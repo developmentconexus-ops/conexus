@@ -26,7 +26,8 @@ responde a pergunta abaixo. No fim: faz o roteiro, com a sua conta do GitHub, e 
 **Fica de fora.** O banco, que nasce na etapa 2. Login, empresas e toda tela do produto. A página é
 nova e pequena, pública e sem segredo, e não espera o estudo da interface. Em cada publicação o Hub
 fica fora do ar por alguns segundos; publicar sem esse corte é a etapa 16. Nenhum segredo fica no
-GitHub: os do servidor ficam num arquivo dele.
+GitHub: os do servidor ficam num arquivo dele. O risco que você aceita: quem pode enviar código ao
+repositório pode mandar no servidor como administrador, como já podia publicar em `main`.
 
 **A decisão sua pedida nesta etapa.** Quando o programa do Hub travar sem cair, você quer receber
 e-mail? Exemplo: o servidor está ligado, mas o programa parou de responder; você abre o endereço e
@@ -60,7 +61,7 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U4 | Um merge em `main` fica no ar em até 10 minutos, com a versão do commit, sem comando no servidor. Publicar ou voltar atrás a partir de outro ramo termina vermelho sem tocar o servidor | Prova da U4: verificação 1 do 0035; caso "outro ramo" | must |
-| 2 | U4 | "Voltar atrás" põe a imagem anterior em até 5 minutos. Sem anterior, termina vermelho e o Hub não muda. Repetir a mesma publicação não apaga a anterior | Verificação 2; casos "sem anterior" e "publicar duas vezes" | must |
+| 2 | U4 | "Voltar atrás" põe a imagem anterior em até 5 minutos; apertar de novo não muda nada. Sem anterior, termina vermelho e o Hub não muda. Repetir a mesma publicação não apaga a anterior | Verificação 2; casos "duas vezes", "sem anterior" e "publicar duas vezes" | must |
 | 3 | U4 | Uma imagem cujo programa não sobe (falta configuração): a anterior volta a responder em até 2 minutos, e a publicação termina vermelha | Verificação 3 | must |
 | 4 | U4 | No fim da U4, uma varredura de fora não acha porta TCP aberta | Verificação 4 | must |
 | 5 | U4 | Um programa morto volta sozinho em até 1 minuto | Verificação 5 | must |
@@ -71,7 +72,7 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 | 10 | U2 | Rota sem tipo de acesso, ou com tipo que não existe, impede a subida, e o erro nomeia método e caminho | `platform/access.test.ts`, "recusa rota sem tipo", "recusa tipo desconhecido" | must |
 | 11 | U2 | `GET /api/health` responde 200 `{"status":"LIVE"}` sem tocar banco algum | `main.test.ts`, "saúde" | must |
 | 12 | U2 | `GET /api/status` responde 200 `{"version":"<40 hex>"}`, a da configuração | `hub/status/status.test.ts`, "lê a versão" | must |
-| 13 | U2 | Caminho desconhecido: 404; JSON inválido, `Content-Length` errado ou linha malformada: 400; mídia errada: 415. Sempre `application/problem+json` com só `type`, `title`, `status`, `code` e `traceId`, nunca 500 nem o corpo do Fastify; log `info` | `main.test.ts`, um caso por recusa, com status e corpo literais | must |
+| 13 | U2 | Caminho desconhecido: 404; JSON inválido, `Content-Length` errado ou linha malformada: 400; mídia errada: 415; corpo acima do limite: 413. Sempre `application/problem+json` com só `type`, `title`, `status`, `code` e `traceId`, nunca 500 nem o corpo do Fastify; log `info` | `main.test.ts`, um caso por recusa, com status e corpo literais | must |
 | 14 | U2 | `HEAD` só em páginas: `HEAD /` responde 200, `HEAD /api/status` responde 404 | `main.test.ts`, "HEAD" | must |
 | 15 | U2 | Toda resposta leva CSP `script-src 'self'`, sem `unsafe-inline`, `frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, e nenhum cabeçalho de CORS | `main.test.ts`, "cabeçalhos" | must |
 | 16 | U2 | Um pedido deixa uma linha de log com rota, status, duração e id; um `traceparent` recebido não aparece | `main.test.ts`, "log por pedido" | should |
@@ -88,7 +89,7 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 
 | Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |
 | --- | --- | --- | --- | --- |
-| `http` (548 linhas) | Nova | `apps/server/src/platform/http.ts`, `access.ts` | Não se aplica | Carrega, por propósito: tipo de acesso por rota, recusado na subida (C33); 404 antes do corpo (S27); `HEAD` só em páginas (C30); erro em cinco campos, `type` `urn:conexus:problem:<CODE>` (C51); resposta conferida (C31); `trustProxy: false`, sem limite que leia o endereço (S29); um log por pedido (C46); erro pelo status (C50); CSP (S26); handler sem `request` (C14). Larga: três ouvintes e os tipos `sign-in`, `host-write`, `hub-entry` ([0018], [0014]); `session` e `sign-out`, refeitos na etapa 3; as listas à mão; os hashes de CSP do Mastra ([0033]); `forceCloseConnections`, `traceId` só em `SYSTEM`, `strict-origin` ("implementado assim") |
+| `http` (548 linhas) | Nova | `apps/server/src/platform/http.ts`, `access.ts` | Não se aplica | Carrega, por propósito: tipo de acesso por rota, recusado na subida (C33); 404 antes do corpo (C34); `HEAD` só em páginas (C30); erro em cinco campos, `type` `urn:conexus:problem:<CODE>` (C51); resposta conferida (C31); `trustProxy: false`, sem limite que leia o endereço (S29); um log por pedido (C46); erro pelo status (C50); CSP (S26); handler sem `request` (C14). Larga: três ouvintes e os tipos `sign-in`, `host-write`, `hub-entry` ([0018], [0014]); `session` e `sign-out`, refeitos na etapa 3; as listas à mão; os hashes de CSP do Mastra ([0033]); `forceCloseConnections`, `traceId` só em `SYSTEM`, `strict-origin` ("implementado assim") |
 | Classe de erro (75) | Nova | `apps/server/src/platform/failure.ts` | Não se aplica | Carrega: uma classe com código da tabela (C49); `cause` nunca serializada; log com tipos e quadros da cadeia, sem mensagem (S41, C54). Larga: herdar `MastraError` |
 | Tabela de falhas (JSON, gerador, duas cópias) | Nova | `packages/hub-api/src/failures.ts` | Não se aplica | Carrega: categoria, status, frase e ação (C48). Larga: o gerador, que servia a dois pacotes; agora um dono (C26) |
 | Configuração (242) | Nova | `apps/server/src/platform/config.ts` | Não se aplica | Carrega: recusar subir nomeando o valor (C67). Larga: 30 de 33 variáveis; a saída 78, cuja base era o systemd |
@@ -98,13 +99,13 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 | Tokens (143) | Nova, do guia de design | `apps/web/src/brand/tokens.css` | Não se aplica | Carrega: três blocos de tema (V4). Larga: `.light`/`.dark` do `ThemeProvider` ([0033]) e `cx-*` (W25) |
 | CI antigo | Nova | `ci.yml`, `scripts/` | Não se aplica | Carrega: um portão que falha em job falho, pulado ou cancelado (L15), por expressão nativa |
 
-Cookies e conferência de origem ficam para a etapa 3; o resto da etapa é novo, sem decisão antiga.
+Cookies e conferência de origem ficam para a etapa 3.
 
 **A medida do transplante.** De `http`, cerca de 150 das 548 linhas têm consumidor nesta etapa, e
 cada bloco muda mais de um terço; dos 35 casos de teste antigos, nenhum passa pela porta pública sem
 mudar. Por isso essas partes nascem novas, e o que os testes antigos fixavam virou os critérios 9 a
 17. A marca é trazida: o construtor da U3 conta as
-linhas trazidas e mudadas no seu relatório e para se passar de um terço.
+linhas trazidas e mudadas e para se passar de um terço.
 
 **A dívida.** Nenhuma.
 
@@ -123,7 +124,7 @@ linhas trazidas e mudadas no seu relatório e para se passar de um terço.
 - Workspace npm com `apps/*` e `packages/*`. Scripts da raiz: `verify` (tudo o que o CI roda),
   `lint`, `typecheck`, `deps`, `knip`, `docs`, `test`, `build`. `test` e `build` rodam em cada
   workspace que os tiver.
-- `.nvmrc` 24.21.0. TypeScript 6.0.3, porque o dependency-cruiser 18.4.0 não lê o 7.
+- `.nvmrc` 24.21.0. TypeScript 6.0.3: o dependency-cruiser 18.4.0 não lê o 7.
   `tsconfig.base.json`: `strict`, `noEmit`, `module` e `moduleResolution` `nodenext`,
   `allowImportingTsExtensions`, `verbatimModuleSyntax`, `erasableSyntaxOnly`.
 - Portas de teste do servidor (T5): `apps/server/src/main.ts`, todo `public.ts`, e um arquivo de
@@ -175,7 +176,8 @@ uma vez com um job que falha e uma vez cancelado. 22 e 23: num repositório Git 
 
 - `type AccessKind = 'page' | 'public'`. `page`: `GET` e `HEAD` de `/`, `/favicon.svg` e
   `/assets/*`, sem credencial. `public`: `GET` em `/api/`, sem credencial. Fora disso, 404.
-- `type Operation`: `id`, `summary`, `access`, `method`, `path`, `success`, `failures`.
+- `type Operation`: `id`, `summary`, `access`, `method`, `path`, `bodyLimit`, `success`, `failures`.
+  `serve` passa o `bodyLimit` ao Fastify (S27); as duas operações desta etapa declaram 1 KiB.
 - `getHealth`: `GET /api/health`, `public`, "Says the program is alive, without touching any
   database." 200 `Health = { status: 'LIVE' }`.
 - `getStatus`: `GET /api/status`, `public`, "Reads the version of the Hub that is live." 200
@@ -183,22 +185,22 @@ uma vez com um job que falha e uma vez cancelado. 22 e 23: num repositório Git 
 - `Version`: schema Zod de 40 caracteres hexadecimais com `.brand('Version')`; só `Version.parse`
   cria um.
 - `FAILURES` e `FailureCode`: `INTERNAL_UNEXPECTED` (SYSTEM, 500), `NOT_FOUND` (USER, 404),
-  `REQUEST_MALFORMED` (USER, 400; todo 4xx sem código próprio), `REQUEST_MEDIA_TYPE_UNSUPPORTED`
-  (USER, 415), `CONFIG_INVALID` (SYSTEM, 500, só no log de subida). Cada linha com frase e ação em
-  português.
-- `Problem = { type, title, status, code, traceId }`; `traceId` é o id do pedido.
+  `REQUEST_MALFORMED` (USER, 400; todo 4xx sem código próprio), `REQUEST_BODY_TOO_LARGE` (USER, 413),
+  `REQUEST_MEDIA_TYPE_UNSUPPORTED` (USER, 415), `CONFIG_INVALID` (SYSTEM, 500, só no log de
+  subida). Cada linha com frase e ação em português.
+- `Problem = { type, title, status, code, traceId }`: `title` é a frase da linha da tabela (C48),
+  `traceId` o id do pedido.
 - `readConfig(env): Config`, `Config = { version: Version; port: number; logLevel: LogLevel }`, de
   `CONEXUS_VERSION`, `HUB_PORT` (1 a 65535) e `LOG_LEVEL` (`error`, `warn`, `info`, `debug`), todos
   obrigatórios. Falha `CONFIG_INVALID` com os nomes nos detalhes.
 - `class Failure extends Error` (`code`, `details`); `logFailure(log, failure)`;
   `serve(app, operation, handler)`, com o handler tipado pela operação.
-- `createStatus(deps: { version: Version })`: objeto congelado `{ read(): HubStatus }`.
+- `createStatus({ version })`: objeto congelado `{ read(): HubStatus }`.
 - `createHub(config): Promise<FastifyInstance>` em `main.ts`, sem escutar. Com `import.meta.main`,
   `main.ts` lê a configuração, liga o `close-with-grace` e escuta em `0.0.0.0:HUB_PORT`.
-- A página é servida de `apps/web/dist`, achada pelo caminho de `main.ts`; a imagem guarda esse
-  desenho de pastas. Sem a pasta, `/` responde 404.
+- A página vem de `apps/web/dist`, achada pelo caminho de `main.ts`; sem ela, `/` responde 404.
 - Prazos: `requestTimeout` e `connectionTimeout` 30 s; `keepAliveTimeout` acima do keep-alive de
-  origem do cloudflared lido na versão instalada; desligamento 15 s.
+  origem do cloudflared instalado; desligamento 15 s.
 
 ### A ordem do trabalho
 
@@ -237,10 +239,9 @@ Fastify, lido e não provado aqui.
 
 - `hubQuery(operation)` em `platform/hub.ts`: monta o endereço pela operação, pede no mesmo domínio,
   valida a resposta com o schema da operação e lê toda falha como `Problem` (C49).
-- `statusQuery` em `hub/status/queries.ts`, de `hubQuery(getStatus)`.
+- `statusQuery` em `queries.ts`, de `hubQuery(getStatus)`.
 - `StatusPage`: marca, versão em `fact` (mono), frase em português.
-- Sem roteador: `main.tsx` monta só o cache e a página; o estudo da interface, antes da etapa 3,
-  traz `routes/`.
+- Sem roteador: `main.tsx` monta o cache e a página; `routes/` vem com o estudo da interface.
 
 ### A ordem do trabalho
 
@@ -265,18 +266,18 @@ critério 18. O 19, no navegador, na prova da U4.
 | --- | --- | --- |
 | `infra/hub.Dockerfile`, `.dockerignore` | Cria | `ci.yml`, `publish.yml` |
 | `infra/compose.yaml`, `infra/deploy.sh` | Cria | os dois workflows, pelo runner do servidor |
-| `infra/setup-server.sh` | Cria | o Firstmate, uma vez, pelo how-to |
-| `.github/workflows/publish.yml`, `rollback.yml` | Cria | GitHub, no push em `main`; o botão "Voltar atrás" |
+| `infra/setup-server.sh` | Cria | o how-to |
+| `.github/workflows/publish.yml`, `rollback.yml` | Cria | GitHub; o botão "Voltar atrás" |
 | `.github/workflows/ci.yml` | Muda: o job `image` | o portão `ci` |
 | `docs/how-to/hub-server.md`, `docs/index.md` | Cria, muda | o Firstmate; `check-docs` |
 | `docs/decisions/0035-…` | Muda: o Resultado | `docs/index.md` |
-| `docs/architecture.md` | Muda: seção 7 cita [0035] e o aviso segue a resposta do fundador; seção 11 ganha a linha do risco do runner (S47) | `docs/index.md` |
+| `docs/architecture.md` | Muda: seção 7 cita [0035] e o aviso segue a resposta do fundador; seção 11 ganha o risco do runner: root no servidor (S47) | `docs/index.md` |
 
 ### Os contratos que a unidade cria
 
 - Imagem `ghcr.io/developmentconexus-ops/conexus-hub:<commit>`, privada, de `node:24-slim` por
   digest, usuário `node`, `ARG`/`ENV CONEXUS_VERSION`, `HUB_PORT` e `LOG_LEVEL` definidos, `CMD node
-  apps/server/src/main.ts`, sem arquivo de ambiente nem segredo.
+  apps/server/src/main.ts`, `apps/web/dist` no mesmo lugar, sem arquivo de ambiente nem segredo.
 - `compose.yaml`: `hub` por digest, `init: true`, `restart: unless-stopped`, verificação de saúde em
   `/api/health` com `node` e `fetch` (a imagem não tem `curl`), `stop_grace_period` acima de 15 s,
   nenhuma porta publicada; `cloudflared` `2026.10.0`, `tunnel --no-autoupdate run --token-file
@@ -287,7 +288,8 @@ critério 18. O 19, no navegador, na prova da U4.
   gerenciador de senhas dele. Nenhum segredo no GitHub.
 - `deploy.sh <imagem>`: se a imagem já roda, não faz nada; senão guarda a que roda em
   `/var/lib/conexus/previous-image` e sobe a nova com `up --wait`; se não ficar saudável, volta a
-  anterior e sai 1. `deploy.sh --previous`: sobe a anterior; sem ela, sai 2.
+  anterior e sai 1. `deploy.sh --previous`: sobe a anterior e não muda o registro, então rodar de
+  novo não faz nada, pela regra "já roda" (C64); sem anterior, sai 2. Voltar atrás volta um passo só.
 - `publish.yml`, no push em `main`: job `image` num runner do GitHub, que constrói e envia com
   `GITHUB_TOKEN` (`packages: write`) e apaga as versões além das dez últimas; job `deploy` em
   `[self-hosted, hub]`, que recusa ref diferente de `refs/heads/main`, entra no registro com o
@@ -309,15 +311,15 @@ critério 18. O 19, no navegador, na prova da U4.
 4. Os workflows. Regras: L13, L17. Funções: `docker/login-action`, `docker/build-push-action`,
    `actions/delete-package-versions`, fixadas por SHA como na U1.
 5. `setup-server.sh` e o how-to: Docker, o runner como serviço de um usuário sem login no grupo
-   `docker`, a pasta de segredos, o lado do Cloudflare, entrada fechada no firewall do provedor.
-   O SSH, só com chave, fecha no fim, depois de provado o console do provedor como acesso de
-   emergência; sem console, a unidade para e volta ao cartão (L7).
-6. A prova, com U2 e U3 no ramo da etapa: as verificações do [0035] e os casos dos critérios 1, 2,
-   8 e 19, registrados no pull request; o Resultado no registro, num commit à parte; as seções 7 e 11
-   da arquitetura.
+   `docker`, a pasta de segredos, o lado do Cloudflare, entrada fechada no firewall do provedor, e a
+   configuração do GitHub que impede workflows de pull requests de fork, conferida (caso "forks").
+   O SSH, só com chave, fecha no fim, provado o console do provedor; sem console, volta ao cartão
+   (L7).
+6. A prova, com U2 e U3 no ramo: o [0035] e os casos abaixo; o Resultado num commit à parte; as
+   seções 7 e 11 da arquitetura.
 
 ### Como se prova
 
-No servidor, as verificações do [0035] e os casos "outro ramo", "sem anterior", "publicar duas
-vezes", "travado" e "console", com o que rodou e o que apareceu. O job `image` constrói a imagem em
-todo pull request.
+No servidor, as verificações do [0035] e os casos "outro ramo", "sem anterior", "duas vezes",
+"publicar duas vezes", "travado", "console" e "forks", com o que rodou e o que apareceu. O job
+`image` constrói a imagem em todo pull request.

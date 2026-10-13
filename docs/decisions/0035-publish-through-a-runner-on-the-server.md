@@ -12,16 +12,16 @@ Hosted runners build the image; a GitHub runner on the server starts it with Com
 
 **Question.** Does the server publish and roll back alone, with no open port?
 
-**Fixed.** The São Paulo server, the versions of step 1's card, GitHub Free.
+**Fixed.** São Paulo server, step 1's versions, GitHub Free.
 
 | # | Check | Passes when |
 | --- | --- | --- |
 | 1 | Merge into `main` | Live within 10 min, no server command |
-| 2 | "Voltar atrás" | Previous version within 5 min |
+| 2 | "Voltar atrás" | Previous within 5 min |
 | 3 | Image missing a setting | Previous answers within 2 min; run red |
 | 4 | Outside port scan | No open TCP port |
 | 5 | Kill the program | Back within 1 min |
-| 6 | Stop cloudflared | Cloudflare e-mail arrives; delay recorded |
+| 6 | Stop cloudflared | Cloudflare e-mail; delay recorded |
 | 7 | `docker events`, three publishes | Old Hub dies before new starts |
 
 **Not covered.** A hang, load, restoring the server.
@@ -32,11 +32,11 @@ Not run.
 
 ## Consequences
 
-On GitHub Free any repository writer can run code on that runner, as L14 accepts for `main`.
+On GitHub Free any writer can run code as root on the server, reading the tunnel token, as L14 accepts for `main`.
 
 ## Reopens when
 
-A check fails, or self-hosted minutes stop being free.
+A check fails, or runner minutes cost money.
 
 ## State
 
