@@ -10,9 +10,9 @@
     "node": ">=24.21.0"
   },
   "scripts": {
-    "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run suppressions && npm run test && npm run build --if-present",
+    "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run suppressions && npm run test && npm run build",
     "lint": "biome check .",
-    "typecheck": "tsc -p scripts/tsconfig.json",
+    "typecheck": "tsc -p scripts/tsconfig.json && npm run typecheck --workspaces --if-present",
     "deps": "depcruise . --config .dependency-cruiser.cjs",
     "knip": "knip",
     "docs": "node scripts/check-docs.ts",
@@ -20,7 +20,8 @@
     "approval": "node scripts/check-approval.ts",
     "method-freeze": "node scripts/check-method-freeze.ts",
     "new-dependencies": "node scripts/list-new-dependencies.ts",
-    "test": "npm run test:scripts",
+    "test": "npm run test:scripts && npm run test --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
     "test:scripts": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts scripts/*.test.ts"
   },
   "devDependencies": {
