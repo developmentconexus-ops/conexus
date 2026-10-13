@@ -67,7 +67,7 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 | 10 | U2 | Rota sem tipo de acesso, ou com tipo que não existe, impede a subida, e o erro nomeia método e caminho | `platform/access.test.ts`, "recusa rota sem tipo", "recusa tipo desconhecido" | must |
 | 11 | U2 | `GET /api/health` responde 200 `{"status":"LIVE"}` sem tocar banco algum | `main.test.ts`, "saúde" | must |
 | 12 | U2 | `GET /api/status` responde 200 `{"version":"v0.1.0"}`, a da configuração | `hub/status/status.test.ts`, "lê a versão" | must |
-| 13 | U2 | Caminho desconhecido: 404; JSON inválido, `Content-Length` errado ou linha malformada: 400; mídia errada: 415; corpo acima do limite: 413. Sempre `application/problem+json` com só `type`, `title`, `status`, `code` e `traceId`, nunca 500 nem o corpo do Fastify; log `info` | `main.test.ts`, um caso por recusa, com status e corpo literais | must |
+| 13 | U2 | Caminho desconhecido: 404; `Content-Length` errado ou linha malformada: 400. Sempre `application/problem+json` com só `type`, `title`, `status`, `code` e `traceId`, nunca 500 nem o corpo do Fastify; log `info` | `main.test.ts`, um caso por recusa, com status e corpo literais | must |
 | 14 | U2 | `HEAD` só em páginas: `HEAD /` responde 200, `HEAD /api/status` responde 404 | `main.test.ts`, "HEAD" | must |
 | 15 | U2 | Toda resposta leva CSP `script-src 'self'`, sem `unsafe-inline`, `frame-ancestors 'none'`, `Referrer-Policy: no-referrer`, e nenhum cabeçalho de CORS | `main.test.ts`, "cabeçalhos" | must |
 | 16 | U2 | Um pedido deixa uma linha de log com rota, status, duração e id; um `traceparent` recebido não aparece | `main.test.ts`, "log por pedido" | should |
@@ -179,9 +179,8 @@ uma vez com um job que falha e uma vez cancelado. 22 e 23: num repositório Git 
 - `Version`: schema Zod do nome de versão `v<n>.<n>.<n>`, com `.brand('Version')`; só `Version.parse`
   cria um.
 - `FAILURES` e `FailureCode`: `INTERNAL_UNEXPECTED` (SYSTEM, 500), `NOT_FOUND` (USER, 404),
-  `REQUEST_MALFORMED` (USER, 400; todo 4xx sem código próprio), `REQUEST_BODY_TOO_LARGE` (USER, 413),
-  `REQUEST_MEDIA_TYPE_UNSUPPORTED` (USER, 415), `CONFIG_INVALID` (SYSTEM, 500, só no log de
-  subida). Cada linha com frase e ação em português.
+  `REQUEST_MALFORMED` (USER, 400; todo 4xx sem código próprio), `CONFIG_INVALID` (SYSTEM, 500, só no
+  log de subida). Cada linha com frase e ação em português.
 - `Problem = { type, title, status, code, traceId }`: `title` é a frase da linha da tabela (C48),
   `traceId` o id do pedido.
 - `readConfig(env): Config`, `Config = { version: Version; port: number; logLevel: LogLevel }`, de

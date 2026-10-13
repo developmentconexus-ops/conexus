@@ -232,4 +232,8 @@ with it. This wait is Conexus code.
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
 
 **Debt.** Small fixes left on a brought part are listed here, one line each, with the step that
-removes them. None yet.
+removes them.
+
+- The invalid-JSON 400, the 415 and the 413 refusals, and the `bodyLimit` proof, are proved with
+  step 3's first POST operation: step 1 has only GET and HEAD routes, and Fastify never reads a
+  body on them.
