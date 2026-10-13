@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 500 600;
+  font-display: swap;
+  src: url("./fonts/BricolageGrotesque-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Hanken Grotesk";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("./fonts/HankenGrotesk-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("./fonts/JetBrainsMono-latin.woff2") format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Tokens of the design guide's front matter, in three blocks: light, the system's dark, and the chosen dark (design V4). */
+@theme {
+  --color-*: initial;
+  --color-canvas: #f6f7f8;
+  --color-surface: #ffffff;
+  --color-surface-3: #eff1f3;
+  --color-surface-4: #e6e9ec;
+  --color-line: #dde1e5;
+  --color-line-strong: #8a939c;
+  --color-text: #121518;
+  --color-text-2: #59616a;
+  --color-ink: #121518;
+  --color-on-ink: #ffffff;
+  --color-accent: #b07a0c;
+  --color-accent-text: #9a6a08;
+  --color-accent-soft: #fbf1d9;
+  --color-mark: #c08a12;
+  --color-success: #1a7f4b;
+  --color-warning: #b54708;
+  --color-danger: #c0283d;
+  --color-on-accent: #ffffff;
+  --color-preview-paper: #ffffff;
+
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --text-display: 2.1rem;
+  --text-display--line-height: 1.15;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 600;
+  --text-title: 1.05rem;
+  --text-title--line-height: 1.3;
+  --text-title--letter-spacing: -0.01em;
+  --text-title--font-weight: 600;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.55;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1;
+  --text-label--font-weight: 500;
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow--letter-spacing: 0.08em;
+  --text-eyebrow--font-weight: 700;
+  --text-fact: 0.75rem;
+  --text-fact--line-height: 1.4;
+
+  --radius-control: 6px;
+  --radius-object: 10px;
+  --radius-card: 14px;
+  --radius-composer: 16px;
+  --radius-pill: 999px;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2.5rem;
+
+  --ease-fit: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-fit-a: fit-a 0.9s var(--ease-arrive) 0.3s both;
+  --animate-fit-b: fit-b 0.9s var(--ease-arrive) 0.3s both;
+
+  @keyframes fit-a {
+    from {
+      transform: translate(-3px, -3px);
+    }
+    to {
+      transform: none;
+    }
+  }
+  @keyframes fit-b {
+    from {
+      transform: translate(3px, 3px);
+    }
+    to {
+      transform: none;
+    }
+  }
+}
+
+:root {
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-canvas: #0e1012;
+    --color-surface: #16191c;
+    --color-surface-3: #1d2125;
+    --color-surface-4: #262b30;
+    --color-line: #2c3237;
+    --color-line-strong: #6e7780;
+    --color-text: #eef0f2;
+    --color-text-2: #a3abb3;
+    --color-ink: #eef0f2;
+    --color-on-ink: #121518;
+    --color-accent: #f2b53a;
+    --color-accent-text: #f2b53a;
+    --color-accent-soft: #3a2e12;
+    --color-mark: #f2b53a;
+    --color-success: #6fd39a;
+    --color-warning: #f5a25b;
+    --color-danger: #f28b9a;
+    --color-on-accent: #ffffff;
+    --color-preview-paper: #ffffff;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #0e1012;
+  --color-surface: #16191c;
+  --color-surface-3: #1d2125;
+  --color-surface-4: #262b30;
+  --color-line: #2c3237;
+  --color-line-strong: #6e7780;
+  --color-text: #eef0f2;
+  --color-text-2: #a3abb3;
+  --color-ink: #eef0f2;
+  --color-on-ink: #121518;
+  --color-accent: #f2b53a;
+  --color-accent-text: #f2b53a;
+  --color-accent-soft: #3a2e12;
+  --color-mark: #f2b53a;
+  --color-success: #6fd39a;
+  --color-warning: #f5a25b;
+  --color-danger: #f28b9a;
+  --color-on-accent: #ffffff;
+  --color-preview-paper: #ffffff;
+}
+
+@media (max-width: 40rem) {
+  :root {
+    --text-display: 1.6rem;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-canvas font-body text-body text-text;
+  }
+}
