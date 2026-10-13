@@ -1,0 +1,78 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": { "includes": ["**", "!package-lock.json", "!**/*.woff2"] },
+  "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
+  "javascript": {
+    "formatter": { "quoteStyle": "single", "semicolons": "asNeeded", "trailingCommas": "all" }
+  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        "noExcessiveLinesPerFunction": {
+          "level": "error",
+          "options": { "maxLines": 60, "skipBlankLines": true }
+        }
+      },
+      "style": {
+        "noDefaultExport": "error",
+        "noProcessEnv": "error",
+        "noNonNullAssertion": "error",
+        "useConsistentTypeDefinitions": { "level": "error", "options": { "style": "type" } },
+        "noExcessiveLinesPerFile": {
+          "level": "error",
+          "options": { "maxLines": 300, "skipBlankLines": true }
+        },
+        "useImportType": { "level": "error", "options": { "style": "separatedType" } },
+        "noRestrictedGlobals": {
+          "level": "error",
+          "options": {
+            "deniedGlobals": {
+              "fetch": "The web calls the Hub only through platform/hub.ts (web W9)."
+            }
+          }
+        },
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "vitest": "Only screen files use Vitest (testing T1, decision 0034).",
+              "msw": "Only screen files use MSW (testing T1, decision 0034).",
+              "@testing-library/react": "Only screen files use Testing Library (testing T1)."
+            }
+          }
+        }
+      },
+      "suspicious": {
+        "noExplicitAny": "error",
+        "noEmptyBlockStatements": "error"
+      },
+      "nursery": {
+        "noThisOutsideOfClass": "error",
+        "noUnsafeTypeAssertion": "error",
+        "useConsistentFunctionStyle": { "level": "error", "options": { "style": "declaration" } }
+      }
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["scripts/**", "apps/server/src/platform/config.ts"],
+      "linter": { "rules": { "style": { "noProcessEnv": "off" } } }
+    },
+    {
+      "includes": ["scripts/test-reporter.ts", "**/*.config.ts"],
+      "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    },
+    {
+      "includes": ["apps/web/src/platform/hub.ts", "scripts/**", "apps/server/**"],
+      "linter": { "rules": { "style": { "noRestrictedGlobals": "off" } } }
+    },
+    {
+      "includes": ["apps/web/**/*.test.tsx", "apps/web/vitest.*", "apps/web/vite.config.ts"],
+      "linter": { "rules": { "style": { "noRestrictedImports": "off" } } }
+    }
+  ]
+}

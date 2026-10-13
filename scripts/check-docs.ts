@@ -1,0 +1,181 @@
+// Defect: a document grows past its ceiling, hides from docs/index.md, holds a link that goes
+// nowhere, repeats or cites a rule that does not exist, names a retired process, or a second step
+// card waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24).
+// Refusals are proved by planting each one in check-docs.test.ts.
+// Revalidate by 2027-04-13, or when the list in delivery L24 changes.
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
+import { basename, dirname, join, relative, resolve } from 'node:path'
+import { parse } from 'yaml'
+
+const root = resolve(process.argv[2] ?? '.')
+
+const CEILINGS: readonly (readonly [RegExp, number])[] = [
+  [/^AGENTS\.md$/, 400],
+  [/^docs\/index\.md$/, 500],
+  [/^docs\/roadmap\.md$/, 1500],
+  [/^docs\/architecture\.md$/, 2500],
+  [/^docs\/guides\/code\.md$/, 3500],
+  [/^docs\/guides\/security\.md$/, 3000],
+  [/^docs\/guides\/(data|design)\.md$/, 2500],
+  [/^docs\/guides\/(testing|web)\.md$/, 2000],
+  [/^docs\/guides\/delivery\.md$/, 1800],
+  [/^docs\/decisions\/[^/]+\.md$/, 250],
+  [/^docs\/steps\/[^/]+\.md$/, 4000],
+  [/^docs\/how-to\/[^/]+\.md$/, 800],
+  [/^\.agents\/skills\/[^/]+\/SKILL\.md$/, 600],
+  [/^\.agents\/skills\/[^/]+\/references\/[^/]+\.md$/, 1500],
+]
+const STEP_PAGE_CEILING = 600
+const RETIRED = [
+  /\bwave\b/i,
+  /\bN[0-5]\b/,
+  /\breceipts?\b/i,
+  /\bFactory (?:review|robot)/i,
+  /\bCodex review\b/i,
+  /\bconexus-spec\b/,
+  /\bconexus-prove\b/,
+  /\bconexus-development\b/,
+  /\bdossier\b/i,
+]
+const RETIRED_HOME = 'docs/guides/delivery.md'
+const RULE_ID = /\b([CDLSTVW]\d{1,3})\b/g
+const RULE_DEFINITION = /^- \*\*([CDLSTVW]\d{1,3})\.\*\*/
+
+function walk(dir: string): string[] {
+  if (!existsSync(dir)) return []
+  return readdirSync(dir).flatMap((name) => {
+    if (name === 'node_modules' || name === '.git') return []
+    const path = join(dir, name)
+    return statSync(path).isDirectory() ? walk(path) : [path]
+  })
+}
+
+const files = [
+  ...['AGENTS.md', 'README.md', 'CLAUDE.md'].map((name) => join(root, name)),
+  ...walk(join(root, 'docs')),
+  ...walk(join(root, '.agents/skills')),
+]
+  .filter((path) => path.endsWith('.md') && existsSync(path))
+  .map((path) => relative(root, path))
+  .sort()
+
+const problems: string[] = []
+function fail(name: string, file: string, detail: string) {
+  problems.push(`${name}: ${file}: ${detail}`)
+}
+
+function words(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length
+}
+
+function withoutCode(text: string): string {
+  return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '').replace(/`[^`\n]*`/g, '')
+}
+
+function body(file: string, text: string): string {
+  if (!file.endsWith('/SKILL.md')) return text
+  return text.replace(/^---\n[\s\S]*?\n---\n/, '')
+}
+
+function checkCeiling(file: string, text: string) {
+  const ceiling = CEILINGS.find(([pattern]) => pattern.test(file))?.[1]
+  if (ceiling === undefined) return
+  const count = words(body(file, text))
+  if (count > ceiling) fail('document-too-long', file, `${count} words, the ceiling is ${ceiling}`)
+  if (/^docs\/steps\//.test(file)) {
+    const page = text.match(/^## A página do fundador\n([\s\S]*?)(?=^## )/m)?.[1] ?? ''
+    if (words(page) > STEP_PAGE_CEILING) {
+      fail(
+        'founder-page-too-long',
+        file,
+        `${words(page)} words, the ceiling is ${STEP_PAGE_CEILING}`,
+      )
+    }
+  }
+}
+
+function checkSkillHeader(file: string, text: string) {
+  if (!file.endsWith('/SKILL.md')) return
+  const header = text.match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? ''
+  const fields: unknown = parse(header)
+  const name =
+    typeof fields === 'object' && fields !== null && 'name' in fields ? fields.name : undefined
+  const folder = basename(dirname(file))
+  if (name !== folder)
+    fail('skill-name-differs-from-folder', file, `${String(name)} is not ${folder}`)
+}
+
+function checkLinks(file: string, text: string) {
+  for (const match of withoutCode(text).matchAll(/\]\(([^)\s]+)\)/g)) {
+    const target = (match[1] ?? '').split('#')[0] ?? ''
+    if (target === '' || /^[a-z][a-z0-9+.-]*:/i.test(target)) continue
+    if (!existsSync(resolve(root, dirname(file), target))) fail('broken-link', file, target)
+  }
+}
+
+function indexedTargets(): string[] {
+  const index = readFileSync(join(root, 'docs/index.md'), 'utf8')
+  return [...withoutCode(index).matchAll(/\]\(([^)\s]+)\)/g)].map((match) =>
+    relative(root, resolve(root, 'docs', (match[1] ?? '').split('#')[0] ?? '')),
+  )
+}
+
+function checkIndex() {
+  if (!existsSync(join(root, 'docs/index.md'))) return
+  const targets = indexedTargets()
+  for (const file of files) {
+    if (!/^(docs|\.agents\/skills)\//.test(file) || file === 'docs/index.md') continue
+    const covered = targets.some((target) => file === target || file.startsWith(`${target}/`))
+    if (!covered) fail('not-in-index', file, 'docs/index.md has no line for it')
+  }
+}
+
+function checkRules(texts: ReadonlyMap<string, string>) {
+  const defined = new Map<string, string>()
+  for (const [file, text] of texts) {
+    if (!/^docs\/guides\//.test(file)) continue
+    for (const line of text.split('\n')) {
+      const id = line.match(RULE_DEFINITION)?.[1]
+      if (id === undefined) continue
+      const first = defined.get(id)
+      if (first !== undefined) fail('rule-defined-twice', file, `${id} is also in ${first}`)
+      else defined.set(id, file)
+    }
+  }
+  for (const [file, text] of texts) {
+    for (const match of withoutCode(text).matchAll(RULE_ID)) {
+      const id = match[1] ?? ''
+      if (!defined.has(id)) fail('rule-missing', file, `${id} is cited and defined nowhere`)
+    }
+  }
+}
+
+function checkRetired(file: string, text: string) {
+  if (file === RETIRED_HOME) return
+  for (const pattern of RETIRED) {
+    const hit = text.match(pattern)?.[0]
+    if (hit !== undefined) fail('retired-name', file, hit)
+  }
+}
+
+function checkSteps() {
+  const cards = files.filter((file) => /^docs\/steps\/[^/]+\.md$/.test(file))
+  if (cards.length > 1) fail('second-card', 'docs/steps', cards.join(', '))
+}
+
+const texts = new Map(files.map((file) => [file, readFileSync(join(root, file), 'utf8')]))
+for (const [file, text] of texts) {
+  checkCeiling(file, text)
+  checkSkillHeader(file, text)
+  checkLinks(file, text)
+  checkRetired(file, text)
+}
+checkIndex()
+checkRules(texts)
+checkSteps()
+
+if (problems.length > 0) {
+  console.error(problems.join('\n'))
+  process.exit(1)
+}
+console.log(`check-docs: ${files.length} documents ok`)
