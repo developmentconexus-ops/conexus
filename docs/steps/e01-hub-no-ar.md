@@ -33,7 +33,7 @@ primeira empresa. "Voltar atrás" põe de volta a versão que você escolher ent
 nova e pequena, pública e sem segredo, e não espera o estudo da interface. Em cada publicação o Hub
 fica fora do ar por alguns segundos; publicar sem esse corte é a etapa 16. Nenhum segredo fica no
 GitHub: os do servidor ficam num arquivo dele. O risco que você aceita: quem pode enviar código ao
-repositório pode mandar no servidor como administrador, como já podia publicar em `main`.
+repositório pode mandar no servidor como administrador, como já podia criar uma versão.
 
 **A decisão sua pedida nesta etapa.** Nenhuma. As suas respostas de 2026-10-13, "4. a 5A 2B 3o que
 recomenda", estão acima.
