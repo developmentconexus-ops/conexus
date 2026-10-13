@@ -8,6 +8,7 @@ em `architecture.md`.
 ### As etapas, e o que você faz na nuvem quando cada uma fecha
 
 1. **Hub no ar.** Publica uma mudança no Hub e volta atrás.
+   Cartão da etapa 1 aprovado em 2026-10-13 (commit defea7ab2b4622b4ad5f74fe71f93f38a5640286): "Aprovo"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
 3. **Entrar.** Entra com e-mail e senha, e sai.
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
@@ -106,7 +107,7 @@ referências e os guias. O resultado decide a árvore de `apps/web` e o guia do 
 ## 3. As duas primeiras etapas
 
 O cartão da etapa 1 está em [`steps/e01-hub-no-ar.md`](steps/e01-hub-no-ar.md). O da etapa 2
-espera num pull request em rascunho ([entrega L5](guides/delivery.md)).
+espera em rascunho ([entrega L5](guides/delivery.md)).
 
 ## 4. Como uma etapa roda
 
