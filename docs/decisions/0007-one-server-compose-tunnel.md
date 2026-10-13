@@ -14,7 +14,7 @@ None written before. Brought from earlier work.
 
 ## Result
 
-Not run. Step 1 shows publishing by push, rolling back and the down alert.
+Not run. Step 1 shows publishing by release, rolling back and the down alert [0035].
 
 ## Consequences
 

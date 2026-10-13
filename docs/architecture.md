@@ -148,11 +148,12 @@ and tests, and a `public.ts` with what others may use. The import law is
 | Neon | An organization of Conexus's own. One project for the Hub, with two databases; one project per company | [0008] [0009] [0021] |
 | E2B | Build machines, under a key used by this installation only | [0028] |
 
-**Publish.** A merge into `main` builds the image and puts it live, with no command on the server.
-Migrations run before the program starts ([data D9](guides/data.md)).
+**Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
+command on the server; a merge alone publishes nothing [0035]. Migrations run before the program
+starts ([data D9](guides/data.md)).
 
-**Roll back.** The previous image comes back with one button. Every migration only adds, so the
-previous image runs on the migrated database ([data D6](guides/data.md)). A Worker rolls back with
+**Roll back.** One button puts back the image of an earlier release. Every migration only adds, so
+an earlier image runs on the migrated database ([data D6](guides/data.md)). A Worker rolls back with
 Cloudflare's own versions.
 
 **Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
