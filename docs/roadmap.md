@@ -8,7 +8,7 @@ em `architecture.md`.
 ### As etapas, e o que você faz na nuvem quando cada uma fecha
 
 1. **Hub no ar.** Publica uma mudança no Hub e volta atrás.
-   Cartão da etapa 1 aprovado em 2026-10-13 (commit defea7ab2b4622b4ad5f74fe71f93f38a5640286): "Aprovo"
+   Cartão da etapa 1 aprovado em 2026-10-13 (commit 073faa746ea5cbda211a1a541aece3cf495bc35e): "Sim"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
 3. **Entrar.** Entra com e-mail e senha, e sai.
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
