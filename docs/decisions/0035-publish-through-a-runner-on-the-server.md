@@ -2,11 +2,11 @@
 
 ## Context
 
-A merge goes live, and one button brings the previous image back, with no command on the server and no open port [0007].
+A merge goes live, and one button brings the previous image back, with no server command or open port [0007].
 
 ## Decision
 
-Hosted runners build the image; a GitHub runner on the server starts it with Compose; a "Voltar atrás" workflow starts the previous one. No secret lives in GitHub. Basis: purpose. Risk: on GitHub Free any writer can run a workflow on that runner, as L14 accepts for `main`.
+Hosted runners build the image; a GitHub runner on the server starts it with Compose; a "Voltar atrás" workflow starts the previous one. No secret lives in GitHub. Basis: purpose.
 
 ## Criterion
 
@@ -16,19 +16,23 @@ Hosted runners build the image; a GitHub runner on the server starts it with Com
 
 | # | Check | Passes when |
 | --- | --- | --- |
-| 1 | Merge into `main` | New version live within 10 min, no server command |
+| 1 | Merge into `main` | Live within 10 min, no server command |
 | 2 | "Voltar atrás" | Previous version within 5 min |
-| 3 | Image missing a setting | Previous version answers; run red |
+| 3 | Image missing a setting | Previous answers within 2 min; run red |
 | 4 | Outside port scan | No open TCP port |
 | 5 | Kill the program | Back within 1 min |
 | 6 | Stop cloudflared | Cloudflare e-mail arrives; delay recorded |
-| 7 | `docker ps` while publishing | Never two Hub containers |
+| 7 | `docker events`, three publishes | Old Hub dies before new starts |
 
 **Not covered.** A hang, load, restoring the server.
 
 ## Result
 
 Not run.
+
+## Consequences
+
+On GitHub Free any repository writer can run code on that runner, as L14 accepts for `main`.
 
 ## Reopens when
 
