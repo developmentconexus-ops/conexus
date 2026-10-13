@@ -1,0 +1,156 @@
+# Delivery guide
+
+How a step of the roadmap goes from its card to the founder's use. This guide adapts
+[Google's engineering practices](https://google.github.io/eng-practices/) (CC BY 3.0) and the
+small-batch capability of [DORA](https://dora.dev/capabilities/), within the founder's decisions.
+Each rule uses the words of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must
+not** are defects in review; **should** and **should not** need a stated reason to break; **may** is
+a free choice. Each rule ends with the machine that refuses a violation, or "review". The steps
+inside each stage are the skills' (see [`AGENTS.md`](../../AGENTS.md)). This guide changes only with
+the founder's word.
+
+## 1. One step at a time
+
+- **L1.** The roadmap **must** have one step "in construction", and only it **may** have a branch
+  with product code. A planning session **may** study and scope the next step beside it, writing no
+  product code. [review]
+- **L2.** A step **must** be small: something the founder uses within a few days. Founder,
+  2026-10-12: "A". [review]
+- **L3.** Every step **must** pass through five stages: study, scope, build, review, use. [review]
+- **L4.** A defect in what is already in `main` **must** become a fix step of its own, at the front of
+  the queue, with the same review and merge. [review]
+
+## 2. The card
+
+- **L5.** `docs/steps/` **must** hold one file: the card of the step in construction. The next card
+  waits in a draft pull request and enters when the current step closes. [check-docs]
+- **L6.** The founder **must** approve the card's page in Portuguese. The roadmap records the
+  approval with his words, the date and the commit of the card; CI checks that commit is an ancestor
+  of the tip and that the card has not changed since. [CI]
+- **L7.** A unit **must** touch only the files its card's blast radius names. A file outside it, or a
+  change of scope found mid-step, **must** stop the build and return to the card, with the founder's
+  word for what he sees. [review]
+
+**Why.** An approval that cites a commit the card has since left approves nothing. A blast radius
+written before the build is what makes a reviewer able to see the build wandered.
+
+**Right.** A builder finds the unit needs a column on a table the card does not name, stops, and the
+card gains the file before the build resumes.
+
+**Wrong.** The builder adds the column to make the test pass and mentions it in the report.
+
+## 3. Build and review
+
+- **L8.** A step **must** be built whole on its own branch, in units. Units that share no folder
+  **may** run in parallel, with one commit per unit. [review]
+- **L9.** A step **must** have one review of the whole step, after its units are built, by two models
+  that did not build it, at the exact commit. Each **must** run the refusal criteria. There **must
+  not** be a per-unit review or a review robot. Founder, 2026-10-12, in firstmate's reading, which
+  he did not contest. [review]
+- **L10.** A reviewer **must** read the rules from `main`, never from the branch it reviews. [review]
+- **L11.** A finding **must** name its evidence, file and line, and the rule it breaks. The builder **must** find the
+  cause before the fix; two failed fixes on one premise **must** send the step back to its card.
+  [review]
+- **L12.** A finding with no rule broken and no defect shown is a preference: it **must** start with
+  `Nit:` and **must not** block. [review]
+
+**Why.** In October a reading of all the work at once by two models found four defects the batch reviews
+and green CI had missed. A pull request that could change its own rules could approve itself. A fix
+without its cause comes back.
+
+**Right.** "Symptom: the list shows a deleted Project. Cause: the store reads a column nothing writes.
+Fix: the state leaves the type. Breaks D18."
+
+**Wrong.** A second patch on the same premise after the first failed review.
+
+## 4. Merge and use
+
+- **L13.** The step's code **must** enter `main` in one merge, by firstmate, after the tests pass and
+  the review approves the same commit. Founder, 2026-10-13: "1 ok". The card's pull request, a
+  proof's decision record and the closing pull request carry documents only. The merge **must** keep
+  the commits, so a cited commit exists on `main`. [firstmate's merge script]
+- **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
+  `main`, always through firstmate's merge script, and only after the CI job reported green on that
+  exact commit. After the opening commit nobody **may** push to `main` directly. Risk: nothing on
+  GitHub refuses a direct push. Founder, 2026-10-13, declining GitHub Pro: "3. Nao vou".
+  [firstmate's merge script, review]
+- **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled;
+  firstmate's merge script reads that check. [CI]
+- **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
+  is on the list of expensive choices. [CI, review]
+- **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
+  firstmate, and used by the founder through the card's use script. His words, the date and the
+  address go on the step's line in the roadmap, and only then **may** the next step start. Founder,
+  2026-10-12. [CI, from the first step's closing]
+- **L18.** If the use fails, the step **must** stay open and gain a fix. [review]
+
+**Why.** An approval on an older commit proves nothing about the code that lands, and a squash would
+leave approvals pointing at commits that exist on no branch. A green CI is not a person using it.
+
+**Right.** Firstmate merges the commit both verdicts name, the image goes live, and the founder's "fiz
+e funcionou" goes on the roadmap with the date.
+
+**Wrong.** A merge after a push that came in after the last verdict.
+
+## 5. Closing a step
+
+- **L19.** The closing pull request **must** write the use line, move into the guides the rules the
+  step learned, confirm every acceptance criterion has a test, and delete the card. [review]
+- **L20.** Skills and guides **must** change only in a closing pull request, when no step is in
+  construction. A finding that asks for a change waits in the method queue, an issue with the method
+  label. The exception is an emergency label only the founder applies, counted on the step's line.
+  [CI]
+
+**Why.** Five changes of method in seventeen hours left every running session on a different rule.
+
+**Right.** A reviewer finds a guide rule that misleads; the issue waits, and the closing pull request
+changes the guide.
+
+**Wrong.** A guide edited mid-step so the next unit passes.
+
+## 6. What the repository keeps
+
+- **L21.** The repository **must** keep only what changes what the next agent does: the use line in
+  the roadmap, a proof's criterion and result in its decision record, a learned rule in its guide.
+  What only proves a stage was done stays in the pull request. [check-docs]
+- **L22.** Studies and proofs **must** stay outside this repository; a decision record keeps the
+  conclusion. Founder, 2026-10-12. [review]
+- **L23.** What the founder reads **must** be in Portuguese: the README, the roadmap, the cards and
+  their founder's page. `AGENTS.md`, the guides, the architecture, the decision records and the
+  skills **must** be in English. [review]
+- **L24.** A file in `docs/` or `.agents/skills/` **must** have a line in `docs/index.md` and stay
+  under its ceiling below; links **must** resolve; rule identifiers **must** be unique and every cited
+  one exist; a rule **must** live in one file; retired process names **must not** appear. They are:
+  wave, N0 to N5, receipts, Factory as the old review robot, Codex review, `conexus-spec`,
+  `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. [check-docs, review]
+
+| File | Ceiling, in words |
+| --- | ---: |
+| `AGENTS.md` | 400 |
+| `docs/index.md` | 500 |
+| `docs/roadmap.md` | 1,500 |
+| `docs/architecture.md` | 2,500 |
+| `docs/guides/code.md` | 3,500 |
+| `docs/guides/security.md` | 3,000 |
+| `docs/guides/data.md`, `design.md` | 2,500 |
+| `docs/guides/testing.md`, `web.md` | 2,000 |
+| `docs/guides/delivery.md` | 1,800 |
+| `docs/decisions/*.md` | 250 |
+| `docs/steps/*.md` | 4,000, the founder's page about 600 |
+| `docs/how-to/*.md` | 800 |
+| `.agents/skills/*/SKILL.md`, body | 600 |
+| `.agents/skills/*/references/*.md` | 1,500 |
+
+**Why.** The old repository's evidence folders reached 678 files before they were deleted, and its
+specifications reached 94,146 words. A ceiling a machine checks is the only one that holds.
+
+**Right.** A review verdict lives in the pull request; the rule it taught goes into a guide.
+
+**Wrong.** A `docs/evidence/` folder of filled checklists.
+
+## 7. Git
+
+- **L25.** A pull request **should** do one thing and open with one line saying what changes, then
+  why. Commit titles **should** follow conventional commits. [review]
+- **L26.** Nobody **may** reset, clean, stash, force-push or discard work they did not create.
+  [review]
