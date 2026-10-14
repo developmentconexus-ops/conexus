@@ -14,7 +14,7 @@ Declared for step 2, not run: the Hub live, nobody signed in, no run for ten min
 
 ## Result
 
-Not run.
+Run 2026-10-14 on the live Hub, pass. After 13 minutes without a request the Neon endpoint was `idle` (from 19:18Z UTC); the next `/api/status` answered in 1.0 s, against 0.17 s warm. Neon logged unexplained activity at 19:13Z.
 
 ## Consequences
 
