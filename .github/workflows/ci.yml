@@ -84,7 +84,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: The image builds
-        run: docker build --file infra/hub.Dockerfile --build-arg CONEXUS_VERSION=v0.0.0 .
+        run: docker build --file infra/hub.Dockerfile --build-arg CONEXUS_VERSION=v0.0.0 --tag conexus-hub:ci .
+      - name: The image carries the migration label and defines no NODE_ENV
+        run: |
+          label="$(docker image inspect --format '{{ index .Config.Labels "conexus.migrate" }}' conexus-hub:ci)"
+          if [ "$label" != "1" ]; then
+            echo "the image lacks the label conexus.migrate=1, so deploy.sh would skip migrate"
+            exit 1
+          fi
+          if docker image inspect --format '{{ range .Config.Env }}{{ println . }}{{ end }}' conexus-hub:ci | grep -q '^NODE_ENV='; then
+            echo "the image defines NODE_ENV"
+            exit 1
+          fi
 
   ci:
     if: always()

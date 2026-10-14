@@ -1,0 +1,21 @@
+# Restaurar o banco do Hub
+
+Como voltar o banco do Hub a um minuto anterior, no Neon, e conferir que o Hub voltou certo. Vale para qualquer restauração, por erro ou por teste.
+
+## Antes
+
+Escolha o minuto. O Neon guarda só seis horas de histórico no plano grátis. Anote a hora de Brasília: o Neon mostra em UTC, três horas à frente.
+
+## Restaurar
+
+1. No Neon, abra o projeto do Hub, depois Backup & Restore.
+2. Escolha o ramo principal e o minuto, e confirme a restauração.
+3. No GitHub, em Actions, rode "Reiniciar o Hub". É obrigatório depois de toda restauração: a senha do login do Hub volta a ser a do arquivo do servidor, e as migrações que a restauração desfez são aplicadas de novo.
+4. Em até 2 minutos, abra o Hub e recarregue. "Último início" é a hora de agora. "Início anterior" é o último início que existia antes do minuto escolhido. Os inícios depois desse minuto sumiram.
+5. No Neon, em Branches, apague o ramo de cópia que a restauração criou: o nome termina em `_old_` e uma data. O plano grátis aceita só dez ramos.
+
+## Se a página dá erro
+
+Se o Hub mostra "O banco do Conexus não respondeu" ou "Algo deu errado", rode "Reiniciar o Hub" de novo e espere 2 minutos. Se o minuto escolhido é anterior à primeira migração, o Hub no ar responde erro até esse reinício aplicar as migrações; depois a página volta.
+
+Se o erro continuar depois do segundo reinício, pare e avise o Firstmate: não tente consertar o banco pelo Neon.
