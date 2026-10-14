@@ -45,25 +45,25 @@ recomenda", estão acima.
 | U1 Esqueleto | A raiz, as conferências que os guias citam e o CI com um portão só | raiz, `scripts/`, `.github/workflows/ci.yml` | [entrega](../guides/delivery.md) | nada |
 | U2 Servidor | Configuração, falha, acesso por rota, saúde, estado, desligamento | `apps/server/`, `packages/hub-api/` | [testes](../guides/testing.md) | U1 |
 | U3 Página | A página: marca, versão lida do servidor, frase | `apps/web/` | [web](../guides/web.md) | U2 |
-| U4 Publicar | Imagem, Compose com o túnel, publicar, "Voltar atrás", o servidor, os avisos e a prova do [0035](../decisions/0035-publish-through-a-runner-on-the-server.md) | `infra/`, `.github/workflows/`, `docs/how-to/`, `.dockerignore`, `docs/decisions/0035-…`, `docs/architecture.md`, `docs/index.md` | [segurança](../guides/security.md) | U1; a prova espera U2 e U3 |
+| U4 Publicar | Imagem, Compose com o túnel, publicar, "Voltar atrás", o servidor, os avisos e a prova do [0035](../decisions/0035-publish-through-a-runner-on-the-server.md) | `infra/`, `.github/workflows/`, `docs/how-to/`, `.dockerignore`, `docs/decisions/`, `docs/architecture.md`, `docs/index.md` | [segurança](../guides/security.md) | U1; a prova espera U2 e U3 |
 
 U1 vem sozinha. Depois, U2 e U4 correm em paralelo, sem pasta em comum; em `ci.yml` a U4 só
-acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A prova da U4 roda por
-último, no servidor, com cada caso registrado no pull request da etapa.
+acrescenta `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A prova da U4 roda por
+último, no servidor.
 
 ## Os critérios de aceite
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U4 | Uma versão de um commit de `main` fica no ar em até 10 minutos, com o seu nome, sem comando no servidor. Uma versão de commit fora de `main` termina vermelha; um merge só de documentos não publica; nos dois, o Hub não muda | Prova da U4: verificação 1 do 0035; casos "fora de main" e "só documentos" | must |
-| 2 | U4 | "Voltar atrás" com uma versão anterior põe a imagem dela em até 5 minutos; repetir com a mesma não muda nada. Uma versão que não existe, ou fora das dez guardadas, termina vermelha e o Hub não muda | Verificação 2; casos "duas vezes" e "versão inexistente" | must |
-| 3 | U4 | Uma versão cujo programa não sobe (falta configuração): a que rodava volta a responder em até 2 minutos, e a publicação termina vermelha | Verificação 3 | must |
+| 1 | U4 | Uma versão de um commit de `main` fica no ar em até 10 minutos, com o seu nome, sem comando no servidor. Versão de commit fora de `main` termina vermelha; merge só de documentos não publica; nos dois o Hub não muda | Prova da U4: verificação 1 do 0035; casos "fora de main" e "só documentos" | must |
+| 2 | U4 | "Voltar atrás" com uma versão anterior põe a imagem dela em até 5 minutos; repetir não muda nada. Versão inexistente, ou fora das dez guardadas, termina vermelha e o Hub não muda | Verificação 2; casos "duas vezes" e "versão inexistente" | must |
+| 3 | U4 | Versão cujo programa não sobe (falta configuração): a que rodava volta a responder em até 2 minutos, e a publicação termina vermelha | Verificação 3 | must |
 | 4 | U4 | No fim da U4, uma varredura de fora não acha porta TCP aberta | Verificação 4 | must |
 | 5 | U4 | Um programa morto volta sozinho em até 1 minuto | Verificação 5 | must |
 | 6 | U4 | Com o cloudflared parado, o e-mail do Cloudflare chega ao fundador; a demora fica registrada | Verificação 6 | must |
 | 7 | U4 | Em três versões seguidas, `docker events` mostra o `die` do Hub antigo antes do `start` do novo | Verificação 7 | must |
 | 8 | U4 | Com o programa congelado (`docker pause`), o e-mail do monitor chega ao fundador em até 10 minutos | Prova da U4, caso "travado" | must |
-| 9 | U2 | Sem `CONEXUS_VERSION`, `HUB_PORT` ou `LOG_LEVEL`, ou com valor fora do formato, o programa não sobe, sai com código diferente de zero e escreve uma linha `CONFIG_INVALID` que nomeia a variável | `apps/server/src/main.test.ts`, "recusa subir sem <variável>", um caso por variável | must |
+| 9 | U2 | Sem `CONEXUS_VERSION`, `HUB_PORT` ou `LOG_LEVEL`, ou valor fora do formato, o programa não sobe, sai com código não zero e escreve uma linha `CONFIG_INVALID` que nomeia a variável | `apps/server/src/main.test.ts`, "recusa subir sem <variável>", um caso por variável | must |
 | 10 | U2 | Rota sem tipo de acesso, ou com tipo que não existe, impede a subida, e o erro nomeia método e caminho | `platform/access.test.ts`, "recusa rota sem tipo", "recusa tipo desconhecido" | must |
 | 11 | U2 | `GET /api/health` responde 200 `{"status":"LIVE"}` sem tocar banco algum | `main.test.ts`, "saúde" | must |
 | 12 | U2 | `GET /api/status` responde 200 `{"version":"v0.1.0"}`, a da configuração | `hub/status/status.test.ts`, "lê a versão" | must |
@@ -84,23 +84,22 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 
 | Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |
 | --- | --- | --- | --- | --- |
-| `http` (548 linhas) | Nova | `apps/server/src/platform/http.ts`, `access.ts` | Não se aplica | Carrega: tipo de acesso por rota, recusado na subida (C33); 404 antes do corpo (C34); `HEAD` só em páginas (C30); erro em cinco campos, `type` `urn:conexus:problem:<CODE>` (C51); resposta conferida (C31); `trustProxy: false`, sem limite que leia o endereço (S29); um log por pedido (C46); erro pelo status (C50); CSP (S26); handler sem `request` (C14). Larga: três ouvintes e os tipos `sign-in`, `host-write`, `hub-entry` ([0018], [0014]); `session` e `sign-out`, refeitos na etapa 3; as listas à mão; os hashes de CSP do Mastra ([0033]); `forceCloseConnections`, `traceId` só em `SYSTEM`, `strict-origin` ("implementado assim") |
-| Classe de erro (75) | Nova | `apps/server/src/platform/failure.ts` | Não se aplica | Carrega: uma classe com código da tabela (C49); `cause` nunca serializada; log com tipos e quadros da cadeia, sem mensagem (S41, C54). Larga: herdar `MastraError` |
-| Tabela de falhas (JSON, gerador, duas cópias) | Nova | `packages/hub-api/src/failures.ts` | Não se aplica | Carrega: categoria, status, frase e ação (C48). Larga: o gerador, que servia a dois pacotes; agora um dono (C26) |
-| Configuração (242) | Nova | `apps/server/src/platform/config.ts` | Não se aplica | Carrega: recusar subir nomeando o valor (C67). Larga: 30 de 33 variáveis; a saída 78 (systemd) |
-| Logger, desligamento | Nova, nativa | `main.ts`, `close-with-grace` | Não se aplica | Carrega: fechar com prazo (C62). Larga: os tratadores à mão; trava e migração vão para as etapas 2 e 3 |
-| Tipo de operação (78) | Nova | `packages/hub-api/src/operation.ts` | Não se aplica | Carrega: uma declaração por operação (C28). Larga, até haver consumidor: entrada, `malformed`, `effects`, binário |
-| Marca (41) | Nova: 19 das 37 linhas mudam, acima de um terço, porque as classes `cx-*` e o movimento sem uso saem | `apps/web/src/brand/mark.tsx` | Não se aplica | Carrega: `aria-hidden` na marca, `aria-label` no logotipo (V31); as duas peças (V25) |
-| Fontes, `favicon.svg` | Trazida | `fonts/`, `favicon.svg` | Não se aplica | Carrega: fontes locais (V14) |
-| Tokens (143) | Nova, do guia de design | `apps/web/src/brand/tokens.css` | Não se aplica | Carrega: três temas (V4). Larga: `.light`/`.dark` ([0033]) e `cx-*` (W25) |
-| CI antigo | Nova | `ci.yml`, `scripts/` | Não se aplica | Carrega: um portão só (L15), por expressão nativa |
+| `http` (548 linhas) | Nova | `apps/server/src/platform/http.ts`, `access.ts` | — | Carrega: tipo de acesso por rota, recusado na subida (C33); 404 antes do corpo (C34); `HEAD` só em páginas (C30); erro em cinco campos, `type` `urn:conexus:problem:<CODE>` (C51); resposta conferida (C31); `trustProxy: false`, sem limite que leia o endereço (S29); um log por pedido (C46); erro pelo status (C50); CSP (S26); handler sem `request` (C14). Larga: três ouvintes e os tipos `sign-in`, `host-write`, `hub-entry` ([0018], [0014]); `session` e `sign-out`, refeitos na etapa 3; as listas à mão; os hashes de CSP do Mastra ([0033]); `forceCloseConnections`, `traceId` só em `SYSTEM`, `strict-origin` ("implementado assim") |
+| Classe de erro (75) | Nova | `apps/server/src/platform/failure.ts` | — | Carrega: uma classe com código da tabela (C49); `cause` nunca serializada; log com tipos e quadros da cadeia, sem mensagem (S41, C54). Larga: herdar `MastraError` |
+| Tabela de falhas (JSON, gerador, duas cópias) | Nova | `packages/hub-api/src/failures.ts` | — | Carrega: categoria, status, frase e ação (C48). Larga: o gerador de dois pacotes; agora um dono (C26) |
+| Configuração (242) | Nova | `apps/server/src/platform/config.ts` | — | Carrega: recusar subir nomeando o valor (C67). Larga: 30 de 33 variáveis; a saída 78 (systemd) |
+| Logger, desligamento | Nova, nativa | `main.ts`, `close-with-grace` | — | Carrega: fechar com prazo (C62). Larga: os tratadores à mão; trava e migração: etapas 2 e 3 |
+| Tipo de operação (78) | Nova | `packages/hub-api/src/operation.ts` | — | Carrega: uma declaração por operação (C28). Larga, até haver consumidor: entrada, `malformed`, `effects`, binário |
+| Marca (41) | Nova: 19 das 37 linhas mudam, acima de um terço (saem as classes `cx-*` e o movimento sem uso) | `apps/web/src/brand/mark.tsx` | — | Carrega: `aria-hidden` na marca, `aria-label` no logotipo (V31); as duas peças (V25) |
+| Fontes, `favicon.svg` | Trazida | `fonts/`, `favicon.svg` | — | Carrega: fontes locais (V14) |
+| Tokens (143) | Nova, do guia de design | `apps/web/src/brand/tokens.css` | — | Carrega: três temas (V4). Larga: `.light`/`.dark` ([0033]) e `cx-*` (W25) |
+| CI antigo | Nova | `ci.yml`, `scripts/` | — | Carrega: um portão só (L15), por expressão nativa |
 
 Cookies e conferência de origem ficam para a etapa 3.
 
 **A medida do transplante.** De `http`, cerca de 150 das 548 linhas têm consumidor nesta etapa, e
 cada bloco muda mais de um terço; dos 35 casos de teste antigos, nenhum passa pela porta pública sem
-mudar. Por isso essas partes nascem novas, e o que os testes antigos fixavam virou os critérios 9 a
-17. A marca nasce nova: o construtor da U3 mediu 19 de 37 linhas mudadas, acima de um terço. Fontes e `favicon.svg` são trazidos.
+mudar. Essas partes nascem novas; o que os testes antigos fixavam virou os critérios 9 a 17.
 
 **A dívida.** Nenhuma.
 
@@ -113,26 +112,26 @@ mudar. Por isso essas partes nascem novas, e o que os testes antigos fixavam vir
 | `package.json`, `package-lock.json`, `.nvmrc`, `tsconfig.base.json`, `biome.json`, `.dependency-cruiser.cjs`, `knip.json`, `.gitignore` | Cria | npm, CI, ferramentas |
 | `scripts/check-docs.ts`, `check-suppressions.ts`, `suppressions.json`, `check-approval.ts`, `check-method-freeze.ts`, `list-new-dependencies.ts`, `test-reporter.ts`, `rules.test.ts`, e um `*.test.ts` ao lado de cada script | Cria | scripts da raiz, `ci.yml` |
 | `.github/workflows/ci.yml` | Cria | GitHub; o script de fusão do Firstmate lê o portão `ci` |
+| `scripts/tsconfig.json` | Cria | `typecheck` |
 
 ### Os contratos que a unidade cria
 
 - Workspace npm com `apps/*` e `packages/*`. Scripts da raiz: `verify` (o que o CI roda), `lint`,
-  `typecheck`, `deps`, `knip`, `docs`, `test`, `build`, os dois últimos em cada workspace.
-- `.nvmrc` 24.21.0. TypeScript 6.0.3: o dependency-cruiser 18.4.0 não lê o 7.
+  `typecheck`, `deps`, `knip`, `docs`, `test`, `build`.
+- `.nvmrc` 24.21.0. TypeScript 6.0.3 (o dependency-cruiser 18.4.0 não lê o 7).
   `tsconfig.base.json`: `strict`, `noEmit`, `module` e `moduleResolution` `nodenext`,
   `allowImportingTsExtensions`, `verbatimModuleSyntax`, `erasableSyntaxOnly`.
 - Portas de teste do servidor (T5): `apps/server/src/main.ts`, todo `public.ts`, e um arquivo de
-  `platform/` pelo teste ao lado dele, porque `platform` não tem `public.ts`.
+  `platform/` pelo teste ao lado dele (`platform` não tem `public.ts`).
 - `suppressions.json`: `{ "<arquivo>": <número> }`; o CI falha se a contagem real diferir.
 - A linha de aprovação, escrita pelo Firstmate no roteiro quando o fundador aprova:
-  `Cartão da etapa <n> aprovado em <AAAA-MM-DD> (commit <sha>): "<palavras>"`. O primeiro CI da
-  etapa a lê.
+  `Cartão da etapa <n> aprovado em <AAAA-MM-DD> (commit <sha>): "<palavras>"`. O primeiro CI a lê.
 - `check-method-freeze.ts`: recusa mudança em `.agents/skills/` ou `docs/guides/` com cartão em
   `docs/steps/`, salvo o rótulo `emergência`.
 - `ci.yml`, em `pull_request` e `push` para `main`: jobs `check` e `test`, e `ci`, que depende de
-  todos com `if: always()` e falha se algum resultado for `failure`, `cancelled` ou `skipped`, salvo o job `image`, aceito como pulado só em `push` para `main`. Cada
-  job tem `timeout-minutes`, o prazo global de T3. Ações fixadas pelo SHA do commit da última versão
-  com duas semanas.
+  todos com `if: always()` e falha se algum resultado for `failure`, `cancelled` ou `skipped`, salvo
+  `image`, pulado só em `push` para `main`. Cada job tem `timeout-minutes` (T3). Ações fixadas pelo
+  SHA da última versão com duas semanas.
 
 ### A ordem do trabalho
 
@@ -151,8 +150,8 @@ mudar. Por isso essas partes nascem novas, e o que os testes antigos fixavam vir
 ### Como se prova
 
 `npm run verify` verde. Critério 20: `rules.test.ts` roda Biome e dependency-cruiser sobre arquivos
-ruins num diretório temporário; cada script recusa o seu caso. Critério 21: o pull request da U1 roda
-uma vez com um job que falha e uma vez cancelado. 22 e 23: num repositório Git temporário.
+ruins em diretório temporário; cada script recusa o seu caso. Critério 21: o pull request da U1 roda
+com um job que falha e um cancelado. 22 e 23: em repositório Git temporário.
 
 ## U2 Servidor
 
@@ -161,10 +160,13 @@ uma vez com um job que falha e uma vez cancelado. 22 e 23: num repositório Git 
 | Arquivo | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/hub-api/package.json`, `tsconfig.json`, `src/index.ts`, `operation.ts`, `failures.ts`, `health.ts`, `status.ts` | Cria | `apps/server`, `apps/web` |
-| `apps/server/package.json`, `tsconfig.json` | Cria | npm, CI, Dockerfile |
+| `apps/server/package.json`, `tsconfig.json` | Cria: com `helmet` direto | npm, CI, Dockerfile |
 | `apps/server/src/main.ts`, `main.test.ts` | Cria | `CMD` da imagem; testes |
 | `apps/server/src/platform/config.ts`, `failure.ts`, `access.ts`, `access.test.ts`, `http.ts`, `health.ts` | Cria | `main.ts`, `hub/status` |
 | `apps/server/src/hub/status/public.ts`, `status.ts`, `status.test.ts` | Cria | `main.ts` |
+| `package.json` da raiz | Muda: `typecheck`, `test`, `build` rodam em cada workspace; `verify` constrói | CI |
+| `package-lock.json` | Muda: as dependências dos dois pacotes | npm, CI |
+| `.github/workflows/ci.yml` | Muda: `npm run build` sem `--if-present` | o portão `ci` |
 
 ### Os contratos que a unidade cria
 
@@ -191,7 +193,7 @@ uma vez com um job que falha e uma vez cancelado. 22 e 23: num repositório Git 
 - `createStatus({ version })`: objeto congelado `{ read(): HubStatus }`.
 - `createHub(config): Promise<FastifyInstance>` em `main.ts`, sem escutar. Com `import.meta.main`,
   `main.ts` lê a configuração, liga o `close-with-grace` e escuta em `0.0.0.0:HUB_PORT`.
-- A página vem de `apps/web/dist`, achada pelo caminho de `main.ts`; sem ela, `/` responde 404.
+- A página vem de `apps/web/dist`, achada pelo caminho de `main.ts`; sem ela, `/` dá 404.
 - Prazos: `requestTimeout` e `connectionTimeout` 30 s; `keepAliveTimeout` acima do keep-alive de
   origem do cloudflared instalado; desligamento 15 s.
 
@@ -213,8 +215,7 @@ uma vez com um job que falha e uma vez cancelado. 22 e 23: num repositório Git 
 ### Como se prova
 
 `node --test`, porta 0. Critérios 11 a 16 por `createHub` e `inject`; o 10 pelo teste de
-`access.ts`; o 9 e o 17 com `main.ts` em processo filho. Esperar o pedido em curso é do `close()` do
-Fastify, lido e não provado aqui.
+`access.ts`; o 9 e o 17 com `main.ts` em processo filho. Esperar o pedido em curso é do `close()` do Fastify: lido, não provado.
 
 ## U3 Página
 
@@ -227,6 +228,9 @@ Fastify, lido e não provado aqui.
 | `apps/web/src/platform/hub.ts`, `cache.ts` | Cria | `hub/status/queries.ts`, `main.tsx` |
 | `apps/web/src/brand/tokens.css`, `mark.tsx`, `favicon.svg`, `fonts/` com as licenças OFL | Cria | `main.tsx`, `index.html`, `status-page.tsx` |
 | `apps/web/src/hub/status/public.ts`, `queries.ts`, `status-page.tsx`, `status-page.test.tsx` | Cria | `main.tsx` |
+| `apps/web/src/platform/cache.test.tsx` | Cria | Vitest |
+| `biome.json` | Muda: diretivas do Tailwind no parser de CSS; reformatado | `lint` |
+| `package-lock.json` | Muda: as dependências de `apps/web` | npm, CI |
 
 ### Os contratos que a unidade cria
 
@@ -234,7 +238,7 @@ Fastify, lido e não provado aqui.
   validada pelo schema dela, toda falha lida como `Problem` (C49).
 - `statusQuery` em `queries.ts`, de `hubQuery(getStatus)`.
 - `StatusPage`: marca, versão em `fact` (mono), frase em português.
-- Sem roteador: `main.tsx` monta o cache e a página; `routes/` vem com o estudo da interface.
+- Sem roteador: `main.tsx` monta cache e página; `routes/` vem com o estudo da interface.
 
 ### A ordem do trabalho
 
@@ -260,11 +264,13 @@ critério 18. O 19, no navegador, na prova da U4.
 | `infra/hub.Dockerfile`, `.dockerignore` | Cria | `ci.yml`, `publish.yml` |
 | `infra/compose.yaml`, `infra/deploy.sh` | Cria | os dois workflows, pelo runner do servidor |
 | `infra/setup-server.sh` | Cria | o how-to |
+| `scripts/setup-server.test.ts`, `scripts/dockerignore.test.ts` | Cria | `npm test` |
 | `.github/workflows/publish.yml`, `rollback.yml` | Cria | GitHub; o botão "Voltar atrás" |
 | `.github/workflows/ci.yml` | Muda: o job `image`, só em `pull_request` | o portão `ci` |
 | `docs/how-to/hub-server.md`, `docs/index.md` | Cria, muda | o Firstmate; `check-docs` |
 | `docs/decisions/0035-…` | Muda: o Resultado | `docs/index.md` |
-| `docs/architecture.md` | Muda: seção 7 cita [0035] e o monitor externo nos avisos; seção 11 ganha o risco do runner: root no servidor (S47) | `docs/index.md` |
+| `docs/decisions/0036-…` | Cria: exceção ao S31, token do runner no ambiente de uma chamada | `docs/index.md` |
+| `docs/architecture.md` | Muda: seção 7 cita [0035] e o monitor externo nos avisos; seção 11 ganha o risco do runner (S47) e a exceção do [0036] | `docs/index.md` |
 
 ### Os contratos que a unidade cria
 
@@ -272,23 +278,22 @@ critério 18. O 19, no navegador, na prova da U4.
   digest, usuário `node`, `ARG`/`ENV CONEXUS_VERSION`, `HUB_PORT` e `LOG_LEVEL` definidos, `CMD node
   apps/server/src/main.ts`, `apps/web/dist` no mesmo lugar, sem arquivo de ambiente nem segredo.
 - `compose.yaml`: `hub` por digest, `init: true`, `restart: unless-stopped`, verificação de saúde em
-  `/api/health` com `node` e `fetch` (a imagem não tem `curl`), `stop_grace_period` acima de 15 s,
-  nenhuma porta publicada; `cloudflared` `2026.10.0`, `tunnel --no-autoupdate run --token-file
+  `/api/health` com `node` e `fetch` (sem `curl` na imagem), `stop_grace_period` acima de 15 s, sem porta
+  publicada; `cloudflared` `2026.10.0`, `tunnel --no-autoupdate run --token-file
   /run/secrets/tunnel_token`.
 - Segredos: pasta `/etc/conexus/secrets/` (0700), um arquivo 0400 por segredo, dono o usuário do
   contêiner que o lê, montado como `secrets` do Compose; o ambiente leva só o caminho (S31). Agora,
-  o token do túnel; a chave da instalação nasce aí na etapa 7, com a cópia do fundador no
-  gerenciador de senhas dele.
+  o token do túnel; a chave da instalação nasce aí na etapa 7, com cópia no gerenciador de senhas
+  do fundador.
 - `deploy.sh <imagem>`, sem estado guardado: se a imagem já roda, não faz nada (C64); senão sobe a
-  nova com `up --wait`; se não ficar saudável, sobe de novo a que rodava, lida do Docker, e sai 1.
+  nova com `up --wait`; se não ficar saudável, volta à que rodava, lida do Docker, e sai 1.
 - `publish.yml`, em `release: published`, nunca num push, ignorando pré-lançamento: job `image`
-  num runner do GitHub, que recusa versão cujo commit não alcança `main`, constrói do commit da versão com `CONEXUS_VERSION`
-  igual ao nome dela, envia com `GITHUB_TOKEN` (`packages: write`) e guarda as imagens das dez
+  num runner do GitHub, que recusa versão cujo commit não alcança `main`, constrói do commit dela
+  com `CONEXUS_VERSION` igual ao nome, envia com `GITHUB_TOKEN` (`packages: write`) e guarda as imagens das dez
   últimas versões; job `deploy` em `[self-hosted, hub]`, que entra no registro com o `GITHUB_TOKEN`
   do job (`packages: read`) e roda `deploy.sh` com o digest. O job `image` do CI roda só em pull
-  request, não envia nada e usa `v0.0.0`.
-- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `version`, de descrição em português (nome de entrada é código: inglês, ASCII), no mesmo runner:
-  entra no registro como o `deploy`, acha o digest da etiqueta `:<versão>` e roda `deploy.sh` com
+  request, sem enviar, com `v0.0.0`.
+- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `version`, de descrição em português (entrada é código: inglês, ASCII), no mesmo runner: entra no registro como o `deploy`, acha o digest da etiqueta `:<versão>` e roda `deploy.sh` com
   ele; sem etiqueta guardada, termina vermelho antes do `deploy.sh`.
 - Cloudflare, pelo Firstmate com a chave do fundador, apagada depois, e escrito no how-to: túnel,
   nome público do Hub para `http://hub:<HUB_PORT>`, DNS, token no servidor, Tunnel Health Alert ao
@@ -300,22 +305,20 @@ critério 18. O 19, no navegador, na prova da U4.
 1. Dockerfile, `.dockerignore`, job `image` em `ci.yml`. Regras: S37, [0002]. Funções: build em
    estágios; `npm ci --omit=dev` mantendo os links do workspace, porque o Node recusa `.ts` sob
    `node_modules`.
-2. `compose.yaml`. Regras: S31, C61, C62. Funções: Docker Engine 29 e Compose v5 do repositório da
-   Docker: `secrets` de arquivo, `init`, `healthcheck`, `restart`, `stop_grace_period`.
+2. `compose.yaml`. Regras: S31, C61, C62. Funções: Docker Engine 29, Compose v5: `secrets` de arquivo, `init`, `healthcheck`, `restart`, `stop_grace_period`.
 3. `deploy.sh`. Regras: C64, C73. Funções: `docker compose up --wait --wait-timeout`.
 4. Os workflows. Regras: L13, L17. Funções: `docker/login-action`, `docker/build-push-action`,
    `actions/delete-package-versions`, fixadas por SHA como na U1.
 5. `setup-server.sh` e o how-to: Docker, o runner como serviço de um usuário sem login no grupo
    `docker`, a pasta de segredos, o lado do Cloudflare, entrada fechada no firewall do provedor, e a
    configuração do GitHub que impede workflows de pull requests de fork, conferida (caso "forks").
-   O SSH, só com chave, fecha no fim, provado o console do provedor; sem console, volta ao cartão
-   (L7).
-6. A prova, com U2 e U3 no ramo: o [0035] e os casos abaixo; o Resultado num commit à parte; as
-   seções 7 e 11 da arquitetura.
+   O SSH, só com chave, fecha no fim, provado o console do provedor; sem console, volta ao cartão (L7).
+6. A prova, com U2 e U3 no ramo: o [0035] e os casos abaixo; o Resultado em commit à parte; as seções
+   7 e 11 da arquitetura.
 
 ### Como se prova
 
-No servidor, as verificações do [0035] e os casos "fora de main", "só documentos", "duas
-vezes", "versão inexistente ou fora das dez", "travado", "console" e "forks", com o que rodou e o que apareceu. O job
-`image` constrói a imagem em todo pull request. O caso "fora de main" publica `v0.0.1` de um
+No servidor, as verificações do [0035] e os casos "fora de main", "só documentos", "duas vezes",
+"versão inexistente ou fora das dez", "travado", "console" e "forks", com o que rodou e apareceu. O
+job `image` constrói a imagem em todo pull request. O caso "fora de main" publica `v0.0.1` de um
 ramo e a apaga depois.
