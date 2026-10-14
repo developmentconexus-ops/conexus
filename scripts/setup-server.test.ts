@@ -63,17 +63,27 @@ function setup(tunnel: string, runner: string) {
   for (const name of STUBBED) {
     const record = `printf "%s %s\\n" "\${0##*/}" "$*" >> "$CALLS"`
     const body =
-      name === 'timeout'
-        ? 'shift 2\nprintf "timeout-for %s\\n" "$*" >> "$CALLS"\nexec "$@"'
-        : name === 'curl'
-          ? `${record}\nwhile [ $# -gt 1 ]; do [ "$1" = -o ] && : > "$2"; shift; done`
-          : record
+      name === 'sudo'
+        ? `${record}\nwhile [ $# -gt 0 ] && [[ $1 != ./* ]]; do shift; done\n[ $# -gt 0 ] && exec "$@"\nexit 0`
+        : name === 'install'
+          ? `${record}\nprintf "env-in-install %s\\n" "\${ACTIONS_RUNNER_INPUT_TOKEN:-unset}" >> "$CALLS"`
+          : name === 'timeout'
+            ? 'shift 2\nprintf "timeout-for %s\\n" "$*" >> "$CALLS"\nexec "$@"'
+            : name === 'curl'
+              ? `${record}\nwhile [ $# -gt 1 ]; do [ "$1" = -o ] && : > "$2"; shift; done`
+              : record
     writeFileSync(join(bin, name), `#!/bin/bash\n${body}\n`)
     chmodSync(join(bin, name), 0o755)
   }
   for (const name of REAL) symlinkSync(`/usr/bin/${name}`, join(bin, name))
-  writeFileSync(join(work, 'runner', 'svc.sh'), '#!/bin/bash\necho "svc.sh $*" >> "$CALLS"\n')
-  chmodSync(join(work, 'runner', 'svc.sh'), 0o755)
+  const stubs = {
+    'svc.sh': `echo "svc.sh $*" >> "$CALLS"\necho "env-in-svc \${ACTIONS_RUNNER_INPUT_TOKEN:-unset}" >> "$CALLS"`,
+    'config.sh': `echo "config.sh $*" >> "$CALLS"\necho "env-in-config \${ACTIONS_RUNNER_INPUT_TOKEN:-unset}" >> "$CALLS"`,
+  }
+  for (const [name, body] of Object.entries(stubs)) {
+    writeFileSync(join(work, 'runner', name), `#!/bin/bash\n${body}\n`)
+    chmodSync(join(work, 'runner', name), 0o755)
+  }
   const run = spawnSync('/bin/bash', [SCRIPT], {
     encoding: 'utf8',
     env: { ...environment(tunnel, runner, work, bin), CALLS: log },
@@ -136,5 +146,17 @@ test('o token do runner não vai na linha de comando de ninguém', () => {
   const { run, calls } = setup(good, goodRunner)
   assert.equal(run.status, 0, run.stderr)
   assert.ok(calls.some((call) => call.startsWith('sudo ') && call.includes('./config.sh')))
-  assert.doesNotMatch(calls.join('\n'), new RegExp(`${RUNNER_TOKEN}|${TUNNEL_TOKEN}|--token`))
+  const argv = calls.filter((call) => !call.startsWith('env-in-'))
+  assert.doesNotMatch(argv.join('\n'), new RegExp(`${RUNNER_TOKEN}|${TUNNEL_TOKEN}|--token`))
+})
+
+test('o token do runner está só no ambiente da chamada do config.sh', () => {
+  const { run, calls } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  assert.ok(calls.includes(`env-in-config ${RUNNER_TOKEN}`))
+  assert.ok(calls.some((call) => call.startsWith('config.sh --unattended')))
+  assert.ok(calls.includes('env-in-install unset'))
+  assert.ok(calls.includes('env-in-svc unset'))
+  const others = calls.filter((call) => !call.startsWith('env-in-config '))
+  assert.doesNotMatch(others.join('\n'), new RegExp(RUNNER_TOKEN))
 })

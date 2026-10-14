@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Run as root. Each token is read from a file only root can read, named by TUNNEL_TOKEN_FILE and
 # RUNNER_TOKEN_FILE. The runner reads its registration token only from a command line, from its
-# environment or from a terminal prompt, never from a file: see the open decision on S31.
+# environment or from a terminal prompt, never from a file (decision 0036): the token is set in the
+# environment of the config.sh call alone, never exported to this script and never in a command line.
 set -euo pipefail
 
 : "${RUNNER_URL:?RUNNER_URL is required}"
@@ -60,11 +61,9 @@ if [ ! -x ./run.sh ]; then
   rm runner.tar.gz
 fi
 if [ ! -f .runner ]; then
-  ACTIONS_RUNNER_INPUT_TOKEN="$(cat "$RUNNER_TOKEN_FILE")"
-  export ACTIONS_RUNNER_INPUT_TOKEN
-  limit 120 sudo --preserve-env=ACTIONS_RUNNER_INPUT_TOKEN -u runner ./config.sh --unattended \
+  ACTIONS_RUNNER_INPUT_TOKEN="$(cat "$RUNNER_TOKEN_FILE")" \
+    limit 120 sudo --preserve-env=ACTIONS_RUNNER_INPUT_TOKEN -u runner ./config.sh --unattended \
     --url "$RUNNER_URL" --labels hub --name hub --replace
-  unset ACTIONS_RUNNER_INPUT_TOKEN
 fi
 limit 60 ./svc.sh install runner
 limit 60 ./svc.sh start
