@@ -59,7 +59,7 @@ Domínio próprio de empresa.
    viram dívida listada. "2. A", e com ela: "Tem que ser muito bem estudado como vai ser feito,
    né, o código do zero, o que vai ser reaproveitado, para ele ser também já refatorado como
    código, ele ser no arquivo correto, ele não manter decisões antigas só porque elas já foram
-   feitas." Ver a seção 4.
+   feitas." Ver a seção 3.
 3. **Toda linha lida do banco tem o formato conferido antes de ser usada.** "3. A".
 4. **A primeira etapa virou duas.** "4. B". Publicar e voltar atrás, e depois restaurar, o banco
    dormindo e o teste de dados.
@@ -104,7 +104,7 @@ etapa 12 volta a você.
 **A interface.** Antes da etapa 3, o Firstmate encomenda o estudo da tela antiga inteira, contra as
 referências e os guias. O resultado decide a árvore de `apps/web` e o guia do lado da tela.
 
-## 4. Como uma etapa roda
+## 3. Como uma etapa roda
 
 Cada etapa passa pelas cinco fases de [entrega L3](guides/delivery.md), cada uma, menos o uso, com a sua
 skill ([`AGENTS.md`](../AGENTS.md)). A sua resposta 2 vive na regra do estudo

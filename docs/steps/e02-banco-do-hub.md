@@ -29,8 +29,9 @@ avisar. No fim: faz o roteiro e diz o que viu.
 **Fica de fora.** Entrar com e-mail e senha, e empresas: etapas 3 e 4. O banco do Mastra: etapa
 12, onde o teste do banco dormindo roda de novo.
 
-**A decisão sua pedida nesta etapa.** A regra dos dados diz que toda tabela do Hub tem a coluna
-da empresa. A tabela dos inícios do Hub não é de empresa nenhuma, e nenhuma empresa existe.
+**A decisão sua pedida nesta etapa, já respondida.** A regra dos dados diz que toda tabela do Hub
+tem a coluna da empresa. A tabela dos inícios do Hub não é de empresa nenhuma, e nenhuma empresa
+existe.
 
 - **A.** Tabelas da instalação (os inícios, e depois a concessão dos trabalhos agendados) ficam
   sem a coluna; a regra passa a valer para toda tabela com dado de uma empresa, e o guia é

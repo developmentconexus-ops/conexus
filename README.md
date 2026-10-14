@@ -21,4 +21,4 @@ Os guias, a arquitetura, os registros de decisão, as instruções dos agentes e
 inglês, porque são os agentes que os leem quando estudam, constroem e revisam. Cada registro de
 decisão traz as suas palavras, na língua em que você as disse.
 
-Como cada etapa anda, do estudo até o seu uso, está na seção 4 do roteiro.
+Como cada etapa anda, do estudo até o seu uso, está na seção 3 do roteiro.
