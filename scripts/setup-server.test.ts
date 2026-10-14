@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { after, test } from 'node:test'
@@ -9,6 +17,22 @@ const SCRIPT = resolve(import.meta.dirname, '../infra/setup-server.sh')
 const dir = mkdtempSync(join(tmpdir(), 'conexus-setup-'))
 after(() => rmSync(dir, { recursive: true, force: true }))
 
+const RUNNER_TOKEN = 'runner-token-value'
+const TUNNEL_TOKEN = 'tunnel-token-value'
+// The commands the script calls that must not touch the machine are stubs that record what they got.
+const STUBBED = [
+  'apt-get',
+  'curl',
+  'id',
+  'install',
+  'sha256sum',
+  'sudo',
+  'timeout',
+  'usermod',
+  'useradd',
+]
+const REAL = ['cat', 'rm', 'stat']
+
 function secret(name: string, content: string, mode: number): string {
   const path = join(dir, name)
   writeFileSync(path, content)
@@ -16,42 +40,101 @@ function secret(name: string, content: string, mode: number): string {
   return path
 }
 
-function run(tunnel: string, runner: string) {
-  return spawnSync('bash', [SCRIPT], {
-    encoding: 'utf8',
-    env: {
-      PATH: process.env.PATH ?? '',
-      RUNNER_URL: 'https://example.invalid/org/repo',
-      RUNNER_VERSION: '0.0.0',
-      RUNNER_SHA256: 'x',
-      TUNNEL_TOKEN_FILE: tunnel,
-      RUNNER_TOKEN_FILE: runner,
-    },
-  })
+function environment(tunnel: string, runner: string, work: string, bin: string) {
+  return {
+    PATH: bin,
+    RUNNER_URL: 'https://example.invalid/org/repo',
+    RUNNER_VERSION: '0.0.0',
+    RUNNER_SHA256: 'x',
+    TUNNEL_TOKEN_FILE: tunnel,
+    RUNNER_TOKEN_FILE: runner,
+    SECRETS_DIR: join(work, 'secrets'),
+    DOCKER_APT_LIST: join(work, 'docker.list'),
+    RUNNER_HOME: join(work, 'runner'),
+  }
 }
 
-const good = secret('good', 'token\n', 0o600)
+function setup(tunnel: string, runner: string) {
+  const work = mkdtempSync(join(dir, 'work-'))
+  const bin = join(work, 'bin')
+  const log = join(work, 'calls.log')
+  mkdirSync(bin)
+  mkdirSync(join(work, 'runner'))
+  for (const name of STUBBED) {
+    const record = `printf "%s %s\\n" "\${0##*/}" "$*" >> "$CALLS"`
+    const body =
+      name === 'timeout'
+        ? 'shift 2\nprintf "timeout-for %s\\n" "$*" >> "$CALLS"\nexec "$@"'
+        : name === 'curl'
+          ? `${record}\nwhile [ $# -gt 1 ]; do [ "$1" = -o ] && : > "$2"; shift; done`
+          : record
+    writeFileSync(join(bin, name), `#!/bin/bash\n${body}\n`)
+    chmodSync(join(bin, name), 0o755)
+  }
+  for (const name of REAL) symlinkSync(`/usr/bin/${name}`, join(bin, name))
+  writeFileSync(join(work, 'runner', 'svc.sh'), '#!/bin/bash\necho "svc.sh $*" >> "$CALLS"\n')
+  chmodSync(join(work, 'runner', 'svc.sh'), 0o755)
+  const run = spawnSync('/bin/bash', [SCRIPT], {
+    encoding: 'utf8',
+    env: { ...environment(tunnel, runner, work, bin), CALLS: log },
+  })
+  const calls = (() => {
+    try {
+      return readFileSync(log, 'utf8').split('\n').filter(Boolean)
+    } catch {
+      return []
+    }
+  })()
+  return { run, calls }
+}
+
+const good = secret('good', `${TUNNEL_TOKEN}\n`, 0o600)
+const goodRunner = secret('good-runner', `${RUNNER_TOKEN}\n`, 0o600)
 
 test('recusa um token legível por outros', () => {
-  const result = run(secret('open', 'token\n', 0o644), good)
-  assert.equal(result.status, 1)
-  assert.match(result.stderr, /open must be readable by its owner only/)
+  const { run, calls } = setup(secret('open', 'token\n', 0o644), goodRunner)
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /open must be readable by its owner only/)
+  assert.deepEqual(calls, [])
 })
 
 test('recusa um token vazio', () => {
-  const result = run(good, secret('empty', '', 0o600))
-  assert.equal(result.status, 1)
-  assert.match(result.stderr, /empty is missing or empty/)
+  const { run, calls } = setup(good, secret('empty', '', 0o600))
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /empty is missing or empty/)
+  assert.deepEqual(calls, [])
 })
 
-test('o token do runner não vai na linha de comando', () => {
-  assert.doesNotMatch(readFileSync(SCRIPT, 'utf8'), /--token\b/)
+test('instala o token do túnel como 0400 do usuário do cloudflared', () => {
+  const { run, calls } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  assert.ok(calls.some((call) => / -m 0400 -o 65532 .*good .*\/secrets\/tunnel_token$/.test(call)))
 })
 
-test('toda chamada de fora tem prazo', () => {
-  const calls = readFileSync(SCRIPT, 'utf8')
-    .split('\n')
-    .filter((line) => /\bcurl\b/.test(line) && !line.includes('apt-get install'))
-  assert.equal(calls.length, 1)
-  assert.match(calls[0] ?? '', /^fetch=\(curl .*--connect-timeout \d+ --max-time \d+\)$/)
+test('toda chamada de rede e todo comando que espera tem prazo', () => {
+  const { run, calls } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  const curls = calls.filter((call) => call.startsWith('curl '))
+  assert.equal(curls.length, 2)
+  for (const call of curls) assert.match(call, /--connect-timeout \d+ --max-time \d+/)
+  const limited = calls.filter((call) => call.startsWith('timeout-for '))
+  for (const command of [
+    'apt-get update',
+    'apt-get install',
+    'sudo',
+    './svc.sh install',
+    './svc.sh start',
+  ]) {
+    assert.ok(
+      limited.some((call) => call.includes(command)),
+      command,
+    )
+  }
+})
+
+test('o token do runner não vai na linha de comando de ninguém', () => {
+  const { run, calls } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  assert.ok(calls.some((call) => call.startsWith('sudo ') && call.includes('./config.sh')))
+  assert.doesNotMatch(calls.join('\n'), new RegExp(`${RUNNER_TOKEN}|${TUNNEL_TOKEN}|--token`))
 })
