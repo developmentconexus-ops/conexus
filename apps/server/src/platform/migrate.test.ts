@@ -18,16 +18,12 @@ import {
 const run = promisify(execFile)
 
 // The owner is no superuser, so the stored verifier is read by the superuser inside the container.
-async function storedVerifier(test: TestDatabase): Promise<string> {
-  assert.ok(
-    test.container,
-    'CONEXUS_TEST_DATABASE_CONTAINER names the container that serves the tests',
-  )
+async function storedVerifier(container: string): Promise<string> {
   const { stdout } = await run(
     'docker',
     [
       'exec',
-      test.container,
+      container,
       'psql',
       '--username=postgres',
       '--no-psqlrc',
@@ -151,11 +147,16 @@ test('migrate aplica os limites do login do Hub também quando o papel já exist
 
 test('migrate com a mesma senha não reescreve o verificador do login do Hub', async (t) => {
   const test = await createTestDatabase(t)
-  const before = await storedVerifier(test)
+  const { container } = test
+  if (container === undefined) {
+    t.skip('reading pg_authid needs the superuser inside CONEXUS_TEST_DATABASE_CONTAINER')
+    return
+  }
+  const before = await storedVerifier(container)
   assert.match(before, /^SCRAM-SHA-256\$/)
   await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
   await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
-  assert.equal(await storedVerifier(test), before)
+  assert.equal(await storedVerifier(container), before)
   await loginWorks(test, decodeURIComponent(new URL(test.runtimeUrl.reveal()).password))
 })
 
@@ -182,9 +183,12 @@ test('migrate dá senha ao login do Hub que voltou de uma restauração sem ela'
   const test = await createTestDatabase(t)
   const original = decodeURIComponent(new URL(test.runtimeUrl.reveal()).password)
   await withRoleLock(async () => {
-    await test.asOwner('alter role hub_runtime password null')
-    await loginFails(test, original)
-    await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+    try {
+      await test.asOwner('alter role hub_runtime password null')
+      await loginFails(test, original)
+    } finally {
+      await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+    }
   })
   await loginWorks(test, original)
 })
