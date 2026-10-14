@@ -14,8 +14,9 @@ How the São Paulo server is prepared, and how the Hub is published and put back
    already exists. It refuses a file others can read. It installs Docker, copies the
    tunnel token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a
    service of the user `runner`, which has no login and sits in the `docker` group.
-4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the provider's
-   `sshd_config` may have no `Include`, and then a drop-in under `/etc/ssh/sshd_config.d` is ignored.
+4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the provider's main
+   SSH configuration may have no `Include`, and then a drop-in in sshd's configuration folder is
+   ignored.
 5. Close SSH last, after the provider's console is proved to work. Without a console, stop and ask.
 
 ## Check the GitHub settings

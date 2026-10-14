@@ -16,7 +16,8 @@ The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the ca
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
 one guide the card names for the unit, and loads the maintainers' skills the card names for it
-before writing code. With pstack, it also loads `poteto-mode` and `typescript-best-practices`.
+before writing code. With pstack, it also loads `poteto-mode` and `typescript-best-practices`;
+without it, [code](../../../docs/guides/code.md) alone guides the writing.
 [bring](references/bring.md) only when the unit brings code; [bug](references/bug.md) only for a
 defect.
 
