@@ -168,13 +168,13 @@ screen.
 
 **Why.** Eleven forms written by hand in two ways checked only "not empty"; one form piece with the
 contract's schema gives the browser the server's limits. No reference app sends an attempt key; it
-exists for the retry after a lost reply, which `isSubmitting` does not cover. By its skill, the shadcn CLI writes
-through path aliases in `components.json`, which [0003](../decisions/0003-repository-shape.md)
-forbids, and aliases keep raw values in the brand folder ([design V3](design.md)). The Hub sends
-`style-src 'self'` (`apps/server/src/platform/http.ts:28`), and sonner 2.0.8 injects a `<style>`
-when imported (`dist/index.mjs:2-5`). Better Auth 1.7.8 answers `INVALID_EMAIL_OR_PASSWORD` for
-either mistake (`sign-in.mjs:322-336`) and its 429 carries no code
-(`api/rate-limiter/index.mjs:64-71`).
+exists for the retry after a lost reply, which `isSubmitting` does not cover. By its skill, the
+shadcn CLI writes through path aliases in `components.json`, which
+[0003](../decisions/0003-repository-shape.md) forbids, and aliases keep raw values in the brand
+folder ([design V3](design.md)). The Hub sends `style-src 'self'`
+(`apps/server/src/platform/http.ts:28`), and sonner 2.0.8 injects a `<style>` when imported
+(`dist/index.mjs:2-5`). Better Auth 1.7.8 answers `INVALID_EMAIL_OR_PASSWORD` for either mistake
+(`sign-in.mjs:322-336`) and its 429 carries no code (`api/rate-limiter/index.mjs:64-71`).
 
 **Right.** `<Form schema={createProject.body} onSubmit={submit}>` with the refusal set by
 `setError`.
