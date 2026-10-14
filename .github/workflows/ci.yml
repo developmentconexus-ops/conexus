@@ -74,6 +74,8 @@ jobs:
         run: >-
           psql postgres://postgres:ci-superuser@localhost:5432/postgres
           -c "create role conexus_owner login createdb createrole password 'ci-owner'"
+      - name: The container that serves the tests dumps the catalog
+        run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
       - run: npm test
       - run: npm run build
 

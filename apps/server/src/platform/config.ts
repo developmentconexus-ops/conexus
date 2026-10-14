@@ -64,16 +64,19 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
 const TestEnvironment = z.object({
   CONEXUS_TEST_DATABASE_URL: z.string().min(1),
   CONEXUS_TEST_RUNTIME_PASSWORD: z.string().min(1),
+  CONEXUS_TEST_DATABASE_CONTAINER: z.string().min(1).optional(),
 })
 
 export function readTestDatabase(env = process.env): {
   ownerUrl: DatabaseUrl
   runtimePassword: string
+  container: string | undefined
 } {
   const parsed = TestEnvironment.safeParse(env)
   if (!parsed.success) throw invalid(variablesOf(parsed.error))
   return {
     ownerUrl: DatabaseUrl.parse(parsed.data.CONEXUS_TEST_DATABASE_URL),
     runtimePassword: parsed.data.CONEXUS_TEST_RUNTIME_PASSWORD,
+    container: parsed.data.CONEXUS_TEST_DATABASE_CONTAINER,
   }
 }

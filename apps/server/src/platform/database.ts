@@ -162,17 +162,12 @@ export async function assertMigrated(database: Database): Promise<void> {
   }
 }
 
-const RuntimeLogin = z.object({ superuser: z.boolean(), bypassRls: z.boolean(), owns: z.number() })
-
 export async function assertRuntimeLogin(database: Database): Promise<void> {
   const login = await database.read(async (tx) => {
-    const rows = await tx.execute(sql`select r.rolsuper as superuser, r.rolbypassrls as "bypassRls",
-        (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
-          where c.relowner = r.oid and n.nspname !~ '^pg_' and n.nspname <> 'information_schema') as owns
-      from pg_roles r where r.rolname = current_user`)
-    return RuntimeLogin.parse(rows.rows[0])
+    const rows = await tx.execute(sql`select current_user as name`)
+    return z.object({ name: z.string() }).parse(rows.rows[0])
   })
-  if (login.superuser || login.bypassRls || login.owns > 0) {
+  if (login.name !== 'hub_runtime') {
     throw new Failure('CONFIG_INVALID', { details: { variables: 'HUB_DATABASE_URL_FILE' } })
   }
 }

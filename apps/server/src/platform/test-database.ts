@@ -21,6 +21,7 @@ export type TestDatabase = {
   database: Database
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
+  container: string | undefined
   asOwner(text: string, values?: unknown[]): Promise<Record<string, unknown>[]>
 }
 
@@ -59,7 +60,7 @@ export function databaseWithPassword(test: TestDatabase, password: string): Data
 }
 
 export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
-  const { ownerUrl: serverUrl, runtimePassword } = readTestDatabase()
+  const { ownerUrl: serverUrl, runtimePassword, container } = readTestDatabase()
   const name = `conexus_test_${randomUUID().replaceAll('-', '')}`
   const ownerUrl = withDatabase(serverUrl, name)
   const runtimeUrl = withDatabase(serverUrl, name, {
@@ -86,6 +87,7 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
     database,
     ownerUrl,
     runtimeUrl,
+    container,
     asOwner: async (text, values) => {
       const client = await connected(ownerUrl)
       try {

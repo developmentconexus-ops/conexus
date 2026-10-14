@@ -111,7 +111,7 @@ test('mudada: uma migração aplicada que mudou nomeia a causa, não o atraso', 
   )
 })
 
-test('dono das tabelas: o login do Hub não pode ser o dono do banco', async (t) => {
+test('login: o Hub só sobe com o login hub_runtime, não com o dono do banco', async (t) => {
   const { database, env } = await serverEnv(t)
   const { lines, exited } = start({ ...env, HUB_DATABASE_URL_FILE: urlFile(t, database.ownerUrl) })
   assert.equal(await exited, 1)
