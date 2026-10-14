@@ -55,15 +55,24 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  image:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: The image builds
+        run: docker build --file infra/hub.Dockerfile --build-arg CONEXUS_VERSION=v0.0.0 .
+
   ci:
     if: always()
-    needs: [check, test]
+    needs: [check, test, image]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Every job must have succeeded
         env:
-          RESULTS: ${{ join(needs.*.result, ' ') }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.test.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do

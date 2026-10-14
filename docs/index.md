@@ -8,6 +8,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [README.md](../README.md): what this repository is, for a person, in Portuguese.
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each card's approval and each closed step's use line.
 - [architecture.md](architecture.md): the system's goals, context, parts, deployment, crosscutting concepts, risks and debt.
+- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and putting back a Hub version.
 - [steps/](steps/): the card of the step in construction, and only it.
 
 ## Guides: the rules
