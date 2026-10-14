@@ -1,8 +1,5 @@
 #!/usr/bin/env bash
-# Prepares a fresh Ubuntu server for the Hub: Docker, the secrets folder and the GitHub runner.
-# Run as root. Needs RUNNER_URL (the repository's URL) and RUNNER_TOKEN (a registration token from
-# GitHub, valid one hour) in the environment, and the Cloudflare tunnel token on standard input.
-# The token never reaches the command line, the repository or the shell history.
+# Run as root; the Cloudflare tunnel token comes on standard input so it never reaches a command line.
 set -euo pipefail
 
 : "${RUNNER_URL:?RUNNER_URL is required}"

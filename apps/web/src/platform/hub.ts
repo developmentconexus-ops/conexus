@@ -5,7 +5,6 @@ import type { z } from 'zod'
 
 const DEADLINE_MS = 10_000
 
-/** The one failure a screen sees: the code of the failure table, whatever went wrong. */
 export class HubFailure extends Error {
   readonly code: FailureCode
 
@@ -41,7 +40,6 @@ async function call<S extends z.ZodType>(
   return parsed.data
 }
 
-/** The only door to the Hub: the address comes from the operation and the reply is parsed with its schema. */
 export function hubQuery<S extends z.ZodType>(operation: Reading<S>) {
   return queryOptions({
     queryKey: [operation.id],

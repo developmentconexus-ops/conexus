@@ -1,4 +1,3 @@
-// check-suppressions refuses a suppression without a cause and a count that does not match.
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'

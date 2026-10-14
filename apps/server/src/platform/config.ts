@@ -13,7 +13,6 @@ const Environment = z.object({
   LOG_LEVEL: z.enum(LOG_LEVELS),
 })
 
-/** The one reader of the environment: refuses to start on a missing or invalid value and names it. */
 export function readConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const parsed = Environment.safeParse(env)
   if (!parsed.success) {

@@ -47,7 +47,6 @@ function frames(error: unknown): string {
     .join(' | ')
 }
 
-/** Logs the code as the message and only scalar fields: the types and frames of the cause, never its text. */
 export function logFailure(log: FailureLog, failure: Failure): void {
   const row = FAILURES[failure.code]
   const chain = causeChain(failure)

@@ -1,5 +1,3 @@
-// Criterion 20: Biome and dependency-cruiser refuse a bad file for each rule, by name.
-// The bad files are planted in a temporary directory and checked with the repository's own config.
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import {

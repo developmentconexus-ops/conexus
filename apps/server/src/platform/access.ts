@@ -20,11 +20,6 @@ function refuse(route: string, reason: string): never {
   throw new Failure('INTERNAL_UNEXPECTED', { details: { route, reason } })
 }
 
-/**
- * Every route declares one access kind in its config. A route without one, with an unknown one, or
- * outside what its kind allows stops the server from starting; a request that matched no route is
- * answered 404 before its body is read.
- */
 export function enforceAccess(app: FastifyInstance): void {
   app.addHook('onRoute', (route) => {
     const methods = [route.method].flat()

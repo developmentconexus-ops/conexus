@@ -31,7 +31,6 @@ function problemOf(code: FailureCode, traceId: string): Problem {
   })
 }
 
-/** Maps by the status a library error carries, never by its text (code C50, C52). */
 function failureOf(error: unknown): Failure {
   if (error instanceof Failure) return error
   const status = ErrorStatus.safeParse(error)
@@ -109,7 +108,6 @@ function installPages(app: FastifyInstance): void {
   })
 }
 
-/** The Hub's server: security headers, access law, one error handler, one log line per request. */
 export async function createServer(config: Config, webRoot: string): Promise<FastifyInstance> {
   const app: FastifyInstance = Fastify({
     logger: { level: config.logLevel },
@@ -150,7 +148,6 @@ export async function createServer(config: Config, webRoot: string): Promise<Fas
 
 type Handler<O extends Operation> = () => z.output<O['success']['body']>
 
-/** Registers an operation: its access kind and body limit come from the declaration, and the reply is checked against its schema before it is sent. */
 export function serve<O extends Operation>(
   app: FastifyInstance,
   operation: O,

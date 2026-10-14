@@ -13,7 +13,6 @@ import { createServer, serve } from './platform/http.ts'
 const SHUTDOWN_DEADLINE_MS = 15_000
 const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 
-/** Builds the Hub without listening. `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
   options: { webRoot?: string } = {},

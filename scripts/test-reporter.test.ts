@@ -1,4 +1,3 @@
-// The reporter fails a run with zero tests and a skip that does not start with `opt-in:`.
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'

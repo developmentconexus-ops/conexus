@@ -1,4 +1,3 @@
-// check-docs refuses each planted defect by name and accepts a clean tree.
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'

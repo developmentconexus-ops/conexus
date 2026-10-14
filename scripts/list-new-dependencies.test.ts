@@ -1,4 +1,3 @@
-// Criterion 23: the job summary lists every dependency the pull request adds.
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'

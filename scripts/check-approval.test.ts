@@ -1,4 +1,3 @@
-// Criterion 22: the approval line cites an ancestor of the tip, and the card has not changed since.
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
