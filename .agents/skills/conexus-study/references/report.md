@@ -96,6 +96,12 @@ For each brought part: lines today, the lines its refactor will change, the fixe
 (medium and large), the small ones left as debt, and whether it would be written this way from
 nothing.
 
+For each part written new that replaces an old mechanism:
+
+- **Old mechanism**: <file at the frozen commit>.
+- **What it covered**: <...>.
+- **What the new part drops, and why**: <each item, with its reason, or "nothing">.
+
 ## 10. Blast radius
 
 | File | Created, changed or deleted | Who imports or calls it |
@@ -131,3 +137,4 @@ Command that lists the importers: `<one command>`.
 - A count comes from a command a reader can rerun, printed in the report.
 - Section 8 names functions and rules, never function bodies: the card and the build own the code.
 - Section 9 has a row for every part the step touches, even when the answer is "new".
+- Every part in section 9 written new that replaces an old mechanism has its three fields filled.
