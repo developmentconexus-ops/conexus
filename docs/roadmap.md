@@ -10,6 +10,7 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Cartão da etapa 1 aprovado em 2026-10-13 (commit 26b9bdee5dbd01546e59be68292e6354f2b48f91): "Sim"
    Etapa 1 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
+   Cartão da etapa 2 aprovado em 2026-10-14 (commit 9d94e1a1402951b4aceae42b58e0349bf347717d): "Aprovo"
 3. **Entrar.** Entra com e-mail e senha, e sai.
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
@@ -59,7 +60,7 @@ Domínio próprio de empresa.
    viram dívida listada. "2. A", e com ela: "Tem que ser muito bem estudado como vai ser feito,
    né, o código do zero, o que vai ser reaproveitado, para ele ser também já refatorado como
    código, ele ser no arquivo correto, ele não manter decisões antigas só porque elas já foram
-   feitas." Ver a seção 4.
+   feitas." Ver a seção 3.
 3. **Toda linha lida do banco tem o formato conferido antes de ser usada.** "3. A".
 4. **A primeira etapa virou duas.** "4. B". Publicar e voltar atrás, e depois restaurar, o banco
    dormindo e o teste de dados.
@@ -104,11 +105,7 @@ etapa 12 volta a você.
 **A interface.** Antes da etapa 3, o Firstmate encomenda o estudo da tela antiga inteira, contra as
 referências e os guias. O resultado decide a árvore de `apps/web` e o guia do lado da tela.
 
-## 3. As duas primeiras etapas
-
-O cartão da etapa 2 espera em rascunho ([entrega L5](guides/delivery.md)).
-
-## 4. Como uma etapa roda
+## 3. Como uma etapa roda
 
 Cada etapa passa pelas cinco fases de [entrega L3](guides/delivery.md), cada uma, menos o uso, com a sua
 skill ([`AGENTS.md`](../AGENTS.md)). A sua resposta 2 vive na regra do estudo
