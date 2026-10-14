@@ -44,6 +44,8 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    permissions:
+      actions: write
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -52,6 +54,12 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: Rehearsal, a job that is cancelled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run cancel ${{ github.run_id }} --repo ${{ github.repository }}
+          sleep 60
       - run: npm test
       - run: npm run build
 
