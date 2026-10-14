@@ -41,9 +41,8 @@ etapa 4 com o seu primeiro uso. **Resposta**: pendente.
 
 **Só para informar** (o Firstmate pergunta à parte, e a página segue a recomendação até a sua
 resposta): o limite (10 por minuto por endereço), a primeira senha (o link do passo 1) e o tempo da
-entrada (30 minutos sem usar, 8 horas no total). Das perguntas da interface, já respondidas em
-2026-10-14 ("prefiro em ingles", "2. A / 3. A / 4. A"), o endereço fica `/sign-in`, a palavra que o
-Hub e a biblioteca já usam: uma exceção sua ao português de tudo que a pessoa lê.
+entrada (30 minutos sem usar, 8 horas no total). Endereços em inglês, como você respondeu em 2026-10-14
+("prefiro em ingles"): fica `/sign-in`, a palavra que o Hub e a biblioteca já usam.
 
 **A lista de logins do banco**, que a regra dos dados manda passar pela sua palavra: o login do Hub
 passa a ler e gravar as tabelas de entrada (pessoas, senhas guardadas como hash, sessões, links de
@@ -60,7 +59,7 @@ Ao aprovar esta página, você aprova essa lista para a etapa inteira.
 | U4 Identidade | Entrar, ler a sessão, sair, o prazo total, os registros da biblioteca | `apps/server/src/`, `apps/server/` (raiz), `packages/hub-api/`, `docs/` | segurança | `better-auth-best-practices`, `better-auth-security-best-practices`, `email-and-password-best-practices`, `fastify-best-practices` | U3 |
 | U5 Primeira pessoa | O comando `first-person`, a senha pelo link, a ação "Criar a primeira pessoa", os procedimentos | `apps/server/src/`, `packages/hub-api/`, `.github/workflows/`, `docs/how-to/` | segurança | `better-auth-best-practices`, `email-and-password-best-practices` | U4 |
 | U6 Telas | Rotas por arquivo, "Entrar", "Criar sua senha", a moldura com "Sair", espera, falha e endereço desconhecido | `apps/web/`, raiz | web | `shadcn` | U5 |
-| U7 Ao vivo | LT16 pelo Tunnel, o endereço do cliente (S29), a ação no servidor, o resultado no 0013 | `docs/decisions/`; o servidor | segurança | nenhuma | U1 a U6 no ar |
+| U7 Ao vivo | LT16 pelo Tunnel, o endereço do cliente (S29), a ação no servidor, o resultado no 0013 | `docs/decisions/`; nenhum código | segurança | nenhuma | U1 a U6 no ar |
 
 As unidades correm em ordem: cada uma divide pasta com a seguinte. O código da etapa entra no `main`
 num merge só (L13), então nenhuma unidade sobe sozinha.
@@ -75,9 +74,9 @@ os da configuração: 1800 s sem uso, renovação a cada 60 s, 8 h no total, 10 
 | 1 | U1 | O esquema `auth` tem só `user`, `session`, `account`, `verification`, `rate_limit`; nenhuma tabela de empresa, membro, convite ou equipe (LT6) | `hub/identity/tables.test.ts`, "catálogo" | must |
 | 2 | U2 | O catálogo depois de `migrate` é igual a `database-grants.sql`; o login do Hub recebe 42501 em `DELETE` de `auth.user` e `auth.account` e em DDL | `platform/catalog.test.ts`, um caso plantado por recusa | must |
 | 3 | U3 | Uma rota sem tipo de acesso, ou com tipo desconhecido, impede a subida | `platform/access.test.ts`, "tipo" | must |
-| 4 | U4 | Em `PUT /api/sessions/current`, `DELETE /api/sessions/current` e `PUT /api/passwords`: sem `Origin`, com `Origin` de outro site ou `Sec-Fetch-Site: cross-site`, 403 `REQUEST_ORIGIN_REFUSED` antes do corpo ser lido | `identity.test.ts`, "origem", um caso por rota | must |
-| 5 | U4 | Nas mesmas três rotas: formulário, multipart ou `text/plain`, 415; JSON inválido, 400 `REQUEST_MALFORMED`; corpo acima de 4 KiB, 413 (dívida da seção 11) | `identity.test.ts`, "mídia", um caso por recusa e rota | must |
-| 6 | U4 | Em `PUT /api/sessions/current` e `PUT /api/passwords` sem `cf-connecting-ip`: 400 `REQUEST_MALFORMED` | `identity.test.ts`, "endereço" | must |
+| 4 | U4 | Em `PUT` e `DELETE /api/sessions/current`: sem `Origin`, com `Origin` de outro site ou `Sec-Fetch-Site: cross-site`, 403 `REQUEST_ORIGIN_REFUSED` antes do corpo ser lido | `identity.test.ts`, "origem", um caso por rota | must |
+| 5 | U4 | Nas mesmas duas rotas: formulário, multipart ou `text/plain`, 415; JSON inválido, 400 `REQUEST_MALFORMED`; corpo acima de 4 KiB, 413 (dívida da seção 11) | `identity.test.ts`, "mídia", um caso por recusa e rota | must |
+| 6 | U4 | Em `PUT /api/sessions/current` sem `cf-connecting-ip`: 400 `REQUEST_MALFORMED` | `identity.test.ts`, "endereço" | must |
 | 7 | U3 | Sem `HUB_PUBLIC_ORIGIN`, sem o arquivo do segredo, ou com arquivo que outros leem, a subida sai com 1 e `CONFIG_INVALID` com o nome da variável; `deploy.sh` recusa sem `hub_session_secret` | `boot.test.ts`, "configuração"; `scripts/deploy.test.ts` | must |
 | 8 | U4 | `PUT /api/sessions/current` com e-mail e senha certos: 200 com a pessoa (id, nome, e-mail) e um só `Set-Cookie`: `__Host-conexus_session`, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`, sem `Domain` (LT3, LT7 do Hub) | `hub/identity/identity.test.ts`, "entrar", cabeçalho literal | must |
 | 9 | U4 | Na mesma rota, e-mail desconhecido e senha errada: o mesmo 401 `SIGN_IN_REFUSED`, o mesmo corpo | `identity.test.ts`, "recusa" | must |
@@ -93,8 +92,8 @@ os da configuração: 1800 s sem uso, renovação a cada 60 s, 8 h no total, 10 
 | 19 | U4 | Nas rotas dos critérios 8 a 10, a saída do processo tem só linhas com código e id de rastreio, nenhuma com e-mail; entrar, recusa, limite e sair deixam cada um o seu código (R1, S41, S45) | `identity.test.ts`, "registros", saída capturada | must |
 | 20 | U4 | Depois do último pedido a qualquer rota acima, o pool chega a zero conexões (D27) | `identity.test.ts`, "banco dorme", `whenIdle()` | must |
 | 21 | U5 | `first-person` sem pessoa cria a pessoa sem senha e grava o link no arquivo de resumo dado; nenhuma linha de registro traz o token; com outro e-mail, ou com uma pessoa com senha, sai com 1, `FIRST_PERSON_EXISTS` e "Já existe uma pessoa nesta instalação."; com a pessoa ainda sem senha, dá um link novo e o antigo deixa de valer (C64) | `hub/identity/first-person.test.ts` | must |
-| 22 | U5 | `PUT /api/passwords` com o token do link e senha de 8 a 128: 204, e a pessoa entra pelo critério 8; o mesmo token de novo, vencido, ou o valor guardado em `auth.verification` usado como token: 422 `PASSWORD_LINK_INVALID`; senha curta: 422 `PASSWORD_TOO_SHORT`, e o link continua valendo | `first-person.test.ts`, "senha pelo link" | must |
-| 23 | U6 | Sem sessão, `/` leva a `/sign-in` sem desenhar a moldura; com sessão, a moldura, o nome e a versão do Hub; depois de entrar, a página pedida | `apps/web/src/routes/_app/route.test.tsx` com MSW | must |
+| 22 | U5 | `PUT /api/passwords` com o token do link e senha de 8 a 128: 204, e a pessoa entra pelo critério 8; o mesmo token de novo, vencido, ou o valor guardado em `auth.verification` usado como token: 422 `PASSWORD_LINK_INVALID`; senha curta: 422 `PASSWORD_TOO_SHORT`, e o link continua valendo; as recusas dos critérios 4 a 6 também nesta rota | `first-person.test.ts`, "senha pelo link", "origem", "mídia", "endereço" | must |
+| 23 | U6 | Sem sessão, `/` leva a `/sign-in` sem desenhar a moldura; com sessão, a moldura, "Você entrou como {nome}." e a versão do Hub; depois de entrar, a página pedida | `apps/web/src/routes/_app/route.test.tsx` com MSW | must |
 | 24 | U6 | "Entrar no Conexus": erro de campo em português; 401 no formulário sem dizer qual campo; 429 com o seu texto; botão desabilitado enquanto envia | `apps/web/src/hub/identity/sign-in-form.test.tsx` | must |
 | 25 | U6 | "Criar sua senha": o token vem do fragmento do link (`#token=`), nunca da consulta; senha curta no campo; 422 `PASSWORD_LINK_INVALID` mostra "Este link já foi usado ou venceu."; 204 leva a `/sign-in` | `apps/web/src/hub/identity/set-password-form.test.tsx` | must |
 | 26 | U6 | "Sair do Conexus" leva a `/sign-in` com "Você saiu do Conexus."; um 401 em qualquer leitura, com "Sua sessão terminou." | `apps/web/src/hub/identity/account-menu.test.tsx`; `apps/web/src/platform/cache.test.tsx`, "401" | must |
@@ -123,8 +122,10 @@ instalação, à espera da decisão 5 e do seu primeiro leitor (D18).
 
 **A medida do transplante.** Nenhuma parte é trazida.
 
-**A dívida**, levada à seção 11 da arquitetura no fechamento (L19). Linhas vencidas de `auth.session` e `auth.verification` só saem quando apresentadas.
-`createUser` e `findCredentialAccount` são chamadas internas da biblioteca, sem chamada pública com o
+**A dívida**, levada à seção 11 da arquitetura no fechamento (L19):
+
+- Linhas vencidas de `auth.session` e `auth.verification` só saem quando apresentadas.
+- `createUser` e `findCredentialAccount` são chamadas internas da biblioteca, sem chamada pública com o
 cadastro fechado; a versão fica fixa e os critérios 21 e 22 as cobrem.
 
 ## U1 Tabelas
@@ -184,7 +185,7 @@ Critério 2.
 | --- | --- | --- |
 | `apps/server/src/platform/{access,http,config,database}.ts` e os testes ao lado | Muda | `main.ts`, `migrate.ts`, `hub/status/*` |
 | `apps/server/src/platform/test-database.ts` | Muda | os testes de servidor |
-| `packages/hub-api/src/identity.ts` (`Person`, `PersonId`, `Email`) | Cria | servidor, web |
+| `packages/hub-api/src/identity.ts` (`Person`, `PersonId`, `Email`), `index.ts` | Cria / muda | servidor, web |
 | `apps/server/src/main.ts`, `main.test.ts`, `boot.test.ts` | Muda | a imagem, CI |
 | `packages/hub-api/src/{operation,failures}.ts` | Muda | servidor, web |
 | `infra/compose.yaml`, `infra/deploy.sh`, `scripts/deploy.test.ts` | Muda | publicar, voltar atrás, reiniciar |
@@ -205,6 +206,7 @@ Critério 2.
   As linhas que a biblioteca lê não passam por D21: a biblioteca as confere.
 - `secret-file.ts` e `failure.ts` ficam como estão: o leitor de segredo serve, e as falhas novas vivem em `hub-api`.
 - Compose: o segredo `hub_session_secret` em `/etc/conexus/secrets` e as duas variáveis.
+- `FailureRow` ganha `actionKind: 'RETRY' | 'SIGN_IN' | 'NONE'`, dado a toda linha (C48).
 - Falhas: `REQUEST_ORIGIN_REFUSED` 403, `REQUEST_MEDIA_TYPE_REFUSED` 415, `REQUEST_TOO_LARGE` 413.
 
 ### A ordem do trabalho
@@ -283,7 +285,7 @@ Critérios 4 a 6 e 8 a 20; os critérios 14 e 17 também por remoção (T12).
 | --- | --- | --- |
 | `apps/server/src/hub/identity/first-person.ts`, `first-person.test.ts`, `routes.ts` | Cria / muda | `main.ts` |
 | `apps/server/src/main.ts` | Muda | Compose |
-| `packages/hub-api/src/identity.ts`, `failures.ts` | Muda | servidor, web |
+| `packages/hub-api/src/identity.ts`, `index.ts`, `failures.ts` | Muda | servidor, web |
 | `.github/workflows/first-person.yml` | Cria | o fundador |
 | `docs/how-to/hub-server.md`, `docs/how-to/hub-database-restore.md` | Muda | Firstmate, fundador |
 
@@ -298,8 +300,8 @@ Critérios 4 a 6 e 8 a 20; os critérios 14 e 17 também por remoção (T12).
 
 ### A ordem do trabalho
 
-1. `first-person.ts`: sem pessoa com senha, `internalAdapter.createUser` (ou a pessoa sem senha que
-   já existe) e `auth.api.requestPasswordReset`, com `sendResetPassword` que entrega o link a este
+1. `first-person.ts`: sem pessoa com senha, `internalAdapter.createUser`, ou, com o mesmo e-mail,
+   a pessoa sem senha que já existe; e `auth.api.requestPasswordReset`, com `sendResetPassword` que entrega o link a este
    processo; 15 minutos; o link vai ao arquivo, nunca a um registro. Regras: C64, S12, S35, S41.
 2. `setPassword` por `auth.handler` em `/reset-password`. Regras: C28, C52.
 3. A ação pelo runner do servidor, como "Reiniciar o Hub", com o resumo em `$GITHUB_STEP_SUMMARY`.
@@ -313,10 +315,8 @@ Critérios 21 e 22.
 
 O estudo da interface (2026-10-14), seção 17, dá as telas, estados e textos, com as respostas do
 fundador. Correção a ele: as operações vivem em `packages/hub-api`, a tela as chama por
-`platform/hub.ts`, e `platform/auth.ts` e `useSession` não existem (C26, C28). As mudanças de guia
-do estudo (G1 a G17) estão **pendentes**: vão num pull request só de documentos que entra no `main`
-antes deste cartão (escolha do fundador, 2026-10-14). U6 segue W1 como esse pull request a deixar;
-se ele não entrar, U6 para (L7).
+`platform/hub.ts`, e `platform/auth.ts` e `useSession` não existem (C26, C28). As regras de tela vêm do
+`main` desde o pull request 27.
 
 ### O raio da mudança
 
@@ -333,8 +333,9 @@ se ele não entrar, U6 para (L7).
 
 ### A ordem do trabalho
 
-1. Rotas, guarda e páginas do roteador; peças de `ui/`; regras do cache; formulários. Regras: W1 a
-   W27; os textos do estudo da interface. Funções: as do estudo da interface, U1 a U4.
+1. Rotas, guarda e páginas do roteador; peças de `ui/`; regras do cache; formulários. Regras: W1 (com
+   `routeTree.gen.ts` aceito pelo verificador e ignorado por Biome e knip), W9, W15 a W17, W21 a W23,
+   W27 (`platform/jitless.ts`), W28; o desenho de V56; os textos do estudo da interface. Funções: as do estudo da interface, U1 a U4.
 
 ### Como se prova
 
