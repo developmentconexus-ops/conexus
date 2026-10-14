@@ -10,6 +10,7 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Cartão da etapa 1 aprovado em 2026-10-13 (commit 26b9bdee5dbd01546e59be68292e6354f2b48f91): "Sim"
    Etapa 1 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
+   Cartão da etapa 2 aprovado em 2026-10-14 (commit 9d94e1a1402951b4aceae42b58e0349bf347717d): "Aprovo"
 3. **Entrar.** Entra com e-mail e senha, e sai.
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
