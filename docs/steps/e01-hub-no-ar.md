@@ -45,11 +45,11 @@ recomenda", estão acima.
 | U1 Esqueleto | A raiz, as conferências que os guias citam e o CI com um portão só | raiz, `scripts/`, `.github/workflows/ci.yml` | [entrega](../guides/delivery.md) | nada |
 | U2 Servidor | Configuração, falha, acesso por rota, saúde, estado, desligamento | `apps/server/`, `packages/hub-api/` | [testes](../guides/testing.md) | U1 |
 | U3 Página | A página: marca, versão lida do servidor, frase | `apps/web/` | [web](../guides/web.md) | U2 |
-| U4 Publicar | Imagem, Compose com o túnel, publicar, "Voltar atrás", o servidor, os avisos e a prova do [0035](../decisions/0035-publish-through-a-runner-on-the-server.md) | `infra/`, `.github/workflows/`, `docs/how-to/`, `.dockerignore`, `docs/decisions/0035-…`, `docs/architecture.md`, `docs/index.md` | [segurança](../guides/security.md) | U1; a prova espera U2 e U3 |
+| U4 Publicar | Imagem, Compose com o túnel, publicar, "Voltar atrás", o servidor, os avisos e a prova do [0035](../decisions/0035-publish-through-a-runner-on-the-server.md) | `infra/`, `.github/workflows/`, `docs/how-to/`, `.dockerignore`, `docs/decisions/`, `docs/architecture.md`, `docs/index.md` | [segurança](../guides/security.md) | U1; a prova espera U2 e U3 |
 
 U1 vem sozinha. Depois, U2 e U4 correm em paralelo, sem pasta em comum; em `ci.yml` a U4 só
 acrescenta `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A prova da U4 roda por
-último, no servidor, cada caso no pull request.
+último, no servidor.
 
 ## Os critérios de aceite
 
@@ -63,7 +63,7 @@ acrescenta `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A prova 
 | 6 | U4 | Com o cloudflared parado, o e-mail do Cloudflare chega ao fundador; a demora fica registrada | Verificação 6 | must |
 | 7 | U4 | Em três versões seguidas, `docker events` mostra o `die` do Hub antigo antes do `start` do novo | Verificação 7 | must |
 | 8 | U4 | Com o programa congelado (`docker pause`), o e-mail do monitor chega ao fundador em até 10 minutos | Prova da U4, caso "travado" | must |
-| 9 | U2 | Sem `CONEXUS_VERSION`, `HUB_PORT` ou `LOG_LEVEL`, ou com valor fora do formato, o programa não sobe, sai com código não zero e escreve uma linha `CONFIG_INVALID` que nomeia a variável | `apps/server/src/main.test.ts`, "recusa subir sem <variável>", um caso por variável | must |
+| 9 | U2 | Sem `CONEXUS_VERSION`, `HUB_PORT` ou `LOG_LEVEL`, ou valor fora do formato, o programa não sobe, sai com código não zero e escreve uma linha `CONFIG_INVALID` que nomeia a variável | `apps/server/src/main.test.ts`, "recusa subir sem <variável>", um caso por variável | must |
 | 10 | U2 | Rota sem tipo de acesso, ou com tipo que não existe, impede a subida, e o erro nomeia método e caminho | `platform/access.test.ts`, "recusa rota sem tipo", "recusa tipo desconhecido" | must |
 | 11 | U2 | `GET /api/health` responde 200 `{"status":"LIVE"}` sem tocar banco algum | `main.test.ts`, "saúde" | must |
 | 12 | U2 | `GET /api/status` responde 200 `{"version":"v0.1.0"}`, a da configuração | `hub/status/status.test.ts`, "lê a versão" | must |
@@ -88,7 +88,7 @@ acrescenta `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A prova 
 | Classe de erro (75) | Nova | `apps/server/src/platform/failure.ts` | — | Carrega: uma classe com código da tabela (C49); `cause` nunca serializada; log com tipos e quadros da cadeia, sem mensagem (S41, C54). Larga: herdar `MastraError` |
 | Tabela de falhas (JSON, gerador, duas cópias) | Nova | `packages/hub-api/src/failures.ts` | — | Carrega: categoria, status, frase e ação (C48). Larga: o gerador de dois pacotes; agora um dono (C26) |
 | Configuração (242) | Nova | `apps/server/src/platform/config.ts` | — | Carrega: recusar subir nomeando o valor (C67). Larga: 30 de 33 variáveis; a saída 78 (systemd) |
-| Logger, desligamento | Nova, nativa | `main.ts`, `close-with-grace` | — | Carrega: fechar com prazo (C62). Larga: os tratadores à mão; trava e migração ficam para as etapas 2 e 3 |
+| Logger, desligamento | Nova, nativa | `main.ts`, `close-with-grace` | — | Carrega: fechar com prazo (C62). Larga: os tratadores à mão; trava e migração: etapas 2 e 3 |
 | Tipo de operação (78) | Nova | `packages/hub-api/src/operation.ts` | — | Carrega: uma declaração por operação (C28). Larga, até haver consumidor: entrada, `malformed`, `effects`, binário |
 | Marca (41) | Nova: 19 das 37 linhas mudam, acima de um terço (saem as classes `cx-*` e o movimento sem uso) | `apps/web/src/brand/mark.tsx` | — | Carrega: `aria-hidden` na marca, `aria-label` no logotipo (V31); as duas peças (V25) |
 | Fontes, `favicon.svg` | Trazida | `fonts/`, `favicon.svg` | — | Carrega: fontes locais (V14) |
@@ -151,7 +151,7 @@ mudar. Essas partes nascem novas; o que os testes antigos fixavam virou os crit�
 
 `npm run verify` verde. Critério 20: `rules.test.ts` roda Biome e dependency-cruiser sobre arquivos
 ruins em diretório temporário; cada script recusa o seu caso. Critério 21: o pull request da U1 roda
-com um job que falha e com um cancelado. 22 e 23: em repositório Git temporário.
+com um job que falha e um cancelado. 22 e 23: em repositório Git temporário.
 
 ## U2 Servidor
 
@@ -238,7 +238,7 @@ com um job que falha e com um cancelado. 22 e 23: em repositório Git temporári
   validada pelo schema dela, toda falha lida como `Problem` (C49).
 - `statusQuery` em `queries.ts`, de `hubQuery(getStatus)`.
 - `StatusPage`: marca, versão em `fact` (mono), frase em português.
-- Sem roteador: `main.tsx` monta o cache e a página; `routes/` vem com o estudo da interface.
+- Sem roteador: `main.tsx` monta cache e página; `routes/` vem com o estudo da interface.
 
 ### A ordem do trabalho
 
@@ -269,7 +269,8 @@ critério 18. O 19, no navegador, na prova da U4.
 | `.github/workflows/ci.yml` | Muda: o job `image`, só em `pull_request` | o portão `ci` |
 | `docs/how-to/hub-server.md`, `docs/index.md` | Cria, muda | o Firstmate; `check-docs` |
 | `docs/decisions/0035-…` | Muda: o Resultado | `docs/index.md` |
-| `docs/architecture.md` | Muda: seção 7 cita [0035] e o monitor externo nos avisos; seção 11 ganha o risco do runner: root no servidor (S47) | `docs/index.md` |
+| `docs/decisions/0036-…` | Cria: exceção ao S31, token do runner no ambiente de uma chamada | `docs/index.md` |
+| `docs/architecture.md` | Muda: seção 7 cita [0035] e o monitor externo nos avisos; seção 11 ganha o risco do runner (S47) e a exceção do [0036] | `docs/index.md` |
 
 ### Os contratos que a unidade cria
 
@@ -291,9 +292,8 @@ critério 18. O 19, no navegador, na prova da U4.
   com `CONEXUS_VERSION` igual ao nome, envia com `GITHUB_TOKEN` (`packages: write`) e guarda as imagens das dez
   últimas versões; job `deploy` em `[self-hosted, hub]`, que entra no registro com o `GITHUB_TOKEN`
   do job (`packages: read`) e roda `deploy.sh` com o digest. O job `image` do CI roda só em pull
-  request, não envia nada e usa `v0.0.0`.
-- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `version`, de descrição em português (nome de entrada é código:
-  inglês, ASCII), no mesmo runner: entra no registro como o `deploy`, acha o digest da etiqueta `:<versão>` e roda `deploy.sh` com
+  request, sem enviar, com `v0.0.0`.
+- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `version`, de descrição em português (entrada é código: inglês, ASCII), no mesmo runner: entra no registro como o `deploy`, acha o digest da etiqueta `:<versão>` e roda `deploy.sh` com
   ele; sem etiqueta guardada, termina vermelho antes do `deploy.sh`.
 - Cloudflare, pelo Firstmate com a chave do fundador, apagada depois, e escrito no how-to: túnel,
   nome público do Hub para `http://hub:<HUB_PORT>`, DNS, token no servidor, Tunnel Health Alert ao
@@ -305,7 +305,7 @@ critério 18. O 19, no navegador, na prova da U4.
 1. Dockerfile, `.dockerignore`, job `image` em `ci.yml`. Regras: S37, [0002]. Funções: build em
    estágios; `npm ci --omit=dev` mantendo os links do workspace, porque o Node recusa `.ts` sob
    `node_modules`.
-2. `compose.yaml`. Regras: S31, C61, C62. Funções: Docker Engine 29 e Compose v5 da Docker: `secrets` de arquivo, `init`, `healthcheck`, `restart`, `stop_grace_period`.
+2. `compose.yaml`. Regras: S31, C61, C62. Funções: Docker Engine 29, Compose v5: `secrets` de arquivo, `init`, `healthcheck`, `restart`, `stop_grace_period`.
 3. `deploy.sh`. Regras: C64, C73. Funções: `docker compose up --wait --wait-timeout`.
 4. Os workflows. Regras: L13, L17. Funções: `docker/login-action`, `docker/build-push-action`,
    `actions/delete-package-versions`, fixadas por SHA como na U1.
