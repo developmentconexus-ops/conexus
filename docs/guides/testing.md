@@ -91,7 +91,9 @@ a hand-written example proves a platform mechanism, not that the Builder finds a
 ## 5. Services, time and files
 
 - **T19.** Each developer **must** have a disposable database, and each suite **must** create its own uniquely named database from the migrations, with no
-  superuser, and drop it. [review]
+  superuser, and drop it. One exception: `migrate.test.ts` reads `pg_authid` as the test container's
+  superuser to prove the password verifier does not change (data D32), and skips with an `opt-in:`
+  reason without `CONEXUS_TEST_DATABASE_CONTAINER`. Founder, 2026-10-14: "2. A". [review]
 - **T20.** A test **must** create and remove what it uses, bind port 0 when it listens, and **must
   not** sleep or poll with a timer to wait for a result. [review]
 - **T21.** Test files **must** obey the same size limits as code. [Biome]

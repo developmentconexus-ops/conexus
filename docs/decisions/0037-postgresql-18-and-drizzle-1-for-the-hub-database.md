@@ -46,4 +46,4 @@ A check fails, or Drizzle's stable 1.0 changes the ledger or the folder format.
 
 ## State
 
-Proposed 2026-10-14.
+Proposed 2026-10-14. Accepted in use: "Deu certo".

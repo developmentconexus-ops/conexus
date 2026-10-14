@@ -67,6 +67,10 @@ again, so "Último início" changes. Use it after every database restore:
 [hub-database-restore](hub-database-restore.md). If the restarted Hub does not turn healthy, the run
 ends red and says so; run Voltar atrás with an earlier version.
 
+Every publish, restart and Voltar atrás recreates the `hub` container, so the Hub answers 502 from
+Cloudflare for about 1 to 2 s, until step 16 removes the cut. A check that polls through it expects
+those 502s and no 500.
+
 ## Put back
 
 Actions, Voltar atrás, Run workflow, with one of the last ten versions. An unknown version ends red.

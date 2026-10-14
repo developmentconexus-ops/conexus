@@ -11,6 +11,7 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Etapa 1 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
    Cartão da etapa 2 aprovado em 2026-10-14 (commit 9d94e1a1402951b4aceae42b58e0349bf347717d): "Aprovo"
+   Etapa 2 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 3. **Entrar.** Entra com e-mail e senha, e sai.
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
@@ -69,12 +70,11 @@ Domínio próprio de empresa.
 ## 2. As etapas
 
 Os 17 testes de login (LT1 a LT17), as provas PD1 a PD9, as fichas e os
-estudos vivem fora do repositório.
+estudos vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso dela fica na
+seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 1 Hub no ar | O repositório, a conta Cloudflare e o servidor | Quatro respostas no cartão | Ficha `http`. O estudo da forma |
-| 2 Banco do Hub | A 1. A organização do Neon | Nenhuma | Ficha `platform` |
 | 3 Entrar | A 2, com o Tunnel no domínio. O estudo da interface inteira | O administrador da instalação (5) | Rascunho do login e a revisão dele (B1, B4, R1). Dos testes de login, os que só pedem o Hub. A concessão. O registro 0013, reaberto |
 | 4 Empresa e convite | O remetente com DNS | Convite com aceite (4) | Fichas `workspace` e admissão. LT11 e LT12. A porta "apagar empresa". O registro 0015, reaberto |
 | 5 Duas empresas | A 4 | A política por linha no banco | A lista de nove itens da política |
@@ -98,9 +98,7 @@ estudos vivem fora do repositório.
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 
 O teste do banco dormindo, da etapa 2, roda de novo em toda etapa que acrescenta algo que roda
-sozinho. Se o caminho `http` falhar na etapa 2 por causa da versão do PostgreSQL ou do driver, as
-etapas 7 a 10 são replanejadas antes de a 3 começar. Se o banco não dormir com o Mastra parado, a
-etapa 12 volta a você.
+sozinho. Se o banco não dormir com o Mastra parado, a etapa 12 volta a você.
 
 **A interface.** Antes da etapa 3, o Firstmate encomenda o estudo da tela antiga inteira, contra as
 referências e os guias. O resultado decide a árvore de `apps/web` e o guia do lado da tela.

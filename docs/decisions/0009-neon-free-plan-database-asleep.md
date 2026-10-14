@@ -26,4 +26,4 @@ A cause that keeps the database awake cannot leave. Then the free allowance ends
 
 ## State
 
-Brought. Founder, 2026-10-13: "2. B ... Neon pago apenas quando tiver as empresa elas nem sabem que vou epdir, então sistema tem que estar funcional primeiro".
+Brought. Founder, 2026-10-13: "2. B ... Neon pago apenas quando tiver as empresa elas nem sabem que vou epdir, então sistema tem que estar funcional primeiro". Accepted 2026-10-14, when the founder used step 2: "Deu certo".
