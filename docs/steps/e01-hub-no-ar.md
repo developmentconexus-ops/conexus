@@ -75,7 +75,7 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 | 18 | U3 | A página mostra a marca, a versão informada pelo servidor em fonte mono e a frase; se a leitura falhar, mostra a frase da tabela de falhas e nenhuma versão | `apps/web/src/hub/status/status-page.test.tsx`, "mostra a versão", "mostra a falha" | must |
 | 19 | U3 | Servida pela imagem, a página não deixa erro nem violação de CSP no console | Prova da U4, caso "console" | must |
 | 20 | U1 | O CI recusa: import que fura parede, teste que importa o interior, teste que trava, zero testes, supressão sem mudar a contagem, documento acima do teto ou com link quebrado, mudança em skills ou guias com cartão em `docs/steps/` | `scripts/*.test.ts` e `scripts/rules.test.ts`, um caso ruim plantado por recusa, com o nome da recusa | must |
-| 21 | U1 | O portão `ci` falha quando um job falha, é pulado ou cancelado | Pull request de ensaio da U1, casos "falha", "cancelado" | must |
+| 21 | U1 | O portão `ci` falha quando um job falha, é pulado (salvo `image` em `push` para `main`) ou cancelado | Pull request de ensaio da U1, casos "falha", "cancelado" | must |
 | 22 | U1 | A linha de aprovação do cartão cita um commit ancestral da ponta, e o cartão não mudou desde ele | `scripts/check-approval.test.ts`, "commit fora da ponta", "cartão mudado" | must |
 | 23 | U1 | O resumo do job lista toda dependência nova do pull request | `scripts/list-new-dependencies.test.ts`, "lista a nova" | must |
 | 24 | U1 | O servidor roda `.ts` direto, e o Vite empacota a página que importa `@conexus/hub-api`, que aponta para `.ts` | Job `test` do CI | must |
@@ -90,7 +90,8 @@ acrescenta o job `image`. U3 espera a U2, de quem importa `@conexus/hub-api`. A 
 | Configuração (242) | Nova | `apps/server/src/platform/config.ts` | Não se aplica | Carrega: recusar subir nomeando o valor (C67). Larga: 30 de 33 variáveis; a saída 78 (systemd) |
 | Logger, desligamento | Nova, nativa | `main.ts`, `close-with-grace` | Não se aplica | Carrega: fechar com prazo (C62). Larga: os tratadores à mão; trava e migração vão para as etapas 2 e 3 |
 | Tipo de operação (78) | Nova | `packages/hub-api/src/operation.ts` | Não se aplica | Carrega: uma declaração por operação (C28). Larga, até haver consumidor: entrada, `malformed`, `effects`, binário |
-| Marca (41), fontes, `favicon.svg` | Trazida | `apps/web/src/brand/mark.tsx`, `fonts/`, `favicon.svg` | Tamanhos do logotipo em classes do Tailwind | Carrega: `aria-hidden` na marca, `aria-label` no logotipo (V31); as duas peças (V25); fontes locais (V14) |
+| Marca (41) | Nova: 19 das 37 linhas mudam, acima de um terço, porque as classes `cx-*` e o movimento sem uso saem | `apps/web/src/brand/mark.tsx` | Não se aplica | Carrega: `aria-hidden` na marca, `aria-label` no logotipo (V31); as duas peças (V25) |
+| Fontes, `favicon.svg` | Trazida | `fonts/`, `favicon.svg` | Não se aplica | Carrega: fontes locais (V14) |
 | Tokens (143) | Nova, do guia de design | `apps/web/src/brand/tokens.css` | Não se aplica | Carrega: três temas (V4). Larga: `.light`/`.dark` ([0033]) e `cx-*` (W25) |
 | CI antigo | Nova | `ci.yml`, `scripts/` | Não se aplica | Carrega: um portão só (L15), por expressão nativa |
 
@@ -99,8 +100,7 @@ Cookies e conferência de origem ficam para a etapa 3.
 **A medida do transplante.** De `http`, cerca de 150 das 548 linhas têm consumidor nesta etapa, e
 cada bloco muda mais de um terço; dos 35 casos de teste antigos, nenhum passa pela porta pública sem
 mudar. Por isso essas partes nascem novas, e o que os testes antigos fixavam virou os critérios 9 a
-17. A marca é trazida: o construtor da U3 conta as
-linhas trazidas e mudadas e para se passar de um terço.
+17. A marca nasce nova: o construtor da U3 mediu 19 de 37 linhas mudadas, acima de um terço. Fontes e `favicon.svg` são trazidos.
 
 **A dívida.** Nenhuma.
 
@@ -130,7 +130,7 @@ linhas trazidas e mudadas e para se passar de um terço.
 - `check-method-freeze.ts`: recusa mudança em `.agents/skills/` ou `docs/guides/` com cartão em
   `docs/steps/`, salvo o rótulo `emergência`.
 - `ci.yml`, em `pull_request` e `push` para `main`: jobs `check` e `test`, e `ci`, que depende de
-  todos com `if: always()` e falha se algum resultado for `failure`, `cancelled` ou `skipped`. Cada
+  todos com `if: always()` e falha se algum resultado for `failure`, `cancelled` ou `skipped`, salvo o job `image`, aceito como pulado só em `push` para `main`. Cada
   job tem `timeout-minutes`, o prazo global de T3. Ações fixadas pelo SHA do commit da última versão
   com duas semanas.
 
@@ -287,7 +287,7 @@ critério 18. O 19, no navegador, na prova da U4.
   últimas versões; job `deploy` em `[self-hosted, hub]`, que entra no registro com o `GITHUB_TOKEN`
   do job (`packages: read`) e roda `deploy.sh` com o digest. O job `image` do CI roda só em pull
   request, não envia nada e usa `v0.0.0`.
-- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `versão`, no mesmo runner:
+- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `versao` (nomes de entrada do GitHub são ASCII), no mesmo runner:
   entra no registro como o `deploy`, acha o digest da etiqueta `:<versão>` e roda `deploy.sh` com
   ele; sem etiqueta guardada, termina vermelho antes do `deploy.sh`.
 - Cloudflare, pelo Firstmate com a chave do fundador, apagada depois, e escrito no how-to: túnel,
