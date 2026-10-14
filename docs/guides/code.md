@@ -10,7 +10,8 @@ Each rule uses the words of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): 
 not** are defects in review; **should** and **should not** need a stated reason to break; **may** is
 a free choice. Each rule ends with the machine that refuses a violation, or "review". The guide
 states the target; code that departs from it is a defect. How to use Fastify, Zod, TypeScript or
-Mastra is the maintainers' skills; this guide decides only what they leave open.
+Mastra is the maintainers' skills; this guide decides only what they leave open. A pstack skill a
+Conexus skill names is a tool: where it conflicts with a guide, the guide wins.
 
 Owners next door: [architecture](../architecture.md) for who owns each concept, [data](data.md),
 [security](security.md), [testing](testing.md), and [web](web.md) for the screens.
@@ -164,7 +165,7 @@ beside the schema.
 ## 6. The API
 
 - **C33.** Every route **must** declare one access kind, and the server **must** refuse to start with
-  a route that has none, two, or one not allowed on its listener. Only the access module **may**
+  a route that has none, two, or one that does not exist. Only the access module **may**
   read credential cookies and the `Origin`, `Cookie` and `Sec-Fetch-*` headers. [boot check, review]
 - **C34.** Access checks (origin, caller) **must** run in `onRequest`, before the body is read.
   [review]

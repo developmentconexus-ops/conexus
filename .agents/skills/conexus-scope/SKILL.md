@@ -20,20 +20,27 @@ parts, [architecture](../../../docs/architecture.md), and the guide each unit wi
 1. Write first the sentence of use and the use script: three to six actions, written as what a
    person sees, done by the founder on the cloud installation without a terminal.
 2. List what enters and what stays out, and why.
-3. Write the acceptance criteria, each observable from outside, with the refusals included.
+3. Write the acceptance criteria, each observable from outside, with the refusals included; each
+   refusal names the route of this step that reaches it.
 4. Split the step into units. Name the folders of each; units that share no folder may run in
    parallel. For each unit write the blast radius (each file created, changed or deleted, and who
-   imports or calls it), the contracts it creates by signature only, the order of the work with the
+   imports or calls it), the contracts it creates by signature only (with pstack `architect`, and
+   `arena` for competing shapes, when a contract crosses a module; without pstack, compare two shapes
+   in writing), the order of the work with the
    guide rules by identifier and the library functions at the installed version, and the test of
    each criterion with its level.
 5. Copy the study's table of parts into the card. Every part is new or brought, by the study rule
    ([`conexus-study`](../conexus-study/SKILL.md) step 5). A brought part has the file of the new
-   tree where it lands, what is refactored as it enters, and each old decision it carries with its
-   basis in words.
-6. Check that no expensive choice is left without its proof.
-7. Name, for each unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads.
+   tree where it lands, what is refactored as it enters, the study's count of the lines that
+   refactor changes (past a third, the part is new), and each old decision it carries with its basis
+   in words.
+6. Check that no expensive choice is left without its proof. A proof that needs the founder's
+   accounts may move to a named unit, written as such on the founder's page.
+7. Name, for each unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads,
+   and the maintainers' skills it loads.
 8. Write the founder's page in Portuguese, one decision at a time, with an example.
-9. Give the card to a reader of another model, who did not write it, before it reaches the founder.
+9. Give the card to a reader of another model, who did not write it, at the exact commit the founder
+   will approve; a later commit of the card is read again before it reaches him.
 
 ## What it produces
 

@@ -27,7 +27,8 @@ its frozen commit, read only. The entry sheets stay outside this repository.
 4. For each part the step touches, say whether it is **new** or **brought**. For a brought part,
    write:
    - the file of the new tree where it lands;
-   - what is refactored as it enters, and which medium and large fixes are done in it;
+   - what is refactored as it enters, which medium and large fixes are done in it, and the count
+     of lines that refactor will change;
    - each decision of the old code it carries, with its basis in words.
 5. The study rule, which every other skill cites. A decision whose only basis is "implemented
    so", "only tested so" or "decided before" is dropped, or defended in writing with a reason of its
@@ -39,9 +40,12 @@ its frozen commit, read only. The entry sheets stay outside this repository.
    product runs, who holds the session, data isolation, and any ready-made piece that holds state
    or identity or runs third-party code. If it is, follow [proof](references/proof.md).
 7. Compare at least two options and recommend one, with its basis in words.
-8. Write how to implement, by unit: the library functions at the installed version, the guide
-   rules by identifier, the order, and the proof. List the blast radius: each file created, changed
-   or deleted, and who imports or calls it.
+8. Write how to implement, by unit: the library functions at the installed version, the
+   maintainers' skill of each library on this machine or "none", the guide rules by identifier, the
+   order, and the proof. Name the one fact each unit's design rests on and prove it by running it,
+   with pstack `blast-radius` when the session has it; a fact not run is listed as not proved, and
+   the card does not rest on it. List the blast radius: each file created, changed or deleted, and
+   who imports or calls it.
 9. Answer, separating what was seen from what is a hypothesis. Cite a source for every claim: file
    and line, or a page and the date it was read.
 
@@ -49,10 +53,7 @@ its frozen commit, read only. The entry sheets stay outside this repository.
 
 A study report from [the template](references/report.md), within its ceiling, delivered to the
 planning session and kept outside the repository ([delivery L22](../../../docs/guides/delivery.md)).
-It holds the questions, what the repository decided, the references with file, line and version,
-the native way, at least two options compared with a recommendation and its basis, how to implement
-by unit, the table of parts from step 4, the blast radius, the proof, the risks and what was not
-confirmed. For an expensive choice, a decision record in state "proposed" with its Criterion.
+For an expensive choice, a decision record in state "proposed" with its Criterion.
 
 ## Stop and ask
 

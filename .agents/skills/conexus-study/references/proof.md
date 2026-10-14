@@ -6,7 +6,8 @@ Read only when the study finds a choice on the expensive list.
 
 1. Write a decision record in `docs/decisions/` with state "proposed" and a **Criterion** section:
    the question, the pass rule of each check, and what is held fixed. It enters `main` before any
-   proof code runs. The Criterion fits in 300 words; the set-up detail stays with the proof's code.
+   proof code runs. The record, Result included, stays within its ceiling ([delivery
+   L24](../../../../docs/guides/delivery.md)); the set-up detail stays with the proof's code.
 2. Run the proof on the real service, outside this repository.
 3. Write the **Result** against the Criterion, in the same record, in a later commit. The Criterion
    is never edited again; a later note goes under a **Notes** section.

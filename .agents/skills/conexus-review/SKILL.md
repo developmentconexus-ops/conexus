@@ -28,7 +28,9 @@ The pull request, its head commit and the card. Nothing from the builders' conve
    5): brought parts land in the named file and carry only the listed old decisions. Ask of every
    line of the step which one exists only because the old code had it; each such line is a finding
    unless the study defended it in writing.
-6. Walk the checklist.
+6. Walk the checklist. With pstack, also run `interrogate` over the whole diff; without it, these
+   steps stand alone. A skill the card names for a unit that the build report does not list as loaded
+   is a finding.
 7. Write one verdict.
 
 ## What it produces

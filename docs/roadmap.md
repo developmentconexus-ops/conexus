@@ -1,7 +1,6 @@
 # Roteiro do Conexus no repositório novo
 
-Proposta de 2026-10-13, com as suas respostas do mesmo dia. Nada foi construído nem rodado. O desenho está
-em `architecture.md`.
+Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `architecture.md`.
 
 ## 1. A página do fundador
 
@@ -9,6 +8,7 @@ em `architecture.md`.
 
 1. **Hub no ar.** Publica uma mudança no Hub e volta atrás.
    Cartão da etapa 1 aprovado em 2026-10-13 (commit 26b9bdee5dbd01546e59be68292e6354f2b48f91): "Sim"
+   Etapa 1 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
 3. **Entrar.** Entra com e-mail e senha, e sai.
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
@@ -72,7 +72,7 @@ estudos vivem fora do repositório.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 1 Hub no ar | O repositório, a conta Cloudflare e o servidor | Nenhuma | Ficha `http`. O estudo da forma |
+| 1 Hub no ar | O repositório, a conta Cloudflare e o servidor | Quatro respostas no cartão | Ficha `http`. O estudo da forma |
 | 2 Banco do Hub | A 1. A organização do Neon | Nenhuma | Ficha `platform` |
 | 3 Entrar | A 2, com o Tunnel no domínio. O estudo da interface inteira | O administrador da instalação (5) | Rascunho do login e a revisão dele (B1, B4, R1). Dos testes de login, os que só pedem o Hub. A concessão. O registro 0013, reaberto |
 | 4 Empresa e convite | O remetente com DNS | Convite com aceite (4) | Fichas `workspace` e admissão. LT11 e LT12. A porta "apagar empresa". O registro 0015, reaberto |
@@ -106,8 +106,7 @@ referências e os guias. O resultado decide a árvore de `apps/web` e o guia do 
 
 ## 3. As duas primeiras etapas
 
-O cartão da etapa 1 está em [`steps/e01-hub-no-ar.md`](steps/e01-hub-no-ar.md). O da etapa 2
-espera em rascunho ([entrega L5](guides/delivery.md)).
+O cartão da etapa 2 espera em rascunho ([entrega L5](guides/delivery.md)).
 
 ## 4. Como uma etapa roda
 

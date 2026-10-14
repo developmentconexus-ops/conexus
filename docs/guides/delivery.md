@@ -81,7 +81,10 @@ Fix: the state leaves the type. Breaks D18."
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
   firstmate, and used by the founder through the card's use script. His words, the date and the
   address go on the step's line in the roadmap, and only then **may** the next step start. Founder,
-  2026-10-12. [CI, from the first step's closing]
+  2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
+  note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with the
+  first company [0035]. A proof **must not** spend a name of this scheme; the card names the
+  releases its proof creates. [CI, from the first step's closing]
 - **L18.** If the use fails, the step **must** stay open and gain a fix. [review]
 
 **Why.** An approval on an older commit proves nothing about the code that lands, and a squash would
@@ -135,7 +138,7 @@ changes the guide.
 | `docs/guides/data.md`, `design.md` | 2,500 |
 | `docs/guides/testing.md`, `web.md` | 2,000 |
 | `docs/guides/delivery.md` | 1,800 |
-| `docs/decisions/*.md` | 250 |
+| `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | 4,000, the founder's page about 600 |
 | `docs/how-to/*.md` | 800 |
 | `.agents/skills/*/SKILL.md`, body | 600 |

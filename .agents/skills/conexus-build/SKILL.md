@@ -15,7 +15,8 @@ session that wrote the card does not build it.
 The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the card is the contract.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
-one guide the card names for the unit. The maintainers' skill of each library the unit touches.
+one guide the card names for the unit, and loads the maintainers' skills the card names for it
+before writing code. With pstack, it also loads `poteto-mode` and `typescript-best-practices`.
 [bring](references/bring.md) only when the unit brings code; [bug](references/bug.md) only for a
 defect.
 
@@ -34,13 +35,18 @@ defect.
 5. Write the tests through the server's public door, with the negative cases
    ([testing](../../../docs/guides/testing.md)).
 6. Run the result for real: the server, the route, the screen, the migration on a disposable
-   database. Then reread the diff and remove what a careful engineer would not write.
+   database, through the repository's verification skill when one exists, kept current with pstack
+   `maintain-verification-skill`. Then run pstack `deslop` and `no-comments`; code C70 and C73
+   decide what leaves, so a comment that states a why the code cannot show stays. Without pstack:
+   reread the diff and remove what a careful engineer would not write.
 7. One commit for the unit on the step branch. The tests the unit touches are green.
 
 ## What it produces
 
 The commit and a report: what I ran, what I saw, what I did not prove, the brought and changed line
-counts of each brought part, and every criterion of the card with the test that covers it. No pull
+counts of each brought part, and every criterion of the card with the test that covers it. It lists
+every file changed outside the unit's blast radius and every departure from the card, each with the
+stop it raised, or "none"; and the maintainers' skills and pstack skills loaded. No pull
 request per unit and no review per unit: the step gets one review when its units are built
 ([delivery](../../../docs/guides/delivery.md)).
 

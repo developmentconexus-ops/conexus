@@ -166,8 +166,9 @@ its Workers in steps 7 and 9, everything together in step 22.
 **The Hub reaches its database** by the direct address, because a long-lived server keeps its own
 connections. Basis: only tested so; accepted because the pooled address serves callers that do not.
 
-**Down alerts.** Cloudflare's Tunnel health notification, plus a free external monitor of the health
-route, which does not touch the database, so a hung program is seen too [0035].
+**Down alerts.** Cloudflare's Tunnel health notification and a free external monitor of the health
+route both e-mail the founder; the route does not touch the database, so a hung program is seen too
+[0035].
 
 ## 8. Crosscutting concepts
 
@@ -239,3 +240,5 @@ removes them.
 - The invalid-JSON 400, the 415 and the 413 refusals, and the `bodyLimit` proof, are proved with
   step 3's first POST operation: step 1 has only GET and HEAD routes, and Fastify never reads a
   body on them.
+- Trace ids are Fastify's request ids: the Hub audit's `telemetry` part has no step in the roadmap
+  yet.

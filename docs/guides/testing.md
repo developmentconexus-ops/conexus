@@ -15,7 +15,8 @@ to break; **may** is a free choice. Each rule ends with the machine that refuses
 - **T2.** A test **must** sit next to the file it tests: `x.test.ts` beside `x.ts`, `x.test.tsx`
   beside a screen. End-to-end scripts, few, **must** live in `tests/e2e` and run against a real Hub.
   [review]
-- **T3.** Every run **must** have a global timeout. [CI]
+- **T3.** Every run **must** have a global timeout: `node:test` has only a per-test one, so the CI
+  job's `timeout-minutes` is the global one. [CI]
 - **T4.** A skipped test **must** state why, starting with `opt-in:`; a suite that ran zero tests
   **must** fail; and a test **must not** pass silently when the service it needs is missing. [CI]
 
