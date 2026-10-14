@@ -7,16 +7,22 @@ export const Version = z
   .brand('Version')
 export type Version = z.infer<typeof Version>
 
-export const HubStatus = z.object({ version: Version })
+export const Start = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('RECORDED'), version: Version, startedAt: z.iso.datetime() }),
+  z.object({ state: z.literal('NONE') }),
+])
+export type Start = z.infer<typeof Start>
+
+export const HubStatus = z.object({ version: Version, lastStart: Start, previousStart: Start })
 export type HubStatus = z.infer<typeof HubStatus>
 
 export const getStatus = {
   id: 'getStatus',
-  summary: 'Reads the version of the Hub that is live.',
+  summary: 'Reads the version of the Hub that is live and its last two starts.',
   access: 'public',
   method: 'GET',
   path: '/api/status',
   bodyLimit: 1024,
   success: { status: 200, body: HubStatus },
-  failures: [],
+  failures: ['DATABASE_UNAVAILABLE'],
 } as const satisfies Operation

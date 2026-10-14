@@ -5,7 +5,7 @@
   "scripts": {
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run && node --test --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts vite.config.test.ts"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",

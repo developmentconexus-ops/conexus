@@ -168,7 +168,9 @@ export async function createServer(config: Config, webRoot: string): Promise<Fas
   return app
 }
 
-type Handler<O extends Operation> = () => z.output<O['success']['body']>
+type Handler<O extends Operation> = () =>
+  | z.output<O['success']['body']>
+  | Promise<z.output<O['success']['body']>>
 
 /** The reply is checked against the operation's schema before it is sent. */
 export function serve<O extends Operation>(

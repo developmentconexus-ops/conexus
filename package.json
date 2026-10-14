@@ -20,6 +20,7 @@
     "approval": "node scripts/check-approval.ts",
     "method-freeze": "node scripts/check-method-freeze.ts",
     "new-dependencies": "node scripts/list-new-dependencies.ts",
+    "migrations": "node scripts/check-migrations.ts",
     "test": "npm run test:scripts && npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "test:scripts": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts scripts/*.test.ts"

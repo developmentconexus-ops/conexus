@@ -38,6 +38,9 @@ jobs:
         env:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: npm run method-freeze -- --base "origin/${{ github.base_ref }}" --labels "$LABELS"
+      - name: Migrations carry no unmarked DROP or RENAME, no changed or forked history, no session state
+        if: github.event_name == 'pull_request'
+        run: npm run migrations -- --base "origin/${{ github.base_ref }}"
       - name: List the new dependencies
         if: github.event_name == 'pull_request'
         run: npm run new-dependencies -- --base "origin/${{ github.base_ref }}"
@@ -45,6 +48,21 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        env:
+          POSTGRES_PASSWORD: ci-superuser
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
+      CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -52,6 +70,12 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - name: The owner of the test databases is not a superuser
+        run: >-
+          psql postgres://postgres:ci-superuser@localhost:5432/postgres
+          -c "create role conexus_owner login createdb createrole password 'ci-owner'"
+      - name: The container that serves the tests dumps the catalog
+        run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
       - run: npm test
       - run: npm run build
 
@@ -62,7 +86,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: The image builds
-        run: docker build --file infra/hub.Dockerfile --build-arg CONEXUS_VERSION=v0.0.0 .
+        run: docker build --file infra/hub.Dockerfile --build-arg CONEXUS_VERSION=v0.0.0 --tag conexus-hub:ci .
+      - name: The image carries the migration label and defines no NODE_ENV
+        run: |
+          label="$(docker image inspect --format '{{ index .Config.Labels "conexus.migrate" }}' conexus-hub:ci)"
+          if [ "$label" != "1" ]; then
+            echo "the image lacks the label conexus.migrate=1, so deploy.sh would skip migrate"
+            exit 1
+          fi
+          if docker image inspect --format '{{ range .Config.Env }}{{ println . }}{{ end }}' conexus-hub:ci | grep -q '^NODE_ENV='; then
+            echo "the image defines NODE_ENV"
+            exit 1
+          fi
 
   ci:
     if: always()

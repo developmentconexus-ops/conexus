@@ -14,6 +14,7 @@ after(() => {
 function git(dir: string, ...args: string[]) {
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], {
     cwd: dir,
+    timeout: 120_000,
   })
 }
 
@@ -40,6 +41,7 @@ function branch(changed: string, card: boolean): string {
 function run(dir: string, labels = '') {
   return spawnSync('node', [SCRIPT, '--base', 'main', '--root', dir, '--labels', labels], {
     encoding: 'utf8',
+    timeout: 120_000,
   })
 }
 

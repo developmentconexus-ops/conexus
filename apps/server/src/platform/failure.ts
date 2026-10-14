@@ -47,6 +47,15 @@ function frames(error: unknown): string {
     .join(' | ')
 }
 
+function systemCode(chain: unknown[]): string | undefined {
+  for (const cause of chain) {
+    if (typeof cause === 'object' && cause !== null && 'code' in cause) {
+      if (typeof cause.code === 'string') return cause.code
+    }
+  }
+  return undefined
+}
+
 /** Logs only scalar fields: the types and frames of the cause, never its text (S41). */
 export function logFailure(log: FailureLog, failure: Failure): void {
   const row = FAILURES[failure.code]
@@ -61,6 +70,8 @@ export function logFailure(log: FailureLog, failure: Failure): void {
       .map((cause) => (cause instanceof Error ? cause.name : typeof cause))
       .join(' <- ')
     fields.frames = frames(chain.at(-1))
+    const code = systemCode(chain)
+    if (code !== undefined) fields.code = code
   }
   if (row.category === 'USER') log.info(fields, failure.code)
   else log.error(fields, failure.code)

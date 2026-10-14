@@ -6,6 +6,10 @@ services:
     init: true
     restart: unless-stopped
     stop_grace_period: 20s
+    secrets:
+      - hub_database_url
+    environment:
+      HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
     healthcheck:
       test:
         - CMD
@@ -16,6 +20,20 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+  migrate:
+    image: ${HUB_IMAGE:?HUB_IMAGE must name the image by digest}
+    init: true
+    profiles:
+      - migrate
+    restart: "no"
+    command: ["node", "apps/server/src/main.ts", "migrate"]
+    secrets:
+      - hub_database_url
+      - hub_migration_database_url
+    environment:
+      HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
+      HUB_MIGRATION_DATABASE_URL_FILE: /run/secrets/hub_migration_database_url
 
   cloudflared:
     image: cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
@@ -31,3 +49,7 @@ services:
 secrets:
   tunnel_token:
     file: /etc/conexus/secrets/tunnel_token
+  hub_database_url:
+    file: /etc/conexus/secrets/hub_database_url
+  hub_migration_database_url:
+    file: /etc/conexus/secrets/hub_migration_database_url

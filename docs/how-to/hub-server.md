@@ -41,6 +41,14 @@ StatusCake, free plan: an HTTP check of `https://<the Hub's name>/api/health` ev
 the founder's e-mail. Its free terms for commercial use were not checked when this was written: read
 them at sign-up.
 
+## Database keys
+
+Firstmate writes two files as root in `/etc/conexus/secrets`, then sets owner uid 1000 and mode 0400:
+`hub_database_url`, the Hub login, and `hub_migration_database_url`, the owner login. Both hold a
+direct (not pooled) PostgreSQL address. Only the service `migrate` mounts the owner key. The `hub`
+container mounts `hub_database_url` alone, and `deploy.sh` refuses to start the Hub without it. The
+founder opens port 22 only while the files are written, then closes it.
+
 ## Publish
 
 Merging into `main` publishes nothing. Create a GitHub Release whose tag is `v<n>.<n>.<n>` on a commit of
@@ -48,10 +56,22 @@ Merging into `main` publishes nothing. Create a GitHub Release whose tag is `v<n
 server. A tag on another commit ends red and the Hub does not change. Counting the ten kept images
 needs a token that can read packages.
 
+Before it starts the new image, `deploy.sh` runs `migrate` for 60 seconds, but only when the image
+carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the
+run red. Rerun the failed job once the cause is fixed.
+
+## Restart
+
+Actions, Reiniciar o Hub, Run workflow. It runs `migrate` with the live image and starts the Hub
+again, so "Último início" changes. Use it after every database restore:
+[hub-database-restore](hub-database-restore.md). If the restarted Hub does not turn healthy, the run
+ends red and says so; run Voltar atrás with an earlier version.
+
 ## Put back
 
 Actions, Voltar atrás, Run workflow, with one of the last ten versions. An unknown version ends red.
-Running it twice with the same version changes nothing.
+Running it twice with the same version changes nothing. An image from before step 2 has no label, so
+putting it back skips `migrate`.
 
 ## When it fails
 

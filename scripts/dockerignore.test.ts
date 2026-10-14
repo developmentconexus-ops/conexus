@@ -33,7 +33,7 @@ test('o contexto da imagem deixa fora ambiente, segredo e saída de build, em qu
   const build = spawnSync(
     'docker',
     ['build', '--quiet', '--output', `type=local,dest=${out}`, context],
-    { encoding: 'utf8' },
+    { encoding: 'utf8', timeout: 120_000 },
   )
   assert.equal(build.status, 0, build.stderr)
   for (const path of PLANTED) assert.equal(existsSync(join(out, 'context', path)), false, path)

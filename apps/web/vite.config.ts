@@ -7,7 +7,7 @@ export default defineConfig({
   build: {
     // The Hub's CSP allows no data: URI, so nothing is inlined.
     assetsInlineLimit: 0,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         assetFileNames: (asset) =>
           asset.names.includes('favicon.svg') ? 'favicon.svg' : 'assets/[name]-[hash][extname]',

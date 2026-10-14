@@ -23,7 +23,7 @@ function check(files: Record<string, string>, recorded: Record<string, number>) 
     mkdirSync(dirname(join(dir, path)), { recursive: true })
     writeFileSync(join(dir, path), content)
   }
-  return spawnSync('node', [SCRIPT, dir], { encoding: 'utf8' })
+  return spawnSync('node', [SCRIPT, dir], { encoding: 'utf8', timeout: 120_000 })
 }
 
 test('aceita a contagem registrada, com causa', () => {

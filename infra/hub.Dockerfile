@@ -15,8 +15,8 @@ RUN npm run build -w @conexus/web
 
 FROM ${NODE_IMAGE}
 ARG CONEXUS_VERSION
-ENV NODE_ENV=production \
-    CONEXUS_VERSION=${CONEXUS_VERSION} \
+LABEL conexus.migrate=1
+ENV CONEXUS_VERSION=${CONEXUS_VERSION} \
     HUB_PORT=8080 \
     LOG_LEVEL=info
 WORKDIR /app

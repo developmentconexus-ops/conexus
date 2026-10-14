@@ -1,0 +1,82 @@
+{
+  "id": "c721a418-1648-4a7d-a025-8a822ce69591",
+  "prevIds": ["c3704d62-dd4d-4581-93f1-1f58ee605cdf"],
+  "version": "8",
+  "dialect": "postgres",
+  "ddl": [
+    {
+      "name": "hub",
+      "entityType": "schemas"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "starts",
+      "entityType": "tables",
+      "schema": "hub"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": {
+        "type": "always",
+        "name": "starts_id_seq",
+        "increment": "1",
+        "startWith": "1",
+        "minValue": "1",
+        "maxValue": "9223372036854775807",
+        "cache": 1,
+        "cycle": false
+      },
+      "name": "id",
+      "entityType": "columns",
+      "schema": "hub",
+      "table": "starts"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "version",
+      "entityType": "columns",
+      "schema": "hub",
+      "table": "starts"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "started_at",
+      "entityType": "columns",
+      "schema": "hub",
+      "table": "starts"
+    },
+    {
+      "columns": ["id"],
+      "nameExplicit": false,
+      "name": "starts_pkey",
+      "schema": "hub",
+      "table": "starts",
+      "entityType": "pks"
+    },
+    {
+      "value": "\"version\" ~ '^v[0-9]+\\.[0-9]+\\.[0-9]+$'",
+      "name": "starts_version_format",
+      "entityType": "checks",
+      "schema": "hub",
+      "table": "starts"
+    }
+  ],
+  "renames": []
+}

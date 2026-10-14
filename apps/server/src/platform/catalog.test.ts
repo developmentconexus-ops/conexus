@@ -1,0 +1,138 @@
+import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { test } from 'node:test'
+import { promisify } from 'node:util'
+import type { TestDatabase } from './test-database.ts'
+import { createTestDatabase, withRoleLock } from './test-database.ts'
+
+const run = promisify(execFile)
+
+const APPROVED = readFileSync(join(import.meta.dirname, '..', '..', 'database-grants.sql'), 'utf8')
+  .split('\n')
+  .filter((line) => line !== '' && !line.startsWith('--'))
+  .join('\n')
+
+const OBJECT_LINES =
+  /^(ALTER .* OWNER TO |GRANT |REVOKE |ALTER DEFAULT PRIVILEGES |ALTER DATABASE .* SET |ALTER ROLE .* IN DATABASE )/
+const ROLE_LINES = /^(CREATE ROLE|ALTER ROLE|GRANT|REVOKE) /
+
+// The harness names are replaced by fixed words, so the approved file holds what production has.
+const SUPERUSER = 'postgres'
+const OWNER_WORD = 'test_owner'
+const SUPERUSER_WORD = 'test_superuser'
+const DATABASE_WORD = 'hub_database'
+
+// The PostgreSQL 18 client that dumps is the one in the container that serves the tests.
+async function dump(test: TestDatabase, program: string, args: string[]): Promise<string[]> {
+  const { container } = test
+  assert.ok(container, 'CONEXUS_TEST_DATABASE_CONTAINER names the container that serves the tests')
+  const owner = new URL(test.ownerUrl.reveal())
+  const { stdout } = await run(
+    'docker',
+    [
+      'exec',
+      `--env=PGPASSWORD=${decodeURIComponent(owner.password)}`,
+      container,
+      program,
+      '--host=localhost',
+      `--username=${decodeURIComponent(owner.username)}`,
+      ...args,
+    ],
+    {
+      timeout: 30_000,
+      killSignal: 'SIGKILL',
+    },
+  )
+  return stdout.split('\n')
+}
+
+function named(text: string, name: string, word: string): string {
+  return text.replace(new RegExp(`\\b${name}\\b`, 'g'), word)
+}
+
+async function snapshotOf(test: TestDatabase): Promise<string> {
+  const url = new URL(test.ownerUrl.reveal())
+  const database = url.pathname.slice(1)
+  const owner = decodeURIComponent(url.username)
+  const objects = await dump(test, 'pg_dump', ['--create', '--schema-only', database])
+  const roles = await dump(test, 'pg_dumpall', ['--roles-only', '--no-role-passwords'])
+  function harness(line: string): boolean {
+    return (
+      new RegExp(`^(CREATE|ALTER) ROLE (${owner}|${SUPERUSER})\\b`).test(line) ||
+      // test-database.ts grants hub_runtime to the owner so that dropping a test database can end its connections
+      line === `GRANT hub_runtime TO ${owner} WITH INHERIT TRUE GRANTED BY ${owner};`
+    )
+  }
+  return [
+    ...objects.filter((line) => OBJECT_LINES.test(line)),
+    ...roles.filter((line) => ROLE_LINES.test(line) && !harness(line)),
+  ]
+    .map((line) =>
+      named(
+        named(named(line, database, DATABASE_WORD), owner, OWNER_WORD),
+        SUPERUSER,
+        SUPERUSER_WORD,
+      ),
+    )
+    .join('\n')
+}
+
+test('o instantâneo depois de migrate é o de database-grants.sql', async (t) => {
+  const database = await createTestDatabase(t)
+  assert.equal(await withRoleLock(() => snapshotOf(database)), APPROVED)
+})
+
+// Roles belong to the whole server, so a planted login is made and dropped inside the lock.
+const PLANTED: [string, string[], string][] = [
+  [
+    'um schema de que hub_runtime é dono',
+    ['create schema planted authorization hub_runtime'],
+    'ALTER SCHEMA planted OWNER TO hub_runtime;',
+  ],
+  [
+    'uma permissão padrão para hub_runtime',
+    ['alter default privileges in schema hub grant delete on tables to hub_runtime'],
+    `ALTER DEFAULT PRIVILEGES FOR ROLE ${OWNER_WORD} IN SCHEMA hub GRANT DELETE ON TABLES TO hub_runtime;`,
+  ],
+  [
+    'uma concessão a mais',
+    ['grant insert on drizzle.__drizzle_migrations to hub_runtime'],
+    'GRANT SELECT,INSERT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;',
+  ],
+  [
+    'CREATE no banco',
+    ['grant create on database $db to hub_runtime'],
+    `GRANT CREATE ON DATABASE ${DATABASE_WORD} TO hub_runtime;`,
+  ],
+  [
+    'um banco de que hub_runtime é dono',
+    ['alter database $db owner to hub_runtime'],
+    `ALTER DATABASE ${DATABASE_WORD} OWNER TO hub_runtime;`,
+  ],
+  [
+    'uma configuração do papel neste banco',
+    ['alter role hub_runtime in database $db set statement_timeout = 0'],
+    `ALTER ROLE hub_runtime IN DATABASE ${DATABASE_WORD} SET statement_timeout TO '0';`,
+  ],
+  ['um papel a mais', ['create role planted_login login'], 'CREATE ROLE planted_login;'],
+]
+for (const [name, statements, line] of PLANTED) {
+  test(`o instantâneo recusa ${name}`, async (t) => {
+    const database = await createTestDatabase(t)
+    const databaseName = new URL(database.ownerUrl.reveal()).pathname.slice(1)
+    const actual = await withRoleLock(async () => {
+      try {
+        for (const statement of statements) {
+          await database.asOwner(statement.replaceAll('$db', databaseName))
+        }
+        return await snapshotOf(database)
+      } finally {
+        await database.asOwner('drop role if exists planted_login')
+      }
+    })
+    assert.notEqual(actual, APPROVED)
+    assert.ok(actual.split('\n').includes(line), actual)
+  })
+}

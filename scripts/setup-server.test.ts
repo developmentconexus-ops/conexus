@@ -97,6 +97,7 @@ function setup(
   }
   const run = spawnSync('/bin/bash', [SCRIPT], {
     encoding: 'utf8',
+    timeout: 120_000,
     env: { ...environment(tunnel, runner, work, bin), CALLS: log, ...extra },
   })
   const calls = (() => {
