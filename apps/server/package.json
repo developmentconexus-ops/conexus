@@ -12,8 +12,14 @@
     "@fastify/helmet": "13.1.1",
     "@fastify/static": "10.1.5",
     "close-with-grace": "2.5.0",
+    "drizzle-orm": "1.0.0-rc.4",
     "fastify": "5.12.5",
     "helmet": "8.3.0",
+    "pg": "8.23.1",
     "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "1.0.0-rc.4"
   }
 }

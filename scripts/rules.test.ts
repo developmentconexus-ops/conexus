@@ -88,6 +88,11 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
     './http.ts',
     { 'apps/server/src/platform/http.ts': PUBLIC },
   ],
+  'driver-only-in-the-database-modules': [
+    'apps/server/src/hub/a/store.ts',
+    'pg',
+    { 'apps/server/src/hub/a/mapper.ts': importing('drizzle-orm/node-postgres') },
+  ],
   'web-tree-shape': [
     'apps/web/src/components/button.ts',
     '../platform/hub.ts',
@@ -109,6 +114,10 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/server/src/hub/a/ok.test.ts': './public.ts',
   'apps/server/src/platform/health.test.ts': './health.ts',
   'apps/server/src/main.test.ts': './main.ts',
+  'apps/server/src/platform/database.ts': 'pg',
+  'apps/server/src/platform/migrate.ts': 'drizzle-orm/node-postgres',
+  'apps/server/src/platform/database.test.ts': './test-database.ts',
+  'apps/server/src/hub/a/ok2.test.ts': '../../platform/test-database.ts',
   'apps/web/src/ui/button.ts': '../platform/hub.ts',
   'apps/web/src/routes/ok.ts': '../hub/b/public.ts',
   'apps/web/src/hub/a/queries.ts': '@conexus/hub-api',
@@ -131,6 +140,7 @@ before(() => {
     'apps/server/src/platform/health.ts',
     'apps/server/src/platform/hub.ts',
     'apps/server/src/main.ts',
+    'apps/server/src/platform/test-database.ts',
     'apps/server/src/hub/a/public.ts',
     'apps/web/src/hub/b/public.ts',
   ]) {
@@ -148,6 +158,16 @@ for (const [rule, [file]] of Object.entries(BAD_IMPORTS)) {
     )
   })
 }
+
+test('dependency-cruiser recusa o driver de PostgreSQL por outro caminho de importação', () => {
+  assert.ok(
+    violations.some(
+      (violation) =>
+        violation.rule.name === 'driver-only-in-the-database-modules' &&
+        violation.from === 'apps/server/src/hub/a/mapper.ts',
+    ),
+  )
+})
 
 test('dependency-cruiser aceita as portas públicas', () => {
   const refused = violations.filter((violation) => Object.hasOwn(GOOD_IMPORTS, violation.from))

@@ -1,0 +1,16 @@
+{
+  "hub_runtime": {
+    "attributes": {
+      "login": true,
+      "superuser": false,
+      "inherit": false,
+      "createDatabase": false,
+      "createRole": false,
+      "bypassRls": false,
+      "replication": false,
+      "connectionLimit": -1
+    },
+    "settings": ["idle_in_transaction_session_timeout=10s", "statement_timeout=10s"],
+    "grants": ["SELECT ON TABLE drizzle.__drizzle_migrations", "USAGE ON SCHEMA drizzle"]
+  }
+}

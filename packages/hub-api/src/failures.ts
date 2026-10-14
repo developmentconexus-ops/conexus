@@ -32,6 +32,18 @@ export const FAILURES = {
     phrase: 'O Conexus não iniciou porque a configuração está errada.',
     action: 'Corrija o valor que o registro aponta e inicie de novo.',
   },
+  DATABASE_UNAVAILABLE: {
+    category: 'SYSTEM',
+    status: 503,
+    phrase: 'O banco do Conexus não respondeu.',
+    action: 'O erro foi registrado. Avise quem cuida do Conexus.',
+  },
+  DATABASE_BEHIND: {
+    category: 'SYSTEM',
+    status: 500,
+    phrase: 'O Conexus não iniciou porque falta uma migração no banco.',
+    action: 'Rode a migração e inicie de novo.',
+  },
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

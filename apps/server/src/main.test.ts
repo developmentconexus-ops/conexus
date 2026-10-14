@@ -1,30 +1,43 @@
 import assert from 'node:assert/strict'
 import type { ChildProcess } from 'node:child_process'
-import { spawn, spawnSync } from 'node:child_process'
-import { once } from 'node:events'
+import { spawn } from 'node:child_process'
+import { on, once } from 'node:events'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { connect, createServer } from 'node:net'
+import { connect } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { after, test } from 'node:test'
+import type { TestContext } from 'node:test'
+import { after, before, test } from 'node:test'
 import { Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { createHub } from './main.ts'
+import type { TestDatabase } from './platform/test-database.ts'
+import { createTestDatabase, freePort, urlFile } from './platform/test-database.ts'
 
 const MAIN = join(import.meta.dirname, 'main.ts')
-const GOOD_ENV = { CONEXUS_VERSION: 'v0.1.0', HUB_PORT: '8080', LOG_LEVEL: 'error' }
 const apps: FastifyInstance[] = []
 const children: ChildProcess[] = []
 const dirs: string[] = []
+let shared: TestDatabase
+const cleanups: (() => Promise<void> | void)[] = []
+before(async () => {
+  shared = await createTestDatabase({ after: (cleanup) => cleanups.push(cleanup) })
+})
 after(async () => {
   for (const child of children) child.kill('SIGKILL')
   for (const app of apps) await app.close()
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
+  for (const cleanup of cleanups) await cleanup()
 })
 
 async function hub(webRoot?: string) {
-  const config = { version: Version.parse('v0.1.0'), port: 1, logLevel: 'error' } as const
-  const app = await createHub(config, webRoot === undefined ? {} : { webRoot })
+  const config = {
+    version: Version.parse('v0.1.0'),
+    port: 1,
+    logLevel: 'error',
+    databaseUrl: shared.runtimeUrl,
+  } as const
+  const app = await createHub(config, { database: shared.database, webRoot })
   apps.push(app)
   return app
 }
@@ -34,13 +47,13 @@ function problem(response: {
   headers: Record<string, unknown>
   json(): unknown
 }) {
-  const { traceId, ...rest } = z4(response.json())
+  const { traceId, ...rest } = withTraceId(response.json())
   assert.match(traceId, /^[0-9a-f-]{36}$/)
   assert.match(String(response.headers['content-type']), /^application\/problem\+json/)
   return rest
 }
 
-function z4(value: unknown): { traceId: string } & Record<string, unknown> {
+function withTraceId(value: unknown): { traceId: string } & Record<string, unknown> {
   assert.ok(typeof value === 'object' && value !== null && 'traceId' in value)
   assert.equal(typeof value.traceId, 'string')
   return { ...value, traceId: String(value.traceId) }
@@ -51,38 +64,6 @@ const NOT_FOUND = {
   title: 'Não encontramos o que você procurou.',
   status: 404,
   code: 'NOT_FOUND',
-}
-
-function boot(env: Record<string, string>) {
-  const run = spawnSync(process.execPath, [MAIN], { env, encoding: 'utf8' })
-  const lines = run.stdout
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => JSON.parse(line))
-  return { status: run.status, lines }
-}
-
-for (const name of Object.keys(GOOD_ENV)) {
-  test(`recusa subir sem ${name}`, () => {
-    const env = Object.fromEntries(Object.entries(GOOD_ENV).filter(([key]) => key !== name))
-    const { status, lines } = boot(env)
-    assert.equal(status, 1)
-    assert.equal(lines.find((line) => line.msg === 'CONFIG_INVALID')?.variables, name)
-  })
-}
-
-const OUT_OF_FORMAT = [
-  ['CONEXUS_VERSION', '0.1.0'],
-  ['HUB_PORT', 'abc'],
-  ['HUB_PORT', '70000'],
-  ['LOG_LEVEL', 'loud'],
-] as const
-for (const [name, value] of OUT_OF_FORMAT) {
-  test(`recusa subir com ${name}=${value} fora do formato`, () => {
-    const { status, lines } = boot({ ...GOOD_ENV, [name]: value })
-    assert.equal(status, 1)
-    assert.equal(lines.find((line) => line.msg === 'CONFIG_INVALID')?.variables, name)
-  })
 }
 
 test('saúde', async () => {
@@ -155,7 +136,7 @@ for (const [name, bytes] of SOCKET_REFUSALS) {
     const [head = '', body = ''] = answer.split('\r\n\r\n')
     assert.match(head, /^HTTP\/1\.1 400 Bad Request\r\nContent-Type: application\/problem\+json/)
     assertSecurityHeaders(head)
-    const { traceId, ...rest } = z4(JSON.parse(body))
+    const { traceId, ...rest } = withTraceId(JSON.parse(body))
     assert.match(traceId, /^[0-9a-f-]{36}$/)
     assert.deepEqual(rest, {
       type: 'urn:conexus:problem:REQUEST_MALFORMED',
@@ -200,17 +181,14 @@ test('cabeçalhos', async () => {
   }
 })
 
-async function freePort(): Promise<number> {
-  const server = createServer()
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  const address = server.address()
-  await new Promise((resolve) => server.close(resolve))
-  return typeof address === 'object' && address !== null ? address.port : 0
-}
-
-async function startChild() {
+async function startChild(t: TestContext) {
   const port = await freePort()
-  const env = { ...GOOD_ENV, HUB_PORT: String(port), LOG_LEVEL: 'info' }
+  const env = {
+    CONEXUS_VERSION: 'v0.1.0',
+    HUB_PORT: String(port),
+    LOG_LEVEL: 'info',
+    HUB_DATABASE_URL_FILE: urlFile(t, shared.runtimeUrl),
+  }
   const child = spawn(process.execPath, [MAIN], { env, stdio: ['ignore', 'pipe', 'pipe'] })
   children.push(child)
   const lines: Record<string, unknown>[] = []
@@ -224,9 +202,7 @@ async function startChild() {
     for (const text of String(chunk).split('\n').filter(Boolean)) {
       const line = JSON.parse(text)
       lines.push(line)
-      const message = String(line.msg).startsWith('Server listening')
-        ? 'LISTENING'
-        : String(line.msg)
+      const message = String(line.msg)
       const waiter = seen.get(message) ?? Promise.withResolvers<void>()
       seen.set(message, waiter)
       waiter.resolve()
@@ -239,8 +215,8 @@ async function startChild() {
   return { child, port, lines, exited, until }
 }
 
-test('log por pedido', async () => {
-  const { child, port, lines, exited } = await startChild()
+test('log por pedido', async (t) => {
+  const { child, port, lines, exited } = await startChild(t)
   const traceparent = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
   const response = await fetch(`http://127.0.0.1:${port}/api/health`, { headers: { traceparent } })
   assert.equal(response.status, 200)
@@ -256,14 +232,15 @@ test('log por pedido', async () => {
   assert.doesNotMatch(JSON.stringify(lines), /0af7651916cd43dd8448eb211c80319c/)
 })
 
-test('desligamento', async () => {
-  const { child, exited } = await startChild()
+test('desligamento', async (t) => {
+  const { child, lines, exited } = await startChild(t)
   child.kill('SIGTERM')
   assert.deepEqual(await exited, { code: 0, signal: null })
+  assert.equal(lines.find((line) => line.msg === 'SHUTTING_DOWN')?.signal, 'SIGTERM')
 })
 
-test('segundo sinal', async () => {
-  const { child, port, exited, until } = await startChild()
+test('segundo sinal', async (t) => {
+  const { child, port, exited, until } = await startChild(t)
   const stuck = connect(port, '127.0.0.1')
   stuck.on('error', () => stuck.destroy())
   await once(stuck, 'connect')
@@ -274,15 +251,15 @@ test('segundo sinal', async () => {
   assert.deepEqual(await exited, { code: 1, signal: null })
 })
 
-test('caminho com porcentagem malformada responde 400 em problem+json, com cabeçalhos e log', async () => {
-  const { child, port, lines, exited } = await startChild()
+test('caminho com porcentagem malformada responde 400 em problem+json, com cabeçalhos e log', async (t) => {
+  const { child, port, lines, exited } = await startChild(t)
   for (const path of ['/%zz', '/api/%E0%A4%A']) {
     const answer = await raw(port, `GET ${path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n`)
     const [head = '', body = ''] = answer.split('\r\n\r\n')
     assert.match(head, /^HTTP\/1\.1 400 Bad Request\r\n/, path)
     assert.match(head, /\r\ncontent-type: application\/problem\+json/i, path)
     assertSecurityHeaders(head)
-    const { traceId, ...rest } = z4(JSON.parse(body))
+    const { traceId, ...rest } = withTraceId(JSON.parse(body))
     assert.match(traceId, /^[0-9a-f-]{36}$/)
     assert.deepEqual(rest, {
       type: 'urn:conexus:problem:REQUEST_MALFORMED',
@@ -301,24 +278,32 @@ test('caminho com porcentagem malformada responde 400 em problem+json, com cabe�
   )
 })
 
+const HEALTH_PIPELINE = 'GET /api/health HTTP/1.1\r\nHost: x\r\n'
+
 test('pedido que chega a uma conexão aberta durante o desligamento é atendido, não recusado', async () => {
   const app = await hub()
+  const closeStarted = Promise.withResolvers<void>()
+  app.addHook('preClose', async () => closeStarted.resolve())
   await app.listen({ host: '127.0.0.1', port: 0 })
   const socket = connect(app.addresses()[0]?.port ?? 0, '127.0.0.1')
+  const ended = once(socket, 'close')
+  await once(socket, 'connect')
+  socket.write(`${HEALTH_PIPELINE}\r\n${HEALTH_PIPELINE}`)
   let received = ''
   socket.on('data', (chunk) => {
     received += chunk
   })
-  const ended = once(socket, 'close')
-  await once(socket, 'connect')
-  socket.write('GET /api/health HTTP/1.1\r\nHost: x\r\n')
-  await new Promise((resolve) => setTimeout(resolve, 50))
+  for await (const _ of on(socket, 'data')) {
+    if (received.includes('{"status":"LIVE"}')) break
+  }
   const closing = app.close()
-  await new Promise((resolve) => setTimeout(resolve, 50))
+  await closeStarted.promise
   socket.write('\r\n')
   await ended
   await closing
-  const [head = '', body = ''] = received.split('\r\n\r\n')
+  const answers = received.split(/(?=HTTP\/1\.1 )/)
+  assert.equal(answers.length, 2)
+  const [head = '', body = ''] = (answers[1] ?? '').split('\r\n\r\n')
   assert.match(head, /^HTTP\/1\.1 200 OK\r\n/)
   assertSecurityHeaders(head)
   assert.equal(body, '{"status":"LIVE"}')

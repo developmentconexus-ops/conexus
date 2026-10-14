@@ -1,9 +1,11 @@
-// The import law of code C3 to C8, testing T5 and web W1, W4 to W6, W13. Every rule below names
+// The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W6, W13. Every rule below names
 // the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
 // A subject is one folder of hub/ or builder/ (server and web). Revalidate by 2027-04-13.
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
+const TEST_DATABASE = `${SERVER}/platform/test-database\\.ts$`
+const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -55,20 +57,35 @@ module.exports = {
     },
     {
       name: 'test-enters-through-the-public-door',
-      comment: 'T5: a server test imports main.ts or a public.ts, never the inside.',
+      comment:
+        'T5: a server test imports main.ts, a public.ts or the test database, never the inside.',
       severity: 'error',
       from: { path: `${SERVER}/(?!platform/).*\\.test\\.tsx?$` },
-      to: { path: `${SERVER}/`, pathNot: [`${SERVER}/main\\.ts$`, PUBLIC_DOOR] },
+      to: { path: `${SERVER}/`, pathNot: [`${SERVER}/main\\.ts$`, PUBLIC_DOOR, TEST_DATABASE] },
     },
     {
       name: 'platform-test-enters-through-its-own-file',
-      comment: 'T5: a platform test imports main.ts, a public.ts, or the file beside it.',
+      comment:
+        'T5: a platform test imports main.ts, a public.ts, the test database or the file beside it.',
       severity: 'error',
       from: { path: `${SERVER}/platform/([^/]+)\\.test\\.tsx?$` },
       to: {
         path: `${SERVER}/`,
-        pathNot: [`${SERVER}/main\\.ts$`, PUBLIC_DOOR, `${SERVER}/platform/$1\\.tsx?$`],
+        pathNot: [
+          `${SERVER}/main\\.ts$`,
+          PUBLIC_DOOR,
+          TEST_DATABASE,
+          `${SERVER}/platform/$1\\.tsx?$`,
+        ],
       },
+    },
+    {
+      name: 'driver-only-in-the-database-modules',
+      comment:
+        'D19: only database.ts, migrate.ts and test-database.ts import the PostgreSQL driver.',
+      severity: 'error',
+      from: { pathNot: DRIVER_MODULES },
+      to: { path: '(^|node_modules/)(pg|drizzle-orm/node-postgres)(/|$)' },
     },
     {
       name: 'web-tree-shape',
