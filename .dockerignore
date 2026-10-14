@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/*.test.ts
+**/*.test.tsx
+.git
+.github
+**/.env
+**/.env.*
+**/secrets
+docs

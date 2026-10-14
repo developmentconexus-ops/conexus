@@ -1,0 +1,19 @@
+{
+  "name": "@conexus/server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@conexus/hub-api": "*",
+    "@fastify/helmet": "13.1.1",
+    "@fastify/static": "10.1.5",
+    "close-with-grace": "2.5.0",
+    "fastify": "5.12.5",
+    "helmet": "8.3.0",
+    "zod": "4.6.5"
+  }
+}

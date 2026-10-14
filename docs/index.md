@@ -8,6 +8,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [README.md](../README.md): what this repository is, for a person, in Portuguese.
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each card's approval and each closed step's use line.
 - [architecture.md](architecture.md): the system's goals, context, parts, deployment, crosscutting concepts, risks and debt.
+- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and putting back a Hub version.
 - [steps/](steps/): the card of the step in construction, and only it.
 
 ## Guides: the rules
@@ -57,6 +58,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [0033](decisions/0033-own-visual-pieces.md) own visual pieces.
 - [0034](decisions/0034-vitest-for-screen-files.md) Vitest for screens.
 - [0035](decisions/0035-publish-through-a-runner-on-the-server.md) publish a release through a runner, proposed.
+- [0036](decisions/0036-runner-token-in-one-call-environment.md) runner token in one call's environment.
 
 ## Skills
 

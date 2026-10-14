@@ -166,8 +166,8 @@ its Workers in steps 7 and 9, everything together in step 22.
 **The Hub reaches its database** by the direct address, because a long-lived server keeps its own
 connections. Basis: only tested so; accepted because the pooled address serves callers that do not.
 
-**Down alerts.** Cloudflare's Tunnel health notification, plus a health route that does not touch
-the database, so a hung program is seen too.
+**Down alerts.** Cloudflare's Tunnel health notification, plus a free external monitor of the health
+route, which does not touch the database, so a hung program is seen too [0035].
 
 ## 8. Crosscutting concepts
 
@@ -229,6 +229,8 @@ with it. This wait is Conexus code.
 | The server stops | Hub and published apps stop [0025] | Revisited in step 18 |
 | Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Versions pinned; fallback named in each record |
 | One E2B key | A cleanup in another installation deletes a machine | A key of this installation only [0028] |
+| The publish runner runs as root on the server | Any writer of the repository can command the server [0035] | Accepted by the founder; forks never reach the runner |
+| The runner registration token passes through one call's environment, not a file (S31) | A token readable by root for one call on the server | Accepted by the founder [0036] |
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
 
 **Debt.** Small fixes left on a brought part are listed here, one line each, with the step that

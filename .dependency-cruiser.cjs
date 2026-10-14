@@ -1,0 +1,107 @@
+// The import law of code C3 to C8, testing T5 and web W1, W4 to W6, W13. Every rule below names
+// the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
+// A subject is one folder of hub/ or builder/ (server and web). Revalidate by 2027-04-13.
+const SERVER = '^apps/server/src'
+const WEB = '^apps/web/src'
+const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
+
+/** @type {import('dependency-cruiser').IConfiguration} */
+module.exports = {
+  forbidden: [
+    {
+      name: 'no-circular',
+      comment: 'C6: there must not be an import cycle.',
+      severity: 'error',
+      from: {},
+      to: { circular: true },
+    },
+    {
+      name: 'no-loose-file-in-hub-or-builder',
+      comment: 'C6: a file in hub/ or builder/ belongs to a subject folder.',
+      severity: 'error',
+      from: { path: `${SERVER}/(hub|builder)/[^/]+\\.tsx?$` },
+      to: {},
+    },
+    {
+      name: 'subject-only-through-public',
+      comment: 'C4, W4: another subject is reached only through its public.ts.',
+      severity: 'error',
+      from: { path: `^apps/(server|web)/src/(hub|builder)/([^/]+)/` },
+      to: {
+        path: `^apps/$1/src/(hub|builder)/[^/]+/`,
+        pathNot: [`^apps/$1/src/$2/$3/`, PUBLIC_DOOR],
+      },
+    },
+    {
+      name: 'hub-does-not-import-builder',
+      comment: 'C4, W4: the Hub never imports the Builder; main.ts hands it over.',
+      severity: 'error',
+      from: { path: '^apps/(server|web)/src/hub/' },
+      to: { path: '^apps/$1/src/builder/' },
+    },
+    {
+      name: 'platform-does-not-import-subject',
+      comment: 'C7: platform/ holds no subject and imports none.',
+      severity: 'error',
+      from: { path: `${SERVER}/platform/` },
+      to: { path: `${SERVER}/(hub|builder)/` },
+    },
+    {
+      name: 'program-imports-program-by-name',
+      comment: 'C5: between programs, code imports by package name, never by path.',
+      severity: 'error',
+      from: { path: '^(apps|packages)/([^/]+)/' },
+      to: { path: '^(apps|packages)/', pathNot: ['^$1/$2/'], dependencyTypes: ['local'] },
+    },
+    {
+      name: 'test-enters-through-the-public-door',
+      comment: 'T5: a server test imports main.ts or a public.ts, never the inside.',
+      severity: 'error',
+      from: { path: `${SERVER}/(?!platform/).*\\.test\\.tsx?$` },
+      to: { path: `${SERVER}/`, pathNot: [`${SERVER}/main\\.ts$`, PUBLIC_DOOR] },
+    },
+    {
+      name: 'platform-test-enters-through-its-own-file',
+      comment: 'T5: a platform test imports main.ts, a public.ts, or the file beside it.',
+      severity: 'error',
+      from: { path: `${SERVER}/platform/([^/]+)\\.test\\.tsx?$` },
+      to: {
+        path: `${SERVER}/`,
+        pathNot: [`${SERVER}/main\\.ts$`, PUBLIC_DOOR, `${SERVER}/platform/$1\\.tsx?$`],
+      },
+    },
+    {
+      name: 'web-tree-shape',
+      comment:
+        'W1: apps/web/src holds main.tsx and the folders routes, hub, builder, ui, platform, brand.',
+      severity: 'error',
+      from: { path: `${WEB}/(?!(main\\.tsx|routes/|hub/|builder/|ui/|platform/|brand/))` },
+      to: {},
+    },
+    {
+      name: 'web-support-does-not-import-subject',
+      comment: 'W5, W13: ui/, platform/ and brand/ import no subject and no route.',
+      severity: 'error',
+      from: { path: `${WEB}/(ui|platform|brand)/` },
+      to: { path: `${WEB}/(hub|builder|routes)/` },
+    },
+    {
+      name: 'routes-reach-subject-through-public',
+      comment: 'W6: routes/ reaches a subject only through its public.ts.',
+      severity: 'error',
+      from: { path: `${WEB}/routes/` },
+      to: { path: `${WEB}/(hub|builder)/`, pathNot: PUBLIC_DOOR },
+    },
+  ],
+  options: {
+    doNotFollow: { path: 'node_modules' },
+    tsPreCompilationDeps: true,
+    tsConfig: { fileName: 'tsconfig.base.json' },
+    enhancedResolveOptions: {
+      exportsFields: ['exports'],
+      conditionNames: ['import', 'node', 'default', 'types'],
+      mainFields: ['module', 'main', 'types'],
+    },
+    exclude: { path: '(^|/)(node_modules|dist|coverage)/' },
+  },
+}
