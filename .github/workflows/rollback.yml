@@ -3,8 +3,8 @@ name: Voltar atrás
 on:
   workflow_dispatch:
     inputs:
-      versao:
-        description: "Versão (por exemplo v0.1.0), uma das dez últimas"
+      version:
+        description: "Versão para pôr de volta, por exemplo v0.1.0"
         required: true
         type: string
 
@@ -35,7 +35,7 @@ jobs:
       - name: Find the image kept for the version
         id: reference
         env:
-          VERSION: ${{ inputs.versao }}
+          VERSION: ${{ inputs.version }}
         run: |
           if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "$VERSION is not a version name"

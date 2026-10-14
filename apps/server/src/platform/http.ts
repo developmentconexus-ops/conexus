@@ -31,6 +31,7 @@ function problemOf(code: FailureCode, traceId: string): Problem {
   })
 }
 
+/** Maps by the status a library error carries, never by its text (code C50, C52). */
 function failureOf(error: unknown): Failure {
   if (error instanceof Failure) return error
   const status = ErrorStatus.safeParse(error)
@@ -148,6 +149,7 @@ export async function createServer(config: Config, webRoot: string): Promise<Fas
 
 type Handler<O extends Operation> = () => z.output<O['success']['body']>
 
+/** The reply is checked against the operation's schema before it is sent. */
 export function serve<O extends Operation>(
   app: FastifyInstance,
   operation: O,

@@ -8,6 +8,8 @@ const WORDMARK_CLASS = {
   lg: 'text-[32px]',
 } as const
 
+// Decorative on purpose: the wordmark names the product, so the mark never carries meaning a
+// screen reader would miss.
 function ConexusMark({ size = 24, arrive = false }: Readonly<{ size?: number; arrive?: boolean }>) {
   return (
     <svg
@@ -36,6 +38,7 @@ export function ConexusWordmark({
   arrive = false,
 }: Readonly<{
   size?: 'xs' | 'sm' | 'md' | 'lg'
+  /** The prototype draws the mark a size larger than the wordmark text. Defaults to the text size. */
   markSize?: number
   arrive?: boolean
 }>) {

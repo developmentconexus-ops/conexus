@@ -6,6 +6,7 @@ import { config } from 'zod'
 // schema exists.
 config({ jitless: true })
 
+/** A failed read is shown, never retried by default (code C58). */
 export function createCache(): QueryClient {
   return new QueryClient({ defaultOptions: { queries: { retry: false } } })
 }

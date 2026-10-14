@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Keeps no state: the image that runs is read from Docker, so running it again with the same
+# image changes nothing.
 set -euo pipefail
 
 image="${1:?usage: deploy.sh <image reference by digest>}"
