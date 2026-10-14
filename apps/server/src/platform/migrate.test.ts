@@ -106,18 +106,24 @@ const PLANTED: [string, string[], (catalog: Catalog) => unknown][] = [
     (catalog) => catalog.hub_runtime?.grants,
   ],
 ]
+const GRANTED = [
+  'INSERT ON TABLE hub.starts',
+  'SELECT ON TABLE drizzle.__drizzle_migrations',
+  'SELECT ON TABLE hub.starts',
+  'USAGE ON SCHEMA drizzle',
+  'USAGE ON SCHEMA hub',
+]
 const SHOWN = [
   ['hub_runtime', 'planted_login'],
   true,
+  ['INSERT ON TABLE drizzle.__drizzle_migrations', ...GRANTED],
   [
-    'INSERT ON TABLE drizzle.__drizzle_migrations',
+    ...GRANTED.slice(0, 1),
     'SELECT ON TABLE drizzle.__drizzle_migrations',
-    'USAGE ON SCHEMA drizzle',
-  ],
-  [
-    'SELECT ON TABLE drizzle.__drizzle_migrations',
+    'SELECT ON TABLE hub.starts',
     'UPDATE ON COLUMN drizzle.__drizzle_migrations.hash',
     'USAGE ON SCHEMA drizzle',
+    'USAGE ON SCHEMA hub',
   ],
 ]
 for (const [index, [name, statements, shown]] of PLANTED.entries()) {

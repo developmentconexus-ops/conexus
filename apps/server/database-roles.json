@@ -11,6 +11,12 @@
       "connectionLimit": -1
     },
     "settings": ["idle_in_transaction_session_timeout=10s", "statement_timeout=10s"],
-    "grants": ["SELECT ON TABLE drizzle.__drizzle_migrations", "USAGE ON SCHEMA drizzle"]
+    "grants": [
+      "INSERT ON TABLE hub.starts",
+      "SELECT ON TABLE drizzle.__drizzle_migrations",
+      "SELECT ON TABLE hub.starts",
+      "USAGE ON SCHEMA drizzle",
+      "USAGE ON SCHEMA hub"
+    ]
   }
 }

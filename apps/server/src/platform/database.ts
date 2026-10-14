@@ -1,6 +1,7 @@
 import { once } from 'node:events'
 import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
+import { DrizzleQueryError } from 'drizzle-orm/errors'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { drizzle } from 'drizzle-orm/node-postgres'
@@ -49,8 +50,8 @@ export class DatabaseUrl {
 
 type Orm = NodePgDatabase
 type Transaction = Parameters<Parameters<Orm['transaction']>[0]>[0]
-type ReadTx = Pick<Transaction, 'select' | 'selectDistinct' | 'execute'>
-type CommandTx = Transaction
+export type ReadTx = Pick<Transaction, 'select' | 'selectDistinct' | 'execute'>
+export type CommandTx = Transaction
 
 export type Database = Readonly<{
   read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>
@@ -68,6 +69,17 @@ export function databaseFailure(error: unknown): Failure {
     }
   }
   return new Failure('DATABASE_UNAVAILABLE', { cause: error })
+}
+
+function ownErrorsAreUnexpected<Tx, T>(work: (tx: Tx) => Promise<T>) {
+  return async (tx: Tx): Promise<T> => {
+    try {
+      return await work(tx)
+    } catch (error) {
+      if (error instanceof DrizzleQueryError || error instanceof Failure) throw error
+      throw new Failure('INTERNAL_UNEXPECTED', { cause: error })
+    }
+  }
 }
 
 export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Database {
@@ -90,11 +102,17 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   return Object.freeze({
     read: (work) =>
       run(() =>
-        orm.transaction(work, { isolationLevel: 'repeatable read', accessMode: 'read only' }),
+        orm.transaction(ownErrorsAreUnexpected(work), {
+          isolationLevel: 'repeatable read',
+          accessMode: 'read only',
+        }),
       ),
     command: (work) =>
       run(() =>
-        orm.transaction(work, { isolationLevel: 'read committed', accessMode: 'read write' }),
+        orm.transaction(ownErrorsAreUnexpected(work), {
+          isolationLevel: 'read committed',
+          accessMode: 'read write',
+        }),
       ),
     whenIdle: async () => {
       while (pool.totalCount > 0) await once(pool, 'remove')

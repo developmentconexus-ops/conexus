@@ -109,6 +109,12 @@ export async function unreachableDatabaseUrl(): Promise<DatabaseUrl> {
   return DatabaseUrl.parse(`postgres://nobody:nothing@127.0.0.1:${await freePort()}/none`)
 }
 
+export async function unreachableDatabase(t: Lifetime): Promise<Database> {
+  const database = openDatabase({ url: await unreachableDatabaseUrl(), log: silent })
+  t.after(() => database.close())
+  return database
+}
+
 export function urlFile(t: TestContext, url: DatabaseUrl): string {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-key-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))

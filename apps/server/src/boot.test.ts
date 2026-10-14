@@ -89,7 +89,9 @@ async function serverEnv(t: TestContext, extra: Record<string, string> = {}) {
 
 test('atrasado: o banco sem uma migração que o programa traz recusa a subida', async (t) => {
   const { database, env } = await serverEnv(t)
-  await database.asOwner('delete from drizzle.__drizzle_migrations')
+  await database.asOwner(
+    'delete from drizzle.__drizzle_migrations where id = (select max(id) from drizzle.__drizzle_migrations)',
+  )
   const { lines, exited } = start(env)
   assert.equal(await exited, 1)
   assert.equal(messages(lines, 'DATABASE_BEHIND')[0]?.missing, 1)

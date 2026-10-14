@@ -10,6 +10,7 @@ import type { TestContext } from 'node:test'
 import { after, before, test } from 'node:test'
 import { Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import { createStatus } from './hub/status/public.ts'
 import { createHub } from './main.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import { createTestDatabase, freePort, urlFile } from './platform/test-database.ts'
@@ -37,7 +38,8 @@ async function hub(webRoot?: string) {
     logLevel: 'error',
     databaseUrl: shared.runtimeUrl,
   } as const
-  const app = await createHub(config, { database: shared.database, webRoot })
+  const status = createStatus({ version: config.version, database: shared.database })
+  const app = await createHub(config, { status, webRoot })
   apps.push(app)
   return app
 }
@@ -70,12 +72,6 @@ test('saúde', async () => {
   const response = await (await hub()).inject({ method: 'GET', url: '/api/health' })
   assert.equal(response.statusCode, 200)
   assert.equal(response.body, '{"status":"LIVE"}')
-})
-
-test('lê a versão pela rota', async () => {
-  const response = await (await hub()).inject({ method: 'GET', url: '/api/status' })
-  assert.equal(response.statusCode, 200)
-  assert.equal(response.body, '{"version":"v0.1.0"}')
 })
 
 test('caminho desconhecido responde 404 em problem+json', async () => {
