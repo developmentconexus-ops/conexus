@@ -20,11 +20,11 @@ Hub, que o que veio depois sumiu. Depois vê o banco dormir no Neon e acordar qu
 5. Não abra o Hub nem o Neon por dez minutos. Abra o Neon em Branches: o banco aparece "Idle".
 6. Abra o Hub: responde com cerca de um segundo a mais, e as horas do passo 3.
 
-**O que você faz, e quando.** Antes: cria a organização do Neon no plano grátis e entrega ao
-Firstmate uma chave dela, e uma chave da Cloudflare só de Workers; as duas são apagadas no fim.
-No começo: aprova esta página e responde a pergunta abaixo. Depois do merge, quando o Firstmate
-pedir: no painel de firewall do provedor do servidor, abre a porta 22 para o endereço que ele
-der, e a fecha quando ele avisar. No fim: faz o roteiro e diz o que viu.
+**O que você faz, e quando.** No começo: aprova esta página. Antes do build, com o Firstmate te
+guiando na hora: cria a organização do Neon no plano grátis e entrega uma chave dela, e uma chave
+da Cloudflare só de Workers; as duas são apagadas no fim. Depois do merge, quando o Firstmate
+pedir: no painel de firewall do provedor, abre a porta 22 para o endereço dele, e a fecha quando ele
+avisar. No fim: faz o roteiro e diz o que viu.
 
 **Fica de fora.** Entrar com e-mail e senha, e empresas: etapas 3 e 4. O banco do Mastra: etapa
 12, onde o teste do banco dormindo roda de novo.
@@ -36,9 +36,10 @@ da empresa. A tabela dos inícios do Hub não é de empresa nenhuma, e nenhuma e
   sem a coluna; a regra passa a valer para toda tabela com dado de uma empresa, e o guia é
   emendado no fechamento. Exemplo: a linha "v0.2.0 às 14:02" não diz empresa nenhuma.
 - **B.** Toda tabela tem a coluna, e as da instalação gravam um valor fixo, "instalação".
-  Exemplo: a linha leva "instalação" numa coluna que ninguém lê, o que outra regra proíbe.
 
-Recomendação: **A**, porque uma coluna que ninguém lê guarda um valor inventado.
+**Resposta** (2026-10-14): "1. A 2. A com você me guiando na hora 3. A 4. A". A, sem a coluna; e
+os três acessos como recomendados: a chave do Neon com o Firstmate guiando, a porta 22 aberta só
+para a instalação das chaves, a chave da Cloudflare só de Workers.
 
 **A lista de logins do banco**, que a regra dos dados manda passar pela sua palavra: um só, o do
 Hub. Ele lê e grava os inícios e lê o registro das migrações, e não apaga nem muda nada. Ao aprovar
@@ -223,8 +224,7 @@ sinal, e os prazos do banco terminam a espera antes dos 30 s do pedido (C73).
 
 - `hub.starts`: `id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY`, `version text NOT NULL CHECK
   (version ~ '^v[0-9]+\.[0-9]+\.[0-9]+$')`, `started_at timestamptz NOT NULL DEFAULT now()`. A
-  coluna da empresa segue a decisão da página: nenhuma em A; `company text NOT NULL CHECK (company
-  = 'installation')` em B.
+  coluna da empresa: nenhuma, pela resposta A do fundador.
 - Concessões: `USAGE` no schema `hub`, `SELECT, INSERT` em `hub.starts`.
 - `Start = { state: 'RECORDED'; version: Version; startedAt: string } | { state: 'NONE' }`, com
   `startedAt` em RFC 3339 UTC; `HubStatus = { version: Version; lastStart: Start; previousStart:
@@ -242,7 +242,7 @@ sinal, e os prazos do banco terminam a espera antes dos 30 s do pedido (C73).
    Regras: D21, D22, C40.
 3. `http.ts`, `main.ts`, a rota. Regras: C9, C28, C31, C41, C43.
 4. Página: a hora por `Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', day, month,
-   hour, minute })`. Uma visita à página acorda o banco, como o 0009 espera. Regras: web W1, o guia de design para o texto.
+   hour, minute })`. Regras: web W1, o guia de design para o texto.
 
 ### Como se prova
 

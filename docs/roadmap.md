@@ -104,10 +104,6 @@ etapa 12 volta a você.
 **A interface.** Antes da etapa 3, o Firstmate encomenda o estudo da tela antiga inteira, contra as
 referências e os guias. O resultado decide a árvore de `apps/web` e o guia do lado da tela.
 
-## 3. As duas primeiras etapas
-
-O cartão da etapa 2 espera em rascunho ([entrega L5](guides/delivery.md)).
-
 ## 4. Como uma etapa roda
 
 Cada etapa passa pelas cinco fases de [entrega L3](guides/delivery.md), cada uma, menos o uso, com a sua
