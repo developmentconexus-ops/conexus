@@ -34,7 +34,7 @@ throwaway project for checks 3 to 5, deleted after.
 
 ## Result
 
-Not run.
+Run 2026-10-14 on the live Hub: all six checks passed. On Neon, `neon_superuser` holds the owner login, not `hub_runtime`.
 
 ## Consequences
 
