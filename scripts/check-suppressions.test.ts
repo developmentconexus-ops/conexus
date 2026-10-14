@@ -60,3 +60,24 @@ test('recusa @ts-expect-error sem causa', () => {
   assert.equal(run.status, 1)
   assert.match(run.stderr, /^suppression-without-cause: a\.ts:1$/m)
 })
+
+test('conta a supressão de JSX dentro de chaves', () => {
+  const jsx = [
+    'export const a = (',
+    '  <input',
+    '    // placeholder',
+    '  />',
+    ')',
+    '{/* biome-ignore lint/a11y/noAutofocus: the field opens the dialog */}',
+    '',
+  ].join('\n')
+  const run = check({ 'a.tsx': jsx }, {})
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^suppression-count-changed: a\.tsx: 1 in the file, 0 /m)
+})
+
+test('recusa supressão de JSX sem causa', () => {
+  const run = check({ 'a.tsx': '{/* biome-ignore lint/a11y/noAutofocus */}\n' }, { 'a.tsx': 1 })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^suppression-without-cause: a\.tsx:1$/m)
+})

@@ -29,7 +29,7 @@ if (!hasCard) {
   process.exit(0)
 }
 
-const changed = execFileSync('git', ['diff', '--name-only', `${base}...HEAD`], {
+const changed = execFileSync('git', ['diff', '--name-only', '--no-renames', `${base}...HEAD`], {
   cwd: root,
   encoding: 'utf8',
 })

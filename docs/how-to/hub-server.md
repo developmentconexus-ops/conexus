@@ -7,10 +7,12 @@ How the São Paulo server is prepared, and how the Hub is published and put back
 1. Reinstall the server with Ubuntu LTS. Close every inbound port in the provider's firewall.
 2. In the repository's GitHub settings, open Actions, then Runners, and add a self-hosted runner. Copy
    its registration token and the runner version with its checksum.
-3. As root on the server, with the Cloudflare tunnel token on standard input:
-   `RUNNER_URL=… RUNNER_TOKEN=… RUNNER_VERSION=… RUNNER_SHA256=… infra/setup-server.sh < token-file`.
-   It installs Docker, writes the token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and
-   starts the runner as a service of the user `runner`, which has no login and sits in the `docker` group.
+3. As root on the server, save the Cloudflare tunnel token and the runner registration token each in
+   a file only root can read (mode 0400 or 0600), then run
+   `RUNNER_URL=… RUNNER_VERSION=… RUNNER_SHA256=… TUNNEL_TOKEN_FILE=… RUNNER_TOKEN_FILE=… infra/setup-server.sh`
+   and delete both files. The script refuses a file others can read. It installs Docker, copies the
+   tunnel token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a
+   service of the user `runner`, which has no login and sits in the `docker` group.
 4. Close SSH last, after the provider's console is proved to work. Without a console, stop and ask.
 
 ## Check the GitHub settings

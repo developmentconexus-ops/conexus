@@ -9,7 +9,7 @@ const root = resolve(process.argv[2] ?? '.')
 const SKIPPED = new Set(['node_modules', '.git', 'dist', 'coverage'])
 const SOURCE = /\.(?:[cm]?[jt]sx?|css)$/
 const SUPPRESSION =
-  /^\s*(?:\/\/|\/\*+)\s*(biome-ignore(?:-all|-start|-end)?|@ts-ignore|@ts-expect-error|@ts-nocheck)\b(.*)$/
+  /^\s*\{?\s*(?:\/\/|\/\*+)\s*(biome-ignore(?:-all|-start|-end)?|@ts-ignore|@ts-expect-error|@ts-nocheck)\b(.*)$/
 const CAUSE_AFTER_COLON = /^[^:]*:\s*\S/
 
 function walk(dir: string): string[] {
@@ -23,7 +23,7 @@ function walk(dir: string): string[] {
 function hasCause(kind: string, rest: string): boolean {
   if (kind === 'biome-ignore-end') return true
   if (kind.startsWith('biome-ignore')) return CAUSE_AFTER_COLON.test(rest)
-  return rest.replace(/\*\/\s*$/, '').trim().length > 0
+  return rest.replace(/\*\/\s*\}?\s*$/, '').trim().length > 0
 }
 
 const counts: Record<string, number> = {}

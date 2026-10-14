@@ -12,7 +12,7 @@ export function StatusPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-canvas p-lg font-body text-text">
       <div className="flex flex-col items-center gap-xl text-center">
-        <ConexusWordmark size="lg" arrive />
+        <ConexusWordmark arrive />
         {status.isError ? (
           <p role="alert" className="text-title">
             {FAILURES[failure].phrase}

@@ -133,6 +133,16 @@ function raw(port: number, bytes: string): Promise<string> {
   })
 }
 
+function assertSecurityHeaders(head: string) {
+  assert.match(
+    head,
+    /\r\nContent-Security-Policy: [^\r]*script-src 'self'[^\r]*frame-ancestors 'none'/i,
+  )
+  assert.match(head, /\r\nReferrer-Policy: no-referrer\r\n/i)
+  assert.match(head, /\r\nX-Frame-Options: DENY\r\n/i)
+  assert.doesNotMatch(head, /access-control-/i)
+}
+
 const SOCKET_REFUSALS = [
   ['Content-Length errado', 'GET /api/health HTTP/1.1\r\nHost: x\r\nContent-Length: abc\r\n\r\n'],
   ['linha malformada', 'NOT A REQUEST LINE\r\n\r\n'],
@@ -144,6 +154,7 @@ for (const [name, bytes] of SOCKET_REFUSALS) {
     const answer = await raw(app.addresses()[0]?.port ?? 0, bytes)
     const [head = '', body = ''] = answer.split('\r\n\r\n')
     assert.match(head, /^HTTP\/1\.1 400 Bad Request\r\nContent-Type: application\/problem\+json/)
+    assertSecurityHeaders(head)
     const { traceId, ...rest } = z4(JSON.parse(body))
     assert.match(traceId, /^[0-9a-f-]{36}$/)
     assert.deepEqual(rest, {
@@ -261,4 +272,54 @@ test('segundo sinal', async () => {
   await until('SHUTTING_DOWN')
   child.kill('SIGTERM')
   assert.deepEqual(await exited, { code: 1, signal: null })
+})
+
+test('caminho com porcentagem malformada responde 400 em problem+json, com cabeçalhos e log', async () => {
+  const { child, port, lines, exited } = await startChild()
+  for (const path of ['/%zz', '/api/%E0%A4%A']) {
+    const answer = await raw(port, `GET ${path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n`)
+    const [head = '', body = ''] = answer.split('\r\n\r\n')
+    assert.match(head, /^HTTP\/1\.1 400 Bad Request\r\n/, path)
+    assert.match(head, /\r\ncontent-type: application\/problem\+json/i, path)
+    assertSecurityHeaders(head)
+    const { traceId, ...rest } = z4(JSON.parse(body))
+    assert.match(traceId, /^[0-9a-f-]{36}$/)
+    assert.deepEqual(rest, {
+      type: 'urn:conexus:problem:REQUEST_MALFORMED',
+      title: 'O Conexus não entendeu o pedido.',
+      status: 400,
+      code: 'REQUEST_MALFORMED',
+    })
+    assert.doesNotMatch(body, /%zz|E0%A4/)
+  }
+  child.kill('SIGTERM')
+  await exited
+  const served = lines.filter((line) => line.msg === 'REQUEST_SERVED')
+  assert.deepEqual(
+    served.map((line) => line.status),
+    [400, 400],
+  )
+})
+
+test('pedido que chega a uma conexão aberta durante o desligamento é atendido, não recusado', async () => {
+  const app = await hub()
+  await app.listen({ host: '127.0.0.1', port: 0 })
+  const socket = connect(app.addresses()[0]?.port ?? 0, '127.0.0.1')
+  let received = ''
+  socket.on('data', (chunk) => {
+    received += chunk
+  })
+  const ended = once(socket, 'close')
+  await once(socket, 'connect')
+  socket.write('GET /api/health HTTP/1.1\r\nHost: x\r\n')
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  const closing = app.close()
+  await new Promise((resolve) => setTimeout(resolve, 50))
+  socket.write('\r\n')
+  await ended
+  await closing
+  const [head = '', body = ''] = received.split('\r\n\r\n')
+  assert.match(head, /^HTTP\/1\.1 200 OK\r\n/)
+  assertSecurityHeaders(head)
+  assert.equal(body, '{"status":"LIVE"}')
 })

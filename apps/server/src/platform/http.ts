@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto'
+import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import type { FailureCode, Operation } from '@conexus/hub-api'
 import { FAILURES, Problem } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import Fastify, { LogController } from 'fastify'
+import helmet from 'helmet'
 import { z } from 'zod'
 import { enforceAccess } from './access.ts'
 import type { Config } from './config.ts'
@@ -16,6 +18,27 @@ const CONNECTION_TIMEOUT_MS = 30_000
 // Above the 90 s keep-alive of cloudflared's connection to its origin, so the Hub never closes first.
 const KEEP_ALIVE_TIMEOUT_MS = 95_000
 const ONE_YEAR_MS = 31_536_000_000
+
+const HELMET_OPTIONS = {
+  contentSecurityPolicy: {
+    useDefaults: false,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'"],
+      imgSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'none'"],
+    },
+  },
+  frameguard: { action: 'deny' },
+  referrerPolicy: { policy: 'no-referrer' },
+} as const
+const securityHeaders = helmet(HELMET_OPTIONS)
 
 const ErrorStatus = z.object({ statusCode: z.number().int() })
 const WildcardParams = z.object({ '*': z.string() })
@@ -48,15 +71,38 @@ function answerClientError(app: FastifyInstance, error: NodeJS.ErrnoException, s
   const traceId = randomUUID()
   logFailure(app.log, new Failure('REQUEST_MALFORMED', { details: { traceId }, cause: error }))
   const body = JSON.stringify(problemOf('REQUEST_MALFORMED', traceId))
+  const response = new ServerResponse(new IncomingMessage(socket))
+  securityHeaders(response.req, response, () => undefined)
+  const headers = Object.entries(response.getHeaders()).map(([name, value]) => `${name}: ${value}`)
   socket.end(
     [
       'HTTP/1.1 400 Bad Request',
       'Content-Type: application/problem+json',
       `Content-Length: ${Buffer.byteLength(body)}`,
       'Connection: close',
+      ...headers,
       '',
       body,
     ].join('\r\n'),
+  )
+}
+
+function replyWithFailure(request: FastifyRequest, reply: FastifyReply, failure: Failure) {
+  logFailure(request.log, failure)
+  return reply
+    .code(FAILURES[failure.code].status)
+    .type('application/problem+json')
+    .send(problemOf(failure.code, request.id))
+}
+
+function logServed(request: FastifyRequest, reply: FastifyReply): void {
+  request.log.info(
+    {
+      route: request.routeOptions.url ?? '(unmatched)',
+      status: reply.statusCode,
+      durationMs: Math.round(reply.elapsedTime),
+    },
+    'REQUEST_SERVED',
   )
 }
 
@@ -65,23 +111,9 @@ function installErrorHandling(app: FastifyInstance): void {
     throw new Failure('NOT_FOUND')
   })
   app.setErrorHandler((error, request, reply) => {
-    const failure = failureOf(error)
-    logFailure(request.log, failure)
-    reply
-      .code(FAILURES[failure.code].status)
-      .type('application/problem+json')
-      .send(problemOf(failure.code, request.id))
+    replyWithFailure(request, reply, failureOf(error))
   })
-  app.addHook('onResponse', async (request, reply) => {
-    request.log.info(
-      {
-        route: request.routeOptions.url ?? '(unmatched)',
-        status: reply.statusCode,
-        durationMs: Math.round(reply.elapsedTime),
-      },
-      'REQUEST_SERVED',
-    )
-  })
+  app.addHook('onResponse', async (request, reply) => logServed(request, reply))
 }
 
 function installPages(app: FastifyInstance): void {
@@ -119,27 +151,16 @@ export async function createServer(config: Config, webRoot: string): Promise<Fas
     requestTimeout: REQUEST_TIMEOUT_MS,
     connectionTimeout: CONNECTION_TIMEOUT_MS,
     keepAliveTimeout: KEEP_ALIVE_TIMEOUT_MS,
+    frameworkErrors: (error, request, reply) => {
+      securityHeaders(request.raw, reply.raw, () => undefined)
+      // A malformed URL matches no route, so Fastify runs none of the hooks.
+      reply.raw.once('finish', () => logServed(request, reply))
+      return replyWithFailure(request, reply, new Failure('REQUEST_MALFORMED', { cause: error }))
+    },
+    return503OnClosing: false,
     clientErrorHandler: (error, socket) => answerClientError(app, error, socket),
   })
-  await app.register(fastifyHelmet, {
-    contentSecurityPolicy: {
-      useDefaults: false,
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'"],
-        imgSrc: ["'self'"],
-        fontSrc: ["'self'"],
-        connectSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        baseUri: ["'self'"],
-        formAction: ["'self'"],
-        frameAncestors: ["'none'"],
-      },
-    },
-    frameguard: { action: 'deny' },
-    referrerPolicy: { policy: 'no-referrer' },
-  })
+  await app.register(fastifyHelmet, HELMET_OPTIONS)
   await app.register(fastifyStatic, { root: webRoot, serve: false })
   enforceAccess(app)
   installErrorHandling(app)

@@ -65,3 +65,23 @@ test('aceita sem cartão em docs/steps', () => {
 test('aceita mudança fora de skills e guias', () => {
   assert.equal(run(branch('docs/architecture.md', true)).status, 0)
 })
+
+test('recusa guia que sai de docs/guides por renomeação', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-freeze-'))
+  dirs.push(dir)
+  git(dir, 'init', '-q', '-b', 'main')
+  write(dir, 'docs/steps/e01-x.md', 'card\n')
+  write(
+    dir,
+    'docs/guides/security.md',
+    'a guide with enough lines\nto be recognised\nas the same file\n',
+  )
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'base')
+  git(dir, 'checkout', '-q', '-b', 'topic')
+  git(dir, 'mv', 'docs/guides/security.md', 'docs/security.md')
+  git(dir, 'commit', '-q', '-m', 'move')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^method-frozen-during-step: docs\/guides\/security\.md/)
+})
