@@ -19,8 +19,9 @@ The list of database roles and their grants is a data file beside the migrations
   Builder's runs and model accounts [0011]. Mastra's tables **must** live in a separate database
   under a login that cannot enter the Hub's [0010]. Conexus code **must not** write Mastra's tables.
   [database grants]
-- **D2.** Every Hub table **must** have the company column, and every transaction **must** carry the
-  company. The row policy is decided in step 5 [0012]. [review]
+- **D2.** Every Hub table that holds a company's data **must** have the company column, and every
+  transaction on it **must** carry the company. An installation table, such as the Hub's starts, has
+  none. The row policy is decided in step 5 [0012]. [review]
 - **D3.** A company's app data **must** live in that company's Neon project: one schema and two
   logins per app and environment, one that runs the app and one that migrates it. Preview and
   Published **must** be two schemas, never two branches [0021]. A company project **must not** hold
@@ -45,14 +46,15 @@ separate database. A schema per owner makes ownership visible and keeps grants n
   move the callers, contract. [CI migration check]
 - **D7.** An applied migration **must not** change. [CI migration check]
 - **D8.** Someone **must** read the generated SQL before it is applied. [review]
-- **D9.** Migrations **must** run by a subcommand before the program starts, on the direct address,
-  never a pooled one. The program **must** refuse to start when the database lacks a migration it
-  ships with. [boot check]
-- **D10.** Roles and grants **must** be created by SQL, never from Neon's console or API. The Hub's
-  login **must not** own a table, be a superuser or have `BYPASSRLS`. [catalog check]
+- **D9.** Migrations **must** run by the program's `migrate` subcommand, which the deploy runs as a
+  one-off service before it starts the Hub, on the direct address, never a pooled one. The program
+  **must** refuse to start when the database lacks a migration it ships with. [boot check]
+- **D10.** Roles and grants **must** be created by SQL, never from Neon's console or API [0038]. The
+  Hub's login **must not** own a table, be a superuser or have `BYPASSRLS`. [catalog snapshot]
 - **D11.** The role and grant list **must** change only in a pull request of its own, with the
-  founder's word. CI compares the catalog after migration with that list. [catalog check, from the
-  first migration]
+  founder's word. After migration, CI compares a `pg_dump` and `pg_dumpall` snapshot of the catalog
+  with that list [0038]. The equality holds on CI's disposable cluster only: Neon adds roles and
+  grants of its own. [catalog snapshot, `catalog.test.ts`]
 - **D12.** Grants **must** keep each login's verbs and columns narrow, and **must not** be treated as
   row authorization: admission owns that ([security S7](security.md)). [catalog check, review]
 - **D13.** A dropped function **must** name its exact signature and **must not** use `CASCADE`; a
@@ -61,10 +63,15 @@ separate database. A schema per owner makes ownership visible and keeps grants n
   [review]
 - **D14.** Reference data **must** enter by migration or by a generated file, never by a manual
   insert. [review]
+- **D32.** `migrate` **must** set a login's password only when that login, with its key file's
+  password, is refused with 28P01. Each `ALTER ROLE ... PASSWORD` stores a new SCRAM salt even for the
+  same password; on Neon a restart that rewrote it answered one request with 500, read as a new login
+  refused while Neon's proxy still held the old verifier. [`migrate.test.ts`, the verifier unchanged]
 
 **Why.** A database is reproducible only when every change is a file in the repository, applied the
-same way everywhere. A rename can come out of a generator as a drop and a create. A login made in
-Neon's console joins a group that ignores row policies.
+same way everywhere. A rename can come out of a generator as a drop and a create. A login made by
+Neon joins `neon_superuser`, which writes every table and, after one `SET ROLE`, bypasses every row
+policy; on the Hub's Neon project the owner login is its member and `hub_runtime` is not [0038].
 
 **Right.** A new column in one migration; the code that stops reading the old one ships; a later
 migration drops it.
@@ -105,8 +112,12 @@ read.
   visible: `update` and `delete` have a top-level `where`, an upsert's update has its own `where`,
   and `merge` is not used. [review]
 - **D23.** A read transaction **should** be `REPEATABLE READ READ ONLY`; a command **should** run in
-  `READ COMMITTED` and lock the rows it decides on. Basis: implemented so; kept because it gives a
-  read one snapshot and a command one decision point. [review]
+  `READ COMMITTED` and lock the rows it decides on. Basis: PostgreSQL 18's
+  [transaction isolation](https://www.postgresql.org/docs/18/transaction-iso.html), read 2026-10-14:
+  under repeatable read every statement of a transaction sees one snapshot, so a read of several
+  statements agrees with itself; a command at that level fails with 40001 on a concurrent update and
+  must be retried, and C65 closes a race in the design, not by a retry. In read committed, a locked
+  row makes the second command wait and then decide on the committed row. [review]
 - **D24.** A database error **must** be mapped as [code C52](code.md) says, by SQLSTATE and also by
   constraint name. [review]
 - **D25.** There **must not** be a session-level lock, or a session setting outside a transaction. A

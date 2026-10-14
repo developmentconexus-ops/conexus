@@ -27,7 +27,8 @@ The pull request, its head commit and the card. Nothing from the builders' conve
    against the card's table and the study rule ([`conexus-study`](../conexus-study/SKILL.md) step
    5): brought parts land in the named file and carry only the listed old decisions. Ask of every
    line of the step which one exists only because the old code had it; each such line is a finding
-   unless the study defended it in writing.
+   unless the study defended it in writing. When two findings fall on one mechanism, ask whether
+   the mechanism should exist, not only where its hole is.
 6. Walk the checklist. With pstack, also run `interrogate` over the whole diff; without it, these
    steps stand alone. A skill the card names for a unit that the build report does not list as loaded
    is a finding.

@@ -18,7 +18,8 @@ parts, [architecture](../../../docs/architecture.md), and the guide each unit wi
 ## Steps
 
 1. Write first the sentence of use and the use script: three to six actions, written as what a
-   person sees, done by the founder on the cloud installation without a terminal.
+   person sees, done by the founder on the cloud installation without a terminal; a vendor's
+   console, such as Neon's, is not a terminal.
 2. List what enters and what stays out, and why.
 3. Write the acceptance criteria, each observable from outside, with the refusals included; each
    refusal names the route of this step that reaches it.

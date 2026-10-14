@@ -297,7 +297,9 @@ after a restart, or when an update starts a second copy.
 
 - **C67.** Configuration **must** be read in one place, parsed by one Zod schema; no other file
   **may** read `process.env`. The program **must** refuse to start on a missing or invalid value and
-  name it. [Biome, boot check]
+  name it. Code **must not** read or branch on `NODE_ENV`, which the image does not set; the Fastify
+  and Node maintainers' skills call branching on it a bad practice. [Biome, boot check, CI job
+  `image`]
 - **C68.** A Worker **must** read its bindings through a schema the same way. The Fastify and
   Workers maintainers' skills disagree on configuration; this rule decides. [review]
 
