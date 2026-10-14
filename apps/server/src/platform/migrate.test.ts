@@ -149,7 +149,7 @@ test('migrate com a mesma senha não reescreve o verificador do login do Hub', a
   const test = await createTestDatabase(t)
   const { container } = test
   if (container === undefined) {
-    t.skip('reading pg_authid needs the superuser inside CONEXUS_TEST_DATABASE_CONTAINER')
+    t.skip('opt-in: reading pg_authid needs the superuser inside CONEXUS_TEST_DATABASE_CONTAINER')
     return
   }
   const before = await storedVerifier(container)
