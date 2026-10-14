@@ -60,15 +60,23 @@ export type Database = Readonly<{
   close(): Promise<void>
 }>
 
+const SYSTEM_ERROR_CODE = /^E[A-Z0-9_]+$/
+
+function isConnectionError(error: Error): boolean {
+  return SYSTEM_ERROR_CODE.test(String(Reflect.get(error, 'code'))) || error.constructor === Error
+}
+
 export function databaseFailure(error: unknown): Failure {
   if (error instanceof Failure) return error
+  let connection = false
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
     if (cause instanceof pg.DatabaseError) {
       const unavailable = UNAVAILABLE_SQLSTATES.test(cause.code ?? '')
       return new Failure(unavailable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause })
     }
+    connection ||= isConnectionError(cause)
   }
-  return new Failure('DATABASE_UNAVAILABLE', { cause: error })
+  return new Failure(connection ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause: error })
 }
 
 function ownErrorsAreUnexpected<Tx, T>(work: (tx: Tx) => Promise<T>) {
@@ -84,16 +92,33 @@ function ownErrorsAreUnexpected<Tx, T>(work: (tx: Tx) => Promise<T>) {
 
 export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Database {
   const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
+  function lost(error: Error): void {
+    logFailure(deps.log, new Failure('DATABASE_UNAVAILABLE', { cause: error }))
+  }
   // An idle connection the server drops emits here; with no listener the process dies.
-  pool.on('error', (error) =>
-    logFailure(deps.log, new Failure('DATABASE_UNAVAILABLE', { cause: error })),
-  )
-  const orm: Orm = drizzle({ client: pool })
+  pool.on('error', lost)
   let closing: Promise<void> | undefined
 
-  async function run<T>(work: () => Promise<T>): Promise<T> {
+  async function inTransaction<T>(
+    work: (tx: CommandTx) => Promise<T>,
+    config: {
+      isolationLevel: 'repeatable read' | 'read committed'
+      accessMode: 'read only' | 'read write'
+    },
+  ): Promise<T> {
     try {
-      return await work()
+      const client = await pool.connect()
+      client.on('error', lost)
+      let failure: Error | undefined
+      try {
+        return await drizzle({ client }).transaction(ownErrorsAreUnexpected(work), config)
+      } catch (error) {
+        failure = error instanceof Error ? error : new Error('transaction failed', { cause: error })
+        throw error
+      } finally {
+        client.off('error', lost)
+        client.release(failure)
+      }
     } catch (error) {
       throw databaseFailure(error)
     }
@@ -101,19 +126,9 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
 
   return Object.freeze({
     read: (work) =>
-      run(() =>
-        orm.transaction(ownErrorsAreUnexpected(work), {
-          isolationLevel: 'repeatable read',
-          accessMode: 'read only',
-        }),
-      ),
+      inTransaction(work, { isolationLevel: 'repeatable read', accessMode: 'read only' }),
     command: (work) =>
-      run(() =>
-        orm.transaction(ownErrorsAreUnexpected(work), {
-          isolationLevel: 'read committed',
-          accessMode: 'read write',
-        }),
-      ),
+      inTransaction(work, { isolationLevel: 'read committed', accessMode: 'read write' }),
     whenIdle: async () => {
       while (pool.totalCount > 0) await once(pool, 'remove')
     },
@@ -134,9 +149,30 @@ export async function assertMigrated(database: Database): Promise<void> {
     const rows = await tx.execute(sql`select name, hash from drizzle.__drizzle_migrations`)
     return rows.rows.map((row) => AppliedMigration.parse(row))
   })
-  const have = new Set(applied.map((row) => `${row.name}:${row.hash}`))
-  const missing = shipped.filter((migration) => !have.has(`${migration.name}:${migration.hash}`))
+  const hashByName = new Map(applied.map((row) => [row.name, row.hash]))
+  const missing = shipped.filter((migration) => !hashByName.has(migration.name))
   if (missing.length > 0) {
     throw new Failure('DATABASE_BEHIND', { details: { missing: missing.length } })
+  }
+  const changed = shipped.filter((migration) => hashByName.get(migration.name) !== migration.hash)
+  if (changed.length > 0) {
+    throw new Failure('DATABASE_MIGRATION_CHANGED', {
+      details: { changed: changed.map((migration) => migration.name).join(',') },
+    })
+  }
+}
+
+const RuntimeLogin = z.object({ superuser: z.boolean(), bypassRls: z.boolean(), owns: z.number() })
+
+export async function assertRuntimeLogin(database: Database): Promise<void> {
+  const login = await database.read(async (tx) => {
+    const rows = await tx.execute(sql`select r.rolsuper as superuser, r.rolbypassrls as "bypassRls",
+        (select count(*)::int from pg_class c join pg_namespace n on n.oid = c.relnamespace
+          where c.relowner = r.oid and n.nspname !~ '^pg_' and n.nspname <> 'information_schema') as owns
+      from pg_roles r where r.rolname = current_user`)
+    return RuntimeLogin.parse(rows.rows[0])
+  })
+  if (login.superuser || login.bypassRls || login.owns > 0) {
+    throw new Failure('CONFIG_INVALID', { details: { variables: 'HUB_DATABASE_URL_FILE' } })
   }
 }

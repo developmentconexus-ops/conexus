@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { build } from 'vite'
+import { build, loadConfigFromFile } from 'vite'
 
 test('o build emite o favicon sem hash e o resto com hash', async (t) => {
   const outDir = mkdtempSync(join(tmpdir(), 'conexus-web-build-'))
@@ -21,4 +21,13 @@ test('o build emite o favicon sem hash e o resto com hash', async (t) => {
     assets.filter((name) => !/-[\w-]{8,}\.\w+$/.test(name)),
     [],
   )
+})
+
+test('a configuração usa rolldownOptions, a chave do Vite instalado, e não rollupOptions', async () => {
+  const loaded = await loadConfigFromFile(
+    { command: 'build', mode: 'production' },
+    join(import.meta.dirname, 'vite.config.ts'),
+  )
+  assert.equal(loaded?.config.build?.rollupOptions, undefined)
+  assert.notEqual(loaded?.config.build?.rolldownOptions, undefined)
 })

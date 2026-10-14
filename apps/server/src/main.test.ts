@@ -218,6 +218,7 @@ test('log por pedido', async (t) => {
   assert.equal(response.status, 200)
   child.kill('SIGTERM')
   await exited
+  assert.equal(lines.filter((line) => line.msg === 'LISTENING').length, 1)
   const served = lines.filter((line) => line.msg === 'REQUEST_SERVED')
   assert.equal(served.length, 1)
   const [line] = served

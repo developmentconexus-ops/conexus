@@ -15,6 +15,7 @@ function git(dir: string, ...args: string[]): string {
   return execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], {
     cwd: dir,
     encoding: 'utf8',
+    timeout: 120_000,
   }).trim()
 }
 
@@ -39,7 +40,7 @@ function repository(): { dir: string; card: string } {
 }
 
 function run(dir: string, ...args: string[]) {
-  return spawnSync('node', [SCRIPT, dir, ...args], { encoding: 'utf8' })
+  return spawnSync('node', [SCRIPT, dir, ...args], { encoding: 'utf8', timeout: 120_000 })
 }
 
 test('aceita o cartão aprovado e inalterado', () => {

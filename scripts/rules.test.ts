@@ -38,7 +38,7 @@ function cruise(dir: string): Violation[] {
   const run = spawnSync(
     join(ROOT, 'node_modules/.bin/depcruise'),
     ['.', '--config', join(ROOT, '.dependency-cruiser.cjs'), '--output-type', 'json'],
-    { cwd: dir, encoding: 'utf8' },
+    { cwd: dir, encoding: 'utf8', timeout: 120_000 },
   )
   return JSON.parse(run.stdout).summary.violations
 }
@@ -241,7 +241,7 @@ before(() => {
   const run = spawnSync(
     join(ROOT, 'node_modules/.bin/biome'),
     ['lint', '--colors=off', '--max-diagnostics=500', '.'],
-    { cwd: dir, encoding: 'utf8' },
+    { cwd: dir, encoding: 'utf8', timeout: 120_000 },
   )
   lint = run.stdout + run.stderr
 })
@@ -273,6 +273,7 @@ test('Biome aceita fetch na única peça que chama o Hub', () => {
   const run = spawnSync(join(ROOT, 'node_modules/.bin/biome'), ['lint', '--colors=off', '.'], {
     cwd: dir,
     encoding: 'utf8',
+    timeout: 120_000,
   })
   assert.equal(run.status, 0, run.stdout + run.stderr)
 })
@@ -291,6 +292,7 @@ test('o teste que trava falha pelo prazo do comando de teste', () => {
   const run = spawnSync('node', [...args.slice(0, -1), join(dir, 'hang.test.ts')], {
     cwd: ROOT,
     encoding: 'utf8',
+    timeout: 120_000,
     env,
   })
   assert.notEqual(run.status, 0)

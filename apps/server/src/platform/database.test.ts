@@ -71,3 +71,52 @@ test('o objeto é congelado e fechar duas vezes é seguro', async (t) => {
   await database.close()
   await database.close()
 })
+
+test('a conexão derrubada no meio de um comando vira DATABASE_UNAVAILABLE e o processo segue', async (t) => {
+  const { database, asOwner } = await createTestDatabase(t)
+  const started = Promise.withResolvers<number>()
+  const running = database.command(async (tx) => {
+    const backend = await tx.execute(sql`select pg_backend_pid()::int as pid`)
+    started.resolve(Number(backend.rows[0]?.pid))
+    return tx.execute(sql`select pg_sleep(30)`)
+  })
+  const refused = assert.rejects(running, failsWith('DATABASE_UNAVAILABLE'))
+  await asOwner('select pg_terminate_backend($1)', [await started.promise])
+  await refused
+  const next = await database.read((tx) => tx.execute(sql`select 1 as one`))
+  assert.deepEqual(next.rows, [{ one: 1 }])
+})
+
+test('uma leitura parada além do prazo falha e a conexão não volta ao pool', async (t) => {
+  const { database } = await createTestDatabase(t)
+  const held = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  const holder = database.command(async (tx) => {
+    await tx.execute(sql`set local idle_in_transaction_session_timeout = 0`)
+    await tx.execute(sql`select pg_advisory_xact_lock(777)`)
+    held.resolve()
+    await release.promise
+  })
+  await held.promise
+  await assert.rejects(
+    database.read(async (tx) => {
+      await tx.execute(sql`set local statement_timeout = 0`)
+      return tx.execute(sql`select pg_advisory_xact_lock(777)`)
+    }),
+    failsWith('DATABASE_UNAVAILABLE'),
+  )
+  const next = await database.read((tx) => tx.execute(sql`select 1 as one`))
+  assert.deepEqual(next.rows, [{ one: 1 }])
+  release.resolve()
+  await holder
+})
+
+test('um erro do próprio programa na consulta não vira banco fora', async (t) => {
+  const { database } = await createTestDatabase(t)
+  const circular: Record<string, unknown> = {}
+  circular.self = circular
+  await assert.rejects(
+    database.read((tx) => tx.execute(sql`select ${circular}::text`)),
+    failsWith('INTERNAL_UNEXPECTED'),
+  )
+})

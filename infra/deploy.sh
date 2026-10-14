@@ -36,9 +36,12 @@ if [ "$mode" = "--restart" ]; then
     exit 1
   fi
   migrate_if_labeled "$previous"
-  HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub
-  echo "restarted: $previous"
-  exit 0
+  if HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
+    echo "restarted: $previous"
+    exit 0
+  fi
+  echo "not healthy after the restart: $previous; run Voltar atrás to start an earlier release" >&2
+  exit 1
 fi
 
 image="$mode"

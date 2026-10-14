@@ -44,6 +44,12 @@ export const FAILURES = {
     phrase: 'O Conexus não iniciou porque falta uma migração no banco.',
     action: 'Rode a migração e inicie de novo.',
   },
+  DATABASE_MIGRATION_CHANGED: {
+    category: 'SYSTEM',
+    status: 500,
+    phrase: 'O Conexus não iniciou porque uma migração já aplicada mudou.',
+    action: 'Volte o arquivo da migração ao que era e publique de novo.',
+  },
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

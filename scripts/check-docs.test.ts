@@ -25,7 +25,7 @@ function check(changes: Record<string, string>) {
     mkdirSync(dirname(join(dir, path)), { recursive: true })
     writeFileSync(join(dir, path), content)
   }
-  return spawnSync('node', [SCRIPT, dir], { encoding: 'utf8' })
+  return spawnSync('node', [SCRIPT, dir], { encoding: 'utf8', timeout: 120_000 })
 }
 
 function words(count: number): string {

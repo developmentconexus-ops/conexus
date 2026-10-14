@@ -7,7 +7,7 @@ import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { Config } from './platform/config.ts'
 import { readConfig } from './platform/config.ts'
-import { assertMigrated, openDatabase } from './platform/database.ts'
+import { assertMigrated, assertRuntimeLogin, openDatabase } from './platform/database.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
 import { createServer, serve } from './platform/http.ts'
@@ -32,11 +32,23 @@ function bootLog(level: Config['logLevel']) {
   return Fastify({ logger: { level } }).log
 }
 
+async function listenOnce(app: FastifyInstance, port: number): Promise<void> {
+  const { level } = app.log
+  app.log.level = 'silent'
+  try {
+    await app.listen({ host: '0.0.0.0', port })
+  } finally {
+    app.log.level = level
+  }
+  app.log.info('LISTENING')
+}
+
 async function runServer(): Promise<void> {
   const config = readConfig('serve')
   const log = bootLog(config.logLevel)
   const database = openDatabase({ url: config.databaseUrl, log })
   try {
+    await assertRuntimeLogin(database)
     await assertMigrated(database)
     const status = createStatus({ version: config.version, database })
     const app = await createHub(config, { status })
@@ -50,11 +62,7 @@ async function runServer(): Promise<void> {
       },
     )
     try {
-      await app.listen({
-        host: '0.0.0.0',
-        port: config.port,
-        listenTextResolver: () => 'LISTENING',
-      })
+      await listenOnce(app, config.port)
       await status.recordStart()
     } catch (error) {
       grace.uninstall()

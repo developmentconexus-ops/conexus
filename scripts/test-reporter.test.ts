@@ -18,6 +18,7 @@ function run(source: string) {
   const { NODE_TEST_CONTEXT: _outer, ...env } = process.env
   return spawnSync('node', ['--test', `--test-reporter=${REPORTER}`, join(dir, 'x.test.ts')], {
     encoding: 'utf8',
+    timeout: 120_000,
     env,
   })
 }

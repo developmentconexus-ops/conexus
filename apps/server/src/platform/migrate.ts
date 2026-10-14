@@ -6,9 +6,12 @@ import type { DatabaseUrl } from './database.ts'
 import { databaseFailure, MIGRATIONS_FOLDER, POOL_LIMITS } from './database.ts'
 import { Failure } from './failure.ts'
 
+const RUNTIME_LOGIN = 'hub_runtime'
+
 function passwordOf(runtimeUrl: DatabaseUrl): string {
-  const password = URL.parse(runtimeUrl.reveal())?.password ?? ''
-  if (password === '') {
+  const url = URL.parse(runtimeUrl.reveal())
+  const password = url?.password ?? ''
+  if (password === '' || decodeURIComponent(url?.username ?? '') !== RUNTIME_LOGIN) {
     throw new Failure('CONFIG_INVALID', { details: { variables: 'HUB_DATABASE_URL_FILE' } })
   }
   return decodeURIComponent(password)
@@ -17,12 +20,17 @@ function passwordOf(runtimeUrl: DatabaseUrl): string {
 export async function migrate(deps: {
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
+  migrationsFolder?: string
 }): Promise<void> {
   const password = passwordOf(deps.runtimeUrl)
-  const pool = new pg.Pool({ connectionString: deps.ownerUrl.reveal(), ...POOL_LIMITS, max: 1 })
+  const pool = new pg.Pool({
+    connectionString: deps.ownerUrl.reveal(),
+    connectionTimeoutMillis: POOL_LIMITS.connectionTimeoutMillis,
+    max: 1,
+  })
   const db = drizzle({ client: pool })
   try {
-    await applyMigrations(db, { migrationsFolder: MIGRATIONS_FOLDER })
+    await applyMigrations(db, { migrationsFolder: deps.migrationsFolder ?? MIGRATIONS_FOLDER })
     await db.transaction(async (tx) => {
       await tx.execute(sql`select set_config('conexus.runtime_password', ${password}, true)`)
       await tx.execute(sql`do $$ begin

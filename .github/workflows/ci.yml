@@ -38,7 +38,7 @@ jobs:
         env:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: npm run method-freeze -- --base "origin/${{ github.base_ref }}" --labels "$LABELS"
-      - name: The migrations keep the previous image running
+      - name: Migrations carry no unmarked DROP or RENAME, no changed or forked history, no session state
         if: github.event_name == 'pull_request'
         run: npm run migrations -- --base "origin/${{ github.base_ref }}"
       - name: List the new dependencies

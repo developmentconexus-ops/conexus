@@ -2,9 +2,9 @@
 // running sessions end up on different rules (delivery L20).
 // Refusals are proved by planting each one in check-method-freeze.test.ts.
 // Revalidate by 2027-04-13, or when the emergency label changes.
-import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { runCommand } from './command.ts'
 
 const EMERGENCY = 'emergência'
 const FROZEN = ['.agents/skills/', 'docs/guides/']
@@ -29,9 +29,8 @@ if (!hasCard) {
   process.exit(0)
 }
 
-const changed = execFileSync('git', ['diff', '--name-only', '--no-renames', `${base}...HEAD`], {
+const changed = runCommand('git', ['diff', '--name-only', '--no-renames', `${base}...HEAD`], {
   cwd: root,
-  encoding: 'utf8',
 })
   .split('\n')
   .filter((file) => FROZEN.some((prefix) => file.startsWith(prefix)))

@@ -19,6 +19,7 @@ function git(dir: string, ...args: string[]) {
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], {
     cwd: dir,
     stdio: 'ignore',
+    timeout: 120_000,
   })
 }
 
@@ -61,7 +62,10 @@ function check(change: (dir: string) => void): { status: number | null; stderr: 
   git(dir, 'checkout', '-q', '-b', 'topic')
   change(dir)
   commit(dir, 'change')
-  const run = spawnSync('node', [SCRIPT, '--base', 'main', '--root', dir], { encoding: 'utf8' })
+  const run = spawnSync('node', [SCRIPT, '--base', 'main', '--root', dir], {
+    encoding: 'utf8',
+    timeout: 120_000,
+  })
   return { status: run.status, stderr: run.stderr }
 }
 
@@ -127,6 +131,8 @@ for (const [what, code] of [
   ['pg_advisory_lock', 'await tx.execute(sql`select pg_advisory_lock(1)`)'],
   ['pg_try_advisory_lock', 'await tx.execute(sql`select pg_try_advisory_lock(1)`)'],
   ['SET SESSION', 'await tx.execute(sql`SET SESSION statement_timeout = 0`)'],
+  ['SET sem LOCAL', 'await tx.execute(sql`SET statement_timeout = 0`)'],
+  ['SET TO', 'await tx.execute(sql`set search_path to other`)'],
   ['set_config falso', "await tx.execute(sql`select set_config('a.b', 'c', false)`)"],
 ] as const) {
   test(`recusa ${what} no servidor`, () => {
@@ -135,6 +141,17 @@ for (const [what, code] of [
     assert.match(run.stderr, /apps\/server\/src\/hub\/a\/store\.ts: .* \(data D25\)/)
   })
 }
+
+test('aceita SET LOCAL e UPDATE ... SET', () => {
+  const run = check((dir) =>
+    write(
+      dir,
+      'apps/server/src/hub/a/store.ts',
+      "sql`set local statement_timeout = '5s'`\nsql`update hub.starts\n  set at = now()`\ntx.set(x)\n",
+    ),
+  )
+  assert.deepEqual(run, { status: 0, stderr: '' })
+})
 
 test('aceita set_config dentro da transação e a trava de transação', () => {
   const run = check((dir) =>

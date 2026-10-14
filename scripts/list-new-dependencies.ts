@@ -2,9 +2,9 @@
 // of the expensive choices (delivery L16).
 // The refusal to hide one is proved by planting a new dependency in list-new-dependencies.test.ts.
 // Revalidate by 2027-04-13, or when a dependency can enter outside a package.json.
-import { execFileSync } from 'node:child_process'
 import { appendFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { runCommand } from './command.ts'
 
 const SECTIONS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
 
@@ -21,11 +21,7 @@ if (base === undefined) {
 const root = resolve(option('--root') ?? '.')
 
 function git(...args: string[]): string {
-  return execFileSync('git', args, {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'ignore'],
-  })
+  return runCommand('git', args, { cwd: root })
 }
 
 function manifests(ref: string): string[] {

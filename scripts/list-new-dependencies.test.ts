@@ -14,6 +14,7 @@ after(() => {
 function git(dir: string, ...args: string[]) {
   execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], {
     cwd: dir,
+    timeout: 120_000,
   })
 }
 
@@ -39,6 +40,7 @@ function summary(change: (dir: string) => void): string {
   const file = join(dir, 'summary.md')
   const run = spawnSync('node', [SCRIPT, '--base', 'main', '--root', dir], {
     encoding: 'utf8',
+    timeout: 120_000,
     env: { ...process.env, GITHUB_STEP_SUMMARY: file },
   })
   assert.equal(run.status, 0, run.stderr)

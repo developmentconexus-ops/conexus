@@ -1,138 +1,11 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { sql } from 'drizzle-orm'
-import { z } from 'zod'
 import { migrate } from './migrate.ts'
-import type { TestDatabase } from './test-database.ts'
 import { createTestDatabase, databaseWithPassword, withRoleLock } from './test-database.ts'
-
-const EXPECTED = JSON.parse(
-  readFileSync(join(import.meta.dirname, '..', '..', 'database-roles.json'), 'utf8'),
-)
-
-const ROLES = `select rolname as name, rolcanlogin as login, rolsuper as superuser,
-    rolinherit as inherit, rolcreatedb as "createDatabase", rolcreaterole as "createRole",
-    rolbypassrls as "bypassRls", rolreplication as replication, rolconnlimit as "connectionLimit",
-    coalesce(rolconfig, '{}') as settings, oid::text as oid
-  from pg_roles
-  where rolname not like 'pg\\_%' and not rolsuper and rolname <> current_user`
-const GRANTS = `select a.privilege_type || ' ON SCHEMA ' || n.nspname as grant, a.grantee::text as role
-    from pg_namespace n, aclexplode(n.nspacl) a
-    where n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema' and a.grantee <> 0
-  union all
-  select a.privilege_type || ' ON TABLE ' || n.nspname || '.' || c.relname, a.grantee::text
-    from pg_class c join pg_namespace n on n.oid = c.relnamespace, aclexplode(c.relacl) a
-    where n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema' and a.grantee <> 0
-  union all
-  select a.privilege_type || ' ON COLUMN ' || n.nspname || '.' || c.relname || '.' || t.attname, a.grantee::text
-    from pg_attribute t join pg_class c on c.oid = t.attrelid
-      join pg_namespace n on n.oid = c.relnamespace, aclexplode(t.attacl) a
-    where n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema' and a.grantee <> 0`
-
-const RoleRow = z.object({
-  name: z.string(),
-  oid: z.string(),
-  settings: z.array(z.string()),
-  login: z.boolean(),
-  superuser: z.boolean(),
-  inherit: z.boolean(),
-  createDatabase: z.boolean(),
-  createRole: z.boolean(),
-  bypassRls: z.boolean(),
-  replication: z.boolean(),
-  connectionLimit: z.number(),
-})
-const GrantRow = z.object({ grant: z.string(), role: z.string() })
-type Catalog = Record<
-  string,
-  { attributes: Record<string, unknown>; settings: string[]; grants: string[] }
->
-
-async function catalogOf({ asOwner }: TestDatabase): Promise<Catalog> {
-  const grants = (await asOwner(GRANTS)).map((row) => GrantRow.parse(row))
-  const catalog: Catalog = {}
-  for (const row of await asOwner(ROLES)) {
-    const { name, oid, settings, ...attributes } = RoleRow.parse(row)
-    catalog[name] = {
-      attributes,
-      settings: settings.sort(),
-      grants: grants
-        .filter((grant) => grant.role === oid)
-        .map((grant) => grant.grant)
-        .sort(),
-    }
-  }
-  return catalog
-}
-
-test('o catálogo depois de migrate é o de database-roles.json', async (t) => {
-  assert.deepEqual(await catalogOf(await createTestDatabase(t)), EXPECTED)
-})
-
-async function plantedCatalog(t: Parameters<typeof createTestDatabase>[0], statements: string[]) {
-  const test = await createTestDatabase(t)
-  return withRoleLock(async () => {
-    try {
-      for (const statement of statements) await test.asOwner(statement)
-      return await catalogOf(test)
-    } finally {
-      await test.asOwner('alter role hub_runtime nocreatedb')
-      await test.asOwner('drop role if exists planted_login')
-    }
-  })
-}
-
-const PLANTED: [string, string[], (catalog: Catalog) => unknown][] = [
-  [
-    'um papel a mais',
-    ['create role planted_login login'],
-    (catalog) => Object.keys(catalog).sort(),
-  ],
-  [
-    'um atributo a mais',
-    ['alter role hub_runtime createdb'],
-    (catalog) => catalog.hub_runtime?.attributes.createDatabase,
-  ],
-  [
-    'uma concessão a mais',
-    ['grant insert on drizzle.__drizzle_migrations to hub_runtime'],
-    (catalog) => catalog.hub_runtime?.grants,
-  ],
-  [
-    'uma concessão de coluna a mais',
-    ['grant update (hash) on drizzle.__drizzle_migrations to hub_runtime'],
-    (catalog) => catalog.hub_runtime?.grants,
-  ],
-]
-const GRANTED = [
-  'INSERT ON TABLE hub.starts',
-  'SELECT ON TABLE drizzle.__drizzle_migrations',
-  'SELECT ON TABLE hub.starts',
-  'USAGE ON SCHEMA drizzle',
-  'USAGE ON SCHEMA hub',
-]
-const SHOWN = [
-  ['hub_runtime', 'planted_login'],
-  true,
-  ['INSERT ON TABLE drizzle.__drizzle_migrations', ...GRANTED],
-  [
-    ...GRANTED.slice(0, 1),
-    'SELECT ON TABLE drizzle.__drizzle_migrations',
-    'SELECT ON TABLE hub.starts',
-    'UPDATE ON COLUMN drizzle.__drizzle_migrations.hash',
-    'USAGE ON SCHEMA drizzle',
-    'USAGE ON SCHEMA hub',
-  ],
-]
-for (const [index, [name, statements, shown]] of PLANTED.entries()) {
-  test(`o catálogo recusa ${name}`, async (t) => {
-    const actual = await plantedCatalog(t, statements)
-    assert.notDeepEqual(actual, EXPECTED)
-    assert.deepEqual(shown(actual), SHOWN[index])
-  })
-}
 
 test('o login do Hub recebe 42501 em DELETE e em DDL', async (t) => {
   const { database } = await createTestDatabase(t)
@@ -169,4 +42,49 @@ test('migrate duas vezes: a segunda não aplica nada, e só a senha do arquivo e
     },
   )
   await other.close()
+})
+
+test('migrate recusa uma URL do Hub que não é a do login hub_runtime', async (t) => {
+  const test = await createTestDatabase(t)
+  await withRoleLock(async () => {
+    await assert.rejects(
+      migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.ownerUrl }),
+      (error: unknown) => error instanceof Error && error.message.startsWith('CONFIG_INVALID'),
+    )
+  })
+})
+
+test('migrate não corta uma migração lenta no prazo de 15 s das consultas do Hub', async (t) => {
+  const test = await createTestDatabase(t)
+  const folder = mkdtempSync(join(tmpdir(), 'conexus-migrations-'))
+  t.after(() => rmSync(folder, { recursive: true, force: true }))
+  cpSync(join(import.meta.dirname, '..', '..', 'migrations'), folder, { recursive: true })
+  mkdirSync(join(folder, '99991231000000_slow'))
+  writeFileSync(join(folder, '99991231000000_slow', 'migration.sql'), 'select pg_sleep(17);')
+  await withRoleLock(() =>
+    migrate({
+      ownerUrl: test.ownerUrl,
+      runtimeUrl: test.runtimeUrl,
+      migrationsFolder: folder,
+    }),
+  )
+  const applied = await test.asOwner(
+    "select count(*)::int as slow from drizzle.__drizzle_migrations where name like '%_slow'",
+  )
+  assert.deepEqual(applied, [{ slow: 1 }])
+})
+
+test('migrate aplica os limites do login do Hub também quando o papel já existia', async (t) => {
+  const test = await createTestDatabase(t)
+  const settings = await withRoleLock(async () => {
+    await test.asOwner('alter role hub_runtime reset all')
+    await test.asOwner(
+      "delete from drizzle.__drizzle_migrations where name like '%hub_runtime_login'",
+    )
+    await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+    return test.asOwner(`select rolconfig from pg_roles where rolname = 'hub_runtime'`)
+  })
+  assert.deepEqual(settings, [
+    { rolconfig: ['statement_timeout=10s', 'idle_in_transaction_session_timeout=10s'] },
+  ])
 })

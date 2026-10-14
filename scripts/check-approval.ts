@@ -3,9 +3,9 @@
 // the same file at that commit and now (delivery L6).
 // Refusals are proved by planting each one in check-approval.test.ts.
 // Revalidate by 2027-04-13, or when the approval line changes shape.
-import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { runCommand } from './command.ts'
 
 const args = process.argv.slice(2)
 const baseIndex = args.indexOf('--base')
@@ -14,11 +14,7 @@ const positional = args.filter((arg, index) => arg !== '--base' && args[index - 
 const root = resolve(positional[0] ?? '.')
 
 function git(...gitArgs: string[]): string {
-  return execFileSync('git', gitArgs, {
-    cwd: root,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
+  return runCommand('git', gitArgs, { cwd: root, stderr: 'pipe' })
 }
 
 function gitSucceeds(...gitArgs: string[]): boolean {

@@ -97,6 +97,28 @@ test('atrasado: o banco sem uma migração que o programa traz recusa a subida',
   assert.equal(messages(lines, 'DATABASE_BEHIND')[0]?.missing, 1)
 })
 
+test('mudada: uma migração aplicada que mudou nomeia a causa, não o atraso', async (t) => {
+  const { database, env } = await serverEnv(t)
+  await database.asOwner(
+    "update drizzle.__drizzle_migrations set hash = 'changed' where name like '%hub_status_starts'",
+  )
+  const { lines, exited } = start(env)
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'DATABASE_BEHIND').length, 0)
+  assert.match(
+    String(messages(lines, 'DATABASE_MIGRATION_CHANGED')[0]?.changed),
+    /hub_status_starts/,
+  )
+})
+
+test('dono das tabelas: o login do Hub não pode ser o dono do banco', async (t) => {
+  const { database, env } = await serverEnv(t)
+  const { lines, exited } = start({ ...env, HUB_DATABASE_URL_FILE: urlFile(t, database.ownerUrl) })
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_DATABASE_URL_FILE')
+  assert.equal(messages(lines, 'LISTENING').length, 0)
+})
+
 test('adiantado: o banco com migrações a mais deixa o programa subir', async (t) => {
   const { database, env } = await serverEnv(t)
   await database.asOwner(

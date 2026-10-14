@@ -64,7 +64,8 @@ run red. Rerun the failed job once the cause is fixed.
 
 Actions, Reiniciar o Hub, Run workflow. It runs `migrate` with the live image and starts the Hub
 again, so "Último início" changes. Use it after every database restore:
-[hub-database-restore](hub-database-restore.md).
+[hub-database-restore](hub-database-restore.md). If the restarted Hub does not turn healthy, the run
+ends red and says so; run Voltar atrás with an earlier version.
 
 ## Put back
 
