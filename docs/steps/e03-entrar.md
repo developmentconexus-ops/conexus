@@ -335,7 +335,8 @@ fundador. Correção a ele: as operações vivem em `packages/hub-api`, a tela a
 
 1. Rotas, guarda e páginas do roteador; peças de `ui/`; regras do cache; formulários. Regras: W1 (com
    `routeTree.gen.ts` aceito pelo verificador e ignorado por Biome e knip), W9, W15 a W17, W21 a W23,
-   W27 (`platform/jitless.ts`), W28; W24 não se aplica (U4: entrar não cria recurso); o desenho de V56; os textos do estudo da interface. Funções: as do estudo da interface, U1 a U4.
+   W27 (`platform/jitless.ts`), W28; W24 não se aplica (U4: entrar não cria recurso); o desenho
+   de V56; os textos do estudo da interface. Funções: as do estudo da interface, U1 a U4.
 
 ### Como se prova
 
