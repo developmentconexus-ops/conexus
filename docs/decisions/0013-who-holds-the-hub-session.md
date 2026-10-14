@@ -14,7 +14,13 @@ The step 3 study starts from Better Auth's native session at the installed versi
 
 ## Result
 
-Not run.
+Local run, 2026-10-14, by the step 3 study, against a gate written before it: better-auth 1.7.8
+with its Drizzle adapter on PostgreSQL 18, one machine, no browser, no Tunnel. Passed with the
+native session: the `__Host-` cookie by configuration (LT3, LT7 on the Hub host), a deleted row
+refused on the next call (LT14), no stored row opens a session without the secret (LT15), no
+undeclared library path (LT17), every sign-up path closed. Missing natively, so Conexus code: a
+total deadline, and a sign-out that fails when the row cannot be deleted. Not run: LT16, through the
+Tunnel, after publish. The other tests belong to steps 4, 8 and 18.
 
 ## Consequences
 
