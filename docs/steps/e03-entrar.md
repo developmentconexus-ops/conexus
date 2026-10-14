@@ -10,7 +10,7 @@ senha, vê o Hub recusar tentativas demais, e sai.
 1. No GitHub, em Actions, rode "Criar a primeira pessoa" com o seu nome e e-mail. O resumo da
    execução mostra um link que vale 15 minutos e uma vez só.
 2. Abra o link: a página "Criar sua senha", em `hub.conexus.fun/set-password`. Escolha uma senha
-   de 8 caracteres ou mais. Aparece "Entrar no Conexus", em `/sign-in`.
+   de 8 caracteres ou mais. Aparece "Entrar no Conexus", em `/login`.
 3. Entre com o e-mail e a senha: a moldura do Hub, com "Você entrou como {seu nome}." e a versão
    do Hub. Abra o link do passo 1 de novo: "Este link já foi usado ou venceu."
 4. Saia pelo menu da conta, "Sair do Conexus": volta "Entrar", com "Você saiu do Conexus.".
@@ -41,8 +41,8 @@ etapa 4 com o seu primeiro uso. **Resposta**: pendente.
 
 **Só para informar** (o Firstmate pergunta à parte, e a página segue a recomendação até a sua
 resposta): o limite (10 por minuto por endereço), a primeira senha (o link do passo 1) e o tempo da
-entrada (30 minutos sem usar, 8 horas no total). Endereços em inglês, como você respondeu em 2026-10-14
-("prefiro em ingles"): fica `/sign-in`, a palavra que o Hub e a biblioteca já usam.
+entrada (30 minutos sem usar, 8 horas no total). Já respondido: a página de entrar fica em
+`/login`.
 
 **A lista de logins do banco**, que a regra dos dados manda passar pela sua palavra: o login do Hub
 passa a ler e gravar as tabelas de entrada (pessoas, senhas guardadas como hash, sessões, links de
@@ -93,12 +93,12 @@ os da configuração: 1800 s sem uso, renovação a cada 60 s, 8 h no total, 10 
 | 20 | U4 | Depois do último pedido a qualquer rota acima, o pool chega a zero conexões (D27) | `identity.test.ts`, "banco dorme", `whenIdle()` | must |
 | 21 | U5 | `first-person` sem pessoa cria a pessoa sem senha e grava o link no arquivo de resumo dado; nenhuma linha de registro traz o token; com outro e-mail, ou com uma pessoa com senha, sai com 1, `FIRST_PERSON_EXISTS` e "Já existe uma pessoa nesta instalação."; com a pessoa ainda sem senha, dá um link novo e o antigo deixa de valer (C64) | `hub/identity/first-person.test.ts` | must |
 | 22 | U5 | `PUT /api/passwords` com o token do link e senha de 8 a 128: 204, e a pessoa entra pelo critério 8; o mesmo token de novo, vencido, ou o valor guardado em `auth.verification` usado como token: 422 `PASSWORD_LINK_INVALID`; senha curta: 422 `PASSWORD_TOO_SHORT`, e o link continua valendo; as recusas dos critérios 4 a 6 também nesta rota | `first-person.test.ts`, "senha pelo link", "origem", "mídia", "endereço" | must |
-| 23 | U6 | Sem sessão, `/` leva a `/sign-in` sem desenhar a moldura; com sessão, a moldura, "Você entrou como {nome}." e a versão do Hub; depois de entrar, a página pedida | `apps/web/src/routes/_app/route.test.tsx` com MSW | must |
+| 23 | U6 | Sem sessão, `/` leva a `/login` sem desenhar a moldura; com sessão, a moldura, "Você entrou como {nome}." e a versão do Hub; depois de entrar, a página pedida | `apps/web/src/routes/_app/route.test.tsx` com MSW | must |
 | 24 | U6 | "Entrar no Conexus": erro de campo em português; 401 no formulário sem dizer qual campo; 429 com o seu texto; botão desabilitado enquanto envia | `apps/web/src/hub/identity/sign-in-form.test.tsx` | must |
-| 25 | U6 | "Criar sua senha": o token vem do fragmento do link (`#token=`), nunca da consulta; senha curta no campo; 422 `PASSWORD_LINK_INVALID` mostra "Este link já foi usado ou venceu."; 204 leva a `/sign-in` | `apps/web/src/hub/identity/set-password-form.test.tsx` | must |
-| 26 | U6 | "Sair do Conexus" leva a `/sign-in` com "Você saiu do Conexus."; um 401 em qualquer leitura, com "Sua sessão terminou." | `apps/web/src/hub/identity/account-menu.test.tsx`; `apps/web/src/platform/cache.test.tsx`, "401" | must |
+| 25 | U6 | "Criar sua senha": o token vem do fragmento do link (`#token=`), nunca da consulta; senha curta no campo; 422 `PASSWORD_LINK_INVALID` mostra "Este link já foi usado ou venceu."; 204 leva a `/login` | `apps/web/src/hub/identity/set-password-form.test.tsx` | must |
+| 26 | U6 | "Sair do Conexus" leva a `/login` com "Você saiu do Conexus."; um 401 em qualquer leitura, com "Sua sessão terminou." | `apps/web/src/hub/identity/account-menu.test.tsx`; `apps/web/src/platform/cache.test.tsx`, "401" | must |
 | 27 | U6 | Um endereço desconhecido mostra "Não encontramos o que você procurou." | `apps/web/src/routes/__root.test.tsx` | must |
-| 28 | U7 | No Chromium, `/sign-in`, `/set-password` e a moldura sem violação de CSP | Firstmate, ao vivo, o painel de problemas do Chromium | must |
+| 28 | U7 | No Chromium, `/login`, `/set-password` e a moldura sem violação de CSP | Firstmate, ao vivo, o painel de problemas do Chromium | must |
 | 29 | U7 | Pelo Tunnel: os cookies do critério 8; `cf-connecting-ip` é o endereço de quem pede; um 429 num endereço não afeta outro (LT16, S29) | Firstmate, ao vivo, antes do roteiro | must |
 | 30 | U7 | A ação "Criar a primeira pessoa" mostra o link só no resumo da execução, não no log; um segredo trocado encerra as sessões | Firstmate, ao vivo | must |
 
@@ -324,7 +324,7 @@ fundador. Correção a ele: as operações vivem em `packages/hub-api`, a tela a
 | --- | --- | --- |
 | `apps/web/vite.config.ts`, `vite.config.test.ts`, `apps/web/package.json`, `package-lock.json` | Muda | Vite, npm |
 | `apps/web/src/main.tsx`, `routeTree.gen.ts` | Muda / cria (gerado) | `index.html` |
-| `apps/web/src/routes/{__root,_public/route,_public/sign-in,_public/set-password,_app/route,_app/index}.tsx`, `__root.test.tsx`, `_app/route.test.tsx` | Cria | `routeTree.gen.ts` |
+| `apps/web/src/routes/{__root,_public/route,_public/login,_public/set-password,_app/route,_app/index}.tsx`, `__root.test.tsx`, `_app/route.test.tsx` | Cria | `routeTree.gen.ts` |
 | `apps/web/src/ui/{cn.ts,button,input,label,field,form,dropdown-menu,avatar,sheet,states,frame}.tsx` | Cria | rotas, `hub/identity` |
 | `apps/web/src/platform/{jitless,hub,cache,theme}.ts`, `cache.test.tsx` | Cria / muda | `main.tsx`, `queries.ts` |
 | `apps/web/src/hub/identity/{queries.ts,sign-in-form,set-password-form,account-menu}.tsx`, `public.ts` e testes | Cria | rotas |
@@ -335,7 +335,7 @@ fundador. Correção a ele: as operações vivem em `packages/hub-api`, a tela a
 
 1. Rotas, guarda e páginas do roteador; peças de `ui/`; regras do cache; formulários. Regras: W1 (com
    `routeTree.gen.ts` aceito pelo verificador e ignorado por Biome e knip), W9, W15 a W17, W21 a W23,
-   W27 (`platform/jitless.ts`), W28; o desenho de V56; os textos do estudo da interface. Funções: as do estudo da interface, U1 a U4.
+   W27 (`platform/jitless.ts`), W28; W24 não se aplica (U4: entrar não cria recurso); o desenho de V56; os textos do estudo da interface. Funções: as do estudo da interface, U1 a U4.
 
 ### Como se prova
 
