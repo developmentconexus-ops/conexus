@@ -27,7 +27,7 @@ test('mostra a versão', async () => {
   open()
   expect(await screen.findByText('v0.1.0')).toBeTruthy()
   expect(screen.getByRole('img', { name: 'Conexus' })).toBeTruthy()
-  expect(screen.getByText('O Conexus está no ar.')).toBeTruthy()
+  expect(screen.getByText('Hub do Conexus no ar.')).toBeTruthy()
   expect(screen.queryByRole('alert')).toBeNull()
 })
 
@@ -51,7 +51,7 @@ test('mostra a falha', async () => {
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe('Algo deu errado dentro do Conexus.')
   expect(screen.queryByText(/^v\d/)).toBeNull()
-  expect(screen.queryByText('O Conexus está no ar.')).toBeNull()
+  expect(screen.queryByText('Hub do Conexus no ar.')).toBeNull()
 })
 
 test('mostra a falha quando o Hub não responde', async () => {
