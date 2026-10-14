@@ -287,7 +287,7 @@ critério 18. O 19, no navegador, na prova da U4.
   últimas versões; job `deploy` em `[self-hosted, hub]`, que entra no registro com o `GITHUB_TOKEN`
   do job (`packages: read`) e roda `deploy.sh` com o digest. O job `image` do CI roda só em pull
   request, não envia nada e usa `v0.0.0`.
-- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `versao` (nomes de entrada do GitHub são ASCII), no mesmo runner:
+- `rollback.yml`: "Voltar atrás", `workflow_dispatch` com a entrada `version`, de descrição em português (nome de entrada é código: inglês, ASCII), no mesmo runner:
   entra no registro como o `deploy`, acha o digest da etiqueta `:<versão>` e roda `deploy.sh` com
   ele; sem etiqueta guardada, termina vermelho antes do `deploy.sh`.
 - Cloudflare, pelo Firstmate com a chave do fundador, apagada depois, e escrito no how-to: túnel,
