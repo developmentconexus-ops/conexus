@@ -65,7 +65,7 @@ ordem do fim.
 | 2 | U1 | Com o banco inalcançável na subida, `main.ts` sai com 1 e `DATABASE_UNAVAILABLE` | `boot.test.ts`, "banco fora na subida" | must |
 | 3 | U1 | `node src/main.ts migrate` duas vezes: a segunda não aplica nada; o login do Hub entra com a senha do seu arquivo, e outra senha recebe 28P01 | `apps/server/src/platform/migrate.test.ts` | must |
 | 4 | U1 | `migrate` sem `HUB_MIGRATION_DATABASE_URL_FILE`, ou com arquivo que outros leem, sai com 1 e `CONFIG_INVALID` com o nome da variável | `boot.test.ts`, "migrate sem chave" | must |
-| 5 | U1 | O catálogo depois de `migrate` é igual a `roles.json`; um papel, atributo ou concessão a mais é recusado; o login do Hub recebe 42501 em `DELETE` e DDL | `migrate.test.ts`, "catálogo", um caso plantado por recusa | must |
+| 5 | U1 | O catálogo depois de `migrate` é igual a `database-roles.json`; um papel, atributo ou concessão a mais é recusado; o login do Hub recebe 42501 em `DELETE` e DDL | `migrate.test.ts`, "catálogo", um caso plantado por recusa | must |
 | 6 | U1 | Depois de uma leitura, o pool chega a zero conexões | `apps/server/src/platform/database.test.ts`: espera `whenIdle()` e conta `pg_stat_activity` | must |
 | 7 | U1 | `npm run deps` recusa importar `pg` ou `drizzle-orm/node-postgres` fora de `platform/database.ts`, `platform/migrate.ts` e `platform/test-database.ts` | `scripts/rules.test.ts`, arquivo plantado | must |
 | 8 | U1 | F1: um erro não tratado ou a porta ocupada deixa `INTERNAL_UNEXPECTED` com o tipo da causa e `code=EADDRINUSE`, e sai com 1; um sinal deixa `SHUTTING_DOWN` com o sinal | `boot.test.ts`, "porta ocupada", com a porta presa pelo teste | must |
@@ -81,7 +81,7 @@ ordem do fim.
 | 18 | U4 | "Reiniciar o Hub" roda `migrate` e muda "Último início" em até 2 minutos | Firstmate e o passo 2 do roteiro | must |
 | 19 | U4 | "Voltar atrás" para v0.1.x, imagem sem o rótulo de migração, pula `migrate`, termina verde e mostra v0.1.x; "Voltar atrás" para v0.2.0 volta | Firstmate, ao vivo | must |
 | 20 | U4 | O contêiner `hub` monta só `hub_database_url`; só o serviço `migrate` monta a chave do dono | Firstmate, `docker inspect` | must |
-| 21 | U4 | Restaurar a um minuto entre dois inícios e rodar "Reiniciar o Hub": o início posterior ao minuto some de `/api/status`, e o anterior aparece em `previousStart` | Firstmate, antes do roteiro | must |
+| 21 | U4 | Restaurar a um minuto entre dois inícios e rodar "Reiniciar o Hub": `lastStart` é o do reinício, `previousStart` o último antes do minuto, e o posterior ao minuto sumiu | Firstmate, antes do roteiro | must |
 | 22 | U4 | Restaurar a antes da primeira migração: o Hub no ar responde 500 em `/api/status`; "Reiniciar o Hub" aplica as migrações e a página volta | Firstmate, pelo procedimento | must |
 | 23 | U4 | F5: a imagem não define `NODE_ENV` | job `image` do CI; `docker inspect` | must |
 | 24 | U5 | Dez minutos sem pedido, com o Neon fechado: "Idle"; o pedido seguinte responde, com o tempo de acordar medido ([0009](../decisions/0009-neon-free-plan-database-asleep.md)) | Firstmate e o passo 5 do roteiro | must |
@@ -100,7 +100,7 @@ fundador com as saídas do 0009. Os dois schemas do 0005 aparecem com a primeira
 | Papel criado por SQL (`0001_baseline.sql:11-39`) | Nova | migração da U1 | — | Ignora papel já existente: papéis valem para o servidor inteiro, e os testes criam muitos bancos num só |
 | Senha do login por arquivo (`provision-hub-roles.mjs`) | Nova | `platform/migrate.ts` | — | A senha mora num arquivo, e o dono a grava. Saem o literal na SQL (D20) e a sondagem antes de gravar (só "implementado assim") |
 | `secret-file.ts` (15 linhas) | Trazida | `platform/secret-file.ts` | Importação `.ts`, o nome da variável no detalhe | Recusa arquivo que outros leem, ou vazio: um segredo legível por outro usuário já vazou |
-| Recusa de transação aninhada, etiqueta `sql`, troca de papel, `sql-lexer.ts`, `connection-census.ts`, `session()`, trava de instância, aplicador próprio | Não entram | — | — | Sobras da troca de papel; a trava de sessão é recusada (D25); o Drizzle aplica numa transação, e o grupo `hub-server` põe um aplicador de cada vez |
+| Recusa de transação aninhada, etiqueta `sql`, troca de papel, `sql-lexer.ts`, `connection-census.ts`, `session()`, trava de instância, aplicador próprio | Não entram | — | — | Sobras da troca de papel; trava de sessão recusada (D25); o Drizzle aplica numa transação |
 | Recibos de repetição e `jobs.ts` | Fora desta etapa | — | — | Nada cria nem roda sozinho |
 
 **A medida do transplante.** `secret-file.ts`: 15 linhas trazidas, cerca de 3 mudam, nenhum teste
@@ -135,7 +135,7 @@ sinal, e os prazos do banco terminam a espera antes dos 30 s do pedido (C73).
 | `apps/server/package.json`, `package-lock.json` | muda: `drizzle-orm`, `pg`; dev `drizzle-kit`, `@types/pg` | npm, CI, imagem |
 | `packages/hub-api/src/failures.ts` | muda | servidor, web |
 | `.dependency-cruiser.cjs`, `scripts/rules.test.ts` | muda: a parede do driver; testes podem importar `platform/test-database.ts` | `npm run deps`, `test:scripts` |
-| `.github/workflows/ci.yml` | muda: serviço PostgreSQL 18 por digest no job `test`, com um dono sem superusuário | GitHub |
+| `.github/workflows/ci.yml` | muda: serviço PostgreSQL 18 por digest no job `test`, um dono sem superusuário, e as duas variáveis de teste; o how-to local as define igual | GitHub |
 | `knip.json` | muda, se `drizzle.config.ts` pedir entrada | `npm run knip` |
 
 ### Os contratos que a unidade cria
