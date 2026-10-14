@@ -53,10 +53,14 @@ export async function withRoleLock<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
-export function databaseWithPassword(test: TestDatabase, password: string): Database {
+export function runtimeUrlWithPassword(test: TestDatabase, password: string): DatabaseUrl {
   const next = new URL(test.runtimeUrl.reveal())
   next.password = password
-  return openDatabase({ url: DatabaseUrl.parse(next.toString()), log: silent })
+  return DatabaseUrl.parse(next.toString())
+}
+
+export function databaseWithPassword(test: TestDatabase, password: string): Database {
+  return openDatabase({ url: runtimeUrlWithPassword(test, password), log: silent })
 }
 
 export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {

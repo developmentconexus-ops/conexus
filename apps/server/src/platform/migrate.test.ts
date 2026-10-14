@@ -1,11 +1,71 @@
 import assert from 'node:assert/strict'
+import { execFile } from 'node:child_process'
 import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { promisify } from 'node:util'
 import { sql } from 'drizzle-orm'
 import { migrate } from './migrate.ts'
-import { createTestDatabase, databaseWithPassword, withRoleLock } from './test-database.ts'
+import type { TestDatabase } from './test-database.ts'
+import {
+  createTestDatabase,
+  databaseWithPassword,
+  runtimeUrlWithPassword,
+  withRoleLock,
+} from './test-database.ts'
+
+const run = promisify(execFile)
+
+// The owner is no superuser, so the stored verifier is read by the superuser inside the container.
+async function storedVerifier(test: TestDatabase): Promise<string> {
+  assert.ok(
+    test.container,
+    'CONEXUS_TEST_DATABASE_CONTAINER names the container that serves the tests',
+  )
+  const { stdout } = await run(
+    'docker',
+    [
+      'exec',
+      test.container,
+      'psql',
+      '--username=postgres',
+      '--no-psqlrc',
+      '--tuples-only',
+      '--no-align',
+      '--command',
+      "select rolpassword from pg_authid where rolname = 'hub_runtime'",
+    ],
+    { timeout: 30_000, killSignal: 'SIGKILL' },
+  )
+  return stdout.trim()
+}
+
+async function loginFails(test: TestDatabase, password: string): Promise<void> {
+  const other = databaseWithPassword(test, password)
+  try {
+    await assert.rejects(
+      other.read((tx) => tx.execute(sql`select 1`)),
+      (error: unknown) => {
+        assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
+        assert.equal(error.cause.code, '28P01')
+        return true
+      },
+    )
+  } finally {
+    await other.close()
+  }
+}
+
+async function loginWorks(test: TestDatabase, password: string): Promise<void> {
+  const other = databaseWithPassword(test, password)
+  try {
+    const result = await other.read((tx) => tx.execute(sql`select current_user as login`))
+    assert.deepEqual(result.rows, [{ login: 'hub_runtime' }])
+  } finally {
+    await other.close()
+  }
+}
 
 test('o login do Hub recebe 42501 em DELETE e em DDL', async (t) => {
   const { database } = await createTestDatabase(t)
@@ -87,4 +147,44 @@ test('migrate aplica os limites do login do Hub também quando o papel já exist
   assert.deepEqual(settings, [
     { rolconfig: ['statement_timeout=10s', 'idle_in_transaction_session_timeout=10s'] },
   ])
+})
+
+test('migrate com a mesma senha não reescreve o verificador do login do Hub', async (t) => {
+  const test = await createTestDatabase(t)
+  const before = await storedVerifier(test)
+  assert.match(before, /^SCRAM-SHA-256\$/)
+  await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
+  await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
+  assert.equal(await storedVerifier(test), before)
+  await loginWorks(test, decodeURIComponent(new URL(test.runtimeUrl.reveal()).password))
+})
+
+test('migrate com a senha trocada no arquivo: a nova entra e a antiga é recusada', async (t) => {
+  const test = await createTestDatabase(t)
+  const original = decodeURIComponent(new URL(test.runtimeUrl.reveal()).password)
+  const rotated = `${original}-rotated`
+  await withRoleLock(async () => {
+    try {
+      await migrate({
+        ownerUrl: test.ownerUrl,
+        runtimeUrl: runtimeUrlWithPassword(test, rotated),
+      })
+      await loginWorks(test, rotated)
+      await loginFails(test, original)
+    } finally {
+      await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+    }
+  })
+  await loginWorks(test, original)
+})
+
+test('migrate dá senha ao login do Hub que voltou de uma restauração sem ela', async (t) => {
+  const test = await createTestDatabase(t)
+  const original = decodeURIComponent(new URL(test.runtimeUrl.reveal()).password)
+  await withRoleLock(async () => {
+    await test.asOwner('alter role hub_runtime password null')
+    await loginFails(test, original)
+    await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+  })
+  await loginWorks(test, original)
 })
