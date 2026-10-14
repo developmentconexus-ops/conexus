@@ -4,7 +4,7 @@ import { ConexusWordmark } from '../../brand/mark.tsx'
 import { HubFailure } from '../../platform/hub.ts'
 import { statusQuery } from './queries.ts'
 
-const PHRASE = 'O Conexus está no ar.'
+const PHRASE = 'Hub do Conexus no ar.'
 
 export function StatusPage() {
   const status = useQuery(statusQuery)
