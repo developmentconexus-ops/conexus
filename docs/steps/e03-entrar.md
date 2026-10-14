@@ -37,17 +37,17 @@ conexões de qualquer empresa: você abriria a conexão com o sistema da empresa
 - **B.** Fica como hoje.
 
 Recomendação: **A**. Nesta etapa nada muda na tela: você é criado sem esse papel, que entra na
-etapa 4 com o seu primeiro uso. **Resposta**: pendente.
+etapa 4 com o seu primeiro uso. **Resposta**, 2026-10-14: "1. A".
 
-**Só para informar** (o Firstmate pergunta à parte, e a página segue a recomendação até a sua
-resposta): o limite (10 por minuto por endereço), a primeira senha (o link do passo 1) e o tempo da
-entrada (30 minutos sem usar, 8 horas no total). Já respondido: a página de entrar fica em
-`/login`.
+**Só para informar**, respondido em 2026-10-14: o limite, 10 por minuto por endereço ("2. A"); a
+primeira senha, pelo link do passo 1 ("3. A"); o tempo da entrada, 30 minutos sem usar e 8 horas no
+total ("4. A"). Já respondido: a página de entrar fica em `/login`.
 
 **A lista de logins do banco**, que a regra dos dados manda passar pela sua palavra: o login do Hub
 passa a ler e gravar as tabelas de entrada (pessoas, senhas guardadas como hash, sessões, links de
 uso único, contagem de tentativas). Apaga sessões, links e contagens; não apaga pessoas nem senhas.
-Ao aprovar esta página, você aprova essa lista para a etapa inteira.
+Ao aprovar esta página, você aprova essa lista para a etapa inteira. Aprovada, 2026-10-14:
+"0 Aprovo".
 
 ## As unidades
 
