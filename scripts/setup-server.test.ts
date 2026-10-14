@@ -48,30 +48,41 @@ function environment(tunnel: string, runner: string, work: string, bin: string) 
     RUNNER_SHA256: 'x',
     TUNNEL_TOKEN_FILE: tunnel,
     RUNNER_TOKEN_FILE: runner,
+    CONEXUS_SETUP_TEST: '1',
     SECRETS_DIR: join(work, 'secrets'),
+    KEYRINGS_DIR: join(work, 'keyrings'),
+    OS_RELEASE: join(work, 'os-release'),
     DOCKER_APT_LIST: join(work, 'docker.list'),
     RUNNER_HOME: join(work, 'runner'),
   }
 }
 
-function setup(tunnel: string, runner: string) {
+function setup(
+  tunnel: string,
+  runner: string,
+  extra: Record<string, string | undefined> = {},
+  withDocker = false,
+) {
   const work = mkdtempSync(join(dir, 'work-'))
   const bin = join(work, 'bin')
   const log = join(work, 'calls.log')
   mkdirSync(bin)
   mkdirSync(join(work, 'runner'))
-  for (const name of STUBBED) {
+  writeFileSync(join(work, 'os-release'), 'VERSION_CODENAME=test\n')
+  for (const name of withDocker ? [...STUBBED, 'docker'] : STUBBED) {
     const record = `printf "%s %s\\n" "\${0##*/}" "$*" >> "$CALLS"`
     const body =
       name === 'sudo'
         ? `${record}\nwhile [ $# -gt 0 ] && [[ $1 != ./* ]]; do shift; done\n[ $# -gt 0 ] && exec "$@"\nexit 0`
-        : name === 'install'
-          ? `${record}\nprintf "env-in-install %s\\n" "\${ACTIONS_RUNNER_INPUT_TOKEN:-unset}" >> "$CALLS"`
-          : name === 'timeout'
-            ? 'shift 2\nprintf "timeout-for %s\\n" "$*" >> "$CALLS"\nexec "$@"'
-            : name === 'curl'
-              ? `${record}\nwhile [ $# -gt 1 ]; do [ "$1" = -o ] && : > "$2"; shift; done`
-              : record
+        : name === 'sha256sum'
+          ? `${record}\ncat > /dev/null`
+          : name === 'install'
+            ? `${record}\nprintf "env-in-install %s\\n" "\${ACTIONS_RUNNER_INPUT_TOKEN:-unset}" >> "$CALLS"`
+            : name === 'timeout'
+              ? 'shift 2\nprintf "timeout-for %s\\n" "$*" >> "$CALLS"\nexec "$@"'
+              : name === 'curl'
+                ? `${record}\nwhile [ $# -gt 1 ]; do [ "$1" = -o ] && : > "$2"; shift; done`
+                : record
     writeFileSync(join(bin, name), `#!/bin/bash\n${body}\n`)
     chmodSync(join(bin, name), 0o755)
   }
@@ -86,7 +97,7 @@ function setup(tunnel: string, runner: string) {
   }
   const run = spawnSync('/bin/bash', [SCRIPT], {
     encoding: 'utf8',
-    env: { ...environment(tunnel, runner, work, bin), CALLS: log },
+    env: { ...environment(tunnel, runner, work, bin), CALLS: log, ...extra },
   })
   const calls = (() => {
     try {
@@ -159,4 +170,28 @@ test('o token do runner está só no ambiente da chamada do config.sh', () => {
   assert.ok(calls.includes('env-in-svc unset'))
   const others = calls.filter((call) => !call.startsWith('env-in-config '))
   assert.doesNotMatch(others.join('\n'), new RegExp(RUNNER_TOKEN))
+})
+
+test('as baixadas têm tamanho máximo, e a extração tem prazo', () => {
+  const { run, calls } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  for (const call of calls.filter((call) => call.startsWith('curl '))) {
+    assert.match(call, /--max-filesize \d+/)
+  }
+  assert.ok(calls.some((call) => call.startsWith('timeout-for sudo -u runner tar ')))
+})
+
+test('o teste não escreve fora da pasta temporária', () => {
+  const { run, calls } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  const outside = calls.filter(
+    (call) => /\/etc\/(?!conexus )/.test(call) && !/\/etc\/apt\/sources/.test(call),
+  )
+  assert.deepEqual(outside, [])
+})
+
+test('os ajustes de teste só valem com CONEXUS_SETUP_TEST=1', () => {
+  const { calls } = setup(good, goodRunner, { CONEXUS_SETUP_TEST: undefined }, true)
+  assert.ok(calls.some((call) => call.includes('/etc/conexus/secrets/tunnel_token')))
+  assert.ok(!calls.some((call) => call.includes('work-')))
 })
