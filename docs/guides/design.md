@@ -103,6 +103,20 @@ components:
     typography: "{typography.label}"
   button-default-hover:
     backgroundColor: "{colors.surface-3}"
+  button-danger:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.danger}"
+    rounded: "{rounded.control}"
+    padding: "0 0.9rem"
+    height: "34px"
+    typography: "{typography.label}"
+  button-danger-confirm:
+    backgroundColor: "{colors.danger}"
+    textColor: "{colors.on-ink}"
+    rounded: "{rounded.control}"
+    padding: "0 0.9rem"
+    height: "34px"
+    typography: "{typography.label}"
   button-ghost:
     backgroundColor: "transparent"
     textColor: "{colors.text-2}"
@@ -198,7 +212,7 @@ mono.
   now. [review]
 - **V6.** The primary action is `ink` with `on-ink`. [review]
 - **V7.** Success, warning and danger mark status only, always beside a word, on low tints of the
-  surface. [review]
+  surface; the one exception is the destructive button of V55. [review]
 - **V8.** Text keeps 4.5:1 contrast with its ground in both themes. [review]
 - **V9.** Light is the default; dark follows the system unless the person picks a theme. [review]
 
@@ -219,6 +233,9 @@ mono.
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
 - **V17.** No `style` attribute in Conexus's own pieces; styles come from tokens. [review]
 - **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll. [review]
+- **V56.** On a phone the rail becomes a drawer opened from the top bar ("Abrir navegação"), and the
+  top bar keeps the mark, the current place and the account. A rail dropped without a drawer takes
+  every place with it. [review]
 
 ## Elevation and depth
 
@@ -237,6 +254,9 @@ mono.
 
 - **V23.** A component takes its colors, radius and type from tokens. [review]
 - **V24.** A new component enters the front matter in the same change. [review]
+- **V55.** A destructive action on a page is a `button-danger`, neutral with `danger` text; the full
+  `danger` fill, `button-danger-confirm`, is only the final button of its confirmation, in place of
+  `ink`. The red fill marks the last step, the real danger; founder, 2026-10-14: "B". [review]
 
 ## Motion
 
@@ -255,7 +275,8 @@ mono.
 - **V30.** Tab reaches every action in reading order, Esc closes what opened, and every drag has a
   keyboard path. [review]
 - **V31.** Every input has a label, and every icon-only button a pt-BR `aria-label`. [review]
-- **V32.** The console shows no error and no Content Security Policy violation. [review]
+- **V32.** The console shows no error and no Content Security Policy violation, so no piece injects a
+  `<style>` element ([web W22](web.md)). [review]
 
 ## Iconography
 
@@ -277,10 +298,11 @@ mono.
 - **V41.** The product says **você**. In chat the agent is **Conexus** and speaks in the first
   person; in system text it is **o agente**. Product nouns are capitalized: Projeto, Prévia, and the
   lenses Prévia, Código, Alterações and Sobre. [review]
-- **V42.** One action has one text everywhere. A non-technical person reads every word as a promise.
-  [review]
+- **V42.** One action has one text everywhere; trying again is always "Tentar de novo", as the failure
+  table already says. A non-technical person reads every word as a promise. [review]
 - **V43.** A failure's words come from the failure table, by code; the internal code is never shown
-  in mono. A failure the person can fix says what to change ([code C48](code.md)). [review]
+  in mono. A failure the person can fix says what to change, and a button appears beside it only when
+  its row's action kind asks for one ([code C48](code.md)). [review]
 - **V44.** A tool shows as a sentence while it runs and when it ends, never as its technical name.
   Reasoning shows only as "Pensando…". [review]
 - **V45.** What is not built says "em breve". Numbers and dates use the Brazilian format ("1.234,5",
