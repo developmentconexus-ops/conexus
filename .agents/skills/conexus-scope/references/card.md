@@ -29,8 +29,8 @@ roteiro e diz o que viu.
 
 ## As unidades
 
-| Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
-| --- | --- | --- | --- | --- |
+| Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
+| --- | --- | --- | --- | --- | --- |
 
 <quais correm em paralelo, porque não dividem pasta>
 
@@ -75,6 +75,8 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 - Someone who did not write the code can check every criterion from outside, and each says what is
   refused as well as what works.
 - Every file the build will touch is in a unit's blast radius, with its importers. A file outside it
-  stops the build ([delivery L7](../../../../docs/guides/delivery.md)).
+  stops the build ([delivery L7](../../../../docs/guides/delivery.md)). A unit that adds a package
+  or a check lists the shared root files it changes (`package.json`, `package-lock.json`,
+  `biome.json`, `ci.yml`).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - The order of the work names guide rules by identifier and never restates them.

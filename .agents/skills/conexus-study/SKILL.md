@@ -13,8 +13,8 @@ too: the entry sheet of the Hub study is its input, not its answer.
 ## What it receives
 
 The step's line in [the roadmap](../../../docs/roadmap.md) and its questions. For brought code,
-the entry sheet of each part, which firstmate hands in the study's instructions, and the old code at
-its frozen commit, read only. The entry sheets stay outside this repository.
+the entry sheet of each part, which firstmate hands over, and the old code at its frozen commit,
+read only.
 
 ## Steps
 
@@ -40,8 +40,10 @@ its frozen commit, read only. The entry sheets stay outside this repository.
    or identity or runs third-party code. If it is, follow [proof](references/proof.md).
 7. Compare at least two options and recommend one, with its basis in words.
 8. Write how to implement, by unit: the library functions at the installed version, the guide
-   rules by identifier, the order, and the proof. List the blast radius: each file created, changed
-   or deleted, and who imports or calls it.
+   rules by identifier, the order, and the proof. Prove by running the one fact each unit's design
+   rests on, with pstack `blast-radius` when the session has it; a fact not run is listed as not
+   proved, and the card does not rest on it. List the blast radius, with who imports or calls each
+   file.
 9. Answer, separating what was seen from what is a hypothesis. Cite a source for every claim: file
    and line, or a page and the date it was read.
 

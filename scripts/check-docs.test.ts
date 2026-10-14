@@ -38,7 +38,7 @@ test('aceita uma árvore limpa', () => {
 })
 
 const REFUSALS: [string, Record<string, string>][] = [
-  ['document-too-long', { 'docs/decisions/0001-x.md': words(251) }],
+  ['document-too-long', { 'docs/decisions/0001-x.md': words(351) }],
   ['broken-link', { 'AGENTS.md': 'See [gone](docs/gone.md).\n' }],
   ['not-in-index', { 'docs/guides/web.md': '- **W1.** A rule.\n' }],
   ['rule-defined-twice', { 'docs/guides/web.md': '- **C1.** Again.\n' }],

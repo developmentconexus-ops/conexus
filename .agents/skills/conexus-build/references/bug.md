@@ -1,6 +1,7 @@
 # Fixing a defect
 
-Read only when the unit is a defect.
+Read only when the unit is a defect. With pstack, run these steps with `tdd`; where the two differ,
+these steps win.
 
 1. Reproduce it first, with the smallest input that shows it, on the real artifact.
 2. Find the cause: ask why until the answer is a line of code or a missing rule, not a symptom.

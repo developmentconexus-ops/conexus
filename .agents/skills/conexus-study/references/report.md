@@ -50,6 +50,8 @@ brought, what stays open.>
 | Reference | Version or commit | What was read |
 | --- | --- | --- |
 
+**Maintainers' skills**: for each library the step touches, the skill this machine has, or "none".
+
 The same questions, answered for each reference with `file:line`:
 
 | Question | Reference A | Reference B | Conexus old code |
@@ -79,6 +81,8 @@ accepted or dropped.
 
 - **Does**: <one sentence>.
 - **Library functions**: <package@version: function, with the docs or source line>.
+- **Skills**: <the maintainers' skills the unit loads, or "none">.
+- **The fact it rests on**: <one fact, and the run that proved it, or "not proved">.
 - **Guide rules**: <ids, for example C27, D21, S7>.
 - **Order**: <what first, what depends on what>.
 - **Proof**: <the command or action that shows it works, and the refusal it must show>.
@@ -88,8 +92,9 @@ accepted or dropped.
 | Part | New or brought | File of the new tree | Refactored as it enters | Old decisions it carries, with basis in words |
 | --- | --- | --- | --- | --- |
 
-For each brought part: lines today, the fixes done in it (medium and large), the small ones left as
-debt, and whether it would be written this way from nothing.
+For each brought part: lines today, the lines its refactor will change, the fixes done in it
+(medium and large), the small ones left as debt, and whether it would be written this way from
+nothing.
 
 ## 10. Blast radius
 

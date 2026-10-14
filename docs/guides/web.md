@@ -126,6 +126,9 @@ screen.
 - **W25.** Styles **must** be Tailwind with the brand tokens in `@theme`; the component is the unit
   of reuse, and there **must not** be a stylesheet per screen. [review]
 - **W26.** Logic without React **should** live in a pure `.ts` file, apart from the screen. [review]
+- **W27.** The first module `main.tsx` imports **must** set Zod's `jitless` before any schema
+  exists: Zod 4 builds its first schema with `new Function`, which the CSP of
+  [security S26](security.md) refuses. [`platform/cache.test.tsx`]
 
 **Why.** Eleven forms written by hand in two ways checked only "not empty"; one form piece with the
 contract's schema gives the browser the server's limits.
