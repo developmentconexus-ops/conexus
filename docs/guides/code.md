@@ -216,8 +216,9 @@ returns the first Project.
 ## 7. Errors
 
 - **C48.** There **must** be one closed table of failure codes, each with a category (`USER`,
-  `THIRD_PARTY`, `SYSTEM`), a status, the phrase a person reads and the action they can take.
-  [review]
+  `THIRD_PARTY`, `SYSTEM`), a status, the phrase a person reads and the action they can take. Each
+  row **must** also carry an action kind (`RETRY`, `SIGN_IN`, `NONE`) beside that sentence, so a
+  screen shows a button only when its row says so (C55). [review]
 - **C49.** Code **must** throw only Conexus's failure class. A refusal its caller branches on **must**
   be a result union on `ok`. The browser **must** read every failure through one shared reader. The
   Builder **must** convert to Mastra's error only at its edge. [review]
