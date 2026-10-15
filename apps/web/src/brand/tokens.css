@@ -89,6 +89,12 @@
   --spacing-xl: 1.5rem;
   --spacing-2xl: 2.5rem;
 
+  /* Widths take names the spacing scale does not use: max-w-* reads --spacing-* before
+     --container-*, so max-w-sm would be --spacing-sm, 0.5rem. */
+  --container-drawer: 20rem;
+  --container-column: 24rem;
+  --container-message: 28rem;
+
   --ease-fit: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-fit-a: fit-a 0.9s var(--ease-arrive) 0.3s both;

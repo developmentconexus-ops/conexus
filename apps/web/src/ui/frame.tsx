@@ -12,7 +12,7 @@ import { Sheet, SheetClose, SheetContent, SheetTrigger } from './sheet.tsx'
 export function Column({ children }: { children: ReactNode }) {
   return (
     <main className="grid min-h-dvh place-items-center bg-canvas p-lg">
-      <div className="flex w-full max-w-sm flex-col items-center gap-xl">
+      <div className="flex w-full max-w-column flex-col items-center gap-xl">
         <ConexusWordmark arrive />
         {children}
       </div>

@@ -7,7 +7,7 @@ import { Button } from './button.tsx'
 function Centred({ children }: { children: ReactNode }) {
   return (
     <main className="grid min-h-dvh place-items-center bg-canvas p-lg">
-      <div className="flex max-w-md flex-col items-center gap-lg text-center">{children}</div>
+      <div className="flex max-w-message flex-col items-center gap-lg text-center">{children}</div>
     </main>
   )
 }
