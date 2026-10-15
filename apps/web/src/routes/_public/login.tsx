@@ -17,7 +17,7 @@ const SameOriginPath = z
 
 const Search = z.object({
   redirect: SameOriginPath.optional().catch(undefined),
-  reason: z.enum(['signed-out', 'session-ended']).optional().catch(undefined),
+  reason: z.enum(['signed-out', 'session-ended', 'password-set']).optional().catch(undefined),
 })
 
 export const Route = createFileRoute('/_public/login')({

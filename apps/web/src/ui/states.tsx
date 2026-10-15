@@ -1,13 +1,14 @@
 import type { FailureCode } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
+import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { ConexusWordmark } from '../brand/mark.tsx'
-import { Button } from './button.tsx'
+import { Button, buttonVariants } from './button.tsx'
 
 function Centred({ children }: { children: ReactNode }) {
   return (
     <main className="grid min-h-dvh place-items-center bg-canvas p-lg">
-      <div className="flex max-w-md flex-col items-center gap-lg text-center">{children}</div>
+      <div className="flex max-w-message flex-col items-center gap-lg text-center">{children}</div>
     </main>
   )
 }
@@ -49,6 +50,9 @@ export function NotFound() {
       <ConexusWordmark />
       <h1 className="font-display text-title">{FAILURES.NOT_FOUND.phrase}</h1>
       <p className="text-text-2">{FAILURES.NOT_FOUND.action}</p>
+      <Link to="/" className={buttonVariants()}>
+        Voltar ao início
+      </Link>
     </Centred>
   )
 }

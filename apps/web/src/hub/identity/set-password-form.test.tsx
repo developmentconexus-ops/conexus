@@ -36,7 +36,7 @@ async function choose(password: string) {
   return field
 }
 
-test('o token vem do fragmento do link; 204 leva a /login', async () => {
+test('o token vem do fragmento do link; 204 leva a /login com "Senha criada. Entre com ela."', async () => {
   const sent: unknown[] = []
   server.use(
     http.put('*/api/passwords', async ({ request }) => {
@@ -48,15 +48,17 @@ test('o token vem do fragmento do link; 204 leva a /login', async () => {
   expect(await screen.findByRole('heading', { name: 'Criar sua senha' })).toBeTruthy()
   await choose('senha-nova-1')
   expect(await screen.findByRole('heading', { name: 'Entrar no Conexus' })).toBeTruthy()
+  expect(screen.getByRole('status').textContent).toBe('Senha criada. Entre com ela.')
   expect(router.state.location.pathname).toBe('/login')
   expect(sent).toEqual([{ token: 'tok-123', password: 'senha-nova-1' }])
 })
 
-test('um token na consulta, e não no fragmento, não vale: a frase do link e nenhum campo', async () => {
+test('um token na consulta, e não no fragmento, não vale: só a frase do link, sem título nem campo', async () => {
   open('/set-password?token=tok-123')
   expect((await screen.findByRole('alert')).textContent).toBe(
     'Este link já foi usado ou venceu. Peça um link novo a quem cuida do Conexus.',
   )
+  expect(screen.queryByRole('heading', { name: 'Criar sua senha' })).toBeNull()
   expect(screen.queryByLabelText('Senha')).toBeNull()
 })
 
