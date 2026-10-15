@@ -13,15 +13,19 @@ import {
   unreachableDatabase,
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
+import { createIdentity } from '../identity/public.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
+const silent = { info: () => undefined, error: () => undefined }
 const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
 
 async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const test = await createTestDatabase(t)
   const status = createStatus({ version: VERSION, database: test.database })
-  const app = await createHub(testConfig(test.runtimeUrl), { status })
+  const config = testConfig(test.runtimeUrl)
+  const identity = createIdentity({ database: test.database, config, log: silent })
+  const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   return { app, status, test }
 }
@@ -84,8 +88,11 @@ test('recordStart grava a versão que roda, e o último início passa a ser ele'
 })
 
 test('com o banco fora, /api/status responde 503 e /api/health continua 200', async (t) => {
-  const status = createStatus({ version: VERSION, database: await unreachableDatabase(t) })
-  const app = await createHub(testConfig(await unreachableDatabaseUrl()), { status })
+  const database = await unreachableDatabase(t)
+  const status = createStatus({ version: VERSION, database })
+  const config = testConfig(await unreachableDatabaseUrl())
+  const identity = createIdentity({ database, config, log: silent })
+  const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   const response = await app.inject(STATUS)
   assert.equal(response.statusCode, 503)

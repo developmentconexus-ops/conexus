@@ -1,4 +1,4 @@
-import type { AccessKind } from '@conexus/hub-api'
+import type { AccessKind, Person } from '@conexus/hub-api'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import type { PublicOrigin } from './config.ts'
@@ -9,6 +9,16 @@ const AccessConfig = z.looseObject({
 })
 const READS = ['GET', 'HEAD']
 const JSON_MEDIA_TYPE = 'application/json'
+
+/** Reads the session a request carries; the identity subject owns it and main.ts hands it over. */
+export type SessionReader = (request: {
+  headers: Headers
+}) => Promise<
+  { kind: 'SIGNED_IN'; person: Person; setCookie: readonly string[] } | { kind: 'SIGNED_OUT' }
+>
+
+// Written once per request by the onRequest hook below, before any handler runs.
+const signedIn = new WeakMap<FastifyRequest, Person>()
 
 type Shape = { methods: readonly string[]; path: RegExp }
 const ALLOWED: Record<AccessKind, Shape> = {
@@ -25,6 +35,22 @@ function declared(config: unknown): AccessKind | undefined {
 
 function refuse(route: string, reason: string): never {
   throw new Failure('INTERNAL_UNEXPECTED', { details: { route, reason } })
+}
+
+export function headersOf(request: FastifyRequest): Headers {
+  const headers = new Headers()
+  for (const [name, value] of Object.entries(request.headers)) {
+    for (const one of [value ?? []].flat()) headers.append(name, one)
+  }
+  return headers
+}
+
+/** The person whose session the access check read, for a route of the `session` kind. */
+export function personOf(request: FastifyRequest): Person {
+  const person = signedIn.get(request)
+  if (person === undefined)
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'no session read' } })
+  return person
 }
 
 function hasBody(request: FastifyRequest): boolean {
@@ -48,7 +74,10 @@ function checkWrite(request: FastifyRequest, publicOrigin: PublicOrigin): void {
   }
 }
 
-export function enforceAccess(app: FastifyInstance, deps: { publicOrigin: PublicOrigin }): void {
+export function enforceAccess(
+  app: FastifyInstance,
+  deps: { publicOrigin: PublicOrigin; readSession: SessionReader },
+): void {
   app.addHook('onRoute', (route) => {
     const methods = [route.method].flat()
     const where = `${methods.join('|')} ${route.url}`
@@ -63,14 +92,19 @@ export function enforceAccess(app: FastifyInstance, deps: { publicOrigin: Public
       }
     }
   })
-  app.addHook('onRequest', async (request) => {
+  app.addHook('onRequest', async (request, reply) => {
     const access = declared(request.routeOptions.config)
     if (access === undefined) throw new Failure('NOT_FOUND')
     if (access !== 'entry' && access !== 'session') return
     if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)
-    // The Tunnel puts the client's address here; the attempt limit keys on it (security S28, S29).
-    if (access === 'entry' && !request.headers['cf-connecting-ip']) {
-      throw new Failure('REQUEST_MALFORMED')
+    if (access === 'entry') {
+      // The Tunnel puts the client's address here; the attempt limit keys on it (security S28, S29).
+      if (!request.headers['cf-connecting-ip']) throw new Failure('REQUEST_MALFORMED')
+      return
     }
+    const session = await deps.readSession({ headers: headersOf(request) })
+    if (session.kind === 'SIGNED_OUT') throw new Failure('SESSION_REQUIRED')
+    signedIn.set(request, session.person)
+    if (session.setCookie.length > 0) reply.header('set-cookie', session.setCookie)
   })
 }

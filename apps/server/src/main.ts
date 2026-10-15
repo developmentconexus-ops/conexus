@@ -3,6 +3,8 @@ import { getStatus } from '@conexus/hub-api'
 import closeWithGrace from 'close-with-grace'
 import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
+import type { Identity } from './hub/identity/public.ts'
+import { createIdentity } from './hub/identity/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { Config } from './platform/config.ts'
@@ -19,11 +21,15 @@ const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: { status: Status; webRoot?: string },
+  deps: { status: Status; identity: Identity; webRoot?: string },
 ): Promise<FastifyInstance> {
-  const app = await createServer(config, deps.webRoot ?? WEB_ROOT)
+  const app = await createServer(config, {
+    webRoot: deps.webRoot ?? WEB_ROOT,
+    readSession: deps.identity.readSession,
+  })
   registerHealth(app)
   serve(app, getStatus, deps.status.read)
+  deps.identity.routes(app)
   await app.ready()
   return app
 }
@@ -51,7 +57,8 @@ async function runServer(): Promise<void> {
     await assertRuntimeLogin(database)
     await assertMigrated(database)
     const status = createStatus({ version: config.version, database })
-    const app = await createHub(config, { status })
+    const identity = createIdentity({ database, config, log })
+    const app = await createHub(config, { status, identity })
     const grace = closeWithGrace(
       { delay: SHUTDOWN_DEADLINE_MS, logger: app.log },
       async ({ signal, err }) => {

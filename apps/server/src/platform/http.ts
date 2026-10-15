@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
-import type { FailureCode, Operation } from '@conexus/hub-api'
+import type { FailureCode, Operation, Person } from '@conexus/hub-api'
 import { FAILURES, Problem } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
@@ -9,8 +9,10 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import Fastify, { LogController } from 'fastify'
 import helmet from 'helmet'
 import { z } from 'zod'
-import { enforceAccess } from './access.ts'
+import type { SessionReader } from './access.ts'
+import { enforceAccess, headersOf, personOf } from './access.ts'
 import type { Config } from './config.ts'
+import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 
 const REQUEST_TIMEOUT_MS = 30_000
@@ -146,7 +148,10 @@ function installPages(app: FastifyInstance): void {
   })
 }
 
-export async function createServer(config: Config, webRoot: string): Promise<FastifyInstance> {
+export async function createServer(
+  config: Config,
+  deps: { webRoot: string; readSession: SessionReader },
+): Promise<FastifyInstance> {
   const app: FastifyInstance = Fastify({
     logger: { level: config.logLevel },
     logController: new LogController({ disableRequestLogging: true, requestIdLogLabel: 'traceId' }),
@@ -166,8 +171,8 @@ export async function createServer(config: Config, webRoot: string): Promise<Fas
     clientErrorHandler: (error, socket) => answerClientError(app, error, socket),
   })
   await app.register(fastifyHelmet, HELMET_OPTIONS)
-  await app.register(fastifyStatic, { root: webRoot, serve: false })
-  enforceAccess(app, { publicOrigin: config.publicOrigin })
+  await app.register(fastifyStatic, { root: deps.webRoot, serve: false })
+  enforceAccess(app, { publicOrigin: config.publicOrigin, readSession: deps.readSession })
   installErrorHandling(app)
   installPages(app)
   return app
@@ -194,22 +199,15 @@ type Body<O extends Operation> = O['success'] extends {
 }
   ? z.input<S>
   : undefined
-type Input<O extends Operation> = { headers: Headers } & (NonNullable<
+type Input<O extends Operation> = { headers: Headers; log: FailureLog } & (NonNullable<
   O['input']
 >['body'] extends infer B extends z.ZodType
   ? { body: z.output<B> }
-  : unknown)
+  : unknown) &
+  (O['access'] extends 'session' ? { person: Person } : unknown)
 type Handler<O extends Operation> = (
   input: Input<O>,
 ) => Body<O> | Reply<Body<O>> | Promise<Body<O> | Reply<Body<O>>>
-
-function headersOf(request: FastifyRequest): Headers {
-  const headers = new Headers()
-  for (const [name, value] of Object.entries(request.headers)) {
-    for (const one of [value ?? []].flat()) headers.append(name, one)
-  }
-  return headers
-}
 
 function bodyOf(operation: Operation, request: FastifyRequest): unknown {
   const schema = operation.input?.body
@@ -228,7 +226,12 @@ export function serve<O extends Operation>(
 export function serve(
   app: FastifyInstance,
   operation: Operation,
-  handler: (input: { headers: Headers; body: unknown }) => unknown,
+  handler: (input: {
+    headers: Headers
+    log: FailureLog
+    body: unknown
+    person: Person | undefined
+  }) => unknown,
 ): void {
   app.route({
     method: operation.method,
@@ -236,7 +239,12 @@ export function serve(
     bodyLimit: operation.bodyLimit,
     config: { access: operation.access },
     handler: async (request, reply) => {
-      const input = { headers: headersOf(request), body: bodyOf(operation, request) }
+      const input = {
+        headers: headersOf(request),
+        log: request.log,
+        body: bodyOf(operation, request),
+        person: operation.access === 'session' ? personOf(request) : undefined,
+      }
       const result = await handler(input)
       const answer = result instanceof Reply ? result : new Reply(result, [])
       if (answer.setCookie.length > 0) reply.header('set-cookie', answer.setCookie)

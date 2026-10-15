@@ -9,6 +9,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
+import { createIdentity } from './hub/identity/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import { createHub } from './main.ts'
 import type { TestDatabase } from './platform/test-database.ts'
@@ -19,6 +20,7 @@ import {
   testConfig,
 } from './platform/test-database.ts'
 
+const silent = { info: () => undefined, error: () => undefined }
 const MAIN = join(import.meta.dirname, 'main.ts')
 const apps: FastifyInstance[] = []
 const children: ChildProcess[] = []
@@ -38,7 +40,8 @@ after(async () => {
 async function hub(webRoot?: string) {
   const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
-  const app = await createHub(config, { status, webRoot })
+  const identity = createIdentity({ database: shared.database, config, log: silent })
+  const app = await createHub(config, { status, identity, webRoot })
   apps.push(app)
   return app
 }

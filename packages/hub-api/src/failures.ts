@@ -44,6 +44,27 @@ export const FAILURES = {
     action: 'Envie menos de uma vez.',
     actionKind: 'NONE',
   },
+  SIGN_IN_REFUSED: {
+    category: 'USER',
+    status: 401,
+    phrase: 'E-mail ou senha não conferem.',
+    action: 'Confira o e-mail e a senha.',
+    actionKind: 'NONE',
+  },
+  SIGN_IN_ATTEMPTS_EXCEEDED: {
+    category: 'USER',
+    status: 429,
+    phrase: 'Muitas tentativas de entrada deste endereço.',
+    action: 'Espere um minuto e tente de novo.',
+    actionKind: 'NONE',
+  },
+  SESSION_REQUIRED: {
+    category: 'USER',
+    status: 401,
+    phrase: 'Sua sessão terminou.',
+    action: 'Entre de novo para continuar.',
+    actionKind: 'SIGN_IN',
+  },
   REQUEST_MALFORMED: {
     category: 'USER',
     status: 400,

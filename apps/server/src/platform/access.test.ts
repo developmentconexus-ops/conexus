@@ -12,7 +12,10 @@ type Route = {
 
 async function start(route: Route, onHandle: () => void = () => undefined) {
   const app = Fastify({ exposeHeadRoutes: false })
-  enforceAccess(app, { publicOrigin: TEST_ORIGIN })
+  enforceAccess(app, {
+    publicOrigin: TEST_ORIGIN,
+    readSession: async () => ({ kind: 'SIGNED_OUT' }),
+  })
   app.route({
     ...route,
     handler: async () => {

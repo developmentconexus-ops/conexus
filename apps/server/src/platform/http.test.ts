@@ -2,9 +2,12 @@ import assert from 'node:assert/strict'
 import { tmpdir } from 'node:os'
 import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
+import { Person } from '@conexus/hub-api'
 import { z } from 'zod'
 import { createServer, serve, withCookies } from './http.ts'
 import { TEST_ORIGIN, testConfig, unreachableDatabaseUrl } from './test-database.ts'
+
+const PERSON = Person.parse({ id: 'person-1', name: 'Ana Lima', email: 'ana@example.test' })
 
 const echo = {
   id: 'echoNote',
@@ -30,7 +33,10 @@ const forget = {
 } as const satisfies Operation
 
 async function hub() {
-  const app = await createServer(testConfig(await unreachableDatabaseUrl()), tmpdir())
+  const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
+    webRoot: tmpdir(),
+    readSession: async () => ({ kind: 'SIGNED_IN', person: PERSON, setCookie: [] }),
+  })
   serve(app, echo, ({ body }) => withCookies({ note: body.note }, ['a=1; Path=/', 'b=2; Path=/']))
   serve(app, forget, () => withCookies(undefined, ['a=; Max-Age=0; Path=/']))
   await app.ready()
