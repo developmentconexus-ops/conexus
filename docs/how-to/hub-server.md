@@ -43,7 +43,7 @@ the founder's e-mail. Read its free terms for commercial use at sign-up; they we
 Firstmate writes two files as root in `/etc/conexus/secrets`, then sets owner uid 1000 and mode 0400:
 `hub_database_url`, the Hub login, and `hub_migration_database_url`, the owner login. Both hold a
 direct (not pooled) PostgreSQL address. Only `migrate` mounts the owner key, and the `hub` container
-`hub_database_url` alone. Port 22 is open only while the files are written.
+mounts `hub_database_url` alone. Port 22 is open only while they are written.
 
 ## Session secret and first person
 
