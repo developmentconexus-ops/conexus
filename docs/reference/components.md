@@ -136,7 +136,7 @@ select-item:
   backgroundColor: "transparent"
   textColor: "{colors.text}"
   rounded: "{rounded.control}"
-  padding: "0 {spacing.sm}"
+  padding: "0 2rem 0 {spacing.sm}"
   height: "34px"
   typography: "{typography.label}"
 select-item-highlighted:
@@ -152,7 +152,7 @@ drawer-backdrop:
 ```
 
 These are the pieces with values of their own; a heading or an alert line is text in its tokens.
-The rail's places are `nav-item`, with an 18px icon (design V34). The menu, the select and the drawer take a
+The rail's places are `nav-item`, with an 18px icon (design V34). A `select-item` keeps 2rem on the right for its check mark, as shadcn's does. The menu, the select and the drawer take a
 hairline, not a shadow, because the brand has no shadow token yet (design V3, V20). A `notice` is a
 `role="status"` line in the body color, so it is not mistaken for the grey subtitle under it. The wordmark's "nexus" and the mark take `mark`.
 
