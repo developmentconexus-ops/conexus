@@ -16,6 +16,7 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Cartão da etapa 3 aprovado em 2026-10-14 (commit 5a65e5348fd47f541a9c0447a3a11996a28d3b25): "Aprovo"
    Etapa 3 usada em 2026-10-15 em https://hub.conexus.fun: "Todos passos deram certo"
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
+   Cartão da etapa 4 aprovado em 2026-10-15 (commit 9e9bff0e21742a2e04fbe6afb2f685d8ca5f6940): "1. A, sim poré mtem que configurar senha não? 2. A 3. A 4. A 5. A 6. Okay 7. A 8. Aprovo 9. A"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.

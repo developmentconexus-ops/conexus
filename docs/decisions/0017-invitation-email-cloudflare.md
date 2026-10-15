@@ -10,7 +10,22 @@ Cloudflare's own e-mail service sends invitations, with a delivery test before t
 
 ## Criterion
 
-A delivery test before the first company.
+**Question.** Does an invitation sent by the Hub through Cloudflare's REST API arrive, and does its
+link survive the inbox?
+
+**Fixed.** The Hub release of step 4 on the cloud installation; the sender on a subdomain of the
+Hub's domain, onboarded in Cloudflare's dashboard; Workers Paid; two inboxes of the founder at two
+providers.
+
+| # | Check | Passes when |
+| --- | --- | --- |
+| 1 | An invitation to each inbox | The reply lists it under `delivered` or `queued`; it arrives in the inbox, not spam, within 5 minutes, with SPF, DKIM and DMARC passing in its headers |
+| 2 | The invitation's link, then "Ainda não tenho senha" | The second message arrives; the password set with its link signs in; the invitation is accepted |
+| 3 | The link opened again after acceptance | Nothing is spent by opening it; the page shows the invitation accepted |
+| 4 | The account's daily quota | Written down as the dashboard shows it |
+| 5 | An invitation to an address with no inbox | Written down: the reply's list, any of the three, and the dashboard's entry a day later |
+
+**Not covered.** Volume; a corporate scanner; providers not tried.
 
 ## Result
 
@@ -26,4 +41,4 @@ The delivery test fails.
 
 ## State
 
-Brought. Founder, 2026-10-12: "Se cloudflare tem e é incluso em nosso plano porque não usar?" and "8. Sim".
+The Criterion was one sentence until the step 4 study wrote it out, before any run; the card's readers added the reply checks. Brought. Founder, 2026-10-12: "Se cloudflare tem e é incluso em nosso plano porque não usar?" and "8. Sim".
