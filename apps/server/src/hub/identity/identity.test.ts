@@ -258,10 +258,13 @@ test('registros: entrar, recusa, limite e sair deixam cada um o seu código, sem
   assert.deepEqual([entered.status, out.status], [200, 204])
   child.kill('SIGTERM')
   await exited
-  const lines = output
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => JSON.parse(line))
+  const raw = output.split('\n').filter(Boolean)
+  for (const line of raw) assert.equal(line.match(/"level":/g)?.length, 1, line)
+  assert.ok(
+    raw.some((line) => line.includes('"AUTH_LIBRARY_')),
+    'a library line was written',
+  )
+  const lines = raw.map((line) => JSON.parse(line))
   // Served lines sit between the start and the stop; boot lines carry no request.
   const served = lines.slice(
     lines.findIndex((line) => line.msg === 'LISTENING') + 1,

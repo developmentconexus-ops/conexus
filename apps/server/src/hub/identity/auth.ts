@@ -122,8 +122,8 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       // Only a code leaves: the library's messages and arguments can hold an e-mail or an error (S41).
       log: (level) => {
         const log = requestLog.getStore() ?? deps.log
-        if (level === 'error') log.error({ level }, 'AUTH_LIBRARY_ERROR')
-        else log.info({ level }, 'AUTH_LIBRARY_NOTICE')
+        if (level === 'error') log.error({ libraryLevel: level }, 'AUTH_LIBRARY_ERROR')
+        else log.info({ libraryLevel: level }, 'AUTH_LIBRARY_NOTICE')
       },
     },
   })
