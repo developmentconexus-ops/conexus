@@ -120,3 +120,13 @@ test('um erro do próprio programa na consulta não vira banco fora', async (t) 
     failsWith('INTERNAL_UNEXPECTED'),
   )
 })
+
+test('o Drizzle da biblioteca usa o mesmo pool, que chega a zero conexões depois', async (t) => {
+  const { database, asOwner } = await createTestDatabase(t)
+  const countRuntime = `select count(*)::int as open from pg_stat_activity
+    where datname = current_database() and usename = 'hub_runtime'`
+  const read = await database.libraryOrm().execute(sql`select current_user as login`)
+  assert.deepEqual(read.rows, [{ login: 'hub_runtime' }])
+  await database.whenIdle()
+  assert.deepEqual(await asOwner(countRuntime), [{ open: 0 }])
+})

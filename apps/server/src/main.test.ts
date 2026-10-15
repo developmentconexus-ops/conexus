@@ -8,12 +8,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { after, before, test } from 'node:test'
-import { Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { createStatus } from './hub/status/public.ts'
 import { createHub } from './main.ts'
 import type { TestDatabase } from './platform/test-database.ts'
-import { createTestDatabase, freePort, urlFile } from './platform/test-database.ts'
+import {
+  createTestDatabase,
+  freePort,
+  serveEnvironment,
+  testConfig,
+} from './platform/test-database.ts'
 
 const MAIN = join(import.meta.dirname, 'main.ts')
 const apps: FastifyInstance[] = []
@@ -32,12 +36,7 @@ after(async () => {
 })
 
 async function hub(webRoot?: string) {
-  const config = {
-    version: Version.parse('v0.1.0'),
-    port: 1,
-    logLevel: 'error',
-    databaseUrl: shared.runtimeUrl,
-  } as const
+  const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
   const app = await createHub(config, { status, webRoot })
   apps.push(app)
@@ -179,12 +178,7 @@ test('cabeçalhos', async () => {
 
 async function startChild(t: TestContext) {
   const port = await freePort()
-  const env = {
-    CONEXUS_VERSION: 'v0.1.0',
-    HUB_PORT: String(port),
-    LOG_LEVEL: 'info',
-    HUB_DATABASE_URL_FILE: urlFile(t, shared.runtimeUrl),
-  }
+  const env = serveEnvironment(t, shared.runtimeUrl, port)
   const child = spawn(process.execPath, [MAIN], { env, stdio: ['ignore', 'pipe', 'pipe'] })
   children.push(child)
   const lines: Record<string, unknown>[] = []

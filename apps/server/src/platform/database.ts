@@ -56,6 +56,8 @@ export type CommandTx = Transaction
 export type Database = Readonly<{
   read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>
   command<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>
+  /** Only for a library's own adapter, which checks the rows it reads itself (data D19, D21). */
+  libraryOrm(): Orm
   whenIdle(): Promise<void>
   close(): Promise<void>
 }>
@@ -98,6 +100,7 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   // An idle connection the server drops emits here; with no listener the process dies.
   pool.on('error', lost)
   let closing: Promise<void> | undefined
+  const library = drizzle({ client: pool })
 
   async function inTransaction<T>(
     work: (tx: CommandTx) => Promise<T>,
@@ -129,6 +132,7 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
       inTransaction(work, { isolationLevel: 'repeatable read', accessMode: 'read only' }),
     command: (work) =>
       inTransaction(work, { isolationLevel: 'read committed', accessMode: 'read write' }),
+    libraryOrm: () => library,
     whenIdle: async () => {
       while (pool.totalCount > 0) await once(pool, 'remove')
     },

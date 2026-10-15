@@ -8,8 +8,11 @@ services:
     stop_grace_period: 20s
     secrets:
       - hub_database_url
+      - hub_session_secret
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
+      HUB_PUBLIC_ORIGIN: https://hub.conexus.fun
+      HUB_SESSION_SECRET_FILE: /run/secrets/hub_session_secret
     healthcheck:
       test:
         - CMD
@@ -53,3 +56,5 @@ secrets:
     file: /etc/conexus/secrets/hub_database_url
   hub_migration_database_url:
     file: /etc/conexus/secrets/hub_migration_database_url
+  hub_session_secret:
+    file: /etc/conexus/secrets/hub_session_secret

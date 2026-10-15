@@ -54,14 +54,19 @@ function problemOf(code: FailureCode, traceId: string): Problem {
   })
 }
 
+const CLIENT_ERRORS: Partial<Record<number, FailureCode>> = {
+  404: 'NOT_FOUND',
+  413: 'REQUEST_TOO_LARGE',
+  415: 'REQUEST_MEDIA_TYPE_REFUSED',
+}
+
 /** Maps by the status a library error carries, never by its text (code C50, C52). */
 function failureOf(error: unknown): Failure {
   if (error instanceof Failure) return error
   const status = ErrorStatus.safeParse(error)
   if (status.success && status.data.statusCode >= 400 && status.data.statusCode < 500) {
-    return new Failure(status.data.statusCode === 404 ? 'NOT_FOUND' : 'REQUEST_MALFORMED', {
-      cause: error,
-    })
+    const code = CLIENT_ERRORS[status.data.statusCode] ?? 'REQUEST_MALFORMED'
+    return new Failure(code, { cause: error })
   }
   return new Failure('INTERNAL_UNEXPECTED', { cause: error })
 }
@@ -162,28 +167,82 @@ export async function createServer(config: Config, webRoot: string): Promise<Fas
   })
   await app.register(fastifyHelmet, HELMET_OPTIONS)
   await app.register(fastifyStatic, { root: webRoot, serve: false })
-  enforceAccess(app)
+  enforceAccess(app, { publicOrigin: config.publicOrigin })
   installErrorHandling(app)
   installPages(app)
   return app
 }
 
-type Handler<O extends Operation> = () =>
-  | z.output<O['success']['body']>
-  | Promise<z.output<O['success']['body']>>
+/** A reply that also sets cookies; only `withCookies` builds one. */
+class Reply<T> {
+  readonly body: T
+  readonly setCookie: readonly string[]
 
-/** The reply is checked against the operation's schema before it is sent. */
+  constructor(body: T, setCookie: readonly string[]) {
+    this.body = body
+    this.setCookie = setCookie
+  }
+}
+
+export function withCookies<T>(body: T, setCookie: readonly string[]): Reply<T> {
+  return new Reply(body, setCookie)
+}
+
+type Body<O extends Operation> = O['success'] extends {
+  status: 200
+  body: infer S extends z.ZodType
+}
+  ? z.input<S>
+  : undefined
+type Input<O extends Operation> = { headers: Headers } & (NonNullable<
+  O['input']
+>['body'] extends infer B extends z.ZodType
+  ? { body: z.output<B> }
+  : unknown)
+type Handler<O extends Operation> = (
+  input: Input<O>,
+) => Body<O> | Reply<Body<O>> | Promise<Body<O> | Reply<Body<O>>>
+
+function headersOf(request: FastifyRequest): Headers {
+  const headers = new Headers()
+  for (const [name, value] of Object.entries(request.headers)) {
+    for (const one of [value ?? []].flat()) headers.append(name, one)
+  }
+  return headers
+}
+
+function bodyOf(operation: Operation, request: FastifyRequest): unknown {
+  const schema = operation.input?.body
+  if (schema === undefined) return undefined
+  const body = schema.safeParse(request.body)
+  if (!body.success) throw new Failure('REQUEST_MALFORMED', { cause: body.error })
+  return body.data
+}
+
+/** The body is parsed with the operation's schema, and the reply checked with it before it is sent. */
 export function serve<O extends Operation>(
   app: FastifyInstance,
   operation: O,
   handler: Handler<O>,
+): void
+export function serve(
+  app: FastifyInstance,
+  operation: Operation,
+  handler: (input: { headers: Headers; body: unknown }) => unknown,
 ): void {
   app.route({
     method: operation.method,
     url: operation.path,
     bodyLimit: operation.bodyLimit,
     config: { access: operation.access },
-    handler: async (_request, reply) =>
-      reply.code(operation.success.status).send(operation.success.body.parse(await handler())),
+    handler: async (request, reply) => {
+      const input = { headers: headersOf(request), body: bodyOf(operation, request) }
+      const result = await handler(input)
+      const answer = result instanceof Reply ? result : new Reply(result, [])
+      if (answer.setCookie.length > 0) reply.header('set-cookie', answer.setCookie)
+      const { success } = operation
+      if (success.status === 204) return reply.code(204).send()
+      return reply.code(200).send(success.body.parse(answer.body))
+    },
   })
 }

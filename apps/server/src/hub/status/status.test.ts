@@ -8,23 +8,20 @@ import { createHub } from '../../main.ts'
 import {
   createTestDatabase,
   freePort,
+  serveEnvironment,
+  testConfig,
   unreachableDatabase,
   unreachableDatabaseUrl,
-  urlFile,
 } from '../../platform/test-database.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
 const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
 
-function config(databaseUrl: Parameters<typeof createHub>[0]['databaseUrl']) {
-  return { version: VERSION, port: 1, logLevel: 'error', databaseUrl } as const
-}
-
 async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const test = await createTestDatabase(t)
   const status = createStatus({ version: VERSION, database: test.database })
-  const app = await createHub(config(test.runtimeUrl), { status })
+  const app = await createHub(testConfig(test.runtimeUrl), { status })
   t.after(() => app.close())
   return { app, status, test }
 }
@@ -88,7 +85,7 @@ test('recordStart grava a versão que roda, e o último início passa a ser ele'
 
 test('com o banco fora, /api/status responde 503 e /api/health continua 200', async (t) => {
   const status = createStatus({ version: VERSION, database: await unreachableDatabase(t) })
-  const app = await createHub(config(await unreachableDatabaseUrl()), { status })
+  const app = await createHub(testConfig(await unreachableDatabaseUrl()), { status })
   t.after(() => app.close())
   const response = await app.inject(STATUS)
   assert.equal(response.statusCode, 503)
@@ -115,12 +112,7 @@ test('uma linha fora do contrato é recusada na leitura, sem o valor no log', as
   assert.doesNotMatch(response.body, /PLANTED/)
   const port = await freePort()
   const child = spawn(process.execPath, [MAIN], {
-    env: {
-      CONEXUS_VERSION: 'v0.1.0',
-      HUB_PORT: String(port),
-      LOG_LEVEL: 'info',
-      HUB_DATABASE_URL_FILE: urlFile(t, test.runtimeUrl),
-    },
+    env: serveEnvironment(t, test.runtimeUrl, port),
     stdio: ['ignore', 'pipe', 'ignore'],
   })
   t.after(() => child.kill('SIGKILL'))

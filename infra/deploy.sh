@@ -28,6 +28,17 @@ migrate_if_labeled() {
   fi
 }
 
+# The secrets folder is root's alone, so Docker reads the file, as the Hub's user, inside the image.
+require_secret() {
+  local image="$1" name="$2"
+  if ! docker run --rm --network none --user 1000 \
+    --mount "type=bind,source=/etc/conexus/secrets/$name,target=/run/check,readonly" \
+    --entrypoint test "$image" -s /run/check; then
+    echo "missing secret: $name; write /etc/conexus/secrets/$name first" >&2
+    return 1
+  fi
+}
+
 previous="$(running_image)"
 
 if [ "$mode" = "--restart" ]; then
@@ -35,6 +46,7 @@ if [ "$mode" = "--restart" ]; then
     echo "no Hub is running" >&2
     exit 1
   fi
+  require_secret "$previous" hub_session_secret
   migrate_if_labeled "$previous"
   if HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
     echo "restarted: $previous"
@@ -51,6 +63,7 @@ if [ "$previous" = "$image" ]; then
 fi
 
 docker pull --quiet "$image" > /dev/null
+require_secret "$image" hub_session_secret
 migrate_if_labeled "$image"
 
 if HUB_IMAGE="$image" "${compose[@]}" up --detach --wait --wait-timeout 90; then

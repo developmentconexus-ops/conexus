@@ -1,11 +1,13 @@
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
+import { Version } from '@conexus/hub-api'
 import pg from 'pg'
-import { readTestDatabase } from './config.ts'
+import type { Config } from './config.ts'
+import { PublicOrigin, readTestDatabase, SessionSecret } from './config.ts'
 import type { Database } from './database.ts'
 import { DatabaseUrl, openDatabase } from './database.ts'
 import { migrate } from './migrate.ts'
@@ -14,6 +16,20 @@ import { migrate } from './migrate.ts'
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
 const RUNTIME_LOGIN = 'hub_runtime'
 const silent = { info: () => undefined, error: () => undefined }
+
+export const TEST_ORIGIN = PublicOrigin.parse('https://hub.example.test')
+
+/** The configuration a test Hub serves with, its session secret fresh for each call. */
+export function testConfig(databaseUrl: DatabaseUrl): Config {
+  return {
+    version: Version.parse('v0.1.0'),
+    port: 1,
+    logLevel: 'error',
+    databaseUrl,
+    publicOrigin: TEST_ORIGIN,
+    sessionSecret: SessionSecret.parse(randomBytes(32).toString('base64url')),
+  }
+}
 
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
@@ -121,10 +137,30 @@ export async function unreachableDatabase(t: Lifetime): Promise<Database> {
   return database
 }
 
-export function urlFile(t: TestContext, url: DatabaseUrl): string {
+function keyFile(t: TestContext, name: string, value: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-key-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
-  const path = join(dir, 'database_url')
-  writeFileSync(path, url.reveal(), { mode: 0o400 })
+  const path = join(dir, name)
+  writeFileSync(path, value, { mode: 0o400 })
   return path
+}
+
+export function urlFile(t: TestContext, url: DatabaseUrl): string {
+  return keyFile(t, 'database_url', url.reveal())
+}
+
+export function sessionSecretFile(t: TestContext): string {
+  return keyFile(t, 'session_secret', randomBytes(32).toString('base64url'))
+}
+
+/** The environment a spawned Hub serves with, as Compose gives it. */
+export function serveEnvironment(t: TestContext, url: DatabaseUrl, port: number) {
+  return {
+    CONEXUS_VERSION: 'v0.1.0',
+    HUB_PORT: String(port),
+    LOG_LEVEL: 'info',
+    HUB_DATABASE_URL_FILE: urlFile(t, url),
+    HUB_PUBLIC_ORIGIN: TEST_ORIGIN,
+    HUB_SESSION_SECRET_FILE: sessionSecretFile(t),
+  }
 }

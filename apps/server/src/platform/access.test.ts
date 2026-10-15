@@ -2,36 +2,49 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import Fastify from 'fastify'
 import { enforceAccess } from './access.ts'
+import { TEST_ORIGIN } from './test-database.ts'
 
-type Route = { method: 'GET' | 'POST'; url: string; config?: Record<string, unknown> }
+type Route = {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  url: string
+  config?: Record<string, unknown>
+}
 
-async function start(route: Route) {
+async function start(route: Route, onHandle: () => void = () => undefined) {
   const app = Fastify({ exposeHeadRoutes: false })
-  enforceAccess(app)
-  app.route({ ...route, handler: async () => ({ ok: true }) })
+  enforceAccess(app, { publicOrigin: TEST_ORIGIN })
+  app.route({
+    ...route,
+    handler: async () => {
+      onHandle()
+      return { ok: true }
+    },
+  })
   await app.ready()
   return app
 }
 
-test('recusa rota sem tipo', async () => {
+test('tipo: recusa rota sem tipo', async () => {
   await assert.rejects(
     start({ method: 'GET', url: '/orphan' }),
     /INTERNAL_UNEXPECTED route=GET \/orphan /,
   )
 })
 
-test('recusa tipo desconhecido', async () => {
+test('tipo: recusa tipo desconhecido', async () => {
   await assert.rejects(
     start({ method: 'GET', url: '/api/secret', config: { access: 'secret' } }),
     /route=GET \/api\/secret /,
   )
 })
 
-test('recusa o que o tipo não permite', async () => {
+test('tipo: recusa o que o tipo não permite', async () => {
   const refused: Route[] = [
     { method: 'POST', url: '/api/write', config: { access: 'public' } },
     { method: 'GET', url: '/other', config: { access: 'public' } },
     { method: 'GET', url: '/api/page', config: { access: 'page' } },
+    { method: 'GET', url: '/api/entry', config: { access: 'entry' } },
+    { method: 'PUT', url: '/outside', config: { access: 'session' } },
   ]
   for (const route of refused) {
     await assert.rejects(start(route), new RegExp(`route=${route.method} ${route.url} `))
@@ -44,3 +57,49 @@ test('aceita uma rota pública em /api/', async () => {
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), { ok: true })
 })
+
+const WRITE = {
+  method: 'PUT',
+  url: '/api/entry',
+  headers: {
+    origin: 'https://hub.example.test',
+    'content-type': 'application/json',
+    'cf-connecting-ip': '203.0.113.7',
+  },
+  payload: '{}',
+} as const
+
+test('entrada: a escrita da página do Hub, em JSON e com o endereço do cliente, passa', async () => {
+  const app = await start({ method: 'PUT', url: '/api/entry', config: { access: 'entry' } })
+  const response = await app.inject(WRITE)
+  assert.equal(response.statusCode, 200)
+})
+
+const REFUSED: [string, Record<string, string | undefined>, string][] = [
+  ['sem Origin', { origin: undefined }, 'REQUEST_ORIGIN_REFUSED'],
+  ['de outro site', { origin: 'https://other.example.test' }, 'REQUEST_ORIGIN_REFUSED'],
+  ['cross-site', { 'sec-fetch-site': 'cross-site' }, 'REQUEST_ORIGIN_REFUSED'],
+  [
+    'em formulário',
+    { 'content-type': 'application/x-www-form-urlencoded' },
+    'REQUEST_MEDIA_TYPE_REFUSED',
+  ],
+  ['em text/plain', { 'content-type': 'text/plain' }, 'REQUEST_MEDIA_TYPE_REFUSED'],
+  ['corpo sem tipo', { 'content-type': undefined }, 'REQUEST_MEDIA_TYPE_REFUSED'],
+  ['sem cf-connecting-ip', { 'cf-connecting-ip': undefined }, 'REQUEST_MALFORMED'],
+]
+for (const [name, headers, code] of REFUSED) {
+  test(`entrada: recusa a escrita ${name} antes do handler`, async () => {
+    let handled = false
+    const app = await start(
+      { method: 'PUT', url: '/api/entry', config: { access: 'entry' } },
+      () => {
+        handled = true
+      },
+    )
+    const sent = Object.entries({ ...WRITE.headers, ...headers }).filter(([, value]) => value)
+    const response = await app.inject({ ...WRITE, headers: Object.fromEntries(sent) })
+    assert.equal(response.json().code, code)
+    assert.equal(handled, false)
+  })
+}
