@@ -23,9 +23,9 @@ providers.
 | 2 | The invitation's link, then "Ainda não tenho senha" | The second message arrives; the password set with its link signs in; the invitation is accepted |
 | 3 | The link opened again after acceptance | Nothing is spent by opening it; the page shows the invitation accepted |
 | 4 | The account's daily quota | Written down as the dashboard shows it |
-| 5 | An invitation to an address with no inbox | Listed under `permanent_bounces`; the Hub answers `MAIL_BOUNCED` |
+| 5 | An invitation to an address with no inbox | Written down: the reply's list, any of the three, and the dashboard's entry a day later |
 
-**Not covered.** Volume; a corporate scanner unless the founder has such an inbox; providers not tried.
+**Not covered.** Volume; a corporate scanner; providers not tried.
 
 ## Result
 
@@ -41,4 +41,4 @@ The delivery test fails.
 
 ## State
 
-The Criterion was one sentence until the step 4 study wrote it out, before any run; the card's reader added checks of the reply. Brought. Founder, 2026-10-12: "Se cloudflare tem e é incluso em nosso plano porque não usar?" and "8. Sim".
+The Criterion was one sentence until the step 4 study wrote it out, before any run; the card's readers added the reply checks. Brought. Founder, 2026-10-12: "Se cloudflare tem e é incluso em nosso plano porque não usar?" and "8. Sim".
