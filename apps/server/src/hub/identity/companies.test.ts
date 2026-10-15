@@ -30,7 +30,6 @@ function id(): string {
   return randomBytes(16).toString('hex')
 }
 
-/** A person with a password, signed in from an address of their own. */
 async function personOn(hub: Hub, who: Who) {
   const personId = id()
   await hub.test.asOwner('insert into auth.user (id, name, email, role) values ($1, $2, $3, $4)', [

@@ -30,7 +30,6 @@ export function Pager(props: {
   )
 }
 
-/** "Suas empresas": the companies the person belongs to, with the role in each. */
 export function Companies() {
   const { page } = route.useSearch()
   const { data } = useSuspenseQuery(companiesQuery(page))

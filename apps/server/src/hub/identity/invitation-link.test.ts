@@ -104,7 +104,6 @@ function post(hub: Hub, person: Person, url: string, body: unknown, key: string 
   })
 }
 
-/** Ana, the installation administrator, owns Empresa Teste. */
 async function companyOn(t: TestContext) {
   const hub = await hubOn(t)
   const ana = await personOn(hub, ANA)

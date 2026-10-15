@@ -110,7 +110,6 @@ function post(hub: Hub, person: Person, url: string, body: unknown, key: string 
   })
 }
 
-/** Ana, the installation administrator, owns Empresa Teste. */
 async function companyOn(t: TestContext) {
   const hub = await hubOn(t)
   const ana = await personOn(hub, ANA)
@@ -180,7 +179,6 @@ test('do convite à empresa: o convite, o e-mail novo cria a senha, entra, aceit
   })
 })
 
-/** Requests to a spawned Hub, as a browser sends them. */
 function clientOf(port: number) {
   return async function send(method: string, path: string, cookie?: string, body?: unknown) {
     const response = await fetch(`http://127.0.0.1:${port}${path}`, {
@@ -200,7 +198,6 @@ function clientOf(port: number) {
   }
 }
 
-/** Ana creates and invites, Davi takes his link and accepts, and six requests find nothing. */
 async function walk(hub: Hub, send: ReturnType<typeof clientOf>) {
   async function signIn(email: string, password = PASSWORD) {
     return (await send('PUT', '/api/sessions/current', undefined, { email, password })).cookie

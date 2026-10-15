@@ -140,7 +140,6 @@ export function sentenceOf(error: unknown): string {
   return [row.phrase, row.action].filter(Boolean).join(' ')
 }
 
-/** A path parameter the contract would never issue names no page: the address is not found. */
 /** A read the Hub answers 404 shows the route's not-found, as an id that cannot exist does. */
 export async function readOrNotFound<T>(read: Promise<T>): Promise<T> {
   try {
@@ -151,6 +150,7 @@ export async function readOrNotFound<T>(read: Promise<T>): Promise<T> {
   }
 }
 
+/** A path parameter the contract would never issue names no page: the address is not found. */
 export function idOrNotFound<S extends z.ZodType>(schema: S, raw: string): z.output<S> {
   const id = schema.safeParse(raw)
   if (!id.success) throw notFound()
