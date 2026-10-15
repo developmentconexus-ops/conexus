@@ -174,7 +174,7 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
 
 /** Resolves once the pool holds no connection, as when nobody uses Conexus (data D27). */
 export async function whenIdle(database: Database): Promise<void> {
-  const pool = database.libraryOrm().$client
+  const pool = database.libraryOrm({}).$client
   while (pool.totalCount > 0) await once(pool, 'remove')
 }
 

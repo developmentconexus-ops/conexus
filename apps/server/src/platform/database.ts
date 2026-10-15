@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import type { AnyRelations, EmptyRelations } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import { DrizzleQueryError } from 'drizzle-orm/errors'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
@@ -48,16 +49,27 @@ export class DatabaseUrl {
   }
 }
 
-type Orm = NodePgDatabase & { $client: pg.Pool }
-type Transaction = Parameters<Parameters<Orm['transaction']>[0]>[0]
+type Orm<R extends AnyRelations = EmptyRelations> = NodePgDatabase<R> & { $client: pg.Pool }
+type Transaction<R extends AnyRelations = EmptyRelations> = Parameters<
+  Parameters<Orm<R>['transaction']>[0]
+>[0]
 export type ReadTx = Pick<Transaction, 'select' | 'selectDistinct' | 'execute'>
 export type CommandTx = Transaction
+type LibraryTx<R extends AnyRelations> = Transaction<R>
 
 export type Database = Readonly<{
   read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>
   command<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>
-  /** Only for a library's own adapter, which checks the rows it reads itself (data D19, D21). */
-  libraryOrm(): Orm
+  /**
+   * Only for a library's own adapter, which checks the rows it reads itself (data D19, D21). The
+   * relations are the library's, so its joins run as one query each.
+   */
+  libraryOrm<R extends AnyRelations>(relations: R): Orm<R>
+  /** A command whose transaction carries the library's relations, for its adapter to join on. */
+  libraryCommand<R extends AnyRelations, T>(
+    relations: R,
+    work: (tx: LibraryTx<R>) => Promise<T>,
+  ): Promise<T>
   close(): Promise<void>
 }>
 
@@ -84,6 +96,9 @@ function ownErrorsAreUnexpected<Tx, T>(work: (tx: Tx) => Promise<T>) {
   }
 }
 
+const NO_RELATIONS: EmptyRelations = {}
+const WRITE = { isolationLevel: 'read committed', accessMode: 'read write' } as const
+
 export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Database {
   const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
   function lost(error: Error): void {
@@ -92,15 +107,15 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   // An idle connection the server drops emits here; with no listener the process dies.
   pool.on('error', lost)
   let closing: Promise<void> | undefined
-  const library = drizzle({ client: pool })
 
   /**
    * The connection is lost where it is lost: the pool cannot connect, or the client emits `error`,
    * which pg does for a dropped socket before it rejects the query. Past the read deadline the socket
    * is destroyed, so a stalled reply takes that same path; the client never returns to the pool.
    */
-  async function inTransaction<T>(
-    work: (tx: CommandTx) => Promise<T>,
+  async function inTransaction<R extends AnyRelations, T>(
+    relations: R,
+    work: (tx: LibraryTx<R>) => Promise<T>,
     config: {
       isolationLevel: 'repeatable read' | 'read committed'
       accessMode: 'read only' | 'read write'
@@ -125,7 +140,7 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
     deadline.addEventListener('abort', stalled, { once: true })
     let failure: Error | undefined
     try {
-      return await drizzle({ client }).transaction(ownErrorsAreUnexpected(work), config)
+      return await drizzle({ client, relations }).transaction(ownErrorsAreUnexpected(work), config)
     } catch (error) {
       failure = error instanceof Error ? error : new Error('transaction failed', { cause: error })
       if (lostWith === undefined) throw databaseFailure(error)
@@ -139,10 +154,13 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
 
   return Object.freeze({
     read: (work) =>
-      inTransaction(work, { isolationLevel: 'repeatable read', accessMode: 'read only' }),
-    command: (work) =>
-      inTransaction(work, { isolationLevel: 'read committed', accessMode: 'read write' }),
-    libraryOrm: () => library,
+      inTransaction(NO_RELATIONS, work, {
+        isolationLevel: 'repeatable read',
+        accessMode: 'read only',
+      }),
+    command: (work) => inTransaction(NO_RELATIONS, work, WRITE),
+    libraryOrm: (relations) => drizzle({ client: pool, relations }),
+    libraryCommand: (relations, work) => inTransaction(relations, work, WRITE),
     close: () => {
       closing ??= pool.end()
       return closing

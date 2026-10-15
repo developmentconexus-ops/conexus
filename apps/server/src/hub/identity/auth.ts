@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import * as libraryContext from '@better-auth/core/context'
-import { drizzleAdapter } from '@better-auth/drizzle-adapter'
+import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { FailureCode } from '@conexus/hub-api'
 import { PASSWORD_LENGTH } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
@@ -19,6 +19,7 @@ import {
   invitation,
   member,
   rateLimit,
+  relations,
   session,
   user,
   verification,
@@ -121,7 +122,8 @@ export type LibraryCommand = <T>(work: (tx: CommandTx) => Promise<T>) => Promise
  */
 export function libraryCommandOn(auth: Auth, database: Database): LibraryCommand {
   return (work) =>
-    database.command(
+    database.libraryCommand(
+      relations,
       async (tx) =>
         await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),
     )
@@ -148,7 +150,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     basePath: BASE_PATH,
     baseURL: deps.config.publicOrigin,
     secret: deps.config.sessionSecret.reveal(),
-    database: adapterFor(deps.database.libraryOrm()),
+    database: adapterFor(deps.database.libraryOrm(relations)),
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,
@@ -169,6 +171,9 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       customRules: { [SIGN_IN_PATH]: SIGN_IN_ATTEMPTS },
     },
     advanced: {
+      // One query per join, on the relations of tables.ts. Without it the library joins row by row,
+      // all at once, on a command's one connection, and pg warns of concurrent queries.
+      database: { joins: true },
       // __Host- comes from the names below; the library would otherwise prefix __Secure-.
       useSecureCookies: false,
       cookies: {

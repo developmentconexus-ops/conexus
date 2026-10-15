@@ -265,3 +265,18 @@ test('registro: criar, convidar, dar o link, aceitar e cada 404 deixam só códi
   const names = ['Ana Lima', 'Bruno Reis', 'Davi Costa', 'Empresa Teste']
   for (const kept of [...people, ...names, token]) assert.doesNotMatch(output, new RegExp(kept))
 })
+
+test('criar: quem já é dono de três empresas cria a quarta num Hub de verdade, sem linha crua', async (t) => {
+  const hub = await hubOn(t)
+  await personOn(hub, ANA)
+  const { port, stop } = await spawnHub(t, serveEnvironment(t, hub.test.runtimeUrl))
+  const send = clientOf(port)
+  const credentials = { email: ANA.email, password: PASSWORD }
+  const ana = (await send('PUT', '/api/sessions/current', undefined, credentials)).cookie
+  const created = []
+  for (const name of ['Empresa A', 'Empresa B', 'Empresa C', 'Empresa D']) {
+    created.push((await send('POST', '/api/companies', ana, { name })).status)
+  }
+  await stop()
+  assert.deepEqual(created, [201, 201, 201, 201])
+})
