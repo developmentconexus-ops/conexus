@@ -47,6 +47,7 @@ if [ "$mode" = "--restart" ]; then
     exit 1
   fi
   require_secret "$previous" hub_session_secret
+  require_secret "$previous" hub_mail_token
   migrate_if_labeled "$previous"
   if HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
     echo "restarted: $previous"
@@ -64,6 +65,7 @@ fi
 
 docker pull --quiet "$image" > /dev/null
 require_secret "$image" hub_session_secret
+require_secret "$image" hub_mail_token
 migrate_if_labeled "$image"
 
 if HUB_IMAGE="$image" "${compose[@]}" up --detach --wait --wait-timeout 90; then

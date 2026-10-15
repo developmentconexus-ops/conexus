@@ -114,6 +114,20 @@ export const FAILURES = {
     action: 'Volte o arquivo da migração ao que era e publique de novo.',
     actionKind: 'NONE',
   },
+  MAIL_UNAVAILABLE: {
+    category: 'THIRD_PARTY',
+    status: 502,
+    phrase: 'O e-mail não pôde ser enviado agora.',
+    action: 'Tente de novo daqui a pouco.',
+    actionKind: 'NONE',
+  },
+  MAIL_BOUNCED: {
+    category: 'USER',
+    status: 422,
+    phrase: 'Esse endereço não recebe e-mails.',
+    action: 'Confira o e-mail e convide de novo.',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

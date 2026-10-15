@@ -42,5 +42,27 @@
       "file": "src/platform/http.test.ts",
       "name": "a porta de teste registra"
     }
+  },
+  {
+    "id": "mail-reply-cap",
+    "file": "apps/server/src/platform/mail.ts",
+    "find": "if (size > REPLY_CAP_BYTES) return undefined",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/mail.test.ts",
+      "name": "acima de 16 KiB"
+    }
+  },
+  {
+    "id": "mail-bounce-refused",
+    "file": "apps/server/src/platform/mail.ts",
+    "find": "if (permanent_bounces.length > 0) {",
+    "replace": "if (permanent_bounces.length < 0) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/mail.test.ts",
+      "name": "endereço que volta"
+    }
   }
 ]

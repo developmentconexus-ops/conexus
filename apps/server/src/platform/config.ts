@@ -1,4 +1,4 @@
-import { Version } from '@conexus/hub-api'
+import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
@@ -42,13 +42,51 @@ export class SessionSecret {
   }
 }
 
+/** The mail provider's send address, with the account in it: the one place mail goes (S36). */
+export const MailApiUrl = z
+  .string()
+  .refine((value) => ['https:', 'http:'].includes(URL.parse(value)?.protocol ?? ''))
+  .brand('MailApiUrl')
+export type MailApiUrl = z.infer<typeof MailApiUrl>
+
+/** Sends mail as the installation; it leaves the program only in the adapter's request (S35). */
+export class MailToken {
+  readonly #value: string
+
+  private constructor(value: string) {
+    this.#value = value
+  }
+
+  static parse(value: string): MailToken {
+    return new MailToken(value)
+  }
+
+  reveal(): string {
+    return this.#value
+  }
+
+  toString(): string {
+    return '[MailToken]'
+  }
+
+  toJSON(): string {
+    return '[MailToken]'
+  }
+}
+
 type BaseConfig = {
   version: Version
   port: number
   logLevel: LogLevel
   databaseUrl: DatabaseUrl
 }
-export type Config = BaseConfig & { publicOrigin: PublicOrigin; sessionSecret: SessionSecret }
+export type Config = BaseConfig & {
+  publicOrigin: PublicOrigin
+  sessionSecret: SessionSecret
+  mailApiUrl: MailApiUrl
+  mailFrom: Email
+  mailToken: MailToken
+}
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
 const Environment = z.object({
@@ -61,6 +99,9 @@ const MigrationKey = z.object({ HUB_MIGRATION_DATABASE_URL_FILE: z.string().min(
 const ServeEnvironment = z.object({
   HUB_PUBLIC_ORIGIN: PublicOrigin,
   HUB_SESSION_SECRET_FILE: z.string().min(1),
+  HUB_MAIL_API_URL: MailApiUrl,
+  HUB_MAIL_FROM: Email,
+  HUB_MAIL_TOKEN_FILE: z.string().min(1),
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -121,6 +162,9 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
       serve.HUB_SESSION_SECRET_FILE,
       SessionSecret.parse,
     ),
+    mailApiUrl: serve.HUB_MAIL_API_URL,
+    mailFrom: serve.HUB_MAIL_FROM,
+    mailToken: readSecret('HUB_MAIL_TOKEN_FILE', serve.HUB_MAIL_TOKEN_FILE, MailToken.parse),
   }
 }
 

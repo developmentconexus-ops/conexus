@@ -9,10 +9,14 @@ services:
     secrets:
       - hub_database_url
       - hub_session_secret
+      - hub_mail_token
+    # HUB_MAIL_API_URL and HUB_MAIL_FROM: the send address names the account, so it stays out of Git.
+    env_file: /etc/conexus/hub.env
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
       HUB_PUBLIC_ORIGIN: https://hub.conexus.fun
       HUB_SESSION_SECRET_FILE: /run/secrets/hub_session_secret
+      HUB_MAIL_TOKEN_FILE: /run/secrets/hub_mail_token
     healthcheck:
       test:
         - CMD
@@ -58,3 +62,5 @@ secrets:
     file: /etc/conexus/secrets/hub_migration_database_url
   hub_session_secret:
     file: /etc/conexus/secrets/hub_session_secret
+  hub_mail_token:
+    file: /etc/conexus/secrets/hub_mail_token

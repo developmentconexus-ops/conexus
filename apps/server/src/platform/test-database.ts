@@ -10,12 +10,12 @@ import { join } from 'node:path'
 import type { Readable } from 'node:stream'
 import type { TestContext } from 'node:test'
 import { after } from 'node:test'
-import { Version } from '@conexus/hub-api'
+import { Email, Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import pg from 'pg'
 import { z } from 'zod'
 import type { Config } from './config.ts'
-import { PublicOrigin, readTestDatabase, SessionSecret } from './config.ts'
+import { MailApiUrl, MailToken, PublicOrigin, readTestDatabase, SessionSecret } from './config.ts'
 import type { Database } from './database.ts'
 import { DatabaseUrl, openDatabase } from './database.ts'
 import { migrate } from './migrate.ts'
@@ -67,9 +67,12 @@ export function takeUndeclared(): string[] {
 }
 
 export const TEST_ORIGIN = PublicOrigin.parse('https://hub.example.test')
+// Nothing listens on the discard port, so a Hub that sends mail without a fake server fails loudly.
+const NO_MAIL_SERVER = 'http://127.0.0.1:9/email/sending/send'
+const TEST_MAIL_FROM = 'convites@hub.example.test'
 
-/** The configuration a test Hub serves with, its session secret fresh for each call. */
-export function testConfig(databaseUrl: DatabaseUrl): Config {
+/** The configuration a test Hub serves with, its secrets fresh for each call; mail goes to `mailApiUrl`. */
+export function testConfig(databaseUrl: DatabaseUrl, mailApiUrl = NO_MAIL_SERVER): Config {
   return {
     version: Version.parse('v0.1.0'),
     port: 1,
@@ -77,6 +80,9 @@ export function testConfig(databaseUrl: DatabaseUrl): Config {
     databaseUrl,
     publicOrigin: TEST_ORIGIN,
     sessionSecret: SessionSecret.parse(randomBytes(32).toString('base64url')),
+    mailApiUrl: MailApiUrl.parse(mailApiUrl),
+    mailFrom: Email.parse(TEST_MAIL_FROM),
+    mailToken: MailToken.parse(randomBytes(16).toString('hex')),
   }
 }
 
@@ -215,6 +221,9 @@ export function serveEnvironment(t: TestContext, url: DatabaseUrl, port?: number
     HUB_DATABASE_URL_FILE: urlFile(t, url),
     HUB_PUBLIC_ORIGIN: TEST_ORIGIN,
     HUB_SESSION_SECRET_FILE: sessionSecretFile(t),
+    HUB_MAIL_API_URL: NO_MAIL_SERVER,
+    HUB_MAIL_FROM: TEST_MAIL_FROM,
+    HUB_MAIL_TOKEN_FILE: keyFile(t, 'hub_mail_token', randomBytes(16).toString('hex')),
   }
 }
 

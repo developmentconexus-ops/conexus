@@ -53,8 +53,8 @@ Hub, ends every session.
 
 ## Para o fundador
 
-- Enquanto o Firstmate grava as chaves do banco ou o segredo das sessões, abra a porta 22 no
-  firewall do provedor e feche-a depois.
+- Enquanto o Firstmate grava um segredo no servidor, abra a porta 22 no firewall do provedor e
+  feche-a depois. O e-mail dos convites: [hub-mail](hub-mail.md).
 - Em Actions, rode "Criar a primeira pessoa". O resumo da execução, nunca o log, mostra um link
   `/set-password` de uso único, que vale 15 minutos. Rodar de novo dá um link novo enquanto não
   houver senha.

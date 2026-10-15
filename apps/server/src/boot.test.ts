@@ -35,6 +35,9 @@ const WITH_FILE = {
   HUB_DATABASE_URL_FILE: '/nowhere/hub_database_url',
   HUB_PUBLIC_ORIGIN: 'https://hub.example.test',
   HUB_SESSION_SECRET_FILE: '/nowhere/hub_session_secret',
+  HUB_MAIL_API_URL: 'https://mail.example.test/email/sending/send',
+  HUB_MAIL_FROM: 'convites@hub.example.test',
+  HUB_MAIL_TOKEN_FILE: '/nowhere/hub_mail_token',
 }
 
 for (const name of Object.keys(WITH_FILE)) {
@@ -53,6 +56,8 @@ const OUT_OF_FORMAT = [
   ['LOG_LEVEL', 'loud'],
   ['HUB_PUBLIC_ORIGIN', 'http://hub.example.test'],
   ['HUB_PUBLIC_ORIGIN', 'https://hub.example.test/'],
+  ['HUB_MAIL_API_URL', 'ftp://mail.example.test/send'],
+  ['HUB_MAIL_FROM', 'convites'],
 ] as const
 for (const [name, value] of OUT_OF_FORMAT) {
   test(`configuração: recusa subir com ${name}=${value} fora do formato`, async (t) => {
@@ -90,6 +95,22 @@ test('configuração: com o segredo das sessões curto demais, nomeia a variáve
   const { lines, exited } = startHub(t, env)
   assert.equal(await exited, 1)
   assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_SESSION_SECRET_FILE')
+})
+
+test('configuração: sem o arquivo do token do correio, nomeia a variável', async (t) => {
+  const { env } = await serverEnv(t, { HUB_MAIL_TOKEN_FILE: '/nowhere/hub_mail_token' })
+  const { lines, exited } = startHub(t, env)
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_MAIL_TOKEN_FILE')
+  assert.equal(messages(lines, 'LISTENING').length, 0)
+})
+
+test('configuração: com o token do correio legível por outros, nomeia a variável', async (t) => {
+  const { env } = await serverEnv(t)
+  chmodSync(env.HUB_MAIL_TOKEN_FILE, 0o644)
+  const { lines, exited } = startHub(t, env)
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_MAIL_TOKEN_FILE')
 })
 
 test('atrasado: o banco sem uma migração que o programa traz recusa a subida', async (t) => {
