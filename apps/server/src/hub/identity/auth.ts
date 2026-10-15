@@ -77,8 +77,9 @@ export function adapterOn(auth: Auth, tx: CommandTx) {
   return adapterFor(tx)(auth.options)
 }
 
+// No secure attribute: better-call sets Secure on every __Host- name (dist/cookies.mjs:48-49).
 function hostCookie(name: string) {
-  return { name: `__Host-conexus_${name}`, attributes: { secure: true } }
+  return { name: `__Host-conexus_${name}` }
 }
 
 export function createAuth(deps: { database: Database; config: Config; log: FailureLog }) {

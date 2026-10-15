@@ -4,7 +4,7 @@ import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
 import type { FailureCode, Operation, Person } from '@conexus/hub-api'
-import { FAILURES, Problem } from '@conexus/hub-api'
+import { FAILURES, PAGES, Problem } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
@@ -133,9 +133,6 @@ function installErrorHandling(app: FastifyInstance, page: { built: boolean }): v
   })
   app.addHook('onResponse', async (request, reply) => logServed(request, reply))
 }
-
-/** The addresses the screens' router answers; each opens the same page (web W1). */
-const PAGES = ['/', '/login', '/set-password'] as const
 
 function installPages(app: FastifyInstance): void {
   const config = { access: 'page' } as const

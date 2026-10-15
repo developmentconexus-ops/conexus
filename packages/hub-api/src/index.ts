@@ -12,4 +12,5 @@ export {
   setPassword,
 } from './identity.ts'
 export type { AccessKind, Operation } from './operation.ts'
+export { PAGES } from './pages.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
