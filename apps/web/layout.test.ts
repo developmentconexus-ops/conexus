@@ -103,7 +103,10 @@ for (const [viewport, drawer] of [
   test(`a gaveta tem ${drawer}px numa tela de ${viewport.width}px`, async () => {
     const page = await open('/', viewport, SIGNED_IN)
     await page.getByRole('button', { name: 'Abrir navegação' }).click()
-    assert.equal(await widthOf(page.getByRole('dialog', { name: 'Navegação' })), drawer)
+    const dialog = page.getByRole('dialog', { name: 'Navegação' })
+    // Measured after the slide-in, whose transform leaves a fraction of a pixel mid-way.
+    await dialog.evaluate((open) => Promise.all(open.getAnimations().map((slide) => slide.finished)))
+    assert.equal(await widthOf(dialog), drawer)
     await page.close()
   })
 }
