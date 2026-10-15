@@ -29,8 +29,8 @@ the founder's word.
   of the tip and that the card has not changed since. [CI]
 - **L7.** A unit **must** touch only the files its card's blast radius names. A file outside it, or a
   change of scope found mid-step, **must** stop the build and return to the card, with the founder's
-  word for what he sees. A new test beside its file, in a folder the unit owns, is inside the
-  radius. Founder, 2026-10-15: "EA". [review]
+  word for what he sees. A new test beside its file is inside the radius when the card names its
+  folder, by the card template's row `<folder>/*.test.ts`. Founder, 2026-10-15: "EA". [review]
 
 **Why.** An approval that cites a commit the card has since left approves nothing. A blast radius
 written before the build is what makes a reviewer able to see the build wandered.
@@ -120,8 +120,9 @@ changes the guide.
 - **L22.** Studies and proofs **must** stay outside this repository; a decision record keeps the
   conclusion. Founder, 2026-10-12. [review]
 - **L23.** What the founder reads **must** be in Portuguese: the README, the roadmap, the cards and
-  their founder's page. `AGENTS.md`, the guides, the architecture, the decision records and the
-  skills **must** be in English. [review]
+  their founder's page, and a how-to the founder follows. `AGENTS.md`, the guides, the
+  architecture, the decision records, the skills and the other how-tos **must** be in English.
+  Founder, 2026-10-15: "2. A". [review]
 - **L24.** A file in `docs/` or `.agents/skills/` **must** have a line in `docs/index.md` and stay
   under its ceiling below; links **must** resolve; rule identifiers **must** be unique and every cited
   one exist; a rule **must** live in one file; retired process names **must not** appear. They are:

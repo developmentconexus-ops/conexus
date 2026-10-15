@@ -82,22 +82,26 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 - Someone who did not write the code can check every criterion from outside, and each says what is
   refused as well as what works.
 - Every file the build will touch is in a unit's blast radius, with its importers. A file outside it
-  stops the build ([delivery L7](../../../../docs/guides/delivery.md)); a test beside its file, in a
-  folder the unit owns, is inside it. A unit that adds a package
+  stops the build ([delivery L7](../../../../docs/guides/delivery.md)), except a test beside its file
+  in a folder the radius names with its `*.test.ts` row. A unit that adds a package
   or a check lists the shared root files it changes (`package.json`, `package-lock.json`,
   `biome.json`, `ci.yml`).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - The order of the work names guide rules by identifier and never restates them.
 - Every write or command the step adds, its own or a library's, has its row in the failure table:
   run twice at once, refused halfway (a grant revoked in the test), the database down, and what the
-  process prints under each. Each cell names its criterion. Founder, 2026-10-15: "A-A".
+  process prints under each. Each cell names its criterion; a step with no write writes "nenhuma".
+  Founder, 2026-10-15: "A-A".
+- The card takes every item of the open issues labelled `next-card`, or says on the founder's page
+  why one waits. Whoever files an item for the next card applies the label; the closing pull request
+  of the step that took an item removes it from the issue, and closes the issue when none is left.
 
 ## The reader's questions
 
 The reader of step 9 answers each one with the card's line.
 
-1. Does each criterion and contract cite its rules by identifier, without restating them, and hold
-   against each rule it cites?
+1. Does each criterion and contract hold against every guide rule that applies to it, cited or not,
+   and cite rules by identifier without restating them?
 2. Does each named test reach what it tests through the public door ([testing
    T5](../../../../docs/guides/testing.md))?
 3. Does any criterion rest on a fact the study lists as not proved?

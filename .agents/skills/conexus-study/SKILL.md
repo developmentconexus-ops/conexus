@@ -26,10 +26,8 @@ each part's entry sheet from firstmate and the old code at its frozen commit, re
    installed version, with file and line. List every option a guarantee rests on, with its default,
    and where the library catches, prints or answers an error by itself ([code
    C50](../../../docs/guides/code.md)).
-4. For each part the step touches, say whether it is **new** or **brought**, and fill its row of
-   the report's section 9: for a brought part, where it lands, what is refactored and fixed as it
-   enters, and each old decision it carries with its basis; for a new part replacing an old
-   mechanism, what the old covered and what it drops and why.
+4. For each part the step touches, say whether it is **new** or **brought**, and fill its row and
+   its fields in the report's section 9.
 5. The study rule, which every other skill cites. A decision whose only basis is "implemented
    so", "only tested so" or "decided before" is dropped, or defended in writing with a reason of its
    own. A part is brought only if it would be written that way from nothing. Its measure: lines
@@ -41,12 +39,12 @@ each part's entry sheet from firstmate and the old code at its frozen commit, re
    or identity or runs third-party code. If it is, follow [proof](references/proof.md).
 7. Compare at least two options and recommend one, with its basis in words.
 8. Write how to implement, by unit, as the report's section 8 asks. Prove by running the one fact
-   each unit's design rests on, on the product itself, never a stand-in, with pstack
-   `blast-radius` when present; a fact not run is listed as not proved, and the card does not rest
+   each unit's design rests on, against the boundary it is about ([testing
+   T14](../../../docs/guides/testing.md)): the real Hub for how it integrates, serves or bundles,
+   the real library and service for a native fact; with pstack `blast-radius` when present; a fact not run is listed as not proved, and the card does not rest
    on it. List the blast radius with each file's importers, and every write the step adds, its own
    or a library's, for the card's failure table.
-9. Answer, separating what was seen from a hypothesis, with a source for every claim: file and
-   line, or a page and the date read.
+9. Separate what was seen from a hypothesis, and give every claim its source.
 
 ## What it produces
 

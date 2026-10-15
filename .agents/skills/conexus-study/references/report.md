@@ -88,8 +88,8 @@ accepted or dropped.
 - **Does**: <one sentence>.
 - **Library functions**: <package@version: function, with the docs or source line>.
 - **Skills**: <the maintainers' skills the unit loads, or "none">.
-- **The fact it rests on**: <one fact, and the run on the product itself that proved it, or "not
-  proved">.
+- **The fact it rests on**: <one fact, and the run against the boundary it is about that proved
+  it, or "not proved">.
 - **Writes**: <each write or command the unit adds, its own or a library's, for the card's failure
   table>.
 - **Guide rules**: <ids, for example C27, D21, S7>.

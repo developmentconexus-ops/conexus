@@ -14,10 +14,8 @@ to break; **may** is a free choice. Each rule ends with the machine that refuses
   use Vitest [0034]. [review]
 - **T2.** A test **must** sit next to the file it tests: `x.test.ts` beside `x.ts`, `x.test.tsx`
   beside a screen. End-to-end scripts, few, **must** live in `tests/e2e` and run against a real Hub.
-  The browser check of the built screens **must** live at the root of its app, as
-  `apps/web/layout.test.ts`: it runs on `node:test` in headless Chromium against the built files,
-  with the Hub's reads answered from the contract's schemas (T15), because a width, an overflow or an
-  outline belongs to the whole built app, not to one file. [review]
+  The browser check of the built screens **must** live at the root of its app, because what it
+  measures belongs to the whole app, not to one file. [review]
 - **T3.** Every run **must** have a global timeout: `node:test` has only a per-test one, so the CI
   job's `timeout-minutes` is the global one. [CI]
 - **T4.** A skipped test **must** state why, starting with `opt-in:`; a suite that ran zero tests

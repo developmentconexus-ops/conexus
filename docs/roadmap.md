@@ -77,7 +77,7 @@ seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 4 Empresa e convite | O remetente com DNS | Convite com aceite (4) | Primeira unidade: as três conferências automáticas (linha crua no registro, tirar cada proteção, arquivos fora do raio). As issues #25 e #32. Fichas `workspace` e admissão. LT11 e LT12. A porta "apagar empresa". O registro 0015, reaberto |
+| 4 Empresa e convite | O remetente com DNS | Convite com aceite (4) | Primeira unidade: as três conferências automáticas (linha crua no registro, tirar cada proteção, arquivos fora do raio). As issues `next-card`. A sua decisão 5, de 2026-10-14 ("1. A"): o administrador da instalação é papel só da equipe da plataforma; quem cria e muda as conexões de uma empresa é o dono ou um administrador dela; o papel entra nesta etapa. Fichas `workspace` e admissão. LT11 e LT12. A porta "apagar empresa". O registro 0015, reaberto |
 | 5 Duas empresas | A 4 | A política por linha no banco | A lista de nove itens da política |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |

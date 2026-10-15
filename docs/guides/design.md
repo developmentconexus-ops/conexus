@@ -86,6 +86,10 @@ spacing:
   lg: "1rem"
   xl: "1.5rem"
   2xl: "2.5rem"
+containers:
+  drawer: "20rem"
+  column: "24rem"
+  message: "28rem"
 ---
 
 # Design guide
@@ -149,7 +153,8 @@ mono.
 
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
 - **V17.** No `style` attribute in Conexus's own pieces; styles come from tokens. [review]
-- **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll. [review]
+- **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll.
+  [`layout.test.ts`, review]
 - **V56.** On a phone the rail becomes a drawer opened from the top bar ("Abrir navegação"), and the
   top bar keeps the mark, the current place and the account. A rail dropped without a drawer takes
   every place with it. [review]
@@ -188,7 +193,7 @@ mono.
 
 - **V27.** Hover moves a surface one step up its scale: `surface`, `surface-3`, `surface-4`. Press
   shows a fill and never shrinks. [review]
-- **V28.** `:focus-visible` draws a 2px `accent` outline. [review]
+- **V28.** `:focus-visible` draws a 2px `accent` outline. [`layout.test.ts`, review]
 - **V29.** A disabled control says why when the reason is not obvious. [review]
 - **V30.** Tab reaches every action in reading order, Esc closes what opened, and every drag has a
   keyboard path. [review]
@@ -201,7 +206,8 @@ mono.
 
 - **V33.** Icons come from `lucide-react` with its defaults: outline, stroke 2, round caps, colored
   by `currentColor` from a token on the parent. One set at one stroke reads as one product. [review]
-- **V34.** Size follows the neighbour: 14px in toolbars, 16px inline, 18px in the rail. [review]
+- **V34.** Size follows the neighbour: 14px in toolbars, 16px inline, 18px in the rail.
+  [`layout.test.ts`, review]
 - **V35.** The stop control is the one filled icon. An icon has one meaning and never shows status
   alone; a decorative icon is `aria-hidden`. [review]
 - **V36.** Provider logos appear only in model pickers. [review]

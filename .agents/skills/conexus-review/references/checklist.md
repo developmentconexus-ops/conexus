@@ -33,5 +33,7 @@ guides; do not spend the review on them. Each question cites the rule it checks.
 13. Did a negative test leave without its protection (T11)?
 14. Is any new dependency on the list of expensive choices (L16)? Does it have its decision record?
 15. Does every acceptance criterion have a test, and does the step's main path run unfaked (T16)?
+    Is there a write in the diff, the step's or a library's, with no row in the card's failure table
+    ([card template](../../conexus-scope/references/card.md))?
 16. Did the step add something that runs alone? Then the sleeping-database test ran again (D27).
 17. Does the diff touch `.agents/skills/` or `docs/guides/` while the step is in construction (L20)?

@@ -22,6 +22,11 @@ undeclared library path (LT17), every sign-up path closed. Missing natively, so 
 total deadline, and a sign-out that fails when the row cannot be deleted. Not run: LT16, through the
 Tunnel, after publish. The other tests belong to steps 4, 8 and 18.
 
+## Notes
+
+LT16, 2026-10-15, v0.3.0 through the Tunnel: from one address, ten wrong sign-ins got 401 and the
+eleventh 429; another address then got 401. Each requester is counted apart.
+
 ## Consequences
 
 Code of Conexus's own exists only for a guarantee shown missing. Changing the holder later signs everyone in again once.
