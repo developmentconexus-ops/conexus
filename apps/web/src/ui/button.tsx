@@ -14,8 +14,9 @@ const buttonVariants = cva(
         ghost: 'bg-transparent text-text-2 hover:bg-surface-3 hover:text-text',
       },
       size: {
-        default: 'h-[34px] px-[0.9rem]',
-        icon: 'size-8',
+        // Icons follow their neighbour: 16px beside a label, 14px in a toolbar (design V34).
+        default: 'h-[34px] px-[0.9rem] [&_svg]:size-4',
+        icon: 'size-8 [&_svg]:size-3.5',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },
