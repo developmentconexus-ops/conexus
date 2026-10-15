@@ -13,6 +13,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 the server tests need.
 - [steps/](steps/): the folder of the step card in construction, empty between steps.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes itself instead of its library's, with the library's line.
+- [reference/components.md](reference/components.md): each piece of the screens and its tokens (design V24).
 
 ## Guides: the rules
 

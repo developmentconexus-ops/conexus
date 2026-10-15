@@ -37,8 +37,9 @@ defect.
    step 5) as you go; when a part passes its limit, stop and report.
 5. Write the tests through the server's public door, with the negative cases
    ([testing](../../../docs/guides/testing.md)).
-6. Run the result for real: the server, the route, the screen, the migration on a disposable
-   database, through the repository's verification skill when one exists, kept current with pstack
+6. Run the result for real: the server, the route, the migration on a disposable database, and a
+   changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
+   repository's verification skill when one exists, kept current with pstack
    `maintain-verification-skill`. Then run pstack `deslop` and `no-comments`; code C70 and C73
    decide what leaves, so a comment that states a why the code cannot show stays. Without pstack:
    reread the diff and remove what a careful engineer would not write.

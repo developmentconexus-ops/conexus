@@ -40,6 +40,11 @@ roteiro e diz o que viu.
 | --- | --- | --- | --- | --- |
 | 1 | U<k> | | <arquivo do teste e o caso> | <must / should> |
 
+## A tabela de falhas
+
+| Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio | Banco fora | O que o processo imprime | Critérios |
+| --- | --- | --- | --- | --- | --- |
+
 ## O que nasce novo e o que é trazido
 
 | Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |
@@ -55,6 +60,7 @@ roteiro e diz o que viu.
 
 | Arquivo | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
+| `<pasta da unidade>/*.test.ts` | Cria ou muda | os testes ao lado dos seus arquivos |
 
 ### Os contratos que a unidade cria
 
@@ -63,7 +69,8 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 
 ### A ordem do trabalho
 
-1. <passo>. Regras: <ids, por exemplo C27, D21>. Funções: <pacote@versão: função>.
+1. <passo>. Regras: <ids, por exemplo C27, D21>. Funções: <pacote@versão: função; as opções de que a
+   garantia depende, com o padrão>.
 
 ### Como se prova
 
@@ -75,8 +82,25 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 - Someone who did not write the code can check every criterion from outside, and each says what is
   refused as well as what works.
 - Every file the build will touch is in a unit's blast radius, with its importers. A file outside it
-  stops the build ([delivery L7](../../../../docs/guides/delivery.md)). A unit that adds a package
+  stops the build ([delivery L7](../../../../docs/guides/delivery.md)); a test beside its file, in a
+  folder the unit owns, is inside it. A unit that adds a package
   or a check lists the shared root files it changes (`package.json`, `package-lock.json`,
   `biome.json`, `ci.yml`).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - The order of the work names guide rules by identifier and never restates them.
+- Every write or command the step adds, its own or a library's, has its row in the failure table:
+  run twice at once, refused halfway (a grant revoked in the test), the database down, and what the
+  process prints under each. Each cell names its criterion. Founder, 2026-10-15: "A-A".
+
+## The reader's questions
+
+The reader of step 9 answers each one with the card's line.
+
+1. Does each criterion and contract cite its rules by identifier, without restating them, and hold
+   against each rule it cites?
+2. Does each named test reach what it tests through the public door ([testing
+   T5](../../../../docs/guides/testing.md))?
+3. Does any criterion rest on a fact the study lists as not proved?
+4. Does every write the study listed have its row in the failure table?
+5. Is each guide rule the study found resting only on "implemented so" a decision on the founder's
+   page?

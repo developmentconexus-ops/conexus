@@ -19,18 +19,17 @@ each part's entry sheet from firstmate and the old code at its frozen commit, re
 
 1. Write each question in one sentence.
 2. Read what the repository decided: [architecture](../../../docs/architecture.md), the
-   decision records of the subject, and the guide [`docs/index.md`](../../../docs/index.md) names
-   for it.
+   decision records of the subject, the guide [`docs/index.md`](../../../docs/index.md) names
+   for it, and every open issue `gh issue list --label next-card` prints.
 3. Look for the native way first ([code C75](../../../docs/guides/code.md)) for every mechanism, a
    machine a guide requires included: in the library's, platform's or database's code, at the
-   installed version, with file and line.
-4. For each part the step touches, say whether it is **new** or **brought**. For a brought part,
-   write:
-   - the file of the new tree where it lands;
-   - what is refactored as it enters, and which medium and large fixes are done in it;
-   - each decision of the old code it carries, with its basis in words.
-
-   A new part replacing an old mechanism lists what the old covered, and what it drops and why.
+   installed version, with file and line. List every option a guarantee rests on, with its default,
+   and where the library catches, prints or answers an error by itself ([code
+   C50](../../../docs/guides/code.md)).
+4. For each part the step touches, say whether it is **new** or **brought**, and fill its row of
+   the report's section 9: for a brought part, where it lands, what is refactored and fixed as it
+   enters, and each old decision it carries with its basis; for a new part replacing an old
+   mechanism, what the old covered and what it drops and why.
 5. The study rule, which every other skill cites. A decision whose only basis is "implemented
    so", "only tested so" or "decided before" is dropped, or defended in writing with a reason of its
    own. A part is brought only if it would be written that way from nothing. Its measure: lines
@@ -41,28 +40,30 @@ each part's entry sheet from firstmate and the old code at its frozen commit, re
    product runs, who holds the session, data isolation, and any ready-made piece that holds state
    or identity or runs third-party code. If it is, follow [proof](references/proof.md).
 7. Compare at least two options and recommend one, with its basis in words.
-8. Write how to implement, by unit: the library functions at the installed version, the guide
-   rules by identifier, the order, and the proof. Prove by running the one fact each unit's design
-   rests on, with pstack `blast-radius` when present; a fact not run is listed as not proved, and
-   the card does not rest on it. List the blast radius and who imports or calls each file.
+8. Write how to implement, by unit, as the report's section 8 asks. Prove by running the one fact
+   each unit's design rests on, on the product itself, never a stand-in, with pstack
+   `blast-radius` when present; a fact not run is listed as not proved, and the card does not rest
+   on it. List the blast radius with each file's importers, and every write the step adds, its own
+   or a library's, for the card's failure table.
 9. Answer, separating what was seen from a hypothesis, with a source for every claim: file and
    line, or a page and the date read.
 
 ## What it produces
 
-A study report from [the template](references/report.md), within its ceiling, for the planning
-session, kept outside the repository ([delivery L22](../../../docs/guides/delivery.md)).
-It holds the questions, what the repository decided, the references, the native way, two options
-or more with a recommendation and its basis, how to implement by unit, the table of parts from step
-4, the blast radius, the proof, the risks and what was not confirmed. For an expensive choice, a decision record in state "proposed" with its Criterion.
+A study report with every section of [the template](references/report.md), within its ceiling,
+for the planning session, kept outside the repository ([delivery
+L22](../../../docs/guides/delivery.md)). For an expensive choice, a decision record in state
+"proposed" with its Criterion.
 
 ## Stop and ask
 
 - The answer needs a product choice: put it to the founder through firstmate, by what a person
   sees, with an example and a recommendation, one question at a time.
 - Two references disagree and the choice changes what a person sees.
+- A guide rule the step must follow rests only on "implemented so": the founder decides it before
+  the card is approved.
 
 ## When it closes
 
-Every section of the report is filled, every claim cites its source, every part has its row, and
-every expensive choice has its Result against its Criterion.
+Every section of the report is filled, every part has its row, and every expensive choice has its
+Result against its Criterion.

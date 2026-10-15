@@ -74,8 +74,9 @@ not-found an outsider gets.
   how it meets this, is reopened [0013]. [review]
 - **S17.** The Hub cookie **must** be `__Host-` prefixed, `Secure`, `HttpOnly`, `SameSite=Lax`, path
   `/`, with no domain. [review]
-- **S18.** A session **must** have an idle and a total deadline, decided by the database clock.
-  [review]
+- **S18.** A session **must** have an idle and a total deadline, both on the clock of the library
+  that stamps it; the Hub adds only the total, on the library's own `createdAt`. Founder,
+  2026-10-15: "1. A". [review]
 - **S19.** Every request **must** read the session row, with no cookie cache. [review]
 - **S20.** Sign-out **must** end the session on the server first. A person **must** be able to end
   their own sessions, and an administrator another person's. [review]

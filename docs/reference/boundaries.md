@@ -21,7 +21,7 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Library line.** `better-auth/dist/api/routes/session.mjs`. `getSession` turns a failed query
   into a 500 `APIError` and drops its cause. `auth.handler` throws a raw query error, because
   `onAPIError: { throw: true }` keeps the router from printing it, row values and all, to stderr
-  (`better-call/dist/router.mjs:96`).
+  (`better-call/dist/router.mjs:93`).
 - **Hand-made piece.** `inLibrary` in `apps/server/src/hub/identity/auth.ts`. It maps every call
   into the library through `databaseFailure`, and a 5xx it cannot name to `DATABASE_UNAVAILABLE`.
 - **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
@@ -73,3 +73,19 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Why.** [Security S20](../guides/security.md). With the library's order, a database failure
   answers "signed out" to a session that is still alive. The test "sair falha" in
   `session.test.ts` fails without the piece.
+
+## Fastify 5.12.5
+
+### `serve` parses the body and checks the reply
+
+- **Library line.** `fastify/types/type-provider.d.ts:9-18`. A type provider types a request's parts
+  from the route's schema, and `setValidatorCompiler` and `setSerializerCompiler`
+  (`fastify/fastify.js:727`, `:740`) let a Zod schema validate the body and serialize the reply.
+- **Hand-made piece.** `serve` and `bodyOf` in `apps/server/src/platform/http.ts`. `bodyOf` parses the
+  body with the operation's schema and refuses it with `REQUEST_MALFORMED`; `serve` parses the reply
+  with `success.body` before it sends it, and sets the reply's cookies from the handler's `Answer`.
+- **Why.** [Code C31 and C14](../guides/code.md). Through the generic `serve`, the provider types the
+  body as `unknown`, and it has nothing for the `person` of the `session` access kind, the `Headers`
+  or the cookies of an `Answer`. The compilers would replace only `bodyOf` and the reply's parse, at
+  about the same number of lines (both step 3 reviews, 2026-10-15). The tests "corpo fora do esquema"
+  and "o corpo lido pelo esquema da operação volta" in `http.test.ts` cover it.

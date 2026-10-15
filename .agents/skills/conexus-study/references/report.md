@@ -64,6 +64,12 @@ Where they agree: <...>. Where they differ, and why: <...>.
 <How the library or platform does it at the installed version, with file and line. What it leaves
 undone, with the line where it does less.>
 
+| Library and constructor | Option a guarantee rests on | Default at the installed version | Set to, or kept, and why |
+| --- | --- | --- | --- |
+
+**Errors the library handles itself**: <where it catches, prints or answers an error on its own,
+with the line, and the option that sends the error to the central handler (code C50)>.
+
 ## 7. Options
 
 | Option | What a person sees | Cost to build | Cost to undo | Evidence |
@@ -82,7 +88,10 @@ accepted or dropped.
 - **Does**: <one sentence>.
 - **Library functions**: <package@version: function, with the docs or source line>.
 - **Skills**: <the maintainers' skills the unit loads, or "none">.
-- **The fact it rests on**: <one fact, and the run that proved it, or "not proved">.
+- **The fact it rests on**: <one fact, and the run on the product itself that proved it, or "not
+  proved">.
+- **Writes**: <each write or command the unit adds, its own or a library's, for the card's failure
+  table>.
 - **Guide rules**: <ids, for example C27, D21, S7>.
 - **Order**: <what first, what depends on what>.
 - **Proof**: <the command or action that shows it works, and the refusal it must show>.

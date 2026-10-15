@@ -86,98 +86,15 @@ spacing:
   lg: "1rem"
   xl: "1.5rem"
   2xl: "2.5rem"
-components:
-  button-primary:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.on-ink}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-default:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-default-hover:
-    backgroundColor: "{colors.surface-3}"
-  button-danger:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.danger}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-danger-confirm:
-    backgroundColor: "{colors.danger}"
-    textColor: "{colors.on-ink}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-  icon-button:
-    backgroundColor: "transparent"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.control}"
-    size: "32px"
-  icon-button-round-hover:
-    backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.accent-text}"
-    rounded: "{rounded.pill}"
-    size: "32px"
-  nav-item:
-    backgroundColor: "transparent"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.control}"
-    height: "34px"
-    padding: "0 0.6rem"
-  nav-item-hover:
-    backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.text}"
-  nav-item-active:
-    backgroundColor: "{colors.surface-3}"
-    textColor: "{colors.text}"
-  input:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.control}"
-    padding: "0 0.75rem"
-    height: "36px"
-  chip:
-    backgroundColor: "{colors.surface-3}"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.pill}"
-    padding: "0 0.55rem"
-    height: "1.5rem"
-  panel:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.object}"
-    padding: "1.5rem"
-  project-card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.card}"
-  composer:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.composer}"
-    padding: "0.7rem 0.8rem 0.4rem"
 ---
 
 # Design guide
 
 How Conexus looks, moves and speaks. It follows the
 [DESIGN.md format](https://github.com/google-labs-code/design.md): the front matter holds the
-tokens, and the sections below give the rules under the format's section names. Each rule has an
+tokens, and the sections below give the rules under the format's section names. The format's
+`components` live in [the components list](../reference/components.md), which changes with the step
+that adds a piece (V24). Each rule has an
 identifier, at most one sentence of reason, and in brackets the machine that refuses a violation,
 "rule to write" when the check is promised and not yet written, or "review". How the web side is organized and how styles are written is [web](web.md); how to use
 the shadcn pieces is their maintainers' skill.
@@ -253,7 +170,8 @@ mono.
 ## Components
 
 - **V23.** A component takes its colors, radius and type from tokens. [review]
-- **V24.** A new component enters the front matter in the same change. [review]
+- **V24.** A new component enters [the components list](../reference/components.md) in the same
+  change, with its tokens. [review]
 - **V55.** A destructive action on a page is a `button-danger`, neutral with `danger` text; the full
   `danger` fill, `button-danger-confirm`, is only the final button of its confirmation, in place of
   `ink`. The red fill marks the last step, the real danger; founder, 2026-10-14: "B". [review]
@@ -275,8 +193,9 @@ mono.
 - **V30.** Tab reaches every action in reading order, Esc closes what opened, and every drag has a
   keyboard path. [review]
 - **V31.** Every input has a label, and every icon-only button a pt-BR `aria-label`. [review]
-- **V32.** The console shows no error and no Content Security Policy violation, so no piece injects a
-  `<style>` element ([web W22](web.md)). [review]
+- **V32.** The console shows no uncaught error and no Content Security Policy violation, so no piece
+  injects a `<style>` element ([web W22](web.md)). Chromium also logs a refusal the screen shows,
+  such as a wrong password; that line is not an error. Founder, 2026-10-15: "2. A". [review]
 
 ## Iconography
 
@@ -302,7 +221,9 @@ mono.
   table already says. A non-technical person reads every word as a promise. [review]
 - **V43.** A failure's words come from the failure table, by code; the internal code is never shown
   in mono. A failure the person can fix says what to change, and a button appears beside it only when
-  its row's action kind asks for one ([code C48](code.md)). [review]
+  its row's action kind asks for one ([code C48](code.md)). One exception: the not-found page offers
+  every person the link "Voltar ao início", drawn as `button-default`, while its row keeps `NONE`.
+  Founder, 2026-10-15: "1 A". [review]
 - **V44.** A tool shows as a sentence while it runs and when it ends, never as its technical name.
   Reasoning shows only as "Pensando…". [review]
 - **V45.** What is not built says "em breve". Numbers and dates use the Brazilian format ("1.234,5",

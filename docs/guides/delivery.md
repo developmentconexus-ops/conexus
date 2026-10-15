@@ -29,7 +29,8 @@ the founder's word.
   of the tip and that the card has not changed since. [CI]
 - **L7.** A unit **must** touch only the files its card's blast radius names. A file outside it, or a
   change of scope found mid-step, **must** stop the build and return to the card, with the founder's
-  word for what he sees. [review]
+  word for what he sees. A new test beside its file, in a folder the unit owns, is inside the
+  radius. Founder, 2026-10-15: "EA". [review]
 
 **Why.** An approval that cites a commit the card has since left approves nothing. A blast radius
 written before the build is what makes a reviewer able to see the build wandered.

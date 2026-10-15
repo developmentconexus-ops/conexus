@@ -161,10 +161,11 @@ screen.
 - **W25.** Styles **must** be Tailwind with the brand tokens in `@theme`; the component is the unit
   of reuse, and there **must not** be a stylesheet per screen. [review]
 - **W26.** Logic without React **should** live in a pure `.ts` file, apart from the screen. [review]
-- **W27.** `platform/jitless.ts`, the first module `main.tsx` imports, **must** set Zod's `jitless`
-  before any schema exists: Zod 4 builds its first schema with `new Function`, which the CSP of
-  [security S26](security.md) refuses. Set in `main.tsx`'s own body it is too late, because imports
-  hoist. [`platform/cache.test.tsx`]
+- **W27.** `platform/jitless.ts` **must** set Zod's `jitless` before any schema exists: Zod 4 builds
+  its first schema with `new Function`, which the CSP of [security S26](security.md) refuses. The
+  build puts it in the chunk that holds Zod, because that chunk runs before the entry's body; an
+  import at the top of `main.tsx` is too late once the build splits code.
+  [`platform/cache.test.tsx`, `vite.config.test.ts`]
 
 **Why.** Eleven forms written by hand in two ways checked only "not empty"; one form piece with the
 contract's schema gives the browser the server's limits. No reference app sends an attempt key; it
