@@ -229,7 +229,7 @@ mono.
   in mono. A failure the person can fix says what to change, and a button appears beside it only when
   its row's action kind asks for one ([code C48](code.md)). One exception: the not-found page offers
   every person the link "Voltar ao início", drawn as `button-default`, while its row keeps `NONE`.
-  Founder, 2026-10-15: "1 A". [review]
+  Founder, 2026-10-15, screen fix answer 1: "1 A". [review]
 - **V44.** A tool shows as a sentence while it runs and when it ends, never as its technical name.
   Reasoning shows only as "Pensando…". [review]
 - **V45.** What is not built says "em breve". Numbers and dates use the Brazilian format ("1.234,5",

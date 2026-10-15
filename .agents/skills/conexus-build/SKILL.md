@@ -50,9 +50,9 @@ defect.
 The commit and a report: what I ran, what I saw, what I did not prove, the brought and changed line
 counts of each brought part, and every criterion of the card with the test that covers it. It lists
 every file changed outside the unit's blast radius and every departure from the card, each with the
-stop it raised, or "none"; and the maintainers' skills and pstack skills loaded. No pull
-request per unit and no review per unit: the step gets one review when its units are built
-([delivery](../../../docs/guides/delivery.md)).
+stop it raised, or "none"; the screenshots looked at, by state, width and theme, or "no screen
+touched"; and the maintainers' skills and pstack skills loaded. No pull request or review per unit
+([delivery L9](../../../docs/guides/delivery.md)).
 
 ## Stop and ask
 

@@ -104,6 +104,13 @@ removed.
 - **S26.** The Hub **must** send a Content Security Policy with `script-src 'self'` and no
   `unsafe-inline`, a strict `Referrer-Policy`, and `frame-ancestors 'none'`. [review]
 - **S27.** Each route **must** declare a body size limit. [review]
+- **S48.** A route's access kind ([code C33](code.md)) **must** be one of four. `page` reads any
+  address outside `/api/`, and an unknown one gets the screens' page with 404, which they show in
+  Portuguese. `public` is an API `GET` with no session. `entry` is a write with no session that
+  also needs `cf-connecting-ip`. `session` reads the session first. Every kind but `page` refuses
+  a `Sec-Fetch-Site` other than `same-origin` or none, and every write takes S24's origin and S25's
+  media. Founder, 2026-10-15:
+  "1 A 2. A". [`access.test.ts`, `http.test.ts`]
 
 **Why.** A form post from another site is the one request a browser sends with cookies and no
 preflight; refusing its media types and checking `Origin` closes it without a second secret.

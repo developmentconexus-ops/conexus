@@ -42,7 +42,7 @@ roteiro e diz o que viu.
 
 ## A tabela de falhas
 
-| Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio | Banco fora | O que o processo imprime | Critérios |
+| Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 
 ## O que nasce novo e o que é trazido
@@ -82,15 +82,16 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 - Someone who did not write the code can check every criterion from outside, and each says what is
   refused as well as what works.
 - Every file the build will touch is in a unit's blast radius, with its importers. A file outside it
-  stops the build ([delivery L7](../../../../docs/guides/delivery.md)), except a test beside its file
-  in a folder the radius names with its `*.test.ts` row. A unit that adds a package
+  stops the build, except as [delivery L7](../../../../docs/guides/delivery.md) allows through the
+  radius table's `*.test.ts` row. A unit that adds a package
   or a check lists the shared root files it changes (`package.json`, `package-lock.json`,
   `biome.json`, `ci.yml`).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - The order of the work names guide rules by identifier and never restates them.
 - Every write or command the step adds, its own or a library's, has its row in the failure table:
-  run twice at once, refused halfway (a grant revoked in the test), the database down, and what the
-  process prints under each. Each cell names its criterion; a step with no write writes "nenhuma".
+  run twice at once, refused halfway after one statement or one call (a grant revoked in the test, a
+  third party that fails), a dependency down (the database or a third party), and what the process
+  prints under each. Each cell names its criterion; a step with no write writes "nenhuma".
   Founder, 2026-10-15: "A-A".
 - The card takes every item of the open issues labelled `next-card`, or says on the founder's page
   why one waits. Whoever files an item for the next card applies the label; the closing pull request
@@ -100,8 +101,9 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 
 The reader of step 9 answers each one with the card's line.
 
-1. Does each criterion and contract hold against every guide rule that applies to it, cited or not,
-   and cite rules by identifier without restating them?
+1. For each thing a criterion or contract observes (a status, a failure code, a bound, the console,
+   a cookie), open the guide that owns it: does the card hold against its rules, cited or not, and
+   cite them by identifier without restating them?
 2. Does each named test reach what it tests through the public door ([testing
    T5](../../../../docs/guides/testing.md))?
 3. Does any criterion rest on a fact the study lists as not proved?

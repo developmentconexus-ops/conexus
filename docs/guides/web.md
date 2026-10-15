@@ -159,9 +159,11 @@ screen.
 - **W24.** Every write that creates something **must** use the attempt key: two clicks, one request.
   [review, and a test per form]
 - **W25.** Styles **must** be Tailwind with the brand tokens in `@theme`; the component is the unit
-  of reuse, and there **must not** be a stylesheet per screen. A width **must** be a `--container-*`
-  token or a fraction, never a spacing name: Tailwind 4 reads `max-w-*`, `w-*` and `min-w-*`
-  through `--spacing-*` before `--container-*`, so `max-w-sm` is the brand's 0.5rem. [review]
+  of reuse, and there **must not** be a stylesheet per screen. A named width utility **must not**
+  use a brand spacing name (`xs` to `2xl`), and a layout cap **must** be a `--container-*` token
+  with a name of its own: Tailwind 4 reads `max-w-*`, `w-*` and `min-w-*` through `--spacing-*`
+  before `--container-*`, so `max-w-sm` is the brand's 0.5rem. Numeric, intrinsic and zero widths,
+  such as `min-w-48`, `size-8` and `min-w-0`, stay valid. [review]
 - **W26.** Logic without React **should** live in a pure `.ts` file, apart from the screen. [review]
 - **W27.** `platform/jitless.ts` **must** set Zod's `jitless` before any schema exists: Zod 4 builds
   its first schema with `new Function`, which the CSP of [security S26](security.md) refuses. The

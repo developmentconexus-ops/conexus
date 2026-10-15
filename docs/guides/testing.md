@@ -72,7 +72,8 @@ company filter is removed.
 
 - **T14.** A double **must** prove only the boundary it replaces. A claim about a real provider,
   model, E2B, Neon or Cloudflare **must** have evidence from that service, run with authority to call
-  it. [review]
+  it. A proof of how the product serves, bundles or integrates **must** run on the Hub itself.
+  [review]
 - **T15.** A fake of a protocol **should** be preferred over a mock of a function. A fake reply from
   the Hub **must** pass the contract's schema, so a stale fake fails. [review]
 - **T16.** The test that closes a step **must not** fake its main path. [review]

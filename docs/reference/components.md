@@ -130,6 +130,7 @@ drawer-backdrop:
   backgroundColor: "{colors.canvas}, 80% opacity"
 ```
 
+These are the pieces with values of their own; a heading or an alert line is text in its tokens.
 The rail's places are `nav-item`, with an 18px icon (design V34). The menu and the drawer take a
 hairline, not a shadow, because the brand has no shadow token yet (design V3, V20). A `notice` is a
 `role="status"` line. The wordmark's "nexus" and the mark take `mark`.
