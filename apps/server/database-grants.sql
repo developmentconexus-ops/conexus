@@ -1,13 +1,16 @@
 -- The approved snapshot of the Hub database: owners, grants, default privileges, database settings
 -- (pg_dump --create --schema-only) and every role (pg_dumpall --roles-only --no-role-passwords).
 -- catalog.test.ts replaces the test database, owner and superuser names by hub_database, test_owner
--- and test_superuser, and leaves out the two roles of the test harness and the membership that
--- test-database.ts grants to the owner. Comment lines and blank lines are ignored in the comparison.
+-- and test_superuser, and leaves out the two roles of the test harness. Comment lines and blank lines
+-- are ignored in the comparison.
 ALTER DATABASE hub_database OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
 ALTER TABLE auth.account OWNER TO test_owner;
+ALTER TABLE auth.company OWNER TO test_owner;
+ALTER TABLE auth.invitation OWNER TO test_owner;
+ALTER TABLE auth.member OWNER TO test_owner;
 ALTER TABLE auth.rate_limit OWNER TO test_owner;
 ALTER TABLE auth.session OWNER TO test_owner;
 ALTER TABLE auth."user" OWNER TO test_owner;
@@ -20,6 +23,11 @@ GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 -- Step 3, founder 2026-10-14 ("0 Aprovo"): the Hub never deletes a person or a stored password.
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.account TO hub_runtime;
+-- Step 4, founder 2026-10-15 (decision 8, "Aprovo"): the Hub never deletes a company, a member or an
+-- invitation.
+GRANT SELECT,INSERT,UPDATE ON TABLE auth.company TO hub_runtime;
+GRANT SELECT,INSERT,UPDATE ON TABLE auth.invitation TO hub_runtime;
+GRANT SELECT,INSERT,UPDATE ON TABLE auth.member TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.rate_limit TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.session TO hub_runtime;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth."user" TO hub_runtime;

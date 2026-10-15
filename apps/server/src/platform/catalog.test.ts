@@ -166,6 +166,10 @@ for (const [name, statements, line, undo = []] of PLANTED) {
 const REFUSED: [string, ReturnType<typeof sql>][] = [
   ['DELETE de auth.user', sql`delete from auth.user`],
   ['DELETE de auth.account', sql`delete from auth.account`],
+  // Step 4, decision 8: the Hub never deletes a company, a member or an invitation.
+  ['DELETE de auth.company', sql`delete from auth.company`],
+  ['DELETE de auth.member', sql`delete from auth.member`],
+  ['DELETE de auth.invitation', sql`delete from auth.invitation`],
   ['DDL em auth', sql`alter table auth.session add column planted text`],
 ]
 for (const [name, statement] of REFUSED) {
