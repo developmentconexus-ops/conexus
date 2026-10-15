@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
+    "@tanstack/router-plugin": "1.168.46",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.3.0",
@@ -21,10 +22,18 @@
     "vitest": "5.0.2"
   },
   "dependencies": {
+    "@base-ui/react": "1.9.0",
     "@conexus/hub-api": "*",
+    "@hookform/resolvers": "5.9.1",
     "@tanstack/react-query": "5.104.0",
+    "@tanstack/react-router": "1.170.44",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "lucide-react": "1.57.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "react-hook-form": "7.90.0",
+    "tailwind-merge": "3.7.0",
     "zod": "4.6.5"
   }
 }

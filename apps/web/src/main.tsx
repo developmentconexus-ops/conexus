@@ -1,17 +1,71 @@
+import './platform/jitless.ts'
+import './brand/tokens.css'
+import { CSPProvider } from '@base-ui/react/csp-provider'
 import { QueryClientProvider } from '@tanstack/react-query'
+import type { RouterHistory } from '@tanstack/react-router'
+import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createCache } from './platform/cache.ts'
-import './brand/tokens.css'
-import { StatusPage } from './hub/status/public.ts'
+import { HubFailure } from './platform/hub.ts'
+import { applyChosenTheme } from './platform/theme.ts'
+import { routeTree } from './routeTree.gen.ts'
+import { Failure, Loading, NotFound } from './ui/states.tsx'
+
+// The router learns its routes and its static data by declaration merging, which needs interfaces.
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: ReturnType<typeof createConexus>['router']
+  }
+  interface StaticDataRouteOption {
+    place?: string
+  }
+}
+
+function PageFailure({ error, reset }: { error: unknown; reset: () => void }) {
+  return (
+    <Failure
+      code={error instanceof HubFailure ? error.code : 'INTERNAL_UNEXPECTED'}
+      onRetry={reset}
+    />
+  )
+}
+
+/** The router and its cache; a session that ends on any call lands on sign-in (web W15). */
+export function createConexus(history?: RouterHistory) {
+  const queryClient = createCache(async () => {
+    const back = router.state.location.href
+    await router.navigate({ to: '/login', search: { reason: 'session-ended', redirect: back } })
+    queryClient.clear()
+  })
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    ...(history ? { history } : {}),
+    defaultPendingComponent: Loading,
+    defaultErrorComponent: PageFailure,
+    defaultNotFoundComponent: NotFound,
+    defaultPendingMs: 150,
+    defaultPendingMinMs: 400,
+    defaultPreload: 'intent',
+  })
+  return { router, queryClient }
+}
+
+export function Conexus({ conexus }: { conexus: ReturnType<typeof createConexus> }) {
+  return (
+    <StrictMode>
+      <CSPProvider disableStyleElements>
+        <QueryClientProvider client={conexus.queryClient}>
+          <RouterProvider router={conexus.router} />
+        </QueryClientProvider>
+      </CSPProvider>
+    </StrictMode>
+  )
+}
 
 const root = document.getElementById('root')
-if (root === null) throw new Error('index.html has no #root')
-
-createRoot(root).render(
-  <StrictMode>
-    <QueryClientProvider client={createCache()}>
-      <StatusPage />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+if (root !== null) {
+  applyChosenTheme()
+  createRoot(root).render(<Conexus conexus={createConexus()} />)
+}

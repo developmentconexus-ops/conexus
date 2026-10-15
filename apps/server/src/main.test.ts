@@ -76,8 +76,8 @@ test('saúde', async () => {
   assert.equal(response.body, '{"status":"LIVE"}')
 })
 
-test('caminho desconhecido responde 404 em problem+json', async () => {
-  const response = await (await hub()).inject({ method: 'GET', url: '/nope' })
+test('caminho desconhecido em /api/ responde 404 em problem+json', async () => {
+  const response = await (await hub()).inject({ method: 'GET', url: '/api/nope' })
   assert.equal(response.statusCode, 404)
   assert.deepEqual(problem(response), NOT_FOUND)
 })
@@ -85,7 +85,7 @@ test('caminho desconhecido responde 404 em problem+json', async () => {
 test('o 404 vem antes do corpo', async () => {
   const app = await hub()
   const cases = [
-    { url: '/nope', payload: '{bad' },
+    { url: '/api/nope', payload: '{bad' },
     { url: '/api/health', payload: '{"a":1}' },
   ]
   for (const { url, payload } of cases) {
@@ -165,7 +165,7 @@ test('sem a página construída, / responde 404', async () => {
 
 test('cabeçalhos', async () => {
   const app = await hub()
-  for (const url of ['/api/health', '/nope']) {
+  for (const url of ['/api/health', '/api/nope', '/nope']) {
     const { headers } = await app.inject({ method: 'GET', url })
     const policy = String(headers['content-security-policy'])
     assert.match(policy, /(^|;)script-src 'self'(;|$)/)

@@ -46,6 +46,7 @@ test('tipo: recusa o que o tipo não permite', async () => {
     { method: 'POST', url: '/api/write', config: { access: 'public' } },
     { method: 'GET', url: '/other', config: { access: 'public' } },
     { method: 'GET', url: '/api/page', config: { access: 'page' } },
+    { method: 'GET', url: '/api', config: { access: 'page' } },
     { method: 'GET', url: '/api/entry', config: { access: 'entry' } },
     { method: 'PUT', url: '/outside', config: { access: 'session' } },
   ]

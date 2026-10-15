@@ -1,0 +1,75 @@
+import { FAILURES, Problem } from '@conexus/hub-api'
+import { createMemoryHistory } from '@tanstack/react-router'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
+import { setupServer } from 'msw/node'
+import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { Conexus, createConexus } from '../../main.tsx'
+
+const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
+const STATUS = { version: 'v0.1.0', lastStart: { state: 'NONE' }, previousStart: { state: 'NONE' } }
+const server = setupServer()
+beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
+
+function refusal(code: keyof typeof FAILURES) {
+  const row = FAILURES[code]
+  const body = Problem.parse({
+    type: `urn:conexus:problem:${code}`,
+    title: row.phrase,
+    status: row.status,
+    code,
+    traceId: 'a1b2c3',
+  })
+  return HttpResponse.json(body, { status: row.status })
+}
+
+function signedIn(signOut: () => Promise<Response> | Response) {
+  const state = { signedIn: true }
+  server.use(
+    http.get('*/api/sessions/current', () =>
+      state.signedIn ? HttpResponse.json({ person: ANA }) : refusal('SESSION_REQUIRED'),
+    ),
+    http.delete('*/api/sessions/current', async () => {
+      const answer = await signOut()
+      if (answer.ok) state.signedIn = false
+      return answer
+    }),
+    http.get('*/api/status', () => HttpResponse.json(STATUS)),
+  )
+  const conexus = createConexus(createMemoryHistory({ initialEntries: ['/'] }))
+  render(<Conexus conexus={conexus} />)
+  return conexus
+}
+
+async function openMenu() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Conta de Ana Lima' }))
+  return screen.findByRole('menuitem', { name: /Sair do Conexus/ })
+}
+
+test('o menu da conta mostra o nome e o e-mail; "Sair do Conexus" leva a /login com "Você saiu do Conexus."', async () => {
+  const conexus = signedIn(() => new HttpResponse(null, { status: 204 }))
+  const leave = await openMenu()
+  expect(screen.getByText('ana@example.test')).toBeTruthy()
+  fireEvent.click(leave)
+  expect(await screen.findByText('Você saiu do Conexus.')).toBeTruthy()
+  expect(conexus.router.state.location.pathname).toBe('/login')
+  expect(screen.queryByText(/Você entrou como/)).toBeNull()
+  expect(conexus.queryClient.getQueryCache().getAll()).toEqual([])
+})
+
+test('enquanto sai, "Saindo…"; uma falha fica no menu com a frase', async () => {
+  const answer = Promise.withResolvers<void>()
+  signedIn(async () => {
+    await answer.promise
+    return refusal('DATABASE_UNAVAILABLE')
+  })
+  fireEvent.click(await openMenu())
+  expect(await screen.findByRole('menuitem', { name: /Saindo…/ })).toBeTruthy()
+  answer.resolve()
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    'O banco do Conexus não respondeu. O erro foi registrado. Avise quem cuida do Conexus.',
+  )
+  expect(screen.getByText('Você entrou como Ana Lima.')).toBeTruthy()
+})

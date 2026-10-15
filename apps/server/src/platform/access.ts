@@ -22,7 +22,8 @@ const signedIn = new WeakMap<FastifyRequest, Person>()
 
 type Shape = { methods: readonly string[]; path: RegExp }
 const ALLOWED: Record<AccessKind, Shape> = {
-  page: { methods: READS, path: /^\/($|favicon\.svg$|assets\/)/ },
+  // A page is any address outside /api/, where the screens' router answers (web W1).
+  page: { methods: READS, path: /^\/(?!api(\/|$))/ },
   public: { methods: ['GET'], path: /^\/api\// },
   entry: { methods: ['POST', 'PUT'], path: /^\/api\// },
   session: { methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], path: /^\/api\// },
@@ -94,7 +95,12 @@ export function enforceAccess(
   })
   app.addHook('onRequest', async (request, reply) => {
     const access = declared(request.routeOptions.config)
-    if (access === undefined) throw new Failure('NOT_FOUND')
+    // Every route declares its kind when it is added, so none means no route. A write is refused
+    // before its body is read; a read goes on to the not-found handler, which may answer the page.
+    if (access === undefined) {
+      if (READS.includes(request.method)) return
+      throw new Failure('NOT_FOUND')
+    }
     if (access !== 'entry' && access !== 'session') return
     if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)
     if (access === 'entry') {

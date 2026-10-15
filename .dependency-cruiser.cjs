@@ -90,9 +90,11 @@ module.exports = {
     {
       name: 'web-tree-shape',
       comment:
-        'W1: apps/web/src holds main.tsx and the folders routes, hub, builder, ui, platform, brand.',
+        'W1: apps/web/src holds main.tsx, the generated routeTree.gen.ts and the folders routes, hub, builder, ui, platform, brand.',
       severity: 'error',
-      from: { path: `${WEB}/(?!(main\\.tsx|routes/|hub/|builder/|ui/|platform/|brand/))` },
+      from: {
+        path: `${WEB}/(?!(main\\.tsx|routeTree\\.gen\\.ts|routes/|hub/|builder/|ui/|platform/|brand/))`,
+      },
       to: {},
     },
     {

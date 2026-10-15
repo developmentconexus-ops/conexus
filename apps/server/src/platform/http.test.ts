@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
 import { Person } from '@conexus/hub-api'
@@ -104,4 +106,46 @@ test('formulário vindo da própria página: 415 REQUEST_MEDIA_TYPE_REFUSED', as
   })
   assert.equal(response.statusCode, 415)
   assert.equal(response.json().title, 'O Conexus não aceita pedidos nesse formato.')
+})
+
+test('páginas: /, /login e /set-password abrem a página das telas; outro endereço, 404', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  writeFileSync(join(dir, 'index.html'), '<!doctype html><title>x</title>')
+  const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
+    webRoot: dir,
+    readSession: async () => ({ kind: 'SIGNED_OUT' }),
+  })
+  t.after(() => app.close())
+  for (const url of ['/', '/login', '/set-password', '/login?redirect=%2F']) {
+    const page = await app.inject({ method: 'GET', url })
+    assert.equal(page.statusCode, 200, url)
+    assert.equal(page.body, '<!doctype html><title>x</title>', url)
+  }
+  assert.equal((await app.inject({ method: 'GET', url: '/entrar' })).statusCode, 404)
+})
+
+test('endereço desconhecido: fora de /api/, a página das telas com 404; em /api/, o JSON de 404', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  writeFileSync(join(dir, 'index.html'), '<!doctype html><title>x</title>')
+  const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
+    webRoot: dir,
+    readSession: async () => ({ kind: 'SIGNED_OUT' }),
+  })
+  t.after(() => app.close())
+  for (const url of ['/endereco-que-nao-existe', '/a/b?c=1', '/assets/nao-existe.js']) {
+    const typed = await app.inject({ method: 'GET', url })
+    assert.equal(typed.statusCode, 404, url)
+    assert.equal(typed.body, '<!doctype html><title>x</title>', url)
+    assert.match(String(typed.headers['content-type']), /^text\/html/, url)
+  }
+  for (const url of ['/api/nao-existe', '/api', '/api?x=1']) {
+    const api = await app.inject({ method: 'GET', url })
+    assert.equal(api.statusCode, 404, url)
+    assert.equal(Object(api.json()).code, 'NOT_FOUND', url)
+  }
+  const write = await app.inject({ method: 'POST', url: '/endereco-que-nao-existe', payload: '{' })
+  assert.equal(write.statusCode, 404)
+  assert.equal(Object(write.json()).code, 'NOT_FOUND')
 })
