@@ -48,7 +48,3 @@ export function SheetContent({
     </SheetPrimitive.Portal>
   )
 }
-
-export function SheetClose(props: SheetPrimitive.Close.Props) {
-  return <SheetPrimitive.Close data-slot="sheet-close" {...props} />
-}

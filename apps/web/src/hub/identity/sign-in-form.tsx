@@ -5,11 +5,12 @@ import { sentenceOf } from '../../platform/hub.ts'
 import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { sessionQuery, signIn } from './queries.ts'
 
-type SignInReason = 'signed-out' | 'session-ended'
+type SignInReason = 'signed-out' | 'session-ended' | 'password-set'
 
 const NOTICES: Record<SignInReason, string> = {
   'signed-out': 'Você saiu do Conexus.',
   'session-ended': `${FAILURES.SESSION_REQUIRED.phrase} ${FAILURES.SESSION_REQUIRED.action}`,
+  'password-set': 'Senha criada. Entre com ela.',
 }
 
 export function SignInForm(props: {

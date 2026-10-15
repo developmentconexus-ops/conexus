@@ -24,7 +24,6 @@ export function SetPasswordForm({ token }: { token: string | undefined }) {
   if (token !== undefined) return <ChoosePassword token={token} />
   return (
     <section className="flex w-full flex-col gap-lg">
-      <Heading />
       <p role="alert" className="text-danger">
         {LINK_INVALID}
       </p>
@@ -44,7 +43,7 @@ function ChoosePassword({ token }: { token: string }) {
       form.setError('root.server', { type: 'server', message: sentenceOf(error) })
       return
     }
-    await router.navigate({ to: '/login' })
+    await router.navigate({ to: '/login', search: { reason: 'password-set' } })
   }
 
   return (
