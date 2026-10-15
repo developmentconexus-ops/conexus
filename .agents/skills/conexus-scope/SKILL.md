@@ -22,13 +22,17 @@ parts, [architecture](../../../docs/architecture.md), and the guide each unit wi
    console, such as Neon's, is not a terminal.
 2. List what enters and what stays out, and why.
 3. Write the acceptance criteria, each observable from outside, with the refusals included; each
-   refusal names the route of this step that reaches it.
-4. Split the step into units. Name the folders of each; units that share no folder may run in
+   refusal names the route of this step that reaches it. Fill the template's failure table for every
+   write the study listed; each row yields criteria.
+4. Split the step into units that each end green on their own: a contract lands with its first
+   implementer, and a migration that changes the catalog snapshot lands with the unit that owns
+   `database-grants.sql`. Name the folders of each; units that share no folder may run in
    parallel. For each unit write the blast radius (each file created, changed or deleted, and who
    imports or calls it), the contracts it creates by signature only (with pstack `architect`, and
    `arena` for competing shapes, when a contract crosses a module; without pstack, compare two shapes
    in writing), the order of the work with the
-   guide rules by identifier and the library functions at the installed version, and the test of
+   guide rules by identifier and the library functions and options the study listed, at the
+   installed version, and the test of
    each criterion with its level.
 5. Copy the study's table of parts into the card. Every part is new or brought, by the study rule
    ([`conexus-study`](../conexus-study/SKILL.md) step 5). A brought part has the file of the new
@@ -39,9 +43,11 @@ parts, [architecture](../../../docs/architecture.md), and the guide each unit wi
    accounts may move to a named unit, written as such on the founder's page.
 7. Name, for each unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads,
    and the maintainers' skills it loads.
-8. Write the founder's page in Portuguese, one decision at a time, with an example.
+8. Write the founder's page in Portuguese, one decision at a time, with an example. A guide rule
+   the study found resting only on "implemented so" is one of them.
 9. Give the card to a reader of another model, who did not write it, at the exact commit the founder
-   will approve; a later commit of the card is read again before it reaches him.
+   will approve, with the reader's questions of [the template](references/card.md); a later commit
+   of the card is read again before it reaches him.
 
 ## What it produces
 

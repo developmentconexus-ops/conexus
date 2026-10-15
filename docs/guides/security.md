@@ -74,8 +74,9 @@ not-found an outsider gets.
   how it meets this, is reopened [0013]. [review]
 - **S17.** The Hub cookie **must** be `__Host-` prefixed, `Secure`, `HttpOnly`, `SameSite=Lax`, path
   `/`, with no domain. [review]
-- **S18.** A session **must** have an idle and a total deadline, decided by the database clock.
-  [review]
+- **S18.** A session **must** have an idle and a total deadline, both on the clock of the library
+  that stamps it; the Hub adds only the total, on the library's own `createdAt`. Founder,
+  2026-10-15: "1. A". [review]
 - **S19.** Every request **must** read the session row, with no cookie cache. [review]
 - **S20.** Sign-out **must** end the session on the server first. A person **must** be able to end
   their own sessions, and an administrator another person's. [review]
@@ -103,6 +104,12 @@ removed.
 - **S26.** The Hub **must** send a Content Security Policy with `script-src 'self'` and no
   `unsafe-inline`, a strict `Referrer-Policy`, and `frame-ancestors 'none'`. [review]
 - **S27.** Each route **must** declare a body size limit. [review]
+- **S48.** The four access kinds of [code C33](code.md) mean: `page`, a read of any address outside
+  `/api/`, where an unknown one gets the screens' page with 404, shown in Portuguese (founder,
+  2026-10-15: "1 A 2. A"); `public`, an API `GET` with no session; `entry`, a write with no
+  session that also needs `cf-connecting-ip` (S29); `session`, a request whose session is read
+  first. Writes follow S24 and S25. The four came with step 3's approved card.
+  [`access.test.ts`, `http.test.ts`]
 
 **Why.** A form post from another site is the one request a browser sends with cookies and no
 preflight; refusing its media types and checking `Origin` closes it without a second secret.

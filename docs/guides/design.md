@@ -86,98 +86,19 @@ spacing:
   lg: "1rem"
   xl: "1.5rem"
   2xl: "2.5rem"
-components:
-  button-primary:
-    backgroundColor: "{colors.ink}"
-    textColor: "{colors.on-ink}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-default:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-default-hover:
-    backgroundColor: "{colors.surface-3}"
-  button-danger:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.danger}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-danger-confirm:
-    backgroundColor: "{colors.danger}"
-    textColor: "{colors.on-ink}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-    typography: "{typography.label}"
-  button-ghost:
-    backgroundColor: "transparent"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.control}"
-    padding: "0 0.9rem"
-    height: "34px"
-  icon-button:
-    backgroundColor: "transparent"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.control}"
-    size: "32px"
-  icon-button-round-hover:
-    backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.accent-text}"
-    rounded: "{rounded.pill}"
-    size: "32px"
-  nav-item:
-    backgroundColor: "transparent"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.control}"
-    height: "34px"
-    padding: "0 0.6rem"
-  nav-item-hover:
-    backgroundColor: "{colors.accent-soft}"
-    textColor: "{colors.text}"
-  nav-item-active:
-    backgroundColor: "{colors.surface-3}"
-    textColor: "{colors.text}"
-  input:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.control}"
-    padding: "0 0.75rem"
-    height: "36px"
-  chip:
-    backgroundColor: "{colors.surface-3}"
-    textColor: "{colors.text-2}"
-    rounded: "{rounded.pill}"
-    padding: "0 0.55rem"
-    height: "1.5rem"
-  panel:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.object}"
-    padding: "1.5rem"
-  project-card:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.card}"
-  composer:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.text}"
-    rounded: "{rounded.composer}"
-    padding: "0.7rem 0.8rem 0.4rem"
+containers:
+  drawer: "20rem"
+  column: "24rem"
+  message: "28rem"
 ---
 
 # Design guide
 
 How Conexus looks, moves and speaks. It follows the
 [DESIGN.md format](https://github.com/google-labs-code/design.md): the front matter holds the
-tokens, and the sections below give the rules under the format's section names. Each rule has an
+tokens, and the sections below give the rules under the format's section names. The format's
+`components` live in [the components list](../reference/components.md), which changes with the step
+that adds a piece (V24). Each rule has an
 identifier, at most one sentence of reason, and in brackets the machine that refuses a violation,
 "rule to write" when the check is promised and not yet written, or "review". How the web side is organized and how styles are written is [web](web.md); how to use
 the shadcn pieces is their maintainers' skill.
@@ -232,7 +153,8 @@ mono.
 
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
 - **V17.** No `style` attribute in Conexus's own pieces; styles come from tokens. [review]
-- **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll. [review]
+- **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll; [testing
+  T23](testing.md) lists the widths looked at. [`layout.test.ts`, review]
 - **V56.** On a phone the rail becomes a drawer opened from the top bar ("Abrir navegação"), and the
   top bar keeps the mark, the current place and the account. A rail dropped without a drawer takes
   every place with it. [review]
@@ -253,7 +175,8 @@ mono.
 ## Components
 
 - **V23.** A component takes its colors, radius and type from tokens. [review]
-- **V24.** A new component enters the front matter in the same change. [review]
+- **V24.** A new component enters [the components list](../reference/components.md) in the same
+  change, with its tokens. [review]
 - **V55.** A destructive action on a page is a `button-danger`, neutral with `danger` text; the full
   `danger` fill, `button-danger-confirm`, is only the final button of its confirmation, in place of
   `ink`. The red fill marks the last step, the real danger; founder, 2026-10-14: "B". [review]
@@ -270,19 +193,21 @@ mono.
 
 - **V27.** Hover moves a surface one step up its scale: `surface`, `surface-3`, `surface-4`. Press
   shows a fill and never shrinks. [review]
-- **V28.** `:focus-visible` draws a 2px `accent` outline. [review]
+- **V28.** `:focus-visible` draws a 2px `accent` outline. [`layout.test.ts`, review]
 - **V29.** A disabled control says why when the reason is not obvious. [review]
 - **V30.** Tab reaches every action in reading order, Esc closes what opened, and every drag has a
   keyboard path. [review]
 - **V31.** Every input has a label, and every icon-only button a pt-BR `aria-label`. [review]
-- **V32.** The console shows no error and no Content Security Policy violation, so no piece injects a
-  `<style>` element ([web W22](web.md)). [review]
+- **V32.** The console shows no uncaught error and no Content Security Policy violation, so no piece
+  injects a `<style>` element ([web W22](web.md)). Chromium also logs a refusal the screen shows,
+  such as a wrong password; that line is not an error. Founder, 2026-10-15: "2. A". [review]
 
 ## Iconography
 
 - **V33.** Icons come from `lucide-react` with its defaults: outline, stroke 2, round caps, colored
   by `currentColor` from a token on the parent. One set at one stroke reads as one product. [review]
-- **V34.** Size follows the neighbour: 14px in toolbars, 16px inline, 18px in the rail. [review]
+- **V34.** Size follows the neighbour: 14px in toolbars, 16px inline, 18px in the rail.
+  [`layout.test.ts`, review]
 - **V35.** The stop control is the one filled icon. An icon has one meaning and never shows status
   alone; a decorative icon is `aria-hidden`. [review]
 - **V36.** Provider logos appear only in model pickers. [review]
@@ -302,7 +227,9 @@ mono.
   table already says. A non-technical person reads every word as a promise. [review]
 - **V43.** A failure's words come from the failure table, by code; the internal code is never shown
   in mono. A failure the person can fix says what to change, and a button appears beside it only when
-  its row's action kind asks for one ([code C48](code.md)). [review]
+  its row's action kind asks for one ([code C48](code.md)). One exception: the not-found page offers
+  every person the link "Voltar ao início", drawn as `button-default`, while its row keeps `NONE`.
+  Founder, 2026-10-15, screen fix answer 1: "1 A". [review]
 - **V44.** A tool shows as a sentence while it runs and when it ends, never as its technical name.
   Reasoning shows only as "Pensando…". [review]
 - **V45.** What is not built says "em breve". Numbers and dates use the Brazilian format ("1.234,5",

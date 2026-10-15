@@ -22,7 +22,8 @@ The pull request, its head commit and the card. Nothing from the builders' conve
 2. Read the whole diff of the step against `main`, at the exact commit.
 3. For every acceptance criterion, try a counterexample.
 4. Run the refusal criteria against the published step or a real database, and say what you ran.
-   A claim you did not run is labelled "read".
+   A claim you did not run is labelled "read". A step that changes a screen is looked at as
+   [testing T23](../../../docs/guides/testing.md) says, and the verdict names the screenshots.
 5. A file changed outside the card's blast radius is a finding (L7). For every part, check it
    against the card's table and the study rule ([`conexus-study`](../conexus-study/SKILL.md) step
    5): brought parts land in the named file and carry only the listed old decisions. Ask of every

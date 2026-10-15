@@ -14,6 +14,7 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Etapa 2 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 3. **Entrar.** Entra com e-mail e senha, e sai.
    Cartão da etapa 3 aprovado em 2026-10-14 (commit 5a65e5348fd47f541a9c0447a3a11996a28d3b25): "Aprovo"
+   Etapa 3 usada em 2026-10-15 em https://hub.conexus.fun: "Todos passos deram certo"
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
@@ -76,8 +77,7 @@ seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 3 Entrar | A 2, com o Tunnel no domínio. O estudo da interface inteira | O administrador da instalação (5) | Rascunho do login e a revisão dele (B1, B4, R1). Dos testes de login, os que só pedem o Hub. A concessão. O registro 0013, reaberto |
-| 4 Empresa e convite | O remetente com DNS | Convite com aceite (4) | Fichas `workspace` e admissão. LT11 e LT12. A porta "apagar empresa". O registro 0015, reaberto |
+| 4 Empresa e convite | O remetente com DNS | Convite com aceite (4) | Primeira unidade: as três conferências automáticas (linha crua no registro, tirar cada proteção, arquivos fora do raio), desenhadas na issue #32; até ela entrar, T12 e L7 seguem só como texto. As issues `next-card`. A sua decisão 5, de 2026-10-14 ("1. A"): o administrador da instalação é papel só da equipe da plataforma; quem cria e muda as conexões de uma empresa é o dono ou um administrador dela; o papel entra nesta etapa. Fichas `workspace` e admissão. LT11 e LT12. A porta "apagar empresa". O registro 0015, reaberto |
 | 5 Duas empresas | A 4 | A política por linha no banco | A lista de nove itens da política |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
@@ -100,9 +100,6 @@ seção 1.
 
 O teste do banco dormindo, da etapa 2, roda de novo em toda etapa que acrescenta algo que roda
 sozinho. Se o banco não dormir com o Mastra parado, a etapa 12 volta a você.
-
-**A interface.** Antes da etapa 3, o Firstmate encomenda o estudo da tela antiga inteira, contra as
-referências e os guias. O resultado decide a árvore de `apps/web` e o guia do lado da tela.
 
 ## 3. Como uma etapa roda
 

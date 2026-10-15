@@ -37,8 +37,9 @@ defect.
    step 5) as you go; when a part passes its limit, stop and report.
 5. Write the tests through the server's public door, with the negative cases
    ([testing](../../../docs/guides/testing.md)).
-6. Run the result for real: the server, the route, the screen, the migration on a disposable
-   database, through the repository's verification skill when one exists, kept current with pstack
+6. Run the result for real: the server, the route, the migration on a disposable database, and a
+   changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
+   repository's verification skill when one exists, kept current with pstack
    `maintain-verification-skill`. Then run pstack `deslop` and `no-comments`; code C70 and C73
    decide what leaves, so a comment that states a why the code cannot show stays. Without pstack:
    reread the diff and remove what a careful engineer would not write.
@@ -49,9 +50,9 @@ defect.
 The commit and a report: what I ran, what I saw, what I did not prove, the brought and changed line
 counts of each brought part, and every criterion of the card with the test that covers it. It lists
 every file changed outside the unit's blast radius and every departure from the card, each with the
-stop it raised, or "none"; and the maintainers' skills and pstack skills loaded. No pull
-request per unit and no review per unit: the step gets one review when its units are built
-([delivery](../../../docs/guides/delivery.md)).
+stop it raised, or "none"; the screenshots looked at, by state, width and theme, or "no screen
+touched"; and the maintainers' skills and pstack skills loaded. No pull request or review per unit
+([delivery L9, L13](../../../docs/guides/delivery.md)).
 
 ## Stop and ask
 

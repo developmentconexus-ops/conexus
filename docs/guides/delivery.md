@@ -29,7 +29,8 @@ the founder's word.
   of the tip and that the card has not changed since. [CI]
 - **L7.** A unit **must** touch only the files its card's blast radius names. A file outside it, or a
   change of scope found mid-step, **must** stop the build and return to the card, with the founder's
-  word for what he sees. [review]
+  word for what he sees. A new test beside its file is inside the radius when the card names its
+  folder, by the card template's row `<folder>/*.test.ts`. Founder, 2026-10-15: "EA". [review]
 
 **Why.** An approval that cites a commit the card has since left approves nothing. A blast radius
 written before the build is what makes a reviewer able to see the build wandered.
@@ -98,7 +99,8 @@ e funcionou" goes on the roadmap with the date.
 ## 5. Closing a step
 
 - **L19.** The closing pull request **must** write the use line, move into the guides the rules the
-  step learned, confirm every acceptance criterion has a test, and delete the card. [review]
+  step learned, confirm every acceptance criterion has a test, remove from the `next-card` issues
+  the items the step took, and delete the card. [review]
 - **L20.** Skills and guides **must** change only in a closing pull request, when no step is in
   construction. A finding that asks for a change waits in the method queue, an issue with the method
   label. The exception is an emergency label only the founder applies, counted on the step's line.
@@ -119,8 +121,9 @@ changes the guide.
 - **L22.** Studies and proofs **must** stay outside this repository; a decision record keeps the
   conclusion. Founder, 2026-10-12. [review]
 - **L23.** What the founder reads **must** be in Portuguese: the README, the roadmap, the cards and
-  their founder's page. `AGENTS.md`, the guides, the architecture, the decision records and the
-  skills **must** be in English. [review]
+  their founder's page, and a how-to the founder follows. `AGENTS.md`, the guides, the
+  architecture, the decision records, the skills and the other how-tos **must** be in English.
+  Founder, 2026-10-15: "2. A". [review]
 - **L24.** A file in `docs/` or `.agents/skills/` **must** have a line in `docs/index.md` and stay
   under its ceiling below; links **must** resolve; rule identifiers **must** be unique and every cited
   one exist; a rule **must** live in one file; retired process names **must not** appear. They are:
@@ -141,6 +144,7 @@ changes the guide.
 | `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | 4,000, the founder's page about 600 |
 | `docs/how-to/*.md` | 800 |
+| `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |
 | `.agents/skills/*/references/*.md` | 1,500 |
 

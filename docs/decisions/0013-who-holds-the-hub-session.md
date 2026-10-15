@@ -20,7 +20,12 @@ native session: the `__Host-` cookie by configuration (LT3, LT7 on the Hub host)
 refused on the next call (LT14), no stored row opens a session without the secret (LT15), no
 undeclared library path (LT17), every sign-up path closed. Missing natively, so Conexus code: a
 total deadline, and a sign-out that fails when the row cannot be deleted. Not run: LT16, through the
-Tunnel, after publish. The other tests belong to steps 4, 8 and 18.
+Tunnel, after publish (see Notes). The other tests belong to steps 4, 8 and 18.
+
+## Notes
+
+LT16, 2026-10-15, through the Tunnel: on v0.3.0 one address got ten 401s, then 429; another got
+401. On v0.3.1 the founder read `__Host-conexus_session`: "HttpOnly ✓, SameSite Lax".
 
 ## Consequences
 

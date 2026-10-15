@@ -238,9 +238,10 @@ with it. This wait is Conexus code.
 **Debt.** Small fixes left on a brought part are listed here, one line each, with the step that
 removes them.
 
-- The invalid-JSON 400, the 415 and the 413 refusals, and the `bodyLimit` proof, are proved with
-  step 3's first POST operation: step 1 has only GET and HEAD routes, and Fastify never reads a
-  body on them.
+- Expired rows of `auth.session` and `auth.verification` leave only when presented, until the first
+  scheduled job.
+- `createUser`, `listUsers` and `findCredentialAccount` are the library's internal calls, with no
+  public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
 - Trace ids are Fastify's request ids: the Hub audit's `telemetry` part has no step in the roadmap
   yet.
 - The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end the wait.

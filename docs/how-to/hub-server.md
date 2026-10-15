@@ -1,6 +1,6 @@
 # Set up the Hub server
 
-How the São Paulo server is prepared, and how the Hub is published and put back. Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
+How the server is prepared, and how the Hub is published and put back. Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
 
 ## Prepare the server
 
@@ -10,13 +10,11 @@ How the São Paulo server is prepared, and how the Hub is published and put back
 3. As root on the server, save the Cloudflare tunnel token and the runner registration token each in
    a file only root can read (mode 0400 or 0600), then run
    `RUNNER_URL=… RUNNER_VERSION=… RUNNER_SHA256=… TUNNEL_TOKEN_FILE=… RUNNER_TOKEN_FILE=… infra/setup-server.sh`
-   and delete both files. The script runs once: a second run stops at the runner service, which
-   already exists. It refuses a file others can read. It installs Docker, copies the
+   and delete both files. The script runs once and refuses a file others can read. It installs Docker, copies the
    tunnel token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a
    service of the user `runner`, which has no login and sits in the `docker` group.
 4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the provider's main
-   SSH configuration may have no `Include`, and then a drop-in in sshd's configuration folder is
-   ignored.
+   SSH configuration may lack the `Include` that reads a drop-in.
 5. Close SSH last, after the provider's console is proved to work. Without a console, stop and ask.
 
 ## Check the GitHub settings
@@ -38,16 +36,14 @@ CSP refuses it. Setting the rule needs a key with Zone Config Rules Edit.
 ## External monitor
 
 StatusCake, free plan: an HTTP check of `https://<the Hub's name>/api/health` every 5 minutes, alerting
-the founder's e-mail. Its free terms for commercial use were not checked when this was written: read
-them at sign-up.
+the founder's e-mail. Read its free terms for commercial use at sign-up; they were not checked.
 
 ## Database keys
 
 Firstmate writes two files as root in `/etc/conexus/secrets`, then sets owner uid 1000 and mode 0400:
 `hub_database_url`, the Hub login, and `hub_migration_database_url`, the owner login. Both hold a
-direct (not pooled) PostgreSQL address. Only the service `migrate` mounts the owner key. The `hub`
-container mounts `hub_database_url` alone, and `deploy.sh` refuses to start the Hub without it. The
-founder opens port 22 only while the files are written, then closes it.
+direct (not pooled) PostgreSQL address. Only `migrate` mounts the owner key, and the `hub` container
+mounts `hub_database_url` alone. Port 22 is open only while they are written.
 
 ## Session secret and first person
 
@@ -55,8 +51,13 @@ Firstmate writes `hub_session_secret` beside those keys, 32 random characters or
 (`openssl rand -base64 48`). `deploy.sh` refuses to run without it. A new secret, then Reiniciar o
 Hub, ends every session.
 
-Actions, Criar a primeira pessoa: the summary, never the log, shows a one-use `/set-password` link
-for 15 minutes. A rerun gives a new link until a password exists.
+## Para o fundador
+
+- Enquanto o Firstmate grava as chaves do banco ou o segredo das sessões, abra a porta 22 no
+  firewall do provedor e feche-a depois.
+- Em Actions, rode "Criar a primeira pessoa". O resumo da execução, nunca o log, mostra um link
+  `/set-password` de uso único, que vale 15 minutos. Rodar de novo dá um link novo enquanto não
+  houver senha.
 
 ## Publish
 

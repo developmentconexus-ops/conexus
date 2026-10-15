@@ -148,8 +148,9 @@ the Project was purged.
 - **C30.** An operation **must** have a real consumer, and a surface not built **must not** have a
   contract. There **must not** be a generic operation such as `execute(anySlug, anyInput)`, a
   caller-chosen URL or connection, or a fetch of any stored object by key. [review]
-- **C31.** A response **must** be checked with the contract's schema before it is sent, without a
-  type provider. [review]
+- **C31.** A response **must** be checked with the contract's schema before it is sent. `serve` does
+  it, and a Fastify type provider cannot replace it: it types the body but not the person, the
+  access kind or the cookies ([boundaries](../reference/boundaries.md)). [review]
 - **C32.** A request body **must not** be spread into an insert; columns are named. [review]
 
 **Why.** One declaration gives the server, the web and the documentation the same shape, so a change
@@ -218,13 +219,15 @@ returns the first Project.
 - **C48.** There **must** be one closed table of failure codes, each with a category (`USER`,
   `THIRD_PARTY`, `SYSTEM`), a status, the phrase a person reads and the action they can take. Each
   row **must** also carry an action kind (`RETRY`, `SIGN_IN`, `NONE`) beside that sentence, so a
-  screen shows a button only when its row says so (C55). [review]
+  screen shows a button only when its row says so (C55), with the one exception of [design
+  V43](design.md). [review]
 - **C49.** Code **must** throw only Conexus's failure class. A refusal its caller branches on **must**
   be a result union on `ok`. The browser **must** read every failure through one shared reader. The
   Builder **must** convert to Mastra's error only at its edge. [review]
 - **C50.** One central handler **must** turn every error into a response; an unknown error becomes
   a `SYSTEM` failure with the original kept as cause. A library's error **must** be mapped by its
-  status, not only from a list of known ones. [review]
+  status, not only from a list of known ones. A framework or library that catches, prints or
+  answers errors in its own router **must** be set so they reach the central handler. [review]
 - **C51.** An error response **must** carry only `type`, `title`, `status`, `code` and the trace
   id, as `application/problem+json`, and **must not** carry a stack or a `detail` a client parses.
   [review]

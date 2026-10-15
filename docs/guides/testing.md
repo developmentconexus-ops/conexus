@@ -14,7 +14,8 @@ to break; **may** is a free choice. Each rule ends with the machine that refuses
   use Vitest [0034]. [review]
 - **T2.** A test **must** sit next to the file it tests: `x.test.ts` beside `x.ts`, `x.test.tsx`
   beside a screen. End-to-end scripts, few, **must** live in `tests/e2e` and run against a real Hub.
-  [review]
+  The browser check of the built screens **must** live at the root of its app, because what it
+  measures belongs to the whole app, not to one file. [review]
 - **T3.** Every run **must** have a global timeout: `node:test` has only a per-test one, so the CI
   job's `timeout-minutes` is the global one. [CI]
 - **T4.** A skipped test **must** state why, starting with `opt-in:`; a suite that ran zero tests
@@ -71,7 +72,8 @@ company filter is removed.
 
 - **T14.** A double **must** prove only the boundary it replaces. A claim about a real provider,
   model, E2B, Neon or Cloudflare **must** have evidence from that service, run with authority to call
-  it. [review]
+  it. A proof of how the product serves, bundles or integrates **must** run on the Hub itself.
+  [review]
 - **T15.** A fake of a protocol **should** be preferred over a mock of a function. A fake reply from
   the Hub **must** pass the contract's schema, so a stale fake fails. [review]
 - **T16.** The test that closes a step **must not** fake its main path. [review]
@@ -99,9 +101,15 @@ a hand-written example proves a platform mechanism, not that the Builder finds a
 - **T21.** Test files **must** obey the same size limits as code. [Biome]
 - **T22.** A generated artifact **must** be tested by parsing or running it, and expected output
   **must** change only by rerunning its generator. [review]
+- **T23.** A change to a screen **must** be looked at in a real browser before it is reported, by
+  the builder and by each reviewer: a screenshot of every state the change touches at 1366, 390 and
+  320 px wide, in light and dark, each one opened and looked at, and a keyboard pass that Tabs
+  through every focus stop. A fact seen there that a measure can hold, such as a width, an overflow
+  or a missing outline, enters the browser check of T2. [review]
 
 **Why.** A shared database hides which change broke it, and a database built from migrations proves
-the migrations. A sleep makes a test slow on a fast machine and flaky on a slow one.
+the migrations. A sleep makes a test slow on a fast machine and flaky on a slow one. Step 3's login
+column drew 8 px wide on the live Hub while every test passed: no check had looked at a screen (T23).
 
 **Right.** A suite named after its file creates `conexus_test_projects_<random>` and drops it.
 
@@ -115,6 +123,6 @@ run to finish.
 | A function or module | Tests of its behaviour, beside it |
 | A store or a migration | Tests against a disposable PostgreSQL, then a Neon branch before real data |
 | A route | An HTTP test, with its negative cases |
-| A screen | A screen test beside it; an end-to-end script for a path that crosses the Hub |
+| A screen | A screen test beside it; the look and the browser check (T23, T2); an end-to-end script for a path that crosses the Hub |
 | A Builder change | A real turn, when authorized |
 | A security rule | Negative cases, the escape test and proof by removal |
