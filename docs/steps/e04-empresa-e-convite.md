@@ -21,7 +21,7 @@ aceita e entra na empresa.
 faz o roteiro e diz o que viu.
 
 **Fica de fora.** Apagar empresa: etapa 5. Tirar pessoa, mudar papel, sair, a regra do último dono,
-cancelar convite: etapa 6. Limite de pessoas por empresa: com planos (`membershipLimit`).
+cancelar convite: etapa 6. Limite diferente por empresa (planos): hoje, todas 100.
 Esperam: tirar o rótulo antigo das migrações (#25-3), seis versões depois, para voltar atrás; a
 atividade do Neon sem explicação (#25-6), que não pede código; #32-3 e #32-8, que mudam guias, no
 fechamento.
