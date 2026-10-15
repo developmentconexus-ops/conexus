@@ -29,7 +29,7 @@ function NavItem({ place, ...props }: { place: Place } & Omit<LinkProps, 'to' | 
     <Link
       {...props}
       to={place.to}
-      className="flex h-[34px] items-center gap-sm rounded-control px-[0.6rem] text-label text-text-2 hover:bg-accent-soft hover:text-text data-[status=active]:bg-surface-3 data-[status=active]:text-text"
+      className="flex h-[34px] items-center gap-sm rounded-control px-[0.6rem] text-label outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent text-text-2 hover:bg-accent-soft hover:text-text data-[status=active]:bg-surface-3 data-[status=active]:text-text"
     >
       <Icon aria-hidden="true" className="size-[18px]" />
       {place.label}
@@ -58,8 +58,8 @@ export function Frame(props: {
   children: ReactNode
 }) {
   return (
-    <div className="grid min-h-dvh grid-rows-[auto_1fr] bg-canvas md:grid-cols-[14rem_1fr]">
-      <header className="flex h-14 items-center gap-md border-b border-line bg-surface px-lg md:col-span-2">
+    <div className="grid min-h-dvh grid-cols-1 grid-rows-[auto_1fr] bg-canvas md:grid-cols-[14rem_1fr]">
+      <header className="flex h-14 items-center gap-sm border-b border-line bg-surface px-lg md:col-span-2 md:gap-md">
         <Sheet>
           <SheetTrigger
             render={<Button variant="ghost" size="icon" className="md:hidden" />}
@@ -79,8 +79,8 @@ export function Frame(props: {
             </nav>
           </SheetContent>
         </Sheet>
-        <ConexusWordmark arrive />
-        <p className="truncate text-text-2">{props.place}</p>
+        <ConexusWordmark arrive word="md" />
+        <p className="min-w-0 truncate text-text-2">{props.place}</p>
         <div className="ml-auto flex items-center gap-sm">
           <ThemeToggle />
           {props.account}

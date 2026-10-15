@@ -24,7 +24,11 @@ function ConexusMark({ arrive }: Readonly<{ arrive: boolean }>) {
   )
 }
 
-export function ConexusWordmark({ arrive = false }: Readonly<{ arrive?: boolean }>) {
+/** `word="md"` shows only the mark below the `md` breakpoint, as a phone's top bar does (design V56). */
+export function ConexusWordmark({
+  arrive = false,
+  word = 'always',
+}: Readonly<{ arrive?: boolean; word?: 'always' | 'md' }>) {
   return (
     <span
       className="inline-flex items-center gap-[.3em] whitespace-nowrap font-display font-semibold leading-none tracking-[-0.03em] text-[32px] text-text"
@@ -32,7 +36,7 @@ export function ConexusWordmark({ arrive = false }: Readonly<{ arrive?: boolean 
       aria-label="Conexus"
     >
       <ConexusMark arrive={arrive} />
-      <span aria-hidden="true">
+      <span aria-hidden="true" className={word === 'md' ? 'hidden md:inline' : undefined}>
         Co<em className="not-italic text-mark">nexus</em>
       </span>
     </span>
