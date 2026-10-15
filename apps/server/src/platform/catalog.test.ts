@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
+import { sql } from 'drizzle-orm'
 import type { TestDatabase } from './test-database.ts'
 import { createTestDatabase, withRoleLock } from './test-database.ts'
 
@@ -117,6 +118,11 @@ const PLANTED: [string, string[], string][] = [
     `ALTER ROLE hub_runtime IN DATABASE ${DATABASE_WORD} SET statement_timeout TO '0';`,
   ],
   ['um papel a mais', ['create role planted_login login'], 'CREATE ROLE planted_login;'],
+  [
+    'DELETE em auth.user',
+    ['grant delete on auth.user to hub_runtime'],
+    'GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth."user" TO hub_runtime;',
+  ],
 ]
 for (const [name, statements, line] of PLANTED) {
   test(`o instantâneo recusa ${name}`, async (t) => {
@@ -134,5 +140,24 @@ for (const [name, statements, line] of PLANTED) {
     })
     assert.notEqual(actual, APPROVED)
     assert.ok(actual.split('\n').includes(line), actual)
+  })
+}
+
+const REFUSED: [string, ReturnType<typeof sql>][] = [
+  ['DELETE de auth.user', sql`delete from auth.user`],
+  ['DELETE de auth.account', sql`delete from auth.account`],
+  ['DDL em auth', sql`alter table auth.session add column planted text`],
+]
+for (const [name, statement] of REFUSED) {
+  test(`o login do Hub recebe 42501 em ${name}`, async (t) => {
+    const { database } = await createTestDatabase(t)
+    await assert.rejects(
+      database.command((tx) => tx.execute(statement)),
+      (error: unknown) => {
+        assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
+        assert.equal(error.cause.code, '42501')
+        return true
+      },
+    )
   })
 }
