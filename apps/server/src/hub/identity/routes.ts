@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { Config } from '../../platform/config.ts'
 import { Failure } from '../../platform/failure.ts'
-import { serve, withCookies } from '../../platform/http.ts'
+import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
 import { RESET_PASSWORD_PATH, SIGN_IN_PATH, withRequestLog } from './auth.ts'
 
@@ -56,7 +56,7 @@ export function registerIdentityRoutes(
     if (!reply.ok) throw new Failure(refusalOf(reply.status))
     const { user } = SignedIn.parse(await reply.json())
     log.info({ personId: user.id }, 'SESSION_CREATED')
-    return withCookies({ person: user }, reply.headers.getSetCookie())
+    return answer({ person: user }, reply.headers.getSetCookie())
   })
 
   serve(app, setPassword, async ({ body, headers, log }) => {
@@ -73,10 +73,10 @@ export function registerIdentityRoutes(
     }
     if (!reply.ok) throw new Failure(refusalOf(reply.status))
     log.info({}, 'PASSWORD_SET')
-    return undefined
+    return answer(undefined)
   })
 
-  serve(app, getSession, ({ person }) => ({ person }))
+  serve(app, getSession, ({ person }) => answer({ person }))
 
   serve(app, deleteSession, async ({ headers, person, log }) => {
     const current = await deps.auth.api.getSession({ headers, query: { disableCookieCache: true } })
@@ -91,6 +91,6 @@ export function registerIdentityRoutes(
       })
     const signedOut = await deps.auth.api.signOut({ headers, returnHeaders: true })
     log.info({ personId: person.id }, 'SESSION_ENDED')
-    return withCookies(undefined, signedOut.headers.getSetCookie())
+    return answer(undefined, signedOut.headers.getSetCookie())
   })
 }

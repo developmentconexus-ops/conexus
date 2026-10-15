@@ -194,19 +194,11 @@ export async function createServer(
   return app
 }
 
-/** A reply that also sets cookies; only `withCookies` builds one. */
-class Reply<T> {
-  readonly body: T
-  readonly setCookie: readonly string[]
+/** What every handler gives back: the body the operation's schema checks, and the cookies to set. */
+export type Answer<T> = Readonly<{ body: T; setCookie: readonly string[] }>
 
-  constructor(body: T, setCookie: readonly string[]) {
-    this.body = body
-    this.setCookie = setCookie
-  }
-}
-
-export function withCookies<T>(body: T, setCookie: readonly string[]): Reply<T> {
-  return new Reply(body, setCookie)
+export function answer<T>(body: T, setCookie: readonly string[] = []): Answer<T> {
+  return { body, setCookie }
 }
 
 type Body<O extends Operation> = O['success'] extends {
@@ -221,9 +213,7 @@ type Input<O extends Operation> = { headers: Headers; log: FailureLog } & (NonNu
   ? { body: z.output<B> }
   : unknown) &
   (O['access'] extends 'session' ? { person: Person } : unknown)
-type Handler<O extends Operation> = (
-  input: Input<O>,
-) => Body<O> | Reply<Body<O>> | Promise<Body<O> | Reply<Body<O>>>
+type Handler<O extends Operation> = (input: Input<O>) => Answer<Body<O>> | Promise<Answer<Body<O>>>
 
 function bodyOf(operation: Operation, request: FastifyRequest): unknown {
   const schema = operation.input?.body
@@ -247,7 +237,7 @@ export function serve(
     log: FailureLog
     body: unknown
     person: Person | undefined
-  }) => unknown,
+  }) => Answer<unknown> | Promise<Answer<unknown>>,
 ): void {
   app.route({
     method: operation.method,
@@ -261,12 +251,11 @@ export function serve(
         body: bodyOf(operation, request),
         person: operation.access === 'session' ? personOf(request) : undefined,
       }
-      const result = await handler(input)
-      const answer = result instanceof Reply ? result : new Reply(result, [])
-      if (answer.setCookie.length > 0) reply.header('set-cookie', answer.setCookie)
+      const { body, setCookie } = await handler(input)
+      if (setCookie.length > 0) reply.header('set-cookie', setCookie)
       const { success } = operation
       if (success.status === 204) return reply.code(204).send()
-      return reply.code(200).send(success.body.parse(answer.body))
+      return reply.code(200).send(success.body.parse(body))
     },
   })
 }

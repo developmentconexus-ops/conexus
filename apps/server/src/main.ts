@@ -15,7 +15,7 @@ import { readConfig } from './platform/config.ts'
 import { assertMigrated, assertRuntimeLogin, openDatabase } from './platform/database.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
-import { createServer, serve } from './platform/http.ts'
+import { answer, createServer, serve } from './platform/http.ts'
 import { migrate } from './platform/migrate.ts'
 
 const SHUTDOWN_DEADLINE_MS = 15_000
@@ -31,7 +31,7 @@ export async function createHub(
     readSession: deps.identity.readSession,
   })
   registerHealth(app)
-  serve(app, getStatus, deps.status.read)
+  serve(app, getStatus, async () => answer(await deps.status.read()))
   deps.identity.routes(app)
   await app.ready()
   return app

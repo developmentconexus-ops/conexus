@@ -6,7 +6,7 @@ import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
 import { Person } from '@conexus/hub-api'
 import { z } from 'zod'
-import { createServer, serve, withCookies } from './http.ts'
+import { answer, createServer, serve } from './http.ts'
 import { TEST_ORIGIN, testConfig, unreachableDatabaseUrl } from './test-database.ts'
 
 const PERSON = Person.parse({ id: 'person-1', name: 'Ana Lima', email: 'ana@example.test' })
@@ -39,8 +39,8 @@ async function hub() {
     webRoot: tmpdir(),
     readSession: async () => ({ kind: 'SIGNED_IN', person: PERSON, setCookie: [] }),
   })
-  serve(app, echo, ({ body }) => withCookies({ note: body.note }, ['a=1; Path=/', 'b=2; Path=/']))
-  serve(app, forget, () => withCookies(undefined, ['a=; Max-Age=0; Path=/']))
+  serve(app, echo, ({ body }) => answer({ note: body.note }, ['a=1; Path=/', 'b=2; Path=/']))
+  serve(app, forget, () => answer(undefined, ['a=; Max-Age=0; Path=/']))
   await app.ready()
   return app
 }
@@ -149,3 +149,27 @@ test('endereço desconhecido: fora de /api/, a página das telas com 404; em /ap
   assert.equal(write.statusCode, 404)
   assert.equal(Object(write.json()).code, 'NOT_FOUND')
 })
+
+test('resposta: o valor literal { body, setCookie } é a resposta, igual em tempo de compilação e de execução', async (t) => {
+  const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
+    webRoot: tmpdir(),
+    readSession: async () => ({ kind: 'SIGNED_OUT' }),
+  })
+  t.after(() => app.close())
+  serve(app, echo, ({ body }) => ({ body: { note: body.note }, setCookie: ['review=1; Path=/'] }))
+  const response = await app.inject({
+    method: 'PUT',
+    url: echo.path,
+    headers: HEADERS,
+    payload: '{"note":"ok"}',
+  })
+  assert.equal(response.statusCode, 200)
+  assert.equal(response.body, '{"note":"ok"}')
+  assert.deepEqual([response.headers['set-cookie']].flat(), ['review=1; Path=/'])
+})
+
+// Never called: it exists so `npm run typecheck` fails if a bare body becomes a valid answer (T9).
+export function bareBodyIsNotAnAnswer(app: Parameters<typeof serve>[0]): void {
+  // @ts-expect-error: a handler gives back answer(body), never the body alone (code C22).
+  serve(app, echo, ({ body }) => ({ note: body.note }))
+}
