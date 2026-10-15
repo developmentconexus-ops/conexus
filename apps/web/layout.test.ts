@@ -105,7 +105,9 @@ for (const [viewport, drawer] of [
     await page.getByRole('button', { name: 'Abrir navegação' }).click()
     const dialog = page.getByRole('dialog', { name: 'Navegação' })
     // Measured after the slide-in, whose transform leaves a fraction of a pixel mid-way.
-    await dialog.evaluate((open) => Promise.all(open.getAnimations().map((slide) => slide.finished)))
+    await dialog.evaluate((open) =>
+      Promise.all(open.getAnimations().map((slide) => slide.finished)),
+    )
     assert.equal(await widthOf(dialog), drawer)
     await page.close()
   })
