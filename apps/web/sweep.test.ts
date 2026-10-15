@@ -208,7 +208,7 @@ const STATES: State[] = [
       ...SIGNED_IN,
       [`GET /api/invitations/${INVITATION}`]: failure('NOT_FOUND'),
     },
-    settle: (p) => waitFor(p, 'Não foi possível abrir o Conexus'),
+    settle: (p) => waitFor(p, 'Se o convite foi para outro e-mail, saia e entre com ele.'),
   },
   {
     name: 'erro de campo',

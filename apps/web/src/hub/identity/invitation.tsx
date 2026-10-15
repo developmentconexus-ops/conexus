@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import { NotFoundWithHint } from '../../ui/states.tsx'
 import { ROLE_LABELS } from './companies.tsx'
 import {
   acceptReceivedInvitation,
@@ -151,4 +152,12 @@ export function InvitationAcceptance() {
       return unreachable
     }
   }
+}
+
+/**
+ * Every not-found of an invitation, unknown or someone else's, says the same, so it tells nothing
+ * about whether the invitation exists (security S10); the founder's line, step 4.
+ */
+export function InvitationNotFound() {
+  return <NotFoundWithHint hint="Se o convite foi para outro e-mail, saia e entre com ele." />
 }

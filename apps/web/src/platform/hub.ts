@@ -141,6 +141,16 @@ export function sentenceOf(error: unknown): string {
 }
 
 /** A path parameter the contract would never issue names no page: the address is not found. */
+/** A read the Hub answers 404 shows the route's not-found, as an id that cannot exist does. */
+export async function readOrNotFound<T>(read: Promise<T>): Promise<T> {
+  try {
+    return await read
+  } catch (error) {
+    if (error instanceof HubFailure && error.code === 'NOT_FOUND') throw notFound()
+    throw error
+  }
+}
+
 export function idOrNotFound<S extends z.ZodType>(schema: S, raw: string): z.output<S> {
   const id = schema.safeParse(raw)
   if (!id.success) throw notFound()

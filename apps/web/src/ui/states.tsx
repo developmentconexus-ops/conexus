@@ -45,11 +45,17 @@ export function Failure({ code, onRetry }: { code: FailureCode; onRetry: () => v
 }
 
 export function NotFound() {
+  return <NotFoundWithHint />
+}
+
+/** `hint` is one more line a place adds to every not-found of its own. */
+export function NotFoundWithHint({ hint }: { hint?: string }) {
   return (
     <Centred>
       <ConexusWordmark />
       <h1 className="font-display text-title">{FAILURES.NOT_FOUND.phrase}</h1>
       <p className="text-text-2">{FAILURES.NOT_FOUND.action}</p>
+      {hint !== undefined && <p className="text-text-2">{hint}</p>}
       <Link to="/" className={buttonVariants()}>
         Voltar ao início
       </Link>

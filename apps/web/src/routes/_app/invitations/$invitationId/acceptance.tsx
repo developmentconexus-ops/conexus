@@ -1,7 +1,11 @@
 import { InvitationId } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
-import { InvitationAcceptance, receivedInvitationQuery } from '../../../../hub/identity/public.ts'
-import { idOrNotFound } from '../../../../platform/hub.ts'
+import {
+  InvitationAcceptance,
+  InvitationNotFound,
+  receivedInvitationQuery,
+} from '../../../../hub/identity/public.ts'
+import { idOrNotFound, readOrNotFound } from '../../../../platform/hub.ts'
 
 export const Route = createFileRoute('/_app/invitations/$invitationId/acceptance')({
   staticData: { place: 'Convite' },
@@ -10,6 +14,9 @@ export const Route = createFileRoute('/_app/invitations/$invitationId/acceptance
     stringify: (params) => params,
   },
   loader: ({ context, params }) =>
-    context.queryClient.ensureQueryData(receivedInvitationQuery(params.invitationId)),
+    readOrNotFound(
+      context.queryClient.ensureQueryData(receivedInvitationQuery(params.invitationId)),
+    ),
   component: InvitationAcceptance,
+  notFoundComponent: InvitationNotFound,
 })

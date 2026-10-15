@@ -9,7 +9,7 @@ import {
   SessionState,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
@@ -181,13 +181,24 @@ for (const state of ['EXPIRED', 'CANCELED']) {
   })
 }
 
-test('desconhecido ou de outra pessoa (404): a frase de "não encontrado", sem dizer qual', async () => {
+const OTHER_ADDRESS = 'Se o convite foi para outro e-mail, saia e entre com ele.'
+
+test('desconhecido ou de outra pessoa (404): a página de "não encontrado" e a linha do outro e-mail, sem dizer qual', async () => {
   hub({ person: DAVI }, () => refusal('NOT_FOUND'))
   open(ENTRY)
-  expect(await screen.findByRole('alert')).toBeTruthy()
-  expect(screen.getByRole('alert').textContent).toBe(
-    'Não encontramos o que você procurou. Confira o endereço.',
-  )
+  expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
+  expect(screen.getByText(OTHER_ADDRESS)).toBeTruthy()
+  expect(screen.queryByText('Não foi possível abrir o Conexus')).toBeNull()
+})
+
+test('um endereço de convite malformado, com ou sem sessão: a mesma página e a mesma linha', async () => {
+  for (const person of [DAVI, undefined]) {
+    hub({ person }, () => received('PENDING'))
+    open('/invitations/curto')
+    expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
+    expect(screen.getByText(OTHER_ADDRESS)).toBeTruthy()
+    cleanup()
+  }
 })
 
 test('a empresa cheia: a frase fica na página, e o convite segue para aceitar', async () => {

@@ -1,6 +1,6 @@
 import { InvitationId } from '@conexus/hub-api'
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { InvitationEntry, sessionQuery } from '../../../hub/identity/public.ts'
+import { InvitationEntry, InvitationNotFound, sessionQuery } from '../../../hub/identity/public.ts'
 import { idOrNotFound } from '../../../platform/hub.ts'
 
 export const Route = createFileRoute('/_public/invitations/$invitationId')({
@@ -16,4 +16,5 @@ export const Route = createFileRoute('/_public/invitations/$invitationId')({
     }
   },
   component: InvitationEntry,
+  notFoundComponent: InvitationNotFound,
 })
