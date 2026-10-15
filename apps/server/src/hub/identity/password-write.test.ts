@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Email } from '@conexus/hub-api'
+import { identityOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
@@ -8,7 +9,6 @@ import {
   TEST_ORIGIN,
   testConfig,
 } from '../../platform/test-database.ts'
-import { createIdentity } from './public.ts'
 
 const silent = { info: () => undefined, error: () => undefined }
 const WRITE = {
@@ -21,7 +21,7 @@ const PASSWORD_HASH = /[0-9a-f]{16,}:[0-9a-f]{64,}/
 
 test('senha que não grava: 503, nenhuma senha, o link continua valendo, e a saída não traz o erro do banco', async (t) => {
   const test = await createTestDatabase(t)
-  const identity = createIdentity({
+  const identity = identityOf({
     database: test.database,
     config: testConfig(test.runtimeUrl),
     log: silent,

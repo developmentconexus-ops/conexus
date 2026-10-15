@@ -2,10 +2,11 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import { createHub } from '../../main.ts'
+import { z } from 'zod'
+import { createHub, identityOf } from '../../main.ts'
 import { createTestDatabase, TEST_ORIGIN, testConfig } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
-import { createIdentity } from './public.ts'
+import { createAuth } from './public.ts'
 
 const silent = { info: () => undefined, error: () => undefined }
 const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
@@ -24,7 +25,7 @@ async function hubOn(t: TestContext) {
   const test = await createTestDatabase(t)
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
-  const identity = createIdentity({ database: test.database, config, log: silent })
+  const identity = identityOf({ database: test.database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   await test.asOwner(`insert into auth.user (id, name, email) values ($1, $2, $3)`, [
@@ -217,5 +218,48 @@ test('caminhos da biblioteca: cada caminho de /api/auth/* responde 404', async (
   }
   assert.deepEqual(await hub.test.asOwner('select count(*)::int as people from auth.user'), [
     { people: 1 },
+  ])
+})
+
+const Endpoint = z.object({
+  path: z.string(),
+  options: z.object({ method: z.union([z.string(), z.array(z.string())]) }),
+})
+
+test('LT12: cada caminho de organização e de administração da biblioteca responde 404 e nada muda', async (t) => {
+  const hub = await hubOn(t)
+  await hub.test.asOwner(`update auth.user set role = 'admin' where id = $1`, [ANA.id])
+  const cookie = await signedIn(hub)
+  const auth = createAuth({
+    database: hub.test.database,
+    config: testConfig(hub.test.runtimeUrl),
+    log: silent,
+  })
+  const plugged = Object.values(auth.api)
+    // Each endpoint is a function that carries its path and options as properties.
+    .map((endpoint) =>
+      Endpoint.safeParse({
+        path: Reflect.get(endpoint, 'path'),
+        options: Reflect.get(endpoint, 'options'),
+      }),
+    )
+    .flatMap((endpoint) => (endpoint.success ? [endpoint.data] : []))
+    .filter((endpoint) => /^\/(organization|admin)\//.test(endpoint.path))
+  assert.equal(plugged.length, 37)
+  for (const { path, options } of plugged) {
+    for (const method of [options.method].flat()) {
+      const response = await hub.app.inject({
+        method: method === 'GET' ? 'GET' : 'POST',
+        url: `/api/auth${path}`,
+        headers: { ...WRITE, cookie },
+        ...(method === 'GET'
+          ? {}
+          : { payload: JSON.stringify({ name: 'x', slug: 'x', role: 'admin' }) }),
+      })
+      assert.deepEqual([response.statusCode, problem(response).code], [404, 'NOT_FOUND'], path)
+    }
+  }
+  assert.deepEqual(await hub.test.asOwner('select count(*)::int as companies from auth.company'), [
+    { companies: 0 },
   ])
 })

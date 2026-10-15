@@ -64,5 +64,126 @@
       "file": "src/platform/mail.test.ts",
       "name": "endereço que volta"
     }
+  },
+  {
+    "id": "company-create-administrator",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "allowUserToCreateOrganization: (person) => mayCreateCompanies(person.role),",
+    "replace": "allowUserToCreateOrganization: true,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "criar: outra pessoa"
+    }
+  },
+  {
+    "id": "admission-reads-membership",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": ".where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))",
+    "replace": ".where(eq(member.organizationId, input.companyId))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "fora: o membro"
+    }
+  },
+  {
+    "id": "malformed-id-not-found",
+    "file": "apps/server/src/platform/http.ts",
+    "find": "throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })",
+    "replace": "throw new Failure('REQUEST_MALFORMED', { cause: parsedParams.error })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "fora: o membro"
+    }
+  },
+  {
+    "id": "invitation-attempt-replay",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (same !== undefined) {",
+    "replace": "if (same === null) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo: a mesma chave"
+    }
+  },
+  {
+    "id": "invitation-capacity",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (live >= INVITATION_CAPACITY) throw new Failure('INVITATIONS_FULL')",
+    "replace": "void live",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: com 100 vivos"
+    }
+  },
+  {
+    "id": "invitation-company-lock",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "await lockCompany(tx, input.companyId)",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: com 99 vivos"
+    }
+  },
+  {
+    "id": "password-link-forgets-earlier",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "await forgetLinks(tx, person.id)",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "link: passados 20 s"
+    }
+  },
+  {
+    "id": "accept-recipient-first",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (found === undefined || found.email !== input.person.email.toLowerCase()) {",
+    "replace": "if (found === undefined) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: 200 e um membro"
+    }
+  },
+  {
+    "id": "accept-company-lock",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "await lockCompany(tx, found.companyId)",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: dois juntos"
+    }
+  },
+  {
+    "id": "accept-one-transaction",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
+    "replace": "await libraryContext.runWithAdapter(adapterFor(tx)(auth.options), () => work(tx)),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: uma escrita recusada"
+    }
+  },
+  {
+    "id": "write-signal-follows-reply",
+    "file": "apps/server/src/platform/http.ts",
+    "find": "signal: untilClientLeaves(reply),",
+    "replace": "signal: request.signal,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-journey.test.ts",
+      "name": "registro"
+    }
   }
 ]

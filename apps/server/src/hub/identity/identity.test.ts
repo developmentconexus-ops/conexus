@@ -3,7 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import type { InjectOptions } from 'fastify'
-import { createHub } from '../../main.ts'
+import { createHub, identityOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
@@ -13,7 +13,6 @@ import {
   whenIdle,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
-import { createIdentity } from './public.ts'
 
 const silent = { info: () => undefined, error: () => undefined }
 const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
@@ -32,7 +31,7 @@ async function hubOn(t: TestContext) {
   const test = await createTestDatabase(t)
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
-  const identity = createIdentity({ database: test.database, config, log: silent })
+  const identity = identityOf({ database: test.database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   await test.asOwner(`insert into auth.user (id, name, email) values ($1, $2, $3)`, [

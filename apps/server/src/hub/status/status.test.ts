@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Version } from '@conexus/hub-api'
-import { createHub } from '../../main.ts'
+import { createHub, identityOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
@@ -10,7 +10,6 @@ import {
   unreachableDatabase,
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
-import { createIdentity } from '../identity/public.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
@@ -20,7 +19,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const test = await createTestDatabase(t)
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
-  const identity = createIdentity({ database: test.database, config, log: silent })
+  const identity = identityOf({ database: test.database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   return { app, status, test }
@@ -87,7 +86,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const database = await unreachableDatabase(t)
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
-  const identity = createIdentity({ database, config, log: silent })
+  const identity = identityOf({ database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   const response = await app.inject(STATUS)

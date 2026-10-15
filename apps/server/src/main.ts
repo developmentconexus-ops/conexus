@@ -7,16 +7,18 @@ import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
 import { z } from 'zod'
 import type { Identity } from './hub/identity/public.ts'
-import { createIdentity } from './hub/identity/public.ts'
+import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { Config } from './platform/config.ts'
 import { readConfig } from './platform/config.ts'
 import type { Database } from './platform/database.ts'
 import { assertMigrated, assertRuntimeLogin, openDatabase } from './platform/database.ts'
+import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
+import { createMail } from './platform/mail.ts'
 import { migrate } from './platform/migrate.ts'
 
 const SHUTDOWN_DEADLINE_MS = 15_000
@@ -36,6 +38,15 @@ export async function createHub(
   deps.identity.routes(app)
   await app.ready()
   return app
+}
+
+/** The identity subject, sending its mail through the provider the configuration names. */
+export function identityOf(deps: {
+  database: Database
+  config: Config
+  log: FailureLog
+}): Identity {
+  return createIdentity({ ...deps, sendMail: createMail(deps) })
 }
 
 /** The first-person command logs to stderr: its stdout may be the run's summary, where the link goes. */
@@ -92,7 +103,7 @@ async function runServer(): Promise<void> {
     await assertRuntimeLogin(database)
     await assertMigrated(database)
     const status = createStatus({ version: config.version, database })
-    const identity = createIdentity({ database, config, log })
+    const identity = identityOf({ database, config, log })
     const app = await createHub(config, { status, identity })
     const grace = shutDownOnSignal(app, database)
     try {
@@ -142,9 +153,9 @@ async function runFirstPerson(args: string[]): Promise<void> {
   try {
     await assertRuntimeLogin(database)
     await assertMigrated(database)
-    const identity = createIdentity({ database, config, log })
+    const identity = identityOf({ database, config, log })
     const { link } = await identity.firstPerson({ name: input.name, email: input.email })
-    appendFileSync(input.summary, firstPersonSummary(input.name, link))
+    appendFileSync(input.summary, passwordLinkText(input.name, link))
     log.info({}, 'FIRST_PERSON_LINK_GIVEN')
   } catch (error) {
     if (error instanceof Failure && error.code === 'FIRST_PERSON_EXISTS') {
@@ -154,10 +165,6 @@ async function runFirstPerson(args: string[]): Promise<void> {
   } finally {
     await database.close()
   }
-}
-
-function firstPersonSummary(name: string, link: string): string {
-  return `Link para ${name} criar a senha do Conexus. Vale 15 minutos e uma vez só.\n\n${link}\n`
 }
 
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {

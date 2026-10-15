@@ -1,3 +1,4 @@
 {
+  "apps/server/src/hub/identity/admission.check.ts": 2,
   "apps/server/src/platform/http.test.ts": 1
 }

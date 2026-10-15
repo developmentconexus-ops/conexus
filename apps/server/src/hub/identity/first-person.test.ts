@@ -7,7 +7,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { Email } from '@conexus/hub-api'
-import { createHub } from '../../main.ts'
+import { createHub, identityOf } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -16,7 +16,6 @@ import {
   testConfig,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
-import { createIdentity } from './public.ts'
 
 const run = promisify(execFile)
 const _ROOT = join(import.meta.dirname, '..', '..', '..', '..', '..')
@@ -70,7 +69,7 @@ function tokenOf(summary: string): string {
 async function hubOn(t: TestContext, test: TestDatabase) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
-  const identity = createIdentity({ database: test.database, config, log: silent })
+  const identity = identityOf({ database: test.database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   return app
@@ -102,7 +101,7 @@ function codeOf(response: { json(): unknown }): unknown {
   return Object(response.json()).code
 }
 
-test('sem pessoa: cria a pessoa sem senha e grava o link no resumo; nenhuma linha de registro traz o token', async (t) => {
+test('sem pessoa: cria a pessoa sem senha, administradora da instalação, e grava o link no resumo; nenhuma linha de registro traz o token', async (t) => {
   const test = await createTestDatabase(t)
   const created = await firstPerson(t, test, ANA)
   assert.equal(created.code, 0, created.output)
@@ -114,9 +113,11 @@ test('sem pessoa: cria a pessoa sem senha e grava o link no resumo; nenhuma linh
   assert.match(created.output, /"msg":"FIRST_PERSON_LINK_GIVEN"/)
   assert.doesNotMatch(created.output, new RegExp(token))
   assert.doesNotMatch(created.output, /ana@example\.test/)
-  const people = await test.asOwner(`select u.name, u.email, count(a.id)::int as accounts
+  const people = await test.asOwner(`select u.name, u.email, u.role, count(a.id)::int as accounts
     from auth.user u left join auth.account a on a.user_id = u.id group by u.id`)
-  assert.deepEqual(people, [{ name: 'Ana Lima', email: 'ana@example.test', accounts: 0 }])
+  assert.deepEqual(people, [
+    { name: 'Ana Lima', email: 'ana@example.test', role: 'admin', accounts: 0 },
+  ])
 })
 
 test('com a pessoa ainda sem senha, dá um link novo e o antigo deixa de valer', async (t) => {
@@ -263,7 +264,7 @@ test('mídia: JSON inválido 400 e corpo acima de 4 KiB 413 em PUT /api/password
 })
 
 function identityOn(test: TestDatabase) {
-  return createIdentity({
+  return identityOf({
     database: test.database,
     config: testConfig(test.runtimeUrl),
     log: silent,

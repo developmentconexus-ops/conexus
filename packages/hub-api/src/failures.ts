@@ -128,6 +128,63 @@ export const FAILURES = {
     action: 'Confira o e-mail e convide de novo.',
     actionKind: 'NONE',
   },
+  IDEMPOTENCY_CONFLICT: {
+    category: 'USER',
+    status: 409,
+    phrase: 'Este pedido já foi feito com outros dados.',
+    action: 'Recarregue a página.',
+    actionKind: 'NONE',
+  },
+  // The card gives these two a phrase and no action: the screen shows them on the field.
+  MEMBER_EXISTS: {
+    category: 'USER',
+    status: 409,
+    phrase: 'Essa pessoa já está na empresa.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  INVITATION_ROLE_REFUSED: {
+    category: 'USER',
+    status: 403,
+    phrase: 'Você não pode convidar com esse papel.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  INVITATIONS_EXCEEDED: {
+    category: 'USER',
+    status: 429,
+    phrase: 'Muitos convites seguidos.',
+    action: 'Espere um pouco e tente de novo.',
+    actionKind: 'NONE',
+  },
+  PASSWORD_LINKS_EXCEEDED: {
+    category: 'USER',
+    status: 429,
+    phrase: 'Muitos pedidos de link.',
+    action: 'Espere um pouco e tente de novo.',
+    actionKind: 'NONE',
+  },
+  INVITATION_CLOSED: {
+    category: 'USER',
+    status: 422,
+    phrase: 'Este convite não vale mais.',
+    action: 'Peça um novo a quem convidou você.',
+    actionKind: 'NONE',
+  },
+  INVITATIONS_FULL: {
+    category: 'USER',
+    status: 409,
+    phrase: 'A empresa já tem 100 convites pendentes.',
+    action: 'Espere aceitarem.',
+    actionKind: 'NONE',
+  },
+  COMPANY_FULL: {
+    category: 'USER',
+    status: 409,
+    phrase: 'A empresa já tem 100 pessoas.',
+    action: 'Fale com quem convidou você.',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

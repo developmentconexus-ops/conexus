@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import { createHub } from '../../main.ts'
+import { createHub, identityOf } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -11,7 +11,6 @@ import {
   unreachableDatabase,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
-import { createIdentity } from './public.ts'
 
 type Config = ReturnType<typeof testConfig>
 const silent = { info: () => undefined, error: () => undefined }
@@ -32,7 +31,7 @@ const UNAVAILABLE = {
 
 async function hubOn(t: TestContext, database: TestDatabase['database'], config: Config) {
   const status = createStatus({ version: config.version, database })
-  const identity = createIdentity({ database, config, log: silent })
+  const identity = identityOf({ database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   return app

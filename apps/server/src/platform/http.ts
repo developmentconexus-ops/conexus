@@ -204,28 +204,71 @@ export function answer<T>(body: T, setCookie: readonly string[] = []): Answer<T>
 }
 
 type Body<O extends Operation> = O['success'] extends {
-  status: 200
+  status: 200 | 201
   body: infer S extends z.ZodType
 }
   ? z.input<S>
   : undefined
-type Input<O extends Operation> = { headers: Headers; log: FailureLog } & (NonNullable<
+type Parsed<O extends Operation, K extends 'params' | 'query' | 'body'> = NonNullable<
   O['input']
->['body'] extends infer B extends z.ZodType
-  ? { body: z.output<B> }
-  : unknown) &
+>[K] extends infer S extends z.ZodType
+  ? { [P in K]: z.output<S> }
+  : unknown
+type Input<O extends Operation> = {
+  headers: Headers
+  log: FailureLog
+  signal: AbortSignal
+} & Parsed<O, 'params'> &
+  Parsed<O, 'query'> &
+  Parsed<O, 'body'> &
+  (O['attemptKey'] extends true ? { attemptKey: string } : unknown) &
   (O['access'] extends 'session' ? { person: Person } : unknown)
 type Handler<O extends Operation> = (input: Input<O>) => Answer<Body<O>> | Promise<Answer<Body<O>>>
 
-function bodyOf(operation: Operation, request: FastifyRequest): unknown {
-  const schema = operation.input?.body
-  if (schema === undefined) return undefined
-  const body = schema.safeParse(request.body)
-  if (!body.success) throw new Failure('REQUEST_MALFORMED', { cause: body.error })
-  return body.data
+const AttemptKey = z.uuid()
+
+/**
+ * The path parameters are read first: an id that cannot exist is the same not-found as one that
+ * does not, and it costs no query (code C42, security S10).
+ */
+function partsOf(operation: Operation, request: FastifyRequest) {
+  const { params, query, body } = operation.input ?? {}
+  const parsedParams = params?.safeParse(request.params)
+  if (parsedParams?.success === false) {
+    throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })
+  }
+  const key = operation.attemptKey
+    ? AttemptKey.safeParse(request.headers['idempotency-key'])
+    : undefined
+  if (key?.success === false) throw new Failure('REQUEST_MALFORMED', { cause: key.error })
+  const parsedQuery = query?.safeParse(request.query)
+  if (parsedQuery?.success === false)
+    throw new Failure('REQUEST_MALFORMED', { cause: parsedQuery.error })
+  const parsedBody = body?.safeParse(request.body)
+  if (parsedBody?.success === false)
+    throw new Failure('REQUEST_MALFORMED', { cause: parsedBody.error })
+  return {
+    params: parsedParams?.data,
+    query: parsedQuery?.data,
+    body: parsedBody?.data,
+    attemptKey: key?.data,
+  }
 }
 
-/** The body is parsed with the operation's schema, and the reply checked with it before it is sent. */
+/**
+ * Aborts when the client leaves before the reply is sent. Fastify's `request.signal` follows the
+ * request's `close` (fastify/lib/request.js:218-229), which Node emits once the body is read, so a
+ * write would abort its own e-mail (docs/reference/boundaries.md).
+ */
+function untilClientLeaves(reply: FastifyReply): AbortSignal {
+  const left = new AbortController()
+  reply.raw.once('close', () => {
+    if (!reply.raw.writableFinished) left.abort()
+  })
+  return left.signal
+}
+
+/** The parts are parsed with the operation's schemas, and the reply checked before it is sent. */
 export function serve<O extends Operation>(
   app: FastifyInstance,
   operation: O,
@@ -237,27 +280,32 @@ export function serve(
   handler: (input: {
     headers: Headers
     log: FailureLog
+    signal: AbortSignal
+    params: unknown
+    query: unknown
     body: unknown
+    attemptKey: string | undefined
     person: Person | undefined
   }) => Answer<unknown> | Promise<Answer<unknown>>,
 ): void {
   app.route({
     method: operation.method,
-    url: operation.path,
+    url: operation.path.replaceAll(/\{(\w+)\}/g, ':$1'),
     bodyLimit: operation.bodyLimit,
     config: { access: operation.access, failures: operation.failures },
     handler: async (request, reply) => {
       const input = {
         headers: headersOf(request),
         log: request.log,
-        body: bodyOf(operation, request),
+        signal: untilClientLeaves(reply),
+        ...partsOf(operation, request),
         person: operation.access === 'session' ? personOf(request) : undefined,
       }
       const { body, setCookie } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)
       const { success } = operation
       if (success.status === 204) return reply.code(204).send()
-      return reply.code(200).send(success.body.parse(body))
+      return reply.code(success.status).send(success.body.parse(body))
     },
   })
 }
