@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
+import { Email } from '@conexus/hub-api'
 import { createHub } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -254,4 +255,59 @@ test('mídia: JSON inválido 400 e corpo acima de 4 KiB 413 em PUT /api/password
     assert.equal(response.statusCode, status)
     assert.equal(codeOf(response), code)
   }
+})
+
+function identityOn(test: TestDatabase) {
+  return createIdentity({
+    database: test.database,
+    config: testConfig(test.runtimeUrl),
+    log: silent,
+  })
+}
+
+test('ao mesmo tempo, com dois e-mails: uma pessoa só, e a outra chamada recusa FIRST_PERSON_EXISTS', async (t) => {
+  const test = await createTestDatabase(t)
+  const runs = await Promise.allSettled([
+    identityOn(test).firstPerson({ name: ANA.name, email: Email.parse(ANA.email) }),
+    identityOn(test).firstPerson({ name: 'Bruno Reis', email: Email.parse('bruno@example.test') }),
+  ])
+  assert.deepEqual(runs.map((run) => run.status).sort(), ['fulfilled', 'rejected'])
+  const refused = runs.find((run) => run.status === 'rejected')
+  assert.equal(Object(refused?.reason).code, 'FIRST_PERSON_EXISTS')
+  assert.deepEqual(await test.asOwner('select count(*)::int as people from auth.user'), [
+    { people: 1 },
+  ])
+})
+
+test('ao mesmo tempo, a mesma pessoa duas vezes: uma pessoa e um só link que vale', async (t) => {
+  const test = await createTestDatabase(t)
+  const person = { name: ANA.name, email: Email.parse(ANA.email) }
+  const links = await Promise.all([
+    identityOn(test).firstPerson(person),
+    identityOn(test).firstPerson(person),
+  ])
+  assert.deepEqual(await test.asOwner('select count(*)::int as people from auth.user'), [
+    { people: 1 },
+  ])
+  assert.deepEqual(await test.asOwner('select count(*)::int as links from auth.verification'), [
+    { links: 1 },
+  ])
+  const app = await hubOn(t, test)
+  const answers = []
+  for (const { link } of links) {
+    const token = link.split('#token=')[1]
+    answers.push((await setPassword(app, { token, password: 'senha-nova-1' })).statusCode)
+  }
+  assert.deepEqual(answers.sort(), [204, 422])
+})
+
+test('sem poder gravar o link, a pessoa também não fica: uma só unidade de trabalho', async (t) => {
+  const test = await createTestDatabase(t)
+  await test.asOwner('revoke insert on auth.verification from hub_runtime')
+  await assert.rejects(
+    identityOn(test).firstPerson({ name: ANA.name, email: Email.parse(ANA.email) }),
+  )
+  assert.deepEqual(await test.asOwner('select count(*)::int as people from auth.user'), [
+    { people: 0 },
+  ])
 })

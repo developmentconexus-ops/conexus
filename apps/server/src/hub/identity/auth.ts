@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { betterAuth } from 'better-auth'
 import type { Config } from '../../platform/config.ts'
-import type { Database } from '../../platform/database.ts'
+import type { CommandTx, Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { account, rateLimit, session, user, verification } from './tables.ts'
@@ -42,6 +42,18 @@ async function deliverLink({ token }: { token: string }): Promise<void> {
   deliver(token)
 }
 
+function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
+  return drizzleAdapter(db, {
+    provider: 'pg',
+    schema: { user, session, account, verification, rateLimit },
+  })
+}
+
+/** The library's adapter on one of our transactions, so its writes join that unit of work. */
+export function adapterOn(auth: Auth, tx: CommandTx) {
+  return adapterFor(tx)(auth.options)
+}
+
 function hostCookie(name: string) {
   return { name: `__Host-conexus_${name}`, attributes: { secure: true } }
 }
@@ -52,10 +64,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     basePath: BASE_PATH,
     baseURL: deps.config.publicOrigin,
     secret: deps.config.sessionSecret.reveal(),
-    database: drizzleAdapter(deps.database.libraryOrm(), {
-      provider: 'pg',
-      schema: { user, session, account, verification, rateLimit },
-    }),
+    database: adapterFor(deps.database.libraryOrm()),
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,
