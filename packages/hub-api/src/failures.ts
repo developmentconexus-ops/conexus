@@ -65,6 +65,27 @@ export const FAILURES = {
     action: 'Entre de novo para continuar.',
     actionKind: 'SIGN_IN',
   },
+  PASSWORD_LINK_INVALID: {
+    category: 'USER',
+    status: 422,
+    phrase: 'Este link já foi usado ou venceu.',
+    action: 'Peça um link novo a quem cuida do Conexus.',
+    actionKind: 'NONE',
+  },
+  PASSWORD_TOO_SHORT: {
+    category: 'USER',
+    status: 422,
+    phrase: 'A senha precisa de 8 caracteres ou mais.',
+    action: 'Escolha uma senha mais longa.',
+    actionKind: 'NONE',
+  },
+  FIRST_PERSON_EXISTS: {
+    category: 'USER',
+    status: 409,
+    phrase: 'Já existe uma pessoa nesta instalação.',
+    action: 'Entre com a pessoa que já existe.',
+    actionKind: 'NONE',
+  },
   REQUEST_MALFORMED: {
     category: 'USER',
     status: 400,

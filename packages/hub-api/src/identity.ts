@@ -48,3 +48,20 @@ export const deleteSession = {
   success: { status: 204 },
   failures: ['SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 } as const satisfies Operation
+
+export const setPassword = {
+  id: 'setPassword',
+  summary: 'Sets a person’s first password with the token of their one-use link.',
+  access: 'entry',
+  method: 'PUT',
+  path: '/api/passwords',
+  bodyLimit: 4096,
+  input: {
+    body: z.object({
+      token: z.string().min(1),
+      password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+    }),
+  },
+  success: { status: 204 },
+  failures: ['PASSWORD_LINK_INVALID', 'PASSWORD_TOO_SHORT'],
+} as const satisfies Operation

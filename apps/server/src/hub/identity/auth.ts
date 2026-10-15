@@ -4,19 +4,42 @@ import { betterAuth } from 'better-auth'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import { account, rateLimit, session, user, verification } from './tables.ts'
 
 export const SIGN_IN_PATH = '/sign-in/email'
+export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
 export const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 const PASSWORD_LENGTH = { min: 8, max: 128 }
+const PASSWORD_LINK_SECONDS = 900
 
 // The library logs without the request; a sign-in runs inside this store so its lines carry the trace id.
 const requestLog = new AsyncLocalStorage<FailureLog>()
 
 export function withRequestLog<T>(log: FailureLog, work: () => Promise<T>): Promise<T> {
   return requestLog.run(log, work)
+}
+
+// The one-use link goes back to the command that asked for it, never to an e-mail or a log (S35).
+const linkDelivery = new AsyncLocalStorage<(token: string) => void>()
+
+/** Runs `work`, which asks the library for a reset link, and returns the token it delivered. */
+export async function linkTokenOf(work: () => Promise<unknown>): Promise<string> {
+  let token: string | undefined
+  await linkDelivery.run((given) => {
+    token = given
+  }, work)
+  if (token === undefined)
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'no link' } })
+  return token
+}
+
+async function deliverLink({ token }: { token: string }): Promise<void> {
+  const deliver = linkDelivery.getStore()
+  if (deliver === undefined) throw new Error('a password link was asked outside first-person')
+  deliver(token)
 }
 
 function hostCookie(name: string) {
@@ -38,6 +61,8 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       disableSignUp: true,
       minPasswordLength: PASSWORD_LENGTH.min,
       maxPasswordLength: PASSWORD_LENGTH.max,
+      resetPasswordTokenExpiresIn: PASSWORD_LINK_SECONDS,
+      sendResetPassword: deliverLink,
     },
     session: {
       expiresIn: LIFETIMES.idleSeconds,
