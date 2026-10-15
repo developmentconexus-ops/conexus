@@ -46,7 +46,9 @@ const securityHeaders = helmet(HELMET_OPTIONS)
 
 const ErrorStatus = z.object({ statusCode: z.number().int() })
 const WildcardParams = z.object({ '*': z.string() })
-const API_ADDRESS = /^\/api(\/|\?|$)/
+// A missing asset answers the JSON 404: streaming the page after the failed file stream would
+// stack a second file stream on one reply.
+const NOT_A_PAGE = /^\/(api|assets)(\/|\?|$)/
 
 function problemOf(code: FailureCode, traceId: string): Problem {
   const row = FAILURES[code]
@@ -117,13 +119,13 @@ function logServed(request: FastifyRequest, reply: FastifyReply): void {
 }
 
 /**
- * A read of an unknown address outside /api/ gets the screens' page with 404, so the person reads
- * "Não encontramos o que você procurou." and the browser still learns it found nothing.
+ * A read of an unknown address outside /api/ and /assets/ gets the screens' page with 404, so the
+ * person reads "Não encontramos o que você procurou." and the browser still learns it found nothing.
  */
 function installErrorHandling(app: FastifyInstance, page: { built: boolean }): void {
   app.setNotFoundHandler((request, reply) => {
     const read = request.method === 'GET' || request.method === 'HEAD'
-    if (page.built && read && !API_ADDRESS.test(request.url)) {
+    if (page.built && read && !NOT_A_PAGE.test(request.url)) {
       return reply.code(404).sendFile('index.html', { maxAge: 0 })
     }
     throw new Failure('NOT_FOUND')

@@ -1,7 +1,4 @@
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import { once } from 'node:events'
-import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
@@ -9,15 +6,14 @@ import type { InjectOptions } from 'fastify'
 import { createHub } from '../../main.ts'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
+  spawnHub,
   TEST_ORIGIN,
   testConfig,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 import { createIdentity } from './public.ts'
 
-const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
 const silent = { info: () => undefined, error: () => undefined }
 const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 const PASSWORD = 'senha-certa-1'
@@ -229,23 +225,7 @@ test('banco dorme: depois do último pedido a cada rota, o pool chega a zero con
 
 test('registros: entrar, recusa, limite e sair deixam cada um o seu código, sempre com o id de rastreio, nunca o e-mail', async (t) => {
   const hub = await hubOn(t)
-  const port = await freePort()
-  const child = spawn(process.execPath, [MAIN], {
-    env: serveEnvironment(t, hub.test.runtimeUrl, port),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  t.after(() => child.kill('SIGKILL'))
-  let output = ''
-  const listening = Promise.withResolvers<void>()
-  child.stdout.on('data', (chunk) => {
-    output += chunk
-    if (output.includes('"LISTENING"')) listening.resolve()
-  })
-  child.stderr.on('data', (chunk) => {
-    output += chunk
-  })
-  const exited = once(child, 'exit')
-  await listening.promise
+  const { port, lines, stop } = await spawnHub(t, serveEnvironment(t, hub.test.runtimeUrl))
   const url = `http://127.0.0.1:${port}${SESSIONS}`
   async function put(password: string, ip = CLIENT) {
     const body = JSON.stringify({ email: ANA.email, password })
@@ -256,22 +236,17 @@ test('registros: entrar, recusa, limite e sair deixam cada um o seu código, sem
   for (let attempt = 0; attempt < 11; attempt++) await put('senha-errada')
   const out = await fetch(url, { method: 'DELETE', headers: { origin: TEST_ORIGIN, cookie } })
   assert.deepEqual([entered.status, out.status], [200, 204])
-  child.kill('SIGTERM')
-  await exited
-  const raw = output.split('\n').filter(Boolean)
-  for (const line of raw) assert.equal(line.match(/"level":/g)?.length, 1, line)
-  assert.ok(
-    raw.some((line) => line.includes('"AUTH_LIBRARY_')),
-    'a library line was written',
-  )
-  const lines = raw.map((line) => JSON.parse(line))
+  await stop()
   // Served lines sit between the start and the stop; boot lines carry no request.
   const served = lines.slice(
     lines.findIndex((line) => line.msg === 'LISTENING') + 1,
     lines.findIndex((line) => line.msg === 'SHUTTING_DOWN'),
   )
+  assert.ok(
+    served.some((line) => String(line.msg).startsWith('AUTH_LIBRARY_')),
+    'a library line was written',
+  )
   for (const line of served) {
-    assert.match(String(line.msg), /^[A-Z_]+$/, JSON.stringify(line))
     assert.match(String(line.traceId), /^[0-9a-f-]{36}$/, JSON.stringify(line))
   }
   const codes = new Set(served.map((line) => line.msg))
@@ -283,6 +258,7 @@ test('registros: entrar, recusa, limite e sair deixam cada um o seu código, sem
   ]) {
     assert.ok(codes.has(code), code)
   }
+  const output = JSON.stringify(lines)
   assert.doesNotMatch(output, /ana@example\.test/)
   assert.doesNotMatch(output, new RegExp(PASSWORD))
 })

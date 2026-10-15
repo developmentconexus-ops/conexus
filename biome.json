@@ -148,6 +148,10 @@
           }
         }
       }
+    },
+    {
+      "includes": ["apps/web/src/**"],
+      "plugins": ["./scripts/w25.grit"]
     }
   ],
   "css": {

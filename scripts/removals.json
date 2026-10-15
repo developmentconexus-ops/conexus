@@ -1,0 +1,20 @@
+[
+  {
+    "id": "raw-output-in-process",
+    "file": "scripts/test-reporter.ts",
+    "find": "const lines = `${pending.get(key) ?? ''}${event.data.message}`.split('\\n')",
+    "replace": "const lines: string[] = []",
+    "test": { "cwd": ".", "file": "scripts/test-reporter.test.ts", "name": "linha crua: recusa" }
+  },
+  {
+    "id": "raw-output-spawned-hub",
+    "file": "apps/server/src/platform/test-database.ts",
+    "find": "if (line === undefined) raw.push(text)",
+    "replace": "if (line === undefined) return",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/test-database.test.ts",
+      "name": "linha crua: um Hub iniciado que imprime"
+    }
+  }
+]

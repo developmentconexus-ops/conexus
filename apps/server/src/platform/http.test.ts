@@ -125,7 +125,7 @@ test('páginas: /, /login e /set-password abrem a página das telas; outro ender
   assert.equal((await app.inject({ method: 'GET', url: '/entrar' })).statusCode, 404)
 })
 
-test('endereço desconhecido: fora de /api/, a página das telas com 404; em /api/, o JSON de 404', async (t) => {
+test('endereço desconhecido: fora de /api/ e /assets/, a página das telas com 404; nelas, o JSON de 404', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>x</title>')
@@ -134,13 +134,13 @@ test('endereço desconhecido: fora de /api/, a página das telas com 404; em /ap
     readSession: async () => ({ kind: 'SIGNED_OUT' }),
   })
   t.after(() => app.close())
-  for (const url of ['/endereco-que-nao-existe', '/a/b?c=1', '/assets/nao-existe.js']) {
+  for (const url of ['/endereco-que-nao-existe', '/a/b?c=1']) {
     const typed = await app.inject({ method: 'GET', url })
     assert.equal(typed.statusCode, 404, url)
     assert.equal(typed.body, '<!doctype html><title>x</title>', url)
     assert.match(String(typed.headers['content-type']), /^text\/html/, url)
   }
-  for (const url of ['/api/nao-existe', '/api', '/api?x=1']) {
+  for (const url of ['/api/nao-existe', '/api', '/api?x=1', '/assets/nao-existe.js']) {
     const api = await app.inject({ method: 'GET', url })
     assert.equal(api.statusCode, 404, url)
     assert.equal(Object(api.json()).code, 'NOT_FOUND', url)

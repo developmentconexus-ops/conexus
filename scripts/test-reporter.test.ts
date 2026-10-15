@@ -44,3 +44,25 @@ test('aceita pular com opt-in', () => {
     "import test from 'node:test'\ntest('a', { skip: 'opt-in: needs a key' }, () => {})\ntest('b', () => {})\n"
   assert.equal(run(source).status, 0)
 })
+
+test('linha crua: recusa o que não é uma linha de registro com nível e código', () => {
+  const source = [
+    "import test from 'node:test'",
+    "test('a', () => {",
+    "  process.stdout.write('# SERVER_ERROR: x\\n')",
+    '  process.stderr.write(\'{"level":50,"msg":"not a code"}\\n\')',
+    '  process.stdout.write(\'{"level":30,"level":30,"msg":"TWO_LEVELS"}\\n\')',
+    '})',
+  ].join('\n')
+  const result = run(source)
+  assert.equal(result.status, 1)
+  assert.equal(result.stderr.match(/^raw-output: /gm)?.length, 3, result.stderr)
+  assert.match(result.stderr, /^raw-output: .*x\.test\.ts: # SERVER_ERROR: x$/m)
+})
+
+test('linha crua: aceita a linha de registro com um nível e um código', () => {
+  const source =
+    'import test from \'node:test\'\ntest(\'a\', () => {\n  process.stdout.write(\'{"level":30,"msg":"LISTENING"}\\n\')\n})\n'
+  const result = run(source)
+  assert.equal(result.status, 0, result.stderr)
+})

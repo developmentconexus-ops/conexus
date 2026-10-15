@@ -12,6 +12,7 @@ import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { Config } from './platform/config.ts'
 import { readConfig } from './platform/config.ts'
+import type { Database } from './platform/database.ts'
 import { assertMigrated, assertRuntimeLogin, openDatabase } from './platform/database.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
@@ -54,6 +55,35 @@ async function listenOnce(app: FastifyInstance, port: number): Promise<void> {
   app.log.info('LISTENING')
 }
 
+/**
+ * The library's own lines are prose, so every one of its cases logs a code here instead (code C50).
+ */
+function shutDownOnSignal(app: FastifyInstance, database: Database) {
+  function unexpected(cause: unknown) {
+    logFailure(app.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+  }
+  return closeWithGrace(
+    {
+      delay: SHUTDOWN_DEADLINE_MS,
+      logger: false,
+      onSecondSignal: (signal) => app.log.error({ signal }, 'SHUTDOWN_FORCED'),
+      onSecondError: unexpected,
+      onTimeout: (delay) => app.log.error({ deadlineMs: delay }, 'SHUTDOWN_TIMED_OUT'),
+    },
+    async ({ signal, err }) => {
+      if (err) unexpected(err)
+      app.log.info(signal === undefined ? {} : { signal }, 'SHUTTING_DOWN')
+      try {
+        await app.close()
+        await database.close()
+      } catch (error) {
+        unexpected(error)
+        throw error
+      }
+    },
+  )
+}
+
 async function runServer(): Promise<void> {
   const config = readConfig('serve')
   const log = bootLog(config.logLevel)
@@ -64,15 +94,7 @@ async function runServer(): Promise<void> {
     const status = createStatus({ version: config.version, database })
     const identity = createIdentity({ database, config, log })
     const app = await createHub(config, { status, identity })
-    const grace = closeWithGrace(
-      { delay: SHUTDOWN_DEADLINE_MS, logger: app.log },
-      async ({ signal, err }) => {
-        if (err) logFailure(app.log, new Failure('INTERNAL_UNEXPECTED', { cause: err }))
-        app.log.info(signal === undefined ? {} : { signal }, 'SHUTTING_DOWN')
-        await app.close()
-        await database.close()
-      },
-    )
+    const grace = shutDownOnSignal(app, database)
     try {
       await listenOnce(app, config.port)
       await status.recordStart()

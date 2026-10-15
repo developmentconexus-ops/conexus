@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict'
-import type { ChildProcess } from 'node:child_process'
-import { spawn } from 'node:child_process'
 import { on, once } from 'node:events'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { connect } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { TestContext } from 'node:test'
 import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
 import { createIdentity } from './hub/identity/public.ts'
@@ -17,13 +14,13 @@ import {
   createTestDatabase,
   freePort,
   serveEnvironment,
+  spawnHub,
+  startHub,
   testConfig,
 } from './platform/test-database.ts'
 
 const silent = { info: () => undefined, error: () => undefined }
-const MAIN = join(import.meta.dirname, 'main.ts')
 const apps: FastifyInstance[] = []
-const children: ChildProcess[] = []
 const dirs: string[] = []
 let shared: TestDatabase
 const cleanups: (() => Promise<void> | void)[] = []
@@ -31,7 +28,6 @@ before(async () => {
   shared = await createTestDatabase({ after: (cleanup) => cleanups.push(cleanup) })
 })
 after(async () => {
-  for (const child of children) child.kill('SIGKILL')
   for (const app of apps) await app.close()
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
   for (const cleanup of cleanups) await cleanup()
@@ -179,42 +175,12 @@ test('cabeçalhos', async () => {
   }
 })
 
-async function startChild(t: TestContext) {
-  const port = await freePort()
-  const env = serveEnvironment(t, shared.runtimeUrl, port)
-  const child = spawn(process.execPath, [MAIN], { env, stdio: ['ignore', 'pipe', 'pipe'] })
-  children.push(child)
-  const lines: Record<string, unknown>[] = []
-  const seen = new Map<string, PromiseWithResolvers<void>>()
-  function until(message: string) {
-    const waiter = seen.get(message) ?? Promise.withResolvers<void>()
-    seen.set(message, waiter)
-    return waiter.promise
-  }
-  child.stdout.on('data', (chunk: Buffer) => {
-    for (const text of String(chunk).split('\n').filter(Boolean)) {
-      const line = JSON.parse(text)
-      lines.push(line)
-      const message = String(line.msg)
-      const waiter = seen.get(message) ?? Promise.withResolvers<void>()
-      seen.set(message, waiter)
-      waiter.resolve()
-    }
-  })
-  const exited = new Promise<{ code: number | null; signal: string | null }>((resolve) => {
-    child.on('exit', (code, signal) => resolve({ code, signal }))
-  })
-  await until('LISTENING')
-  return { child, port, lines, exited, until }
-}
-
 test('log por pedido', async (t) => {
-  const { child, port, lines, exited } = await startChild(t)
+  const { port, lines, stop } = await spawnHub(t, serveEnvironment(t, shared.runtimeUrl))
   const traceparent = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
   const response = await fetch(`http://127.0.0.1:${port}/api/health`, { headers: { traceparent } })
   assert.equal(response.status, 200)
-  child.kill('SIGTERM')
-  await exited
+  await stop()
   assert.equal(lines.filter((line) => line.msg === 'LISTENING').length, 1)
   const served = lines.filter((line) => line.msg === 'REQUEST_SERVED')
   assert.equal(served.length, 1)
@@ -227,26 +193,28 @@ test('log por pedido', async (t) => {
 })
 
 test('desligamento', async (t) => {
-  const { child, lines, exited } = await startChild(t)
-  child.kill('SIGTERM')
-  assert.deepEqual(await exited, { code: 0, signal: null })
+  const { lines, stop } = await spawnHub(t, serveEnvironment(t, shared.runtimeUrl))
+  await stop()
   assert.equal(lines.find((line) => line.msg === 'SHUTTING_DOWN')?.signal, 'SIGTERM')
 })
 
 test('segundo sinal', async (t) => {
-  const { child, port, exited, until } = await startChild(t)
+  const port = await freePort()
+  const { kill, exited, until, lines } = startHub(t, serveEnvironment(t, shared.runtimeUrl, port))
+  await until('LISTENING')
   const stuck = connect(port, '127.0.0.1')
   stuck.on('error', () => stuck.destroy())
   await once(stuck, 'connect')
   stuck.write('GET /api/health HTTP/1.1\r\nHost: x\r\n')
-  child.kill('SIGTERM')
+  kill('SIGTERM')
   await until('SHUTTING_DOWN')
-  child.kill('SIGTERM')
-  assert.deepEqual(await exited, { code: 1, signal: null })
+  kill('SIGTERM')
+  assert.equal(await exited, 1)
+  assert.equal(lines.find((line) => line.msg === 'SHUTDOWN_FORCED')?.signal, 'SIGTERM')
 })
 
 test('caminho com porcentagem malformada responde 400 em problem+json, com cabeçalhos e log', async (t) => {
-  const { child, port, lines, exited } = await startChild(t)
+  const { port, lines, stop } = await spawnHub(t, serveEnvironment(t, shared.runtimeUrl))
   for (const path of ['/%zz', '/api/%E0%A4%A']) {
     const answer = await raw(port, `GET ${path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n`)
     const [head = '', body = ''] = answer.split('\r\n\r\n')
@@ -263,8 +231,7 @@ test('caminho com porcentagem malformada responde 400 em problem+json, com cabe�
     })
     assert.doesNotMatch(body, /%zz|E0%A4/)
   }
-  child.kill('SIGTERM')
-  await exited
+  await stop()
   const served = lines.filter((line) => line.msg === 'REQUEST_SERVED')
   assert.deepEqual(
     served.map((line) => line.status),

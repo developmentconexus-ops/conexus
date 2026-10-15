@@ -77,6 +77,8 @@ jobs:
       - name: The container that serves the tests dumps the catalog
         run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
       - run: npm test
+      - name: Each protection's test fails when the protection is taken out
+        run: npm run removals
       - run: npm run build
 
   image:
