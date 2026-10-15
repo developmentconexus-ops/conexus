@@ -26,7 +26,8 @@ Esperam: tirar o rótulo antigo das migrações (#25-3), seis versões depois, p
 atividade do Neon sem explicação (#25-6), que não pede código; #32-3 e #32-8, que mudam guias, no
 fechamento.
 
-**As decisões suas pedidas nesta etapa.** Recomendo A em 1 a 7 e 9; a 8 pede sua aprovação.
+**As decisões suas pedidas nesta etapa.** Respondidas em 2026-10-15; as suas palavras estão no
+roteiro.
 
 1. **Aceite explícito.** Hoje o convidado vira membro sozinho ao entrar. **A.** Vê "A empresa B
    convidou você" e só entra ao clicar "Aceitar convite". **B.** Automático.
@@ -50,8 +51,6 @@ fechamento.
 9. **Apagar o que é de uma empresa.** A regra C10 pede já agora a função que apaga tudo de uma
    empresa, sem quem a chame. **A.** Entra na etapa 5, com "Apagar empresa"; o fechamento corrige a
    regra. Ex.: a Empresa Teste fica até lá. **B.** Entra agora, sem uso.
-
-*Pendentes.*
 
 ## As unidades
 
