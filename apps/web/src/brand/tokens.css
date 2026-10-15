@@ -180,4 +180,9 @@
   body {
     @apply bg-canvas font-body text-body text-text;
   }
+
+  /* One keyboard focus for every piece (design V28); a utility that removes the outline wins. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-solid outline-accent;
+  }
 }

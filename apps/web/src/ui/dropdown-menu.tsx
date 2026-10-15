@@ -56,7 +56,7 @@ export function DropdownMenuItem({ className, ...props }: MenuPrimitive.Item.Pro
     <MenuPrimitive.Item
       data-slot="dropdown-menu-item"
       className={cn(
-        'flex h-[34px] cursor-default items-center gap-sm rounded-control px-sm font-body text-label outline-hidden select-none data-highlighted:bg-surface-3 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+        'flex h-[34px] cursor-default items-center gap-sm rounded-control px-sm font-body text-label select-none data-highlighted:bg-surface-3 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
         className,
       )}
       {...props}

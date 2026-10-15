@@ -29,7 +29,7 @@ function NavItem({ place, ...props }: { place: Place } & Omit<LinkProps, 'to' | 
     <Link
       {...props}
       to={place.to}
-      className="flex h-[34px] items-center gap-sm rounded-control px-[0.6rem] text-label outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-accent text-text-2 hover:bg-accent-soft hover:text-text data-[status=active]:bg-surface-3 data-[status=active]:text-text"
+      className="flex h-[34px] items-center gap-sm rounded-control px-[0.6rem] text-label text-text-2 hover:bg-accent-soft hover:text-text data-[status=active]:bg-surface-3 data-[status=active]:text-text"
     >
       <Icon aria-hidden="true" className="size-[18px]" />
       {place.label}
@@ -80,7 +80,7 @@ export function Frame(props: {
           </SheetContent>
         </Sheet>
         <ConexusWordmark arrive word="md" />
-        <p className="min-w-0 truncate text-text-2">{props.place}</p>
+        <p className="truncate text-text-2">{props.place}</p>
         <div className="ml-auto flex items-center gap-sm">
           <ThemeToggle />
           {props.account}
