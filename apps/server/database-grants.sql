@@ -4,13 +4,26 @@
 -- and test_superuser, and leaves out the two roles of the test harness and the membership that
 -- test-database.ts grants to the owner. Comment lines and blank lines are ignored in the comparison.
 ALTER DATABASE hub_database OWNER TO test_owner;
+ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
+ALTER TABLE auth.account OWNER TO test_owner;
+ALTER TABLE auth.rate_limit OWNER TO test_owner;
+ALTER TABLE auth.session OWNER TO test_owner;
+ALTER TABLE auth."user" OWNER TO test_owner;
+ALTER TABLE auth.verification OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
+GRANT USAGE ON SCHEMA auth TO hub_runtime;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
+-- Step 3, founder 2026-10-14 ("0 Aprovo"): the Hub never deletes a person or a stored password.
+GRANT SELECT,INSERT,UPDATE ON TABLE auth.account TO hub_runtime;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.rate_limit TO hub_runtime;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.session TO hub_runtime;
+GRANT SELECT,INSERT,UPDATE ON TABLE auth."user" TO hub_runtime;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.verification TO hub_runtime;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 CREATE ROLE hub_runtime;
