@@ -262,7 +262,11 @@ test('registros: entrar, recusa, limite e sair deixam cada um o seu código, sem
     .split('\n')
     .filter(Boolean)
     .map((line) => JSON.parse(line))
-  const served = lines.filter((line) => !['LISTENING', 'SHUTTING_DOWN'].includes(line.msg))
+  // Served lines sit between the start and the stop; boot lines carry no request.
+  const served = lines.slice(
+    lines.findIndex((line) => line.msg === 'LISTENING') + 1,
+    lines.findIndex((line) => line.msg === 'SHUTTING_DOWN'),
+  )
   for (const line of served) {
     assert.match(String(line.msg), /^[A-Z_]+$/, JSON.stringify(line))
     assert.match(String(line.traceId), /^[0-9a-f-]{36}$/, JSON.stringify(line))
