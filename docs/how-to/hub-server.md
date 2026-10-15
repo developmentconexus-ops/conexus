@@ -49,6 +49,15 @@ direct (not pooled) PostgreSQL address. Only the service `migrate` mounts the ow
 container mounts `hub_database_url` alone, and `deploy.sh` refuses to start the Hub without it. The
 founder opens port 22 only while the files are written, then closes it.
 
+## Session secret and first person
+
+Firstmate writes `hub_session_secret` beside those keys, 32 random characters or more
+(`openssl rand -base64 48`). `deploy.sh` refuses to run without it. A new secret, then Reiniciar o
+Hub, ends every session.
+
+Actions, Criar a primeira pessoa: the summary, never the log, shows a one-use `/set-password` link
+for 15 minutes. A rerun gives a new link until a password exists.
+
 ## Publish
 
 Merging into `main` publishes nothing. Create a GitHub Release whose tag is `v<n>.<n>.<n>` on a commit of

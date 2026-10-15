@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!package-lock.json", "!**/*.woff2"]
+    "includes": ["**", "!package-lock.json", "!**/*.woff2", "!apps/web/src/routeTree.gen.ts"]
   },
   "formatter": {
     "indentStyle": "space",
@@ -99,6 +99,16 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["apps/web/src/main.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useConsistentTypeDefinitions": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["scripts/**", "apps/server/src/platform/config.ts"],
       "linter": {

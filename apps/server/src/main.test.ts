@@ -8,13 +8,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { after, before, test } from 'node:test'
-import { Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import { createIdentity } from './hub/identity/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import { createHub } from './main.ts'
 import type { TestDatabase } from './platform/test-database.ts'
-import { createTestDatabase, freePort, urlFile } from './platform/test-database.ts'
+import {
+  createTestDatabase,
+  freePort,
+  serveEnvironment,
+  testConfig,
+} from './platform/test-database.ts'
 
+const silent = { info: () => undefined, error: () => undefined }
 const MAIN = join(import.meta.dirname, 'main.ts')
 const apps: FastifyInstance[] = []
 const children: ChildProcess[] = []
@@ -32,14 +38,10 @@ after(async () => {
 })
 
 async function hub(webRoot?: string) {
-  const config = {
-    version: Version.parse('v0.1.0'),
-    port: 1,
-    logLevel: 'error',
-    databaseUrl: shared.runtimeUrl,
-  } as const
+  const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
-  const app = await createHub(config, { status, webRoot })
+  const identity = createIdentity({ database: shared.database, config, log: silent })
+  const app = await createHub(config, { status, identity, webRoot })
   apps.push(app)
   return app
 }
@@ -74,8 +76,8 @@ test('saúde', async () => {
   assert.equal(response.body, '{"status":"LIVE"}')
 })
 
-test('caminho desconhecido responde 404 em problem+json', async () => {
-  const response = await (await hub()).inject({ method: 'GET', url: '/nope' })
+test('caminho desconhecido em /api/ responde 404 em problem+json', async () => {
+  const response = await (await hub()).inject({ method: 'GET', url: '/api/nope' })
   assert.equal(response.statusCode, 404)
   assert.deepEqual(problem(response), NOT_FOUND)
 })
@@ -83,7 +85,7 @@ test('caminho desconhecido responde 404 em problem+json', async () => {
 test('o 404 vem antes do corpo', async () => {
   const app = await hub()
   const cases = [
-    { url: '/nope', payload: '{bad' },
+    { url: '/api/nope', payload: '{bad' },
     { url: '/api/health', payload: '{"a":1}' },
   ]
   for (const { url, payload } of cases) {
@@ -163,7 +165,7 @@ test('sem a página construída, / responde 404', async () => {
 
 test('cabeçalhos', async () => {
   const app = await hub()
-  for (const url of ['/api/health', '/nope']) {
+  for (const url of ['/api/health', '/api/nope', '/nope']) {
     const { headers } = await app.inject({ method: 'GET', url })
     const policy = String(headers['content-security-policy'])
     assert.match(policy, /(^|;)script-src 'self'(;|$)/)
@@ -179,12 +181,7 @@ test('cabeçalhos', async () => {
 
 async function startChild(t: TestContext) {
   const port = await freePort()
-  const env = {
-    CONEXUS_VERSION: 'v0.1.0',
-    HUB_PORT: String(port),
-    LOG_LEVEL: 'info',
-    HUB_DATABASE_URL_FILE: urlFile(t, shared.runtimeUrl),
-  }
+  const env = serveEnvironment(t, shared.runtimeUrl, port)
   const child = spawn(process.execPath, [MAIN], { env, stdio: ['ignore', 'pipe', 'pipe'] })
   children.push(child)
   const lines: Record<string, unknown>[] = []

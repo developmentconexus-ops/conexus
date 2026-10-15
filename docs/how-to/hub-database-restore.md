@@ -10,9 +10,10 @@ Escolha o minuto. O Neon guarda só seis horas de histórico no plano grátis. A
 
 1. No Neon, abra o projeto do Hub, depois Backup & Restore.
 2. Escolha o ramo principal e o minuto, e confirme a restauração.
-3. No GitHub, em Actions, rode "Reiniciar o Hub". É obrigatório depois de toda restauração: a senha do login do Hub volta a ser a do arquivo do servidor, e as migrações que a restauração desfez são aplicadas de novo.
-4. Em até 2 minutos, abra o Hub e recarregue. "Último início" é a hora de agora. "Início anterior" é o último início que existia antes do minuto escolhido. Os inícios depois desse minuto sumiram.
-5. No Neon, em Branches, apague o ramo de cópia que a restauração criou: o nome termina em `_old_` e uma data. O plano grátis aceita só dez ramos.
+3. Peça ao Firstmate um segredo das sessões novo no servidor ([hub-server](hub-server.md), "Session secret"). Uma sessão restaurada não pode voltar a valer: com o segredo trocado, toda sessão acaba e cada pessoa entra de novo.
+4. No GitHub, em Actions, rode "Reiniciar o Hub". É obrigatório depois de toda restauração: a senha do login do Hub volta a ser a do arquivo do servidor, e as migrações que a restauração desfez são aplicadas de novo.
+5. Em até 2 minutos, entre de novo no Hub. "Último início" é a hora de agora. "Início anterior" é o último início que existia antes do minuto escolhido. Os inícios depois desse minuto sumiram.
+6. No Neon, em Branches, apague o ramo de cópia que a restauração criou: o nome termina em `_old_` e uma data. O plano grátis aceita só dez ramos.
 
 ## Se a página dá erro
 

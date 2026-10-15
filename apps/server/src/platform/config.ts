@@ -7,13 +7,49 @@ import { readSecretFile } from './secret-file.ts'
 const LOG_LEVELS = ['error', 'warn', 'info', 'debug'] as const
 type LogLevel = (typeof LOG_LEVELS)[number]
 
-export type Config = {
+const SESSION_SECRET_MIN_LENGTH = 32
+
+/** The Hub's address as the browser sees it, the only `Origin` its writes accept (security S24). */
+export const PublicOrigin = z
+  .string()
+  .refine((value) => URL.parse(value)?.protocol === 'https:' && URL.parse(value)?.origin === value)
+  .brand('PublicOrigin')
+export type PublicOrigin = z.infer<typeof PublicOrigin>
+
+/** Signs the session cookie: a copy of the database without it opens no session (security S16). */
+export class SessionSecret {
+  readonly #value: string
+
+  private constructor(value: string) {
+    this.#value = value
+  }
+
+  static parse(value: string): SessionSecret {
+    if (value.length < SESSION_SECRET_MIN_LENGTH) throw new TypeError('session secret too short')
+    return new SessionSecret(value)
+  }
+
+  reveal(): string {
+    return this.#value
+  }
+
+  toString(): string {
+    return '[SessionSecret]'
+  }
+
+  toJSON(): string {
+    return '[SessionSecret]'
+  }
+}
+
+type BaseConfig = {
   version: Version
   port: number
   logLevel: LogLevel
   databaseUrl: DatabaseUrl
 }
-type MigrateConfig = Config & { migrationDatabaseUrl: DatabaseUrl }
+export type Config = BaseConfig & { publicOrigin: PublicOrigin; sessionSecret: SessionSecret }
+type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
 const Environment = z.object({
   CONEXUS_VERSION: Version,
@@ -22,6 +58,10 @@ const Environment = z.object({
   HUB_DATABASE_URL_FILE: z.string().min(1),
 })
 const MigrationKey = z.object({ HUB_MIGRATION_DATABASE_URL_FILE: z.string().min(1) })
+const ServeEnvironment = z.object({
+  HUB_PUBLIC_ORIGIN: PublicOrigin,
+  HUB_SESSION_SECRET_FILE: z.string().min(1),
+})
 
 function invalid(variables: string, reason?: string): Failure {
   return new Failure('CONFIG_INVALID', {
@@ -29,36 +69,59 @@ function invalid(variables: string, reason?: string): Failure {
   })
 }
 
-function readUrl(variable: string, path: string): DatabaseUrl {
+function readSecret<T>(variable: string, path: string, parse: (value: string) => T): T {
   const value = readSecretFile(variable, path)
   try {
-    return DatabaseUrl.parse(value)
+    return parse(value)
   } catch (cause) {
     throw new Failure('CONFIG_INVALID', { details: { variables: variable }, cause })
   }
+}
+
+function readUrl(variable: string, path: string): DatabaseUrl {
+  return readSecret(variable, path, DatabaseUrl.parse)
+}
+
+function parsed<T extends z.ZodType>(schema: T, env: NodeJS.ProcessEnv): z.output<T> {
+  const result = schema.safeParse(env)
+  if (!result.success) throw invalid(variablesOf(result.error), z.prettifyError(result.error))
+  return result.data
 }
 
 function variablesOf(error: z.ZodError): string {
   return [...new Set(error.issues.map((issue) => String(issue.path[0])))].join(',')
 }
 
-export function readConfig(mode: 'serve', env?: NodeJS.ProcessEnv): Config
-export function readConfig(mode: 'migrate', env?: NodeJS.ProcessEnv): MigrateConfig
-export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config | MigrateConfig {
-  const parsed = Environment.safeParse(env)
-  if (!parsed.success) throw invalid(variablesOf(parsed.error), z.prettifyError(parsed.error))
-  const { data } = parsed
-  const config: Config = {
+function baseConfig(data: z.output<typeof Environment>): BaseConfig {
+  return {
     version: data.CONEXUS_VERSION,
     port: data.HUB_PORT,
     logLevel: data.LOG_LEVEL,
     databaseUrl: readUrl('HUB_DATABASE_URL_FILE', data.HUB_DATABASE_URL_FILE),
   }
-  if (mode === 'serve') return config
-  const owner = MigrationKey.safeParse(env)
-  if (!owner.success) throw invalid(variablesOf(owner.error), z.prettifyError(owner.error))
-  const path = owner.data.HUB_MIGRATION_DATABASE_URL_FILE
-  return { ...config, migrationDatabaseUrl: readUrl('HUB_MIGRATION_DATABASE_URL_FILE', path) }
+}
+
+export function readConfig(mode: 'serve', env?: NodeJS.ProcessEnv): Config
+export function readConfig(mode: 'migrate', env?: NodeJS.ProcessEnv): MigrateConfig
+export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config | MigrateConfig {
+  const data = parsed(Environment, env)
+  if (mode === 'migrate') {
+    const path = parsed(MigrationKey, env).HUB_MIGRATION_DATABASE_URL_FILE
+    return {
+      ...baseConfig(data),
+      migrationDatabaseUrl: readUrl('HUB_MIGRATION_DATABASE_URL_FILE', path),
+    }
+  }
+  const serve = parsed(ServeEnvironment, env)
+  return {
+    ...baseConfig(data),
+    publicOrigin: serve.HUB_PUBLIC_ORIGIN,
+    sessionSecret: readSecret(
+      'HUB_SESSION_SECRET_FILE',
+      serve.HUB_SESSION_SECRET_FILE,
+      SessionSecret.parse,
+    ),
+  }
 }
 
 const TestEnvironment = z.object({

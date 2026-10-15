@@ -18,6 +18,7 @@ case "$*" in
   "inspect --format {{.Config.Image}}"*) echo "\${STUB_RUNNING_IMAGE:-}" ;;
   "image inspect"*) echo "\${STUB_LABEL:-}" ;;
   *" run --rm migrate") exit "\${STUB_MIGRATE_STATUS:-0}" ;;
+  "run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/hub_session_secret,"*) exit "\${STUB_SECRET_STATUS:-0}" ;;
   *" up "*) exit "\${STUB_UP_STATUS:-0}" ;;
 esac
 `
@@ -27,6 +28,7 @@ type Stub = {
   labeled?: boolean
   migrateStatus?: number
   upStatus?: number
+  secretMissing?: boolean
 }
 
 function deploy(argument: string, stub: Stub = {}) {
@@ -49,6 +51,7 @@ function deploy(argument: string, stub: Stub = {}) {
       STUB_LABEL: stub.labeled === false ? '' : '1',
       STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
       STUB_UP_STATUS: String(stub.upStatus ?? 0),
+      STUB_SECRET_STATUS: stub.secretMissing === true ? '1' : '0',
     },
   })
   const log = readFileSync(calls, 'utf8').split('\n').filter(Boolean)
@@ -112,4 +115,33 @@ test('--restart cujo Hub não fica saudável diz como voltar atrás', () => {
   assert.equal(run.status, 1)
   assert.match(run.stderr, /not healthy after the restart/)
   assert.match(run.stderr, /Voltar atrás/)
+})
+
+test('sem hub_session_secret recusa antes de migrate e não sobe o Hub', () => {
+  const { run, count } = deploy('hub@sha256:new', {
+    running: 'hub@sha256:old',
+    secretMissing: true,
+  })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /missing secret: hub_session_secret/)
+  assert.equal(count('run --rm migrate'), 0)
+  assert.equal(count(' up '), 0)
+})
+
+test('--restart sem hub_session_secret recusa e não recria o Hub', () => {
+  const { run, count } = deploy('--restart', { running: 'hub@sha256:old', secretMissing: true })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /missing secret: hub_session_secret/)
+  assert.equal(count(' up '), 0)
+})
+
+test('o segredo é conferido na imagem nova, sem rede, como o usuário do Hub', () => {
+  const { run, log } = deploy('hub@sha256:new')
+  assert.equal(run.status, 0, run.stderr)
+  assert.ok(
+    log.includes(
+      'run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/hub_session_secret,target=/run/check,readonly --entrypoint test hub@sha256:new -s /run/check [HUB_IMAGE=]',
+    ),
+    log.join('\n'),
+  )
 })

@@ -12,6 +12,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): como restaurar o banco do Hub a um minuto e conferir.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 the server tests need.
 - [steps/](steps/): the folder of the step card in construction, empty between steps.
+- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes itself instead of its library's, with the library's line.
 
 ## Guides: the rules
 

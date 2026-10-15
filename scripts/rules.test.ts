@@ -121,6 +121,7 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/web/src/ui/button.ts': '../platform/hub.ts',
   'apps/web/src/routes/ok.ts': '../hub/b/public.ts',
   'apps/web/src/hub/a/queries.ts': '@conexus/hub-api',
+  'apps/web/src/routeTree.gen.ts': './platform/hub.ts',
 }
 
 let violations: Violation[] = []

@@ -8,23 +8,24 @@ import { createHub } from '../../main.ts'
 import {
   createTestDatabase,
   freePort,
+  serveEnvironment,
+  testConfig,
   unreachableDatabase,
   unreachableDatabaseUrl,
-  urlFile,
 } from '../../platform/test-database.ts'
+import { createIdentity } from '../identity/public.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
+const silent = { info: () => undefined, error: () => undefined }
 const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
-
-function config(databaseUrl: Parameters<typeof createHub>[0]['databaseUrl']) {
-  return { version: VERSION, port: 1, logLevel: 'error', databaseUrl } as const
-}
 
 async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const test = await createTestDatabase(t)
   const status = createStatus({ version: VERSION, database: test.database })
-  const app = await createHub(config(test.runtimeUrl), { status })
+  const config = testConfig(test.runtimeUrl)
+  const identity = createIdentity({ database: test.database, config, log: silent })
+  const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   return { app, status, test }
 }
@@ -87,8 +88,11 @@ test('recordStart grava a versão que roda, e o último início passa a ser ele'
 })
 
 test('com o banco fora, /api/status responde 503 e /api/health continua 200', async (t) => {
-  const status = createStatus({ version: VERSION, database: await unreachableDatabase(t) })
-  const app = await createHub(config(await unreachableDatabaseUrl()), { status })
+  const database = await unreachableDatabase(t)
+  const status = createStatus({ version: VERSION, database })
+  const config = testConfig(await unreachableDatabaseUrl())
+  const identity = createIdentity({ database, config, log: silent })
+  const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   const response = await app.inject(STATUS)
   assert.equal(response.statusCode, 503)
@@ -115,12 +119,7 @@ test('uma linha fora do contrato é recusada na leitura, sem o valor no log', as
   assert.doesNotMatch(response.body, /PLANTED/)
   const port = await freePort()
   const child = spawn(process.execPath, [MAIN], {
-    env: {
-      CONEXUS_VERSION: 'v0.1.0',
-      HUB_PORT: String(port),
-      LOG_LEVEL: 'info',
-      HUB_DATABASE_URL_FILE: urlFile(t, test.runtimeUrl),
-    },
+    env: serveEnvironment(t, test.runtimeUrl, port),
     stdio: ['ignore', 'pipe', 'ignore'],
   })
   t.after(() => child.kill('SIGKILL'))

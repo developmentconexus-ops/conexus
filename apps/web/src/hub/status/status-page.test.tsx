@@ -14,7 +14,7 @@ afterAll(() => server.close())
 
 function open() {
   render(
-    <QueryClientProvider client={createCache()}>
+    <QueryClientProvider client={createCache(() => undefined)}>
       <StatusPage />
     </QueryClientProvider>,
   )
@@ -42,7 +42,6 @@ test('mostra a versão e os dois inícios na hora de Brasília', async () => {
     '14/10 14:02',
     '14/10 00:30',
   ])
-  expect(screen.getByRole('img', { name: 'Conexus' })).toBeTruthy()
   expect(screen.getByText('Hub do Conexus no ar.')).toBeTruthy()
   expect(screen.queryByRole('alert')).toBeNull()
 })

@@ -2,14 +2,16 @@ import assert from 'node:assert/strict'
 import type { ChildProcess } from 'node:child_process'
 import { spawn } from 'node:child_process'
 import { once } from 'node:events'
-import { chmodSync } from 'node:fs'
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { after, test } from 'node:test'
 import {
   createTestDatabase,
   freePort,
+  serveEnvironment,
   unreachableDatabaseUrl,
   urlFile,
 } from './platform/test-database.ts'
@@ -46,15 +48,27 @@ function start(env: Record<string, string>, args: string[] = []) {
   return { child, lines, until, exited }
 }
 
+function shortSecretFile(t: TestContext): string {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-key-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  writeFileSync(join(dir, 'secret'), 'too-short', { mode: 0o400 })
+  return join(dir, 'secret')
+}
+
 function messages(lines: Line[], message: string): Line[] {
   return lines.filter((line) => line.msg === message)
 }
 
 const GOOD_ENV = { CONEXUS_VERSION: 'v0.1.0', HUB_PORT: '8080', LOG_LEVEL: 'info' }
-const WITH_FILE = { ...GOOD_ENV, HUB_DATABASE_URL_FILE: '/nowhere/hub_database_url' }
+const WITH_FILE = {
+  ...GOOD_ENV,
+  HUB_DATABASE_URL_FILE: '/nowhere/hub_database_url',
+  HUB_PUBLIC_ORIGIN: 'https://hub.example.test',
+  HUB_SESSION_SECRET_FILE: '/nowhere/hub_session_secret',
+}
 
 for (const name of Object.keys(WITH_FILE)) {
-  test(`recusa subir sem ${name}`, async () => {
+  test(`configuração: recusa subir sem ${name}`, async () => {
     const env = Object.fromEntries(Object.entries(WITH_FILE).filter(([key]) => key !== name))
     const { lines, exited } = start(env)
     assert.equal(await exited, 1)
@@ -67,9 +81,11 @@ const OUT_OF_FORMAT = [
   ['HUB_PORT', 'abc'],
   ['HUB_PORT', '70000'],
   ['LOG_LEVEL', 'loud'],
+  ['HUB_PUBLIC_ORIGIN', 'http://hub.example.test'],
+  ['HUB_PUBLIC_ORIGIN', 'https://hub.example.test/'],
 ] as const
 for (const [name, value] of OUT_OF_FORMAT) {
-  test(`recusa subir com ${name}=${value} fora do formato`, async () => {
+  test(`configuração: recusa subir com ${name}=${value} fora do formato`, async () => {
     const { lines, exited } = start({ ...WITH_FILE, [name]: value })
     assert.equal(await exited, 1)
     assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, name)
@@ -78,14 +94,33 @@ for (const [name, value] of OUT_OF_FORMAT) {
 
 async function serverEnv(t: TestContext, extra: Record<string, string> = {}) {
   const database = await createTestDatabase(t)
-  const port = String(await freePort())
-  const env = {
-    ...GOOD_ENV,
-    HUB_PORT: port,
-    HUB_DATABASE_URL_FILE: urlFile(t, database.runtimeUrl),
-  }
+  const port = await freePort()
+  const env = serveEnvironment(t, database.runtimeUrl, port)
   return { database, env: { ...env, ...extra } }
 }
+
+test('configuração: sem o arquivo do segredo das sessões, nomeia a variável', async (t) => {
+  const { env } = await serverEnv(t, { HUB_SESSION_SECRET_FILE: '/nowhere/hub_session_secret' })
+  const { lines, exited } = start(env)
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_SESSION_SECRET_FILE')
+  assert.equal(messages(lines, 'LISTENING').length, 0)
+})
+
+test('configuração: com o segredo das sessões legível por outros, nomeia a variável', async (t) => {
+  const { env } = await serverEnv(t)
+  chmodSync(env.HUB_SESSION_SECRET_FILE, 0o644)
+  const { lines, exited } = start(env)
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_SESSION_SECRET_FILE')
+})
+
+test('configuração: com o segredo das sessões curto demais, nomeia a variável', async (t) => {
+  const { env } = await serverEnv(t, { HUB_SESSION_SECRET_FILE: shortSecretFile(t) })
+  const { lines, exited } = start(env)
+  assert.equal(await exited, 1)
+  assert.equal(messages(lines, 'CONFIG_INVALID')[0]?.variables, 'HUB_SESSION_SECRET_FILE')
+})
 
 test('atrasado: o banco sem uma migração que o programa traz recusa a subida', async (t) => {
   const { database, env } = await serverEnv(t)
