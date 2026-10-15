@@ -150,14 +150,19 @@ test('com outro e-mail, ou com a pessoa já com senha: sai com 1, FIRST_PERSON_E
   ])
 })
 
-test('senha pelo link: 204 e a pessoa entra; o mesmo token, o vencido ou o valor guardado no banco, 422', async (t) => {
+test('senha pelo link: 204 e a pessoa entra; nenhuma coluna guarda o token; o mesmo token ou o valor guardado no banco, 422', async (t) => {
   const test = await createTestDatabase(t)
   const app = await hubOn(t, test)
   const token = tokenOf((await firstPerson(t, test, ANA)).summary)
   const short = await setPassword(app, { token, password: 'curta' })
-  assert.equal(short.statusCode, 422)
-  assert.equal(codeOf(short), 'PASSWORD_TOO_SHORT')
+  assert.equal(short.statusCode, 400)
+  assert.equal(codeOf(short), 'REQUEST_MALFORMED')
   const stored = await test.asOwner('select identifier, value from auth.verification')
+  // A copy of the database alone opens nothing: the token is stored only as its hash (S16).
+  assert.deepEqual(
+    stored.filter((row) => `${String(row.identifier)} ${String(row.value)}`.includes(token)),
+    [],
+  )
   for (const row of stored) {
     for (const guess of [String(row.identifier), String(row.value)]) {
       assert.equal(

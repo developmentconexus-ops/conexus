@@ -11,7 +11,8 @@ export const Person = z.object({ id: PersonId, name: z.string().min(1), email: E
 export type Person = z.infer<typeof Person>
 
 const SignedIn = z.object({ person: Person })
-const PASSWORD_MAX_LENGTH = 128
+/** A first password's length, which the form checks before it sends and the library again. */
+export const PASSWORD_LENGTH = { min: 8, max: 128 } as const
 
 export const createSession = {
   id: 'createSession',
@@ -21,7 +22,7 @@ export const createSession = {
   path: '/api/sessions/current',
   bodyLimit: 4096,
   input: {
-    body: z.object({ email: Email, password: z.string().min(1).max(PASSWORD_MAX_LENGTH) }),
+    body: z.object({ email: Email, password: z.string().min(1).max(PASSWORD_LENGTH.max) }),
   },
   success: { status: 200, body: SignedIn },
   failures: ['SIGN_IN_REFUSED', 'SIGN_IN_ATTEMPTS_EXCEEDED', 'DATABASE_UNAVAILABLE'],
@@ -66,9 +67,9 @@ export const setPassword = {
   input: {
     body: z.object({
       token: z.string().min(1),
-      password: z.string().min(1).max(PASSWORD_MAX_LENGTH),
+      password: z.string().min(PASSWORD_LENGTH.min).max(PASSWORD_LENGTH.max),
     }),
   },
   success: { status: 204 },
-  failures: ['PASSWORD_LINK_INVALID', 'PASSWORD_TOO_SHORT'],
+  failures: ['PASSWORD_LINK_INVALID'],
 } as const satisfies Operation

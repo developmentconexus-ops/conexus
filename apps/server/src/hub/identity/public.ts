@@ -6,6 +6,10 @@ import { createFirstPerson } from './first-person.ts'
 import { registerIdentityRoutes } from './routes.ts'
 import { createSessionReader } from './session.ts'
 
+// The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
+// call can prove the sign-up stays closed (criterion 18).
+export { createAuth } from './auth.ts'
+
 export type Identity = ReturnType<typeof createIdentity>
 
 export function createIdentity(deps: { database: Database; config: Config; log: FailureLog }) {

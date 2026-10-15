@@ -60,25 +60,23 @@ test('um token na consulta, e não no fragmento, não vale: a frase do link e ne
   expect(screen.queryByLabelText('Senha')).toBeNull()
 })
 
-test('senha curta: a frase do Hub fica no campo', async () => {
-  server.use(http.put('*/api/passwords', () => refusal('PASSWORD_TOO_SHORT')))
-  open('/set-password#token=tok-123')
-  const field = await choose('curta')
-  expect(
-    await screen.findByText(
-      'A senha precisa de 8 caracteres ou mais. Escolha uma senha mais longa.',
-    ),
-  ).toBeTruthy()
-  expect(field.getAttribute('aria-invalid')).toBe('true')
-  expect(screen.queryByRole('alert')).toBeNull()
-})
-
-test('senha vazia: "Escreva a senha." sem pedido ao Hub', async () => {
-  open('/set-password#token=tok-123')
-  await choose('')
-  expect(await screen.findByText('Escreva a senha.')).toBeTruthy()
-  expect(screen.queryByRole('alert')).toBeNull()
-})
+for (const password of ['curta', '']) {
+  test(`senha curta ("${password}"): o formulário diz no campo, antes de enviar ao Hub`, async () => {
+    let sent = 0
+    server.use(
+      http.put('*/api/passwords', () => {
+        sent++
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    open('/set-password#token=tok-123')
+    const field = await choose(password)
+    expect(await screen.findByText('A senha precisa de 8 caracteres ou mais.')).toBeTruthy()
+    expect(field.getAttribute('aria-invalid')).toBe('true')
+    expect(screen.queryByRole('alert')).toBeNull()
+    expect(sent).toBe(0)
+  })
+}
 
 test('422 PASSWORD_LINK_INVALID: "Este link já foi usado ou venceu."', async () => {
   server.use(http.put('*/api/passwords', () => refusal('PASSWORD_LINK_INVALID')))

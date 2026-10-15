@@ -14,7 +14,6 @@ const SignedIn = z.object({ user: Person })
 const LibraryRefusal = z.object({ code: z.string() })
 const PASSWORD_REFUSALS: Partial<Record<string, FailureCode>> = {
   INVALID_TOKEN: 'PASSWORD_LINK_INVALID',
-  PASSWORD_TOO_SHORT: 'PASSWORD_TOO_SHORT',
 }
 
 /** By status, never by the library's message (code C52); its one outside system is the database. */

@@ -5,6 +5,7 @@ export {
   deleteSession,
   Email,
   getSession,
+  PASSWORD_LENGTH,
   Person,
   PersonId,
   SessionState,

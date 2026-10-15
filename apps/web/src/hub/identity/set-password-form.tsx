@@ -1,18 +1,20 @@
-import { FAILURES, setPassword } from '@conexus/hub-api'
+import { FAILURES, PASSWORD_LENGTH, setPassword } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { sentenceOf } from '../../platform/hub.ts'
 import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { choosePassword } from './queries.ts'
 
 const PASSWORD = setPassword.input.body.pick({ password: true })
+const CHOOSE = `Escolha uma senha de ${PASSWORD_LENGTH.min} caracteres ou mais.`
+const TOO_SHORT = `A senha precisa de ${PASSWORD_LENGTH.min} caracteres ou mais.`
 const LINK_INVALID = `${FAILURES.PASSWORD_LINK_INVALID.phrase} ${FAILURES.PASSWORD_LINK_INVALID.action}`
 
 function Heading() {
   return (
     <header className="flex flex-col gap-xs">
       <h1 className="font-display text-title">Criar sua senha</h1>
-      <p className="text-text-2">Escolha uma senha de 8 caracteres ou mais.</p>
+      <p className="text-text-2">{CHOOSE}</p>
     </header>
   )
 }
@@ -39,9 +41,7 @@ function ChoosePassword({ token }: { token: string }) {
     try {
       await send.mutateAsync({ token, password })
     } catch (error) {
-      const onField = error instanceof HubFailure && error.code === 'PASSWORD_TOO_SHORT'
-      if (onField) form.setError('password', { type: 'server', message: sentenceOf(error) })
-      else form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
       return
     }
     await router.navigate({ to: '/login' })
@@ -56,7 +56,7 @@ function ChoosePassword({ token }: { token: string }) {
           label="Senha"
           type="password"
           autoComplete="new-password"
-          invalid="Escreva a senha."
+          invalid={TOO_SHORT}
         />
         <FormAlert />
         <SubmitButton idle="Criar a senha" pending="Criando…" />

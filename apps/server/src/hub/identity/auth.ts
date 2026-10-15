@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
+import { PASSWORD_LENGTH } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
 import { z } from 'zod'
 import type { Config } from '../../platform/config.ts'
@@ -14,7 +15,6 @@ export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
 const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
-const PASSWORD_LENGTH = { min: 8, max: 128 }
 const PASSWORD_LINK_SECONDS = 900
 
 // The library logs without the request; a sign-in runs inside this store so its lines carry the trace id.
