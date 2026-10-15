@@ -132,22 +132,110 @@ for (const viewport of [SMALL_PHONE, ZOOMED_PHONE]) {
   })
 }
 
-test('o Tab mostra o contorno de 2px no campo e no botão', async () => {
+/**
+ * Where focus is after the key, once it settles: Base UI moves focus off its guards on the next
+ * frame. Each stop reads its name, its drawn outline and whether it sits in the open dialog or menu.
+ */
+async function press(page: Page, key: string): Promise<string> {
+  await page.keyboard.press(key)
+  return page.evaluate(
+    () =>
+      new Promise<string>((settled) =>
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            const focused = document.activeElement
+            if (!focused || focused === document.body) return settled('body')
+            const name =
+              focused.getAttribute('aria-label') ||
+              focused.textContent?.trim() ||
+              focused.getAttribute('name')
+            const { outlineStyle, outlineWidth } = getComputedStyle(focused)
+            const inside = focused.closest('[role=dialog], [role=menu]') ? ' inside' : ''
+            settled(`${name} ${outlineStyle} ${outlineWidth}${inside}`)
+          }),
+        ),
+      ),
+  )
+}
+
+async function presses(page: Page, key: string, count: number): Promise<string[]> {
+  const stops: string[] = []
+  for (let stop = 0; stop < count; stop++) stops.push(await press(page, key))
+  return stops
+}
+
+test('o Tab passa pela entrada com contorno de 2px em cada parada', async () => {
   const page = await open('/login', DESKTOP, SIGNED_OUT)
   await page.getByRole('textbox', { name: 'E-mail' }).waitFor()
-  const outlines: string[] = []
-  for (let stop = 0; stop < 3; stop++) {
-    await page.keyboard.press('Tab')
-    outlines.push(
-      await page.evaluate(() => {
-        const focused = document.activeElement
-        if (!focused) return 'nothing focused'
-        const style = getComputedStyle(focused)
-        return `${focused.textContent || focused.getAttribute('name')} ${style.outlineStyle} ${style.outlineWidth}`
-      }),
-    )
-  }
-  assert.deepEqual(outlines, ['email solid 2px', 'password solid 2px', 'Entrar solid 2px'])
+  assert.deepEqual(await presses(page, 'Tab', 4), [
+    'email solid 2px',
+    'password solid 2px',
+    'Entrar solid 2px',
+    'body',
+  ])
+  await page.close()
+})
+
+for (const [viewport, stops] of [
+  [DESKTOP, ['Usar tema escuro solid 2px', 'Conta de Ana Lima solid 2px', 'Início solid 2px']],
+  [
+    PHONE,
+    ['Abrir navegação solid 2px', 'Usar tema escuro solid 2px', 'Conta de Ana Lima solid 2px'],
+  ],
+] as const) {
+  test(`o Tab passa pela moldura com contorno de 2px numa tela de ${viewport.width}px`, async () => {
+    const page = await open('/', viewport, SIGNED_IN)
+    await page.getByRole('button', { name: 'Conta de Ana Lima' }).waitFor()
+    assert.deepEqual(await presses(page, 'Tab', 4), [...stops, 'body'])
+    await page.close()
+  })
+}
+
+test('o menu da conta aberto pelo teclado mostra o contorno em Sair do Conexus', async () => {
+  const page = await open('/', DESKTOP, SIGNED_IN)
+  await page.getByRole('button', { name: 'Conta de Ana Lima' }).focus()
+  assert.deepEqual(await presses(page, 'Enter', 1), ['Sair do Conexus solid 2px inside'])
+  await page.close()
+})
+
+test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', async () => {
+  const page = await open('/', PHONE, SIGNED_IN)
+  await page.getByRole('button', { name: 'Abrir navegação' }).focus()
+  assert.deepEqual(
+    [...(await presses(page, 'Enter', 1)), ...(await presses(page, 'Tab', 3))],
+    [
+      'Início solid 2px inside',
+      'Fechar navegação solid 2px inside',
+      'Início solid 2px inside',
+      'Fechar navegação solid 2px inside',
+    ],
+  )
+  assert.deepEqual(await presses(page, 'Shift+Tab', 2), [
+    'Início solid 2px inside',
+    'Fechar navegação solid 2px inside',
+  ])
+  await page.close()
+})
+
+function iconWidth(owner: Locator): Promise<number> {
+  return owner.locator('svg').evaluate((icon) => icon.getBoundingClientRect().width)
+}
+
+test('os ícones têm 14px na barra, 16px ao lado de um texto e 18px no trilho', async () => {
+  const page = await open('/', PHONE, SIGNED_IN)
+  const opener = await iconWidth(page.getByRole('button', { name: 'Abrir navegação' }))
+  const theme = await iconWidth(page.getByRole('button', { name: 'Usar tema escuro' }))
+  await page.getByRole('button', { name: 'Conta de Ana Lima' }).click()
+  const leave = await iconWidth(page.getByRole('menuitem', { name: 'Sair do Conexus' }))
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Abrir navegação' }).click()
+  const drawer = page.getByRole('dialog', { name: 'Navegação' })
+  const close = await iconWidth(drawer.getByRole('button', { name: 'Fechar navegação' }))
+  const rail = await iconWidth(drawer.getByRole('button', { name: 'Início' }))
+  assert.deepEqual(
+    { opener, theme, close, leave, rail },
+    { opener: 14, theme: 14, close: 14, leave: 16, rail: 18 },
+  )
   await page.close()
 })
 
