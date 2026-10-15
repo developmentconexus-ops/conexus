@@ -63,6 +63,14 @@ function mediaType(request: FastifyRequest): string | undefined {
   return request.headers['content-type']?.split(';')[0]?.trim().toLowerCase()
 }
 
+/** Another site's page may not make the browser call the API, reads included (security S24). */
+function checkSite(request: FastifyRequest): void {
+  const site = request.headers['sec-fetch-site']
+  if (site !== undefined && site !== 'same-origin' && site !== 'none') {
+    throw new Failure('REQUEST_ORIGIN_REFUSED')
+  }
+}
+
 /** A form post from another site is the one write a browser sends with cookies and no preflight. */
 function checkWrite(request: FastifyRequest, publicOrigin: PublicOrigin): void {
   const site = request.headers['sec-fetch-site']
@@ -101,7 +109,9 @@ export function enforceAccess(
       if (READS.includes(request.method)) return
       throw new Failure('NOT_FOUND')
     }
-    if (access !== 'entry' && access !== 'session') return
+    if (access === 'page') return
+    checkSite(request)
+    if (access === 'public') return
     if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)
     if (access === 'entry') {
       // The Tunnel puts the client's address here; the attempt limit keys on it (security S28, S29).

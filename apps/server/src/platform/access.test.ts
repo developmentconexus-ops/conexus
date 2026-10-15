@@ -107,3 +107,28 @@ for (const [name, headers, code] of REFUSED) {
     assert.equal(handled, false)
   })
 }
+
+const READS_BY_SITE: [string, 'public' | 'session' | 'page', string, number | string][] = [
+  ['pública', 'public', 'cross-site', 'REQUEST_ORIGIN_REFUSED'],
+  ['pública', 'public', 'same-site', 'REQUEST_ORIGIN_REFUSED'],
+  ['com sessão', 'session', 'cross-site', 'REQUEST_ORIGIN_REFUSED'],
+  ['pública', 'public', 'same-origin', 200],
+  ['pública', 'public', 'none', 200],
+  ['a página, aberta de um link noutro site,', 'page', 'cross-site', 200],
+]
+for (const [name, access, site, expected] of READS_BY_SITE) {
+  test(`Fetch Metadata: uma leitura ${name} com Sec-Fetch-Site ${site}: ${expected}`, async () => {
+    let handled = false
+    const url = access === 'page' ? '/login' : '/api/read'
+    const app = await start({ method: 'GET', url, config: { access } }, () => {
+      handled = true
+    })
+    const response = await app.inject({ method: 'GET', url, headers: { 'sec-fetch-site': site } })
+    if (typeof expected === 'number') {
+      assert.equal(response.statusCode, expected)
+    } else {
+      assert.equal(response.json().code, expected)
+      assert.equal(handled, false)
+    }
+  })
+}
