@@ -99,7 +99,8 @@ e funcionou" goes on the roadmap with the date.
 ## 5. Closing a step
 
 - **L19.** The closing pull request **must** write the use line, move into the guides the rules the
-  step learned, confirm every acceptance criterion has a test, and delete the card. [review]
+  step learned, confirm every acceptance criterion has a test, remove from the `next-card` issues
+  the items the step took, and delete the card. [review]
 - **L20.** Skills and guides **must** change only in a closing pull request, when no step is in
   construction. A finding that asks for a change waits in the method queue, an issue with the method
   label. The exception is an emergency label only the founder applies, counted on the step's line.
@@ -143,6 +144,7 @@ changes the guide.
 | `docs/decisions/*.md` | 350 |
 | `docs/steps/*.md` | 4,000, the founder's page about 600 |
 | `docs/how-to/*.md` | 800 |
+| `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |
 | `.agents/skills/*/references/*.md` | 1,500 |
 

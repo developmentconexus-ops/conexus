@@ -23,7 +23,7 @@ parts, [architecture](../../../docs/architecture.md), and the guide each unit wi
 2. List what enters and what stays out, and why.
 3. Write the acceptance criteria, each observable from outside, with the refusals included; each
    refusal names the route of this step that reaches it. Fill the template's failure table for every
-   write the study listed; each row is a criterion.
+   write the study listed; each row yields criteria.
 4. Split the step into units that each end green on their own: a contract lands with its first
    implementer, and a migration that changes the catalog snapshot lands with the unit that owns
    `database-grants.sql`. Name the folders of each; units that share no folder may run in

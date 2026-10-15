@@ -153,8 +153,8 @@ mono.
 
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
 - **V17.** No `style` attribute in Conexus's own pieces; styles come from tokens. [review]
-- **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll.
-  [`layout.test.ts`, review]
+- **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll; [testing
+  T23](testing.md) lists the widths looked at. [`layout.test.ts`, review]
 - **V56.** On a phone the rail becomes a drawer opened from the top bar ("Abrir navegação"), and the
   top bar keeps the mark, the current place and the account. A rail dropped without a drawer takes
   every place with it. [review]

@@ -24,8 +24,8 @@ Tunnel, after publish (see Notes). The other tests belong to steps 4, 8 and 18.
 
 ## Notes
 
-LT16, 2026-10-15, v0.3.0 through the Tunnel: from one address, ten wrong sign-ins got 401 and the
-eleventh 429; another address then got 401.
+LT16, 2026-10-15, through the Tunnel: on v0.3.0 one address got ten 401s, then 429; another got
+401. On v0.3.1 the founder read `__Host-conexus_session`: "HttpOnly ✓, SameSite Lax".
 
 ## Consequences
 

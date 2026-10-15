@@ -88,14 +88,12 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
   `biome.json`, `ci.yml`).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - The order of the work names guide rules by identifier and never restates them.
-- Every write or command the step adds, its own or a library's, has its row in the failure table:
-  run twice at once, refused halfway after one statement or one call (a grant revoked in the test, a
-  third party that fails), a dependency down (the database or a third party), and what the process
-  prints under each. Each cell names its criterion; a step with no write writes "nenhuma".
-  Founder, 2026-10-15: "A-A".
+- Every write or command the step adds, its own or a library's, has its row in the failure table,
+  and each cell names its criterion; a step with no write writes "nenhuma". Founder, 2026-10-15:
+  "A-A".
 - The card takes every item of the open issues labelled `next-card`, or says on the founder's page
-  why one waits. Whoever files an item for the next card applies the label; the closing pull request
-  of the step that took an item removes it from the issue, and closes the issue when none is left.
+  why one waits. Whoever files an item for the next card applies the label; the closing removes the
+  items the step took ([delivery L19](../../../../docs/guides/delivery.md)).
 
 ## The reader's questions
 

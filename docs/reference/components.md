@@ -6,8 +6,8 @@ same change ([design V24](../guides/design.md)). Each value names a token of the
 or a measure the piece's code in `apps/web/src/ui` and `apps/web/src/brand` holds. The guide owns
 the rules; this file only lists the pieces.
 
-The file has no ceiling in delivery L24, like `boundaries.md`: it grows by one entry for each piece a
-screen uses, and an entry is a few lines of values, not prose.
+Its ceiling is in [delivery L24](../guides/delivery.md): none, because it grows by one short entry
+for each piece a screen uses.
 
 ## Built
 

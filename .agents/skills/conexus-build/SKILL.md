@@ -52,7 +52,7 @@ counts of each brought part, and every criterion of the card with the test that 
 every file changed outside the unit's blast radius and every departure from the card, each with the
 stop it raised, or "none"; the screenshots looked at, by state, width and theme, or "no screen
 touched"; and the maintainers' skills and pstack skills loaded. No pull request or review per unit
-([delivery L9](../../../docs/guides/delivery.md)).
+([delivery L9, L13](../../../docs/guides/delivery.md)).
 
 ## Stop and ask
 

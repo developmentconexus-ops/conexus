@@ -1,6 +1,6 @@
 # Set up the Hub server
 
-How the São Paulo server is prepared, and how the Hub is published and put back. Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
+How the server is prepared, and how the Hub is published and put back. Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
 
 ## Prepare the server
 
@@ -14,8 +14,7 @@ How the São Paulo server is prepared, and how the Hub is published and put back
    tunnel token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a
    service of the user `runner`, which has no login and sits in the `docker` group.
 4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the provider's main
-   SSH configuration may have no `Include`, and then a drop-in in sshd's configuration folder is
-   ignored.
+   SSH configuration may lack the `Include` that reads a drop-in.
 5. Close SSH last, after the provider's console is proved to work. Without a console, stop and ask.
 
 ## Check the GitHub settings
@@ -37,8 +36,7 @@ CSP refuses it. Setting the rule needs a key with Zone Config Rules Edit.
 ## External monitor
 
 StatusCake, free plan: an HTTP check of `https://<the Hub's name>/api/health` every 5 minutes, alerting
-the founder's e-mail. Its free terms for commercial use were not checked when this was written: read
-them at sign-up.
+the founder's e-mail. Read its free terms for commercial use at sign-up; they were not checked.
 
 ## Database keys
 
@@ -86,10 +84,10 @@ those 502s and no 500.
 ## Put back
 
 Actions, Voltar atrás, Run workflow, with one of the last ten versions. An unknown version ends red.
-An image from before step 2 has no label, so
+Running it twice with the same version changes nothing. An image from before step 2 has no label, so
 putting it back skips `migrate`.
 
 ## When it fails
 
 - A release whose program does not start: `deploy.sh` brings the earlier image back and the run ends red.
-- Read the state with `docker compose --file infra/compose.yaml ps` and `docker logs`.
+- Read the state with `docker compose --file infra/compose.yaml ps` and `docker logs`. Logs carry no secret.
