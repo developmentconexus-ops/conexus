@@ -200,3 +200,46 @@ test('o roteiro de uso: criar a empresa, convidar, criar a senha, aceitar e ver 
   await daviJoins(daviPage, mail)
   assert.deepEqual(problems, [])
 })
+
+test('a resposta de "criar empresa" se perde na borda: a nova tentativa leva a mesma chave e há uma só empresa', async (t) => {
+  const mail = await mailProvider(t)
+  const { port, database } = await liveHub(t, mail.url)
+  await installAdministrator(database)
+  const browser: Browser = await chromium.launch()
+  t.after(() => browser.close())
+  const context = await browser.newContext()
+  await reachHub(context, port, '198.51.100.10')
+  const page = await context.newPage()
+  const keys: (string | undefined)[] = []
+  await page.route(`${TEST_ORIGIN}/api/companies`, async (route) => {
+    const request = route.request()
+    if (request.method() !== 'POST') return route.fallback()
+    const key = (await request.allHeaders())['idempotency-key']
+    keys.push(key)
+    if (keys.length > 1) return route.fallback()
+    const url = request.url().replace(TEST_ORIGIN, `http://127.0.0.1:${port}`)
+    await route.fetch({
+      url,
+      headers: { ...(await request.allHeaders()), 'cf-connecting-ip': '198.51.100.10' },
+    })
+    return route.fulfill({
+      status: 504,
+      contentType: 'text/html',
+      body: '<html><body>Gateway Timeout</body></html>',
+    })
+  })
+  await page.goto(`${TEST_ORIGIN}/`)
+  await signIn(page, ANA.email, PASSWORD)
+  await page.getByRole('heading', { name: 'Suas empresas' }).waitFor()
+  await page.getByRole('link', { name: 'Nova empresa' }).click()
+  await page.getByLabel('Nome').fill('Empresa Teste')
+  await page.getByRole('button', { name: 'Criar empresa' }).click()
+  await page.getByRole('alert').waitFor()
+  await page.getByRole('button', { name: 'Criar empresa' }).click()
+  await page.getByRole('heading', { name: 'Empresa Teste', exact: true }).waitFor()
+  assert.equal(keys.length, 2)
+  assert.ok(keys[0] !== undefined)
+  assert.equal(keys[1], keys[0])
+  const [count] = await database.asOwner('select count(*)::int as n from auth.company')
+  assert.equal(count?.n, 1)
+})

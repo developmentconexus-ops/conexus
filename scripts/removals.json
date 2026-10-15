@@ -218,5 +218,27 @@
       "file": "src/hub/identity/invitation-journey.test.ts",
       "name": "cria a quarta"
     }
+  },
+  {
+    "id": "attempt-key-outcome-unknown",
+    "file": "apps/web/src/platform/hub.ts",
+    "find": "outcomeUnknown: FAILURES[code].category === 'SYSTEM'",
+    "replace": "outcomeUnknown: false",
+    "test": {
+      "cwd": "apps/web",
+      "file": "hub.test.ts",
+      "name": "resposta que não decide"
+    }
+  },
+  {
+    "id": "company-attempt-replay",
+    "file": "apps/server/src/hub/identity/companies.ts",
+    "find": "if (found !== undefined) {",
+    "replace": "if (found === null) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "criar: o administrador cria"
+    }
   }
 ]

@@ -9,20 +9,33 @@ const DEADLINE_MS = 10_000
 
 export class HubFailure extends Error {
   readonly code: FailureCode
-  /** The Hub may have acted, so a retry of a write must carry the same attempt key (code C37). */
-  readonly replyLost: boolean
+  /**
+   * True unless the browser read a whole answer from the Hub that settles the outcome. The Hub may
+   * have acted, so a retry of a write must carry the same attempt key (code C37, web W24).
+   */
+  readonly outcomeUnknown: boolean
 
-  constructor(code: FailureCode, options: { cause?: unknown; replyLost?: boolean } = {}) {
+  constructor(code: FailureCode, options: { cause?: unknown; outcomeUnknown?: boolean } = {}) {
     super(code, options)
     this.name = 'HubFailure'
     this.code = code
-    this.replyLost = options.replyLost ?? false
+    this.outcomeUnknown = options.outcomeUnknown ?? true
   }
 }
 
+/** The body of a reply, or the failure that says it could not be read whole. */
+async function bodyOf(response: Response): Promise<unknown> {
+  return response.json().catch((cause: unknown) => {
+    throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
+  })
+}
+
+/** Only a Hub Problem whose row is not a SYSTEM failure settles the outcome: the Hub did not act. */
 async function failureOf(response: Response): Promise<HubFailure> {
-  const problem = Problem.safeParse(await response.json().catch(() => undefined))
-  return new HubFailure(problem.success ? problem.data.code : 'INTERNAL_UNEXPECTED')
+  const problem = Problem.safeParse(await bodyOf(response))
+  if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
+  const { code } = problem.data
+  return new HubFailure(code, { outcomeUnknown: FAILURES[code].category === 'SYSTEM' })
 }
 
 /** The one fetch to the Hub: same origin, with cookies, under a deadline (web W9). */
@@ -33,7 +46,7 @@ async function hubFetch(path: string, init: RequestInit = {}): Promise<Response>
     credentials: 'same-origin',
     signal: AbortSignal.any(signals),
   }).catch((cause: unknown) => {
-    throw new HubFailure('INTERNAL_UNEXPECTED', { cause, replyLost: true })
+    throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
   })
 }
 
@@ -99,7 +112,7 @@ async function send(operation: Operation, sent: Sent, signal?: AbortSignal) {
 
 async function parsed(operation: Operation, response: Response): Promise<unknown> {
   if (operation.success.status === 204) return undefined
-  const result = operation.success.body.safeParse(await response.json().catch(() => undefined))
+  const result = operation.success.body.safeParse(await bodyOf(response))
   if (!result.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: result.error })
   return result.data
 }

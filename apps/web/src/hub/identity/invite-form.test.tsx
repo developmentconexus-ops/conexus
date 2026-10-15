@@ -38,6 +38,21 @@ function accepted(email: string, role: string) {
   return HttpResponse.json(createInvitation.success.body.parse({ invitation }), { status: 201 })
 }
 
+function edgePage(status: number) {
+  return new HttpResponse('<html><body>Gateway</body></html>', {
+    status,
+    headers: { 'content-type': 'text/html' },
+  })
+}
+
+/** Replies after which the browser cannot tell whether the Hub acted: the key stays (code C37, web W24). */
+const UNDECIDED: [string, () => Response][] = [
+  ['resposta cortada', () => new HttpResponse('{"invitation":{"id":"iii', { status: 201 })],
+  ['502 da borda', () => edgePage(502)],
+  ['504 da borda', () => edgePage(504)],
+  ['banco sem resposta', () => refusal('DATABASE_UNAVAILABLE')],
+]
+
 type Sent = { key: string | null; body: unknown }
 
 /** The Hub as a person of Empresa Teste sees it; `answer` replies to each invitation written. */
@@ -168,4 +183,35 @@ test('502 MAIL_UNAVAILABLE: a frase fica no formulário, e o aviso de envio não
     'O e-mail não pôde ser enviado agora. Tente de novo daqui a pouco.',
   )
   expect(screen.queryByRole('status')).toBeNull()
+})
+
+for (const [name, reply] of UNDECIDED) {
+  test(`${name}: a nova tentativa leva a mesma chave`, async () => {
+    let calls = 0
+    const sent = hub(['admin', 'member'], () =>
+      ++calls === 1 ? reply() : accepted('davi@example.test', 'member'),
+    )
+    const { email } = await open()
+    fireEvent.change(email, { target: { value: 'davi@example.test' } })
+    send()
+    await screen.findByRole('alert')
+    send()
+    await screen.findByRole('status')
+    expect(sent.length).toBe(2)
+    expect(sent[1]?.key).toBe(sent[0]?.key)
+  })
+}
+
+test('502 MAIL_UNAVAILABLE: o convite foi gravado, então a nova tentativa leva outra chave', async () => {
+  let calls = 0
+  const sent = hub(['admin', 'member'], () =>
+    ++calls === 1 ? refusal('MAIL_UNAVAILABLE') : accepted('davi@example.test', 'member'),
+  )
+  const { email } = await open()
+  fireEvent.change(email, { target: { value: 'davi@example.test' } })
+  send()
+  await screen.findByRole('alert')
+  send()
+  await screen.findByRole('status')
+  expect(sent[1]?.key).not.toBe(sent[0]?.key)
 })

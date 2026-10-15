@@ -33,6 +33,21 @@ function refusal(code: keyof typeof FAILURES) {
   return HttpResponse.json(body, { status: row.status })
 }
 
+function edgePage(status: number) {
+  return new HttpResponse('<html><body>Gateway</body></html>', {
+    status,
+    headers: { 'content-type': 'text/html' },
+  })
+}
+
+/** Replies after which the browser cannot tell whether the Hub acted: the key stays (code C37, web W24). */
+const UNDECIDED: [string, () => Response][] = [
+  ['resposta cortada', () => new HttpResponse('{"company":{"id":"aaa', { status: 201 })],
+  ['502 da borda', () => edgePage(502)],
+  ['504 da borda', () => edgePage(504)],
+  ['banco sem resposta', () => refusal('DATABASE_UNAVAILABLE')],
+]
+
 type Sent = { key: string | null; body: unknown }
 
 /** The Hub as an administrator sees it; `answer` is what creating a company replies, one per call. */
@@ -154,3 +169,17 @@ test('quem não pode criar: a frase de "não encontrado" no formulário', async 
   expect(alert.textContent).toBe('Não encontramos o que você procurou. Confira o endereço.')
   expect((await screen.findByLabelText('Nome')).getAttribute('aria-invalid')).toBeNull()
 })
+
+for (const [name, reply] of UNDECIDED) {
+  test(`${name}: a nova tentativa leva a mesma chave`, async () => {
+    const sent = hub([reply, created])
+    open()
+    await write('Empresa Teste')
+    await waitFor(() => expect(sent.length).toBe(1))
+    await screen.findByRole('alert')
+    fireEvent.click(screen.getByRole('button', { name: 'Criar empresa' }))
+    await screen.findByRole('heading', { name: 'Empresa Teste' })
+    expect(sent.length).toBe(2)
+    expect(sent[1]?.key).toBe(sent[0]?.key)
+  })
+}
