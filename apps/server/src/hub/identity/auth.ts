@@ -69,6 +69,8 @@ function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
   return drizzleAdapter(db, {
     provider: 'pg',
     schema: { user, session, account, verification, rateLimit },
+    // The library spends a reset link before it writes the password; one transaction keeps both (D22).
+    transaction: true,
   })
 }
 
@@ -118,6 +120,9 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       },
       ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
     },
+    // The router would print an error it cannot answer, row values and all, to stderr
+    // (better-call dist/router.mjs:96); thrown, it reaches inLibrary and leaves as a code (S41).
+    onAPIError: { throw: true },
     telemetry: { enabled: false },
     logger: {
       // Only a code leaves: the library's messages and arguments can hold an e-mail or an error (S41).

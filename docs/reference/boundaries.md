@@ -19,13 +19,28 @@ versions are the installed ones. When the library changes, reread the line it na
 ### A failure inside the library reads as the database's
 
 - **Library line.** `better-auth/dist/api/routes/session.mjs`. `getSession` turns a failed query
-  into a 500 `APIError` and drops its cause. `auth.handler` lets a raw query error out of the
-  attempt limiter.
+  into a 500 `APIError` and drops its cause. `auth.handler` throws a raw query error, because
+  `onAPIError: { throw: true }` keeps the router from printing it, row values and all, to stderr
+  (`better-call/dist/router.mjs:96`).
 - **Hand-made piece.** `inLibrary` in `apps/server/src/hub/identity/auth.ts`. It maps every call
   into the library through `databaseFailure`, and a 5xx it cannot name to `DATABASE_UNAVAILABLE`.
 - **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
-  system, and the contracts promise 503. The test "banco fora" in `database-down.test.ts` fails
-  without the piece.
+  system, and the contracts promise 503. [Security S41](../guides/security.md): only a code leaves.
+  The test "banco fora" in `database-down.test.ts` fails without the piece, and the test "senha que
+  não grava" in `password-write.test.ts` fails without the option.
+
+### The first person: one lock, and the library on our transaction
+
+- **Library line.** `@better-auth/core/dist/context/transaction.mjs:65`. `runWithTransaction` opens
+  the library's own unit of work, which holds no lock and reaches only the library's adapter.
+- **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts`. It
+  opens one `database.command`, takes `pg_advisory_xact_lock` on the key `conexus.first-person`,
+  and runs the library on that transaction with `runWithAdapter(adapterOn(auth, tx), …)`. The lock
+  ends with the transaction.
+- **Why.** [Code C64 and C65](../guides/code.md). Two runs at once must make one person and one
+  link, and `forgetLinks` needs plain SQL in the same unit of work. The tests "ao mesmo tempo, com
+  dois e-mails" and "ao mesmo tempo, a mesma pessoa duas vezes" fail without the lock, and "sem
+  poder gravar o link" fails without the binding.
 
 ### Sign-in and the first password reach the library through a request we build
 
