@@ -27,6 +27,13 @@ const ROWS = [
     replace: 'LIMIT = 11',
     test: { ...TEST, file: 'missing.test.ts' },
   },
+  {
+    id: 'broken',
+    file: 'limit.ts',
+    find: 'LIMIT = 10',
+    replace: 'LIMIT = 11',
+    test: { ...TEST, file: 'broken.test.ts' },
+  },
 ]
 
 let repo = ''
@@ -35,6 +42,13 @@ before(() => {
   const files: Record<string, string> = {
     'scripts/removals.json': JSON.stringify(ROWS),
     'limit.ts': '// the limit\nexport const LIMIT = 10\nexport const DOUBLE = LIMIT * 2\n',
+    'broken.test.ts': [
+      "import assert from 'node:assert/strict'",
+      "import { test } from 'node:test'",
+      "import { LIMIT } from './limit.ts'",
+      "test('quebrado', () => assert.equal(LIMIT, 11))",
+      '',
+    ].join('\n'),
     'limit.test.ts': [
       "import assert from 'node:assert/strict'",
       "import { test } from 'node:test'",
@@ -70,6 +84,7 @@ const OUTCOMES: [string, string, number][] = [
   ['no-file', 'stale', 1],
   ['skipped', 'unreachable', 1],
   ['no-test', 'unreachable', 1],
+  ['broken', 'broken-baseline', 1],
 ]
 for (const [id, outcome, status] of OUTCOMES) {
   test(`remoção ${id}: ${outcome}, saída ${status}`, () => {
@@ -88,5 +103,5 @@ test('todas as linhas: uma por remoção, saída 1 quando alguma não é pega', 
 test('a cópia não muda o repositório', () => {
   removals('--only', 'caught')
   const status = spawnSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' })
-  assert.equal(status.stdout, '?? limit.test.ts\n?? limit.ts\n?? scripts/\n')
+  assert.equal(status.stdout, '?? broken.test.ts\n?? limit.test.ts\n?? limit.ts\n?? scripts/\n')
 })

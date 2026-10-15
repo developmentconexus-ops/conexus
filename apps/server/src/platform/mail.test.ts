@@ -116,6 +116,7 @@ for (const [name, reply, reason] of [
     json(200, { success: false, result: { delivered: [], permanent_bounces: [], queued: [] } }),
     'unsuccessful',
   ],
+  ['success: false sem resultado', json(200, { success: false, result: null }), 'unsuccessful'],
   [
     'resposta fora do esquema',
     json(200, { success: true, result: { delivered: 'bruno' } }),

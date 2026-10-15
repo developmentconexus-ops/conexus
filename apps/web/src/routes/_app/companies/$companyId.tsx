@@ -7,7 +7,7 @@ import {
   membersQuery,
   People,
 } from '../../../hub/identity/public.ts'
-import { idOrNotFound } from '../../../platform/hub.ts'
+import { idOrNotFound, readOrNotFound } from '../../../platform/hub.ts'
 
 const Page = listMembers.input.query.shape.page.catch(undefined)
 const Search = z.object({ members: Page, invitations: Page })
@@ -22,13 +22,17 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
   loaderDeps: ({ search }) => search,
   loader: async ({ context, params, deps }) => {
     const { queryClient } = context
-    const company = await queryClient.ensureQueryData(companyQuery(params.companyId))
-    await Promise.all([
-      queryClient.ensureQueryData(membersQuery(params.companyId, deps.members)),
-      ...(company.mayInviteAs.length > 0
-        ? [queryClient.ensureQueryData(invitationsQuery(params.companyId, deps.invitations))]
-        : []),
-    ])
+    const company = await readOrNotFound(
+      queryClient.ensureQueryData(companyQuery(params.companyId)),
+    )
+    await readOrNotFound(
+      Promise.all([
+        queryClient.ensureQueryData(membersQuery(params.companyId, deps.members)),
+        ...(company.mayInviteAs.length > 0
+          ? [queryClient.ensureQueryData(invitationsQuery(params.companyId, deps.invitations))]
+          : []),
+      ]),
+    )
   },
   component: People,
 })

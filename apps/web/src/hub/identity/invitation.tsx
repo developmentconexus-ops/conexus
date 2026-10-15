@@ -8,12 +8,12 @@ import { sentenceOf } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { NotFoundWithHint } from '../../ui/states.tsx'
-import { ROLE_LABELS } from './companies.tsx'
 import {
   acceptReceivedInvitation,
   receivedInvitationQuery,
   requestPasswordLink,
 } from './queries.ts'
+import { ROLE_LABELS } from './roles.ts'
 
 const entryRoute = getRouteApi('/_public/invitations/$invitationId')
 const acceptanceRoute = getRouteApi('/_app/invitations/$invitationId/acceptance')

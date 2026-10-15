@@ -57,6 +57,7 @@ const OUT_OF_FORMAT = [
   ['HUB_PUBLIC_ORIGIN', 'http://hub.example.test'],
   ['HUB_PUBLIC_ORIGIN', 'https://hub.example.test/'],
   ['HUB_MAIL_API_URL', 'ftp://mail.example.test/send'],
+  ['HUB_MAIL_API_URL', 'http://mail.example.test/send'],
   ['HUB_MAIL_FROM', 'convites'],
 ] as const
 for (const [name, value] of OUT_OF_FORMAT) {

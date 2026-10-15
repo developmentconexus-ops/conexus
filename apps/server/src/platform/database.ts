@@ -16,7 +16,8 @@ export const POOL_LIMITS = {
   idleTimeoutMillis: 10_000,
   min: 0,
 } as const
-// The one deadline of a unit of work's replies (code C57), owned by inTransaction below.
+// The one deadline of a connection's replies while it is checked out (code C57), owned by the pool
+// in openDatabase below.
 const READ_DEADLINE_MS = 15_000
 
 const UNAVAILABLE_SQLSTATES = /^(08.{3}|57P0[123]|57014)$/
@@ -106,12 +107,23 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   }
   // An idle connection the server drops emits here; with no listener the process dies.
   pool.on('error', lost)
+  // Every checkout, a transaction's or one library query's, gets the deadline: past it the socket
+  // is destroyed, so a stalled reply fails as a dropped connection does and the pool drops the client.
+  const deadlines = new Map<pg.PoolClient, NodeJS.Timeout>()
+  pool.on('acquire', (client) => {
+    const stalled = setTimeout(() => client.connection.stream.destroy(), READ_DEADLINE_MS)
+    deadlines.set(client, stalled.unref())
+  })
+  pool.on('release', (_error, client) => {
+    clearTimeout(deadlines.get(client))
+    deadlines.delete(client)
+  })
   let closing: Promise<void> | undefined
 
   /**
    * The connection is lost where it is lost: the pool cannot connect, or the client emits `error`,
-   * which pg does for a dropped socket before it rejects the query. Past the read deadline the socket
-   * is destroyed, so a stalled reply takes that same path; the client never returns to the pool.
+   * which pg does for a dropped socket before it rejects the query, a stalled one included; the
+   * client never returns to the pool.
    */
   async function inTransaction<R extends AnyRelations, T>(
     relations: R,
@@ -132,23 +144,17 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
       lostWith = error
       lost(error)
     }
-    function stalled(): void {
-      client.connection.stream.destroy()
-    }
     client.on('error', onError)
-    const deadline = AbortSignal.timeout(READ_DEADLINE_MS)
-    deadline.addEventListener('abort', stalled, { once: true })
-    let failure: Error | undefined
     try {
       return await drizzle({ client, relations }).transaction(ownErrorsAreUnexpected(work), config)
     } catch (error) {
-      failure = error instanceof Error ? error : new Error('transaction failed', { cause: error })
       if (lostWith === undefined) throw databaseFailure(error)
       throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
     } finally {
-      deadline.removeEventListener('abort', stalled)
       client.off('error', onError)
-      client.release(failure)
+      // A refusal rolls the transaction back and leaves the connection idle, so it goes back to the
+      // pool; a lost or still open one is destroyed (pg-pool removes a client released with true).
+      client.release(lostWith !== undefined || client.getTransactionStatus() !== 'I')
     }
   }
 

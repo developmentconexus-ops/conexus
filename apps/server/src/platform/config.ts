@@ -42,10 +42,19 @@ export class SessionSecret {
   }
 }
 
-/** The mail provider's send address, with the account in it: the one place mail goes (S36). */
+const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]']
+
+/**
+ * The mail provider's send address, with the account in it: the one place mail goes (S36). The
+ * token leaves only over https; plain http is allowed only to this machine, where no wire sees it.
+ */
 export const MailApiUrl = z
   .string()
-  .refine((value) => ['https:', 'http:'].includes(URL.parse(value)?.protocol ?? ''))
+  .refine((value) => {
+    const url = URL.parse(value)
+    if (url?.protocol === 'https:') return true
+    return url?.protocol === 'http:' && LOOPBACK.includes(url.hostname)
+  })
   .brand('MailApiUrl')
 export type MailApiUrl = z.infer<typeof MailApiUrl>
 

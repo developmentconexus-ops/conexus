@@ -121,15 +121,14 @@ test('dois cliques seguidos: um só pedido', async () => {
   expect(sent.length).toBe(1)
 })
 
-test('a recusa fica no campo, e a próxima tentativa leva outra chave', async () => {
+test('a recusa fica no formulário, não no campo, e a próxima tentativa leva outra chave', async () => {
   const sent = hub([() => refusal('IDEMPOTENCY_CONFLICT'), created])
   open()
   await write('Empresa Teste')
   const field = await screen.findByLabelText('Nome')
-  expect(
-    await screen.findByText('Este pedido já foi feito com outros dados. Recarregue a página.'),
-  ).toBeTruthy()
-  expect(field.getAttribute('aria-invalid')).toBe('true')
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe('Este pedido já foi feito com outros dados. Recarregue a página.')
+  expect(field.getAttribute('aria-invalid')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Criar empresa' }))
   await screen.findByRole('heading', { name: 'Empresa Teste' })
   expect(sent[1]?.key).not.toBe(sent[0]?.key)
@@ -147,11 +146,11 @@ test('resposta perdida: a nova tentativa leva a mesma chave', async () => {
   expect(sent[1]?.key).toBe(sent[0]?.key)
 })
 
-test('quem não pode criar: a frase de "não encontrado" no campo', async () => {
+test('quem não pode criar: a frase de "não encontrado" no formulário', async () => {
   hub([() => refusal('NOT_FOUND')])
   open()
   await write('Empresa Teste')
-  expect(
-    await screen.findByText('Não encontramos o que você procurou. Confira o endereço.'),
-  ).toBeTruthy()
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe('Não encontramos o que você procurou. Confira o endereço.')
+  expect((await screen.findByLabelText('Nome')).getAttribute('aria-invalid')).toBeNull()
 })

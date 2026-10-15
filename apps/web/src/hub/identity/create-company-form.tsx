@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { sentenceOf } from '../../platform/hub.ts'
-import { Form, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { makeCompany } from './queries.ts'
 
 export function CreateCompanyForm() {
@@ -19,7 +19,7 @@ export function CreateCompanyForm() {
       )
       await router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } })
     } catch (error) {
-      form.setError('name', { type: 'server', message: sentenceOf(error) })
+      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
     }
   }
 
@@ -34,6 +34,7 @@ export function CreateCompanyForm() {
           autoComplete="organization"
           invalid="Escreva o nome da empresa, com até 100 caracteres."
         />
+        <FormAlert />
         <SubmitButton idle="Criar empresa" pending="Criando…" />
       </Form>
     </section>

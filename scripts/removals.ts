@@ -3,7 +3,8 @@
 // Each row of removals.json takes one protection out in a scratch copy of the repository and runs
 // its test there, child processes included. A row is `caught` when a test of that run fails,
 // `survived` when they pass, `stale` when its text is absent or repeated, `unreachable` when no test
-// ran. Any row other than `caught` exits 1.
+// ran, `broken-baseline` when its test already fails before the protection is taken out. Any row
+// other than `caught` exits 1.
 // The refusals are proved by planting each one in removals.test.ts.
 // Revalidate by 2027-04-15, or when Node changes `run` from node:test.
 import {
@@ -31,7 +32,8 @@ type Removal = {
   replace: string
   test: { cwd: string; file: string; name?: string }
 }
-type Outcome = 'caught' | 'survived' | 'stale' | 'unreachable'
+type Outcome = 'caught' | 'survived' | 'stale' | 'unreachable' | 'broken-baseline'
+type Run = 'failed' | 'passed' | 'none'
 
 const ROW_DEADLINE_MS = 600_000
 
@@ -99,15 +101,15 @@ function scratchCopy(root: string): string {
   return copy
 }
 
-async function testOutcome(copy: string, removal: Removal): Promise<Outcome> {
-  const file = join(copy, removal.test.cwd, removal.test.file)
+async function runTest(copy: string, test: Removal['test']): Promise<Run> {
+  const file = join(copy, test.cwd, test.file)
   const stream = run({
-    cwd: join(copy, removal.test.cwd),
+    cwd: join(copy, test.cwd),
     files: [file],
     concurrency: 1,
     timeout: ROW_DEADLINE_MS,
     signal: AbortSignal.timeout(ROW_DEADLINE_MS),
-    ...(removal.test.name === undefined ? {} : { testNamePatterns: [removal.test.name] }),
+    ...(test.name === undefined ? {} : { testNamePatterns: [test.name] }),
   })
   let failed = 0
   let passed = 0
@@ -123,21 +125,51 @@ async function testOutcome(copy: string, removal: Removal): Promise<Outcome> {
       passed++
     }
   }
-  if (failed > 0) return 'caught'
-  return passed > 0 ? 'survived' : 'unreachable'
+  if (failed > 0) return 'failed'
+  return passed > 0 ? 'passed' : 'none'
 }
 
-async function outcomeOf(root: string, removal: Removal): Promise<Outcome> {
+/** Each distinct test runs once, unmutated, in one scratch copy: a test red before the removal catches nothing. */
+function baselines(root: string) {
+  const known = new Map<string, Promise<Run>>()
+  let copy: string | undefined
+  return {
+    of(test: Removal['test']): Promise<Run> {
+      const key = JSON.stringify([test.cwd, test.file, test.name])
+      let run = known.get(key)
+      if (run === undefined) {
+        copy ??= scratchCopy(root)
+        run = runTest(copy, test)
+        known.set(key, run)
+      }
+      return run
+    },
+    dispose(): void {
+      if (copy !== undefined) rmSync(copy, { recursive: true, force: true })
+    },
+  }
+}
+
+async function outcomeOf(
+  root: string,
+  removal: Removal,
+  baseline: (test: Removal['test']) => Promise<Run>,
+): Promise<Outcome> {
   const copy = scratchCopy(root)
   try {
     const path = join(copy, removal.file)
     const text = existsSync(path) ? readFileSync(path, 'utf8') : ''
     if (text.split(removal.find).length !== 2) return 'stale'
+    const before = await baseline(removal.test)
+    if (before === 'failed') return 'broken-baseline'
+    if (before === 'none') return 'unreachable'
     writeFileSync(
       path,
       text.replace(removal.find, () => removal.replace),
     )
-    return await testOutcome(copy, removal)
+    const after = await runTest(copy, removal.test)
+    if (after === 'failed') return 'caught'
+    return after === 'passed' ? 'survived' : 'unreachable'
   } finally {
     rmSync(copy, { recursive: true, force: true })
   }
@@ -149,10 +181,15 @@ async function main(): Promise<void> {
   const only = args.indexOf('--only') === -1 ? undefined : args[args.indexOf('--only') + 1]
   const removals = loadRemovals(root).filter((removal) => only === undefined || removal.id === only)
   if (removals.length === 0) throw new Error(`removals.json has no row ${only}`)
-  for (const removal of removals) {
-    const outcome = await outcomeOf(root, removal)
-    console.log(`${outcome} ${removal.id}`)
-    if (outcome !== 'caught') process.exitCode = 1
+  const baseline = baselines(root)
+  try {
+    for (const removal of removals) {
+      const outcome = await outcomeOf(root, removal, baseline.of)
+      console.log(`${outcome} ${removal.id}`)
+      if (outcome !== 'caught') process.exitCode = 1
+    }
+  } finally {
+    baseline.dispose()
   }
 }
 

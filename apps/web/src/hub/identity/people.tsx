@@ -1,8 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
-import { Pager, ROLE_LABELS } from './companies.tsx'
+import { Empty } from '../../ui/states.tsx'
 import { InviteForm } from './invite-form.tsx'
+import { Pager } from './pager.tsx'
 import { companyQuery, invitationsQuery, membersQuery } from './queries.ts'
+import { ROLE_LABELS } from './roles.ts'
 
 const route = getRouteApi('/_app/companies/$companyId')
 
@@ -47,17 +49,23 @@ function PendingInvitations() {
   return (
     <section className="flex flex-col gap-lg">
       <h2 className="font-display text-title">Convites pendentes</h2>
-      <ul className="flex flex-col border-y border-line empty:hidden">
-        {data.invitations.map((invitation) => (
-          <li
-            key={invitation.id}
-            className="flex flex-wrap items-center justify-between gap-x-md gap-y-xs border-b border-line px-sm py-md last:border-b-0"
-          >
-            <span className="min-w-0 truncate">{invitation.email}</span>
-            <span className="shrink-0 text-label text-text-2">{ROLE_LABELS[invitation.role]}</span>
-          </li>
-        ))}
-      </ul>
+      {data.invitations.length === 0 ? (
+        <Empty>Nenhum convite pendente.</Empty>
+      ) : (
+        <ul className="flex flex-col border-y border-line">
+          {data.invitations.map((invitation) => (
+            <li
+              key={invitation.id}
+              className="flex flex-wrap items-center justify-between gap-x-md gap-y-xs border-b border-line px-sm py-md last:border-b-0"
+            >
+              <span className="min-w-0 truncate">{invitation.email}</span>
+              <span className="shrink-0 text-label text-text-2">
+                {ROLE_LABELS[invitation.role]}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
       <Pager
         next={data.next}
         page={page}

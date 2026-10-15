@@ -33,6 +33,28 @@
     }
   },
   {
+    "id": "library-read-deadline",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "deadlines.set(client, stalled.unref())",
+    "replace": "clearTimeout(stalled)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/database.test.ts",
+      "name": "uma consulta da biblioteca sem resposta"
+    }
+  },
+  {
+    "id": "refused-command-keeps-connection",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "client.release(lostWith !== undefined || client.getTransactionStatus() !== 'I')",
+    "replace": "client.release(true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "link: um id desconhecido"
+    }
+  },
+  {
     "id": "undeclared-failure-recorded",
     "file": "apps/server/src/platform/test-database.ts",
     "find": "undeclared.push(`${request.method} ${request.routeOptions.url} ${code}`)",
@@ -161,7 +183,7 @@
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-acceptance.test.ts",
-      "name": "aceitar: dois juntos"
+      "name": "aceitar: com um re-convite ao mesmo tempo"
     }
   },
   {

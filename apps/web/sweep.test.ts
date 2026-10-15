@@ -52,12 +52,25 @@ function companies(
     mayCreate,
     next: { kind: 'END' },
   } as const
-  return { ...SIGNED_IN, 'GET /api/companies': ok(listCompanies, body) }
+  // The router preloads a company when its link takes focus, as the Tab pass does (defaultPreload).
+  const preloaded = body.companies.map(({ company, role }) =>
+    companyPage(role, role === 'member' ? [] : ['admin', 'member'], company.id, company.name),
+  )
+  return {
+    ...Object.assign({}, ...preloaded),
+    ...SIGNED_IN,
+    'GET /api/companies': ok(listCompanies, body),
+  }
 }
 
 /** The company page as a person with `role` sees it, who may invite as `mayInviteAs`. */
-function companyPage(role: 'owner' | 'member', mayInviteAs: ('owner' | 'admin' | 'member')[]) {
-  const company = { id: COMPANY, name: LONG_NAME }
+function companyPage(
+  role: 'owner' | 'admin' | 'member',
+  mayInviteAs: ('owner' | 'admin' | 'member')[],
+  id = COMPANY,
+  name = LONG_NAME,
+) {
+  const company = { id, name }
   const people = [
     { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' },
     {
@@ -72,12 +85,12 @@ function companyPage(role: 'owner' | 'member', mayInviteAs: ('owner' | 'admin' |
   ] as const
   return {
     ...SIGNED_IN,
-    [`GET /api/companies/${COMPANY}`]: ok(getCompany, { company, role, mayInviteAs }),
-    [`GET /api/companies/${COMPANY}/members`]: ok(listMembers, {
+    [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
+    [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: [...people],
       next: { kind: 'END' },
     }),
-    [`GET /api/companies/${COMPANY}/invitations`]: ok(listInvitations, {
+    [`GET /api/companies/${id}/invitations`]: ok(listInvitations, {
       invitations: [...pending],
       next: { kind: 'END' },
     }),
@@ -176,6 +189,24 @@ const STATES: State[] = [
     path: `/companies/${COMPANY}`,
     replies: OWNER,
     settle: (p) => waitFor(p, 'Convidar pessoa'),
+  },
+  {
+    name: 'sem convites pendentes',
+    path: `/companies/${COMPANY}`,
+    replies: {
+      ...OWNER,
+      [`GET /api/companies/${COMPANY}/invitations`]: ok(listInvitations, {
+        invitations: [],
+        next: { kind: 'END' },
+      }),
+    },
+    settle: (p) => waitFor(p, 'Nenhum convite pendente.'),
+  },
+  {
+    name: 'empresa que o Hub não acha',
+    path: `/companies/${COMPANY}`,
+    replies: { ...SIGNED_IN, [`GET /api/companies/${COMPANY}`]: failure('NOT_FOUND') },
+    settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
   },
   {
     name: 'membro',

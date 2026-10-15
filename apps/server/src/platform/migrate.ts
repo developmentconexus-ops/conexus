@@ -29,7 +29,7 @@ async function loginRefused(runtimeUrl: DatabaseUrl): Promise<boolean> {
     return false
   } catch (error) {
     if (error instanceof Error && 'code' in error && error.code === INVALID_PASSWORD) return true
-    throw error
+    throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
   } finally {
     await client.end().catch(() => undefined)
   }
@@ -41,13 +41,15 @@ export async function migrate(deps: {
   migrationsFolder?: string
 }): Promise<void> {
   const password = passwordOf(deps.runtimeUrl)
-  const pool = new pg.Pool({
+  const client = new pg.Client({
     connectionString: deps.ownerUrl.reveal(),
     connectionTimeoutMillis: POOL_LIMITS.connectionTimeoutMillis,
-    max: 1,
   })
-  const db = drizzle({ client: pool })
   try {
+    await client.connect().catch((error: unknown) => {
+      throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
+    })
+    const db = drizzle({ client })
     await applyMigrations(db, { migrationsFolder: deps.migrationsFolder ?? MIGRATIONS_FOLDER })
     if (!(await loginRefused(deps.runtimeUrl))) return
     await db.transaction(async (tx) => {
@@ -59,6 +61,6 @@ export async function migrate(deps: {
   } catch (error) {
     throw databaseFailure(error)
   } finally {
-    await pool.end()
+    await client.end().catch(() => undefined)
   }
 }

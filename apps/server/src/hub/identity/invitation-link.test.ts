@@ -4,6 +4,7 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
+import { sql } from 'drizzle-orm'
 import { createHub, identityOf } from '../../main.ts'
 import { createTestDatabase, TEST_ORIGIN, testConfig } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
@@ -213,6 +214,21 @@ test('link: convite cancelado, vencido, desconhecido ou malformado, 404 e ningu�
     ]),
     [{ people: 0 }],
   )
+})
+
+test('link: um id desconhecido, 404, e a conexão do pool segue a mesma', async (t) => {
+  const hub = await hubOn(t)
+  const pool = hub.test.database.libraryOrm({}).$client
+  const backends = `select pid from pg_stat_activity
+    where datname = current_database() and usename = 'hub_runtime'`
+  await hub.test.database.read((tx) => tx.execute(sql`select 1`))
+  const before = await hub.test.asOwner(backends)
+  for (let round = 0; round < 3; round++) {
+    const refused = await askLink(hub, id())
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
+  }
+  assert.deepEqual([pool.totalCount, pool.idleCount], [1, 1])
+  assert.deepEqual(await hub.test.asOwner(backends), before)
 })
 
 test('link: dois pedidos juntos, uma pessoa só e um 429 PASSWORD_LINKS_EXCEEDED', async (t) => {

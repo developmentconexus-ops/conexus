@@ -172,6 +172,26 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
   }
 }
 
+/**
+ * Runs `text` as the owner in a transaction that stays open while `work` runs, so the locks it takes
+ * are held until `work` calls `release`, or ends.
+ */
+export async function withOwnerLock<T>(
+  test: TestDatabase,
+  text: string,
+  values: unknown[],
+  work: (release: () => Promise<void>) => Promise<T>,
+): Promise<T> {
+  const client = await connected(test.ownerUrl)
+  try {
+    await client.query('begin')
+    await client.query(text, values)
+    return await work(async () => void (await client.query('commit')))
+  } finally {
+    await client.end()
+  }
+}
+
 /** Resolves once the pool holds no connection, as when nobody uses Conexus (data D27). */
 export async function whenIdle(database: Database): Promise<void> {
   const pool = database.libraryOrm({}).$client
@@ -186,8 +206,8 @@ export async function freePort(): Promise<number> {
   return typeof address === 'object' && address !== null ? address.port : 0
 }
 
-export async function unreachableDatabaseUrl(): Promise<DatabaseUrl> {
-  return DatabaseUrl.parse(`postgres://nobody:nothing@127.0.0.1:${await freePort()}/none`)
+export async function unreachableDatabaseUrl(login = 'nobody'): Promise<DatabaseUrl> {
+  return DatabaseUrl.parse(`postgres://${login}:nothing@127.0.0.1:${await freePort()}/none`)
 }
 
 export async function unreachableDatabase(t: Lifetime): Promise<Database> {

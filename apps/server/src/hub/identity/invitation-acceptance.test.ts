@@ -3,9 +3,15 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import { hashPassword } from 'better-auth/crypto'
 import { createHub, identityOf } from '../../main.ts'
-import { createTestDatabase, TEST_ORIGIN, testConfig } from '../../platform/test-database.ts'
+import {
+  createTestDatabase,
+  TEST_ORIGIN,
+  testConfig,
+  withOwnerLock,
+} from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 
 const silent = { info: () => undefined, error: () => undefined }
@@ -244,31 +250,60 @@ test('aceitar: dois juntos, um só membro e dois 200', async (t) => {
   assert.deepEqual(await members(hub, davi.id), [{ role: 'admin' }])
 })
 
+type Reply = Awaited<ReturnType<typeof accept>>
+
+/** Resolves once `count` requests of this database wait on a lock, or `request` has answered. */
+async function queued(hub: Hub, count: number, request: Promise<Reply>): Promise<void> {
+  let answered = false
+  void request.then(() => {
+    answered = true
+  })
+  const waiting = `select count(distinct l.pid)::int as waiting from pg_locks l
+    join pg_stat_activity a on a.pid = l.pid
+    where not l.granted and a.datname = current_database()`
+  const deadline = Date.now() + 5_000
+  while (!answered && Object((await hub.test.asOwner(waiting))[0]).waiting < count) {
+    assert.ok(Date.now() < deadline, `${count} requests never queued on the company`)
+    await setTimeout(20)
+  }
+}
+
+function outcomeOf(response: Reply): string {
+  return `${response.statusCode}${response.statusCode < 300 ? '' : String(codeOf(response))}`
+}
+
+// The company is held with the strongest row lock, so each request stops at its first touch of the
+// company, the first in line goes first on release, and both orders run every time.
 test('aceitar: com um re-convite ao mesmo tempo, nas duas ordens, membro e 409 MEMBER_EXISTS, ou o convite canceled e 422; nunca 40P01', async (t) => {
   const { hub, ana, companyId, invite } = await companyOn(t)
-  for (let round = 0; round < 6; round++) {
+  const orders = [
+    { first: 'accept', answers: ['200', '409MEMBER_EXISTS'], status: 'accepted', joined: 1 },
+    { first: 'invite', answers: ['201', '422INVITATION_CLOSED'], status: 'canceled', joined: 0 },
+  ]
+  for (const [round, order] of orders.entries()) {
     const email = `pessoa${round}@example.test`
     const person = await personOn(hub, { name: `Pessoa ${round}`, email })
     const invitationId = await invite(email)
-    const body = { email, role: 'member' }
-    const [accepted, again] = await Promise.all([
-      accept(hub, person, invitationId),
-      post(hub, ana, `/api/companies/${companyId}/invitations`, body),
-    ])
-    const outcome = [accepted, again].map((response) => {
-      const code = response.statusCode < 300 ? '' : String(codeOf(response))
-      return `${response.statusCode}${code}`
+    function accepting() {
+      return accept(hub, person, invitationId)
+    }
+    function inviting() {
+      return post(hub, ana, `/api/companies/${companyId}/invitations`, { email, role: 'member' })
+    }
+    const [first, second] = order.first === 'accept' ? [accepting, inviting] : [inviting, accepting]
+    const lockCompany = 'select id from auth.company where id = $1 for update'
+    const answered = await withOwnerLock(hub.test, lockCompany, [companyId], async (release) => {
+      const ahead = first()
+      await queued(hub, 1, ahead)
+      const behind = second()
+      await queued(hub, 2, behind)
+      await release()
+      return Promise.all([ahead, behind])
     })
-    assert.ok(
-      ['200,409MEMBER_EXISTS', '422INVITATION_CLOSED,201'].includes(outcome.join(',')),
-      outcome.join(','),
-    )
+    assert.deepEqual(answered.map(outcomeOf), order.answers, `${order.first} first`)
     const [status] = await statusOf(hub, invitationId)
     const joined = await members(hub, person.id)
-    assert.deepEqual(
-      [status?.status, joined.length],
-      outcome[0] === '200' ? ['accepted', 1] : ['canceled', 0],
-    )
+    assert.deepEqual([status?.status, joined.length], [order.status, order.joined])
   }
 })
 

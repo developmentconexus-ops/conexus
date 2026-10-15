@@ -191,6 +191,7 @@ function clientOf(port: number) {
         ...(cookie === undefined ? {} : { cookie }),
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      signal: AbortSignal.timeout(10_000),
     })
     const text = await response.text()
     const set = String(response.headers.get('set-cookie')).split(';')[0] ?? ''
@@ -207,6 +208,8 @@ async function walk(hub: Hub, send: ReturnType<typeof clientOf>) {
   const { company } = (await send('POST', '/api/companies', ana, { name: 'Empresa Teste' })).json
   const invitations = `/api/companies/${company.id}/invitations`
   const invited = await send('POST', invitations, ana, { email: INVITEE, role: 'member' })
+  const sent = [invited.status, hub.mail.sent.length]
+  assert.deepEqual(sent, [201, 1], 'the invitation is answered and its mail sent while Ana waits')
   const { invitation } = invited.json
   const named = { name: 'Davi Costa' }
   await send('PUT', `/api/invitations/${invitation.id}/password-link`, undefined, named)
@@ -235,8 +238,8 @@ test('registro: criar, convidar, dar o link, aceitar e cada 404 deixam só códi
     HUB_MAIL_API_URL: hub.mail.url,
   }
   const { port, lines, stop } = await spawnHub(t, environment)
-  const { token, statuses } = await walk(hub, clientOf(port))
-  await stop()
+  // A Hub still running holds the database the test's cleanup drops, so it stops even on a failure.
+  const { token, statuses } = await walk(hub, clientOf(port)).finally(stop)
   assert.deepEqual(statuses, [200, 404, 404, 404, 404, 404, 404])
   const messages = lines.map((line) => String(line.msg))
   for (const code of [

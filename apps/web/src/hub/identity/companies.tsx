@@ -1,34 +1,12 @@
-import type { Next, Role } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
+import { Empty } from '../../ui/states.tsx'
+import { Pager } from './pager.tsx'
 import { companiesQuery } from './queries.ts'
+import { ROLE_LABELS } from './roles.ts'
 
 const route = getRouteApi('/_app/')
-
-export const ROLE_LABELS: Record<Role, string> = {
-  owner: 'Dono',
-  admin: 'Administrador',
-  member: 'Membro',
-}
-
-/**
- * The links that move along a list kept in the address (web W18): the page that follows, and the
- * way back to the first once the person has left it. `link` draws a link to a page of this list.
- */
-export function Pager(props: {
-  next: Next
-  page: string | undefined
-  link: (page: string | undefined, label: string) => ReactNode
-}) {
-  return (
-    <div className="flex gap-lg text-label">
-      {props.page !== undefined && props.link(undefined, 'Primeira página')}
-      {props.next.kind === 'MORE' && props.link(props.next.page, 'Ver mais')}
-    </div>
-  )
-}
 
 export function Companies() {
   const { page } = route.useSearch()
@@ -44,7 +22,7 @@ export function Companies() {
         )}
       </div>
       {data.companies.length === 0 ? (
-        <p className="text-text-2">Você ainda não participa de nenhuma empresa.</p>
+        <Empty>Você ainda não participa de nenhuma empresa.</Empty>
       ) : (
         <ul className="flex flex-col border-y border-line">
           {data.companies.map(({ company, role }) => (

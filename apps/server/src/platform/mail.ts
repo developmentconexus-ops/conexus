@@ -15,8 +15,8 @@ const SENDER_NAME = 'Conexus'
 const DEADLINE_MS = 10_000
 const REPLY_CAP_BYTES = 16 * 1024
 
+const Succeeded = z.object({ success: z.boolean() })
 const SendReply = z.object({
-  success: z.boolean(),
   result: z.object({
     delivered: z.array(z.string()),
     permanent_bounces: z.array(z.string()),
@@ -85,9 +85,11 @@ export function createMail(deps: { config: Config; log: FailureLog }): SendMail 
       if (error instanceof Failure) throw error
       return refuse('unreachable', error)
     }
+    const outcome = Succeeded.safeParse(body)
+    if (!outcome.success) return refuse('shape', outcome.error)
+    if (!outcome.data.success) return refuse('unsuccessful')
     const parsed = SendReply.safeParse(body)
     if (!parsed.success) return refuse('shape', parsed.error)
-    if (!parsed.data.success) return refuse('unsuccessful')
     const { delivered, permanent_bounces, queued } = parsed.data.result
     if (permanent_bounces.length > 0) {
       deps.log.info({ outcome: 'BOUNCED' }, 'MAIL_FAILED')

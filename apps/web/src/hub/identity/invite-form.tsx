@@ -9,8 +9,8 @@ import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { FieldError, FieldLabel } from '../../ui/field.tsx'
 import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
-import { ROLE_LABELS } from './companies.tsx'
 import { companyQuery, inviteToCompany } from './queries.ts'
+import { ROLE_LABELS } from './roles.ts'
 
 const route = getRouteApi('/_app/companies/$companyId')
 

@@ -62,3 +62,8 @@ export function NotFoundWithHint({ hint }: { hint?: string }) {
     </Centred>
   )
 }
+
+/** A list with nothing in it yet: one sentence in the grey of a subtitle (web W22). */
+export function Empty({ children }: { children: ReactNode }) {
+  return <p className="text-text-2">{children}</p>
+}

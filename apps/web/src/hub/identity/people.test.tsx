@@ -1,4 +1,11 @@
-import { getCompany, listInvitations, listMembers, SessionState } from '@conexus/hub-api'
+import {
+  FAILURES,
+  getCompany,
+  listInvitations,
+  listMembers,
+  Problem,
+  SessionState,
+} from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -21,7 +28,12 @@ const PENDING = {
   expiresAt: '2026-10-17T12:00:00.000Z',
 }
 
-type View = { role: string; mayInviteAs: string[]; membersNext?: unknown }
+type View = {
+  role: string
+  mayInviteAs: string[]
+  membersNext?: unknown
+  invitations?: (typeof PENDING)[]
+}
 
 /** The Hub as one person of the company sees it; each list read is recorded by its query string. */
 function hub(view: View) {
@@ -54,7 +66,10 @@ function hub(view: View) {
     http.get(`*/api/companies/${COMPANY.id}/invitations`, ({ request }) => {
       reads.push(`invitations${new URL(request.url).search}`)
       return HttpResponse.json(
-        listInvitations.success.body.parse({ invitations: [PENDING], next: { kind: 'END' } }),
+        listInvitations.success.body.parse({
+          invitations: view.invitations ?? [PENDING],
+          next: { kind: 'END' },
+        }),
       )
     }),
   )
@@ -124,4 +139,37 @@ test('um id que não tem 32 letras e dígitos: a frase de "não encontrado"', as
   )
   render(<Conexus conexus={conexus} />)
   expect(await screen.findByText(/Não encontramos o que você procurou/)).toBeTruthy()
+})
+
+test('uma empresa que o Hub responde 404: a página de "não encontrado", não a de erro', async () => {
+  server.use(
+    http.get('*/api/sessions/current', () =>
+      HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: ANA })),
+    ),
+    http.get(`*/api/companies/${COMPANY.id}`, () =>
+      HttpResponse.json(
+        Problem.parse({
+          type: 'urn:conexus:problem:NOT_FOUND',
+          title: FAILURES.NOT_FOUND.phrase,
+          status: 404,
+          code: 'NOT_FOUND',
+          traceId: 'a1b2c3',
+        }),
+        { status: 404 },
+      ),
+    ),
+  )
+  open()
+  expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
+  expect(screen.queryByText('Não foi possível abrir o Conexus')).toBeNull()
+})
+
+test('sem convites pendentes: a frase "Nenhum convite pendente."', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin'], invitations: [] })
+  open()
+  const pending = within(
+    sectionOf(await screen.findByRole('heading', { name: 'Convites pendentes' })),
+  )
+  expect(pending.getByText('Nenhum convite pendente.')).toBeTruthy()
+  expect(pending.queryAllByRole('listitem')).toEqual([])
 })
