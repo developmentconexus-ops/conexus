@@ -13,6 +13,7 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Cartão da etapa 2 aprovado em 2026-10-14 (commit 9d94e1a1402951b4aceae42b58e0349bf347717d): "Aprovo"
    Etapa 2 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 3. **Entrar.** Entra com e-mail e senha, e sai.
+   Cartão da etapa 3 aprovado em 2026-10-14 (commit 5a65e5348fd47f541a9c0447a3a11996a28d3b25): "Aprovo"
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
