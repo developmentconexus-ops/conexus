@@ -12,37 +12,43 @@ aceita e entra na empresa.
 2. Em "Convidar pessoa", o e-mail da sua segunda caixa, papel Administrador: ele aparece em
    "Convites pendentes".
 3. Numa janela anônima, abra o e-mail "Convite para Empresa Teste" e o link. Clique "Ainda não tenho
-   senha", abra o segundo e-mail e crie a senha.
+   senha", escreva o nome, abra o segundo e-mail e crie a senha.
 4. Entre com ela: "{seu nome} convidou você para Empresa Teste como Administrador." Clique "Aceitar
    convite": a empresa abre com as duas pessoas.
 5. Abra o link do convite de novo: "Você já faz parte de Empresa Teste."
 
-**O que você faz, e quando.** No começo: aprova esta página. Antes do merge: o que a decisão 7 pede.
-No fim: faz o roteiro e diz o que viu.
+**O que você faz, e quando.** No começo: aprova esta página. Antes do merge: a decisão 7. No fim:
+faz o roteiro e diz o que viu.
 
 **Fica de fora.** Apagar empresa: etapa 5. Tirar pessoa, mudar papel, sair, a regra do último dono
-(provada aqui), cancelar convite: etapa 6. Quatro itens de #25 e #32.
+(provada aqui), cancelar convite: etapa 6. Esperam: tirar o rótulo antigo das migrações (#25-3), só
+seis versões depois, para voltar atrás; a atividade do Neon sem explicação (#25-6), que não
+pede código; #32-3 e #32-8, que mudam regras dos guias, só no fechamento.
 
-**As decisões suas pedidas nesta etapa.** Recomendo A em todas.
+**As decisões suas pedidas nesta etapa.** Recomendo A em 1 a 7 e 9; a 8 pede sua aprovação.
 
 1. **Aceite explícito.** Hoje quem é convidado vira membro sozinho ao entrar. **A.** Vê "A empresa B
    convidou você" e só entra ao clicar "Aceitar convite". **B.** Automático.
 2. **Quem cria vira dono?** **A.** Você vira o primeiro dono, convida o de verdade e sai na etapa 6.
-   **B.** Cria sem fazer parte; o Conexus convida em nome da instalação (código nosso).
+   **B.** Cria sem fazer parte; o Conexus convida em nome da instalação.
 3. **Quem convida.** **A.** Dono convida qualquer papel; administrador convida administrador ou
    membro; membro não convida. **B.** Só o dono.
 4. **Prazo do convite.** **A.** 2 dias, e "Convidar de novo" depois. **B.** 7 dias.
-5. **Quem não tem senha.** **A.** Dois e-mails: o convite e, após "Ainda
-   não tenho senha", o link de 15 minutos. **B.** Um só, com o link de 2 dias (código nosso que imita
-   a biblioteca).
-6. **Limites.** **A.** 10 convites por minuto por pessoa; 100 pendentes por empresa; 3 pedidos de
-   link por minuto por endereço. **B.** Outros números.
+5. **Quem não tem senha.** **A.** Dois e-mails: o convite e, após "Ainda não tenho senha" e o nome
+   que a pessoa escreve, o link de 15 minutos. **B.** Um só, com o link de 2 dias.
+6. **Limites.** **A.** 10 convites por minuto por pessoa; 100 pendentes por empresa; um link a cada
+   20 segundos por pessoa convidada (o endereço de internet é limitado pela Cloudflare). **B.**
+   Outros números.
 7. **O remetente (0017).** **A.** Cloudflare, o Resend de reserva. Você fornece: Workers Paid (US$ 5
    por mês, 3.000 e-mails; depois US$ 0,35 por mil); um endereço num subdomínio do Hub, com "Onboard
-   Domain", que cria o DNS; um token "Email Sending: Edit"; duas caixas suas. O e-mail sai do Brasil,
+   Domain"; um token "Email Sending: Edit"; duas caixas suas. O e-mail sai do Brasil,
    e cada empresa é avisada (0032).
-8. **Logins do banco (D11).** O login do Hub passa a ler, criar e mudar empresas, membros e convites,
-   sem apagar nenhum.
+8. **Permissão do Hub no banco (D11).** O programa do Hub passa a ler, criar e mudar empresas,
+   membros e convites, e nunca apagá-los. Ex.: um defeito que tente apagar uma empresa é recusado
+   pelo próprio banco. Responda "aprovo", ou diga o que mudar.
+9. **Apagar o que é de uma empresa.** A regra C10 pede já agora a função que apaga tudo de uma
+   empresa, sem quem a chame. **A.** Entra na etapa 5, com "Apagar empresa"; o fechamento corrige a
+   regra. Ex.: a Empresa Teste fica até lá. **B.** Entra agora, sem uso.
 
 *Pendentes.*
 
@@ -50,92 +56,84 @@ No fim: faz o roteiro e diz o que viu.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| U1 Conferências | As três conferências e W25 | `scripts/`, `apps/server/src/`, raiz | testes | `node` | — |
-| U2 Consertos | Os itens de servidor das issues #25 e #32 | `apps/server/`, `packages/hub-api/` | testes | `fastify-best-practices` | U1 |
-| U3 Tabelas | Tabelas dos plugins, chaves únicas, papel do primeiro | `apps/server/src/hub/identity/`, `apps/server/migrations/` | dados | `neon:neon-postgres` | U2 |
-| U4 Concessões | O login do Hub nas tabelas novas, em pull request só dele | `apps/server/` (raiz), `apps/server/migrations/`, `apps/server/src/platform/` | dados | `neon:neon-postgres` | U3 |
-| U5 Correio | A porta e o adaptador do e-mail | `apps/server/src/`, `infra/`, `scripts/`, `docs/how-to/` | segurança | `cloudflare:cloudflare-email-service` | U4 |
-| U6 Empresas e convites | As nove operações, a admissão, o comando junto | `apps/server/src/`, `packages/hub-api/`, `docs/reference/` | segurança | `organization-best-practices`, `better-auth-security-best-practices` | U5 |
-| U7 Telas | As telas e a varredura | `apps/web/`, `packages/hub-api/` | web | `shadcn` | U6 |
-| U8 Ao vivo | O teste de entrega do 0017 | `docs/decisions/` | segurança | nenhuma | U1 a U7 no ar |
+| U1 Conferências | Três conferências e W25 | `scripts/`, `apps/server/src/`, raiz | testes | `node` | — |
+| U2 Consertos | Itens de servidor de #25 e #32 | `apps/server/`, `packages/hub-api/` | testes | `fastify-best-practices` | U1 |
+| U3 Tabelas e concessões | Tabelas, papel do primeiro, login do Hub; pull request próprio (D11) | `apps/server/` | dados | `neon:neon-postgres` | U2 |
+| U4 Correio | Porta e adaptador do e-mail | `apps/server/src/`, `infra/`, `scripts/`, `docs/how-to/` | segurança | `cloudflare:cloudflare-email-service` | U3 |
+| U5 Empresas e convites | Nove operações, admissão, comando junto | `apps/server/src/`, `packages/hub-api/`, `docs/reference/` | segurança | `organization-best-practices`, `better-auth-security-best-practices` | U4 |
+| U6 Telas | Telas, varredura, ponta a ponta | `apps/web/`, `packages/hub-api/`, `tests/e2e/` | web | `shadcn` | U5 |
+| U7 Ao vivo | Teste de entrega do 0017 | `docs/decisions/` | segurança | nenhuma | U1 a U6 no ar |
 
-Em ordem: cada uma divide pasta com a seguinte. Um merge só (L13).
+Em ordem: dividem pastas. Um merge só (L13).
 
 ## Os critérios de aceite
 
-Servidor: biblioteca de verdade em banco descartável (T16, T19). "Remoção": linha `caught` em
-`scripts/removals.json` (T12).
+Servidor: biblioteca real em banco descartável (T16, T19), `app.inject`, status e corpo literais. "Remoção": linha `caught` em `scripts/removals.json` (T12).
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | Linha de teste ou de Hub iniciado fora do JSON com `level` e código: o teste falha | `scripts/test-reporter.test.ts`, "linha crua"; `platform/test-database.test.ts` | must |
+| 1 | U1 | Linha fora do JSON com `level` e código, de teste ou de Hub iniciado: falha | `scripts/test-reporter.test.ts`, "linha crua"; `platform/test-database.test.ts` | must |
 | 2 | U1 | `npm run removals`: teste verde, `survived`; `find` ausente ou repetido, `stale`; teste pulado, `unreachable`; saída 1; pega, 0 | `scripts/removals.test.ts` | must |
-| 3 | U1 | `npm run radius -- U<k> <commit>`: arquivo fora da tabela, `out-of-radius` e saída 1; avisa `ambiguous-row` | `scripts/check-radius.test.ts` | must |
-| 4 | U1 | O Biome recusa `max-w-sm` e `w-2xl` em `apps/web/src` e aceita `min-w-48` | `scripts/rules.test.ts`, "W25" | must |
-| 5 | U2 | `whenIdle` fora do tipo `Database`; "banco dorme" chega a zero conexões | `platform/database.test.ts`; `identity.test.ts` | must |
-| 6 | U2 | Falha no `connect` ou evento `error` do cliente: 503; erro sem SQLSTATE numa consulta: 500, qualquer classe | `platform/database.test.ts`, "perda" | must |
-| 7 | U2 | Sem `CONEXUS_TEST_DATABASE_CONTAINER`, o catálogo pula com `opt-in:` | `platform/catalog.test.ts` | must |
-| 8 | U2 | Código fora das falhas da operação falha no gancho da porta de teste; `setPassword` declara `DATABASE_UNAVAILABLE` | `platform/http.test.ts`; `password-write.test.ts` | must |
-| 9 | U2 | Reproduzida a causa, o `drop database` das suítes sem 42501, sem espera nem repetição | `catalog.test.ts` | must |
-| 10 | U3 | `auth.company`, `auth.member`, `auth.invitation` com `company_id`; os quatro únicos do contrato; as colunas dos plugins | `hub/identity/tables.test.ts`, "catálogo" | must |
-| 11 | U3 | Depois de `migrate`, a pessoa mais antiga ganha `role = 'admin'` se ninguém tem; sem pessoas, nada | `tables.test.ts`, "administrador" | must |
-| 12 | U4 | Catálogo igual a `database-grants.sql`; 42501 em `DELETE` de `company`, `member`, `invitation` | `platform/catalog.test.ts` | must |
-| 13 | U5 | Sem uma variável `HUB_MAIL_*`, ou token legível por outros: sai 1, `CONFIG_INVALID` com o nome; `deploy.sh` recusa sem `hub_mail_token` | `boot.test.ts`; `scripts/deploy.test.ts` | must |
-| 14 | U5 | Lado do Hub (T14): 2xx passa; 4xx, 5xx ou prazo: `MAIL_UNAVAILABLE`, sem repetir, registro sem endereço | `platform/mail.test.ts`, servidor falso (T15) | must |
-| 15 | U6 | `POST /api/companies` pelo administrador da instalação: 201, ele dono; mesma chave, a mesma empresa, ou 409 `IDEMPOTENCY_CONFLICT` com outro nome; outra pessoa, 404 sem linha (remoção) | `hub/identity/companies.test.ts` | must |
-| 16 | U6 | `GET /api/companies`: só as de quem pede, com papel, 50 por página, consulta do Hub; `mayCreate` só do administrador | `companies.test.ts`, "lista" | must |
-| 17 | U6 | `GET /api/companies/{id}` e `/members`: membro, 200; `/invitations`: dono e administrador, 200, membro 404; 2ª página por `next`; outra empresa, id desconhecido ou malformado (sem consulta), o mesmo 404 (S10, remoção) | `companies.test.ts`, "fora" | must |
-| 18 | U6 | Convidar por dono ou administrador: 201, um pendente, um e-mail com `/invitations/{id}`; membro ou outra empresa, 404 sem linha; administrador pedindo dono, 403 `INVITATION_ROLE_REFUSED`; já membro, 409 `MEMBER_EXISTS` | `hub/identity/invitations.test.ts`, "convidar" | must |
-| 19 | U6 | Outra chave: o anterior cancelado, novo e-mail; mesma chave: o mesmo, sem e-mail; dois ao mesmo tempo: um pendente, outro 409 `INVITATION_PENDING` (remoção) | `invitations.test.ts`, "de novo" | must |
-| 20 | U6 | 11º convite de uma pessoa em 60 s: 429 `INVITATIONS_EXCEEDED`; 101º pendente da empresa, contado pelo Hub: 409 `INVITATIONS_FULL`; sem linha nem e-mail; dois juntos no 10º, um passa (remoção) | `invitations.test.ts`, "limite" | must |
-| 21 | U6 | Correio fora: convite salvo, 502 `MAIL_UNAVAILABLE` | `invitations.test.ts`, "correio fora" | must |
-| 22 | U6 | `GET /api/invitations/{invitationId}`: a convidada, 200 com empresa, papel, quem convidou, estado; outra pessoa, 404; sem sessão, 401 | `invitations.test.ts`, "ler" | must |
-| 23 | U6 | `PUT /api/invitations/{invitationId}/password-link`: sem pessoa, criada sem senha, e-mail com `/set-password?redirect=/invitations/{id}#token=`; com senha, 204 sem e-mail; convite não pendente, 404 sem pessoa; 4º do endereço em 60 s, 429 `PASSWORD_LINKS_EXCEEDED`; as recusas de `entry` (`access.ts`) | `invitations.test.ts`, "link" | must |
-| 24 | U6 | `PUT /api/invitations/{invitationId}/acceptance` pela convidada: 200, um membro com o papel; de novo, igual; outra pessoa, 404 sem escrita; vencido, 422 `INVITATION_EXPIRED`; dois juntos, um membro e 200 nos dois | `invitations.test.ts`, "aceitar" | must |
-| 25 | U6 | Escrita recusada no meio do aceite: nenhum membro, convite pendente, 500; com `runWithAdapter` no lugar do comando junto, falha (remoção) | `invitations.test.ts`, "no meio" | must |
-| 26 | U6 | LT11: convite a e-mail novo, link, `PUT /api/passwords`, entrar, aceitar, e a empresa em `GET /api/companies` | `invitations.test.ts`, "do convite à empresa" | must |
-| 27 | U6 | LT12: todo caminho de organização e de administração da biblioteca, 404; `signUpEmail` recusado | `session.test.ts`, "caminhos da biblioteca"; `sign-up.test.ts` | must |
-| 28 | U6 | Nos critérios 15 a 26, só linhas com código, sem e-mail, nome ou token; os códigos da tabela de falhas; cada 404 registra seu motivo (S10, S41, S45) | `invitations.test.ts`, `companies.test.ts`, "registro" | must |
-| 29 | U6 | `first-person` cria a pessoa com `role = 'admin'` ; os casos de hoje passam | `first-person.test.ts` | must |
-| 30 | U7 | Início: empresas com papel; vazio, "Você ainda não participa de nenhuma empresa."; "Nova empresa" só com `mayCreate` | `routes/_app/route.test.tsx` | must |
-| 31 | U7 | "Nova empresa": erro no campo; dois cliques, um pedido com a mesma chave; 201 abre a empresa | `hub/identity/create-company-form.test.tsx` | must |
-| 32 | U7 | Pessoas: membros com papel; pendentes e formulário conforme a Hub; papéis de `mayInviteAs`; 409 no e-mail, 403 no papel | `people.test.tsx`, `invite-form.test.tsx` | must |
-| 33 | U7 | `/invitations/{id}`: "Entrar" e "Ainda não tenho senha"; com sessão, o `beforeLoad` leva a `/invitations/{id}/acceptance` (W15): "Aceitar convite" abre a empresa; vencido, aceito, desconhecido com seus textos | `hub/identity/invitation.test.tsx`; `platform/http.test.ts` | must |
-| 34 | U7 | "Criar sua senha" com `redirect`: 204 leva a `/login?redirect=/invitations/{id}`; fora da origem, ignorado (W16) | `set-password-form.test.tsx` | must |
-| 35 | U7 | #32: foco volta a "Abrir navegação"; aviso sem `text-text-2`; foco no título depois de entrar; contorno longe da borda do menu | `layout.test.ts`, `sign-in-form.test.tsx`, `route.test.tsx`, `sweep.test.ts` | must |
-| 36 | U7 | Cada endereço de `PAGES` em 1366, 390 e 320 px, claro e escuro: sem rolagem lateral, contorno de 2 px em cada parada do Tab | `apps/web/sweep.test.ts` | must |
-| 37 | U8 | Os quatro itens do 0017 passam; o resultado vai ao registro | Firstmate, ao vivo, com você | must |
+| 3 | U1 | `npm run radius -- U<k> <commit>`: arquivo fora da tabela, `out-of-radius`; commit desconhecido; saída 1; avisa `ambiguous-row` | `scripts/check-radius.test.ts` | must |
+| 4 | U1 | O Biome recusa `max-w-sm` e `w-2xl` em `apps/web/src`, aceita `min-w-48` | `scripts/rules.test.ts`, "W25" | must |
+| 5 | U2 | `whenIdle` fora de `Database`; "banco dorme" chega a zero conexões; falha no `connect` ou evento `error`: 503; erro sem SQLSTATE: 500 | `platform/database.test.ts`, "perda"; `identity.test.ts` | must |
+| 6 | U2 | Sem `CONEXUS_TEST_DATABASE_CONTAINER`, o catálogo pula com `opt-in:`; reproduzida a causa, `drop database` sem 42501, espera ou repetição | `platform/catalog.test.ts` | must |
+| 7 | U2 | Código fora das falhas da operação falha na porta de teste; `setPassword` declara `DATABASE_UNAVAILABLE` | `platform/http.test.ts`; `password-write.test.ts` | must |
+| 8 | U3 | Colunas e únicos do contrato; catálogo igual a `database-grants.sql`; 42501 em `DELETE` das três tabelas | `hub/identity/tables.test.ts`; `catalog.test.ts` | must |
+| 9 | U3 | Depois de `migrate`, a pessoa mais antiga ganha `role = 'admin'` se ninguém tem | `tables.test.ts`, "administrador" | must |
+| 10 | U4 | Sem uma variável `HUB_MAIL_*`, ou token legível por outros: sai 1, `CONFIG_INVALID`; `deploy.sh` recusa sem `hub_mail_token` | `boot.test.ts`; `scripts/deploy.test.ts` | must |
+| 11 | U4 | Lado do Hub (T14): em `delivered` ou `queued`, passa; em `permanent_bounces`, `MAIL_BOUNCED`; não-2xx, `success: false`, fora do esquema, acima de 16 KiB, prazo, cliente que sai: `MAIL_UNAVAILABLE`; sem repetir nem endereço no registro | `platform/mail.test.ts`, servidor falso (T15) | must |
+| 12 | U5 | `POST /api/companies` pelo administrador: 201, ele dono; mesma chave, a mesma; outro nome, 409 `IDEMPOTENCY_CONFLICT`; outra pessoa, 404 sem linha (remoção) | `companies.test.ts`, "criar" | must |
+| 13 | U5 | `GET /api/companies`: só as de quem pede, 50 por página; `mayCreate` só do administrador | `companies.test.ts`, "lista" | must |
+| 14 | U5 | `/api/companies/{companyId}` e `/members`: membro, 200; `/invitations`: dono e administrador; 2ª página por `next`; outra empresa, id desconhecido ou malformado, o mesmo 404 (S10, remoção) | `companies.test.ts`, "fora" | must |
+| 15 | U5 | Convidar: 201, e-mail com `/invitations/{id}`; membro ou outra empresa, 404 sem linha; administrador pedindo dono, 403 `INVITATION_ROLE_REFUSED`; já membro, 409 `MEMBER_EXISTS`; endereço que volta, 422; correio fora, 502; o convite fica | `invitations.test.ts`, "convidar" | must |
+| 16 | U5 | Outra chave: o anterior cancelado; mesma chave: o mesmo, sem e-mail; dois juntos ao mesmo e-mail: outro 409 `INVITATION_PENDING` (remoção) | `invitations.test.ts`, "de novo" | must |
+| 17 | U5 | 11º convite de uma pessoa em 60 s: 429 `INVITATIONS_EXCEEDED`; com 99 pendentes, dois convidantes juntos: um 201, um 409 `INVITATIONS_FULL`, 100 pendentes, um e-mail (remoção) | `invitations.test.ts`, "limite" | must |
+| 18 | U5 | `GET /api/invitations/{invitationId}`: a convidada, 200; outra pessoa, 404; sem sessão, 401 | `invitations.test.ts`, "ler" | must |
+| 19 | U5 | `PUT …/password-link`: sem pessoa, criada com o nome, e-mail com `/set-password?redirect=/invitations/{id}#token=`; com senha, 204 sem e-mail; convite não pendente, 404; dois juntos: uma pessoa, um 204, um 429 `PASSWORD_LINKS_EXCEEDED`; após 20 s, link novo, o anterior 422 (remoção) | `invitations.test.ts`, "link" | must |
+| 20 | U5 | `PUT …/acceptance` pela convidada: 200, um membro; de novo, igual; outra pessoa, 404 sem escrita; vencido, 422 `INVITATION_EXPIRED`; dois juntos, um membro, dois 200 | `invitations.test.ts`, "aceitar" | must |
+| 21 | U5 | Escrita recusada no meio do aceite: nada fica, 500; com `runWithAdapter`, falha (remoção) | `invitations.test.ts`, "no meio" | must |
+| 22 | U5 | LT11, do convite a e-mail novo à empresa listada; LT12, caminhos de organização e administração 404, `signUpEmail` recusado | `invitations.test.ts`, "do convite à empresa"; `session.test.ts`; `sign-up.test.ts` | must |
+| 23 | U5 | Critérios 12 a 22: linhas só com código, sem e-mail, nome ou token; cada 404 com seu motivo (S10, S41, S45) | `invitations.test.ts`, `companies.test.ts`, "registro" | must |
+| 24 | U5 | `first-person` cria a pessoa com `role = 'admin'`; os casos de hoje passam | `first-person.test.ts` | must |
+| 25 | U6 | Início: empresas com papel; vazio, "Você ainda não participa de nenhuma empresa."; "Nova empresa" só com `mayCreate` | `routes/_app/route.test.tsx` | must |
+| 26 | U6 | "Nova empresa": erro no campo; dois cliques, um pedido; 201 abre a empresa | `create-company-form.test.tsx` | must |
+| 27 | U6 | Pessoas: membros, pendentes, formulário conforme o Hub e `mayInviteAs`; 409 no e-mail, 403 no papel | `people.test.tsx`, `invite-form.test.tsx` | must |
+| 28 | U6 | `/invitations/{id}`: "Entrar" e "Ainda não tenho senha" com o nome; com sessão, o `beforeLoad` leva a `…/acceptance` (W15), "Aceitar convite" abre a empresa; vencido, aceito, desconhecido | `invitation.test.tsx`; `platform/http.test.ts` | must |
+| 29 | U6 | "Criar sua senha": 204 leva a `/login?redirect=/invitations/{id}`; `redirect` fora da origem, ignorado (W16) | `set-password-form.test.tsx` | must |
+| 30 | U6 | #32: gaveta muda o endereço, foco volta a "Abrir navegação"; aviso sem `text-text-2`; foco no título após entrar; contorno longe da borda do menu | `layout.test.ts`, `sign-in-form.test.tsx`, `route.test.tsx`, `sweep.test.ts` | must |
+| 31 | U6 | Cada estado da matriz em 1366, 390 e 320 px, claro e escuro: sem rolagem lateral, contorno de 2 px em cada parada do Tab | `apps/web/sweep.test.ts` | must |
+| 32 | U6 | O roteiro de uso no Chromium, contra um Hub de verdade | `tests/e2e/invitation.test.ts` | must |
+| 33 | U7 | Os cinco itens do 0017 passam, escritos no registro | Firstmate, ao vivo, com você | must |
 
 ## A tabela de falhas
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Empresa, dono, empresa ativa da sessão (`createOrganization`) | Mesma chave: lida antes, ou 23505; devolve a primeira | Tudo volta (comando junto) | 503 | `COMPANY_CREATED` | 15, 28 |
-| Convite e cancelamento do anterior (`createInvitation`) | Um pendente, o outro 409 | Tudo volta | 503 | `INVITATION_CREATED` | 18, 19, 28 |
-| Pessoa sem senha | Um e-mail, uma pessoa (único de `user.email`) | Volta com o comando | 503 | nada | 23 |
-| Link de senha e tentativas (`/request-password-reset`, sozinho) | Vale o último (`forgetLinks`) | A pessoa fica sem link; pedir de novo serve | 503 | `PASSWORD_LINK_GIVEN` | 23 |
-| Convite aceito, membro, empresa ativa (`acceptInvitation`) | Convite travado: um membro, 200 nos dois | Nada fica; 500 | 503 | `INVITATION_ACCEPTED` | 24, 25 |
-| E-mail, depois do `commit` | Um por convite novo | — | 502, o convite fica | `MAIL_SENT`, `MAIL_FAILED` | 14, 21 |
-| As três migrações (U3, U4) | Uma por vez (D9) | Volta a migração | `migrate` sai 1 | `MIGRATED` | 10 a 12 |
-| Primeira pessoa com `role` | Uma pessoa | Volta tudo | sai 1 | `FIRST_PERSON_LINK_GIVEN` | 29 |
-| Cópia de `npm run removals` | Pastas diferentes | O repositório não muda | sem banco, `unreachable` | uma linha por remoção | 2 |
+| Empresa, dono, empresa ativa (`createOrganization`) | Mesma chave: 23505 em `slug` ou `attempt_key`, a primeira | Tudo volta | 503 | `COMPANY_CREATED` | 12 |
+| Convite, cancelamento do anterior (`createInvitation`) | Trava empresa e quem convida: 409 | Tudo volta | 503 | `INVITATION_CREATED` | 15 a 17 |
+| Pessoa e link (`createUser`, `forgetLinks`, `requestPasswordReset`) | Trava do e-mail: uma pessoa, um link, outro 429 | Tudo volta | 503 | `PASSWORD_LINK_GIVEN` | 19 |
+| Convite aceito, membro, empresa ativa (`acceptInvitation`) | Convite travado: um membro, 200 nos dois | Nada fica; 500 | 503 | `INVITATION_ACCEPTED` | 20, 21 |
+| E-mail, após o `commit` | Um por pedido | — | 502 ou 422; a linha fica | `MAIL_SENT`, `MAIL_FAILED` | 11, 15 |
+| As três migrações (U3) | Uma por vez (D9) | Volta a migração | `migrate` sai 1 | `MIGRATED` | 8, 9 |
+| Primeira pessoa com `role` | Uma | Volta tudo | sai 1 | `FIRST_PERSON_LINK_GIVEN` | 24 |
+| Cópia de `npm run removals` | Pastas próprias | Nada muda | `unreachable` | uma linha por remoção | 2 |
+| `npm run radius` | Só lê | — | sem `git`, saída 1 | uma linha por arquivo | 3 |
 
 ## O que nasce novo e o que é trazido
 
 | Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |
 | --- | --- | --- | --- | --- |
-| Empresa e convites (`workspace/`) | Nova, nativa | `auth.company`, `auth.invitation`; `hub/identity/{companies,invitations}.ts` | — | Dono com a empresa e um pendente por e-mail: propósito (C64, D15) |
-| Admissão (`admission.ts`) | Nova | `hub/identity/admission.ts`, papéis do plugin | — | Prova só da admissão (S7); motivo só no registro (S10) |
+| Empresa e convites (`workspace/`) | Nova, nativa | `auth.company`, `auth.invitation` | — | Dono e um pendente por e-mail (C64, D15) |
+| Admissão (`admission.ts`) | Nova | `hub/identity/admission.ts` | — | S7, S10 |
 | Entrada automática (`authentication.ts:147-157`) | Retirada | — | — | "Implementado assim": decisão 1 |
-| Administrador da instalação (`iam.installation_administrator`) | Nova, nativa | `user.role` | — | Fato de pessoa (S11); histórico sem leitor, retirado |
+| Administrador da instalação | Nova, nativa | `user.role` | — | Fato de pessoa (S11) |
 
 **A medida do transplante.** Nenhuma parte é trazida.
 
 **A dívida.**
 
-- O `slug` recebe a chave; a repetição é lida por `attempt_key` antes, e 23505 em `slug` ou `attempt_key` é repetição.
 - O aceite recusado no meio dá 500, não 503 (`crud-invites.mjs:332-339`).
-- Esperam: #25-3, #25-6, #32-3 e #32-8 (relatório, L20).
 
 ## U1 Conferências
 
@@ -158,14 +156,13 @@ Servidor: biblioteca de verdade em banco descartável (T16, T19). "Remoção": l
 
 ### A ordem do trabalho
 
-1. A recusa de linha crua no relator e em `spawnHub`. Regras:
-   C50, C78, T4, T20.
+1. A recusa de linha crua no relator e em `spawnHub`. Regras: C50, C78, T4, T20.
 2. `removals.ts` numa cópia do repositório. Regras: T5, T12, C60.
 3. `check-radius.ts` (L7); o plugin GritQL (W25).
 
 ### Como se prova
 
-Critérios 1 a 4, com casos plantados que precisam falhar (C78).
+`npm run test:scripts`, `npm test -w @conexus/server`; casos plantados (C78).
 
 ## U2 Consertos
 
@@ -181,69 +178,55 @@ Critérios 1 a 4, com casos plantados que precisam falhar (C78).
 ### Os contratos que a unidade cria
 
 - `whenIdle(database)` em `test-database.ts`, fora de `Database`.
-- `serve` põe `failures` na `config` da rota; o gancho `onSend` da porta de teste recusa um `code`
-  fora dela e das falhas de acesso, `NOT_FOUND` e `INTERNAL_UNEXPECTED`.
+- `serve` põe `failures` na `config` da rota; o `onSend` da porta de teste recusa `code` fora dela,
+  das de acesso, `NOT_FOUND` e `INTERNAL_UNEXPECTED`.
 - `LIFETIMES = { idleSeconds, renewAfterSeconds, totalSeconds }` em `auth.ts`.
 - `apps/server/package.json`: `"generate": "drizzle-kit generate"`.
 
 ### A ordem do trabalho
 
-1. #32-15 reproduzido primeiro (`conexus-build`, defeito). Regras: C65, T20.
+1. #32-15 reproduzido primeiro. Regras: C65, T20.
 2. #25-1; #25-2, a perda decidida por onde aconteceu. Regras: C26, C52.
 3. #25-4, #25-5, #32-6, #32-9, #32-10. Regras: C28, C70, T4.
-4. #32-11: `createAuth` fica em `public.ts`: só por ela se prova o cadastro fechado.
+4. #32-11: `createAuth` fica em `public.ts`, porta da prova do cadastro fechado.
 
 ### Como se prova
 
-Critérios 5 a 9.
+`npm test -w @conexus/server`, banco como no CI.
 
-## U3 Tabelas
+## U3 Tabelas e concessões
 
 ### O raio da mudança
 
 | Arquivo | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/hub/identity/tables.ts`, `apps/server/src/hub/identity/tables.test.ts` | Muda | `drizzle.config.ts`; `auth.ts` |
-| `apps/server/migrations/<data>_company_tables/` | Cria (gerada por `npm run generate`) | `migrate` |
-| `apps/server/migrations/<data>_installation_admin/migration.sql` | Cria (SQL à mão) | `migrate` |
+| `apps/server/migrations/<data>_company_tables/` | Cria (`npm run generate`) | `migrate` |
+| `apps/server/migrations/<data>_installation_admin/migration.sql`, `apps/server/migrations/<data>_company_grants/migration.sql` | Cria (SQL à mão) | `migrate` |
+| `apps/server/database-grants.sql`, `apps/server/src/platform/catalog.test.ts` | Muda | CI |
 
 ### Os contratos que a unidade cria
 
-- Os campos dos modelos dos plugins em 1.7.8, como na etapa 3; chaves estrangeiras `RESTRICT`.
-- Únicos: `company(attempt_key)`, `member(company_id, user_id)`, `invitation(company_id,
-  lower(email)) where status = 'pending'`, `invitation(company_id, attempt_key)`.
+- Colunas `text not null`, salvo `?` (pode ser nulo) e `ts` (`timestamptz not null`):
+  `company(id pk, name, slug unique, logo?, metadata?, created_at ts, attempt_key unique)`;
+  `member(id pk, company_id, user_id, role, created_at ts)`, único `(company_id, user_id)`;
+  `invitation(id pk, company_id, email, role?, status, expires_at ts, created_at ts, inviter_id,
+  attempt_key)`, únicos `(company_id, lower(email)) where status = 'pending'`, `(company_id,
+  attempt_key)`; `user` + `role?`, `banned boolean default false`, `ban_reason?`, `ban_expires
+  timestamptz?`; `session` + `active_organization_id?`, `impersonated_by?`. Chaves estrangeiras
+  `RESTRICT`.
+- `hub_runtime`: `SELECT, INSERT, UPDATE` nas três tabelas novas.
 
 ### A ordem do trabalho
 
-1. Tabelas e migração gerada, lida antes (D2, D4 a D8, D15, D17); a do papel, com o porquê (D14).
+1. Migração gerada, lida antes (D2, D4 a D8, D15, D17); a do papel (D14); as concessões, decisão 8
+   (D10 a D12).
 
 ### Como se prova
 
-Critérios 10 e 11.
+`npm test -w @conexus/server`, com `CONEXUS_TEST_DATABASE_CONTAINER` para o catálogo.
 
-## U4 Concessões
-
-### O raio da mudança
-
-| Arquivo | Cria, muda ou apaga | Quem importa ou chama |
-| --- | --- | --- |
-| `apps/server/migrations/<data>_company_grants/migration.sql` | Cria (SQL à mão) | `migrate` |
-| `apps/server/database-grants.sql` | Muda | `platform/catalog.test.ts` |
-| `apps/server/src/platform/catalog.test.ts` | Muda | CI |
-
-### Os contratos que a unidade cria
-
-`hub_runtime`: `SELECT, INSERT, UPDATE` em `auth.company`, `auth.member`, `auth.invitation`.
-
-### A ordem do trabalho
-
-1. Pull request próprio, decisão 8. Regras: D10, D11, D12.
-
-### Como se prova
-
-Critério 12.
-
-## U5 Correio
+## U4 Correio
 
 ### O raio da mudança
 
@@ -256,23 +239,26 @@ Critério 12.
 
 ### Os contratos que a unidade cria
 
-- `type SendMail = (message: { to: Email; subject: string; text: string }) => Promise<void>`;
-  `createMail(deps: { config; log }): SendMail`.
+- `type SendMail = (message: { to: Email; subject: string; text: string }, signal: AbortSignal) =>
+  Promise<'DELIVERED' | 'QUEUED'>`; `createMail(deps: { config; log }): SendMail`.
+- Resposta 2xx lida com Zod, até 16 KiB: `{ success: boolean; result: { delivered: string[];
+  permanent_bounces: string[]; queued: string[] } }`.
 - `Config`: `mailApiUrl` (`HUB_MAIL_API_URL`), `mailFrom: Email` (`HUB_MAIL_FROM`), `mailToken`
   (`HUB_MAIL_TOKEN_FILE`, classe com `#value`).
-- Falha `MAIL_UNAVAILABLE`: `THIRD_PARTY`, 502, "O e-mail não pôde ser enviado agora.", "O convite
-  ficou salvo. Convide de novo daqui a pouco.", `NONE`.
+- `MAIL_UNAVAILABLE`: `THIRD_PARTY`, 502, "O e-mail não pôde ser enviado agora." / "O convite ficou
+  salvo. Convide de novo daqui a pouco.". `MAIL_BOUNCED`: `USER`, 422, "Esse endereço não recebe
+  e-mails." / "Confira o e-mail e convide de novo.".
 
 ### A ordem do trabalho
 
-1. `fetch` com prazo de 10 s, sem repetir, sem ler um não-2xx (C56 a C59, S31, S36, S41); o
-   segredo no Compose, em `deploy.sh` e no procedimento (C67, S37).
+1. `fetch` com prazo de 10 s e o sinal do pedido (C27, C56 a C59, S31, S36, S41); o segredo no
+   Compose, `deploy.sh` e procedimento (C67, S37).
 
 ### Como se prova
 
-Critérios 13 e 14.
+`npm test -w @conexus/server`; um caso do servidor falso por recusa.
 
-## U6 Empresas e convites
+## U5 Empresas e convites
 
 ### O raio da mudança
 
@@ -289,60 +275,70 @@ Critérios 13 e 14.
 
 ### Os contratos que a unidade cria
 
-- `CompanyId`, `InvitationId` (32 letras e dígitos, marcados); `Role`; `Company`, `Membership`,
-  `Member`, `PendingInvitation`, `ReceivedInvitation` (com `state`: pendente, vencido, aceito, cancelado).
-- `Operation` ganha `input.params`, `success.status: 201` e `attemptKey: true` (`Idempotency-Key`,
-  UUID); `serve` confere os parâmetros antes do corpo (C42).
-- `listCompanies`: `GET /api/companies`, `session`, `?page`; 200 `{ companies: Membership[]; mayCreate:
-  boolean; next: { kind: 'END' } | { kind: 'MORE'; page: string } }`.
+- `CompanyId`, `InvitationId`: 32 letras e dígitos, marcados. `Role = 'owner' | 'admin' |
+  'member'`. `Company = { id; name }`; `Membership = { company; role }`; `Member = { personId;
+  name; email; role }`; `PendingInvitation = { id; email; role; expiresAt }`; `ReceivedInvitation =
+  { id; company; role; inviterName; state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED' }`.
+  `Next = { kind: 'END' } | { kind: 'MORE'; page: string }`.
+- `Operation` ganha `input.params`, `success.status: 201`, `attemptKey: true` (`Idempotency-Key`,
+  UUID); `serve` confere parâmetros antes do corpo (C42).
+- `listCompanies`: `GET /api/companies?page`, `session`; 200 `{ companies: Membership[]; mayCreate;
+  next: Next }`.
 - `createCompany`: `POST /api/companies`, `session`, chave, `{ name }` 1 a 100; 201 `{ company }`;
   `NOT_FOUND`, `IDEMPOTENCY_CONFLICT` 409.
 - `getCompany`: `GET /api/companies/{companyId}`; 200 `{ company; role; mayInviteAs: Role[] }`.
-  `listMembers`, `listInvitations`: `GET …/members`, `GET …/invitations`, `?page`; 200 com a lista e `next`, 50 por página, consulta do Hub.
+  `listMembers`: `GET …/members?page`, 200 `{ members: Member[]; next }`; `listInvitations`: `GET
+  …/invitations?page`, 200 `{ invitations: PendingInvitation[]; next }`; 50 por página.
 - `createInvitation`: `POST /api/companies/{companyId}/invitations`, chave, `{ email; role }`; 201
-  `{ invitation }`; `INVITATION_ROLE_REFUSED` 403, `MEMBER_EXISTS` 409, `INVITATION_PENDING` 409,
-  `INVITATIONS_EXCEEDED` 429, `INVITATIONS_FULL` 409, `IDEMPOTENCY_CONFLICT` 409, `MAIL_UNAVAILABLE` 502.
-- `getInvitation`: `GET /api/invitations/{invitationId}`, `session`; 200 `{ invitation:
-  ReceivedInvitation }`.
-- `putPasswordLink`: `PUT /api/invitations/{invitationId}/password-link`, `entry`; 204; `PASSWORD_LINKS_EXCEEDED`
-  429, `MAIL_UNAVAILABLE` 502. `acceptInvitation`: `PUT /api/invitations/{invitationId}/acceptance`, `session`; 200
-  `{ company }`; `INVITATION_EXPIRED` 422. `PUT` nos dois: repetir põe o mesmo estado.
+  `{ invitation: PendingInvitation }`; `INVITATION_ROLE_REFUSED` 403, `MEMBER_EXISTS`,
+  `INVITATION_PENDING`, `INVITATIONS_FULL`, `IDEMPOTENCY_CONFLICT` 409, `INVITATIONS_EXCEEDED` 429,
+  `MAIL_BOUNCED` 422, `MAIL_UNAVAILABLE` 502.
+- `getInvitation`: `GET /api/invitations/{invitationId}`, `session`; 200 `{ invitation: ReceivedInvitation }`.
+- `putPasswordLink`: `PUT /api/invitations/{invitationId}/password-link`, `entry`, `{ name }` 1 a
+  100; 204; `PASSWORD_LINKS_EXCEEDED` 429, `MAIL_BOUNCED` 422, `MAIL_UNAVAILABLE` 502.
+- `acceptInvitation`: `PUT /api/invitations/{invitationId}/acceptance`, `session`; 200 `{ company }`;
+  `INVITATION_EXPIRED` 422.
 - Todas: `NOT_FOUND`, `DATABASE_UNAVAILABLE`, e as de acesso.
 - Falhas novas, `USER`, `NONE`: `IDEMPOTENCY_CONFLICT` "Este pedido já foi feito com outros dados." /
   "Recarregue a página."; `MEMBER_EXISTS` "Essa pessoa já está na empresa."; `INVITATION_PENDING` "Já
   há um convite pendente para esse e-mail."; `INVITATION_ROLE_REFUSED` "Você não pode convidar com esse
   papel."; `INVITATIONS_EXCEEDED` "Muitos convites seguidos." e `PASSWORD_LINKS_EXCEEDED` "Muitos
-  pedidos de link." / "Espere um minuto e tente de novo."; `INVITATION_EXPIRED` "Este convite
+  pedidos de link." / "Espere um pouco e tente de novo."; `INVITATION_EXPIRED` "Este convite
   venceu." / "Peça um novo a quem convidou você."; `INVITATIONS_FULL` "A empresa já tem 100 convites
-  pendentes." / "Espere que aceitem antes de convidar mais.".
+  pendentes." / "Espere aceitarem.".
 - `admit(input: { tx: CommandTx; personId: PersonId; companyId: CompanyId; action: CompanyAction }):
-  Promise<Admitted>`; `Admitted` com membro `private`, feito só aqui (C16).
-- `libraryCommand<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>` em `auth.ts`:
-  `database.command` com `runWithTransaction(adapterOn(auth, tx), …)`; também em `first-person.ts`.
+  Promise<Admitted>`, único construtor de `Admitted` (C16).
+- `auth.ts`: `libraryCommand<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>`
+  (`database.command` + `runWithTransaction(adapterOn(auth, tx), …)`); `forgetLinks(tx, personId)`,
+  vinda de `first-person.ts`.
 - `createIdentity(deps: { database; config; log; sendMail: SendMail })`.
 
 ### A ordem do trabalho
 
 1. `organization()` e `admin()` de `better-auth@1.7.8`: `modelName: 'company'`, `attemptKey`
    adicional, `allowUserToCreateOrganization` pelo `role`, `cancelPendingInvitationsOnReInvite`,
-   sem `sendInvitationEmail`, `customRules` de `/request-password-reset`. Regras: C75, S11, S12.
+   sem `sendInvitationEmail`. Regras: C75, S11, S12.
 2. Toda gravação da biblioteca em `libraryCommand`, por `auth.api` com a sessão; nunca
    `createOrganization` sem ela. Regras: C64, D22.
 3. `admit` lê o membro e decide por `defaultRoles[role].authorize`. Regras: S6 a S10, D21.
-4. Convidar: admitir, travar a linha de quem convida e contar os convites dele em 60 s; membro
-   e papel lidos pelo Hub; `createInvitation`, `commit`, e então o e-mail; 23505 pelo nome do índice. Regras: C37, D16, D24,
-   D26, S28.
-5. Link: num comando, o convite pendente e a pessoa se faltar (`internalAdapter.createUser`); depois,
-   sozinho, `/request-password-reset` por `auth.handler`, `linkTokenOf`, o e-mail. Regras: S12, S30.
-6. Aceitar: travar o convite, estado e prazo, `acceptInvitation`; já aceito por ela, devolve a empresa. Regras: C64, S8.
+4. Convidar: admitir; `FOR UPDATE` na empresa, depois em quem convida; contar pendentes e convites
+   dela em 60 s; membro e papel lidos pelo Hub; `createInvitation`, `commit`, o e-mail; 23505 pelo
+   índice. Regras: C37, C65,
+   D16, D23, D24, D26, S28.
+5. Link, num `libraryCommand`: `pg_advisory_xact_lock` do e-mail; convite pendente; a pessoa, se
+   falta; link de menos de 20 s, 429; `forgetLinks`; `auth.api.requestPasswordReset`, `linkTokenOf`;
+   `commit`, o e-mail. Regras: C64, C65,
+   S12, S28.
+6. Aceitar: `FOR UPDATE` no convite, estado, prazo, `acceptInvitation`; já aceito por ela, a
+   empresa. Regras: C64, S8.
 7. `boundaries.md` (C75); as linhas de remoção.
 
 ### Como se prova
 
-Critérios 15 a 29, com `app.inject` e status e corpo literais; prazo e janela envelhecidos por `UPDATE`
-do dono do banco de teste, sem espera (T20).
+`npm test -w @conexus/server`; prazos envelhecidos por `UPDATE` do dono, sem espera (T20); `npm run
+removals`.
 
-## U7 Telas
+## U6 Telas
 
 ### O raio da mudança
 
@@ -356,28 +352,31 @@ do dono do banco de teste, sem espera (T20).
 | `apps/web/src/routes/{_app/index,_app/companies/new,_app/companies/$companyId,_public/invitations/$invitationId,_app/invitations/$invitationId/acceptance,_public/set-password}.tsx`, `apps/web/src/routeTree.gen.ts` | Cria / muda | o roteador |
 | `apps/web/src/hub/identity/{queries,public}.ts`, `apps/web/src/hub/identity/{sign-in-form,set-password-form,companies,create-company-form,people,invite-form,invitation}.tsx` | Muda / cria | rotas |
 | `apps/web/{layout.test,sweep.test,layout-harness}.ts`, `apps/web/package.json` | Muda / cria | `npm test -w @conexus/web` |
+| `tests/e2e/invitation.test.ts`, `package.json`, `.github/workflows/ci.yml` | Cria / muda | `npm run e2e`, CI |
 | `apps/web/src/{hub/identity,routes,routes/_app,platform}/*.test.tsx` | Cria ou muda | os testes ao lado |
 
 ### Os contratos que a unidade cria
 
-- `hubQuery(operation, { params })`, chave da operação e dos parâmetros (W11); `hubMutation` manda
-  `Idempotency-Key` quando `attemptKey`; `attempt-key.ts`: uma chave por tentativa, renovada após a
-  resposta.
-- `set-password`: `validateSearch` com `redirect` lido como caminho da mesma origem.
+- `hubQuery(operation, { params })`, chave: operação e parâmetros (W11); `hubMutation` manda
+  `Idempotency-Key` quando `attemptKey`; `attempt-key.ts`: uma chave por tentativa, nova após a resposta.
+- `set-password`: `validateSearch` de `redirect` (W16).
+- Matriz de `sweep.test.ts`, respostas falsas do contrato: sem sessão; sem empresas; com empresas;
+  dono; membro; convite pendente, vencido, aceito, alheio; erro de campo; carregando; 502.
+- `npm run e2e`: Hub em processo, banco do CI, correio falso que guarda os links, `cf-connecting-ip`
+  posto.
 
 ### A ordem do trabalho
 
 1. `hub.ts` com parâmetros, 201 e a chave. Regras: W9 a W11, W24.
-2. As telas com os textos da página, dos critérios e estes: "Suas empresas", "Convites pendentes",
-   "Convite enviado para {e-mail}.".
-   Regras: W14 a W24, V24, V31, V38 a V43.
-3. #32-1, 2, 4, 5, 7 e a varredura. Regras: V18, V28, T2.
+2. Textos da página, dos critérios, e "Suas empresas", "Convites pendentes", "Convite
+   enviado para {e-mail}.". Regras: W14 a W24, V24, V31, V38 a V43.
+3. #32-1, 2, 4, 5, 7, varredura, ponta a ponta. Regras: V18, V28, T2.
 
 ### Como se prova
 
-Critérios 30 a 36; capturas e Tab (T23).
+`npm test -w @conexus/web`; `npm run e2e`; capturas e Tab (T23).
 
-## U8 Ao vivo
+## U7 Ao vivo
 
 ### O raio da mudança
 
@@ -387,8 +386,8 @@ Critérios 30 a 36; capturas e Tab (T23).
 
 ### A ordem do trabalho
 
-1. Com a decisão 7, o Firstmate grava o token e roda os quatro itens; o resultado vai ao 0017.
+1. O Firstmate grava o token da decisão 7 e roda os cinco itens.
 
 ### Como se prova
 
-Critério 37.
+Critério 33.
