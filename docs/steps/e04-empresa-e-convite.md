@@ -117,7 +117,7 @@ Servidor: biblioteca de verdade em banco descartável (T16, T19). "Remoção": l
 | Convite aceito, membro, empresa ativa (`acceptInvitation`) | Convite travado: um membro, 200 nos dois | Nada fica; 500 | 503 | `INVITATION_ACCEPTED` | 24, 25 |
 | E-mail, depois do `commit` | Um por convite novo | — | 502, o convite fica | `MAIL_SENT`, `MAIL_FAILED` | 14, 21 |
 | As três migrações (U3, U4) | Uma por vez (D9) | Volta a migração | `migrate` sai 1 | `MIGRATED` | 10 a 12 |
-| Primeira pessoa com `role` | Uma pessoa | Volta tudo | sai 1 | `FIRST_PERSON_EXISTS` | 29 |
+| Primeira pessoa com `role` | Uma pessoa | Volta tudo | sai 1 | `FIRST_PERSON_LINK_GIVEN` | 29 |
 | Cópia de `npm run removals` | Pastas diferentes | O repositório não muda | sem banco, `unreachable` | uma linha por remoção | 2 |
 
 ## O que nasce novo e o que é trazido
