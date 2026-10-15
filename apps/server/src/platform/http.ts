@@ -186,9 +186,12 @@ export async function createServer(
     clientErrorHandler: (error, socket) => answerClientError(app, error, socket),
   })
   await app.register(fastifyHelmet, HELMET_OPTIONS)
-  await app.register(fastifyStatic, { root: deps.webRoot, serve: false })
+  const built = existsSync(join(deps.webRoot, 'index.html'))
+  // The plugin would warn about a missing root in prose; the Hub says it by its code (code C50).
+  await app.register(fastifyStatic, { root: deps.webRoot, serve: false, suppressWarning: true })
+  if (!built) app.log.warn('WEB_PAGE_MISSING')
   enforceAccess(app, { publicOrigin: config.publicOrigin, readSession: deps.readSession })
-  installErrorHandling(app, { built: existsSync(join(deps.webRoot, 'index.html')) })
+  installErrorHandling(app, { built })
   installPages(app)
   return app
 }
