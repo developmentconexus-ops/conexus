@@ -10,6 +10,7 @@ import {
   spawnHub,
   TEST_ORIGIN,
   testConfig,
+  whenIdle,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 import { createIdentity } from './public.ts'
@@ -217,7 +218,7 @@ test('banco dorme: depois do último pedido a cada rota, o pool chega a zero con
   await signIn(hub, { email: ANA.email, password: 'senha-errada' })
   await read(hub, cookie)
   await signOut(hub, cookie)
-  await hub.test.database.whenIdle()
+  await whenIdle(hub.test.database)
   const open = await hub.test.asOwner(`select count(*)::int as open from pg_stat_activity
     where datname = current_database() and usename = 'hub_runtime'`)
   assert.deepEqual(open, [{ open: 0 }])

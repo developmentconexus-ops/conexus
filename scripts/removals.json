@@ -4,7 +4,11 @@
     "file": "scripts/test-reporter.ts",
     "find": "const lines = `${pending.get(key) ?? ''}${event.data.message}`.split('\\n')",
     "replace": "const lines: string[] = []",
-    "test": { "cwd": ".", "file": "scripts/test-reporter.test.ts", "name": "linha crua: recusa" }
+    "test": {
+      "cwd": ".",
+      "file": "scripts/test-reporter.test.ts",
+      "name": "linha crua: recusa"
+    }
   },
   {
     "id": "raw-output-spawned-hub",
@@ -15,6 +19,28 @@
       "cwd": "apps/server",
       "file": "src/platform/test-database.test.ts",
       "name": "linha crua: um Hub iniciado que imprime"
+    }
+  },
+  {
+    "id": "read-deadline-is-the-database",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "if (lostWith === undefined) throw databaseFailure(error)",
+    "replace": "throw databaseFailure(error)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/database.test.ts",
+      "name": "uma leitura parada além do prazo"
+    }
+  },
+  {
+    "id": "undeclared-failure-recorded",
+    "file": "apps/server/src/platform/test-database.ts",
+    "find": "undeclared.push(`${request.method} ${request.routeOptions.url} ${code}`)",
+    "replace": "void code",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/http.test.ts",
+      "name": "a porta de teste registra"
     }
   }
 ]

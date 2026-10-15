@@ -7,7 +7,13 @@ import type { Operation } from '@conexus/hub-api'
 import { Person } from '@conexus/hub-api'
 import { z } from 'zod'
 import { answer, createServer, serve } from './http.ts'
-import { TEST_ORIGIN, testConfig, unreachableDatabaseUrl } from './test-database.ts'
+import {
+  TEST_ORIGIN,
+  takeUndeclared,
+  testConfig,
+  unreachableDatabase,
+  unreachableDatabaseUrl,
+} from './test-database.ts'
 
 const PERSON = Person.parse({ id: 'person-1', name: 'Ana Lima', email: 'ana@example.test' })
 
@@ -166,6 +172,37 @@ test('resposta: o valor literal { body, setCookie } é a resposta, igual em temp
   assert.equal(response.statusCode, 200)
   assert.equal(response.body, '{"note":"ok"}')
   assert.deepEqual([response.headers['set-cookie']].flat(), ['review=1; Path=/'])
+})
+
+test('a porta de teste registra o código de falha que a operação não declara, e o arquivo falha', async (t) => {
+  const database = await unreachableDatabase(t)
+  const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
+    webRoot: tmpdir(),
+    readSession: async () => ({ kind: 'SIGNED_OUT' }),
+  })
+  t.after(() => app.close())
+  for (const [path, failures] of [
+    ['/api/notes/declared', ['DATABASE_UNAVAILABLE']],
+    ['/api/notes/undeclared', []],
+  ] as const) {
+    const read = {
+      id: 'readNote',
+      summary: 'Reads a note from the database.',
+      access: 'public',
+      method: 'GET',
+      path,
+      bodyLimit: 64,
+      success: { status: 204 },
+      failures,
+    } as const satisfies Operation
+    serve(app, read, () => database.read(async () => answer(undefined)))
+  }
+  const declared = await app.inject({ method: 'GET', url: '/api/notes/declared' })
+  assert.deepEqual([declared.statusCode, declared.json().code], [503, 'DATABASE_UNAVAILABLE'])
+  assert.deepEqual(takeUndeclared(), [])
+  const undeclared = await app.inject({ method: 'GET', url: '/api/notes/undeclared' })
+  assert.equal(undeclared.statusCode, 503)
+  assert.deepEqual(takeUndeclared(), ['GET /api/notes/undeclared DATABASE_UNAVAILABLE'])
 })
 
 // Never called: it exists so `npm run typecheck` fails if a bare body becomes a valid answer (T9).

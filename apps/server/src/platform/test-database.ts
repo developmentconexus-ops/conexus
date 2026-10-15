@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { randomBytes, randomUUID } from 'node:crypto'
+import { subscribe } from 'node:diagnostics_channel'
 import { once } from 'node:events'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
@@ -8,8 +9,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { Readable } from 'node:stream'
 import type { TestContext } from 'node:test'
+import { after } from 'node:test'
 import { Version } from '@conexus/hub-api'
+import type { FastifyInstance } from 'fastify'
 import pg from 'pg'
+import { z } from 'zod'
 import type { Config } from './config.ts'
 import { PublicOrigin, readTestDatabase, SessionSecret } from './config.ts'
 import type { Database } from './database.ts'
@@ -20,6 +24,47 @@ import { migrate } from './migrate.ts'
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
 const RUNTIME_LOGIN = 'hub_runtime'
 const silent = { info: () => undefined, error: () => undefined }
+
+// The codes any route may answer besides its operation's: the access check's and the two every
+// route has. A route that answers another code its operation does not declare says less in the
+// contract than it does (#32-9), so every Hub a test builds records it, and the test file fails.
+const UNDECLARED_ALLOWED = new Set([
+  'NOT_FOUND',
+  'INTERNAL_UNEXPECTED',
+  'REQUEST_ORIGIN_REFUSED',
+  'REQUEST_MEDIA_TYPE_REFUSED',
+  'REQUEST_MALFORMED',
+  'REQUEST_TOO_LARGE',
+  'SESSION_REQUIRED',
+])
+const Declared = z.looseObject({ failures: z.array(z.string()).default([]) })
+const Answered = z.looseObject({ code: z.string() })
+const undeclared: string[] = []
+
+function isFastify(value: unknown): value is FastifyInstance {
+  return typeof value === 'object' && value !== null && 'addHook' in value
+}
+
+subscribe('fastify.initialization', (message) => {
+  const fastify = Reflect.get(Object(message), 'fastify')
+  if (!isFastify(fastify)) return
+  fastify.addHook('onSend', async (request, reply, payload) => {
+    if (!String(reply.getHeader('content-type')).startsWith('application/problem+json')) return
+    const { code } = Answered.parse(JSON.parse(String(payload)))
+    const { failures } = Declared.parse(request.routeOptions.config)
+    if (!UNDECLARED_ALLOWED.has(code) && !failures.includes(code)) {
+      undeclared.push(`${request.method} ${request.routeOptions.url} ${code}`)
+    }
+  })
+})
+after(() =>
+  assert.deepEqual(undeclared, [], 'a route answered a code its operation does not declare'),
+)
+
+/** The undeclared answers recorded so far, which the file's end no longer refuses. */
+export function takeUndeclared(): string[] {
+  return undeclared.splice(0)
+}
 
 export const TEST_ORIGIN = PublicOrigin.parse('https://hub.example.test')
 
@@ -97,16 +142,14 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
   t.after(async () => {
     try {
       await database.close()
-      await admin.query(`drop database ${name} with (force)`)
+      // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
+      // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
+      await admin.query(`drop database ${name}`)
     } finally {
       await admin.end()
     }
   })
-  await withRoleLock(async () => {
-    await migrate({ ownerUrl, runtimeUrl })
-    // Dropping the database ends the Hub login's connections, which only a member may do.
-    await admin.query('grant hub_runtime to current_user')
-  })
+  await withRoleLock(() => migrate({ ownerUrl, runtimeUrl }))
   return {
     database,
     ownerUrl,
@@ -121,6 +164,12 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
       }
     },
   }
+}
+
+/** Resolves once the pool holds no connection, as when nobody uses Conexus (data D27). */
+export async function whenIdle(database: Database): Promise<void> {
+  const pool = database.libraryOrm().$client
+  while (pool.totalCount > 0) await once(pool, 'remove')
 }
 
 export async function freePort(): Promise<number> {

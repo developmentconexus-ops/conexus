@@ -13,7 +13,7 @@ import { account, rateLimit, session, user, verification } from './tables.ts'
 export const SIGN_IN_PATH = '/sign-in/email'
 export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
-const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60 }
+export const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 60 * 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 const PASSWORD_LINK_SECONDS = 900
 
@@ -120,8 +120,9 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       },
       ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
     },
-    // The router would print an error it cannot answer, row values and all, to stderr
-    // (better-call dist/router.mjs:96); thrown, it reaches inLibrary and leaves as a code (S41).
+    // The router would print an error it cannot answer, row values and all, to stderr (the
+    // `# SERVER_ERROR` line of better-call's dist/router.mjs); thrown, it reaches inLibrary and
+    // leaves as a code (S41).
     onAPIError: { throw: true },
     telemetry: { enabled: false },
     logger: {

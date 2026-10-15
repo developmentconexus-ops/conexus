@@ -242,7 +242,7 @@ export function serve(
     method: operation.method,
     url: operation.path,
     bodyLimit: operation.bodyLimit,
-    config: { access: operation.access },
+    config: { access: operation.access, failures: operation.failures },
     handler: async (request, reply) => {
       const input = {
         headers: headersOf(request),

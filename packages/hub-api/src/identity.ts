@@ -71,5 +71,5 @@ export const setPassword = {
     }),
   },
   success: { status: 204 },
-  failures: ['PASSWORD_LINK_INVALID'],
+  failures: ['PASSWORD_LINK_INVALID', 'DATABASE_UNAVAILABLE'],
 } as const satisfies Operation

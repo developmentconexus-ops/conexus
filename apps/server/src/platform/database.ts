@@ -1,4 +1,3 @@
-import { once } from 'node:events'
 import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
 import { DrizzleQueryError } from 'drizzle-orm/errors'
@@ -13,10 +12,11 @@ import { Failure, logFailure } from './failure.ts'
 export const MIGRATIONS_FOLDER = join(import.meta.dirname, '..', '..', 'migrations')
 export const POOL_LIMITS = {
   connectionTimeoutMillis: 5_000,
-  query_timeout: 15_000,
   idleTimeoutMillis: 10_000,
   min: 0,
 } as const
+// The one deadline of a unit of work's replies (code C57), owned by inTransaction below.
+const READ_DEADLINE_MS = 15_000
 
 const UNAVAILABLE_SQLSTATES = /^(08.{3}|57P0[123]|57014)$/
 
@@ -48,7 +48,7 @@ export class DatabaseUrl {
   }
 }
 
-type Orm = NodePgDatabase
+type Orm = NodePgDatabase & { $client: pg.Pool }
 type Transaction = Parameters<Parameters<Orm['transaction']>[0]>[0]
 export type ReadTx = Pick<Transaction, 'select' | 'selectDistinct' | 'execute'>
 export type CommandTx = Transaction
@@ -58,27 +58,19 @@ export type Database = Readonly<{
   command<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>
   /** Only for a library's own adapter, which checks the rows it reads itself (data D19, D21). */
   libraryOrm(): Orm
-  whenIdle(): Promise<void>
   close(): Promise<void>
 }>
 
-const SYSTEM_ERROR_CODE = /^E[A-Z0-9_]+$/
-
-function isConnectionError(error: Error): boolean {
-  return SYSTEM_ERROR_CODE.test(String(Reflect.get(error, 'code'))) || error.constructor === Error
-}
-
+/** A database error is mapped by its SQLSTATE (code C52); any other error is the program's. */
 export function databaseFailure(error: unknown): Failure {
   if (error instanceof Failure) return error
-  let connection = false
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
     if (cause instanceof pg.DatabaseError) {
       const unavailable = UNAVAILABLE_SQLSTATES.test(cause.code ?? '')
       return new Failure(unavailable ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause })
     }
-    connection ||= isConnectionError(cause)
   }
-  return new Failure(connection ? 'DATABASE_UNAVAILABLE' : 'INTERNAL_UNEXPECTED', { cause: error })
+  return new Failure('INTERNAL_UNEXPECTED', { cause: error })
 }
 
 function ownErrorsAreUnexpected<Tx, T>(work: (tx: Tx) => Promise<T>) {
@@ -102,6 +94,11 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   let closing: Promise<void> | undefined
   const library = drizzle({ client: pool })
 
+  /**
+   * The connection is lost where it is lost: the pool cannot connect, or the client emits `error`,
+   * which pg does for a dropped socket before it rejects the query. Past the read deadline the socket
+   * is destroyed, so a stalled reply takes that same path; the client never returns to the pool.
+   */
   async function inTransaction<T>(
     work: (tx: CommandTx) => Promise<T>,
     config: {
@@ -109,21 +106,34 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
       accessMode: 'read only' | 'read write'
     },
   ): Promise<T> {
+    let client: pg.PoolClient
     try {
-      const client = await pool.connect()
-      client.on('error', lost)
-      let failure: Error | undefined
-      try {
-        return await drizzle({ client }).transaction(ownErrorsAreUnexpected(work), config)
-      } catch (error) {
-        failure = error instanceof Error ? error : new Error('transaction failed', { cause: error })
-        throw error
-      } finally {
-        client.off('error', lost)
-        client.release(failure)
-      }
+      client = await pool.connect()
     } catch (error) {
-      throw databaseFailure(error)
+      throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
+    }
+    let lostWith: Error | undefined
+    function onError(error: Error): void {
+      lostWith = error
+      lost(error)
+    }
+    function stalled(): void {
+      client.connection.stream.destroy()
+    }
+    client.on('error', onError)
+    const deadline = AbortSignal.timeout(READ_DEADLINE_MS)
+    deadline.addEventListener('abort', stalled, { once: true })
+    let failure: Error | undefined
+    try {
+      return await drizzle({ client }).transaction(ownErrorsAreUnexpected(work), config)
+    } catch (error) {
+      failure = error instanceof Error ? error : new Error('transaction failed', { cause: error })
+      if (lostWith === undefined) throw databaseFailure(error)
+      throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
+    } finally {
+      deadline.removeEventListener('abort', stalled)
+      client.off('error', onError)
+      client.release(failure)
     }
   }
 
@@ -133,9 +143,6 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
     command: (work) =>
       inTransaction(work, { isolationLevel: 'read committed', accessMode: 'read write' }),
     libraryOrm: () => library,
-    whenIdle: async () => {
-      while (pool.totalCount > 0) await once(pool, 'remove')
-    },
     close: () => {
       closing ??= pool.end()
       return closing
