@@ -217,6 +217,17 @@ test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', a
   await page.close()
 })
 
+test('na gaveta, Início é um link e fecha a gaveta quando seguido', async () => {
+  const page = await open('/', PHONE, SIGNED_IN)
+  await page.getByRole('button', { name: 'Abrir navegação' }).click()
+  await page
+    .getByRole('dialog', { name: 'Navegação' })
+    .getByRole('link', { name: 'Início' })
+    .click()
+  await page.getByRole('dialog').waitFor({ state: 'detached', timeout: 2000 })
+  await page.close()
+})
+
 function iconWidth(owner: Locator): Promise<number> {
   return owner.locator('svg').evaluate((icon) => icon.getBoundingClientRect().width)
 }
@@ -231,7 +242,7 @@ test('os ícones têm 14px na barra, 16px ao lado de um texto e 18px no trilho',
   await page.getByRole('button', { name: 'Abrir navegação' }).click()
   const drawer = page.getByRole('dialog', { name: 'Navegação' })
   const close = await iconWidth(drawer.getByRole('button', { name: 'Fechar navegação' }))
-  const rail = await iconWidth(drawer.getByRole('button', { name: 'Início' }))
+  const rail = await iconWidth(drawer.getByRole('link', { name: 'Início' }))
   assert.deepEqual(
     { opener, theme, close, leave, rail },
     { opener: 14, theme: 14, close: 14, leave: 16, rail: 18 },
