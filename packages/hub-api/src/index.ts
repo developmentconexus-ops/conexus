@@ -7,6 +7,7 @@ export {
   getSession,
   Person,
   PersonId,
+  SessionState,
   setPassword,
 } from './identity.ts'
 export type { AccessKind, Operation } from './operation.ts'

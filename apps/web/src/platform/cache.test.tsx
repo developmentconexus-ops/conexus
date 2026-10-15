@@ -41,7 +41,9 @@ test('401: uma leitura que acha a sessÃ£o terminada leva a /login com "Sua sessÃ
     traceId: 'a1b2c3',
   })
   const server = setupServer(
-    http.get('*/api/sessions/current', () => HttpResponse.json({ person: ana })),
+    http.get('*/api/sessions/current', () =>
+      HttpResponse.json({ state: 'SIGNED_IN', person: ana }),
+    ),
     http.get('*/api/status', () => HttpResponse.json(ended, { status: 401 })),
   )
   server.listen({ onUnhandledFrame: 'error' })

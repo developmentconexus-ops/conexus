@@ -55,22 +55,11 @@ async function parsed<S extends z.ZodType>(schema: S, response: Response): Promi
   return result.data
 }
 
-/** `answers` turns a refusal into data, as when no session is the answer "nobody", not a failure. */
-export function hubQuery<S extends z.ZodType, A = never>(
-  operation: Reading<S>,
-  answers: Partial<Record<FailureCode, A>> = {},
-) {
+export function hubQuery<S extends z.ZodType>(operation: Reading<S>) {
   return queryOptions({
     queryKey: [operation.id],
-    queryFn: async ({ signal }): Promise<z.output<S> | A> => {
-      const response = await send(operation, undefined, signal).catch((error: unknown) => {
-        const answer = error instanceof HubFailure ? answers[error.code] : undefined
-        if (answer === undefined) throw error
-        return { answer }
-      })
-      if ('answer' in response) return response.answer
-      return parsed(operation.success.body, response)
-    },
+    queryFn: async ({ signal }) =>
+      parsed(operation.success.body, await send(operation, undefined, signal)),
   })
 }
 

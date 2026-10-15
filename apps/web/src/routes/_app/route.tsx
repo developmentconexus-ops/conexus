@@ -8,7 +8,9 @@ const PLACES = [{ to: '/', icon: HouseIcon, label: 'Início' }] as const
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context, location }) => {
     const session = await context.queryClient.ensureQueryData(sessionQuery)
-    if (session === null) throw redirect({ to: '/login', search: { redirect: location.href } })
+    if (session.state === 'SIGNED_OUT') {
+      throw redirect({ to: '/login', search: { redirect: location.href } })
+    }
     return { person: session.person }
   },
   component: AppFrame,

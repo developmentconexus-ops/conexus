@@ -79,20 +79,24 @@ function refusal(code: string, status: number, title: string) {
   return { type: `urn:conexus:problem:${code}`, title, status, code }
 }
 
-const SESSION_REQUIRED = refusal('SESSION_REQUIRED', 401, 'Sua sessão terminou.')
+const SIGNED_OUT = JSON.stringify({ state: 'SIGNED_OUT' })
 
-test('cópia do banco: o cookie abre; sem cookie, com o token cru da tabela ou com assinatura forjada, 401', async (t) => {
+async function signedOutRead(hub: Hub, cookie?: string) {
+  const response = await read(hub, cookie)
+  assert.equal(response.statusCode, 200, String(cookie))
+  assert.equal(response.body, SIGNED_OUT, String(cookie))
+}
+
+test('cópia do banco: o cookie abre; sem cookie, com o token cru da tabela ou com assinatura forjada, ninguém', async (t) => {
   const hub = await hubOn(t)
   const cookie = await signedIn(hub)
   const ok = await read(hub, cookie)
   assert.equal(ok.statusCode, 200)
-  assert.equal(ok.body, JSON.stringify({ person: ANA }))
+  assert.equal(ok.body, JSON.stringify({ state: 'SIGNED_IN', person: ANA }))
   const [row] = await hub.test.asOwner('select token from auth.session')
   const forged = `${cookie.split('.')[0]}.${'A'.repeat(43)}%3D`
   for (const attempt of [undefined, `__Host-conexus_session=${String(row?.token)}`, forged]) {
-    const response = await read(hub, attempt)
-    assert.equal(response.statusCode, 401, String(attempt))
-    assert.deepEqual(problem(response), SESSION_REQUIRED)
+    await signedOutRead(hub, attempt)
   }
 })
 
@@ -100,10 +104,10 @@ test('linha apagada: a sessão apagada no banco não abre mais', async (t) => {
   const hub = await hubOn(t)
   const cookie = await signedIn(hub)
   await hub.test.asOwner('delete from auth.session')
-  assert.equal((await read(hub, cookie)).statusCode, 401)
+  await signedOutRead(hub, cookie)
 })
 
-test('prazo ocioso: sem uso há mais de 1800 s, 401; usada depois de 60 s, volta com o cookie renovado', async (t) => {
+test('prazo ocioso: sem uso há mais de 1800 s, ninguém; usada depois de 60 s, volta com o cookie renovado', async (t) => {
   const hub = await hubOn(t)
   const cookie = await signedIn(hub)
   await hub.test.asOwner(`update auth.session set expires_at = now() + interval '1739 seconds'`)
@@ -115,32 +119,20 @@ test('prazo ocioso: sem uso há mais de 1800 s, 401; usada depois de 60 s, volta
   )
   assert.deepEqual(left, { renewed: true })
   await hub.test.asOwner(`update auth.session set expires_at = now() - interval '1 second'`)
-  assert.equal((await read(hub, cookie)).statusCode, 401)
+  await signedOutRead(hub, cookie)
 })
 
-test('prazo total: em uso e criada há mais de 8 h, 401 e a linha some', async (t) => {
+test('prazo total: em uso e criada há mais de 8 h, ninguém e a linha some', async (t) => {
   const hub = await hubOn(t)
   const cookie = await signedIn(hub)
   await hub.test.asOwner(`update auth.session set created_at = now() - interval '8 hours 1 second'`)
-  const response = await read(hub, cookie)
-  assert.equal(response.statusCode, 401)
-  assert.deepEqual(problem(response), SESSION_REQUIRED)
+  await signedOutRead(hub, cookie)
   assert.deepEqual(await hub.test.asOwner('select count(*)::int as rows from auth.session'), [
     { rows: 0 },
   ])
 })
 
-test('relógio do banco: expires_at no futuro pelo processo e no passado pelo banco, 401', async (t) => {
-  const hub = await hubOn(t)
-  const cookie = await signedIn(hub)
-  await hub.test.asOwner(`update auth.session set expires_at = now() - interval '1 second'`)
-  t.mock.timers.enable({ apis: ['Date'], now: Date.now() - 600_000 })
-  const response = await read(hub, cookie)
-  t.mock.timers.reset()
-  assert.equal(response.statusCode, 401)
-})
-
-test('sair: 204, a linha some, o cookie expira; o mesmo cookie em seguida, 401', async (t) => {
+test('sair: 204, a linha some, o cookie expira; o mesmo cookie em seguida, ninguém', async (t) => {
   const hub = await hubOn(t)
   const cookie = await signedIn(hub)
   const response = await signOut(hub, cookie)
@@ -155,7 +147,7 @@ test('sair: 204, a linha some, o cookie expira; o mesmo cookie em seguida, 401',
   assert.deepEqual(await hub.test.asOwner('select count(*)::int as rows from auth.session'), [
     { rows: 0 },
   ])
-  assert.equal((await read(hub, cookie)).statusCode, 401)
+  await signedOutRead(hub, cookie)
 })
 
 test('sair falha: com o DELETE recusado pelo banco, 503, cookie mantido e sessão viva', async (t) => {
@@ -169,7 +161,7 @@ test('sair falha: com o DELETE recusado pelo banco, 503, cookie mantido e sessã
     refusal('DATABASE_UNAVAILABLE', 503, 'O banco do Conexus não respondeu.'),
   )
   assert.equal(response.headers['set-cookie'], undefined)
-  assert.equal((await read(hub, cookie)).statusCode, 200)
+  assert.equal(JSON.parse((await read(hub, cookie)).body).state, 'SIGNED_IN')
 })
 
 // Every endpoint of better-auth 1.7.8 (auth.api), with its methods; none is routed.

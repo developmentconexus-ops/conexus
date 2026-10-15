@@ -22,13 +22,18 @@ function refusal(code: keyof typeof FAILURES) {
     code,
     traceId: 'a1b2c3',
   })
-  return HttpResponse.json(body, { status: row.status })
+  return HttpResponse.json(body, {
+    status: row.status,
+    headers: { 'content-type': 'application/problem+json' },
+  })
 }
 
 function hub(state: { signedIn: boolean }) {
   server.use(
     http.get('*/api/sessions/current', () =>
-      state.signedIn ? HttpResponse.json({ person: ANA }) : refusal('SESSION_REQUIRED'),
+      HttpResponse.json(
+        state.signedIn ? { state: 'SIGNED_IN', person: ANA } : { state: 'SIGNED_OUT' },
+      ),
     ),
     http.put('*/api/sessions/current', () => {
       state.signedIn = true

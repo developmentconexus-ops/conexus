@@ -27,15 +27,22 @@ export const createSession = {
   failures: ['SIGN_IN_REFUSED', 'SIGN_IN_ATTEMPTS_EXCEEDED', 'DATABASE_UNAVAILABLE'],
 } as const satisfies Operation
 
+/** Nobody signed in is an answer, not a refusal, as the library's own null session is. */
+export const SessionState = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('SIGNED_IN'), person: Person }),
+  z.object({ state: z.literal('SIGNED_OUT') }),
+])
+export type SessionState = z.infer<typeof SessionState>
+
 export const getSession = {
   id: 'getSession',
-  summary: 'Reads who is signed in on this browser.',
-  access: 'session',
+  summary: 'Reads who is signed in on this browser, or that nobody is.',
+  access: 'public',
   method: 'GET',
   path: '/api/sessions/current',
   bodyLimit: 1024,
-  success: { status: 200, body: SignedIn },
-  failures: ['SESSION_REQUIRED'],
+  success: { status: 200, body: SessionState },
+  failures: ['DATABASE_UNAVAILABLE'],
 } as const satisfies Operation
 
 export const deleteSession = {

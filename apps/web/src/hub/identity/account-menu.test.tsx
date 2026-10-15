@@ -29,7 +29,9 @@ function signedIn(signOut: () => Promise<Response> | Response) {
   const state = { signedIn: true }
   server.use(
     http.get('*/api/sessions/current', () =>
-      state.signedIn ? HttpResponse.json({ person: ANA }) : refusal('SESSION_REQUIRED'),
+      HttpResponse.json(
+        state.signedIn ? { state: 'SIGNED_IN', person: ANA } : { state: 'SIGNED_OUT' },
+      ),
     ),
     http.delete('*/api/sessions/current', async () => {
       const answer = await signOut()

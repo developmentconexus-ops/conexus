@@ -2,11 +2,12 @@ import type { FailureCode } from '@conexus/hub-api'
 import { createSession, deleteSession, getSession, Person, setPassword } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
+import type { SessionReader } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
 import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
-import { RESET_PASSWORD_PATH, SIGN_IN_PATH, withRequestLog } from './auth.ts'
+import { inLibrary, RESET_PASSWORD_PATH, SIGN_IN_PATH, statusOf, withRequestLog } from './auth.ts'
 
 const FORWARDED = ['origin', 'cf-connecting-ip', 'user-agent', 'cookie']
 const SignedIn = z.object({ user: Person })
@@ -40,18 +41,15 @@ function libraryRequest(
   })
 }
 
-function statusOf(error: unknown): number {
-  const status = z.object({ statusCode: z.number().int() }).safeParse(error)
-  return status.success ? status.data.statusCode : 500
-}
-
 export function registerIdentityRoutes(
   app: FastifyInstance,
-  deps: { auth: Auth; config: Config },
+  deps: { auth: Auth; config: Config; readSession: SessionReader },
 ): void {
   serve(app, createSession, async ({ body, headers, log }) => {
     const reply = await withRequestLog(log, () =>
-      deps.auth.handler(libraryRequest(deps.config, { path: SIGN_IN_PATH, headers, body })),
+      inLibrary(() =>
+        deps.auth.handler(libraryRequest(deps.config, { path: SIGN_IN_PATH, headers, body })),
+      ),
     )
     if (!reply.ok) throw new Failure(refusalOf(reply.status))
     const { user } = SignedIn.parse(await reply.json())
@@ -62,8 +60,10 @@ export function registerIdentityRoutes(
   serve(app, setPassword, async ({ body, headers, log }) => {
     const reset = { newPassword: body.password, token: body.token }
     const reply = await withRequestLog(log, () =>
-      deps.auth.handler(
-        libraryRequest(deps.config, { path: RESET_PASSWORD_PATH, headers, body: reset }),
+      inLibrary(() =>
+        deps.auth.handler(
+          libraryRequest(deps.config, { path: RESET_PASSWORD_PATH, headers, body: reset }),
+        ),
       ),
     )
     if (reply.status === 400) {
@@ -76,10 +76,16 @@ export function registerIdentityRoutes(
     return answer(undefined)
   })
 
-  serve(app, getSession, ({ person }) => answer({ person }))
+  serve(app, getSession, async ({ headers }) => {
+    const session = await deps.readSession({ headers })
+    if (session.kind === 'SIGNED_OUT') return answer({ state: 'SIGNED_OUT' })
+    return answer({ state: 'SIGNED_IN', person: session.person }, session.setCookie)
+  })
 
   serve(app, deleteSession, async ({ headers, person, log }) => {
-    const current = await deps.auth.api.getSession({ headers, query: { disableCookieCache: true } })
+    const current = await inLibrary(() =>
+      deps.auth.api.getSession({ headers, query: { disableCookieCache: true } }),
+    )
     if (current === null) throw new Failure('SESSION_REQUIRED')
     // The library's sign-out logs and swallows a failed delete (api/routes/sign-out.mjs:49-54),
     // so the row goes first and fails loudly, and only then are the cookies expired (S20).
@@ -89,7 +95,7 @@ export function registerIdentityRoutes(
         const code = statusOf(error) === 401 ? 'SESSION_REQUIRED' : 'DATABASE_UNAVAILABLE'
         throw new Failure(code, { cause: error })
       })
-    const signedOut = await deps.auth.api.signOut({ headers, returnHeaders: true })
+    const signedOut = await inLibrary(() => deps.auth.api.signOut({ headers, returnHeaders: true }))
     log.info({ personId: person.id }, 'SESSION_ENDED')
     return answer(undefined, signedOut.headers.getSetCookie())
   })

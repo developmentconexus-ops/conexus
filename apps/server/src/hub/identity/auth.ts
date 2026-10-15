@@ -1,8 +1,10 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter'
 import { betterAuth } from 'better-auth'
+import { z } from 'zod'
 import type { Config } from '../../platform/config.ts'
 import type { CommandTx, Database } from '../../platform/database.ts'
+import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { account, rateLimit, session, user, verification } from './tables.ts'
@@ -10,7 +12,7 @@ import { account, rateLimit, session, user, verification } from './tables.ts'
 export const SIGN_IN_PATH = '/sign-in/email'
 export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
-export const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60 }
+const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 const PASSWORD_LENGTH = { min: 8, max: 128 }
 const PASSWORD_LINK_SECONDS = 900
@@ -40,6 +42,27 @@ async function deliverLink({ token }: { token: string }): Promise<void> {
   const deliver = linkDelivery.getStore()
   if (deliver === undefined) throw new Error('a password link was asked outside first-person')
   deliver(token)
+}
+
+const ErrorStatus = z.object({ statusCode: z.number().int() })
+
+export function statusOf(error: unknown): number {
+  const status = ErrorStatus.safeParse(error)
+  return status.success ? status.data.statusCode : 500
+}
+
+/**
+ * Runs a call into the library. Its one outside system is the database, so a failure it cannot
+ * name, such as a 500 that dropped its cause, is the database's (code C50, C52).
+ */
+export async function inLibrary<T>(work: () => Promise<T>): Promise<T> {
+  try {
+    return await work()
+  } catch (error) {
+    const failure = databaseFailure(error)
+    if (failure.code !== 'INTERNAL_UNEXPECTED' || statusOf(error) < 500) throw failure
+    throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
+  }
 }
 
 function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
