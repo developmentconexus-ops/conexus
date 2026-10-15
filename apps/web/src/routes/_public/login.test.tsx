@@ -1,3 +1,4 @@
+import { listCompanies } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -7,6 +8,11 @@ import { Conexus, createConexus } from '../../main.tsx'
 
 const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 const STATUS = { version: 'v0.1.0', lastStart: { state: 'NONE' }, previousStart: { state: 'NONE' } }
+const NO_COMPANIES = listCompanies.success.body.parse({
+  companies: [],
+  mayCreate: false,
+  next: { kind: 'END' },
+})
 const server = setupServer()
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
 afterEach(() => server.resetHandlers())
@@ -35,6 +41,7 @@ for (const hostile of HOSTILE) {
         return HttpResponse.json({ person: ANA })
       }),
       http.get('*/api/status', () => HttpResponse.json(STATUS)),
+      http.get('*/api/companies', () => HttpResponse.json(NO_COMPANIES)),
     )
     const path = `/login?redirect=${encodeURIComponent(hostile)}`
     const conexus = createConexus(createMemoryHistory({ initialEntries: [path] }))

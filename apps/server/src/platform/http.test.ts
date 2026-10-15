@@ -114,7 +114,7 @@ test('formulário vindo da própria página: 415 REQUEST_MEDIA_TYPE_REFUSED', as
   assert.equal(response.json().title, 'O Conexus não aceita pedidos nesse formato.')
 })
 
-test('páginas: /, /login e /set-password abrem a página das telas; outro endereço, 404', async (t) => {
+test('páginas: cada endereço das telas, com seus parâmetros, abre a página das telas; outro endereço, 404', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>x</title>')
@@ -123,12 +123,25 @@ test('páginas: /, /login e /set-password abrem a página das telas; outro ender
     readSession: async () => ({ kind: 'SIGNED_OUT' }),
   })
   t.after(() => app.close())
-  for (const url of ['/', '/login', '/set-password', '/login?redirect=%2F']) {
+  const addresses = [
+    '/',
+    '/login',
+    '/set-password',
+    '/login?redirect=%2F',
+    '/set-password?redirect=%2Finvitations%2Fabc#token=t',
+    '/companies/new',
+    '/companies/abc',
+    '/invitations/abc',
+    '/invitations/abc/acceptance',
+  ]
+  for (const url of addresses) {
     const page = await app.inject({ method: 'GET', url })
     assert.equal(page.statusCode, 200, url)
     assert.equal(page.body, '<!doctype html><title>x</title>', url)
   }
   assert.equal((await app.inject({ method: 'GET', url: '/entrar' })).statusCode, 404)
+  assert.equal((await app.inject({ method: 'GET', url: '/companies' })).statusCode, 404)
+  assert.equal((await app.inject({ method: 'GET', url: '/invitations/abc/outra' })).statusCode, 404)
 })
 
 test('endereço desconhecido: fora de /api/ e /assets/, a página das telas com 404; nelas, o JSON de 404', async (t) => {

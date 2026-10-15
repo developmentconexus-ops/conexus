@@ -64,7 +64,7 @@ field-error:
   textColor: "{colors.danger}"
   typography: "{typography.label}"
 notice:
-  textColor: "{colors.text-2}"
+  textColor: "{colors.text}"
   typography: "{typography.body}"
 frame-top-bar:
   backgroundColor: "{colors.surface}"
@@ -108,7 +108,7 @@ menu:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text}"
   rounded: "{rounded.object}"
-  padding: "{spacing.xs}"
+  padding: "{spacing.sm}"
   width: "12rem, at least"
   border: "hairline, {colors.line}"
 menu-item:
@@ -119,6 +119,27 @@ menu-item:
   height: "34px"
   typography: "{typography.label}"
 menu-item-highlighted:
+  backgroundColor: "{colors.surface-3}"
+select-trigger:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text}"
+  rounded: "{rounded.control}"
+  padding: "0 0.75rem"
+  height: "36px"
+select-menu:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text}"
+  rounded: "{rounded.object}"
+  padding: "{spacing.sm}"
+  border: "hairline, {colors.line}"
+select-item:
+  backgroundColor: "transparent"
+  textColor: "{colors.text}"
+  rounded: "{rounded.control}"
+  padding: "0 {spacing.sm}"
+  height: "34px"
+  typography: "{typography.label}"
+select-item-highlighted:
   backgroundColor: "{colors.surface-3}"
 drawer:
   backgroundColor: "{colors.surface}"
@@ -131,9 +152,9 @@ drawer-backdrop:
 ```
 
 These are the pieces with values of their own; a heading or an alert line is text in its tokens.
-The rail's places are `nav-item`, with an 18px icon (design V34). The menu and the drawer take a
+The rail's places are `nav-item`, with an 18px icon (design V34). The menu, the select and the drawer take a
 hairline, not a shadow, because the brand has no shadow token yet (design V3, V20). A `notice` is a
-`role="status"` line. The wordmark's "nexus" and the mark take `mark`.
+`role="status"` line in the body color, so it is not mistaken for the grey subtitle under it. The wordmark's "nexus" and the mark take `mark`.
 
 ## Brought from the old design, with no code yet
 

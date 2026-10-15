@@ -138,10 +138,10 @@ function installErrorHandling(app: FastifyInstance, page: { built: boolean }): v
 
 function installPages(app: FastifyInstance): void {
   const config = { access: 'page' } as const
-  for (const url of PAGES) {
+  for (const page of PAGES) {
     app.route({
       method: ['GET', 'HEAD'],
-      url,
+      url: page.replaceAll(/\$(\w+)/g, ':$1'),
       config,
       handler: (_request, reply) => reply.sendFile('index.html', { maxAge: 0 }),
     })

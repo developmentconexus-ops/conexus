@@ -89,3 +89,27 @@ test('422 PASSWORD_LINK_INVALID: "Este link já foi usado ou venceu."', async ()
   )
   expect(router.state.location.pathname).toBe('/set-password')
 })
+
+test('vindo de um convite, 204 leva a /login com o convite de volta (W16)', async () => {
+  server.use(http.put('*/api/passwords', () => new HttpResponse(null, { status: 204 })))
+  const router = open('/set-password?redirect=%2Finvitations%2Fabc#token=tok-123')
+  await choose('senha-nova-1')
+  expect(await screen.findByRole('heading', { name: 'Entrar no Conexus' })).toBeTruthy()
+  expect(router.state.location.href).toBe(
+    '/login?reason=password-set&redirect=%2Finvitations%2Fabc',
+  )
+})
+
+for (const hostile of [
+  '//evil.example.test/',
+  'https://evil.example.test/',
+  '/\\evil.example.test',
+]) {
+  test(`um endereço de volta fora do Hub (${hostile}) é ignorado: 204 leva a /login sem ele`, async () => {
+    server.use(http.put('*/api/passwords', () => new HttpResponse(null, { status: 204 })))
+    const router = open(`/set-password?redirect=${encodeURIComponent(hostile)}#token=tok-123`)
+    await choose('senha-nova-1')
+    expect(await screen.findByRole('heading', { name: 'Entrar no Conexus' })).toBeTruthy()
+    expect(router.state.location.search).toEqual({ reason: 'password-set' })
+  })
+}

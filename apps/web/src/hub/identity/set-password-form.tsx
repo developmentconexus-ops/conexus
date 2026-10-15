@@ -19,9 +19,17 @@ function Heading() {
   )
 }
 
-/** `token` is the one from the link's fragment; without one the link cannot be used. */
-export function SetPasswordForm({ token }: { token: string | undefined }) {
-  if (token !== undefined) return <ChoosePassword token={token} />
+/**
+ * `token` is the one from the link's fragment; without one the link cannot be used. `redirect` is
+ * where the person goes after signing in with the new password.
+ */
+export function SetPasswordForm(props: {
+  token: string | undefined
+  redirect: string | undefined
+}) {
+  if (props.token !== undefined) {
+    return <ChoosePassword token={props.token} redirect={props.redirect} />
+  }
   return (
     <section className="flex w-full flex-col gap-lg">
       <p role="alert" className="text-danger">
@@ -31,19 +39,19 @@ export function SetPasswordForm({ token }: { token: string | undefined }) {
   )
 }
 
-function ChoosePassword({ token }: { token: string }) {
+function ChoosePassword({ token, redirect }: { token: string; redirect: string | undefined }) {
   const router = useRouter()
   const send = useMutation(choosePassword)
   const form = useSchemaForm(PASSWORD, { password: '' })
 
   async function submit({ password }: { password: string }) {
     try {
-      await send.mutateAsync({ token, password })
+      await send.mutateAsync({ body: { token, password } })
     } catch (error) {
       form.setError('root.server', { type: 'server', message: sentenceOf(error) })
       return
     }
-    await router.navigate({ to: '/login', search: { reason: 'password-set' } })
+    await router.navigate({ to: '/login', search: { reason: 'password-set', redirect } })
   }
 
   return (

@@ -44,6 +44,9 @@ test('401: uma leitura que acha a sessÃ£o terminada leva a /login com "Sua sessÃ
     http.get('*/api/sessions/current', () =>
       HttpResponse.json({ state: 'SIGNED_IN', person: ana }),
     ),
+    http.get('*/api/companies', () =>
+      HttpResponse.json({ companies: [], mayCreate: false, next: { kind: 'END' } }),
+    ),
     http.get('*/api/status', () => HttpResponse.json(ended, { status: 401 })),
   )
   server.listen({ onUnhandledFrame: 'error' })

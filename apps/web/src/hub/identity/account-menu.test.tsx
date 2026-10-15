@@ -38,6 +38,9 @@ function signedIn(signOut: () => Promise<Response> | Response) {
       if (answer.ok) state.signedIn = false
       return answer
     }),
+    http.get('*/api/companies', () =>
+      HttpResponse.json({ companies: [], mayCreate: false, next: { kind: 'END' } }),
+    ),
     http.get('*/api/status', () => HttpResponse.json(STATUS)),
   )
   const conexus = createConexus(createMemoryHistory({ initialEntries: ['/'] }))
