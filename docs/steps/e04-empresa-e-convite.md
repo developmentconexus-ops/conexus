@@ -21,9 +21,10 @@ aceita e entra na empresa.
 faz o roteiro e diz o que viu.
 
 **Fica de fora.** Apagar empresa: etapa 5. Tirar pessoa, mudar papel, sair, a regra do último dono,
-cancelar convite: etapa 6. Esperam: tirar o rótulo antigo das migrações (#25-3), só
-seis versões depois, para voltar atrás; a atividade do Neon sem explicação (#25-6), que não
-pede código; #32-3 e #32-8, que mudam regras dos guias, só no fechamento.
+cancelar convite: etapa 6. Limite de pessoas por empresa: com planos (`membershipLimit`).
+Esperam: tirar o rótulo antigo das migrações (#25-3), seis versões depois, para voltar atrás; a
+atividade do Neon sem explicação (#25-6), que não pede código; #32-3 e #32-8, que mudam guias, no
+fechamento.
 
 **As decisões suas pedidas nesta etapa.** Recomendo A em 1 a 7 e 9; a 8 pede sua aprovação.
 
