@@ -26,8 +26,8 @@ import { migrate } from './migrate.ts'
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
 export const silent = { info: () => undefined, error: () => undefined }
 
-// The codes any route may answer besides its operation's: the access check's and the two every
-// route has. A route that answers another code its operation does not declare says less in the
+// The codes any route may answer besides its operation's: the access check's, the body parser's,
+// NOT_FOUND and INTERNAL_UNEXPECTED. A route that answers another code its operation does not declare says less in the
 // contract than it does (#32-9), so every Hub a test builds records it, and the test file fails.
 const UNDECLARED_ALLOWED = new Set([
   'NOT_FOUND',
@@ -255,10 +255,6 @@ export function serveEnvironment(t: TestContext, url: DatabaseUrl, port?: number
 }
 
 const MAIN = join(import.meta.dirname, '..', 'main.ts')
-// The test reporter refuses a raw line from an in-process test (scripts/test-reporter.ts); a spawned
-// Hub's pipes reach no reporter, so this is the same rule for them, decided by the same function
-// (code C50, C54, C72).
-
 export type HubProcess = {
   lines: LogLine[]
   /** Resolves on the first line with this message; rejects when the Hub ends without one. */
@@ -278,6 +274,9 @@ export function startHub(
 ): HubProcess {
   const child = spawn(process.execPath, [MAIN, ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] })
   const lines: LogLine[] = []
+  // The test reporter refuses a raw line from an in-process test (scripts/test-reporter.ts); a
+  // spawned Hub's pipes reach no reporter, so this is the same rule for them, decided by the same
+  // function (code C50, C54, C72).
   const raw: string[] = []
   const waiting = new Map<string, PromiseWithResolvers<void>>()
   function waiterFor(message: string) {
