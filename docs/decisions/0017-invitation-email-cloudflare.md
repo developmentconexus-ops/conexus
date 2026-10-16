@@ -25,16 +25,16 @@ Cloudflare's own e-mail service sends invitations, with a delivery test before t
 
 ## Result
 
-2026-10-16, v0.4.0, with the founder; firstmate read log. Results are in italics above.
-Repeated corporate check: <!-- PLACEHOLDER: 0017 repeated check at corporate Microsoft 365 mailbox -->
+2026-10-16, v0.4.0 and v0.4.1, with founder; firstmate read log. Results are in italics above.
+Repeated check (step 4.1): HTML invitation filed in Junk again at corporate Microsoft 365 mailbox. The founder accepted it as is ("nem ligo, podemos passar"), omitting allow-listing.
 
 ## Consequences
 
-Check 1's miss meets "Reopens when" for that mailbox. Repeated check waits for step 4.1 use.
+Delivery failed criterion at corporate mailbox, but was accepted for production.
 
 ## Reopens when
 
-Delivery test fails. Met for corporate mailbox. Founder decision I: if repeated mail lands in Junk, IT allows domain in Microsoft Tenant Allow/Block List.
+Delivery test fails. By its terms the condition was met, but the founder accepted delivery as is; does not reopen.
 
 ## State
 

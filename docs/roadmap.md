@@ -20,7 +20,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Etapa 4 usada em 2026-10-16 em https://hub.conexus.fun: "Deu certo"; sobre o fluxo, "O fluxo não está bem pensando pesnando como um todo"
    4.1 **Convite completo.** Cria a senha no convite, e cancela ou recusa um.
       Cartão da etapa 4.1 aprovado em 2026-10-16 (commit 473338311584743520a5f5b1ddb4271252f8fc76): "A aprovo"
-      <!-- PLACEHOLDER: Etapa 4.1 usada em <data> em <endereço>: "<palavras do fundador>" -->
+      Etapa 4.1 usada em 2026-10-16 em https://hub.conexus.fun (v0.4.1): "Foi sim para lixo eletronico, mas nem ligo, podemos passar e tudo deu certo. cancelei e testei tudo e tudo foi validado"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
