@@ -39,13 +39,12 @@ Os demais itens de 39 e os dois restantes de 25 esperam: não são necessários 
 trabalho autônomo novo que peça repetir a prova de banco dormindo. O rótulo de migração sai quando
 v0.1.x deixar as dez versões retidas; não há data de calendário comprovada para prometer aqui.
 
-**A decisão sua pedida nesta etapa.** Nenhuma nova. Esta página registra as respostas; não declara
-que você já aprovou o commit deste cartão.
+**A decisão sua pedida nesta etapa.** Nenhuma nova; a aprovação deste commit ainda não foi dada.
 
 ## As unidades
 
-Base: `main` `a44b6dd`; estudo de 2026-10-16 corrigido pelas respostas. Guia de código em todas as
-unidades, além do indicado. Revisão: [checklist](../reference/checklist.md) e perguntas do template.
+Base: `main` `a44b6dd`; estudo corrigido de 2026-10-16. Guias: código + indicado.
+Revisão: [checklist](../reference/checklist.md) e template.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
 | --- | --- | --- | --- | --- | --- |
@@ -55,8 +54,7 @@ unidades, além do indicado. Revisão: [checklist](../reference/checklist.md) e 
 | U4 | Notice, nomes distintos, senha sem piscada, destino inicial | identidade web, rotas, ui, falhas | web | shadcn | U3 |
 | U5 | Percurso integrado, imagem e modo da pasta do deploy | testes, infra, referências | testes | nenhuma | U4 |
 
-Não há paralelismo por pasta: U1–U4 compartilham identidade; U3 e U5 compartilham infra.
-Contratos chegam com servidor e consumidores compilando juntos.
+Sem paralelismo: U1–U4 compartilham identidade; U3/U5, infra. Contratos/consumidores compilam juntos.
 
 **Orçamento de código alterado**, adições mais remoções, sem testes nem gerados: U1 **1.700**;
 U2 **950**; U3 **400**; U4 **400**; U5 **120**. **Total: 3.570**, teto de planejamento 4.000 (L2).
@@ -67,19 +65,19 @@ Acima disso, voltar ao cartão; não cortar uma recusa silenciosamente.
 
 ## Os critérios de aceite
 
-Critérios **must**, ainda não executados. HTTP: Hub/PostgreSQL descartável; tela: MSW validado.
+Critérios **must**, futuros. HTTP: Hub/PostgreSQL descartável; tela: MSW validado.
 
 | # | Unidade | Critério observável e recusa | Teste e nível |
 | --- | --- | --- | --- |
 | A1 | U1 | GET do link cobre a matriz abaixo; id inválido/desconhecido dá 404; nenhum GET aceita, cria pessoa ou muda convite | `invitation-journey.test.ts`, HTTP must |
 | A2 | U1 | Senha cria/verifica pessoa e abre sessão, sem e-mail de senha nem membro; 7/129 caracteres recusados, 8/128 aceitos; conta com senha não é sobrescrita | `password-write.test.ts`, HTTP must |
 | A3 | U1 | Duas senhas concorrentes, inclusive convites de empresas distintas para o mesmo e-mail, não criam duas contas nem trocam a senha vencedora; recusa depois de cada escrita desfaz tudo; cookie só após commit | `password-write.test.ts`, HTTP must |
-| A4 | U1 | Abrir/criar senha não aceita; só PUT de acceptance cria um membro; aceite repetido responde a mesma empresa; outra sessão, vencido, recusado ou cancelado não ganham membro | `invitation-acceptance.test.ts`, HTTP must |
-| A5 | U1 | PUT de declination sem sessão recusa pelo link, sem conta; repetição é sucesso sem nova escrita; aceite e recusa concorrentes têm um vencedor | `invitation-journey.test.ts`, HTTP must |
+| A4 | U1 | Só acceptance cria membro; resposta perdida, repetição com revisão original dá 200/mesma empresa sem escrita; sessão alheia, vencido/encerrado ou membro removido não ganham membro | `invitation-acceptance.test.ts`, HTTP must |
+| A5 | U1 | declination sem sessão/conta; resposta perdida, repetir revisão original dá 204 sem escrita; sessão alheia recusada; aceite/recusa concorrentes têm um vencedor | `invitation-journey.test.ts`, HTTP must |
 | A6 | U1 | Nas escritas password/declination/acceptance: origem ausente/externa, mídia, sessão revogada onde exigida e limite nativo são recusados; log não contém id secreto, link, senha ou nomes | `identity.test.ts`, `invitation-journey.test.ts`, HTTP/log must |
-| A7 | U2 | DELETE só para dono/admin da empresa correta; cancelamento repetido não altera nada; um aceito/recusado não vira cancelado; corrida com aceite serializa | `invitations.test.ts`, HTTP must |
+| A7 | U2 | DELETE só dono/admin atual da empresa; resposta perdida, repetir revisão original dá 204 sem escrita; sem permissão não repete; aceito/recusado não vira cancelado; corrida serializa | `invitations.test.ts`, HTTP must |
 | A8 | U2 | PUT de reenvio vivo mantém id e renova dois dias; POST de reemissão do vencido cria id diferente, mantém antigo legível como EXPIRED; repetir chave de criação não cria outro nem devolve cancelado como pendente | `invitation-replay.test.ts`, HTTP must |
-| A9 | U2 | Lista paginada só pending/expired, sem perder linhas depois de 50; revisão obsoleta dá 412 sem efeito; membro/empresa alheia não lista/cancela/reenvia; capacidade e ritmo existentes permanecem | `invitations.test.ts`, HTTP must |
+| A9 | U2 | Lista só pending/expired, preserva paginação após 50; nova transição com revisão obsoleta dá 412 sem efeito, salvo replay terminal abaixo; empresa/membro alheio recusados; limites permanecem | `invitations.test.ts`, HTTP must |
 | A10 | U3 | Mail capturado tem HTML/texto, Ver convite, endereço reserva, remetente e prazo; dados hostis são escapados; não sai segundo e-mail ao criar senha | `invitation-journey.test.ts`, HTTP/fake SMTP-API must |
 | A11 | U3/U5 | Imagem final envia pelo módulo empacotado, sem CLI instalada; timeout/bounce/corte não provocam retry automático nem sucesso falso; banco fora da marca não causa novo envio automático | `invitation-journey.test.ts`, imagem/fake provedor must |
 | A12 | U4 | Cada célula da matriz renderiza ações e dados permitidos; confirmação divergente só reclama no blur/envio; senha criada continua visível enquanto sessão/cache atualizam | `invitation.test.tsx`, tela must |
@@ -106,8 +104,8 @@ Dono: Hub. `pending` vivo → PENDING; vencido → EXPIRED; `accepted` → ACCEP
 | --- | --- | --- | --- | --- |
 | PENDING | quem/empresa/papel/prazo; Nome, Senha, Confirmar senha, Criar senha e Recusar convite | mesmos dados; Entrar com retorno; Recusar convite | mesmos dados; Aceitar convite e Recusar convite | só outro endereço e seu e-mail; Sair e abrir o convite |
 | EXPIRED | Este convite venceu. | igual | igual | mesma mensagem de outra sessão |
-| ACCEPTED | Este convite já foi usado. | igual | Você já faz parte de {empresa}; Abrir empresa | mesma mensagem de outra sessão |
-| DECLINED | Este convite foi recusado. | igual | Você recusou este convite. | mesma mensagem de outra sessão |
+| ACCEPTED | Este convite já foi usado. | igual | membro atual: empresa/Abrir empresa; sem vínculo: CLOSED/ACCEPTED, sem empresa | mesma mensagem de outra sessão |
+| DECLINED | Este convite foi recusado. | igual | igual | mesma mensagem de outra sessão |
 | CANCELED | Este convite foi cancelado. | igual | igual | mesma mensagem de outra sessão |
 | UNKNOWN | 404 comum | 404 comum | 404 comum | 404 comum |
 
@@ -127,7 +125,7 @@ escolhe-se união (C21/C22), sem campos fora da matriz. Dono: `packages/hub-api/
 | NEW/HAS_PASSWORD: `email` | convite | login preenchido |
 | OTHER: `signedInAs` | sessão no acesso | botão sair e explicação |
 | CLOSED: `state` EXPIRED/ACCEPTED/DECLINED/CANCELED | leitura/relógio | frase encerrada |
-| JOINED: `company.{id,name}` | leitura para convidado aceito e ainda membro | Abrir empresa |
+| JOINED: `company.{id,name}` | convidado aceito e membro atual; sem vínculo → CLOSED/ACCEPTED | Abrir empresa |
 | password: `name`, `password`, `revision` | formulário; revisão do GET | comando senha; biblioteca |
 | demais escritas: `revision` | tela a partir da leitura | comando, antes de escrever |
 | list/create/reissue/renew: `invitation.{id,email,role,expiresAt,state,revision}` | servidor | Pessoas, reenvio/cancelamento |
@@ -153,9 +151,9 @@ ambíguo automaticamente; novo Reenviar é ação deliberada. Nenhum envio segur
 | --- | --- | --- | --- | --- | --- |
 | createUser, emailVerified, requestPasswordReset, resetPassword, forgetLinks, signInEmail/session | empresa depois e-mail serializados; perdedor não sobrescreve | mesma transação desfaz conta, token, senha, verificação e sessão | banco: 503, sem cookie | código/trace | A2,A3,A6 |
 | rateLimit nativo | contador persistente da biblioteca | tentativa recusada continua contada fora da transação de negócio | banco: 503, nunca libera tentativa | código/trace | A6 |
-| acceptInvitation/member | lock empresa; repetido já aceito retorna empresa | rollback inclusive compensação nativa | banco: 503 | código/trace | A4,A6 |
-| recusa pública/status rejected | lock empresa; repetido DECLINED é 204; aceite vencedor fecha recusa | rollback | banco: 503 | código/trace | A5,A6 |
-| cancelInvitation/status canceled | lock empresa; repetido cancelado é 204; não altera aceito | rollback | banco: 503 | código/trace | A7,A9 |
+| acceptInvitation/member | lock; aceito + destinatário/membro atual: 200 antes da revisão, sem escrita | rollback inclusive compensação nativa | banco: 503 | código/trace | A4,A6 |
+| recusa pública/status rejected | lock; rejected + link/sessão permitidos: 204 antes da revisão, sem escrita | rollback | banco: 503 | código/trace | A5,A6 |
+| cancelInvitation/status canceled | lock; cancelado explícito + admissão atual: 204 antes da revisão, sem escrita | rollback | banco: 503 | código/trace | A7,A9 |
 | createInvitation/reemissão + marcador do vencido | chave existente; payload diferente 409; lock empresa/pessoa | rollback de cancelamento, marcador e novo convite | banco: 503; provedor após commit mantém linha | código/trace | A8,A9 |
 | renew com resend:true/expiresAt | revisão fecha corrida; repetido stale 412 sem outro envio | rollback; commit já feito não é desfeito pelo correio | banco: 503; mail falha sem retry automático | código/trace | A8,A9,A11 |
 | reserva deliveryStartedAt, envio, mailedAt | uma reserva por entrega; replay ambíguo não envia | falha de render não envia; bounce marcado; reserva sem resposta permanece incerta | timeout/corte: MAIL_UNAVAILABLE; marca falhou: 503 | código/trace | A10,A11 |
@@ -172,9 +170,8 @@ ambíguo automaticamente; novo Reenviar é ação deliberada. Nenhum envio segur
 | HTML/texto | nova | `messages.ts`, `invitation-mail.ts`, modelo de identidade; `platform/mail.ts` | protótipo orienta, não é transplantado | Conexus remetente: resposta de 2026-10-15 |
 | Telas | nova, muda etapa 4 | identidade web: `invitation.tsx`, `people.tsx`, `set-password-form.tsx` | une fluxo público e remove segundo e-mail | aceite explícito: decisão do fundador |
 
-**Transplante:** zero linhas; protótipo é prova visual. Permanecem passwordLinkMail/primeiro dono;
-saem putPasswordLink, ritmo de 20 s e testes/removal rows da proteção removida. **Dívida:** nenhuma
-nova planejada; entrega e APIs internas existentes continuam riscos.
+**Transplante:** zero; protótipo visual. Fica passwordLinkMail/primeiro dono; saem putPasswordLink,
+ritmo de 20 s e testes/removal rows correspondentes. **Dívida:** nenhuma nova; riscos existentes ficam.
 
 ## U1 Link, senha e resposta
 
@@ -184,7 +181,7 @@ nova planejada; entrega e APIs internas existentes continuam riscos.
 | --- | --- | --- |
 | `packages/hub-api/src/` | união, operações/falhas; dono contrato HTTP | server serve, web hub, OpenAPI |
 | `apps/server/src/hub/identity/` | leituras, comandos, rotas, admission, testes | public.ts → main; acesso chama leitor sessão |
-| `apps/server/src/platform/` | acesso/serve: sessão opcional tipada em public/entry | todas as rotas; sem mudar exigência das session |
+| `apps/server/src/platform/` | acesso/serve: sessão opcional só nos convites public/entry | outras rotas inalteradas |
 | `apps/web/src/hub/identity/` | consumidor completo do novo fluxo, queries, testes | public.ts → rotas |
 | `apps/web/src/routes/` | loaders públicos e retorno; elimina rota duplicada de aceite | roteador |
 | `apps/server/migrations/` | revision integer NOT NULL DEFAULT 0 | migrate; comandos/leitura |
@@ -194,8 +191,9 @@ nova planejada; entrega e APIs internas existentes continuam riscos.
 ### Contratos e ordem
 
 1. `getInvitation`: GET `/api/invitations/{invitationId}`, public, 200 `{invitation: InvitationView}`;
-   404/503. Só o acesso lê cookies e fornece presença de sessão; public/entry não passam a exigir
-   sessão. Cookie inválido conta como deslogado; falha de banco não. Regras C33/C34, S10/S48.
+   404/503. Acesso fornece sessão opcional só nestes convites public/entry; cookie inválido é
+   deslogado, banco fora não. C33/C34, S10/S48: registrar no fechamento exceção do link e sessão
+   opcional restrita, sem generalizar public/entry nem mudar guias agora (L20/L27).
 2. `createInvitationPassword`: PUT `…/{invitationId}/password`, entry, body acima, limite 4096,
    204 + cookie; 404/409/412/429/503. `declineInvitation`: PUT `…/declination`, entry, revisão,
    limite 1024, 204; 404/412/422/429/503. Outra sessão não pode agir. S12/S17/S24, C48/C50.
@@ -205,11 +203,19 @@ nova planejada; entrega e APIs internas existentes continuam riscos.
    padrão; disableSignUp=true (default false), senha 8/128, token 900 s; onAPIError.throw=true.
    Limitação deve passar pelo router nativo: auth.api sozinho pula rateLimit. Separar admissão
    da tentativa e transação; contador não pode sumir no rollback. S23/S28, C64/C65.
-5. Recusa sem sessão é escrita estreita do Hub; rejectInvitation nativo exige sessão
-   (`crud-invites.mjs:352-396`). Leitura terminal nativa também não serve (`:503`). Registrar C75.
+5. Accept/decline/cancel: entrada/acesso, lock empresa, releitura/admissão atual; antes da revisão, no-op
+   só no mesmo convite/operação: aceito + destinatário/membro atual → 200/empresa; rejected +
+   link/sessão ausente ou convidada → 204; canceled explícito (sem superseded_at) + admissão
+   atual → 204. Sem escrita/incremento. Acesso inválido: 401/404, sem replay. Outro terminal
+   ou aceito sem membro: INVITATION_CLOSED. Nova transição permitida: revisão divergente → 412;
+   igual → executar. A4/A5/A7: resposta perdida/revisão original, nenhuma escrita; A4/A7: revogação;
+   A5: sessão alheia; A9: nova transição stale. C38/C64/C65.
+6. Nativo 1.7.8 não resolve: aceite/reject recusam terminal (`crud-invites.mjs:268,377`); cancel
+   regrava status/hooks (`:450`). Hub reconhece no-op; reject sem sessão também é Hub (`:352`).
+   Leitura terminal nativa não serve (`:503`). Registrar C75.
 
-**Prova:** A1–A6 e A12 via HTTP/tela, `npm run test -w @conexus/server`,
-`npm run test -w @conexus/web`, `npm run openapi`, `npm run typecheck`. T5/T8/T10/T12.
+**Prova:** A1–A6/A12: `npm run test -w @conexus/server`, `npm run test -w @conexus/web`,
+`npm run openapi`, `npm run typecheck`. T5/T8/T10/T12.
 
 ## U2 Ciclo no painel
 
@@ -239,8 +245,8 @@ explícito, mesmo vencido, continua CANCELED. `findPendingInvitation` exclui ven
 (`adapter.mjs:753-770`); não alterar adapter nem a expiração antiga. A migração fica com seu dono de
 snapshot; mudança de privilégios inesperada exige PR próprio D11, não ampliação nesta unidade.
 
-**Prova:** A7–A9 com comandos de U1, migrações/catalog; remoções dos filtros, lock e cheque de
-estado fazem suas negativas falharem (L20). `deliveryStartedAt`: coordenador reserva antes do envio;
+**Prova:** A7–A9, comandos U1, migrações/catalog e remoções (L20). Ordem de replay de U1 vale
+para cancel: não chama cancelInvitation no no-op. `deliveryStartedAt`: coordenador reserva antes do envio;
 replay lê a reserva. Sem mailedAt, responde MAIL_UNAVAILABLE, sem redisparar. Reenviar deliberado
 renova a revisão e limpa as marcas. Reserva/mailedAt são commits próprios, nunca lock durante fetch.
 
@@ -263,10 +269,9 @@ renova a revisão e limpa as marcas. Reserva/mailedAt são commits próprios, nu
 Props escritos por identidade, lidos só pelo renderizador; html/text pelo adapter Cloudflare.
 
 **Ordem:** C56–C59/C75, V3/V8/V38–V43. React Email **6.11.0**, renderer **2.1.0**, React/DOM
-**19.2.4**, esbuild **0.28.2** fixados no lock, dependências de build. Native render recebe props no
-envio; text é função do mesmo modelo. Bundle só desse módulo, ESM Node, minificado, JSX automático;
-nenhum template/substituição de strings, nenhum bundle do Hub inteiro. Build de imagem e prestart/
-pretest local o geram; nunca commitado. Tipos derivam do port; teste executa artefato, não lê fonte.
+**19.2.4**, esbuild **0.28.2**: lock/build. Render recebe props no envio; text vem do mesmo modelo.
+Bundle só desse módulo: ESM Node, minificado, JSX automático, sem template/substituição de strings.
+Imagem e prestart/pretest local geram; nunca commitado. Tipos derivados do port; teste executa artefato.
 
 Medição: instalação direta 117 pacotes/68.136.787 bytes; bundle executado **997.746 bytes**,
 **19 origens**; mesma base Node: +**310.574 bytes** `.Size`. Camada medida, não Hub inteiro; A11 integra.
@@ -275,8 +280,7 @@ instalar o runtime completo é alternativa de 117 pacotes/68 MB medida aqui. Esb
 não o render em execução. Inline/tabelas/fallback de fontes do e-mail não viram padrão das telas;
 conflitos V3/V14/V17 ficam no fechamento L27. Sem CDN, tracking ou serviço de envio novo.
 
-**Prova:** A10/A11, comando de servidor e imagem de U5. Prazo de dois dias aparece no e-mail.
-Fake não prova entrega Outlook; envio real só autorizado no uso.
+**Prova:** A10/A11, servidor/imagem U5; prazo no e-mail. Entrega Outlook só no uso autorizado.
 
 ## U4 Estados visíveis
 
