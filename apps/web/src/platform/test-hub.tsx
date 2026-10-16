@@ -1,5 +1,12 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, getCompany, listCompanies, listMembers, SessionState } from '@conexus/hub-api'
+import {
+  FAILURES,
+  getCompany,
+  listCompanies,
+  listMembers,
+  PROBLEM_MEDIA_TYPE,
+  SessionState,
+} from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
@@ -86,7 +93,7 @@ export function hubServer() {
 export function refusal(code: FailureCode) {
   return HttpResponse.json(problemOf(code), {
     status: FAILURES[code].status,
-    headers: { 'content-type': 'application/problem+json' },
+    headers: { 'content-type': PROBLEM_MEDIA_TYPE },
   })
 }
 
