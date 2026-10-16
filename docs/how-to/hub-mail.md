@@ -25,9 +25,10 @@ Firstmate writes two files as root, while port 22 is open:
 start with `CONFIG_INVALID` naming a missing or malformed variable, or a token file others can read,
 and `deploy.sh` brings the earlier image back.
 
-A new token or address takes effect with Reiniciar o Hub. The Hub sends each message once, with a
-10 s deadline, and never retries: a failed send answers "O e-mail não pôde ser enviado agora." and
-the invitation stays.
+A new token or address takes effect with Reiniciar o Hub. The Hub sends each message
+once per request, with a 10 s deadline, and never retries inside it. A replay of a request whose
+invitation was never marked as answered sends again. A failed send answers "O e-mail não pôde ser
+enviado agora." and the invitation stays.
 
 ## Para o fundador
 

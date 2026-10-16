@@ -4,8 +4,9 @@ How a step of the roadmap goes from its card to the founder's use. This guide ad
 [Google's engineering practices](https://google.github.io/eng-practices/) (CC BY 3.0) and the
 small-batch capability of [DORA](https://dora.dev/capabilities/), within the founder's decisions.
 Each rule uses the words of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must
-not** are defects in review; **should** and **should not** need a stated reason to break; **may** is
-a free choice. Each rule ends with the machine that refuses a violation, or "review". The steps
+not** state a requirement; **should** and **should not** need a stated reason to break; **may** is
+a free choice. Whether a broken rule holds a merge is the rubric's call (L12), not the word's. Each
+rule ends with the machine that refuses a violation, or "review". The steps
 inside each stage are the skills' (see [`AGENTS.md`](../../AGENTS.md)). This guide changes only with
 the founder's word.
 
@@ -14,8 +15,10 @@ the founder's word.
 - **L1.** The roadmap **must** have one step "in construction", and only it **may** have a branch
   with product code. A planning session **may** study and scope the next step beside it, writing no
   product code. [review]
-- **L2.** A step **must** be small: something the founder uses within a few days. Founder,
-  2026-10-12: "A". [review]
+- **L2.** A step **must** be small: something the founder uses within a few days, and about 4,000
+  changed lines of code, without tests and generated files, a number to calibrate at step 5. The
+  card splits a step above it before the build. Founder, 2026-10-12: "A"; 2026-10-16: "Concordo".
+  [review]
 - **L3.** Every step **must** pass through five stages: study, scope, build, review, use. [review]
 - **L4.** A defect in what is already in `main` **must** become a fix step of its own, at the front of
   the queue, with the same review and merge. [review]
@@ -27,42 +30,51 @@ the founder's word.
 - **L6.** The founder **must** approve the card's page in Portuguese. The roadmap records the
   approval with his words, the date and the commit of the card; CI checks that commit is an ancestor
   of the tip and that the card has not changed since. [CI]
-- **L7.** A unit **must** touch only the files its card's blast radius names. A file outside it, or a
-  change of scope found mid-step, **must** stop the build and return to the card, with the founder's
-  word for what he sees. A new test beside its file is inside the radius when the card names its
-  folder, by the card template's row `<folder>/*.test.ts`. Founder, 2026-10-15: "EA". [review]
+- **L7.** A unit **must** touch only the folders its card's blast radius names and the owner of each
+  contract it creates. A file outside them that follows directly from a contract or guard the card
+  declares **may** proceed, declared in the build report. A change of what a person sees, or of
+  scope, **must** stop the build and return to the card, with the founder's word. Founder,
+  2026-10-15: "EA"; 2026-10-16: "Concordo". [review]
 
 **Why.** An approval that cites a commit the card has since left approves nothing. A blast radius
 written before the build is what makes a reviewer able to see the build wandered.
 
-**Right.** A builder finds the unit needs a column on a table the card does not name, stops, and the
-card gains the file before the build resumes.
+**Right.** A failure-table row the card's contract needs goes in the report as declared.
 
-**Wrong.** The builder adds the column to make the test pass and mentions it in the report.
+**Wrong.** A column on a table the card does not name, added to make a test pass.
 
 ## 3. Build and review
 
 - **L8.** A step **must** be built whole on its own branch, in units. Units that share no folder
   **may** run in parallel, with one commit per unit. [review]
-- **L9.** A step **must** have one review of the whole step, after its units are built, by two models
-  that did not build it, at the exact commit. Each **must** run the refusal criteria. There **must
-  not** be a per-unit review or a review robot. Founder, 2026-10-12, in firstmate's reading, which
-  he did not contest. [review]
+- **L9.** A step **must** have one review of the whole step, after its units are built and CI is
+  green, by two models that did not build it, at the exact commit. Each **must** run the refusal
+  criteria. After a fix, one model **must** read only the diff since the reviewed commit: is each
+  Bloqueia closed, did the fix make a new one. There **must not** be a per-unit review or a review
+  robot. A pull request of documents only gets `check-docs` and one reader, once; a card, one whole
+  reading, then its diffs. Founder, 2026-10-12, in firstmate's reading (not contested); 2026-10-16:
+  "Concordo". [review]
 - **L10.** A reviewer **must** read the rules from `main`, never from the branch it reviews. [review]
-- **L11.** A finding **must** name its evidence, file and line, and the rule it breaks. The builder **must** find the
-  cause before the fix; two failed fixes on one premise **must** send the step back to its card.
-  [review]
-- **L12.** A finding with no rule broken and no defect shown is a preference: it **must** start with
-  `Nit:` and **must not** block. [review]
+- **L11.** A finding **must** name its evidence, file and line, and the rule it breaks. The builder
+  **must** find the cause before the fix and sweep its class across the whole diff. A third delta
+  check that still blocks on the same premise **must** send the step back to its card and the
+  founder. [review]
+- **L12.** A finding **must** carry one label. **Bloqueia** holds the merge and says "Se for assim
+  para produção, <quem> perde <o quê> quando <situação>"; without it the finding is Fechamento.
+  **Fechamento** (wording, a name, a citation, a guide amendment) goes on a list in the pull request
+  for the closing. **Issue futura** (an improvement outside the card, a scale not yet reached with
+  its trigger written, a development tool) goes to a `next-card` or method issue. A finding with no
+  rule broken and no defect shown starts with `Nit:`, as Fechamento. Founder, 2026-10-16:
+  "Concordo". [review]
 
-**Why.** In October a reading of all the work at once by two models found four defects the batch reviews
-and green CI had missed. A pull request that could change its own rules could approve itself. A fix
-without its cause comes back.
+**Why.** In October a reading of all the work at once by two models found four defects the batch
+reviews and green CI had missed. A pull request that could change its own rules could approve
+itself. A fix without its cause comes back.
 
 **Right.** "Symptom: the list shows a deleted Project. Cause: the store reads a column nothing writes.
 Fix: the state leaves the type. Breaks D18."
 
-**Wrong.** A second patch on the same premise after the first failed review.
+**Wrong.** A review of the whole step after every fix.
 
 ## 4. Merge and use
 
@@ -91,25 +103,24 @@ Fix: the state leaves the type. Breaks D18."
 **Why.** An approval on an older commit proves nothing about the code that lands, and a squash would
 leave approvals pointing at commits that exist on no branch. A green CI is not a person using it.
 
-**Right.** Firstmate merges the commit both verdicts name, the image goes live, and the founder's "fiz
-e funcionou" goes on the roadmap with the date.
-
 **Wrong.** A merge after a push that came in after the last verdict.
 
 ## 5. Closing a step
 
 - **L19.** The closing pull request **must** write the use line, move into the guides the rules the
-  step learned, confirm every acceptance criterion has a test, remove from the `next-card` issues
-  the items the step took, and delete the card. [review]
+  step learned, confirm every acceptance criterion has a test, settle the review's Fechamento list,
+  remove from the `next-card` issues the items the step took, and delete the card. [review]
 - **L20.** Skills and guides **must** change only in a closing pull request, when no step is in
-  construction. A finding that asks for a change waits in the method queue, an issue with the method
-  label. The exception is an emergency label only the founder applies, counted on the step's line.
-  [CI]
+  construction. A new check **must** land in a pull request of its own before the step that needs
+  it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
+  when none serves. A finding that asks for a change waits in the method queue, an issue with the
+  method label. The exception is an emergency label only the founder applies, counted on the step's
+  line. Founder, 2026-10-16: "Concordo". [CI for skills and guides, review for checks]
+- **L27.** Where the correct native solution conflicts with a rule, the solution **must** stay and
+  the conflict **must** go on the closing list for the rule's amendment; the founder is called only
+  when what a person sees, or the scope, changes. Founder, 2026-10-16: "Concordo". [review]
 
 **Why.** Five changes of method in seventeen hours left every running session on a different rule.
-
-**Right.** A reviewer finds a guide rule that misleads; the issue waits, and the closing pull request
-changes the guide.
 
 **Wrong.** A guide edited mid-step so the next unit passes.
 
@@ -148,10 +159,8 @@ changes the guide.
 | `.agents/skills/*/SKILL.md`, body | 600 |
 | `.agents/skills/*/references/*.md` | 1,500 |
 
-**Why.** The old repository's evidence folders reached 678 files before they were deleted, and its
-specifications reached 94,146 words. A ceiling a machine checks is the only one that holds.
-
-**Right.** A review verdict lives in the pull request; the rule it taught goes into a guide.
+**Why.** The old repository's specifications reached 94,146 words. A ceiling a machine checks is
+the only one that holds.
 
 **Wrong.** A `docs/evidence/` folder of filled checklists.
 

@@ -22,8 +22,9 @@ each part's entry sheet from firstmate and the old code at its frozen commit, re
    decision records of the subject, the guide [`docs/index.md`](../../../docs/index.md) names
    for it, and every open issue `gh issue list --label next-card` prints.
 3. Look for the native way first ([code C75](../../../docs/guides/code.md)) for every mechanism, a
-   machine a guide requires included: in the library's, platform's or database's code, at the
-   installed version, with file and line. List every option a guarantee rests on, with its default,
+   machine a guide requires included, and every function the step calls, code already on `main`
+   included: in the library's, platform's or database's code, at the installed version, with file
+   and line. List every option a guarantee rests on, with its default,
    and where the library catches, prints or answers an error by itself ([code
    C50](../../../docs/guides/code.md)).
 4. For each part the step touches, say whether it is **new** or **brought**, and fill its row and
@@ -42,7 +43,8 @@ each part's entry sheet from firstmate and the old code at its frozen commit, re
    each unit's design rests on, against the boundary the claim is about ([testing
    T14](../../../docs/guides/testing.md)), with pstack `blast-radius` when present; a fact not run is listed as not proved, and the card does not rest
    on it. List the blast radius with each file's importers, and every write the step adds, its own
-   or a library's, for the card's failure table.
+   or a library's, for the card's failure table, and for each create the ambiguous network
+   replies (a cut reply, a 502, a 503) and what the client does with each.
 9. Separate what was seen from a hypothesis, and give every claim its source.
 
 ## What it produces

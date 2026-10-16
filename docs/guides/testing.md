@@ -3,7 +3,7 @@
 What counts as proof. This guide adapts the automated testing section of the
 [Microsoft Code With Engineering Playbook](https://github.com/microsoft/code-with-engineering-playbook/tree/main/docs/automated-testing)
 (CC BY 4.0). Each rule uses the words of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119):
-**must** and **must not** are defects in review; **should** and **should not** need a stated reason
+**must** and **must not** state a requirement; **should** and **should not** need a stated reason
 to break; **may** is a free choice. Each rule ends with the machine that refuses a violation, or
 "review". How to use a test runner is its maintainers' skill.
 
@@ -72,8 +72,9 @@ company filter is removed.
 
 - **T14.** A double **must** prove only the boundary it replaces. A claim about a real provider,
   model, E2B, Neon or Cloudflare **must** have evidence from that service, run with authority to call
-  it. A proof of how the product serves, bundles or integrates **must** run on the Hub itself.
-  [review]
+  it. A proof of how the product serves, bundles or integrates **must** run on the Hub itself. A
+  test of what a setup script or deploy creates (a folder, its mode, a file, a user) **must** read
+  what that script made, not a path or mode the test plants. [review]
 - **T15.** A fake of a protocol **should** be preferred over a mock of a function. A fake reply from
   the Hub **must** pass the contract's schema, so a stale fake fails. [review]
 - **T16.** The test that closes a step **must not** fake its main path. [review]
@@ -97,15 +98,18 @@ a hand-written example proves a platform mechanism, not that the Builder finds a
   superuser to prove the password verifier does not change (data D32), and skips with an `opt-in:`
   reason without `CONEXUS_TEST_DATABASE_CONTAINER`. Founder, 2026-10-14: "2. A". [review]
 - **T20.** A test **must** create and remove what it uses, bind port 0 when it listens, and **must
-  not** sleep or poll with a timer to wait for a result. [review]
+  not** sleep or poll with a timer to wait for a result. One case may poll: the acceptance race
+  test observes the lock queue through `pg_locks`. Founder, 2026-10-16: "2. a". [review]
 - **T21.** Test files **must** obey the same size limits as code. [Biome]
 - **T22.** A generated artifact **must** be tested by parsing or running it, and expected output
   **must** change only by rerunning its generator. [review]
 - **T23.** A change to a screen **must** be looked at in a real browser before it is reported, by
   the builder and by each reviewer: a screenshot of every state the change touches at 1366, 390 and
   320 px wide, in light and dark, each one opened and looked at, and a keyboard pass that Tabs
-  through every focus stop. A fact seen there that a measure can hold, such as a width, an overflow
-  or a missing outline, enters the browser check of T2. [review]
+  through every focus stop. A change of state, such as a submit, a redirect or a refresh, is also
+  watched as a recorded trace of the page across it, because a still capture misses a state that
+  shows for a moment. A fact seen there that a measure can hold, such as a width, an overflow or a
+  missing outline, enters the browser check of T2. [review]
 
 **Why.** A shared database hides which change broke it, and a database built from migrations proves
 the migrations. A sleep makes a test slow on a fast machine and flaky on a slow one. Step 3's login

@@ -1,7 +1,7 @@
 # Web guide
 
 How the Hub's screens are organized and written. Each rule uses the words of
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** are defects in review;
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a requirement;
 **should** and **should not** need a stated reason to break; **may** is a free choice. Each rule ends
 with the machine that refuses a violation, "rule to write" when the check is promised and not yet
 written, or "review". How to use a library is its maintainers' skill, read before these rules. Only
@@ -157,7 +157,10 @@ screen.
   refusal **must** land on the form, not on a field, and **must not** say which of e-mail or password
   was wrong; a 429 reads its own sentence by its status. [review]
 - **W24.** Every write that creates something **must** use the attempt key: two clicks, one request.
-  [review, and a test per form]
+  The key **must** end only on an answer the browser read whole from the Hub that settles the
+  outcome: the success body, or a failure whose row says it settles (C48). No reply, a cut or
+  unreadable body, a reply that is not the Hub's, or a failure that does not settle **must** keep it
+  for the next attempt. [review, a test per form, and one on a real socket]
 - **W25.** Styles **must** be Tailwind with the brand tokens in `@theme`; the component is the unit
   of reuse, and there **must not** be a stylesheet per screen. A named width utility **must not**
   use a brand spacing name (`xs` to `2xl`), and a layout cap **must** be a `--container-*` token
@@ -173,7 +176,8 @@ screen.
 
 **Why.** Eleven forms written by hand in two ways checked only "not empty"; one form piece with the
 contract's schema gives the browser the server's limits. No reference app sends an attempt key; it
-exists for the retry after a lost reply, which `isSubmitting` does not cover. By its skill, the
+exists for the retry after an answer that does not settle the outcome: a reply can arrive and still
+be lost, and `isSubmitting` does not cover that. By its skill, the
 shadcn CLI writes through path aliases in `components.json`, which
 [0003](../decisions/0003-repository-shape.md) forbids, and aliases keep raw values in the brand
 folder ([design V3](design.md)). The Hub sends `style-src 'self'`

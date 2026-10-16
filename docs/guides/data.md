@@ -3,8 +3,8 @@
 How Conexus stores data and changes its schema. This guide follows
 [Evolutionary Database Design](https://martinfowler.com/articles/evodb.html) by Pramod Sadalage and
 Martin Fowler, with the PostgreSQL documentation for roles and constraints. Each rule uses the words
-of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** are defects in
-review; **should** and **should not** need a stated reason to break; **may** is a free choice. Each
+of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a
+requirement; **should** and **should not** need a stated reason to break; **may** is a free choice. Each
 rule ends with the machine that refuses a violation, or "review". How to use Drizzle or PostgreSQL
 is the maintainers' skills; Neon's own sign-in, functions and storage, which its skills offer, are
 not used.

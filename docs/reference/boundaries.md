@@ -7,8 +7,10 @@ installed: Stryker 10.0.0, remark-validate-links 13.1.0, the Cloudflare SDK 7.3.
 and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. Every
 piece of this file that a row of `scripts/removals.json` protects names that row, and its test
 "fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
-not name protect Hub rules that are not boundaries over a library, such as the mail adapter's
-refusal of a bounce, the replay of an attempt key and the library options the Hub sets.
+not name protect Hub rules that are not boundaries over a library: the mail adapter's refusal of a
+bounce, the replay of an attempt key, who may create a company, the state of a listed invitation,
+the log line of an undeclared failure, a write refused for its media type or its origin, and the
+library joins the Hub sets.
 
 ## Better Auth 1.7.8
 
@@ -46,8 +48,10 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   query into a 500 `APIError` and drops its cause. `auth.handler` throws a raw query error, because
   `onAPIError: { throw: true }` keeps the router from printing it, row values and all, to stderr
   (`better-call/dist/router.mjs:93`).
-- **Hand-made piece.** `inLibrary` in `apps/server/src/hub/identity/auth.ts`. It maps every call
-  into the library through `databaseFailure`, and a 5xx it cannot name to `DATABASE_UNAVAILABLE`.
+- **Hand-made piece.** `inLibrary` in `apps/server/src/hub/identity/auth.ts`. It wraps the session
+  read (`session.ts`) and the route calls (`routes.ts`), mapping a failure through
+  `databaseFailure` and a 5xx it cannot name to `DATABASE_UNAVAILABLE`. A library command goes
+  through `libraryCommand`, which `databaseFailure` maps in the database module.
 - **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
   system, and the contracts promise 503. [Security S41](../guides/security.md): only a code leaves.
   The test "banco fora" in `database-down.test.ts` fails without the piece (removal

@@ -21,7 +21,7 @@ read.
 1. <ação e o que aparece>
 
 **O que você faz, e quando.** Antes: <o que fornece>. No começo: aprova esta página. No fim: faz o
-roteiro e diz o que viu.
+roteiro, diz o que viu e aprova os textos das telas.
 
 **Fica de fora.** <o que não entra, e por quê>
 
@@ -34,11 +34,21 @@ roteiro e diz o que viu.
 
 <quais correm em paralelo, porque não dividem pasta>
 
+**Orçamento de código alterado.** U<k>: <linhas, sem testes nem gerados>. Total da etapa: <linhas>.
+
 ## Os critérios de aceite
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U<k> | | <arquivo do teste e o caso> | <must / should> |
+
+## A matriz de estados
+
+| Tela | Vazio | Carregando | Erro | Não encontrado | Vencido ou recusado |
+| --- | --- | --- | --- | --- | --- |
+
+| Campo de contrato | Quem escreve | Quem lê |
+| --- | --- | --- |
 
 ## A tabela de falhas
 
@@ -58,9 +68,9 @@ roteiro e diz o que viu.
 
 ### O raio da mudança
 
-| Arquivo | Cria, muda ou apaga | Quem importa ou chama |
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `<pasta da unidade>/*.test.ts` | Cria ou muda | os testes ao lado dos seus arquivos |
+| `<pasta da unidade>/` | Cria ou muda | |
 
 ### Os contratos que a unidade cria
 
@@ -81,11 +91,12 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 
 - Someone who did not write the code can check every criterion from outside, and each says what is
   refused as well as what works.
-- Every file the build will touch is in a unit's blast radius, with its importers. A file outside it
-  stops the build, except as [delivery L7](../../../../docs/guides/delivery.md) allows through the
-  radius table's `*.test.ts` row. A unit that adds a package
-  or a check lists the shared root files it changes (`package.json`, `package-lock.json`,
-  `biome.json`, `ci.yml`).
+- Every folder the build will touch is in a unit's blast radius, with its importers, and so is the
+  owner of each contract the unit creates (the failure table, the config, its test door). A file
+  outside them stops the build only as [delivery L7](../../../../docs/guides/delivery.md) says. A
+  unit that adds a package lists the shared root files it changes (`package.json`,
+  `package-lock.json`, `biome.json`, `ci.yml`). No unit builds a check for the step: it lands first,
+  in a pull request of its own ([delivery L20](../../../../docs/guides/delivery.md)).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - The order of the work names guide rules by identifier and never restates them.
 - Every write or command the step adds, its own or a library's, has its row in the failure table,
@@ -97,7 +108,7 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 
 ## The reader's questions
 
-The reader of step 9 answers each one with the card's line.
+The reader of step <n> answers each one with the card's line.
 
 1. For each thing a criterion or contract observes (a status, a failure code, a bound, the console,
    a cookie), open the guide that owns it: does the card hold against its rules, cited or not, and
@@ -108,3 +119,5 @@ The reader of step 9 answers each one with the card's line.
 4. Does every write the study listed have its row in the failure table?
 5. Is each guide rule the study found resting only on "implemented so" a decision on the founder's
    page?
+6. Does the state matrix give every screen its states, and every contract field a writer and a
+   reader? A field nobody reads leaves the contract.
