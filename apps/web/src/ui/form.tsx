@@ -54,7 +54,6 @@ export function useFieldError(name: string, invalid?: string) {
   }
 }
 
-/** One input with its label and its error. */
 export function TextField(props: {
   name: string
   label: string
