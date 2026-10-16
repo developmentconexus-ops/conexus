@@ -52,6 +52,9 @@ test('catálogo: as colunas de empresa, membro e convite, e as dos plugins em pe
       'invitation.inviter_id text NO',
       'invitation.attempt_key text NO',
       `invitation.mailed_at ${ts} YES`,
+      'invitation.revision integer NO default 0',
+      `invitation.superseded_at ${ts} YES`,
+      'invitation.replaces jsonb YES',
       'member.id text NO',
       'member.company_id text NO',
       'member.user_id text NO',
@@ -120,7 +123,7 @@ test('catálogo: os únicos, as chaves estrangeiras RESTRICT das novas tabelas e
     `select data_type as type, count(*)::int as columns from information_schema.columns
       where table_schema = 'auth' and data_type like 'timestamp%' group by data_type`,
   )
-  assert.deepEqual(dates, [{ type: 'timestamp with time zone', columns: 18 }])
+  assert.deepEqual(dates, [{ type: 'timestamp with time zone', columns: 19 }])
 })
 
 test('catálogo: um só convite pendente por empresa e endereço, em qualquer caixa; o cancelado não conta', async (t) => {

@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
@@ -49,7 +50,8 @@ function environment(tunnel: string, runner: string, work: string, bin: string) 
     TUNNEL_TOKEN_FILE: tunnel,
     RUNNER_TOKEN_FILE: runner,
     CONEXUS_SETUP_TEST: '1',
-    SECRETS_DIR: join(work, 'secrets'),
+    CONFIG_DIR: join(work, 'config'),
+    SECRETS_DIR: join(work, 'config', 'secrets'),
     KEYRINGS_DIR: join(work, 'keyrings'),
     OS_RELEASE: join(work, 'os-release'),
     DOCKER_APT_LIST: join(work, 'docker.list'),
@@ -77,7 +79,7 @@ function setup(
         : name === 'sha256sum'
           ? `${record}\ncat > /dev/null`
           : name === 'install'
-            ? `${record}\nprintf "env-in-install %s\\n" "\${ACTIONS_RUNNER_INPUT_TOKEN:-unset}" >> "$CALLS"`
+            ? `${record}\nprintf "env-in-install %s\\n" "\${ACTIONS_RUNNER_INPUT_TOKEN:-unset}" >> "$CALLS"\nif [ "$1" = -d ] && [ "$#" = 4 ] && [[ $4 = "$SETUP_ROOT"/* ]]; then /usr/bin/install "$@"; fi`
             : name === 'timeout'
               ? 'shift 2\nprintf "timeout-for %s\\n" "$*" >> "$CALLS"\nexec "$@"'
               : name === 'curl'
@@ -98,7 +100,7 @@ function setup(
   const run = spawnSync('/bin/bash', [SCRIPT], {
     encoding: 'utf8',
     timeout: 120_000,
-    env: { ...environment(tunnel, runner, work, bin), CALLS: log, ...extra },
+    env: { ...environment(tunnel, runner, work, bin), CALLS: log, SETUP_ROOT: work, ...extra },
   })
   const calls = (() => {
     try {
@@ -107,7 +109,7 @@ function setup(
       return []
     }
   })()
-  return { run, calls }
+  return { run, calls, config: join(work, 'config') }
 }
 
 const good = secret('good', `${TUNNEL_TOKEN}\n`, 0o600)
@@ -131,6 +133,14 @@ test('instala o token do túnel como 0400 do usuário do cloudflared', () => {
   const { run, calls } = setup(good, goodRunner)
   assert.equal(run.status, 0, run.stderr)
   assert.ok(calls.some((call) => / -m 0400 -o 65532 .*good .*\/secrets\/tunnel_token$/.test(call)))
+})
+
+test('setup creates the traversable parent and private secrets directory without root', () => {
+  const { run, config } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  assert.equal(statSync(config).mode & 0o777, 0o711)
+  assert.equal(statSync(join(config, 'secrets')).mode & 0o777, 0o700)
+  assert.equal(statSync(config).uid, process.getuid?.())
 })
 
 test('toda chamada de rede e todo comando que espera tem prazo', () => {

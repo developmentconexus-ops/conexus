@@ -1,9 +1,11 @@
 import {
+  cancelInvitation,
   createInvitation,
   FAILURES,
   getCompany,
   listInvitations,
   listMembers,
+  renewInvitation,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
@@ -21,6 +23,7 @@ const PENDING = {
   email: 'bia@example.test',
   role: 'admin',
   expiresAt: '2026-10-17T12:00:00.000Z',
+  revision: 0,
   state: 'PENDING',
 }
 const EXPIRED = {
@@ -28,6 +31,7 @@ const EXPIRED = {
   email: 'eva@example.test',
   role: 'member',
   expiresAt: '2026-10-14T12:00:00.000Z',
+  revision: 0,
   state: 'EXPIRED',
 }
 
@@ -113,7 +117,7 @@ test('dono: os membros com o papel, os convites pendentes e o formulário "Convi
     sectionOf(await screen.findByRole('heading', { name: 'Convites pendentes' })),
   )
   expect(pending.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-    'bia@example.testVence em 17/10/2026, 09:00Administrador',
+    'bia@example.testVence em 17/10/2026, 09:00AdministradorReenviarCancelar',
   ])
   expect(screen.getByRole('heading', { name: 'Convidar pessoa' })).toBeTruthy()
 })
@@ -134,9 +138,9 @@ test('a página dos membros fica no endereço: "Ver mais" pede a que segue', asy
     membersNext: { kind: 'MORE', page: 'm'.repeat(32) },
   })
   const router = open()
-  fireEvent.click(await screen.findByRole('link', { name: 'Ver mais' }))
+  fireEvent.click(await screen.findByRole('link', { name: 'Ver mais: Pessoas' }))
   await waitFor(() => expect(router.state.location.search).toEqual({ members: 'm'.repeat(32) }))
-  expect(await screen.findByRole('link', { name: 'Primeira página' })).toBeTruthy()
+  expect(await screen.findByRole('link', { name: 'Primeira página: Pessoas' })).toBeTruthy()
   expect(reads).toContain(`members?page=${'m'.repeat(32)}`)
 })
 
@@ -174,11 +178,14 @@ test('convites: o vivo diz "Vence em" com dia e hora no fuso de quem lê; o venc
     sectionOf(await screen.findByRole('heading', { name: 'Convites pendentes' })),
   )
   expect(pending.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-    'bia@example.testVence em 17/10/2026, 09:00Administrador',
-    'eva@example.testVencidoMembroConvidar de novo',
+    'bia@example.testVence em 17/10/2026, 09:00AdministradorReenviarCancelar',
+    'eva@example.testVencidoMembroReenviarCancelar',
   ])
   expect(pending.getAllByRole('button').map((button) => button.textContent)).toEqual([
-    'Convidar de novo',
+    'Reenviar',
+    'Cancelar',
+    'Reenviar',
+    'Cancelar',
   ])
 })
 
@@ -190,15 +197,24 @@ test('"Convidar de novo" manda o mesmo e-mail e papel com uma chave de tentativa
     answer: () =>
       HttpResponse.json(
         createInvitation.success.body.parse({
-          invitation: { ...EXPIRED, id: 'n'.repeat(32), expiresAt: '2026-10-18T12:00:00.000Z' },
+          invitation: {
+            ...EXPIRED,
+            state: 'PENDING',
+            id: 'n'.repeat(32),
+            expiresAt: '2026-10-18T12:00:00.000Z',
+          },
         }),
         { status: 201 },
       ),
   })
   open()
-  fireEvent.click(await screen.findByRole('button', { name: 'Convidar de novo' }))
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Reenviar convite para eva@example.test' }),
+  )
   await waitFor(() => expect(reads).toEqual(['members', 'invitations', 'members', 'invitations']))
-  expect(sent.map(({ body }) => body)).toEqual([{ email: 'eva@example.test', role: 'member' }])
+  expect(sent.map(({ body }) => body)).toEqual([
+    { email: 'eva@example.test', role: 'member', replaces: { id: EXPIRED.id, revision: 0 } },
+  ])
   expect(sent[0]?.key).toMatch(
     /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
   )
@@ -212,8 +228,44 @@ test('"Convidar de novo" recusado: a frase da recusa na linha do convite', async
     answer: () => refusal('MEMBER_EXISTS'),
   })
   open()
-  fireEvent.click(await screen.findByRole('button', { name: 'Convidar de novo' }))
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Reenviar convite para eva@example.test' }),
+  )
   const row = within((await screen.findByRole('alert')).closest('li') ?? document.body)
   expect(row.getByRole('alert').textContent).toBe('Essa pessoa já está na empresa.')
   expect(row.getByText('eva@example.test')).toBeTruthy()
+})
+
+test('live invitation renews with its revision; cancellation requires the exact email and preserves a refusal', async () => {
+  const calls: unknown[] = []
+  hub({ role: 'owner', mayInviteAs: ['admin'], invitations: [PENDING] })
+  server.use(
+    http.put(`*/api/companies/${COMPANY.id}/invitations/${PENDING.id}`, async ({ request }) => {
+      calls.push(renewInvitation.input.body.parse(await request.json()))
+      return HttpResponse.json(
+        renewInvitation.success.body.parse({ invitation: { ...PENDING, revision: 1 } }),
+      )
+    }),
+    http.delete(`*/api/companies/${COMPANY.id}/invitations/${PENDING.id}`, async ({ request }) => {
+      calls.push(cancelInvitation.input.body.parse(await request.json()))
+      return refusal('INVITATION_STALE')
+    }),
+  )
+  open()
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Reenviar convite para bia@example.test' }),
+  )
+  await waitFor(() => expect(calls).toEqual([{ revision: 0 }]))
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Cancelar convite para bia@example.test' }),
+  )
+  const confirmName = `Confirmar cancelamento de convite para ${PENDING.email}`
+  fireEvent.click(screen.getByRole('button', { name: confirmName }))
+  expect(await screen.findByText('Digite o e-mail do convite.')).toBeTruthy()
+  expect(calls).toHaveLength(1)
+  fireEvent.change(screen.getByLabelText('Confirmar e-mail'), { target: { value: PENDING.email } })
+  fireEvent.click(screen.getByRole('button', { name: confirmName }))
+  expect(await screen.findByText('Este convite mudou. Recarregue a página.')).toBeTruthy()
+  expect(screen.getByLabelText('Confirmar e-mail')).toHaveProperty('value', PENDING.email)
+  expect(calls).toEqual([{ revision: 0 }, { revision: 0 }])
 })

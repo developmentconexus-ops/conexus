@@ -1,4 +1,4 @@
-import { createFileRoute, useLocation } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { SameOriginPath, SetPasswordForm } from '../../hub/identity/public.ts'
 
@@ -12,11 +12,12 @@ const Search = z.object({ redirect: SameOriginPath.optional().catch(undefined) }
 
 export const Route = createFileRoute('/_public/set-password')({
   validateSearch: Search,
+  loader: ({ location }) => ({ token: tokenOf(location.hash) }),
   component: SetPasswordPage,
 })
 
 function SetPasswordPage() {
-  const hash = useLocation({ select: (location) => location.hash })
+  const { token } = Route.useLoaderData()
   const { redirect } = Route.useSearch()
-  return <SetPasswordForm token={tokenOf(hash)} redirect={redirect} />
+  return <SetPasswordForm token={token} redirect={redirect} />
 }

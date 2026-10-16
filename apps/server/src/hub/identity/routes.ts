@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { SessionReader } from '../../platform/access.ts'
 import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
 import {
@@ -32,6 +33,20 @@ function libraryRequest(
     headers: sent,
     body: JSON.stringify(request.body),
   })
+}
+
+export async function countInvitationAttempt(
+  deps: { auth: Auth; config: Config },
+  input: { headers: Headers; log: FailureLog; path: string },
+): Promise<void> {
+  const reply = await withRequestLog(input.log, () =>
+    inLibrary(() =>
+      deps.auth.handler(
+        libraryRequest(deps.config, { path: input.path, headers: input.headers, body: {} }),
+      ),
+    ),
+  )
+  if (!reply.ok) throw await refusedReply(reply, { 429: 'SIGN_IN_ATTEMPTS_EXCEEDED' })
 }
 
 export function registerIdentityRoutes(

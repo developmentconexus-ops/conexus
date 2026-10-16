@@ -8,3 +8,4 @@
 **/.env.*
 **/secrets
 docs
+**/invitation-render.mjs

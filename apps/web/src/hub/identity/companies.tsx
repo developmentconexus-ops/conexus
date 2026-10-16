@@ -40,7 +40,7 @@ export function Companies() {
           ))}
         </List>
       )}
-      <Pager next={data.next} param="page" page={page} />
+      <Pager next={data.next} param="page" page={page} list="Empresas" />
     </section>
   )
 }

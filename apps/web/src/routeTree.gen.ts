@@ -11,7 +11,6 @@ import { Route as PublicSetPasswordRouteImport } from './routes/_public/set-pass
 import { Route as AppCompaniesCompanyIdRouteImport } from './routes/_app/companies/$companyId.tsx'
 import { Route as AppCompaniesNewRouteImport } from './routes/_app/companies/new.tsx'
 import { Route as PublicInvitationsInvitationIdRouteImport } from './routes/_public/invitations/$invitationId.tsx'
-import { Route as AppInvitationsInvitationIdAcceptanceRouteImport } from './routes/_app/invitations/$invitationId/acceptance.tsx'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -52,12 +51,6 @@ const PublicInvitationsInvitationIdRoute =
     path: '/invitations/$invitationId',
     getParentRoute: () => PublicRouteRoute,
   } as any)
-const AppInvitationsInvitationIdAcceptanceRoute =
-  AppInvitationsInvitationIdAcceptanceRouteImport.update({
-    id: '/invitations/$invitationId/acceptance',
-    path: '/invitations/$invitationId/acceptance',
-    getParentRoute: () => AppRouteRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -66,7 +59,6 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/companies/new': typeof AppCompaniesNewRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
-  '/invitations/$invitationId/acceptance': typeof AppInvitationsInvitationIdAcceptanceRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -75,7 +67,6 @@ export interface FileRoutesByTo {
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/companies/new': typeof AppCompaniesNewRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
-  '/invitations/$invitationId/acceptance': typeof AppInvitationsInvitationIdAcceptanceRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,7 +78,6 @@ export interface FileRoutesById {
   '/_app/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/_app/companies/new': typeof AppCompaniesNewRoute
   '/_public/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
-  '/_app/invitations/$invitationId/acceptance': typeof AppInvitationsInvitationIdAcceptanceRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,7 +88,6 @@ export interface FileRouteTypes {
     | '/companies/$companyId'
     | '/companies/new'
     | '/invitations/$invitationId'
-    | '/invitations/$invitationId/acceptance'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,7 +96,6 @@ export interface FileRouteTypes {
     | '/companies/$companyId'
     | '/companies/new'
     | '/invitations/$invitationId'
-    | '/invitations/$invitationId/acceptance'
   id:
     | '__root__'
     | '/_app'
@@ -118,7 +106,6 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId'
     | '/_app/companies/new'
     | '/_public/invitations/$invitationId'
-    | '/_app/invitations/$invitationId/acceptance'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,13 +171,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicInvitationsInvitationIdRouteImport
       parentRoute: typeof PublicRouteRoute
     }
-    '/_app/invitations/$invitationId/acceptance': {
-      id: '/_app/invitations/$invitationId/acceptance'
-      path: '/invitations/$invitationId/acceptance'
-      fullPath: '/invitations/$invitationId/acceptance'
-      preLoaderRoute: typeof AppInvitationsInvitationIdAcceptanceRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
   }
 }
 
@@ -198,15 +178,12 @@ interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppCompaniesCompanyIdRoute: typeof AppCompaniesCompanyIdRoute
   AppCompaniesNewRoute: typeof AppCompaniesNewRoute
-  AppInvitationsInvitationIdAcceptanceRoute: typeof AppInvitationsInvitationIdAcceptanceRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppCompaniesCompanyIdRoute: AppCompaniesCompanyIdRoute,
   AppCompaniesNewRoute: AppCompaniesNewRoute,
-  AppInvitationsInvitationIdAcceptanceRoute:
-    AppInvitationsInvitationIdAcceptanceRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(

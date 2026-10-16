@@ -17,6 +17,7 @@ export type Person = z.infer<typeof Person>
 const SignedIn = z.object({ person: Person })
 /** A first password's length, which the form checks before it sends and the library again. */
 export const PASSWORD_LENGTH = { min: 8, max: 128 } as const
+export const Password = z.string().min(PASSWORD_LENGTH.min).max(PASSWORD_LENGTH.max)
 
 export const createSession = defineOperation({
   id: 'createSession',
@@ -71,7 +72,7 @@ export const setPassword = defineOperation({
   input: {
     body: z.object({
       token: z.string().min(1),
-      password: z.string().min(PASSWORD_LENGTH.min).max(PASSWORD_LENGTH.max),
+      password: Password,
     }),
   },
   success: { status: 204 },

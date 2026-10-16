@@ -60,10 +60,11 @@ export async function admit(input: {
   companyId: CompanyId
   action: CompanyAction
 }): Promise<Admitted> {
-  const [row] = await input.tx
+  const query = input.tx
     .select({ role: member.role })
     .from(member)
     .where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))
+  const [row] = await (input.action === 'invite' ? query.for('share') : query)
   if (row === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
   const role = Role.parse(row.role)
   if (!allows(role, input.action)) {

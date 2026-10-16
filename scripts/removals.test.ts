@@ -105,15 +105,43 @@ before(() => {
 })
 after(() => rmSync(repo, { recursive: true, force: true }))
 
-function removals(...args: string[]) {
+function removalsAt(cwd: string, ...args: string[]) {
   const { NODE_TEST_CONTEXT: _outer, ...env } = process.env
   return spawnSync('node', [REMOVALS, ...args], {
-    cwd: repo,
+    cwd,
     encoding: 'utf8',
     timeout: 120_000,
     env,
   })
 }
+
+function removals(...args: string[]) {
+  return removalsAt(repo, ...args)
+}
+
+test('ignored mail renderer is carried into the baseline and mutated scratch trees', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-removals-renderer-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const renderer = 'apps/server/src/hub/identity/invitation-render.mjs'
+  const files = {
+    '.gitignore': renderer,
+    'scripts/removals.json': JSON.stringify([{ ...ROWS[0], test: { ...TEST, name: 'renderer' } }]),
+    'limit.ts': 'export const LIMIT = 10\n',
+    [renderer]: 'export const expected = 10\n',
+    'apps/server/src/hub/identity/port.ts': 'export {}\n',
+    'limit.test.ts': `import { test } from 'node:test'; import assert from 'node:assert/strict';
+      import { LIMIT } from './limit.ts'; import { expected } from './${renderer}';
+      test('renderer', () => assert.equal(LIMIT, expected));`,
+  }
+  for (const [file, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, file)), { recursive: true })
+    writeFileSync(join(dir, file), content)
+  }
+  spawnSync('git', ['init', '--quiet'], { cwd: dir })
+  const result = removalsAt(dir, '--only', 'caught')
+  assert.equal(result.stdout, 'caught caught\n', result.stderr)
+  assert.equal(result.status, 0)
+})
 
 const OUTCOMES: [string, string, number][] = [
   ['caught', 'caught', 0],

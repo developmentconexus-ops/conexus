@@ -4,7 +4,7 @@ import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure } from './failure.ts'
 
-export type MailMessage = { to: Email; subject: string; text: string }
+export type MailMessage = { to: Email; subject: string; text: string; html?: string }
 export type SendMail = (
   message: MailMessage,
   signal: AbortSignal,
@@ -63,6 +63,7 @@ export function createMail(deps: { config: Config; log: FailureLog }): SendMail 
         from: { address: mailFrom, name: SENDER_NAME },
         subject: message.subject,
         text: message.text,
+        ...(message.html === undefined ? {} : { html: message.html }),
       }),
       signal,
       redirect: 'error',

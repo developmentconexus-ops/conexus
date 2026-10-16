@@ -11,12 +11,14 @@ set -euo pipefail
 RUNNER_VERSION="${RUNNER_VERSION:?RUNNER_VERSION is required, a version of github.com/actions/runner}"
 RUNNER_SHA256="${RUNNER_SHA256:?RUNNER_SHA256 is required, the checksum from that version release note}"
 
-secrets=/etc/conexus/secrets
+config_dir=/etc/conexus
+secrets="$config_dir/secrets"
 keyrings=/etc/apt/keyrings
 docker_list=/etc/apt/sources.list.d/docker.list
 os_release=/etc/os-release
 home=/home/runner/actions-runner
 if [ "${CONEXUS_SETUP_TEST:-}" = 1 ]; then
+  config_dir="${CONFIG_DIR:?}"
   secrets="${SECRETS_DIR:?}"
   keyrings="${KEYRINGS_DIR:?}"
   docker_list="${DOCKER_APT_LIST:?}"
@@ -58,7 +60,8 @@ if ! command -v docker >/dev/null; then
   limit 900 apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin docker-buildx-plugin
 fi
 
-install -d -m 0700 /etc/conexus "$secrets"
+install -d -m 0711 "$config_dir"
+install -d -m 0700 "$secrets"
 install -m 0400 -o "$cloudflared_uid" "$TUNNEL_TOKEN_FILE" "$secrets/tunnel_token"
 
 id runner >/dev/null 2>&1 || useradd --create-home --shell /usr/sbin/nologin runner

@@ -25,6 +25,12 @@ type SignedIn = { person: Person; sessionToken: string }
 // Written once per request by the onRequest hook below, before any handler runs.
 const signedIn = new WeakMap<FastifyRequest, SignedIn>()
 
+const INVITATION_ACCESS = /^\/api\/invitations\/[^/]+(?:\/(?:password|declination))?$/
+
+export function invitationSessionOf(request: FastifyRequest): SignedIn | undefined {
+  return signedIn.get(request)
+}
+
 type Shape = { methods: readonly string[]; path: RegExp }
 const ALLOWED: Record<AccessKind, Shape> = {
   // A page is any address outside /api/, where the screens' router answers (web W1).
@@ -103,14 +109,18 @@ export function enforceAccess(
     }
     if (access === 'page') return
     checkSite(request)
-    if (access === 'public') return
+    const optional = INVITATION_ACCESS.test(request.routeOptions.url ?? '')
+    if (access === 'public' && !optional) return
     if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)
     if (access === 'entry') {
       if (!request.headers[CLIENT_ADDRESS_HEADER]) throw new Failure('REQUEST_MALFORMED')
-      return
+      if (!optional) return
     }
     const session = await deps.readSession({ headers: headersOf(request) })
-    if (session.kind === 'SIGNED_OUT') throw new Failure('SESSION_REQUIRED')
+    if (session.kind === 'SIGNED_OUT') {
+      if (access === 'session') throw new Failure('SESSION_REQUIRED')
+      return
+    }
     signedIn.set(request, { person: session.person, sessionToken: session.sessionToken })
     if (session.setCookie.length > 0) reply.header('set-cookie', session.setCookie)
   })

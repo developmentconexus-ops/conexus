@@ -19,15 +19,17 @@ test('um endereço desconhecido mostra "Não encontramos o que você procurou."'
   expect(screen.queryByText('Not Found')).toBeNull()
 })
 
-for (const [who, signedIn, arrival] of [
-  ['sem sessão', false, 'Entrar no Conexus'],
-  ['com sessão', true, 'Você entrou como Ana Lima.'],
+for (const [who, signedIn, label, arrival] of [
+  ['sem sessão', false, 'Entrar', 'Entrar no Conexus'],
+  ['com sessão', true, 'Voltar ao início', 'Você entrou como Ana Lima.'],
 ] as const) {
-  test(`${who}, "Voltar ao início" leva do endereço desconhecido ao início`, async () => {
+  test(`${who}, "${label}" nomeia o destino real do endereço desconhecido`, async () => {
     server.use(...homeHub({ signedIn }))
     const conexus = createConexus(createMemoryHistory({ initialEntries: ['/nada-aqui'] }))
     render(<Conexus conexus={conexus} />)
-    fireEvent.click(await screen.findByRole('link', { name: 'Voltar ao início' }))
+    const action = await screen.findByRole('link', { name: label })
+    expect(action.getAttribute('href')).toBe(signedIn ? '/' : '/login')
+    fireEvent.click(action)
     expect(await screen.findByText(arrival)).toBeTruthy()
   })
 }

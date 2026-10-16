@@ -16,6 +16,7 @@ import {
   useSchemaForm,
 } from '../../ui/form.tsx'
 import { SectionTitle } from '../../ui/list.tsx'
+import { Notice } from '../../ui/notice.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { companyQuery, inviteToCompany } from './queries.ts'
 
@@ -102,11 +103,7 @@ export function InviteForm() {
         />
         <RoleField roles={roles} />
         <FormAlert />
-        {sentTo !== undefined && (
-          <p role="status" className="text-text">
-            Convite enviado para {sentTo}.
-          </p>
-        )}
+        {sentTo !== undefined && <Notice>Convite enviado para {sentTo}.</Notice>}
         <SubmitButton idle="Enviar convite" pending="Enviando…" />
       </Form>
     </section>

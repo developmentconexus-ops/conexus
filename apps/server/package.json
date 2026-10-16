@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prestart": "npm run build",
     "start": "node src/main.ts",
+    "build": "esbuild src/hub/identity/invitation-email.tsx --bundle --platform=node --format=esm --minify --define:process.env.NODE_ENV='\"production\"' --jsx=automatic --alias:react=./node_modules/react --alias:react-dom=./node_modules/react-dom --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=src/hub/identity/invitation-render.mjs",
+    "pretest": "npm run build",
     "generate": "drizzle-kit generate",
     "typecheck": "tsc -p tsconfig.json",
     "test": "node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts ${TEST_SHARD:+--test-shard=$TEST_SHARD} \"src/**/*.test.ts\""
@@ -23,7 +26,12 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@react-email/render": "2.1.0",
     "@types/pg": "8.23.1",
-    "drizzle-kit": "1.0.0-rc.4"
+    "drizzle-kit": "1.0.0-rc.4",
+    "esbuild": "0.28.2",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-email": "6.11.0"
   }
 }
