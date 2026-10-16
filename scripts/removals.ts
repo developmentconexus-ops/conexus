@@ -87,7 +87,7 @@ function linkModules(from: string, to: string): void {
   }
 }
 
-/** The working tree as git sees it, tracked and new files alike, with the installed modules linked. */
+/** The worktree's source and mail build input, with the installed modules linked. */
 function scratchCopy(root: string): string {
   const copy = mkdtempSync(join(tmpdir(), 'conexus-removal-'))
   const listed = runCommand(
@@ -97,6 +97,8 @@ function scratchCopy(root: string): string {
   )
   const files = listed.split('\0').filter((file) => file !== '' && existsSync(join(root, file)))
   for (const file of files) cpSync(join(root, file), join(copy, file))
+  const renderer = 'apps/server/src/hub/identity/invitation-render.mjs'
+  if (existsSync(join(root, renderer))) cpSync(join(root, renderer), join(copy, renderer))
   for (const manifest of files.filter((file) => file.endsWith('package.json'))) {
     const modules = join(dirname(manifest), 'node_modules')
     if (existsSync(join(root, modules))) linkModules(join(root, modules), join(copy, modules))

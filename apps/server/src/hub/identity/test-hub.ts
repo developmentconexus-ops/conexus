@@ -14,7 +14,13 @@ import {
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 
-export type Mail = { to: string; subject: string; text: string }
+export type Mail = {
+  to: string
+  subject: string
+  text: string
+  html: string
+  from: { address: string; name: string }
+}
 type MailMode = 'DELIVER' | 'BOUNCE' | 'FAIL' | 'HOLD'
 
 /**
@@ -25,14 +31,39 @@ export async function mailServer(t: TestContext) {
   const sent: Mail[] = []
   const state: { mode: MailMode } = { mode: 'DELIVER' }
   const held = Promise.withResolvers<void>()
+  const heldReplies: (() => void)[] = []
   const server = createServer((request, response) => {
     const chunks: Buffer[] = []
     request.on('data', (chunk: Buffer) => chunks.push(chunk))
     request.on('end', () => {
-      if (state.mode === 'HOLD') return held.resolve()
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+      if (state.mode === 'HOLD') {
+        heldReplies.push(() => {
+          sent.push({
+            to: body.to,
+            subject: body.subject,
+            text: body.text,
+            html: body.html,
+            from: body.from,
+          })
+          response.writeHead(200, { 'content-type': 'application/json' })
+          response.end(
+            JSON.stringify({
+              success: true,
+              result: { delivered: [body.to], permanent_bounces: [], queued: [] },
+            }),
+          )
+        })
+        return held.resolve()
+      }
       if (state.mode === 'FAIL') return response.writeHead(500).end()
-      sent.push({ to: body.to, subject: body.subject, text: body.text })
+      sent.push({
+        to: body.to,
+        subject: body.subject,
+        text: body.text,
+        html: body.html,
+        from: body.from,
+      })
       const bounced = state.mode === 'BOUNCE' ? [body.to] : []
       const delivered = state.mode === 'DELIVER' ? [body.to] : []
       const result = { delivered, permanent_bounces: bounced, queued: [] }
@@ -48,7 +79,15 @@ export async function mailServer(t: TestContext) {
   const address = server.address()
   assert.ok(address !== null && typeof address === 'object')
   const url = `http://127.0.0.1:${address.port}/email/sending/send`
-  return { url, sent, state, held: held.promise }
+  return {
+    url,
+    sent,
+    state,
+    held: held.promise,
+    releaseHeld: () => {
+      for (const reply of heldReplies.splice(0)) reply()
+    },
+  }
 }
 
 export const PASSWORD = 'senha-certa-1'

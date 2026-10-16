@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
 import { TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
 import type { MailHub, Person } from './test-hub.ts'
-import { codeOf, companyOn, INVITEE, personOn, post } from './test-hub.ts'
+import { codeOf, companyOn, INVITEE, PASSWORD, personOn, post, signIn } from './test-hub.ts'
 
 const DAVI = { name: 'Davi Costa', email: INVITEE }
 
@@ -11,7 +11,12 @@ function put(hub: MailHub, person: Person | undefined, url: string) {
   return hub.app.inject({
     method: 'PUT',
     url,
-    headers: { origin: TEST_ORIGIN, ...(person ? { cookie: person.cookie } : {}) },
+    headers: {
+      origin: TEST_ORIGIN,
+      'content-type': 'application/json',
+      ...(person ? { cookie: person.cookie } : {}),
+    },
+    payload: { revision: 0 },
   })
 }
 
@@ -35,26 +40,28 @@ async function statusOf(hub: MailHub, invitationId: string) {
   return hub.test.asOwner('select status from auth.invitation where id = $1', [invitationId])
 }
 
-test('ler: a convidada, 200 com o estado; outra pessoa, 404; sem sessão, 401', async (t) => {
+test('read: the invitee sees the pending details; another session sees only itself; anonymous sees the password entry', async (t) => {
   const { hub, companyId, invite } = await companyOn(t)
   const davi = await personOn(hub, DAVI)
   const outsider = await personOn(hub, { name: 'Edu Melo', email: 'edu@example.test' })
   const invitationId = await invite()
   const received = await read(hub, davi, invitationId)
   assert.equal(received.statusCode, 200)
-  assert.deepEqual(received.json(), {
-    invitation: {
-      id: invitationId,
-      company: { id: companyId, name: 'Empresa Teste' },
-      role: 'admin',
-      inviterName: 'Ana Lima',
-      state: 'PENDING',
-    },
+  const { expiresAt, ...view } = Object(received.json()).invitation
+  assert.match(expiresAt, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+  assert.deepEqual(view, {
+    kind: 'INVITED',
+    revision: 0,
+    company: { id: companyId, name: 'Empresa Teste' },
+    role: 'admin',
+    inviterName: 'Ana Lima',
   })
   const refused = await read(hub, outsider, invitationId)
-  assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
+  assert.deepEqual(refused.json(), {
+    invitation: { kind: 'OTHER', signedInAs: 'edu@example.test' },
+  })
   const anonymous = await read(hub, undefined, invitationId)
-  assert.deepEqual([anonymous.statusCode, codeOf(anonymous)], [401, 'SESSION_REQUIRED'])
+  assert.equal(Object(anonymous.json()).invitation.kind, 'HAS_PASSWORD')
   const states: [string, string][] = [
     [`expires_at = now() - interval '1 second'`, 'EXPIRED'],
     [`status = 'canceled'`, 'CANCELED'],
@@ -125,6 +132,65 @@ test('aceitar: dois juntos, um só membro e dois 200', async (t) => {
     [200, 200],
   )
   assert.deepEqual(await members(hub, davi.id), [{ role: 'admin' }])
+})
+
+test('acceptance replay requires the current membership and a session still live after waiting for the company', async (t) => {
+  const { hub, companyId, invite } = await companyOn(t)
+  const davi = await personOn(hub, DAVI)
+  const id = await invite()
+  assert.equal((await accept(hub, davi, id)).statusCode, 200)
+  const queuedReplay = await withOwnerLock(
+    hub.test,
+    'select id from auth.company where id = $1 for update',
+    [companyId],
+    async (release) => {
+      const replay = accept(hub, davi, id)
+      await queued(hub, 1, replay)
+      await hub.test.asOwner('delete from auth.session where user_id = $1', [davi.id])
+      await release()
+      return replay
+    },
+  )
+  assert.deepEqual([queuedReplay.statusCode, codeOf(queuedReplay)], [401, 'SESSION_REQUIRED'])
+  const signedIn = await signIn(hub, { email: INVITEE, password: PASSWORD })
+  const current = {
+    id: davi.id,
+    cookie: String(signedIn.headers['set-cookie']).split(';')[0] ?? '',
+  }
+  await hub.test.asOwner('delete from auth.member where user_id = $1', [davi.id])
+  const removed = await accept(hub, current, id)
+  assert.deepEqual([removed.statusCode, codeOf(removed)], [422, 'INVITATION_CLOSED'])
+  assert.deepEqual(await statusOf(hub, id), [{ status: 'accepted' }])
+  assert.deepEqual(
+    await hub.test.asOwner('select revision from auth.invitation where id = $1', [id]),
+    [{ revision: 1 }],
+  )
+})
+
+test('acceptance and public declination have exactly one winner', async (t) => {
+  const { hub, invite } = await companyOn(t)
+  const davi = await personOn(hub, DAVI)
+  const id = await invite()
+  const replies = await Promise.all([
+    accept(hub, davi, id),
+    hub.app.inject({
+      method: 'PUT',
+      url: `/api/invitations/${id}/declination`,
+      headers: {
+        origin: TEST_ORIGIN,
+        'content-type': 'application/json',
+        'cf-connecting-ip': '203.0.113.90',
+      },
+      payload: { revision: 0 },
+    }),
+  ])
+  const accepted = replies[0]?.statusCode === 200
+  assert.deepEqual(
+    replies.map((r) => r.statusCode),
+    accepted ? [200, 422] : [422, 204],
+  )
+  assert.deepEqual(await statusOf(hub, id), [{ status: accepted ? 'accepted' : 'rejected' }])
+  assert.deepEqual(await members(hub, davi.id), accepted ? [{ role: 'admin' }] : [])
 })
 
 type Reply = Awaited<ReturnType<typeof accept>>

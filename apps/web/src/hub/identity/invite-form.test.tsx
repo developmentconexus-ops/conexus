@@ -16,7 +16,14 @@ import {
 const server = hubServer()
 
 function accepted(email: string, role: string) {
-  const invitation = { id: 'i'.repeat(32), email, role, expiresAt: '2026-10-17T12:00:00.000Z' }
+  const invitation = {
+    state: 'PENDING',
+    id: 'i'.repeat(32),
+    email,
+    role,
+    expiresAt: '2026-10-17T12:00:00.000Z',
+    revision: 0,
+  }
   return HttpResponse.json(createInvitation.success.body.parse({ invitation }), { status: 201 })
 }
 
@@ -28,7 +35,14 @@ type Sent = { key: string | null; body: unknown }
 function hub(
   mayInviteAs: string[],
   answer: (body: Sent) => Response,
-  listed: { id: string; email: string; role: string; expiresAt: string; state: string }[] = [],
+  listed: {
+    id: string
+    email: string
+    role: string
+    expiresAt: string
+    state: string
+    revision: number
+  }[] = [],
 ) {
   const sent: Sent[] = []
   server.use(
@@ -217,6 +231,7 @@ test('201: a lista de convites pendentes mostra o convite sem recarregar a pági
         email: 'davi@example.test',
         role: 'member',
         expiresAt: '2026-10-17T12:00:00.000Z',
+        revision: 0,
         state: 'PENDING',
       })
       return accepted('davi@example.test', 'member')
@@ -244,6 +259,7 @@ for (const code of ['MAIL_UNAVAILABLE', 'MAIL_BOUNCED'] as const) {
           email: 'davi@example.test',
           role: 'member',
           expiresAt: '2026-10-17T12:00:00.000Z',
+          revision: 0,
           state: 'PENDING',
         })
         return refusal(code)

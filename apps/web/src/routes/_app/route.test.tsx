@@ -122,11 +122,11 @@ test('a lista mantém a página no endereço: "Ver mais" pede a página que segu
     { companies: [{ company: EMPRESA, role: 'owner' }], mayCreate: false, next },
   )
   const router = open('/')
-  fireEvent.click(await screen.findByRole('link', { name: 'Ver mais' }))
-  expect(await screen.findByRole('link', { name: 'Primeira página' })).toBeTruthy()
+  fireEvent.click(await screen.findByRole('link', { name: 'Ver mais: Empresas' }))
+  expect(await screen.findByRole('link', { name: 'Primeira página: Empresas' })).toBeTruthy()
   expect(router.state.location.href).toBe(`/?page=${'c'.repeat(32)}`)
   expect(asked).toEqual(['', `?page=${'c'.repeat(32)}`])
-  fireEvent.click(screen.getByRole('link', { name: 'Primeira página' }))
+  fireEvent.click(screen.getByRole('link', { name: 'Primeira página: Empresas' }))
   await waitFor(() => expect(router.state.location.href).toBe('/'))
 })
 

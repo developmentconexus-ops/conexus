@@ -13,8 +13,14 @@ import { Input } from './input.tsx'
 export function useSchemaForm<I extends FieldValues, O>(
   schema: z.ZodType<O, I>,
   defaultValues: DefaultValues<I>,
+  mode: 'onSubmit' | 'onBlur' = 'onSubmit',
 ): UseFormReturn<I, unknown, O> {
-  return useForm<I, unknown, O>({ resolver: standardSchemaResolver(schema), defaultValues })
+  return useForm<I, unknown, O>({
+    resolver: standardSchemaResolver(schema),
+    defaultValues,
+    mode,
+    reValidateMode: mode === 'onBlur' ? 'onBlur' : 'onChange',
+  })
 }
 
 export function Form<I extends FieldValues, O>(props: {
@@ -100,10 +106,15 @@ export function setServerError<I extends FieldValues, O>(
   form.setError(field ?? 'root.server', { type: 'server', message: sentenceOf(error) })
 }
 
-export function SubmitButton(props: { idle: string; pending: string }) {
+export function SubmitButton(props: { idle: string; pending: string; label?: string }) {
   const { formState } = useFormContext()
   return (
-    <Button type="submit" variant="primary" disabled={formState.isSubmitting}>
+    <Button
+      type="submit"
+      variant="primary"
+      aria-label={props.label}
+      disabled={formState.isSubmitting}
+    >
       {formState.isSubmitting ? props.pending : props.idle}
     </Button>
   )

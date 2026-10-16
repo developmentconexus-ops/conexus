@@ -6,10 +6,19 @@ import { Link } from '@tanstack/react-router'
  * way back to the first once the person has left it. `param` is the search parameter that holds
  * this list's page; the other parameters of the address stay as they are.
  */
-export function Pager(props: { next: Next; param: string; page: string | undefined }) {
+export function Pager(props: {
+  next: Next
+  param: string
+  page: string | undefined
+  list: string
+}) {
   function toPage(page: string | undefined, label: string) {
     return (
-      <Link to="." search={(old) => ({ ...old, [props.param]: page })}>
+      <Link
+        aria-label={`${label}: ${props.list}`}
+        to="."
+        search={(old) => ({ ...old, [props.param]: page })}
+      >
         {label}
       </Link>
     )
