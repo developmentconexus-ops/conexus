@@ -47,7 +47,11 @@ if (cards.length === 0) {
   process.exit(0)
 }
 const card = cards[0] ?? ''
-const step = ((card.match(/^e(\d+(?:\.\d+)?)-/) ?? [])[1] ?? '').replace(/^0+(?=\d)/, '')
+const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
+const step =
+  digits.length > 2 && digits.startsWith('0')
+    ? `${Number(digits[1])}.${Number(digits.slice(2))}`
+    : String(Number(digits))
 const cardPath = `docs/steps/${card}`
 
 const roadmap = readFileSync(join(root, 'docs/roadmap.md'), 'utf8')

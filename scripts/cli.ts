@@ -3,4 +3,4 @@ export function option(name: string): string | undefined {
   return index === -1 ? undefined : process.argv[index + 1]
 }
 
-export const STEP_CARD = /^e\d+(?:\.\d+)?-.*\.md$/
+export const STEP_CARD = /^e\d+-.*\.md$/
