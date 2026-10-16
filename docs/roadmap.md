@@ -1,6 +1,6 @@
 # Roteiro do Conexus no repositório novo
 
-Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `architecture.md`.
+Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
 
 ## 1. A página do fundador
 
@@ -19,6 +19,7 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Cartão da etapa 4 aprovado em 2026-10-15 (commit 9e9bff0e21742a2e04fbe6afb2f685d8ca5f6940): "1. A, sim poré mtem que configurar senha não? 2. A 3. A 4. A 5. A 6. Okay 7. A 8. Aprovo 9. A"
    Etapa 4 usada em 2026-10-16 em https://hub.conexus.fun: "Deu certo"; sobre o fluxo, "O fluxo não está bem pensando pesnando como um todo"
    4.1 **Convite completo.** Cria a senha no convite, e cancela ou recusa um.
+      Cartão da etapa 4.1 aprovado em 2026-10-16 (commit 473338311584743520a5f5b1ddb4271252f8fc76): "A aprovo"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
