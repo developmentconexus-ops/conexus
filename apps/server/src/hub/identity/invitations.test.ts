@@ -300,11 +300,15 @@ test('limite: com 99 vivos, dois convidantes juntos, um 201 e um 409 INVITATIONS
   ])
 })
 
-test('limite: com 100 vivos atrás de 100 vencidos, 409 INVITATIONS_FULL', async (t) => {
+test('limite: com 100 vivos atrás de 100 vencidos, 409 INVITATIONS_FULL; com 99, o centésimo passa', async (t) => {
   const { hub, ana, companyId, invite } = await companyOn(t)
   await seed(hub, companyId, ana.id, 100, false)
-  await seed(hub, companyId, ana.id, 100, true)
+  await seed(hub, companyId, ana.id, 99, true)
+  assert.equal((await invite(ana, 'edu@example.test')).statusCode, 201)
   const full = await invite(ana, INVITEE)
   assert.deepEqual([full.statusCode, codeOf(full)], [409, 'INVITATIONS_FULL'])
-  assert.deepEqual(hub.mail.sent, [])
+  assert.deepEqual(
+    hub.mail.sent.map((mail) => mail.to),
+    ['edu@example.test'],
+  )
 })

@@ -143,6 +143,17 @@
     }
   },
   {
+    "id": "invitation-capacity-live-only",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "      sql`${invitation.expiresAt} > statement_timestamp()`,\n    ),\n  )\n  if (live >= INVITATION_CAPACITY)",
+    "replace": "    ),\n  )\n  if (live >= INVITATION_CAPACITY)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: com 100 vivos atrás de 100 vencidos"
+    }
+  },
+  {
     "id": "invitation-company-lock",
     "file": "apps/server/src/hub/identity/invitations.ts",
     "find": "await lockCompany(tx, input.companyId)",
