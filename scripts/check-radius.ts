@@ -23,7 +23,7 @@ function refuse(name: string, detail: string): never {
 /**
  * The card's cell grammar as a `path.matchesGlob` pattern: `*` is any run inside one segment, a
  * `<placeholder>` is one or more characters inside one segment, `{a,b}` alternates, a trailing `/`
- * names a folder, and every other character is itself, a dot-leading name included. Node's matcher
+ * names a folder (kept as the trailing `/`; see isInside), and every other character is itself, a dot-leading name included. Node's matcher
  * reads more (`**`, `?`, classes, extglobs, escapes, and `*` skipping dotfiles), so the cell is
  * translated rather than passed through.
  */
@@ -45,7 +45,16 @@ function globOf(span: string): string {
     else if (part.startsWith('*')) glob += atSegmentStart ? '{*,.*}' : '*'
     else glob += part.replace(/[?[(]/g, '[$&]')
   }
-  return span.endsWith('/') ? `${glob}**` : glob
+  return glob
+}
+
+/** `docs/**` skips dot names in Node's matcher, so a folder holds a file when one of its parents is the folder. */
+function isInside(file: string, pattern: string): boolean {
+  if (!pattern.endsWith('/')) return matchesGlob(file, pattern)
+  const parts = file.split('/')
+  return parts.slice(0, -1).some((_, index) => {
+    return matchesGlob(parts.slice(0, index + 1).join('/'), pattern.slice(0, -1))
+  })
 }
 
 function radiusRows(card: string): string[] {
@@ -83,7 +92,19 @@ function changedFiles(): string[] {
   }
   const listed = runCommand(
     'git',
-    ['diff-tree', '-r', '--root', '--no-commit-id', '--no-renames', '--name-only', commit],
+    [
+      '-c',
+      'core.quotePath=false',
+      'diff-tree',
+      '-r',
+      '--root',
+      '--no-commit-id',
+      '--no-renames',
+      '--name-only',
+      '-m',
+      '--first-parent',
+      commit,
+    ],
     { cwd: root },
   )
   return listed.split('\n').filter(Boolean)
@@ -96,9 +117,7 @@ const card = readFileSync(
   'utf8',
 )
 const radius = radiusOf(card)
-const outside = changedFiles().filter(
-  (file) => !radius.some((pattern) => matchesGlob(file, pattern)),
-)
+const outside = changedFiles().filter((file) => !radius.some((pattern) => isInside(file, pattern)))
 for (const file of outside) console.log(`out-of-radius ${unit} ${file}`)
 if (outside.length > 0) process.exit(1)
 console.log(`radius: ${unit} ${commit} inside`)

@@ -208,3 +208,32 @@ for (const [name, cell, refusal] of [
     assert.match(result.stderr, new RegExp(`^${refusal}: `, 'm'))
   })
 }
+
+test('raio: uma pasta cobre nomes com ponto, em qualquer nível', () => {
+  const card = cardOf('`docs/`')
+  assert.deepEqual(
+    outside(card, ['docs/.gitkeep', 'docs/a/.x', 'docs/.d/f', 'docs/a/.d/f/.g', 'docs/b']),
+    [],
+  )
+})
+
+test('raio: nome com acento é lido sem aspas', () => {
+  assert.deepEqual(outside(cardOf('`src/ação.ts`'), ['src/ação.ts', 'src/outro-ç.ts']), [
+    'src/outro-ç.ts',
+  ])
+})
+
+test('raio: o commit de merge lista os arquivos contra o primeiro pai', () => {
+  const repo = committed(['apps/server/src/c.ts'])
+  git(repo, 'checkout', '--quiet', '-b', 'side', 'HEAD~1')
+  mkdirSync(join(repo, 'outside'), { recursive: true })
+  writeFileSync(join(repo, 'outside/side.ts'), 'x\n')
+  git(repo, 'add', '.')
+  git(repo, 'commit', '--quiet', '-m', 'side')
+  git(repo, 'checkout', '--quiet', '-')
+  const merged = git(repo, 'merge', '--quiet', '--no-ff', '-m', 'merge', 'side')
+  assert.equal(merged.status, 0, merged.stderr)
+  const result = radius(repo, 'U1')
+  assert.equal(result.status, 1, result.stdout + result.stderr)
+  assert.match(result.stdout, /^out-of-radius U1 outside\/side\.ts$/m)
+})
