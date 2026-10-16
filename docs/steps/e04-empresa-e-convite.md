@@ -259,9 +259,8 @@ Servidor: biblioteca real em banco descartável (T16, T19), `app.inject`, status
 
 - `CompanyId`, `InvitationId`: 32 letras e dígitos, marcados. `Role = 'owner' | 'admin' |
   'member'`. `Company = { id; name }`; `Membership = { company; role }`; `Member = { personId;
-  name; email; role }`; `PendingInvitation = { id; email; role; expiresAt }`;
-  `ListedInvitation = PendingInvitation & {state:'PENDING'|'EXPIRED'}`; `ReceivedInvitation = {
-  id; company; role; inviterName; state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED' }`.
+  name; email; role }`; `PendingInvitation = { id; email; role; expiresAt }`; `ReceivedInvitation =
+  { id; company; role; inviterName; state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED' }`.
   `Next = { kind: 'END' } | { kind: 'MORE'; page: string }`.
 - `Operation` ganha `input.params`, `success.status: 201`, `attemptKey: true` (`Idempotency-Key`,
   UUID); `serve` confere parâmetros antes do corpo (C42).
@@ -271,7 +270,7 @@ Servidor: biblioteca real em banco descartável (T16, T19), `app.inject`, status
   `NOT_FOUND`, `IDEMPOTENCY_CONFLICT` 409.
 - `getCompany`: `GET /api/companies/{companyId}`; 200 `{ company; role; mayInviteAs: Role[] }`.
   `listMembers`: `GET …/members?page`, 200 `{ members: Member[]; next }`; `listInvitations`: `GET
-  …/invitations?page`, 200 `{ invitations: ListedInvitation[]; next }`; 50 por página.
+  …/invitations?page`, 200 `{ invitations: PendingInvitation[]; next }`; 50 por página.
 - `createInvitation`: `POST /api/companies/{companyId}/invitations`, chave, `{ email; role }`; 201
   `{ invitation: PendingInvitation }`; `INVITATION_ROLE_REFUSED` 403, `MEMBER_EXISTS`,
   `INVITATIONS_FULL`, `IDEMPOTENCY_CONFLICT` 409, `INVITATIONS_EXCEEDED` 429,
