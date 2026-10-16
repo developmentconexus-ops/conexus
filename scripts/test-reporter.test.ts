@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
+import { once } from 'node:events'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -11,9 +12,14 @@ after(() => {
   for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
 })
 
-function run(source: string) {
+function directory(): string {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-reporter-'))
   dirs.push(dir)
+  return dir
+}
+
+function run(source: string) {
+  const dir = directory()
   writeFileSync(join(dir, 'x.test.ts'), source)
   const { NODE_TEST_CONTEXT: _outer, ...env } = process.env
   return spawnSync('node', ['--test', `--test-reporter=${REPORTER}`, join(dir, 'x.test.ts')], {
@@ -72,4 +78,31 @@ test('linha crua: aceita a linha de registro cujo valor aninhado tem a chave lev
     'import test from \'node:test\'\ntest(\'a\', () => {\n  process.stdout.write(\'{"level":30,"msg":"LISTENING","err":{"level":"x","text":"{\\\\"level\\\\":1}"}}\\n\')\n})\n'
   const result = run(source)
   assert.equal(result.status, 0, result.stderr)
+})
+
+test('linha crua: recusa sem travar a linha com aspas sem fechar', async () => {
+  const source = [
+    "import test from 'node:test'",
+    "test('a', () => {",
+    '  process.stdout.write(\'raw "unterminated\\n\')',
+    '  process.stdout.write(\'{"level":30,"msg":"LISTENING\\n\')',
+    '})',
+  ].join('\n')
+  const file = join(directory(), 'x.test.ts')
+  writeFileSync(file, source)
+  const { NODE_TEST_CONTEXT: _outer, ...env } = process.env
+  const child = spawn('node', ['--test', `--test-reporter=${REPORTER}`, file], {
+    env,
+    detached: true,
+    stdio: ['ignore', 'ignore', 'pipe'],
+  })
+  let stderr = ''
+  child.stderr.setEncoding('utf8').on('data', (text: string) => {
+    stderr += text
+  })
+  const hung = setTimeout(() => process.kill(-Number(child.pid), 'SIGKILL'), 20_000)
+  const [status] = await once(child, 'close')
+  clearTimeout(hung)
+  assert.equal(status, 1, `the reporter hung or passed: ${stderr}`)
+  assert.equal(stderr.match(/^raw-output: /gm)?.length, 2, stderr)
 })

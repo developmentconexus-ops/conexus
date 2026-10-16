@@ -11,7 +11,10 @@ import { spec } from 'node:test/reporters'
 
 const CODE = /^[A-Z][A-Z0-9_]*$/
 
-/** The keys of the object's own level, so a repeated `level` is seen and a nested one is not. */
+/**
+ * The keys of the object's own level, so a repeated `level` is seen and a nested one is not. Only
+ * valid JSON may reach it: every string in valid JSON closes, so the scan ends.
+ */
 function topLevelKeys(json: string): string[] {
   const keys: string[] = []
   let depth = 0
@@ -31,11 +34,10 @@ function topLevelKeys(json: string): string[] {
 
 function isLogLine(line: string): boolean {
   try {
-    if (topLevelKeys(line).filter((key) => key === 'level').length !== 1) return false
     const parsed: unknown = JSON.parse(line)
-    return (
-      typeof parsed === 'object' && parsed !== null && CODE.test(String(Reflect.get(parsed, 'msg')))
-    )
+    if (typeof parsed !== 'object' || parsed === null) return false
+    if (topLevelKeys(line).filter((key) => key === 'level').length !== 1) return false
+    return CODE.test(String(Reflect.get(parsed, 'msg')))
   } catch {
     return false
   }
