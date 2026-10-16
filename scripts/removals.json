@@ -240,5 +240,16 @@
       "file": "src/hub/identity/companies.test.ts",
       "name": "criar: o administrador cria"
     }
+  },
+  {
+    "id": "invitation-replay-resends-unmailed",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (same.unmailed) return",
+    "replace": "if (false) return",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-replay.test.ts",
+      "name": "o Hub parou entre o convite e o e-mail"
+    }
   }
 ]

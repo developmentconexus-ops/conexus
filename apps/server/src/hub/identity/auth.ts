@@ -138,6 +138,8 @@ export async function forgetLinks(tx: CommandTx, personId: string): Promise<void
 }
 
 const KEY_FIELD = { type: 'string', required: true } as const
+// Left out of the plugin's request body (db/to-zod.mjs:17), so only the Hub's mark sets it.
+const MAILED_FIELD = { type: 'date', required: false, input: false } as const
 
 // No secure attribute: better-call sets Secure on every __Host- name (dist/cookies.mjs:48-49).
 function hostCookie(name: string) {
@@ -191,7 +193,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       organization({
         schema: {
           organization: { modelName: 'company', additionalFields: { attemptKey: KEY_FIELD } },
-          invitation: { additionalFields: { attemptKey: KEY_FIELD } },
+          invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
         },
         allowUserToCreateOrganization: (person) => mayCreateCompanies(person.role),
         // The Hub counts the open invitations itself, under the company's lock: the plugin reads

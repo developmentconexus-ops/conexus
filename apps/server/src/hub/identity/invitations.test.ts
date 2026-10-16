@@ -5,7 +5,15 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import { createHub, identityOf } from '../../main.ts'
-import { createTestDatabase, TEST_ORIGIN, testConfig } from '../../platform/test-database.ts'
+import type { HubProcess } from '../../platform/test-database.ts'
+import {
+  createTestDatabase,
+  freePort,
+  serveEnvironment,
+  startHub,
+  TEST_ORIGIN,
+  testConfig,
+} from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 
 const silent = { info: () => undefined, error: () => undefined }
@@ -216,6 +224,23 @@ test('convidar: o endereço que volta, 422 MAIL_BOUNCED; o correio fora, 502 MAI
   assert.deepEqual([down.statusCode, codeOf(down)], [502, 'MAIL_UNAVAILABLE'])
   assert.deepEqual(await rows(hub), [{ status: 'pending' }])
   assert.deepEqual(await rows(hub, 'edu@example.test'), [{ status: 'pending' }])
+})
+
+test('de novo com a mesma chave: depois do correio fora, um e-mail; depois de um endereço que volta, nenhum', async (t) => {
+  const { hub, ana, invite } = await companyOn(t)
+  const [bounceKey, downKey] = [randomUUID(), randomUUID()]
+  hub.mail.state.mode = 'BOUNCE'
+  assert.equal((await invite(ana, INVITEE, 'member', bounceKey)).statusCode, 422)
+  hub.mail.state.mode = 'FAIL'
+  assert.equal((await invite(ana, 'edu@example.test', 'member', downKey)).statusCode, 502)
+  hub.mail.state.mode = 'DELIVER'
+  assert.equal((await invite(ana, INVITEE, 'member', bounceKey)).statusCode, 201)
+  assert.equal((await invite(ana, 'edu@example.test', 'member', downKey)).statusCode, 201)
+  assert.equal((await invite(ana, 'edu@example.test', 'member', downKey)).statusCode, 201)
+  assert.deepEqual(
+    hub.mail.sent.map((mail) => mail.to),
+    [INVITEE, 'edu@example.test'],
+  )
 })
 
 test('de novo: com outra chave, o anterior fica canceled e um só pending, também com dois juntos', async (t) => {

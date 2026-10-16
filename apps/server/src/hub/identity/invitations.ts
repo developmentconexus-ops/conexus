@@ -1,6 +1,6 @@
 import type { CompanyId, InvitationId, Person, Role } from '@conexus/hub-api'
 import { Company, Email, PAGE_SIZE, PendingInvitation, ReceivedInvitation } from '@conexus/hub-api'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -107,7 +107,11 @@ type Invite = {
 
 async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) {
   const [same] = await tx
-    .select(pending)
+    .select({
+      ...pending,
+      unmailed: sql<boolean>`${invitation.status} = 'pending' and ${invitation.mailedAt} is null
+        and ${invitation.expiresAt} > statement_timestamp()`,
+    })
     .from(invitation)
     .where(
       and(eq(invitation.organizationId, admitted.companyId), eq(invitation.attemptKey, attemptKey)),
@@ -182,7 +186,10 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
         if (same.email !== email || same.role !== input.role) {
           throw new Failure('IDEMPOTENCY_CONFLICT')
         }
-        return { invitation: pendingOf(same), mail: undefined }
+        // Committed but never answered by the provider, as when the Hub stopped before the send:
+        // the replay sends it again, so delivery is at least once (C64).
+        if (same.unmailed) return { ...(await createdOf(tx, admitted, same.id)), created: false }
+        return { invitation: pendingOf(same), mail: undefined, created: false }
       }
       await checkRoom(tx, admitted, email)
       const open = await openOf(tx, admitted, email)
@@ -196,8 +203,16 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
         USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'MEMBER_EXISTS',
         YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE: 'INVITATION_ROLE_REFUSED',
       })
-      return createdOf(tx, admitted, created.id)
+      return { ...(await createdOf(tx, admitted, created.id)), created: true }
     })
+}
+
+/** The provider answered the invitation's e-mail, delivered, queued or bounced: no replay resends it. */
+export async function markMailed(tx: CommandTx, invitationId: InvitationId): Promise<void> {
+  await tx
+    .update(invitation)
+    .set({ mailedAt: sql`statement_timestamp()` })
+    .where(and(eq(invitation.id, invitationId), isNull(invitation.mailedAt)))
 }
 
 /** The e-mail of a link is the person's lock: two requests at once make one person and one link. */

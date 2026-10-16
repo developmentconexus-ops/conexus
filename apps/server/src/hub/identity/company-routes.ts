@@ -12,6 +12,7 @@ import {
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
+import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import { admit, mayInviteAs } from './admission.ts'
@@ -20,6 +21,7 @@ import { createCompanyCommand, readCompany, readMembers, readMemberships } from 
 import {
   acceptCommand,
   createInvitationCommand,
+  markMailed,
   passwordLinkCommand,
   readInvitations,
   readReceived,
@@ -99,11 +101,23 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     async ({ person, headers, params, body, attemptKey, log, signal }) => {
       const made = await invite({ person, headers, ...params, ...body, attemptKey })
       const { invitation } = made
-      if (made.mail !== undefined) {
+      if (made.created) {
         log.info({ invitationId: invitation.id, companyId: params.companyId }, 'INVITATION_CREATED')
+      }
+      if (made.mail !== undefined) {
         const link = `${origin}/invitations/${invitation.id}`
         const mail = { ...made.mail, to: invitation.email, inviterName: person.name, link }
-        await deps.sendMail(invitationMail({ ...mail, role: invitation.role }), signal)
+        function mailed() {
+          return deps.database.command((tx) => markMailed(tx, invitation.id))
+        }
+        try {
+          await deps.sendMail(invitationMail({ ...mail, role: invitation.role }), signal)
+        } catch (error) {
+          // A bounce is the provider's definite answer; an unavailable one may not have sent.
+          if (error instanceof Failure && error.code === 'MAIL_BOUNCED') await mailed()
+          throw error
+        }
+        await mailed()
       }
       return answer({ invitation })
     },
