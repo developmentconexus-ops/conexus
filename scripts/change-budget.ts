@@ -10,6 +10,12 @@ if (base === undefined) {
 }
 const root = resolve(option('--root') ?? '.')
 const cards = readdirSync(resolve(root, 'docs/steps')).filter((name) => STEP_CARD.test(name))
+if (cards.length === 0) {
+  const summary = '## Changed code size (informational)\n\nNo step is in construction.\n\n'
+  console.log(summary)
+  if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary)
+  process.exit(0)
+}
 const cardName = cards[0]
 if (cards.length !== 1 || cardName === undefined) {
   console.error(`change-budget: expected one step card, found ${cards.length}`)
