@@ -187,6 +187,17 @@
     }
   },
   {
+    "id": "open-invitation-row-parsed",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "return OpenRow.optional().parse(open)",
+    "replace": "return open",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo: o anterior com um id fora de forma"
+    }
+  },
+  {
     "id": "password-link-forgets-earlier",
     "file": "apps/server/src/hub/identity/invitations.ts",
     "find": "await forgetLinks(tx, person.id)",

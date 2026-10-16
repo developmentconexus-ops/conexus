@@ -44,6 +44,7 @@ export function after(order: SQL, id: string | undefined, row: SQL): SQL | undef
 }
 
 const PersonRole = z.object({ role: z.string().nullable() })
+const MemberRow = Member.extend({ id: z.string().regex(ROW_ID) })
 
 export async function readMemberships(tx: ReadTx, personId: string, page: string | undefined) {
   const key = pageKey(page)
@@ -64,13 +65,14 @@ export async function readMemberships(tx: ReadTx, personId: string, page: string
     )
     .orderBy(asc(company.name), asc(company.id))
     .limit(PAGE_SIZE + 1)
-  const listed = pageOf(rows, (row) => row.id)
+  const memberships = rows.map((row) =>
+    Membership.parse({ company: { id: row.id, name: row.name }, role: row.role }),
+  )
+  const listed = pageOf(memberships, (row) => row.company.id)
   const [named] = await tx.select({ role: user.role }).from(user).where(eq(user.id, personId))
   const person = PersonRole.optional().parse(named)
   return {
-    companies: listed.rows.map((row) =>
-      Membership.parse({ company: { id: row.id, name: row.name }, role: row.role }),
-    ),
+    companies: listed.rows,
     mayCreate: mayCreateCompanies(person?.role),
     next: listed.next,
   }
@@ -109,8 +111,9 @@ export async function readMembers(tx: ReadTx, admitted: Admitted, page: string |
     )
     .orderBy(asc(user.name), asc(member.id))
     .limit(PAGE_SIZE + 1)
-  const listed = pageOf(rows, (row) => row.id)
-  return { members: listed.rows.map((row) => Member.parse(row)), next: listed.next }
+  const parsed = rows.map((row) => MemberRow.parse(row))
+  const listed = pageOf(parsed, (row) => row.id)
+  return { members: listed.rows.map(({ id: _id, ...shown }) => shown), next: listed.next }
 }
 
 /**

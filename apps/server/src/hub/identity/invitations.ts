@@ -44,6 +44,7 @@ const ReceivedRow = PendingRow.omit({ expiresAt: true }).extend({
   inviterName: z.string(),
 })
 const InvitationEmail = z.object({ email: Email })
+const OpenRow = z.object({ id: InvitationId })
 const AcceptRow = z.object({ companyId: CompanyId, email: Email })
 const JoinedRow = z.object({ status: Status, memberId: z.string().nullable() })
 
@@ -82,11 +83,9 @@ export async function readInvitations(tx: ReadTx, admitted: Admitted, page: stri
     )
     .orderBy(asc(invitation.createdAt), asc(invitation.id))
     .limit(PAGE_SIZE + 1)
-  const listed = pageOf(rows, (row) => row.id)
-  return {
-    invitations: listed.rows.map((row) => pendingOf(PendingRow.parse(row))),
-    next: listed.next,
-  }
+  const parsed = rows.map((row) => PendingRow.parse(row))
+  const listed = pageOf(parsed, (row) => row.id)
+  return { invitations: listed.rows.map(pendingOf), next: listed.next }
 }
 
 function stateOf(status: z.infer<typeof Status>, live: boolean): ReceivedInvitation['state'] {
@@ -188,7 +187,7 @@ async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
         eq(invitation.status, 'pending'),
       ),
     )
-  return open
+  return OpenRow.optional().parse(open)
 }
 
 async function createdOf(tx: CommandTx, admitted: Admitted, invitationId: string) {

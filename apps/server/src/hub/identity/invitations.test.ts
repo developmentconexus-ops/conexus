@@ -264,6 +264,20 @@ test('de novo: o anterior vencido há 2 dias, ou vencendo agora, 201 e um e-mail
   assert.equal(hub.mail.sent.length, 4)
 })
 
+test('de novo: o anterior com um id fora de forma no banco, 500 e ele segue pendente, sem e-mail', async (t) => {
+  const { hub, ana, companyId, invite } = await companyOn(t)
+  await hub.test.asOwner(
+    `insert into auth.invitation (id, company_id, email, role, status, expires_at, created_at,
+      inviter_id, attempt_key) values ('fora-de-forma', $1, $2, 'member', 'pending',
+      now() + interval '1 day', now(), $3, gen_random_uuid()::text)`,
+    [companyId, INVITEE, ana.id],
+  )
+  const refused = await invite(ana, INVITEE)
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [500, 'INTERNAL_UNEXPECTED'])
+  assert.deepEqual(await rows(hub), [{ status: 'pending' }])
+  assert.deepEqual(hub.mail.sent, [])
+})
+
 test('de novo: a mesma chave dá o mesmo convite, sem outro e-mail; com outros dados, 409 IDEMPOTENCY_CONFLICT', async (t) => {
   const { hub, ana, invite } = await companyOn(t)
   const key = randomUUID()
