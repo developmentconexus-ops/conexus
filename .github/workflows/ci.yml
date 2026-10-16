@@ -30,6 +30,8 @@ jobs:
       - run: npm run deps
       - run: npm run knip
       - run: npm run docs
+      - name: The OpenAPI document emits from the operations
+        run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
       - name: Approval of the step card
         run: npm run approval -- ${{ github.event_name == 'pull_request' && format('--base origin/{0}', github.base_ref) || '' }}

@@ -22,6 +22,7 @@
     "new-dependencies": "node scripts/list-new-dependencies.ts",
     "migrations": "node scripts/check-migrations.ts",
     "removals": "node scripts/removals.ts",
+    "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
     "test": "npm run test:scripts && npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
