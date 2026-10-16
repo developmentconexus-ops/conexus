@@ -16,6 +16,13 @@ import { ANA, COMPANY } from './src/platform/fixtures.ts'
 const INVITATION = 'i'.repeat(32)
 const LONG_EMAIL = 'pessoa.com.um.nome.muito.comprido.mesmo@empresa-de-nome-longo.example.test'
 const LONG_NAME = 'Empresa de Nome Muito Comprido que Não Cabe em Uma Linha de Telefone Pequeno'
+const LIVE_INVITATION = {
+  id: 'p'.repeat(32),
+  email: LONG_EMAIL,
+  role: 'admin',
+  expiresAt: '2026-10-17T12:00:00.000Z',
+  state: 'PENDING',
+} as const
 const SIGNED_OUT: Replies = {
   'GET /api/sessions/current': ok(getSession, { state: 'SIGNED_OUT' }),
 }
@@ -75,15 +82,6 @@ function companyPage(
       role: 'member',
     },
   ] as const
-  const pending = [
-    {
-      id: 'p'.repeat(32),
-      email: LONG_EMAIL,
-      role: 'admin',
-      expiresAt: '2026-10-17T12:00:00.000Z',
-      state: 'PENDING',
-    },
-  ] as const
   return {
     ...SIGNED_IN,
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
@@ -92,7 +90,7 @@ function companyPage(
       next: { kind: 'END' },
     }),
     [`GET /api/companies/${id}/invitations`]: ok(listInvitations, {
-      invitations: [...pending],
+      invitations: [LIVE_INVITATION],
       next: { kind: 'END' },
     }),
   }
@@ -135,6 +133,22 @@ async function inviteRefused(page: Page, sentence: string) {
 
 export const OWNER = companyPage('owner', ['owner', 'admin', 'member'])
 const MEMBER = companyPage('member', [])
+const WITH_EXPIRED: Replies = {
+  ...OWNER,
+  [`GET /api/companies/${COMPANY.id}/invitations`]: ok(listInvitations, {
+    invitations: [
+      LIVE_INVITATION,
+      {
+        id: 'e'.repeat(32),
+        email: `vencido.${LONG_EMAIL}`,
+        role: 'member',
+        expiresAt: '2026-10-14T12:00:00.000Z',
+        state: 'EXPIRED',
+      },
+    ],
+    next: { kind: 'END' },
+  }),
+}
 const NO_COMPANIES = companies([], false)
 const NEVER = new Promise<never>(() => undefined)
 
@@ -207,6 +221,24 @@ export const STATES: State[] = [
       }),
     },
     settle: (p) => waitFor(p, 'Nenhum convite pendente.'),
+  },
+  {
+    name: 'convite vencido na lista',
+    path: `/companies/${COMPANY.id}`,
+    replies: WITH_EXPIRED,
+    settle: (p) => waitFor(p, 'Convidar de novo'),
+  },
+  {
+    name: 'convidar de novo recusado',
+    path: `/companies/${COMPANY.id}`,
+    replies: {
+      ...WITH_EXPIRED,
+      [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MEMBER_EXISTS'),
+    },
+    settle: async (page) => {
+      await page.getByRole('button', { name: 'Convidar de novo' }).click()
+      await waitFor(page, 'Essa pessoa já está na empresa.')
+    },
   },
   {
     name: 'empresa que o Hub não acha',

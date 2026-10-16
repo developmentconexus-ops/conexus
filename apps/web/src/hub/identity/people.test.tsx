@@ -1,4 +1,10 @@
-import { FAILURES, getCompany, listInvitations, listMembers } from '@conexus/hub-api'
+import {
+  createInvitation,
+  FAILURES,
+  getCompany,
+  listInvitations,
+  listMembers,
+} from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -17,17 +23,29 @@ const PENDING = {
   expiresAt: '2026-10-17T12:00:00.000Z',
   state: 'PENDING',
 }
+const EXPIRED = {
+  id: 'e'.repeat(32),
+  email: 'eva@example.test',
+  role: 'member',
+  expiresAt: '2026-10-14T12:00:00.000Z',
+  state: 'EXPIRED',
+}
 
 type View = {
   role: string
   mayInviteAs: string[]
   membersNext?: unknown
   invitations?: (typeof PENDING)[]
+  answer?: () => Response
 }
 
-/** The Hub as one person of the company sees it; each list read is recorded by its query string. */
+/**
+ * The Hub as one person of the company sees it; each list read is recorded by its query string,
+ * each invitation written by its key and body.
+ */
 function hub(view: View) {
   const reads: string[] = []
+  const sent: { key: string | null; body: unknown }[] = []
   server.use(
     sessionRead(() => ANA),
     http.get(`*/api/companies/${COMPANY.id}`, () =>
@@ -60,8 +78,12 @@ function hub(view: View) {
         }),
       )
     }),
+    http.post(`*/api/companies/${COMPANY.id}/invitations`, async ({ request }) => {
+      sent.push({ key: request.headers.get('idempotency-key'), body: await request.json() })
+      return view.answer?.() ?? refusal('INTERNAL_UNEXPECTED')
+    }),
   )
-  return reads
+  return { reads, sent }
 }
 
 function sectionOf(heading: HTMLElement): HTMLElement {
@@ -91,13 +113,13 @@ test('dono: os membros com o papel, os convites pendentes e o formulário "Convi
     sectionOf(await screen.findByRole('heading', { name: 'Convites pendentes' })),
   )
   expect(pending.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-    'bia@example.testAdministrador',
+    'bia@example.testVence em 17/10/2026, 09:00Administrador',
   ])
   expect(screen.getByRole('heading', { name: 'Convidar pessoa' })).toBeTruthy()
 })
 
 test('membro: só as pessoas; sem convites pendentes, sem formulário e sem pedir a lista de convites', async () => {
-  const reads = hub({ role: 'member', mayInviteAs: [] })
+  const { reads } = hub({ role: 'member', mayInviteAs: [] })
   open()
   expect(await screen.findByRole('heading', { name: 'Pessoas' })).toBeTruthy()
   expect(screen.queryByRole('heading', { name: 'Convites pendentes' })).toBeNull()
@@ -106,7 +128,7 @@ test('membro: só as pessoas; sem convites pendentes, sem formulário e sem pedi
 })
 
 test('a página dos membros fica no endereço: "Ver mais" pede a que segue', async () => {
-  const reads = hub({
+  const { reads } = hub({
     role: 'owner',
     mayInviteAs: ['admin'],
     membersNext: { kind: 'MORE', page: 'm'.repeat(32) },
@@ -143,4 +165,55 @@ test('sem convites pendentes: a frase "Nenhum convite pendente."', async () => {
   )
   expect(pending.getByText('Nenhum convite pendente.')).toBeTruthy()
   expect(pending.queryAllByRole('listitem')).toEqual([])
+})
+
+test('convites: o vivo diz "Vence em" com dia e hora no fuso de quem lê; o vencido diz "Vencido" e oferece "Convidar de novo"', async () => {
+  hub({ role: 'owner', mayInviteAs: ['admin', 'member'], invitations: [PENDING, EXPIRED] })
+  open()
+  const pending = within(
+    sectionOf(await screen.findByRole('heading', { name: 'Convites pendentes' })),
+  )
+  expect(pending.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
+    'bia@example.testVence em 17/10/2026, 09:00Administrador',
+    'eva@example.testVencidoMembroConvidar de novo',
+  ])
+  expect(pending.getAllByRole('button').map((button) => button.textContent)).toEqual([
+    'Convidar de novo',
+  ])
+})
+
+test('"Convidar de novo" manda o mesmo e-mail e papel com uma chave de tentativa, e a lista é lida de novo', async () => {
+  const { reads, sent } = hub({
+    role: 'owner',
+    mayInviteAs: ['admin', 'member'],
+    invitations: [EXPIRED],
+    answer: () =>
+      HttpResponse.json(
+        createInvitation.success.body.parse({
+          invitation: { ...EXPIRED, id: 'n'.repeat(32), expiresAt: '2026-10-18T12:00:00.000Z' },
+        }),
+        { status: 201 },
+      ),
+  })
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Convidar de novo' }))
+  await waitFor(() => expect(reads).toEqual(['members', 'invitations', 'members', 'invitations']))
+  expect(sent.map(({ body }) => body)).toEqual([{ email: 'eva@example.test', role: 'member' }])
+  expect(sent[0]?.key).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+  )
+})
+
+test('"Convidar de novo" recusado: a frase da recusa na linha do convite', async () => {
+  hub({
+    role: 'owner',
+    mayInviteAs: ['admin', 'member'],
+    invitations: [EXPIRED],
+    answer: () => refusal('MEMBER_EXISTS'),
+  })
+  open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Convidar de novo' }))
+  const row = within((await screen.findByRole('alert')).closest('li') ?? document.body)
+  expect(row.getByRole('alert').textContent).toBe('Essa pessoa já está na empresa.')
+  expect(row.getByText('eva@example.test')).toBeTruthy()
 })
