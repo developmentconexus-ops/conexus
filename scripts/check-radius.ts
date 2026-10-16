@@ -1,7 +1,7 @@
 // Defect: a unit's commit touches a file its card's blast radius does not name, and the departure
 // reaches the founder only if the builder notices it (delivery L7).
 // `npm run radius -- U<k> [commit]` reads the table under "O raio da mudança" in the unit's section
-// of the card, and prints `out-of-radius <file>` for each file the commit changed outside it. A bare
+// of the card, and prints `out-of-radius U<k> <file>` for each file the commit changed outside it. A bare
 // name in a cell may mean the root or the folder of the path before it: both match, and the row is
 // named `ambiguous-row` so the card can say which.
 // Matching is Node's `path.matchesGlob` over a translation of the cell, so the card's grammar stays
@@ -24,9 +24,9 @@ function refuse(name: string, detail: string): never {
 /**
  * The card's cell grammar as a `path.matchesGlob` pattern: `*` is any run inside one segment, a
  * `<placeholder>` is one or more characters inside one segment, `{a,b}` alternates, a trailing `/`
- * names a folder (kept as the trailing `/`; see isInside), and every other character is itself, a dot-leading name included. Node's matcher
- * reads more (`**`, `?`, classes, extglobs, escapes, and `*` skipping dotfiles), so the cell is
- * translated rather than passed through.
+ * names a folder (kept as the trailing `/`; see isInside), and every other character is itself, a
+ * dot-leading name included. Node's matcher reads more (`**`, `?`, classes, extglobs, escapes, and
+ * `*` skipping dotfiles), so the cell is translated rather than passed through.
  */
 function globOf(span: string): string {
   const alternatives: boolean[] = []

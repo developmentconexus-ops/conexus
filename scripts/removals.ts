@@ -116,20 +116,16 @@ async function runTest(copy: string, test: Removal['test']): Promise<Run> {
   const named = new RegExp(test.name)
   let failed = 0
   let passed = 0
+  // A file that cannot load fails under its own name: that is no test run, not a catch. Only a
+  // test under the row's name counts; another test or a hook of another suite does not.
+  function underRowName(data: { name: string; file?: string }): boolean {
+    return data.name !== data.file && named.test(data.name)
+  }
   for await (const event of stream) {
-    // A file that cannot load fails under its own name: that is no test run, not a catch. Only a
-    // failure under the row's name is one; another test or a hook of another suite is not.
-    if (
-      event.type === 'test:fail' &&
-      event.data.name !== event.data.file &&
-      named.test(event.data.name)
-    ) {
-      failed++
-    }
+    if (event.type === 'test:fail' && underRowName(event.data)) failed++
     if (
       event.type === 'test:pass' &&
-      event.data.name !== event.data.file &&
-      named.test(event.data.name) &&
+      underRowName(event.data) &&
       !event.data.skip &&
       !event.data.todo
     ) {
