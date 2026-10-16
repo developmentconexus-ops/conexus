@@ -34,6 +34,8 @@ roteiro, diz o que viu e aprova os textos das telas.
 
 <quais correm em paralelo, porque não dividem pasta>
 
+**Orçamento de código alterado.** U<k>: <linhas, sem testes nem gerados>. Total da etapa: <linhas>.
+
 ## Os critérios de aceite
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
@@ -106,7 +108,7 @@ tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhu
 
 ## The reader's questions
 
-The reader of step 9 answers each one with the card's line.
+The reader of step <n> answers each one with the card's line.
 
 1. For each thing a criterion or contract observes (a status, a failure code, a bound, the console,
    a cookie), open the guide that owns it: does the card hold against its rules, cited or not, and

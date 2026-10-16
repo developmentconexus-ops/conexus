@@ -13,8 +13,8 @@ Cloudflare's own e-mail service sends invitations, with a delivery test before t
 **Question.** Does an invitation sent by the Hub through Cloudflare's REST API arrive, and does its
 link survive the inbox?
 
-**Fixed.** The Hub release of step 4 on the cloud installation; the sender on a subdomain of the
-Hub's domain, onboarded in Cloudflare; Workers Paid; two inboxes of the founder at two providers.
+**Fixed.** Step 4 on the cloud installation; a sender subdomain onboarded in Cloudflare; Workers
+Paid; the founder's two inboxes at two providers.
 
 1. **An invitation to each inbox.** Passes when the reply lists it under `delivered` or `queued`, and
    it arrives in the inbox, not spam, within 5 minutes, with SPF, DKIM and DMARC passing.
@@ -37,13 +37,13 @@ Hub's domain, onboarded in Cloudflare; Workers Paid; two inboxes of the founder 
 
 ## Consequences
 
-A beta service on the only door in. Check 1's miss meets "Reopens when" for that mailbox; the
-decision holds for one repeat.
+Check 1's miss meets "Reopens when" for that mailbox. The founder approved repeating the check
+there after step 4.1 sends HTML and text with a button.
 
 ## Reopens when
 
-The delivery test fails. Step 4.1 sends HTML and text with a button and repeats check 1 at that
-mailbox; Junk again means Resend.
+The delivery test fails. This condition was met for the corporate mailbox. The founder's decision I:
+if the repeated message lands in Junk, his IT allows the domain in Microsoft's Tenant Allow/Block List.
 
 ## State
 
