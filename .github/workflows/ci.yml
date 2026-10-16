@@ -184,6 +184,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/install
       - uses: ./.github/actions/test-database
+      - name: The mail bundle the host test imports exists
+        run: npm run build -w @conexus/server
       - name: The image builds
         run: docker build --file infra/hub.Dockerfile --build-arg CONEXUS_VERSION=v0.0.0 --tag conexus-hub:ci .
       - name: The image carries the migration label and defines no NODE_ENV
