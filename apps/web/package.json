@@ -6,7 +6,7 @@
     "build": "vite build",
     "typecheck": "tsc -p tsconfig.json",
     "pretest": "playwright-core install chromium-headless-shell",
-    "test": "vitest run && node --test --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts hub.test.ts vite.config.test.ts layout.test.ts sweep.test.ts"
+    "test": "vitest run && node --test --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts hub.test.ts vite.config.test.ts layout.test.ts sweep.test.ts keyboard.test.ts"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.3",
