@@ -6,7 +6,7 @@ import { dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
 
 const REMOVALS = resolve(import.meta.dirname, 'removals.ts')
-const TEST = { cwd: '.', file: 'limit.test.ts' }
+const TEST = { cwd: '.', file: 'limit.test.ts', name: 'o limite é 10' }
 const ROWS = [
   { id: 'caught', file: 'limit.ts', find: 'LIMIT = 10', replace: 'LIMIT = 11', test: TEST },
   { id: 'survived', file: 'limit.ts', find: '// the limit\n', replace: '', test: TEST },
@@ -28,11 +28,18 @@ const ROWS = [
     test: { ...TEST, file: 'missing.test.ts' },
   },
   {
+    id: 'unrelated',
+    file: 'limit.ts',
+    find: 'LIMIT = 10',
+    replace: 'LIMIT = 11',
+    test: { ...TEST, file: 'unrelated.test.ts', name: 'o alvo' },
+  },
+  {
     id: 'broken',
     file: 'limit.ts',
     find: 'LIMIT = 10',
     replace: 'LIMIT = 11',
-    test: { ...TEST, file: 'broken.test.ts' },
+    test: { ...TEST, file: 'broken.test.ts', name: 'quebrado' },
   },
 ]
 
@@ -47,6 +54,16 @@ before(() => {
       "import { test } from 'node:test'",
       "import { LIMIT } from './limit.ts'",
       "test('quebrado', () => assert.equal(LIMIT, 11))",
+      '',
+    ].join('\n'),
+    'unrelated.test.ts': [
+      "import assert from 'node:assert/strict'",
+      "import { after, describe, test } from 'node:test'",
+      "import { LIMIT } from './limit.ts'",
+      "describe('grupo', () => {",
+      '  after(() => assert.equal(LIMIT, 10))',
+      "  test('o alvo', () => assert.equal(typeof LIMIT, 'number'))",
+      '})',
       '',
     ].join('\n'),
     'limit.test.ts': [
@@ -85,6 +102,7 @@ const OUTCOMES: [string, string, number][] = [
   ['skipped', 'unreachable', 1],
   ['no-test', 'unreachable', 1],
   ['broken', 'broken-baseline', 1],
+  ['unrelated', 'survived', 1],
 ]
 for (const [id, outcome, status] of OUTCOMES) {
   test(`remoção ${id}: ${outcome}, saída ${status}`, () => {
@@ -103,7 +121,10 @@ test('todas as linhas: uma por remoção, saída 1 quando alguma não é pega', 
 test('a cópia não muda o repositório', () => {
   removals('--only', 'caught')
   const status = spawnSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' })
-  assert.equal(status.stdout, '?? broken.test.ts\n?? limit.test.ts\n?? limit.ts\n?? scripts/\n')
+  assert.equal(
+    status.stdout,
+    '?? broken.test.ts\n?? limit.test.ts\n?? limit.ts\n?? scripts/\n?? unrelated.test.ts\n',
+  )
 })
 
 const BAD_MANIFESTS: [string, unknown, RegExp][] = [
@@ -111,6 +132,18 @@ const BAD_MANIFESTS: [string, unknown, RegExp][] = [
   ['não é lista', { id: 'x' }, /removals\.json : /],
   ['sem campo', [{ ...ROWS[0], find: '' }], /removals\.json 0\.find: /],
   ['teste sem arquivo', [{ ...ROWS[0], test: { cwd: '.' } }], /removals\.json 0\.test\.file: /],
+  [
+    'teste sem nome',
+    [{ ...ROWS[0], test: { cwd: '.', file: 'limit.test.ts' } }],
+    /removals\.json 0\.test\.name: /,
+  ],
+  ['chave a mais na linha', [{ ...ROWS[0], nmae: 'x' }], /removals\.json 0: .*nmae/],
+  [
+    'chave a mais no teste',
+    [{ ...ROWS[0], test: { ...TEST, nmae: 'x' } }],
+    /removals\.json 0\.test: .*nmae/,
+  ],
+  ['id repetido', [ROWS[0], ROWS[0]], /removals\.json 1\.id: repeats the id caught/],
   ['nome vazio', [{ ...ROWS[0], test: { ...TEST, name: '' } }], /removals\.json 0\.test\.name: /],
 ]
 for (const [name, manifest, message] of BAD_MANIFESTS) {
@@ -127,5 +160,19 @@ for (const [name, manifest, message] of BAD_MANIFESTS) {
     } finally {
       rmSync(bad, { recursive: true, force: true })
     }
+  })
+}
+
+for (const args of [
+  ['--only'],
+  ['--only', '--only'],
+  ['--only', 'caught', 'survived'],
+  ['caught'],
+]) {
+  test(`argumentos ${JSON.stringify(args)}: o comando recusa e não roda linha`, () => {
+    const result = removals(...args)
+    assert.equal(result.stdout, '')
+    assert.match(result.stderr, /usage: removals\.ts \[--only <row id>\]/)
+    assert.notEqual(result.status, 0)
   })
 }

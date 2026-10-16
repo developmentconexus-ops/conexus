@@ -1,10 +1,14 @@
 // Defect: a protection whose test stays green when the protection is taken out proves nothing
 // (testing T12), and a test the protection names that cannot run proves nothing either (T4, T5).
 // Each row of removals.json takes one protection out in a scratch copy of the repository and runs
-// its test there, child processes included. A row is `caught` when a test of that run fails,
-// `survived` when they pass, `stale` when its text is absent or repeated, `unreachable` when no test
-// ran, `broken-baseline` when its test already fails before the protection is taken out. Any row
-// other than `caught` exits 1.
+// its test there, child processes included. `test.name` is a pattern, as `--test-name-pattern` reads
+// it. A row is `caught` when a test:fail event whose own name matches that pattern appears (a child
+// that fails fails the suite it sits in, and the suite's name counts when it matches); a failure of
+// another test, a hook of another suite or a file that cannot load is not a catch. It is `survived`
+// when the tests of that name pass, `stale` when its text is absent or repeated, `unreachable` when
+// no test of that name ran, `broken-baseline` when its test already fails before the protection is
+// taken out. Any row other than `caught` exits 1. The manifest refuses an unknown key at any level
+// and a repeated id, and `--only` takes one id.
 // The refusals are proved by planting each one in removals.test.ts.
 // Revalidate by 2027-04-15, or when Node changes `run` from node:test.
 import {
@@ -20,6 +24,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from 'node:fs'
+
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { run } from 'node:test'
@@ -29,15 +34,28 @@ import { runCommand } from './command.ts'
 const text = z.string().min(1)
 const Removals = z
   .array(
-    z.object({
+    z.strictObject({
       id: text,
       file: text,
       find: text,
       replace: z.string(),
-      test: z.object({ cwd: text, file: text, name: text.optional() }),
+      test: z.strictObject({ cwd: text, file: text, name: text }),
     }),
   )
   .min(1, 'must be a list with at least one row')
+  .superRefine((rows, context) => {
+    const seen = new Set<string>()
+    for (const [index, row] of rows.entries()) {
+      if (seen.has(row.id)) {
+        context.addIssue({
+          code: 'custom',
+          path: [index, 'id'],
+          message: `repeats the id ${row.id}`,
+        })
+      }
+      seen.add(row.id)
+    }
+  })
 type Removal = z.infer<typeof Removals>[number]
 type Outcome = 'caught' | 'survived' | 'stale' | 'unreachable' | 'broken-baseline'
 type Run = 'failed' | 'passed' | 'none'
@@ -93,16 +111,25 @@ async function runTest(copy: string, test: Removal['test']): Promise<Run> {
     concurrency: 1,
     timeout: ROW_DEADLINE_MS,
     signal: AbortSignal.timeout(ROW_DEADLINE_MS),
-    ...(test.name === undefined ? {} : { testNamePatterns: [test.name] }),
+    testNamePatterns: [test.name],
   })
+  const named = new RegExp(test.name)
   let failed = 0
   let passed = 0
   for await (const event of stream) {
-    // A file that cannot load fails under its own name: that is no test run, not a catch.
-    if (event.type === 'test:fail' && event.data.name !== event.data.file) failed++
+    // A file that cannot load fails under its own name: that is no test run, not a catch. Only a
+    // failure under the row's name is one; another test or a hook of another suite is not.
+    if (
+      event.type === 'test:fail' &&
+      event.data.name !== event.data.file &&
+      named.test(event.data.name)
+    ) {
+      failed++
+    }
     if (
       event.type === 'test:pass' &&
       event.data.name !== event.data.file &&
+      named.test(event.data.name) &&
       !event.data.skip &&
       !event.data.todo
     ) {
@@ -162,7 +189,10 @@ async function outcomeOf(
 async function main(): Promise<void> {
   const root = process.cwd()
   const args = process.argv.slice(2)
-  const only = args.indexOf('--only') === -1 ? undefined : args[args.indexOf('--only') + 1]
+  if (args.length > 0 && (args.length !== 2 || args[0] !== '--only' || args[1]?.startsWith('--'))) {
+    throw new Error('usage: removals.ts [--only <row id>]')
+  }
+  const only = args[1]
   const removals = loadRemovals(root).filter((removal) => only === undefined || removal.id === only)
   if (removals.length === 0) throw new Error(`removals.json has no row ${only}`)
   const baseline = baselines(root)
