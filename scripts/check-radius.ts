@@ -10,6 +10,7 @@
 // glob matcher changes.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, matchesGlob } from 'node:path'
+import { STEP_CARD } from './cli.ts'
 import { runCommand } from './command.ts'
 
 const root = process.cwd()
@@ -111,7 +112,7 @@ function changedFiles(): string[] {
 }
 
 if (!/^U\d+$/.test(unit)) refuse('usage', 'npm run radius -- U<k> [commit]')
-const cards = readdirSync(join(root, 'docs/steps')).filter((name) => /^e\d+-.*\.md$/.test(name))
+const cards = readdirSync(join(root, 'docs/steps')).filter((name) => STEP_CARD.test(name))
 const card = readFileSync(
   join(root, 'docs/steps', cards[0] ?? refuse('no-card', 'docs/steps')),
   'utf8',

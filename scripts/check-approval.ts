@@ -5,6 +5,7 @@
 // Revalidate by 2027-04-13, or when the approval line changes shape.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { STEP_CARD } from './cli.ts'
 import { runCommand } from './command.ts'
 
 const args = process.argv.slice(2)
@@ -39,7 +40,7 @@ function onlyDocuments(): boolean {
 
 const stepsDir = join(root, 'docs/steps')
 const cards = existsSync(stepsDir)
-  ? readdirSync(stepsDir).filter((name) => /^e\d+-.*\.md$/.test(name))
+  ? readdirSync(stepsDir).filter((name) => STEP_CARD.test(name))
   : []
 if (cards.length === 0) {
   console.log('check-approval: no card in docs/steps, nothing to check')

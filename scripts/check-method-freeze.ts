@@ -4,15 +4,11 @@
 // Revalidate by 2027-04-13, or when the emergency label changes.
 import { existsSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { option } from './cli.ts'
 import { runCommand } from './command.ts'
 
 const EMERGENCY = 'emergência'
 const FROZEN = ['.agents/skills/', 'docs/guides/']
-
-function option(name: string): string | undefined {
-  const index = process.argv.indexOf(name)
-  return index === -1 ? undefined : process.argv[index + 1]
-}
 
 const base = option('--base')
 if (base === undefined) {

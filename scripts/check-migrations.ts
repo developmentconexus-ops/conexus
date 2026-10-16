@@ -5,6 +5,7 @@
 // Revalidate by 2027-04-13, or when drizzle-kit changes its snapshot format.
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { option } from './cli.ts'
 import { runCommand, spawnCommand } from './command.ts'
 
 const DRIZZLE_KIT_DEADLINE_MS = 120_000
@@ -19,11 +20,6 @@ const SESSION_STATE: [RegExp, string][] = [
   [/[`'";]\s*set\s+(?!local\b)(?!session\b)[a-z_][\w.]*\s*(=|to\b)/i, 'SET outside a transaction'],
   [/set_config\([^)]*,\s*false\s*\)/i, 'set_config with is_local false'],
 ]
-
-function option(name: string): string | undefined {
-  const index = process.argv.indexOf(name)
-  return index === -1 ? undefined : process.argv[index + 1]
-}
 
 const base = option('--base')
 if (base === undefined) {

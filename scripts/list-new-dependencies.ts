@@ -4,14 +4,10 @@
 // Revalidate by 2027-04-13, or when a dependency can enter outside a package.json.
 import { appendFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { option } from './cli.ts'
 import { runCommand } from './command.ts'
 
 const SECTIONS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
-
-function option(name: string): string | undefined {
-  const index = process.argv.indexOf(name)
-  return index === -1 ? undefined : process.argv[index + 1]
-}
 
 const base = option('--base')
 if (base === undefined) {
