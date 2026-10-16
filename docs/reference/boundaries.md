@@ -513,8 +513,9 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Hand-made piece.** `defineOperation` in `packages/hub-api/src/operation.ts` and
   `scripts/emit-openapi.ts`. `defineOperation` marks an operation with the `DECLARED` symbol; the
   emitter emits only the exports `isDeclaredOperation` accepts, and `serve` in
-  `apps/server/src/platform/http.ts` takes only a `DeclaredOperation`, so every route the Hub serves
-  is in the document. The emitter maps each declared operation to a path item: `operationId`,
+  `apps/server/src/platform/http.ts` takes only a `DeclaredOperation`, so every API route registered
+  through `serve` is in the document; the pages, `favicon.svg` and `/assets/*`, registered with
+  `app.route`, are not API routes and are not in it. The emitter maps each declared operation to a path item: `operationId`,
   `security` from the operation's access (the `cookieSession` apiKey scheme for `session`,
   `security: []` for every other access), parameters, the `Idempotency-Key` header of an
   attempt-keyed write, the request body, the success, and the failures grouped by their status in
