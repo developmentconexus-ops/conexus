@@ -29,7 +29,7 @@ const SendReply = z.discriminatedUnion('success', [
 
 type Refusal = 'status' | 'unsuccessful' | 'shape' | 'too-large' | 'unreachable'
 
-/** Reads at most the cap; a longer body is cancelled where it stands (C59). */
+/** Reads at most the cap; past it, it stops reading and answers undefined (C59). */
 async function cappedText(body: ReadableStream<Uint8Array> | null): Promise<string | undefined> {
   if (body === null) return ''
   const chunks: Uint8Array[] = []

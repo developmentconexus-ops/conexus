@@ -146,7 +146,7 @@ export const invitation = auth.table(
   },
   (table) => [
     // One open invitation per company and address: the plugin checks before it writes, so two
-    // invitations at once would both pass without this index (study K8).
+    // invitations at once would both pass without this index.
     uniqueIndex('invitation_pending_email_key')
       .on(table.organizationId, sql`lower(${table.email})`)
       .where(sql`${table.status} = 'pending'`),

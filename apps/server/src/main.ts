@@ -67,7 +67,8 @@ async function listenOnce(app: FastifyInstance, port: number): Promise<void> {
 }
 
 /**
- * The library's own lines are prose, so every one of its cases logs a code here instead (code C50).
+ * close-with-grace's own lines are prose, so its logger is off and each of its cases logs a code
+ * here (code C50).
  */
 function shutDownOnSignal(app: FastifyInstance, database: Database) {
   function unexpected(cause: unknown) {

@@ -42,7 +42,7 @@ export const MailApiUrl = z
   .brand('MailApiUrl')
 export type MailApiUrl = z.infer<typeof MailApiUrl>
 
-/** Sends mail as the installation; it leaves the program only in the adapter's request (S35). */
+/** Sends mail as the installation; `createMail` in mail.ts reveals it into its request (S35). */
 export type MailToken = Secret<'MailToken'>
 export const MailToken = {
   parse(value: string): MailToken {

@@ -12,8 +12,8 @@ import { refusedAs } from './auth.ts'
 import { company, member, user } from './tables.ts'
 
 /**
- * One row more than a page tells whether another page follows. Its token encodes the last row's
- * id, so the client holds no row's identity (code C44).
+ * One row more than a page tells whether another page follows. Its token is the last row's id in
+ * base64url, which the client sends back and never reads (code C44).
  */
 export function pageOf<T>(rows: T[], idOf: (row: T) => string): { rows: T[]; next: Next } {
   const shown = rows.slice(0, PAGE_SIZE)
@@ -25,7 +25,7 @@ export function pageOf<T>(rows: T[], idOf: (row: T) => string): { rows: T[]; nex
   }
 }
 
-/** The id of the row a page token starts after; a token the Hub did not write is malformed. */
+/** The id of the row a page token starts after; a token not in `pageOf`'s form is malformed. */
 export function pageKey(page: string | undefined): string | undefined {
   if (page === undefined) return undefined
   const id = Buffer.from(page, 'base64url').toString('utf8')

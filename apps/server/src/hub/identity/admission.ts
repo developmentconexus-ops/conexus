@@ -7,8 +7,8 @@ import { Failure } from '../../platform/failure.ts'
 import { member } from './tables.ts'
 
 /**
- * Each action on a company and the statement it needs from the plugin's roles, the one table of
- * who may do what (security S6). Reading needs only the membership.
+ * Each action on a company and the statement it needs from the plugin's roles (security S6).
+ * `readCompany` needs only the membership.
  */
 const ACTIONS = {
   readCompany: undefined,

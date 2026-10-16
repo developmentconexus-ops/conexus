@@ -45,7 +45,7 @@ export type Database = Readonly<{
   read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>
   command<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>
   /**
-   * Only for a library's own adapter, which checks the rows it reads itself (data D19, D21). The
+   * For a library's own adapter, which checks the rows it reads itself (data D19, D21). The
    * relations are the library's, so its joins run as one query each.
    */
   libraryOrm<R extends AnyRelations>(relations: R): Orm<R>

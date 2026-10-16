@@ -152,7 +152,7 @@ export async function forgetLinks(tx: CommandTx, personId: string): Promise<void
 
 const CredentialRow = z.object({ password: z.string().min(1).nullable() }).nullable()
 
-/** Whether the person has a password; inside a library command, it reads in its transaction. */
+/** Inside a library command, it reads in the command's transaction. */
 export async function hasPassword(auth: Auth, personId: PersonId): Promise<boolean> {
   const { internalAdapter } = await auth.$context
   const account = CredentialRow.parse(await internalAdapter.findCredentialAccount(personId))

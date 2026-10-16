@@ -1,4 +1,4 @@
-/** A value that must not reach a log or a response: printing or serializing it names the secret only. */
+/** Kept from logs and responses: printed, serialized or inspected, it shows only its name. */
 export class Secret<Name extends string> {
   readonly #value: string
   readonly name: Name
