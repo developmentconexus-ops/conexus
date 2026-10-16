@@ -295,5 +295,104 @@
       "file": "src/hub/identity/invitation-replay.test.ts",
       "name": "o Hub parou entre o convite e o e-mail"
     }
+  },
+  {
+    "id": "library-failure-is-database",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    const failure = databaseFailure(error)\n    if (failure.code !== 'INTERNAL_UNEXPECTED' || statusOf(error) < 500) throw failure\n    throw new Failure('DATABASE_UNAVAILABLE', { cause: error })",
+    "replace": "    throw error",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/database-down.test.ts",
+      "name": "banco fora"
+    }
+  },
+  {
+    "id": "library-errors-thrown",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    onAPIError: { throw: true },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-write.test.ts",
+      "name": "senha que não grava"
+    }
+  },
+  {
+    "id": "first-person-lock",
+    "file": "apps/server/src/hub/identity/first-person.ts",
+    "find": "await transactionLock(tx, 'conexus.first-person')",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/first-person.test.ts",
+      "name": "ao mesmo tempo"
+    }
+  },
+  {
+    "id": "first-person-forgets-earlier-link",
+    "file": "apps/server/src/hub/identity/first-person.ts",
+    "find": "} else await forgetLinks(tx, same.id)",
+    "replace": "}",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/first-person.test.ts",
+      "name": "com a pessoa ainda sem senha"
+    }
+  },
+  {
+    "id": "sign-in-through-router",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "deps.auth.handler(libraryRequest(deps.config, { path: SIGN_IN_PATH, headers, body })),",
+    "replace": "deps.auth.api.signInEmail({ body, headers, asResponse: true }),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/identity.test.ts",
+      "name": "limite: a 11ª tentativa"
+    }
+  },
+  {
+    "id": "sign-out-row-first",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    await inLibrary(() =>\n      refusedAs(() => deps.auth.api.revokeSession({ body, headers }), { 401: 'SESSION_REQUIRED' }),\n    )\n",
+    "replace": "    void body\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/session.test.ts",
+      "name": "sair falha"
+    }
+  },
+  {
+    "id": "re-invite-cancels-expired",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "const open = await openOf(tx, admitted, email)",
+    "replace": "const open = undefined",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo: o anterior vencido"
+    }
+  },
+  {
+    "id": "invitation-pace",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (recent >= INVITATIONS_PER_MINUTE) throw new Failure('INVITATIONS_EXCEEDED')",
+    "replace": "void recent",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: o 11º convite"
+    }
+  },
+  {
+    "id": "password-link-pace",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (given > 0) throw new Failure('PASSWORD_LINKS_EXCEEDED')",
+    "replace": "void given",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "link: dois pedidos juntos"
+    }
   }
 ]

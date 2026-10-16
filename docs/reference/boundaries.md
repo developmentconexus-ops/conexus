@@ -2,7 +2,10 @@
 
 [Code C75](../guides/code.md) says to use the library's own mechanism first. This file records each
 mechanism that Conexus writes itself instead, with the library line it replaces and the reason. The
-versions are the installed ones. When the library changes, reread the line it names.
+versions are the installed ones, except three candidates read from the npm registry and not
+installed: Stryker 10.0.0, remark-validate-links 13.1.0 and the Cloudflare SDK 7.3.0. When the
+library changes, reread the line it names. A test that "fails without" a piece names its row in
+`scripts/removals.json`; a test that "covers" a piece has no row.
 
 ## Better Auth 1.7.8
 
@@ -19,9 +22,8 @@ versions are the installed ones. When the library changes, reread the line it na
   (removal `session-total-lifetime`). The cost: once `expiresAt` is capped, the library's renewal
   test (`session.mjs:180`) holds on every read, so each read writes the row from `createdAt` plus
   7 h 31 min, the last 29 minutes (`expiresIn` minus `updateAge`, 1740 s). Before that, a read
-  writes at most once a minute. Probed on PostgreSQL on 2026-10-15: two reads in the same second
-  at 7 h 30 min 30 s wrote once, at 7 h 31 min 1 s twice. The idle deadline and the renewal stay
-  the library's, by the founder's answer of 2026-10-15 ("1. A").
+  writes at most once a minute. The idle deadline and the renewal stay the library's, by the
+  founder's answer of 2026-10-15 ("1. A").
 
 ### A failure inside the library reads as the database's
 
@@ -33,8 +35,9 @@ versions are the installed ones. When the library changes, reread the line it na
   into the library through `databaseFailure`, and a 5xx it cannot name to `DATABASE_UNAVAILABLE`.
 - **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
   system, and the contracts promise 503. [Security S41](../guides/security.md): only a code leaves.
-  The test "banco fora" in `database-down.test.ts` fails without the piece, and the test "senha que
-  não grava" in `password-write.test.ts` fails without the option.
+  The test "banco fora" in `database-down.test.ts` fails without the piece (removal
+  `library-failure-is-database`), and the test "senha que não grava" in `password-write.test.ts`
+  fails without the option (removal `library-errors-thrown`).
 
 ### A library refusal becomes the Hub's code by one reader
 
@@ -64,9 +67,10 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Why.** [Code C64 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
   in an accept leaves nothing, and `forgetLinks` needs plain SQL in the same unit of work. The test
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` fails with
-  `runWithAdapter`, which leaves the plugin's own transaction on another connection. The tests
-  "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a mesma pessoa duas vezes" in
-  `first-person.test.ts` fail without the lock.
+  `runWithAdapter`, which leaves the plugin's own transaction on another connection (removal
+  `accept-one-transaction`). The tests "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a
+  mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
+  `first-person-lock`).
 
 ### Sign-in and the first password reach the library through a request we build
 
@@ -76,8 +80,9 @@ versions are the installed ones. When the library changes, reread the line it na
   `Request` for `auth.handler` from the Hub's own route, with only `origin`, `cf-connecting-ip`,
   `user-agent` and `cookie`.
 - **Why.** The library's routes are not mounted (criterion 18), and the limit of
-  [security S30](../guides/security.md) must still apply. The test "limite" in `identity.test.ts`
-  fails without it.
+  [security S30](../guides/security.md) must still apply. The test "limite: a 11ª tentativa" in
+  `identity.test.ts` fails when sign-in goes through `auth.api` instead (removal
+  `sign-in-through-router`).
 
 ### An earlier link stops working when a new one is given
 
@@ -88,7 +93,7 @@ versions are the installed ones. When the library changes, reread the line it na
   person's links by their stored value, the person's id, in the same transaction as the new one.
 - **Why.** [Code C64](../guides/code.md). The test "com a pessoa ainda sem senha" in
   `first-person.test.ts` and the test "link: passados 20 s" in `invitation-link.test.ts` fail
-  without it.
+  without it (removals `first-person-forgets-earlier-link` and `password-link-forgets-earlier`).
 
 ### Sign-out: the row first, then the cookies
 
@@ -99,7 +104,7 @@ versions are the installed ones. When the library changes, reread the line it na
   `signOut`, which expires the cookies.
 - **Why.** [Security S20](../guides/security.md). With the library's order, a database failure
   answers "signed out" to a session that is still alive. The test "sair falha" in
-  `session.test.ts` fails without the piece.
+  `session.test.ts` fails without the piece (removal `sign-out-row-first`).
 
 ### Who may act on a company: admission over the plugin's roles
 
@@ -111,9 +116,10 @@ versions are the installed ones. When the library changes, reread the line it na
   person's member row and decides with the plugin's `defaultRoles[role].authorize`, through one
   table of actions. It answers an `Admitted` proof, which the Hub's reads and the invite require.
 - **Why.** [Security S6, S7 and S10](../guides/security.md). An outsider, an unknown company and a
-  role without the action get the same 404, with the reason only in the log. The tests "fora" in
-  `companies.test.ts` and "convidar: o membro, ou quem é de outra empresa" in
-  `invitations.test.ts` fail without it; `admission.check.ts` fails to compile when a proof can be
+  role without the action get the same 404, with the reason only in the log. The test "fora: o
+  membro" in `companies.test.ts` fails when admission reads any member of the company (removal
+  `admission-reads-membership`); "convidar: o membro, ou quem é de outra empresa" in
+  `invitations.test.ts` covers it, and `admission.check.ts` fails to compile when a proof can be
   forged.
 
 ### The lists the Hub reads itself, 50 rows a page
@@ -141,8 +147,10 @@ versions are the installed ones. When the library changes, reread the line it na
   `invitationLimit` set to infinity. After `lockCompany` takes the company row `FOR NO KEY UPDATE`,
   it counts the live pending rows of other addresses in SQL.
 - **Why.** The founder's limit of 100 (step 4, answer 6), and [code C65](../guides/code.md). The
-  tests "limite: com 100 vivos atrás de 100 vencidos" and "limite: com 99 vivos, dois convidantes
-  juntos" in `invitations.test.ts` fail without the count and without the lock.
+  test "limite: com 100 vivos atrás de 100 vencidos" in `invitations.test.ts` fails without the
+  refusal (removal `invitation-capacity`) and when expired rows count (removal
+  `invitation-capacity-live-only`); "limite: com 99 vivos, dois convidantes juntos" fails without
+  the lock (removal `invitation-company-lock`).
 
 ### A new invitation cancels the address's open one, expired or not
 
@@ -154,15 +162,15 @@ versions are the installed ones. When the library changes, reread the line it na
   address's pending row with no clock and cancels it through `auth.api.cancelInvitation` before the
   plugin creates the new one.
 - **Why.** The founder's "Convidar de novo" after 2 days (step 4, answer 4). The test "de novo: o
-  anterior vencido há 2 dias, ou vencendo agora" in `invitations.test.ts` fails without it.
+  anterior vencido há 2 dias, ou vencendo agora" in `invitations.test.ts` fails without it
+  (removal `re-invite-cancels-expired`).
 
 ### Three reads through the library's internal adapter
 
 - **Library line.** `better-auth/dist/db/internal-adapter.mjs:583`, `:667` and `:227`.
   `findUserByEmail`, `findCredentialAccount` and `listUsers` belong to the adapter the library
   gives its plugins, and the Hub reaches them through `auth.$context`, which the library documents
-  for no application (native-first audit, finding 5). Creating a person has
-  the public `auth.api.createUser` of the admin plugin
+  for no application. Creating a person has the public `auth.api.createUser` of the admin plugin
   (`better-auth/dist/plugins/admin/routes.mjs:195-201`), and the Hub uses it.
 - **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts` and
   `passwordLinkCommand` in `invitations.ts`. They read the person by e-mail, whether she has a
@@ -201,7 +209,8 @@ versions are the installed ones. When the library changes, reread the line it na
   company's lock, and a rollback after the send mails an invitation that does not exist; sent after
   the commit with no record, a Hub stopped before the send leaves a replay that mails nothing
   (founder, 2026-10-15, "A"). The test "o Hub parou entre o convite e o e-mail" in
-  `invitation-replay.test.ts` fails without the replay branch.
+  `invitation-replay.test.ts` fails without the replay branch (removal
+  `invitation-replay-resends-unmailed`).
 
 ### The pace of invitations and of password links
 
@@ -214,7 +223,7 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Why.** [Security S28](../guides/security.md): behind the Tunnel the Hub keys on the account;
   the founder's numbers (step 4, answer 6). The tests "limite: o 11º convite" in
   `invitations.test.ts` and "link: dois pedidos juntos" in `invitation-link.test.ts` fail without
-  them.
+  them (removals `invitation-pace` and `password-link-pace`).
 
 ### Accepting: the recipient first, then the company's lock
 
@@ -224,9 +233,10 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Hand-made piece.** `acceptCommand` in `apps/server/src/hub/identity/invitations.ts`. It
   answers 404 to anyone but the recipient, locks the company row, and answers an invitation she
   already accepted with its company; otherwise it calls the plugin's accept.
-- **Why.** [Security S10](../guides/security.md), [code C64 and C65](../guides/code.md). The tests
-  "aceitar: 200 e um membro" and "aceitar: dois juntos" in `invitation-acceptance.test.ts` fail
-  without it.
+- **Why.** [Security S10](../guides/security.md), [code C64 and C65](../guides/code.md). In
+  `invitation-acceptance.test.ts`, "aceitar: 200 e um membro" fails when the recipient is not
+  checked first (removal `accept-recipient-first`), "aceitar: com um re-convite ao mesmo tempo"
+  fails without the lock (removal `accept-company-lock`), and "aceitar: dois juntos" covers it.
 
 ## Fastify 5.12.5
 
@@ -242,7 +252,7 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Why.** [Code C31 and C14](../guides/code.md). Through the generic `serve`, the provider types the
   body as `unknown`, and it has nothing for the `person` of the `session` access kind, the `Headers`
   or the cookies of an `Answer`. The compilers would replace only `bodyOf` and the reply's parse, at
-  about the same number of lines (both step 3 reviews, 2026-10-15). The tests "corpo fora do esquema"
+  about the same number of lines. The tests "corpo fora do esquema"
   and "o corpo lido pelo esquema da operação volta" in `http.test.ts` cover it.
 
 ### A write's signal follows the reply, not the request
@@ -253,7 +263,8 @@ versions are the installed ones. When the library changes, reread the line it na
   reply closes before it finished.
 - **Why.** With `request.signal`, every e-mail a write sends after reading its body is aborted
   (U4: the request's signal reaches the mail adapter). The test "registro" in
-  `invitation-journey.test.ts`, against a Hub on a real socket, fails with it.
+  `invitation-journey.test.ts`, against a Hub on a real socket, fails with it (removal
+  `write-signal-follows-reply`).
 
 ## Platform: pg 8.23.1, Drizzle 1.0.0-rc.4, Fastify 5.12.5 and Node 24
 
@@ -305,8 +316,8 @@ versions are the installed ones. When the library changes, reread the line it na
   the origin check.
 - **Why.** [Security S24 and S25](../guides/security.md). Fastify's 415 comes after `onRequest`,
   so after the session is read, and a JSON write with an empty body would become
-  `FST_ERR_CTP_EMPTY_JSON_BODY`. The native refusal is the smaller change (native-first audit,
-  finding 1, 2026-10-15) and is not yet taken; the test "formulário vindo da própria página: 415
+  `FST_ERR_CTP_EMPTY_JSON_BODY`. The native refusal would be the smaller change and is not yet
+  taken; the test "formulário vindo da própria página: 415
   REQUEST_MEDIA_TYPE_REFUSED" in `http.test.ts` covers both.
 
 ### One log line per request, by code
@@ -323,8 +334,8 @@ versions are the installed ones. When the library changes, reread the line it na
 
 - **Library line.** Node 24's global `fetch` has no size cap on a reply. undici's
   `Agent({ maxResponseSize })` has one, but the `undici` bundled with Node refuses that dispatcher
-  through the global `fetch` (`UND_ERR_INVALID_ARG`, native-first audit probe), so the cap would
-  need a separate `undici` dependency. The Cloudflare SDK reads the whole body and retries twice.
+  through the global `fetch` (`UND_ERR_INVALID_ARG`), so the cap would need a separate `undici`
+  dependency. The Cloudflare SDK 7.3.0 reads the whole body and retries twice.
 - **Hand-made piece.** `cappedText` in `apps/server/src/platform/mail.ts`. It reads the reply
   stream and stops at 16 KiB.
 - **Why.** [Code C59](../guides/code.md), and no dependency for about 12 lines. The test "correio:
@@ -334,7 +345,7 @@ versions are the installed ones. When the library changes, reread the line it na
 
 ### The Hub client: one address, one reply schema, one closed failure table
 
-- **Library line.** `@tanstack/query-core/src/queryOptions.ts:257-258` and
+- **Library line.** `@tanstack/react-query/src/queryOptions.ts:257-258` and
   `mutationOptions.ts:87-95` return their input unchanged. They derive no address and check no
   reply. Better Auth's `createAuthClient` (`client/config.mjs:38-55`) builds the library's own
   endpoint client, not the Hub's operations. The browser's `fetch`, `URL` and `Response.json` carry
