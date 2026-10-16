@@ -5,7 +5,7 @@ import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { INSTALLATION_ADMINISTRATOR } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { forgetLinks, hasPassword, linkTokenOf } from './auth.ts'
+import { forgetLinks, hasPassword, linkTokenOf, storedAddress } from './auth.ts'
 
 const SET_PASSWORD_PAGE = '/set-password'
 
@@ -23,7 +23,7 @@ export function createFirstPerson(deps: {
       const { internalAdapter } = await deps.auth.$context
       const people = Person.array().parse(await internalAdapter.listUsers(2))
       const [only] = people
-      const same = only?.email === email.toLowerCase() ? only : undefined
+      const same = only?.email === storedAddress(email) ? only : undefined
       const withPassword = same ? await hasPassword(deps.auth, same.id) : false
       if (people.length > 1 || (only !== undefined && (same === undefined || withPassword))) {
         throw new Failure('FIRST_PERSON_EXISTS')

@@ -5,8 +5,9 @@ import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { admit } from './admission.ts'
+import { storedAddress } from './auth.ts'
 import { after, pageKey, pageOf } from './companies.ts'
-import { PendingRow, pending, pendingOf, Status } from './invitations.ts'
+import { LIVE, PendingRow, pending, pendingOf, Status } from './invitations.ts'
 import { company, invitation, user } from './tables.ts'
 
 const ReceivedRow = PendingRow.omit({ expiresAt: true }).extend({
@@ -62,7 +63,7 @@ export function readReceived(database: Database, person: Person, invitationId: I
         email: invitation.email,
         role: invitation.role,
         status: invitation.status,
-        live: sql<boolean>`${invitation.expiresAt} > statement_timestamp()`,
+        live: sql<boolean>`${LIVE}`,
         companyId: company.id,
         companyName: company.name,
         inviterName: user.name,
@@ -72,7 +73,7 @@ export function readReceived(database: Database, person: Person, invitationId: I
       .innerJoin(user, eq(invitation.inviterId, user.id))
       .where(eq(invitation.id, invitationId))
     const row = ReceivedRow.optional().parse(found)
-    if (row === undefined || row.email !== person.email.toLowerCase()) {
+    if (row === undefined || row.email !== storedAddress(person.email)) {
       throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
     }
     return ReceivedInvitation.parse({

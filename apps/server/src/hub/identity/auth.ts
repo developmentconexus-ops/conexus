@@ -152,6 +152,11 @@ export async function forgetLinks(tx: CommandTx, personId: string): Promise<void
 
 const CredentialRow = z.object({ password: z.string().min(1).nullable() }).nullable()
 
+/** An address as the library stores it: it lowercases every e-mail it writes. */
+export function storedAddress(email: string): string {
+  return email.toLowerCase()
+}
+
 /** Inside a library command, it reads in the command's transaction. */
 export async function hasPassword(auth: Auth, personId: PersonId): Promise<boolean> {
   const { internalAdapter } = await auth.$context

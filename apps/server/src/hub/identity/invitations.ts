@@ -1,6 +1,5 @@
 import {
   CAPACITY,
-  Company,
   CompanyId,
   Email,
   InvitationId,
@@ -16,11 +15,12 @@ import { Failure } from '../../platform/failure.ts'
 import type { Admitted } from './admission.ts'
 import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { forgetLinks, hasPassword, linkTokenOf, refusedAs } from './auth.ts'
+import { forgetLinks, hasPassword, linkTokenOf, refusedAs, storedAddress } from './auth.ts'
+import { companyById } from './companies.ts'
 import { company, invitation, member, user, verification } from './tables.ts'
 
 // The founder's number, step 4 answer 6: invitations per person and minute.
-const INVITATIONS_PER_MINUTE = 10
+const INVITATION_PACE = { most: 10, window: sql`interval '1 minute'` }
 export const Status = z.enum(['pending', 'accepted', 'canceled'])
 
 export const pending = {
@@ -29,6 +29,10 @@ export const pending = {
   role: invitation.role,
   expiresAt: invitation.expiresAt,
 }
+
+/** Still open by the database's clock; the plugin's own check reads the application's. */
+export const LIVE = sql`${invitation.expiresAt} > statement_timestamp()`
+const ADDRESS = sql`lower(${invitation.email})`
 
 export const PendingRow = z.object({
   id: InvitationId,
@@ -72,7 +76,7 @@ async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) 
     .select({
       ...pending,
       unmailed: sql<boolean>`${invitation.status} = 'pending' and ${invitation.mailedAt} is null
-        and ${invitation.expiresAt} > statement_timestamp()`,
+        and ${LIVE}`,
     })
     .from(invitation)
     .where(
@@ -88,8 +92,8 @@ async function checkRoom(tx: CommandTx, admitted: Admitted, email: string): Prom
     and(
       eq(invitation.organizationId, admitted.companyId),
       eq(invitation.status, 'pending'),
-      sql`lower(${invitation.email}) <> ${email}`,
-      sql`${invitation.expiresAt} > statement_timestamp()`,
+      sql`${ADDRESS} <> ${email}`,
+      LIVE,
     ),
   )
   if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')
@@ -100,10 +104,10 @@ async function checkPace(tx: CommandTx, personId: string): Promise<void> {
     invitation,
     and(
       eq(invitation.inviterId, personId),
-      sql`${invitation.createdAt} > statement_timestamp() - interval '60 seconds'`,
+      sql`${invitation.createdAt} > statement_timestamp() - ${INVITATION_PACE.window}`,
     ),
   )
-  if (recent >= INVITATIONS_PER_MINUTE) throw new Failure('INVITATIONS_EXCEEDED')
+  if (recent >= INVITATION_PACE.most) throw new Failure('INVITATIONS_EXCEEDED')
 }
 
 /**
@@ -117,7 +121,7 @@ async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
     .where(
       and(
         eq(invitation.organizationId, admitted.companyId),
-        sql`lower(${invitation.email}) = ${email}`,
+        sql`${ADDRESS} = ${email}`,
         eq(invitation.status, 'pending'),
       ),
     )
@@ -126,14 +130,10 @@ async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
 
 async function createdOf(tx: CommandTx, admitted: Admitted, invitationId: string) {
   const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invitationId))
-  const [named] = await tx
-    .select({ id: company.id, name: company.name })
-    .from(company)
-    .where(eq(company.id, admitted.companyId))
-  if (row === undefined || named === undefined) {
+  if (row === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'invitation not read' } })
   }
-  const companyName = Company.parse(named).name
+  const companyName = (await companyById(tx, admitted.companyId)).name
   return { invitation: pendingOf(PendingRow.parse(row)), mail: { companyName } }
 }
 
@@ -144,7 +144,7 @@ async function createdOf(tx: CommandTx, admitted: Admitted, invitationId: string
 export function createInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: Invite) =>
     deps.libraryCommand(async (tx) => {
-      const email = input.email.toLowerCase()
+      const email = storedAddress(input.email)
       const { headers } = input
       await lockCompany(tx, input.companyId)
       const personId = input.person.id
@@ -197,13 +197,7 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
       const [still] = await tx
         .select({ email: invitation.email })
         .from(invitation)
-        .where(
-          and(
-            eq(invitation.id, input.invitationId),
-            eq(invitation.status, 'pending'),
-            sql`${invitation.expiresAt} > statement_timestamp()`,
-          ),
-        )
+        .where(and(eq(invitation.id, input.invitationId), eq(invitation.status, 'pending'), LIVE))
       const open = InvitationEmail.optional().parse(still)
       if (open === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'CLOSED' } })
       const { internalAdapter } = await deps.auth.$context
@@ -243,7 +237,7 @@ export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))
       const found = AcceptRow.optional().parse(listed)
-      if (found === undefined || found.email !== input.person.email.toLowerCase()) {
+      if (found === undefined || found.email !== storedAddress(input.person.email)) {
         throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
       }
       await lockCompany(tx, found.companyId)
@@ -267,10 +261,6 @@ export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand
           ORGANIZATION_MEMBERSHIP_LIMIT_REACHED: 'COMPANY_FULL',
         })
       }
-      const [named] = await tx
-        .select({ id: company.id, name: company.name })
-        .from(company)
-        .where(eq(company.id, found.companyId))
-      return { company: Company.parse(named), accepted: !already }
+      return { company: await companyById(tx, found.companyId), accepted: !already }
     })
 }

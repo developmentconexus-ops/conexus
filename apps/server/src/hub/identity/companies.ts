@@ -3,7 +3,7 @@ import { Company, LIBRARY_ID, Member, Membership, PAGE_SIZE } from '@conexus/hub
 import type { SQL, SQLWrapper } from 'drizzle-orm'
 import { and, asc, eq, gt, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { Database } from '../../platform/database.ts'
+import type { Database, ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { admit, mayCreateCompanies, mayInviteAs } from './admission.ts'
@@ -85,6 +85,13 @@ export function readMemberships(database: Database, personId: string, page: stri
   })
 }
 
+const named = { id: company.id, name: company.name }
+
+export async function companyById(tx: ReadTx, companyId: string): Promise<Company> {
+  const [row] = await tx.select(named).from(company).where(eq(company.id, companyId))
+  return Company.parse(row)
+}
+
 /** The company, the caller's role in it and the roles the caller may invite with, one snapshot. */
 export function readCompany(
   database: Database,
@@ -92,12 +99,8 @@ export function readCompany(
 ) {
   return database.read(async (tx) => {
     const admitted = await admit({ tx, ...input, action: 'readCompany' })
-    const [row] = await tx
-      .select({ id: company.id, name: company.name })
-      .from(company)
-      .where(eq(company.id, admitted.companyId))
     return {
-      company: Company.parse(row),
+      company: await companyById(tx, admitted.companyId),
       role: admitted.role,
       mayInviteAs: mayInviteAs(admitted),
     }
@@ -152,7 +155,7 @@ export function createCompanyCommand(deps: { auth: Auth; libraryCommand: Library
       // Two creates with one key at once: the second waits here and finds the first's company.
       await transactionLock(tx, `conexus.company:${input.attemptKey}`)
       const [listed] = await tx
-        .select({ id: company.id, name: company.name })
+        .select(named)
         .from(company)
         .where(eq(company.attemptKey, input.attemptKey))
       const found = Company.optional().parse(listed)
