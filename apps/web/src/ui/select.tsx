@@ -5,7 +5,8 @@ import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `select` (registry/base-nova/ui/select.tsx, read with `shadcn view`
 // 4.21.5), keeping the parts a single-choice field uses. The popup takes a hairline instead of
-// shadcn's shadow, since the brand has no shadow token (V3), and the menu's padding (V20).
+// shadcn's shadow, since the brand has no shadow token (V3), and the menu's padding (V20). The padding sits
+// on the list, which clips: an option's 4px of outline and offset (V28) needs that room inside it.
 export const Select = SelectPrimitive.Root
 
 export function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
@@ -64,13 +65,13 @@ export function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           className={cn(
-            'relative isolate max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-object border border-line bg-surface p-sm text-text outline-none',
+            'relative isolate max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-object border border-line bg-surface text-text outline-none',
             className,
           )}
           {...props}
         >
           <SelectScrollUpButton />
-          <SelectPrimitive.List>{children}</SelectPrimitive.List>
+          <SelectPrimitive.List className="p-sm">{children}</SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
