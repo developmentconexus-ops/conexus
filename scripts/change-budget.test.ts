@@ -35,7 +35,7 @@ test('reports total and per-unit code changes, excluding tests and generated out
   git(dir, 'init', '-q', '-b', 'main')
   write(
     dir,
-    'docs/steps/e04.1-invite.md',
+    'docs/steps/e041-invite.md',
     [
       '## U1 Link',
       '### O raio da mudança',
