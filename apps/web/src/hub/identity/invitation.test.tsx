@@ -144,9 +144,11 @@ test('o nome vazio fica no campo, e um 429 fica no formulário', async () => {
   expect(asked).toBe(0)
   fireEvent.change(screen.getByLabelText('Nome'), { target: { value: 'Davi Costa' } })
   fireEvent.click(screen.getByRole('button', { name: 'Enviar link' }))
-  expect((await screen.findByRole('alert')).textContent).toBe(
+  const refused = await screen.findByText(
     'Muitos pedidos de link. Espere um pouco e tente de novo.',
   )
+  expect(refused.getAttribute('role')).toBe('alert')
+  expect(screen.queryByText('Escreva o seu nome.')).toBeNull()
 })
 
 test('com sessão, o endereço do convite leva a /acceptance, e "Aceitar convite" abre a empresa com as duas pessoas', async () => {

@@ -1,3 +1,4 @@
+// Revalidate by 2027-04-15, or when Tailwind changes how a width utility resolves its namespace.
 or {
   JsStringLiteralExpression() as $text,
   JsxString() as $text,

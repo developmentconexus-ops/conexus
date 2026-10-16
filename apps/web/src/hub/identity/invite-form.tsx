@@ -6,7 +6,7 @@ import { useId, useState } from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
-import { FieldError, FieldLabel } from '../../ui/field.tsx'
+import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { companyQuery, inviteToCompany } from './queries.ts'
@@ -27,7 +27,7 @@ function RoleField({ roles }: { roles: readonly Role[] }) {
   const error = formState.errors.role
   const message = typeof error?.message === 'string' ? error.message : undefined
   return (
-    <div className="flex w-full flex-col gap-sm">
+    <Field data-invalid={error ? true : undefined}>
       <FieldLabel htmlFor={id}>Papel</FieldLabel>
       <Controller
         name="role"
@@ -39,7 +39,10 @@ function RoleField({ roles }: { roles: readonly Role[] }) {
             onValueChange={field.onChange}
             items={roles.map((role) => ({ value: role, label: ROLE_LABELS[role] }))}
           >
-            <SelectTrigger aria-invalid={error ? true : undefined}>
+            <SelectTrigger
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? `${id}-error` : undefined}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -52,8 +55,8 @@ function RoleField({ roles }: { roles: readonly Role[] }) {
           </Select>
         )}
       />
-      <FieldError>{message}</FieldError>
-    </div>
+      <FieldError id={`${id}-error`}>{message}</FieldError>
+    </Field>
   )
 }
 

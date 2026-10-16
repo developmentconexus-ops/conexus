@@ -47,7 +47,7 @@ export function TextField(props: {
   const sentence = error?.type === 'server' ? error.message : undefined
   const message = error ? (typeof sentence === 'string' ? sentence : props.invalid) : undefined
   return (
-    <Field>
+    <Field data-invalid={error ? true : undefined}>
       <FieldLabel htmlFor={id}>{props.label}</FieldLabel>
       <Input
         id={id}

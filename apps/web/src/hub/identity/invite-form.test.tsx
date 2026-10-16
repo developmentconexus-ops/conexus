@@ -172,6 +172,10 @@ test('403 INVITATION_ROLE_REFUSED: a frase fica no campo do papel', async () => 
   expect(await screen.findByText('Você não pode convidar com esse papel.')).toBeTruthy()
   expect(role.getAttribute('aria-invalid')).toBe('true')
   expect(email.getAttribute('aria-invalid')).toBeNull()
+  const sentence = screen.getByRole('alert')
+  expect(sentence.textContent).toBe('Você não pode convidar com esse papel.')
+  expect(role.getAttribute('aria-describedby')).toBe(sentence.id)
+  expect(sentence.id).not.toBe('')
 })
 
 test('502 MAIL_UNAVAILABLE: a frase fica no formulário, e o aviso de envio não aparece', async () => {

@@ -75,7 +75,7 @@ for (const password of ['curta', '']) {
     const field = await choose(password)
     expect(await screen.findByText('A senha precisa de 8 caracteres ou mais.')).toBeTruthy()
     expect(field.getAttribute('aria-invalid')).toBe('true')
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('alert').id).toBe(field.getAttribute('aria-describedby'))
     expect(sent).toBe(0)
   })
 }

@@ -51,8 +51,7 @@ function PasswordLinkForm({ onSent }: { onSent: () => void }) {
 /** The invitation's address for a person with no session: sign in, or ask for a first password. */
 export function InvitationEntry() {
   const { invitationId } = entryRoute.useParams()
-  const [asking, setAsking] = useState(false)
-  const [sent, setSent] = useState(false)
+  const [step, setStep] = useState<'ENTRY' | 'ASKING' | 'SENT'>('ENTRY')
   return (
     <section className="flex w-full flex-col gap-lg">
       <h1 className="font-display text-title">Você recebeu um convite</h1>
@@ -64,10 +63,12 @@ export function InvitationEntry() {
         >
           Entrar
         </Link>
-        <Button onClick={() => setAsking(true)}>Ainda não tenho senha</Button>
+        <Button onClick={() => setStep((now) => (now === 'ENTRY' ? 'ASKING' : now))}>
+          Ainda não tenho senha
+        </Button>
       </div>
-      {asking && !sent && <PasswordLinkForm onSent={() => setSent(true)} />}
-      {sent && (
+      {step === 'ASKING' && <PasswordLinkForm onSent={() => setStep('SENT')} />}
+      {step === 'SENT' && (
         <p role="status" className="text-text">
           Enviamos o link para criar a senha ao e-mail do convite.
         </p>
