@@ -5,5 +5,5 @@ or {
   JsTemplateChunkElement() as $text
 } where {
   $text <: r".*\b(?:max-w|min-w|w)-(?:xs|sm|md|lg|xl|2xl)\b.*",
-  register_diagnostic(span=$text, message="A width utility with a brand spacing name reads --spacing-*, not --container-*: use a --container-* token with a name of its own (web W25).")
+  register_diagnostic(span=$text, message="A width utility with a brand spacing name reads --spacing-*, not --container-*: use a --container-* token with a name of its own (design V23).")
 }

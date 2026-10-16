@@ -89,7 +89,7 @@ library joins the Hub sets.
   transaction, so every call the library makes inside, nested ones included, writes there.
   `createFirstPerson` in `first-person.ts` also takes `transactionLock` (`database.ts`, a
   `pg_advisory_xact_lock`) on the key `conexus.first-person`, which ends with the transaction.
-- **Why.** [Code C64 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
+- **Why.** [Code C37 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
   in an accept leaves nothing, and `forgetLinks` deletes through the same transaction. The test
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` fails with
   `runWithAdapter`, which leaves the plugin's own transaction on another connection (removal
@@ -117,7 +117,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `forgetLinks` in `apps/server/src/hub/identity/auth.ts`. It deletes the
   person's links by their stored value, the person's id, with Drizzle's `delete` in the same
   transaction as the new one.
-- **Why.** [Code C64](../guides/code.md). The test "com a pessoa ainda sem senha" in
+- **Why.** [Code C37](../guides/code.md). The test "com a pessoa ainda sem senha" in
   `first-person.test.ts` and the test "link: passados 20 s" in `invitation-link.test.ts` fail
   without it (removals `first-person-forgets-earlier-link` and `password-link-forgets-earlier`).
 
@@ -128,7 +128,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `apps/server/src/hub/identity/routes.ts`, `deleteSession`. It calls
   `revokeSession` first, which fails loudly when the database refuses. Only after that does it call
   `signOut`, which expires the cookies.
-- **Why.** [Security S20](../guides/security.md). With the library's order, a database failure
+- **Why.** [Security S13](../guides/security.md). With the library's order, a database failure
   answers "signed out" to a session that is still alive. The test "sair falha" in
   `session.test.ts` fails without the piece (removal `sign-out-row-first`).
 
@@ -202,7 +202,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts`,
   `passwordLinkCommand` in `invitations.ts` and `hasPassword` in `auth.ts`. They read the person by
   e-mail, whether she has a password, and whether the installation has anyone, inside the command's
-  transaction, and parse each row as [data D21](../guides/data.md) says: a person against the
+  transaction, and parse each row as [code C27](../guides/code.md) says: a person against the
   contract's `Person`, an account against its password.
 - **Why.** The public reads need a session (`/admin/list-users`) or return no password state, and
   these run before anyone is signed in. The reads join the command's transaction through
@@ -219,7 +219,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `linkTokenOf` in `apps/server/src/hub/identity/auth.ts`. The configured
   `sendResetPassword` gives the token to the `AsyncLocalStorage` slot of the call that asked, and
   the command builds the link and the e-mail itself.
-- **Why.** [Security S35](../guides/security.md): the token reaches only the command, never an
+- **Why.** [Security S36](../guides/security.md): the token reaches only the command, never an
   e-mail sent inside the library's call or a log. Building the token ourselves would copy the
   library's private identifier format. The test "com a pessoa ainda sem senha" in
   `first-person.test.ts` and the tests "link" in `invitation-link.test.ts` read the link it returns.
@@ -236,7 +236,7 @@ library joins the Hub sets.
   sends again: delivery is at least once. `mailed_at` is an
   additional field with `input: false`, which leaves it out of the plugin's request body
   (`better-auth/dist/db/to-zod.mjs:17`).
-- **Why.** [Code C64](../guides/code.md). Sent inside the transaction, a slow provider holds the
+- **Why.** [Code C37](../guides/code.md). Sent inside the transaction, a slow provider holds the
   company's lock, and a rollback after the send mails an invitation that does not exist; sent after
   the commit with no record, a Hub stopped before the send leaves a replay that mails nothing
   (founder, 2026-10-15, "A"). The test "o Hub parou entre o convite e o e-mail" in
@@ -282,7 +282,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `acceptCommand` in `apps/server/src/hub/identity/invitations.ts`. It
   answers 404 to anyone but the recipient, locks the company row, and answers an invitation she
   already accepted with its company; otherwise it calls the plugin's accept.
-- **Why.** [Security S10](../guides/security.md), [code C64 and C65](../guides/code.md). In
+- **Why.** [Security S10](../guides/security.md), [code C37 and C65](../guides/code.md). In
   `invitation-acceptance.test.ts`, "aceitar: 200 e um membro" fails when the recipient is not
   checked first (removal `accept-recipient-first`), "aceitar: com um re-convite ao mesmo tempo"
   fails without the lock (removal `accept-company-lock`), and "aceitar: dois juntos" covers it.
@@ -372,8 +372,8 @@ library joins the Hub sets.
   never runs.
 - **Hand-made piece.** `answerClientError` and the `frameworkErrors` option in
   `apps/server/src/platform/http.ts`. Both answer `REQUEST_MALFORMED` in problem+json, apply the
-  helmet middleware by hand and log the line of C46.
-- **Why.** [Code C51](../guides/code.md) and [security S26](../guides/security.md). The tests
+  helmet middleware by hand and log the line of C54.
+- **Why.** [Code C51](../guides/code.md) and [security S24](../guides/security.md). The tests
   "Content-Length errado", "linha malformada" and "caminho com porcentagem malformada responde 400
   em problem+json, com cabeçalhos e log" in `main.test.ts` cover it.
 
@@ -384,7 +384,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `logServed` in `apps/server/src/platform/http.ts`, with
   `disableRequestLogging`. It writes `REQUEST_SERVED` with the route, the status and the duration;
   `genReqId` and `requestIdLogLabel` stay native.
-- **Why.** [Code C46 and C50](../guides/code.md): one line per request, and a message is a code. The
+- **Why.** [Code C54 and C50](../guides/code.md): one line per request, and a message is a code. The
   test "log por pedido" in `main.test.ts` covers it.
 
 ### The mail provider's reply is read up to a cap

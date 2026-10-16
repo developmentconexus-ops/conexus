@@ -51,7 +51,7 @@ each part's entry sheet from firstmate and the old code at its frozen commit, re
 
 A study report with every section of [the template](references/report.md), within its ceiling,
 for the planning session, kept outside the repository ([delivery
-L22](../../../docs/guides/delivery.md)). For an expensive choice, a decision record in state
+L21](../../../docs/guides/delivery.md)). For an expensive choice, a decision record in state
 "proposed" with its Criterion.
 
 ## Stop and ask

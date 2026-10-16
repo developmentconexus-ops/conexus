@@ -1,8 +1,8 @@
 # Components: the pieces of the Hub's screens and their tokens
 
 The `components` of the [DESIGN.md format](https://github.com/google-labs-code/design.md), kept
-apart from the [design guide](../guides/design.md) so a step that adds a piece adds its entry in the
-same change ([design V24](../guides/design.md)). Each value names a token of the guide's front matter
+apart from the [design guide](../guides/design.md) as a reference for shared pieces
+([design V23](../guides/design.md)). Each value names a token of the guide's front matter
 or a measure the piece's code in `apps/web/src/ui` and `apps/web/src/brand` holds. The guide owns
 the rules; this file only lists the pieces.
 
@@ -153,7 +153,7 @@ drawer-backdrop:
 
 These are the pieces with values of their own; a heading or an alert line is text in its tokens.
 The rail's places are `nav-item`, with an 18px icon (design V34). A `select-item` keeps 2rem on the right for its check mark, as shadcn's does. The select is shadcn's base-nova item with these departures: it drops `SelectGroup`, `SelectLabel` and `SelectSeparator`, since a role list has no groups; the trigger is 36px and the item 34px, the brand's control heights, not shadcn's 36px and padded rows; and the popup has a hairline and the brand's `sm` padding, with no shadow. The menu, the select and the drawer take a
-hairline, not a shadow, because the brand has no shadow token yet (design V3, V20). A `notice` is a
+hairline, not a shadow, because the brand has no shadow token yet (design V3, V19). A `notice` is a
 `role="status"` line in the body color, so it is not mistaken for the grey subtitle under it. The wordmark's "nexus" and the mark take `mark`.
 
 ## Brought from the old design, with no code yet

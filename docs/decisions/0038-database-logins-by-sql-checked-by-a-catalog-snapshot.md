@@ -33,7 +33,7 @@ roles and grants, so the equality is checked on the CI cluster only.
 
 The test cluster must be disposable: another role on it fails the equality. On Neon the owner login
 holds `neon_superuser`, so its key stays with the `migrate` service alone. The company projects'
-logins of step 7 follow the same rule (D3).
+logins of step 7 follow the same rule (architecture section 5; decision [0021]).
 
 ## Reopens when
 
