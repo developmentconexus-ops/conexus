@@ -28,15 +28,13 @@ A / T2. A / T3. A / T4. A”. A empresa nasce no cadastro, sem membro, e o admin
 ao aceitar. O CNPJ é único pelas 14 posições, com letras aceitas. Corrige-se enquanto o cliente
 aguarda; trocar o e-mail é cancelar e convidar outro. A Central mostra só dados e donos.
 
-**A exceção de P6 B.** Uma migração só acrescenta (D6). Desta vez, uma só, ela apaga as empresas
-sem cadastro na Central, com membros e convites; pessoas, senhas e sessões ficam. Se a publicação
-voltar atrás, elas não voltam, e uma empresa criada na versão anterior fica fora da Central: não
-crie empresas nela.
+**A exceção de P6 B.** Uma migração só acrescenta (D6). Desta vez, única, apaga as empresas
+sem cadastro na Central, com membros e convites; pessoas, senhas e sessões ficam. No rollback,
+elas não voltam, e empresas criadas na versão anterior ficam fora da Central: não crie empresas nela.
 
 **Fica de fora.** Apagar cliente (etapa 5), telefone, endereço, plano, consulta à Receita, entrar
-como o cliente. Das issues `next-card` entra o item 23 da 39; os 1–4 e 24 da 39 e 3 e 8 da 32 são de
-4.1; os 5–7 da 39 já entraram. Os demais da 39 e da 25 esperam: o cadastro não precisa deles, e nada
-novo roda sozinho.
+como o cliente. Das issues `next-card` entra o item 23 da 39; os itens de 4.1 (1–4, 24 da 39; 3, 8 da 32)
+e 5–7 da 39 já entraram. Os demais esperam: o cadastro não precisa deles e nada novo roda sozinho.
 
 **A decisão sua pedida nesta etapa.** O login do Hub poderá ler, gravar e alterar a tabela de
 cadastro, mas **não apagar**; a exclusão é da etapa 5, com o grant dela. **A**: aprovo. **B**: outro
@@ -44,7 +42,7 @@ conjunto, e qual. Exemplo: com A, nem um defeito do Hub apaga um cadastro.
 
 ## As unidades
 
-Base: `main` `6ca2d08`; estudo de 2026-10-16; cartão de 4.1 em `4733383`; revisão pelo
+Base: `main` `6e6afff` (após merge de 4.1, PR #44); estudo de 2026-10-16; revisão pelo
 [checklist](../reference/checklist.md).
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
@@ -58,24 +56,20 @@ Base: `main` `6ca2d08`; estudo de 2026-10-16; cartão de 4.1 em `4733383`; revis
 
 Sem paralelismo: U1, U3, U5 e U6 dividem a identidade; U4 e U5, as telas.
 
-**Orçamento de código alterado**, adições mais remoções, sem testes nem gerados: U1 **400**;
-U2 **150**; U3 **1.650**; U4 **1.050**; U5 **400**; U6 **300**. Total: **3.950**, teto 4.000
-(L2), estimativa do estudo, a recontar contra o código de 4.1 antes da aprovação. Acima de 4.000,
-a etapa se divide sem cortar escopo: **4.2a** com U1, U2, U3, U5, U6 e, de U4, a lista e o cadastro;
-**4.2b** com o detalhe, a correção e as ações do convite de dono; cada uma com o seu roteiro.
+**Orçamento de código alterado** (adições e remoções sem testes/gerados): U1 **400**; U2 **150**;
+U3 **1.650**; U4 **1.050**; U5 **400**; U6 **300**. Total: **3.950**, teto 4.000 (L2).
+Se passar de 4.000, divide-se: **4.2a** (U1–U3, U5, U6, lista e cadastro de U4); **4.2b**
+(detalhe, correção e ações de convite de U4).
 
-**Encaixes de 4.1 assumidos**, do cartão aprovado; conferir no código de 4.1 em `main` antes da
-aprovação.
+**Encaixes de 4.1 conferidos** no código de 4.1 em `main` (`6e6afff`):
 
 - **E1.** `InvitationView` com seis `kind` e `inviterName`, por `getInvitation`.
-- **E2.** `createInvitation` (com `replaces`), `renewInvitation`, `cancelInvitation` e
-  `listInvitations` recebem a prova de admissão como parâmetro.
-- **E3.** `renderInvitation` com `inviterName`; envio depois do commit, `mailed_at`, replay do
-  pendente vivo sem marca.
-- **E4.** `revision` e `superseded_at` em `auth.invitation`; `INVITATION_STALE`, `INVITATION_CLOSED`.
-- **E5.** `acceptInvitation` com revisão, sob `lockCompany`.
-- **E6.** `Notice`, `NotFound` com destino inicial, a linha de convite de Pessoas.
-- **E7.** O snapshot de `database-grants.sql` depois de 4.1.
+- **E2.** Comandos de 4.1 chamam `admit` sob transação e `lockCompany`, sem receber a prova por parâmetro. Em 4.2 U1, `admit` admite o operador para `invite` (`owner`) se a empresa não tem membros (`AWAITING_OWNER`), e dá 404 em `readInvitations`. Cancelamento usa DELETE; renovação, PUT.
+- **E3.** `renderInvitation` com `inviterName`; envio pós-commit via `mailInvitation`, `mailed_at` gravado na resposta ou bounce, replay do pendente sem marca.
+- **E4.** `revision` e `superseded_at` em `auth.invitation`; `INVITATION_STALE`, `INVITATION_CLOSED`. Reemissão (`replaces`) exige convite expirado sob o lock.
+- **E5.** `acceptInvitation` com revisão sob `lockCompany`.
+- **E6.** `Notice`, `NotFound` com destino inicial, linha de convite de Pessoas.
+- **E7.** O snapshot de `database-grants.sql` após 4.1.
 
 ## Os critérios de aceite
 
@@ -127,11 +121,10 @@ Dono: Hub. `AWAITING_OWNER` sem linha em `member`, `ACTIVE` com uma ou mais; der
 | `listCompanies.mayOperate`, no lugar de `mayCreate` | tabela de ações | menu, guarda |
 | `InvitationView.inviterName` | leitura de 4.1: “Conexus” se a empresa não tem membro | convite, e-mail |
 
-Falhas novas, USER, settles, ação NONE (C48). No campo: `CLIENT_EXISTS` 409, “Já existe um cliente
-com este CNPJ.”; `CLIENT_OWNER_IS_OPERATOR` 422, “Este e-mail é de um operador da Conexus.”. No
-formulário, com “Recarregue a página.”: `CLIENT_STALE` 412, “Este cliente mudou.”; `CLIENT_ACTIVE`
-409, “Este cliente já está ativo.”. `OWNER_INVITATION_OPEN` 409, “Já há um convite de dono em
-aberto.” / “Cancele-o antes de convidar outro e-mail.”
+Falhas novas, USER, settles, ação NONE (C48). No campo: `CLIENT_EXISTS` 409 (“Já existe um cliente
+com este CNPJ.”); `CLIENT_OWNER_IS_OPERATOR` 422 (“Este e-mail é de um operador da Conexus.”). No
+formulário: `CLIENT_STALE` 412 (“Este cliente mudou.”); `CLIENT_ACTIVE` 409 (“Este cliente já está ativo.”).
+`OWNER_INVITATION_OPEN` 409 (“Já há um convite de dono em aberto.” / “Cancele-o antes de convidar outro e-mail.”).
 
 ## A tabela de falhas
 
@@ -154,12 +147,11 @@ aberto.” / “Cancele-o antes de convidar outro e-mail.”
 | Convite de dono | reuso de 4.1 | `invitations.ts`, `invitation-reads.ts`, e-mail | prova de operador | cartão de 4.1 |
 | Central web | nova | `apps/web/src/hub/operations/`, `apps/web/src/routes/_app/operations/` | — | Q1 A |
 
-**A medida do transplante.** Zero linhas antigas. Substitui-se `createCompanyCommand`, de `main`; o
-replay pela chave continua no cadastro.
+**A medida do transplante.** Zero linhas antigas. `createCompanyCommand` é substituído pelo cadastro.
 
-**A dívida.** Nenhuma nova. Fechamento (L27): S6 pede ser membro, e o operador age por um fato da
-pessoa (S11); a exceção a D6 em “Roll back” da arquitetura; nota em 0015, empresa sem membro
-enquanto aguarda. Risco sem caminho hoje: um operador promovido depois aceitar um convite de dono.
+**A dívida.** Nenhuma nova. Fechamento (L27): S6 pede ser membro e operador age por fato da pessoa
+(S11); exceção a D6 em “Roll back”; nota em 0015 (empresa sem membro aguardando). Risco: operador
+promovido depois aceitar convite de dono.
 
 ## U1 Admissão do operador
 
@@ -187,7 +179,8 @@ enquanto aguarda. Risco sem caminho hoje: um operador promovido depois aceitar u
 
 1. A união e a tabela. Regras: S6, S7, S8, S10, S11, C16, C21, C22, C26. Funções: better-auth 1.7.8
    `defaultRoles[role].authorize` (`organization/access`), já usada; `user.role` lido na transação.
-2. Os comandos de 4.1 aceitam `OwnerInviterProof` só com o papel `owner` (E2).
+2. `admit` resolve o operador na empresa sem membro para a ação `invite`, limitando o papel a `owner`
+   via `mayInviteAs` (E2).
 3. Sai `mayCreateCompanies`; até U5, `mayCreate` e `allowUserToCreateOrganization` leem `mayOperate`.
 
 ### Como se prova
@@ -358,7 +351,7 @@ migra até a anterior (`migrate({migrationsFolder})`), planta as linhas e aplica
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/identity/` | `invitation-reads.ts`, `messages.ts`, modelo do e-mail | `getInvitation`, envio |
+| `apps/server/src/hub/identity/` | `invitation-reads.ts`, `messages.ts`, `company-routes.ts`, modelo do e-mail | `getInvitation`, envio, reenvio |
 | `tests/e2e/` | cria `client.test.ts` | `npm run e2e` |
 | `docs/reference/` | boundaries: `getOrgAdapter`, com a linha da biblioteca (C75) | revisores |
 
