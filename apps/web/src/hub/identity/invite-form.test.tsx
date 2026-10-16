@@ -4,16 +4,21 @@ import {
   getCompany,
   listInvitations,
   listMembers,
-  SessionState,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
+import {
+  ANA,
+  COMPANY,
+  hubServer,
+  refusal,
+  sessionRead,
+  undecided,
+} from '../../platform/test-hub.tsx'
 
-const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
 const server = hubServer()
 
 function accepted(email: string, role: string) {
@@ -33,9 +38,7 @@ function hub(
 ) {
   const sent: Sent[] = []
   server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: ANA })),
-    ),
+    sessionRead(() => ANA),
     http.get(`*/api/companies/${COMPANY.id}`, () =>
       HttpResponse.json(
         getCompany.success.body.parse({ company: COMPANY, role: 'owner', mayInviteAs }),

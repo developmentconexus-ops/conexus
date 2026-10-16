@@ -1,18 +1,18 @@
-import {
-  createCompany,
-  getCompany,
-  listCompanies,
-  listMembers,
-  SessionState,
-} from '@conexus/hub-api'
+import { createCompany, getCompany, listCompanies, listMembers } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
+import {
+  ANA,
+  COMPANY,
+  hubServer,
+  refusal,
+  sessionRead,
+  undecided,
+} from '../../platform/test-hub.tsx'
 
-const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
 const server = hubServer()
 
 const UNDECIDED = undecided('{"company":{"id":"aaa')
@@ -23,9 +23,7 @@ type Sent = { key: string | null; body: unknown }
 function hub(answers: (() => Response)[]) {
   const sent: Sent[] = []
   server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: ANA })),
-    ),
+    sessionRead(() => ANA),
     http.get('*/api/companies', () =>
       HttpResponse.json(
         listCompanies.success.body.parse({ companies: [], mayCreate: true, next: { kind: 'END' } }),

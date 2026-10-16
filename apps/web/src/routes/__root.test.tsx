@@ -1,16 +1,10 @@
-import { listCompanies, PAGES } from '@conexus/hub-api'
+import { PAGES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../main.tsx'
-import { ANA, hubServer, STATUS } from '../platform/test-hub.tsx'
+import { homeHub, hubServer } from '../platform/test-hub.tsx'
 
-const NO_COMPANIES = listCompanies.success.body.parse({
-  companies: [],
-  mayCreate: false,
-  next: { kind: 'END' },
-})
 const server = hubServer()
 
 test('um endereço desconhecido mostra "Não encontramos o que você procurou."', async () => {
@@ -25,16 +19,12 @@ test('um endereço desconhecido mostra "Não encontramos o que você procurou."'
   expect(screen.queryByText('Not Found')).toBeNull()
 })
 
-for (const [who, session, arrival] of [
-  ['sem sessão', { state: 'SIGNED_OUT' }, 'Entrar no Conexus'],
-  ['com sessão', { state: 'SIGNED_IN', person: ANA }, 'Você entrou como Ana Lima.'],
+for (const [who, signedIn, arrival] of [
+  ['sem sessão', false, 'Entrar no Conexus'],
+  ['com sessão', true, 'Você entrou como Ana Lima.'],
 ] as const) {
   test(`${who}, "Voltar ao início" leva do endereço desconhecido ao início`, async () => {
-    server.use(
-      http.get('*/api/sessions/current', () => HttpResponse.json(session)),
-      http.get('*/api/status', () => HttpResponse.json(STATUS)),
-      http.get('*/api/companies', () => HttpResponse.json(NO_COMPANIES)),
-    )
+    server.use(...homeHub({ signedIn }))
     const conexus = createConexus(createMemoryHistory({ initialEntries: ['/nada-aqui'] }))
     render(<Conexus conexus={conexus} />)
     fireEvent.click(await screen.findByRole('link', { name: 'Voltar ao início' }))

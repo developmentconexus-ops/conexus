@@ -1,16 +1,55 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES } from '@conexus/hub-api'
-import { HttpResponse } from 'msw'
+import { FAILURES, listCompanies, SessionState } from '@conexus/hub-api'
+import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { problemOf } from './test-problem.ts'
 
 export const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
+export const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
+export const NO_COMPANIES = listCompanies.success.body.parse({
+  companies: [],
+  mayCreate: false,
+  next: { kind: 'END' },
+})
 export const STATUS = {
   version: 'v0.1.0',
   lastStart: { state: 'NONE' },
   previousStart: { state: 'NONE' },
 } as const
+
+/** The session read: the person `signedIn` returns, or nobody when it returns undefined. */
+export function sessionRead(signedIn: () => typeof ANA | undefined) {
+  return http.get('*/api/sessions/current', () => {
+    const person = signedIn()
+    return HttpResponse.json(
+      SessionState.parse(person ? { state: 'SIGNED_IN', person } : { state: 'SIGNED_OUT' }),
+    )
+  })
+}
+
+/**
+ * The Hub a person lands on after signing in as Ana: the session (signing in sets `state`), the
+ * status and the company list, which `onCompaniesRead` sees with its query string.
+ */
+export function homeHub(
+  state: { signedIn: boolean },
+  companies: unknown = NO_COMPANIES,
+  onCompaniesRead: (search: string) => void = () => undefined,
+) {
+  return [
+    sessionRead(() => (state.signedIn ? ANA : undefined)),
+    http.put('*/api/sessions/current', () => {
+      state.signedIn = true
+      return HttpResponse.json({ person: ANA })
+    }),
+    http.get('*/api/status', () => HttpResponse.json(STATUS)),
+    http.get('*/api/companies', ({ request }) => {
+      onCompaniesRead(new URL(request.url).search)
+      return HttpResponse.json(listCompanies.success.body.parse(companies))
+    }),
+  ]
+}
 
 /** The Hub as a test sees it: no request goes unanswered, and each test starts with no handler. */
 export function hubServer() {

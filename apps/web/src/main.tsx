@@ -3,7 +3,7 @@ import './brand/tokens.css'
 import { CSPProvider } from '@base-ui/react/csp-provider'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { RouterHistory } from '@tanstack/react-router'
-import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { createRouter, RouterProvider, useRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createCache } from './platform/cache.ts'
@@ -29,10 +29,11 @@ declare module '@tanstack/react-router' {
 }
 
 function PageFailure({ error, reset }: { error: unknown; reset: () => void }) {
+  const router = useRouter()
   return (
     <Failure
       code={error instanceof HubFailure ? error.code : 'INTERNAL_UNEXPECTED'}
-      onRetry={reset}
+      onRetry={() => void router.invalidate().then(reset)}
     />
   )
 }

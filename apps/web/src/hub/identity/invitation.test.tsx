@@ -5,17 +5,15 @@ import {
   getCompany,
   getInvitation,
   listMembers,
-  SessionState,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, hubServer, refusal } from '../../platform/test-hub.tsx'
+import { ANA, COMPANY, hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
 
 const DAVI = { id: 'person-davi', name: 'Davi Costa', email: 'davi@example.test' }
-const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
 const INVITATION = 'i'.repeat(32)
 const server = hubServer()
 
@@ -35,13 +33,7 @@ type Who = { person: typeof DAVI | undefined }
 /** The Hub with `who` signed in (or nobody); signing in as Davi signs him in. */
 function hub(who: Who, reply: () => Response) {
   server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(
-        SessionState.parse(
-          who.person ? { state: 'SIGNED_IN', person: who.person } : { state: 'SIGNED_OUT' },
-        ),
-      ),
-    ),
+    sessionRead(() => who.person),
     http.put('*/api/sessions/current', () => {
       who.person = DAVI
       return HttpResponse.json(createSession.success.body.parse({ person: DAVI }))

@@ -4,29 +4,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, hubServer, refusal, STATUS } from '../../platform/test-hub.tsx'
+import { ANA, homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
 
-const NO_COMPANIES = { companies: [], mayCreate: false, next: { kind: 'END' } }
 const asked: string[] = []
 const server = hubServer()
 
 function hub(state: { signedIn: boolean }, companies: unknown = NO_COMPANIES) {
-  server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(
-        state.signedIn ? { state: 'SIGNED_IN', person: ANA } : { state: 'SIGNED_OUT' },
-      ),
-    ),
-    http.put('*/api/sessions/current', () => {
-      state.signedIn = true
-      return HttpResponse.json({ person: ANA })
-    }),
-    http.get('*/api/status', () => HttpResponse.json(STATUS)),
-    http.get('*/api/companies', ({ request }) => {
-      asked.push(new URL(request.url).search)
-      return HttpResponse.json(listCompanies.success.body.parse(companies))
-    }),
-  )
+  server.use(...homeHub(state, companies, (search) => asked.push(search)))
 }
 
 function open(path: string) {
@@ -75,6 +59,19 @@ test('o Hub sem banco ao ler a sessão: "Não foi possível abrir o Conexus" com
     'O banco do Conexus não respondeu. O erro foi registrado. Avise quem cuida do Conexus.',
   )
   expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+})
+
+test('uma falha que o Hub manda tentar de novo mostra "Tentar de novo", que lê a sessão outra vez', async () => {
+  let reads = 0
+  server.use(
+    http.get('*/api/sessions/current', () => {
+      reads += 1
+      return refusal('REQUEST_MALFORMED')
+    }),
+  )
+  open('/')
+  fireEvent.click(await screen.findByRole('button', { name: 'Tentar de novo' }))
+  await waitFor(() => expect(reads).toBe(2))
 })
 
 const EMPRESA = { id: 'a'.repeat(32), name: 'Empresa Teste' }

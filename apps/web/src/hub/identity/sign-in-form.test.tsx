@@ -1,10 +1,9 @@
-import { SessionState } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { ANA, homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 
@@ -79,21 +78,8 @@ test('enquanto envia, o botão fica desabilitado com "Entrando…"', async () =>
 })
 
 test('entrar a caminho de outra página leva o foco ao título dela, não ao corpo (#32-4)', async () => {
-  const ana = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
   const state = { signedIn: false }
-  server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(
-        SessionState.parse(
-          state.signedIn ? { state: 'SIGNED_IN', person: ana } : { state: 'SIGNED_OUT' },
-        ),
-      ),
-    ),
-    http.put('*/api/sessions/current', () => {
-      state.signedIn = true
-      return HttpResponse.json({ person: ana })
-    }),
-  )
+  server.use(...homeHub(state))
   render(
     <Conexus
       conexus={createConexus(
@@ -101,7 +87,7 @@ test('entrar a caminho de outra página leva o foco ao título dela, não ao cor
       )}
     />,
   )
-  fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ana.email } })
+  fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
   const title = await screen.findByRole('heading', { name: 'Nova empresa' })

@@ -1,12 +1,11 @@
-import { FAILURES, getCompany, listInvitations, listMembers, SessionState } from '@conexus/hub-api'
+import { FAILURES, getCompany, listInvitations, listMembers } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, hubServer, refusal } from '../../platform/test-hub.tsx'
+import { ANA, COMPANY, hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
 
-const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
 const server = hubServer()
 
 const DAVI = { personId: 'person-davi', name: 'Davi Costa', email: 'davi@example.test' }
@@ -28,9 +27,7 @@ type View = {
 function hub(view: View) {
   const reads: string[] = []
   server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: ANA })),
-    ),
+    sessionRead(() => ANA),
     http.get(`*/api/companies/${COMPANY.id}`, () =>
       HttpResponse.json(
         getCompany.success.body.parse({
@@ -121,20 +118,14 @@ test('a página dos membros fica no endereço: "Ver mais" pede a que segue', asy
 
 test('um id que não tem 32 letras e dígitos: a frase de "não encontrado"', async () => {
   const conexus = createConexus(createMemoryHistory({ initialEntries: ['/companies/curto'] }))
-  server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: ANA })),
-    ),
-  )
+  server.use(sessionRead(() => ANA))
   render(<Conexus conexus={conexus} />)
   expect(await screen.findByText(/Não encontramos o que você procurou/)).toBeTruthy()
 })
 
 test('uma empresa que o Hub responde 404: a página de "não encontrado", não a de erro', async () => {
   server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: ANA })),
-    ),
+    sessionRead(() => ANA),
     http.get(`*/api/companies/${COMPANY.id}`, () => refusal('NOT_FOUND')),
   )
   open()

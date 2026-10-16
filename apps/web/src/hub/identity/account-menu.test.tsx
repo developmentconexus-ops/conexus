@@ -3,27 +3,19 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, hubServer, refusal, STATUS } from '../../platform/test-hub.tsx'
+import { homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 
 function signedIn(signOut: () => Promise<Response> | Response) {
   const state = { signedIn: true }
   server.use(
-    http.get('*/api/sessions/current', () =>
-      HttpResponse.json(
-        state.signedIn ? { state: 'SIGNED_IN', person: ANA } : { state: 'SIGNED_OUT' },
-      ),
-    ),
+    ...homeHub(state),
     http.delete('*/api/sessions/current', async () => {
       const answer = await signOut()
       if (answer.ok) state.signedIn = false
       return answer
     }),
-    http.get('*/api/companies', () =>
-      HttpResponse.json({ companies: [], mayCreate: false, next: { kind: 'END' } }),
-    ),
-    http.get('*/api/status', () => HttpResponse.json(STATUS)),
   )
   const conexus = createConexus(createMemoryHistory({ initialEntries: ['/'] }))
   render(<Conexus conexus={conexus} />)
