@@ -47,7 +47,57 @@ jobs:
         if: github.event_name == 'pull_request'
         run: npm run new-dependencies -- --base "origin/${{ github.base_ref }}"
 
-  test:
+  # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
+  # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.
+  scripts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/install
+      - run: npm run test:scripts
+
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    services:
+      postgres:
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        env:
+          POSTGRES_PASSWORD: ci-superuser
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
+      CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/install
+      - uses: ./.github/actions/test-database
+      - run: npm run test:shared -w @conexus/server -- --test-shard=${{ matrix.shard }}/2
+      # migrate.test.ts changes the roles of the whole server, so it runs when nothing else does.
+      - if: matrix.shard == 1
+        run: npm run test:roles -w @conexus/server
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/install
+      - run: npm test -w @conexus/web
+      - run: npm run build
+
+  e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -67,25 +117,18 @@ jobs:
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - name: The owner of the test databases is not a superuser
-        run: >-
-          psql postgres://postgres:ci-superuser@localhost:5432/postgres
-          -c "create role conexus_owner login createdb createrole password 'ci-owner'"
-      - name: The container that serves the tests dumps the catalog
-        run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
-      - run: npm test
+      - uses: ./.github/actions/install
+      - uses: ./.github/actions/test-database
       - name: The founder's use script runs in a browser against a real Hub
         run: npm run e2e
-      - run: npm run build
 
   removals:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -103,19 +146,10 @@ jobs:
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - name: The owner of the test databases is not a superuser
-        run: >-
-          psql postgres://postgres:ci-superuser@localhost:5432/postgres
-          -c "create role conexus_owner login createdb createrole password 'ci-owner'"
-      - name: The container that serves the tests dumps the catalog
-        run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/install
+      - uses: ./.github/actions/test-database
       - name: Each protection's test fails when the protection is taken out
-        run: npm run removals
+        run: npm run removals -- --shard ${{ matrix.shard }}/3
 
   image:
     if: github.event_name == 'pull_request'
@@ -139,13 +173,16 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, test, removals, image]
+    needs: [check, scripts, server, web, e2e, removals, image]
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     steps:
       - name: Every job must have succeeded
         env:
-          RESULTS: ${{ needs.check.result }} ${{ needs.test.result }} ${{ needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.e2e.result }} ${{ needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
@@ -154,3 +191,19 @@ jobs:
               exit 1
             fi
           done
+      # Where the time went: the run's own record of each job and step, read back from GitHub, so
+      # the slowest step of every run is one click away and no service holds the numbers.
+      - name: The jobs and the slowest steps of this run
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
+            --jq '.jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, seconds: (($job.completed_at | fromdate) - ($job.started_at | fromdate)), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}' \
+            | jq -s -r '
+              "### Jobs, longest first", "", "| Seconds | Job |", "| ---: | --- |",
+              (sort_by(-.seconds)[] | "| \(.seconds) | \(.job) |"), "",
+              "### Slowest steps", "", "| Seconds | Job | Step |", "| ---: | --- | --- |",
+              ([.[] | .job as $job | .steps[] | {job: $job, step, seconds}] | sort_by(-.seconds) | .[:15][] | "| \(.seconds) | \(.job) | \(.step) |")
+            ' >> "$GITHUB_STEP_SUMMARY"
