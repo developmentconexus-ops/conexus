@@ -506,7 +506,7 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   dependency).
 - **Hand-made piece.** `scripts/emit-openapi.ts`. It walks the operations `@conexus/hub-api`
   exports and maps each to a path item: `operationId`, `security` from the operation's access (the
-  `cookieSession` apiKey scheme for `session`, `security: []` for `public` and `entry`), parameters,
+  `cookieSession` apiKey scheme for `session`, `security: []` for every other access), parameters,
   the `Idempotency-Key` header of an attempt-keyed write, the request body, the success, and the
   failures grouped by their status in the failure table, with one `Problem` component. It stops with
   the operation's id and exit code 1 on a schema `z.toJSONSchema` cannot express (a planted `z.date()`
@@ -515,7 +515,7 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Why.** [Code C28 and C29](../guides/code.md): the document is read from the one declaration of
   each operation. Either package would still need the mapping from our `Operation` to its path
   object, the failure grouping, the header and the `Problem` component. It would remove only
-  `schema` and `parameters`, about 15 of the 110 lines, for one more dependency. The tests in
+  `schema` and `parameters`, a small part of the file, for one more dependency. The tests in
   `scripts/emit-openapi.test.ts` (one `operationId` per declared operation, the `security` of each
   access, the refused schema) cover it. Revalidate by 2027-04-16, the only date, or when the
   Operation type gains a field.
