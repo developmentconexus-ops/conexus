@@ -160,7 +160,10 @@ const AS_ROOT = process.getuid?.() === 0
 for (const hubEnv of ['missing', 'unreadable'] as const) {
   for (const argument of ['hub@sha256:new', '--restart']) {
     test(`${argument} com hub.env ${hubEnv} recusa antes de qualquer chamada ao Docker`, {
-      skip: hubEnv === 'unreadable' && AS_ROOT,
+      skip:
+        hubEnv === 'unreadable' && AS_ROOT
+          ? 'opt-in: root reads any file, so this case needs a user without root'
+          : false,
     }, () => {
       const { run, log } = deploy(argument, { running: 'hub@sha256:old', hubEnv })
       assert.equal(run.status, 1)
