@@ -8,19 +8,20 @@ versions are the installed ones. When the library changes, reread the line it na
 
 ### The session's total lifetime
 
-- **Library line.** `better-auth/dist/api/routes/session.mjs:155`. `getSession` reads, slides and
-  ends a session by its own clock, on the idle deadline alone. The library has no total deadline.
-- **Hand-made piece.** `apps/server/src/hub/identity/session.ts`. On the session `getSession`
-  returns, it checks 8 h since creation. A session past that is revoked and read as signed out.
+- **Library line.** `better-auth/dist/api/routes/session.mjs:178-200`. `getSession` renews a
+  session once `updateAge` (60 s) has passed since the last renewal, to `expiresIn` (1800 s) from
+  now. The library has no total deadline.
+- **Hand-made piece.** `capAtTotalLifetime` in `apps/server/src/hub/identity/auth.ts`, the
+  library's own `databaseHooks.session.update.before`. It caps a renewal's `expiresAt` at
+  `createdAt` plus 8 h; the library then ends the session on its idle deadline (`session.mjs:155`).
 - **Why.** The founder's 8 hours in total (step 3, answer "4. A"). The test "prazo total" in
-  `session.test.ts` fails without the piece. The native candidate,
-  `databaseHooks.session.update.before` capping `expiresAt` at `createdAt` plus 8 h, runs only when
-  the library renews a session (`session.mjs:199`), which it does once 60 s have passed since the
-  last renewal. Probed on PostgreSQL on 2026-10-15 with the check removed: a session renewed 2 s
-  before its 8 h got `expires_at` exactly 8 h after `created_at` and ended on its own, but "prazo
-  total", a session past 8 h that was renewed within the last 60 s, stayed signed in. The check
-  stays until that test is changed or dropped. The idle deadline and the renewal stay the library's,
-  by the founder's answer of 2026-10-15 ("1. A").
+  `session.test.ts`, a session read every 25 min through the library, fails without the hook
+  (removal `session-total-lifetime`). The cost: once `expiresAt` is capped, the library's renewal
+  test (`session.mjs:180`) holds on every read, so each read writes the row from `createdAt` plus
+  7 h 31 min, the last 29 minutes (`expiresIn` minus `updateAge`, 1740 s). Before that, a read
+  writes at most once a minute. Probed on PostgreSQL on 2026-10-15: two reads in the same second
+  at 7 h 30 min 30 s wrote once, at 7 h 31 min 1 s twice. The idle deadline and the renewal stay
+  the library's, by the founder's answer of 2026-10-15 ("1. A").
 
 ### A failure inside the library reads as the database's
 

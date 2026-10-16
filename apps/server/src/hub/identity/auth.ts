@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from 'node:async_hooks'
+import type { GenericEndpointContext } from '@better-auth/core'
 import * as libraryContext from '@better-auth/core/context'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { FailureCode } from '@conexus/hub-api'
@@ -29,7 +30,7 @@ import {
 export const SIGN_IN_PATH = '/sign-in/email'
 export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
-export const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 60 * 60 }
+const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 60 * 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 export const PASSWORD_LINK_SECONDS = 900
 // The founder's numbers, step 4 answers 4 and 6.
@@ -153,6 +154,20 @@ const KEY_FIELD = { type: 'string', required: true } as const
 // Left out of the plugin's request body (db/to-zod.mjs:17), so only the Hub's mark sets it.
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
 
+/**
+ * A renewal never moves a session past 8 h from its creation, the founder's total. `getSession` renews
+ * after placing the session it read on the context (`better-auth/dist/api/routes/session.mjs:154`).
+ */
+async function capAtTotalLifetime(
+  data: { expiresAt?: Date },
+  context: GenericEndpointContext | null,
+) {
+  const createdAt = context?.context.session?.session.createdAt
+  if (data.expiresAt === undefined || createdAt === undefined) return
+  const end = createdAt.getTime() + LIFETIMES.totalSeconds * 1000
+  return { data: { expiresAt: new Date(Math.min(data.expiresAt.getTime(), end)) } }
+}
+
 // No secure attribute: better-call sets Secure on every __Host- name (dist/cookies.mjs:48-49).
 function hostCookie(name: string) {
   return { name: `__Host-conexus_${name}` }
@@ -178,6 +193,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       updateAge: LIFETIMES.renewAfterSeconds,
       cookieCache: { enabled: false },
     },
+    databaseHooks: { session: { update: { before: capAtTotalLifetime } } },
     verification: { storeIdentifier: 'hashed' },
     rateLimit: {
       enabled: true,

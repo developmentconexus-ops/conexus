@@ -1,5 +1,16 @@
 [
   {
+    "id": "session-total-lifetime",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    databaseHooks: { session: { update: { before: capAtTotalLifetime } } },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/session.test.ts",
+      "name": "prazo total"
+    }
+  },
+  {
     "id": "raw-output-in-process",
     "file": "scripts/test-reporter.ts",
     "find": "const lines = `${pending.get(key) ?? ''}${event.data.message}`.split('\\n')",
