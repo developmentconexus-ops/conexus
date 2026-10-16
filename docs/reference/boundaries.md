@@ -439,11 +439,27 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Hand-made piece.** `scripts/test-reporter.ts`. It composes `spec()` and adds the policy checks
   on the events.
 - **Why.** [Testing T4](../guides/testing.md). It cannot see the pipes of a Hub spawned by a test,
-  so `apps/server/src/platform/test-database.ts` holds a second entry. The test "linha crua:
-  recusa" in `scripts/test-reporter.test.ts` fails without the raw-line refusal (removal
-  `raw-output-in-process`), and "linha crua: um Hub iniciado que imprime" in `test-database.test.ts`
-  fails without the second entry's (removal `raw-output-spawned-hub`). The other tests in
-  `test-reporter.test.ts` cover the rest of the policy.
+  so `startHub` in `apps/server/src/platform/test-database.ts` is a second entry point. Both decide
+  what a log line is through one `parseLogLine` (`scripts/log-line.ts`, the row below). The test
+  "linha crua: recusa" in `scripts/test-reporter.test.ts` fails without the raw-line refusal
+  (removal `raw-output-in-process`), and "linha crua: um Hub iniciado que imprime" in
+  `test-database.test.ts` fails without the spawned Hub's (removal `raw-output-spawned-hub`). The
+  other tests in `test-reporter.test.ts` cover the rest of the policy.
+
+### A log line: one top-level `level`, read from the text
+
+- **Library line.** `JSON.parse` (ECMAScript) returns the object with one value per key: of a
+  repeated key only the last survives, and a nested object's keys are indistinguishable from the
+  top level's once parsed. It gives no key order, no count and no duplicate report.
+- **Hand-made piece.** `topLevelKeys` in `scripts/log-line.ts`. It walks a text that `JSON.parse`
+  already accepted, counts brace and bracket depth, and lists the keys at depth 1, with any
+  whitespace between the closing quote and `:`.
+- **Why.** [Code C50 and C54](../guides/code.md): a line with two top-level `level` keys must be
+  refused and a nested `level` must not be; only the text shows the duplicate. The scan runs only on
+  valid JSON, where every string closes, so it ends. The tests in `scripts/test-reporter.test.ts`
+  (a repeated `level` refused; a nested `level`, with and without spaces around `:`, accepted) and
+  the nested case in `apps/server/src/platform/test-database.test.ts` cover it. Revalidate by
+  2027-04-13, or when `JSON.parse` reports duplicate keys.
 
 ### Removals: one protection taken out in a scratch copy, then its test
 
