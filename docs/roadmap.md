@@ -17,6 +17,8 @@ Proposta de 2026-10-13, com as suas respostas do mesmo dia. O desenho está em `
    Etapa 3 usada em 2026-10-15 em https://hub.conexus.fun: "Todos passos deram certo"
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
    Cartão da etapa 4 aprovado em 2026-10-15 (commit 9e9bff0e21742a2e04fbe6afb2f685d8ca5f6940): "1. A, sim poré mtem que configurar senha não? 2. A 3. A 4. A 5. A 6. Okay 7. A 8. Aprovo 9. A"
+   Etapa 4 usada em 2026-10-16 em https://hub.conexus.fun: "Deu certo"; sobre o fluxo, "O fluxo não está bem pensando pesnando como um todo"
+   4.1 **Convite completo.** Cria a senha no convite, e cancela ou recusa um.
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
@@ -78,7 +80,7 @@ seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 4 Empresa e convite | O remetente com DNS | Convite com aceite (4) | Primeira unidade: as três conferências automáticas (linha crua no registro, tirar cada proteção, arquivos fora do raio), desenhadas na issue #32; até ela entrar, T12 e L7 seguem só como texto. As issues `next-card`. A sua decisão 5, de 2026-10-14 ("1. A"): o administrador da instalação é papel só da equipe da plataforma; quem cria e muda as conexões de uma empresa é o dono ou um administrador dela; o papel entra nesta etapa. Fichas `workspace` e admissão. LT11 e LT12. A porta "apagar empresa". O registro 0015, reaberto |
+| 4.1 Convite completo | A etapa 4 usada | Nenhuma | A senha criada na página do convite (confirmação, regras à vista, sucesso, sem erro piscando). Quem abre o link, em todo caso: abrir nunca aceita, e o link usado fecha para todos. Cancelar pela empresa, recusar pela pessoa. E-mail em HTML e texto, com botão. A entrega repetida na caixa corporativa. Da issue "Code items from step 4": `Notice`, nomes dos botões, reenvio de convite cancelado |
 | 5 Duas empresas | A 4 | A política por linha no banco | A lista de nove itens da política |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
