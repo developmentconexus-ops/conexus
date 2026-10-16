@@ -44,6 +44,13 @@ const REFUSALS: [string, Record<string, string>][] = [
   ['broken-fragment', { 'AGENTS.md': '# Title\n\nSee [up](#nowhere).\n' }],
   ['broken-fragment', { 'AGENTS.md': 'See [code](docs/guides/code.md#nowhere).\n' }],
   ['broken-fragment', { 'AGENTS.md': 'See [code][c].\n\n[c]: docs/guides/code.md#nowhere\n' }],
+  [
+    'broken-fragment',
+    {
+      'docs/guides/code.md': '- **C1.** A rule.\n\nHeading\n=======\n',
+      'AGENTS.md': '[x](docs/guides/code.md#heading-1)\n',
+    },
+  ],
   ['not-in-index', { 'docs/guides/web.md': '- **W1.** A rule.\n' }],
   ['rule-defined-twice', { 'docs/guides/web.md': '- **C1.** Again.\n' }],
   ['rule-missing', { 'AGENTS.md': 'Obey C9.\n' }],
@@ -96,6 +103,38 @@ test('um fragmento que nomeia um título passa, também com repetição, acento 
     ].join('\n'),
   })
   assert.equal(run.status, 0, run.stderr)
+})
+
+const HEADING_FORMS: [string, string, string][] = [
+  ['ATX', '## Heading', 'heading'],
+  ['Setext com =', 'Heading\n=======', 'heading'],
+  ['Setext com -', 'Heading\n-------', 'heading'],
+  ['Setext com ênfase e código', 'A `x_y` _Dois_\n---', 'a-x_y-dois'],
+  ['ênfase com _', '## _Heading_', 'heading'],
+  ['ênfase forte com __', '## __Heading__', 'heading'],
+  ['sublinhado no meio da palavra', '## snake_case', 'snake_case'],
+  ['sublinhado em código', '## `a_b_`', 'a_b_'],
+]
+
+for (const [form, heading, id] of HEADING_FORMS) {
+  test(`um fragmento acha o título ${form}`, () => {
+    const run = check({
+      'docs/guides/code.md': `- **C1.** A rule.\n\n${heading}\n`,
+      'AGENTS.md': `[x](docs/guides/code.md#${id})\n`,
+    })
+    assert.equal(run.status, 0, run.stderr)
+  })
+}
+
+test('um --- que separa ou abre o arquivo não é título Setext', () => {
+  const run = check({
+    'docs/guides/code.md':
+      '---\nname: x\n---\n- **C1.** A rule.\n\nText\n\n---\n\n```\ncode\n```\n---\n',
+    'AGENTS.md':
+      '[a](docs/guides/code.md#name-x) [b](docs/guides/code.md#text) [c](docs/guides/code.md#code)\n',
+  })
+  assert.equal(run.status, 1)
+  assert.equal(run.stderr.match(/^broken-fragment: /gm)?.length, 3)
 })
 
 test('um fragmento em arquivo que não é Markdown ou em pasta não é conferido', () => {
