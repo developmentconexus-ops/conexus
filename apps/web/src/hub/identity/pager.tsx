@@ -1,19 +1,23 @@
 import type { Next } from '@conexus/hub-api'
-import type { ReactNode } from 'react'
+import { Link } from '@tanstack/react-router'
 
 /**
  * The links that move along a list kept in the address (web W18): the page that follows, and the
- * way back to the first once the person has left it. `link` draws a link to a page of this list.
+ * way back to the first once the person has left it. `param` is the search parameter that holds
+ * this list's page; the other parameters of the address stay as they are.
  */
-export function Pager(props: {
-  next: Next
-  page: string | undefined
-  link: (page: string | undefined, label: string) => ReactNode
-}) {
+export function Pager(props: { next: Next; param: string; page: string | undefined }) {
+  function toPage(page: string | undefined, label: string) {
+    return (
+      <Link to="." search={(old) => ({ ...old, [props.param]: page })}>
+        {label}
+      </Link>
+    )
+  }
   return (
     <div className="flex gap-lg text-label">
-      {props.page !== undefined && props.link(undefined, 'Primeira página')}
-      {props.next.kind === 'MORE' && props.link(props.next.page, 'Ver mais')}
+      {props.page !== undefined && toPage(undefined, 'Primeira página')}
+      {props.next.kind === 'MORE' && toPage(props.next.page, 'Ver mais')}
     </div>
   )
 }

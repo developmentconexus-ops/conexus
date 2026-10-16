@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi, Link } from '@tanstack/react-router'
+import { getRouteApi } from '@tanstack/react-router'
 import { Empty } from '../../ui/states.tsx'
 import { InviteForm } from './invite-form.tsx'
 import { Pager } from './pager.tsx'
@@ -29,15 +29,7 @@ function Members() {
           </li>
         ))}
       </ul>
-      <Pager
-        next={data.next}
-        page={page}
-        link={(to, label) => (
-          <Link to="." search={(old) => ({ ...old, members: to })}>
-            {label}
-          </Link>
-        )}
-      />
+      <Pager next={data.next} param="members" page={page} />
     </section>
   )
 }
@@ -66,15 +58,7 @@ function PendingInvitations() {
           ))}
         </ul>
       )}
-      <Pager
-        next={data.next}
-        page={page}
-        link={(to, label) => (
-          <Link to="." search={(old) => ({ ...old, invitations: to })}>
-            {label}
-          </Link>
-        )}
-      />
+      <Pager next={data.next} param="invitations" page={page} />
     </section>
   )
 }

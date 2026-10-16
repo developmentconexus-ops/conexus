@@ -39,15 +39,7 @@ export function Companies() {
           ))}
         </ul>
       )}
-      <Pager
-        next={data.next}
-        page={page}
-        link={(to, label) => (
-          <Link to="/" search={{ page: to }}>
-            {label}
-          </Link>
-        )}
-      />
+      <Pager next={data.next} param="page" page={page} />
     </section>
   )
 }
