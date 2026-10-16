@@ -8,7 +8,8 @@
 // when the tests of that name pass, `stale` when its text is absent or repeated, `unreachable` when
 // no test of that name ran, `broken-baseline` when its test already fails before the protection is
 // taken out. Any row other than `caught` exits 1. The manifest refuses an unknown key at any level
-// and a repeated id, and `--only` takes one id.
+// and a repeated id, `--only` takes one id and `--shard 2/3` runs the second of three slices of the
+// rows, so CI can run the slices as parallel jobs.
 // The refusals are proved by planting each one in removals.test.ts.
 // Revalidate by 2027-04-15, or when Node changes `run` from node:test.
 import {
@@ -182,15 +183,39 @@ async function outcomeOf(
   }
 }
 
+const USAGE = 'usage: removals.ts [--only <row id> | --shard <index>/<total>]'
+
+/** `--shard 2/3` is the second of three runs of equal size, each a run of neighbouring rows. */
+function shardOf(value: string): { index: number; total: number } {
+  const match = /^([1-9]\d*)\/([1-9]\d*)$/.exec(value)
+  const index = Number(match?.[1])
+  const total = Number(match?.[2])
+  if (match === null || index > total) throw new Error(USAGE)
+  return { index, total }
+}
+
 async function main(): Promise<void> {
   const root = process.cwd()
   const args = process.argv.slice(2)
-  if (args.length > 0 && (args.length !== 2 || args[0] !== '--only' || args[1]?.startsWith('--'))) {
-    throw new Error('usage: removals.ts [--only <row id>]')
+  const flag = args[0]
+  const value = args[1]
+  if (
+    args.length > 0 &&
+    (args.length !== 2 || (flag !== '--only' && flag !== '--shard') || value?.startsWith('--'))
+  ) {
+    throw new Error(USAGE)
   }
-  const only = args[1]
-  const removals = loadRemovals(root).filter((removal) => only === undefined || removal.id === only)
-  if (removals.length === 0) throw new Error(`removals.json has no row ${only}`)
+  const all = loadRemovals(root)
+  let removals = all
+  if (flag === '--only') {
+    removals = all.filter((removal) => removal.id === value)
+    if (removals.length === 0) throw new Error(`removals.json has no row ${value}`)
+  }
+  if (flag === '--shard' && value !== undefined) {
+    const { index, total } = shardOf(value)
+    removals = all.filter((_, row) => Math.floor((row * total) / all.length) === index - 1)
+    if (removals.length === 0) throw new Error(`removals.json has no row for shard ${value}`)
+  }
   const baseline = baselines(root)
   try {
     for (const removal of removals) {

@@ -1,0 +1,13 @@
+name: Test database
+description: Makes the PostgreSQL service look as the tests expect, like a developer's container.
+runs:
+  using: composite
+  steps:
+    - name: The owner of the test databases is not a superuser
+      shell: bash
+      run: >-
+        psql postgres://postgres:ci-superuser@localhost:5432/postgres
+        -c "create role conexus_owner login createdb createrole password 'ci-owner'"
+    - name: The container that serves the tests dumps the catalog
+      shell: bash
+      run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"

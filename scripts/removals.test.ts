@@ -141,6 +141,23 @@ test('todas as linhas: uma por remoção, saída 1 quando alguma não é pega', 
   assert.equal(result.status, 1)
 })
 
+test('fatias: cada linha roda numa fatia só, e as fatias juntas rodam todas', () => {
+  const slices = [1, 2, 3].map((index) => removals('--shard', `${index}/3`).stdout.split('\n'))
+  const ids = slices.flatMap((lines) => lines.filter(Boolean).map((line) => line.split(' ')[1]))
+  assert.deepEqual(ids.toSorted(), ROWS.map((row) => row.id).toSorted())
+  assert.deepEqual(
+    slices.map((lines) => lines.filter(Boolean).length),
+    [4, 3, 3],
+  )
+})
+
+test('uma fatia sem linha recusa', () => {
+  const result = removals('--shard', '11/11')
+  assert.equal(result.stdout, '')
+  assert.match(result.stderr, /removals\.json has no row for shard 11\/11/)
+  assert.notEqual(result.status, 0)
+})
+
 test('a cópia não muda o repositório', () => {
   removals('--only', 'caught')
   const status = spawnSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' })
@@ -191,11 +208,19 @@ for (const args of [
   ['--only', '--only'],
   ['--only', 'caught', 'survived'],
   ['caught'],
+  ['--shard'],
+  ['--shard', '0/2'],
+  ['--shard', '3/2'],
+  ['--shard', '1'],
+  ['--shard', '1/2', '1/2'],
 ]) {
   test(`argumentos ${JSON.stringify(args)}: o comando recusa e não roda linha`, () => {
     const result = removals(...args)
     assert.equal(result.stdout, '')
-    assert.match(result.stderr, /usage: removals\.ts \[--only <row id>\]/)
+    assert.match(
+      result.stderr,
+      /usage: removals\.ts \[--only <row id> \| --shard <index>\/<total>\]/,
+    )
     assert.notEqual(result.status, 0)
   })
 }

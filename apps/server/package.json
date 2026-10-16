@@ -6,7 +6,7 @@
     "start": "node src/main.ts",
     "generate": "drizzle-kit generate",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\""
+    "test": "node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts ${TEST_SHARD:+--test-shard=$TEST_SHARD} \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@better-auth/core": "1.7.8",
