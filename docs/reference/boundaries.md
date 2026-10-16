@@ -2,10 +2,11 @@
 
 [Code C75](../guides/code.md) says to use the library's own mechanism first. This file records each
 mechanism that Conexus writes itself instead, with the library line it replaces and the reason. The
-versions are the installed ones, except three candidates read from the npm registry and not
-installed: Stryker 10.0.0, remark-validate-links 13.1.0 and the Cloudflare SDK 7.3.0. When the
-library changes, reread the line it names. A test that "fails without" a piece names its row in
-`scripts/removals.json`; a test that "covers" a piece has no row.
+versions are the installed ones, except five candidates read from the npm registry and not
+installed: Stryker 10.0.0, remark-validate-links 13.1.0, the Cloudflare SDK 7.3.0, zod-openapi 6.0.2
+and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. A test
+that "fails without" a piece names its row in `scripts/removals.json`; a test that "covers" a piece
+has no row.
 
 ## Better Auth 1.7.8
 
