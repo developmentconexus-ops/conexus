@@ -23,8 +23,8 @@ dono. A Conexus nunca vira membro da empresa, e o cliente deixa de criar empresa
 esta página e o grant abaixo. Antes da publicação: confirma as empresas de teste que a migração
 apaga. No fim: faz o roteiro, diz o que viu e aprova os textos das telas.
 
-**Decisões já dadas, 2026-10-16.** “p1. a / P2. A / P3. A / P4. A / P5. A / P6. B / P7. A / T1.
-A / T2. A / T3. A / T4. A”. A empresa nasce no cadastro, sem membro, e o administrador vira dono
+**Decisões já dadas, 2026-10-16.** “p1. a / P2. A / P3. A / P4. A / P5. A / P6. B / P7. A / t1.
+a / t2. a / t3. a / t4. a”. A empresa nasce no cadastro, sem membro, e o administrador vira dono
 ao aceitar. O CNPJ é único pelas 14 posições, com letras aceitas. Corrige-se enquanto o cliente
 aguarda; trocar o e-mail é cancelar e convidar outro. A Central mostra só dados e donos.
 
@@ -37,12 +37,12 @@ como o cliente. Das issues `next-card` entra o item 23 da 39; os itens de 4.1 (1
 e 5–7 da 39 já entraram. Os demais esperam: o cadastro não precisa deles e nada novo roda sozinho.
 
 **A decisão sua pedida nesta etapa.** O login do Hub poderá ler, gravar e alterar a tabela de
-cadastro, mas **não apagar**; a exclusão é da etapa 5, com o grant dela. **A**: aprovo. **B**: outro
-conjunto, e qual. Exemplo: com A, nem um defeito do Hub apaga um cadastro.
+cadastro, mas **não apagar**; a exclusão é da etapa 5, com o grant dela. Resposta do fundador,
+2026-10-16: “Aprovo” (opção A: ler, gravar e alterar por `hub_runtime`, sem apagar).
 
 ## As unidades
 
-Base: `main` `6e6afff` (após merge de 4.1, PR #44); estudo de 2026-10-16; revisão pelo
+Base: `main` `e4a8c44`; estudo de 2026-10-16; revisão pelo
 [checklist](../reference/checklist.md).
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
@@ -149,7 +149,7 @@ formulário: `CLIENT_STALE` 412 (“Este cliente mudou.”); `CLIENT_ACTIVE` 409
 
 **A medida do transplante.** Zero linhas antigas. `createCompanyCommand` é substituído pelo cadastro.
 
-**A dívida.** Nenhuma nova. Fechamento (L27): S6 pede ser membro e operador age por fato da pessoa
+**A dívida.** Nenhuma nova. Fechamento (L19): S6 pede ser membro e operador age por fato da pessoa
 (S11); exceção a D6 em “Roll back”; nota em 0015 (empresa sem membro aguardando). Risco: operador
 promovido depois aceitar convite de dono.
 
@@ -208,7 +208,7 @@ Esquema `operations` (D4), tabela `client`: `company_id text PRIMARY KEY`, sem c
 
 ### A ordem do trabalho
 
-PR próprio, com a palavra do fundador, antes do código (D11). Regras: D4–D6, D8, D10–D12, D15, D18.
+PR próprio, com a palavra do fundador, antes do código (D11). Regras: D4–D6, D10–D12, D15, D18.
 Drizzle 1.0.0-rc.4 gera a tabela; os grants, migração própria.
 
 ### Como se prova
@@ -224,7 +224,7 @@ Drizzle 1.0.0-rc.4 gera a tabela; os grants, migração própria.
 | `packages/hub-api/src/` | cria `operations.ts`; muda `failures.ts`, `index.ts` | servidor, web, OpenAPI |
 | `packages/hub-api/package.json`, `package-lock.json` | `@brazilian-utils/brazilian-utils` 2.5.0 (L16) | workspaces |
 | `apps/server/src/hub/identity/` | cria `clients.ts`; muda `public.ts`, `auth.ts`, `invitations.ts`, `invitation-reads.ts` | `operations`, `company-routes.ts` |
-| `apps/server/src/hub/operations/` | cria `clients.ts`, `routes.ts`, `public.ts` e testes | `main.ts` (C9) |
+| `apps/server/src/hub/operations/` | cria `clients.ts`, `routes.ts`, `public.ts` e testes | `main.ts` (C4) |
 | `apps/server/src/main.ts` | liga `operations` às portas da identidade | boot |
 | `scripts/removals.json` | as cinco remoções novas | `npm run removals` |
 
@@ -259,8 +259,8 @@ O convite de dono usa as operações de 4.1, e `createInvitation` ganha `OWNER_I
 
 1. Cadastro numa `libraryCommand`: lock da chave; replay (outro corpo → `IDEMPOTENCY_CONFLICT`);
    `admitOperator`; `isOperator` → `CLIENT_OWNER_IS_OPERATOR`; `registerCompany`; INSERT do cliente;
-   commit; e-mail. O 23505 do CNPJ vira `CLIENT_EXISTS` pelo nome da restrição (D24, C52). Regras:
-   C37, C64, C65, D21, D22, D26, S12, S45. Funções, better-auth 1.7.8: `getOrgAdapter(await
+   commit; e-mail. O 23505 do CNPJ vira `CLIENT_EXISTS` pelo nome da restrição (C52). Regras:
+   C27, C37, C65, D22, S12, S41. Funções, better-auth 1.7.8: `getOrgAdapter(await
    auth.$context, opções do plugin)` (`organization/index.mjs:1-4`); `.createOrganization`
    (`adapter.mjs:141`), só a empresa, `slug` e `attemptKey` iguais à chave; `.createInvitation`
    (`:728`), `pending`, `inviterId` do operador, papel `owner` fixo. Não `auth.api.createOrganization`,
@@ -268,14 +268,14 @@ O convite de dono usa as operações de 4.1, e `createInvitation` ganha `OWNER_I
 2. Primeira prova: o adapter grava na transação do Hub (`getCurrentAdapter`, `adapter.mjs:142`), só
    lido no estudo; se não, volta ao cartão.
 3. Correção: lock da empresa; revisão; `renameCompany` (`ACTIVE` → `CLIENT_ACTIVE`), com
-   `.updateOrganization` (`adapter.mjs:352`) se o nome mudou; `revision + 1`. Regras: C38, D23.
-4. Rotas e leituras. Regras: C28–C31, C33, C35, C41–C45, C48, S9, S10. Página por `pageOf` sobre
+   `.updateOrganization` (`adapter.mjs:352`) se o nome mudou; `revision + 1`. Regras: C38, D22.
+4. Rotas e leituras. Regras: C28–C31, C33, C35–C38, C40, C44, C45, C48, S9, S10. Página por `pageOf` sobre
    `(registered_at, company_id)` (C44). Com `OwnerInviterProof`, `createInvitation` exige zero
    convites `owner` vivos, sob o lock.
 
 ### Como se prova
 
-A3–A11: `npm run test -w @conexus/server` com status e corpo literais (T8), `npm run openapi`.
+A3–A11: `npm run test -w @conexus/server` com status e corpo literais (T6), `npm run openapi`.
 Remoções novas (T12): `client-attempt-replay`, `client-one-transaction`, `operator-not-member`,
 `client-owner-not-operator`, `owner-invitation-awaiting-only`.
 
@@ -291,7 +291,7 @@ Remoções novas (T12): `client-attempt-replay`, `client-one-transaction`, `oper
 | `apps/web/src/hub/identity/` | `account-menu.tsx`; a linha de convite, se servir (E6) | `_app/route.tsx` |
 | `apps/web/src/platform/` | `test-hub.tsx`, o fake do contrato | testes |
 | `apps/web/package.json`, `package-lock.json` | `formatCnpj` da mesma biblioteca | build |
-| `apps/web/src/ui/`, `docs/reference/` | uma peça nova, se houver, com a entrada (W21, V24) | telas |
+| `apps/web/src/ui/`, `docs/reference/` | uma peça nova, se houver, com a entrada (W21, V23) | telas |
 
 ### Os contratos que a unidade cria
 
@@ -300,7 +300,7 @@ Endereços (W1): `/operations/clients?page=`, `/operations/clients/new`,
 
 ### A ordem do trabalho
 
-Regras: W1–W4, W8–W24, W28, V24. `hubQuery`, `hubMutation`, `useAttemptKey`, `Form`, `Field`. A
+Regras: W1, W4, W8–W13, W15, W17, W18, W21–W24, W28, V23. `hubQuery`, `hubMutation`, `useAttemptKey`, `Form`, `Field`. A
 guarda em `beforeLoad` só poupa uma ida; o servidor recusa (A3). `formatCnpj(v, {version: 2})`
 mostra a máscara.
 
@@ -321,7 +321,7 @@ A12, A13: `npm run test -w @conexus/web`; navegador real (T23), com trace no cad
 | `apps/web/src/hub/identity/` | apaga `create-company-form.tsx` e o teste; muda `companies.tsx`, `queries.ts`, `public.ts` | rotas |
 | `apps/web/src/routes/_app/` | apaga `companies/new.tsx`; muda `route.test.tsx` | roteador |
 | `apps/web/src/platform/` | `cache.test.tsx`, `test-hub.tsx` | testes |
-| `scripts/removals.json` | saem `company-create-administrator` e `company-attempt-replay` (T11) | `npm run removals` |
+| `scripts/removals.json` | saem `company-create-administrator` e `company-attempt-replay` (T10, T12) | `npm run removals` |
 | `docs/reference/` | boundaries: sai “who may create a company” | revisores |
 
 ### Os contratos que a unidade cria
@@ -332,7 +332,7 @@ linha em `operations.client`, na ordem: DELETE de `auth.invitation` e `auth.memb
 
 ### A ordem do trabalho
 
-Regras: C45, C74, D5–D7, D9, T11. Sai tudo junto; `allowUserToCreateOrganization: false` (padrão
+Regras: C45, C74, D5–D7, D9, T10, T12. Sai tudo junto; `allowUserToCreateOrganization: false` (padrão
 `true`, `crud-org.mjs:56`). A versão anterior roda no banco migrado: o
 esquema só ganhou `operations`, que ela ignora.
 
@@ -362,7 +362,7 @@ texto diz “primeiro dono”. Derivado, sem coluna (C26).
 
 ### A ordem do trabalho
 
-Regras: T14, T16, T22, T23, S12. Percurso: cadastro, e-mail no fake, senha, aceite, e um segundo
+Regras: T6, T14, T23, S12. Percurso: cadastro, e-mail no fake, senha, aceite, e um segundo
 cadastro com o mesmo e-mail.
 
 ### Como se prova
