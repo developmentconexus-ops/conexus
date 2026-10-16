@@ -200,7 +200,7 @@
   {
     "id": "invitation-capacity-live-only",
     "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "      sql`${invitation.expiresAt} > statement_timestamp()`,\n    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
+    "find": "      LIVE,\n    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
     "replace": "    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
     "test": {
       "cwd": "apps/server",
@@ -244,7 +244,7 @@
   {
     "id": "accept-recipient-first",
     "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "if (found === undefined || found.email !== input.person.email.toLowerCase()) {",
+    "find": "if (found === undefined || found.email !== storedAddress(input.person.email)) {",
     "replace": "if (found === undefined) {",
     "test": {
       "cwd": "apps/server",
@@ -420,7 +420,7 @@
   {
     "id": "invitation-pace",
     "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "if (recent >= INVITATIONS_PER_MINUTE) throw new Failure('INVITATIONS_EXCEEDED')",
+    "find": "if (recent >= INVITATION_PACE.most) throw new Failure('INVITATIONS_EXCEEDED')",
     "replace": "void recent",
     "test": {
       "cwd": "apps/server",
