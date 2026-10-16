@@ -8,7 +8,7 @@ type FailureRow = {
   status: number
   phrase: string
   action: string
-  actionKind: 'RETRY' | 'SIGN_IN' | 'NONE'
+  actionKind: 'RETRY' | 'SIGN_IN' | 'INITIAL' | 'NONE'
 }
 
 export const FAILURES = {
@@ -26,7 +26,7 @@ export const FAILURES = {
     status: 404,
     phrase: 'Não encontramos o que você procurou.',
     action: 'Confira o endereço.',
-    actionKind: 'NONE',
+    actionKind: 'INITIAL',
   },
   REQUEST_ORIGIN_REFUSED: {
     category: 'USER',
@@ -74,6 +74,22 @@ export const FAILURES = {
     status: 401,
     phrase: 'Sua sessão terminou.',
     action: 'Entre de novo para continuar.',
+    actionKind: 'SIGN_IN',
+  },
+  INVITATION_STALE: {
+    category: 'USER',
+    settles: true,
+    status: 412,
+    phrase: 'Este convite mudou.',
+    action: 'Recarregue a página.',
+    actionKind: 'NONE',
+  },
+  INVITATION_PASSWORD_EXISTS: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Este e-mail já tem senha.',
+    action: 'Entre com a sua senha.',
     actionKind: 'SIGN_IN',
   },
   PASSWORD_LINK_INVALID: {
@@ -178,14 +194,6 @@ export const FAILURES = {
     settles: true,
     status: 429,
     phrase: 'Muitos convites seguidos.',
-    action: 'Espere um pouco e tente de novo.',
-    actionKind: 'NONE',
-  },
-  PASSWORD_LINKS_EXCEEDED: {
-    category: 'USER',
-    settles: true,
-    status: 429,
-    phrase: 'Muitos pedidos de link.',
     action: 'Espere um pouco e tente de novo.',
     actionKind: 'NONE',
   },

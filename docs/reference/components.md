@@ -66,6 +66,22 @@ field-error:
 notice:
   textColor: "{colors.text}"
   typography: "{typography.body}"
+  contract: "children → native polite status paragraph"
+initial-action:
+  component: "button-default link"
+  destination: "root route loading supplies Entrar or Voltar ao início"
+invitation-email:
+  backgroundColor: "{colors.canvas}"
+  contentColor: "{colors.surface}"
+  textColor: "{colors.text}"
+  secondaryTextColor: "{colors.text-2}"
+  borderColor: "{colors.line}"
+  rounded: "{rounded.card}"
+  button: "button-primary"
+  width: "520px, at most"
+  padding: "{spacing.xl}"
+  fonts: "system fallbacks, no remote resources"
+  rendering: "React Email at send time; inline values and dark media query"
 frame-top-bar:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text-2}"

@@ -142,7 +142,6 @@ test('páginas: cada endereço das telas, com seus parâmetros, abre a página d
     '/companies/new',
     '/companies/abc',
     '/invitations/abc',
-    '/invitations/abc/acceptance',
   ]
   for (const url of addresses) {
     const page = await app.inject({ method: 'GET', url })
@@ -152,6 +151,10 @@ test('páginas: cada endereço das telas, com seus parâmetros, abre a página d
   assert.equal((await app.inject({ method: 'GET', url: '/entrar' })).statusCode, 404)
   assert.equal((await app.inject({ method: 'GET', url: '/companies' })).statusCode, 404)
   assert.equal((await app.inject({ method: 'GET', url: '/invitations/abc/outra' })).statusCode, 404)
+  assert.equal(
+    (await app.inject({ method: 'GET', url: '/invitations/abc/acceptance' })).statusCode,
+    404,
+  )
 })
 
 test('endereço desconhecido: fora de /api/ e /assets/, a página das telas com 404; nelas, o JSON de 404', async (t) => {

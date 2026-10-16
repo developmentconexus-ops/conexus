@@ -83,7 +83,7 @@ test('de novo com a mesma chave: o Hub parou entre o convite e o e-mail, e chega
     const { invitation } = Object(await replayed.json())
     assert.equal((await invite()).status, 201)
     assert.deepEqual(
-      mail.sent.map((sent) => [sent.to, sent.text.endsWith(`/invitations/${invitation.id}\n`)]),
+      mail.sent.map((sent) => [sent.to, sent.text.includes(`/invitations/${invitation.id}`)]),
       [[INVITEE, true]],
     )
     assert.deepEqual(await test.asOwner(COMMITTED), [{ status: 'pending', mailed: true }])

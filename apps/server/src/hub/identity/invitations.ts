@@ -1,33 +1,33 @@
+import type { CompanyId, Person } from '@conexus/hub-api'
 import {
   CAPACITY,
-  CompanyId,
+  createInvitation,
   Email,
   InvitationId,
   PendingInvitation,
-  Person,
   Role,
 } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
-import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Admitted } from './admission.ts'
 import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { forgetLinks, hasPassword, linkTokenOf, refusedAs, storedAddress } from './auth.ts'
+import { refusedAs, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
-import { company, invitation, member, user, verification } from './tables.ts'
+import { company, invitation, user } from './tables.ts'
 
 // The founder's number, step 4 answer 6: invitations per person and minute.
 const INVITATION_PACE = { most: 10, window: sql`interval '1 minute'` }
-export const Status = z.enum(['pending', 'accepted', 'canceled'])
+export const Status = z.enum(['pending', 'accepted', 'rejected', 'canceled'])
 
 export const pending = {
   id: invitation.id,
   email: invitation.email,
   role: invitation.role,
   expiresAt: invitation.expiresAt,
+  revision: invitation.revision,
 }
 
 /** Still open by the database's clock; the plugin's own check reads the application's. */
@@ -39,22 +39,30 @@ export const PendingRow = z.object({
   email: Email,
   role: Role,
   expiresAt: z.date(),
+  revision: z.number().int().nonnegative(),
 })
-const AttemptRow = PendingRow.extend({ unmailed: z.boolean() })
-const InvitationEmail = z.object({ email: Email })
-const OpenRow = z.object({ id: InvitationId })
-const AcceptRow = z.object({ companyId: CompanyId, email: Email })
-const JoinedRow = z.object({ status: Status, memberId: z.string().nullable() })
+const Replacement = createInvitation.input.body.shape.replaces.unwrap()
+const AttemptRow = PendingRow.extend({
+  unmailed: z.boolean(),
+  status: Status,
+  live: z.boolean(),
+  replaces: Replacement.nullable(),
+})
+const OpenRow = PendingRow.extend({ live: z.boolean() })
 
 export function pendingOf(row: z.infer<typeof PendingRow>) {
-  return PendingInvitation.parse({ ...row, expiresAt: row.expiresAt.toISOString() })
+  return PendingInvitation.parse({
+    ...row,
+    state: 'PENDING',
+    expiresAt: row.expiresAt.toISOString(),
+  })
 }
 
 /**
  * Inviting and accepting first lock the company, so the two serialize in one order and never
  * deadlock (C65, D23). The lock leaves foreign keys free: a new member still references the row.
  */
-async function lockCompany(tx: CommandTx, companyId: string): Promise<void> {
+export async function lockCompany(tx: CommandTx, companyId: string): Promise<void> {
   await tx
     .select({ id: company.id })
     .from(company)
@@ -69,12 +77,16 @@ type Invite = {
   email: Email
   role: Role
   attemptKey: string
+  replaces?: z.infer<typeof Replacement>
 }
 
 async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) {
   const [same] = await tx
     .select({
       ...pending,
+      status: invitation.status,
+      live: sql<boolean>`${LIVE}`,
+      replaces: invitation.replaces,
       unmailed: sql<boolean>`${invitation.status} = 'pending' and ${invitation.mailedAt} is null
         and ${LIVE}`,
     })
@@ -99,7 +111,7 @@ async function checkRoom(tx: CommandTx, admitted: Admitted, email: string): Prom
   if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')
 }
 
-async function checkPace(tx: CommandTx, personId: string): Promise<void> {
+export async function checkPace(tx: CommandTx, personId: string): Promise<void> {
   const recent = await tx.$count(
     invitation,
     and(
@@ -116,7 +128,7 @@ async function checkPace(tx: CommandTx, personId: string): Promise<void> {
  */
 async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
   const [open] = await tx
-    .select({ id: invitation.id })
+    .select({ ...pending, live: sql<boolean>`${LIVE}` })
     .from(invitation)
     .where(
       and(
@@ -152,9 +164,15 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       await tx.select({ id: user.id }).from(user).where(eq(user.id, personId)).for('no key update')
       const same = await attemptOf(tx, admitted, input.attemptKey)
       if (same !== undefined) {
-        if (same.email !== email || same.role !== input.role) {
+        if (
+          same.email !== email ||
+          same.role !== input.role ||
+          same.replaces?.id !== input.replaces?.id ||
+          same.replaces?.revision !== input.replaces?.revision
+        ) {
           throw new Failure('IDEMPOTENCY_CONFLICT')
         }
+        if (same.status !== 'pending' || !same.live) throw new Failure('INVITATION_CLOSED')
         // Committed but never answered by the provider, as when the Hub stopped before the send:
         // the replay sends it again, so delivery is at least once (C64).
         if (same.unmailed) return { ...(await createdOf(tx, admitted, same.id)), created: false }
@@ -162,8 +180,25 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       }
       await checkRoom(tx, admitted, email)
       const open = await openOf(tx, admitted, email)
+      if (input.replaces !== undefined) {
+        if (
+          open === undefined ||
+          open.id !== input.replaces.id ||
+          open.live ||
+          open.revision !== input.replaces.revision ||
+          open.role !== input.role
+        )
+          throw new Failure('INVITATION_STALE')
+      }
       if (open !== undefined) {
         await deps.auth.api.cancelInvitation({ headers, body: { invitationId: open.id } })
+        await tx
+          .update(invitation)
+          .set({
+            revision: sql`${invitation.revision} + 1`,
+            ...(input.replaces !== undefined ? { supersededAt: sql`statement_timestamp()` } : {}),
+          })
+          .where(eq(invitation.id, open.id))
       }
       await checkPace(tx, personId)
       const { attemptKey, role } = input
@@ -172,95 +207,11 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
         USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'MEMBER_EXISTS',
         YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE: 'INVITATION_ROLE_REFUSED',
       })
+      if (input.replaces !== undefined)
+        await tx
+          .update(invitation)
+          .set({ replaces: input.replaces })
+          .where(eq(invitation.id, created.id))
       return { ...(await createdOf(tx, admitted, created.id)), created: true }
-    })
-}
-
-// The founder's pace, step 4 answer 6: one link every 20 seconds per invited person.
-const LINK_PACE = sql`interval '20 seconds'`
-
-/**
- * Gives the invited e-mail a link to create its password: the person is created if missing, and a
- * person who has a password gets nothing. Answers the token and whom to send it to.
- */
-export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
-  return (input: { invitationId: InvitationId; name: string }) =>
-    deps.libraryCommand(async (tx) => {
-      const [listed] = await tx
-        .select({ email: invitation.email })
-        .from(invitation)
-        .where(eq(invitation.id, input.invitationId))
-      const found = InvitationEmail.optional().parse(listed)
-      if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'UNKNOWN' } })
-      // The e-mail is the person's lock: two requests at once make one person and one link.
-      await transactionLock(tx, `conexus.person:${found.email}`)
-      const [still] = await tx
-        .select({ email: invitation.email })
-        .from(invitation)
-        .where(and(eq(invitation.id, input.invitationId), eq(invitation.status, 'pending'), LIVE))
-      const open = InvitationEmail.optional().parse(still)
-      if (open === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'CLOSED' } })
-      const { internalAdapter } = await deps.auth.$context
-      const known = await internalAdapter.findUserByEmail(open.email)
-      const row =
-        known?.user ??
-        (await deps.auth.api.createUser({ body: { name: input.name, email: open.email } })).user
-      const person = Person.parse(row)
-      if (await hasPassword(deps.auth, person.id)) {
-        return { kind: 'HAS_PASSWORD' } as const
-      }
-      const given = await tx.$count(
-        verification,
-        and(
-          eq(verification.value, person.id),
-          sql`${verification.createdAt} > statement_timestamp() - ${LINK_PACE}`,
-        ),
-      )
-      if (given > 0) throw new Failure('PASSWORD_LINKS_EXCEEDED')
-      await forgetLinks(tx, person.id)
-      const token = await linkTokenOf(() =>
-        deps.auth.api.requestPasswordReset({ body: { email: open.email } }),
-      )
-      return { kind: 'LINK', token, email: open.email, name: person.name } as const
-    })
-}
-
-/**
- * Accepts an invitation for the person it was sent to. Accepting again answers the same company;
- * the plugin decides the deadline, the state and the company's capacity (K21r, K23).
- */
-export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
-  return (input: { person: Person; headers: Headers; invitationId: InvitationId }) =>
-    deps.libraryCommand(async (tx) => {
-      const [listed] = await tx
-        .select({ companyId: invitation.organizationId, email: invitation.email })
-        .from(invitation)
-        .where(eq(invitation.id, input.invitationId))
-      const found = AcceptRow.optional().parse(listed)
-      if (found === undefined || found.email !== storedAddress(input.person.email)) {
-        throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
-      }
-      await lockCompany(tx, found.companyId)
-      const [row] = await tx
-        .select({ status: invitation.status, memberId: member.id })
-        .from(invitation)
-        .leftJoin(
-          member,
-          and(
-            eq(member.organizationId, invitation.organizationId),
-            eq(member.userId, input.person.id),
-          ),
-        )
-        .where(eq(invitation.id, input.invitationId))
-      const joined = JoinedRow.optional().parse(row)
-      const already = joined?.status === 'accepted' && joined.memberId !== null
-      if (!already) {
-        const body = { invitationId: input.invitationId }
-        await refusedAs(() => deps.auth.api.acceptInvitation({ headers: input.headers, body }), {
-          INVITATION_NOT_FOUND: 'INVITATION_CLOSED',
-          ORGANIZATION_MEMBERSHIP_LIMIT_REACHED: 'COMPANY_FULL',
-        })
-      }
-      return { company: await companyById(tx, found.companyId), accepted: !already }
     })
 }

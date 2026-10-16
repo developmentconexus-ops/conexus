@@ -4,11 +4,15 @@ export {
   COMPANY_NAME_MAX_LENGTH,
   Company,
   CompanyId,
+  cancelInvitation,
   createCompany,
   createInvitation,
+  createInvitationPassword,
+  declineInvitation,
   getCompany,
   getInvitation,
   InvitationId,
+  InvitationView,
   LIBRARY_ID,
   ListedInvitation,
   listCompanies,
@@ -19,10 +23,9 @@ export {
   Next,
   PAGE_SIZE,
   PendingInvitation,
-  putPasswordLink,
-  ReceivedInvitation,
   ROLE_LABELS,
   Role,
+  renewInvitation,
 } from './companies.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
 export { getHealth, Health } from './health.ts'

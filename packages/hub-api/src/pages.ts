@@ -10,5 +10,4 @@ export const PAGES = [
   '/companies/new',
   '/companies/$companyId',
   '/invitations/$invitationId',
-  '/invitations/$invitationId/acceptance',
 ] as const

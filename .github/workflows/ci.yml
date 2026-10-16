@@ -165,8 +165,27 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        env:
+          POSTGRES_PASSWORD: ci-superuser
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
+      CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/install
+      - uses: ./.github/actions/test-database
+      - name: The mail bundle the host test imports exists
+        run: npm run build -w @conexus/server
       - name: The image builds
         run: docker build --file infra/hub.Dockerfile --build-arg CONEXUS_VERSION=v0.0.0 --tag conexus-hub:ci .
       - name: The image carries the migration label and defines no NODE_ENV
@@ -180,6 +199,9 @@ jobs:
             echo "the image defines NODE_ENV"
             exit 1
           fi
+
+      - name: The final image sends rendered HTML and text through the real Hub
+        run: npm run test:image
 
   ci:
     if: always()

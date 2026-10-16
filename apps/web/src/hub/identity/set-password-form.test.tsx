@@ -84,6 +84,39 @@ test('vindo de um convite, 204 leva a /login com o convite de volta (W16)', asyn
   )
 })
 
+test('password saved before slow navigation never renders an invalid-link alert', async () => {
+  const entered = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
+  server.use(
+    http.put('*/api/passwords', () => new HttpResponse(null, { status: 204 })),
+    http.get('*/api/invitations/:id', async () => {
+      entered.resolve()
+      await release.promise
+      return HttpResponse.json({ invitation: { kind: 'CLOSED', state: 'EXPIRED' } })
+    }),
+  )
+  const back = `/invitations/${'i'.repeat(32)}`
+  open(`/set-password?redirect=${encodeURIComponent(back)}#token=tok-123`)
+  await screen.findByLabelText('Senha')
+  let flashed = false
+  const watch = new MutationObserver(() => {
+    flashed ||= document.querySelector('[role="alert"]') !== null
+  })
+  watch.observe(document.body, { childList: true, subtree: true, characterData: true })
+  try {
+    await choose('senha-nova-1')
+    await entered.promise
+    expect(screen.queryByRole('alert')).toBeNull()
+    release.resolve()
+    expect(await screen.findByRole('heading', { name: 'Entrar no Conexus' })).toBeTruthy()
+    expect(screen.getByRole('status').textContent).toBe('Senha criada. Entre com ela.')
+    expect(flashed).toBe(false)
+  } finally {
+    release.resolve()
+    watch.disconnect()
+  }
+})
+
 for (const hostile of [
   '//evil.example.test/',
   'https://evil.example.test/',
