@@ -156,7 +156,7 @@
   {
     "id": "invitation-capacity",
     "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "if (live >= INVITATION_CAPACITY) throw new Failure('INVITATIONS_FULL')",
+    "find": "if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')",
     "replace": "void live",
     "test": {
       "cwd": "apps/server",
@@ -167,8 +167,8 @@
   {
     "id": "invitation-capacity-live-only",
     "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "      sql`${invitation.expiresAt} > statement_timestamp()`,\n    ),\n  )\n  if (live >= INVITATION_CAPACITY)",
-    "replace": "    ),\n  )\n  if (live >= INVITATION_CAPACITY)",
+    "find": "      sql`${invitation.expiresAt} > statement_timestamp()`,\n    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
+    "replace": "    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitations.test.ts",

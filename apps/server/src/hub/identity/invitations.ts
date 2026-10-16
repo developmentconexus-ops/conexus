@@ -1,5 +1,6 @@
 import type { Person } from '@conexus/hub-api'
 import {
+  CAPACITY,
   Company,
   CompanyId,
   Email,
@@ -21,8 +22,7 @@ import { forgetLinks, linkTokenOf, refusedAs } from './auth.ts'
 import { after, pageKey, pageOf } from './companies.ts'
 import { company, invitation, member, user, verification } from './tables.ts'
 
-// The founder's numbers, step 4 answer 6: open invitations per company, and per person and minute.
-const INVITATION_CAPACITY = 100
+// The founder's number, step 4 answer 6: invitations per person and minute.
 const INVITATIONS_PER_MINUTE = 10
 const Status = z.enum(['pending', 'accepted', 'canceled'])
 
@@ -159,7 +159,7 @@ async function checkRoom(tx: CommandTx, admitted: Admitted, email: string): Prom
       sql`${invitation.expiresAt} > statement_timestamp()`,
     ),
   )
-  if (live >= INVITATION_CAPACITY) throw new Failure('INVITATIONS_FULL')
+  if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')
 }
 
 async function checkPace(tx: CommandTx, personId: string): Promise<void> {

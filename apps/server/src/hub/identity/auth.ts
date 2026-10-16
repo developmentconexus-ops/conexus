@@ -3,7 +3,7 @@ import type { GenericEndpointContext } from '@better-auth/core'
 import * as libraryContext from '@better-auth/core/context'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { FailureCode } from '@conexus/hub-api'
-import { PASSWORD_LENGTH } from '@conexus/hub-api'
+import { CAPACITY, PASSWORD_LENGTH } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
 import { admin, organization } from 'better-auth/plugins'
 import { sql } from 'drizzle-orm'
@@ -33,9 +33,8 @@ const BASE_PATH = '/api/auth'
 const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 60 * 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 export const PASSWORD_LINK_SECONDS = 900
-// The founder's numbers, step 4 answers 4 and 6.
+// The founder's number, step 4 answer 4.
 export const INVITATION_SECONDS = 2 * 24 * 60 * 60
-const COMPANY_CAPACITY = 100
 
 // The library logs without the request; a sign-in runs inside this store so its lines carry the trace id.
 const requestLog = new AsyncLocalStorage<FailureLog>()
@@ -229,7 +228,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
         // at most 100 rows of them, in no order (docs/reference/boundaries.md).
         invitationLimit: Number.POSITIVE_INFINITY,
         invitationExpiresIn: INVITATION_SECONDS,
-        membershipLimit: COMPANY_CAPACITY,
+        membershipLimit: CAPACITY.members,
       }),
       admin(),
     ],

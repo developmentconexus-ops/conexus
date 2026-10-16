@@ -1,3 +1,4 @@
+export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,
   Company,

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CAPACITY } from './capacity.ts'
 
 type FailureRow = {
   category: 'USER' | 'THIRD_PARTY' | 'SYSTEM'
@@ -174,14 +175,14 @@ export const FAILURES = {
   INVITATIONS_FULL: {
     category: 'USER',
     status: 409,
-    phrase: 'A empresa já tem 100 convites pendentes.',
+    phrase: `A empresa já tem ${CAPACITY.openInvitations} convites pendentes.`,
     action: 'Espere aceitarem.',
     actionKind: 'NONE',
   },
   COMPANY_FULL: {
     category: 'USER',
     status: 409,
-    phrase: 'A empresa já tem 100 pessoas.',
+    phrase: `A empresa já tem ${CAPACITY.members} pessoas.`,
     action: 'Fale com quem convidou você.',
     actionKind: 'NONE',
   },
