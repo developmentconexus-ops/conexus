@@ -270,7 +270,7 @@ test('fora: a segunda página de pessoas e de convites vem por next', async (t) 
   }
 })
 
-test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreate só do administrador', async (t) => {
+test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreate só do administrador; a página de uma empresa alheia não abre nada', async (t) => {
   const hub = await hubOn(t)
   const ana = await personOn(hub, ADMIN)
   const bruno = await personOn(hub, BRUNO)
@@ -304,6 +304,12 @@ test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreat
   })
   assert.deepEqual((await call(hub, bruno, 'GET', '/api/companies')).json(), {
     companies: [{ company: { id: ids[3], name: 'Empresa 03' }, role: 'admin' }],
+    mayCreate: false,
+    next: { kind: 'END' },
+  })
+  const foreign = Buffer.from(ids[0] ?? '').toString('base64url')
+  assert.deepEqual((await call(hub, bruno, 'GET', `/api/companies?page=${foreign}`)).json(), {
+    companies: [],
     mayCreate: false,
     next: { kind: 'END' },
   })

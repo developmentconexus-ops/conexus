@@ -110,6 +110,17 @@
     }
   },
   {
+    "id": "membership-page-anchor-scoped",
+    "file": "apps/server/src/hub/identity/companies.ts",
+    "find": "join auth.member m on m.company_id = c.id\n            where c.id = ${key} and m.user_id = ${personId}`",
+    "replace": "join auth.member m on m.company_id = c.id\n            where c.id = ${key}`",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "lista: só as empresas de quem pede"
+    }
+  },
+  {
     "id": "malformed-id-not-found",
     "file": "apps/server/src/platform/http.ts",
     "find": "throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })",

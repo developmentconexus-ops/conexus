@@ -57,7 +57,8 @@ export async function readMemberships(tx: ReadTx, personId: string, page: string
         after(
           sql`(${company.name}, ${company.id})`,
           key,
-          sql`select name, id from auth.company where id = ${key}`,
+          sql`select c.name, c.id from auth.company c join auth.member m on m.company_id = c.id
+            where c.id = ${key} and m.user_id = ${personId}`,
         ),
       ),
     )
