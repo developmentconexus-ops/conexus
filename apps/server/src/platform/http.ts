@@ -4,7 +4,7 @@ import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
 import type { FailureCode, Operation, Person } from '@conexus/hub-api'
-import { FAILURES, PAGES, Problem } from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, AttemptKey, FAILURES, PAGES, Problem } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
@@ -230,8 +230,6 @@ type Input<O extends Operation> = {
   (O['access'] extends 'session' ? { person: Person; sessionToken: string } : unknown)
 type Handler<O extends Operation> = (input: Input<O>) => Answer<Body<O>> | Promise<Answer<Body<O>>>
 
-const AttemptKey = z.uuid()
-
 /**
  * The path parameters are read first: an id that cannot exist is the same not-found as one that
  * does not, and it costs no query (code C42, security S10).
@@ -243,7 +241,7 @@ function partsOf(operation: Operation, request: FastifyRequest) {
     throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })
   }
   const key = operation.attemptKey
-    ? AttemptKey.safeParse(request.headers['idempotency-key'])
+    ? AttemptKey.safeParse(request.headers[ATTEMPT_KEY_HEADER.toLowerCase()])
     : undefined
   if (key?.success === false) throw new Failure('REQUEST_MALFORMED', { cause: key.error })
   const parsedQuery = query?.safeParse(request.query)

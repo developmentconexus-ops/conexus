@@ -266,8 +266,8 @@
   {
     "id": "attempt-key-outcome-unknown",
     "file": "apps/web/src/platform/hub.ts",
-    "find": "outcomeUnknown: FAILURES[code].category === 'SYSTEM'",
-    "replace": "outcomeUnknown: false",
+    "find": "const settled = FAILURES[code].category === 'USER' || code === 'MAIL_UNAVAILABLE'",
+    "replace": "const settled = true",
     "test": {
       "cwd": "apps/web",
       "file": "hub.test.ts",

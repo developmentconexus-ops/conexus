@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import type { Operation } from './operation.ts'
 
+/** The session cookie: `__Host-` makes the browser keep it to this origin, over HTTPS, at `/`. */
+export const COOKIE_PREFIX = '__Host-conexus_'
+export const SESSION_COOKIE = `${COOKIE_PREFIX}session`
+
 export const PersonId = z.string().min(1).brand('PersonId')
 export type PersonId = z.infer<typeof PersonId>
 

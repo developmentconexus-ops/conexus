@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { Email, PersonId } from './identity.ts'
 import type { Operation } from './operation.ts'
 
-const LIBRARY_ID = /^[A-Za-z0-9]{32}$/
+export const LIBRARY_ID = /^[A-Za-z0-9]{32}$/
 
 export const CompanyId = z.string().regex(LIBRARY_ID).brand('CompanyId')
 export type CompanyId = z.infer<typeof CompanyId>

@@ -1,5 +1,5 @@
 import type { Next, Person } from '@conexus/hub-api'
-import { Company, Member, Membership, PAGE_SIZE } from '@conexus/hub-api'
+import { Company, LIBRARY_ID, Member, Membership, PAGE_SIZE } from '@conexus/hub-api'
 import type { SQL, SQLWrapper } from 'drizzle-orm'
 import { and, asc, eq, gt, sql } from 'drizzle-orm'
 import { z } from 'zod'
@@ -11,8 +11,6 @@ import { admit, mayCreateCompanies } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { company, member, user } from './tables.ts'
-
-const ROW_ID = /^[A-Za-z0-9]{32}$/
 
 /**
  * One row more than a page tells whether another page follows. Its token encodes the last row's
@@ -32,7 +30,7 @@ export function pageOf<T>(rows: T[], idOf: (row: T) => string): { rows: T[]; nex
 export function pageKey(page: string | undefined): string | undefined {
   if (page === undefined) return undefined
   const id = Buffer.from(page, 'base64url').toString('utf8')
-  if (!ROW_ID.test(id) || Buffer.from(id).toString('base64url') !== page) {
+  if (!LIBRARY_ID.test(id) || Buffer.from(id).toString('base64url') !== page) {
     throw new Failure('REQUEST_MALFORMED', { details: { reason: 'PAGE' } })
   }
   return id
@@ -51,7 +49,7 @@ export function after(
 }
 
 const PersonRole = z.object({ role: z.string().nullable() })
-const MemberRow = Member.extend({ id: z.string().regex(ROW_ID) })
+const MemberRow = Member.extend({ id: z.string().regex(LIBRARY_ID) })
 
 export async function readMemberships(tx: ReadTx, personId: string, page: string | undefined) {
   const key = pageKey(page)

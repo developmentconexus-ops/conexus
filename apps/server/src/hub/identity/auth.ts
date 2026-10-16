@@ -3,7 +3,7 @@ import type { GenericEndpointContext } from '@better-auth/core'
 import * as libraryContext from '@better-auth/core/context'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { FailureCode } from '@conexus/hub-api'
-import { CAPACITY, PASSWORD_LENGTH } from '@conexus/hub-api'
+import { CAPACITY, COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
 import { admin, organization } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
@@ -170,7 +170,7 @@ async function capAtTotalLifetime(
 
 // No secure attribute: better-call sets Secure on every __Host- name (dist/cookies.mjs:48-49).
 function hostCookie(name: string) {
-  return { name: `__Host-conexus_${name}` }
+  return { name: `${COOKIE_PREFIX}${name}` }
 }
 
 export function createAuth(deps: { database: Database; config: Config; log: FailureLog }) {
@@ -207,7 +207,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       // __Host- comes from the names below; the library would otherwise prefix __Secure-.
       useSecureCookies: false,
       cookies: {
-        session_token: hostCookie('session'),
+        session_token: { name: SESSION_COOKIE },
         session_data: hostCookie('session_data'),
         dont_remember: hostCookie('dont_remember'),
       },

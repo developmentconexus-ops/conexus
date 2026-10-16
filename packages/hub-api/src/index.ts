@@ -8,6 +8,7 @@ export {
   getCompany,
   getInvitation,
   InvitationId,
+  LIBRARY_ID,
   listCompanies,
   listInvitations,
   listMembers,
@@ -23,6 +24,7 @@ export {
 export { FAILURES, type FailureCode, Problem } from './failures.ts'
 export { getHealth, Health } from './health.ts'
 export {
+  COOKIE_PREFIX,
   createSession,
   deleteSession,
   Email,
@@ -30,9 +32,10 @@ export {
   PASSWORD_LENGTH,
   Person,
   PersonId,
+  SESSION_COOKIE,
   SessionState,
   setPassword,
 } from './identity.ts'
-export type { AccessKind, Operation } from './operation.ts'
+export { type AccessKind, ATTEMPT_KEY_HEADER, AttemptKey, type Operation } from './operation.ts'
 export { PAGES } from './pages.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
