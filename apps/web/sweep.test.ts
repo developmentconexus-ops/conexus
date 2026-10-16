@@ -20,12 +20,11 @@ import {
   presses,
   SMALL_PHONE,
 } from './layout-harness.ts'
+import { ANA, COMPANY } from './src/platform/fixtures.ts'
 
-// Every state of the screens, at three widths and in both themes: no sideways scroll, and a 2px
+// Each state listed here, at three widths and in both themes: no sideways scroll, and a 2px
 // outline at each Tab stop (testing T23, design V18, V28).
-const COMPANY = 'a'.repeat(32)
 const INVITATION = 'i'.repeat(32)
-const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 const LONG_EMAIL = 'pessoa.com.um.nome.muito.comprido.mesmo@empresa-de-nome-longo.example.test'
 const LONG_NAME = 'Empresa de Nome Muito Comprido que Não Cabe em Uma Linha de Telefone Pequeno'
 const SIGNED_OUT: Replies = {
@@ -67,7 +66,7 @@ function companies(
 function companyPage(
   role: 'owner' | 'admin' | 'member',
   mayInviteAs: ('owner' | 'admin' | 'member')[],
-  id = COMPANY,
+  id = COMPANY.id,
   name = LONG_NAME,
 ) {
   const company = { id, name }
@@ -100,7 +99,7 @@ function companyPage(
 function received(state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED'): Replies {
   const invitation = {
     id: INVITATION,
-    company: { id: COMPANY, name: LONG_NAME },
+    company: { id: COMPANY.id, name: LONG_NAME },
     role: 'admin',
     inviterName: 'Ana Lima',
     state,
@@ -186,16 +185,16 @@ const STATES: State[] = [
   },
   {
     name: 'dono',
-    path: `/companies/${COMPANY}`,
+    path: `/companies/${COMPANY.id}`,
     replies: OWNER,
     settle: (p) => waitFor(p, 'Convidar pessoa'),
   },
   {
     name: 'sem convites pendentes',
-    path: `/companies/${COMPANY}`,
+    path: `/companies/${COMPANY.id}`,
     replies: {
       ...OWNER,
-      [`GET /api/companies/${COMPANY}/invitations`]: ok(listInvitations, {
+      [`GET /api/companies/${COMPANY.id}/invitations`]: ok(listInvitations, {
         invitations: [],
         next: { kind: 'END' },
       }),
@@ -204,13 +203,13 @@ const STATES: State[] = [
   },
   {
     name: 'empresa que o Hub não acha',
-    path: `/companies/${COMPANY}`,
-    replies: { ...SIGNED_IN, [`GET /api/companies/${COMPANY}`]: failure('NOT_FOUND') },
+    path: `/companies/${COMPANY.id}`,
+    replies: { ...SIGNED_IN, [`GET /api/companies/${COMPANY.id}`]: failure('NOT_FOUND') },
     settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
   },
   {
     name: 'membro',
-    path: `/companies/${COMPANY}`,
+    path: `/companies/${COMPANY.id}`,
     replies: MEMBER,
     settle: (p) => waitFor(p, 'Pessoas'),
   },
@@ -243,8 +242,11 @@ const STATES: State[] = [
   },
   {
     name: 'erro de campo',
-    path: `/companies/${COMPANY}`,
-    replies: { ...OWNER, [`POST /api/companies/${COMPANY}/invitations`]: failure('MEMBER_EXISTS') },
+    path: `/companies/${COMPANY.id}`,
+    replies: {
+      ...OWNER,
+      [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MEMBER_EXISTS'),
+    },
     settle: (page) => inviteRefused(page, 'Essa pessoa já está na empresa.'),
   },
   {
@@ -255,10 +257,10 @@ const STATES: State[] = [
   },
   {
     name: '502',
-    path: `/companies/${COMPANY}`,
+    path: `/companies/${COMPANY.id}`,
     replies: {
       ...OWNER,
-      [`POST /api/companies/${COMPANY}/invitations`]: failure('MAIL_UNAVAILABLE'),
+      [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MAIL_UNAVAILABLE'),
     },
     settle: (page) => inviteRefused(page, 'O e-mail não pôde ser enviado agora.'),
   },

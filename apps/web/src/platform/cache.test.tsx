@@ -31,7 +31,8 @@ test('montar a página e ler uma resposta do Hub não compilam código em tempo 
 })
 
 test('401: uma leitura que acha a sessão terminada leva a /login com "Sua sessão terminou." e o endereço de volta', async () => {
-  const { ANA, refusal } = await import('./test-hub.tsx')
+  const { ANA } = await import('./fixtures.ts')
+  const { refusal } = await import('./test-hub.tsx')
   const server = setupServer(
     http.get('*/api/sessions/current', () =>
       HttpResponse.json({ state: 'SIGNED_IN', person: ANA }),

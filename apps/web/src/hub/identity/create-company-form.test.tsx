@@ -4,9 +4,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import {
-  ANA,
-  COMPANY,
   companyRead,
   hubServer,
   refusal,

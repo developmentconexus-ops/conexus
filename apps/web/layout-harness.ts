@@ -7,7 +7,7 @@ import type { Browser, Page } from 'playwright-core'
 import { chromium } from 'playwright-core'
 import { build } from 'vite'
 import type { z } from 'zod'
-import { problemOf } from './src/platform/test-problem.ts'
+import { problemOf } from './src/platform/fixtures.ts'
 
 // The widths come from the browser's layout of the built screens; jsdom computes none.
 const ORIGIN = 'https://hub.test'

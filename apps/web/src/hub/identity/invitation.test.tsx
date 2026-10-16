@@ -10,14 +10,8 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import {
-  ANA,
-  COMPANY,
-  companyRead,
-  hubServer,
-  refusal,
-  sessionRead,
-} from '../../platform/test-hub.tsx'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { companyRead, hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
 
 const DAVI = { id: 'person-davi', name: 'Davi Costa', email: 'davi@example.test' }
 const INVITATION = 'i'.repeat(32)

@@ -2,7 +2,8 @@ import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, homeHub, hubServer } from '../../platform/test-hub.tsx'
+import { ANA } from '../../platform/fixtures.ts'
+import { homeHub, hubServer } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 

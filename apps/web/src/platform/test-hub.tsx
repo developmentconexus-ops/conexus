@@ -3,10 +3,8 @@ import { FAILURES, getCompany, listCompanies, listMembers, SessionState } from '
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
-import { problemOf } from './test-problem.ts'
+import { ANA, COMPANY, problemOf } from './fixtures.ts'
 
-export const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
-export const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
 export const NO_COMPANIES = listCompanies.success.body.parse({
   companies: [],
   mayCreate: false,

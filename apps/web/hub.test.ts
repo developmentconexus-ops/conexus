@@ -5,8 +5,8 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { FailureCode } from '@conexus/hub-api'
 import { createCompany, FAILURES } from '@conexus/hub-api'
+import { problemOf } from './src/platform/fixtures.ts'
 import { HubFailure, hubMutation } from './src/platform/hub.ts'
-import { problemOf } from './src/platform/test-problem.ts'
 
 // hub.ts against a real socket, which MSW cannot express: a reply that ends after the headers
 // (testing T14). Run by node:test, like the other root tests of this package.

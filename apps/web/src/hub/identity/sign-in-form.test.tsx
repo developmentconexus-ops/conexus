@@ -3,7 +3,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
+import { ANA } from '../../platform/fixtures.ts'
+import { homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 

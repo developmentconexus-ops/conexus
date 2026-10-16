@@ -4,7 +4,8 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY, hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 

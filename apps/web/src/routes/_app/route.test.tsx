@@ -4,7 +4,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
+import { ANA } from '../../platform/fixtures.ts'
+import { homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
 
 const asked: string[] = []
 const server = hubServer()
