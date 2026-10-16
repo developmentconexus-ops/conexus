@@ -4,10 +4,10 @@ import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
 import { getHealth, listCompanies } from '@conexus/hub-api'
 import { z } from 'zod'
-import { emitOpenApi } from '../../../../scripts/emit-openapi.ts'
-import { createStatus } from '../hub/status/public.ts'
-import { createHub, identityOf } from '../main.ts'
-import { createTestDatabase, TEST_ORIGIN, testConfig } from './test-database.ts'
+import { emitOpenApi } from '../../../scripts/emit-openapi.ts'
+import { createStatus } from './hub/status/public.ts'
+import { createHub, identityOf } from './main.ts'
+import { createTestDatabase, TEST_ORIGIN, testConfig } from './platform/test-database.ts'
 
 const silent = { info: () => undefined, error: () => undefined }
 
