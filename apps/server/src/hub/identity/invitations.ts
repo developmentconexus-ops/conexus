@@ -19,12 +19,11 @@ import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { forgetLinks, linkTokenOf, refusedAs } from './auth.ts'
 import { after, pageKey, pageOf } from './companies.ts'
-import { company, invitation, member, user } from './tables.ts'
+import { company, invitation, member, user, verification } from './tables.ts'
 
 // The founder's numbers, step 4 answer 6: open invitations per company, and per person and minute.
 const INVITATION_CAPACITY = 100
 const INVITATIONS_PER_MINUTE = 10
-const COUNT = z.object({ count: z.coerce.number().int() })
 const Status = z.enum(['pending', 'accepted', 'canceled'])
 
 const pending = {
@@ -52,17 +51,16 @@ function pendingOf(row: z.infer<typeof PendingRow>) {
   return PendingInvitation.parse({ ...row, expiresAt: row.expiresAt.toISOString() })
 }
 
-async function counted(tx: CommandTx, query: ReturnType<typeof sql>): Promise<number> {
-  const result = await tx.execute(query)
-  return COUNT.parse(result.rows[0]).count
-}
-
 /**
  * Inviting and accepting first lock the company, so the two serialize in one order and never
  * deadlock (C65, D23). The lock leaves foreign keys free: a new member still references the row.
  */
 async function lockCompany(tx: CommandTx, companyId: string): Promise<void> {
-  await tx.execute(sql`select id from auth.company where id = ${companyId} for no key update`)
+  await tx
+    .select({ id: company.id })
+    .from(company)
+    .where(eq(company.id, companyId))
+    .for('no key update')
 }
 
 export async function readInvitations(tx: ReadTx, admitted: Admitted, page: string | undefined) {
@@ -152,19 +150,25 @@ async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) 
 
 /** Room for one more open invitation: the address's own, about to be replaced, does not count. */
 async function checkRoom(tx: CommandTx, admitted: Admitted, email: string): Promise<void> {
-  const live = await counted(
-    tx,
-    sql`select count(*) from auth.invitation where company_id = ${admitted.companyId}
-      and status = 'pending' and lower(email) <> ${email} and expires_at > statement_timestamp()`,
+  const live = await tx.$count(
+    invitation,
+    and(
+      eq(invitation.organizationId, admitted.companyId),
+      eq(invitation.status, 'pending'),
+      sql`lower(${invitation.email}) <> ${email}`,
+      sql`${invitation.expiresAt} > statement_timestamp()`,
+    ),
   )
   if (live >= INVITATION_CAPACITY) throw new Failure('INVITATIONS_FULL')
 }
 
 async function checkPace(tx: CommandTx, personId: string): Promise<void> {
-  const recent = await counted(
-    tx,
-    sql`select count(*) from auth.invitation where inviter_id = ${personId}
-      and created_at > statement_timestamp() - interval '60 seconds'`,
+  const recent = await tx.$count(
+    invitation,
+    and(
+      eq(invitation.inviterId, personId),
+      sql`${invitation.createdAt} > statement_timestamp() - interval '60 seconds'`,
+    ),
   )
   if (recent >= INVITATIONS_PER_MINUTE) throw new Failure('INVITATIONS_EXCEEDED')
 }
@@ -212,7 +216,7 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       await lockCompany(tx, input.companyId)
       const personId = input.person.id
       const admitted = await admit({ tx, personId, companyId: input.companyId, action: 'invite' })
-      await tx.execute(sql`select id from auth.user where id = ${personId} for no key update`)
+      await tx.select({ id: user.id }).from(user).where(eq(user.id, personId)).for('no key update')
       const same = await attemptOf(tx, admitted, input.attemptKey)
       if (same !== undefined) {
         if (same.email !== email || same.role !== input.role) {
@@ -285,10 +289,12 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
       if ((await internalAdapter.findCredentialAccount(person.id))?.password) {
         return { kind: 'HAS_PASSWORD' } as const
       }
-      const given = await counted(
-        tx,
-        sql`select count(*) from auth.verification where value = ${person.id}
-          and created_at > statement_timestamp() - ${LINK_PACE}`,
+      const given = await tx.$count(
+        verification,
+        and(
+          eq(verification.value, person.id),
+          sql`${verification.createdAt} > statement_timestamp() - ${LINK_PACE}`,
+        ),
       )
       if (given > 0) throw new Failure('PASSWORD_LINKS_EXCEEDED')
       await forgetLinks(tx, person.id)
