@@ -76,7 +76,13 @@ function companyPage(
     },
   ] as const
   const pending = [
-    { id: 'p'.repeat(32), email: LONG_EMAIL, role: 'admin', expiresAt: '2026-10-17T12:00:00.000Z' },
+    {
+      id: 'p'.repeat(32),
+      email: LONG_EMAIL,
+      role: 'admin',
+      expiresAt: '2026-10-17T12:00:00.000Z',
+      state: 'PENDING',
+    },
   ] as const
   return {
     ...SIGNED_IN,

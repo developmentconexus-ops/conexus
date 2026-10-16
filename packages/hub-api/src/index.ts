@@ -10,6 +10,7 @@ export {
   getInvitation,
   InvitationId,
   LIBRARY_ID,
+  ListedInvitation,
   listCompanies,
   listInvitations,
   listMembers,

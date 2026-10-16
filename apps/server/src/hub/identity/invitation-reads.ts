@@ -1,5 +1,5 @@
 import type { InvitationId, Person, PersonId } from '@conexus/hub-api'
-import { CompanyId, PAGE_SIZE, ReceivedInvitation } from '@conexus/hub-api'
+import { CompanyId, ListedInvitation, PAGE_SIZE, ReceivedInvitation } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
@@ -10,6 +10,7 @@ import { after, pageKey, pageOf } from './companies.ts'
 import { LIVE, PendingRow, pending, pendingOf, Status } from './invitations.ts'
 import { company, invitation, user } from './tables.ts'
 
+const ListedRow = PendingRow.extend({ live: z.boolean() })
 const ReceivedRow = PendingRow.omit({ expiresAt: true }).extend({
   live: z.boolean(),
   status: Status,
@@ -26,7 +27,7 @@ export function readInvitations(
     const admitted = await admit({ tx, ...input, action: 'readInvitations' })
     const key = pageKey(page)
     const rows = await tx
-      .select(pending)
+      .select({ ...pending, live: sql<boolean>`${LIVE}` })
       .from(invitation)
       .where(
         and(
@@ -42,9 +43,14 @@ export function readInvitations(
       )
       .orderBy(asc(invitation.createdAt), asc(invitation.id))
       .limit(PAGE_SIZE + 1)
-    const parsed = rows.map((row) => PendingRow.parse(row))
+    const parsed = rows.map((row) => ListedRow.parse(row))
     const listed = pageOf(parsed, (row) => row.id)
-    return { invitations: listed.rows.map(pendingOf), next: listed.next }
+    return {
+      invitations: listed.rows.map((row) =>
+        ListedInvitation.parse({ ...pendingOf(row), state: stateOf('pending', row.live) }),
+      ),
+      next: listed.next,
+    }
   })
 }
 

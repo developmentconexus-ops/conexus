@@ -209,6 +209,17 @@
     }
   },
   {
+    "id": "invitation-list-state-live",
+    "file": "apps/server/src/hub/identity/invitation-reads.ts",
+    "find": "      .select({ ...pending, live: sql<boolean>`${LIVE}` })\n",
+    "replace": "      .select({ ...pending, live: sql<boolean>`true` })\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "um convite vencido fica em"
+    }
+  },
+  {
     "id": "invitation-company-lock",
     "file": "apps/server/src/hub/identity/invitations.ts",
     "find": "await lockCompany(tx, input.companyId)",

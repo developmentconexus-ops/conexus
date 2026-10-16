@@ -15,6 +15,7 @@ const PENDING = {
   email: 'bia@example.test',
   role: 'admin',
   expiresAt: '2026-10-17T12:00:00.000Z',
+  state: 'PENDING',
 }
 
 type View = {

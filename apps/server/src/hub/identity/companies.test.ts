@@ -202,6 +202,35 @@ test('fora: a segunda página de pessoas e de convites vem por next', async (t) 
   }
 })
 
+test('fora: um convite vencido fica em "Convites pendentes", marcado EXPIRED pelo relógio do banco', async (t) => {
+  const hub = await hubOn(t)
+  const ana = await personOn(hub, ANA)
+  const companyId = await companyOf(hub, ana, 'Empresa Teste')
+  const seeded = [
+    ['viva@example.test', "now() + interval '1 day'", 1],
+    ['vencida@example.test', "now() - interval '1 hour'", 2],
+  ] as const
+  for (const [email, expires, second] of seeded) {
+    await hub.test.asOwner(
+      `insert into auth.invitation (id, company_id, email, role, status, expires_at, created_at,
+        inviter_id, attempt_key) values ($1, $2, $3, 'member', 'pending', ${expires},
+        now() + make_interval(secs => $4), $5, $6)`,
+      [id(), companyId, email, second, ana.id, randomUUID()],
+    )
+  }
+  const response = await call(hub, ana, 'GET', `/api/companies/${companyId}/invitations`)
+  assert.equal(response.statusCode, 200)
+  const page = Object(response.json())
+  assert.deepEqual(
+    page.invitations.map((row: { email: string; state: string }) => [row.email, row.state]),
+    [
+      ['viva@example.test', 'PENDING'],
+      ['vencida@example.test', 'EXPIRED'],
+    ],
+  )
+  assert.deepEqual(page.next, { kind: 'END' })
+})
+
 test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreate só do administrador; a página de uma empresa alheia não abre nada', async (t) => {
   const hub = await hubOn(t)
   const ana = await personOn(hub, ANA)

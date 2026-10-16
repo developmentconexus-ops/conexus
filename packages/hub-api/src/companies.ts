@@ -43,12 +43,20 @@ export const PendingInvitation = z.object({
 })
 export type PendingInvitation = z.infer<typeof PendingInvitation>
 
+const InvitationState = z.enum(['PENDING', 'EXPIRED', 'ACCEPTED', 'CANCELED'])
+
+/** A row of "Convites pendentes": whether it still opens is the Hub's clock, not the browser's. */
+export const ListedInvitation = PendingInvitation.extend({
+  state: InvitationState.extract(['PENDING', 'EXPIRED']),
+})
+export type ListedInvitation = z.infer<typeof ListedInvitation>
+
 export const ReceivedInvitation = z.object({
   id: InvitationId,
   company: Company,
   role: Role,
   inviterName: z.string().min(1),
-  state: z.enum(['PENDING', 'EXPIRED', 'ACCEPTED', 'CANCELED']),
+  state: InvitationState,
 })
 export type ReceivedInvitation = z.infer<typeof ReceivedInvitation>
 
@@ -130,7 +138,7 @@ export const listMembers = defineOperation({
 
 export const listInvitations = defineOperation({
   id: 'listInvitations',
-  summary: 'Lists the open invitations of a company, for the people who may invite.',
+  summary: 'Lists the pending invitations of a company, live or expired, for those who may invite.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/invitations',
@@ -138,7 +146,7 @@ export const listInvitations = defineOperation({
   input: { params: InCompany, query: Page },
   success: {
     status: 200,
-    body: z.object({ invitations: z.array(PendingInvitation), next: Next }),
+    body: z.object({ invitations: z.array(ListedInvitation), next: Next }),
   },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })

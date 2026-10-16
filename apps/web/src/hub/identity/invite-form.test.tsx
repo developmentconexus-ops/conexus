@@ -28,7 +28,7 @@ type Sent = { key: string | null; body: unknown }
 function hub(
   mayInviteAs: string[],
   answer: (body: Sent) => Response,
-  listed: { id: string; email: string; role: string; expiresAt: string }[] = [],
+  listed: { id: string; email: string; role: string; expiresAt: string; state: string }[] = [],
 ) {
   const sent: Sent[] = []
   server.use(
@@ -217,6 +217,7 @@ test('201: a lista de convites pendentes mostra o convite sem recarregar a pági
         email: 'davi@example.test',
         role: 'member',
         expiresAt: '2026-10-17T12:00:00.000Z',
+        state: 'PENDING',
       })
       return accepted('davi@example.test', 'member')
     },
@@ -243,6 +244,7 @@ for (const code of ['MAIL_UNAVAILABLE', 'MAIL_BOUNCED'] as const) {
           email: 'davi@example.test',
           role: 'member',
           expiresAt: '2026-10-17T12:00:00.000Z',
+          state: 'PENDING',
         })
         return refusal(code)
       },
