@@ -2,9 +2,7 @@
   "version": "8",
   "dialect": "postgres",
   "id": "28e8492b-3ec6-44a1-9d52-06b3079711a6",
-  "prevIds": [
-    "d74d5320-b5d4-43fc-a56c-ea609526aea2"
-  ],
+  "prevIds": ["d74d5320-b5d4-43fc-a56c-ea609526aea2"],
   "ddl": [
     {
       "name": "auth",
@@ -1109,14 +1107,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "account_user_id_user_id_fkey",
@@ -1126,14 +1120,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "company_id"
-      ],
+      "columns": ["company_id"],
       "schemaTo": "auth",
       "tableTo": "company",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "invitation_company_id_company_id_fkey",
@@ -1143,14 +1133,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "inviter_id"
-      ],
+      "columns": ["inviter_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "invitation_inviter_id_user_id_fkey",
@@ -1160,14 +1146,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "company_id"
-      ],
+      "columns": ["company_id"],
       "schemaTo": "auth",
       "tableTo": "company",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "member_company_id_company_id_fkey",
@@ -1177,14 +1159,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "member_user_id_user_id_fkey",
@@ -1194,14 +1172,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "session_user_id_user_id_fkey",
@@ -1210,9 +1184,7 @@
       "table": "session"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "account_pkey",
       "schema": "auth",
@@ -1220,9 +1192,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "company_pkey",
       "schema": "auth",
@@ -1230,9 +1200,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "invitation_pkey",
       "schema": "auth",
@@ -1240,9 +1208,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "member_pkey",
       "schema": "auth",
@@ -1250,9 +1216,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "rate_limit_pkey",
       "schema": "auth",
@@ -1260,9 +1224,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "session_pkey",
       "schema": "auth",
@@ -1270,9 +1232,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "user_pkey",
       "schema": "auth",
@@ -1280,9 +1240,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "verification_pkey",
       "schema": "auth",
@@ -1290,9 +1248,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "starts_pkey",
       "schema": "hub",
@@ -1301,10 +1257,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "company_id",
-        "attempt_key"
-      ],
+      "columns": ["company_id", "attempt_key"],
       "nullsNotDistinct": false,
       "name": "invitation_company_id_attempt_key_key",
       "entityType": "uniques",
@@ -1313,10 +1266,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "company_id",
-        "user_id"
-      ],
+      "columns": ["company_id", "user_id"],
       "nullsNotDistinct": false,
       "name": "member_company_id_user_id_key",
       "entityType": "uniques",
@@ -1325,9 +1275,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "slug"
-      ],
+      "columns": ["slug"],
       "nullsNotDistinct": false,
       "name": "company_slug_key",
       "schema": "auth",
@@ -1336,9 +1284,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "attempt_key"
-      ],
+      "columns": ["attempt_key"],
       "nullsNotDistinct": false,
       "name": "company_attempt_key_key",
       "schema": "auth",
@@ -1347,9 +1293,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "key"
-      ],
+      "columns": ["key"],
       "nullsNotDistinct": false,
       "name": "rate_limit_key_key",
       "schema": "auth",
@@ -1358,9 +1302,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "token"
-      ],
+      "columns": ["token"],
       "nullsNotDistinct": false,
       "name": "session_token_key",
       "schema": "auth",
@@ -1369,9 +1311,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "email"
-      ],
+      "columns": ["email"],
       "nullsNotDistinct": false,
       "name": "user_email_key",
       "schema": "auth",
