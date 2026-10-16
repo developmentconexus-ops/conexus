@@ -8,7 +8,7 @@ type FailureRow = {
   status: number
   phrase: string
   action: string
-  actionKind: 'RETRY' | 'SIGN_IN' | 'NONE'
+  actionKind: 'RETRY' | 'SIGN_IN' | 'INITIAL' | 'NONE'
 }
 
 export const FAILURES = {
@@ -26,7 +26,7 @@ export const FAILURES = {
     status: 404,
     phrase: 'Não encontramos o que você procurou.',
     action: 'Confira o endereço.',
-    actionKind: 'NONE',
+    actionKind: 'INITIAL',
   },
   REQUEST_ORIGIN_REFUSED: {
     category: 'USER',

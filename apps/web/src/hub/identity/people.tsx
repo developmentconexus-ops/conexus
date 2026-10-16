@@ -57,7 +57,7 @@ function Members() {
           </Row>
         ))}
       </List>
-      <Pager next={data.next} param="members" page={page} />
+      <Pager next={data.next} param="members" page={page} list="Pessoas" />
     </section>
   )
 }
@@ -94,8 +94,17 @@ function CancelInvitation({
         invalid="Digite o e-mail do convite."
       />
       <FormAlert />
-      <SubmitButton idle="Confirmar cancelamento" pending="Cancelando…" />
-      <Button type="button" disabled={cancel.isPending} onClick={onClose}>
+      <SubmitButton
+        idle="Confirmar cancelamento"
+        pending="Cancelando…"
+        label={`Confirmar cancelamento de convite para ${invitation.email}`}
+      />
+      <Button
+        type="button"
+        aria-label={`Voltar sem cancelar convite para ${invitation.email}`}
+        disabled={cancel.isPending}
+        onClick={onClose}
+      >
         Voltar
       </Button>
     </Form>
@@ -185,7 +194,7 @@ function PendingInvitations() {
           ))}
         </List>
       )}
-      <Pager next={data.next} param="invitations" page={page} />
+      <Pager next={data.next} param="invitations" page={page} list="Convites pendentes" />
     </section>
   )
 }

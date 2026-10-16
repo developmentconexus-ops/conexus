@@ -138,9 +138,9 @@ test('a página dos membros fica no endereço: "Ver mais" pede a que segue', asy
     membersNext: { kind: 'MORE', page: 'm'.repeat(32) },
   })
   const router = open()
-  fireEvent.click(await screen.findByRole('link', { name: 'Ver mais' }))
+  fireEvent.click(await screen.findByRole('link', { name: 'Ver mais: Pessoas' }))
   await waitFor(() => expect(router.state.location.search).toEqual({ members: 'm'.repeat(32) }))
-  expect(await screen.findByRole('link', { name: 'Primeira página' })).toBeTruthy()
+  expect(await screen.findByRole('link', { name: 'Primeira página: Pessoas' })).toBeTruthy()
   expect(reads).toContain(`members?page=${'m'.repeat(32)}`)
 })
 
@@ -259,11 +259,12 @@ test('live invitation renews with its revision; cancellation requires the exact 
   fireEvent.click(
     await screen.findByRole('button', { name: 'Cancelar convite para bia@example.test' }),
   )
-  fireEvent.click(screen.getByRole('button', { name: 'Confirmar cancelamento' }))
+  const confirmName = `Confirmar cancelamento de convite para ${PENDING.email}`
+  fireEvent.click(screen.getByRole('button', { name: confirmName }))
   expect(await screen.findByText('Digite o e-mail do convite.')).toBeTruthy()
   expect(calls).toHaveLength(1)
   fireEvent.change(screen.getByLabelText('Confirmar e-mail'), { target: { value: PENDING.email } })
-  fireEvent.click(screen.getByRole('button', { name: 'Confirmar cancelamento' }))
+  fireEvent.click(screen.getByRole('button', { name: confirmName }))
   expect(await screen.findByText('Este convite mudou. Recarregue a página.')).toBeTruthy()
   expect(screen.getByLabelText('Confirmar e-mail')).toHaveProperty('value', PENDING.email)
   expect(calls).toEqual([{ revision: 0 }, { revision: 0 }])

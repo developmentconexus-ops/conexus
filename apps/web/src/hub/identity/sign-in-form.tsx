@@ -11,6 +11,7 @@ import {
   useSchemaForm,
 } from '../../ui/form.tsx'
 import { PageTitle } from '../../ui/list.tsx'
+import { Notice } from '../../ui/notice.tsx'
 import { sessionQuery, signIn } from './queries.ts'
 
 const ANY_ORIGIN = 'https://conexus.invalid'
@@ -83,11 +84,7 @@ export function SignInForm(props: {
 
   return (
     <section className="flex w-full flex-col gap-lg">
-      {props.reason && (
-        <p role="status" className="text-text">
-          {NOTICES[props.reason]}
-        </p>
-      )}
+      {props.reason && <Notice>{NOTICES[props.reason]}</Notice>}
       <header className="flex flex-col gap-xs">
         <PageTitle>Entrar no Conexus</PageTitle>
         <p className="text-text-2">Use o seu e-mail de trabalho.</p>

@@ -82,7 +82,7 @@ export function homeHub(
 
 /** The Hub as a test sees it: no request goes unanswered, and each test starts with no handler. */
 export function hubServer() {
-  const server = setupServer()
+  const server = setupServer(sessionRead(() => undefined))
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
   afterEach(() => server.resetHandlers())
   afterAll(() => server.close())

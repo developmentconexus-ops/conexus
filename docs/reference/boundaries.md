@@ -322,6 +322,28 @@ library joins the Hub sets.
 - **Why.** S23/S28 and the card's A6. The native counter test in `invitation-journey.test.ts`
   reaches 429 after ten refused transactions, independently for both paths.
 
+## TanStack Router 1.170.44: stable public-page data
+
+- **Native.** Route `loader` supplies a snapshot through `useLoaderData`; `beforeLoad` supplies
+  derived route context, read through `getRouteApi().useRouteContext` as the app guard already does.
+- **Choice.** `/set-password` captures the fragment token in its loader, not the live location
+  during departure. The root supplies only the initial destination derived from the session query;
+  screens do not infer or copy a session. NOT_FOUND consumes INITIAL through one shared reader.
+- **Proof.** The held-navigation regression in `set-password-form.test.tsx` catches the original
+  live-location implementation when restored. `states.test.tsx`/`__root.test.tsx` exercise both
+  initial destinations. Invitation success stays visible while refresh is held, hides obsolete
+  actions, and does not follow navigation to another invitation (`invitation.test.tsx`). The
+  founder-approved V43/C48 wording exception remains on closing L27.
+
+## shadcn: nonurgent Notice
+
+- **Native comparison.** The Base UI registry's `alert.tsx`, obtained with the maintainer CLI,
+  defines `role="alert"` and callout variants. Its docs describe a callout for user attention.
+- **Choice.** The card's Notice is instead one native `role="status"` paragraph with `{children}`,
+  no title, variant or dismiss state. Login, invitation send and password success consume it.
+  `states.test.tsx` checks polite status without an urgent alert. This remains a status owner,
+  not another alert implementation or a toast.
+
 ## React Email 6.11.0 and renderer 2.1.0
 
 - **Native reference.** Documenso `cd0cc5febcbb76ec7e5ecb75c0b8c65ab8432198`,

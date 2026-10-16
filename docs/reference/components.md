@@ -66,6 +66,10 @@ field-error:
 notice:
   textColor: "{colors.text}"
   typography: "{typography.body}"
+  contract: "children → native polite status paragraph"
+initial-action:
+  component: "button-default link"
+  destination: "root route loading supplies Entrar or Voltar ao início"
 invitation-email:
   backgroundColor: "{colors.canvas}"
   contentColor: "{colors.surface}"

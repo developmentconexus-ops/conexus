@@ -17,6 +17,7 @@ import {
   useSchemaForm,
 } from '../../ui/form.tsx'
 import { PageTitle } from '../../ui/list.tsx'
+import { Notice } from '../../ui/notice.tsx'
 import { NotFoundWithHint } from '../../ui/states.tsx'
 import {
   acceptReceivedInvitation,
@@ -78,7 +79,7 @@ function InvitationPassword(props: {
         invalid="Use de 8 a 128 caracteres."
       />
       <p className="text-text-2">8 caracteres ou mais</p>
-      <Button type="button" onClick={() => setVisible((value) => !value)}>
+      <Button type="button" aria-pressed={visible} onClick={() => setVisible((value) => !value)}>
         {visible ? 'Ocultar senha' : 'Mostrar senha'}
       </Button>
       <TextField
@@ -170,7 +171,9 @@ const CLOSED = {
 export function InvitationEntry() {
   const { invitationId } = entryRoute.useParams()
   const { invitation } = entryRoute.useLoaderData()
-  const [created, setCreated] = useState(false)
+  const [createdFor, setCreatedFor] = useState<string>()
+  const created =
+    createdFor === invitationId && (invitation.kind === 'NEW' || invitation.kind === 'INVITED')
   let content: ReactNode
   switch (invitation.kind) {
     case 'CLOSED':
@@ -210,7 +213,10 @@ export function InvitationEntry() {
             .
           </p>
           {invitation.kind === 'NEW' && (
-            <InvitationPassword invitation={invitation} onCreated={() => setCreated(true)} />
+            <InvitationPassword
+              invitation={invitation}
+              onCreated={() => setCreatedFor(invitationId)}
+            />
           )}
           {invitation.kind === 'HAS_PASSWORD' && (
             <Link
@@ -230,12 +236,8 @@ export function InvitationEntry() {
   }
   return (
     <section className="flex w-full flex-col items-start gap-lg">
-      {created && (
-        <p role="status" className="text-text">
-          Senha criada. Você já entrou.
-        </p>
-      )}
-      {content}
+      {created && <Notice>Senha criada. Você já entrou.</Notice>}
+      {created && invitation.kind === 'NEW' ? null : content}
     </section>
   )
 }

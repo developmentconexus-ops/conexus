@@ -1,5 +1,11 @@
 import type { InvitationView } from '@conexus/hub-api'
-import { acceptInvitation, FAILURES, getCompany, getInvitation } from '@conexus/hub-api'
+import {
+  acceptInvitation,
+  FAILURES,
+  getCompany,
+  getInvitation,
+  SessionState,
+} from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -69,14 +75,22 @@ test('another session sees only its address and can sign out to read the invitat
 test('password confirmation waits for blur and success remains while session and invitation refresh', async () => {
   const state = hub({ kind: 'NEW', email: DAVI.email, ...DETAILS })
   const sent: unknown[] = []
+  const refreshing = Promise.withResolvers<void>()
+  const release = Promise.withResolvers<void>()
   server.use(
+    http.get('*/api/sessions/current', async () => {
+      if (state.invitation.kind !== 'INVITED') return HttpResponse.json({ state: 'SIGNED_OUT' })
+      refreshing.resolve()
+      await release.promise
+      return HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: DAVI }))
+    }),
     http.put(`*/api/invitations/${ID}/password`, async ({ request }) => {
       sent.push(await request.json())
       state.invitation = { kind: 'INVITED', ...DETAILS, revision: 1 }
       return new HttpResponse(null, { status: 204 })
     }),
   )
-  open()
+  const router = open()
   fireEvent.change(await screen.findByLabelText('Nome'), { target: { value: DAVI.name } })
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-nova-1' } })
   fireEvent.change(screen.getByLabelText('Confirmar senha'), { target: { value: 'diferente' } })
@@ -86,10 +100,27 @@ test('password confirmation waits for blur and success remains while session and
   fireEvent.change(screen.getByLabelText('Confirmar senha'), { target: { value: 'senha-nova-1' } })
   fireEvent.blur(screen.getByLabelText('Confirmar senha'))
   fireEvent.click(screen.getByRole('button', { name: 'Criar senha' }))
-  expect(await screen.findByText('Senha criada. Você já entrou.')).toBeTruthy()
+  try {
+    await refreshing.promise
+    expect(screen.getByRole('status').textContent).toBe('Senha criada. Você já entrou.')
+    expect(screen.queryByLabelText('Nome')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Recusar convite' })).toBeNull()
+  } finally {
+    release.resolve()
+  }
   expect(await screen.findByRole('button', { name: 'Aceitar convite' })).toBeTruthy()
+  expect(screen.getByRole('status').textContent).toBe('Senha criada. Você já entrou.')
   expect(sent).toEqual([{ name: DAVI.name, password: 'senha-nova-1', revision: 0 }])
   expect(screen.queryByRole('alert')).toBeNull()
+  const next = 'n'.repeat(32)
+  server.use(
+    http.get(`*/api/invitations/${next}`, () =>
+      HttpResponse.json({ invitation: state.invitation }),
+    ),
+  )
+  await router.navigate({ href: `/invitations/${next}` })
+  expect(screen.queryByText('Senha criada. Você já entrou.')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Aceitar convite' })).toBeTruthy()
 })
 
 test('password refusal preserves entered fields', async () => {
