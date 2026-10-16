@@ -11,16 +11,19 @@ and creates an API token that can only do "Email Sending: Edit".
 
 ## Write the token and the addresses
 
-Firstmate writes two files as root, with owner uid 1000 and mode 0400, while port 22 is open:
+Firstmate writes two files as root, while port 22 is open:
 
-- `/etc/conexus/secrets/hub_mail_token`, the token. `deploy.sh` refuses to run without it.
-- `/etc/conexus/hub.env`, two lines kept out of Git because the address names the account:
+- `/etc/conexus/secrets/hub_mail_token`, the token, with owner uid 1000 and mode 0400.
+  `deploy.sh` refuses to run without it.
+- `/etc/conexus/hub.env`, with owner `runner` and mode 0400, because Compose reads it as the user
+  that runs `deploy.sh`, not inside the Hub's container. Two lines, kept out of Git because the
+  address names the account:
   `HUB_MAIL_API_URL=https://api.cloudflare.com/client/v4/accounts/<account id>/email/sending/send`
   and `HUB_MAIL_FROM=<sender>@<onboarded subdomain>`.
 
-Compose refuses to start without `hub.env`. The Hub refuses to start with `CONFIG_INVALID` naming a
-missing or malformed variable, or a token file others can read, and `deploy.sh` brings the earlier
-image back.
+`deploy.sh` refuses to run when `hub.env` is missing or `runner` cannot read it. The Hub refuses to
+start with `CONFIG_INVALID` naming a missing or malformed variable, or a token file others can read,
+and `deploy.sh` brings the earlier image back.
 
 A new token or address takes effect with Reiniciar o Hub. The Hub sends each message once, with a
 10 s deadline, and never retries: a failed send answers "O e-mail não pôde ser enviado agora." and

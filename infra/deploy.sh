@@ -39,6 +39,16 @@ require_secret() {
   fi
 }
 
+# Compose reads `env_file` itself, as the user that runs this script, and `ps` below needs it too.
+require_hub_env() {
+  local file="${HUB_ENV_FILE:-/etc/conexus/hub.env}"
+  if ! { : < "$file"; } 2> /dev/null; then
+    echo "missing or unreadable hub.env: $file; write it first, readable by $(id -un)" >&2
+    return 1
+  fi
+}
+
+require_hub_env
 previous="$(running_image)"
 
 if [ "$mode" = "--restart" ]; then

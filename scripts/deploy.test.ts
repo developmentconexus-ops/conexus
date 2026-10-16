@@ -30,6 +30,7 @@ type Stub = {
   migrateStatus?: number
   upStatus?: number
   missingSecret?: string
+  hubEnv?: 'missing' | 'unreadable'
 }
 
 function deploy(argument: string, stub: Stub = {}) {
@@ -39,6 +40,9 @@ function deploy(argument: string, stub: Stub = {}) {
   writeFileSync(join(dir, 'bin/docker'), STUB_DOCKER)
   chmodSync(join(dir, 'bin/docker'), 0o755)
   const calls = join(dir, 'calls')
+  const hubEnv = join(dir, 'hub.env')
+  if (stub.hubEnv !== 'missing') writeFileSync(hubEnv, 'HUB_MAIL_FROM=a@b.test\n')
+  if (stub.hubEnv === 'unreadable') chmodSync(hubEnv, 0o000)
   writeFileSync(calls, '')
   const run = spawnSync('bash', [DEPLOY, argument], {
     encoding: 'utf8',
@@ -47,6 +51,7 @@ function deploy(argument: string, stub: Stub = {}) {
       ...process.env,
       PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}`,
       CALLS: calls,
+      HUB_ENV_FILE: hubEnv,
       STUB_RUNNING_ID: stub.running === undefined ? '' : 'container-id',
       STUB_RUNNING_IMAGE: stub.running ?? '',
       STUB_LABEL: stub.labeled === false ? '' : '1',
@@ -150,3 +155,17 @@ test('os segredos são conferidos na imagem nova, sem rede, como o usuário do H
     )
   }
 })
+
+const AS_ROOT = process.getuid?.() === 0
+for (const hubEnv of ['missing', 'unreadable'] as const) {
+  for (const argument of ['hub@sha256:new', '--restart']) {
+    test(`${argument} com hub.env ${hubEnv} recusa antes de qualquer chamada ao Docker`, {
+      skip: hubEnv === 'unreadable' && AS_ROOT,
+    }, () => {
+      const { run, log } = deploy(argument, { running: 'hub@sha256:old', hubEnv })
+      assert.equal(run.status, 1)
+      assert.match(run.stderr, /missing or unreadable hub\.env: .*hub\.env; write it first/)
+      assert.deepEqual(log, [])
+    })
+  }
+}
