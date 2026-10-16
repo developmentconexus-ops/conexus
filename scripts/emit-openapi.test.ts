@@ -148,3 +148,26 @@ test('um export que não passou por defineOperation não é emitido, ainda que t
     [...ids, 'strayRead'],
   )
 })
+
+test('um corpo de sucesso é application/json, uma falha é application/problem+json', () => {
+  const responses = Document.parse(emitOpenApi()).paths['/api/companies/{companyId}/invitations']
+    ?.post?.responses
+  function contentTypes(status: string) {
+    return Object.keys(Z_CONTENT.parse(responses?.[status]).content)
+  }
+  assert.deepEqual(contentTypes('201'), ['application/json'])
+  assert.deepEqual(contentTypes('401'), ['application/problem+json'])
+})
+
+const Z_CONTENT = z.object({ content: z.record(z.string(), z.unknown()) })
+
+test('o limite do corpo não é emitido, e uma transformação em entrada converte sem recusa', () => {
+  const transformed = {
+    ...PLANTED,
+    bodyLimit: 7_654_321,
+    input: { body: z.string().transform((text) => text.length) },
+  } satisfies Operation
+  const text = JSON.stringify(emitOpenApi([transformed]))
+  assert.match(text, /"\/api\/planted"/)
+  assert.doesNotMatch(text, /bodyLimit|7654321|"x-/)
+})
