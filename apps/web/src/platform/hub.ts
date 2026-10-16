@@ -1,5 +1,5 @@
 import type { FailureCode, Operation } from '@conexus/hub-api'
-import { FAILURES, Problem } from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, FAILURES, Problem } from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
@@ -105,7 +105,7 @@ function addressOf(operation: Operation, sent: Sent): string {
 async function send(operation: Operation, sent: Sent = {}, signal?: AbortSignal) {
   const headers = {
     ...(sent.body === undefined ? {} : { 'content-type': 'application/json' }),
-    ...(sent.attemptKey === undefined ? {} : { 'idempotency-key': sent.attemptKey }),
+    ...(sent.attemptKey === undefined ? {} : { [ATTEMPT_KEY_HEADER]: sent.attemptKey }),
   }
   const response = await hubFetch(addressOf(operation, sent), {
     method: operation.method,

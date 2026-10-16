@@ -12,14 +12,13 @@ import { writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import type { Operation } from '@conexus/hub-api'
 import * as api from '@conexus/hub-api'
-import { FAILURES, Problem } from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, AttemptKey, FAILURES, Problem, SESSION_COOKIE } from '@conexus/hub-api'
 import { z } from 'zod'
 
 type Json = Record<string, unknown>
 
-/** The Hub's session cookie (security S17); the server names it in `apps/server/src/hub/identity/auth.ts`. */
+/** The scheme of the Hub's session cookie (security S17). */
 const SESSION_SCHEME = 'cookieSession'
-const SESSION_COOKIE = '__Host-conexus_session'
 
 type JsonSchema = z.core.JSONSchema.BaseSchema
 
@@ -82,10 +81,10 @@ function operationItem(operation: Operation): Json {
       ...(operation.attemptKey
         ? [
             {
-              name: 'Idempotency-Key',
+              name: ATTEMPT_KEY_HEADER,
               in: 'header',
               required: true,
-              schema: { type: 'string', format: 'uuid' },
+              schema: schema(AttemptKey, 'input'),
             },
           ]
         : []),
