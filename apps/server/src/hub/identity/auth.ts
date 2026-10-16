@@ -155,8 +155,9 @@ const KEY_FIELD = { type: 'string', required: true } as const
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
 
 /**
- * A renewal never moves a session past 8 h from its creation, the founder's total. `getSession` renews
- * after placing the session it read on the context (`better-auth/dist/api/routes/session.mjs:154`).
+ * A renewal never moves a session past 8 h from its creation, the founder's total. `getSession`
+ * renews after placing the session it read on the context
+ * (`better-auth/dist/api/routes/session.mjs:154`).
  */
 async function capAtTotalLifetime(
   data: { expiresAt?: Date },
