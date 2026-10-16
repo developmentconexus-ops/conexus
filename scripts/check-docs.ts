@@ -2,7 +2,7 @@
 // nowhere, repeats or cites a rule that does not exist, names a retired process, or a second step
 // card waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24).
 // A link is inline or a reference definition, and a fragment must name a heading of the Markdown
-// file it points to. Refusals are proved by planting each one in check-docs.test.ts.
+// file it points to, an ATX or a Setext heading, read by its rendered text. Refusals are proved by planting each one in check-docs.test.ts.
 // Revalidate by 2027-04-13, or when the list in delivery L24 changes.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
@@ -113,16 +113,47 @@ function withoutFences(text: string): string {
   return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '')
 }
 
+const ATX_HEADING = /^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/
+const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/
+const NOT_A_PARAGRAPH = /^(?: {4}|\s*(?:#|>|[-+*][ \t]|\d+[.)][ \t]|(?:=+|-+)[ \t]*$))/
+
+/** The text of each heading, ATX or Setext, as written. A Setext underline needs a paragraph line directly above it. */
+function headingTitles(text: string): string[] {
+  const lines = withoutFences(text.replace(/^---\n[\s\S]*?\n---\n/, '')).split('\n')
+  const titles: string[] = []
+  lines.forEach((line, i) => {
+    const atx = line.match(ATX_HEADING)?.[1]
+    if (atx !== undefined) titles.push(atx)
+    const above = lines[i - 1]
+    if (SETEXT_UNDERLINE.test(line) && above?.trim() && !NOT_A_PARAGRAPH.test(above)) {
+      titles.push(above.trim())
+    }
+  })
+  return titles
+}
+
+/** Emphasis, code and link markup gone; an underscore inside a word, as in `snake_case`, is text. */
+function renderedText(title: string): string {
+  return title
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .split(/(`[^`]*`)/)
+    .map((part, i) =>
+      i % 2 === 1
+        ? part.replace(/`/g, '')
+        : part
+            .replace(/[*~]/g, '')
+            .replace(/(?<![\p{L}\p{N}])_+(?=[^\s_])/gu, '')
+            .replace(/(?<=[^\s_])_+(?![\p{L}\p{N}])/gu, ''),
+    )
+    .join('')
+}
+
 /** The ids GitHub gives a document's headings: lower case, punctuation gone, repeats numbered. */
 function headingIds(text: string): Set<string> {
   const ids = new Set<string>()
   const seen = new Map<string, number>()
-  for (const [, title = ''] of withoutFences(text).matchAll(
-    /^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/gm,
-  )) {
-    const slug = title
-      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/[`*~]/g, '')
+  for (const title of headingTitles(text)) {
+    const slug = renderedText(title)
       .toLowerCase()
       .replace(/[^\p{L}\p{N}\p{M} _-]/gu, '')
       .replace(/ /g, '-')
