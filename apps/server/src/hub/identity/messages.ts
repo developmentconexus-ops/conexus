@@ -1,7 +1,6 @@
 import type { Email, Role } from '@conexus/hub-api'
+import type { MailMessage } from '../../platform/mail.ts'
 import { INVITATION_SECONDS, PASSWORD_LINK_SECONDS } from './auth.ts'
-
-type Mail = { to: Email; subject: string; text: string }
 
 const ROLE_NAMES: Record<Role, string> = {
   owner: 'Dono',
@@ -23,7 +22,7 @@ export function invitationMail(input: {
   inviterName: string
   role: Role
   link: string
-}): Mail {
+}): MailMessage {
   return {
     to: input.to,
     subject: `Convite para ${input.companyName}`,
@@ -37,7 +36,7 @@ export function invitationMail(input: {
   }
 }
 
-export function passwordLinkMail(input: { to: Email; name: string; link: string }): Mail {
+export function passwordLinkMail(input: { to: Email; name: string; link: string }): MailMessage {
   return {
     to: input.to,
     subject: 'Crie sua senha do Conexus',
