@@ -2,6 +2,7 @@ import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
+import { Secret } from './secret.ts'
 import { readSecretFile } from './secret-file.ts'
 
 const LOG_LEVELS = ['error', 'warn', 'info', 'debug'] as const
@@ -17,29 +18,12 @@ export const PublicOrigin = z
 export type PublicOrigin = z.infer<typeof PublicOrigin>
 
 /** Signs the session cookie: a copy of the database without it opens no session (security S16). */
-export class SessionSecret {
-  readonly #value: string
-
-  private constructor(value: string) {
-    this.#value = value
-  }
-
-  static parse(value: string): SessionSecret {
+export type SessionSecret = Secret<'SessionSecret'>
+export const SessionSecret = {
+  parse(value: string): SessionSecret {
     if (value.length < SESSION_SECRET_MIN_LENGTH) throw new TypeError('session secret too short')
-    return new SessionSecret(value)
-  }
-
-  reveal(): string {
-    return this.#value
-  }
-
-  toString(): string {
-    return '[SessionSecret]'
-  }
-
-  toJSON(): string {
-    return '[SessionSecret]'
-  }
+    return new Secret('SessionSecret', value)
+  },
 }
 
 const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]']
@@ -59,28 +43,11 @@ export const MailApiUrl = z
 export type MailApiUrl = z.infer<typeof MailApiUrl>
 
 /** Sends mail as the installation; it leaves the program only in the adapter's request (S35). */
-export class MailToken {
-  readonly #value: string
-
-  private constructor(value: string) {
-    this.#value = value
-  }
-
-  static parse(value: string): MailToken {
-    return new MailToken(value)
-  }
-
-  reveal(): string {
-    return this.#value
-  }
-
-  toString(): string {
-    return '[MailToken]'
-  }
-
-  toJSON(): string {
-    return '[MailToken]'
-  }
+export type MailToken = Secret<'MailToken'>
+export const MailToken = {
+  parse(value: string): MailToken {
+    return new Secret('MailToken', value)
+  },
 }
 
 type BaseConfig = {

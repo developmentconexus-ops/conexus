@@ -8,6 +8,7 @@ import pg from 'pg'
 import { z } from 'zod'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
+import { Secret } from './secret.ts'
 
 export const MIGRATIONS_FOLDER = join(import.meta.dirname, '..', '..', 'migrations')
 export const POOL_LIMITS = {
@@ -21,32 +22,15 @@ const READ_DEADLINE_MS = 15_000
 
 const UNAVAILABLE_SQLSTATES = /^(08.{3}|57P0[123]|57014)$/
 
-export class DatabaseUrl {
-  readonly #value: string
-
-  private constructor(value: string) {
-    this.#value = value
-  }
-
-  static parse(value: string): DatabaseUrl {
+export type DatabaseUrl = Secret<'DatabaseUrl'>
+export const DatabaseUrl = {
+  parse(value: string): DatabaseUrl {
     const url = URL.parse(value)
     if (url === null || !['postgres:', 'postgresql:'].includes(url.protocol)) {
       throw new TypeError('not a PostgreSQL URL')
     }
-    return new DatabaseUrl(value)
-  }
-
-  reveal(): string {
-    return this.#value
-  }
-
-  toString(): string {
-    return '[DatabaseUrl]'
-  }
-
-  toJSON(): string {
-    return '[DatabaseUrl]'
-  }
+    return new Secret('DatabaseUrl', value)
+  },
 }
 
 type Orm<R extends AnyRelations = EmptyRelations> = NodePgDatabase<R> & { $client: pg.Pool }
