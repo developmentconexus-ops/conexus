@@ -83,8 +83,9 @@ versions are the installed ones. When the library changes, reread the line it na
 
 ### Who may act on a company: admission over the plugin's roles
 
-- **Library line.** `better-auth/dist/plugins/organization/has-permission.mjs:22`. The plugin
-  checks a role inside each of its own endpoints, and its reads (`/organization/list-members`,
+- **Library line.** `better-auth/dist/plugins/organization/has-permission.mjs:7`, which decides at
+  `:31` through `hasPermissionFn` (`permission.mjs:2`). The plugin checks a role inside each of its
+  own endpoints, and its reads (`/organization/list-members`,
   `/organization/list-invitations`) answer an outsider 403 and read the company's whole roster.
 - **Hand-made piece.** `admit` in `apps/server/src/hub/identity/admission.ts`. It reads the
   person's member row and decides with the plugin's `defaultRoles[role].authorize`, through one
@@ -134,6 +135,18 @@ versions are the installed ones. When the library changes, reread the line it na
   plugin creates the new one.
 - **Why.** The founder's "Convidar de novo" after 2 days (step 4, answer 4). The test "de novo: o
   anterior vencido há 2 dias, ou vencendo agora" in `invitations.test.ts` fails without it.
+
+### A password link's token goes back to the command that asked for it
+
+- **Library line.** `better-auth/dist/api/routes/password.mjs:82`. `requestPasswordReset` answers
+  only a status and hands the token to `emailAndPassword.sendResetPassword` alone.
+- **Hand-made piece.** `linkTokenOf` in `apps/server/src/hub/identity/auth.ts`. The configured
+  `sendResetPassword` gives the token to the `AsyncLocalStorage` slot of the call that asked, and
+  the command builds the link and the e-mail itself.
+- **Why.** [Security S35](../guides/security.md): the token reaches only the command, never an
+  e-mail sent inside the library's call or a log. Building the token ourselves would copy the
+  library's private identifier format. The test "com a pessoa ainda sem senha" in
+  `first-person.test.ts` and the tests "link" in `invitation-link.test.ts` read the link it returns.
 
 ### The invitation's e-mail leaves after the commit and is marked when answered
 
@@ -204,3 +217,78 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Why.** With `request.signal`, every e-mail a write sends after reading its body is aborted
   (U4: the request's signal reaches the mail adapter). The test "registro" in
   `invitation-journey.test.ts`, against a Hub on a real socket, fails with it.
+
+## Platform: pg 8.23.1, Drizzle 1.0.0-rc.4, Fastify 5.12.5 and Node 24
+
+### A deadline on every checkout of a database connection
+
+- **Library line.** `pg/lib/client.js:702`. `query_timeout` times one query and leaves the
+  connection open with the query still running, and `pg-pool/index.js:392` returns such a client to
+  the pool. `statement_timeout` and `idle_in_transaction_session_timeout`, set on `hub_runtime`, are
+  the server's and cannot fire across a dead network.
+- **Hand-made piece.** `openDatabase` in `apps/server/src/platform/database.ts`. On the pool's
+  `acquire`, a 15 s timer destroys the client's socket; `release` clears it, and a lost or still
+  open client is released with `true`, which removes it.
+- **Why.** [Code C57](../guides/code.md): nothing native bounds a whole checkout on the client. The
+  test "uma consulta da biblioteca sem resposta cai no prazo de 15 s" in `database.test.ts` fails
+  without it (removal `library-read-deadline`).
+
+### The Hub refuses to serve a database behind its migrations
+
+- **Library line.** `drizzle-orm/pg-core/async/session.js:136`. `migrate()` compares the shipped
+  migrations with `drizzle.__drizzle_migrations` inside itself and exports no check; only
+  `readMigrationFiles` is public.
+- **Hand-made piece.** `assertMigrated` in `apps/server/src/platform/database.ts`. It reads the name
+  and hash of each applied migration from that table and compares them with the shipped files.
+- **Why.** The Hub runs as `hub_runtime`, which may not migrate, and a Hub on an older schema must
+  stop with `DATABASE_BEHIND` or `DATABASE_MIGRATION_CHANGED`. The piece depends on the table's
+  shape, which is not a documented contract (`upgradeIfNeeded` changes it), so a Drizzle upgrade
+  rereads it. The tests "atrasado" and "mudada" in `boot.test.ts` cover it.
+
+### A malformed request is answered in problem+json with the security headers
+
+- **Library line.** `fastify/fastify.js:963`. The default `clientErrorHandler` answers plain JSON
+  with no security headers and no trace id, and `@fastify/helmet` sets its headers only in
+  `onRequest` hooks (`@fastify/helmet/index.js:36`, `:52`), which a request that matches no route
+  never runs.
+- **Hand-made piece.** `answerClientError` and the `frameworkErrors` option in
+  `apps/server/src/platform/http.ts`. Both answer `REQUEST_MALFORMED` in problem+json, apply the
+  helmet middleware by hand and log the line of C46.
+- **Why.** [Code C51](../guides/code.md) and [security S26](../guides/security.md). The tests
+  "Content-Length errado", "linha malformada" and "caminho com porcentagem malformada responde 400
+  em problem+json, com cabeçalhos e log" in `main.test.ts` cover it.
+
+### A write's media type is refused with its origin, before the session is read
+
+- **Library line.** `fastify/lib/handle-request.js:83-86`. Fastify answers 415
+  `FST_ERR_CTP_INVALID_MEDIA_TYPE` for a body with a media type it has no parser for, before it
+  reads the body; it parses `text/plain` by default unless `removeContentTypeParser` drops it.
+- **Hand-made piece.** `checkWrite` in `apps/server/src/platform/access.ts`, with `hasBody` and
+  `mediaType`. It refuses any write that is not `application/json` in the `onRequest` hook, beside
+  the origin check.
+- **Why.** [Security S24 and S25](../guides/security.md). Fastify's 415 comes after `onRequest`,
+  so after the session is read, and a JSON write with an empty body would become
+  `FST_ERR_CTP_EMPTY_JSON_BODY`. The native refusal is the smaller change (native-first audit,
+  finding 1, 2026-10-15) and is not yet taken; the test "formulário vindo da própria página: 415
+  REQUEST_MEDIA_TYPE_REFUSED" in `http.test.ts` covers both.
+
+### One log line per request, by code
+
+- **Library line.** `fastify/lib/log-controller.js:50` and `:68`. Fastify's request logging
+  writes two prose lines per request, "incoming request" and "request completed".
+- **Hand-made piece.** `logServed` in `apps/server/src/platform/http.ts`, with
+  `disableRequestLogging`. It writes `REQUEST_SERVED` with the route, the status and the duration;
+  `genReqId` and `requestIdLogLabel` stay native.
+- **Why.** [Code C46 and C50](../guides/code.md): one line per request, and a message is a code. The
+  test "log por pedido" in `main.test.ts` covers it.
+
+### The mail provider's reply is read up to a cap
+
+- **Library line.** Node 24's global `fetch` has no size cap on a reply. undici's
+  `Agent({ maxResponseSize })` has one, but the `undici` bundled with Node refuses that dispatcher
+  through the global `fetch` (`UND_ERR_INVALID_ARG`, native-first audit probe), so the cap would
+  need a separate `undici` dependency. The Cloudflare SDK reads the whole body and retries twice.
+- **Hand-made piece.** `cappedText` in `apps/server/src/platform/mail.ts`. It reads the reply
+  stream and stops at 16 KiB.
+- **Why.** [Code C59](../guides/code.md), and no dependency for about 12 lines. The test "correio:
+  resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` covers it.
