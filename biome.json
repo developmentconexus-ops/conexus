@@ -75,9 +75,9 @@
           "level": "error",
           "options": {
             "paths": {
-              "vitest": "Only screen files use Vitest (testing T1, decision 0034).",
-              "msw": "Only screen files use MSW (testing T1, decision 0034).",
-              "@testing-library/react": "Only screen files use Testing Library (testing T1)."
+              "vitest": "Only screen files use Vitest (decision 0034).",
+              "msw": "Only screen files use MSW (decision 0034).",
+              "@testing-library/react": "Only screen files use Testing Library (decision 0034)."
             }
           }
         }
@@ -99,6 +99,16 @@
     }
   },
   "overrides": [
+    {
+      "includes": ["apps/web/src/ui/**", "apps/web/src/hub/**", "apps/web/src/builder/**"],
+      "linter": {
+        "rules": {
+          "nursery": {
+            "noInlineStyles": "error"
+          }
+        }
+      }
+    },
     {
       "includes": ["apps/web/src/main.tsx"],
       "linter": {

@@ -9,7 +9,7 @@ driver [0020].
 ## Decision
 
 The Hub's Neon project runs PostgreSQL 18, Neon's default for new projects. Drizzle is pinned at
-`1.0.0-rc.4`: its migrator applies by name, and it ships row schemas for Zod (data D21). Basis:
+`1.0.0-rc.4`: its migrator applies by name, and it ships row schemas for Zod (code C27). Basis:
 purpose. The earlier proofs ran on 18, and 17 answered the same.
 
 ## Criterion

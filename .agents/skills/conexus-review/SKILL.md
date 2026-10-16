@@ -17,7 +17,7 @@ The pull request, its head commit and the card. Nothing from the builders' conve
 
 ## Steps
 
-1. Read the rules from `main` (L10): `AGENTS.md`, this skill, [the
+1. Read the rules from `main`: `AGENTS.md`, this skill, [the
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the guides the card names. Write which files you read and at which commit.
 2. Read the whole diff of the step against `main`, at the exact commit.

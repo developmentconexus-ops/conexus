@@ -1,7 +1,7 @@
 # The study report
 
 Every step's study fills this template. The report stays outside the repository ([delivery
-L22](../../../../docs/guides/delivery.md)); the card copies from it, and an expensive choice leaves a
+L21](../../../../docs/guides/delivery.md)); the card copies from it, and an expensive choice leaves a
 decision record. A careful report is 3,000 to 8,000 words; past 8,000, split the step.
 
 ## Evidence, cheapest first
@@ -92,7 +92,7 @@ accepted or dropped.
   it, or "not proved">.
 - **Writes**: <each write or command the unit adds, its own or a library's, for the card's failure
   table>.
-- **Guide rules**: <ids, for example C27, D21, S7>.
+- **Guide rules**: <ids, for example C27, D22, S7>.
 - **Order**: <what first, what depends on what>.
 - **Proof**: <the command or action that shows it works, and the refusal it must show>.
 

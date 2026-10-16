@@ -1,16 +1,15 @@
 # Web guide
 
-How the Hub's screens are organized and written. Each rule uses the words of
+How the Hub's screens are organized and written. Each rule uses
 [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a requirement;
-**should** and **should not** need a stated reason to break; **may** is a free choice. Each rule ends
-with the machine that refuses a violation, "rule to write" when the check is promised and not yet
-written, or "review". How to use a library is its maintainers' skill, read before these rules. Only
-shadcn and Better Auth have one, installed at user level rather than in this repository; TanStack
-Router, TanStack Query, React Hook Form and Tailwind have none, so read their documentation at the
-version `apps/web` installs.
+**should** and **should not** need a stated reason to break; **may** is a free choice. Brackets name
+the enforcing machine, "rule to write" for a promised check, or "review". Guidance does not reopen
+approved behavior; [delivery L12](delivery.md) decides whether a finding blocks. Library usage
+belongs to maintainers' skills, checked against the installed version. Where none exists, read
+the installed library's documentation.
 
-Owners next door: [design](design.md) for how screens look and speak, [code](code.md) for the
-import law and errors, [testing](testing.md) for the test tools.
+Owners next door: [design](design.md) for appearance, [code](code.md) for imports, boundaries and
+errors, [security](security.md) for authority and CSP, [testing](testing.md) for proof.
 
 ## 1. The tree
 
@@ -35,21 +34,8 @@ platform/         jitless.ts, hub.ts (the only fetch), cache, attempt key, failu
 brand/            tokens, fonts, mark
 ```
 
-- **W2.** A subject **must** hold its `queries.ts`, its screens, its pure logic, each test beside its
-  file, and a `public.ts`, with no subfolder by kind. [review]
-- **W3.** A component **must** live in the subject that owns the data it shows. It **must** move to
-  `ui/` when it knows no subject and a second subject needs it, and it is moved, never copied.
-  [review]
-
-**Why.** One map serves the person, the agent and the checker: whoever opens `hub/projects` on the
-server finds the screens in `hub/projects` on the web. The route tree and `route.tsx` sit where
-`@tanstack/router-plugin` 1.168.46 puts them by default (`generatedRouteTree`, `routeToken`), so a
-layout reads in one folder. A pathless folder such as `_public` never reaches the address.
-
-**Right.** The Project picker lives in `hub/projects`, sign-out in `hub/identity`, and the `_app`
-route joins them in the frame from `ui/`.
-
-**Wrong.** A `components/` folder holding the confirmations of four subjects.
+The router plugin owns generated tree shape and route tokens. [Code C26](code.md) owns shared
+behavior and [testing T6](testing.md) tests beside the owner; no second file tree is needed here.
 
 ## 2. Walls
 
@@ -64,14 +50,6 @@ route joins them in the frame from `ui/`.
 - **W8.** A screen **must** read route parameters and data through `getRouteApi`, never by importing
   the route. [dependency-cruiser]
 
-**Why.** A route is to the screens what `main.ts` is to the server: the one place that joins two
-subjects. Importing the route from its screen makes a cycle.
-
-**Right.** The route of the Project page imports `hub/projects/public.ts` and
-`builder/conversation/public.ts` and places both.
-
-**Wrong.** `hub/projects/prompt-box.tsx` importing `builder/conversation/session.ts`.
-
 ## 3. Calling the Hub
 
 - **W9.** A screen **must** call the Hub only through `platform/hub.ts`, which builds the address
@@ -82,110 +60,65 @@ subjects. Importing the route from its screen makes a cycle.
 - **W10.** Only a subject's `queries.ts` **may** use `hubQuery` and `hubMutation`. [rule to write]
 - **W11.** Nobody **may** write a query key; it derives from the operation and its input. [rule to
   write]
-- **W12.** After a write, the `MutationCache` **should** invalidate every query, with an exit by
-  `meta`; the conversation stays out of it. [review]
+- **W12.** Cache updates after writes **should** be centralized in `MutationCache`, retaining the
+  current invalidate-all policy with explicit `meta` exceptions and the conversation outside it.
+  Failure: saving in one screen leaves another displaying an old version. TanStack does not
+  invalidate that data automatically. [review]
 - **W13.** `platform/hub.ts` **must not** know a subject. [dependency-cruiser]
 
-**Why.** One `fetch` that checks every reply against the contract means a changed shape fails at the
-edge, and a key derived from the operation cannot drift from the call it caches. Better Auth 1.7.8
-takes a fetch through `fetchOptions.customFetchImpl` (`client/config.mjs:46`) and keeps the session
-in an atom of its own (`client/session-atom.mjs:50-55`), a second owner of one fact
-([code C26](code.md)).
-
-**Right.**
-
-```ts
-export const projectQuery = (projectId: ProjectId) => hubQuery(getProject, { params: { projectId } })
-```
-
-in `hub/projects/queries.ts`.
-
-**Wrong.** `useQuery({ queryKey: ['projects'], queryFn: () => fetch('/api/projects') })` in a screen.
+One declaration supplies address, schema and query identity. Better Auth's own session atom is a
+second owner, so its `useSession` is not a substitute for the shared cache.
 
 ## 4. Routes and state
 
-- **W14.** A route file **must not** hold a screen; it says the address, who enters and what loads.
+- **W15.** Session entry, expiry and exit **should** be centralized in the frame's `beforeLoad`
+  and shared 401 handling, not each screen. Any read/write 401 drops cache and returns to sign-in
+  with the return address. After "Sair" or expiry, the approved sign-in page explains which
+  happened above the form, then returns after sign-in; there is no separate signed-out page.
+  Founder, 2026-10-14: "A". Failure: a mutation's 401 leaves another person's cached data visible.
   [review]
-- **W15.** Session and permission to enter **must** live in the frame's `beforeLoad`; no screen
-  **may** ask whether the person is signed in. A 401 on any read or write **must** drop the cache
-  and send the person to sign-in with the return address; no screen handles it. After "Sair", or
-  when the session ends, the person **must** land on the sign-in page with one line above the form
-  saying which happened, and return to that address after signing in; there is no separate
-  signed-out page. Founder, 2026-10-14: "A". [review]
-- **W16.** Route and search parameters **must** be checked in the route, with Zod. A return address
-  in the search **must** be parsed as a same-origin path ([security S24](security.md)). [review]
-- **W17.** A route's main read **should** be fetched by its `loader`. The router **must** set
-  `defaultPendingComponent`, `defaultErrorComponent` and `defaultNotFoundComponent` from `ui/`, and
-  set `defaultPendingMs` and `defaultPendingMinMs` itself. [review]
-- **W18.** Every list **must** keep its page and filter in the address, so a link reopens the same
-  list. [review]
-- **W19.** There **must not** be state at module level. Server data lives in TanStack Query,
-  shareable state in the address, the rest in the component, and the live stream in a reducer. A
-  per-browser preference, such as the theme or the last company, **may** live in `localStorage`,
-  read and written inside `try`. [review]
-- **W20.** A screen **must not** decide a product rule; it shows what the Hub says. [review]
+- **W17.** A route **should** load its main read in its `loader`, setting shared pending, error and
+  not-found components and explicit pending delays. Failure: a failed loader displays
+  "Something went wrong" in English or a blank first second. Native router options serve this;
+  checking property names cannot prove the experience. [review]
+- **W18.** Shareable list state **should** live in the address, including page and filter. Failure:
+  copying a link opens a different page/filter. `validateSearch` cannot choose meaningful filters
+  for the product. [review]
 - **W28.** After sign-in the session entry **must** be removed from the cache, not only invalidated,
   before `router.invalidate()`; after sign-out the cache **must** be cleared. [review, and a test per
   flow]
 
-**Why.** Seventeen copies of the frame and ten of the sign-in gate were the old screens' largest
-repetition; one `beforeLoad` and one frame remove them by construction. The router sees a session
-that ended only at the next navigation or `router.invalidate()` (`@tanstack/router-core` 1.171.37,
-`router.d.ts:766`), so the 401 has to trigger it. `ensureQueryData` returns a cached entry even when
-stale: a proof with only an invalidation kept the person on the sign-in page after the right
-password. Without the three components the router shows English, "Not Found" and "Something went
-wrong!" (`@tanstack/react-router` 1.170.44, `not-found.js:41`, `CatchBoundary.js:56`), and its
-default pending delay shows a blank first second (`router-core`, `router.d.ts:105,113`).
-
-**Right.** `validateSearch: z.object({ lens: z.enum(['preview', 'code']) })` in the route, and the
-version number read from the Hub's reply.
-
-**Wrong.** A screen that computes the app's version from its own list, differently from another
-screen.
+`ensureQueryData` can return a cached session even when stale. Invalidation alone once left the
+person on sign-in after the correct password; the flow tests retain that concrete distinction.
 
 ## 5. Pieces and forms
 
-- **W21.** Visual pieces **must** be Conexus's own, copied from shadcn into `ui/` on Base UI and
-  painted with the brand [0033]. A new piece **must** be born in `ui/` ([code C72](code.md)). A
-  piece is copied from the registry by hand, read with `shadcn view`, never written by `shadcn add`.
-  shadcn's color names **may** exist only as `@theme inline` aliases of brand tokens. [review]
-- **W22.** "Loading", "error" and "empty" **must** come from `ui/`. The root **must** set Base UI's
-  `CSPProvider` with `disableStyleElements`, no piece **may** inject a `<style>` element, sonner
-  included, and a toast **must** be the Base UI `toast` piece. [review]
-- **W23.** A form **must** use the `Form` and `Field` of `ui/`, React Hook Form with the body schema
-  `packages/hub-api` already has, and the server's refusal **must** land on its field. A sign-in
-  refusal **must** land on the form, not on a field, and **must not** say which of e-mail or password
-  was wrong; a 429 reads its own sentence by its status. [review]
+- **W21.** Shared visual pieces **should** use the selected native source, adapted once in `ui/`,
+  not copied into variants per screen: Conexus's own shadcn pieces on Base UI and brand tokens
+  [0033]. Read copied code; aliases do not bypass [0003]. Failure: a manual `FieldError` loses the
+  alert behavior its native piece already has. The choice remains; a CLI ritual is not another
+  correctness rule. [review]
+- **W22.** Shared loading/error/empty states and pieces **should** work under the actual CSP,
+  including error output: root Base UI `CSPProvider` with `disableStyleElements`, Base UI toast,
+  no injected style elements. Fonts remain local to the brand, without a CDN. Failure: sonner
+  injects a style element and the browser blocks the notification. Source `noInlineStyles` does
+  not inspect vendor DOM; observe uncaught errors and CSP violations in the browser, distinguishing
+  expected refusals shown by the screen. [review]
+- **W23.** Forms **should** reuse `ui/` Form/Field, React Hook Form and the contract's body schema,
+  showing refusal on its field or form as appropriate. Sign-in errors stay on the form without
+  disclosing which credential failed; 429 has its own status-based sentence. Failure: a message
+  without alert semantics gives a screen-reader user no feedback. [review]
 - **W24.** Every write that creates something **must** use the attempt key: two clicks, one request.
   The key **must** end only on an answer the browser read whole from the Hub that settles the
   outcome: the success body, or a failure whose row says it settles (C48). No reply, a cut or
   unreadable body, a reply that is not the Hub's, or a failure that does not settle **must** keep it
   for the next attempt. [review, a test per form, and one on a real socket]
-- **W25.** Styles **must** be Tailwind with the brand tokens in `@theme`; the component is the unit
-  of reuse, and there **must not** be a stylesheet per screen. A named width utility **must not**
-  use a brand spacing name (`xs` to `2xl`), and a layout cap **must** be a `--container-*` token
-  with a name of its own: Tailwind 4 reads `max-w-*`, `w-*` and `min-w-*` through `--spacing-*`
-  before `--container-*`, so `max-w-sm` is the brand's 0.5rem. Numeric, intrinsic and zero widths,
-  such as `min-w-48`, `size-8` and `min-w-0`, stay valid. [review]
-- **W26.** Logic without React **should** live in a pure `.ts` file, apart from the screen. [review]
 - **W27.** `platform/jitless.ts` **must** set Zod's `jitless` before any schema exists: Zod 4 builds
-  its first schema with `new Function`, which the CSP of [security S26](security.md) refuses. The
+  its first schema with `new Function`, which the CSP of [security S24](security.md) refuses. The
   build puts it in the chunk that holds Zod, because that chunk runs before the entry's body; an
   import at the top of `main.tsx` is not enough once the build splits code.
   [`platform/cache.test.tsx`, `vite.config.test.ts`]
 
-**Why.** Eleven forms written by hand in two ways checked only "not empty"; one form piece with the
-contract's schema gives the browser the server's limits. No reference app sends an attempt key; it
-exists for the retry after an answer that does not settle the outcome: a reply can arrive and still
-be lost, and `isSubmitting` does not cover that. By its skill, the
-shadcn CLI writes through path aliases in `components.json`, which
-[0003](../decisions/0003-repository-shape.md) forbids, and aliases keep raw values in the brand
-folder ([design V3](design.md)). The Hub sends `style-src 'self'`
-(`apps/server/src/platform/http.ts:28`), and sonner 2.0.8 injects a `<style>` when imported
-(`dist/index.mjs:2-5`). Better Auth 1.7.8 answers `INVALID_EMAIL_OR_PASSWORD` for either mistake
-(`sign-in.mjs:322-336`) and its 429 carries no code (`api/rate-limiter/index.mjs:64-71`).
-
-**Right.** `<Form schema={createProject.body} onSubmit={submit}>` with the refusal set by
-`setError`.
-
-**Wrong.** A `useState` per field and an `if (!name)` before the request.
+[Design V23](design.md) owns style reuse and the width-token collision; its existing GritQL plugin
+stays enabled. [Code C37](code.md) owns attempt identity end to end, while the mixed rule above
+retains the form/socket proof already required. No new checker is claimed for semantic judgment.

@@ -95,79 +95,75 @@ containers:
 # Design guide
 
 How Conexus looks, moves and speaks. It follows the
-[DESIGN.md format](https://github.com/google-labs-code/design.md): the front matter holds the
-tokens, and the sections below give the rules under the format's section names. The format's
-`components` live in [the components list](../reference/components.md), which changes with the step
-that adds a piece (V24). Each rule has an
-identifier, at most one sentence of reason, and in brackets the machine that refuses a violation,
-"rule to write" when the check is promised and not yet written, or "review". How the web side is organized and how styles are written is [web](web.md); how to use
-the shadcn pieces is their maintainers' skill.
+[DESIGN.md format](https://github.com/google-labs-code/design.md). The front matter records the
+current visual reference; the web's brand tokens and shared pieces own implementation values, not
+an obligatory second hand-maintained table here. The format's `components` live in
+[the components list](../reference/components.md).
 
-The brand folder of the web side defines every color and radius the front matter names, with the
-same value. The format's `primary` is our `ink`.
+Rules use [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** is a requirement, **should**
+needs a stated reason to break, and **may** is free choice. The bracket names the enforcing machine,
+"rule to write" for a promised check, or "review". Guidance does not reopen an approved product
+choice; [delivery L12](delivery.md) decides whether a finding blocks. [Web](web.md) owns organization
+and styles; maintainers' skills own library usage. [Delivery L23](delivery.md) owns visible language.
 
-This guide is brought from the old product nearly as it was. Basis: decided before; accepted
-because no study judged the design and the founder has not reopened it. A step that changes a
-screen may reopen a rule with his word.
+The design was accepted from the old product before a new study; the founder can reopen a screen's
+choices. This method change does not redesign the product.
 
 ## Overview
 
-**"Grafite e Ipê".** Graphite neutrals, flat and separated by hairlines, so the person's own app is
-the most colorful thing on screen. Ipê, a warm gold, is the one accent. Prose is sans, facts are
-mono.
-
-- **V1.** A screen's regions (top bar, scope rail, page column, panes) take no radius and no shadow;
-  hairlines separate them. The person's app is the content, and the frame stays quiet. [review]
-- **V2.** Conexus designs its own screens, structure and page patterns, from its own pieces on every
-  administration screen [0033]; the Builder conversation's pieces are chosen in step 12. [review]
+**Grafite e Ipê.** Graphite neutrals, flat and separated by hairlines, keep the person's app the
+most colorful thing on screen. Ipê is the warm gold accent; prose is sans and facts are mono.
 
 ## Colors
 
 - **V3.** Every color is a token; only the brand folder holds a raw value, shadows and overlays
   included. Outbound e-mail HTML is an exception: e-mail clients require inline color values [0017].
   Tokens let both themes change in one file. [rule to write]
-- **V4.** A new token is defined in the light, system-dark and chosen-dark blocks under one name,
-  and in the front matter. [review]
-- **V5.** Ipê (`accent`) marks only focus, the caret, selection (the chosen value of a control
-  included), the active lens and the agent at work; never a resting button fill, a heading or
-  decoration. The send button turns ipê on hover. One accent sends the eye to what is happening
-  now. [review]
-- **V6.** The primary action is `ink` with `on-ink`. [review]
-- **V7.** Success, warning and danger mark status only, always beside a word, on low tints of the
-  surface; the one exception is the destructive button of V55. [review]
-- **V8.** Text keeps 4.5:1 contrast with its ground in both themes. [review]
-- **V9.** Light is the default; dark follows the system unless the person picks a theme. [review]
+- **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
+  lens and working agent, not every resting action or heading. The send hover keeps its current
+  accent. Failure: making everything gold hides the difference between focus and decoration.
+  [review]
+- **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
+  Failure: a pale subtitle disappears on the light background. Syntax lint does not measure
+  rendered contrast. [review]
+- **V9.** Theme behavior **should** respect the person's choice: light remains the default, dark
+  follows the system unless chosen explicitly. Failure: reload loses the preference and returns
+  to light. [review]
 
 ## Typography
 
-- **V10.** Headings use Bricolage Grotesque (`display`, `title`); everything read as language uses
-  Hanken Grotesk (`body`, `label`, `eyebrow`). [review]
-- **V11.** JetBrains Mono (`fact`) is for facts only: model ids, paths, commands, times, revisions,
-  error codes and counts. Mono marks what a person may copy or compare exactly. [review]
-- **V12.** Numerals are tabular. [review]
-- **V13.** Prose never goes below 12px; mono stamps and group labels never below 11px. [review]
-- **V14.** Fonts are self-hosted from the brand folder; no other family and no CDN. Outbound e-mail
-  HTML is an exception: e-mail clients use system font fallbacks. [review]
-- **V15.** `display` shrinks from 2.1rem to 1.6rem on narrow screens; the front matter gives its
-  largest size. [review]
+- **V11.** Mono **should** mark exact facts to copy or compare, not the main prose of a message.
+  Failure: an internal error code becomes the only explanation, leaving no understandable next
+  step. [review]
+- **V13.** Text **should** stay legible on narrow screens, retaining the reference minima of 12px
+  prose and 11px mono stamps/group labels; display titles adapt from 2.1rem to 1.6rem. Failure:
+  shrinking body copy to fit a list makes the reader zoom to understand it. [review]
 
 ## Layout
 
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
-- **V17.** No `style` attribute in Conexus's own screen pieces; styles come from tokens. Outbound
-  e-mail HTML is an exception: e-mail clients require inline styles and table layout. [review]
+- **V17.** Conexus's own web pieces **must not** use an inline `style` attribute; use tokens.
+  Outbound e-mail HTML is an exception: e-mail clients require inline styles and table layout.
+  This check covers source in ui/hub/builder, not DOM styles emitted by vendors.
+  [Biome `nursery.noInlineStyles`]
+
+The matching `biome.json` override sets `linter.rules.nursery.noInlineStyles` to `"error"` for
+`apps/web/src/{ui,hub,builder}/**`. Biome 2.5.14's nursery rules are not stable: revalidate the bad
+inline/good class cases on upgrade before accepting changed diagnostics. The risk is diagnostic
+churn, not runtime style enforcement; do not extend this check to vendor-generated styles.
 - **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll; [testing
   T23](testing.md) lists the widths looked at. [`layout.test.ts`, review]
-- **V56.** On a phone the rail becomes a drawer opened from the top bar ("Abrir navegação"), and the
-  top bar keeps the mark, the current place and the account. A rail dropped without a drawer takes
-  every place with it. [review]
+- **V56.** Narrow navigation **should** retain every destination and the account, with the approved
+  top-bar drawer ("Abrir navegação"), mark and current place. Failure: a frame overflows at 320px
+  and puts "Sair" outside the screen. A future layout need not copy the drawer's DOM to retain
+  access. [review]
 
 ## Elevation and depth
 
-- **V19.** Surfaces are separated by hairlines (`line`), not shadows; a card at rest does not float.
-  [review]
-- **V20.** A shadow appears only on a hover lift, a popover or a menu, from a token. [review]
-- **V21.** No glass, gradient surface, texture or imagery, except the Preview. [review]
+- **V19.** Grafite e Ipê **should** use flat regions separated by hairlines, leaving the frame quiet
+  and the Preview as content. Resting cards do not float; hover/popover/menu elevation uses shared
+  tokens when useful. Failure: shadows on every panel look like overlapping windows competing
+  with the Preview. [review]
 
 ## Shapes
 
@@ -177,81 +173,64 @@ mono.
 
 ## Components
 
-- **V23.** A component takes its colors, radius and type from tokens. [review]
-- **V24.** A new component enters [the components list](../reference/components.md) in the same
-  change, with its tokens. [review]
-- **V55.** A destructive action on a page is a `button-danger`, neutral with `danger` text; the full
-  `danger` fill, `button-danger-confirm`, is only the final button of its confirmation, in place of
-  `ink`. The red fill marks the last step, the real danger; founder, 2026-10-14: "B". [review]
+- **V23.** Shared pieces **should** own appearance through brand tokens for color, radius and
+  typography, retaining the current ink/on-ink primary action, Bricolage headings, Hanken prose
+  and tabular mono facts. The piece owns its icon set, sizing and state styling. Tailwind named
+  widths avoid brand spacing names (`xs` to `2xl`): Tailwind 4 resolves spacing before containers,
+  so `max-w-sm` becomes 0.5rem. Use a distinct container name; numeric, intrinsic and zero widths
+  remain valid. Failure: a copied hex misses a theme change, or a spacing name makes a column 8px
+  wide. The existing GritQL plugin checks only that width collision, not all token semantics.
+  [review]
+- **V55.** Destructive actions **should** retain the approved distinction: neutral `button-danger`
+  with danger text on the page, full-danger `button-danger-confirm` only at the final confirmation
+  instead of ink. Founder, 2026-10-14: "B". Failure: two equally red actions obscure which click
+  actually removes the item. [review]
 
 ## Motion
 
-- **V25.** **Encaixe** is the one authored motion: the mark's two pieces slide apart and fit back
-  while the agent works, and fit once on first load. No second motif, such as an orb, a shimmer or
-  a bounce. Movement always means Conexus is working. [review]
-- **V26.** All motion stops under `prefers-reduced-motion`, and the end state makes sense without
-  it. [review]
+The brand piece retains Encaixe, the mark's pieces separating and fitting while work runs.
+
+- **V26.** Motion **should** respect `prefers-reduced-motion`, including copied library pieces,
+  with a comprehensible final state. Failure: the drawer still animates under reduced-motion
+  preference. Finding a `motion-reduce` class cannot prove transitive library behavior. [review]
 
 ## Interaction and accessibility
 
-- **V27.** Hover moves a surface one step up its scale: `surface`, `surface-3`, `surface-4`. Press
-  shows a fill and never shrinks. [review]
 - **V28.** `:focus-visible` draws a 2px `accent` outline. [`layout.test.ts`, review]
-- **V29.** A disabled control says why when the reason is not obvious. [review]
-- **V30.** Tab reaches every action in reading order, Esc closes what opened, and every drag has a
-  keyboard path. [review]
-- **V31.** Every input has a label, and every icon-only button a pt-BR `aria-label`. [review]
-- **V32.** The console shows no uncaught error and no Content Security Policy violation, so no piece
-  injects a `<style>` element ([web W22](web.md)). Chromium also logs a refusal the screen shows,
-  such as a wrong password; that line is not an error. Founder, 2026-10-15: "2. A". [review]
+- **V29.** A disabled action **should** explain a nonobvious impediment and how to resolve it.
+  Failure: a permanently disabled button leaves the person with no next step. [review]
+- **V30.** Every action **should** have a keyboard path and coherent focus return, including Tab
+  order, Esc, drag alternatives and safe text composition. Failure: Tab reaches a control without
+  showing where focus is. The conversation's exact shortcuts belong in its card. [review]
+- **V31.** Controls **should** have meaningful localized accessible names: labels for inputs and
+  pt-BR labels for icon-only buttons. Failure: a screen reader announces only "button" with no
+  purpose. Syntactic a11y lint does not prove name quality or language. [review]
 
 ## Iconography
 
-- **V33.** Icons come from `lucide-react` with its defaults: outline, stroke 2, round caps, colored
-  by `currentColor` from a token on the parent. One set at one stroke reads as one product. [review]
 - **V34.** Size follows the neighbour: 14px in toolbars, 16px inline, 18px in the rail.
   [`layout.test.ts`, review]
-- **V35.** The stop control is the one filled icon. An icon has one meaning and never shows status
-  alone; a decorative icon is `aria-hidden`. [review]
-- **V36.** Provider logos appear only in model pickers. [review]
-- **V37.** No icon font, emoji, text glyph or second icon set. [review]
+- **V35.** Status **should** have words, not only a color or icon, and decorative icons stay out of
+  the accessible name. Failure: a green circle without a word is undecipherable to someone who
+  cannot distinguish its color. The filled Stop remains a detail of its piece. [review]
 
 ## Voice
 
-- **V38.** Everything a person reads is in pt-BR, `aria-label` and placeholders included. [review]
-- **V39.** Sentence case, capitals only in small group labels. Buttons are verbs ("Permitir", "Ver
-  aplicativo"), never a bare "OK". [review]
-- **V40.** Text is simple, calm and responsible: no exclamation, empty apology or emoji. The only
-  symbols are `·` and `…`. [review]
-- **V41.** The product says **você**. In chat the agent is **Conexus** and speaks in the first
-  person; in system text it is **o agente**. Product nouns are capitalized: Projeto, Prévia, and the
-  lenses Prévia, Código, Alterações and Sobre. [review]
-- **V42.** One action has one text everywhere; trying again is always "Tentar de novo", as the failure
-  table already says. A non-technical person reads every word as a promise. [review]
-- **V43.** A failure's words come from the failure table, by code; the internal code is never shown
-  in mono. A failure the person can fix says what to change, and a button appears beside it only when
-  its row's action kind asks for one ([code C48](code.md)). One exception: the not-found page offers
-  every person the link "Voltar ao início", drawn as `button-default`, while its row keeps `NONE`.
-  Founder, 2026-10-15, screen fix answer 1: "1 A". [review]
-- **V44.** A tool shows as a sentence while it runs and when it ends, never as its technical name.
-  Reasoning shows only as "Pensando…". [review]
-- **V45.** What is not built says "em breve". Numbers and dates use the Brazilian format ("1.234,5",
-  "5 de out."). Examples never invent customers or figures. [review]
+- **V39.** Text **should** be calm, clear sentence case, with actions named by verbs rather than
+  bare "OK"; technical tool activity becomes an understandable sentence, not exposed reasoning.
+  Failure: two "OK" buttons do not identify which confirms deletion. Domain names follow
+  [code C69](code.md); punctuation and symbol blacklists cannot prove clarity. [review]
+
+Failure wording, allowed actions and the not-found navigation exception have one owner:
+[code C48](code.md). This guide does not keep a second failure map.
 
 ## The Build surface
 
-- **V46.** The app is the main area, with the conversation beside it; both survive resizing,
-  collapsing and a narrow screen. On a phone a segmented switch swaps them, and both stay mounted.
-  [review]
-- **V47.** Enter sends and Shift+Enter breaks a line, safely with input methods. [review]
-- **V48.** While a question waits, Enter answers it, Stop stays its own control, and the screen says
-  "Esperando a sua resposta" with no countdown. [review]
-- **V49.** The conversation follows new messages only while the reader stays at its end. [review]
-- **V50.** A model change never touches an active run. [review]
-- **V51.** The Preview stays usable while new work runs, and an older launch never replaces a newer
-  one. [review]
-- **V52.** An app that fails its check never replaces the last good version; source that passed and
-  then fails to build its Preview stays current with a safe diagnostic. [review]
-- **V53.** Code and Changes are read-only; Changes compares a run's base with its result. [review]
-- **V54.** A reload rebuilds the conversation, the run, the source and the Preview from the server.
-  [review]
+- **V54.** The surface **should** reflect server state and versions, preserving conversation,
+  reading position and the last usable Preview during work and reload. New messages do not take
+  control of a reader away from the end; a model choice does not alter an active run. Source and
+  read-only Code/Changes reflect the admitted version and the run's base/result, not an inferred
+  client version. An older launch cannot replace newer work; failed checks keep the last good
+  app, with a safe diagnostic if current source fails to build. Failure: a connection drops and
+  the screen declares completion the server never confirmed. Future conversation controls belong
+  in their card, not simulated components to satisfy this guide. [review]
