@@ -1,10 +1,11 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { InviteForm } from './invite-form.tsx'
 import { Pager } from './pager.tsx'
 import { companyQuery, invitationsQuery, membersQuery } from './queries.ts'
-import { ROLE_LABELS } from './roles.ts'
+import { RoleBadge } from './role-badge.tsx'
 
 const route = getRouteApi('/_app/companies/$companyId')
 
@@ -14,21 +15,20 @@ function Members() {
   const { data } = useSuspenseQuery(membersQuery(companyId, page))
   return (
     <section className="flex flex-col gap-lg">
-      <h2 className="font-display text-title">Pessoas</h2>
-      <ul className="flex flex-col border-y border-line">
+      <SectionTitle>Pessoas</SectionTitle>
+      <List>
         {data.members.map((member) => (
-          <li
-            key={member.personId}
-            className="flex flex-wrap items-center justify-between gap-x-md gap-y-xs border-b border-line px-sm py-md last:border-b-0"
-          >
-            <span className="flex min-w-0 flex-col">
-              <span className="truncate">{member.name}</span>
-              <span className="truncate text-label text-text-2">{member.email}</span>
-            </span>
-            <span className="shrink-0 text-label text-text-2">{ROLE_LABELS[member.role]}</span>
-          </li>
+          <Row key={member.personId}>
+            <div className={rowBody({ kind: 'wrapping' })}>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{member.name}</span>
+                <span className="truncate text-label text-text-2">{member.email}</span>
+              </span>
+              <RoleBadge role={member.role} />
+            </div>
+          </Row>
         ))}
-      </ul>
+      </List>
       <Pager next={data.next} param="members" page={page} />
     </section>
   )
@@ -40,23 +40,20 @@ function PendingInvitations() {
   const { data } = useSuspenseQuery(invitationsQuery(companyId, page))
   return (
     <section className="flex flex-col gap-lg">
-      <h2 className="font-display text-title">Convites pendentes</h2>
+      <SectionTitle>Convites pendentes</SectionTitle>
       {data.invitations.length === 0 ? (
         <Empty>Nenhum convite pendente.</Empty>
       ) : (
-        <ul className="flex flex-col border-y border-line">
+        <List>
           {data.invitations.map((invitation) => (
-            <li
-              key={invitation.id}
-              className="flex flex-wrap items-center justify-between gap-x-md gap-y-xs border-b border-line px-sm py-md last:border-b-0"
-            >
-              <span className="min-w-0 truncate">{invitation.email}</span>
-              <span className="shrink-0 text-label text-text-2">
-                {ROLE_LABELS[invitation.role]}
-              </span>
-            </li>
+            <Row key={invitation.id}>
+              <div className={rowBody({ kind: 'wrapping' })}>
+                <span className="min-w-0 truncate">{invitation.email}</span>
+                <RoleBadge role={invitation.role} />
+              </div>
+            </Row>
           ))}
-        </ul>
+        </List>
       )}
       <Pager next={data.next} param="invitations" page={page} />
     </section>

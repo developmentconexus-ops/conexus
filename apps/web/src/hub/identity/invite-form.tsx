@@ -15,6 +15,7 @@ import {
   useFieldError,
   useSchemaForm,
 } from '../../ui/form.tsx'
+import { SectionTitle } from '../../ui/list.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { companyQuery, inviteToCompany } from './queries.ts'
 import { ROLE_LABELS } from './roles.ts'
@@ -92,7 +93,7 @@ export function InviteForm() {
 
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">
-      <h2 className="font-display text-title">Convidar pessoa</h2>
+      <SectionTitle>Convidar pessoa</SectionTitle>
       <Form form={form} onSubmit={submit}>
         <TextField
           name="email"
