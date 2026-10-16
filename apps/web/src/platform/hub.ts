@@ -30,7 +30,10 @@ async function bodyOf(response: Response): Promise<unknown> {
   })
 }
 
-/** Only a Hub Problem whose row is not a SYSTEM failure settles the outcome: the Hub did not act. */
+/**
+ * Only a Hub Problem whose row is not a SYSTEM failure settles the outcome: the Hub's answer says
+ * what it did, which can be a change that stands, such as an invitation whose e-mail failed.
+ */
 async function failureOf(response: Response): Promise<HubFailure> {
   const problem = Problem.safeParse(await bodyOf(response))
   if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
@@ -76,6 +79,8 @@ type WriteParts<O extends Operation> = (Has<O, 'params'> extends true
   (O['attemptKey'] extends true ? { attemptKey: string } : unknown)
 type WriteVariables<O extends Operation> = unknown extends WriteParts<O> ? undefined : WriteParts<O>
 
+// The query's implementation signature cannot be related to its overload's rest tuple, so a read
+// keeps this parse; a write is typed by its overload and needs none.
 const Sent = z.object({
   params: z.record(z.string(), z.string()).optional(),
   query: z.record(z.string(), z.string().optional()).optional(),
@@ -95,7 +100,7 @@ function addressOf(operation: Operation, sent: Sent): string {
   return query.size === 0 ? path : `${path}?${query}`
 }
 
-async function send(operation: Operation, sent: Sent, signal?: AbortSignal) {
+async function send(operation: Operation, sent: Sent = {}, signal?: AbortSignal) {
   const headers = {
     ...(sent.body === undefined ? {} : { 'content-type': 'application/json' }),
     ...(sent.attemptKey === undefined ? {} : { 'idempotency-key': sent.attemptKey }),
@@ -142,8 +147,7 @@ export function hubMutation<O extends Operation>(operation: O): WriteOptions<O>
 export function hubMutation(operation: Operation) {
   return mutationOptions({
     mutationKey: [operation.id],
-    mutationFn: async (variables: never) =>
-      parsed(operation, await send(operation, Sent.parse(variables ?? {}))),
+    mutationFn: async (variables: never) => parsed(operation, await send(operation, variables)),
   })
 }
 

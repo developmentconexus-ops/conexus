@@ -2,12 +2,19 @@ import type { FailureCode, Role } from '@conexus/hub-api'
 import { createInvitation } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
-import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  TextField,
+  useFieldError,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { companyQuery, inviteToCompany } from './queries.ts'
 import { ROLE_LABELS } from './roles.ts'
@@ -22,27 +29,22 @@ const FIELD_OF: Partial<Record<FailureCode, 'email' | 'role'>> = {
 }
 
 function RoleField({ roles }: { roles: readonly Role[] }) {
-  const { control, formState } = useFormContext()
-  const id = useId()
-  const error = formState.errors.role
-  const message = typeof error?.message === 'string' ? error.message : undefined
+  const { control } = useFormContext()
+  const shown = useFieldError('role')
   return (
-    <Field data-invalid={error ? true : undefined}>
-      <FieldLabel htmlFor={id}>Papel</FieldLabel>
+    <Field {...shown.field}>
+      <FieldLabel htmlFor={shown.id}>Papel</FieldLabel>
       <Controller
         name="role"
         control={control}
         render={({ field }) => (
           <Select
-            id={id}
+            id={shown.id}
             value={field.value}
             onValueChange={field.onChange}
             items={roles.map((role) => ({ value: role, label: ROLE_LABELS[role] }))}
           >
-            <SelectTrigger
-              aria-invalid={error ? true : undefined}
-              aria-describedby={error ? `${id}-error` : undefined}
-            >
+            <SelectTrigger {...shown.control}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -55,7 +57,7 @@ function RoleField({ roles }: { roles: readonly Role[] }) {
           </Select>
         )}
       />
-      <FieldError id={`${id}-error`}>{message}</FieldError>
+      <FieldError id={shown.errorId}>{shown.message}</FieldError>
     </Field>
   )
 }

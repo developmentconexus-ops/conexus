@@ -148,10 +148,8 @@ export function InvitationAcceptance() {
           </Link>
         </Closed>
       )
-    default: {
-      const unreachable: never = invitation.state
-      return unreachable
-    }
+    default:
+      return invitation.state satisfies never
   }
 }
 
