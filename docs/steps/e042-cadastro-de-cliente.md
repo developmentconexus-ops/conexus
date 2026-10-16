@@ -349,7 +349,8 @@ para a publicação.
 
 ### Como se prova
 
-A14, A15: `npm run test -w @conexus/server`, `npm run test -w @conexus/web`, `npm run knip`.
+A14, A15: `npm run test -w @conexus/server`, `npm run test -w @conexus/web`, `npm run knip`. A15
+migra até a anterior (`migrate({migrationsFolder})`), planta as linhas e aplica a de P6 B.
 
 ## U6 Convite de dono e percurso
 
