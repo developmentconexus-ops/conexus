@@ -30,9 +30,9 @@ export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
 export const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 60 * 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
-const PASSWORD_LINK_SECONDS = 900
+export const PASSWORD_LINK_SECONDS = 900
 // The founder's numbers, step 4 answers 4 and 6.
-const INVITATION_SECONDS = 2 * 24 * 60 * 60
+export const INVITATION_SECONDS = 2 * 24 * 60 * 60
 const COMPANY_CAPACITY = 100
 
 // The library logs without the request; a sign-in runs inside this store so its lines carry the trace id.
