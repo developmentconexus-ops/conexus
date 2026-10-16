@@ -22,6 +22,7 @@ import {
   AttemptKey,
   FAILURES,
   isDeclaredOperation,
+  PROBLEM_MEDIA_TYPE,
   Problem,
   SESSION_COOKIE,
 } from '@conexus/hub-api'
@@ -66,7 +67,7 @@ function responses(operation: Operation): Json {
     out[status] = {
       description: (codes ?? []).join(', '),
       content: {
-        'application/problem+json': { schema: { $ref: '#/components/schemas/Problem' } },
+        [PROBLEM_MEDIA_TYPE]: { schema: { $ref: '#/components/schemas/Problem' } },
       },
     }
   }
