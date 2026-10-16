@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { Email, PersonId } from './identity.ts'
-import type { Operation } from './operation.ts'
+import { defineOperation } from './operation.ts'
 
 export const LIBRARY_ID = /^[A-Za-z0-9]{32}$/
 
@@ -13,6 +13,13 @@ export type InvitationId = z.infer<typeof InvitationId>
 /** From the most privileged to the least; `mayInviteAs` and the invite form read this order. */
 export const Role = z.enum(['owner', 'admin', 'member'])
 export type Role = z.infer<typeof Role>
+
+/** The Portuguese name of each role, on the screens and in the mail. */
+export const ROLE_LABELS: Record<Role, string> = {
+  owner: 'Dono',
+  admin: 'Administrador',
+  member: 'Membro',
+}
 
 export const Company = z.object({ id: CompanyId, name: z.string().min(1) })
 export type Company = z.infer<typeof Company>
@@ -58,13 +65,15 @@ export type Next = z.infer<typeof Next>
 /** Every list answers this many rows at most. */
 export const PAGE_SIZE = 50
 
-const CompanyName = z.string().trim().min(1).max(100)
+/** The longest company name, in characters. */
+export const COMPANY_NAME_MAX_LENGTH = 100
+const CompanyName = z.string().trim().min(1).max(COMPANY_NAME_MAX_LENGTH)
 const PersonName = z.string().trim().min(1).max(100)
 const Page = z.object({ page: PageToken.optional() })
 const InCompany = z.object({ companyId: CompanyId })
 const OfInvitation = z.object({ invitationId: InvitationId })
 
-export const listCompanies = {
+export const listCompanies = defineOperation({
   id: 'listCompanies',
   summary: 'Lists the companies the person belongs to, with the role in each.',
   access: 'session',
@@ -77,9 +86,9 @@ export const listCompanies = {
     body: z.object({ companies: z.array(Membership), mayCreate: z.boolean(), next: Next }),
   },
   failures: ['SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const createCompany = {
+export const createCompany = defineOperation({
   id: 'createCompany',
   summary: 'Creates a company with the installation administrator as its first owner.',
   access: 'session',
@@ -90,9 +99,9 @@ export const createCompany = {
   attemptKey: true,
   success: { status: 201, body: z.object({ company: Company }) },
   failures: ['NOT_FOUND', 'IDEMPOTENCY_CONFLICT', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const getCompany = {
+export const getCompany = defineOperation({
   id: 'getCompany',
   summary: 'Reads a company the person belongs to, the role and the roles it may invite as.',
   access: 'session',
@@ -105,9 +114,9 @@ export const getCompany = {
     body: z.object({ company: Company, role: Role, mayInviteAs: z.array(Role) }),
   },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const listMembers = {
+export const listMembers = defineOperation({
   id: 'listMembers',
   summary: 'Lists the people of a company the person belongs to.',
   access: 'session',
@@ -117,9 +126,9 @@ export const listMembers = {
   input: { params: InCompany, query: Page },
   success: { status: 200, body: z.object({ members: z.array(Member), next: Next }) },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const listInvitations = {
+export const listInvitations = defineOperation({
   id: 'listInvitations',
   summary: 'Lists the open invitations of a company, for the people who may invite.',
   access: 'session',
@@ -132,9 +141,9 @@ export const listInvitations = {
     body: z.object({ invitations: z.array(PendingInvitation), next: Next }),
   },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const createInvitation = {
+export const createInvitation = defineOperation({
   id: 'createInvitation',
   summary: 'Invites an e-mail into a company with a role and sends the invitation.',
   access: 'session',
@@ -156,9 +165,9 @@ export const createInvitation = {
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],
-} as const satisfies Operation
+})
 
-export const getInvitation = {
+export const getInvitation = defineOperation({
   id: 'getInvitation',
   summary: 'Reads an invitation sent to the signed-in person’s e-mail.',
   access: 'session',
@@ -168,9 +177,9 @@ export const getInvitation = {
   input: { params: OfInvitation },
   success: { status: 200, body: z.object({ invitation: ReceivedInvitation }) },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const putPasswordLink = {
+export const putPasswordLink = defineOperation({
   id: 'putPasswordLink',
   summary: 'Sends the invited e-mail a link to create its password, creating the person if new.',
   access: 'entry',
@@ -186,9 +195,9 @@ export const putPasswordLink = {
     'MAIL_UNAVAILABLE',
     'DATABASE_UNAVAILABLE',
   ],
-} as const satisfies Operation
+})
 
-export const acceptInvitation = {
+export const acceptInvitation = defineOperation({
   id: 'acceptInvitation',
   summary: 'Accepts an invitation sent to the signed-in person’s e-mail and joins the company.',
   access: 'session',
@@ -204,4 +213,4 @@ export const acceptInvitation = {
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],
-} as const satisfies Operation
+})

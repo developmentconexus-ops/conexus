@@ -1,4 +1,4 @@
-import { createCompany } from '@conexus/hub-api'
+import { COMPANY_NAME_MAX_LENGTH, createCompany } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
@@ -33,7 +33,7 @@ export function CreateCompanyForm() {
           label="Nome"
           type="text"
           autoComplete="organization"
-          invalid="Escreva o nome da empresa, com até 100 caracteres."
+          invalid={`Escreva o nome da empresa, com até ${COMPANY_NAME_MAX_LENGTH} caracteres.`}
         />
         <FormAlert />
         <SubmitButton idle="Criar empresa" pending="Criando…" />

@@ -1,5 +1,5 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { createInvitation, Role } from '@conexus/hub-api'
+import { createInvitation, ROLE_LABELS, Role } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -18,7 +18,6 @@ import {
 import { SectionTitle } from '../../ui/list.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
 import { companyQuery, inviteToCompany } from './queries.ts'
-import { ROLE_LABELS } from './roles.ts'
 
 const route = getRouteApi('/_app/companies/$companyId')
 

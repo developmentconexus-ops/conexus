@@ -22,3 +22,14 @@ export type Operation = {
   success: { status: 200; body: z.ZodType } | { status: 201; body: z.ZodType } | { status: 204 }
   failures: readonly FailureCode[]
 }
+
+const DECLARED = Symbol('conexus.operation')
+
+/** Declares an operation: only what passes through here is an operation for the OpenAPI emitter. */
+export function defineOperation<const O extends Operation>(operation: O): O {
+  return { ...operation, [DECLARED]: true }
+}
+
+export function isDeclaredOperation(value: unknown): value is Operation {
+  return typeof value === 'object' && value !== null && DECLARED in value
+}

@@ -1,12 +1,7 @@
 import type { Email, Role } from '@conexus/hub-api'
+import { ROLE_LABELS } from '@conexus/hub-api'
 import type { MailMessage } from '../../platform/mail.ts'
 import { INVITATION_SECONDS, PASSWORD_LINK_SECONDS } from './auth.ts'
-
-const ROLE_NAMES: Record<Role, string> = {
-  owner: 'Dono',
-  admin: 'Administrador',
-  member: 'Membro',
-}
 
 const LINK_MINUTES = PASSWORD_LINK_SECONDS / 60
 const INVITATION_DAYS = INVITATION_SECONDS / (24 * 60 * 60)
@@ -27,7 +22,7 @@ export function invitationMail(input: {
     to: input.to,
     subject: `Convite para ${input.companyName}`,
     text: [
-      `${input.inviterName} convidou você para ${input.companyName} como ${ROLE_NAMES[input.role]}.`,
+      `${input.inviterName} convidou você para ${input.companyName} como ${ROLE_LABELS[input.role]}.`,
       `O convite vale ${INVITATION_DAYS} dias.`,
       '',
       input.link,

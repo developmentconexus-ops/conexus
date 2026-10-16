@@ -1,6 +1,7 @@
 export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,
+  COMPANY_NAME_MAX_LENGTH,
   Company,
   CompanyId,
   createCompany,
@@ -19,6 +20,7 @@ export {
   PendingInvitation,
   putPasswordLink,
   ReceivedInvitation,
+  ROLE_LABELS,
   Role,
 } from './companies.ts'
 export { FAILURES, type FailureCode, Problem } from './failures.ts'
@@ -36,6 +38,13 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
-export { type AccessKind, ATTEMPT_KEY_HEADER, AttemptKey, type Operation } from './operation.ts'
+export {
+  type AccessKind,
+  ATTEMPT_KEY_HEADER,
+  AttemptKey,
+  defineOperation,
+  isDeclaredOperation,
+  type Operation,
+} from './operation.ts'
 export { PAGES } from './pages.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'

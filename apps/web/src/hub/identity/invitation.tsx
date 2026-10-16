@@ -1,5 +1,5 @@
 import type { ReceivedInvitation } from '@conexus/hub-api'
-import { FAILURES, putPasswordLink } from '@conexus/hub-api'
+import { FAILURES, putPasswordLink, ROLE_LABELS } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -14,7 +14,6 @@ import {
   receivedInvitationQuery,
   requestPasswordLink,
 } from './queries.ts'
-import { ROLE_LABELS } from './roles.ts'
 
 const entryRoute = getRouteApi('/_public/invitations/$invitationId')
 const acceptanceRoute = getRouteApi('/_app/invitations/$invitationId/acceptance')

@@ -1,6 +1,7 @@
 // Defect: the OpenAPI document is written by hand or drifts from the Zod operations, or an
 // operation's schema cannot be converted and nobody notices (code C28, C29).
-// The document is emitted from every operation `@conexus/hub-api` exports, never committed:
+// The document is emitted from every operation `@conexus/hub-api` exports through
+// `defineOperation`, never committed; an export that did not pass through it is not emitted:
 // `npm run openapi [-- out.json]` prints it or writes it. An operation's schema that `z.toJSONSchema`
 // cannot express (a `z.date()`, for one) stops the command with the operation's id and exit code 1;
 // a transform under `io: 'input'` converts without error and is not refused.
@@ -16,7 +17,14 @@ import { writeFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import type { Operation } from '@conexus/hub-api'
 import * as api from '@conexus/hub-api'
-import { ATTEMPT_KEY_HEADER, AttemptKey, FAILURES, Problem, SESSION_COOKIE } from '@conexus/hub-api'
+import {
+  ATTEMPT_KEY_HEADER,
+  AttemptKey,
+  FAILURES,
+  isDeclaredOperation,
+  Problem,
+  SESSION_COOKIE,
+} from '@conexus/hub-api'
 import { z } from 'zod'
 
 type Json = Record<string, unknown>
@@ -65,12 +73,8 @@ function responses(operation: Operation): Json {
   return out
 }
 
-function isOperation(value: unknown): value is Operation {
-  return typeof value === 'object' && value !== null && 'id' in value && 'method' in value
-}
-
-export function operations(): Operation[] {
-  return Object.values(api).flatMap((value) => (isOperation(value) ? [value] : []))
+export function operations(exported: object = api): Operation[] {
+  return Object.values(exported).flatMap((value) => (isDeclaredOperation(value) ? [value] : []))
 }
 
 function operationItem(operation: Operation): Json {

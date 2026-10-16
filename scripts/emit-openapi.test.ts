@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
+import * as api from '@conexus/hub-api'
 import { z } from 'zod'
 import { emitOpenApi, operations } from './emit-openapi.ts'
 
@@ -119,4 +120,31 @@ test('o comando recusa um esquema sem forma JSON: sai com 1 e nada vai à saída
   assert.equal(result.status, 1)
   assert.equal(result.stdout, '')
   assert.match(result.stderr, /planted has a schema with no JSON form/)
+})
+
+test('um export que não passou por defineOperation não é emitido, ainda que tenha a forma', () => {
+  const stray = {
+    id: 'strayRead',
+    summary: 'A stray export shaped like an operation.',
+    access: 'public',
+    method: 'GET',
+    path: '/api/stray',
+    bodyLimit: 1,
+    success: { status: 204 },
+    failures: [],
+  } satisfies Operation
+  const intruders = { ...api, stray, notOperation: { id: 'x', method: 'y', path: '/api/other' } }
+  const ids = operations(intruders).map((operation) => operation.id)
+  assert.deepEqual(
+    ids,
+    operations().map((operation) => operation.id),
+  )
+  assert.ok(!ids.includes('strayRead'))
+  const paths = Object.keys(Document.parse(emitOpenApi(operations(intruders))).paths)
+  assert.ok(!paths.includes('/api/stray') && !paths.includes('/api/other'))
+  const declared = api.defineOperation(stray)
+  assert.deepEqual(
+    operations({ ...intruders, declared }).map((operation) => operation.id),
+    [...ids, 'strayRead'],
+  )
 })
