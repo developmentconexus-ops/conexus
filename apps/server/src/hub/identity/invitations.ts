@@ -4,51 +4,45 @@ import {
   CompanyId,
   Email,
   InvitationId,
-  PAGE_SIZE,
   PendingInvitation,
   Person,
-  ReceivedInvitation,
   Role,
 } from '@conexus/hub-api'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx, ReadTx } from '../../platform/database.ts'
+import type { CommandTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Admitted } from './admission.ts'
 import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { forgetLinks, hasPassword, linkTokenOf, refusedAs } from './auth.ts'
-import { after, pageKey, pageOf } from './companies.ts'
 import { company, invitation, member, user, verification } from './tables.ts'
 
 // The founder's number, step 4 answer 6: invitations per person and minute.
 const INVITATIONS_PER_MINUTE = 10
-const Status = z.enum(['pending', 'accepted', 'canceled'])
+export const Status = z.enum(['pending', 'accepted', 'canceled'])
 
-const pending = {
+export const pending = {
   id: invitation.id,
   email: invitation.email,
   role: invitation.role,
   expiresAt: invitation.expiresAt,
 }
 
-// Every row is parsed before it is used, with the contract's types (data D21).
-const PendingRow = z.object({ id: InvitationId, email: Email, role: Role, expiresAt: z.date() })
-const AttemptRow = PendingRow.extend({ unmailed: z.boolean() })
-const ReceivedRow = PendingRow.omit({ expiresAt: true }).extend({
-  live: z.boolean(),
-  status: Status,
-  companyId: CompanyId,
-  companyName: z.string(),
-  inviterName: z.string(),
+export const PendingRow = z.object({
+  id: InvitationId,
+  email: Email,
+  role: Role,
+  expiresAt: z.date(),
 })
+const AttemptRow = PendingRow.extend({ unmailed: z.boolean() })
 const InvitationEmail = z.object({ email: Email })
 const OpenRow = z.object({ id: InvitationId })
 const AcceptRow = z.object({ companyId: CompanyId, email: Email })
 const JoinedRow = z.object({ status: Status, memberId: z.string().nullable() })
 
-function pendingOf(row: z.infer<typeof PendingRow>) {
+export function pendingOf(row: z.infer<typeof PendingRow>) {
   return PendingInvitation.parse({ ...row, expiresAt: row.expiresAt.toISOString() })
 }
 
@@ -62,66 +56,6 @@ async function lockCompany(tx: CommandTx, companyId: string): Promise<void> {
     .from(company)
     .where(eq(company.id, companyId))
     .for('no key update')
-}
-
-export async function readInvitations(tx: ReadTx, admitted: Admitted, page: string | undefined) {
-  const key = pageKey(page)
-  const rows = await tx
-    .select(pending)
-    .from(invitation)
-    .where(
-      and(
-        eq(invitation.organizationId, admitted.companyId),
-        eq(invitation.status, 'pending'),
-        after(sql`(${invitation.createdAt}, ${invitation.id})`, key, (id) =>
-          tx
-            .select({ createdAt: invitation.createdAt, id: invitation.id })
-            .from(invitation)
-            .where(and(eq(invitation.id, id), eq(invitation.organizationId, admitted.companyId))),
-        ),
-      ),
-    )
-    .orderBy(asc(invitation.createdAt), asc(invitation.id))
-    .limit(PAGE_SIZE + 1)
-  const parsed = rows.map((row) => PendingRow.parse(row))
-  const listed = pageOf(parsed, (row) => row.id)
-  return { invitations: listed.rows.map(pendingOf), next: listed.next }
-}
-
-function stateOf(status: z.infer<typeof Status>, live: boolean): ReceivedInvitation['state'] {
-  if (status === 'accepted') return 'ACCEPTED'
-  if (status === 'canceled') return 'CANCELED'
-  return live ? 'PENDING' : 'EXPIRED'
-}
-
-/** The invitation as the person it was sent to reads it; anyone else finds nothing (S10). */
-export async function readReceived(tx: ReadTx, person: Person, invitationId: InvitationId) {
-  const [found] = await tx
-    .select({
-      id: invitation.id,
-      email: invitation.email,
-      role: invitation.role,
-      status: invitation.status,
-      live: sql<boolean>`${invitation.expiresAt} > statement_timestamp()`,
-      companyId: company.id,
-      companyName: company.name,
-      inviterName: user.name,
-    })
-    .from(invitation)
-    .innerJoin(company, eq(invitation.organizationId, company.id))
-    .innerJoin(user, eq(invitation.inviterId, user.id))
-    .where(eq(invitation.id, invitationId))
-  const row = ReceivedRow.optional().parse(found)
-  if (row === undefined || row.email !== person.email.toLowerCase()) {
-    throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
-  }
-  return ReceivedInvitation.parse({
-    id: row.id,
-    company: { id: row.companyId, name: row.companyName },
-    role: row.role,
-    inviterName: row.inviterName,
-    state: stateOf(row.status, row.live),
-  })
 }
 
 type Invite = {

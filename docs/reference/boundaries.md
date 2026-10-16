@@ -146,7 +146,7 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   `listMembers` pages by offset (`:186`).
 - **Hand-made piece.** `readMemberships` and `readMembers` in
   `apps/server/src/hub/identity/companies.ts`, `readInvitations` and `readReceived` in
-  `invitations.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page starts
+  `invitation-reads.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page starts
   after the last row's id.
 - **Why.** A list past 100 rows would lose rows silently, and a page by offset shifts when a row
   arrives. The plugin's `getInvitation` also refuses an invitation that is no longer pending

@@ -14,17 +14,11 @@ import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
-import { admit, mayInviteAs } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { createCompanyCommand, readCompany, readMembers, readMemberships } from './companies.ts'
 import { mailInvitation } from './invitation-mail.ts'
-import {
-  acceptCommand,
-  createInvitationCommand,
-  passwordLinkCommand,
-  readInvitations,
-  readReceived,
-} from './invitations.ts'
+import { readInvitations, readReceived } from './invitation-reads.ts'
+import { acceptCommand, createInvitationCommand, passwordLinkCommand } from './invitations.ts'
 import { passwordLinkMail } from './messages.ts'
 
 type Deps = {
@@ -37,46 +31,23 @@ type Deps = {
 
 function registerReads(app: FastifyInstance, { database }: Deps): void {
   serve(app, listCompanies, async ({ person, query }) =>
-    answer(await database.read((tx) => readMemberships(tx, person.id, query.page))),
+    answer(await readMemberships(database, person.id, query.page)),
   )
 
   serve(app, getCompany, async ({ person, params }) =>
-    answer(
-      await database.read(async (tx) => {
-        const admitted = await admit({ tx, personId: person.id, ...params, action: 'readCompany' })
-        const company = await readCompany(tx, admitted)
-        return { company, role: admitted.role, mayInviteAs: mayInviteAs(admitted) }
-      }),
-    ),
+    answer(await readCompany(database, { personId: person.id, ...params })),
   )
 
   serve(app, listMembers, async ({ person, params, query }) =>
-    answer(
-      await database.read(async (tx) => {
-        const admitted = await admit({ tx, personId: person.id, ...params, action: 'readCompany' })
-        return readMembers(tx, admitted, query.page)
-      }),
-    ),
+    answer(await readMembers(database, { personId: person.id, ...params }, query.page)),
   )
 
   serve(app, listInvitations, async ({ person, params, query }) =>
-    answer(
-      await database.read(async (tx) => {
-        const admitted = await admit({
-          tx,
-          personId: person.id,
-          ...params,
-          action: 'readInvitations',
-        })
-        return readInvitations(tx, admitted, query.page)
-      }),
-    ),
+    answer(await readInvitations(database, { personId: person.id, ...params }, query.page)),
   )
 
   serve(app, getInvitation, async ({ person, params }) =>
-    answer({
-      invitation: await database.read((tx) => readReceived(tx, person, params.invitationId)),
-    }),
+    answer({ invitation: await readReceived(database, person, params.invitationId) }),
   )
 }
 
