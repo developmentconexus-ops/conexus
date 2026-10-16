@@ -404,9 +404,10 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Why.** [Web W9](../guides/web.md) and [code C28](../guides/code.md): the screens call the
   operations of `packages/hub-api` and no second contract. A native HTTP status cannot say whether a
   write committed, so each row of the failure table says whether a whole answer with its code
-  settles the outcome (`settles` in `packages/hub-api/src/failures.ts`). The tests in `apps/web/hub.test.ts`
-  (cut body, deadline, edge HTML, definite and uncertain failure) cover it, and "resposta que não
-  decide" fails when every failure counts as settled (removal `attempt-key-outcome-unknown`).
+  settles the outcome (`settles` in `packages/hub-api/src/failures.ts`). The tests in
+  `apps/web/hub.test.ts` (cut body, deadline, edge HTML, definite and uncertain failure) cover it,
+  and "resposta que não decide" fails when every failure counts as settled (removal
+  `attempt-key-outcome-unknown`).
 
 ### A write that must survive a lost reply
 
