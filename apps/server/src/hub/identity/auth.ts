@@ -53,7 +53,7 @@ const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 export const PASSWORD_LINK_SECONDS = 900
 // The founder's number, step 4 answer 4.
-export const INVITATION_SECONDS = 2 * 24 * 60 * 60
+const INVITATION_SECONDS = 2 * 24 * 60 * 60
 
 // The library logs without the request; a sign-in runs inside this store so its lines carry the trace id.
 const requestLog = new AsyncLocalStorage<FailureLog>()

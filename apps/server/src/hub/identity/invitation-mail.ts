@@ -35,9 +35,10 @@ export async function mailInvitation(
   },
 ): Promise<void> {
   const { invitation: sent, signal } = input
-  const message = invitationMail({
+  const message = await invitationMail({
     to: sent.email,
     role: sent.role,
+    expiresAt: sent.expiresAt,
     companyName: input.companyName,
     inviterName: input.inviterName,
     link: input.link,

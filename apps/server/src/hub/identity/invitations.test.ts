@@ -73,13 +73,12 @@ test('convidar: 201, e o e-mail leva o endereço /invitations/{id}', async (t) =
   )
   const days = (Date.parse(invitation.expiresAt) - Date.now()) / 86_400_000
   assert.ok(days > 1.99 && days <= 2, String(days))
-  assert.deepEqual(hub.mail.sent, [
-    {
-      to: INVITEE,
-      subject: 'Convite para Empresa Teste',
-      text: `Ana Lima convidou você para Empresa Teste como Administrador.\nO convite vale 2 dias.\n\nhttps://hub.example.test/invitations/${invitation.id}\n`,
-    },
-  ])
+  assert.equal(hub.mail.sent.length, 1)
+  const sent = hub.mail.sent[0]
+  assert.equal(sent?.to, INVITEE)
+  assert.equal(sent?.subject, 'Convite para Empresa Teste')
+  assert.ok(sent?.text.includes(`https://hub.example.test/invitations/${invitation.id}`))
+  assert.ok(sent?.html.includes('Ver convite'))
 })
 
 test('convidar: o membro, ou quem é de outra empresa, 404 e nenhuma linha', async (t) => {

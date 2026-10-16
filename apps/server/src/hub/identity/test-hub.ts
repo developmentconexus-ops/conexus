@@ -14,7 +14,13 @@ import {
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 
-export type Mail = { to: string; subject: string; text: string }
+export type Mail = {
+  to: string
+  subject: string
+  text: string
+  html: string
+  from: { address: string; name: string }
+}
 type MailMode = 'DELIVER' | 'BOUNCE' | 'FAIL' | 'HOLD'
 
 /**
@@ -33,7 +39,13 @@ export async function mailServer(t: TestContext) {
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
       if (state.mode === 'HOLD') {
         heldReplies.push(() => {
-          sent.push({ to: body.to, subject: body.subject, text: body.text })
+          sent.push({
+            to: body.to,
+            subject: body.subject,
+            text: body.text,
+            html: body.html,
+            from: body.from,
+          })
           response.writeHead(200, { 'content-type': 'application/json' })
           response.end(
             JSON.stringify({
@@ -45,7 +57,13 @@ export async function mailServer(t: TestContext) {
         return held.resolve()
       }
       if (state.mode === 'FAIL') return response.writeHead(500).end()
-      sent.push({ to: body.to, subject: body.subject, text: body.text })
+      sent.push({
+        to: body.to,
+        subject: body.subject,
+        text: body.text,
+        html: body.html,
+        from: body.from,
+      })
       const bounced = state.mode === 'BOUNCE' ? [body.to] : []
       const delivered = state.mode === 'DELIVER' ? [body.to] : []
       const result = { delivered, permanent_bounces: bounced, queued: [] }

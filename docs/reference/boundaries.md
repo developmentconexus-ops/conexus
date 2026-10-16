@@ -322,6 +322,23 @@ library joins the Hub sets.
 - **Why.** S23/S28 and the card's A6. The native counter test in `invitation-journey.test.ts`
   reaches 429 after ten refused transactions, independently for both paths.
 
+## React Email 6.11.0 and renderer 2.1.0
+
+- **Native reference.** Documenso `cd0cc5febcbb76ec7e5ecb75c0b8c65ab8432198`,
+  `packages/email/render.tsx:6,65,92` renders React Email at send time. Installing that runtime
+  directly is the measured alternative of 117 packages/68,136,787 bytes, including CLI tools.
+- **Packaging.** Native esbuild 0.28.2 bundles only `invitation-email.tsx` as an ignored ESM
+  artifact, with React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
+  versions; the build replaces the dependencies' development-mode constant. No runtime environment
+  branch or template substitution is added. `invitation-render.d.mts` owns the port used by source
+  and consumer. Local prestart/pretest, pree2e/preremovals and the image build generate the same
+  artifact; removal scratch copies carry this generated input as well as source.
+- **Why.** The approved 4.1 packaging decision keeps send-time escaping and native HTML-to-text
+  conversion without the CLI runtime installation. The generated module measures 745,905 bytes.
+  `invitation-email.test.ts` sends through the Hub and HTTP provider fake; final-image proof is
+  completed with integration. Inline colors/tables/system fonts are mail-client exceptions to
+  V3/V14/V17, not patterns for Hub screens; carry them to closing L27.
+
 ## Fastify 5.12.5
 
 ### `serve` parses the body and checks the reply
