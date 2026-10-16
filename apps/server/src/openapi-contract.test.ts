@@ -1,15 +1,11 @@
 import assert from 'node:assert/strict'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
 import { getHealth, listCompanies } from '@conexus/hub-api'
 import { z } from 'zod'
 import { emitOpenApi } from '../../../scripts/emit-openapi.ts'
-import { createStatus } from './hub/status/public.ts'
-import { createHub, identityOf } from './main.ts'
-import { createTestDatabase, TEST_ORIGIN, testConfig } from './platform/test-database.ts'
-
-const silent = { info: () => undefined, error: () => undefined }
+import { hubOn } from './hub/identity/test-hub.ts'
+import { TEST_ORIGIN } from './platform/test-database.ts'
 
 const Document = z.object({
   paths: z.record(
@@ -26,23 +22,13 @@ const Document = z.object({
   ),
 })
 
-async function hubOn(t: TestContext) {
-  const test = await createTestDatabase(t)
-  const config = testConfig(test.runtimeUrl)
-  const status = createStatus({ version: config.version, database: test.database })
-  const identity = identityOf({ database: test.database, config, log: silent })
-  const app = await createHub(config, { status, identity })
-  t.after(() => app.close())
-  return app
-}
-
 function declared(operation: Operation, status: number): string[] {
   const item = Document.parse(emitOpenApi()).paths[operation.path]?.[operation.method.toLowerCase()]
   return Object.keys(item?.responses[String(status)]?.content ?? {})
 }
 
 test('a resposta de sucesso sai com o status e o tipo que o documento declara', async (t) => {
-  const app = await hubOn(t)
+  const { app } = await hubOn(t)
   const response = await app.inject({ method: 'GET', url: getHealth.path })
   assert.equal(response.statusCode, 200)
   assert.deepEqual(declared(getHealth, response.statusCode), ['application/json'])
@@ -50,7 +36,7 @@ test('a resposta de sucesso sai com o status e o tipo que o documento declara', 
 })
 
 test('a falha sai com o status e o tipo que o documento declara', async (t) => {
-  const app = await hubOn(t)
+  const { app } = await hubOn(t)
   const response = await app.inject({
     method: 'GET',
     url: listCompanies.path,

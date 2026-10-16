@@ -1,63 +1,9 @@
 import assert from 'node:assert/strict'
-import { randomBytes, randomUUID } from 'node:crypto'
-import type { TestContext } from 'node:test'
+import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { hashPassword } from 'better-auth/crypto'
-import { createHub, identityOf } from '../../main.ts'
-import { createTestDatabase, TEST_ORIGIN, testConfig } from '../../platform/test-database.ts'
-import { createStatus } from '../status/public.ts'
-
-const silent = { info: () => undefined, error: () => undefined }
-const PASSWORD = 'senha-certa-1'
-const ADMIN = { name: 'Ana Lima', email: 'ana@example.test', role: 'admin' }
-const BRUNO = { name: 'Bruno Reis', email: 'bruno@example.test' }
-const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
-
-async function hubOn(t: TestContext) {
-  const test = await createTestDatabase(t)
-  const config = testConfig(test.runtimeUrl)
-  const status = createStatus({ version: config.version, database: test.database })
-  const identity = identityOf({ database: test.database, config, log: silent })
-  const app = await createHub(config, { status, identity })
-  t.after(() => app.close())
-  return { app, test }
-}
-
-type Hub = Awaited<ReturnType<typeof hubOn>>
-type Who = { name: string; email: string; role?: string }
-
-function id(): string {
-  return randomBytes(16).toString('hex')
-}
-
-async function personOn(hub: Hub, who: Who) {
-  const personId = id()
-  await hub.test.asOwner('insert into auth.user (id, name, email, role) values ($1, $2, $3, $4)', [
-    personId,
-    who.name,
-    who.email,
-    who.role ?? 'user',
-  ])
-  await hub.test.asOwner(
-    `insert into auth.account (id, account_id, provider_id, user_id, password, updated_at)
-      values ($1, $2, 'credential', $2, $3, now())`,
-    [id(), personId, await hashPassword(PASSWORD)],
-  )
-  const signedIn = await hub.app.inject({
-    method: 'PUT',
-    url: '/api/sessions/current',
-    headers: {
-      origin: TEST_ORIGIN,
-      'content-type': 'application/json',
-      'cf-connecting-ip': `198.51.100.${Math.floor(Math.random() * 250) + 1}`,
-    },
-    payload: JSON.stringify({ email: who.email, password: PASSWORD }),
-  })
-  assert.equal(signedIn.statusCode, 200)
-  return { id: personId, cookie: String(signedIn.headers['set-cookie']).split(';')[0] ?? '' }
-}
-
-type Person = Awaited<ReturnType<typeof personOn>>
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import type { Hub, Person } from './test-hub.ts'
+import { ANA, BRUNO, CARLA, codeOf, hubOn, id, personOn, post } from './test-hub.ts'
 
 function call(
   hub: Hub,
@@ -73,18 +19,8 @@ function call(
   })
 }
 
-function create(hub: Hub, person: Person, name: string, key: string = randomUUID()) {
-  return hub.app.inject({
-    method: 'POST',
-    url: '/api/companies',
-    headers: {
-      origin: TEST_ORIGIN,
-      'content-type': 'application/json',
-      'idempotency-key': key,
-      cookie: person.cookie,
-    },
-    payload: JSON.stringify({ name }),
-  })
+function create(hub: Hub, person: Person, name: string, key?: string) {
+  return post(hub, person, '/api/companies', { name }, key)
 }
 
 async function companyOf(hub: Hub, person: Person, name: string): Promise<string> {
@@ -101,13 +37,9 @@ async function join(hub: Hub, companyId: string, personId: string, role: string)
   )
 }
 
-function codeOf(response: { json(): unknown }): unknown {
-  return Object(response.json()).code
-}
-
 test('criar: o administrador cria, 201, e é o dono; a mesma chave dá a mesma empresa, também duas juntas', async (t) => {
   const hub = await hubOn(t)
-  const ana = await personOn(hub, ADMIN)
+  const ana = await personOn(hub, ANA)
   const created = await create(hub, ana, '  Empresa Teste ')
   assert.equal(created.statusCode, 201)
   const { company } = Object(created.json())
@@ -139,7 +71,7 @@ test('criar: o administrador cria, 201, e é o dono; a mesma chave dá a mesma e
 
 test('criar: a mesma chave com outro nome, 409 IDEMPOTENCY_CONFLICT; sem chave, 400', async (t) => {
   const hub = await hubOn(t)
-  const ana = await personOn(hub, ADMIN)
+  const ana = await personOn(hub, ANA)
   const key = randomUUID()
   assert.equal((await create(hub, ana, 'Empresa Teste', key)).statusCode, 201)
   const conflict = await create(hub, ana, 'Empresa Nova', key)
@@ -153,7 +85,7 @@ test('criar: a mesma chave com outro nome, 409 IDEMPOTENCY_CONFLICT; sem chave, 
 
 test('criar: outra pessoa, 404 NOT_FOUND e nenhuma empresa, com chave nova ou com a chave de outra', async (t) => {
   const hub = await hubOn(t)
-  const ana = await personOn(hub, ADMIN)
+  const ana = await personOn(hub, ANA)
   const bruno = await personOn(hub, BRUNO)
   const key = randomUUID()
   assert.equal((await create(hub, ana, 'Empresa Teste', key)).statusCode, 201)
@@ -170,7 +102,7 @@ test('criar: outra pessoa, 404 NOT_FOUND e nenhuma empresa, com chave nova ou co
 
 test('fora: o membro lê a empresa e as pessoas; os convites, só dono e administrador; outra empresa, id desconhecido ou malformado, o mesmo 404', async (t) => {
   const hub = await hubOn(t)
-  const ana = await personOn(hub, ADMIN)
+  const ana = await personOn(hub, ANA)
   const bruno = await personOn(hub, BRUNO)
   const carla = await personOn(hub, CARLA)
   const companyId = await companyOf(hub, ana, 'Empresa Teste')
@@ -222,7 +154,7 @@ test('fora: o membro lê a empresa e as pessoas; os convites, só dono e adminis
 
 test('fora: a segunda página de pessoas e de convites vem por next', async (t) => {
   const hub = await hubOn(t)
-  const ana = await personOn(hub, ADMIN)
+  const ana = await personOn(hub, ANA)
   const companyId = await companyOf(hub, ana, 'Empresa Teste')
   for (let index = 0; index < 51; index++) {
     const personId = id()
@@ -272,7 +204,7 @@ test('fora: a segunda página de pessoas e de convites vem por next', async (t) 
 
 test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreate só do administrador; a página de uma empresa alheia não abre nada', async (t) => {
   const hub = await hubOn(t)
-  const ana = await personOn(hub, ADMIN)
+  const ana = await personOn(hub, ANA)
   const bruno = await personOn(hub, BRUNO)
   const ids: string[] = []
   // Seeded rows: through the API, the plugin reads an owner's companies at once on one connection.

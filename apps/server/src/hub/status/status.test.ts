@@ -5,6 +5,7 @@ import { createHub, identityOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
+  silent,
   spawnHub,
   testConfig,
   unreachableDatabase,
@@ -13,7 +14,6 @@ import {
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
-const silent = { info: () => undefined, error: () => undefined }
 
 async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const test = await createTestDatabase(t)

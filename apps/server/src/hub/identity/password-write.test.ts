@@ -5,17 +5,12 @@ import { identityOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
+  silent,
   spawnHub,
-  TEST_ORIGIN,
   testConfig,
+  WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 
-const silent = { info: () => undefined, error: () => undefined }
-const WRITE = {
-  origin: TEST_ORIGIN,
-  'content-type': 'application/json',
-  'cf-connecting-ip': '203.0.113.7',
-}
 // The library's scrypt hash is a hex salt and a hex key joined by a colon.
 const PASSWORD_HASH = /[0-9a-f]{16,}:[0-9a-f]{64,}/
 
@@ -35,7 +30,7 @@ test('senha que n√£o grava: 503, nenhuma senha, o link continua valendo, e a sa√
   function setPassword() {
     return fetch(`http://127.0.0.1:${port}/api/passwords`, {
       method: 'PUT',
-      headers: WRITE,
+      headers: WRITE_HEADERS,
       body: JSON.stringify({ token, password: 'senha-nova-1' }),
     })
   }

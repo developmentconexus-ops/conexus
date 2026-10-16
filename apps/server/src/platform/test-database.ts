@@ -24,7 +24,7 @@ import { migrate } from './migrate.ts'
 
 // Roles belong to the whole server, so suites that touch them take turns on this lock.
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
-const silent = { info: () => undefined, error: () => undefined }
+export const silent = { info: () => undefined, error: () => undefined }
 
 // The codes any route may answer besides its operation's: the access check's and the two every
 // route has. A route that answers another code its operation does not declare says less in the
@@ -68,6 +68,12 @@ export function takeUndeclared(): string[] {
 }
 
 export const TEST_ORIGIN = PublicOrigin.parse('https://hub.example.test')
+export const CLIENT = '203.0.113.7'
+export const WRITE_HEADERS = {
+  origin: TEST_ORIGIN,
+  'content-type': 'application/json',
+  'cf-connecting-ip': CLIENT,
+}
 // Nothing listens on the discard port, so a Hub that sends mail without a fake server fails loudly.
 const NO_MAIL_SERVER = 'http://127.0.0.1:9/email/sending/send'
 const TEST_MAIL_FROM = 'convites@hub.example.test'

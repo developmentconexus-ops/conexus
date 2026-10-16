@@ -12,22 +12,17 @@ import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
   serveEnvironment,
-  TEST_ORIGIN,
+  silent,
   testConfig,
+  WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 
 const run = promisify(execFile)
 const _ROOT = join(import.meta.dirname, '..', '..', '..', '..', '..')
 const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
-const silent = { info: () => undefined, error: () => undefined }
 const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 const LINK = /^https:\/\/hub\.example\.test\/set-password#token=([A-Za-z0-9]+)$/m
-const WRITE = {
-  origin: TEST_ORIGIN,
-  'content-type': 'application/json',
-  'cf-connecting-ip': '203.0.113.7',
-}
 
 async function firstPerson(
   t: TestContext,
@@ -78,7 +73,7 @@ async function hubOn(t: TestContext, test: TestDatabase) {
 function setPassword(
   app: Awaited<ReturnType<typeof hubOn>>,
   body: unknown,
-  headers: Record<string, string> = WRITE,
+  headers: Record<string, string> = WRITE_HEADERS,
 ) {
   return app.inject({
     method: 'PUT',
@@ -92,7 +87,7 @@ function signIn(app: Awaited<ReturnType<typeof hubOn>>, password: string) {
   return app.inject({
     method: 'PUT',
     url: '/api/sessions/current',
-    headers: WRITE,
+    headers: WRITE_HEADERS,
     payload: JSON.stringify({ email: ANA.email, password }),
   })
 }
@@ -230,7 +225,7 @@ for (const [name, change, status, code] of REFUSALS) {
     const app = await hubOn(t, test)
     const token = tokenOf((await firstPerson(t, test, ANA)).summary)
     const headers: Record<string, string> = {}
-    for (const [header, value] of Object.entries({ ...WRITE, ...change })) {
+    for (const [header, value] of Object.entries({ ...WRITE_HEADERS, ...change })) {
       if (value !== null) headers[header] = value
     }
     const refused = await setPassword(app, { token, password: 'senha-nova-1' }, headers)
@@ -255,7 +250,7 @@ test('mídia: JSON inválido 400 e corpo acima de 4 KiB 413 em PUT /api/password
     const response = await app.inject({
       method: 'PUT',
       url: '/api/passwords',
-      headers: WRITE,
+      headers: WRITE_HEADERS,
       payload,
     })
     assert.equal(response.statusCode, status)

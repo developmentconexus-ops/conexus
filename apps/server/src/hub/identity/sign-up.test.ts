@@ -1,9 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { createTestDatabase, testConfig } from '../../platform/test-database.ts'
+import { createTestDatabase, silent, testConfig } from '../../platform/test-database.ts'
 import { createAuth } from './public.ts'
-
-const silent = { info: () => undefined, error: () => undefined }
 
 test('cadastro fechado: signUpEmail no servidor é recusado e ninguém é criado', async (t) => {
   const test = await createTestDatabase(t)

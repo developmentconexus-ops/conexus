@@ -7,12 +7,11 @@ import { sql } from 'drizzle-orm'
 import { DatabaseUrl, openDatabase } from './database.ts'
 import {
   createTestDatabase,
+  silent,
   unreachableDatabaseUrl,
   whenIdle,
   withRoleLock,
 } from './test-database.ts'
-
-const silent = { info: () => undefined, error: () => undefined }
 
 function failsWith(code: string, sqlstate?: string) {
   return (error: unknown) => {

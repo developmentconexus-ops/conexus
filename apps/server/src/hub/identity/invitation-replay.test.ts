@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict'
-import { randomBytes, randomUUID } from 'node:crypto'
-import { createServer } from 'node:http'
-import type { TestContext } from 'node:test'
+import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import type { HubProcess } from '../../platform/test-database.ts'
@@ -12,46 +10,9 @@ import {
   startHub,
   TEST_ORIGIN,
 } from '../../platform/test-database.ts'
+import { ANA, INVITEE, id, mailServer, PASSWORD } from './test-hub.ts'
 
-const PASSWORD = 'senha-certa-1'
-const ANA = { name: 'Ana Lima', email: 'ana@example.test', role: 'admin' }
-const INVITEE = 'davi@example.test'
 const WRITE = { origin: TEST_ORIGIN, 'content-type': 'application/json' }
-
-/**
- * A fake of the mail provider (T15). DELIVER keeps each message and answers delivered; HOLD keeps
- * nothing and never answers, and `held` resolves when such a request has arrived.
- */
-async function mailServer(t: TestContext) {
-  const sent: { to: string; text: string }[] = []
-  const state: { mode: 'DELIVER' | 'HOLD' } = { mode: 'DELIVER' }
-  const held = Promise.withResolvers<void>()
-  const server = createServer((request, response) => {
-    const chunks: Buffer[] = []
-    request.on('data', (chunk: Buffer) => chunks.push(chunk))
-    request.on('end', () => {
-      if (state.mode === 'HOLD') return held.resolve()
-      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-      sent.push({ to: body.to, text: body.text })
-      const result = { delivered: [body.to], permanent_bounces: [], queued: [] }
-      response.writeHead(200, { 'content-type': 'application/json' })
-      response.end(JSON.stringify({ success: true, result }))
-    })
-  })
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
-    server.closeAllConnections()
-    server.close()
-  })
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  const url = `http://127.0.0.1:${address.port}/email/sending/send`
-  return { url, sent, state, held: held.promise }
-}
-
-function id(): string {
-  return randomBytes(16).toString('hex')
-}
 
 type TestDatabase = Awaited<ReturnType<typeof createTestDatabase>>
 

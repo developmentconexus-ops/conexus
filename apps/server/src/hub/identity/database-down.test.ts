@@ -6,22 +6,18 @@ import { createHub, identityOf } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
+  silent,
   TEST_ORIGIN,
   testConfig,
   unreachableDatabase,
+  WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 
 type Config = ReturnType<typeof testConfig>
-const silent = { info: () => undefined, error: () => undefined }
 const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 const PASSWORD = 'senha-certa-1'
 const SESSIONS = '/api/sessions/current'
-const WRITE = {
-  origin: TEST_ORIGIN,
-  'content-type': 'application/json',
-  'cf-connecting-ip': '203.0.113.7',
-}
 const UNAVAILABLE = {
   type: 'urn:conexus:problem:DATABASE_UNAVAILABLE',
   title: 'O banco do Conexus não respondeu.',
@@ -54,7 +50,7 @@ async function liveCookie(t: TestContext, config: Config): Promise<string> {
   const signed = await live.inject({
     method: 'PUT',
     url: SESSIONS,
-    headers: WRITE,
+    headers: WRITE_HEADERS,
     payload: JSON.stringify({ email: ANA.email, password: PASSWORD }),
   })
   assert.equal(signed.statusCode, 200)
@@ -76,7 +72,7 @@ test('banco fora: entrar, ler a sessão e sair respondem 503 DATABASE_UNAVAILABL
     await app.inject({
       method: 'PUT',
       url: SESSIONS,
-      headers: WRITE,
+      headers: WRITE_HEADERS,
       payload: JSON.stringify({ email: ANA.email, password: PASSWORD }),
     }),
     await app.inject({ method: 'GET', url: SESSIONS, headers: { cookie } }),

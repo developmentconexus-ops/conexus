@@ -13,12 +13,12 @@ import {
   createTestDatabase,
   freePort,
   serveEnvironment,
+  silent,
   spawnHub,
   startHub,
   testConfig,
 } from './platform/test-database.ts'
 
-const silent = { info: () => undefined, error: () => undefined }
 const apps: FastifyInstance[] = []
 const dirs: string[] = []
 let shared: TestDatabase
