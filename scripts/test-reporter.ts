@@ -11,9 +11,27 @@ import { spec } from 'node:test/reporters'
 
 const CODE = /^[A-Z][A-Z0-9_]*$/
 
+/** The keys of the object's own level, so a repeated `level` is seen and a nested one is not. */
+function topLevelKeys(json: string): string[] {
+  const keys: string[] = []
+  let depth = 0
+  for (let i = 0; i < json.length; i++) {
+    const char = json[i]
+    if (char === '{' || char === '[') depth++
+    else if (char === '}' || char === ']') depth--
+    else if (char === '"') {
+      let end = i + 1
+      while (json[end] !== '"') end += json[end] === '\\' ? 2 : 1
+      if (depth === 1 && json[end + 1] === ':') keys.push(json.slice(i + 1, end))
+      i = end
+    }
+  }
+  return keys
+}
+
 function isLogLine(line: string): boolean {
-  if (line.match(/"level":/g)?.length !== 1) return false
   try {
+    if (topLevelKeys(line).filter((key) => key === 'level').length !== 1) return false
     const parsed: unknown = JSON.parse(line)
     return (
       typeof parsed === 'object' && parsed !== null && CODE.test(String(Reflect.get(parsed, 'msg')))

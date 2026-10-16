@@ -66,3 +66,10 @@ test('linha crua: aceita a linha de registro com um nível e um código', () => 
   const result = run(source)
   assert.equal(result.status, 0, result.stderr)
 })
+
+test('linha crua: aceita a linha de registro cujo valor aninhado tem a chave level', () => {
+  const source =
+    'import test from \'node:test\'\ntest(\'a\', () => {\n  process.stdout.write(\'{"level":30,"msg":"LISTENING","err":{"level":"x","text":"{\\\\"level\\\\":1}"}}\\n\')\n})\n'
+  const result = run(source)
+  assert.equal(result.status, 0, result.stderr)
+})
