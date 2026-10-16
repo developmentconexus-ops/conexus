@@ -22,6 +22,28 @@
     }
   },
   {
+    "id": "first-person-rows-parsed",
+    "file": "apps/server/src/hub/identity/first-person.ts",
+    "find": "Person.array().parse(await internalAdapter.listUsers(2))",
+    "replace": "await internalAdapter.listUsers(2)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/first-person-rows.test.ts",
+      "name": "id vazio"
+    }
+  },
+  {
+    "id": "link-person-row-parsed",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "const person = Person.parse(row)",
+    "replace": "const person = row",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "id vazio"
+    }
+  },
+  {
     "id": "raw-output-in-process",
     "file": "scripts/test-reporter.ts",
     "find": "const lines = `${pending.get(key) ?? ''}${event.data.message}`.split('\\n')",

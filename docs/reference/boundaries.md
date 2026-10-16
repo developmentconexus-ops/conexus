@@ -189,14 +189,18 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   gives its plugins, and the Hub reaches them through `auth.$context`, which the library documents
   for no application. Creating a person has the public `auth.api.createUser` of the admin plugin
   (`better-auth/dist/plugins/admin/routes.mjs:195-201`), and the Hub uses it.
-- **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts` and
-  `passwordLinkCommand` in `invitations.ts`. They read the person by e-mail, whether she has a
-  password, and whether the installation has anyone, inside the command's transaction.
+- **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts`,
+  `passwordLinkCommand` in `invitations.ts` and `hasPassword` in `auth.ts`. They read the person by
+  e-mail, whether she has a password, and whether the installation has anyone, inside the command's
+  transaction, and parse each row as [data D21](../guides/data.md) says: a person against the
+  contract's `Person`, an account against its password.
 - **Why.** The public reads need a session (`/admin/list-users`) or return no password state, and
   these run before anyone is signed in. The reads join the command's transaction through
   `runWithTransaction`. When the library changes, reread `$context` and these three methods. The
   tests "com a pessoa ainda sem senha" in `first-person.test.ts` and "link" in
-  `invitation-link.test.ts` cover them.
+  `invitation-link.test.ts` cover them. The tests "id vazio" in `first-person-rows.test.ts` and
+  `invitation-link.test.ts`, a person row with an empty id, fail without the parse (removals `first-person-rows-parsed` and
+  `link-person-row-parsed`).
 
 ### A password link's token goes back to the command that asked for it
 

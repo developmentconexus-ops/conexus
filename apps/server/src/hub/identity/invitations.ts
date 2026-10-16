@@ -1,4 +1,3 @@
-import type { Person } from '@conexus/hub-api'
 import {
   CAPACITY,
   Company,
@@ -7,6 +6,7 @@ import {
   InvitationId,
   PAGE_SIZE,
   PendingInvitation,
+  Person,
   ReceivedInvitation,
   Role,
 } from '@conexus/hub-api'
@@ -18,7 +18,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { Admitted } from './admission.ts'
 import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { forgetLinks, linkTokenOf, refusedAs } from './auth.ts'
+import { forgetLinks, hasPassword, linkTokenOf, refusedAs } from './auth.ts'
 import { after, pageKey, pageOf } from './companies.ts'
 import { company, invitation, member, user, verification } from './tables.ts'
 
@@ -274,10 +274,11 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
       if (open === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'CLOSED' } })
       const { internalAdapter } = await deps.auth.$context
       const known = await internalAdapter.findUserByEmail(open.email)
-      const person =
+      const row =
         known?.user ??
         (await deps.auth.api.createUser({ body: { name: input.name, email: open.email } })).user
-      if ((await internalAdapter.findCredentialAccount(person.id))?.password) {
+      const person = Person.parse(row)
+      if (await hasPassword(deps.auth, person.id)) {
         return { kind: 'HAS_PASSWORD' } as const
       }
       const given = await tx.$count(

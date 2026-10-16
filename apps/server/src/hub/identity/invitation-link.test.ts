@@ -180,6 +180,22 @@ test('link: sem pessoa, ela é criada com o nome, e o e-mail leva /set-password?
   assert.equal((await setPassword(hub, tokenOf(mail, invitationId))).statusCode, 204)
 })
 
+test('link: a pessoa de id vazio no banco, 500 e nenhum link nem e-mail', async (t) => {
+  const { hub, invite } = await companyOn(t)
+  await hub.test.asOwner(`insert into auth.user (id, name, email) values ('', 'Davi Costa', $1)`, [
+    INVITEE,
+  ])
+  const refused = await askLink(hub, await invite())
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [500, 'INTERNAL_UNEXPECTED'])
+  assert.deepEqual(
+    hub.mail.sent.map((mail) => mail.subject),
+    ['Convite para Empresa Teste'],
+  )
+  assert.deepEqual(await hub.test.asOwner('select count(*)::int as links from auth.verification'), [
+    { links: 0 },
+  ])
+})
+
 test('link: quem já tem senha, 204 e nenhum e-mail', async (t) => {
   const { hub, invite } = await companyOn(t)
   await personOn(hub, { name: 'Davi Costa', email: INVITEE })

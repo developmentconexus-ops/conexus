@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 import type { GenericEndpointContext } from '@better-auth/core'
 import * as libraryContext from '@better-auth/core/context'
 import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
-import type { FailureCode } from '@conexus/hub-api'
+import type { FailureCode, PersonId } from '@conexus/hub-api'
 import { CAPACITY, COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
 import { admin, organization } from 'better-auth/plugins'
@@ -147,6 +147,15 @@ export function libraryCommandOn(auth: Auth, database: Database): LibraryCommand
  */
 export async function forgetLinks(tx: CommandTx, personId: string): Promise<void> {
   await tx.delete(verification).where(eq(verification.value, personId))
+}
+
+const CredentialRow = z.object({ password: z.string().min(1).nullable() }).nullable()
+
+/** Whether the person has a password; inside a library command, it reads in its transaction. */
+export async function hasPassword(auth: Auth, personId: PersonId): Promise<boolean> {
+  const { internalAdapter } = await auth.$context
+  const account = CredentialRow.parse(await internalAdapter.findCredentialAccount(personId))
+  return Boolean(account?.password)
 }
 
 const KEY_FIELD = { type: 'string', required: true } as const

@@ -1,10 +1,11 @@
 import type { Email } from '@conexus/hub-api'
+import { Person } from '@conexus/hub-api'
 import type { PublicOrigin } from '../../platform/config.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { INSTALLATION_ADMINISTRATOR } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { forgetLinks, linkTokenOf } from './auth.ts'
+import { forgetLinks, hasPassword, linkTokenOf } from './auth.ts'
 
 const SET_PASSWORD_PAGE = '/set-password'
 
@@ -20,13 +21,11 @@ export function createFirstPerson(deps: {
       // Two runs at once would each see an empty installation; the second waits here.
       await transactionLock(tx, 'conexus.first-person')
       const { internalAdapter } = await deps.auth.$context
-      const people = await internalAdapter.listUsers(2)
+      const people = Person.array().parse(await internalAdapter.listUsers(2))
       const [only] = people
       const same = only?.email === email.toLowerCase() ? only : undefined
-      const hasPassword = same
-        ? Boolean((await internalAdapter.findCredentialAccount(same.id))?.password)
-        : false
-      if (people.length > 1 || (only !== undefined && (same === undefined || hasPassword))) {
+      const withPassword = same ? await hasPassword(deps.auth, same.id) : false
+      if (people.length > 1 || (only !== undefined && (same === undefined || withPassword))) {
         throw new Failure('FIRST_PERSON_EXISTS')
       }
       if (same === undefined) {
