@@ -37,7 +37,8 @@ const pending = {
 // Every row is parsed before it is used, with the contract's types (data D21).
 const PendingRow = z.object({ id: InvitationId, email: Email, role: Role, expiresAt: z.date() })
 const AttemptRow = PendingRow.extend({ unmailed: z.boolean() })
-const ReceivedRow = PendingRow.extend({
+const ReceivedRow = PendingRow.omit({ expiresAt: true }).extend({
+  live: z.boolean(),
   status: Status,
   companyId: CompanyId,
   companyName: z.string(),
@@ -90,10 +91,10 @@ export async function readInvitations(tx: ReadTx, admitted: Admitted, page: stri
   }
 }
 
-function stateOf(status: z.infer<typeof Status>, expiresAt: Date): ReceivedInvitation['state'] {
+function stateOf(status: z.infer<typeof Status>, live: boolean): ReceivedInvitation['state'] {
   if (status === 'accepted') return 'ACCEPTED'
   if (status === 'canceled') return 'CANCELED'
-  return expiresAt.getTime() > Date.now() ? 'PENDING' : 'EXPIRED'
+  return live ? 'PENDING' : 'EXPIRED'
 }
 
 /** The invitation as the person it was sent to reads it; anyone else finds nothing (S10). */
@@ -104,7 +105,7 @@ export async function readReceived(tx: ReadTx, person: Person, invitationId: Inv
       email: invitation.email,
       role: invitation.role,
       status: invitation.status,
-      expiresAt: invitation.expiresAt,
+      live: sql<boolean>`${invitation.expiresAt} > statement_timestamp()`,
       companyId: company.id,
       companyName: company.name,
       inviterName: user.name,
@@ -122,7 +123,7 @@ export async function readReceived(tx: ReadTx, person: Person, invitationId: Inv
     company: { id: row.companyId, name: row.companyName },
     role: row.role,
     inviterName: row.inviterName,
-    state: stateOf(row.status, row.expiresAt),
+    state: stateOf(row.status, row.live),
   })
 }
 
