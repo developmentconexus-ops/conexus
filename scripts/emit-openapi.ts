@@ -5,10 +5,11 @@
 // cannot express (a `z.date()`, for one) stops the command with the operation's id and exit code 1;
 // a transform under `io: 'input'` converts without error and is not refused.
 // A success body is `application/json`; a failure is a Problem under `application/problem+json`,
-// the type the Hub sends (apps/server/src/platform/http.ts), proved against a real Hub by
-// apps/server/src/platform/openapi-contract.test.ts.
-// Each operation's access is its `security`: `session` requires the cookie session, `public` and
-// `entry` carry `security: []`. `page` is no `/api/` operation and has none. The body limit
+// the type the Hub sends (apps/server/src/platform/http.ts). One success (`getHealth`) and one
+// failure (`listCompanies` without a session, 401) are checked against the document through
+// `app.inject`, no socket, by apps/server/src/openapi-contract.test.ts.
+// Each operation's access is its `security`: `session` requires the cookie session, every other
+// access (`public`, `entry`, `page`) carries `security: []`. The body limit
 // (`bodyLimit`) is not emitted: OpenAPI 3.1 has no field for it and an `x-` extension would be
 // invented. Revalidation date: the Zod row of docs/reference/boundaries.md.
 import { writeFileSync } from 'node:fs'
