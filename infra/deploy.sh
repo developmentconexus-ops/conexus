@@ -40,6 +40,7 @@ require_secret() {
 }
 
 # Compose reads `env_file` itself, as the user that runs this script, and `ps` below needs it too.
+# compose.yaml fixes the path; HUB_ENV_FILE exists only so scripts/deploy.test.ts can plant one.
 require_hub_env() {
   local file="${HUB_ENV_FILE:-/etc/conexus/hub.env}"
   if ! { : < "$file"; } 2> /dev/null; then
