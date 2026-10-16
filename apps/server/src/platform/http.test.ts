@@ -3,8 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import type { Operation } from '@conexus/hub-api'
-import { Person } from '@conexus/hub-api'
+import { defineOperation, Person } from '@conexus/hub-api'
 import { z } from 'zod'
 import { answer, createServer, serve } from './http.ts'
 import {
@@ -17,7 +16,7 @@ import {
 
 const PERSON = Person.parse({ id: 'person-1', name: 'Ana Lima', email: 'ana@example.test' })
 
-const echo = {
+const echo = defineOperation({
   id: 'echoNote',
   summary: 'Answers the note it was sent.',
   access: 'entry',
@@ -27,9 +26,9 @@ const echo = {
   input: { body: z.object({ note: z.string().max(8) }) },
   success: { status: 200, body: z.object({ note: z.string() }) },
   failures: [],
-} as const satisfies Operation
+})
 
-const forget = {
+const forget = defineOperation({
   id: 'deleteNote',
   summary: 'Forgets the note.',
   access: 'session',
@@ -38,7 +37,7 @@ const forget = {
   bodyLimit: 64,
   success: { status: 204 },
   failures: [],
-} as const satisfies Operation
+})
 
 async function hub() {
   const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
@@ -203,7 +202,7 @@ test('a porta de teste registra o código de falha que a operação não declara
     ['/api/notes/declared', ['DATABASE_UNAVAILABLE']],
     ['/api/notes/undeclared', []],
   ] as const) {
-    const read = {
+    const read = defineOperation({
       id: 'readNote',
       summary: 'Reads a note from the database.',
       access: 'public',
@@ -212,7 +211,7 @@ test('a porta de teste registra o código de falha que a operação não declara
       bodyLimit: 64,
       success: { status: 204 },
       failures,
-    } as const satisfies Operation
+    })
     serve(app, read, () => database.read(async () => answer(undefined)))
   }
   const declared = await app.inject({ method: 'GET', url: '/api/notes/declared' })

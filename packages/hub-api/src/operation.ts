@@ -23,13 +23,15 @@ export type Operation = {
   failures: readonly FailureCode[]
 }
 
-const DECLARED = Symbol('conexus.operation')
+const DECLARED: unique symbol = Symbol('conexus.operation')
 
-/** Declares an operation: only what passes through here is an operation for the OpenAPI emitter. */
-export function defineOperation<const O extends Operation>(operation: O): O {
+/** An operation through `defineOperation`: the only kind the server serves and the emitter emits. */
+export type DeclaredOperation = Operation & { readonly [DECLARED]: true }
+
+export function defineOperation<const O extends Operation>(operation: O): O & DeclaredOperation {
   return { ...operation, [DECLARED]: true }
 }
 
-export function isDeclaredOperation(value: unknown): value is Operation {
+export function isDeclaredOperation(value: unknown): value is DeclaredOperation {
   return typeof value === 'object' && value !== null && DECLARED in value
 }

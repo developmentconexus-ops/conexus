@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
-import type { FailureCode, Operation, Person } from '@conexus/hub-api'
+import type { DeclaredOperation, FailureCode, Operation, Person } from '@conexus/hub-api'
 import { ATTEMPT_KEY_HEADER, AttemptKey, FAILURES, PAGES, Problem } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
@@ -272,7 +272,7 @@ function untilClientLeaves(reply: FastifyReply): AbortSignal {
 }
 
 /** The parts are parsed with the operation's schemas, and the reply checked before it is sent. */
-export function serve<O extends Operation>(
+export function serve<O extends DeclaredOperation>(
   app: FastifyInstance,
   operation: O,
   handler: Handler<O>,

@@ -42,6 +42,7 @@ export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
   AttemptKey,
+  type DeclaredOperation,
   defineOperation,
   isDeclaredOperation,
   type Operation,
