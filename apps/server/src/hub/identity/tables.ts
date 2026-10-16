@@ -143,6 +143,7 @@ export const invitation = auth.table(
     attemptKey: text('attempt_key').notNull(),
     // When the provider answered the invitation's e-mail; NULL until then, so a replay sends it (C64).
     mailedAt: instant('mailed_at'),
+    revision: integer('revision').notNull().default(0),
   },
   (table) => [
     // One open invitation per company and address: the plugin checks before it writes, so two

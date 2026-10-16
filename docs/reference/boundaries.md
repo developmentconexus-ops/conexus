@@ -118,8 +118,8 @@ library joins the Hub sets.
   person's links by their stored value, the person's id, with Drizzle's `delete` in the same
   transaction as the new one.
 - **Why.** [Code C64](../guides/code.md). The test "com a pessoa ainda sem senha" in
-  `first-person.test.ts` and the test "link: passados 20 s" in `invitation-link.test.ts` fail
-  without it (removals `first-person-forgets-earlier-link` and `password-link-forgets-earlier`).
+  `first-person.test.ts` fails without it (removal `first-person-forgets-earlier-link`). The
+  invitation password command consumes its reset token in the same transaction; it sends no link.
 
 ### Sign-out: the row first, then the cookies
 
@@ -200,16 +200,16 @@ library joins the Hub sets.
   for no application. Creating a person has the public `auth.api.createUser` of the admin plugin
   (`better-auth/dist/plugins/admin/routes.mjs:195-201`), and the Hub uses it.
 - **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts`,
-  `passwordLinkCommand` in `invitations.ts` and `hasPassword` in `auth.ts`. They read the person by
+  `passwordCommand` in `invitation-response.ts` and `hasPassword` in `auth.ts`. They read the person by
   e-mail, whether she has a password, and whether the installation has anyone, inside the command's
   transaction, and parse each row as [data D21](../guides/data.md) says: a person against the
   contract's `Person`, an account against its password.
 - **Why.** The public reads need a session (`/admin/list-users`) or return no password state, and
   these run before anyone is signed in. The reads join the command's transaction through
   `runWithTransaction`. When the library changes, reread `$context` and these three methods. The
-  tests "com a pessoa ainda sem senha" in `first-person.test.ts` and "link" in
+  tests "com a pessoa ainda sem senha" in `first-person.test.ts` and "password" in
   `invitation-link.test.ts` cover them. The tests "id vazio" in `first-person-rows.test.ts` and
-  `invitation-link.test.ts`, a person row with an empty id, fail without the parse (removals
+  "empty name" in `invitation-link.test.ts` fail without the person-row parse (removals
   `first-person-rows-parsed` and `link-person-row-parsed`).
 
 ### A password link's token goes back to the command that asked for it
@@ -218,11 +218,12 @@ library joins the Hub sets.
   only a status and hands the token to `emailAndPassword.sendResetPassword` alone.
 - **Hand-made piece.** `linkTokenOf` in `apps/server/src/hub/identity/auth.ts`. The configured
   `sendResetPassword` gives the token to the `AsyncLocalStorage` slot of the call that asked, and
-  the command builds the link and the e-mail itself.
+  the first-person command builds its link; the invitation command spends the token immediately.
 - **Why.** [Security S35](../guides/security.md): the token reaches only the command, never an
   e-mail sent inside the library's call or a log. Building the token ourselves would copy the
   library's private identifier format. The test "com a pessoa ainda sem senha" in
-  `first-person.test.ts` and the tests "link" in `invitation-link.test.ts` read the link it returns.
+  `first-person.test.ts` reads its link; `password-write.test.ts` proves the invitation writes a
+  password and session without a second e-mail.
 
 ### The invitation's e-mail leaves after the commit and is marked when answered
 
@@ -244,19 +245,17 @@ library joins the Hub sets.
   `invitation-replay-resends-unmailed`), and "de novo com a mesma chave: depois do correio fora" in
   `invitations.test.ts` fails without the mark on a bounce (removal `invitation-bounce-marked`).
 
-### The pace of invitations and of password links
+### The pace of invitations
 
 - **Library line.** `better-auth/dist/api/index.mjs:165-173`. The library limits attempts only in
   its router's `onRequest`, which `auth.api` skips, and it keys them by address and path
   (`api/rate-limiter/index.mjs:248`).
-- **Hand-made piece.** `checkPace` and the 20-second check of `passwordLinkCommand` in
-  `apps/server/src/hub/identity/invitations.ts`. They count the person's invitations of the last
-  60 s, under the person's row lock, and the person's links of the last 20 s, under an advisory
-  lock on the e-mail.
+- **Hand-made piece.** `checkPace` in `apps/server/src/hub/identity/invitations.ts` counts the
+  person's invitations of the last 60 s under the person's row lock. The old password-link pace
+  leaves with the second e-mail.
 - **Why.** [Security S28](../guides/security.md): behind the Tunnel the Hub keys on the account;
   the founder's numbers (step 4, answer 6). The tests "limite: o 11º convite" in
-  `invitations.test.ts` and "link: dois pedidos juntos" in `invitation-link.test.ts` fail without
-  them (removals `invitation-pace` and `password-link-pace`).
+  `invitations.test.ts` fails without it (removal `invitation-pace`).
 
 ### The library writes its timestamps with the application's clock
 
@@ -279,13 +278,40 @@ library joins the Hub sets.
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:268-279`. The
   accept checks the invitation's state before its recipient, so another person learns whether it
   is open, and it counts the members with no lock, so two accepts at once both pass the limit.
-- **Hand-made piece.** `acceptCommand` in `apps/server/src/hub/identity/invitations.ts`. It
+- **Hand-made piece.** `acceptCommand` in `apps/server/src/hub/identity/invitation-response.ts`. It
   answers 404 to anyone but the recipient, locks the company row, and answers an invitation she
   already accepted with its company; otherwise it calls the plugin's accept.
 - **Why.** [Security S10](../guides/security.md), [code C64 and C65](../guides/code.md). In
   `invitation-acceptance.test.ts`, "aceitar: 200 e um membro" fails when the recipient is not
   checked first (removal `accept-recipient-first`), "aceitar: com um re-convite ao mesmo tempo"
   fails without the lock (removal `accept-company-lock`), and "aceitar: dois juntos" covers it.
+
+### Public invitation responses and terminal replay
+
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:268,352-396,503`.
+  Reads require a signed-in recipient and refuse terminal invitations; rejection requires a session;
+  acceptance refuses an already accepted invitation. The default opaque id proves delivery to the
+  invited address (`:29-36`).
+- **Hand-made piece.** `readReceived` returns the card's `InvitationView`, without company details
+  for terminal anonymous links or another session. `invitation-response.ts` creates the first
+  password with native createUser/resetPassword/signInEmail, under company then address locks;
+  declination writes rejected under the company lock. Terminal replay precedes revision checks
+  only for the same operation and currently admitted recipient. Acceptance locks the live session
+  row through commit, so revocation while waiting cannot replay successfully.
+- **Why.** The approved 4.1 matrix and separate acceptance. `invitation-journey.test.ts`,
+  `password-write.test.ts` and `invitation-acceptance.test.ts` cover the matrix, original-revision
+  replay, competing responses, cross-company password races and transaction rollback.
+
+### Invitation attempts counted by the native router outside the business transaction
+
+- **Library line.** `better-auth/dist/api/index.mjs:165-173` invokes rate limiting from the router;
+  `auth.api` skips it. `api/rate-limiter/index.mjs:262-278` applies custom path rules.
+- **Hand-made piece.** The `invitation-attempts` plugin declares two native endpoints with
+  `createAuthEndpoint`; `countInvitationAttempt` calls them through `auth.handler` before opening
+  the business transaction. They are not mounted as public Hub routes. The native database
+  counter persists independently from a refused password or declination.
+- **Why.** S23/S28 and the card's A6. The native counter test in `invitation-journey.test.ts`
+  reaches 429 after ten refused transactions, independently for both paths.
 
 ## Fastify 5.12.5
 
@@ -344,7 +370,7 @@ library joins the Hub sets.
   is the library's: `pg-pool/index.js:392` removes a client whose socket is gone
   (`!client._queryable`), and Drizzle's `transaction` commits or rolls back before it returns
   (`drizzle-orm/node-postgres/session.js:54-61`), so a refused command keeps its connection. The
-  test "link: um id desconhecido, 404, e a conexão do pool segue a mesma" in
+  test "password: an unknown link leaves the transaction pool connection reusable" in
   `invitation-link.test.ts` fails when the release destroys the client (removal
   `refused-command-keeps-connection`).
 - **Why.** [Code C57](../guides/code.md): nothing native bounds a whole checkout on the client. The

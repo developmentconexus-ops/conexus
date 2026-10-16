@@ -20,7 +20,7 @@ import Fastify, { LogController } from 'fastify'
 import helmet from 'helmet'
 import { z } from 'zod'
 import type { SessionReader } from './access.ts'
-import { enforceAccess, headersOf, sessionOf } from './access.ts'
+import { enforceAccess, headersOf, invitationSessionOf, sessionOf } from './access.ts'
 import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
@@ -237,7 +237,11 @@ type Input<O extends Operation> = {
   Parsed<O, 'query'> &
   Parsed<O, 'body'> &
   (O['attemptKey'] extends true ? { attemptKey: string } : unknown) &
-  (O['access'] extends 'session' ? { person: Person; sessionToken: string } : unknown)
+  (O['access'] extends 'session'
+    ? { person: Person; sessionToken: string }
+    : O['id'] extends 'getInvitation' | 'createInvitationPassword' | 'declineInvitation'
+      ? { person: Person | undefined }
+      : unknown)
 type Handler<O extends Operation> = (input: Input<O>) => Answer<Body<O>> | Promise<Answer<Body<O>>>
 
 /**
@@ -315,7 +319,7 @@ export function serve(
         ...partsOf(operation, request),
         ...(operation.access === 'session'
           ? sessionOf(request)
-          : { person: undefined, sessionToken: undefined }),
+          : (invitationSessionOf(request) ?? { person: undefined, sessionToken: undefined })),
       }
       const { body, setCookie } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)

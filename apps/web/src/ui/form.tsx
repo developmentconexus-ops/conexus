@@ -13,8 +13,14 @@ import { Input } from './input.tsx'
 export function useSchemaForm<I extends FieldValues, O>(
   schema: z.ZodType<O, I>,
   defaultValues: DefaultValues<I>,
+  mode: 'onSubmit' | 'onBlur' = 'onSubmit',
 ): UseFormReturn<I, unknown, O> {
-  return useForm<I, unknown, O>({ resolver: standardSchemaResolver(schema), defaultValues })
+  return useForm<I, unknown, O>({
+    resolver: standardSchemaResolver(schema),
+    defaultValues,
+    mode,
+    reValidateMode: mode === 'onBlur' ? 'onBlur' : 'onChange',
+  })
 }
 
 export function Form<I extends FieldValues, O>(props: {

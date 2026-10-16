@@ -67,6 +67,7 @@ test('convidar: 201, e o e-mail leva o endereço /invitations/{id}', async (t) =
       email: INVITEE,
       role: 'admin',
       expiresAt: undefined,
+      revision: 0,
     },
   )
   const days = (Date.parse(invitation.expiresAt) - Date.now()) / 86_400_000

@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Email, PersonId } from './identity.ts'
+import { Email, Password, PersonId } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
 export const LIBRARY_ID = /^[A-Za-z0-9]{32}$/
@@ -40,10 +40,11 @@ export const PendingInvitation = z.object({
   email: Email,
   role: Role,
   expiresAt: z.iso.datetime(),
+  revision: z.number().int().nonnegative(),
 })
 export type PendingInvitation = z.infer<typeof PendingInvitation>
 
-const InvitationState = z.enum(['PENDING', 'EXPIRED', 'ACCEPTED', 'CANCELED'])
+const InvitationState = z.enum(['PENDING', 'EXPIRED', 'ACCEPTED', 'DECLINED', 'CANCELED'])
 
 /** A row of "Convites pendentes": whether it still opens is the Hub's clock, not the browser's. */
 export const ListedInvitation = PendingInvitation.extend({
@@ -51,14 +52,22 @@ export const ListedInvitation = PendingInvitation.extend({
 })
 export type ListedInvitation = z.infer<typeof ListedInvitation>
 
-export const ReceivedInvitation = z.object({
-  id: InvitationId,
+const OpenInvitation = z.object({
   company: Company,
   role: Role,
   inviterName: z.string().min(1),
-  state: InvitationState,
+  expiresAt: z.iso.datetime(),
+  revision: z.number().int().nonnegative(),
 })
-export type ReceivedInvitation = z.infer<typeof ReceivedInvitation>
+export const InvitationView = z.discriminatedUnion('kind', [
+  OpenInvitation.extend({ kind: z.literal('NEW'), email: Email }),
+  OpenInvitation.extend({ kind: z.literal('HAS_PASSWORD'), email: Email }),
+  OpenInvitation.extend({ kind: z.literal('INVITED') }),
+  z.object({ kind: z.literal('OTHER'), signedInAs: Email }),
+  z.object({ kind: z.literal('CLOSED'), state: InvitationState.exclude(['PENDING']) }),
+  z.object({ kind: z.literal('JOINED'), company: Company }),
+])
+export type InvitationView = z.infer<typeof InvitationView>
 
 /** Where the next page starts, opaque to the client (code C44); only the Hub reads it. */
 const PageToken = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
@@ -177,30 +186,51 @@ export const createInvitation = defineOperation({
 
 export const getInvitation = defineOperation({
   id: 'getInvitation',
-  summary: 'Reads an invitation sent to the signed-in person’s e-mail.',
-  access: 'session',
+  summary: 'Reads the invitation admitted by its secret link and the optional session.',
+  access: 'public',
   method: 'GET',
   path: '/api/invitations/{invitationId}',
   bodyLimit: 1024,
   input: { params: OfInvitation },
-  success: { status: 200, body: z.object({ invitation: ReceivedInvitation }) },
-  failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+  success: { status: 200, body: z.object({ invitation: InvitationView }) },
+  failures: ['NOT_FOUND', 'DATABASE_UNAVAILABLE'],
 })
 
-export const putPasswordLink = defineOperation({
-  id: 'putPasswordLink',
-  summary: 'Sends the invited e-mail a link to create its password, creating the person if new.',
+const Revision = z.object({ revision: z.number().int().nonnegative() })
+
+export const createInvitationPassword = defineOperation({
+  id: 'createInvitationPassword',
+  summary: 'Creates the invited person’s password and session without accepting the invitation.',
   access: 'entry',
   method: 'PUT',
-  path: '/api/invitations/{invitationId}/password-link',
+  path: '/api/invitations/{invitationId}/password',
   bodyLimit: 4096,
-  input: { params: OfInvitation, body: z.object({ name: PersonName }) },
+  input: { params: OfInvitation, body: Revision.extend({ name: PersonName, password: Password }) },
   success: { status: 204 },
   failures: [
     'NOT_FOUND',
-    'PASSWORD_LINKS_EXCEEDED',
-    'MAIL_BOUNCED',
-    'MAIL_UNAVAILABLE',
+    'INVITATION_PASSWORD_EXISTS',
+    'INVITATION_STALE',
+    'INVITATION_CLOSED',
+    'SIGN_IN_ATTEMPTS_EXCEEDED',
+    'DATABASE_UNAVAILABLE',
+  ],
+})
+
+export const declineInvitation = defineOperation({
+  id: 'declineInvitation',
+  summary: 'Declines an invitation by its link without requiring an account.',
+  access: 'entry',
+  method: 'PUT',
+  path: '/api/invitations/{invitationId}/declination',
+  bodyLimit: 1024,
+  input: { params: OfInvitation, body: Revision },
+  success: { status: 204 },
+  failures: [
+    'NOT_FOUND',
+    'INVITATION_STALE',
+    'INVITATION_CLOSED',
+    'SIGN_IN_ATTEMPTS_EXCEEDED',
     'DATABASE_UNAVAILABLE',
   ],
 })
@@ -212,11 +242,12 @@ export const acceptInvitation = defineOperation({
   method: 'PUT',
   path: '/api/invitations/{invitationId}/acceptance',
   bodyLimit: 1024,
-  input: { params: OfInvitation },
+  input: { params: OfInvitation, body: Revision },
   success: { status: 200, body: z.object({ company: Company }) },
   failures: [
     'NOT_FOUND',
     'INVITATION_CLOSED',
+    'INVITATION_STALE',
     'COMPANY_FULL',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',

@@ -2,7 +2,7 @@ export { AccountMenu } from './account-menu.tsx'
 export { Companies } from './companies.tsx'
 export { CreateCompanyForm } from './create-company-form.tsx'
 export { Greeting } from './greeting.tsx'
-export { InvitationAcceptance, InvitationEntry, InvitationNotFound } from './invitation.tsx'
+export { InvitationEntry, InvitationNotFound } from './invitation.tsx'
 export { People } from './people.tsx'
 export {
   companiesQuery,

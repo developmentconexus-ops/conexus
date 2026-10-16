@@ -54,11 +54,12 @@ function focusTitleWhenRendered(router: ReturnType<typeof useRouter>): () => voi
 export function SignInForm(props: {
   reason: SignInReason | undefined
   redirect: string | undefined
+  email?: string
 }) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const send = useMutation(signIn)
-  const form = useSchemaForm(createSession.input.body, { email: '', password: '' })
+  const form = useSchemaForm(createSession.input.body, { email: props.email ?? '', password: '' })
 
   async function submit(values: z.output<typeof createSession.input.body>) {
     try {

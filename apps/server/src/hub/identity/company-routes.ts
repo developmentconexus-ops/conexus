@@ -2,12 +2,13 @@ import {
   acceptInvitation,
   createCompany,
   createInvitation,
+  createInvitationPassword,
+  declineInvitation,
   getCompany,
   getInvitation,
   listCompanies,
   listInvitations,
   listMembers,
-  putPasswordLink,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
@@ -15,11 +16,13 @@ import type { Database } from '../../platform/database.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
+import { INVITATION_DECLINATION_PATH, INVITATION_PASSWORD_PATH } from './auth.ts'
 import { createCompanyCommand, readCompany, readMembers, readMemberships } from './companies.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { readInvitations, readReceived } from './invitation-reads.ts'
-import { acceptCommand, createInvitationCommand, passwordLinkCommand } from './invitations.ts'
-import { passwordLinkMail } from './messages.ts'
+import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
+import { createInvitationCommand } from './invitations.ts'
+import { countInvitationAttempt } from './routes.ts'
 
 type Deps = {
   auth: Auth
@@ -56,7 +59,8 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   const origin = deps.config.publicOrigin
   const create = createCompanyCommand(deps)
   const invite = createInvitationCommand(deps)
-  const giveLink = passwordLinkCommand(deps)
+  const password = passwordCommand(deps)
+  const decline = declineCommand(deps)
   const accept = acceptCommand(deps)
 
   serve(app, createCompany, async ({ person, headers, body, attemptKey, log }) => {
@@ -72,7 +76,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
       const made = await invite({ person, headers, ...params, ...body, attemptKey })
       const { invitation } = made
       if (made.created) {
-        log.info({ invitationId: invitation.id, companyId: params.companyId }, 'INVITATION_CREATED')
+        log.info({ companyId: params.companyId }, 'INVITATION_CREATED')
       }
       const link = `${origin}/invitations/${invitation.id}`
       if (made.mail !== undefined) {
@@ -89,22 +93,30 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     },
   )
 
-  serve(app, putPasswordLink, async ({ params, body, log, signal }) => {
-    const given = await giveLink({ ...params, name: body.name })
-    if (given.kind === 'LINK') {
-      log.info({ invitationId: params.invitationId }, 'PASSWORD_LINK_GIVEN')
-      const page = `/set-password?redirect=/invitations/${params.invitationId}`
-      const link = `${origin}${page}#token=${given.token}`
-      await deps.sendMail(passwordLinkMail({ to: given.email, name: given.name, link }), signal)
-    }
+  serve(app, createInvitationPassword, async ({ person, params, body, headers, log }) => {
+    await countInvitationAttempt(deps, { headers, log, path: INVITATION_PASSWORD_PATH })
+    const cookies = await password({ person, headers, ...params, ...body })
+    log.info({}, 'INVITATION_PASSWORD_CREATED')
+    return answer(undefined, cookies)
+  })
+
+  serve(app, declineInvitation, async ({ person, params, body, headers, log }) => {
+    await countInvitationAttempt(deps, { headers, log, path: INVITATION_DECLINATION_PATH })
+    const changed = await decline({ person, ...params, ...body })
+    if (changed) log.info({}, 'INVITATION_DECLINED')
     return answer(undefined)
   })
 
-  serve(app, acceptInvitation, async ({ person, headers, params, log }) => {
-    const { company, accepted } = await accept({ person, headers, ...params })
+  serve(app, acceptInvitation, async ({ person, sessionToken, headers, params, body, log }) => {
+    const { company, accepted } = await accept({
+      person,
+      sessionToken,
+      headers,
+      ...params,
+      ...body,
+    })
     if (accepted) {
       const fields = {
-        invitationId: params.invitationId,
         companyId: company.id,
         personId: person.id,
       }

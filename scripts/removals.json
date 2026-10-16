@@ -34,13 +34,13 @@
   },
   {
     "id": "link-person-row-parsed",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-response.ts",
     "find": "const person = Person.parse(row)",
     "replace": "const person = row",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-link.test.ts",
-      "name": "id vazio"
+      "name": "empty name"
     }
   },
   {
@@ -95,7 +95,7 @@
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-link.test.ts",
-      "name": "link: um id desconhecido"
+      "name": "connection reusable"
     }
   },
   {
@@ -242,19 +242,8 @@
     }
   },
   {
-    "id": "password-link-forgets-earlier",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "await forgetLinks(tx, person.id)",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/invitation-link.test.ts",
-      "name": "link: passados 20 s"
-    }
-  },
-  {
     "id": "accept-recipient-first",
-    "file": "apps/server/src/hub/identity/invitations.ts",
+    "file": "apps/server/src/hub/identity/invitation-response.ts",
     "find": "if (found === undefined || found.email !== storedAddress(input.person.email)) {",
     "replace": "if (found === undefined) {",
     "test": {
@@ -265,9 +254,9 @@
   },
   {
     "id": "accept-company-lock",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "await lockCompany(tx, found.companyId)",
-    "replace": "",
+    "file": "apps/server/src/hub/identity/invitation-response.ts",
+    "find": "await lockCompany(tx, found.companyId)\n      const [active]",
+    "replace": "const [active]",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-acceptance.test.ts",
@@ -440,14 +429,36 @@
     }
   },
   {
-    "id": "password-link-pace",
-    "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "if (given > 0) throw new Failure('PASSWORD_LINKS_EXCEEDED')",
-    "replace": "void given",
+    "id": "invitation-revision-precondition",
+    "file": "apps/server/src/hub/identity/invitation-response.ts",
+    "find": "if (actual !== expected) throw new Failure('INVITATION_STALE')",
+    "replace": "void actual; void expected",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/identity/invitation-link.test.ts",
-      "name": "link: dois pedidos juntos"
+      "file": "src/hub/identity/invitation-journey.test.ts",
+      "name": "native invitation attempt counters"
+    }
+  },
+  {
+    "id": "invitation-native-attempt-counter",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "deps.auth.handler(\n        libraryRequest(deps.config, { path: input.path, headers: input.headers, body: {} }),\n      )",
+    "replace": "Promise.resolve(new Response())",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-journey.test.ts",
+      "name": "native invitation attempt counters"
+    }
+  },
+  {
+    "id": "invitation-replay-current-session",
+    "file": "apps/server/src/hub/identity/invitation-response.ts",
+    "find": "if (active === undefined) throw new Failure('SESSION_REQUIRED')",
+    "replace": "void active",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-acceptance.test.ts",
+      "name": "acceptance replay requires the current membership"
     }
   },
   {

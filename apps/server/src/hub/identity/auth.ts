@@ -5,6 +5,7 @@ import { drizzleAdapter } from '@better-auth/drizzle-adapter/relations-v2'
 import type { FailureCode, PersonId } from '@conexus/hub-api'
 import { CAPACITY, COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
+import { createAuthEndpoint } from 'better-auth/api'
 import { admin, organization } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
@@ -31,6 +32,23 @@ import {
 export const SIGN_IN_PATH = '/sign-in/email'
 export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
+export const INVITATION_PASSWORD_PATH = '/invitation-password-attempt'
+export const INVITATION_DECLINATION_PATH = '/invitation-declination-attempt'
+const INVITATION_ATTEMPTS = {
+  id: 'invitation-attempts',
+  endpoints: {
+    invitationPasswordAttempt: createAuthEndpoint(
+      INVITATION_PASSWORD_PATH,
+      { method: 'POST' },
+      async () => new Response(null, { status: 204 }),
+    ),
+    invitationDeclinationAttempt: createAuthEndpoint(
+      INVITATION_DECLINATION_PATH,
+      { method: 'POST' },
+      async () => new Response(null, { status: 204 }),
+    ),
+  },
+}
 const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 60 * 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 export const PASSWORD_LINK_SECONDS = 900
@@ -218,7 +236,11 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     rateLimit: {
       enabled: true,
       storage: 'database',
-      customRules: { [SIGN_IN_PATH]: SIGN_IN_ATTEMPTS },
+      customRules: {
+        [SIGN_IN_PATH]: SIGN_IN_ATTEMPTS,
+        [INVITATION_PASSWORD_PATH]: SIGN_IN_ATTEMPTS,
+        [INVITATION_DECLINATION_PATH]: SIGN_IN_ATTEMPTS,
+      },
     },
     advanced: {
       // One query per join, on the relations of tables.ts. Without it the library joins row by row,
@@ -238,6 +260,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     // leaves as a code (S41).
     onAPIError: { throw: true },
     plugins: [
+      INVITATION_ATTEMPTS,
       organization({
         schema: {
           organization: { modelName: 'company', additionalFields: { attemptKey: KEY_FIELD } },

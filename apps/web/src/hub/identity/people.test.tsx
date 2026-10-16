@@ -21,6 +21,7 @@ const PENDING = {
   email: 'bia@example.test',
   role: 'admin',
   expiresAt: '2026-10-17T12:00:00.000Z',
+  revision: 0,
   state: 'PENDING',
 }
 const EXPIRED = {
@@ -28,6 +29,7 @@ const EXPIRED = {
   email: 'eva@example.test',
   role: 'member',
   expiresAt: '2026-10-14T12:00:00.000Z',
+  revision: 0,
   state: 'EXPIRED',
 }
 
