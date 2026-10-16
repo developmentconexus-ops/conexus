@@ -25,7 +25,7 @@ export type Operation = {
 
 const DECLARED: unique symbol = Symbol('conexus.operation')
 
-/** An operation through `defineOperation`: the only kind the server serves and the emitter emits. */
+/** Declared through `defineOperation`: the only kind `serve` takes and the emitter emits. */
 export type DeclaredOperation = Operation & { readonly [DECLARED]: true }
 
 export function defineOperation<const O extends Operation>(operation: O): O & DeclaredOperation {
