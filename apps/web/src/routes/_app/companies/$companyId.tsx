@@ -1,4 +1,4 @@
-import { CompanyId, listMembers } from '@conexus/hub-api'
+import { CompanyId, listInvitations, listMembers } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import {
@@ -9,8 +9,10 @@ import {
 } from '../../../hub/identity/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../platform/hub.ts'
 
-const Page = listMembers.input.query.shape.page.catch(undefined)
-const Search = z.object({ members: Page, invitations: Page })
+const Search = z.object({
+  members: listMembers.input.query.shape.page.catch(undefined),
+  invitations: listInvitations.input.query.shape.page.catch(undefined),
+})
 
 export const Route = createFileRoute('/_app/companies/$companyId')({
   staticData: { place: 'Empresa' },

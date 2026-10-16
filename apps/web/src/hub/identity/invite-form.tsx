@@ -71,8 +71,7 @@ export function InviteForm() {
   const attempt = useAttemptKey()
   const [sentTo, setSentTo] = useState<string | undefined>(undefined)
   // The list runs from the most to the least privileged; the form starts on the least.
-  const first = roles.at(-1) ?? 'member'
-  const form = useSchemaForm(createInvitation.input.body, { email: '', role: first })
+  const form = useSchemaForm(createInvitation.input.body, { email: '', role: roles.at(-1) })
 
   async function submit(values: { email: string; role: Role }) {
     setSentTo(undefined)
