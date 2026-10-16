@@ -357,9 +357,17 @@ library joins the Hub sets.
   artifact; removal scratch copies carry this generated input as well as source.
 - **Why.** The approved 4.1 packaging decision keeps send-time escaping and native HTML-to-text
   conversion without the CLI runtime installation. The generated module measures 745,905 bytes.
-  `invitation-email.test.ts` sends through the Hub and HTTP provider fake; final-image proof is
-  completed with integration. Inline colors/tables/system fonts are mail-client exceptions to
-  V3/V14/V17, not patterns for Hub screens; carry them to closing L27.
+  `invitation-email.test.ts` sends through the Hub and HTTP provider fake;
+  `tests/e2e/invitation-image.test.ts` exercises the final image's first-person CLI, login, company
+  and invitation HTTP doors and receives the bundle's HTML/text at that fake. Runtime installation
+  uses native npm `--omit=dev --omit=optional`: devOptional packages require both omissions. This
+  removes the mail/build tools and pre-existing drizzle-kit peer chain, not required direct
+  server dependencies. React/DOM remain Better Auth peers resolved from the web's production
+  dependencies, as in the U2 baseline; carry that remainder to closing. Same-base full-image
+  `.Size`: U2 baseline 146,474,446 bytes, integrated image 93,399,171 bytes (53,075,275 fewer).
+  These are whole-Hub sizes, not the study's isolated mail-layer delta. Inline colors/tables/system
+  fonts are mail-client exceptions to V3/V14/V17, not patterns for Hub screens; carry them to
+  closing L27.
 
 ## Fastify 5.12.5
 

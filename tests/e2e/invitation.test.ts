@@ -18,7 +18,7 @@ import {
   testConfig,
 } from '../../apps/server/src/platform/test-database.ts'
 
-// The founder's use script (docs/steps/e04-empresa-e-convite.md), run in Chromium against a real Hub
+// The founder's invitation journey, run in Chromium against a real Hub
 // on a real database. Only the mail provider is faked, at its HTTP door (testing T14, T16).
 const PASSWORD = 'senha-certa-1'
 const NEW_PASSWORD = 'senha-nova-1'
@@ -154,22 +154,18 @@ function linkIn(mail: Mail): string {
   return link
 }
 
-/** Steps 3 to 5: Davi, in an anonymous window, follows the e-mails, creates the password and joins. */
+/** Davi creates his password in the invitation, then explicitly joins the company. */
 async function daviJoins(page: Page, mail: Awaited<ReturnType<typeof mailProvider>>) {
   const invitation = await mail.next()
   assert.equal(invitation.subject, 'Convite para Empresa Teste')
   assert.equal(invitation.to, DAVI.email)
   const invitationLink = linkIn(invitation)
   await page.goto(invitationLink)
-  await page.getByRole('button', { name: 'Ainda não tenho senha' }).click()
   await page.getByLabel('Nome').fill(DAVI.name)
-  await page.getByRole('button', { name: 'Enviar link' }).click()
-  await page.getByRole('status').waitFor()
-  await page.goto(linkIn(await mail.next()))
-  await page.getByLabel('Senha').fill(NEW_PASSWORD)
-  await page.getByRole('button', { name: 'Criar a senha' }).click()
-  await page.getByText('Senha criada. Entre com ela.').waitFor()
-  await signIn(page, DAVI.email, NEW_PASSWORD)
+  await page.getByLabel('Senha', { exact: true }).fill(NEW_PASSWORD)
+  await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
+  await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
+  await page.getByRole('status').filter({ hasText: 'Senha criada. Você já entrou.' }).waitFor()
   await page
     .getByRole('heading', { name: 'Ana Lima convidou você para Empresa Teste como Administrador.' })
     .waitFor()
