@@ -328,3 +328,89 @@ versions are the installed ones. When the library changes, reread the line it na
   stream and stops at 16 KiB.
 - **Why.** [Code C59](../guides/code.md), and no dependency for about 12 lines. The test "correio:
   resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` covers it.
+
+## TanStack Query 5.104.0, Better Auth 1.7.8 and the browser's `fetch`
+
+### The Hub client: one address, one reply schema, one closed failure table
+
+- **Library line.** `@tanstack/query-core/src/queryOptions.ts:257-258` and
+  `mutationOptions.ts:87-95` return their input unchanged. They derive no address and check no
+  reply. Better Auth's `createAuthClient` (`client/config.mjs:38-55`) builds the library's own
+  endpoint client, not the Hub's operations. The browser's `fetch`, `URL` and `Response.json` carry
+  no contract.
+- **Hand-made piece.** `apps/web/src/platform/hub.ts`: `hubFetch`, `HubFailure`, `failureOf`,
+  `sentenceOf`, `readOrNotFound`, `idOrNotFound`, and `hubQuery`'s keys. Each is built on `fetch`,
+  `URL`, `AbortSignal.timeout` and `any`, and Zod `safeParse`.
+- **Why.** [Web W9](../guides/web.md) and [code C28](../guides/code.md): the screens call the
+  operations of `packages/hub-api` and no second contract. A native HTTP status cannot say whether a
+  write committed, so the failure table carries that outcome. The tests in `apps/web/hub.test.ts`
+  (cut body, deadline, edge HTML, definite and uncertain failure) cover it.
+
+### A write that must survive a lost reply
+
+- **Library line.** `@tanstack/query-core/src/mutation.ts:295-313` defaults to zero retries.
+  `mutationCache.ts:195-210` (`canRun`) serializes a `scope.id` and does not deduplicate or keep a
+  key across an uncertain reply. React Hook Form 7.90.0 `isSubmitting` tracks a submission, not
+  whether the Hub committed.
+- **Hand-made piece.** `useAttemptKey` in `apps/web/src/platform/attempt-key.ts`. It keeps the
+  attempt key until the Hub's answer settles the outcome.
+- **Why.** [Code C37](../guides/code.md) and [web W24](../guides/web.md). The two-click and
+  uncertain-reply tests in `create-company-form.test.tsx` and `invite-form.test.tsx` cover it.
+
+## Node 24.21.0
+
+### Test output that refuses a skipped test without a reason
+
+- **Library line.** `node:test/reporters` `spec` and the `TestEvent` stream. Node formats the events
+  and imposes no `opt-in:` reason or Conexus log-line format.
+- **Hand-made piece.** `scripts/test-reporter.ts`. It composes `spec()` and adds the policy checks
+  on the events.
+- **Why.** [Testing T4](../guides/testing.md). It cannot see the pipes of a Hub spawned by a test,
+  so `apps/server/src/platform/test-database.ts` holds a second entry. The tests in
+  `scripts/test-reporter.test.ts` cover the policy.
+
+### Removals: one protection taken out in a scratch copy, then its test
+
+- **Library line.** Node `node:test` `run({ files, cwd, testNamePatterns, signal, timeout })` runs
+  the test. Stryker core 10.0.0 supplies a sandbox, a dry run and `testRunner: 'command'`
+  (`dist/src/test-runner/command-test-runner.js:9-12,45-52,114-143`), which reads one aggregate test
+  from an exit code. Its instrumenter 10.0.0 has fixed replacement maps
+  (`mutators/method-expression-mutator.ts:9-32,61-63`), `string-literal-mutator.ts:11-26` empties a
+  literal, and `object-literal-mutator.ts:10-13` empties an object. None of them removes a named
+  text, such as one SQL predicate or one adapter call, from one named file.
+- **Hand-made piece.** `scripts/removals.ts` and `scripts/removals.json`. Each row replaces an exact
+  text once in a scratch copy and runs the row's test. It reports `caught`, `survived`, `stale`,
+  `unreachable` or `broken-baseline`. The manifest is loaded by one Zod schema.
+- **Why.** [Testing T12 and T4](../guides/testing.md). Stryker's command runner does not tell zero
+  real tests or an import failure apart from a pass, and its mutators cannot target a row. A custom
+  Stryker mutator and runner could bridge that, but would not delete code. The planted outcomes in
+  `scripts/removals.test.ts` cover the runner. Revalidate when Stryker can address a mutation
+  by file and text.
+
+### Radius: the card's grammar over Node's matcher
+
+- **Library line.** `node:path` `matchesGlob(path, pattern)`, stable since Node 24.8.0. It reads
+  `**`, `?`, classes and extglobs, treats `\` as no escape, and `*` skips dotfiles.
+- **Hand-made piece.** `globOf` in `scripts/check-radius.ts`. It translates a cell of the card's
+  radius table (`*`, `<placeholder>`, `{a,b}`, trailing `/`) into a pattern. The card parser, the
+  `ambiguous-row` policy and the brace refusals stay ours.
+- **Why.** [Delivery L7](../guides/delivery.md): the card names what a unit may touch, and a pattern
+  that reads more than the card would let a change pass. The fixtures in
+  `scripts/check-radius.test.ts` (dotfiles, literal metacharacters, `**`) cover the translation.
+
+## remark-validate-links 13.1.0
+
+### Documents: links, fragments and the Conexus policy
+
+- **Library line.** `remark-validate-links/lib/index.js:189-203`. The plugin checks local files and
+  headings. Headings of other files are checked only through the unified-engine file-set workflow
+  (about 143 installed packages), and the single-file API does not check them. Undefined reference
+  labels belong to another plugin.
+- **Hand-made piece.** `scripts/check-docs.ts`. Inline links, reference definitions and fragments
+  are checked by a small reader. The rest is Conexus policy: word ceilings, the index, rule ids,
+  retired names, the one card, skill names.
+- **Why.** [Delivery L24](../guides/delivery.md) and [code C75](../guides/code.md). The plugin would
+  remove only the link reader, while `docs/index.md` coverage and code stripping still need ours.
+  The planted cases (broken inline link, definition, same-file and cross-file fragment) in
+  `check-docs.test.ts` cover them. Revalidate by 2027-04-13 or when the plugin can run in one
+  file without the engine.
