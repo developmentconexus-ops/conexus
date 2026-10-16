@@ -6,7 +6,7 @@ import type { FailureCode } from '@conexus/hub-api'
 import { CAPACITY, PASSWORD_LENGTH } from '@conexus/hub-api'
 import { betterAuth } from 'better-auth'
 import { admin, organization } from 'better-auth/plugins'
-import { sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Config } from '../../platform/config.ts'
 import type { CommandTx, Database } from '../../platform/database.ts'
@@ -146,7 +146,7 @@ export function libraryCommandOn(auth: Auth, database: Database): LibraryCommand
  * stores each link under a hash of its token, so only the person's id, the stored value, finds it.
  */
 export async function forgetLinks(tx: CommandTx, personId: string): Promise<void> {
-  await tx.execute(sql`delete from auth.verification where value = ${personId}`)
+  await tx.delete(verification).where(eq(verification.value, personId))
 }
 
 const KEY_FIELD = { type: 'string', required: true } as const

@@ -66,7 +66,7 @@ has no row.
   `createFirstPerson` in `first-person.ts` also takes `pg_advisory_xact_lock` on the key
   `conexus.first-person`, which ends with the transaction.
 - **Why.** [Code C64 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
-  in an accept leaves nothing, and `forgetLinks` needs plain SQL in the same unit of work. The test
+  in an accept leaves nothing, and `forgetLinks` deletes through the same transaction. The test
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` fails with
   `runWithAdapter`, which leaves the plugin's own transaction on another connection (removal
   `accept-one-transaction`). The tests "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a
@@ -91,7 +91,8 @@ has no row.
   by its identifier, which it stores as a hash of the token, so a link whose token is gone cannot be
   addressed.
 - **Hand-made piece.** `forgetLinks` in `apps/server/src/hub/identity/auth.ts`. It deletes the
-  person's links by their stored value, the person's id, in the same transaction as the new one.
+  person's links by their stored value, the person's id, with Drizzle's `delete` in the same
+  transaction as the new one.
 - **Why.** [Code C64](../guides/code.md). The test "com a pessoa ainda sem senha" in
   `first-person.test.ts` and the test "link: passados 20 s" in `invitation-link.test.ts` fail
   without it (removals `first-person-forgets-earlier-link` and `password-link-forgets-earlier`).
@@ -269,6 +270,20 @@ has no row.
   `write-signal-follows-reply`).
 
 ## Platform: pg 8.23.1, Drizzle 1.0.0-rc.4, Fastify 5.12.5 and Node 24
+
+### A page starts after a row: the row value is SQL
+
+- **Library line.** `drizzle-orm/sql/expressions/conditions.js:101`. `gt(left, right)` renders
+  `left > right` for any `SQLWrapper`, and a select builder as `right` renders as a parenthesized
+  subquery. The builder has no row value, so the pair `(name, id)` cannot be built from columns.
+- **Hand-made piece.** `after` in `apps/server/src/hub/identity/companies.ts` and its three callers,
+  `readMemberships`, `readMembers` and `readInvitations`. The pair is a `sql` template over the
+  tables' own columns; the anchor row is a Drizzle select, scoped as its list is. Only the pair is
+  hand-written.
+- **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
+  on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test "lista: só as empresas de quem pede"
+  in `companies.test.ts` fails when the anchor leaves the list's scope (removal
+  `membership-page-anchor-scoped`).
 
 ### A deadline on every checkout of a database connection
 

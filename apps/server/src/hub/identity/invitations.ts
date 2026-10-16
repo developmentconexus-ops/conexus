@@ -73,11 +73,11 @@ export async function readInvitations(tx: ReadTx, admitted: Admitted, page: stri
       and(
         eq(invitation.organizationId, admitted.companyId),
         eq(invitation.status, 'pending'),
-        after(
-          sql`(${invitation.createdAt}, ${invitation.id})`,
-          key,
-          sql`select created_at, id from auth.invitation
-            where id = ${key} and company_id = ${admitted.companyId}`,
+        after(sql`(${invitation.createdAt}, ${invitation.id})`, key, (id) =>
+          tx
+            .select({ createdAt: invitation.createdAt, id: invitation.id })
+            .from(invitation)
+            .where(and(eq(invitation.id, id), eq(invitation.organizationId, admitted.companyId))),
         ),
       ),
     )

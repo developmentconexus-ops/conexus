@@ -123,8 +123,8 @@
   {
     "id": "membership-page-anchor-scoped",
     "file": "apps/server/src/hub/identity/companies.ts",
-    "find": "join auth.member m on m.company_id = c.id\n            where c.id = ${key} and m.user_id = ${personId}`",
-    "replace": "join auth.member m on m.company_id = c.id\n            where c.id = ${key}`",
+    "find": ".where(and(eq(company.id, id), eq(member.userId, personId))),",
+    "replace": ".where(eq(company.id, id)),",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/companies.test.ts",

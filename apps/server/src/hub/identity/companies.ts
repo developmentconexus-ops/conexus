@@ -1,7 +1,7 @@
 import type { Next, Person } from '@conexus/hub-api'
 import { Company, Member, Membership, PAGE_SIZE } from '@conexus/hub-api'
-import type { SQL } from 'drizzle-orm'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import type { SQL, SQLWrapper } from 'drizzle-orm'
+import { and, asc, eq, gt, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
@@ -38,9 +38,16 @@ export function pageKey(page: string | undefined): string | undefined {
   return id
 }
 
-/** Rows ordered after the one `id` names, whose order key `row` selects; every row on no id. */
-export function after(order: SQL, id: string | undefined, row: SQL): SQL | undefined {
-  return id === undefined ? undefined : sql`${order} > (${row})`
+/**
+ * Rows ordered after the one `id` names, whose order key `anchor` selects; every row on no id. The
+ * caller's `(a, b)` is SQL because the builder has no row value (boundaries).
+ */
+export function after(
+  order: SQL,
+  id: string | undefined,
+  anchor: (id: string) => SQLWrapper,
+): SQL | undefined {
+  return id === undefined ? undefined : gt(order, anchor(id))
 }
 
 const PersonRole = z.object({ role: z.string().nullable() })
@@ -55,11 +62,12 @@ export async function readMemberships(tx: ReadTx, personId: string, page: string
     .where(
       and(
         eq(member.userId, personId),
-        after(
-          sql`(${company.name}, ${company.id})`,
-          key,
-          sql`select c.name, c.id from auth.company c join auth.member m on m.company_id = c.id
-            where c.id = ${key} and m.user_id = ${personId}`,
+        after(sql`(${company.name}, ${company.id})`, key, (id) =>
+          tx
+            .select({ name: company.name, id: company.id })
+            .from(company)
+            .innerJoin(member, eq(member.organizationId, company.id))
+            .where(and(eq(company.id, id), eq(member.userId, personId))),
         ),
       ),
     )
@@ -101,11 +109,12 @@ export async function readMembers(tx: ReadTx, admitted: Admitted, page: string |
     .where(
       and(
         eq(member.organizationId, admitted.companyId),
-        after(
-          sql`(${user.name}, ${member.id})`,
-          key,
-          sql`select p.name, m.id from auth.member m join auth.user p on p.id = m.user_id
-            where m.id = ${key} and m.company_id = ${admitted.companyId}`,
+        after(sql`(${user.name}, ${member.id})`, key, (id) =>
+          tx
+            .select({ name: user.name, id: member.id })
+            .from(member)
+            .innerJoin(user, eq(user.id, member.userId))
+            .where(and(eq(member.id, id), eq(member.organizationId, admitted.companyId))),
         ),
       ),
     )
