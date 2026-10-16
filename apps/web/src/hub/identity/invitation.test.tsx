@@ -217,3 +217,31 @@ test('a empresa cheia: a frase fica na página, e o convite segue para aceitar',
     ),
   )
 })
+
+test('aceitar: "Você já faz parte" não aparece antes de a empresa abrir', async () => {
+  let accepted = false
+  hub({ person: DAVI }, () => received(accepted ? 'ACCEPTED' : 'PENDING'))
+  server.use(
+    http.put(`*/api/invitations/${INVITATION}/acceptance`, () => {
+      accepted = true
+      return HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY }))
+    }),
+    http.get(`*/api/companies/${COMPANY.id}`, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      return HttpResponse.json(
+        getCompany.success.body.parse({ company: COMPANY, role: 'admin', mayInviteAs: [] }),
+      )
+    }),
+  )
+  open(ENTRY)
+  const button = await screen.findByRole('button', { name: 'Aceitar convite' })
+  let flashed = false
+  const watch = new MutationObserver(() => {
+    flashed ||= document.body.textContent?.includes('Você já faz parte') === true
+  })
+  watch.observe(document.body, { childList: true, subtree: true, characterData: true })
+  fireEvent.click(button)
+  expect(await screen.findByRole('heading', { name: 'Empresa Teste' })).toBeTruthy()
+  watch.disconnect()
+  expect(flashed).toBe(false)
+})

@@ -43,4 +43,8 @@ export function receivedInvitationQuery(invitationId: InvitationId) {
 export const makeCompany = hubMutation(createCompany)
 export const inviteToCompany = hubMutation(createInvitation)
 export const requestPasswordLink = hubMutation(putPasswordLink)
-export const acceptReceivedInvitation = hubMutation(acceptInvitation)
+// Accepting changes the invitation's own page, which the person leaves for the company (web W12).
+export const acceptReceivedInvitation = {
+  ...hubMutation(acceptInvitation),
+  meta: { leavesPage: true },
+}

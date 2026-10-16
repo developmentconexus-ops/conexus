@@ -3,19 +3,31 @@ import { HubFailure } from './hub.ts'
 
 /**
  * After a write every query is stale, except where the write's `meta` says `keepCache` (web W12).
+ * A write that failed is no exception: an invitation whose e-mail failed stays in the list, and
+ * the failure table cannot tell which refusals left a change behind. A 401 is: the session
+ * handler drops the cache. A write whose `meta` says `leavesPage` marks every query stale without
+ * refetching the ones on screen: the person is about to navigate away, and a refetch finishing
+ * first would show the page its changed state.
  * A failed read is shown, never retried by default (code C58). A 401 on any read or write calls
  * `onSessionEnded`, so no screen handles it (web W15).
  */
 export function createCache(onSessionEnded: () => void): QueryClient {
+  function isSessionEnded(error: Error | null) {
+    return error instanceof HubFailure && error.code === 'SESSION_REQUIRED'
+  }
   function ended(error: Error) {
-    if (error instanceof HubFailure && error.code === 'SESSION_REQUIRED') onSessionEnded()
+    if (isSessionEnded(error)) onSessionEnded()
   }
   const client: QueryClient = new QueryClient({
     queryCache: new QueryCache({ onError: ended }),
     mutationCache: new MutationCache({
       onError: ended,
-      onSuccess: (_data, _variables, _context, mutation) =>
-        mutation.meta?.keepCache === true ? undefined : client.invalidateQueries(),
+      onSettled: (_data, error, _variables, _context, mutation) =>
+        mutation.meta?.keepCache === true || isSessionEnded(error)
+          ? undefined
+          : client.invalidateQueries(
+              mutation.meta?.leavesPage === true ? { refetchType: 'none' } : undefined,
+            ),
     }),
     defaultOptions: { queries: { retry: false } },
   })

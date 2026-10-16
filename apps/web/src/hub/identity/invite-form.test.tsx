@@ -56,7 +56,11 @@ const UNDECIDED: [string, () => Response][] = [
 type Sent = { key: string | null; body: unknown }
 
 /** The Hub as a person of Empresa Teste sees it; `answer` replies to each invitation written. */
-function hub(mayInviteAs: string[], answer: (body: Sent) => Response) {
+function hub(
+  mayInviteAs: string[],
+  answer: (body: Sent) => Response,
+  listed: { id: string; email: string; role: string; expiresAt: string }[] = [],
+) {
   const sent: Sent[] = []
   server.use(
     http.get('*/api/sessions/current', () =>
@@ -72,7 +76,7 @@ function hub(mayInviteAs: string[], answer: (body: Sent) => Response) {
     ),
     http.get(`*/api/companies/${COMPANY.id}/invitations`, () =>
       HttpResponse.json(
-        listInvitations.success.body.parse({ invitations: [], next: { kind: 'END' } }),
+        listInvitations.success.body.parse({ invitations: listed, next: { kind: 'END' } }),
       ),
     ),
     http.post(`*/api/companies/${COMPANY.id}/invitations`, async ({ request }) => {
@@ -219,3 +223,55 @@ test('502 MAIL_UNAVAILABLE: o convite foi gravado, então a nova tentativa leva 
   await screen.findByRole('status')
   expect(sent[1]?.key).not.toBe(sent[0]?.key)
 })
+
+const PENDING_LIST = /^Convites pendentes$/
+
+test('201: a lista de convites pendentes mostra o convite sem recarregar a página', async () => {
+  const listed: Parameters<typeof hub>[2] = []
+  hub(
+    ['admin', 'member'],
+    () => {
+      listed.push({
+        id: 'i'.repeat(32),
+        email: 'davi@example.test',
+        role: 'member',
+        expiresAt: '2026-10-17T12:00:00.000Z',
+      })
+      return accepted('davi@example.test', 'member')
+    },
+    listed,
+  )
+  const { email } = await open()
+  await screen.findByRole('heading', { name: PENDING_LIST })
+  expect(screen.getByText('Nenhum convite pendente.')).toBeTruthy()
+  fireEvent.change(email, { target: { value: 'davi@example.test' } })
+  send()
+  await screen.findByRole('status')
+  expect(await screen.findByText('davi@example.test', { selector: 'span' })).toBeTruthy()
+  expect(screen.queryByText('Nenhum convite pendente.')).toBeNull()
+})
+
+for (const code of ['MAIL_UNAVAILABLE', 'MAIL_BOUNCED'] as const) {
+  test(`${code}: o convite ficou gravado, então a lista de convites pendentes o mostra`, async () => {
+    const listed: Parameters<typeof hub>[2] = []
+    hub(
+      ['admin', 'member'],
+      () => {
+        listed.push({
+          id: 'i'.repeat(32),
+          email: 'davi@example.test',
+          role: 'member',
+          expiresAt: '2026-10-17T12:00:00.000Z',
+        })
+        return refusal(code)
+      },
+      listed,
+    )
+    const { email } = await open()
+    await screen.findByText('Nenhum convite pendente.')
+    fireEvent.change(email, { target: { value: 'davi@example.test' } })
+    send()
+    await screen.findByText(FAILURES[code].phrase, { exact: false })
+    expect(await screen.findByText('davi@example.test', { selector: 'span' })).toBeTruthy()
+  })
+}
