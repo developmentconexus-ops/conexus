@@ -12,21 +12,20 @@ import {
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
-import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import { admit, mayInviteAs } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { createCompanyCommand, readCompany, readMembers, readMemberships } from './companies.ts'
+import { mailInvitation } from './invitation-mail.ts'
 import {
   acceptCommand,
   createInvitationCommand,
-  markMailed,
   passwordLinkCommand,
   readInvitations,
   readReceived,
 } from './invitations.ts'
-import { invitationMail, passwordLinkMail } from './messages.ts'
+import { passwordLinkMail } from './messages.ts'
 
 type Deps = {
   auth: Auth
@@ -104,20 +103,16 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
       if (made.created) {
         log.info({ invitationId: invitation.id, companyId: params.companyId }, 'INVITATION_CREATED')
       }
+      const link = `${origin}/invitations/${invitation.id}`
       if (made.mail !== undefined) {
-        const link = `${origin}/invitations/${invitation.id}`
-        const mail = { ...made.mail, to: invitation.email, inviterName: person.name, link }
-        function mailed() {
-          return deps.database.command((tx) => markMailed(tx, invitation.id))
-        }
-        try {
-          await deps.sendMail(invitationMail({ ...mail, role: invitation.role }), signal)
-        } catch (error) {
-          // A bounce is the provider's definite answer; an unavailable one may not have sent.
-          if (error instanceof Failure && error.code === 'MAIL_BOUNCED') await mailed()
-          throw error
-        }
-        await mailed()
+        const { companyName } = made.mail
+        await mailInvitation(deps, {
+          invitation,
+          companyName,
+          inviterName: person.name,
+          link,
+          signal,
+        })
       }
       return answer({ invitation })
     },

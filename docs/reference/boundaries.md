@@ -199,11 +199,11 @@ has no row.
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-invites.mjs:226`. The plugin
   sends through `sendInvitationEmail` inside its own call, so inside the Hub's transaction, and it
   keeps no record that an e-mail left.
-- **Hand-made piece.** The `createInvitation` route in
-  `apps/server/src/hub/identity/company-routes.ts` sends after the commit, and `markMailed` in
-  `invitations.ts` sets `mailed_at` once the provider answers delivered, queued or a permanent
-  bounce. A replay with the same attempt key of a pending, unexpired, unmarked invitation answers
-  the mail data again, so the route sends again: delivery is at least once. `mailed_at` is an
+- **Hand-made piece.** `mailInvitation` in `apps/server/src/hub/identity/invitation-mail.ts` sends
+  after the commit and sets `mailed_at` once the provider answers delivered, queued or a permanent
+  bounce; the `createInvitation` route in `company-routes.ts` only calls it. A replay with the same
+  attempt key of a pending, unexpired, unmarked invitation answers the mail data again, so the route
+  sends again: delivery is at least once. `mailed_at` is an
   additional field with `input: false`, which leaves it out of the plugin's request body
   (`better-auth/dist/db/to-zod.mjs:17`).
 - **Why.** [Code C64](../guides/code.md). Sent inside the transaction, a slow provider holds the
@@ -211,7 +211,8 @@ has no row.
   the commit with no record, a Hub stopped before the send leaves a replay that mails nothing
   (founder, 2026-10-15, "A"). The test "o Hub parou entre o convite e o e-mail" in
   `invitation-replay.test.ts` fails without the replay branch (removal
-  `invitation-replay-resends-unmailed`).
+  `invitation-replay-resends-unmailed`), and "de novo com a mesma chave: depois do correio fora" in
+  `invitations.test.ts` fails without the mark on a bounce (removal `invitation-bounce-marked`).
 
 ### The pace of invitations and of password links
 

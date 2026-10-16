@@ -10,7 +10,7 @@ import {
   ReceivedInvitation,
   Role,
 } from '@conexus/hub-api'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
@@ -240,14 +240,6 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       })
       return { ...(await createdOf(tx, admitted, created.id)), created: true }
     })
-}
-
-/** The provider answered the invitation's e-mail, delivered, queued or bounced: no replay resends it. */
-export async function markMailed(tx: CommandTx, invitationId: InvitationId): Promise<void> {
-  await tx
-    .update(invitation)
-    .set({ mailedAt: sql`statement_timestamp()` })
-    .where(and(eq(invitation.id, invitationId), isNull(invitation.mailedAt)))
 }
 
 // The founder's pace, step 4 answer 6: one link every 20 seconds per invited person.

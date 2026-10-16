@@ -297,6 +297,17 @@
     }
   },
   {
+    "id": "invitation-bounce-marked",
+    "file": "apps/server/src/hub/identity/invitation-mail.ts",
+    "find": "if (error instanceof Failure && error.code === 'MAIL_BOUNCED') await mark()",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo com a mesma chave: depois do correio fora"
+    }
+  },
+  {
     "id": "library-failure-is-database",
     "file": "apps/server/src/hub/identity/auth.ts",
     "find": "    const failure = databaseFailure(error)\n    if (failure.code !== 'INTERNAL_UNEXPECTED' || statusOf(error) < 500) throw failure\n    throw new Failure('DATABASE_UNAVAILABLE', { cause: error })",
