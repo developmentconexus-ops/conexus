@@ -14,8 +14,9 @@ const PINO_LEVELS = new Set([10, 20, 30, 40, 50, 60])
 export type LogLine = Record<string, unknown>
 
 /**
- * The keys of the object's own level, so a repeated key is seen and a nested one is not;
- * `JSON.parse` keeps only the last of a repeated key. Only valid JSON may reach it: every string in
+ * The decoded keys of the object's own level, so a repeated key is seen, whether it is written
+ * plain or with escapes, and a nested one is not; `JSON.parse` keeps only the last of a repeated
+ * key. Each key literal is decoded by `JSON.parse` itself. Only valid JSON may reach it: every string in
  * valid JSON closes, so the scan ends.
  */
 function topLevelKeys(json: string): string[] {
@@ -30,7 +31,8 @@ function topLevelKeys(json: string): string[] {
       while (json[end] !== '"') end += json[end] === '\\' ? 2 : 1
       let after = end + 1
       while (/\s/.test(json[after] ?? '')) after++
-      if (depth === 1 && json[after] === ':') keys.push(json.slice(i + 1, end))
+      const key: unknown = JSON.parse(json.slice(i, end + 1))
+      if (depth === 1 && json[after] === ':' && typeof key === 'string') keys.push(key)
       i = end
     }
   }

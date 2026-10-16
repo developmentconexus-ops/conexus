@@ -443,13 +443,15 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   top level's once parsed. It gives no key order, no count and no duplicate report.
 - **Hand-made piece.** `topLevelKeys` in `scripts/log-line.ts`. It walks a text that `JSON.parse`
   already accepted, counts brace and bracket depth, and lists the keys at depth 1, with any
-  whitespace between the closing quote and `:`.
+  whitespace between the closing quote and `:`. Each key literal is decoded by `JSON.parse`, so
+  `le\u0076el` is `level`.
 - **Why.** [Code C50 and C54](../guides/code.md): a line with two top-level `level` keys must be
   refused and a nested `level` must not be; only the text shows the duplicate. The scan runs only on
-  valid JSON, where every string closes, so it ends. The tests in `scripts/test-reporter.test.ts`
-  (a repeated `level` refused; a nested `level`, with and without spaces around `:`, accepted) and
-  the nested case in `apps/server/src/platform/test-database.test.ts` cover it. Revalidate by
-  2027-04-13, or when `JSON.parse` reports duplicate keys.
+  valid JSON, where every string closes, so it ends. The tests in `scripts/log-line.test.ts` (a
+  repeated `level` or `msg` refused, also when one is written with an escape; a nested `level`, with
+  and without spaces around `:`, and a single escaped key accepted) and the nested case in
+  `apps/server/src/platform/test-database.test.ts` cover it. Revalidate by 2027-04-13,
+  or when `JSON.parse` reports duplicate keys.
 
 ### Removals: one protection taken out in a scratch copy, then its test
 

@@ -18,11 +18,17 @@ test('um level ou msg aninhado não conta, e o espaço antes dos dois pontos tam
   assert.notEqual(parseLogLine('{"level" : 30,"msg" : "A"}'), undefined)
 })
 
+test('uma chave escrita com escape vale o que decodifica', () => {
+  assert.deepEqual(parseLogLine('{"le\\u0076el":30,"msg":"A"}'), { level: 30, msg: 'A' })
+})
+
 const REFUSED: Record<string, string> = {
   'texto que não é JSON': 'raw text',
   'um array': '[{"level":30,"msg":"A"}]',
   'level repetido': '{"level":30,"level":30,"msg":"A"}',
   'msg repetido': '{"level":30,"msg":"A","msg":"A"}',
+  'level repetido, um escrito com escape': '{"le\\u0076el":10,"level":30,"msg":"A"}',
+  'msg repetido, um escrito com escape': '{"level":30,"msg":"A","m\\u0073g":"A"}',
   'sem level': '{"msg":"A"}',
   'sem msg': '{"level":30}',
   'level nulo': '{"level":null,"msg":"A"}',
