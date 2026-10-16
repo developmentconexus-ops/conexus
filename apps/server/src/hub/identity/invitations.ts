@@ -1,5 +1,14 @@
-import type { CompanyId, InvitationId, Person, Role } from '@conexus/hub-api'
-import { Company, Email, PAGE_SIZE, PendingInvitation, ReceivedInvitation } from '@conexus/hub-api'
+import type { Person } from '@conexus/hub-api'
+import {
+  Company,
+  CompanyId,
+  Email,
+  InvitationId,
+  PAGE_SIZE,
+  PendingInvitation,
+  ReceivedInvitation,
+  Role,
+} from '@conexus/hub-api'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
@@ -25,7 +34,20 @@ const pending = {
   expiresAt: invitation.expiresAt,
 }
 
-function pendingOf(row: { id: string; email: string; role: string | null; expiresAt: Date }) {
+// Every row is parsed before it is used, with the contract's types (data D21).
+const PendingRow = z.object({ id: InvitationId, email: Email, role: Role, expiresAt: z.date() })
+const AttemptRow = PendingRow.extend({ unmailed: z.boolean() })
+const ReceivedRow = PendingRow.extend({
+  status: Status,
+  companyId: CompanyId,
+  companyName: z.string(),
+  inviterName: z.string(),
+})
+const InvitationEmail = z.object({ email: Email })
+const AcceptRow = z.object({ companyId: CompanyId, email: Email })
+const JoinedRow = z.object({ status: Status, memberId: z.string().nullable() })
+
+function pendingOf(row: z.infer<typeof PendingRow>) {
   return PendingInvitation.parse({ ...row, expiresAt: row.expiresAt.toISOString() })
 }
 
@@ -61,7 +83,10 @@ export async function readInvitations(tx: ReadTx, admitted: Admitted, page: stri
     .orderBy(asc(invitation.createdAt), asc(invitation.id))
     .limit(PAGE_SIZE + 1)
   const listed = pageOf(rows, (row) => row.id)
-  return { invitations: listed.rows.map(pendingOf), next: listed.next }
+  return {
+    invitations: listed.rows.map((row) => pendingOf(PendingRow.parse(row))),
+    next: listed.next,
+  }
 }
 
 function stateOf(status: z.infer<typeof Status>, expiresAt: Date): ReceivedInvitation['state'] {
@@ -72,7 +97,7 @@ function stateOf(status: z.infer<typeof Status>, expiresAt: Date): ReceivedInvit
 
 /** The invitation as the person it was sent to reads it; anyone else finds nothing (S10). */
 export async function readReceived(tx: ReadTx, person: Person, invitationId: InvitationId) {
-  const [row] = await tx
+  const [found] = await tx
     .select({
       id: invitation.id,
       email: invitation.email,
@@ -87,6 +112,7 @@ export async function readReceived(tx: ReadTx, person: Person, invitationId: Inv
     .innerJoin(company, eq(invitation.organizationId, company.id))
     .innerJoin(user, eq(invitation.inviterId, user.id))
     .where(eq(invitation.id, invitationId))
+  const row = ReceivedRow.optional().parse(found)
   if (row === undefined || row.email !== person.email.toLowerCase()) {
     throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
   }
@@ -95,7 +121,7 @@ export async function readReceived(tx: ReadTx, person: Person, invitationId: Inv
     company: { id: row.companyId, name: row.companyName },
     role: row.role,
     inviterName: row.inviterName,
-    state: stateOf(Status.parse(row.status), row.expiresAt),
+    state: stateOf(row.status, row.expiresAt),
   })
 }
 
@@ -119,7 +145,7 @@ async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) 
     .where(
       and(eq(invitation.organizationId, admitted.companyId), eq(invitation.attemptKey, attemptKey)),
     )
-  return same
+  return AttemptRow.optional().parse(same)
 }
 
 /** Room for one more open invitation: the address's own, about to be replaced, does not count. */
@@ -162,13 +188,14 @@ async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
 async function createdOf(tx: CommandTx, admitted: Admitted, invitationId: string) {
   const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invitationId))
   const [named] = await tx
-    .select({ name: company.name })
+    .select({ id: company.id, name: company.name })
     .from(company)
     .where(eq(company.id, admitted.companyId))
   if (row === undefined || named === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'invitation not read' } })
   }
-  return { invitation: pendingOf(row), mail: { companyName: named.name } }
+  const companyName = Company.parse(named).name
+  return { invitation: pendingOf(PendingRow.parse(row)), mail: { companyName } }
 }
 
 /**
@@ -228,14 +255,15 @@ const LINK_PACE = sql`interval '20 seconds'`
 export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: { invitationId: InvitationId; name: string }) =>
     deps.libraryCommand(async (tx) => {
-      const [found] = await tx
+      const [listed] = await tx
         .select({ email: invitation.email })
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))
+      const found = InvitationEmail.optional().parse(listed)
       if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'UNKNOWN' } })
       // The e-mail is the person's lock: two requests at once make one person and one link.
       await transactionLock(tx, `conexus.person:${found.email}`)
-      const [open] = await tx
+      const [still] = await tx
         .select({ email: invitation.email })
         .from(invitation)
         .where(
@@ -245,6 +273,7 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
             sql`${invitation.expiresAt} > statement_timestamp()`,
           ),
         )
+      const open = InvitationEmail.optional().parse(still)
       if (open === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'CLOSED' } })
       const { internalAdapter } = await deps.auth.$context
       const known = await internalAdapter.findUserByEmail(open.email)
@@ -264,7 +293,7 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
       const token = await linkTokenOf(() =>
         deps.auth.api.requestPasswordReset({ body: { email: open.email } }),
       )
-      return { kind: 'LINK', token, email: Email.parse(open.email), name: person.name } as const
+      return { kind: 'LINK', token, email: open.email, name: person.name } as const
     })
 }
 
@@ -275,15 +304,16 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
 export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: { person: Person; headers: Headers; invitationId: InvitationId }) =>
     deps.libraryCommand(async (tx) => {
-      const [found] = await tx
+      const [listed] = await tx
         .select({ companyId: invitation.organizationId, email: invitation.email })
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))
+      const found = AcceptRow.optional().parse(listed)
       if (found === undefined || found.email !== input.person.email.toLowerCase()) {
         throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
       }
       await lockCompany(tx, found.companyId)
-      const [joined] = await tx
+      const [row] = await tx
         .select({ status: invitation.status, memberId: member.id })
         .from(invitation)
         .leftJoin(
@@ -294,6 +324,7 @@ export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand
           ),
         )
         .where(eq(invitation.id, input.invitationId))
+      const joined = JoinedRow.optional().parse(row)
       const already = joined?.status === 'accepted' && joined.memberId !== null
       if (!already) {
         const body = { invitationId: input.invitationId }
@@ -302,10 +333,10 @@ export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand
           ORGANIZATION_MEMBERSHIP_LIMIT_REACHED: 'COMPANY_FULL',
         })
       }
-      const [row] = await tx
+      const [named] = await tx
         .select({ id: company.id, name: company.name })
         .from(company)
         .where(eq(company.id, found.companyId))
-      return { company: Company.parse(row), accepted: !already }
+      return { company: Company.parse(named), accepted: !already }
     })
 }

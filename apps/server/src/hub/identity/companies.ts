@@ -1,7 +1,8 @@
 import type { Next, Person } from '@conexus/hub-api'
-import { Company, CompanyId, Member, Membership, PAGE_SIZE } from '@conexus/hub-api'
+import { Company, Member, Membership, PAGE_SIZE } from '@conexus/hub-api'
 import type { SQL } from 'drizzle-orm'
 import { and, asc, eq, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -23,6 +24,8 @@ export function after(order: SQL, page: string | undefined, key: SQL): SQL | und
   return page === undefined ? undefined : sql`${order} > (${key})`
 }
 
+const PersonRole = z.object({ role: z.string().nullable() })
+
 export async function readMemberships(tx: ReadTx, personId: string, page: string | undefined) {
   const rows = await tx
     .select({ id: company.id, name: company.name, role: member.role })
@@ -41,7 +44,8 @@ export async function readMemberships(tx: ReadTx, personId: string, page: string
     .orderBy(asc(company.name), asc(company.id))
     .limit(PAGE_SIZE + 1)
   const listed = pageOf(rows, (row) => row.id)
-  const [person] = await tx.select({ role: user.role }).from(user).where(eq(user.id, personId))
+  const [named] = await tx.select({ role: user.role }).from(user).where(eq(user.id, personId))
+  const person = PersonRole.optional().parse(named)
   return {
     companies: listed.rows.map((row) =>
       Membership.parse({ company: { id: row.id, name: row.name }, role: row.role }),
@@ -96,15 +100,15 @@ export function createCompanyCommand(deps: { auth: Auth; libraryCommand: Library
     deps.libraryCommand(async (tx) => {
       // Two creates with one key at once: the second waits here and finds the first's company.
       await transactionLock(tx, `conexus.company:${input.attemptKey}`)
-      const [found] = await tx
+      const [listed] = await tx
         .select({ id: company.id, name: company.name })
         .from(company)
         .where(eq(company.attemptKey, input.attemptKey))
+      const found = Company.optional().parse(listed)
       if (found !== undefined) {
-        const companyId = CompanyId.parse(found.id)
-        await admit({ tx, personId: input.person.id, companyId, action: 'readCompany' })
+        await admit({ tx, personId: input.person.id, companyId: found.id, action: 'readCompany' })
         if (found.name !== input.name) throw new Failure('IDEMPOTENCY_CONFLICT')
-        return { company: Company.parse(found), created: false }
+        return { company: found, created: false }
       }
       const body = { name: input.name, slug: input.attemptKey, attemptKey: input.attemptKey }
       const created = await refusedAs(
