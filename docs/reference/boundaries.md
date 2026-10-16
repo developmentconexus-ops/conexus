@@ -429,3 +429,24 @@ library changes, reread the line it names. A test that "fails without" a piece n
   The planted cases (broken inline link, definition, same-file and cross-file fragment) in
   `check-docs.test.ts` cover them. Revalidate by 2027-04-13 or when the plugin can run in one
   file without the engine.
+
+## Zod 4.6.5
+
+### The OpenAPI document, emitted from the operations
+
+- **Library line.** `z.toJSONSchema(schema, { io })` converts one schema and throws on one it cannot
+  express. Two packages build whole documents. Both were read from the npm registry, not installed:
+  `zod-openapi` 6.0.2 (`createDocument`, peer `zod ^4.0.0`), whose `requestParams` expands a
+  `z.object` into path, query and header parameters; and `@asteasolutions/zod-to-openapi` 9.1.0
+  (`OpenApiGeneratorV31` over a `registerPath` registry, peer `zod ^4.0.0`, with `openapi3-ts` as a
+  dependency).
+- **Hand-made piece.** `scripts/emit-openapi.ts`. It walks the operations `@conexus/hub-api`
+  exports and maps each to a path item: `operationId`, parameters, the `Idempotency-Key` header of an
+  attempt-keyed write, the request body, the success, and the failures grouped by their status in
+  the failure table, with one `Problem` component.
+- **Why.** [Code C28 and C29](../guides/code.md): the document is read from the one declaration of
+  each operation. Either package would still need the mapping from our `Operation` to its path
+  object, the failure grouping, the header and the `Problem` component. It would remove only
+  `schema` and `parameters`, about 15 of the 110 lines, for one more dependency. The test in
+  `scripts/emit-openapi.test.ts` (one `operationId` per declared operation) covers it. Revalidate by
+  2027-04-16, or when the Operation type gains a field.
