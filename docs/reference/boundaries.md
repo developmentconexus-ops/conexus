@@ -515,23 +515,25 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Hand-made piece.** `defineOperation` in `packages/hub-api/src/operation.ts` and
   `scripts/emit-openapi.ts`. `defineOperation` marks an operation with the `DECLARED` symbol; the
   emitter emits only the exports `isDeclaredOperation` accepts, and `serve` in
-  `apps/server/src/platform/http.ts` takes only a `DeclaredOperation`, so every API route registered
-  through `serve` is in the document; the pages, `favicon.svg` and `/assets/*`, registered with
-  `app.route`, are not API routes and are not in it. The emitter maps each declared operation to a path item: `operationId`,
-  `security` from the operation's access (the `cookieSession` apiKey scheme for `session`,
-  `security: []` for every other access), parameters, the `Idempotency-Key` header of an
-  attempt-keyed write, the request body, the success, and the failures grouped by their status in
-  the failure table, with one `Problem` component. It stops with the operation's id and exit code 1
-  on a schema `z.toJSONSchema` cannot express (a planted `z.date()` in `emit-openapi.test.ts`); a
-  transform under `io: 'input'` converts without error and is not refused. It does not emit
-  `bodyLimit`: OpenAPI 3.1 has no field for it.
+  `apps/server/src/platform/http.ts` takes only a `DeclaredOperation`. The mark opts an operation
+  in; it does not register it: a declared operation passed to `serve` but not exported by
+  `@conexus/hub-api` answers and is not in the document. The emitter maps each declared operation to
+  a path item: `operationId`, `security` from the operation's access (the `cookieSession` apiKey
+  scheme for `session`, `security: []` for every other access), parameters, the `Idempotency-Key`
+  header of an attempt-keyed write, the request body, the success, and the failures grouped by their
+  status in the failure table, with one `Problem` component. The failures are the operation's own
+  and the platform's (`failuresOf` in `packages/hub-api/src/operation.ts`: origin, malformed
+  request, media type, size and unexpected error, for every operation). It stops with the
+  operation's id and exit code 1 on a schema `z.toJSONSchema` cannot express (a planted `z.date()`
+  in `emit-openapi.test.ts`); a transform under `io: 'input'` converts without error and is not
+  refused. It does not emit `bodyLimit`: OpenAPI 3.1 has no field for it.
 - **Why.** [Code C28 and C29](../guides/code.md): the document is read from the one declaration of
   each operation. Either package would still need the mapping from our `Operation` to its path
   object, the failure grouping, the header and the `Problem` component. It would remove only
   `schema` and `parameters`, a small part of the file, for one more dependency. The tests in
   `scripts/emit-openapi.test.ts` (one `operationId` per declared operation, an export of the same
   shape that did not pass through `defineOperation`, the `security` of each access, the refused
-  schema) cover it, and `npm run typecheck` fails on `apps/server/src/platform/http.check.ts` when
-  `serve` takes an operation `defineOperation` did not declare. Revalidate by 2027-04-16, the only
-  date, or when the Operation type gains a field.
-
+  schema) and `apps/server/src/openapi-contract.test.ts` (a real Hub's success, 401, 403, 413, 415
+  and 400 matched to the document's status and media type) cover it, and `npm run typecheck` fails
+  on `apps/server/src/platform/http.check.ts` when `serve` takes an operation `defineOperation` did
+  not declare. Revalidate by 2027-04-16, the only date, or when the Operation type gains a field.

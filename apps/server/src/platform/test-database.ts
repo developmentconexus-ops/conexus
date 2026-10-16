@@ -26,18 +26,11 @@ import { migrate } from './migrate.ts'
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
 export const silent = { info: () => undefined, error: () => undefined }
 
-// The codes any route may answer besides its operation's: the access check's, the body parser's,
-// NOT_FOUND and INTERNAL_UNEXPECTED. A route that answers another code its operation does not declare says less in the
-// contract than it does (#32-9), so every Hub a test builds records it, and the test file fails.
-const UNDECLARED_ALLOWED = new Set([
-  'NOT_FOUND',
-  'INTERNAL_UNEXPECTED',
-  'REQUEST_ORIGIN_REFUSED',
-  'REQUEST_MEDIA_TYPE_REFUSED',
-  'REQUEST_MALFORMED',
-  'REQUEST_TOO_LARGE',
-  'SESSION_REQUIRED',
-])
+// The codes a route may answer besides its operation's and the platform's (`failuresOf`): the
+// unmatched address's NOT_FOUND, which no route registers, and the access check's SESSION_REQUIRED.
+// A route that answers another code its operation does not declare says less in the contract than
+// it does (#32-9), so every Hub a test builds records it, and the test file fails.
+const UNDECLARED_ALLOWED = new Set(['NOT_FOUND', 'SESSION_REQUIRED'])
 const Declared = z.looseObject({ failures: z.array(z.string()).default([]) })
 const Answered = z.looseObject({ code: z.string() })
 const undeclared: string[] = []

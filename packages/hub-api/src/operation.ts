@@ -35,3 +35,22 @@ export function defineOperation<const O extends Operation>(operation: O): O & De
 export function isDeclaredOperation(value: unknown): value is DeclaredOperation {
   return typeof value === 'object' && value !== null && DECLARED in value
 }
+
+/**
+ * The failures the platform answers around every operation's handler (code C28, C26): `serve`
+ * registers them with the operation's own, the OpenAPI document lists them, and the test door
+ * allows them. Fastify reads a body whatever the method, so even an operation with no `input.body`
+ * is refused for a body's media type and size.
+ */
+const PLATFORM_FAILURES = [
+  'REQUEST_ORIGIN_REFUSED',
+  'REQUEST_MALFORMED',
+  'REQUEST_MEDIA_TYPE_REFUSED',
+  'REQUEST_TOO_LARGE',
+  'INTERNAL_UNEXPECTED',
+] as const satisfies readonly FailureCode[]
+
+/** What an operation can answer besides its success: the platform's failures and its own. */
+export function failuresOf(operation: Operation): FailureCode[] {
+  return [...new Set<FailureCode>([...PLATFORM_FAILURES, ...operation.failures])]
+}

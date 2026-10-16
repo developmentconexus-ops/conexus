@@ -48,12 +48,16 @@ test('uma operação traz parâmetros, corpo e falhas pelo status HTTP', () => {
   assert.ok(operation?.requestBody)
   assert.deepEqual(Object.keys(operation?.responses ?? {}), [
     '201',
+    '400',
     '401',
     '403',
     '404',
     '409',
+    '413',
+    '415',
     '422',
     '429',
+    '500',
     '502',
     '503',
   ])

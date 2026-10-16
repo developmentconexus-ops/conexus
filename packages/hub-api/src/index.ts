@@ -44,6 +44,7 @@ export {
   AttemptKey,
   type DeclaredOperation,
   defineOperation,
+  failuresOf,
   isDeclaredOperation,
   type Operation,
 } from './operation.ts'

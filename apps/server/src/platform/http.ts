@@ -8,6 +8,7 @@ import {
   ATTEMPT_KEY_HEADER,
   AttemptKey,
   FAILURES,
+  failuresOf,
   PAGES,
   PROBLEM_MEDIA_TYPE,
   Problem,
@@ -305,7 +306,7 @@ export function serve(
     method: operation.method,
     url: operation.path.replaceAll(/\{(\w+)\}/g, ':$1'),
     bodyLimit: operation.bodyLimit,
-    config: { access: operation.access, failures: operation.failures },
+    config: { access: operation.access, failures: failuresOf(operation) },
     handler: async (request, reply) => {
       const input = {
         headers: headersOf(request),

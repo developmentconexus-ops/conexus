@@ -6,9 +6,10 @@
 // cannot express (a `z.date()`, for one) stops the command with the operation's id and exit code 1;
 // a transform under `io: 'input'` converts without error and is not refused.
 // A success body is `application/json`; a failure is a Problem under `application/problem+json`,
-// the type the Hub sends (apps/server/src/platform/http.ts). One success (`getHealth`) and one
-// failure (`listCompanies` without a session, 401) are checked against the document through
-// `app.inject`, no socket, by apps/server/src/openapi-contract.test.ts.
+// the type the Hub sends (apps/server/src/platform/http.ts). An operation's failures are its own
+// and the platform's (`failuresOf`). A real Hub's success (`getHealth`) and its 401, 403, 413, 415
+// and 400 refusals are checked against the document through `app.inject`, no socket, by
+// apps/server/src/openapi-contract.test.ts.
 // Each operation's access is its `security`: `session` requires the cookie session, every other
 // access (`public`, `entry`, `page`) carries `security: []`. The body limit
 // (`bodyLimit`) is not emitted: OpenAPI 3.1 has no field for it and an `x-` extension would be
@@ -21,6 +22,7 @@ import {
   ATTEMPT_KEY_HEADER,
   AttemptKey,
   FAILURES,
+  failuresOf,
   isDeclaredOperation,
   PROBLEM_MEDIA_TYPE,
   Problem,
@@ -62,7 +64,7 @@ function responses(operation: Operation): Json {
           }
         : { description: operation.summary },
   }
-  const byStatus = Object.groupBy(operation.failures, (code) => FAILURES[code].status)
+  const byStatus = Object.groupBy(failuresOf(operation), (code) => FAILURES[code].status)
   for (const [status, codes] of Object.entries(byStatus)) {
     out[status] = {
       description: (codes ?? []).join(', '),
