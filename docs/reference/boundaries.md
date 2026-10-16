@@ -13,7 +13,13 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Hand-made piece.** `apps/server/src/hub/identity/session.ts`. On the session `getSession`
   returns, it checks 8 h since creation. A session past that is revoked and read as signed out.
 - **Why.** The founder's 8 hours in total (step 3, answer "4. A"). The test "prazo total" in
-  `session.test.ts` fails without the piece. The idle deadline and the renewal stay the library's,
+  `session.test.ts` fails without the piece. The native candidate,
+  `databaseHooks.session.update.before` capping `expiresAt` at `createdAt` plus 8 h, runs only when
+  the library renews a session (`session.mjs:199`), which it does once 60 s have passed since the
+  last renewal. Probed on PostgreSQL on 2026-10-15 with the check removed: a session renewed 2 s
+  before its 8 h got `expires_at` exactly 8 h after `created_at` and ended on its own, but "prazo
+  total", a session past 8 h that was renewed within the last 60 s, stayed signed in. The check
+  stays until that test is changed or dropped. The idle deadline and the renewal stay the library's,
   by the founder's answer of 2026-10-15 ("1. A").
 
 ### A failure inside the library reads as the database's
