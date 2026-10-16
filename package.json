@@ -10,7 +10,7 @@
     "node": ">=24.21.0"
   },
   "scripts": {
-    "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run suppressions && npm run test && npm run build",
+    "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run test && npm run build",
     "lint": "biome check .",
     "typecheck": "tsc -p scripts/tsconfig.json && tsc -p tests/e2e/tsconfig.json && npm run typecheck --workspaces --if-present",
     "deps": "depcruise . --config .dependency-cruiser.cjs",
