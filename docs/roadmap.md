@@ -109,7 +109,7 @@ sozinho. Se o banco não dormir com o Mastra parado, a etapa 12 volta a você.
 
 ## 3. Como uma etapa roda
 
-Cada etapa passa pelas cinco fases de [entrega L3](guides/delivery.md), cada uma, menos o uso, com a sua
+Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), cada uma, menos o uso, com a sua
 skill ([`AGENTS.md`](../AGENTS.md)). A sua resposta 2 vive na regra do estudo
 ([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão sua é pedida na
 etapa dela, com letras e exemplo.

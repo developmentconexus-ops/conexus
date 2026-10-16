@@ -2,16 +2,16 @@
 
 How Conexus stores data and changes its schema. This guide follows
 [Evolutionary Database Design](https://martinfowler.com/articles/evodb.html) by Pramod Sadalage and
-Martin Fowler, with the PostgreSQL documentation for roles and constraints. Each rule uses the words
-of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a
-requirement; **should** and **should not** need a stated reason to break; **may** is a free choice. Each
-rule ends with the machine that refuses a violation, or "review". How to use Drizzle or PostgreSQL
-is the maintainers' skills; Neon's own sign-in, functions and storage, which its skills offer, are
-not used.
+Martin Fowler, with the PostgreSQL documentation for roles and constraints. Each rule uses
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a requirement;
+**should** and **should not** need a stated reason to break; **may** is a free choice. Each rule ends
+with its enforcing machine, or "review". Guidance does not reopen an approved contract or decision;
+[delivery L12](delivery.md) decides whether a finding blocks. Maintainers' skills own Drizzle and
+PostgreSQL usage; Neon's own sign-in, functions and storage are not used.
 
-Owners next door: [architecture](../architecture.md) for which store holds what, [security](security.md)
-for who may act, [code](code.md) for the error model, and [testing](testing.md) for test databases.
-The list of database roles and their grants is a data file beside the migrations, not this guide.
+Owners next door: [architecture](../architecture.md) for stores and company isolation,
+[security](security.md) for authority, [code](code.md) for errors and [testing](testing.md) for proof.
+Database roles and grants live beside the migrations, not in a second list here.
 
 ## 1. Stores
 
@@ -19,33 +19,19 @@ The list of database roles and their grants is a data file beside the migrations
   Builder's runs and model accounts [0011]. Mastra's tables **must** live in a separate database
   under a login that cannot enter the Hub's [0010]. Conexus code **must not** write Mastra's tables.
   [database grants]
-- **D2.** Every Hub table that holds a company's data **must** have the company column, and every
-  transaction on it **must** carry the company. An installation table, such as the Hub's starts, has
-  none. The row policy is decided in step 5 [0012]. [review]
-- **D3.** A company's app data **must** live in that company's Neon project: one schema and two
-  logins per app and environment, one that runs the app and one that migrates it. Preview and
-  Published **must** be two schemas, never two branches [0021]. A company project **must not** hold
-  a Hub login, and the Hub's database **must not** hold an app login. [review]
-- **D4.** Each owner **must** have its own schema, never `public`. [review]
-
-**Why.** Separate stores fail separately, and a grant given by mistake cannot open a wall that is a
-separate database. A schema per owner makes ownership visible and keeps grants narrow.
-
-**Right.** A Project's handler reads its own schema in its company's project.
-
-**Wrong.** A Hub store joins a Mastra table to read a conversation's messages.
+- **D4.** Each owner **should** have its own schema, not `public`. Failure: unrelated migrations
+  create the same name and unintentionally widen privileges. [review]
 
 ## 2. Schema and migrations
 
-- **D5.** Drizzle **must** own the schema and generate the migrations, at the version fixed in
-  [0005]. What Drizzle cannot generate (a function, a trigger, an extension, a grant) **must** go in
-  a custom migration whose comment says why. Nothing **may** be created by hand in a database.
-  [review]
+- **D5.** Drizzle **should** own schema and generated migrations at the version fixed in [0005],
+  with justified custom SQL for what it cannot generate and reproducible reference data. Examine
+  impact, not just syntax. Failure: a manual database edit never reaches the next environment,
+  or a generated rename drops data. [review]
 - **D6.** A migration **must** only add, so the previous image runs on the migrated database. A
   rename or a drop **must** be a later migration, after no running code reads the old shape: expand,
   move the callers, contract. [CI migration check]
 - **D7.** An applied migration **must not** change. [CI migration check]
-- **D8.** Someone **must** read the generated SQL before it is applied. [review]
 - **D9.** Migrations **must** run by the program's `migrate` subcommand, which the deploy runs as a
   one-off service before it starts the Hub, on the direct address, never a pooled one. The program
   **must** refuse to start when the database lacks a migration it ships with. [boot check]
@@ -57,90 +43,50 @@ separate database. A schema per owner makes ownership visible and keeps grants n
   grants of its own. [catalog snapshot, `catalog.test.ts`]
 - **D12.** Grants **must** keep each login's verbs and columns narrow, and **must not** be treated as
   row authorization: admission owns that ([security S7](security.md)). [catalog check, review]
-- **D13.** A dropped function **must** name its exact signature and **must not** use `CASCADE`; a
-  function a later migration recreates **must** keep every invariant the earlier body enforced, and
-  a dropped one **must** leave no caller.
-  [review]
-- **D14.** Reference data **must** enter by migration or by a generated file, never by a manual
-  insert. [review]
+- **D13.** Removing a function **should** check its exact signature, callers and the replacement's
+  invariants without implicit cascade. Failure: `CASCADE` removes protection another path still
+  needs. The migration checker is a heuristic, not a complete SQL parser. [review]
 - **D32.** `migrate` **must** set a login's password only when that login, with its key file's
   password, is refused with 28P01. Each `ALTER ROLE ... PASSWORD` stores a new SCRAM salt even for the
   same password; on Neon a restart that rewrote it answered one request with 500, read as a new login
   refused while Neon's proxy still held the old verifier. [`migrate.test.ts`, the verifier unchanged]
 
-**Why.** A database is reproducible only when every change is a file in the repository, applied the
-same way everywhere. A rename can come out of a generator as a drop and a create. A login made by
-Neon joins `neon_superuser`, which writes every table and, after one `SET ROLE`, bypasses every row
-policy; on the Hub's Neon project the owner login is its member and `hub_runtime` is not [0038].
-
-**Right.** A new column in one migration; the code that stops reading the old one ships; a later
-migration drops it.
-
-**Wrong.** An edit to a migration that already ran, or a column renamed in place while the previous
-image still reads it.
+A database is reproducible when every change is a versioned file applied the same way everywhere.
+Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [0038].
 
 ## 3. Where a rule lives
 
-- **D15.** Every always-true rule **must** be a constraint: `NOT NULL`, keys, `CHECK`, partial unique
-  indexes, `ON DELETE RESTRICT`, `NUMERIC` for money. [review]
-- **D16.** A business rule **must** be a pure TypeScript function over the rows the command read and
-  locked. SQL **must not** hold a business rule, and TypeScript **must not** repeat one PostgreSQL
-  enforces. [review]
-- **D17.** A foreign key across owners **must** only protect identity or containment; any other
-  reference across owners is an id without a key. [review]
-- **D18.** Each new column **must** have a writer and a reader. [review]
-
-**Why.** A rule in TypeScript is read, tested and changed with the rest of the code. Integrity in
-PostgreSQL holds even when the code is wrong, from any program that writes.
-
-**Right.** "The last owner stays" is a function over the locked roster, and a unique index keeps one
-open invitation per company and e-mail.
-
-**Wrong.** A `SECURITY DEFINER` function that decides who may invite, or a column written and never
-read.
+- **D15.** Always-true integrity **should** use PostgreSQL constraints: nullability, keys, checks,
+  partial unique indexes, restricted deletion and exact numeric money. Failure: concurrent requests
+  both pass a uniqueness `if` and insert duplicates. [review]
+- **D16.** Business rules **should** be explicit TypeScript over the decided rows, with integrity
+  left to the database rather than duplicated. Failure: a trigger and a screen compute different
+  permissions. [code C26](code.md) owns the single source. [review]
+- **D17.** Cross-owner foreign keys **should** protect real identity or containment, not convenience.
+  Failure: a convenient FK prevents removal of data its owner already considers removed. [review]
+- **D18.** Each new column and contract field **should** have a known writer and consumer. Failure:
+  `expiresAt` reaches the client but no screen distinguishes expired from pending. knip cannot
+  detect an unread database field. [review]
 
 ## 4. Access code
 
 - **D19.** A store **must** reach the database only through the database module of `platform/`, and
   only that module **may** import the driver. [dependency-cruiser]
-- **D20.** Values **must** always be bound parameters; an outside value **must not** enter
-  `sql.raw()`. [review]
-- **D21.** Every row read from the database **must** be parsed against its schema, with the
-  contract's narrowed types, before it is used, and a row out of shape **must** be refused at the
-  read. Founder, 2026-10-13: "3. A". [review]
-- **D22.** A unit of work in the Hub **must** be one transaction. A write **must** keep its filter
-  visible: `update` and `delete` have a top-level `where`, an upsert's update has its own `where`,
-  and `merge` is not used. [review]
-- **D23.** A read transaction **should** be `REPEATABLE READ READ ONLY`; a command **should** run in
-  `READ COMMITTED` and lock the rows it decides on. Basis: PostgreSQL 18's
-  [transaction isolation](https://www.postgresql.org/docs/18/transaction-iso.html), read 2026-10-14:
-  under repeatable read every statement of a transaction sees one snapshot, so a read of several
-  statements agrees with itself; a command at that level fails with 40001 on a concurrent update and
-  must be retried, and C65 closes a race in the design, not by a retry. In read committed, a locked
-  row makes the second command wait and then decide on the committed row. [review]
-- **D24.** A database error **must** be mapped as [code C52](code.md) says, by SQLSTATE and also by
-  constraint name. [review]
+- **D20.** Values **should** be bound parameters, with raw SQL reserved for controlled structure,
+  never external values. Failure: concatenating a submitted filter changes the query. Banning
+  every `sql.raw()` would also reject legitimate static SQL. [review]
+- **D22.** Effects decided together **should** share one transaction, with visible write scope,
+  isolation and locks chosen for the decision, and external effects separated from bounded lock
+  holding. Failure: setting a password fails after its one-use link was consumed, or a vendor call
+  holds a row lock indefinitely. PostgreSQL's [isolation semantics](https://www.postgresql.org/docs/18/transaction-iso.html)
+  explain the choice: repeatable read shares a snapshot but can require retry after concurrent
+  updates; read committed with row locks lets the next command decide on the committed row.
+  Neither an isolation name nor a ban on `merge` proves atomicity. [review]
 - **D25.** There **must not** be a session-level lock, or a session setting outside a transaction. A
   single owner **must** be a lease row with an expiry, renewed by activity. [CI search, from the first
   step with a database]
-- **D26.** Code **must not** call outside while holding a row lock. [review]
 - **D27.** Nothing **may** keep a connection or send a statement while nobody uses Conexus; an idle
   database **must** be able to sleep [0009]. [sleeping-database test]
-
-**Why.** One access path means one place sets the timeouts and the company, and one place a reviewer
-reads. A session lock fails behind a pooler and keeps a connection, and with it the database, awake.
-
-**Right.**
-
-```ts
-const rows = await tx.update(projects).set({ name })
-  .where(and(eq(projects.companyId, companyId), eq(projects.id, projectId)))
-  .returning()
-return rows.map((row) => ProjectRow.parse(row))
-```
-
-**Wrong.** A string built with `+` and sent through a raw client, or `pg_advisory_lock` held for the
-life of the process.
 
 ## 5. Generated apps
 
@@ -151,25 +97,8 @@ life of the process.
 - **D29.** An app's migrations **must** live in its own Git. The Hub **must** apply them with that
   app's migration login, and the verifier **must** read them as SQL before Preview. [verifier]
 
-**Why.** With one statement per transaction, nothing stays open while an app works, and the
-all-or-nothing that an action needs is one batch the verifier can see.
-
-**Right.** `db.batch([insertOrder, decrementStock])`.
-
-**Wrong.** Two `db.query` writes for one action, the second run only if the first touched a row.
-
 ## 6. Change with real data
 
-- **D30.** While no installation holds company data, a rename or split **must** be finished in one
-  step: the new shape is added, every caller moves, and a later migration of the same step drops the
-  old one. After that, the drop waits for a later step. [review]
-- **D31.** Once real data exists, a migration **should** be rehearsed on a Neon branch first.
-  [review]
-
-**Why.** A transition phase keeps two shapes alive, and it is worth its cost only when real data
-must survive the change.
-
-**Right.** A rename adds the new column, moves the row schema and every store, and drops the old
-column in a second migration, all in one step.
-
-**Wrong.** A new column beside the old one "for compatibility" before any company exists.
+- **D30.** Without company data, a shape transition **should** finish in one step: add, move every
+  caller, then drop in a later migration of that step. With real data, follow D6 across steps.
+  Failure: keeping two unused shapes forces every future step to synchronize them. [review]

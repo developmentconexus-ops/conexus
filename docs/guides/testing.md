@@ -2,131 +2,96 @@
 
 What counts as proof. This guide adapts the automated testing section of the
 [Microsoft Code With Engineering Playbook](https://github.com/microsoft/code-with-engineering-playbook/tree/main/docs/automated-testing)
-(CC BY 4.0). Each rule uses the words of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119):
-**must** and **must not** state a requirement; **should** and **should not** need a stated reason
-to break; **may** is a free choice. Each rule ends with the machine that refuses a violation, or
-"review". How to use a test runner is its maintainers' skill.
+(CC BY 4.0). Each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and
+**must not** state a requirement; **should** and **should not** need a stated reason to break;
+**may** is a free choice. Each rule ends with its enforcing machine, or "review". A should does
+not authorize violating an approved contract or claiming proof that did not run;
+[delivery L12](delivery.md) decides whether a finding blocks. Maintainers' skills own runner usage;
+[0034] owns the choice of test tools.
 
 ## 1. The tools and where tests live
 
-- **T1.** Logic and server tests **must** run on `node:test`, directly on the `.ts` file. Screen
-  files (`.tsx`) **must** be tested with Vitest, Testing Library and MSW, and nothing else **may**
-  use Vitest [0034]. [review]
-- **T2.** A test **must** sit next to the file it tests: `x.test.ts` beside `x.ts`, `x.test.tsx`
-  beside a screen. End-to-end scripts, few, **must** live in `tests/e2e` and run against a real Hub.
-  The browser check of the built screens **must** live at the root of its app, because what it
-  measures belongs to the whole app, not to one file. [review]
 - **T3.** Every run **must** have a global timeout: `node:test` has only a per-test one, so the CI
   job's `timeout-minutes` is the global one. [CI]
 - **T4.** A skipped test **must** state why, starting with `opt-in:`; a suite that ran zero tests
   **must** fail; and a test **must not** pass silently when the service it needs is missing. [CI]
 
-**Why.** The Fastify and Node maintainers' skills assume `node:test` and the Workers skill assumes
-Vitest; this guide decides. A skipped test reports green and proves nothing, and a hung test without
-a timeout names nothing.
-
-**Right.** `test.skip('opt-in: needs a real E2B key')`.
-
-**Wrong.** A database test that returns early when no database is configured.
-
 ## 2. What a test asserts
 
 - **T5.** A test **must** enter through the server's public door: an HTTP request to a route, or the
   module's `public.ts`. It **must not** import the inside of the server. [lint]
-- **T6.** A test **must** call the code the way its user does and compare the result with a literal
-  value, never only "exists" or "truthy". It **should** follow arrange, act, assert, with one
-  behaviour per test. [review]
-- **T7.** A test **must** check behaviour, not text: it **must not** read production source, and a
-  screen test **must** find by role and visible text, never by class. [review]
-- **T8.** A route change **must** have an HTTP test that asserts the literal status and body. [review]
+- **T6.** Tests **should** exercise observable consumer behavior beside its owner, comparing a
+  result that distinguishes the failure rather than only existence. For a route, assert literal
+  HTTP status and body; fake replies follow the contract. Generated artifacts are parsed or run,
+  with expected output refreshed by their generator, not hand-edited. Browser checks of the built
+  app live at its root; end-to-end scripts in `tests/e2e` exercise a real Hub. Failure:
+  `assert.ok(result)` passes for `{ ok: false }`, or a text match approves an unusable artifact.
+  Auxiliary existence assertions are not forbidden. [review]
+- **T7.** A test **should** observe behavior, using roles and visible text on screens rather than
+  implementation classes or production-source spelling. Failure: searching for `timeout` passes
+  even when the command ignores it. A lint tool may plant source because source is its real input.
+  [review]
 - **T9.** A type rule **must** have a file that fails to compile, such as forging a proof value.
   [TypeScript]
 
-**Why.** A test that reads the source, checks only truthiness or reaches past the public door still
-passes when the behaviour breaks, and breaks when the inside is refactored.
-
-**Right.** `assert.deepEqual(await grant(input), { ok: false, reason: 'FORBIDDEN' })`; a `POST` with
-a malformed id asserting 404 and its `code`.
-
-**Wrong.** `assert.ok(source.includes('FORBIDDEN'))`, or a test that calls the handler function and
-skips the route.
-
 ## 3. Refusals
 
-- **T10.** Each refusal **must** have a negative test: another company, another Project, an expired
-  or revoked session, a missing or foreign `Origin`. Isolation **must** also be tested by removing a
-  `where` on purpose and by passing another company's id. [review]
-- **T11.** A negative test **must** leave only together with the protection it proves. [review]
-- **T12.** A protection **must** be proved by removal: take it out, and its test fails. [review]
-- **T13.** An escape test for an app Worker, the build machine or the data path **must** try the
-  direct path with the other layers off, on the real configuration. [review]
-
-**Why.** A test of only the allowed path cannot fail when the check is removed.
-
-**Right.** A member of another company reads the Project and gets 404, and the test fails when the
-company filter is removed.
-
-**Wrong.** A new access rule tested only with the owner.
+- **T10.** Refusals **should** exercise unauthorized as well as authorized consumers: another
+  company/Project, expired or revoked session, missing or foreign Origin, and foreign ids. Keep
+  each negative case linked to its protection when replacing tests; remove it only with that
+  protection or equivalent proof. Failure: a return-address guard has no case attempting a foreign
+  origin, so its removal goes unnoticed. [review]
+- **T12.** Registered mandatory protections **must** be proved by removal with `npm run removals`,
+  through `scripts/removals.json`. Its harness reports `caught`, `survived`, `stale`, `unreachable`
+  or `broken-baseline`; coverage is only the manifest's entries, not every security property.
+  A check is useful only if its bad case is refused, not merely its good case accepted.
+  [`scripts/removals.ts`]
+- **T13.** Isolation boundaries **should** be proved by a direct attack on the real Worker, build
+  machine or data path with other layers disabled, when authorized. Failure: an outer layer
+  refuses first and the test never reaches the wall it claims to prove. [review]
 
 ## 4. Doubles and real services
 
-- **T14.** A double **must** prove only the boundary it replaces. A claim about a real provider,
-  model, E2B, Neon or Cloudflare **must** have evidence from that service, run with authority to call
-  it. A proof of how the product serves, bundles or integrates **must** run on the Hub itself. A
-  test of what a setup script or deploy creates (a folder, its mode, a file, a user) **must** read
-  what that script made, not a path or mode the test plants. [review]
-- **T15.** A fake of a protocol **should** be preferred over a mock of a function. A fake reply from
-  the Hub **must** pass the contract's schema, so a stale fake fails. [review]
-- **T16.** The test that closes a step **must not** fake its main path. [review]
-- **T17.** There **must not** be a security bypass keyed on a test environment. [review]
-- **T18.** A Builder change **must** be proved by a real turn with a real model and a real E2B
-  machine, when authorized. A gate about the generated app **must** be closed by a real Project: a
-  request in Portuguese, the real model, source the Builder wrote, the check, a Preview, use in a
-  browser and the gate's negative case. [review]
-
-**Why.** A mock proves the code calls the mock. Only the real dependency proves the system works, and
-a hand-written example proves a platform mechanism, not that the Builder finds and uses it.
-
-**Right.** A person asks for an app in Portuguese, and the Preview works in the browser.
-
-**Wrong.** A green test with a scripted model offered as proof that the Builder builds an app.
+- **T14.** A proof **should** claim only the boundary actually exercised. Real provider, model,
+  E2B, Neon and Cloudflare claims need authorized evidence from that service; serving, bundling
+  and integration claims run on the Hub. Read files, modes and users the setup/deploy script
+  actually creates, not values planted by the test. A Builder claim needs a real authorized turn,
+  model and E2B machine; a generated-app gate needs a Portuguese request, generated source, check,
+  Preview, browser use and negative case. Failure: a test plants a file's mode and then claims
+  setup produced it, or a scripted model is presented as a Builder proof. A simulation does not
+  close the real use required by [delivery L17](delivery.md). This guide grants no service access.
+  [review]
+- **T17.** Tests **should not** change authority to pass. Failure: a test-only header still accepted
+  in production bypasses the session. [code C67](code.md) restricts `NODE_ENV`, not every possible
+  bypass spelling. [review]
 
 ## 5. Services, time and files
 
-- **T19.** Each developer **must** have a disposable database, and each suite **must** create its own uniquely named database from the migrations, with no
-  superuser, and drop it. One exception: `migrate.test.ts` reads `pg_authid` as the test container's
-  superuser to prove the password verifier does not change (data D32), and skips with an `opt-in:`
-  reason without `CONEXUS_TEST_DATABASE_CONTAINER`. Founder, 2026-10-14: "2. A". [review]
-- **T20.** A test **must** create and remove what it uses, bind port 0 when it listens, and **must
-  not** sleep or poll with a timer to wait for a result. One case may poll: the acceptance race
-  test observes the lock queue through `pg_locks`. Founder, 2026-10-16: "2. a". [review]
+- **T19.** Each suite **should** create its own uniquely named disposable database from migrations,
+  without superuser, and drop it. The approved exception remains: `migrate.test.ts` reads
+  `pg_authid` as its test container's superuser to prove [data D32](data.md), skipping with an
+  `opt-in:` reason without `CONEXUS_TEST_DATABASE_CONTAINER`. Founder, 2026-10-14: "2. A".
+  Failure: one suite changes a shared role's password and breaks another suite. [review]
+- **T20.** Tests **should** wait for an observable event, bind port 0 and isolate and clean up
+  resources even after assertion failure. The approved acceptance-race observation through
+  `pg_locks` remains (founder, 2026-10-16: "2. a"). Failure: without `finally`, a test leaves a
+  role without its password. A blind ban on timers would not prove reliable waiting. [review]
 - **T21.** Test files **must** obey the same size limits as code. [Biome]
-- **T22.** A generated artifact **must** be tested by parsing or running it, and expected output
-  **must** change only by rerunning its generator. [review]
-- **T23.** A change to a screen **must** be looked at in a real browser before it is reported, by
-  the builder and by each reviewer: a screenshot of every state the change touches at 1366, 390 and
-  320 px wide, in light and dark, each one opened and looked at, and a keyboard pass that Tabs
-  through every focus stop. A change of state, such as a submit, a redirect or a refresh, is also
-  watched as a recorded trace of the page across it, because a still capture misses a state that
-  shows for a moment. A fact seen there that a measure can hold, such as a width, an overflow or a
-  missing outline, enters the browser check of T2. [review]
-
-**Why.** A shared database hides which change broke it, and a database built from migrations proves
-the migrations. A sleep makes a test slow on a fast machine and flaky on a slow one. Step 3's login
-column drew 8 px wide on the live Hub while every test passed: no check had looked at a screen (T23).
-
-**Right.** A suite named after its file creates `conexus_test_projects_<random>` and drops it.
-
-**Wrong.** A test that creates a role on a developer's main database, or waits two seconds for a
-run to finish.
+- **T23.** Screen changes and their transitions **should** be looked at in a real browser, including
+  narrow widths, both themes and a keyboard pass through focus stops. Reference widths remain
+  1366, 390 and 320 px. Look at captures and observe submit, redirect and refresh transitions;
+  record a trace when a still image misses the state. Stable measurements become tests in the
+  existing browser check. Failure: text and console inspection approve a login column only 8 px
+  wide. This is not a separate declaration package for every reviewer. An expected refusal shown
+  by the screen is not an uncaught error. [review]
 
 ## 6. From change to proof
 
 | Change | Proof |
 | --- | --- |
-| A function or module | Tests of its behaviour, beside it |
-| A store or a migration | Tests against a disposable PostgreSQL, then a Neon branch before real data |
-| A route | An HTTP test, with its negative cases |
-| A screen | A screen test beside it; the look and the browser check (T23, T2); an end-to-end script for a path that crosses the Hub |
-| A Builder change | A real turn, when authorized |
-| A security rule | Negative cases, the escape test and proof by removal |
+| A function or module | Observable behavior beside its owner (T6) |
+| A store or migration | Disposable PostgreSQL and an authorized real-service rehearsal when the card requires it (T14, T19) |
+| A route | HTTP status/body and negative cases (T6, T10) |
+| A screen | Screen test beside it, real browser and transitions (T23), end-to-end path when it crosses the Hub |
+| A Builder change | Real turn when authorized (T14) |
+| A security rule | Negative cases, isolation attack, registered removal proof (T10, T12, T13) |

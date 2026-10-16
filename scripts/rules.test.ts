@@ -220,6 +220,11 @@ const BIOME_BAD: Record<string, [string, string, string]> = {
     "export const v = fetch('/api/health')\n",
     'style',
   ],
+  noInlineStyles: [
+    'apps/web/src/ui/inline.tsx',
+    'export const inline = <div style={{ color: "red" }} />\n',
+    'nursery',
+  ],
   noExcessiveLinesPerFunction: [
     'apps/server/src/hub/a/l.ts',
     `export function f() {\n${'  console.log(1)\n'.repeat(61)}}\n`,
@@ -266,14 +271,16 @@ for (const [rule, [file, , group]] of Object.entries(BIOME_BAD)) {
   })
 }
 
-test('Biome aceita fetch na única peça que chama o Hub', () => {
+test('Biome aceita fetch na peça do Hub, classe em ui e style fora das peças próprias', () => {
   const run = biomeLint({
+    'apps/web/src/ui/tokens.tsx': 'export const tokens = <div className="text-text" />\n',
+    'apps/web/src/platform/vendor.tsx': 'export const vendor = <div style={{ color: "red" }} />\n',
     'apps/web/src/platform/hub.ts': "export function ping() {\n  return fetch('/api/health')\n}\n",
   })
   assert.equal(run.status, 0, run.output)
 })
 
-test('W25: o Biome recusa max-w-sm e w-2xl em apps/web/src, aceita min-w-48', () => {
+test('V23: o Biome recusa max-w-sm e w-2xl em apps/web/src, aceita min-w-48', () => {
   const run = biomeLint({
     'apps/web/src/ui/a.tsx': 'export const a = <p className="max-w-sm" />\n',
     'apps/web/src/ui/b.ts': `export const b = ['flex', \`w-2xl \${String(1)}\`]\n`,
