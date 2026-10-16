@@ -1,9 +1,9 @@
 // Defect: a unit's commit touches a file its card's blast radius does not name, and the departure
 // reaches the founder only if the builder notices it (delivery L7).
 // `npm run radius -- U<k> [commit]` reads the table under "O raio da mudança" in the unit's section
-// of the card, and prints `out-of-radius U<k> <file>` for each file the commit changed outside it. A bare
-// name in a cell may mean the root or the folder of the path before it: both match, and the row is
-// named `ambiguous-row` so the card can say which.
+// of the card, and prints `out-of-radius U<k> <file>` for each file the commit changed outside it.
+// A bare name in a cell may mean the root or the folder of the path before it: both match, and the
+// row is named `ambiguous-row` so the card can say which.
 // Matching is Node's `path.matchesGlob` over a translation of the cell, so the card's grammar stays
 // its own (see globOf). The refusals are proved by planting each one in check-radius.test.ts.
 // Revalidate by 2027-04-15, when the card template's radius table changes shape, or when Node's

@@ -35,6 +35,13 @@ const ROWS = [
     test: { ...TEST, file: 'unrelated.test.ts', name: 'o alvo' },
   },
   {
+    id: 'child',
+    file: 'limit.ts',
+    find: 'LIMIT = 10',
+    replace: 'LIMIT = 11',
+    test: { ...TEST, file: 'child.test.ts', name: 'filho' },
+  },
+  {
     id: 'broken',
     file: 'limit.ts',
     find: 'LIMIT = 10',
@@ -54,6 +61,21 @@ before(() => {
       "import { test } from 'node:test'",
       "import { LIMIT } from './limit.ts'",
       "test('quebrado', () => assert.equal(LIMIT, 11))",
+      '',
+    ].join('\n'),
+    'child.ts': [
+      "import assert from 'node:assert/strict'",
+      "import { LIMIT } from './limit.ts'",
+      'assert.equal(LIMIT, 10)',
+      '',
+    ].join('\n'),
+    'child.test.ts': [
+      "import assert from 'node:assert/strict'",
+      "import { spawnSync } from 'node:child_process'",
+      "import { test } from 'node:test'",
+      "test('filho', () => {",
+      "  assert.equal(spawnSync('node', ['child.ts'], { cwd: import.meta.dirname }).status, 0)",
+      '})',
       '',
     ].join('\n'),
     'unrelated.test.ts': [
@@ -101,6 +123,7 @@ const OUTCOMES: [string, string, number][] = [
   ['no-file', 'stale', 1],
   ['skipped', 'unreachable', 1],
   ['no-test', 'unreachable', 1],
+  ['child', 'caught', 0],
   ['broken', 'broken-baseline', 1],
   ['unrelated', 'survived', 1],
 ]
@@ -123,7 +146,7 @@ test('a cópia não muda o repositório', () => {
   const status = spawnSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' })
   assert.equal(
     status.stdout,
-    '?? broken.test.ts\n?? limit.test.ts\n?? limit.ts\n?? scripts/\n?? unrelated.test.ts\n',
+    '?? broken.test.ts\n?? child.test.ts\n?? child.ts\n?? limit.test.ts\n?? limit.ts\n?? scripts/\n?? unrelated.test.ts\n',
   )
 })
 

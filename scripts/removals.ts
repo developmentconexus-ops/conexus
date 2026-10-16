@@ -1,10 +1,10 @@
 // Defect: a protection whose test stays green when the protection is taken out proves nothing
 // (testing T12), and a test the protection names that cannot run proves nothing either (T4, T5).
 // Each row of removals.json takes one protection out in a scratch copy of the repository and runs
-// its test there, child processes included. `test.name` is a pattern, as `--test-name-pattern` reads
-// it. A row is `caught` when a test:fail event whose own name matches that pattern appears (a child
-// that fails fails the suite it sits in, and the suite's name counts when it matches); a failure of
-// another test, a hook of another suite or a file that cannot load is not a catch. It is `survived`
+// its test there. `test.name` is a pattern, as `--test-name-pattern` reads
+// it. A row is `caught` when a test:fail event whose own name matches that pattern appears (a test
+// that fails because a child process it spawned failed counts); a failure of another test, a hook
+// of another suite or a file that cannot load is not a catch. It is `survived`
 // when the tests of that name pass, `stale` when its text is absent or repeated, `unreachable` when
 // no test of that name ran, `broken-baseline` when its test already fails before the protection is
 // taken out. Any row other than `caught` exits 1. The manifest refuses an unknown key at any level
