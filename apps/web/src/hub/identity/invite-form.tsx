@@ -5,12 +5,13 @@ import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { HubFailure } from '../../platform/hub.ts'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import {
   Form,
   FormAlert,
   SubmitButton,
+  setServerError,
   TextField,
   useFieldError,
   useSchemaForm,
@@ -21,7 +22,6 @@ import { companyQuery, inviteToCompany } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId')
 
-// A refusal that names a field is shown on it; any other is the form's.
 const FIELD_OF: Partial<Record<FailureCode, 'email' | 'role'>> = {
   MEMBER_EXISTS: 'email',
   MAIL_BOUNCED: 'email',
@@ -86,7 +86,7 @@ export function InviteForm() {
       form.reset({ email: '', role: values.role })
     } catch (error) {
       const field = error instanceof HubFailure ? FIELD_OF[error.code] : undefined
-      form.setError(field ?? 'root.server', { type: 'server', message: sentenceOf(error) })
+      setServerError(form, error, field)
     }
   }
 

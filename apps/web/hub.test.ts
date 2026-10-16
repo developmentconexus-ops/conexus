@@ -3,8 +3,10 @@ import type { Server, ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { createCompany, FAILURES, Problem } from '@conexus/hub-api'
+import type { FailureCode } from '@conexus/hub-api'
+import { createCompany, FAILURES } from '@conexus/hub-api'
 import { HubFailure, hubMutation } from './src/platform/hub.ts'
+import { problemOf } from './src/platform/test-problem.ts'
 
 // hub.ts against a real socket, which MSW cannot express: a reply that ends after the headers
 // (testing T14). Run by node:test, like the other root tests of this package.
@@ -25,17 +27,8 @@ async function hubThatAnswers(t: TestContext, answer: (reply: Reply) => void) {
   })
 }
 
-function problem(code: keyof typeof FAILURES) {
-  const row = FAILURES[code]
-  return JSON.stringify(
-    Problem.parse({
-      type: `urn:conexus:problem:${code}`,
-      title: row.phrase,
-      status: row.status,
-      code,
-      traceId: 'a1b2c3',
-    }),
-  )
+function problem(code: FailureCode) {
+  return JSON.stringify(problemOf(code))
 }
 
 async function createdWith() {

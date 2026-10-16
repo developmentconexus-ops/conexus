@@ -2,8 +2,14 @@ import { createSession, FAILURES } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
-import { sentenceOf } from '../../platform/hub.ts'
-import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  setServerError,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { sessionQuery, signIn } from './queries.ts'
 
 const ANY_ORIGIN = 'https://conexus.invalid'
@@ -57,7 +63,7 @@ export function SignInForm(props: {
     try {
       await send.mutateAsync({ body: values })
     } catch (error) {
-      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+      setServerError(form, error)
       return
     }
     // The guard reads the session with ensureQueryData, which would return the cached "nobody"

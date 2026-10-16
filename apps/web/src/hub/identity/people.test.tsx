@@ -1,17 +1,10 @@
-import {
-  FAILURES,
-  getCompany,
-  listInvitations,
-  listMembers,
-  Problem,
-  SessionState,
-} from '@conexus/hub-api'
+import { FAILURES, getCompany, listInvitations, listMembers, SessionState } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, hubServer } from '../../platform/test-hub.tsx'
+import { ANA, hubServer, refusal } from '../../platform/test-hub.tsx'
 
 const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
 const server = hubServer()
@@ -142,18 +135,7 @@ test('uma empresa que o Hub responde 404: a página de "não encontrado", não a
     http.get('*/api/sessions/current', () =>
       HttpResponse.json(SessionState.parse({ state: 'SIGNED_IN', person: ANA })),
     ),
-    http.get(`*/api/companies/${COMPANY.id}`, () =>
-      HttpResponse.json(
-        Problem.parse({
-          type: 'urn:conexus:problem:NOT_FOUND',
-          title: FAILURES.NOT_FOUND.phrase,
-          status: 404,
-          code: 'NOT_FOUND',
-          traceId: 'a1b2c3',
-        }),
-        { status: 404 },
-      ),
-    ),
+    http.get(`*/api/companies/${COMPANY.id}`, () => refusal('NOT_FOUND')),
   )
   open()
   expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()

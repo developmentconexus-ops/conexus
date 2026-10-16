@@ -1,8 +1,9 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, Problem } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
+import { problemOf } from './test-problem.ts'
 
 export const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 export const STATUS = {
@@ -22,16 +23,8 @@ export function hubServer() {
 
 /** The Hub's refusal for a failure code, as the server sends it. */
 export function refusal(code: FailureCode) {
-  const row = FAILURES[code]
-  const body = Problem.parse({
-    type: `urn:conexus:problem:${code}`,
-    title: row.phrase,
-    status: row.status,
-    code,
-    traceId: 'a1b2c3',
-  })
-  return HttpResponse.json(body, {
-    status: row.status,
+  return HttpResponse.json(problemOf(code), {
+    status: FAILURES[code].status,
     headers: { 'content-type': 'application/problem+json' },
   })
 }

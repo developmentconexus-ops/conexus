@@ -2,11 +2,12 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, join } from 'node:path'
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, Problem } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import type { Browser, Page } from 'playwright-core'
 import { chromium } from 'playwright-core'
 import { build } from 'vite'
 import type { z } from 'zod'
+import { problemOf } from './src/platform/test-problem.ts'
 
 // The widths come from the browser's layout of the built screens; jsdom computes none.
 const ORIGIN = 'https://hub.test'
@@ -36,14 +37,7 @@ export function ok<S extends z.ZodType>(
 /** A refusal in the Hub's own problem shape, with the status the failure table gives its code. */
 export function failure(code: FailureCode): Reply {
   const row = FAILURES[code]
-  const json = Problem.parse({
-    type: `urn:conexus:problem:${code}`,
-    title: row.phrase,
-    status: row.status,
-    code,
-    traceId: 'trace-layout',
-  })
-  return { status: row.status, json }
+  return { status: row.status, json: problemOf(code) }
 }
 
 /** Replies by "METHOD /path"; a request with none is recorded as unanswered and answered 500. */

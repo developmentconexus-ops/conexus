@@ -1,9 +1,10 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
-import type { DefaultValues, FieldValues, UseFormReturn } from 'react-hook-form'
+import type { DefaultValues, FieldValues, Path, UseFormReturn } from 'react-hook-form'
 import { FormProvider, useForm, useFormContext } from 'react-hook-form'
 import type { z } from 'zod'
+import { sentenceOf } from '../platform/hub.ts'
 import { Button } from './button.tsx'
 import { Field, FieldError, FieldGroup, FieldLabel } from './field.tsx'
 import { Input } from './input.tsx'
@@ -88,6 +89,15 @@ export function FormAlert() {
       {message}
     </p>
   )
+}
+
+/** Puts the sentence for a failure on a field, or on the whole form when no field is named. */
+export function setServerError<I extends FieldValues, O>(
+  form: UseFormReturn<I, unknown, O>,
+  error: unknown,
+  field?: Path<I>,
+) {
+  form.setError(field ?? 'root.server', { type: 'server', message: sentenceOf(error) })
 }
 
 export function SubmitButton(props: { idle: string; pending: string }) {

@@ -2,8 +2,14 @@ import { COMPANY_NAME_MAX_LENGTH, createCompany } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { sentenceOf } from '../../platform/hub.ts'
-import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  setServerError,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { makeCompany } from './queries.ts'
 
 export function CreateCompanyForm() {
@@ -20,7 +26,7 @@ export function CreateCompanyForm() {
     try {
       await attempt((attemptKey) => send.mutateAsync({ body: { name }, attemptKey }))
     } catch (error) {
-      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+      setServerError(form, error)
     }
   }
 

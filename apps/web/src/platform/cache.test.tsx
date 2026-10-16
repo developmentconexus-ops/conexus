@@ -31,23 +31,15 @@ test('montar a página e ler uma resposta do Hub não compilam código em tempo 
 })
 
 test('401: uma leitura que acha a sessão terminada leva a /login com "Sua sessão terminou." e o endereço de volta', async () => {
-  const { FAILURES, Problem } = await import('@conexus/hub-api')
-  const ana = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
-  const ended = Problem.parse({
-    type: 'urn:conexus:problem:SESSION_REQUIRED',
-    title: FAILURES.SESSION_REQUIRED.phrase,
-    status: 401,
-    code: 'SESSION_REQUIRED',
-    traceId: 'a1b2c3',
-  })
+  const { ANA, refusal } = await import('./test-hub.tsx')
   const server = setupServer(
     http.get('*/api/sessions/current', () =>
-      HttpResponse.json({ state: 'SIGNED_IN', person: ana }),
+      HttpResponse.json({ state: 'SIGNED_IN', person: ANA }),
     ),
     http.get('*/api/companies', () =>
       HttpResponse.json({ companies: [], mayCreate: false, next: { kind: 'END' } }),
     ),
-    http.get('*/api/status', () => HttpResponse.json(ended, { status: 401 })),
+    http.get('*/api/status', () => refusal('SESSION_REQUIRED')),
   )
   server.listen({ onUnhandledFrame: 'error' })
   try {

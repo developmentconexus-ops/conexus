@@ -5,9 +5,15 @@ import { getRouteApi, Link, useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { sentenceOf } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
-import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  setServerError,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { NotFoundWithHint } from '../../ui/states.tsx'
 import {
   acceptReceivedInvitation,
@@ -27,7 +33,7 @@ function PasswordLinkForm({ onSent }: { onSent: () => void }) {
     try {
       await send.mutateAsync({ params: { invitationId }, body: { name } })
     } catch (error) {
-      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+      setServerError(form, error)
       return
     }
     onSent()
@@ -102,7 +108,7 @@ function Acceptable({ invitation }: { invitation: ReceivedInvitation }) {
     try {
       await send.mutateAsync({ params: { invitationId: invitation.id } })
     } catch (error) {
-      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+      setServerError(form, error)
     }
   }
 

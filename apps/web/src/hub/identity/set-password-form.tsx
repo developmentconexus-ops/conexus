@@ -1,8 +1,14 @@
 import { FAILURES, PASSWORD_LENGTH, setPassword } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { sentenceOf } from '../../platform/hub.ts'
-import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  setServerError,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { choosePassword } from './queries.ts'
 
 const PASSWORD = setPassword.input.body.pick({ password: true })
@@ -48,7 +54,7 @@ function ChoosePassword({ token, redirect }: { token: string; redirect: string |
     try {
       await send.mutateAsync({ body: { token, password } })
     } catch (error) {
-      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+      setServerError(form, error)
       return
     }
     await router.navigate({ to: '/login', search: { reason: 'password-set', redirect } })
