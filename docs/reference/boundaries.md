@@ -59,10 +59,11 @@ library joins the Hub sets.
   `databaseFailure` and a 5xx it cannot name to `DATABASE_UNAVAILABLE`. A library command goes
   through `libraryCommand`, which `databaseFailure` maps in the database module.
 - **Why.** [Code C50 and C52](../guides/code.md): the database is the library's one outside
-  system, and the contracts promise 503. [Security S41](../guides/security.md): only a code leaves.
-  The test "banco fora" in `database-down.test.ts` fails without the piece (removal
-  `library-failure-is-database`), and the test "senha que não grava" in `password-write.test.ts`
-  fails without the option (removal `library-errors-thrown`).
+  system; unavailable SQLSTATEs map to 503 (`DATABASE_UNAVAILABLE`), while a refused write or
+  unexpected database error is 500 (`INTERNAL_UNEXPECTED`). [Security S41](../guides/security.md):
+  only a code leaves. The test "banco fora" in `database-down.test.ts` fails without the piece
+  (removal `library-failure-is-database`), and the test "senha que não grava" in
+  `password-write.test.ts` fails without the option (removal `library-errors-thrown`).
 
 ### A library refusal becomes the Hub's code by one reader
 

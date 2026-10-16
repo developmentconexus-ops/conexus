@@ -117,7 +117,8 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
 ## Colors
 
 - **V3.** Every color is a token; only the brand folder holds a raw value, shadows and overlays
-  included. Tokens let both themes change in one file. [rule to write]
+  included. Outbound e-mail HTML is an exception: e-mail clients require inline color values [0017].
+  Tokens let both themes change in one file. [rule to write]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
   accent. Failure: making everything gold hides the difference between focus and decoration.
@@ -142,6 +143,7 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
 
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
 - **V17.** Conexus's own web pieces **must not** use an inline `style` attribute; use tokens.
+  Outbound e-mail HTML is an exception: e-mail clients require inline styles and table layout.
   This check covers source in ui/hub/builder, not DOM styles emitted by vendors.
   [Biome `nursery.noInlineStyles`]
 

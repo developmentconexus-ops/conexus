@@ -20,6 +20,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Etapa 4 usada em 2026-10-16 em https://hub.conexus.fun: "Deu certo"; sobre o fluxo, "O fluxo não está bem pensando pesnando como um todo"
    4.1 **Convite completo.** Cria a senha no convite, e cancela ou recusa um.
       Cartão da etapa 4.1 aprovado em 2026-10-16 (commit 473338311584743520a5f5b1ddb4271252f8fc76): "A aprovo"
+      Etapa 4.1 usada em 2026-10-16 em https://hub.conexus.fun (v0.4.1): "Foi sim para lixo eletronico, mas nem ligo, podemos passar e tudo deu certo. cancelei e testei tudo e tudo foi validado"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
@@ -81,8 +82,7 @@ seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 4.1 Convite completo | A etapa 4 usada | Nenhuma | A senha criada na página do convite (confirmação, regras à vista, sucesso, sem erro piscando). Quem abre o link, em todo caso: abrir nunca aceita, e o link usado fecha para todos. Cancelar pela empresa, recusar pela pessoa. E-mail em HTML e texto, com botão. A entrega repetida na caixa corporativa. Da issue "Code items from step 4": `Notice`, nomes dos botões, reenvio de convite cancelado |
-| 5 Duas empresas | A 4 | A política por linha no banco | A lista de nove itens da política |
+| 5 Duas empresas | A 4.1 | A política por linha no banco | A lista de nove itens da política |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
