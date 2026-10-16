@@ -89,16 +89,16 @@ function Closed(props: { title: string; note?: string; children: ReactNode }) {
 
 function Acceptable({ invitation }: { invitation: ReceivedInvitation }) {
   const router = useRouter()
-  const send = useMutation(acceptReceivedInvitation)
+  // Accepting changes this page, which the person leaves for the company. The mutation's own
+  // onSuccess runs before the cache marks queries stale, so the page is gone when they refetch.
+  const send = useMutation({
+    ...acceptReceivedInvitation,
+    onSuccess: ({ company }) =>
+      router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } }),
+  })
 
   function accept() {
-    send.mutate(
-      { params: { invitationId: invitation.id } },
-      {
-        onSuccess: ({ company }) =>
-          router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } }),
-      },
-    )
+    send.mutate({ params: { invitationId: invitation.id } })
   }
 
   return (

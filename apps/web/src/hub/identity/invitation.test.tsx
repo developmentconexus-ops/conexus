@@ -220,6 +220,10 @@ test('a empresa cheia: a frase fica na página, e o convite segue para aceitar',
 
 test('aceitar: "Você já faz parte" não aparece antes de a empresa abrir', async () => {
   let accepted = false
+  let companyOpens: () => void = () => undefined
+  const companyHeld = new Promise<void>((resolve) => {
+    companyOpens = resolve
+  })
   hub({ person: DAVI }, () => received(accepted ? 'ACCEPTED' : 'PENDING'))
   server.use(
     http.put(`*/api/invitations/${INVITATION}/acceptance`, () => {
@@ -227,7 +231,7 @@ test('aceitar: "Você já faz parte" não aparece antes de a empresa abrir', asy
       return HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY }))
     }),
     http.get(`*/api/companies/${COMPANY.id}`, async () => {
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      await companyHeld
       return HttpResponse.json(
         getCompany.success.body.parse({ company: COMPANY, role: 'admin', mayInviteAs: [] }),
       )
@@ -241,6 +245,11 @@ test('aceitar: "Você já faz parte" não aparece antes de a empresa abrir', asy
   })
   watch.observe(document.body, { childList: true, subtree: true, characterData: true })
   fireEvent.click(button)
+  // The company is still loading: the navigation waits for it, and the cache has not yet marked
+  // the invitation stale, so the page still reads as pending.
+  await waitFor(() => expect(accepted).toBe(true))
+  expect(screen.getByRole('button', { name: /Aceitando/ })).toBeTruthy()
+  companyOpens()
   expect(await screen.findByRole('heading', { name: 'Empresa Teste' })).toBeTruthy()
   watch.disconnect()
   expect(flashed).toBe(false)

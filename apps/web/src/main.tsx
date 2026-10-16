@@ -12,7 +12,13 @@ import { applyChosenTheme } from './platform/theme.ts'
 import { routeTree } from './routeTree.gen.ts'
 import { Failure, Loading, NotFound } from './ui/states.tsx'
 
-// The router learns its routes and its static data by declaration merging, which needs interfaces.
+// The router learns its routes and its static data, and the cache the `meta` a write may carry
+// (web W12), by declaration merging, which needs interfaces.
+declare module '@tanstack/react-query' {
+  interface Register {
+    mutationMeta: { keepCache?: true }
+  }
+}
 declare module '@tanstack/react-router' {
   interface Register {
     router: ReturnType<typeof createConexus>['router']

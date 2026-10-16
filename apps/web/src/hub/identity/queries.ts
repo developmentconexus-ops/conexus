@@ -17,7 +17,7 @@ import {
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
 
 // A session write replaces the cache itself (web W28), so it keeps the cache the others refresh.
-const KEEP_CACHE = { keepCache: true }
+const KEEP_CACHE = { keepCache: true } as const
 
 export const sessionQuery = hubQuery(getSession)
 export const signIn = { ...hubMutation(createSession), meta: KEEP_CACHE }
@@ -43,8 +43,4 @@ export function receivedInvitationQuery(invitationId: InvitationId) {
 export const makeCompany = hubMutation(createCompany)
 export const inviteToCompany = hubMutation(createInvitation)
 export const requestPasswordLink = hubMutation(putPasswordLink)
-// Accepting changes the invitation's own page, which the person leaves for the company (web W12).
-export const acceptReceivedInvitation = {
-  ...hubMutation(acceptInvitation),
-  meta: { leavesPage: true },
-}
+export const acceptReceivedInvitation = hubMutation(acceptInvitation)
