@@ -4,9 +4,11 @@
 mechanism that Conexus writes itself instead, with the library line it replaces and the reason. The
 versions are the installed ones, except five candidates read from the npm registry and not
 installed: Stryker 10.0.0, remark-validate-links 13.1.0, the Cloudflare SDK 7.3.0, zod-openapi 6.0.2
-and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. A test
-that "fails without" a piece names its row in `scripts/removals.json`; a test that "covers" a piece
-has no row.
+and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. Every
+piece of this file that a row of `scripts/removals.json` protects names that row, and its test
+"fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
+not name protect Hub rules that are not boundaries over a library, such as the mail adapter's
+refusal of a bounce, the replay of an attempt key and the library options the Hub sets.
 
 ## Better Auth 1.7.8
 
@@ -42,7 +44,7 @@ has no row.
 
 ### A library refusal becomes the Hub's code by one reader
 
-- **Library line.** `better-call/dist/error.mjs:105-112`. `auth.api` throws an `APIError` with
+- **Library line.** `better-call/dist/error.mjs:97-116`. `auth.api` throws an `APIError` with
   `statusCode` and `body.code`, while `auth.handler` answers a `Response` with the same body. The
   library maps neither to the Hub's failure codes.
 - **Hand-made piece.** `refusalOf` in `apps/server/src/hub/identity/auth.ts`, with its two entry
@@ -75,8 +77,8 @@ has no row.
 
 ### Sign-in and the first password reach the library through a request we build
 
-- **Library line.** `better-auth/dist/api/index.mjs:172`. The attempt limit runs only in the
-  library's router, so an `auth.api` call skips it.
+- **Library line.** `better-auth/dist/api/index.mjs:165-173`. The attempt limit runs in the
+  router's `onRequest`, so an `auth.api` call skips it.
 - **Hand-made piece.** `libraryRequest` in `apps/server/src/hub/identity/routes.ts`. It builds the
   `Request` for `auth.handler` from the Hub's own route, with only `origin`, `cf-connecting-ip`,
   `user-agent` and `cookie`.
@@ -165,7 +167,8 @@ has no row.
   plugin creates the new one.
 - **Why.** The founder's "Convidar de novo" after 2 days (step 4, answer 4). The test "de novo: o
   anterior vencido há 2 dias, ou vencendo agora" in `invitations.test.ts` fails without it
-  (removal `re-invite-cancels-expired`).
+  (removal `re-invite-cancels-expired`); "de novo: o anterior com um id fora de forma" fails when
+  the row it finds is not parsed (removal `open-invitation-row-parsed`).
 
 ### Three reads through the library's internal adapter
 
@@ -217,8 +220,9 @@ has no row.
 
 ### The pace of invitations and of password links
 
-- **Library line.** `better-auth/dist/api/index.mjs:172`. The library limits attempts only in its
-  router, which `auth.api` skips, and it keys them by address and path.
+- **Library line.** `better-auth/dist/api/index.mjs:165-173`. The library limits attempts only in its
+  router's `onRequest`, which `auth.api` skips, and it keys them by address and path
+  (`api/rate-limiter/index.mjs:248`).
 - **Hand-made piece.** `checkPace` and the 20-second check of `passwordLinkCommand` in
   `apps/server/src/hub/identity/invitations.ts`. They count the person's invitations of the last
   60 s, under the person's row lock, and the person's links of the last 20 s, under an advisory
@@ -227,6 +231,22 @@ has no row.
   the founder's numbers (step 4, answer 6). The tests "limite: o 11º convite" in
   `invitations.test.ts` and "link: dois pedidos juntos" in `invitation-link.test.ts` fail without
   them (removals `invitation-pace` and `password-link-pace`).
+
+### The library writes its timestamps with the application's clock
+
+- **Library line.** `better-auth/dist/plugins/organization/adapter.mjs:730-735` writes an
+  invitation's `expires_at` from `getDate` (`utils/date.mjs`, `Date.now()`) and its `created_at`
+  from `new Date()`; `better-auth/dist/db/internal-adapter.mjs:720` writes a password link's
+  `created_at` the same way. The plugin tests its own deadline with `new Date()`
+  (`crud-invites.mjs:268`, `:503`).
+- **Hand-made piece.** None. The Hub's own comparisons of those columns run in SQL against
+  `statement_timestamp()`, the database's clock, and `mailed_at` is written with it
+  (`invitations.ts`, `invitation-mail.ts`).
+- **Why.** The Hub could not compare in the application's clock without reading each row back, and
+  it could not make the library write the database's clock without replacing its adapter calls
+  (C75). So one query judges every row with one clock, and a skew between the server and the
+  database moves a deadline or a pace by that skew. No test plants a skew; the question is open for
+  a deployment whose clocks differ by more than the pace's seconds.
 
 ### Accepting: the recipient first, then the company's lock
 
@@ -245,7 +265,7 @@ has no row.
 
 ### `serve` parses the body and checks the reply
 
-- **Library line.** `fastify/types/type-provider.d.ts:9-18`. A type provider types a request's parts
+- **Library line.** `fastify/types/type-provider.d.ts:9-13` and `:69-77`. A type provider types a request's parts
   from the route's schema, and `setValidatorCompiler` and `setSerializerCompiler`
   (`fastify/fastify.js:727`, `:740`) let a Zod schema validate the body and serialize the reply.
 - **Hand-made piece.** `serve` and `partsOf` in `apps/server/src/platform/http.ts`. `partsOf` parses
@@ -256,7 +276,9 @@ has no row.
   body as `unknown`, and it has nothing for the `person` of the `session` access kind, the `Headers`
   or the cookies of an `Answer`. The compilers would replace only `bodyOf` and the reply's parse, at
   about the same number of lines. The tests "corpo fora do esquema"
-  and "o corpo lido pelo esquema da operação volta" in `http.test.ts` cover it.
+  and "o corpo lido pelo esquema da operação volta" in `http.test.ts` cover it, and "fora: o membro"
+  in `companies.test.ts` fails when a malformed path parameter stops answering `NOT_FOUND` (removal
+  `malformed-id-not-found`).
 
 ### A write's signal follows the reply, not the request
 
@@ -299,7 +321,8 @@ has no row.
   (removal `refused-command-keeps-connection`).
 - **Why.** [Code C57](../guides/code.md): nothing native bounds a whole checkout on the client. The
   test "uma consulta da biblioteca sem resposta cai no prazo de 15 s" in `database.test.ts` fails
-  without it (removal `library-read-deadline`).
+  without it (removal `library-read-deadline`), and "uma leitura parada além do prazo" fails when the
+  deadline is not the database's failure (removal `read-deadline-is-the-database`).
 
 ### The Hub refuses to serve a database behind its migrations
 
@@ -359,7 +382,8 @@ has no row.
 - **Hand-made piece.** `cappedText` in `apps/server/src/platform/mail.ts`. It reads the reply
   stream and stops at 16 KiB.
 - **Why.** [Code C59](../guides/code.md), and no dependency for about 12 lines. The test "correio:
-  resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` covers it.
+  resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` fails without the cap
+  (removal `mail-reply-cap`).
 
 ## TanStack Query 5.104.0, Better Auth 1.7.8 and the browser's `fetch`
 
@@ -376,7 +400,8 @@ has no row.
 - **Why.** [Web W9](../guides/web.md) and [code C28](../guides/code.md): the screens call the
   operations of `packages/hub-api` and no second contract. A native HTTP status cannot say whether a
   write committed, so the failure table carries that outcome. The tests in `apps/web/hub.test.ts`
-  (cut body, deadline, edge HTML, definite and uncertain failure) cover it.
+  (cut body, deadline, edge HTML, definite and uncertain failure) cover it, and "resposta que não
+  decide" fails when every failure counts as settled (removal `attempt-key-outcome-unknown`).
 
 ### A write that must survive a lost reply
 
@@ -398,8 +423,11 @@ has no row.
 - **Hand-made piece.** `scripts/test-reporter.ts`. It composes `spec()` and adds the policy checks
   on the events.
 - **Why.** [Testing T4](../guides/testing.md). It cannot see the pipes of a Hub spawned by a test,
-  so `apps/server/src/platform/test-database.ts` holds a second entry. The tests in
-  `scripts/test-reporter.test.ts` cover the policy.
+  so `apps/server/src/platform/test-database.ts` holds a second entry. The test "linha crua:
+  recusa" in `scripts/test-reporter.test.ts` fails without the raw-line refusal (removal
+  `raw-output-in-process`), and "linha crua: um Hub iniciado que imprime" in `test-database.test.ts`
+  fails without the second entry's (removal `raw-output-spawned-hub`). The other tests in
+  `test-reporter.test.ts` cover the rest of the policy.
 
 ### Removals: one protection taken out in a scratch copy, then its test
 
@@ -412,7 +440,10 @@ has no row.
   text, such as one SQL predicate or one adapter call, from one named file.
 - **Hand-made piece.** `scripts/removals.ts` and `scripts/removals.json`. Each row replaces an exact
   text once in a scratch copy and runs the row's test. It reports `caught`, `survived`, `stale`,
-  `unreachable` or `broken-baseline`. The manifest is loaded by one Zod schema.
+  `unreachable` or `broken-baseline`. A row is `caught` only when a `test:fail` event whose own name
+  matches the row's `test.name` pattern appears (a matching failing suite counts); the failure of
+  another test, a hook of another suite or a file that cannot load is not a catch. The manifest is
+  loaded by one strict Zod schema that refuses an unknown key and a repeated id.
 - **Why.** [Testing T12 and T4](../guides/testing.md). Stryker's command runner does not tell zero
   real tests or an import failure apart from a pass, and its mutators cannot target a row. A custom
   Stryker mutator and runner could bridge that, but would not delete code. The planted outcomes in
@@ -436,7 +467,7 @@ has no row.
 
 - **Library line.** `remark-validate-links/lib/index.js:189-203`. The plugin checks local files and
   headings. Headings of other files are checked only through the unified-engine file-set workflow
-  (about 143 installed packages), and the single-file API does not check them. Undefined reference
+  (about 143 dependencies in the registry's metadata, none installed), and the single-file API does not check them. Undefined reference
   labels belong to another plugin.
 - **Hand-made piece.** `scripts/check-docs.ts`. Inline links, reference definitions and fragments
   are checked by a small reader. The rest is Conexus policy: word ceilings, the index, rule ids,
@@ -458,12 +489,17 @@ has no row.
   (`OpenApiGeneratorV31` over a `registerPath` registry, peer `zod ^4.0.0`, with `openapi3-ts` as a
   dependency).
 - **Hand-made piece.** `scripts/emit-openapi.ts`. It walks the operations `@conexus/hub-api`
-  exports and maps each to a path item: `operationId`, parameters, the `Idempotency-Key` header of an
-  attempt-keyed write, the request body, the success, and the failures grouped by their status in
-  the failure table, with one `Problem` component.
+  exports and maps each to a path item: `operationId`, `security` from the operation's access (the
+  `cookieSession` apiKey scheme for `session`, `security: []` for `public` and `entry`), parameters,
+  the `Idempotency-Key` header of an attempt-keyed write, the request body, the success, and the
+  failures grouped by their status in the failure table, with one `Problem` component. It stops with
+  the operation's id and exit code 1 on a schema `z.toJSONSchema` cannot express (a planted `z.date()`
+  in `emit-openapi.test.ts`); a transform under `io: 'input'` converts without error and is not
+  refused. It does not emit `bodyLimit`: OpenAPI 3.1 has no field for it.
 - **Why.** [Code C28 and C29](../guides/code.md): the document is read from the one declaration of
   each operation. Either package would still need the mapping from our `Operation` to its path
   object, the failure grouping, the header and the `Problem` component. It would remove only
-  `schema` and `parameters`, about 15 of the 110 lines, for one more dependency. The test in
-  `scripts/emit-openapi.test.ts` (one `operationId` per declared operation) covers it. Revalidate by
-  2027-04-16, or when the Operation type gains a field.
+  `schema` and `parameters`, about 15 of the 110 lines, for one more dependency. The tests in
+  `scripts/emit-openapi.test.ts` (one `operationId` per declared operation, the `security` of each
+  access, the refused schema) cover it. Revalidate by 2027-04-16, the only date, or when the
+  Operation type gains a field.
