@@ -438,5 +438,27 @@
       "file": "src/hub/identity/invitation-link.test.ts",
       "name": "link: dois pedidos juntos"
     }
+  },
+  {
+    "id": "write-plain-text-refused",
+    "file": "apps/server/src/platform/http.ts",
+    "find": "  app.removeContentTypeParser('text/plain')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/http.test.ts",
+      "name": "mídia da própria página, text/plain"
+    }
+  },
+  {
+    "id": "write-origin-checked",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "    if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "entrada: recusa a escrita de outro site"
+    }
   }
 ]

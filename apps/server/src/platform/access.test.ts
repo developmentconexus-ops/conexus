@@ -83,13 +83,6 @@ const REFUSED: [string, Record<string, string | undefined>, string][] = [
   ['sem Origin', { origin: undefined }, 'REQUEST_ORIGIN_REFUSED'],
   ['de outro site', { origin: 'https://other.example.test' }, 'REQUEST_ORIGIN_REFUSED'],
   ['cross-site', { 'sec-fetch-site': 'cross-site' }, 'REQUEST_ORIGIN_REFUSED'],
-  [
-    'em formulário',
-    { 'content-type': 'application/x-www-form-urlencoded' },
-    'REQUEST_MEDIA_TYPE_REFUSED',
-  ],
-  ['em text/plain', { 'content-type': 'text/plain' }, 'REQUEST_MEDIA_TYPE_REFUSED'],
-  ['corpo sem tipo', { 'content-type': undefined }, 'REQUEST_MEDIA_TYPE_REFUSED'],
   ['sem cf-connecting-ip', { 'cf-connecting-ip': undefined }, 'REQUEST_MALFORMED'],
 ]
 for (const [name, headers, code] of REFUSED) {

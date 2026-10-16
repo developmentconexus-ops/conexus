@@ -55,11 +55,8 @@ async function hub() {
   return app
 }
 
-const HEADERS = {
-  origin: TEST_ORIGIN,
-  'content-type': 'application/json',
-  'cf-connecting-ip': '203.0.113.7',
-}
+const UNTYPED = { origin: TEST_ORIGIN, 'cf-connecting-ip': '203.0.113.7' }
+const HEADERS = { ...UNTYPED, 'content-type': 'application/json' }
 
 test('o corpo lido pelo esquema da operação volta, com cada cookie no seu cabeçalho', async () => {
   const app = await hub()
@@ -106,17 +103,26 @@ for (const [name, payload, status, code] of REFUSALS) {
   })
 }
 
-test('formulário vindo da própria página: 415 REQUEST_MEDIA_TYPE_REFUSED', async () => {
-  const app = await hub()
-  const response = await app.inject({
-    method: 'PUT',
-    url: '/api/notes/current',
-    headers: { ...HEADERS, 'content-type': 'multipart/form-data; boundary=x' },
-    payload: '--x--',
+const MEDIA: [string, string | undefined, string][] = [
+  ['formulário', 'application/x-www-form-urlencoded', 'note=oi'],
+  ['multipart', 'multipart/form-data; boundary=x', '--x--'],
+  ['text/plain', 'text/plain', '{"note":"oi"}'],
+  ['corpo sem tipo', undefined, '{"note":"oi"}'],
+]
+for (const [name, type, payload] of MEDIA) {
+  test(`mídia da própria página, ${name}: 415 REQUEST_MEDIA_TYPE_REFUSED antes do handler`, async () => {
+    const app = await hub()
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/notes/current',
+      headers: type === undefined ? UNTYPED : { ...UNTYPED, 'content-type': type },
+      payload,
+    })
+    assert.equal(response.statusCode, 415)
+    assert.match(String(response.headers['content-type']), /^application\/problem\+json/)
+    assert.equal(response.json().title, 'O Conexus não aceita pedidos nesse formato.')
   })
-  assert.equal(response.statusCode, 415)
-  assert.equal(response.json().title, 'O Conexus não aceita pedidos nesse formato.')
-})
+}
 
 test('páginas: cada endereço das telas, com seus parâmetros, abre a página das telas; outro endereço, 404', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))

@@ -8,7 +8,6 @@ const AccessConfig = z.looseObject({
   access: z.enum(['page', 'public', 'entry', 'session']).optional(),
 })
 const READS = ['GET', 'HEAD']
-const JSON_MEDIA_TYPE = 'application/json'
 
 /** Reads the session a request carries; the identity subject owns it and main.ts hands it over. */
 export type SessionReader = (request: {
@@ -58,15 +57,6 @@ export function sessionOf(request: FastifyRequest): SignedIn {
   return session
 }
 
-function hasBody(request: FastifyRequest): boolean {
-  const length = request.headers['content-length']
-  return request.headers['transfer-encoding'] !== undefined || (length ?? '0') !== '0'
-}
-
-function mediaType(request: FastifyRequest): string | undefined {
-  return request.headers['content-type']?.split(';')[0]?.trim().toLowerCase()
-}
-
 /** Another site's page may not make the browser call the API, reads included (security S24). */
 function checkSite(request: FastifyRequest): void {
   const site = request.headers['sec-fetch-site']
@@ -80,10 +70,6 @@ function checkWrite(request: FastifyRequest, publicOrigin: PublicOrigin): void {
   const site = request.headers['sec-fetch-site']
   if (request.headers.origin !== publicOrigin || (site !== undefined && site !== 'same-origin')) {
     throw new Failure('REQUEST_ORIGIN_REFUSED')
-  }
-  const type = mediaType(request)
-  if (type === undefined ? hasBody(request) : type !== JSON_MEDIA_TYPE) {
-    throw new Failure('REQUEST_MEDIA_TYPE_REFUSED')
   }
 }
 

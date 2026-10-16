@@ -365,20 +365,6 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   "Content-Length errado", "linha malformada" and "caminho com porcentagem malformada responde 400
   em problem+json, com cabeçalhos e log" in `main.test.ts` cover it.
 
-### A write's media type is refused with its origin, before the session is read
-
-- **Library line.** `fastify/lib/handle-request.js:83-86`. Fastify answers 415
-  `FST_ERR_CTP_INVALID_MEDIA_TYPE` for a body with a media type it has no parser for, before it
-  reads the body; it parses `text/plain` by default unless `removeContentTypeParser` drops it.
-- **Hand-made piece.** `checkWrite` in `apps/server/src/platform/access.ts`, with `hasBody` and
-  `mediaType`. It refuses any write that is not `application/json` in the `onRequest` hook, beside
-  the origin check.
-- **Why.** [Security S24 and S25](../guides/security.md). Fastify's 415 comes after `onRequest`,
-  so after the session is read, and a JSON write with an empty body would become
-  `FST_ERR_CTP_EMPTY_JSON_BODY`. The native refusal would be the smaller change and is not yet
-  taken; the test "formulário vindo da própria página: 415
-  REQUEST_MEDIA_TYPE_REFUSED" in `http.test.ts` covers both.
-
 ### One log line per request, by code
 
 - **Library line.** `fastify/lib/log-controller.js:50` and `:68`. Fastify's request logging

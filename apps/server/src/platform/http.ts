@@ -190,6 +190,8 @@ export async function createServer(
     return503OnClosing: false,
     clientErrorHandler: (error, socket) => answerClientError(app, error, socket),
   })
+  // Fastify answers 415 for a body with no parser; JSON is left the only one (security S25).
+  app.removeContentTypeParser('text/plain')
   await app.register(fastifyHelmet, HELMET_OPTIONS)
   const built = existsSync(join(deps.webRoot, 'index.html'))
   // The plugin would warn about a missing root in prose; the Hub says it by its code (code C50).
