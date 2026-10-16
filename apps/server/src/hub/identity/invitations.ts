@@ -251,10 +251,7 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
       const known = await internalAdapter.findUserByEmail(open.email)
       const person =
         known?.user ??
-        (await internalAdapter.createUser(
-          { name: input.name, email: open.email },
-          { method: 'admin' },
-        ))
+        (await deps.auth.api.createUser({ body: { name: input.name, email: open.email } })).user
       if ((await internalAdapter.findCredentialAccount(person.id))?.password) {
         return { kind: 'HAS_PASSWORD' } as const
       }

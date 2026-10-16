@@ -149,6 +149,23 @@ versions are the installed ones. When the library changes, reread the line it na
 - **Why.** The founder's "Convidar de novo" after 2 days (step 4, answer 4). The test "de novo: o
   anterior vencido há 2 dias, ou vencendo agora" in `invitations.test.ts` fails without it.
 
+### Three reads through the library's internal adapter
+
+- **Library line.** `better-auth/dist/db/internal-adapter.mjs:583`, `:667` and `:227`.
+  `findUserByEmail`, `findCredentialAccount` and `listUsers` belong to the adapter the library
+  gives its plugins, and the Hub reaches them through `auth.$context`, which the library documents
+  for no application (native-first audit, finding 5). Creating a person has
+  the public `auth.api.createUser` of the admin plugin
+  (`better-auth/dist/plugins/admin/routes.mjs:195-201`), and the Hub uses it.
+- **Hand-made piece.** `createFirstPerson` in `apps/server/src/hub/identity/first-person.ts` and
+  `passwordLinkCommand` in `invitations.ts`. They read the person by e-mail, whether she has a
+  password, and whether the installation has anyone, inside the command's transaction.
+- **Why.** The public reads need a session (`/admin/list-users`) or return no password state, and
+  these run before anyone is signed in. The reads join the command's transaction through
+  `runWithTransaction`. When the library changes, reread `$context` and these three methods. The
+  tests "com a pessoa ainda sem senha" in `first-person.test.ts` and "link" in
+  `invitation-link.test.ts` cover them.
+
 ### A password link's token goes back to the command that asked for it
 
 - **Library line.** `better-auth/dist/api/routes/password.mjs:82`. `requestPasswordReset` answers

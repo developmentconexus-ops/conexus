@@ -31,10 +31,7 @@ export function createFirstPerson(deps: {
         throw new Failure('FIRST_PERSON_EXISTS')
       }
       if (same === undefined) {
-        await internalAdapter.createUser(
-          { name, email, role: INSTALLATION_ADMINISTRATOR },
-          { method: 'admin' },
-        )
+        await deps.auth.api.createUser({ body: { name, email, role: INSTALLATION_ADMINISTRATOR } })
       } else await forgetLinks(tx, same.id)
       const token = await linkTokenOf(() => deps.auth.api.requestPasswordReset({ body: { email } }))
       return { link: `${deps.publicOrigin}${SET_PASSWORD_PAGE}#token=${token}` }
