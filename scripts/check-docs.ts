@@ -70,7 +70,7 @@ function words(text: string): number {
 }
 
 function withoutCode(text: string): string {
-  return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '').replace(/`[^`\n]*`/g, '')
+  return withoutFences(text).replace(/`[^`\n]*`/g, '')
 }
 
 function body(file: string, text: string): string {

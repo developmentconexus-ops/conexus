@@ -276,7 +276,7 @@ test('Biome aceita fetch na única peça que chama o Hub', () => {
 test('W25: o Biome recusa max-w-sm e w-2xl em apps/web/src, aceita min-w-48', () => {
   const run = biomeLint({
     'apps/web/src/ui/a.tsx': 'export const a = <p className="max-w-sm" />\n',
-    'apps/web/src/ui/b.ts': "export const b = ['flex', `w-2xl ${String(1)}`]\n",
+    'apps/web/src/ui/b.ts': `export const b = ['flex', \`w-2xl \${String(1)}\`]\n`,
     'apps/web/src/ui/c.tsx': 'export const c = <p className="min-w-48 max-w-prose min-w-0" />\n',
   })
   const flagged = [...run.output.matchAll(/^(apps\/web\/src\/ui\/\w+\.tsx?):\d+:\d+ plugin/gm)]

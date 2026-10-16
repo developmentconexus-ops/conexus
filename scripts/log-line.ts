@@ -1,17 +1,20 @@
 // Defect: two readers decide what a Conexus log line is and disagree (code C72). A line is one JSON
-// object with exactly one top-level `level` and a `msg` that is a code (code C50, C54).
+// object whose top level has exactly one `level`, a pino number (10, 20, 30, 40, 50 or 60, as the
+// Hub logs it), and exactly one `msg`, a string that is a code (code C50, C54). Nothing else in the
+// line is checked.
 // Both entry points for a test's raw output call this: scripts/test-reporter.ts for an in-process
 // test, and `startHub` in apps/server/src/platform/test-database.ts for a spawned Hub's pipes.
-// Proved through both by "linha crua" in scripts/test-reporter.test.ts and
-// apps/server/src/platform/test-database.test.ts. Its row in docs/reference/boundaries.md says when to
-// revalidate it.
+// Every refusal is planted in scripts/log-line.test.ts; "linha crua" in
+// scripts/test-reporter.test.ts and apps/server/src/platform/test-database.test.ts prove both entry
+// points call it. Its row in docs/reference/boundaries.md says when to revalidate it.
 
 const CODE = /^[A-Z][A-Z0-9_]*$/
+const PINO_LEVELS = new Set([10, 20, 30, 40, 50, 60])
 
 export type LogLine = Record<string, unknown>
 
 /**
- * The keys of the object's own level, so a repeated `level` is seen and a nested one is not;
+ * The keys of the object's own level, so a repeated key is seen and a nested one is not;
  * `JSON.parse` keeps only the last of a repeated key. Only valid JSON may reach it: every string in
  * valid JSON closes, so the scan ends.
  */
@@ -34,13 +37,21 @@ function topLevelKeys(json: string): string[] {
   return keys
 }
 
+function isRecord(value: unknown): value is LogLine {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 export function parseLogLine(text: string): LogLine | undefined {
   try {
-    const parsed: unknown = JSON.parse(text)
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined
-    if (topLevelKeys(text).filter((key) => key === 'level').length !== 1) return undefined
-    const line: LogLine = Object.fromEntries(Object.entries(parsed))
-    return CODE.test(String(line.msg)) ? line : undefined
+    const line: unknown = JSON.parse(text)
+    if (!isRecord(line)) return undefined
+    const keys = topLevelKeys(text)
+    for (const name of ['level', 'msg']) {
+      if (keys.filter((key) => key === name).length !== 1) return undefined
+    }
+    const { level, msg } = line
+    if (typeof level !== 'number' || !PINO_LEVELS.has(level)) return undefined
+    return typeof msg === 'string' && CODE.test(msg) ? line : undefined
   } catch {
     return undefined
   }
