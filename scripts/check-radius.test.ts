@@ -45,12 +45,12 @@ function git(repo: string, ...args: string[]) {
   })
 }
 
-function committed(files: string[]): string {
+function committed(files: string[], card = CARD): string {
   const repo = mkdtempSync(join(tmpdir(), 'conexus-radius-'))
   repos.push(repo)
   git(repo, 'init', '--quiet')
   mkdirSync(join(repo, 'docs/steps'), { recursive: true })
-  writeFileSync(join(repo, 'docs/steps/e09-teste.md'), CARD)
+  writeFileSync(join(repo, 'docs/steps/e09-teste.md'), card)
   git(repo, 'add', '.')
   git(repo, 'commit', '--quiet', '-m', 'card')
   for (const file of files) {
@@ -109,3 +109,102 @@ test('raio: nome solto depois de um caminho avisa ambiguous-row', () => {
   assert.equal(result.status, 0)
   assert.match(result.stdout, /^ambiguous-row U1 biome\.json: the root or scripts\/$/m)
 })
+
+function cardOf(...cells: string[]): string {
+  return [
+    '# Etapa 9: Teste',
+    '',
+    '## U1 Primeira',
+    '',
+    '### O raio da mudança',
+    '',
+    '| Arquivo | Cria, muda ou apaga | Quem importa ou chama |',
+    '| --- | --- | --- |',
+    ...cells.map((cell) => `| ${cell} | Muda | CI |`),
+    '',
+  ].join('\n')
+}
+
+function outside(card: string, files: string[]): string[] {
+  const result = radius(committed(files, card), 'U1')
+  return result.stdout
+    .split('\n')
+    .filter((line) => line.startsWith('out-of-radius'))
+    .map((line) => line.replace('out-of-radius U1 ', ''))
+}
+
+test('raio: o curinga e o marcador casam nomes com ponto, como o regex antigo', () => {
+  const card = cardOf('`.github/workflows/*.yml`, `docs/*`, `<tipo>.md`, `src/a*`')
+  assert.deepEqual(
+    outside(card, [
+      '.github/workflows/ci.yml',
+      '.github/workflows/.hidden.yml',
+      'docs/.gitkeep',
+      'docs/x',
+      '.dot.md',
+      'x.md',
+      'src/a.hidden',
+    ]),
+    [],
+  )
+})
+
+test('raio: o curinga fica num segmento e ** vale o mesmo que *', () => {
+  const card = cardOf('`apps/*/x.ts`, `lib/**/y.ts`, `<n>.md`')
+  assert.deepEqual(
+    outside(card, ['apps/a/x.ts', 'apps/a/b/x.ts', 'lib/a/y.ts', 'lib/a/b/y.ts', 'a/b.md', '.md']),
+    ['.md', 'a/b.md', 'apps/a/b/x.ts', 'lib/a/b/y.ts'],
+  )
+})
+
+test('raio: metacaracteres do glob do Node são letras na tabela', () => {
+  const card = cardOf(
+    '`routes/[id]/(grupo)/a?.tsx`, `routes/+page.tsx`, `routes/!(x).ts`, `routes/b[xy].ts`',
+  )
+  assert.deepEqual(
+    outside(card, [
+      'routes/[id]/(grupo)/a?.tsx',
+      'routes/+page.tsx',
+      'routes/!(x).ts',
+      'routes/b[xy].ts',
+      'routes/i/(grupo)/a?.tsx',
+      'routes/[id]/(grupo)/aZ.tsx',
+      'routes/page.tsx',
+      'routes/y.ts',
+      'routes/bx.ts',
+    ]),
+    [
+      'routes/bx.ts',
+      'routes/i/(grupo)/a?.tsx',
+      'routes/[id]/(grupo)/aZ.tsx',
+      'routes/page.tsx',
+      'routes/y.ts',
+    ].sort(),
+  )
+})
+
+test('raio: pasta com chaves e dois níveis só cobre o que está abaixo dela', () => {
+  const card = cardOf('`apps/{web,server}/src/`, `docs/`')
+  assert.deepEqual(
+    outside(card, [
+      'apps/web/src/a/b.ts',
+      'apps/server/src/c.ts',
+      'docs/d.md',
+      'apps/web/e.ts',
+      'docs.md',
+    ]),
+    ['apps/web/e.ts', 'docs.md'],
+  )
+})
+
+for (const [name, cell, refusal] of [
+  ['chave aberta', '`a/{b,c.ts`', 'unbalanced-braces'],
+  ['chave com uma só alternativa', '`a/{b}.ts`', 'lonely-braces'],
+  ['barra invertida', '`a\\b.ts`', 'backslash'],
+] as const) {
+  test(`raio: ${name} é recusada`, () => {
+    const result = radius(committed(['a/b.ts'], cardOf(cell)), 'U1')
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, new RegExp(`^${refusal}: `, 'm'))
+  })
+}

@@ -105,3 +105,27 @@ test('a cópia não muda o repositório', () => {
   const status = spawnSync('git', ['status', '--porcelain'], { cwd: repo, encoding: 'utf8' })
   assert.equal(status.stdout, '?? broken.test.ts\n?? limit.test.ts\n?? limit.ts\n?? scripts/\n')
 })
+
+const BAD_MANIFESTS: [string, unknown, RegExp][] = [
+  ['vazio', [], /removals\.json : must be a list with at least one row/],
+  ['não é lista', { id: 'x' }, /removals\.json : /],
+  ['sem campo', [{ ...ROWS[0], find: '' }], /removals\.json 0\.find: /],
+  ['teste sem arquivo', [{ ...ROWS[0], test: { cwd: '.' } }], /removals\.json 0\.test\.file: /],
+  ['nome vazio', [{ ...ROWS[0], test: { ...TEST, name: '' } }], /removals\.json 0\.test\.name: /],
+]
+for (const [name, manifest, message] of BAD_MANIFESTS) {
+  test(`manifesto ruim, ${name}: o comando recusa antes de remover algo`, () => {
+    const bad = mkdtempSync(join(tmpdir(), 'conexus-removals-bad-'))
+    try {
+      mkdirSync(join(bad, 'scripts'))
+      writeFileSync(join(bad, 'scripts/removals.json'), JSON.stringify(manifest))
+      const { NODE_TEST_CONTEXT: _outer, ...env } = process.env
+      const result = spawnSync('node', [REMOVALS], { cwd: bad, encoding: 'utf8', env })
+      assert.equal(result.stdout, '')
+      assert.match(result.stderr, message)
+      assert.notEqual(result.status, 0)
+    } finally {
+      rmSync(bad, { recursive: true, force: true })
+    }
+  })
+}

@@ -23,54 +23,38 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { run } from 'node:test'
+import { z } from 'zod'
 import { runCommand } from './command.ts'
 
-type Removal = {
-  id: string
-  file: string
-  find: string
-  replace: string
-  test: { cwd: string; file: string; name?: string }
-}
+const text = z.string().min(1)
+const Removals = z
+  .array(
+    z.object({
+      id: text,
+      file: text,
+      find: text,
+      replace: z.string(),
+      test: z.object({ cwd: text, file: text, name: text.optional() }),
+    }),
+  )
+  .min(1, 'must be a list with at least one row')
+type Removal = z.infer<typeof Removals>[number]
 type Outcome = 'caught' | 'survived' | 'stale' | 'unreachable' | 'broken-baseline'
 type Run = 'failed' | 'passed' | 'none'
 
 const ROW_DEADLINE_MS = 600_000
 
-function isText(value: unknown): value is string {
-  return typeof value === 'string' && value !== ''
-}
-
-function removalOf(value: unknown, index: number): Removal {
-  const row = Object(value)
-  const test = Object(row.test)
-  const name: unknown = test.name
-  if (
-    !isText(row.id) ||
-    !isText(row.file) ||
-    !isText(row.find) ||
-    typeof row.replace !== 'string' ||
-    !isText(test.cwd) ||
-    !isText(test.file) ||
-    (name !== undefined && !isText(name))
-  ) {
-    throw new Error(`removals.json row ${index} is not { id, file, find, replace, test }`)
-  }
-  return {
-    id: row.id,
-    file: row.file,
-    find: row.find,
-    replace: row.replace,
-    test: { cwd: test.cwd, file: test.file, ...(isText(name) ? { name } : {}) },
-  }
-}
-
 function loadRemovals(root: string): Removal[] {
-  const parsed: unknown = JSON.parse(readFileSync(join(root, 'scripts/removals.json'), 'utf8'))
-  if (!Array.isArray(parsed) || parsed.length === 0) {
-    throw new Error('removals.json must be a list with at least one row')
+  const parsed = Removals.safeParse(
+    JSON.parse(readFileSync(join(root, 'scripts/removals.json'), 'utf8')),
+  )
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0]
+    throw new Error(
+      `removals.json ${issue?.path.join('.') ?? ''}: ${issue?.message ?? 'is not a list of { id, file, find, replace, test } rows'}`,
+    )
   }
-  return parsed.map(removalOf)
+  return parsed.data
 }
 
 /** Each entry links to the original, except links already there, which keep their relative target. */

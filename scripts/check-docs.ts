@@ -1,7 +1,8 @@
 // Defect: a document grows past its ceiling, hides from docs/index.md, holds a link that goes
 // nowhere, repeats or cites a rule that does not exist, names a retired process, or a second step
 // card waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24).
-// Refusals are proved by planting each one in check-docs.test.ts.
+// A link is inline or a reference definition, and a fragment must name a heading of the Markdown
+// file it points to. Refusals are proved by planting each one in check-docs.test.ts.
 // Revalidate by 2027-04-13, or when the list in delivery L24 changes.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
@@ -105,11 +106,47 @@ function checkSkillHeader(file: string, text: string) {
     fail('skill-name-differs-from-folder', file, `${String(name)} is not ${folder}`)
 }
 
+const INLINE_LINK = /\]\(([^)\s]+)\)/g
+const REFERENCE_DEFINITION = /^ {0,3}\[[^\]^][^\]]*\]:[ \t]*<?([^\s>]+)>?/gm
+
+function withoutFences(text: string): string {
+  return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '')
+}
+
+/** The ids GitHub gives a document's headings: lower case, punctuation gone, repeats numbered. */
+function headingIds(text: string): Set<string> {
+  const ids = new Set<string>()
+  const seen = new Map<string, number>()
+  for (const [, title = ''] of withoutFences(text).matchAll(
+    /^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/gm,
+  )) {
+    const slug = title
+      .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/[`*~]/g, '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\p{M} _-]/gu, '')
+      .replace(/ /g, '-')
+    const repeats = seen.get(slug) ?? 0
+    seen.set(slug, repeats + 1)
+    ids.add(repeats === 0 ? slug : `${slug}-${repeats}`)
+  }
+  return ids
+}
+
 function checkLinks(file: string, text: string) {
-  for (const match of withoutCode(text).matchAll(/\]\(([^)\s]+)\)/g)) {
-    const target = (match[1] ?? '').split('#')[0] ?? ''
-    if (target === '' || /^[a-z][a-z0-9+.-]*:/i.test(target)) continue
-    if (!existsSync(resolve(root, dirname(file), target))) fail('broken-link', file, target)
+  const code = withoutCode(text)
+  const targets = [...code.matchAll(INLINE_LINK), ...code.matchAll(REFERENCE_DEFINITION)]
+  for (const match of targets) {
+    const [path = '', fragment] = (match[1] ?? '').split('#')
+    if (/^[a-z][a-z0-9+.-]*:/i.test(path)) continue
+    const target = path === '' ? resolve(root, file) : resolve(root, dirname(file), path)
+    if (!existsSync(target)) fail('broken-link', file, path)
+    else if (fragment && target.endsWith('.md') && statSync(target).isFile()) {
+      const id = decodeURIComponent(fragment).toLowerCase()
+      if (!headingIds(readFileSync(target, 'utf8')).has(id)) {
+        fail('broken-fragment', file, `${path}#${fragment}`)
+      }
+    }
   }
 }
 

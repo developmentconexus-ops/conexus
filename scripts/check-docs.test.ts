@@ -40,6 +40,10 @@ test('aceita uma árvore limpa', () => {
 const REFUSALS: [string, Record<string, string>][] = [
   ['document-too-long', { 'docs/decisions/0001-x.md': words(351) }],
   ['broken-link', { 'AGENTS.md': 'See [gone](docs/gone.md).\n' }],
+  ['broken-link', { 'AGENTS.md': 'See [gone][target].\n\n[target]: docs/gone.md\n' }],
+  ['broken-fragment', { 'AGENTS.md': '# Title\n\nSee [up](#nowhere).\n' }],
+  ['broken-fragment', { 'AGENTS.md': 'See [code](docs/guides/code.md#nowhere).\n' }],
+  ['broken-fragment', { 'AGENTS.md': 'See [code][c].\n\n[c]: docs/guides/code.md#nowhere\n' }],
   ['not-in-index', { 'docs/guides/web.md': '- **W1.** A rule.\n' }],
   ['rule-defined-twice', { 'docs/guides/web.md': '- **C1.** Again.\n' }],
   ['rule-missing', { 'AGENTS.md': 'Obey C9.\n' }],
@@ -74,5 +78,30 @@ test('um link para fora do repositório não é conferido', () => {
 
 test('um link dentro de código não é conferido', () => {
   const run = check({ 'AGENTS.md': 'Write `[a](gone.md)` like this.\n' })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('um fragmento que nomeia um título passa, também com repetição, acento e link no título', () => {
+  const run = check({
+    'docs/guides/code.md':
+      '- **C1.** A rule.\n\n## Os `contratos` do fundador\n\n## Ação\n\n## Ação\n\n## Ver [o guia](code.md)\n',
+    'AGENTS.md': [
+      '# Title',
+      '',
+      '[a](#title) [b](docs/guides/code.md#os-contratos-do-fundador) [c](docs/guides/code.md#ação)',
+      '[d](docs/guides/code.md#ação-1) [e](docs/guides/code.md#ver-o-guia) [f](docs/index.md)',
+      '',
+      '[ref]: docs/guides/code.md#ação',
+      '',
+    ].join('\n'),
+  })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('um fragmento em arquivo que não é Markdown ou em pasta não é conferido', () => {
+  const run = check({
+    'AGENTS.md': 'See [steps](docs/steps/#x) and [s](scripts/x.ts#anchor).\n',
+    'scripts/x.ts': 'x\n',
+  })
   assert.equal(run.status, 0, run.stderr)
 })

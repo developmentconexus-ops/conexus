@@ -4,10 +4,12 @@
 // of the card, and prints `out-of-radius <file>` for each file the commit changed outside it. A bare
 // name in a cell may mean the root or the folder of the path before it: both match, and the row is
 // named `ambiguous-row` so the card can say which.
-// The refusals are proved by planting each one in check-radius.test.ts.
-// Revalidate by 2027-04-15, or when the card template's radius table changes shape.
+// Matching is Node's `path.matchesGlob` over a translation of the cell, so the card's grammar stays
+// its own (see globOf). The refusals are proved by planting each one in check-radius.test.ts.
+// Revalidate by 2027-04-15, when the card template's radius table changes shape, or when Node's
+// glob matcher changes.
 import { readdirSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, matchesGlob } from 'node:path'
 import { runCommand } from './command.ts'
 
 const root = process.cwd()
@@ -18,40 +20,32 @@ function refuse(name: string, detail: string): never {
   process.exit(1)
 }
 
-/** `a/{b,c/d}.ts` becomes `a/b.ts` and `a/c/d.ts`; braces nest. */
-function expand(pattern: string): string[] {
-  const open = pattern.indexOf('{')
-  if (open === -1) return [pattern]
-  let depth = 0
-  const commas: number[] = []
-  for (let index = open; index < pattern.length; index++) {
-    const char = pattern[index]
-    if (char === '{') depth++
-    if (char === ',' && depth === 1) commas.push(index)
-    if (char === '}' && --depth === 0) {
-      const cuts = [open, ...commas, index]
-      const head = pattern.slice(0, open)
-      const tail = pattern.slice(index + 1)
-      return cuts
-        .slice(1)
-        .flatMap((cut, part) =>
-          expand(`${head}${pattern.slice((cuts[part] ?? 0) + 1, cut)}${tail}`),
-        )
+/**
+ * The card's cell grammar as a `path.matchesGlob` pattern: `*` is any run inside one segment, a
+ * `<placeholder>` is one or more characters inside one segment, `{a,b}` alternates, a trailing `/`
+ * names a folder, and every other character is itself, a dot-leading name included. Node's matcher
+ * reads more (`**`, `?`, classes, extglobs, escapes, and `*` skipping dotfiles), so the cell is
+ * translated rather than passed through.
+ */
+function globOf(span: string): string {
+  const alternatives: boolean[] = []
+  for (const char of span) {
+    if (char === '{') alternatives.push(false)
+    if (char === ',' && alternatives.length > 0) alternatives[alternatives.length - 1] = true
+    if (char === '}' && alternatives.length > 0 && alternatives.pop() === false) {
+      return refuse('lonely-braces', span)
     }
   }
-  return refuse('unbalanced-braces', pattern)
-}
-
-function matcher(path: string): RegExp {
-  const pattern = path
-    .split(/(<[^>]+>|\*)/)
-    .map((part) => {
-      if (part === '*') return '[^/]*'
-      if (part.startsWith('<')) return '[^/]+'
-      return part.replace(/[.+?^$()[\]\\|]/g, '\\$&')
-    })
-    .join('')
-  return new RegExp(`^${pattern}${path.endsWith('/') ? '' : '$'}`)
+  if (alternatives.length > 0) return refuse('unbalanced-braces', span)
+  if (span.includes('\\')) return refuse('backslash', span)
+  let glob = ''
+  for (const part of span.split(/(<[^>]+>|\*+)/)) {
+    const atSegmentStart = glob === '' || /[/{,]$/.test(glob)
+    if (part.startsWith('<')) glob += atSegmentStart ? '{?*,.*}' : '?*'
+    else if (part.startsWith('*')) glob += atSegmentStart ? '{*,.*}' : '*'
+    else glob += part.replace(/[?[(]/g, '[$&]')
+  }
+  return span.endsWith('/') ? `${glob}**` : glob
 }
 
 function radiusRows(card: string): string[] {
@@ -64,18 +58,17 @@ function radiusRows(card: string): string[] {
     .map((line) => line.split('|')[1] ?? '')
 }
 
-function radiusOf(card: string): RegExp[] {
-  const radius: RegExp[] = []
+function radiusOf(card: string): string[] {
+  const radius: string[] = []
   for (const cell of radiusRows(card)) {
     let folder = ''
     for (const [, span = ''] of cell.matchAll(/`([^`]+)`/g)) {
-      for (const path of expand(span)) {
-        radius.push(matcher(path))
-        if (path.includes('/')) folder = path.slice(0, path.lastIndexOf('/') + 1)
-        else if (folder !== '') {
-          radius.push(matcher(`${folder}${path}`))
-          console.log(`ambiguous-row ${unit} ${path}: the root or ${folder}`)
-        }
+      radius.push(globOf(span))
+      const fixed = span.slice(0, span.includes('{') ? span.indexOf('{') : undefined)
+      if (span.includes('/')) folder = fixed.slice(0, fixed.lastIndexOf('/') + 1)
+      else if (folder !== '') {
+        radius.push(globOf(`${folder}${span}`))
+        console.log(`ambiguous-row ${unit} ${span}: the root or ${folder}`)
       }
     }
   }
@@ -103,7 +96,9 @@ const card = readFileSync(
   'utf8',
 )
 const radius = radiusOf(card)
-const outside = changedFiles().filter((file) => !radius.some((pattern) => pattern.test(file)))
+const outside = changedFiles().filter(
+  (file) => !radius.some((pattern) => matchesGlob(file, pattern)),
+)
 for (const file of outside) console.log(`out-of-radius ${unit} ${file}`)
 if (outside.length > 0) process.exit(1)
 console.log(`radius: ${unit} ${commit} inside`)
