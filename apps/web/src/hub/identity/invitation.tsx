@@ -4,6 +4,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useRouter } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
@@ -96,9 +97,14 @@ function Acceptable({ invitation }: { invitation: ReceivedInvitation }) {
     onSuccess: ({ company }) =>
       router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } }),
   })
+  const form = useForm()
 
-  function accept() {
-    send.mutate({ params: { invitationId: invitation.id } })
+  async function accept() {
+    try {
+      await send.mutateAsync({ params: { invitationId: invitation.id } })
+    } catch (error) {
+      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+    }
   }
 
   return (
@@ -107,14 +113,10 @@ function Acceptable({ invitation }: { invitation: ReceivedInvitation }) {
         {invitation.inviterName} convidou você para {invitation.company.name} como{' '}
         {ROLE_LABELS[invitation.role]}.
       </h1>
-      {send.isError && (
-        <p role="alert" className="text-danger">
-          {sentenceOf(send.error)}
-        </p>
-      )}
-      <Button variant="primary" disabled={send.isPending} onClick={accept}>
-        {send.isPending ? 'Aceitando…' : 'Aceitar convite'}
-      </Button>
+      <Form form={form} onSubmit={accept}>
+        <FormAlert />
+        <SubmitButton idle="Aceitar convite" pending="Aceitando…" />
+      </Form>
     </section>
   )
 }

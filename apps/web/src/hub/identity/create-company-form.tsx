@@ -8,16 +8,17 @@ import { makeCompany } from './queries.ts'
 
 export function CreateCompanyForm() {
   const router = useRouter()
-  const send = useMutation(makeCompany)
+  const send = useMutation({
+    ...makeCompany,
+    onSuccess: ({ company }) =>
+      router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } }),
+  })
   const attempt = useAttemptKey()
   const form = useSchemaForm(createCompany.input.body, { name: '' })
 
   async function submit({ name }: { name: string }) {
     try {
-      const { company } = await attempt((attemptKey) =>
-        send.mutateAsync({ body: { name }, attemptKey }),
-      )
-      await router.navigate({ to: '/companies/$companyId', params: { companyId: company.id } })
+      await attempt((attemptKey) => send.mutateAsync({ body: { name }, attemptKey }))
     } catch (error) {
       form.setError('root.server', { type: 'server', message: sentenceOf(error) })
     }
