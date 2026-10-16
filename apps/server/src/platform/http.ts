@@ -12,7 +12,7 @@ import Fastify, { LogController } from 'fastify'
 import helmet from 'helmet'
 import { z } from 'zod'
 import type { SessionReader } from './access.ts'
-import { enforceAccess, headersOf, personOf } from './access.ts'
+import { enforceAccess, headersOf, sessionOf } from './access.ts'
 import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
@@ -227,7 +227,7 @@ type Input<O extends Operation> = {
   Parsed<O, 'query'> &
   Parsed<O, 'body'> &
   (O['attemptKey'] extends true ? { attemptKey: string } : unknown) &
-  (O['access'] extends 'session' ? { person: Person } : unknown)
+  (O['access'] extends 'session' ? { person: Person; sessionToken: string } : unknown)
 type Handler<O extends Operation> = (input: Input<O>) => Answer<Body<O>> | Promise<Answer<Body<O>>>
 
 const AttemptKey = z.uuid()
@@ -291,6 +291,7 @@ export function serve(
     body: unknown
     attemptKey: string | undefined
     person: Person | undefined
+    sessionToken: string | undefined
   }) => Answer<unknown> | Promise<Answer<unknown>>,
 ): void {
   app.route({
@@ -304,7 +305,9 @@ export function serve(
         log: request.log,
         signal: untilClientLeaves(reply),
         ...partsOf(operation, request),
-        person: operation.access === 'session' ? personOf(request) : undefined,
+        ...(operation.access === 'session'
+          ? sessionOf(request)
+          : { person: undefined, sessionToken: undefined }),
       }
       const { body, setCookie } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)

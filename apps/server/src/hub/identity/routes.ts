@@ -3,7 +3,6 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { SessionReader } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
-import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
 import {
@@ -72,14 +71,10 @@ export function registerIdentityRoutes(
     return answer({ state: 'SIGNED_IN', person: session.person }, session.setCookie)
   })
 
-  serve(app, deleteSession, async ({ headers, person, log }) => {
-    const current = await inLibrary(() =>
-      deps.auth.api.getSession({ headers, query: { disableCookieCache: true } }),
-    )
-    if (current === null) throw new Failure('SESSION_REQUIRED')
+  serve(app, deleteSession, async ({ headers, person, sessionToken, log }) => {
     // The library's sign-out logs and swallows a failed delete (api/routes/sign-out.mjs:49-54),
     // so the row goes first and fails loudly, and only then are the cookies expired (S20).
-    const body = { token: current.session.token }
+    const body = { token: sessionToken }
     await inLibrary(() =>
       refusedAs(() => deps.auth.api.revokeSession({ body, headers }), { 401: 'SESSION_REQUIRED' }),
     )

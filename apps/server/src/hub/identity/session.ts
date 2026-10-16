@@ -26,6 +26,7 @@ export function createSessionReader(deps: { auth: Auth }): SessionReader {
     return {
       kind: 'SIGNED_IN',
       person: Person.parse(session.user),
+      sessionToken: session.session.token,
       setCookie: found.headers.getSetCookie(),
     }
   }

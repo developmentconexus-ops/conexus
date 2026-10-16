@@ -43,7 +43,12 @@ const forget = {
 async function hub() {
   const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
     webRoot: tmpdir(),
-    readSession: async () => ({ kind: 'SIGNED_IN', person: PERSON, setCookie: [] }),
+    readSession: async () => ({
+      kind: 'SIGNED_IN',
+      person: PERSON,
+      sessionToken: 'token',
+      setCookie: [],
+    }),
   })
   serve(app, echo, ({ body }) => answer({ note: body.note }, ['a=1; Path=/', 'b=2; Path=/']))
   serve(app, forget, () => answer(undefined, ['a=; Max-Age=0; Path=/']))

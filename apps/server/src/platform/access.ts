@@ -14,11 +14,15 @@ const JSON_MEDIA_TYPE = 'application/json'
 export type SessionReader = (request: {
   headers: Headers
 }) => Promise<
-  { kind: 'SIGNED_IN'; person: Person; setCookie: readonly string[] } | { kind: 'SIGNED_OUT' }
+  | { kind: 'SIGNED_IN'; person: Person; sessionToken: string; setCookie: readonly string[] }
+  | { kind: 'SIGNED_OUT' }
 >
 
+/** The session the access check read: its person, and its token for the one route that ends it. */
+type SignedIn = { person: Person; sessionToken: string }
+
 // Written once per request by the onRequest hook below, before any handler runs.
-const signedIn = new WeakMap<FastifyRequest, Person>()
+const signedIn = new WeakMap<FastifyRequest, SignedIn>()
 
 type Shape = { methods: readonly string[]; path: RegExp }
 const ALLOWED: Record<AccessKind, Shape> = {
@@ -46,12 +50,12 @@ export function headersOf(request: FastifyRequest): Headers {
   return headers
 }
 
-/** The person whose session the access check read, for a route of the `session` kind. */
-export function personOf(request: FastifyRequest): Person {
-  const person = signedIn.get(request)
-  if (person === undefined)
+/** The session the access check read, for a route of the `session` kind. */
+export function sessionOf(request: FastifyRequest): SignedIn {
+  const session = signedIn.get(request)
+  if (session === undefined)
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'no session read' } })
-  return person
+  return session
 }
 
 function hasBody(request: FastifyRequest): boolean {
@@ -120,7 +124,7 @@ export function enforceAccess(
     }
     const session = await deps.readSession({ headers: headersOf(request) })
     if (session.kind === 'SIGNED_OUT') throw new Failure('SESSION_REQUIRED')
-    signedIn.set(request, session.person)
+    signedIn.set(request, { person: session.person, sessionToken: session.sessionToken })
     if (session.setCookie.length > 0) reply.header('set-cookie', session.setCookie)
   })
 }
