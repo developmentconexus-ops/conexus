@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { after, before, test } from 'node:test'
+import { after, before, describe, test } from 'node:test'
 import type { Page } from 'playwright-core'
 import type { Viewport } from './layout-harness.ts'
 import { createHarness, DESKTOP, PHONE, presses, SMALL_PHONE } from './layout-harness.ts'
@@ -31,23 +31,27 @@ async function tabStops(page: Page): Promise<string[]> {
   return [...new Set([...back, ...(await walk(page, 'Tab'))])]
 }
 
+// The pages are separate browser contexts and spend their time waiting on frames, so the cases
+// share the machine's two cores instead of queueing behind each other.
 const VIEWPORTS: Viewport[] = [DESKTOP, PHONE, SMALL_PHONE]
-for (const state of STATES) {
-  for (const viewport of VIEWPORTS) {
-    for (const scheme of ['light', 'dark'] as const) {
-      test(`${state.name}, ${viewport.width}px, tema ${scheme}: sem rolagem lateral e contorno de 2px em cada parada do Tab`, async () => {
-        const page = await harness.open(state.path, { viewport, replies: state.replies, scheme })
-        await state.settle(page)
-        const { scroll, inner } = await page.evaluate(() => ({
-          scroll: document.documentElement.scrollWidth,
-          inner: window.innerWidth,
-        }))
-        assert.ok(scroll <= inner, `the page scrolls sideways: ${scroll}px in ${inner}px`)
-        const stops = await tabStops(page)
-        const flawed = stops.filter((stop) => !/ solid 2px( inside)?$/.test(stop))
-        assert.deepEqual(flawed, [])
-        await page.close()
-      })
+describe('varredura', { concurrency: 4 }, () => {
+  for (const state of STATES) {
+    for (const viewport of VIEWPORTS) {
+      for (const scheme of ['light', 'dark'] as const) {
+        test(`${state.name}, ${viewport.width}px, tema ${scheme}: sem rolagem lateral e contorno de 2px em cada parada do Tab`, async () => {
+          const page = await harness.open(state.path, { viewport, replies: state.replies, scheme })
+          await state.settle(page)
+          const { scroll, inner } = await page.evaluate(() => ({
+            scroll: document.documentElement.scrollWidth,
+            inner: window.innerWidth,
+          }))
+          assert.ok(scroll <= inner, `the page scrolls sideways: ${scroll}px in ${inner}px`)
+          const stops = await tabStops(page)
+          const flawed = stops.filter((stop) => !/ solid 2px( inside)?$/.test(stop))
+          assert.deepEqual(flawed, [])
+          await page.close()
+        })
+      }
     }
   }
-}
+})
