@@ -80,6 +80,18 @@ test('linha crua: aceita a linha de registro cujo valor aninhado tem a chave lev
   assert.equal(result.status, 0, result.stderr)
 })
 
+test('linha crua: aceita a linha de registro com level aninhado e espaço em volta dos dois pontos', () => {
+  const source = [
+    "import test from 'node:test'",
+    "test('a', () => {",
+    '  process.stdout.write(\'{"level":30,"msg":"PROBE","err":{"level":"nested"}}\\n\')',
+    '  process.stdout.write(\'{"level" : 30,"msg":"SPACED"}\\n\')',
+    '})',
+  ].join('\n')
+  const result = run(source)
+  assert.equal(result.status, 0, result.stderr)
+})
+
 test('linha crua: recusa sem travar a linha com aspas sem fechar', async () => {
   const source = [
     "import test from 'node:test'",

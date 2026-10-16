@@ -14,6 +14,8 @@ import { Email, Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import pg from 'pg'
 import { z } from 'zod'
+import type { LogLine } from '../../../../scripts/log-line.ts'
+import { parseLogLine } from '../../../../scripts/log-line.ts'
 import type { Config } from './config.ts'
 import { MailApiUrl, MailToken, PublicOrigin, readTestDatabase, SessionSecret } from './config.ts'
 import type { Database } from './database.ts'
@@ -249,22 +251,8 @@ export function serveEnvironment(t: TestContext, url: DatabaseUrl, port?: number
 
 const MAIN = join(import.meta.dirname, '..', 'main.ts')
 // The test reporter refuses a raw line from an in-process test (scripts/test-reporter.ts); a spawned
-// Hub's pipes reach no reporter, so this is the same rule for them (code C50, C54).
-const CODE = /^[A-Z][A-Z0-9_]*$/
-
-export type LogLine = Record<string, unknown>
-
-function logLine(text: string): LogLine | undefined {
-  if (text.match(/"level":/g)?.length !== 1) return undefined
-  try {
-    const parsed: unknown = JSON.parse(text)
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return undefined
-    const line: LogLine = Object.fromEntries(Object.entries(parsed))
-    return CODE.test(String(line.msg)) ? line : undefined
-  } catch {
-    return undefined
-  }
-}
+// Hub's pipes reach no reporter, so this is the same rule for them, decided by the same function
+// (code C50, C54, C72).
 
 export type HubProcess = {
   lines: LogLine[]
@@ -304,7 +292,7 @@ export function startHub(
     })
   }
   function take(text: string) {
-    const line = logLine(text)
+    const line = parseLogLine(text)
     if (line === undefined) raw.push(text)
     else {
       lines.push(line)
