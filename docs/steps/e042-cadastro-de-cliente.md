@@ -23,8 +23,8 @@ dono. A Conexus nunca vira membro da empresa, e o cliente deixa de criar empresa
 esta página e o grant abaixo. Antes da publicação: confirma as empresas de teste que a migração
 apaga. No fim: faz o roteiro, diz o que viu e aprova os textos das telas.
 
-**Decisões já dadas, 2026-10-16.** “p1. a / P2. A / P3. A / P4. A / P5. A / P6. B / P7. A / t1.
-a / t2. a / t3. a / t4. a”. A empresa nasce no cadastro, sem membro, e o administrador vira dono
+**Decisões já dadas.** Respostas do fundador, 2026-10-16: A em todas as perguntas de produto, exceto
+P6 (B), e A nas quatro perguntas técnicas. A empresa nasce no cadastro, sem membro, e o administrador vira dono
 ao aceitar. O CNPJ é único pelas 14 posições, com letras aceitas. Corrige-se enquanto o cliente
 aguarda; trocar o e-mail é cancelar e convidar outro. A Central mostra só dados e donos.
 
