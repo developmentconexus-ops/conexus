@@ -10,7 +10,7 @@ export type CompanyId = z.infer<typeof CompanyId>
 export const InvitationId = z.string().regex(LIBRARY_ID).brand('InvitationId')
 export type InvitationId = z.infer<typeof InvitationId>
 
-/** From the most privileged to the least: the server's `mayInviteAs` and the invite form read this order. */
+/** From the most privileged to the least; `mayInviteAs` and the invite form read this order. */
 export const Role = z.enum(['owner', 'admin', 'member'])
 export type Role = z.infer<typeof Role>
 
