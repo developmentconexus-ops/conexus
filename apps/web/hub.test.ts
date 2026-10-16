@@ -95,3 +95,18 @@ test('resposta que decide: uma recusa de usuário do Hub, inteira', async (t) =>
   })
   assert.equal(assertUnknown(await createdWith(), false).code, 'NOT_FOUND')
 })
+
+test('resposta que decide: MAIL_UNAVAILABLE do Hub, inteiro, com a mudança que ficou', async (t) => {
+  await hubThatAnswers(t, (reply) => {
+    reply.writeHead(502, { 'content-type': 'application/problem+json' })
+    reply.end(problem('MAIL_UNAVAILABLE'))
+  })
+  assert.equal(assertUnknown(await createdWith(), false).code, 'MAIL_UNAVAILABLE')
+})
+
+test('uma recusa de terceiro nova não decide até a web a nomear', () => {
+  const thirdParty = Object.entries(FAILURES)
+    .filter(([, row]) => row.category === 'THIRD_PARTY')
+    .map(([code]) => code)
+  assert.deepEqual(thirdParty, ['MAIL_UNAVAILABLE'])
+})

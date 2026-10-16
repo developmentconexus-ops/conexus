@@ -31,14 +31,16 @@ async function bodyOf(response: Response): Promise<unknown> {
 }
 
 /**
- * Only a Hub Problem whose row is not a SYSTEM failure settles the outcome: the Hub's answer says
- * what it did, which can be a change that stands, such as an invitation whose e-mail failed.
+ * Only a Hub Problem that is a USER failure, or MAIL_UNAVAILABLE, settles the outcome: the Hub's
+ * answer says what it did, which can be a change that stands, such as an invitation whose e-mail
+ * failed. A code of another third party is named here when its table row says it settles.
  */
 async function failureOf(response: Response): Promise<HubFailure> {
   const problem = Problem.safeParse(await bodyOf(response))
   if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
   const { code } = problem.data
-  return new HubFailure(code, { outcomeUnknown: FAILURES[code].category === 'SYSTEM' })
+  const settled = FAILURES[code].category === 'USER' || code === 'MAIL_UNAVAILABLE'
+  return new HubFailure(code, { outcomeUnknown: !settled })
 }
 
 /** The one fetch to the Hub: same origin, with cookies, under a deadline (web W9). */
