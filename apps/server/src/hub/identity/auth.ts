@@ -164,8 +164,13 @@ async function capAtTotalLifetime(
 ) {
   const createdAt = context?.context.session?.session.createdAt
   if (data.expiresAt === undefined || createdAt === undefined) return
-  const end = createdAt.getTime() + LIFETIMES.totalSeconds * 1000
+  const end = endOfLifetime(createdAt)
   return { data: { expiresAt: new Date(Math.min(data.expiresAt.getTime(), end)) } }
+}
+
+/** The instant a session created at `createdAt` ends, whatever its idle deadline says. */
+export function endOfLifetime(createdAt: Date): number {
+  return createdAt.getTime() + LIFETIMES.totalSeconds * 1000
 }
 
 // No secure attribute: better-call sets Secure on every __Host- name (dist/cookies.mjs:48-49).

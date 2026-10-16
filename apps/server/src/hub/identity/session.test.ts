@@ -149,6 +149,31 @@ test('prazo total: usada a cada 25 min, aberta até 8 h e ninguém depois; a lin
   ])
 })
 
+test('prazo total, sessão renovada pela versão anterior além de 8 h: a primeira leitura protegida às 8 h 1 min, 401', async (t) => {
+  const hub = await hubOn(t)
+  for (const renewed of ['2 minutes', '30 seconds']) {
+    const cookie = await signedIn(hub)
+    await hub.test.asOwner(
+      `update auth.session set created_at = now() - interval '8 hours 1 minute',
+        updated_at = now() - $1::interval, expires_at = now() - $1::interval + interval '30 minutes'`,
+      [renewed],
+    )
+    for (const attempt of ['primeira', 'segunda']) {
+      const response = await hub.app.inject({
+        method: 'GET',
+        url: '/api/companies',
+        headers: { cookie },
+      })
+      assert.deepEqual(
+        [response.statusCode, Object(response.json()).code],
+        [401, 'SESSION_REQUIRED'],
+        `renovada há ${renewed}, ${attempt} leitura`,
+      )
+    }
+    await hub.test.asOwner('delete from auth.session')
+  }
+})
+
 test('sair: 204, a linha some, o cookie expira; o mesmo cookie em seguida, ninguém', async (t) => {
   const hub = await hubOn(t)
   const cookie = await signedIn(hub)

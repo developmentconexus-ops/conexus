@@ -11,6 +11,17 @@
     }
   },
   {
+    "id": "session-total-at-read",
+    "file": "apps/server/src/hub/identity/session.ts",
+    "find": "    if (Date.now() >= endOfLifetime(session.session.createdAt)) return { kind: 'SIGNED_OUT' }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/session.test.ts",
+      "name": "versão anterior"
+    }
+  },
+  {
     "id": "raw-output-in-process",
     "file": "scripts/test-reporter.ts",
     "find": "const lines = `${pending.get(key) ?? ''}${event.data.message}`.split('\\n')",

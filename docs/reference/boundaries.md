@@ -16,17 +16,29 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 
 - **Library line.** `better-auth/dist/api/routes/session.mjs:178-200`. `getSession` renews a
   session once `updateAge` (60 s) has passed since the last renewal, to `expiresIn` (1800 s) from
-  now. The library has no total deadline.
+  now. The library has no total deadline. It tests the stored expiry (`session.mjs:155`) before it
+  renews, so a renewal it shortens into the past still returns the session it read.
 - **Hand-made piece.** `capAtTotalLifetime` in `apps/server/src/hub/identity/auth.ts`, the
   library's own `databaseHooks.session.update.before`. It caps a renewal's `expiresAt` at
   `createdAt` plus 8 h; the library then ends the session on its idle deadline (`session.mjs:155`).
+  `createSessionReader` in `session.ts` also answers "signed out" to a session read at `createdAt`
+  plus 8 h or later. Both read the total from `endOfLifetime`.
 - **Why.** The founder's 8 hours in total (step 3, answer "4. A"). The test "prazo total" in
-  `session.test.ts`, a session read every 25 min through the library, fails without the hook
-  (removal `session-total-lifetime`). The cost: once `expiresAt` is capped, the library's renewal
-  test (`session.mjs:180`) holds on every read, so each read writes the row from `createdAt` plus
-  7 h 31 min, the last 29 minutes (`expiresIn` minus `updateAge`, 1740 s). Before that, a read
-  writes at most once a minute. The idle deadline and the renewal stay the library's, by the
-  founder's answer of 2026-10-15 ("1. A").
+  `session.test.ts`, a session read every 25 min through the library, fails without the hook: the
+  row stays (removal `session-total-lifetime`). The cost: once `expiresAt` is capped, the library's
+  renewal test (`session.mjs:180`) holds on every read, so each read writes the row from
+  `createdAt` plus 7 h 31 min, the last 29 minutes (`expiresIn` minus `updateAge`, 1740 s). Before
+  that, a read writes at most once a minute. The idle deadline and the renewal stay the library's,
+  by the founder's answer of 2026-10-15 ("1. A").
+- **Why the read too.** A release without the hook (v0.3.1 and earlier) renews to 30 min from now
+  at any age under 8 h, so its rows end up to 8 h 30 min after their creation. The hook sees such a
+  row only after the library has accepted it. A data migration that clamps `expires_at` does not
+  close this: `infra/deploy.sh` runs `migrate` while the earlier Hub still serves, and it brings the
+  earlier image back when the new one is not healthy, after the migration ran once. The test
+  "versão anterior" in `session.test.ts`, a row renewed at 7 h 59 min and read at 8 h 1 min, fails
+  without the check (removal `session-total-at-read`). Remove it with its removal row once no
+  release without the hook can start on this database: 30 min after such a release last served, no
+  row of its own can be open.
 
 ### A failure inside the library reads as the database's
 
