@@ -163,3 +163,41 @@ test('depois de entrar com Enter, o foco vai para o título da página (#32-4)',
   const title = await screen.findByRole('heading', { name: 'Início' })
   await waitFor(() => expect(document.activeElement).toBe(title))
 })
+
+async function signInFromLogin() {
+  fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
+  fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+}
+
+test('com o carregamento da página preso, o título que aparece depois recebe o foco', async () => {
+  const state = { signedIn: false }
+  hub(state)
+  const held = Promise.withResolvers<void>()
+  server.use(
+    http.get('*/api/companies', async () => {
+      await held.promise
+      return HttpResponse.json(listCompanies.success.body.parse(NO_COMPANIES))
+    }),
+  )
+  open('/')
+  await signInFromLogin()
+  await waitFor(() => expect(state.signedIn).toBe(true))
+  expect(screen.queryByRole('heading', { name: 'Início' })).toBeNull()
+  held.resolve()
+  const title = await screen.findByRole('heading', { name: 'Início' })
+  await waitFor(() => expect(document.activeElement).toBe(title))
+})
+
+test('depois do foco no título, uma nova renderização não o puxa de volta', async () => {
+  hub({ signedIn: false })
+  const router = open('/')
+  await signInFromLogin()
+  const title = await screen.findByRole('heading', { name: 'Início' })
+  await waitFor(() => expect(document.activeElement).toBe(title))
+  const account = screen.getByRole('button', { name: /Ana/ })
+  account.focus()
+  await router.invalidate()
+  await router.navigate({ href: `/?page=${'c'.repeat(32)}` })
+  expect(document.activeElement).toBe(account)
+})

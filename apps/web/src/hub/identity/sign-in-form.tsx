@@ -29,18 +29,19 @@ const NOTICES: Record<SignInReason, string> = {
 
 /**
  * The form unmounts when the person signs in, which drops focus to the page body; the new page's
- * title takes it (#32-4). The title renders a frame after the navigation resolves.
+ * title takes it (#32-4). The router emits `onRendered` once the destination is committed to the
+ * DOM, however late its loader resolves.
  */
-async function focusPageTitle(): Promise<void> {
-  for (let frame = 0; frame < 30; frame++) {
+function focusTitleWhenRendered(router: ReturnType<typeof useRouter>): () => void {
+  const stop = router.subscribe('onRendered', () => {
+    stop()
     const title = document.querySelector<HTMLElement>('main h1')
     if (title) {
       title.tabIndex = -1
       title.focus()
-      return
     }
-    await new Promise((resume) => requestAnimationFrame(resume))
-  }
+  })
+  return stop
 }
 
 export function SignInForm(props: {
@@ -63,8 +64,13 @@ export function SignInForm(props: {
     // (web W28).
     queryClient.removeQueries({ queryKey: sessionQuery.queryKey })
     await router.invalidate()
-    await router.navigate({ href: props.redirect ?? '/' })
-    await focusPageTitle()
+    const stop = focusTitleWhenRendered(router)
+    try {
+      await router.navigate({ href: props.redirect ?? '/' })
+    } catch (error) {
+      stop()
+      throw error
+    }
   }
 
   return (
