@@ -12,6 +12,12 @@ bounce, the replay of an attempt key, who may create a company, the state of a l
 the log line of an undeclared failure, a write refused for its media type or its origin, and the
 library joins the Hub sets.
 
+## GitHub Actions and git
+
+- **Native candidates.** GitHub Actions' `$GITHUB_STEP_SUMMARY` and `git diff --numstat` can display a total, but neither interprets the card's per-unit folders, budgets, test exclusions and generated-file exclusions.
+- **Hand-made piece.** `scripts/change-budget.ts` reads the step card and numstat, groups changed source lines by unit folder, excludes tests/generated output and prints the total and each unit against its budget. `scripts/check-radius.ts` reads the declared radius and reports departures without failing.
+- **Why.** Delivery L2 says CI prints the size; L7 says radius departures are reported rather than stopped. The native candidates cannot resolve card-specific unit boundaries or budget text without this parser. Both checks append to the native step summary; neither is a gate.
+
 ## Better Auth 1.7.8
 
 ### The session's total lifetime

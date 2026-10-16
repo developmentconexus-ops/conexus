@@ -81,14 +81,12 @@ test('raio: os arquivos da tabela da unidade passam, com chaves, marcador, curin
   assert.match(result.stdout, /^radius: U1 HEAD inside$/m)
 })
 
-test('raio: arquivo fora da tabela, out-of-radius e saída 1', () => {
+test('raio: arquivo fora da tabela é reportado sem falhar', () => {
   const repo = committed(['apps/server/src/c.ts', 'apps/server/src/d.ts', 'outside/contract.ts'])
   const result = radius(repo, 'U1')
-  assert.equal(result.status, 1)
-  assert.deepEqual(
-    result.stdout.split('\n').filter((line) => line.startsWith('out-of-radius')),
-    ['out-of-radius U1 apps/server/src/d.ts', 'out-of-radius U1 outside/contract.ts'],
-  )
+  assert.equal(result.status, 0)
+  assert.match(result.stdout, /out-of-radius U1 apps\/server\/src\/d\.ts/)
+  assert.match(result.stdout, /out-of-radius U1 outside\/contract\.ts/)
 })
 
 test('raio: o mesmo arquivo dentro do raio de outra unidade', () => {
@@ -149,11 +147,11 @@ test('raio: o curinga e o marcador casam nomes com ponto, como o regex antigo', 
   )
 })
 
-test('raio: o curinga fica num segmento e ** vale o mesmo que *', () => {
+test('raio: * fica num segmento e ** atravessa níveis', () => {
   const card = cardOf('`apps/*/x.ts`, `lib/**/y.ts`, `<n>.md`')
   assert.deepEqual(
     outside(card, ['apps/a/x.ts', 'apps/a/b/x.ts', 'lib/a/y.ts', 'lib/a/b/y.ts', 'a/b.md', '.md']),
-    ['.md', 'a/b.md', 'apps/a/b/x.ts', 'lib/a/b/y.ts'],
+    ['.md', 'a/b.md', 'apps/a/b/x.ts'],
   )
 })
 
@@ -223,7 +221,7 @@ test('raio: nome com acento é lido sem aspas', () => {
   ])
 })
 
-test('raio: o commit de merge lista os arquivos contra o primeiro pai', () => {
+test('raio: o commit de merge reporta arquivos contra o primeiro pai sem falhar', () => {
   const repo = committed(['apps/server/src/c.ts'])
   git(repo, 'checkout', '--quiet', '-b', 'side', 'HEAD~1')
   mkdirSync(join(repo, 'outside'), { recursive: true })
@@ -234,6 +232,6 @@ test('raio: o commit de merge lista os arquivos contra o primeiro pai', () => {
   const merged = git(repo, 'merge', '--quiet', '--no-ff', '-m', 'merge', 'side')
   assert.equal(merged.status, 0, merged.stderr)
   const result = radius(repo, 'U1')
-  assert.equal(result.status, 1, result.stdout + result.stderr)
+  assert.equal(result.status, 0, result.stdout + result.stderr)
   assert.match(result.stdout, /^out-of-radius U1 outside\/side\.ts$/m)
 })

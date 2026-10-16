@@ -100,6 +100,22 @@ test('recusa cartão sem linha quando a mudança tem código', () => {
   assert.equal(run(dir, '--base', 'main').status, 1)
 })
 
+test('reconhece o cartão 4.1 e procura sua aprovação sem confundir com a etapa 4', () => {
+  const { dir } = repository()
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, 'docs/steps/e04.1-convite.md', 'card 4.1\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qam', 'decimal card')
+  const decimalCard = git(dir, 'rev-parse', 'HEAD')
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 4.1 aprovado em 2026-10-16 (commit ${decimalCard}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'decimal card approval')
+  assert.equal(run(dir).status, 0)
+})
+
 test('sem cartão não há o que conferir', () => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-approval-'))
   dirs.push(dir)
