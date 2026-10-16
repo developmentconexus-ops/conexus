@@ -36,29 +36,29 @@ defect.
    not brought. Keep the measure of the study rule ([`conexus-study`](../conexus-study/SKILL.md)
    step 5) as you go; when a part passes its limit, stop and report.
 5. Write the tests through the server's public door, with the negative cases
-   ([testing](../../../docs/guides/testing.md)).
+   ([testing](../../../docs/guides/testing.md)). Write each screen text from the card's state
+   matrix; the founder approves the texts at the use script, so the build does not stop for one.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
    changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
-   repository's verification skill when one exists, kept current with pstack
-   `maintain-verification-skill`. Then run pstack `deslop` and `no-comments`; code C70 and C73
-   decide what leaves, so a comment that states a why the code cannot show stays. Without pstack:
-   reread the diff and remove what a careful engineer would not write.
+   repository's verification skill when one exists. Then answer [the
+   checklist](../../../docs/reference/checklist.md) item by item, sweeping each class across the
+   whole diff, and run pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves.
+   Without pstack: reread the diff and remove what a careful engineer would not write.
 7. One commit for the unit on the step branch. The tests the unit touches are green.
 
 ## What it produces
 
-The commit and a report: what I ran, what I saw, what I did not prove, the brought and changed line
-counts of each brought part, and every criterion of the card with the test that covers it. It lists
-every file changed outside the unit's blast radius and every departure from the card, each with the
-stop it raised, or "none"; the screenshots looked at, by state, width and theme, or "no screen
-touched"; and the maintainers' skills and pstack skills loaded. No pull request or review per unit
-([delivery L9, L13](../../../docs/guides/delivery.md)).
+The commit and a report: what I ran, saw and did not prove; the line counts of each brought part;
+every criterion with its test; each declared file outside the card's folders ([delivery
+L7](../../../docs/guides/delivery.md)); the screenshots looked at, by state, width and theme, or "no
+screen touched". No pull request or review per unit ([delivery L9,
+L13](../../../docs/guides/delivery.md)).
 
 ## Stop and ask
 
 - A criterion cannot turn green without changing the card.
 - A decision is missing, or a guide and the card contradict each other.
-- The unit needs a file outside its blast radius: that is a change of scope ([delivery
+- The unit changes what a person sees, or the scope, beyond the card ([delivery
   L7](../../../docs/guides/delivery.md)).
 - The unit grows past what the card expects, or a brought part passes the third.
 
@@ -67,5 +67,5 @@ Stop means no more code: report the evidence and the question.
 ## When it closes
 
 The unit's commit is on the step branch, its tests are green, and the report says what ran. A
-review finding comes back as a message: find its cause before fixing, and push the fix to the same
-branch.
+review finding comes back as a message: find its cause, sweep its class across the diff, fix every
+occurrence, and push to the same branch.
