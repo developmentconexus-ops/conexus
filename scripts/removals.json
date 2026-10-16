@@ -299,7 +299,7 @@
   {
     "id": "attempt-key-outcome-unknown",
     "file": "apps/web/src/platform/hub.ts",
-    "find": "const settled = FAILURES[code].category === 'USER' || code === 'MAIL_UNAVAILABLE'",
+    "find": "const settled = FAILURES[code].settles",
     "replace": "const settled = true",
     "test": {
       "cwd": "apps/web",

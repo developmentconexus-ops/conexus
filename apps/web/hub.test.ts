@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { FailureCode } from '@conexus/hub-api'
-import { createCompany, FAILURES } from '@conexus/hub-api'
+import { createCompany } from '@conexus/hub-api'
 import { problemOf } from './src/platform/fixtures.ts'
 import { HubFailure, hubMutation } from './src/platform/hub.ts'
 
@@ -95,11 +95,4 @@ test('resposta que decide: MAIL_UNAVAILABLE do Hub, inteiro, com a mudança que 
     reply.end(problem('MAIL_UNAVAILABLE'))
   })
   assert.equal(assertUnknown(await createdWith(), false).code, 'MAIL_UNAVAILABLE')
-})
-
-test('uma recusa de terceiro nova não decide até a web a nomear', () => {
-  const thirdParty = Object.entries(FAILURES)
-    .filter(([, row]) => row.category === 'THIRD_PARTY')
-    .map(([code]) => code)
-  assert.deepEqual(thirdParty, ['MAIL_UNAVAILABLE'])
 })
