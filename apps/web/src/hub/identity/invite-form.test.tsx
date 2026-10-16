@@ -135,6 +135,12 @@ test('o administrador só vê Administrador e Membro, e começa no menos privile
   ])
 })
 
+test('começa no menos privilegiado mesmo que o Hub liste os papéis em outra ordem', async () => {
+  hub(['member', 'owner', 'admin'], () => refusal('INTERNAL_UNEXPECTED'))
+  const { role } = await open()
+  expect(role.textContent).toBe('Membro')
+})
+
 test('201: "Convite enviado para {e-mail}.", o formulário limpo e o pedido com e-mail, papel e chave', async () => {
   const sent = hub(['owner', 'admin', 'member'], () => accepted('davi@example.test', 'admin'))
   const { email } = await open()

@@ -1,5 +1,5 @@
-import type { FailureCode, Role } from '@conexus/hub-api'
-import { createInvitation } from '@conexus/hub-api'
+import type { FailureCode } from '@conexus/hub-api'
+import { createInvitation, Role } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -70,8 +70,11 @@ export function InviteForm() {
   const send = useMutation(inviteToCompany)
   const attempt = useAttemptKey()
   const [sentTo, setSentTo] = useState<string | undefined>(undefined)
-  // The list runs from the most to the least privileged; the form starts on the least.
-  const form = useSchemaForm(createInvitation.input.body, { email: '', role: roles.at(-1) })
+  // `Role.options` runs from the most to the least privileged; the form starts on the least offered.
+  const form = useSchemaForm(createInvitation.input.body, {
+    email: '',
+    role: Role.options.findLast((role) => roles.includes(role)),
+  })
 
   async function submit(values: { email: string; role: Role }) {
     setSentTo(undefined)
