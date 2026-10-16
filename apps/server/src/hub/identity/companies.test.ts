@@ -259,8 +259,15 @@ test('fora: a segunda página de pessoas e de convites vem por next', async (t) 
     (await call(hub, ana, 'GET', `/api/companies/${companyId}/members`)).json(),
   )
   assert.equal(members.members[0].name, 'Ana Lima')
-  const malformed = await call(hub, ana, 'GET', `/api/companies/${companyId}/members?page=x`)
-  assert.deepEqual([malformed.statusCode, codeOf(malformed)], [400, 'REQUEST_MALFORMED'])
+  for (const page of ['x', members.members[1].personId]) {
+    const malformed = await call(
+      hub,
+      ana,
+      'GET',
+      `/api/companies/${companyId}/members?page=${page}`,
+    )
+    assert.deepEqual([malformed.statusCode, codeOf(malformed)], [400, 'REQUEST_MALFORMED'], page)
+  }
 })
 
 test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreate só do administrador', async (t) => {

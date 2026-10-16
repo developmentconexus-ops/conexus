@@ -44,10 +44,13 @@ export const ReceivedInvitation = z.object({
 })
 export type ReceivedInvitation = z.infer<typeof ReceivedInvitation>
 
+/** Where the next page starts, opaque to the client (code C44); only the Hub reads it. */
+const PageToken = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/)
+
 /** A page of a list ends, or names the page that follows (code C41: never null). */
 export const Next = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('END') }),
-  z.object({ kind: z.literal('MORE'), page: z.string().regex(LIBRARY_ID) }),
+  z.object({ kind: z.literal('MORE'), page: PageToken }),
 ])
 export type Next = z.infer<typeof Next>
 
@@ -56,7 +59,7 @@ export const PAGE_SIZE = 50
 
 const CompanyName = z.string().trim().min(1).max(100)
 const PersonName = z.string().trim().min(1).max(100)
-const Page = z.object({ page: z.string().regex(LIBRARY_ID).optional() })
+const Page = z.object({ page: PageToken.optional() })
 const InCompany = z.object({ companyId: CompanyId })
 const OfInvitation = z.object({ invitationId: InvitationId })
 

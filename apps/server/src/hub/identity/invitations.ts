@@ -18,7 +18,7 @@ import type { Admitted } from './admission.ts'
 import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { forgetLinks, linkTokenOf, refusedAs } from './auth.ts'
-import { after, pageOf } from './companies.ts'
+import { after, pageKey, pageOf } from './companies.ts'
 import { company, invitation, member, user } from './tables.ts'
 
 // The founder's numbers, step 4 answer 6: open invitations per company, and per person and minute.
@@ -65,6 +65,7 @@ async function lockCompany(tx: CommandTx, companyId: string): Promise<void> {
 }
 
 export async function readInvitations(tx: ReadTx, admitted: Admitted, page: string | undefined) {
+  const key = pageKey(page)
   const rows = await tx
     .select(pending)
     .from(invitation)
@@ -74,9 +75,9 @@ export async function readInvitations(tx: ReadTx, admitted: Admitted, page: stri
         eq(invitation.status, 'pending'),
         after(
           sql`(${invitation.createdAt}, ${invitation.id})`,
-          page,
+          key,
           sql`select created_at, id from auth.invitation
-            where id = ${page} and company_id = ${admitted.companyId}`,
+            where id = ${key} and company_id = ${admitted.companyId}`,
         ),
       ),
     )
