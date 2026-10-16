@@ -30,11 +30,3 @@ export function invitationMail(input: {
     ].join('\n'),
   }
 }
-
-export function passwordLinkMail(input: { to: Email; name: string; link: string }): MailMessage {
-  return {
-    to: input.to,
-    subject: 'Crie sua senha do Conexus',
-    text: passwordLinkText(input.name, input.link),
-  }
-}

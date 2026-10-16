@@ -1,5 +1,12 @@
 import type { CompanyId, Person } from '@conexus/hub-api'
-import { CAPACITY, Email, InvitationId, PendingInvitation, Role } from '@conexus/hub-api'
+import {
+  CAPACITY,
+  createInvitation,
+  Email,
+  InvitationId,
+  PendingInvitation,
+  Role,
+} from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
@@ -34,11 +41,21 @@ export const PendingRow = z.object({
   expiresAt: z.date(),
   revision: z.number().int().nonnegative(),
 })
-const AttemptRow = PendingRow.extend({ unmailed: z.boolean() })
-const OpenRow = z.object({ id: InvitationId })
+const Replacement = createInvitation.input.body.shape.replaces.unwrap()
+const AttemptRow = PendingRow.extend({
+  unmailed: z.boolean(),
+  status: Status,
+  live: z.boolean(),
+  replaces: Replacement.nullable(),
+})
+const OpenRow = PendingRow.extend({ live: z.boolean() })
 
 export function pendingOf(row: z.infer<typeof PendingRow>) {
-  return PendingInvitation.parse({ ...row, expiresAt: row.expiresAt.toISOString() })
+  return PendingInvitation.parse({
+    ...row,
+    state: 'PENDING',
+    expiresAt: row.expiresAt.toISOString(),
+  })
 }
 
 /**
@@ -60,12 +77,16 @@ type Invite = {
   email: Email
   role: Role
   attemptKey: string
+  replaces?: z.infer<typeof Replacement>
 }
 
 async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) {
   const [same] = await tx
     .select({
       ...pending,
+      status: invitation.status,
+      live: sql<boolean>`${LIVE}`,
+      replaces: invitation.replaces,
       unmailed: sql<boolean>`${invitation.status} = 'pending' and ${invitation.mailedAt} is null
         and ${LIVE}`,
     })
@@ -90,7 +111,7 @@ async function checkRoom(tx: CommandTx, admitted: Admitted, email: string): Prom
   if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')
 }
 
-async function checkPace(tx: CommandTx, personId: string): Promise<void> {
+export async function checkPace(tx: CommandTx, personId: string): Promise<void> {
   const recent = await tx.$count(
     invitation,
     and(
@@ -107,7 +128,7 @@ async function checkPace(tx: CommandTx, personId: string): Promise<void> {
  */
 async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
   const [open] = await tx
-    .select({ id: invitation.id })
+    .select({ ...pending, live: sql<boolean>`${LIVE}` })
     .from(invitation)
     .where(
       and(
@@ -143,9 +164,15 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       await tx.select({ id: user.id }).from(user).where(eq(user.id, personId)).for('no key update')
       const same = await attemptOf(tx, admitted, input.attemptKey)
       if (same !== undefined) {
-        if (same.email !== email || same.role !== input.role) {
+        if (
+          same.email !== email ||
+          same.role !== input.role ||
+          same.replaces?.id !== input.replaces?.id ||
+          same.replaces?.revision !== input.replaces?.revision
+        ) {
           throw new Failure('IDEMPOTENCY_CONFLICT')
         }
+        if (same.status !== 'pending' || !same.live) throw new Failure('INVITATION_CLOSED')
         // Committed but never answered by the provider, as when the Hub stopped before the send:
         // the replay sends it again, so delivery is at least once (C64).
         if (same.unmailed) return { ...(await createdOf(tx, admitted, same.id)), created: false }
@@ -153,8 +180,25 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       }
       await checkRoom(tx, admitted, email)
       const open = await openOf(tx, admitted, email)
+      if (input.replaces !== undefined) {
+        if (
+          open === undefined ||
+          open.id !== input.replaces.id ||
+          open.live ||
+          open.revision !== input.replaces.revision ||
+          open.role !== input.role
+        )
+          throw new Failure('INVITATION_STALE')
+      }
       if (open !== undefined) {
         await deps.auth.api.cancelInvitation({ headers, body: { invitationId: open.id } })
+        await tx
+          .update(invitation)
+          .set({
+            revision: sql`${invitation.revision} + 1`,
+            ...(input.replaces !== undefined ? { supersededAt: sql`statement_timestamp()` } : {}),
+          })
+          .where(eq(invitation.id, open.id))
       }
       await checkPace(tx, personId)
       const { attemptKey, role } = input
@@ -163,6 +207,11 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
         USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'MEMBER_EXISTS',
         YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE: 'INVITATION_ROLE_REFUSED',
       })
+      if (input.replaces !== undefined)
+        await tx
+          .update(invitation)
+          .set({ replaces: input.replaces })
+          .where(eq(invitation.id, created.id))
       return { ...(await createdOf(tx, admitted, created.id)), created: true }
     })
 }

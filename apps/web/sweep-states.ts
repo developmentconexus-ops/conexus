@@ -33,7 +33,7 @@ export async function waitFor(page: Page, text: string) {
 /** Submits the invitation form, which the state's replies refuse, and waits for the refusal. */
 async function inviteRefused(page: Page, sentence: string) {
   await page.getByLabel('E-mail').fill('davi@example.test')
-  await page.getByRole('button', { name: 'Enviar convite' }).click()
+  await page.getByRole('button', { name: 'Enviar convite', exact: true }).click()
   await waitFor(page, sentence)
 }
 
@@ -121,7 +121,7 @@ export const STATES: State[] = [
     name: 'convite vencido na lista',
     path: `/companies/${COMPANY.id}`,
     replies: WITH_EXPIRED,
-    settle: (p) => waitFor(p, 'Convidar de novo'),
+    settle: (p) => waitFor(p, 'Reenviar'),
   },
   {
     name: 'convidar de novo recusado',
@@ -131,7 +131,10 @@ export const STATES: State[] = [
       [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MEMBER_EXISTS'),
     },
     settle: async (page) => {
-      await page.getByRole('button', { name: 'Convidar de novo' }).click()
+      await page
+        .getByRole('button', { name: /^Reenviar convite para/ })
+        .last()
+        .click()
       await waitFor(page, 'Essa pessoa já está na empresa.')
     },
   },

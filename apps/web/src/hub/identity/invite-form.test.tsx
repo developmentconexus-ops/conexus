@@ -17,6 +17,7 @@ const server = hubServer()
 
 function accepted(email: string, role: string) {
   const invitation = {
+    state: 'PENDING',
     id: 'i'.repeat(32),
     email,
     role,

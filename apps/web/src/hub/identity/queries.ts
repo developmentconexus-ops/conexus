@@ -1,6 +1,7 @@
 import type { CompanyId, InvitationId } from '@conexus/hub-api'
 import {
   acceptInvitation,
+  cancelInvitation,
   createCompany,
   createInvitation,
   createInvitationPassword,
@@ -13,6 +14,7 @@ import {
   listCompanies,
   listInvitations,
   listMembers,
+  renewInvitation,
   setPassword,
 } from '@conexus/hub-api'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -43,6 +45,8 @@ export function receivedInvitationQuery(invitationId: InvitationId) {
 
 export const makeCompany = hubMutation(createCompany)
 export const inviteToCompany = hubMutation(createInvitation)
+export const cancelCompanyInvitation = hubMutation(cancelInvitation)
+export const renewCompanyInvitation = hubMutation(renewInvitation)
 export const createReceivedPassword = { ...hubMutation(createInvitationPassword), meta: KEEP_CACHE }
 export const declineReceivedInvitation = hubMutation(declineInvitation)
 export const acceptReceivedInvitation = hubMutation(acceptInvitation)

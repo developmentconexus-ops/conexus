@@ -6,11 +6,17 @@ import type { SendMail } from '../../platform/mail.ts'
 import { invitationMail } from './messages.ts'
 import { invitation } from './tables.ts'
 
-async function markMailed(tx: CommandTx, invitationId: string): Promise<void> {
+async function markMailed(tx: CommandTx, sent: PendingInvitation): Promise<void> {
   await tx
     .update(invitation)
     .set({ mailedAt: sql`statement_timestamp()` })
-    .where(and(eq(invitation.id, invitationId), isNull(invitation.mailedAt)))
+    .where(
+      and(
+        eq(invitation.id, sent.id),
+        eq(invitation.revision, sent.revision),
+        isNull(invitation.mailedAt),
+      ),
+    )
 }
 
 /**
@@ -37,7 +43,7 @@ export async function mailInvitation(
     link: input.link,
   })
   async function mark(): Promise<void> {
-    await deps.database.command((tx) => markMailed(tx, sent.id))
+    await deps.database.command((tx) => markMailed(tx, sent))
   }
   try {
     await deps.sendMail(message, signal)

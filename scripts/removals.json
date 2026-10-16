@@ -462,6 +462,39 @@
     }
   },
   {
+    "id": "invitation-mark-current-revision",
+    "file": "apps/server/src/hub/identity/invitation-mail.ts",
+    "find": "        eq(invitation.revision, sent.revision),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-lifecycle.test.ts",
+      "name": "a late send cannot mark"
+    }
+  },
+  {
+    "id": "invitation-cancel-terminal-guard",
+    "file": "apps/server/src/hub/identity/invitation-management.ts",
+    "find": "if (row.status !== 'pending') throw new Failure('INVITATION_CLOSED')",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-lifecycle.test.ts",
+      "name": "accepted or declined never become canceled"
+    }
+  },
+  {
+    "id": "invitation-create-replay-terminal",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (same.status !== 'pending' || !same.live) throw new Failure('INVITATION_CLOSED')",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-lifecycle.test.ts",
+      "name": "binds the complete replay payload"
+    }
+  },
+  {
     "id": "write-plain-text-refused",
     "file": "apps/server/src/platform/http.ts",
     "find": "  app.removeContentTypeParser('text/plain')\n",

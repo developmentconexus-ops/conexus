@@ -1,15 +1,32 @@
 import type { ListedInvitation } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { useState } from 'react'
+import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  setServerError,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
 import { List, PageTitle, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { InviteForm } from './invite-form.tsx'
 import { Pager } from './pager.tsx'
-import { companyQuery, invitationsQuery, inviteToCompany, membersQuery } from './queries.ts'
+import {
+  cancelCompanyInvitation,
+  companyQuery,
+  invitationsQuery,
+  inviteToCompany,
+  membersQuery,
+  renewCompanyInvitation,
+} from './queries.ts'
 import { RoleBadge } from './role-badge.tsx'
 
 const route = getRouteApi('/_app/companies/$companyId')
@@ -45,15 +62,67 @@ function Members() {
   )
 }
 
-/** An expired invitation offers "Convidar de novo": the Hub cancels it and sends a new one. */
+function CancelInvitation({
+  invitation,
+  onClose,
+}: {
+  invitation: ListedInvitation
+  onClose: () => void
+}) {
+  const { companyId } = route.useParams()
+  const cancel = useMutation(cancelCompanyInvitation)
+  const form = useSchemaForm(z.object({ email: z.literal(invitation.email) }), { email: '' })
+  async function submit() {
+    try {
+      await cancel.mutateAsync({
+        params: { companyId, invitationId: invitation.id },
+        body: { revision: invitation.revision },
+      })
+      onClose()
+    } catch (error) {
+      setServerError(form, error)
+    }
+  }
+  return (
+    <Form form={form} onSubmit={submit}>
+      <p className="break-all">Para cancelar, confirme {invitation.email}.</p>
+      <TextField
+        name="email"
+        type="email"
+        label="Confirmar e-mail"
+        autoComplete="off"
+        invalid="Digite o e-mail do convite."
+      />
+      <FormAlert />
+      <SubmitButton idle="Confirmar cancelamento" pending="Cancelando…" />
+      <Button type="button" disabled={cancel.isPending} onClick={onClose}>
+        Voltar
+      </Button>
+    </Form>
+  )
+}
+
 function InvitationRow({ invitation }: { invitation: ListedInvitation }) {
   const { companyId } = route.useParams()
   const send = useMutation(inviteToCompany)
+  const renew = useMutation(renewCompanyInvitation)
+  const [canceling, setCanceling] = useState(false)
   const attempt = useAttemptKey()
-  const body = { email: invitation.email, role: invitation.role }
+  const body = {
+    email: invitation.email,
+    role: invitation.role,
+    replaces: { id: invitation.id, revision: invitation.revision },
+  }
 
   function inviteAgain() {
-    // A refusal shows from `send.error`; nothing else waits on it.
+    if (invitation.state === 'PENDING') {
+      renew.mutate({
+        params: { companyId, invitationId: invitation.id },
+        body: { revision: invitation.revision },
+      })
+      return
+    }
+    // The mutation owns the visible refusal.
     attempt((attemptKey) => send.mutateAsync({ params: { companyId }, body, attemptKey })).catch(
       () => undefined,
     )
@@ -70,17 +139,29 @@ function InvitationRow({ invitation }: { invitation: ListedInvitation }) {
               : 'Vencido'
           }
         />
-        <span className="flex items-center gap-md">
+        <span className="flex flex-wrap items-center gap-md">
           <RoleBadge role={invitation.role} />
-          {invitation.state === 'EXPIRED' && (
-            <Button disabled={send.isPending} onClick={inviteAgain}>
-              {send.isPending ? 'Enviando…' : 'Convidar de novo'}
-            </Button>
-          )}
+          <Button
+            aria-label={`Reenviar convite para ${invitation.email}`}
+            disabled={send.isPending || renew.isPending || canceling}
+            onClick={inviteAgain}
+          >
+            {send.isPending || renew.isPending ? 'Enviando…' : 'Reenviar'}
+          </Button>
+          <Button
+            aria-label={`Cancelar convite para ${invitation.email}`}
+            disabled={send.isPending || renew.isPending || canceling}
+            onClick={() => setCanceling(true)}
+          >
+            Cancelar
+          </Button>
         </span>
-        {send.isError && (
+        {canceling && (
+          <CancelInvitation invitation={invitation} onClose={() => setCanceling(false)} />
+        )}
+        {(send.isError || renew.isError) && (
           <p role="alert" className="basis-full text-label text-danger">
-            {sentenceOf(send.error)}
+            {sentenceOf(send.error ?? renew.error)}
           </p>
         )}
       </div>

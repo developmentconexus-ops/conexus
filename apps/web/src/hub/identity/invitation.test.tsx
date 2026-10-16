@@ -166,10 +166,7 @@ test('unknown and malformed links show the common not-found page without invitat
   const conexus = createConexus(createMemoryHistory({ initialEntries: [ENTRY] }))
   render(<Conexus conexus={conexus} />)
   expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
-  await conexus.router.navigate({
-    to: '/invitations/$invitationId',
-    params: { invitationId: 'short' },
-  })
+  await conexus.router.navigate({ href: '/invitations/short' })
   expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Criar senha' })).toBeNull()
 })

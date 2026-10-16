@@ -19,6 +19,7 @@ const ReceivedRow = PendingRow.extend({
   inviterName: z.string(),
   hasPassword: z.boolean(),
   joined: z.boolean(),
+  superseded: z.boolean(),
 })
 export function readInvitations(
   database: Database,
@@ -88,6 +89,7 @@ export function readReceived(
           where ${member.organizationId} = ${invitation.organizationId}
           and ${member.userId} = ${person?.id ?? ''})`,
         status: invitation.status,
+        superseded: sql<boolean>`${invitation.supersededAt} is not null`,
         live: sql<boolean>`${LIVE}`,
         companyId: company.id,
         companyName: company.name,
@@ -106,7 +108,7 @@ export function readReceived(
     if (row.status === 'accepted' && person !== undefined && row.joined) {
       return InvitationView.parse({ kind: 'JOINED', company: targetCompany })
     }
-    const state = stateOf(row.status, row.live)
+    const state = row.superseded ? 'EXPIRED' : stateOf(row.status, row.live)
     if (state !== 'PENDING') return InvitationView.parse({ kind: 'CLOSED', state })
     const details = {
       company: targetCompany,

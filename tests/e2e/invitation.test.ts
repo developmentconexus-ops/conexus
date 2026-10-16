@@ -142,7 +142,7 @@ async function anaInvites(page: Page) {
   await page.getByLabel('E-mail').fill(DAVI.email)
   await page.getByLabel('Papel').click()
   await page.getByRole('option', { name: 'Administrador' }).click()
-  await page.getByRole('button', { name: 'Enviar convite' }).click()
+  await page.getByRole('button', { name: 'Enviar convite', exact: true }).click()
   await page.getByText(`Convite enviado para ${DAVI.email}.`).waitFor()
   const pending = page.getByRole('heading', { name: 'Convites pendentes' }).locator('..')
   await pending.getByText(DAVI.email).waitFor()

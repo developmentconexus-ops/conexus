@@ -178,19 +178,25 @@ library joins the Hub sets.
   `invitation-capacity-live-only`); "limite: com 99 vivos, dois convidantes juntos" fails without
   the lock (removal `invitation-company-lock`).
 
-### A new invitation cancels the address's open one, expired or not
+### Renewing a live invitation and reissuing an expired one
 
-- **Library line.** `better-auth/dist/plugins/organization/adapter.mjs:753`. `findPendingInvitation`
-  drops an expired row in JavaScript, so `cancelPendingInvitationsOnReInvite` cancels only an
-  unexpired one (`crud-invites.mjs:163-166`). An expired row still holds the unique index of one
-  pending invitation per address, and the new one fails on it.
-- **Hand-made piece.** `openOf` in `apps/server/src/hub/identity/invitations.ts`. It finds the
-  address's pending row with no clock and cancels it through `auth.api.cancelInvitation` before the
-  plugin creates the new one.
-- **Why.** The founder's "Convidar de novo" after 2 days (step 4, answer 4). The test "de novo: o
-  anterior vencido há 2 dias, ou vencendo agora" in `invitations.test.ts` fails without it
-  (removal `re-invite-cancels-expired`); "de novo: o anterior com um id fora de forma" fails when
-  the row it finds is not parsed (removal `open-invitation-row-parsed`).
+- **Library line.** `better-auth/dist/plugins/organization/adapter.mjs:753-770` drops expired rows
+  from `findPendingInvitation`. Native `resend: true` extends only a live invitation
+  (`routes/crud-invites.mjs:128-160`); cancel writes even a terminal status (`:428-450`).
+- **Hand-made piece.** `openOf` in `invitations.ts` finds the pending row without a clock. An
+  explicit expired replacement compares its id/revision/email/role under the company lock, cancels
+  natively, stamps `superseded_at` and creates natively in one transaction. The old link reads
+  EXPIRED. The new row's `replaces` retains the original request for complete attempt-key payload
+  comparison. `invitation-management.ts` admits current administrators and recognizes explicit
+  canceled replay before comparing revision; accepted, declined and superseded rows cannot cancel.
+  Live renewal uses native resend, advances revision and clears `mailed_at`.
+- **Why.** The founder's 4.1 decision B. An expired row still holds the unique pending-address
+  index, and the native cancel alone cannot distinguish replacement from explicit cancellation.
+  `invitation-lifecycle.test.ts` covers link identity, terminal replay without writes, full-payload
+  conflicts, current admission, races and rollback; removing terminal guards fails
+  `invitation-cancel-terminal-guard` and `invitation-create-replay-terminal`. Existing expired-row cancellation and parsing
+  tests in `invitations.test.ts` fail without `re-invite-cancels-expired` and
+  `open-invitation-row-parsed`.
 
 ### Three reads through the library's internal adapter
 
@@ -234,7 +240,8 @@ library joins the Hub sets.
   after the commit and sets `mailed_at` once the provider answers delivered, queued or a permanent
   bounce; the `createInvitation` route in `company-routes.ts` only calls it. A replay with the same
   attempt key of a pending, unexpired, unmarked invitation answers the mail data again, so the route
-  sends again: delivery is at least once. `mailed_at` is an
+  sends again: delivery is at least once. The mark compares the sent revision, so a late reply
+  for an earlier send cannot mark a renewed invitation. `mailed_at` is an
   additional field with `input: false`, which leaves it out of the plugin's request body
   (`better-auth/dist/db/to-zod.mjs:17`).
 - **Why.** [Code C64](../guides/code.md). Sent inside the transaction, a slow provider holds the
@@ -244,6 +251,8 @@ library joins the Hub sets.
   `invitation-replay.test.ts` fails without the replay branch (removal
   `invitation-replay-resends-unmailed`), and "de novo com a mesma chave: depois do correio fora" in
   `invitations.test.ts` fails without the mark on a bounce (removal `invitation-bounce-marked`).
+  `invitation-lifecycle.test.ts` proves a failed mark permits at-least-once delivery on replay, and
+  the late-send test fails without the revision comparison (`invitation-mark-current-revision`).
 
 ### The pace of invitations
 

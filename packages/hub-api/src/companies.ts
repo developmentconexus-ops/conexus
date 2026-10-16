@@ -36,6 +36,7 @@ export const Member = z.object({
 export type Member = z.infer<typeof Member>
 
 export const PendingInvitation = z.object({
+  state: z.literal('PENDING'),
   id: InvitationId,
   email: Email,
   role: Role,
@@ -167,12 +168,21 @@ export const createInvitation = defineOperation({
   method: 'POST',
   path: '/api/companies/{companyId}/invitations',
   bodyLimit: 4096,
-  input: { params: InCompany, body: z.object({ email: Email, role: Role }) },
+  input: {
+    params: InCompany,
+    body: z.object({
+      email: Email,
+      role: Role,
+      replaces: z.object({ id: InvitationId, revision: z.number().int().nonnegative() }).optional(),
+    }),
+  },
   attemptKey: true,
   success: { status: 201, body: z.object({ invitation: PendingInvitation }) },
   failures: [
     'NOT_FOUND',
     'INVITATION_ROLE_REFUSED',
+    'INVITATION_STALE',
+    'INVITATION_CLOSED',
     'MEMBER_EXISTS',
     'INVITATIONS_FULL',
     'IDEMPOTENCY_CONFLICT',
@@ -197,6 +207,49 @@ export const getInvitation = defineOperation({
 })
 
 const Revision = z.object({ revision: z.number().int().nonnegative() })
+
+const CompanyInvitation = InCompany.extend({ invitationId: InvitationId })
+
+export const cancelInvitation = defineOperation({
+  id: 'cancelInvitation',
+  summary: 'Cancels an open invitation for a current company administrator.',
+  access: 'session',
+  method: 'DELETE',
+  path: '/api/companies/{companyId}/invitations/{invitationId}',
+  bodyLimit: 1024,
+  input: { params: CompanyInvitation, body: Revision },
+  success: { status: 204 },
+  failures: [
+    'NOT_FOUND',
+    'SESSION_REQUIRED',
+    'INVITATION_STALE',
+    'INVITATION_CLOSED',
+    'DATABASE_UNAVAILABLE',
+  ],
+})
+
+export const renewInvitation = defineOperation({
+  id: 'renewInvitation',
+  summary: 'Renews a live invitation without changing its link and sends it again.',
+  access: 'session',
+  method: 'PUT',
+  path: '/api/companies/{companyId}/invitations/{invitationId}',
+  bodyLimit: 1024,
+  input: { params: CompanyInvitation, body: Revision },
+  success: { status: 200, body: z.object({ invitation: PendingInvitation }) },
+  failures: [
+    'NOT_FOUND',
+    'SESSION_REQUIRED',
+    'INVITATION_STALE',
+    'INVITATION_CLOSED',
+    'INVITATION_ROLE_REFUSED',
+    'MEMBER_EXISTS',
+    'INVITATIONS_EXCEEDED',
+    'MAIL_BOUNCED',
+    'MAIL_UNAVAILABLE',
+    'DATABASE_UNAVAILABLE',
+  ],
+})
 
 export const createInvitationPassword = defineOperation({
   id: 'createInvitationPassword',

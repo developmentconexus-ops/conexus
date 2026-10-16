@@ -67,6 +67,7 @@ test('convidar: 201, e o e-mail leva o endereço /invitations/{id}', async (t) =
       email: INVITEE,
       role: 'admin',
       expiresAt: undefined,
+      state: 'PENDING',
       revision: 0,
     },
   )

@@ -4,6 +4,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgSchema,
   text,
   timestamp,
@@ -144,6 +145,8 @@ export const invitation = auth.table(
     // When the provider answered the invitation's e-mail; NULL until then, so a replay sends it (C64).
     mailedAt: instant('mailed_at'),
     revision: integer('revision').notNull().default(0),
+    supersededAt: instant('superseded_at'),
+    replaces: jsonb('replaces'),
   },
   (table) => [
     // One open invitation per company and address: the plugin checks before it writes, so two

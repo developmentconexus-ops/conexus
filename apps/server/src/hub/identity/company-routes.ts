@@ -1,5 +1,6 @@
 import {
   acceptInvitation,
+  cancelInvitation,
   createCompany,
   createInvitation,
   createInvitationPassword,
@@ -9,6 +10,7 @@ import {
   listCompanies,
   listInvitations,
   listMembers,
+  renewInvitation,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
@@ -19,6 +21,7 @@ import type { Auth, LibraryCommand } from './auth.ts'
 import { INVITATION_DECLINATION_PATH, INVITATION_PASSWORD_PATH } from './auth.ts'
 import { createCompanyCommand, readCompany, readMembers, readMemberships } from './companies.ts'
 import { mailInvitation } from './invitation-mail.ts'
+import { cancelInvitationCommand, renewInvitationCommand } from './invitation-management.ts'
 import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { createInvitationCommand } from './invitations.ts'
@@ -126,7 +129,33 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   })
 }
 
+function registerManagement(app: FastifyInstance, deps: Deps): void {
+  const cancel = cancelInvitationCommand(deps)
+  const renew = renewInvitationCommand(deps)
+  serve(app, cancelInvitation, async ({ person, sessionToken, headers, params, body, log }) => {
+    if (await cancel({ person, sessionToken, headers, ...params, ...body }))
+      log.info({ companyId: params.companyId }, 'INVITATION_CANCELED')
+    return answer(undefined)
+  })
+  serve(
+    app,
+    renewInvitation,
+    async ({ person, sessionToken, headers, params, body, signal, log }) => {
+      const result = await renew({ person, sessionToken, headers, ...params, ...body })
+      log.info({ companyId: params.companyId }, 'INVITATION_RENEWED')
+      await mailInvitation(deps, {
+        ...result,
+        inviterName: person.name,
+        link: `${deps.config.publicOrigin}/invitations/${result.invitation.id}`,
+        signal,
+      })
+      return answer({ invitation: result.invitation })
+    },
+  )
+}
+
 export function registerCompanyRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
+  registerManagement(app, deps)
 }
