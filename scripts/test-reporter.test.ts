@@ -84,7 +84,7 @@ test('linha crua: recusa sem travar a linha com aspas sem fechar', async () => {
   const source = [
     "import test from 'node:test'",
     "test('a', () => {",
-    '  process.stdout.write(\'raw "unterminated\\n\')',
+    "  process.stdout.write('raw \"unterminated\\n')",
     '  process.stdout.write(\'{"level":30,"msg":"LISTENING\\n\')',
     '})',
   ].join('\n')
