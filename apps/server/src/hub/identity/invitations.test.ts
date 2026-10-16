@@ -5,15 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import { createHub, identityOf } from '../../main.ts'
-import type { HubProcess } from '../../platform/test-database.ts'
-import {
-  createTestDatabase,
-  freePort,
-  serveEnvironment,
-  startHub,
-  TEST_ORIGIN,
-  testConfig,
-} from '../../platform/test-database.ts'
+import { createTestDatabase, TEST_ORIGIN, testConfig } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
 
 const silent = { info: () => undefined, error: () => undefined }

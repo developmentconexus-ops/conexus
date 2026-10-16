@@ -1,4 +1,3 @@
-import type { FailureCode } from '@conexus/hub-api'
 import { createSession, deleteSession, getSession, Person, setPassword } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
