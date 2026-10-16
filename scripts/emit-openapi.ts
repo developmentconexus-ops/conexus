@@ -4,6 +4,9 @@
 // `npm run openapi [-- out.json]` prints it or writes it. An operation's schema that `z.toJSONSchema`
 // cannot express (a `z.date()`, for one) stops the command with the operation's id and exit code 1;
 // a transform under `io: 'input'` converts without error and is not refused.
+// A success body is `application/json`; a failure is a Problem under `application/problem+json`,
+// the type the Hub sends (apps/server/src/platform/http.ts), proved against a real Hub by
+// apps/server/src/platform/openapi-contract.test.ts.
 // Each operation's access is its `security`: `session` requires the cookie session, `public` and
 // `entry` carry `security: []`. `page` is no `/api/` operation and has none. The body limit
 // (`bodyLimit`) is not emitted: OpenAPI 3.1 has no field for it and an `x-` extension would be
@@ -54,7 +57,7 @@ function responses(operation: Operation): Json {
     out[status] = {
       description: (codes ?? []).join(', '),
       content: {
-        'application/json': { schema: { $ref: '#/components/schemas/Problem' } },
+        'application/problem+json': { schema: { $ref: '#/components/schemas/Problem' } },
       },
     }
   }
