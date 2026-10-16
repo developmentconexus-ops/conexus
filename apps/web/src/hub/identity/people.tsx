@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
+import { List, PageTitle, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { InviteForm } from './invite-form.tsx'
 import { Pager } from './pager.tsx'
@@ -66,7 +66,7 @@ export function People() {
   const { data: company } = useSuspenseQuery(companyQuery(companyId))
   return (
     <div className="flex flex-col gap-xl">
-      <h1 className="truncate font-display text-title">{company.company.name}</h1>
+      <PageTitle className="truncate">{company.company.name}</PageTitle>
       <Members />
       {company.mayInviteAs.length > 0 && (
         <>

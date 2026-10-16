@@ -10,6 +10,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
+import { PageTitle } from '../../ui/list.tsx'
 import { sessionQuery, signIn } from './queries.ts'
 
 const ANY_ORIGIN = 'https://conexus.invalid'
@@ -87,7 +88,7 @@ export function SignInForm(props: {
         </p>
       )}
       <header className="flex flex-col gap-xs">
-        <h1 className="font-display text-title">Entrar no Conexus</h1>
+        <PageTitle>Entrar no Conexus</PageTitle>
         <p className="text-text-2">Use o seu e-mail de trabalho.</p>
       </header>
       <Form form={form} onSubmit={submit}>

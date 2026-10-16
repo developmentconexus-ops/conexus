@@ -9,6 +9,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
+import { PageTitle } from '../../ui/list.tsx'
 import { choosePassword } from './queries.ts'
 
 const PASSWORD = setPassword.input.body.pick({ password: true })
@@ -19,7 +20,7 @@ const LINK_INVALID = `${FAILURES.PASSWORD_LINK_INVALID.phrase} ${FAILURES.PASSWO
 function Heading() {
   return (
     <header className="flex flex-col gap-xs">
-      <h1 className="font-display text-title">Criar sua senha</h1>
+      <PageTitle>Criar sua senha</PageTitle>
       <p className="text-text-2">{CHOOSE}</p>
     </header>
   )

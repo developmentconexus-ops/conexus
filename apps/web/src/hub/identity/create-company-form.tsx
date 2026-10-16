@@ -10,6 +10,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
+import { PageTitle } from '../../ui/list.tsx'
 import { makeCompany } from './queries.ts'
 
 export function CreateCompanyForm() {
@@ -32,7 +33,7 @@ export function CreateCompanyForm() {
 
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">
-      <h1 className="font-display text-title">Nova empresa</h1>
+      <PageTitle>Nova empresa</PageTitle>
       <Form form={form} onSubmit={submit}>
         <TextField
           name="name"

@@ -1,4 +1,4 @@
-import { createCompany, getCompany, listCompanies, listMembers } from '@conexus/hub-api'
+import { createCompany, listCompanies } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -7,6 +7,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import {
   ANA,
   COMPANY,
+  companyRead,
   hubServer,
   refusal,
   sessionRead,
@@ -40,19 +41,10 @@ function hub(answers: (() => Response)[]) {
       sent.push({ key: request.headers.get('idempotency-key'), body: await request.json() })
       return (answers[sent.length - 1] ?? answers.at(-1))?.() ?? refusal('INTERNAL_UNEXPECTED')
     }),
-    http.get(`*/api/companies/${COMPANY.id}`, () =>
-      HttpResponse.json(
-        getCompany.success.body.parse({ company: COMPANY, role: 'owner', mayInviteAs: [] }),
-      ),
-    ),
-    http.get(`*/api/companies/${COMPANY.id}/members`, () =>
-      HttpResponse.json(
-        listMembers.success.body.parse({
-          members: [{ personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' }],
-          next: { kind: 'END' },
-        }),
-      ),
-    ),
+    ...companyRead({
+      role: 'owner',
+      members: [{ personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' }],
+    }),
   )
   return sent
 }

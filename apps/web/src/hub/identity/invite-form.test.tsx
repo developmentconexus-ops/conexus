@@ -1,10 +1,4 @@
-import {
-  createInvitation,
-  FAILURES,
-  getCompany,
-  listInvitations,
-  listMembers,
-} from '@conexus/hub-api'
+import { createInvitation, FAILURES, listInvitations } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -13,6 +7,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import {
   ANA,
   COMPANY,
+  companyRead,
   hubServer,
   refusal,
   sessionRead,
@@ -39,14 +34,7 @@ function hub(
   const sent: Sent[] = []
   server.use(
     sessionRead(() => ANA),
-    http.get(`*/api/companies/${COMPANY.id}`, () =>
-      HttpResponse.json(
-        getCompany.success.body.parse({ company: COMPANY, role: 'owner', mayInviteAs }),
-      ),
-    ),
-    http.get(`*/api/companies/${COMPANY.id}/members`, () =>
-      HttpResponse.json(listMembers.success.body.parse({ members: [], next: { kind: 'END' } })),
-    ),
+    ...companyRead({ role: 'owner', mayInviteAs }),
     http.get(`*/api/companies/${COMPANY.id}/invitations`, () =>
       HttpResponse.json(
         listInvitations.success.body.parse({ invitations: listed, next: { kind: 'END' } }),

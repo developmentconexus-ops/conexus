@@ -4,14 +4,20 @@ import {
   FAILURES,
   getCompany,
   getInvitation,
-  listMembers,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA, COMPANY, hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import {
+  ANA,
+  COMPANY,
+  companyRead,
+  hubServer,
+  refusal,
+  sessionRead,
+} from '../../platform/test-hub.tsx'
 
 const DAVI = { id: 'person-davi', name: 'Davi Costa', email: 'davi@example.test' }
 const INVITATION = 'i'.repeat(32)
@@ -42,22 +48,13 @@ function hub(who: Who, reply: () => Response) {
     http.put(`*/api/invitations/${INVITATION}/acceptance`, () =>
       HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY })),
     ),
-    http.get(`*/api/companies/${COMPANY.id}`, () =>
-      HttpResponse.json(
-        getCompany.success.body.parse({ company: COMPANY, role: 'admin', mayInviteAs: [] }),
-      ),
-    ),
-    http.get(`*/api/companies/${COMPANY.id}/members`, () =>
-      HttpResponse.json(
-        listMembers.success.body.parse({
-          members: [
-            { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' },
-            { personId: DAVI.id, name: DAVI.name, email: DAVI.email, role: 'admin' },
-          ],
-          next: { kind: 'END' },
-        }),
-      ),
-    ),
+    ...companyRead({
+      role: 'admin',
+      members: [
+        { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' },
+        { personId: DAVI.id, name: DAVI.name, email: DAVI.email, role: 'admin' },
+      ],
+    }),
   )
 }
 

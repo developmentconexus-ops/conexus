@@ -14,6 +14,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
+import { PageTitle } from '../../ui/list.tsx'
 import { NotFoundWithHint } from '../../ui/states.tsx'
 import {
   acceptReceivedInvitation,
@@ -60,7 +61,7 @@ export function InvitationEntry() {
   const [step, setStep] = useState<'ENTRY' | 'ASKING' | 'SENT'>('ENTRY')
   return (
     <section className="flex w-full flex-col gap-lg">
-      <h1 className="font-display text-title">Você recebeu um convite</h1>
+      <PageTitle>Você recebeu um convite</PageTitle>
       <div className="flex flex-wrap gap-md">
         <Link
           to="/login"
@@ -86,7 +87,7 @@ export function InvitationEntry() {
 function Closed(props: { title: string; note?: string; children: ReactNode }) {
   return (
     <section className="flex flex-col items-start gap-lg">
-      <h1 className="font-display text-title">{props.title}</h1>
+      <PageTitle>{props.title}</PageTitle>
       {props.note !== undefined && <p className="text-text-2">{props.note}</p>}
       {props.children}
     </section>
@@ -114,10 +115,10 @@ function Acceptable({ invitation }: { invitation: ReceivedInvitation }) {
 
   return (
     <section className="flex flex-col items-start gap-lg">
-      <h1 className="font-display text-title">
+      <PageTitle>
         {invitation.inviterName} convidou você para {invitation.company.name} como{' '}
         {ROLE_LABELS[invitation.role]}.
-      </h1>
+      </PageTitle>
       <Form form={form} onSubmit={accept}>
         <FormAlert />
         <SubmitButton idle="Aceitar convite" pending="Aceitando…" />

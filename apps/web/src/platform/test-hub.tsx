@@ -1,5 +1,5 @@
 import type { FailureCode } from '@conexus/hub-api'
-import { FAILURES, listCompanies, SessionState } from '@conexus/hub-api'
+import { FAILURES, getCompany, listCompanies, listMembers, SessionState } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
@@ -26,6 +26,30 @@ export function sessionRead(signedIn: () => typeof ANA | undefined) {
       SessionState.parse(person ? { state: 'SIGNED_IN', person } : { state: 'SIGNED_OUT' }),
     )
   })
+}
+
+/** The company page's reads: the company as `role` sees it, and its members. */
+export function companyRead(view: {
+  role: string
+  mayInviteAs?: string[]
+  members?: { personId: string; name: string; email: string; role: string }[]
+}) {
+  return [
+    http.get(`*/api/companies/${COMPANY.id}`, () =>
+      HttpResponse.json(
+        getCompany.success.body.parse({
+          company: COMPANY,
+          role: view.role,
+          mayInviteAs: view.mayInviteAs ?? [],
+        }),
+      ),
+    ),
+    http.get(`*/api/companies/${COMPANY.id}/members`, () =>
+      HttpResponse.json(
+        listMembers.success.body.parse({ members: view.members ?? [], next: { kind: 'END' } }),
+      ),
+    ),
+  ]
 }
 
 /**
