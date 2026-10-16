@@ -3,7 +3,8 @@
 // Both entry points for a test's raw output call this: scripts/test-reporter.ts for an in-process
 // test, and `startHub` in apps/server/src/platform/test-database.ts for a spawned Hub's pipes.
 // Proved through both by "linha crua" in scripts/test-reporter.test.ts and
-// apps/server/src/platform/test-database.test.ts. Revalidate by 2027-04-13.
+// apps/server/src/platform/test-database.test.ts. Its row in docs/reference/boundaries.md says when to
+// revalidate it.
 
 const CODE = /^[A-Z][A-Z0-9_]*$/
 
