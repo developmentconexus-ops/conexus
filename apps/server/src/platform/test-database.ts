@@ -10,7 +10,7 @@ import { join } from 'node:path'
 import type { Readable } from 'node:stream'
 import type { TestContext } from 'node:test'
 import { after } from 'node:test'
-import { Email, Version } from '@conexus/hub-api'
+import { Email, PROBLEM_MEDIA_TYPE, Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import pg from 'pg'
 import { z } from 'zod'
@@ -19,12 +19,11 @@ import { parseLogLine } from '../../../../scripts/log-line.ts'
 import type { Config } from './config.ts'
 import { MailApiUrl, MailToken, PublicOrigin, readTestDatabase, SessionSecret } from './config.ts'
 import type { Database } from './database.ts'
-import { DatabaseUrl, openDatabase } from './database.ts'
+import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 
 // Roles belong to the whole server, so suites that touch them take turns on this lock.
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
-const RUNTIME_LOGIN = 'hub_runtime'
 const silent = { info: () => undefined, error: () => undefined }
 
 // The codes any route may answer besides its operation's: the access check's and the two every
@@ -51,7 +50,7 @@ subscribe('fastify.initialization', (message) => {
   const fastify = Reflect.get(Object(message), 'fastify')
   if (!isFastify(fastify)) return
   fastify.addHook('onSend', async (request, reply, payload) => {
-    if (!String(reply.getHeader('content-type')).startsWith('application/problem+json')) return
+    if (!String(reply.getHeader('content-type')).startsWith(PROBLEM_MEDIA_TYPE)) return
     const { code } = Answered.parse(JSON.parse(String(payload)))
     const { failures } = Declared.parse(request.routeOptions.config)
     if (!UNDECLARED_ALLOWED.has(code) && !failures.includes(code)) {

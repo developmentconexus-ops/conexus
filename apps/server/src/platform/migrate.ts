@@ -3,10 +3,9 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { migrate as applyMigrations } from 'drizzle-orm/node-postgres/migrator'
 import pg from 'pg'
 import type { DatabaseUrl } from './database.ts'
-import { databaseFailure, MIGRATIONS_FOLDER, POOL_LIMITS } from './database.ts'
+import { databaseFailure, MIGRATIONS_FOLDER, POOL_LIMITS, RUNTIME_LOGIN } from './database.ts'
 import { Failure } from './failure.ts'
 
-const RUNTIME_LOGIN = 'hub_runtime'
 const INVALID_PASSWORD = '28P01'
 
 function passwordOf(runtimeUrl: DatabaseUrl): string {
@@ -53,9 +52,11 @@ export async function migrate(deps: {
     await applyMigrations(db, { migrationsFolder: deps.migrationsFolder ?? MIGRATIONS_FOLDER })
     if (!(await loginRefused(deps.runtimeUrl))) return
     await db.transaction(async (tx) => {
-      await tx.execute(sql`select set_config('conexus.runtime_password', ${password}, true)`)
+      await tx.execute(sql`select set_config('conexus.runtime_login', ${RUNTIME_LOGIN}, true),
+        set_config('conexus.runtime_password', ${password}, true)`)
       await tx.execute(sql`do $$ begin
-        execute format('alter role hub_runtime password %L', current_setting('conexus.runtime_password'));
+        execute format('alter role %I password %L', current_setting('conexus.runtime_login'),
+          current_setting('conexus.runtime_password'));
       end $$`)
     })
   } catch (error) {

@@ -177,12 +177,14 @@ export async function assertMigrated(database: Database): Promise<void> {
   }
 }
 
+export const RUNTIME_LOGIN = 'hub_runtime'
+
 export async function assertRuntimeLogin(database: Database): Promise<void> {
   const login = await database.read(async (tx) => {
     const rows = await tx.execute(sql`select current_user as name`)
     return z.object({ name: z.string() }).parse(rows.rows[0])
   })
-  if (login.name !== 'hub_runtime') {
+  if (login.name !== RUNTIME_LOGIN) {
     throw new Failure('CONFIG_INVALID', { details: { variables: 'HUB_DATABASE_URL_FILE' } })
   }
 }

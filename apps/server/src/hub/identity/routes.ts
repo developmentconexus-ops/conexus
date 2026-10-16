@@ -2,6 +2,7 @@ import { createSession, deleteSession, getSession, Person, setPassword } from '@
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { SessionReader } from '../../platform/access.ts'
+import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
@@ -14,7 +15,7 @@ import {
   withRequestLog,
 } from './auth.ts'
 
-const FORWARDED = ['origin', 'cf-connecting-ip', 'user-agent', 'cookie']
+const FORWARDED = ['origin', CLIENT_ADDRESS_HEADER, 'user-agent', 'cookie']
 const SignedIn = z.object({ user: Person })
 
 function libraryRequest(

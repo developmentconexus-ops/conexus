@@ -190,6 +190,9 @@ export const FAILURES = {
 
 export type FailureCode = keyof typeof FAILURES
 
+/** The media type every failure leaves in, a `Problem` body (code C50). */
+export const PROBLEM_MEDIA_TYPE = 'application/problem+json'
+
 export const Problem = z.object({
   type: z.string(),
   title: z.string(),

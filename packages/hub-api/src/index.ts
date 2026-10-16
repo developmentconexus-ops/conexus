@@ -23,7 +23,7 @@ export {
   ROLE_LABELS,
   Role,
 } from './companies.ts'
-export { FAILURES, type FailureCode, Problem } from './failures.ts'
+export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
 export { getHealth, Health } from './health.ts'
 export {
   COOKIE_PREFIX,

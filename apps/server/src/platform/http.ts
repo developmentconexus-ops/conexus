@@ -4,7 +4,14 @@ import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
 import type { DeclaredOperation, FailureCode, Operation, Person } from '@conexus/hub-api'
-import { ATTEMPT_KEY_HEADER, AttemptKey, FAILURES, PAGES, Problem } from '@conexus/hub-api'
+import {
+  ATTEMPT_KEY_HEADER,
+  AttemptKey,
+  FAILURES,
+  PAGES,
+  PROBLEM_MEDIA_TYPE,
+  Problem,
+} from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
@@ -94,7 +101,7 @@ function answerClientError(app: FastifyInstance, error: NodeJS.ErrnoException, s
   socket.end(
     [
       'HTTP/1.1 400 Bad Request',
-      'Content-Type: application/problem+json',
+      `Content-Type: ${PROBLEM_MEDIA_TYPE}`,
       `Content-Length: ${Buffer.byteLength(body)}`,
       'Connection: close',
       ...headers,
@@ -108,7 +115,7 @@ function replyWithFailure(request: FastifyRequest, reply: FastifyReply, failure:
   logFailure(request.log, failure)
   return reply
     .code(FAILURES[failure.code].status)
-    .type('application/problem+json')
+    .type(PROBLEM_MEDIA_TYPE)
     .send(problemOf(failure.code, request.id))
 }
 

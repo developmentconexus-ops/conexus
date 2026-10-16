@@ -8,6 +8,7 @@ import { betterAuth } from 'better-auth'
 import { admin, organization } from 'better-auth/plugins'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
@@ -225,7 +226,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
         session_data: hostCookie('session_data'),
         dont_remember: hostCookie('dont_remember'),
       },
-      ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
+      ipAddress: { ipAddressHeaders: [CLIENT_ADDRESS_HEADER] },
     },
     // The router would print an error it cannot answer, row values and all, to stderr (the
     // `# SERVER_ERROR` line of better-call's dist/router.mjs); thrown, it reaches inLibrary and

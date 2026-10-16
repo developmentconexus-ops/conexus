@@ -8,6 +8,8 @@ const AccessConfig = z.looseObject({
   access: z.enum(['page', 'public', 'entry', 'session']).optional(),
 })
 const READS = ['GET', 'HEAD']
+/** The Tunnel puts the client's address here; the attempt limits key on it (security S28, S29). */
+export const CLIENT_ADDRESS_HEADER = 'cf-connecting-ip'
 
 /** Reads the session a request carries; the identity subject owns it and main.ts hands it over. */
 export type SessionReader = (request: {
@@ -104,8 +106,7 @@ export function enforceAccess(
     if (access === 'public') return
     if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)
     if (access === 'entry') {
-      // The Tunnel puts the client's address here; the attempt limit keys on it (security S28, S29).
-      if (!request.headers['cf-connecting-ip']) throw new Failure('REQUEST_MALFORMED')
+      if (!request.headers[CLIENT_ADDRESS_HEADER]) throw new Failure('REQUEST_MALFORMED')
       return
     }
     const session = await deps.readSession({ headers: headersOf(request) })
