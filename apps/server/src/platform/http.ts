@@ -45,6 +45,12 @@ const HELMET_OPTIONS = {
 const securityHeaders = helmet(HELMET_OPTIONS)
 
 const ErrorStatus = z.object({ statusCode: z.number().int() })
+
+/** The HTTP status a library error carries, Fastify's or Better Auth's; 500 when it has none. */
+export function statusOf(error: unknown): number {
+  const status = ErrorStatus.safeParse(error)
+  return status.success ? status.data.statusCode : 500
+}
 const WildcardParams = z.object({ '*': z.string() })
 // A missing asset answers the JSON 404: streaming the page after the failed file stream would
 // stack a second file stream on one reply.
@@ -70,10 +76,9 @@ const CLIENT_ERRORS: Partial<Record<number, FailureCode>> = {
 /** Maps by the status a library error carries, never by its text (code C50, C52). */
 function failureOf(error: unknown): Failure {
   if (error instanceof Failure) return error
-  const status = ErrorStatus.safeParse(error)
-  if (status.success && status.data.statusCode >= 400 && status.data.statusCode < 500) {
-    const code = CLIENT_ERRORS[status.data.statusCode] ?? 'REQUEST_MALFORMED'
-    return new Failure(code, { cause: error })
+  const status = statusOf(error)
+  if (status >= 400 && status < 500) {
+    return new Failure(CLIENT_ERRORS[status] ?? 'REQUEST_MALFORMED', { cause: error })
   }
   return new Failure('INTERNAL_UNEXPECTED', { cause: error })
 }

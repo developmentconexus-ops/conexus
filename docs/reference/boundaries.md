@@ -29,6 +29,19 @@ versions are the installed ones. When the library changes, reread the line it na
   The test "banco fora" in `database-down.test.ts` fails without the piece, and the test "senha que
   não grava" in `password-write.test.ts` fails without the option.
 
+### A library refusal becomes the Hub's code by one reader
+
+- **Library line.** `better-call/dist/error.mjs:105-112`. `auth.api` throws an `APIError` with
+  `statusCode` and `body.code`, while `auth.handler` answers a `Response` with the same body. The
+  library maps neither to the Hub's failure codes.
+- **Hand-made piece.** `refusalOf` in `apps/server/src/hub/identity/auth.ts`, with its two entry
+  points, `refusedAs` for a thrown refusal and `refusedReply` for a refused reply. Each call names
+  the refusals it expects, by the library's code or by status.
+- **Why.** [Code C52](../guides/code.md): a failure is mapped by its code or status, never by its
+  message, and each route answers only the codes its operation declares. The tests "convidar: o
+  administrador pedindo dono" in `invitations.test.ts` and "sair falha" in `session.test.ts` cover
+  it.
+
 ### Every library write joins one Hub transaction
 
 - **Library line.** `@better-auth/core/dist/context/transaction.mjs:65`. `runWithTransaction` opens

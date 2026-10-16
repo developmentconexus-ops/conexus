@@ -12,6 +12,7 @@ import type { CommandTx, Database } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
+import { statusOf } from '../../platform/http.ts'
 import { mayCreateCompanies } from './admission.ts'
 import {
   account,
@@ -62,33 +63,44 @@ async function deliverLink({ token }: { token: string }): Promise<void> {
   deliver(token)
 }
 
-const ErrorStatus = z.object({ statusCode: z.number().int() })
+/** The Hub's code for each library refusal a call expects, by the library's code or by status. */
+type Refusals = Partial<Record<string, FailureCode>>
+const RefusalBody = z.object({ code: z.string() })
+const Thrown = z.object({ body: z.unknown() })
 
-export function statusOf(error: unknown): number {
-  const status = ErrorStatus.safeParse(error)
-  return status.success ? status.data.statusCode : 500
+/** One reader of a refusal, thrown by `auth.api` or answered by `auth.handler` (code C52). */
+function refusalOf(refusals: Refusals, status: number, body: unknown) {
+  const named = RefusalBody.safeParse(body)
+  const reason = named.success ? named.data.code : String(status)
+  const code = (named.success ? refusals[named.data.code] : undefined) ?? refusals[status]
+  return code === undefined ? undefined : { code, reason }
 }
 
-const LibraryRefusal = z.object({ body: z.object({ code: z.string() }) })
-
 /**
- * Runs a library call inside a command: a refusal the library names by its code becomes the Hub's
- * failure (code C52), and any other error goes on to the command, which maps it.
+ * Runs a library call inside a command: a refusal the call names becomes the Hub's failure, and
+ * any other error goes on to the command, which maps it.
  */
-export async function refusedAs<T>(
-  work: () => Promise<T>,
-  refusals: Partial<Record<string, FailureCode>>,
-): Promise<T> {
+export async function refusedAs<T>(work: () => Promise<T>, refusals: Refusals): Promise<T> {
   try {
     return await work()
   } catch (error) {
-    const refusal = LibraryRefusal.safeParse(error)
-    if (!refusal.success) throw error
-    const reason = refusal.data.body.code
-    const code = refusals[reason]
-    if (code === undefined) throw error
-    throw new Failure(code, { details: { reason }, cause: error })
+    const thrown = Thrown.safeParse(error)
+    const refusal = refusalOf(refusals, statusOf(error), thrown.success ? thrown.data.body : null)
+    if (refusal === undefined) throw error
+    throw new Failure(refusal.code, { details: { reason: refusal.reason }, cause: error })
   }
+}
+
+/**
+ * The failure of a reply `auth.handler` refused: a refusal the call names, else a malformed request,
+ * or the database for a 5xx, its one outside system.
+ */
+export async function refusedReply(reply: Response, refusals: Refusals): Promise<Failure> {
+  const body: unknown = await reply.json().catch(() => null)
+  const refusal = refusalOf(refusals, reply.status, body)
+  if (refusal !== undefined)
+    return new Failure(refusal.code, { details: { reason: refusal.reason } })
+  return new Failure(reply.status < 500 ? 'REQUEST_MALFORMED' : 'DATABASE_UNAVAILABLE')
 }
 
 /**
