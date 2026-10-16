@@ -57,7 +57,7 @@
   {
     "id": "refused-command-keeps-connection",
     "file": "apps/server/src/platform/database.ts",
-    "find": "client.release(lostWith !== undefined || client.getTransactionStatus() !== 'I')",
+    "find": "client.release()",
     "replace": "client.release(true)",
     "test": {
       "cwd": "apps/server",

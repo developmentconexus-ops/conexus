@@ -275,8 +275,11 @@ library changes, reread the line it names. A test that "fails without" a piece n
   the pool. `statement_timeout` and `idle_in_transaction_session_timeout`, set on `hub_runtime`, are
   the server's and cannot fire across a dead network.
 - **Hand-made piece.** `openDatabase` in `apps/server/src/platform/database.ts`. On the pool's
-  `acquire`, a 15 s timer destroys the client's socket; `release` clears it, and a lost or still
-  open client is released with `true`, which removes it.
+  `acquire`, a 15 s timer destroys the client's socket, and `release` clears it. The release itself
+  is the library's: `pg-pool/index.js:392` removes a client whose socket is gone
+  (`!client._queryable`), and Drizzle's `transaction` commits or rolls back before it returns
+  (`drizzle-orm/node-postgres/session.js:54-61`), so a refused command keeps its connection
+  (removal `refused-command-keeps-connection`).
 - **Why.** [Code C57](../guides/code.md): nothing native bounds a whole checkout on the client. The
   test "uma consulta da biblioteca sem resposta cai no prazo de 15 s" in `database.test.ts` fails
   without it (removal `library-read-deadline`).

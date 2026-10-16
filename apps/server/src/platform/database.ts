@@ -148,9 +148,9 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
       throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
     } finally {
       client.off('error', onError)
-      // A refusal rolls the transaction back and leaves the connection idle, so it goes back to the
-      // pool; a lost or still open one is destroyed (pg-pool removes a client released with true).
-      client.release(lostWith !== undefined || client.getTransactionStatus() !== 'I')
+      // A refusal rolls the transaction back and the connection goes back to the pool; a lost one,
+      // the deadline's included, has a destroyed socket, and pg-pool removes it on release.
+      client.release()
     }
   }
 
