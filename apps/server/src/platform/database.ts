@@ -1,7 +1,6 @@
 import { join } from 'node:path'
 import type { AnyRelations, EmptyRelations } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
-import { DrizzleQueryError } from 'drizzle-orm/errors'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { drizzle } from 'drizzle-orm/node-postgres'
@@ -86,17 +85,6 @@ export function databaseFailure(error: unknown): Failure {
   return new Failure('INTERNAL_UNEXPECTED', { cause: error })
 }
 
-function ownErrorsAreUnexpected<Tx, T>(work: (tx: Tx) => Promise<T>) {
-  return async (tx: Tx): Promise<T> => {
-    try {
-      return await work(tx)
-    } catch (error) {
-      if (error instanceof DrizzleQueryError || error instanceof Failure) throw error
-      throw new Failure('INTERNAL_UNEXPECTED', { cause: error })
-    }
-  }
-}
-
 /**
  * Makes a second command on the same key wait for the first one's transaction to end (code C65).
  * The key is hashed to the 64 bits of an advisory lock.
@@ -154,7 +142,7 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
     }
     client.on('error', onError)
     try {
-      return await drizzle({ client, relations }).transaction(ownErrorsAreUnexpected(work), config)
+      return await drizzle({ client, relations }).transaction(work, config)
     } catch (error) {
       if (lostWith === undefined) throw databaseFailure(error)
       throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
