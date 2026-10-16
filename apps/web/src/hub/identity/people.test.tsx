@@ -9,16 +9,12 @@ import {
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
+import { ANA, hubServer } from '../../platform/test-hub.tsx'
 
-const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+const server = hubServer()
 
 const DAVI = { personId: 'person-davi', name: 'Davi Costa', email: 'davi@example.test' }
 const PENDING = {

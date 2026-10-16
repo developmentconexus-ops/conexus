@@ -2,21 +2,16 @@ import { listCompanies, PAGES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../main.tsx'
+import { ANA, hubServer, STATUS } from '../platform/test-hub.tsx'
 
-const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
-const STATUS = { version: 'v0.1.0', lastStart: { state: 'NONE' }, previousStart: { state: 'NONE' } }
 const NO_COMPANIES = listCompanies.success.body.parse({
   companies: [],
   mayCreate: false,
   next: { kind: 'END' },
 })
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+const server = hubServer()
 
 test('um endereço desconhecido mostra "Não encontramos o que você procurou."', async () => {
   const conexus = createConexus(

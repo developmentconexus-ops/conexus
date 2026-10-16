@@ -4,54 +4,24 @@ import {
   getCompany,
   listInvitations,
   listMembers,
-  Problem,
   SessionState,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
+import { ANA, hubServer, refusal, undecided } from '../../platform/test-hub.tsx'
 
-const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
-
-function refusal(code: keyof typeof FAILURES) {
-  const row = FAILURES[code]
-  const body = Problem.parse({
-    type: `urn:conexus:problem:${code}`,
-    title: row.phrase,
-    status: row.status,
-    code,
-    traceId: 'a1b2c3',
-  })
-  return HttpResponse.json(body, { status: row.status })
-}
+const server = hubServer()
 
 function accepted(email: string, role: string) {
   const invitation = { id: 'i'.repeat(32), email, role, expiresAt: '2026-10-17T12:00:00.000Z' }
   return HttpResponse.json(createInvitation.success.body.parse({ invitation }), { status: 201 })
 }
 
-function edgePage(status: number) {
-  return new HttpResponse('<html><body>Gateway</body></html>', {
-    status,
-    headers: { 'content-type': 'text/html' },
-  })
-}
-
-/** Replies after which the browser cannot tell whether the Hub acted: the key stays (code C37, web W24). */
-const UNDECIDED: [string, () => Response][] = [
-  ['resposta cortada', () => new HttpResponse('{"invitation":{"id":"iii', { status: 201 })],
-  ['502 da borda', () => edgePage(502)],
-  ['504 da borda', () => edgePage(504)],
-  ['banco sem resposta', () => refusal('DATABASE_UNAVAILABLE')],
-]
+const UNDECIDED = undecided('{"invitation":{"id":"iii')
 
 type Sent = { key: string | null; body: unknown }
 

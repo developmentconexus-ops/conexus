@@ -1,27 +1,12 @@
-import { FAILURES, Problem, SessionState } from '@conexus/hub-api'
+import { SessionState } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
+import { hubServer, refusal } from '../../platform/test-hub.tsx'
 
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
-
-function refusal(code: keyof typeof FAILURES) {
-  const row = FAILURES[code]
-  const body = Problem.parse({
-    type: `urn:conexus:problem:${code}`,
-    title: row.phrase,
-    status: row.status,
-    code,
-    traceId: 'a1b2c3',
-  })
-  return HttpResponse.json(body, { status: row.status })
-}
+const server = hubServer()
 
 async function openSignIn() {
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: ['/login'] }))} />)

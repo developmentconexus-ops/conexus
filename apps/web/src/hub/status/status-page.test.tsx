@@ -2,15 +2,12 @@ import { HubStatus, Problem } from '@conexus/hub-api'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { createCache } from '../../platform/cache.ts'
+import { hubServer } from '../../platform/test-hub.tsx'
 import { StatusPage } from './public.ts'
 
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+const server = hubServer()
 
 function open() {
   render(

@@ -140,7 +140,12 @@
       }
     },
     {
-      "includes": ["apps/web/**/*.test.tsx", "apps/web/vitest.*", "apps/web/vite.config.ts"],
+      "includes": [
+        "apps/web/**/*.test.tsx",
+        "apps/web/src/platform/test-hub.tsx",
+        "apps/web/vitest.*",
+        "apps/web/vite.config.ts"
+      ],
       "linter": {
         "rules": {
           "style": {
