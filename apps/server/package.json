@@ -6,9 +6,7 @@
     "start": "node src/main.ts",
     "generate": "drizzle-kit generate",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "npm run test:shared && npm run test:roles",
-    "test:shared": "node --test --test-concurrency=4 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts \"src/**/!(migrate).test.ts\"",
-    "test:roles": "node --test --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts src/platform/migrate.test.ts"
+    "test": "node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts ${TEST_SHARD:+--test-shard=$TEST_SHARD} \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@better-auth/core": "1.7.8",
