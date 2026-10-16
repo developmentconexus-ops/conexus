@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
 import { once } from 'node:events'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { after, test } from 'node:test'
@@ -18,19 +18,36 @@ function directory(): string {
   return dir
 }
 
-function run(source: string) {
+function run(source: string, extra: Record<string, string> = {}) {
   const dir = directory()
   writeFileSync(join(dir, 'x.test.ts'), source)
-  const { NODE_TEST_CONTEXT: _outer, ...env } = process.env
+  const { NODE_TEST_CONTEXT: _outer, GITHUB_STEP_SUMMARY: _summary, ...env } = process.env
   return spawnSync('node', ['--test', `--test-reporter=${REPORTER}`, join(dir, 'x.test.ts')], {
     encoding: 'utf8',
     timeout: 120_000,
-    env,
+    env: { ...env, ...extra },
   })
 }
 
 test('passa com um teste que roda', () => {
   assert.equal(run("import test from 'node:test'\ntest('a', () => {})\n").status, 0)
+})
+
+test('a lista dos mais lentos: o resumo do passo traz o teste mais lento primeiro, com o arquivo', () => {
+  const summary = join(directory(), 'summary.md')
+  const source = [
+    "import test from 'node:test'",
+    "test('rápido | com barra', () => {})",
+    "test('lento', async () => { await new Promise((resolve) => setTimeout(resolve, 300)) })",
+  ].join('\n')
+  const result = run(source, { GITHUB_STEP_SUMMARY: summary, npm_package_name: '@conexus/x' })
+  assert.equal(result.status, 0, result.stderr)
+  const table = readFileSync(summary, 'utf8')
+  assert.match(table, /^### Slowest tests of @conexus\/x: \d+ s in all$/m)
+  const tests = [...table.matchAll(/^\| \d+\.\d \| \S*x\.test\.ts \| (.*) \|$/gm)].map(
+    (row) => row[1],
+  )
+  assert.deepEqual(tests, ['lento', 'rápido \\| com barra'])
 })
 
 test('recusa zero testes', () => {

@@ -427,7 +427,10 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Library line.** `node:test/reporters` `spec` and the `TestEvent` stream. Node formats the events
   and imposes no `opt-in:` reason or Conexus log-line format.
 - **Hand-made piece.** `scripts/test-reporter.ts`. It composes `spec()` and adds the policy checks
-  on the events.
+  on the events, and the ten slowest tests of the run to `$GITHUB_STEP_SUMMARY`. `spec()` prints each
+  test's duration in the log but ranks nothing and writes no summary, and `node:test` has no
+  reporter that does; the `junit` and `tap` reporters carry the durations but need a second script
+  to read them. The test "a lista dos mais lentos" in `test-reporter.test.ts` covers the table.
 - **Why.** [Testing T4](../guides/testing.md). It cannot see the pipes of a Hub spawned by a test,
   so `startHub` in `apps/server/src/platform/test-database.ts` is a second entry point. Both decide
   what a log line is through one `parseLogLine` (`scripts/log-line.ts`, the row below). The test

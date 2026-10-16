@@ -5,11 +5,38 @@
 // `startHub` in apps/server/src/platform/test-database.ts holds the same line rule for them, both
 // through `parseLogLine` in scripts/log-line.ts.
 // The refusals are proved by planting each one in test-reporter.test.ts.
+// When GITHUB_STEP_SUMMARY names a file, the run also appends its slowest tests there, so a slow
+// run shows where its time went; the test "a lista dos mais lentos" holds that.
 // Revalidate by 2027-04-13, or when Node changes the test event stream.
+import { appendFileSync } from 'node:fs'
+import { relative } from 'node:path'
 import { Readable } from 'node:stream'
 import type { TestEvent } from 'node:test/reporters'
 import { spec } from 'node:test/reporters'
 import { parseLogLine } from './log-line.ts'
+
+const SLOWEST = 10
+
+type Timed = { name: string; file: string; ms: number }
+
+function slowestTable(timed: Timed[], total: number): string {
+  const rows = timed
+    .toSorted((a, b) => b.ms - a.ms)
+    .slice(0, SLOWEST)
+    .map(
+      (test) =>
+        `| ${(test.ms / 1000).toFixed(1)} | ${test.file} | ${test.name.replaceAll('|', '\\|')} |`,
+    )
+  return [
+    `### Slowest tests of ${process.env.npm_package_name ?? 'the run'}: ${(total / 1000).toFixed(0)} s in all`,
+    '',
+    '| Seconds | File | Test |',
+    '| ---: | --- | --- |',
+    ...rows,
+    '',
+    '',
+  ].join('\n')
+}
 
 function isLogLine(line: string): boolean {
   return parseLogLine(line) !== undefined
@@ -17,6 +44,7 @@ function isLogLine(line: string): boolean {
 
 async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEvent, void> {
   const pending = new Map<string, string>()
+  const timed: Timed[] = []
   for await (const event of source) {
     if (event.type === 'test:stdout' || event.type === 'test:stderr') {
       const key = `${event.type} ${event.data.file ?? ''}`
@@ -27,6 +55,12 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
           process.stderr.write(`raw-output: ${event.data.file ?? ''}: ${line}\n`)
           process.exitCode = 1
         }
+      }
+    }
+    if (event.type === 'test:pass' || event.type === 'test:fail') {
+      const { name, file, details } = event.data
+      if (details.type !== 'suite' && name !== file) {
+        timed.push({ name, file: relative(process.cwd(), file ?? ''), ms: details.duration_ms })
       }
     }
     if (event.type === 'test:pass' && event.data.skip !== undefined && event.data.skip !== false) {
@@ -47,6 +81,12 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
     ) {
       process.stderr.write(`zero-tests: no test ran\n`)
       process.exitCode = 1
+    }
+    if (event.type === 'test:summary' && event.data.file === undefined) {
+      const summary = process.env.GITHUB_STEP_SUMMARY
+      if (summary !== undefined && timed.length > 0) {
+        appendFileSync(summary, slowestTable(timed, event.data.duration_ms))
+      }
     }
     yield event
   }
