@@ -1,0 +1,475 @@
+[
+  {
+    "id": "session-total-lifetime",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    databaseHooks: { session: { update: { before: capAtTotalLifetime } } },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/session.test.ts",
+      "name": "prazo total"
+    }
+  },
+  {
+    "id": "session-total-at-read",
+    "file": "apps/server/src/hub/identity/session.ts",
+    "find": "    if (Date.now() >= endOfLifetime(session.session.createdAt)) return { kind: 'SIGNED_OUT' }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/session.test.ts",
+      "name": "versão anterior"
+    }
+  },
+  {
+    "id": "first-person-rows-parsed",
+    "file": "apps/server/src/hub/identity/first-person.ts",
+    "find": "Person.array().parse(await internalAdapter.listUsers(2))",
+    "replace": "await internalAdapter.listUsers(2)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/first-person-rows.test.ts",
+      "name": "id vazio"
+    }
+  },
+  {
+    "id": "link-person-row-parsed",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "const person = Person.parse(row)",
+    "replace": "const person = row",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "id vazio"
+    }
+  },
+  {
+    "id": "raw-output-in-process",
+    "file": "scripts/test-reporter.ts",
+    "find": "const lines = `${pending.get(key) ?? ''}${event.data.message}`.split('\\n')",
+    "replace": "const lines: string[] = []",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/test-reporter.test.ts",
+      "name": "linha crua: recusa"
+    }
+  },
+  {
+    "id": "raw-output-spawned-hub",
+    "file": "apps/server/src/platform/test-database.ts",
+    "find": "if (line === undefined) raw.push(text)",
+    "replace": "if (line === undefined) return",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/test-database.test.ts",
+      "name": "linha crua: um Hub iniciado que imprime"
+    }
+  },
+  {
+    "id": "read-deadline-is-the-database",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "if (lostWith === undefined) throw databaseFailure(error)",
+    "replace": "throw databaseFailure(error)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/database.test.ts",
+      "name": "uma leitura parada além do prazo"
+    }
+  },
+  {
+    "id": "library-read-deadline",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "deadlines.set(client, stalled.unref())",
+    "replace": "clearTimeout(stalled)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/database.test.ts",
+      "name": "uma consulta da biblioteca sem resposta"
+    }
+  },
+  {
+    "id": "refused-command-keeps-connection",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "client.release()",
+    "replace": "client.release(true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "link: um id desconhecido"
+    }
+  },
+  {
+    "id": "undeclared-failure-recorded",
+    "file": "apps/server/src/platform/test-database.ts",
+    "find": "undeclared.push(`${request.method} ${request.routeOptions.url} ${code}`)",
+    "replace": "void code",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/http.test.ts",
+      "name": "a porta de teste registra"
+    }
+  },
+  {
+    "id": "mail-reply-cap",
+    "file": "apps/server/src/platform/mail.ts",
+    "find": "if (size > REPLY_CAP_BYTES) return undefined",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/mail.test.ts",
+      "name": "acima de 16 KiB"
+    }
+  },
+  {
+    "id": "mail-bounce-refused",
+    "file": "apps/server/src/platform/mail.ts",
+    "find": "if (permanent_bounces.length > 0) {",
+    "replace": "if (permanent_bounces.length < 0) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/mail.test.ts",
+      "name": "endereço que volta"
+    }
+  },
+  {
+    "id": "company-create-administrator",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "allowUserToCreateOrganization: (person) => mayCreateCompanies(person.role),",
+    "replace": "allowUserToCreateOrganization: true,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "criar: outra pessoa"
+    }
+  },
+  {
+    "id": "admission-reads-membership",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": ".where(and(eq(member.organizationId, input.companyId), eq(member.userId, input.personId)))",
+    "replace": ".where(eq(member.organizationId, input.companyId))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "fora: o membro"
+    }
+  },
+  {
+    "id": "membership-page-anchor-scoped",
+    "file": "apps/server/src/hub/identity/companies.ts",
+    "find": ".where(and(eq(company.id, id), eq(member.userId, personId))),",
+    "replace": ".where(eq(company.id, id)),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "lista: só as empresas de quem pede"
+    }
+  },
+  {
+    "id": "malformed-id-not-found",
+    "file": "apps/server/src/platform/http.ts",
+    "find": "throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })",
+    "replace": "throw new Failure('REQUEST_MALFORMED', { cause: parsedParams.error })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "fora: o membro"
+    }
+  },
+  {
+    "id": "invitation-attempt-replay",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (same !== undefined) {",
+    "replace": "if (same === null) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo: a mesma chave"
+    }
+  },
+  {
+    "id": "invitation-capacity",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')",
+    "replace": "void live",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: com 100 vivos"
+    }
+  },
+  {
+    "id": "invitation-capacity-live-only",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "      LIVE,\n    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
+    "replace": "    ),\n  )\n  if (live >= CAPACITY.openInvitations)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: com 100 vivos atrás de 100 vencidos"
+    }
+  },
+  {
+    "id": "invitation-list-state-live",
+    "file": "apps/server/src/hub/identity/invitation-reads.ts",
+    "find": "      .select({ ...pending, live: sql<boolean>`${LIVE}` })\n",
+    "replace": "      .select({ ...pending, live: sql<boolean>`true` })\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "um convite vencido fica em"
+    }
+  },
+  {
+    "id": "invitation-company-lock",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "await lockCompany(tx, input.companyId)",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: com 99 vivos"
+    }
+  },
+  {
+    "id": "open-invitation-row-parsed",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "return OpenRow.optional().parse(open)",
+    "replace": "return open",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo: o anterior com um id fora de forma"
+    }
+  },
+  {
+    "id": "password-link-forgets-earlier",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "await forgetLinks(tx, person.id)",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "link: passados 20 s"
+    }
+  },
+  {
+    "id": "accept-recipient-first",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (found === undefined || found.email !== storedAddress(input.person.email)) {",
+    "replace": "if (found === undefined) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: 200 e um membro"
+    }
+  },
+  {
+    "id": "accept-company-lock",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "await lockCompany(tx, found.companyId)",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: com um re-convite ao mesmo tempo"
+    }
+  },
+  {
+    "id": "accept-one-transaction",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
+    "replace": "await libraryContext.runWithAdapter(adapterFor(tx)(auth.options), () => work(tx)),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-acceptance.test.ts",
+      "name": "aceitar: uma escrita recusada"
+    }
+  },
+  {
+    "id": "write-signal-follows-reply",
+    "file": "apps/server/src/platform/http.ts",
+    "find": "signal: untilClientLeaves(reply),",
+    "replace": "signal: request.signal,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-journey.test.ts",
+      "name": "registro"
+    }
+  },
+  {
+    "id": "library-joins-native",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "database: { joins: true },",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-journey.test.ts",
+      "name": "cria a quarta"
+    }
+  },
+  {
+    "id": "attempt-key-outcome-unknown",
+    "file": "apps/web/src/platform/hub.ts",
+    "find": "const settled = FAILURES[code].settles",
+    "replace": "const settled = true",
+    "test": {
+      "cwd": "apps/web",
+      "file": "hub.test.ts",
+      "name": "resposta que não decide"
+    }
+  },
+  {
+    "id": "company-attempt-replay",
+    "file": "apps/server/src/hub/identity/companies.ts",
+    "find": "if (found !== undefined) {",
+    "replace": "if (found === null) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "criar: o administrador cria"
+    }
+  },
+  {
+    "id": "invitation-replay-resends-unmailed",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (same.unmailed) return",
+    "replace": "if (false) return",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-replay.test.ts",
+      "name": "o Hub parou entre o convite e o e-mail"
+    }
+  },
+  {
+    "id": "invitation-bounce-marked",
+    "file": "apps/server/src/hub/identity/invitation-mail.ts",
+    "find": "if (error instanceof Failure && error.code === 'MAIL_BOUNCED') await mark()",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo com a mesma chave: depois do correio fora"
+    }
+  },
+  {
+    "id": "library-failure-is-database",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    const failure = databaseFailure(error)\n    if (failure.code !== 'INTERNAL_UNEXPECTED' || statusOf(error) < 500) throw failure\n    throw new Failure('DATABASE_UNAVAILABLE', { cause: error })",
+    "replace": "    throw error",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/database-down.test.ts",
+      "name": "banco fora"
+    }
+  },
+  {
+    "id": "library-errors-thrown",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    onAPIError: { throw: true },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-write.test.ts",
+      "name": "senha que não grava"
+    }
+  },
+  {
+    "id": "first-person-lock",
+    "file": "apps/server/src/hub/identity/first-person.ts",
+    "find": "await transactionLock(tx, 'conexus.first-person')",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/first-person.test.ts",
+      "name": "ao mesmo tempo"
+    }
+  },
+  {
+    "id": "first-person-forgets-earlier-link",
+    "file": "apps/server/src/hub/identity/first-person.ts",
+    "find": "} else await forgetLinks(tx, same.id)",
+    "replace": "}",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/first-person.test.ts",
+      "name": "com a pessoa ainda sem senha"
+    }
+  },
+  {
+    "id": "sign-in-through-router",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "deps.auth.handler(libraryRequest(deps.config, { path: SIGN_IN_PATH, headers, body })),",
+    "replace": "deps.auth.api.signInEmail({ body, headers, asResponse: true }),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/identity.test.ts",
+      "name": "limite: a 11ª tentativa"
+    }
+  },
+  {
+    "id": "sign-out-row-first",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    await inLibrary(() =>\n      refusedAs(() => deps.auth.api.revokeSession({ body, headers }), { 401: 'SESSION_REQUIRED' }),\n    )\n",
+    "replace": "    void body\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/session.test.ts",
+      "name": "sair falha"
+    }
+  },
+  {
+    "id": "re-invite-cancels-expired",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "const open = await openOf(tx, admitted, email)",
+    "replace": "const open = undefined",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "de novo: o anterior vencido"
+    }
+  },
+  {
+    "id": "invitation-pace",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (recent >= INVITATION_PACE.most) throw new Failure('INVITATIONS_EXCEEDED')",
+    "replace": "void recent",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "limite: o 11º convite"
+    }
+  },
+  {
+    "id": "password-link-pace",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "if (given > 0) throw new Failure('PASSWORD_LINKS_EXCEEDED')",
+    "replace": "void given",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitation-link.test.ts",
+      "name": "link: dois pedidos juntos"
+    }
+  },
+  {
+    "id": "write-plain-text-refused",
+    "file": "apps/server/src/platform/http.ts",
+    "find": "  app.removeContentTypeParser('text/plain')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/http.test.ts",
+      "name": "mídia da própria página, text/plain"
+    }
+  },
+  {
+    "id": "write-origin-checked",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "    if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "entrada: recusa a escrita de outro site"
+    }
+  }
+]

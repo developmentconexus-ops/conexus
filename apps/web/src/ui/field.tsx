@@ -28,6 +28,7 @@ export function FieldError({ className, ...props }: ComponentProps<'p'>) {
   if (!props.children) return null
   return (
     <p
+      role="alert"
       data-slot="field-error"
       className={cn('font-body text-label text-danger', className)}
       {...props}

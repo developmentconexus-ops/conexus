@@ -1,27 +1,12 @@
-import { FAILURES, Problem } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
+import { ANA } from '../../platform/fixtures.ts'
+import { homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
 
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
-
-function refusal(code: keyof typeof FAILURES) {
-  const row = FAILURES[code]
-  const body = Problem.parse({
-    type: `urn:conexus:problem:${code}`,
-    title: row.phrase,
-    status: row.status,
-    code,
-    traceId: 'a1b2c3',
-  })
-  return HttpResponse.json(body, { status: row.status })
-}
+const server = hubServer()
 
 async function openSignIn() {
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: ['/login'] }))} />)
@@ -91,4 +76,21 @@ test('enquanto envia, o botão fica desabilitado com "Entrando…"', async () =>
   answer.resolve()
   const idle = await screen.findByRole('button', { name: 'Entrar' })
   expect(idle.hasAttribute('disabled')).toBe(false)
+})
+
+test('entrar a caminho de outra página leva o foco ao título dela, não ao corpo (#32-4)', async () => {
+  const state = { signedIn: false }
+  server.use(...homeHub(state))
+  render(
+    <Conexus
+      conexus={createConexus(
+        createMemoryHistory({ initialEntries: ['/login?redirect=%2Fcompanies%2Fnew'] }),
+      )}
+    />,
+  )
+  fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
+  fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+  const title = await screen.findByRole('heading', { name: 'Nova empresa' })
+  await waitFor(() => expect(document.activeElement).toBe(title))
 })

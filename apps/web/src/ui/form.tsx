@@ -1,9 +1,10 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
-import type { DefaultValues, FieldValues, UseFormReturn } from 'react-hook-form'
+import type { DefaultValues, FieldValues, Path, UseFormReturn } from 'react-hook-form'
 import { FormProvider, useForm, useFormContext } from 'react-hook-form'
 import type { z } from 'zod'
+import { sentenceOf } from '../platform/hub.ts'
 import { Button } from './button.tsx'
 import { Field, FieldError, FieldGroup, FieldLabel } from './field.tsx'
 import { Input } from './input.tsx'
@@ -31,9 +32,29 @@ export function Form<I extends FieldValues, O>(props: {
 }
 
 /**
- * One input with its label and its error. A schema error shows `invalid`, in the person's words;
- * a refusal the Hub put on this field with `setError` shows the Hub's sentence.
+ * What a field shows for its error: its message, and the attributes that tie it to the control. A
+ * refusal the Hub put on the field with `setError` shows the Hub's sentence; a schema error shows
+ * `invalid` when given, in the person's words, and the schema's message otherwise.
  */
+export function useFieldError(name: string, invalid?: string) {
+  const { formState } = useFormContext()
+  const id = useId()
+  const error = formState.errors[name]
+  const sentence = typeof error?.message === 'string' ? error.message : undefined
+  const message = error?.type === 'server' ? sentence : (invalid ?? sentence)
+  const errorId = `${id}-error`
+  return {
+    id,
+    errorId,
+    message: error ? message : undefined,
+    field: { 'data-invalid': error ? true : undefined },
+    control: {
+      'aria-invalid': error ? true : undefined,
+      'aria-describedby': error ? errorId : undefined,
+    },
+  }
+}
+
 export function TextField(props: {
   name: string
   label: string
@@ -41,23 +62,19 @@ export function TextField(props: {
   autoComplete: string
   invalid: string
 }) {
-  const { register, formState } = useFormContext()
-  const id = useId()
-  const error = formState.errors[props.name]
-  const sentence = error?.type === 'server' ? error.message : undefined
-  const message = error ? (typeof sentence === 'string' ? sentence : props.invalid) : undefined
+  const { register } = useFormContext()
+  const shown = useFieldError(props.name, props.invalid)
   return (
-    <Field>
-      <FieldLabel htmlFor={id}>{props.label}</FieldLabel>
+    <Field {...shown.field}>
+      <FieldLabel htmlFor={shown.id}>{props.label}</FieldLabel>
       <Input
-        id={id}
+        id={shown.id}
         type={props.type}
         autoComplete={props.autoComplete}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
+        {...shown.control}
         {...register(props.name)}
       />
-      <FieldError id={`${id}-error`}>{message}</FieldError>
+      <FieldError id={shown.errorId}>{shown.message}</FieldError>
     </Field>
   )
 }
@@ -72,6 +89,15 @@ export function FormAlert() {
       {message}
     </p>
   )
+}
+
+/** Puts the sentence for a failure on a field, or on the whole form when no field is named. */
+export function setServerError<I extends FieldValues, O>(
+  form: UseFormReturn<I, unknown, O>,
+  error: unknown,
+  field?: Path<I>,
+) {
+  form.setError(field ?? 'root.server', { type: 'server', message: sentenceOf(error) })
 }
 
 export function SubmitButton(props: { idle: string; pending: string }) {

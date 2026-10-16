@@ -1,27 +1,11 @@
-import { FAILURES, Problem } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
+import { hubServer, refusal } from '../../platform/test-hub.tsx'
 
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
-
-function refusal(code: keyof typeof FAILURES) {
-  const row = FAILURES[code]
-  const body = Problem.parse({
-    type: `urn:conexus:problem:${code}`,
-    title: row.phrase,
-    status: row.status,
-    code,
-    traceId: 'a1b2c3',
-  })
-  return HttpResponse.json(body, { status: row.status })
-}
+const server = hubServer()
 
 function open(path: string) {
   const conexus = createConexus(createMemoryHistory({ initialEntries: [path] }))
@@ -75,7 +59,7 @@ for (const password of ['curta', '']) {
     const field = await choose(password)
     expect(await screen.findByText('A senha precisa de 8 caracteres ou mais.')).toBeTruthy()
     expect(field.getAttribute('aria-invalid')).toBe('true')
-    expect(screen.queryByRole('alert')).toBeNull()
+    expect(screen.getByRole('alert').id).toBe(field.getAttribute('aria-describedby'))
     expect(sent).toBe(0)
   })
 }
@@ -89,3 +73,27 @@ test('422 PASSWORD_LINK_INVALID: "Este link já foi usado ou venceu."', async ()
   )
   expect(router.state.location.pathname).toBe('/set-password')
 })
+
+test('vindo de um convite, 204 leva a /login com o convite de volta (W16)', async () => {
+  server.use(http.put('*/api/passwords', () => new HttpResponse(null, { status: 204 })))
+  const router = open('/set-password?redirect=%2Finvitations%2Fabc#token=tok-123')
+  await choose('senha-nova-1')
+  expect(await screen.findByRole('heading', { name: 'Entrar no Conexus' })).toBeTruthy()
+  expect(router.state.location.href).toBe(
+    '/login?reason=password-set&redirect=%2Finvitations%2Fabc',
+  )
+})
+
+for (const hostile of [
+  '//evil.example.test/',
+  'https://evil.example.test/',
+  '/\\evil.example.test',
+]) {
+  test(`um endereço de volta fora do Hub (${hostile}) é ignorado: 204 leva a /login sem ele`, async () => {
+    server.use(http.put('*/api/passwords', () => new HttpResponse(null, { status: 204 })))
+    const router = open(`/set-password?redirect=${encodeURIComponent(hostile)}#token=tok-123`)
+    await choose('senha-nova-1')
+    expect(await screen.findByRole('heading', { name: 'Entrar no Conexus' })).toBeTruthy()
+    expect(router.state.location.search).toEqual({ reason: 'password-set' })
+  })
+}

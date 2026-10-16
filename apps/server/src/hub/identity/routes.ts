@@ -1,28 +1,22 @@
-import type { FailureCode } from '@conexus/hub-api'
 import { createSession, deleteSession, getSession, Person, setPassword } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { SessionReader } from '../../platform/access.ts'
+import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
-import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
-import { inLibrary, RESET_PASSWORD_PATH, SIGN_IN_PATH, statusOf, withRequestLog } from './auth.ts'
+import {
+  inLibrary,
+  RESET_PASSWORD_PATH,
+  refusedAs,
+  refusedReply,
+  SIGN_IN_PATH,
+  withRequestLog,
+} from './auth.ts'
 
-const FORWARDED = ['origin', 'cf-connecting-ip', 'user-agent', 'cookie']
+const FORWARDED = ['origin', CLIENT_ADDRESS_HEADER, 'user-agent', 'cookie']
 const SignedIn = z.object({ user: Person })
-const LibraryRefusal = z.object({ code: z.string() })
-const PASSWORD_REFUSALS: Partial<Record<string, FailureCode>> = {
-  INVALID_TOKEN: 'PASSWORD_LINK_INVALID',
-}
-
-/** By status, never by the library's message (code C52); its one outside system is the database. */
-function refusalOf(status: number): FailureCode {
-  if (status === 401) return 'SIGN_IN_REFUSED'
-  if (status === 429) return 'SIGN_IN_ATTEMPTS_EXCEEDED'
-  if (status < 500) return 'REQUEST_MALFORMED'
-  return 'DATABASE_UNAVAILABLE'
-}
 
 function libraryRequest(
   config: Config,
@@ -50,7 +44,9 @@ export function registerIdentityRoutes(
         deps.auth.handler(libraryRequest(deps.config, { path: SIGN_IN_PATH, headers, body })),
       ),
     )
-    if (!reply.ok) throw new Failure(refusalOf(reply.status))
+    if (!reply.ok) {
+      throw await refusedReply(reply, { 401: 'SIGN_IN_REFUSED', 429: 'SIGN_IN_ATTEMPTS_EXCEEDED' })
+    }
     const { user } = SignedIn.parse(await reply.json())
     log.info({ personId: user.id }, 'SESSION_CREATED')
     return answer({ person: user }, reply.headers.getSetCookie())
@@ -65,12 +61,7 @@ export function registerIdentityRoutes(
         ),
       ),
     )
-    if (reply.status === 400) {
-      const refusal = LibraryRefusal.safeParse(await reply.json().catch(() => undefined))
-      const code = refusal.success ? PASSWORD_REFUSALS[refusal.data.code] : undefined
-      throw new Failure(code ?? 'REQUEST_MALFORMED')
-    }
-    if (!reply.ok) throw new Failure(refusalOf(reply.status))
+    if (!reply.ok) throw await refusedReply(reply, { INVALID_TOKEN: 'PASSWORD_LINK_INVALID' })
     log.info({}, 'PASSWORD_SET')
     return answer(undefined)
   })
@@ -81,19 +72,13 @@ export function registerIdentityRoutes(
     return answer({ state: 'SIGNED_IN', person: session.person }, session.setCookie)
   })
 
-  serve(app, deleteSession, async ({ headers, person, log }) => {
-    const current = await inLibrary(() =>
-      deps.auth.api.getSession({ headers, query: { disableCookieCache: true } }),
-    )
-    if (current === null) throw new Failure('SESSION_REQUIRED')
+  serve(app, deleteSession, async ({ headers, person, sessionToken, log }) => {
     // The library's sign-out logs and swallows a failed delete (api/routes/sign-out.mjs:49-54),
     // so the row goes first and fails loudly, and only then are the cookies expired (S20).
-    await deps.auth.api
-      .revokeSession({ body: { token: current.session.token }, headers })
-      .catch((error: unknown) => {
-        const code = statusOf(error) === 401 ? 'SESSION_REQUIRED' : 'DATABASE_UNAVAILABLE'
-        throw new Failure(code, { cause: error })
-      })
+    const body = { token: sessionToken }
+    await inLibrary(() =>
+      refusedAs(() => deps.auth.api.revokeSession({ body, headers }), { 401: 'SESSION_REQUIRED' }),
+    )
     const signedOut = await inLibrary(() => deps.auth.api.signOut({ headers, returnHeaders: true }))
     log.info({ personId: person.id }, 'SESSION_ENDED')
     return answer(undefined, signedOut.headers.getSetCookie())

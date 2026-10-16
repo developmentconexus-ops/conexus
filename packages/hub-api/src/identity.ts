@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import type { Operation } from './operation.ts'
+import { defineOperation } from './operation.ts'
+
+/** The session cookie: `__Host-` makes the browser keep it to this origin, over HTTPS, at `/`. */
+export const COOKIE_PREFIX = '__Host-conexus_'
+export const SESSION_COOKIE = `${COOKIE_PREFIX}session`
 
 export const PersonId = z.string().min(1).brand('PersonId')
 export type PersonId = z.infer<typeof PersonId>
@@ -14,7 +18,7 @@ const SignedIn = z.object({ person: Person })
 /** A first password's length, which the form checks before it sends and the library again. */
 export const PASSWORD_LENGTH = { min: 8, max: 128 } as const
 
-export const createSession = {
+export const createSession = defineOperation({
   id: 'createSession',
   summary: 'Signs a person in with e-mail and password and sets this browser’s session.',
   access: 'entry',
@@ -26,7 +30,7 @@ export const createSession = {
   },
   success: { status: 200, body: SignedIn },
   failures: ['SIGN_IN_REFUSED', 'SIGN_IN_ATTEMPTS_EXCEEDED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
 /** Nobody signed in is an answer, not a refusal, as the library's own null session is. */
 export const SessionState = z.discriminatedUnion('state', [
@@ -35,7 +39,7 @@ export const SessionState = z.discriminatedUnion('state', [
 ])
 export type SessionState = z.infer<typeof SessionState>
 
-export const getSession = {
+export const getSession = defineOperation({
   id: 'getSession',
   summary: 'Reads who is signed in on this browser, or that nobody is.',
   access: 'public',
@@ -44,9 +48,9 @@ export const getSession = {
   bodyLimit: 1024,
   success: { status: 200, body: SessionState },
   failures: ['DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const deleteSession = {
+export const deleteSession = defineOperation({
   id: 'deleteSession',
   summary: 'Ends this browser’s session on the server, then expires its cookie.',
   access: 'session',
@@ -55,9 +59,9 @@ export const deleteSession = {
   bodyLimit: 1024,
   success: { status: 204 },
   failures: ['SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-} as const satisfies Operation
+})
 
-export const setPassword = {
+export const setPassword = defineOperation({
   id: 'setPassword',
   summary: 'Sets a person’s first password with the token of their one-use link.',
   access: 'entry',
@@ -71,5 +75,5 @@ export const setPassword = {
     }),
   },
   success: { status: 204 },
-  failures: ['PASSWORD_LINK_INVALID'],
-} as const satisfies Operation
+  failures: ['PASSWORD_LINK_INVALID', 'DATABASE_UNAVAILABLE'],
+})

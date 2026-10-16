@@ -30,6 +30,8 @@ jobs:
       - run: npm run deps
       - run: npm run knip
       - run: npm run docs
+      - name: The OpenAPI document emits from the operations
+        run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
       - name: Approval of the step card
         run: npm run approval -- ${{ github.event_name == 'pull_request' && format('--base origin/{0}', github.base_ref) || '' }}
@@ -38,7 +40,7 @@ jobs:
         env:
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
         run: npm run method-freeze -- --base "origin/${{ github.base_ref }}" --labels "$LABELS"
-      - name: Migrations carry no unmarked DROP or RENAME, no changed or forked history, no session state
+      - name: Migrations carry no unmarked DROP or RENAME, no changed history or conflicting branches, no session state
         if: github.event_name == 'pull_request'
         run: npm run migrations -- --base "origin/${{ github.base_ref }}"
       - name: List the new dependencies
@@ -77,7 +79,43 @@ jobs:
       - name: The container that serves the tests dumps the catalog
         run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
       - run: npm test
+      - name: The founder's use script runs in a browser against a real Hub
+        run: npm run e2e
       - run: npm run build
+
+  removals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+        env:
+          POSTGRES_PASSWORD: ci-superuser
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
+      CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: The owner of the test databases is not a superuser
+        run: >-
+          psql postgres://postgres:ci-superuser@localhost:5432/postgres
+          -c "create role conexus_owner login createdb createrole password 'ci-owner'"
+      - name: The container that serves the tests dumps the catalog
+        run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
+      - name: Each protection's test fails when the protection is taken out
+        run: npm run removals
 
   image:
     if: github.event_name == 'pull_request'
@@ -101,13 +139,13 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, test, image]
+    needs: [check, test, removals, image]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Every job must have succeeded
         env:
-          RESULTS: ${{ needs.check.result }} ${{ needs.test.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.test.result }} ${{ needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do

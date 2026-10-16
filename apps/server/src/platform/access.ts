@@ -8,17 +8,22 @@ const AccessConfig = z.looseObject({
   access: z.enum(['page', 'public', 'entry', 'session']).optional(),
 })
 const READS = ['GET', 'HEAD']
-const JSON_MEDIA_TYPE = 'application/json'
+/** The Tunnel puts the client's address here; the attempt limits key on it (security S28, S29). */
+export const CLIENT_ADDRESS_HEADER = 'cf-connecting-ip'
 
 /** Reads the session a request carries; the identity subject owns it and main.ts hands it over. */
 export type SessionReader = (request: {
   headers: Headers
 }) => Promise<
-  { kind: 'SIGNED_IN'; person: Person; setCookie: readonly string[] } | { kind: 'SIGNED_OUT' }
+  | { kind: 'SIGNED_IN'; person: Person; sessionToken: string; setCookie: readonly string[] }
+  | { kind: 'SIGNED_OUT' }
 >
 
+/** The session the access check read: its person, and its token for the one route that ends it. */
+type SignedIn = { person: Person; sessionToken: string }
+
 // Written once per request by the onRequest hook below, before any handler runs.
-const signedIn = new WeakMap<FastifyRequest, Person>()
+const signedIn = new WeakMap<FastifyRequest, SignedIn>()
 
 type Shape = { methods: readonly string[]; path: RegExp }
 const ALLOWED: Record<AccessKind, Shape> = {
@@ -46,21 +51,12 @@ export function headersOf(request: FastifyRequest): Headers {
   return headers
 }
 
-/** The person whose session the access check read, for a route of the `session` kind. */
-export function personOf(request: FastifyRequest): Person {
-  const person = signedIn.get(request)
-  if (person === undefined)
+/** The session the access check read, for a route of the `session` kind. */
+export function sessionOf(request: FastifyRequest): SignedIn {
+  const session = signedIn.get(request)
+  if (session === undefined)
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'no session read' } })
-  return person
-}
-
-function hasBody(request: FastifyRequest): boolean {
-  const length = request.headers['content-length']
-  return request.headers['transfer-encoding'] !== undefined || (length ?? '0') !== '0'
-}
-
-function mediaType(request: FastifyRequest): string | undefined {
-  return request.headers['content-type']?.split(';')[0]?.trim().toLowerCase()
+  return session
 }
 
 /** Another site's page may not make the browser call the API, reads included (security S24). */
@@ -76,10 +72,6 @@ function checkWrite(request: FastifyRequest, publicOrigin: PublicOrigin): void {
   const site = request.headers['sec-fetch-site']
   if (request.headers.origin !== publicOrigin || (site !== undefined && site !== 'same-origin')) {
     throw new Failure('REQUEST_ORIGIN_REFUSED')
-  }
-  const type = mediaType(request)
-  if (type === undefined ? hasBody(request) : type !== JSON_MEDIA_TYPE) {
-    throw new Failure('REQUEST_MEDIA_TYPE_REFUSED')
   }
 }
 
@@ -114,13 +106,12 @@ export function enforceAccess(
     if (access === 'public') return
     if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)
     if (access === 'entry') {
-      // The Tunnel puts the client's address here; the attempt limit keys on it (security S28, S29).
-      if (!request.headers['cf-connecting-ip']) throw new Failure('REQUEST_MALFORMED')
+      if (!request.headers[CLIENT_ADDRESS_HEADER]) throw new Failure('REQUEST_MALFORMED')
       return
     }
     const session = await deps.readSession({ headers: headersOf(request) })
     if (session.kind === 'SIGNED_OUT') throw new Failure('SESSION_REQUIRED')
-    signedIn.set(request, session.person)
+    signedIn.set(request, { person: session.person, sessionToken: session.sessionToken })
     if (session.setCookie.length > 0) reply.header('set-cookie', session.setCookie)
   })
 }

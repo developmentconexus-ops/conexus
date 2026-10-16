@@ -1,16 +1,13 @@
-import { HubStatus, Problem } from '@conexus/hub-api'
+import { HubStatus } from '@conexus/hub-api'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { setupServer } from 'msw/node'
-import { afterAll, afterEach, beforeAll, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import { createCache } from '../../platform/cache.ts'
+import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { StatusPage } from './public.ts'
 
-const server = setupServer()
-beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
-afterEach(() => server.resetHandlers())
-afterAll(() => server.close())
+const server = hubServer()
 
 function open() {
   render(
@@ -53,42 +50,14 @@ test('mostra que nenhum início foi gravado', async () => {
 })
 
 test('mostra a frase do banco fora', async () => {
-  const problem = Problem.parse({
-    type: 'urn:conexus:problem:DATABASE_UNAVAILABLE',
-    title: 'O banco do Conexus não respondeu.',
-    status: 503,
-    code: 'DATABASE_UNAVAILABLE',
-    traceId: 'a1b2c3',
-  })
-  server.use(
-    http.get('*/api/status', () =>
-      HttpResponse.json(problem, {
-        status: 503,
-        headers: { 'content-type': 'application/problem+json' },
-      }),
-    ),
-  )
+  server.use(http.get('*/api/status', () => refusal('DATABASE_UNAVAILABLE')))
   open()
   expect((await screen.findByRole('alert')).textContent).toBe('O banco do Conexus não respondeu.')
   expect(screen.queryByText('Último início')).toBeNull()
 })
 
 test('mostra a falha', async () => {
-  const problem = Problem.parse({
-    type: 'urn:conexus:problem:INTERNAL_UNEXPECTED',
-    title: 'Algo deu errado dentro do Conexus.',
-    status: 500,
-    code: 'INTERNAL_UNEXPECTED',
-    traceId: 'a1b2c3',
-  })
-  server.use(
-    http.get('*/api/status', () =>
-      HttpResponse.json(problem, {
-        status: 500,
-        headers: { 'content-type': 'application/problem+json' },
-      }),
-    ),
-  )
+  server.use(http.get('*/api/status', () => refusal('INTERNAL_UNEXPECTED')))
   open()
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe('Algo deu errado dentro do Conexus.')

@@ -1,8 +1,15 @@
 import { FAILURES, PASSWORD_LENGTH, setPassword } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
-import { sentenceOf } from '../../platform/hub.ts'
-import { Form, FormAlert, SubmitButton, TextField, useSchemaForm } from '../../ui/form.tsx'
+import {
+  Form,
+  FormAlert,
+  SubmitButton,
+  setServerError,
+  TextField,
+  useSchemaForm,
+} from '../../ui/form.tsx'
+import { PageTitle } from '../../ui/list.tsx'
 import { choosePassword } from './queries.ts'
 
 const PASSWORD = setPassword.input.body.pick({ password: true })
@@ -13,15 +20,23 @@ const LINK_INVALID = `${FAILURES.PASSWORD_LINK_INVALID.phrase} ${FAILURES.PASSWO
 function Heading() {
   return (
     <header className="flex flex-col gap-xs">
-      <h1 className="font-display text-title">Criar sua senha</h1>
+      <PageTitle>Criar sua senha</PageTitle>
       <p className="text-text-2">{CHOOSE}</p>
     </header>
   )
 }
 
-/** `token` is the one from the link's fragment; without one the link cannot be used. */
-export function SetPasswordForm({ token }: { token: string | undefined }) {
-  if (token !== undefined) return <ChoosePassword token={token} />
+/**
+ * `token` is the one from the link's fragment; without one the link cannot be used. `redirect` is
+ * where the person goes after signing in with the new password.
+ */
+export function SetPasswordForm(props: {
+  token: string | undefined
+  redirect: string | undefined
+}) {
+  if (props.token !== undefined) {
+    return <ChoosePassword token={props.token} redirect={props.redirect} />
+  }
   return (
     <section className="flex w-full flex-col gap-lg">
       <p role="alert" className="text-danger">
@@ -31,19 +46,19 @@ export function SetPasswordForm({ token }: { token: string | undefined }) {
   )
 }
 
-function ChoosePassword({ token }: { token: string }) {
+function ChoosePassword({ token, redirect }: { token: string; redirect: string | undefined }) {
   const router = useRouter()
   const send = useMutation(choosePassword)
   const form = useSchemaForm(PASSWORD, { password: '' })
 
   async function submit({ password }: { password: string }) {
     try {
-      await send.mutateAsync({ token, password })
+      await send.mutateAsync({ body: { token, password } })
     } catch (error) {
-      form.setError('root.server', { type: 'server', message: sentenceOf(error) })
+      setServerError(form, error)
       return
     }
-    await router.navigate({ to: '/login', search: { reason: 'password-set' } })
+    await router.navigate({ to: '/login', search: { reason: 'password-set', redirect } })
   }
 
   return (

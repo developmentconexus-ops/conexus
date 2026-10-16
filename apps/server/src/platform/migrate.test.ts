@@ -11,7 +11,12 @@ import type { TestDatabase } from './test-database.ts'
 import {
   createTestDatabase,
   databaseWithPassword,
+  freePort,
   runtimeUrlWithPassword,
+  serveEnvironment,
+  startHub,
+  unreachableDatabaseUrl,
+  urlFile,
   withRoleLock,
 } from './test-database.ts'
 
@@ -191,4 +196,15 @@ test('migrate dá senha ao login do Hub que voltou de uma restauração sem ela'
     }
   })
   await loginWorks(test, original)
+})
+
+test('migrate com o banco recusando a conexão: sai 1 com DATABASE_UNAVAILABLE, não erro inesperado', async (t) => {
+  const env = {
+    ...serveEnvironment(t, await unreachableDatabaseUrl('hub_runtime'), await freePort()),
+    HUB_MIGRATION_DATABASE_URL_FILE: urlFile(t, await unreachableDatabaseUrl()),
+  }
+  const { lines, exited } = startHub(t, env, ['migrate'])
+  assert.equal(await exited, 1)
+  const failures = lines.filter((line) => line.level !== 30).map((line) => [line.msg, line.code])
+  assert.deepEqual(failures, [['DATABASE_UNAVAILABLE', 'ECONNREFUSED']])
 })

@@ -1,6 +1,6 @@
 import { createFileRoute, useLocation } from '@tanstack/react-router'
 import { z } from 'zod'
-import { SetPasswordForm } from '../../hub/identity/public.ts'
+import { SameOriginPath, SetPasswordForm } from '../../hub/identity/public.ts'
 
 /** The token rides in the fragment, which no request carries; a query token is ignored (S35). */
 function tokenOf(hash: string): string | undefined {
@@ -8,9 +8,15 @@ function tokenOf(hash: string): string | undefined {
   return token.success ? token.data : undefined
 }
 
-export const Route = createFileRoute('/_public/set-password')({ component: SetPasswordPage })
+const Search = z.object({ redirect: SameOriginPath.optional().catch(undefined) })
+
+export const Route = createFileRoute('/_public/set-password')({
+  validateSearch: Search,
+  component: SetPasswordPage,
+})
 
 function SetPasswordPage() {
   const hash = useLocation({ select: (location) => location.hash })
-  return <SetPasswordForm token={tokenOf(hash)} />
+  const { redirect } = Route.useSearch()
+  return <SetPasswordForm token={tokenOf(hash)} redirect={redirect} />
 }

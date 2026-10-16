@@ -40,6 +40,17 @@ test('aceita uma árvore limpa', () => {
 const REFUSALS: [string, Record<string, string>][] = [
   ['document-too-long', { 'docs/decisions/0001-x.md': words(351) }],
   ['broken-link', { 'AGENTS.md': 'See [gone](docs/gone.md).\n' }],
+  ['broken-link', { 'AGENTS.md': 'See [gone][target].\n\n[target]: docs/gone.md\n' }],
+  ['broken-fragment', { 'AGENTS.md': '# Title\n\nSee [up](#nowhere).\n' }],
+  ['broken-fragment', { 'AGENTS.md': 'See [code](docs/guides/code.md#nowhere).\n' }],
+  ['broken-fragment', { 'AGENTS.md': 'See [code][c].\n\n[c]: docs/guides/code.md#nowhere\n' }],
+  [
+    'broken-fragment',
+    {
+      'docs/guides/code.md': '- **C1.** A rule.\n\nHeading\n=======\n',
+      'AGENTS.md': '[x](docs/guides/code.md#heading-1)\n',
+    },
+  ],
   ['not-in-index', { 'docs/guides/web.md': '- **W1.** A rule.\n' }],
   ['rule-defined-twice', { 'docs/guides/web.md': '- **C1.** Again.\n' }],
   ['rule-missing', { 'AGENTS.md': 'Obey C9.\n' }],
@@ -76,3 +87,82 @@ test('um link dentro de código não é conferido', () => {
   const run = check({ 'AGENTS.md': 'Write `[a](gone.md)` like this.\n' })
   assert.equal(run.status, 0, run.stderr)
 })
+
+test('um fragmento que nomeia um título passa, também com repetição, acento e link no título', () => {
+  const run = check({
+    'docs/guides/code.md':
+      '- **C1.** A rule.\n\n## Os `contratos` do fundador\n\n## Ação\n\n## Ação\n\n## Ver [o guia](code.md)\n',
+    'AGENTS.md': [
+      '# Title',
+      '',
+      '[a](#title) [b](docs/guides/code.md#os-contratos-do-fundador) [c](docs/guides/code.md#ação)',
+      '[d](docs/guides/code.md#ação-1) [e](docs/guides/code.md#ver-o-guia) [f](docs/index.md)',
+      '',
+      '[ref]: docs/guides/code.md#ação',
+      '',
+    ].join('\n'),
+  })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+const HEADING_FORMS: [string, string, string][] = [
+  ['ATX', '## Heading', 'heading'],
+  ['Setext com =', 'Heading\n=======', 'heading'],
+  ['Setext com -', 'Heading\n-------', 'heading'],
+  ['Setext com ênfase e código', 'A `x_y` _Dois_\n---', 'a-x_y-dois'],
+  ['ênfase com _', '## _Heading_', 'heading'],
+  ['ênfase forte com __', '## __Heading__', 'heading'],
+  ['sublinhado no meio da palavra', '## snake_case', 'snake_case'],
+  ['sublinhado em código', '## `a_b_`', 'a_b_'],
+]
+
+for (const [form, heading, id] of HEADING_FORMS) {
+  test(`um fragmento acha o título ${form}`, () => {
+    const run = check({
+      'docs/guides/code.md': `- **C1.** A rule.\n\n${heading}\n`,
+      'AGENTS.md': `[x](docs/guides/code.md#${id})\n`,
+    })
+    assert.equal(run.status, 0, run.stderr)
+  })
+}
+
+test('um --- que separa ou abre o arquivo não é título Setext', () => {
+  const run = check({
+    'docs/guides/code.md':
+      '---\nname: x\n---\n- **C1.** A rule.\n\nText\n\n---\n\n```\ncode\n```\n---\n',
+    'AGENTS.md':
+      '[a](docs/guides/code.md#name-x) [b](docs/guides/code.md#text) [c](docs/guides/code.md#code)\n',
+  })
+  assert.equal(run.status, 1)
+  assert.equal(run.stderr.match(/^broken-fragment: /gm)?.length, 3)
+})
+
+test('um fragmento em arquivo que não é Markdown ou em pasta não é conferido', () => {
+  const run = check({
+    'AGENTS.md': 'See [steps](docs/steps/#x) and [s](scripts/x.ts#anchor).\n',
+    'scripts/x.ts': 'x\n',
+  })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('um fragmento com % mal formado é broken-fragment, sem travar, e o título com % se acha sem ele', () => {
+  const heading = { 'docs/guides/code.md': '- **C1.** A rule.\n\n## 50% off\n' }
+  const bad = check({ ...heading, 'AGENTS.md': '[x](docs/guides/code.md#50%)\n' })
+  assert.equal(bad.status, 1)
+  assert.match(bad.stderr, /^broken-fragment: AGENTS\.md: docs\/guides\/code\.md#50%$/m)
+  assert.doesNotMatch(bad.stderr, /URIError/)
+  const good = check({ ...heading, 'AGENTS.md': '[x](docs/guides/code.md#50-off)\n' })
+  assert.equal(good.status, 0, good.stderr)
+})
+
+for (const title of ['"t"', "'t'", '(t)']) {
+  test(`um link com título ${title} é conferido`, () => {
+    const broken = check({ 'AGENTS.md': `[a](gone.md ${title})\n` })
+    assert.equal(broken.status, 1)
+    assert.match(broken.stderr, /^broken-link: AGENTS\.md: gone\.md$/m)
+    const fragment = check({ 'AGENTS.md': `[a](docs/guides/code.md#nope ${title})\n` })
+    assert.match(fragment.stderr, /^broken-fragment: /m)
+    const fine = check({ 'AGENTS.md': `[a](docs/index.md ${title})\n` })
+    assert.equal(fine.status, 0, fine.stderr)
+  })
+}

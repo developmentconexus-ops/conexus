@@ -1,7 +1,8 @@
-import { Version } from '@conexus/hub-api'
+import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
+import { Secret } from './secret.ts'
 import { readSecretFile } from './secret-file.ts'
 
 const LOG_LEVELS = ['error', 'warn', 'info', 'debug'] as const
@@ -17,29 +18,36 @@ export const PublicOrigin = z
 export type PublicOrigin = z.infer<typeof PublicOrigin>
 
 /** Signs the session cookie: a copy of the database without it opens no session (security S16). */
-export class SessionSecret {
-  readonly #value: string
-
-  private constructor(value: string) {
-    this.#value = value
-  }
-
-  static parse(value: string): SessionSecret {
+export type SessionSecret = Secret<'SessionSecret'>
+export const SessionSecret = {
+  parse(value: string): SessionSecret {
     if (value.length < SESSION_SECRET_MIN_LENGTH) throw new TypeError('session secret too short')
-    return new SessionSecret(value)
-  }
+    return new Secret('SessionSecret', value)
+  },
+}
 
-  reveal(): string {
-    return this.#value
-  }
+const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]']
 
-  toString(): string {
-    return '[SessionSecret]'
-  }
+/**
+ * The mail provider's send address, with the account in it: the one place mail goes (S36). The
+ * token leaves only over https; plain http is allowed only to this machine, where no wire sees it.
+ */
+export const MailApiUrl = z
+  .string()
+  .refine((value) => {
+    const url = URL.parse(value)
+    if (url?.protocol === 'https:') return true
+    return url?.protocol === 'http:' && LOOPBACK.includes(url.hostname)
+  })
+  .brand('MailApiUrl')
+export type MailApiUrl = z.infer<typeof MailApiUrl>
 
-  toJSON(): string {
-    return '[SessionSecret]'
-  }
+/** Sends mail as the installation; `createMail` in mail.ts reveals it into its request (S35). */
+export type MailToken = Secret<'MailToken'>
+export const MailToken = {
+  parse(value: string): MailToken {
+    return new Secret('MailToken', value)
+  },
 }
 
 type BaseConfig = {
@@ -48,7 +56,13 @@ type BaseConfig = {
   logLevel: LogLevel
   databaseUrl: DatabaseUrl
 }
-export type Config = BaseConfig & { publicOrigin: PublicOrigin; sessionSecret: SessionSecret }
+export type Config = BaseConfig & {
+  publicOrigin: PublicOrigin
+  sessionSecret: SessionSecret
+  mailApiUrl: MailApiUrl
+  mailFrom: Email
+  mailToken: MailToken
+}
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
 const Environment = z.object({
@@ -61,6 +75,9 @@ const MigrationKey = z.object({ HUB_MIGRATION_DATABASE_URL_FILE: z.string().min(
 const ServeEnvironment = z.object({
   HUB_PUBLIC_ORIGIN: PublicOrigin,
   HUB_SESSION_SECRET_FILE: z.string().min(1),
+  HUB_MAIL_API_URL: MailApiUrl,
+  HUB_MAIL_FROM: Email,
+  HUB_MAIL_TOKEN_FILE: z.string().min(1),
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -121,6 +138,9 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
       serve.HUB_SESSION_SECRET_FILE,
       SessionSecret.parse,
     ),
+    mailApiUrl: serve.HUB_MAIL_API_URL,
+    mailFrom: serve.HUB_MAIL_FROM,
+    mailToken: readSecret('HUB_MAIL_TOKEN_FILE', serve.HUB_MAIL_TOKEN_FILE, MailToken.parse),
   }
 }
 

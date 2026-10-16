@@ -39,6 +39,24 @@ require_secret() {
   fi
 }
 
+require_secrets() {
+  local name
+  for name in hub_session_secret hub_mail_token; do
+    require_secret "$1" "$name"
+  done
+}
+
+# Compose reads `env_file` itself, as the user that runs this script, and `ps` below needs it too.
+# compose.yaml fixes the path; HUB_ENV_FILE exists only so scripts/deploy.test.ts can plant one.
+require_hub_env() {
+  local file="${HUB_ENV_FILE:-/etc/conexus/hub.env}"
+  if ! { : < "$file"; } 2> /dev/null; then
+    echo "missing or unreadable hub.env: $file; write it first, readable by $(id -un)" >&2
+    return 1
+  fi
+}
+
+require_hub_env
 previous="$(running_image)"
 
 if [ "$mode" = "--restart" ]; then
@@ -46,7 +64,7 @@ if [ "$mode" = "--restart" ]; then
     echo "no Hub is running" >&2
     exit 1
   fi
-  require_secret "$previous" hub_session_secret
+  require_secrets "$previous"
   migrate_if_labeled "$previous"
   if HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
     echo "restarted: $previous"
@@ -63,7 +81,7 @@ if [ "$previous" = "$image" ]; then
 fi
 
 docker pull --quiet "$image" > /dev/null
-require_secret "$image" hub_session_secret
+require_secrets "$image"
 migrate_if_labeled "$image"
 
 if HUB_IMAGE="$image" "${compose[@]}" up --detach --wait --wait-timeout 90; then

@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict'
+import type { Socket } from 'node:net'
+import { connect, createServer } from 'node:net'
 import { test } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import { sql } from 'drizzle-orm'
-import { openDatabase } from './database.ts'
-import { createTestDatabase, unreachableDatabaseUrl } from './test-database.ts'
-
-const silent = { info: () => undefined, error: () => undefined }
+import { DatabaseUrl, openDatabase } from './database.ts'
+import {
+  createTestDatabase,
+  silent,
+  unreachableDatabaseUrl,
+  whenIdle,
+  withRoleLock,
+} from './test-database.ts'
 
 function failsWith(code: string, sqlstate?: string) {
   return (error: unknown) => {
@@ -25,7 +32,7 @@ test('depois de uma leitura o pool chega a zero conexões', async (t) => {
   const read = await database.read((tx) => tx.execute(sql`select 1 as one`))
   assert.deepEqual(read.rows, [{ one: 1 }])
   assert.deepEqual(await asOwner(countRuntime), [{ open: 1 }])
-  await database.whenIdle()
+  await whenIdle(database)
   assert.deepEqual(await asOwner(countRuntime), [{ open: 0 }])
 })
 
@@ -81,34 +88,45 @@ test('a conexão derrubada no meio de um comando vira DATABASE_UNAVAILABLE e o p
     return tx.execute(sql`select pg_sleep(30)`)
   })
   const refused = assert.rejects(running, failsWith('DATABASE_UNAVAILABLE'))
-  await asOwner('select pg_terminate_backend($1)', [await started.promise])
+  const pid = await started.promise
+  // Ending another login's backend needs its privileges, which the owner holds only for this moment.
+  await withRoleLock(async () => {
+    await asOwner('grant hub_runtime to current_user')
+    try {
+      await asOwner('select pg_terminate_backend($1)', [pid])
+    } finally {
+      await asOwner('revoke hub_runtime from current_user')
+    }
+  })
   await refused
   const next = await database.read((tx) => tx.execute(sql`select 1 as one`))
   assert.deepEqual(next.rows, [{ one: 1 }])
 })
 
-test('uma leitura parada além do prazo falha e a conexão não volta ao pool', async (t) => {
-  const { database } = await createTestDatabase(t)
-  const held = Promise.withResolvers<void>()
-  const release = Promise.withResolvers<void>()
-  const holder = database.command(async (tx) => {
-    await tx.execute(sql`set local idle_in_transaction_session_timeout = 0`)
-    await tx.execute(sql`select pg_advisory_xact_lock(777)`)
-    held.resolve()
-    await release.promise
-  })
-  await held.promise
-  await assert.rejects(
-    database.read(async (tx) => {
-      await tx.execute(sql`set local statement_timeout = 0`)
-      return tx.execute(sql`select pg_advisory_xact_lock(777)`)
-    }),
-    failsWith('DATABASE_UNAVAILABLE'),
+test('uma leitura parada além do prazo: 503, o soquete destruído solta as travas e a conexão não volta ao pool', async (t) => {
+  const { database, asOwner } = await createTestDatabase(t)
+  const holder = asOwner('select pg_advisory_xact_lock(777), pg_sleep(60)').catch(
+    (error: unknown) => error,
   )
+  const started = Date.now()
+  try {
+    await assert.rejects(
+      database.read(async (tx) => {
+        await tx.execute(sql`set local statement_timeout = 0`)
+        await tx.execute(sql`select pg_advisory_xact_lock(888)`)
+        return tx.execute(sql`select pg_advisory_xact_lock(777)`)
+      }),
+      failsWith('DATABASE_UNAVAILABLE'),
+    )
+    assert.ok(Date.now() - started >= 15_000, 'the read deadline is 15 s')
+  } finally {
+    await asOwner(`select pg_cancel_backend(pid) from pg_stat_activity
+      where query like 'select pg_advisory_xact_lock(777), pg_sleep(60)%'`)
+  }
+  assert.equal(Object(await holder).code, '57014')
+  assert.deepEqual(await asOwner('select pg_advisory_xact_lock(888)::text as held'), [{ held: '' }])
   const next = await database.read((tx) => tx.execute(sql`select 1 as one`))
   assert.deepEqual(next.rows, [{ one: 1 }])
-  release.resolve()
-  await holder
 })
 
 test('um erro do próprio programa na consulta não vira banco fora', async (t) => {
@@ -125,8 +143,64 @@ test('o Drizzle da biblioteca usa o mesmo pool, que chega a zero conexões depoi
   const { database, asOwner } = await createTestDatabase(t)
   const countRuntime = `select count(*)::int as open from pg_stat_activity
     where datname = current_database() and usename = 'hub_runtime'`
-  const read = await database.libraryOrm().execute(sql`select current_user as login`)
+  const read = await database.libraryOrm({}).execute(sql`select current_user as login`)
   assert.deepEqual(read.rows, [{ login: 'hub_runtime' }])
-  await database.whenIdle()
+  await whenIdle(database)
   assert.deepEqual(await asOwner(countRuntime), [{ open: 0 }])
+})
+
+/** A TCP proxy to the database that, once `hold` is called, keeps every reply from reaching the Hub. */
+async function replyHolder(target: DatabaseUrl) {
+  const url = new URL(target.reveal())
+  const port = Number(url.port)
+  const host = url.hostname
+  const sockets: Socket[] = []
+  const state = { held: false }
+  const server = createServer((hub) => {
+    const database = connect(port, host)
+    sockets.push(hub, database)
+    hub.on('data', (chunk) => database.write(chunk))
+    database.on('data', (chunk) => {
+      if (!state.held) hub.write(chunk)
+    })
+    for (const socket of [hub, database]) socket.on('error', () => undefined)
+  })
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+  const address = server.address()
+  assert.ok(address !== null && typeof address === 'object')
+  url.hostname = '127.0.0.1'
+  url.port = String(address.port)
+  return {
+    url: DatabaseUrl.parse(url.toString()),
+    hold: () => {
+      state.held = true
+    },
+    close: () => {
+      for (const socket of sockets) socket.destroy()
+      server.close()
+    },
+  }
+}
+
+test('uma consulta da biblioteca sem resposta cai no prazo de 15 s como conexão perdida, e o pool a solta', async (t) => {
+  const { runtimeUrl } = await createTestDatabase(t)
+  const proxy = await replyHolder(runtimeUrl)
+  const database = openDatabase({ url: proxy.url, log: silent })
+  const orm = database.libraryOrm({})
+  try {
+    assert.deepEqual((await orm.execute(sql`select 1 as one`)).rows, [{ one: 1 }])
+    proxy.hold()
+    const started = Date.now()
+    const read = orm.execute(sql`select 1 as one`).then(
+      () => 'answered',
+      (error: unknown) => (error instanceof Error ? String(Object(error.cause).message) : 'thrown'),
+    )
+    const outcome = await Promise.race([read, setTimeout(17_000, 'pending', { ref: false })])
+    assert.equal(outcome, 'Connection terminated unexpectedly')
+    assert.ok(Date.now() - started >= 15_000, 'the deadline is 15 s')
+    assert.equal(orm.$client.totalCount, 0)
+  } finally {
+    proxy.close()
+    await database.close()
+  }
 })

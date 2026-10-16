@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { ConexusWordmark } from '../brand/mark.tsx'
 import { Button, buttonVariants } from './button.tsx'
+import { PageTitle } from './list.tsx'
 
 function Centred({ children }: { children: ReactNode }) {
   return (
@@ -31,7 +32,7 @@ export function Failure({ code, onRetry }: { code: FailureCode; onRetry: () => v
   return (
     <Centred>
       <ConexusWordmark />
-      <h1 className="font-display text-title">Não foi possível abrir o Conexus</h1>
+      <PageTitle>Não foi possível abrir o Conexus</PageTitle>
       <p role="alert">
         {row.phrase} {row.action}
       </p>
@@ -45,14 +46,25 @@ export function Failure({ code, onRetry }: { code: FailureCode; onRetry: () => v
 }
 
 export function NotFound() {
+  return <NotFoundWithHint />
+}
+
+/** `hint` is one more line a place adds to every not-found of its own. */
+export function NotFoundWithHint({ hint }: { hint?: string }) {
   return (
     <Centred>
       <ConexusWordmark />
-      <h1 className="font-display text-title">{FAILURES.NOT_FOUND.phrase}</h1>
+      <PageTitle>{FAILURES.NOT_FOUND.phrase}</PageTitle>
       <p className="text-text-2">{FAILURES.NOT_FOUND.action}</p>
+      {hint !== undefined && <p className="text-text-2">{hint}</p>}
       <Link to="/" className={buttonVariants()}>
         Voltar ao início
       </Link>
     </Centred>
   )
+}
+
+/** A list with nothing in it yet: one sentence in the grey of a subtitle (web W22). */
+export function Empty({ children }: { children: ReactNode }) {
+  return <p className="text-text-2">{children}</p>
 }

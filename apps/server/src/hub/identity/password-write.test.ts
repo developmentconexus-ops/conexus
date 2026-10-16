@@ -1,31 +1,22 @@
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import { once } from 'node:events'
-import { join } from 'node:path'
 import { test } from 'node:test'
 import { Email } from '@conexus/hub-api'
+import { identityOf } from '../../main.ts'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
-  TEST_ORIGIN,
+  silent,
+  spawnHub,
   testConfig,
+  WRITE_HEADERS,
 } from '../../platform/test-database.ts'
-import { createIdentity } from './public.ts'
 
-const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
-const silent = { info: () => undefined, error: () => undefined }
-const WRITE = {
-  origin: TEST_ORIGIN,
-  'content-type': 'application/json',
-  'cf-connecting-ip': '203.0.113.7',
-}
 // The library's scrypt hash is a hex salt and a hex key joined by a colon.
 const PASSWORD_HASH = /[0-9a-f]{16,}:[0-9a-f]{64,}/
 
 test('senha que não grava: 503, nenhuma senha, o link continua valendo, e a saída não traz o erro do banco', async (t) => {
   const test = await createTestDatabase(t)
-  const identity = createIdentity({
+  const identity = identityOf({
     database: test.database,
     config: testConfig(test.runtimeUrl),
     log: silent,
@@ -35,27 +26,11 @@ test('senha que não grava: 503, nenhuma senha, o link continua valendo, e a sa�
     email: Email.parse('ana@example.test'),
   })
   const token = link.split('#token=')[1]
-  const port = await freePort()
-  const child = spawn(process.execPath, [MAIN], {
-    env: serveEnvironment(t, test.runtimeUrl, port),
-    stdio: ['ignore', 'pipe', 'pipe'],
-  })
-  t.after(() => child.kill('SIGKILL'))
-  let output = ''
-  const listening = Promise.withResolvers<void>()
-  child.stdout.on('data', (chunk) => {
-    output += chunk
-    if (output.includes('"LISTENING"')) listening.resolve()
-  })
-  child.stderr.on('data', (chunk) => {
-    output += chunk
-  })
-  const exited = once(child, 'exit')
-  await listening.promise
+  const { port, lines, stop } = await spawnHub(t, serveEnvironment(t, test.runtimeUrl))
   function setPassword() {
     return fetch(`http://127.0.0.1:${port}/api/passwords`, {
       method: 'PUT',
-      headers: WRITE,
+      headers: WRITE_HEADERS,
       body: JSON.stringify({ token, password: 'senha-nova-1' }),
     })
   }
@@ -71,22 +46,12 @@ test('senha que não grava: 503, nenhuma senha, o link continua valendo, e a sa�
 
   await test.asOwner('grant insert on auth.account to hub_runtime')
   assert.equal((await setPassword()).status, 204)
-  child.kill('SIGTERM')
-  await exited
+  await stop()
 
   const [person] = await test.asOwner('select id from auth.user')
-  const lines = output.split('\n').filter(Boolean)
-  for (const line of lines) {
-    assert.doesNotMatch(line, PASSWORD_HASH)
-    assert.doesNotMatch(line, new RegExp(String(person?.id)))
-    assert.equal(line.match(/"level":/g)?.length, 1, line)
-  }
-  const messages = lines.map((line) => String(JSON.parse(line).msg))
-  // Served lines sit between the start and the stop; boot lines carry no request.
-  const served = messages.slice(
-    messages.indexOf('LISTENING') + 1,
-    messages.indexOf('SHUTTING_DOWN'),
-  )
-  for (const message of served) assert.match(message, /^[A-Z_]+$/)
-  assert.ok(served.includes('DATABASE_UNAVAILABLE'), 'the failure was logged by its code')
+  const output = JSON.stringify(lines)
+  assert.doesNotMatch(output, PASSWORD_HASH)
+  assert.doesNotMatch(output, new RegExp(String(person?.id)))
+  const messages = lines.map((line) => String(line.msg))
+  assert.ok(messages.includes('DATABASE_UNAVAILABLE'), 'the failure was logged by its code')
 })

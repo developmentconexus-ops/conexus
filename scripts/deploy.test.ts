@@ -18,7 +18,8 @@ case "$*" in
   "inspect --format {{.Config.Image}}"*) echo "\${STUB_RUNNING_IMAGE:-}" ;;
   "image inspect"*) echo "\${STUB_LABEL:-}" ;;
   *" run --rm migrate") exit "\${STUB_MIGRATE_STATUS:-0}" ;;
-  "run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/hub_session_secret,"*) exit "\${STUB_SECRET_STATUS:-0}" ;;
+  "run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/"*)
+    [[ -n "\${STUB_MISSING_SECRET:-}" && "$*" == *"/\${STUB_MISSING_SECRET},"* ]] && exit 1; exit 0 ;;
   *" up "*) exit "\${STUB_UP_STATUS:-0}" ;;
 esac
 `
@@ -28,7 +29,8 @@ type Stub = {
   labeled?: boolean
   migrateStatus?: number
   upStatus?: number
-  secretMissing?: boolean
+  missingSecret?: string
+  hubEnv?: 'missing' | 'unreadable'
 }
 
 function deploy(argument: string, stub: Stub = {}) {
@@ -38,6 +40,9 @@ function deploy(argument: string, stub: Stub = {}) {
   writeFileSync(join(dir, 'bin/docker'), STUB_DOCKER)
   chmodSync(join(dir, 'bin/docker'), 0o755)
   const calls = join(dir, 'calls')
+  const hubEnv = join(dir, 'hub.env')
+  if (stub.hubEnv !== 'missing') writeFileSync(hubEnv, 'HUB_MAIL_FROM=a@b.test\n')
+  if (stub.hubEnv === 'unreadable') chmodSync(hubEnv, 0o000)
   writeFileSync(calls, '')
   const run = spawnSync('bash', [DEPLOY, argument], {
     encoding: 'utf8',
@@ -46,12 +51,13 @@ function deploy(argument: string, stub: Stub = {}) {
       ...process.env,
       PATH: `${join(dir, 'bin')}${delimiter}${process.env.PATH}`,
       CALLS: calls,
+      HUB_ENV_FILE: hubEnv,
       STUB_RUNNING_ID: stub.running === undefined ? '' : 'container-id',
       STUB_RUNNING_IMAGE: stub.running ?? '',
       STUB_LABEL: stub.labeled === false ? '' : '1',
       STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
       STUB_UP_STATUS: String(stub.upStatus ?? 0),
-      STUB_SECRET_STATUS: stub.secretMissing === true ? '1' : '0',
+      STUB_MISSING_SECRET: stub.missingSecret ?? '',
     },
   })
   const log = readFileSync(calls, 'utf8').split('\n').filter(Boolean)
@@ -117,31 +123,52 @@ test('--restart cujo Hub não fica saudável diz como voltar atrás', () => {
   assert.match(run.stderr, /Voltar atrás/)
 })
 
-test('sem hub_session_secret recusa antes de migrate e não sobe o Hub', () => {
-  const { run, count } = deploy('hub@sha256:new', {
-    running: 'hub@sha256:old',
-    secretMissing: true,
+for (const secret of ['hub_session_secret', 'hub_mail_token']) {
+  test(`sem ${secret} recusa antes de migrate e não sobe o Hub`, () => {
+    const { run, count } = deploy('hub@sha256:new', {
+      running: 'hub@sha256:old',
+      missingSecret: secret,
+    })
+    assert.equal(run.status, 1)
+    assert.match(run.stderr, new RegExp(`missing secret: ${secret}`))
+    assert.equal(count('run --rm migrate'), 0)
+    assert.equal(count(' up '), 0)
   })
-  assert.equal(run.status, 1)
-  assert.match(run.stderr, /missing secret: hub_session_secret/)
-  assert.equal(count('run --rm migrate'), 0)
-  assert.equal(count(' up '), 0)
-})
 
-test('--restart sem hub_session_secret recusa e não recria o Hub', () => {
-  const { run, count } = deploy('--restart', { running: 'hub@sha256:old', secretMissing: true })
-  assert.equal(run.status, 1)
-  assert.match(run.stderr, /missing secret: hub_session_secret/)
-  assert.equal(count(' up '), 0)
-})
+  test(`--restart sem ${secret} recusa e não recria o Hub`, () => {
+    const { run, count } = deploy('--restart', { running: 'hub@sha256:old', missingSecret: secret })
+    assert.equal(run.status, 1)
+    assert.match(run.stderr, new RegExp(`missing secret: ${secret}`))
+    assert.equal(count(' up '), 0)
+  })
+}
 
-test('o segredo é conferido na imagem nova, sem rede, como o usuário do Hub', () => {
+test('os segredos são conferidos na imagem nova, sem rede, como o usuário do Hub', () => {
   const { run, log } = deploy('hub@sha256:new')
   assert.equal(run.status, 0, run.stderr)
-  assert.ok(
-    log.includes(
-      'run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/hub_session_secret,target=/run/check,readonly --entrypoint test hub@sha256:new -s /run/check [HUB_IMAGE=]',
-    ),
-    log.join('\n'),
-  )
+  for (const secret of ['hub_session_secret', 'hub_mail_token']) {
+    assert.ok(
+      log.includes(
+        `run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/${secret},target=/run/check,readonly --entrypoint test hub@sha256:new -s /run/check [HUB_IMAGE=]`,
+      ),
+      log.join('\n'),
+    )
+  }
 })
+
+const AS_ROOT = process.getuid?.() === 0
+for (const hubEnv of ['missing', 'unreadable'] as const) {
+  for (const argument of ['hub@sha256:new', '--restart']) {
+    test(`${argument} com hub.env ${hubEnv} recusa antes de qualquer chamada ao Docker`, {
+      skip:
+        hubEnv === 'unreadable' && AS_ROOT
+          ? 'opt-in: root reads any file, so this case needs a user without root'
+          : false,
+    }, () => {
+      const { run, log } = deploy(argument, { running: 'hub@sha256:old', hubEnv })
+      assert.equal(run.status, 1)
+      assert.match(run.stderr, /missing or unreadable hub\.env: .*hub\.env; write it first/)
+      assert.deepEqual(log, [])
+    })
+  }
+}

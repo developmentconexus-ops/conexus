@@ -7,28 +7,22 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { Email } from '@conexus/hub-api'
-import { createHub } from '../../main.ts'
+import { createHub, identityOf } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
   serveEnvironment,
-  TEST_ORIGIN,
+  silent,
   testConfig,
+  WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 import { createStatus } from '../status/public.ts'
-import { createIdentity } from './public.ts'
 
 const run = promisify(execFile)
 const _ROOT = join(import.meta.dirname, '..', '..', '..', '..', '..')
 const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
-const silent = { info: () => undefined, error: () => undefined }
 const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 const LINK = /^https:\/\/hub\.example\.test\/set-password#token=([A-Za-z0-9]+)$/m
-const WRITE = {
-  origin: TEST_ORIGIN,
-  'content-type': 'application/json',
-  'cf-connecting-ip': '203.0.113.7',
-}
 
 async function firstPerson(
   t: TestContext,
@@ -70,7 +64,7 @@ function tokenOf(summary: string): string {
 async function hubOn(t: TestContext, test: TestDatabase) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
-  const identity = createIdentity({ database: test.database, config, log: silent })
+  const identity = identityOf({ database: test.database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   return app
@@ -79,7 +73,7 @@ async function hubOn(t: TestContext, test: TestDatabase) {
 function setPassword(
   app: Awaited<ReturnType<typeof hubOn>>,
   body: unknown,
-  headers: Record<string, string> = WRITE,
+  headers: Record<string, string> = WRITE_HEADERS,
 ) {
   return app.inject({
     method: 'PUT',
@@ -93,7 +87,7 @@ function signIn(app: Awaited<ReturnType<typeof hubOn>>, password: string) {
   return app.inject({
     method: 'PUT',
     url: '/api/sessions/current',
-    headers: WRITE,
+    headers: WRITE_HEADERS,
     payload: JSON.stringify({ email: ANA.email, password }),
   })
 }
@@ -102,7 +96,7 @@ function codeOf(response: { json(): unknown }): unknown {
   return Object(response.json()).code
 }
 
-test('sem pessoa: cria a pessoa sem senha e grava o link no resumo; nenhuma linha de registro traz o token', async (t) => {
+test('sem pessoa: cria a pessoa sem senha, administradora da instalação, e grava o link no resumo; nenhuma linha de registro traz o token', async (t) => {
   const test = await createTestDatabase(t)
   const created = await firstPerson(t, test, ANA)
   assert.equal(created.code, 0, created.output)
@@ -114,9 +108,11 @@ test('sem pessoa: cria a pessoa sem senha e grava o link no resumo; nenhuma linh
   assert.match(created.output, /"msg":"FIRST_PERSON_LINK_GIVEN"/)
   assert.doesNotMatch(created.output, new RegExp(token))
   assert.doesNotMatch(created.output, /ana@example\.test/)
-  const people = await test.asOwner(`select u.name, u.email, count(a.id)::int as accounts
+  const people = await test.asOwner(`select u.name, u.email, u.role, count(a.id)::int as accounts
     from auth.user u left join auth.account a on a.user_id = u.id group by u.id`)
-  assert.deepEqual(people, [{ name: 'Ana Lima', email: 'ana@example.test', accounts: 0 }])
+  assert.deepEqual(people, [
+    { name: 'Ana Lima', email: 'ana@example.test', role: 'admin', accounts: 0 },
+  ])
 })
 
 test('com a pessoa ainda sem senha, dá um link novo e o antigo deixa de valer', async (t) => {
@@ -229,7 +225,7 @@ for (const [name, change, status, code] of REFUSALS) {
     const app = await hubOn(t, test)
     const token = tokenOf((await firstPerson(t, test, ANA)).summary)
     const headers: Record<string, string> = {}
-    for (const [header, value] of Object.entries({ ...WRITE, ...change })) {
+    for (const [header, value] of Object.entries({ ...WRITE_HEADERS, ...change })) {
       if (value !== null) headers[header] = value
     }
     const refused = await setPassword(app, { token, password: 'senha-nova-1' }, headers)
@@ -254,7 +250,7 @@ test('mídia: JSON inválido 400 e corpo acima de 4 KiB 413 em PUT /api/password
     const response = await app.inject({
       method: 'PUT',
       url: '/api/passwords',
-      headers: WRITE,
+      headers: WRITE_HEADERS,
       payload,
     })
     assert.equal(response.statusCode, status)
@@ -263,7 +259,7 @@ test('mídia: JSON inválido 400 e corpo acima de 4 KiB 413 em PUT /api/password
 })
 
 function identityOn(test: TestDatabase) {
-  return createIdentity({
+  return identityOf({
     database: test.database,
     config: testConfig(test.runtimeUrl),
     log: silent,

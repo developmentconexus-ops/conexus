@@ -41,6 +41,10 @@ function migration(
   write(dir, `apps/server/migrations/${name}/snapshot.json`, JSON.stringify(snapshot))
 }
 
+function tableNamed(name: string): object[] {
+  return [{ entityType: 'tables', name, schema: 'public', isRlsEnabled: false }]
+}
+
 function commit(dir: string, message: string) {
   git(dir, 'add', '.')
   git(dir, 'commit', '-q', '-m', message)
@@ -117,7 +121,7 @@ test('aceita DROP com a linha de contrato e o motivo', () => {
   assert.deepEqual(run, { status: 0, stderr: '' })
 })
 
-test('recusa duas migrações que partem da mesma', () => {
+test('recusa duas migrações que partem da mesma e criam a mesma tabela', () => {
   const run = check((dir) => {
     const table = [{ entityType: 'tables', name: 't', schema: 'public', isRlsEnabled: false }]
     migration(dir, '20260102000000_second', 'CREATE TABLE t (b int);\n', SECOND, FIRST, table)
@@ -125,6 +129,28 @@ test('recusa duas migrações que partem da mesma', () => {
   })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /drizzle-kit check refused the migration history/)
+})
+
+test('aceita duas migrações que partem da mesma e não se conflitam', () => {
+  const run = check((dir) => {
+    migration(
+      dir,
+      '20260102000000_second',
+      'CREATE TABLE t (b int);\n',
+      SECOND,
+      FIRST,
+      tableNamed('t'),
+    )
+    migration(
+      dir,
+      '20260103000000_third',
+      'CREATE TABLE u (c int);\n',
+      THIRD,
+      FIRST,
+      tableNamed('u'),
+    )
+  })
+  assert.deepEqual(run, { status: 0, stderr: '' })
 })
 
 for (const [what, code] of [

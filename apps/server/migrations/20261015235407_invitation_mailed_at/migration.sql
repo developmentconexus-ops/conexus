@@ -1,0 +1,1 @@
+ALTER TABLE "auth"."invitation" ADD COLUMN "mailed_at" timestamp with time zone;

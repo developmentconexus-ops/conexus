@@ -27,7 +27,7 @@ export function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            'min-w-48 origin-(--transform-origin) rounded-object border border-line bg-surface p-xs text-text outline-none',
+            'min-w-48 origin-(--transform-origin) rounded-object border border-line bg-surface p-sm text-text outline-none',
             className,
           )}
           {...props}
@@ -68,7 +68,7 @@ export function DropdownMenuSeparator({ className, ...props }: MenuPrimitive.Sep
   return (
     <MenuPrimitive.Separator
       data-slot="dropdown-menu-separator"
-      className={cn('-mx-xs my-xs h-px bg-line', className)}
+      className={cn('-mx-sm my-xs h-px bg-line', className)}
       {...props}
     />
   )

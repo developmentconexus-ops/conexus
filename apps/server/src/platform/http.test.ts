@@ -3,15 +3,20 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import type { Operation } from '@conexus/hub-api'
-import { Person } from '@conexus/hub-api'
+import { defineOperation, Person } from '@conexus/hub-api'
 import { z } from 'zod'
 import { answer, createServer, serve } from './http.ts'
-import { TEST_ORIGIN, testConfig, unreachableDatabaseUrl } from './test-database.ts'
+import {
+  TEST_ORIGIN,
+  takeUndeclared,
+  testConfig,
+  unreachableDatabase,
+  unreachableDatabaseUrl,
+} from './test-database.ts'
 
 const PERSON = Person.parse({ id: 'person-1', name: 'Ana Lima', email: 'ana@example.test' })
 
-const echo = {
+const echo = defineOperation({
   id: 'echoNote',
   summary: 'Answers the note it was sent.',
   access: 'entry',
@@ -21,9 +26,9 @@ const echo = {
   input: { body: z.object({ note: z.string().max(8) }) },
   success: { status: 200, body: z.object({ note: z.string() }) },
   failures: [],
-} as const satisfies Operation
+})
 
-const forget = {
+const forget = defineOperation({
   id: 'deleteNote',
   summary: 'Forgets the note.',
   access: 'session',
@@ -32,12 +37,17 @@ const forget = {
   bodyLimit: 64,
   success: { status: 204 },
   failures: [],
-} as const satisfies Operation
+})
 
 async function hub() {
   const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
     webRoot: tmpdir(),
-    readSession: async () => ({ kind: 'SIGNED_IN', person: PERSON, setCookie: [] }),
+    readSession: async () => ({
+      kind: 'SIGNED_IN',
+      person: PERSON,
+      sessionToken: 'token',
+      setCookie: [],
+    }),
   })
   serve(app, echo, ({ body }) => answer({ note: body.note }, ['a=1; Path=/', 'b=2; Path=/']))
   serve(app, forget, () => answer(undefined, ['a=; Max-Age=0; Path=/']))
@@ -45,11 +55,8 @@ async function hub() {
   return app
 }
 
-const HEADERS = {
-  origin: TEST_ORIGIN,
-  'content-type': 'application/json',
-  'cf-connecting-ip': '203.0.113.7',
-}
+const UNTYPED = { origin: TEST_ORIGIN, 'cf-connecting-ip': '203.0.113.7' }
+const HEADERS = { ...UNTYPED, 'content-type': 'application/json' }
 
 test('o corpo lido pelo esquema da operação volta, com cada cookie no seu cabeçalho', async () => {
   const app = await hub()
@@ -96,19 +103,28 @@ for (const [name, payload, status, code] of REFUSALS) {
   })
 }
 
-test('formulário vindo da própria página: 415 REQUEST_MEDIA_TYPE_REFUSED', async () => {
-  const app = await hub()
-  const response = await app.inject({
-    method: 'PUT',
-    url: '/api/notes/current',
-    headers: { ...HEADERS, 'content-type': 'multipart/form-data; boundary=x' },
-    payload: '--x--',
+const MEDIA: [string, string | undefined, string][] = [
+  ['formulário', 'application/x-www-form-urlencoded', 'note=oi'],
+  ['multipart', 'multipart/form-data; boundary=x', '--x--'],
+  ['text/plain', 'text/plain', '{"note":"oi"}'],
+  ['corpo sem tipo', undefined, '{"note":"oi"}'],
+]
+for (const [name, type, payload] of MEDIA) {
+  test(`mídia da própria página, ${name}: 415 REQUEST_MEDIA_TYPE_REFUSED antes do handler`, async () => {
+    const app = await hub()
+    const response = await app.inject({
+      method: 'PUT',
+      url: '/api/notes/current',
+      headers: type === undefined ? UNTYPED : { ...UNTYPED, 'content-type': type },
+      payload,
+    })
+    assert.equal(response.statusCode, 415)
+    assert.match(String(response.headers['content-type']), /^application\/problem\+json/)
+    assert.equal(response.json().title, 'O Conexus não aceita pedidos nesse formato.')
   })
-  assert.equal(response.statusCode, 415)
-  assert.equal(response.json().title, 'O Conexus não aceita pedidos nesse formato.')
-})
+}
 
-test('páginas: /, /login e /set-password abrem a página das telas; outro endereço, 404', async (t) => {
+test('páginas: cada endereço das telas, com seus parâmetros, abre a página das telas; outro endereço, 404', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>x</title>')
@@ -117,15 +133,28 @@ test('páginas: /, /login e /set-password abrem a página das telas; outro ender
     readSession: async () => ({ kind: 'SIGNED_OUT' }),
   })
   t.after(() => app.close())
-  for (const url of ['/', '/login', '/set-password', '/login?redirect=%2F']) {
+  const addresses = [
+    '/',
+    '/login',
+    '/set-password',
+    '/login?redirect=%2F',
+    '/set-password?redirect=%2Finvitations%2Fabc#token=t',
+    '/companies/new',
+    '/companies/abc',
+    '/invitations/abc',
+    '/invitations/abc/acceptance',
+  ]
+  for (const url of addresses) {
     const page = await app.inject({ method: 'GET', url })
     assert.equal(page.statusCode, 200, url)
     assert.equal(page.body, '<!doctype html><title>x</title>', url)
   }
   assert.equal((await app.inject({ method: 'GET', url: '/entrar' })).statusCode, 404)
+  assert.equal((await app.inject({ method: 'GET', url: '/companies' })).statusCode, 404)
+  assert.equal((await app.inject({ method: 'GET', url: '/invitations/abc/outra' })).statusCode, 404)
 })
 
-test('endereço desconhecido: fora de /api/, a página das telas com 404; em /api/, o JSON de 404', async (t) => {
+test('endereço desconhecido: fora de /api/ e /assets/, a página das telas com 404; nelas, o JSON de 404', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
   writeFileSync(join(dir, 'index.html'), '<!doctype html><title>x</title>')
@@ -134,13 +163,13 @@ test('endereço desconhecido: fora de /api/, a página das telas com 404; em /ap
     readSession: async () => ({ kind: 'SIGNED_OUT' }),
   })
   t.after(() => app.close())
-  for (const url of ['/endereco-que-nao-existe', '/a/b?c=1', '/assets/nao-existe.js']) {
+  for (const url of ['/endereco-que-nao-existe', '/a/b?c=1']) {
     const typed = await app.inject({ method: 'GET', url })
     assert.equal(typed.statusCode, 404, url)
     assert.equal(typed.body, '<!doctype html><title>x</title>', url)
     assert.match(String(typed.headers['content-type']), /^text\/html/, url)
   }
-  for (const url of ['/api/nao-existe', '/api', '/api?x=1']) {
+  for (const url of ['/api/nao-existe', '/api', '/api?x=1', '/assets/nao-existe.js']) {
     const api = await app.inject({ method: 'GET', url })
     assert.equal(api.statusCode, 404, url)
     assert.equal(Object(api.json()).code, 'NOT_FOUND', url)
@@ -166,6 +195,37 @@ test('resposta: o valor literal { body, setCookie } é a resposta, igual em temp
   assert.equal(response.statusCode, 200)
   assert.equal(response.body, '{"note":"ok"}')
   assert.deepEqual([response.headers['set-cookie']].flat(), ['review=1; Path=/'])
+})
+
+test('a porta de teste registra o código de falha que a operação não declara, e o arquivo falha', async (t) => {
+  const database = await unreachableDatabase(t)
+  const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
+    webRoot: tmpdir(),
+    readSession: async () => ({ kind: 'SIGNED_OUT' }),
+  })
+  t.after(() => app.close())
+  for (const [path, failures] of [
+    ['/api/notes/declared', ['DATABASE_UNAVAILABLE']],
+    ['/api/notes/undeclared', []],
+  ] as const) {
+    const read = defineOperation({
+      id: 'readNote',
+      summary: 'Reads a note from the database.',
+      access: 'public',
+      method: 'GET',
+      path,
+      bodyLimit: 64,
+      success: { status: 204 },
+      failures,
+    })
+    serve(app, read, () => database.read(async () => answer(undefined)))
+  }
+  const declared = await app.inject({ method: 'GET', url: '/api/notes/declared' })
+  assert.deepEqual([declared.statusCode, declared.json().code], [503, 'DATABASE_UNAVAILABLE'])
+  assert.deepEqual(takeUndeclared(), [])
+  const undeclared = await app.inject({ method: 'GET', url: '/api/notes/undeclared' })
+  assert.equal(undeclared.statusCode, 503)
+  assert.deepEqual(takeUndeclared(), ['GET /api/notes/undeclared DATABASE_UNAVAILABLE'])
 })
 
 // Never called: it exists so `npm run typecheck` fails if a bare body becomes a valid answer (T9).

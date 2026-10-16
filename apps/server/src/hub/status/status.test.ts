@@ -1,30 +1,25 @@
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
-import { once } from 'node:events'
-import { join } from 'node:path'
 import { test } from 'node:test'
 import { Version } from '@conexus/hub-api'
-import { createHub } from '../../main.ts'
+import { createHub, identityOf } from '../../main.ts'
 import {
   createTestDatabase,
-  freePort,
   serveEnvironment,
+  silent,
+  spawnHub,
   testConfig,
   unreachableDatabase,
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
-import { createIdentity } from '../identity/public.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
-const silent = { info: () => undefined, error: () => undefined }
-const MAIN = join(import.meta.dirname, '..', '..', 'main.ts')
 
 async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const test = await createTestDatabase(t)
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
-  const identity = createIdentity({ database: test.database, config, log: silent })
+  const identity = identityOf({ database: test.database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   return { app, status, test }
@@ -91,7 +86,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const database = await unreachableDatabase(t)
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
-  const identity = createIdentity({ database, config, log: silent })
+  const identity = identityOf({ database, config, log: silent })
   const app = await createHub(config, { status, identity })
   t.after(() => app.close())
   const response = await app.inject(STATUS)
@@ -117,24 +112,11 @@ test('uma linha fora do contrato é recusada na leitura, sem o valor no log', as
   assert.equal(response.statusCode, 500)
   assert.equal(response.json().code, 'INTERNAL_UNEXPECTED')
   assert.doesNotMatch(response.body, /PLANTED/)
-  const port = await freePort()
-  const child = spawn(process.execPath, [MAIN], {
-    env: serveEnvironment(t, test.runtimeUrl, port),
-    stdio: ['ignore', 'pipe', 'ignore'],
-  })
-  t.after(() => child.kill('SIGKILL'))
-  let output = ''
-  const listening = Promise.withResolvers<void>()
-  child.stdout.on('data', (chunk) => {
-    output += chunk
-    if (output.includes('LISTENING')) listening.resolve()
-  })
-  const exited = once(child, 'exit')
-  await listening.promise
+  const { port, lines, stop } = await spawnHub(t, serveEnvironment(t, test.runtimeUrl))
   const live = await fetch(`http://127.0.0.1:${port}/api/status`)
   assert.equal(live.status, 500)
-  child.kill('SIGTERM')
-  await exited
+  await stop()
+  const output = JSON.stringify(lines)
   assert.match(output, /INTERNAL_UNEXPECTED/)
   assert.doesNotMatch(output, /PLANTED/)
 })

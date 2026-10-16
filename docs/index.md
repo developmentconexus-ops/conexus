@@ -9,6 +9,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each card's approval and each closed step's use line.
 - [architecture.md](architecture.md): the system's goals, context, parts, deployment, crosscutting concepts, risks and debt.
 - [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and putting back a Hub version.
+- [how-to/hub-mail.md](how-to/hub-mail.md): the invitation mail's token and addresses on the server.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): como restaurar o banco do Hub a um minuto e conferir.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 the server tests need.
 - [steps/](steps/): the folder of the step card in construction, empty between steps.

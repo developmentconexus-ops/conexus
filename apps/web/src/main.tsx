@@ -3,7 +3,7 @@ import './brand/tokens.css'
 import { CSPProvider } from '@base-ui/react/csp-provider'
 import { QueryClientProvider } from '@tanstack/react-query'
 import type { RouterHistory } from '@tanstack/react-router'
-import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { createRouter, RouterProvider, useRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createCache } from './platform/cache.ts'
@@ -12,7 +12,13 @@ import { applyChosenTheme } from './platform/theme.ts'
 import { routeTree } from './routeTree.gen.ts'
 import { Failure, Loading, NotFound } from './ui/states.tsx'
 
-// The router learns its routes and its static data by declaration merging, which needs interfaces.
+// The router learns its routes and its static data, and the cache the `meta` a write may carry
+// (web W12), by declaration merging, which needs interfaces.
+declare module '@tanstack/react-query' {
+  interface Register {
+    mutationMeta: { keepCache?: true }
+  }
+}
 declare module '@tanstack/react-router' {
   interface Register {
     router: ReturnType<typeof createConexus>['router']
@@ -23,10 +29,11 @@ declare module '@tanstack/react-router' {
 }
 
 function PageFailure({ error, reset }: { error: unknown; reset: () => void }) {
+  const router = useRouter()
   return (
     <Failure
       code={error instanceof HubFailure ? error.code : 'INTERNAL_UNEXPECTED'}
-      onRetry={reset}
+      onRetry={() => void router.invalidate().then(reset)}
     />
   )
 }

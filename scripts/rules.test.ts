@@ -232,19 +232,28 @@ const BIOME_BAD: Record<string, [string, string, string]> = {
   ],
 }
 
-let lint = ''
-before(() => {
+function biomeConfig(): string {
   const config = JSON.parse(readFileSync(join(ROOT, 'biome.json'), 'utf8'))
   delete config.vcs
-  const files: Record<string, string> = { 'biome.json': JSON.stringify(config) }
-  for (const [file, content] of Object.values(BIOME_BAD)) files[file] = content
-  const dir = plant(files)
+  return JSON.stringify(config)
+}
+
+function biomeLint(files: Record<string, string>) {
+  const dir = plant({ 'biome.json': biomeConfig(), ...files })
+  cpSync(join(ROOT, 'scripts/w25.grit'), join(dir, 'scripts/w25.grit'))
   const run = spawnSync(
     join(ROOT, 'node_modules/.bin/biome'),
     ['lint', '--colors=off', '--max-diagnostics=500', '.'],
     { cwd: dir, encoding: 'utf8', timeout: 120_000 },
   )
-  lint = run.stdout + run.stderr
+  return { status: run.status, output: run.stdout + run.stderr }
+}
+
+let lint = ''
+before(() => {
+  const files: Record<string, string> = {}
+  for (const [file, content] of Object.values(BIOME_BAD)) files[file] = content
+  lint = biomeLint(files).output
 })
 
 for (const [rule, [file, , group]] of Object.entries(BIOME_BAD)) {
@@ -258,25 +267,24 @@ for (const [rule, [file, , group]] of Object.entries(BIOME_BAD)) {
 }
 
 test('Biome aceita fetch na única peça que chama o Hub', () => {
-  const dir = plant({
-    'biome.json':
-      lint === ''
-        ? '{}'
-        : JSON.stringify(
-            (() => {
-              const c = JSON.parse(readFileSync(join(ROOT, 'biome.json'), 'utf8'))
-              delete c.vcs
-              return c
-            })(),
-          ),
+  const run = biomeLint({
     'apps/web/src/platform/hub.ts': "export function ping() {\n  return fetch('/api/health')\n}\n",
   })
-  const run = spawnSync(join(ROOT, 'node_modules/.bin/biome'), ['lint', '--colors=off', '.'], {
-    cwd: dir,
-    encoding: 'utf8',
-    timeout: 120_000,
+  assert.equal(run.status, 0, run.output)
+})
+
+test('W25: o Biome recusa max-w-sm e w-2xl em apps/web/src, aceita min-w-48', () => {
+  const run = biomeLint({
+    'apps/web/src/ui/a.tsx': 'export const a = <p className="max-w-sm" />\n',
+    'apps/web/src/ui/b.ts': `export const b = ['flex', \`w-2xl \${String(1)}\`]\n`,
+    'apps/web/src/ui/c.tsx': 'export const c = <p className="min-w-48 max-w-prose min-w-0" />\n',
   })
-  assert.equal(run.status, 0, run.stdout + run.stderr)
+  const flagged = [...run.output.matchAll(/^(apps\/web\/src\/ui\/\w+\.tsx?):\d+:\d+ plugin/gm)]
+  assert.deepEqual(
+    flagged.map(([, file]) => file),
+    ['apps/web/src/ui/a.tsx', 'apps/web/src/ui/b.ts'],
+    run.output,
+  )
 })
 
 test('o teste que trava falha pelo prazo do comando de teste', () => {
