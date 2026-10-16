@@ -10,7 +10,7 @@ export const NO_COMPANIES = listCompanies.success.body.parse({
   mayCreate: false,
   next: { kind: 'END' },
 })
-export const STATUS = {
+const STATUS = {
   version: 'v0.1.0',
   lastStart: { state: 'NONE' },
   previousStart: { state: 'NONE' },
