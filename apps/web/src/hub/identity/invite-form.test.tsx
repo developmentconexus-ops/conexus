@@ -115,6 +115,21 @@ test('201: "Convite enviado para {e-mail}.", o formulário limpo e o pedido com 
   await waitFor(() => expect(screen.getByLabelText('E-mail')).toHaveProperty('value', ''))
 })
 
+test('depois de um envio, um segundo envio com o e-mail vazio mostra o erro e não o aviso antigo', async () => {
+  const sent = hub(['admin', 'member'], () => accepted('davi@example.test', 'member'))
+  const { email } = await open()
+  fireEvent.change(email, { target: { value: 'davi@example.test' } })
+  send()
+  expect((await screen.findByRole('status')).textContent).toBe(
+    'Convite enviado para davi@example.test.',
+  )
+  await waitFor(() => expect(screen.getByLabelText('E-mail')).toHaveProperty('value', ''))
+  send()
+  expect(await screen.findByText('Escreva um e-mail.')).toBeTruthy()
+  expect(screen.queryByRole('status')).toBeNull()
+  expect(sent).toHaveLength(1)
+})
+
 test('e-mail inválido: o erro no campo e nenhum pedido', async () => {
   const sent = hub(['admin', 'member'], () => accepted('x@example.test', 'member'))
   const { email } = await open()

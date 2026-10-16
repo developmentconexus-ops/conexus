@@ -2,7 +2,6 @@ import type { FailureCode } from '@conexus/hub-api'
 import { createInvitation, ROLE_LABELS, Role } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { useState } from 'react'
 import { Controller, useFormContext } from 'react-hook-form'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure } from '../../platform/hub.ts'
@@ -69,21 +68,21 @@ export function InviteForm() {
   const roles = company.mayInviteAs
   const send = useMutation(inviteToCompany)
   const attempt = useAttemptKey()
-  const [sentTo, setSentTo] = useState<string | undefined>(undefined)
   // `Role.options` runs from the most to the least privileged; the form starts on the least offered.
   const form = useSchemaForm(createInvitation.input.body, {
     email: '',
     role: Role.options.findLast((role) => roles.includes(role)),
   })
 
+  // React Hook Form clears `isSubmitSuccessful` on the next submit, a refused one included.
+  const sentTo = form.formState.isSubmitSuccessful ? send.data?.invitation.email : undefined
+
   async function submit(values: { email: string; role: Role }) {
-    setSentTo(undefined)
     try {
-      const { invitation } = await attempt((attemptKey) =>
+      await attempt((attemptKey) =>
         send.mutateAsync({ params: { companyId }, body: values, attemptKey }),
       )
-      setSentTo(invitation.email)
-      form.reset({ email: '', role: values.role })
+      form.reset({ email: '', role: values.role }, { keepIsSubmitSuccessful: true })
     } catch (error) {
       const field = error instanceof HubFailure ? FIELD_OF[error.code] : undefined
       setServerError(form, error, field)
