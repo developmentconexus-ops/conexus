@@ -30,7 +30,8 @@ O link prova o e-mail; o aceite é separado da senha; recusar não exige conta; 
 caracteres, sem composição obrigatória. A resposta posterior **“B”** corrige o estudo: reenviar
 vivo mantém o link, reenviar vencido cria outro. React Email renderiza ao enviar; você aceitou
 empacotar somente o módulo de e-mail, gerado no build, não versionado. A medição desse módulo
-ficou abaixo de 1 MB. Envio incerto não se repete automaticamente; use Reenviar.
+ficou abaixo de 1 MB. Entrega pelo menos uma vez: replay pendente/vivo sem mailed_at reenvia
+(sua decisão de 2026-10-15, reafirmada em “A aprovo”).
 
 **Fica de fora.** Histórico, recuperação de senha, senha vazada, remoção de pessoas e apagar empresa
 (esta última fica em Duas empresas). Das issues `next-card`, entram 39 itens 1–4 e 24, e 32 itens
@@ -57,7 +58,7 @@ Revisão: [checklist](../reference/checklist.md) e template.
 Sem paralelismo: U1–U4 compartilham identidade; U3/U5, infra. Contratos/consumidores compilam juntos.
 
 **Orçamento de código alterado**, adições mais remoções, sem testes nem gerados: U1 **1.700**;
-U2 **950**; U3 **400**; U4 **400**; U5 **120**. **Total: 3.570**, teto de planejamento 4.000 (L2).
+U2 **900**; U3 **400**; U4 **400**; U5 **120**. **Total: 3.520**, teto de planejamento 4.000 (L2).
 Acima disso, voltar ao cartão; não cortar uma recusa silenciosamente.
 
 **Preparação externa.** 39 itens 5–7, PR próprio L20: orçamento informativo, raio pasta/dono,
@@ -79,7 +80,7 @@ Critérios **must**, futuros. HTTP: Hub/PostgreSQL descartável; tela: MSW valid
 | A8 | U2 | PUT de reenvio vivo mantém id e renova dois dias; POST de reemissão do vencido cria id diferente, mantém antigo legível como EXPIRED; repetir chave de criação não cria outro nem devolve cancelado como pendente | `invitation-replay.test.ts`, HTTP must |
 | A9 | U2 | Lista só pending/expired, preserva paginação após 50; nova transição com revisão obsoleta dá 412 sem efeito, salvo replay terminal abaixo; empresa/membro alheio recusados; limites permanecem | `invitations.test.ts`, HTTP must |
 | A10 | U3 | Mail capturado tem HTML/texto, Ver convite, endereço reserva, remetente e prazo; dados hostis são escapados; não sai segundo e-mail ao criar senha | `invitation-journey.test.ts`, HTTP/fake SMTP-API must |
-| A11 | U3/U5 | Imagem final envia pelo módulo empacotado, sem CLI instalada; timeout/bounce/corte não provocam retry automático nem sucesso falso; banco fora da marca não causa novo envio automático | `invitation-journey.test.ts`, imagem/fake provedor must |
+| A11 | U3/U5 | Imagem envia pelo bundle, sem CLI; adapter não repete fetch nem anuncia sucesso falso; replay pendente/vivo sem mailed_at reenvia após falha da marca | `invitation-journey.test.ts`, `invitation-replay.test.ts`, imagem/fake provedor must |
 | A12 | U4 | Cada célula da matriz renderiza ações e dados permitidos; confirmação divergente só reclama no blur/envio; senha criada continua visível enquanto sessão/cache atualizam | `invitation.test.tsx`, tela must |
 | A13 | U4 | Salvar senha e navegar não produz alerta transitório; Notice comum serve login/convite/senha; nomes de ações/paginadores identificam contexto; inicial não promete home a quem vai entrar | `set-password-form.test.tsx`, `people.test.tsx`, `states.test.tsx`, tela must |
 | A14 | U5 | Roteiro com navegador no Hub, alertas observados durante transições; larguras/temas/teclado de T23, sem erro não tratado/CSP; e-mail real chega nas caixas, inclusive M365 após liberação se necessária | `tests/e2e/invitation.test.ts`, `apps/web/layout.test.ts`, uso real must |
@@ -143,9 +144,8 @@ SIGN_IN, “Este e-mail já tem senha.” / “Entre com a sua senha.” Sem exp
 
 ## A tabela de falhas
 
-Cada célula aponta seu critério. Toda falha deixa código/trace id, nunca a credencial do convite.
-Não prometer exatamente uma entrega: Cloudflare não participa da transação. Não repetir envio
-ambíguo automaticamente; novo Reenviar é ação deliberada. Nenhum envio segura lock.
+Falhas: código/trace, nunca credencial. Cloudflare fora da transação: entrega pelo menos uma vez.
+Replay com mesma chave reenvia apenas pendente/vivo sem mailed_at; pode duplicar. Envio fora do lock.
 
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada depois de instrução/chamada | Dependência fora | O que imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
@@ -155,8 +155,8 @@ ambíguo automaticamente; novo Reenviar é ação deliberada. Nenhum envio segur
 | recusa pública/status rejected | lock; rejected + link/sessão permitidos: 204 antes da revisão, sem escrita | rollback | banco: 503 | código/trace | A5,A6 |
 | cancelInvitation/status canceled | lock; cancelado explícito + admissão atual: 204 antes da revisão, sem escrita | rollback | banco: 503 | código/trace | A7,A9 |
 | createInvitation/reemissão + marcador do vencido | chave existente; payload diferente 409; lock empresa/pessoa | rollback de cancelamento, marcador e novo convite | banco: 503; provedor após commit mantém linha | código/trace | A8,A9 |
-| renew com resend:true/expiresAt | revisão fecha corrida; repetido stale 412 sem outro envio | rollback; commit já feito não é desfeito pelo correio | banco: 503; mail falha sem retry automático | código/trace | A8,A9,A11 |
-| reserva deliveryStartedAt, envio, mailedAt | uma reserva por entrega; replay ambíguo não envia | falha de render não envia; bounce marcado; reserva sem resposta permanece incerta | timeout/corte: MAIL_UNAVAILABLE; marca falhou: 503 | código/trace | A10,A11 |
+| renew com resend:true/expiresAt | revisão fecha corrida; repetido stale 412 sem outro envio | rollback; commit não é desfeito pelo correio | banco: 503; adapter não repete fetch | código/trace | A8,A9,A11 |
+| envio, mailedAt | replay pode duplicar entrega | render falhou: não envia; bounce marca | timeout/corte: MAIL_UNAVAILABLE, sem marca; marca falhou: 503, replay pode duplicar entrega | código/trace | A10,A11 |
 | revokeSession/signOut | revoga antes de limpar cookie | não anuncia saída se delete falhou | banco: 503 | código/trace | A6,A12 |
 | setup pasta/modo | segunda execução preserva modos | teste de falha não anuncia deploy aprovado | comando falhou: saída não zero | código sem conteúdo do ambiente | A15 |
 
@@ -225,7 +225,7 @@ ritmo de 20 s e testes/removal rows correspondentes. **Dívida:** nenhuma nova; 
 | --- | --- | --- |
 | `packages/hub-api/src/` | dono list/create/renew/cancel e revisão | Hub e Pessoas |
 | `apps/server/src/hub/identity/` | commands, schema e testes | company-routes → public |
-| `apps/server/migrations/` | timestamps nullable superseded_at/delivery_started_at em auth.invitation | migrate; leitura/replay |
+| `apps/server/migrations/` | timestamp nullable superseded_at em auth.invitation | migrate; leitura terminal |
 | `apps/server/` | dono `database-grants.sql`, snapshot se afetado; sem ampliar privilégios | catalog.test.ts |
 | `apps/web/src/hub/identity/` | lista, confirmação, ações e queries | rotas de Pessoas |
 | `docs/reference/` | dono das boundaries de reemissão/replay | builder/revisor |
@@ -245,10 +245,10 @@ explícito, mesmo vencido, continua CANCELED. `findPendingInvitation` exclui ven
 (`adapter.mjs:753-770`); não alterar adapter nem a expiração antiga. A migração fica com seu dono de
 snapshot; mudança de privilégios inesperada exige PR próprio D11, não ampliação nesta unidade.
 
-**Prova:** A7–A9, comandos U1, migrações/catalog e remoções (L20). Ordem de replay de U1 vale
-para cancel: não chama cancelInvitation no no-op. `deliveryStartedAt`: coordenador reserva antes do envio;
-replay lê a reserva. Sem mailedAt, responde MAIL_UNAVAILABLE, sem redisparar. Reenviar deliberado
-renova a revisão e limpa as marcas. Reserva/mailedAt são commits próprios, nunca lock durante fetch.
+**Prova:** A7–A9/A11, comandos U1, migrações/catalog e remoções (L20). Ordem de replay de U1 vale
+para cancel: não chama cancelInvitation no no-op. createInvitation repetido com mesma chave retorna
+dados de envio se pendente, vivo e sem mailed_at, sem outro convite. Reenviar explícito renova
+revisão e limpa mailed_at.
 
 ## U3 Mail em execução, sem CLI na imagem
 
@@ -280,7 +280,9 @@ instalar o runtime completo é alternativa de 117 pacotes/68 MB medida aqui. Esb
 não o render em execução. Inline/tabelas/fallback de fontes do e-mail não viram padrão das telas;
 conflitos V3/V14/V17 ficam no fechamento L27. Sem CDN, tracking ou serviço de envio novo.
 
-**Prova:** A10/A11, servidor/imagem U5; prazo no e-mail. Entrega Outlook só no uso autorizado.
+**Prova:** A10/A11, servidor/imagem U5; prazo no e-mail. Após commit envia; após resposta/bounce
+grava mailed_at em commit próprio. Replay pendente/vivo sem marca reenvia mesmo após crash entre
+envio/marca. Fetch sem lock; Outlook só no uso autorizado.
 
 ## U4 Estados visíveis
 
