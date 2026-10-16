@@ -7,11 +7,12 @@ it is silent, the Google guide applies. Its API rules adapt the
 and errors follow [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457). Biome owns formatting.
 
 Each rule uses the words of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must
-not** are defects in review; **should** and **should not** need a stated reason to break; **may** is
+not** state a requirement; **should** and **should not** need a stated reason to break; **may** is
 a free choice. Each rule ends with the machine that refuses a violation, or "review". The guide
-states the target; code that departs from it is a defect. How to use Fastify, Zod, TypeScript or
-Mastra is the maintainers' skills; this guide decides only what they leave open. A pstack skill a
-Conexus skill names is a tool: where it conflicts with a guide, the guide wins.
+states the target; whether a departure holds a merge is [delivery L12](delivery.md)'s call. How to
+use Fastify, Zod, TypeScript or Mastra is the maintainers' skills; this guide decides only what they
+leave open. A pstack skill a Conexus skill names is a tool: where it conflicts with a guide, the
+guide wins.
 
 Owners next door: [architecture](../architecture.md) for who owns each concept, [data](data.md),
 [security](security.md), [testing](testing.md), and [web](web.md) for the screens.
@@ -39,7 +40,8 @@ Owners next door: [architecture](../architecture.md) for who owns each concept, 
 - **C9.** `main.ts` **must** be a list of modules, so a missing dependency fails at boot, not on a
   request. [review]
 - **C10.** Every subject that stores something **must** expose "delete what belongs to a company" in
-  its `public.ts`, wired in `main.ts`, with its test. [review]
+  its `public.ts`, wired in `main.ts`, with its test, in the step that gives it a caller (C74).
+  Founder, 2026-10-15, step 4 answer 9: "A". [review]
 - **C11.** Code **must** use named exports, and **must not** use a default export except where a
   tool requires one (Google). [Biome]
 - **C12.** Code **must not** export a mutable binding (`export let`). [Biome]
@@ -195,8 +197,9 @@ beside the schema.
   or 429 for size, media type or limit, 422 refused business input, 500 unexpected, 502 to 504 for an
   upstream. [review]
 - **C44.** A list that can grow **must** return an opaque continuation token, with a page size the
-  server chooses, and expose only the filters its operation declares. The token **must not** be
-  authorization, a source identity or a snapshot. [review]
+  server chooses, and expose only the filters its operation declares. An encoded random row id is
+  an acceptable token. The token **must not** be authorization, a source identity or a snapshot.
+  Founder, 2026-10-16: "1. a". [review]
 - **C45.** The API **must not** carry a version. A removed field or operation **must** leave the
   contract, the server and the web together, with no deprecation period, and so **must** a changed
   payload. [TypeScript]
@@ -220,7 +223,8 @@ returns the first Project.
   `THIRD_PARTY`, `SYSTEM`), a status, the phrase a person reads and the action they can take. Each
   row **must** also carry an action kind (`RETRY`, `SIGN_IN`, `NONE`) beside that sentence, so a
   screen shows a button only when its row says so (C55), with the one exception of [design
-  V43](design.md). [review]
+  V43](design.md), and `settles`: whether a whole answer with this code tells the client a write's
+  outcome, so it may drop its attempt key (web W24). [review]
 - **C49.** Code **must** throw only Conexus's failure class. A refusal its caller branches on **must**
   be a result union on `ok`. The browser **must** read every failure through one shared reader. The
   Builder **must** convert to Mastra's error only at its edge. [review]
@@ -341,7 +345,9 @@ lives. A narrating comment drifts from the code at the first change.
 - **C73.** Code **must not** add a retry, timeout, fallback or guard for a failure nobody has seen.
   Reproduce it, then guard what you measured. [review]
 - **C74.** Nothing dead **may** stay: unused files, exports and dependencies leave, and no file is
-  listed as an entry to escape that check. [knip, review]
+  listed as an entry to escape that check. A compile-only file that [testing T9](testing.md)
+  requires is an entry by rule: the compiler's entry point, imported by nothing. Founder,
+  2026-10-15: "2. A". [knip, review]
 - **C75.** Native first: before writing a mechanism, its author **must** read how the library or
   platform does it, at its installed version. A hand-made piece kept because it beats the library
   **must** be recorded in a boundaries file of `docs/reference/`, created with the first exception,

@@ -3,7 +3,7 @@
 Who may do what, how a person proves who they are, where secrets live and what may leave. This guide
 follows the chapters of the [OWASP ASVS 5.0](https://github.com/OWASP/ASVS) and targets its level 2.
 Each rule uses the words of [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must
-not** are defects in review; **should** and **should not** need a stated reason to break; **may** is
+not** state a requirement; **should** and **should not** need a stated reason to break; **may** is
 a free choice. Each rule ends with the machine that refuses a violation, or "review"; [code C70](code.md) holds
 for every promise here. Better Auth's
 configuration is its maintainers' skill.
