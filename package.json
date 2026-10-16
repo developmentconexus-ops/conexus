@@ -24,6 +24,7 @@
     "removals": "node scripts/removals.ts",
     "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
+    "change-budget": "node scripts/change-budget.ts",
     "test": "npm run test:scripts && npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "pree2e": "npm exec -w @conexus/web -- playwright-core install chromium-headless-shell",

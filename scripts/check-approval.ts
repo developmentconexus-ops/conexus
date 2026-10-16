@@ -47,12 +47,16 @@ if (cards.length === 0) {
   process.exit(0)
 }
 const card = cards[0] ?? ''
-const step = Number((card.match(/^e(\d+)-/) ?? [])[1])
+const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
+const step =
+  digits.length > 2 && digits.startsWith('0')
+    ? `${Number(digits[1])}.${Number(digits.slice(2))}`
+    : String(Number(digits))
 const cardPath = `docs/steps/${card}`
 
 const roadmap = readFileSync(join(root, 'docs/roadmap.md'), 'utf8')
 const line = new RegExp(
-  `^\\s*Cartão da etapa ${step} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
+  `^\\s*Cartão da etapa ${step.replace('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
   'm',
 )
 const approved = roadmap.match(line)?.[1]

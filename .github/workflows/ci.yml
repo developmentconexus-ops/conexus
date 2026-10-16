@@ -46,6 +46,15 @@ jobs:
       - name: List the new dependencies
         if: github.event_name == 'pull_request'
         run: npm run new-dependencies -- --base "origin/${{ github.base_ref }}"
+      - name: Report changed code size against the step budget
+        if: github.event_name == 'pull_request'
+        run: npm run change-budget -- --base "origin/${{ github.base_ref }}"
+      - name: Report files outside the step's declared folders and contract owners
+        if: github.event_name == 'pull_request'
+        run: |
+          for unit in $(grep -oE '^## U[0-9]+' docs/steps/*.md | grep -oE 'U[0-9]+'); do
+            npm run radius -- "$unit" "${{ github.sha }}"
+          done
 
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
   # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.

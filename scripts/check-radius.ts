@@ -1,14 +1,13 @@
-// Defect: a unit's commit touches a file its card's blast radius does not name, and the departure
-// reaches the founder only if the builder notices it (delivery L7).
+// Report changed files outside a unit's declared radius in CI without stopping the check (delivery L7).
 // `npm run radius -- U<k> [commit]` reads the table under "O raio da mudança" in the unit's section
-// of the card, and prints `out-of-radius U<k> <file>` for each file the commit changed outside it.
+// of the card, prints departures, and appends them to the GitHub Actions step summary.
 // A bare name in a cell may mean the root or the folder of the path before it: both match, and the
 // row is named `ambiguous-row` so the card can say which.
 // Matching is Node's `path.matchesGlob` over a translation of the cell, so the card's grammar stays
 // its own (see globOf). The refusals are proved by planting each one in check-radius.test.ts.
 // Revalidate by 2027-04-15, when the card template's radius table changes shape, or when Node's
 // glob matcher changes.
-import { readdirSync, readFileSync } from 'node:fs'
+import { appendFileSync, readdirSync, readFileSync } from 'node:fs'
 import { join, matchesGlob } from 'node:path'
 import { STEP_CARD } from './cli.ts'
 import { runCommand } from './command.ts'
@@ -43,6 +42,7 @@ function globOf(span: string): string {
   for (const part of span.split(/(<[^>]+>|\*+)/)) {
     const atSegmentStart = glob === '' || /[/{,]$/.test(glob)
     if (part.startsWith('<')) glob += atSegmentStart ? '{?*,.*}' : '?*'
+    else if (part === '**') glob += '**'
     else if (part.startsWith('*')) glob += atSegmentStart ? '{*,.*}' : '*'
     else glob += part.replace(/[?[(]/g, '[$&]')
   }
@@ -119,6 +119,13 @@ const card = readFileSync(
 )
 const radius = radiusOf(card)
 const outside = changedFiles().filter((file) => !radius.some((pattern) => isInside(file, pattern)))
-for (const file of outside) console.log(`out-of-radius ${unit} ${file}`)
-if (outside.length > 0) process.exit(1)
-console.log(`radius: ${unit} ${commit} inside`)
+const report =
+  outside.length > 0
+    ? outside.map((file) => `- \`${file}\``).join('\n')
+    : 'No files outside the declared folders and contract owners.'
+const summary = `### Change radius: ${unit}\n\n${report}\n\n`
+console.log(summary)
+const summaryFile = process.env.GITHUB_STEP_SUMMARY
+if (summaryFile !== undefined && summaryFile !== '') appendFileSync(summaryFile, summary)
+if (outside.length > 0) for (const file of outside) console.log(`out-of-radius ${unit} ${file}`)
+console.log(`radius: ${unit} ${commit} ${outside.length > 0 ? 'outside' : 'inside'}`)
