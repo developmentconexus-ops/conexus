@@ -124,7 +124,8 @@ mono.
 ## Colors
 
 - **V3.** Every color is a token; only the brand folder holds a raw value, shadows and overlays
-  included. Tokens let both themes change in one file. [rule to write]
+  included. Outbound e-mail HTML is an exception: e-mail clients require inline color values [0017].
+  Tokens let both themes change in one file. [rule to write]
 - **V4.** A new token is defined in the light, system-dark and chosen-dark blocks under one name,
   and in the front matter. [review]
 - **V5.** Ipê (`accent`) marks only focus, the caret, selection (the chosen value of a control
@@ -145,14 +146,16 @@ mono.
   error codes and counts. Mono marks what a person may copy or compare exactly. [review]
 - **V12.** Numerals are tabular. [review]
 - **V13.** Prose never goes below 12px; mono stamps and group labels never below 11px. [review]
-- **V14.** Fonts are self-hosted from the brand folder; no other family and no CDN. [review]
+- **V14.** Fonts are self-hosted from the brand folder; no other family and no CDN. Outbound e-mail
+  HTML is an exception: e-mail clients use system font fallbacks. [review]
 - **V15.** `display` shrinks from 2.1rem to 1.6rem on narrow screens; the front matter gives its
   largest size. [review]
 
 ## Layout
 
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
-- **V17.** No `style` attribute in Conexus's own pieces; styles come from tokens. [review]
+- **V17.** No `style` attribute in Conexus's own screen pieces; styles come from tokens. Outbound
+  e-mail HTML is an exception: e-mail clients require inline styles and table layout. [review]
 - **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll; [testing
   T23](testing.md) lists the widths looked at. [`layout.test.ts`, review]
 - **V56.** On a phone the rail becomes a drawer opened from the top bar ("Abrir navegação"), and the
