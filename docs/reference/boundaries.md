@@ -42,8 +42,8 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 
 ### A failure inside the library reads as the database's
 
-- **Library line.** `better-auth/dist/api/routes/session.mjs`. `getSession` turns a failed query
-  into a 500 `APIError` and drops its cause. `auth.handler` throws a raw query error, because
+- **Library line.** `better-auth/dist/api/routes/session.mjs:231-232`. `getSession` turns a failed
+  query into a 500 `APIError` and drops its cause. `auth.handler` throws a raw query error, because
   `onAPIError: { throw: true }` keeps the router from printing it, row values and all, to stderr
   (`better-call/dist/router.mjs:93`).
 - **Hand-made piece.** `inLibrary` in `apps/server/src/hub/identity/auth.ts`. It maps every call
@@ -77,8 +77,8 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Hand-made piece.** `libraryCommandOn` in `apps/server/src/hub/identity/auth.ts`. It opens one
   `database.command` and runs the work in `runWithTransaction` on an adapter bound to that
   transaction, so every call the library makes inside, nested ones included, writes there.
-  `createFirstPerson` in `first-person.ts` also takes `pg_advisory_xact_lock` on the key
-  `conexus.first-person`, which ends with the transaction.
+  `createFirstPerson` in `first-person.ts` also takes `transactionLock` (`database.ts`, a
+  `pg_advisory_xact_lock`) on the key `conexus.first-person`, which ends with the transaction.
 - **Why.** [Code C64 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
   in an accept leaves nothing, and `forgetLinks` deletes through the same transaction. The test
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` fails with
@@ -146,8 +146,8 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   `listMembers` pages by offset (`:186`).
 - **Hand-made piece.** `readMemberships` and `readMembers` in
   `apps/server/src/hub/identity/companies.ts`, `readInvitations` and `readReceived` in
-  `invitation-reads.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page starts
-  after the last row's id.
+  `invitation-reads.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page
+  starts after the last row's id.
 - **Why.** A list past 100 rows would lose rows silently, and a page by offset shifts when a row
   arrives. The plugin's `getInvitation` also refuses an invitation that is no longer pending
   (`crud-invites.mjs:503`), and the screen must say it expired or was accepted. The test "fora: a
@@ -199,8 +199,8 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   `runWithTransaction`. When the library changes, reread `$context` and these three methods. The
   tests "com a pessoa ainda sem senha" in `first-person.test.ts` and "link" in
   `invitation-link.test.ts` cover them. The tests "id vazio" in `first-person-rows.test.ts` and
-  `invitation-link.test.ts`, a person row with an empty id, fail without the parse (removals `first-person-rows-parsed` and
-  `link-person-row-parsed`).
+  `invitation-link.test.ts`, a person row with an empty id, fail without the parse (removals
+  `first-person-rows-parsed` and `link-person-row-parsed`).
 
 ### A password link's token goes back to the command that asked for it
 
@@ -236,8 +236,8 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 
 ### The pace of invitations and of password links
 
-- **Library line.** `better-auth/dist/api/index.mjs:165-173`. The library limits attempts only in its
-  router's `onRequest`, which `auth.api` skips, and it keys them by address and path
+- **Library line.** `better-auth/dist/api/index.mjs:165-173`. The library limits attempts only in
+  its router's `onRequest`, which `auth.api` skips, and it keys them by address and path
   (`api/rate-limiter/index.mjs:248`).
 - **Hand-made piece.** `checkPace` and the 20-second check of `passwordLinkCommand` in
   `apps/server/src/hub/identity/invitations.ts`. They count the person's invitations of the last
@@ -281,19 +281,19 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 
 ### `serve` parses the body and checks the reply
 
-- **Library line.** `fastify/types/type-provider.d.ts:9-13` and `:69-77`. A type provider types a request's parts
-  from the route's schema, and `setValidatorCompiler` and `setSerializerCompiler`
+- **Library line.** `fastify/types/type-provider.d.ts:9-13` and `:69-77`. A type provider types a
+  request's parts from the route's schema, and `setValidatorCompiler` and `setSerializerCompiler`
   (`fastify/fastify.js:727`, `:740`) let a Zod schema validate the body and serialize the reply.
 - **Hand-made piece.** `serve` and `partsOf` in `apps/server/src/platform/http.ts`. `partsOf` parses
   the path parameters first and refuses them with `NOT_FOUND`, then the `Idempotency-Key`, the query
   and the body, each refused with `REQUEST_MALFORMED`; `serve` parses the reply with `success.body`
   before it sends it, and sets the reply's cookies from the handler's `Answer`.
-- **Why.** [Code C31 and C14](../guides/code.md). Through the generic `serve`, the provider types the
-  body as `unknown`, and it has nothing for the `person` of the `session` access kind, the `Headers`
-  or the cookies of an `Answer`. The compilers would replace only `bodyOf` and the reply's parse, at
-  about the same number of lines. The tests "corpo fora do esquema"
-  and "o corpo lido pelo esquema da operação volta" in `http.test.ts` cover it, and "fora: o membro"
-  in `companies.test.ts` fails when a malformed path parameter stops answering `NOT_FOUND` (removal
+- **Why.** [Code C31 and C14](../guides/code.md). Through the generic `serve`, the provider types
+  the body as `unknown`, and it has nothing for the `person` of the `session` access kind, the
+  `Headers` or the cookies of an `Answer`. The compilers would replace only `bodyOf` and the reply's
+  parse, at about the same number of lines. The tests "corpo fora do esquema" and "o corpo lido pelo
+  esquema da operação volta" in `http.test.ts` cover it, and "fora: o membro" in `companies.test.ts`
+  fails when a malformed path parameter stops answering `NOT_FOUND` (removal
   `malformed-id-not-found`).
 
 ### A write's signal follows the reply, not the request
@@ -315,13 +315,13 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   `left > right` for any `SQLWrapper`, and a select builder as `right` renders as a parenthesized
   subquery. The builder has no row value, so the pair `(name, id)` cannot be built from columns.
 - **Hand-made piece.** `after` in `apps/server/src/hub/identity/companies.ts` and its three callers,
-  `readMemberships`, `readMembers` and `readInvitations`. The pair is a `sql` template over the
-  tables' own columns; the anchor row is a Drizzle select, scoped as its list is. Only the pair is
-  hand-written.
+  `readMemberships` and `readMembers` there and `readInvitations` in `invitation-reads.ts`. The pair
+  is a `sql` template over the tables' own columns; the anchor row is a Drizzle select, scoped as
+  its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
-  on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test "lista: só as empresas de quem pede"
-  in `companies.test.ts` fails when the anchor leaves the list's scope (removal
-  `membership-page-anchor-scoped`).
+  on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
+  "lista: só as empresas de quem pede" in `companies.test.ts` fails when the anchor leaves the
+  list's scope (removal `membership-page-anchor-scoped`).
 
 ### A deadline on every checkout of a database connection
 
@@ -333,12 +333,14 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
   `acquire`, a 15 s timer destroys the client's socket, and `release` clears it. The release itself
   is the library's: `pg-pool/index.js:392` removes a client whose socket is gone
   (`!client._queryable`), and Drizzle's `transaction` commits or rolls back before it returns
-  (`drizzle-orm/node-postgres/session.js:54-61`), so a refused command keeps its connection
-  (removal `refused-command-keeps-connection`).
+  (`drizzle-orm/node-postgres/session.js:54-61`), so a refused command keeps its connection. The
+  test "link: um id desconhecido, 404, e a conexão do pool segue a mesma" in
+  `invitation-link.test.ts` fails when the release destroys the client (removal
+  `refused-command-keeps-connection`).
 - **Why.** [Code C57](../guides/code.md): nothing native bounds a whole checkout on the client. The
   test "uma consulta da biblioteca sem resposta cai no prazo de 15 s" in `database.test.ts` fails
-  without it (removal `library-read-deadline`), and "uma leitura parada além do prazo" fails when the
-  deadline is not the database's failure (removal `read-deadline-is-the-database`).
+  without it (removal `library-read-deadline`), and "uma leitura parada além do prazo" fails when
+  the deadline is not the database's failure (removal `read-deadline-is-the-database`).
 
 ### The Hub refuses to serve a database behind its migrations
 
@@ -384,8 +386,8 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 - **Hand-made piece.** `cappedText` in `apps/server/src/platform/mail.ts`. It reads the reply
   stream and stops at 16 KiB.
 - **Why.** [Code C59](../guides/code.md), and no dependency for about 12 lines. The test "correio:
-  resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` fails without the cap
-  (removal `mail-reply-cap`).
+  resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` fails without the
+  cap (removal `mail-reply-cap`).
 
 ## TanStack Query 5.104.0, Better Auth 1.7.8 and the browser's `fetch`
 
@@ -485,8 +487,8 @@ refusal of a bounce, the replay of an attempt key and the library options the Hu
 
 - **Library line.** `remark-validate-links/lib/index.js:189-203`. The plugin checks local files and
   headings. Headings of other files are checked only through the unified-engine file-set workflow
-  (about 143 dependencies in the registry's metadata, none installed), and the single-file API does not check them. Undefined reference
-  labels belong to another plugin.
+  (about 143 dependencies in the registry's metadata, none installed), and the single-file API does
+  not check them. Undefined reference labels belong to another plugin.
 - **Hand-made piece.** `scripts/check-docs.ts`. Inline links, reference definitions and fragments
   are checked by a small reader. The rest is Conexus policy: word ceilings, the index, rule ids,
   retired names, the one card, skill names.
