@@ -105,3 +105,25 @@ test('um fragmento em arquivo que não é Markdown ou em pasta não é conferido
   })
   assert.equal(run.status, 0, run.stderr)
 })
+
+test('um fragmento com % mal formado é broken-fragment, sem travar, e o título com % se acha sem ele', () => {
+  const heading = { 'docs/guides/code.md': '- **C1.** A rule.\n\n## 50% off\n' }
+  const bad = check({ ...heading, 'AGENTS.md': '[x](docs/guides/code.md#50%)\n' })
+  assert.equal(bad.status, 1)
+  assert.match(bad.stderr, /^broken-fragment: AGENTS\.md: docs\/guides\/code\.md#50%$/m)
+  assert.doesNotMatch(bad.stderr, /URIError/)
+  const good = check({ ...heading, 'AGENTS.md': '[x](docs/guides/code.md#50-off)\n' })
+  assert.equal(good.status, 0, good.stderr)
+})
+
+for (const title of ['"t"', "'t'", '(t)']) {
+  test(`um link com título ${title} é conferido`, () => {
+    const broken = check({ 'AGENTS.md': `[a](gone.md ${title})\n` })
+    assert.equal(broken.status, 1)
+    assert.match(broken.stderr, /^broken-link: AGENTS\.md: gone\.md$/m)
+    const fragment = check({ 'AGENTS.md': `[a](docs/guides/code.md#nope ${title})\n` })
+    assert.match(fragment.stderr, /^broken-fragment: /m)
+    const fine = check({ 'AGENTS.md': `[a](docs/index.md ${title})\n` })
+    assert.equal(fine.status, 0, fine.stderr)
+  })
+}

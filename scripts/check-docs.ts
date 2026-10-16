@@ -106,7 +106,7 @@ function checkSkillHeader(file: string, text: string) {
     fail('skill-name-differs-from-folder', file, `${String(name)} is not ${folder}`)
 }
 
-const INLINE_LINK = /\]\(([^)\s]+)\)/g
+const INLINE_LINK = /\]\(\s*<?([^)\s>]+)>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g
 const REFERENCE_DEFINITION = /^ {0,3}\[[^\]^][^\]]*\]:[ \t]*<?([^\s>]+)>?/gm
 
 function withoutFences(text: string): string {
@@ -133,6 +133,15 @@ function headingIds(text: string): Set<string> {
   return ids
 }
 
+/** A fragment with a malformed escape, such as `50%`, names no heading: GitHub drops `%` from ids. */
+function decoded(fragment: string): string {
+  try {
+    return decodeURIComponent(fragment)
+  } catch {
+    return fragment
+  }
+}
+
 function checkLinks(file: string, text: string) {
   const code = withoutCode(text)
   const targets = [...code.matchAll(INLINE_LINK), ...code.matchAll(REFERENCE_DEFINITION)]
@@ -142,7 +151,7 @@ function checkLinks(file: string, text: string) {
     const target = path === '' ? resolve(root, file) : resolve(root, dirname(file), path)
     if (!existsSync(target)) fail('broken-link', file, path)
     else if (fragment && target.endsWith('.md') && statSync(target).isFile()) {
-      const id = decodeURIComponent(fragment).toLowerCase()
+      const id = decoded(fragment).toLowerCase()
       if (!headingIds(readFileSync(target, 'utf8')).has(id)) {
         fail('broken-fragment', file, `${path}#${fragment}`)
       }
@@ -152,7 +161,7 @@ function checkLinks(file: string, text: string) {
 
 function indexedTargets(): string[] {
   const index = readFileSync(join(root, 'docs/index.md'), 'utf8')
-  return [...withoutCode(index).matchAll(/\]\(([^)\s]+)\)/g)].map((match) =>
+  return [...withoutCode(index).matchAll(INLINE_LINK)].map((match) =>
     relative(root, resolve(root, 'docs', (match[1] ?? '').split('#')[0] ?? '')),
   )
 }
