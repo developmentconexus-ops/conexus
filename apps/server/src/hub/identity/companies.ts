@@ -3,6 +3,7 @@ import { Company, CompanyId, Member, Membership, PAGE_SIZE } from '@conexus/hub-
 import type { SQL } from 'drizzle-orm'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
+import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Admitted } from './admission.ts'
 import { admit, mayCreateCompanies } from './admission.ts'
@@ -18,7 +19,7 @@ export function pageOf<T>(rows: T[], idOf: (row: T) => string): { rows: T[]; nex
   return { rows: shown, next: { kind: 'MORE', page: idOf(last) } }
 }
 
-function after(order: SQL, page: string | undefined, key: SQL): SQL | undefined {
+export function after(order: SQL, page: string | undefined, key: SQL): SQL | undefined {
   return page === undefined ? undefined : sql`${order} > (${key})`
 }
 
@@ -86,11 +87,6 @@ export async function readMembers(tx: ReadTx, admitted: Admitted, page: string |
   return { members: listed.rows.map((row) => Member.parse(row)), next: listed.next }
 }
 
-// Two creates with one key at once: the second waits here and finds the first's company (C65).
-function keyLock(attemptKey: string) {
-  return sql`select pg_advisory_xact_lock(hashtextextended(${`conexus.company:${attemptKey}`}, 0))`
-}
-
 /**
  * The installation administrator creates a company and becomes its owner. The key is the attempt's
  * (code C37): the same key and name answer the company it made, another name is a conflict.
@@ -98,7 +94,8 @@ function keyLock(attemptKey: string) {
 export function createCompanyCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: { person: Person; headers: Headers; name: string; attemptKey: string }) =>
     deps.libraryCommand(async (tx) => {
-      await tx.execute(keyLock(input.attemptKey))
+      // Two creates with one key at once: the second waits here and finds the first's company.
+      await transactionLock(tx, `conexus.company:${input.attemptKey}`)
       const [found] = await tx
         .select({ id: company.id, name: company.name })
         .from(company)

@@ -97,6 +97,14 @@ function ownErrorsAreUnexpected<Tx, T>(work: (tx: Tx) => Promise<T>) {
   }
 }
 
+/**
+ * Makes a second command on the same key wait for the first one's transaction to end (code C65).
+ * The key is hashed to the 64 bits of an advisory lock.
+ */
+export async function transactionLock(tx: CommandTx, key: string): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`)
+}
+
 const NO_RELATIONS: EmptyRelations = {}
 const WRITE = { isolationLevel: 'read committed', accessMode: 'read write' } as const
 

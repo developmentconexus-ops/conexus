@@ -1,14 +1,12 @@
 import type { Email } from '@conexus/hub-api'
-import { sql } from 'drizzle-orm'
 import type { PublicOrigin } from '../../platform/config.ts'
+import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { INSTALLATION_ADMINISTRATOR } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { forgetLinks, linkTokenOf } from './auth.ts'
 
 const SET_PASSWORD_PAGE = '/set-password'
-// Two runs at once would each see an empty installation; this lock makes the second wait (C65).
-const FIRST_PERSON_LOCK = sql`select pg_advisory_xact_lock(hashtext('conexus.first-person'))`
 
 export type FirstPerson = (input: { name: string; email: Email }) => Promise<{ link: string }>
 
@@ -19,7 +17,8 @@ export function createFirstPerson(deps: {
 }): FirstPerson {
   return ({ name, email }) =>
     deps.libraryCommand(async (tx) => {
-      await tx.execute(FIRST_PERSON_LOCK)
+      // Two runs at once would each see an empty installation; the second waits here.
+      await transactionLock(tx, 'conexus.first-person')
       const { internalAdapter } = await deps.auth.$context
       const people = await internalAdapter.listUsers(2)
       const [only] = people

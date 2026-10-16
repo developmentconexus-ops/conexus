@@ -3,12 +3,13 @@ import { Company, Email, PAGE_SIZE, PendingInvitation, ReceivedInvitation } from
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
+import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Admitted } from './admission.ts'
 import { admit } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { forgetLinks, linkTokenOf, refusedAs } from './auth.ts'
-import { pageOf } from './companies.ts'
+import { after, pageOf } from './companies.ts'
 import { company, invitation, member, user } from './tables.ts'
 
 // The founder's numbers, step 4 answer 6: open invitations per company, and per person and minute.
@@ -49,10 +50,12 @@ export async function readInvitations(tx: ReadTx, admitted: Admitted, page: stri
       and(
         eq(invitation.organizationId, admitted.companyId),
         eq(invitation.status, 'pending'),
-        page === undefined
-          ? undefined
-          : sql`(${invitation.createdAt}, ${invitation.id}) > (select created_at, id
-              from auth.invitation where id = ${page} and company_id = ${admitted.companyId})`,
+        after(
+          sql`(${invitation.createdAt}, ${invitation.id})`,
+          page,
+          sql`select created_at, id from auth.invitation
+            where id = ${page} and company_id = ${admitted.companyId}`,
+        ),
       ),
     )
     .orderBy(asc(invitation.createdAt), asc(invitation.id))
@@ -215,11 +218,6 @@ export async function markMailed(tx: CommandTx, invitationId: InvitationId): Pro
     .where(and(eq(invitation.id, invitationId), isNull(invitation.mailedAt)))
 }
 
-/** The e-mail of a link is the person's lock: two requests at once make one person and one link. */
-function emailLock(email: string) {
-  return sql`select pg_advisory_xact_lock(hashtextextended(${`conexus.person:${email}`}, 0))`
-}
-
 // The founder's pace, step 4 answer 6: one link every 20 seconds per invited person.
 const LINK_PACE = sql`interval '20 seconds'`
 
@@ -235,7 +233,8 @@ export function passwordLinkCommand(deps: { auth: Auth; libraryCommand: LibraryC
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))
       if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'UNKNOWN' } })
-      await tx.execute(emailLock(found.email))
+      // The e-mail is the person's lock: two requests at once make one person and one link.
+      await transactionLock(tx, `conexus.person:${found.email}`)
       const [open] = await tx
         .select({ email: invitation.email })
         .from(invitation)
