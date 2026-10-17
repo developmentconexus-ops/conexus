@@ -39,6 +39,7 @@ export {
   PASSWORD_LENGTH,
   Person,
   PersonId,
+  requestPasswordRecovery,
   SESSION_COOKIE,
   SessionState,
   setPassword,

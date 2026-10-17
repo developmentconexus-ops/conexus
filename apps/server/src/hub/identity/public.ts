@@ -16,6 +16,7 @@ import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
+import { createPasswordRecovery } from './password-recovery.ts'
 import { registerIdentityRoutes } from './routes.ts'
 import { createSessionReader } from './session.ts'
 
@@ -38,6 +39,12 @@ export function createIdentity(deps: {
   const auth = createAuth(deps)
   const libraryCommand = libraryCommandOn(auth, deps.database)
   const readSession = createSessionReader({ auth })
+  const recovery = createPasswordRecovery({
+    auth,
+    database: deps.database,
+    publicOrigin: deps.config.publicOrigin,
+    sendMail: deps.sendMail,
+  })
   return Object.freeze({
     readSession,
     firstPerson: createFirstPerson({
@@ -75,7 +82,7 @@ export function createIdentity(deps: {
         }),
     }),
     routes: (app: Parameters<typeof registerIdentityRoutes>[0]) => {
-      registerIdentityRoutes(app, { auth, config: deps.config, readSession })
+      registerIdentityRoutes(app, { auth, config: deps.config, readSession, recovery })
       registerCompanyRoutes(app, { ...deps, auth, libraryCommand })
     },
   })

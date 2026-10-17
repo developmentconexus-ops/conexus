@@ -104,7 +104,7 @@ test('sem pessoa: cria a pessoa sem senha, administradora da instalação, e gra
   const token = tokenOf(created.summary)
   assert.match(
     created.summary,
-    /^Link para Ana Lima criar a senha do Conexus\. Vale 15 minutos e uma vez só\.$/m,
+    /^Link para Ana Lima criar a senha do Conexus\. Vale 1 hora e uma vez só\.$/m,
   )
   assert.match(created.output, /"msg":"FIRST_PERSON_LINK_GIVEN"/)
   assert.doesNotMatch(created.output, new RegExp(token))

@@ -117,7 +117,7 @@ async function send(operation: Operation, sent: Sent = {}, signal?: AbortSignal)
 }
 
 async function parsed(operation: Operation, response: Response): Promise<unknown> {
-  if (operation.success.status === 204) return undefined
+  if (!('body' in operation.success)) return undefined
   const result = operation.success.body.safeParse(await bodyOf(response))
   if (!result.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: result.error })
   return result.data

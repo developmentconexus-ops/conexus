@@ -746,5 +746,60 @@
       "file": "src/hub/identity/memberships-invitations.test.ts",
       "name": "convites do tirado"
     }
+  },
+  {
+    "id": "recovery-pace-per-person",
+    "file": "apps/server/src/hub/identity/password-recovery.ts",
+    "find": "        if (await givenWithinPace(tx, person.id)) return undefined\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "pedido: 202 vazio"
+    }
+  },
+  {
+    "id": "recovery-attempt-path",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    await countAttempt(deps, {\n      headers,\n      log,\n      path: PASSWORD_RECOVERY_PATH,\n      exceeded: 'RECOVERY_ATTEMPTS_EXCEEDED',\n    })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "limite: o quarto"
+    }
+  },
+  {
+    "id": "recovery-mail-after-commit",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    const mail = await deps.recovery.request(body.email)\n",
+    "replace": "    const mail = await deps.recovery.request(body.email)\n    if (mail !== undefined) await deps.recovery.send(mail)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "correio: o e-mail sai"
+    }
+  },
+  {
+    "id": "revoke-sessions-on-reset",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "      revokeSessionsOnPasswordReset: true,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "sessões: trocar a senha"
+    }
+  },
+  {
+    "id": "recovery-link-validity",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "export const PASSWORD_LINK_SECONDS = 3600\n",
+    "replace": "export const PASSWORD_LINK_SECONDS = 900\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "pedido: 202 vazio"
+    }
   }
 ]

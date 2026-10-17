@@ -27,7 +27,7 @@ import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { companyScope, createInvitationCommand } from './invitations.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
-import { countInvitationAttempt } from './routes.ts'
+import { countAttempt } from './routes.ts'
 
 type Deps = {
   auth: Auth
@@ -87,14 +87,24 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   )
 
   serve(app, createInvitationPassword, async ({ person, params, body, headers, log }) => {
-    await countInvitationAttempt(deps, { headers, log, path: INVITATION_PASSWORD_PATH })
+    await countAttempt(deps, {
+      headers,
+      log,
+      path: INVITATION_PASSWORD_PATH,
+      exceeded: 'SIGN_IN_ATTEMPTS_EXCEEDED',
+    })
     const cookies = await password({ person, headers, ...params, ...body })
     log.info({}, 'INVITATION_PASSWORD_CREATED')
     return answer(undefined, cookies)
   })
 
   serve(app, declineInvitation, async ({ person, params, body, headers, log }) => {
-    await countInvitationAttempt(deps, { headers, log, path: INVITATION_DECLINATION_PATH })
+    await countAttempt(deps, {
+      headers,
+      log,
+      path: INVITATION_DECLINATION_PATH,
+      exceeded: 'SIGN_IN_ATTEMPTS_EXCEEDED',
+    })
     const changed = await decline({ person, ...params, ...body })
     if (changed) log.info({}, 'INVITATION_DECLINED')
     return answer(undefined)

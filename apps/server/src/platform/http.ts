@@ -211,11 +211,22 @@ export async function createServer(
   return app
 }
 
-/** What every handler gives back: the body the operation's schema checks, and the cookies to set. */
-export type Answer<T> = Readonly<{ body: T; setCookie: readonly string[] }>
+/**
+ * What every handler gives back: the body the operation's schema checks, the cookies to set and
+ * work to run once the reply is sent, so the answer never waits for it.
+ */
+export type Answer<T> = Readonly<{
+  body: T
+  setCookie: readonly string[]
+  afterReply?: (() => Promise<void>) | undefined
+}>
 
-export function answer<T>(body: T, setCookie: readonly string[] = []): Answer<T> {
-  return { body, setCookie }
+export function answer<T>(
+  body: T,
+  setCookie: readonly string[] = [],
+  afterReply?: () => Promise<void>,
+): Answer<T> {
+  return { body, setCookie, afterReply }
 }
 
 type Body<O extends Operation> = O['success'] extends {
@@ -321,11 +332,14 @@ export function serve(
           ? sessionOf(request)
           : (invitationSessionOf(request) ?? { person: undefined, sessionToken: undefined })),
       }
-      const { body, setCookie } = await handler(input)
+      const { body, setCookie, afterReply } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)
+      reply.raw.once('finish', () => {
+        afterReply?.().catch((error: unknown) => logFailure(request.log, failureOf(error)))
+      })
       const { success } = operation
-      if (success.status === 204) return reply.code(204).send()
-      return reply.code(success.status).send(success.body.parse(body))
+      if ('body' in success) return reply.code(success.status).send(success.body.parse(body))
+      return reply.code(success.status).send()
     },
   })
 }

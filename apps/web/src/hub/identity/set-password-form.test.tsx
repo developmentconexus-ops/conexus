@@ -40,7 +40,7 @@ test('o token vem do fragmento do link; 204 leva a /login com "Senha criada. Ent
 test('um token na consulta, e não no fragmento, não vale: só a frase do link, sem título nem campo', async () => {
   open('/set-password?token=tok-123')
   expect((await screen.findByRole('alert')).textContent).toBe(
-    'Este link já foi usado ou venceu. Peça um link novo a quem cuida do Conexus.',
+    'Este link já foi usado ou venceu. Peça um link novo.',
   )
   expect(screen.queryByRole('heading', { name: 'Criar sua senha' })).toBeNull()
   expect(screen.queryByLabelText('Senha')).toBeNull()
@@ -69,7 +69,7 @@ test('422 PASSWORD_LINK_INVALID: "Este link já foi usado ou venceu."', async ()
   const router = open('/set-password#token=tok-usado')
   await choose('senha-nova-1')
   expect((await screen.findByRole('alert')).textContent).toBe(
-    'Este link já foi usado ou venceu. Peça um link novo a quem cuida do Conexus.',
+    'Este link já foi usado ou venceu. Peça um link novo.',
   )
   expect(router.state.location.pathname).toBe('/set-password')
 })

@@ -420,11 +420,34 @@ or its origin.
 - **Library line.** `better-auth/dist/api/index.mjs:165-173` invokes rate limiting from the router;
   `auth.api` skips it. `api/rate-limiter/index.mjs:262-278` applies custom path rules.
 - **Hand-made piece.** The `invitation-attempts` plugin declares two native endpoints with
-  `createAuthEndpoint`; `countInvitationAttempt` calls them through `auth.handler` before opening
+  `createAuthEndpoint`; `countAttempt` calls them through `auth.handler` before opening
   the business transaction. They are not mounted as public Hub routes. The native database
   counter persists independently from a refused password or declination.
 - **Why.** [Security S28](../guides/security.md) and the card's A6. The native counter test in `invitation-journey.test.ts`
   reaches 429 after ten refused transactions, independently for both paths.
+
+### Password recovery: the library's reset link, asked inside our transaction
+
+- **Library line.** `better-auth/dist/api/routes/password.mjs:21-85` (`requestPasswordReset`
+  creates the link and hands the token to `sendResetPassword`; for an unknown address it only
+  simulates a lookup) and `utils/password.mjs:34` (`revokeSessionsOnPasswordReset` deletes the
+  person's sessions in the transaction that spends the link and writes the password). The library
+  limits a path only in its router, which `auth.api` skips.
+- **Hand-made piece.** `createPasswordRecovery` in `identity/password-recovery.ts`. The route
+  counts the attempt on `/password-recovery-attempt` (3 per 60 s per address, the pattern above),
+  then, in one installation transaction under the address lock, asks for a link only for a person
+  who has a password and no link younger than a minute (the library stamps links with the
+  application's clock, so the pace reads that clock), forgetting the earlier link. The e-mail is
+  sent after the commit and after the answer, with `Answer.afterReply` in `platform/http.ts`:
+  the answer is 202 and empty whether or not a mail leaves, and an unavailable provider is logged
+  as `MAIL_UNAVAILABLE`, never answered. The library has no per-person pace and no way to ask for
+  a link without sending it.
+- **Why.** Founder, step 6: 3A (202 always the same, mail after commit), P2 (every link 1 hour),
+  P3 (one mail per person per minute), 4A (a recovery ends the other sessions). The tests in
+  `password-recovery.test.ts` fail without each piece (removals `recovery-pace-per-person`,
+  `recovery-attempt-path`, `recovery-mail-after-commit`, `revoke-sessions-on-reset`,
+  `recovery-link-validity`). A mail still in flight when the Hub stops is lost; the person asks
+  again.
 
 ## TanStack Router 1.170.44: stable public-page data
 
@@ -453,7 +476,8 @@ or its origin.
 - **Native reference.** Documenso `cd0cc5febcbb76ec7e5ecb75c0b8c65ab8432198`,
   `packages/email/render.tsx:6,65,92` renders React Email at send time. Installing that runtime
   directly is the measured alternative of 117 packages/68,136,787 bytes, including CLI tools.
-- **Packaging.** Native esbuild 0.28.2 bundles only `invitation-email.tsx` as an ignored ESM
+- **Packaging.** Native esbuild 0.28.2 bundles only `invitation-email.tsx` (which also exports the
+  recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) as an ignored ESM
   artifact, with React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
   branch or template substitution is added. `invitation-render.d.mts` owns the port used by source
