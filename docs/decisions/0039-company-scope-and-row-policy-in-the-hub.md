@@ -38,4 +38,4 @@ step 4.2's commit. Two synthetic companies; people of A, of B, of both, of none.
 ## State
 
 Proposed 2026-10-17. Provisional until PR 51: A1, a `SECURITY DEFINER` operator check; A2,
-invitations read their company's members.
+invitations read members.

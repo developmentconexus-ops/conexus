@@ -51,7 +51,11 @@ GRANT SELECT, INSERT ON TABLE auth.member TO hub_invitation;
 --> statement-breakpoint
 GRANT SELECT, UPDATE ON TABLE auth.invitation TO hub_invitation;
 --> statement-breakpoint
-GRANT SELECT, INSERT, UPDATE ON TABLE auth."user", auth.session TO hub_invitation;
+-- The password names the person and marks the e-mail verified (the library stamps updated_at);
+-- nothing in the link scope may write a person's role.
+GRANT SELECT, INSERT, UPDATE (name, email_verified, updated_at) ON TABLE auth."user" TO hub_invitation;
+--> statement-breakpoint
+GRANT SELECT, INSERT, UPDATE ON TABLE auth.session TO hub_invitation;
 --> statement-breakpoint
 GRANT SELECT, INSERT ON TABLE auth.account TO hub_invitation;
 --> statement-breakpoint

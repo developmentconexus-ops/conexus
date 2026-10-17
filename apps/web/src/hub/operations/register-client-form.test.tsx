@@ -155,7 +155,10 @@ test('recarregar durante um cadastro que não decidiu: mostra a lista atual e pe
   open()
   await fill()
   await screen.findByRole('alert')
+  // A reload runs no React cleanup, and the tab's storage survives it.
+  const kept = Object.entries(sessionStorage)
   cleanup()
+  for (const [key, value] of kept) sessionStorage.setItem(key, value)
   const reloaded = open()
   expect(
     await screen.findByText('O último cadastro ficou sem resposta. O cliente está nesta lista?'),
@@ -169,4 +172,20 @@ test('recarregar durante um cadastro que não decidiu: mostra a lista atual e pe
   await screen.findByRole('heading', { name: 'Empresa Teste' })
   expect(sent.length).toBe(2)
   expect(sent[1]?.key).not.toBe(sent[0]?.key)
+})
+
+test('sair do formulário pelo app depois de uma resposta que não decide: o próximo cadastro abre o formulário', async () => {
+  const [, cut] = undecided('{"client":{"companyId":"bbb')[0] ?? []
+  hub([cut ?? registered, registered])
+  const router = open()
+  await fill()
+  await screen.findByRole('alert')
+  await router.navigate({ to: '/operations/clients' })
+  await screen.findByRole('heading', { name: 'Central de Operação' })
+  expect(
+    screen.queryByText('O último cadastro ficou sem resposta. O cliente está nesta lista?'),
+  ).toBeNull()
+  await router.navigate({ to: '/operations/clients/new' })
+  expect(await screen.findByText('Ele recebe um convite e entra como primeiro dono.')).toBeTruthy()
+  expect(router.state.location.pathname).toBe('/operations/clients/new')
 })
