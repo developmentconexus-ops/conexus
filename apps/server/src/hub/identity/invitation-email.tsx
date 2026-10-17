@@ -66,7 +66,7 @@ function InvitationContent(props: InvitationMailProps) {
         {props.firstOwner ? (
           <>
             {props.inviterName} convidou você para ser o primeiro dono de{' '}
-            <strong>{props.companyName}</strong> no Conexus.
+            <strong>{props.companyName}</strong>.
           </>
         ) : (
           <>
