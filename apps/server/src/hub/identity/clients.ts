@@ -119,14 +119,18 @@ async function lastOwnerInvitations(tx: ReadTx, companyIds: CompanyId[]) {
   return new Map(
     rows.map((listed) => {
       const row = InvitationRow.parse(listed)
-      const ownerInvitation = OwnerInvitation.parse({
-        ...row,
-        state: stateOf(row.status, row.live),
-        expiresAt: row.expiresAt.toISOString(),
-      })
-      return [row.companyId, ownerInvitation]
+      return [row.companyId, row]
     }),
   )
+}
+
+/** The owner invitation a company awaiting its first owner shows; an accepted one never is. */
+function ownerInvitationOf(row: z.infer<typeof InvitationRow>) {
+  return OwnerInvitation.parse({
+    ...row,
+    state: stateOf(row.status, row.live),
+    expiresAt: row.expiresAt.toISOString(),
+  })
 }
 
 /**
@@ -160,12 +164,13 @@ export async function readOperatedCompanies(
   for (const row of named) {
     const { id, name } = Company.parse(row)
     const first = activeSince.get(id)
-    const ownerInvitation = invitations.get(id)
+    const last = invitations.get(id)
     if (first != null) {
       const ownersOf = owners.filter((owner) => owner.companyId === id)
       const active = { kind: 'ACTIVE', activeSince: first.toISOString(), owners: ownersOf }
       operated.set(id, { name, state: Client.shape.state.parse(active) })
-    } else if (ownerInvitation !== undefined) {
+    } else if (last !== undefined) {
+      const ownerInvitation = ownerInvitationOf(last)
       operated.set(id, { name, state: { kind: 'AWAITING_OWNER', ownerInvitation } })
     } else {
       throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'no owner invitation' } })

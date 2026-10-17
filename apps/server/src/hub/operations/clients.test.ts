@@ -88,7 +88,7 @@ test('sem membro: o cadastro cria a empresa sem membro, um convite owner pendent
   assert.deepEqual(await counts(hub), { companies: 1, invitations: 1, members: 0, clients: 1 })
   assert.deepEqual(
     hub.mail.sent.map((mail) => [mail.to, mail.subject]),
-    [[OWNER, 'Convite para Empresa Teste']],
+    [[OWNER, 'Conexus convidou você para ser o primeiro dono de Empresa Teste']],
   )
   assert.match(hub.mail.sent[0]?.text ?? '', new RegExp(`/invitations/${invitation.id}`))
   assert.match(hub.mail.sent[0]?.text ?? '', /^Conexus convidou você/m)

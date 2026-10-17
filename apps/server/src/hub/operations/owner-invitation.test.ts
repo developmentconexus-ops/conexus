@@ -106,3 +106,86 @@ test('empresa ativa: o operador recebe 404 ao convidar, reenviar e cancelar', as
     { user_id: davi.id, role: 'owner' },
   ])
 })
+
+const ENTRY = {
+  origin: TEST_ORIGIN,
+  'content-type': 'application/json',
+  'cf-connecting-ip': '203.0.113.9',
+}
+
+function received(hub: Hub, invitationId: string, cookie?: string) {
+  const headers = cookie === undefined ? {} : { cookie }
+  return hub.app.inject({ method: 'GET', url: `/api/invitations/${invitationId}`, headers })
+}
+
+function companiesOf(hub: Hub, cookie: string) {
+  return hub.app.inject({ method: 'GET', url: '/api/companies', headers: { cookie } })
+}
+
+test('primeiro dono: convite e e-mail dizem Conexus, Dono e "primeiro dono"; aceito, o dono vê a empresa e o operador não; a mesma pessoa em dois cadastros é dona dos dois (A16)', async (t) => {
+  const { hub, ana, client, first } = await awaiting(t)
+  const [mail] = hub.mail.sent
+  assert.equal(mail?.subject, 'Conexus convidou você para ser o primeiro dono de Empresa Teste')
+  assert.ok(mail?.text.includes('Conexus convidou você para ser o primeiro dono de Empresa Teste'))
+  const view = Object((await received(hub, first)).json()).invitation
+  assert.deepEqual([view.kind, view.inviterName, view.role], ['NEW', 'Conexus', 'owner'])
+  const password = { name: OWNER.name, password: 'senha-nova-1', revision: 0 }
+  const set = await hub.app.inject({
+    method: 'PUT',
+    url: `/api/invitations/${first}/password`,
+    headers: ENTRY,
+    payload: JSON.stringify(password),
+  })
+  assert.equal(set.statusCode, 204)
+  const signedIn = await hub.app.inject({
+    method: 'PUT',
+    url: '/api/sessions/current',
+    headers: ENTRY,
+    payload: JSON.stringify({ email: OWNER.email, password: password.password }),
+  })
+  const davi = String(signedIn.headers['set-cookie']).split(';')[0] ?? ''
+  async function accept(invitationId: string, revision: number) {
+    const response = await hub.app.inject({
+      method: 'PUT',
+      url: `/api/invitations/${invitationId}/acceptance`,
+      headers: { ...ENTRY, cookie: davi },
+      payload: JSON.stringify({ revision }),
+    })
+    assert.equal(response.statusCode, 200)
+  }
+  await accept(first, 1)
+  const other = { ...BODY, cnpj: '11222333000181', legalName: 'Outra Ltda', name: 'Outra Empresa' }
+  const second = Object((await post(hub, ana, '/api/clients', other)).json()).client
+  const invited = Object((await received(hub, second.state.ownerInvitation.id, davi)).json())
+  assert.deepEqual(
+    [invited.invitation.kind, invited.invitation.inviterName, invited.invitation.role],
+    ['INVITED', 'Conexus', 'owner'],
+  )
+  await accept(second.state.ownerInvitation.id, 0)
+  const owned = Object((await companiesOf(hub, davi)).json()).companies
+  assert.deepEqual(
+    owned
+      .map((one: { company: { id: string }; role: string }) => [one.company.id, one.role])
+      .sort(),
+    [
+      [client.companyId, 'owner'],
+      [second.companyId, 'owner'],
+    ].sort(),
+  )
+  const listed = await hub.app.inject({
+    method: 'GET',
+    url: '/api/clients',
+    headers: { cookie: ana.cookie },
+  })
+  const states = Object(listed.json()).clients.map(
+    (one: { state: { kind: string } }) => one.state.kind,
+  )
+  assert.deepEqual([listed.statusCode, states], [200, ['ACTIVE', 'ACTIVE']])
+  assert.deepEqual(Object((await companiesOf(hub, ana.cookie)).json()).companies, [])
+  const read = await hub.app.inject({
+    method: 'GET',
+    url: `/api/companies/${client.companyId}`,
+    headers: { cookie: ana.cookie },
+  })
+  assert.equal(read.statusCode, 404)
+})

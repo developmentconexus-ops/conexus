@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
+import type { Inviter } from './messages.ts'
 import { invitationMail } from './messages.ts'
 import { invitation } from './tables.ts'
 
@@ -29,7 +30,7 @@ export async function mailInvitation(
   input: {
     invitation: PendingInvitation
     companyName: string
-    inviterName: string
+    inviter: Inviter
     link: string
     signal: AbortSignal
   },
@@ -40,7 +41,7 @@ export async function mailInvitation(
     role: sent.role,
     expiresAt: sent.expiresAt,
     companyName: input.companyName,
-    inviterName: input.inviterName,
+    inviter: input.inviter,
     link: input.link,
   })
   async function mark(): Promise<void> {

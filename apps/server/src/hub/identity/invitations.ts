@@ -16,6 +16,7 @@ import { admitInviter, isOperator, mayInviteAs } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
+import type { Inviter } from './messages.ts'
 import { company, invitation, member, user } from './tables.ts'
 
 // The founder's number, step 4 answer 6: invitations per person and minute.
@@ -139,13 +140,24 @@ async function openOf(tx: CommandTx, admitted: CompanyProof, email: string) {
   return OpenRow.optional().parse(open)
 }
 
-async function createdOf(tx: CommandTx, admitted: CompanyProof, invitationId: string) {
+/** On a company with no member only the operator invites, as Conexus, its first owner (step 4.2). */
+export function inviterOf(admitted: CompanyProof, person: Person): Inviter {
+  if (admitted.kind === 'OWNER_INVITER') return { kind: 'CONEXUS' }
+  return { kind: 'MEMBER', name: person.name }
+}
+
+async function createdOf(
+  tx: CommandTx,
+  input: { admitted: CompanyProof; person: Person; invitationId: string },
+) {
+  const { admitted, invitationId } = input
   const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invitationId))
   if (row === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'invitation not read' } })
   }
   const companyName = (await companyById(tx, admitted.companyId)).name
-  return { invitation: pendingOf(PendingRow.parse(row)), mail: { companyName } }
+  const inviter = inviterOf(admitted, input.person)
+  return { invitation: pendingOf(PendingRow.parse(row)), mail: { companyName, inviter } }
 }
 
 /** The inviter's row, held until commit: the pace counts their invitations one at a time. */
@@ -221,7 +233,10 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
         if (same.status !== 'pending' || !same.live) throw new Failure('INVITATION_CLOSED')
         // Committed but never answered by the provider, as when the Hub stopped before the send:
         // the replay sends it again, so delivery is at least once (C64).
-        if (same.unmailed) return { ...(await createdOf(tx, admitted, same.id)), created: false }
+        if (same.unmailed) {
+          const replayed = { admitted, person: input.person, invitationId: same.id }
+          return { ...(await createdOf(tx, replayed)), created: false }
+        }
         return { invitation: pendingOf(same), mail: undefined, created: false }
       }
       if (!mayInviteAs(admitted).includes(input.role)) throw new Failure('INVITATION_ROLE_REFUSED')
@@ -252,6 +267,7 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
           .update(invitation)
           .set({ replaces: input.replaces })
           .where(eq(invitation.id, created.id))
-      return { ...(await createdOf(tx, admitted, created.id)), created: true }
+      const made = { admitted, person: input.person, invitationId: created.id }
+      return { ...(await createdOf(tx, made)), created: true }
     })
 }

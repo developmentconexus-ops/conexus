@@ -72,14 +72,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     }
     const link = `${origin}/invitations/${invitation.id}`
     if (made.mail !== undefined) {
-      const { companyName } = made.mail
-      await mailInvitation(deps, {
-        invitation,
-        companyName,
-        inviterName: person.name,
-        link,
-        signal,
-      })
+      await mailInvitation(deps, { invitation, ...made.mail, link, signal })
     }
     return answer({ invitation })
   })
@@ -130,7 +123,6 @@ function registerManagement(app: FastifyInstance, deps: Deps): void {
     log.info({ companyId: params.companyId }, 'INVITATION_RENEWED')
     await mailInvitation(deps, {
       ...result,
-      inviterName: person.name,
       link: `${deps.config.publicOrigin}/invitations/${result.invitation.id}`,
       signal,
     })

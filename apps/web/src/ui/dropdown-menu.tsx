@@ -60,12 +60,20 @@ export function DropdownMenuItem({ className, ...props }: MenuPrimitive.Item.Pro
   )
 }
 
-/** An item that goes to an address, the same row as `DropdownMenuItem`. */
-export function DropdownMenuLinkItem({ className, ...props }: MenuPrimitive.LinkItem.Props) {
+/**
+ * An item that goes to an address, the same row as `DropdownMenuItem`, and like it closes the menu:
+ * Base UI's link item stays open by default, over the page it opened.
+ */
+export function DropdownMenuLinkItem({
+  className,
+  closeOnClick = true,
+  ...props
+}: MenuPrimitive.LinkItem.Props) {
   return (
     <MenuPrimitive.LinkItem
       data-slot="dropdown-menu-item"
       className={cn(ITEM, className)}
+      closeOnClick={closeOnClick}
       {...props}
     />
   )

@@ -1,6 +1,7 @@
 export type InvitationMailProps = {
   companyName: string
   inviterName: string
+  firstOwner: boolean
   roleLabel: string
   link: string
   expiresOn: string

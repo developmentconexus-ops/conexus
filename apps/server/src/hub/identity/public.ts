@@ -9,7 +9,6 @@ import { readOperatedCompanies, registerCompanyOn, renameCompanyOn } from './cli
 import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
-import { CONEXUS } from './messages.ts'
 import { registerIdentityRoutes } from './routes.ts'
 import { createSessionReader } from './session.ts'
 
@@ -54,7 +53,7 @@ export function createIdentity(deps: {
         mailInvitation(deps, {
           invitation: input.invitation,
           companyName: input.company.name,
-          inviterName: CONEXUS,
+          inviter: { kind: 'CONEXUS' },
           link: `${deps.config.publicOrigin}/invitations/${input.invitation.id}`,
           signal: input.signal,
         }),

@@ -1,5 +1,5 @@
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -53,7 +53,7 @@ test('enquanto sai, "Saindo…"; uma falha fica no menu com a frase', async () =
   expect(screen.getByText('Você entrou como Ana Lima.')).toBeTruthy()
 })
 
-test('"Central de Operação" só aparece para o operador e abre a Central', async () => {
+test('"Central de Operação" só aparece para o operador, abre a Central e fecha o menu', async () => {
   server.use(
     ...homeHub({ signedIn: true }, { ...NO_COMPANIES, mayOperate: true }),
     http.get('*/api/clients', () => HttpResponse.json({ clients: [], next: { kind: 'END' } })),
@@ -64,6 +64,7 @@ test('"Central de Operação" só aparece para o operador e abre a Central', asy
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Central de Operação' }))
   expect(await screen.findByText('Nenhum cliente cadastrado.')).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe('/operations/clients')
+  await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 })
 
 test('sem o papel, o menu não oferece a Central', async () => {

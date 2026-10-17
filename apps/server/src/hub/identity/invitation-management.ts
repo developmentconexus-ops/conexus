@@ -10,6 +10,7 @@ import { companyById } from './companies.ts'
 import {
   checkNotMember,
   checkPace,
+  inviterOf,
   LIVE,
   lockCompany,
   lockedInviter,
@@ -113,6 +114,7 @@ export function renewInvitationCommand(deps: { auth: Auth; libraryCommand: Libra
       return {
         invitation: pendingOf(PendingRow.parse(renewed)),
         companyName: (await companyById(tx, input.companyId)).name,
+        inviter: inviterOf(admitted, input.person),
       }
     })
 }
