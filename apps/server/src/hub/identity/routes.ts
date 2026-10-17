@@ -24,6 +24,7 @@ import {
   SIGN_IN_PATH,
   withRequestLog,
 } from './auth.ts'
+import { checkPassword } from './password-check.ts'
 import type { createPasswordRecovery } from './password-recovery.ts'
 
 const FORWARDED = ['origin', CLIENT_ADDRESS_HEADER, 'user-agent', 'cookie']
@@ -84,6 +85,7 @@ export function registerIdentityRoutes(
   })
 
   serve(app, setPassword, async ({ body, headers, log }) => {
+    await checkPassword(body.password)
     const reset = { newPassword: body.password, token: body.token }
     const reply = await withRequestLog(log, () =>
       inLibrary(() =>

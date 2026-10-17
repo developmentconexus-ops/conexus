@@ -27,6 +27,7 @@ import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { companyScope, createInvitationCommand } from './invitations.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
+import { checkPassword } from './password-check.ts'
 import { countAttempt } from './routes.ts'
 
 type Deps = {
@@ -93,6 +94,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
       path: INVITATION_PASSWORD_PATH,
       exceeded: 'SIGN_IN_ATTEMPTS_EXCEEDED',
     })
+    await checkPassword(body.password)
     const cookies = await password({ person, headers, ...params, ...body })
     log.info({}, 'INVITATION_PASSWORD_CREATED')
     return answer(undefined, cookies)
