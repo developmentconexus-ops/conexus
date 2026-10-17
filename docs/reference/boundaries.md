@@ -516,6 +516,9 @@ or its origin.
   command to the person's own scope for the invitation pace, and back. `installation` and
   `libraryInstallation` stay in the Hub's login, for the installation's own rows, the boot's checks
   and the first administrator. No `AsyncLocalStorage` carries a company: the scope is an argument.
+  `installationRead` reads the status page's starts in a read-only, repeatable-read transaction.
+  `FOR SHARE` and `FOR NO KEY UPDATE` need the UPDATE grant and policy, so a scope that locks a row
+  holds UPDATE on it, on one column no command writes where it only locks.
 - **Why.** Decision 0039 and [data D20, D25](../guides/data.md). In `isolation.test.ts`, "filtro
   esquecido" fails without the role switch (removal `scope-role-set`) and with the member policy
   opened (removal `rls-company-policy`); "o tipo" fails when a read stops naming its scope (removal
