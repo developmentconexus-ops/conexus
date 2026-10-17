@@ -168,7 +168,7 @@ test('filtro esquecido: no contexto A, junções e a âncora da página não tra
   )
   assert.deepEqual(link, {
     companies: ['companyBBBBBBBBBBBBBBBBBBBBBBBBB'],
-    members: [],
+    members: ['member-ab-b', 'member-b'],
     invitations: ['invitationBBBBBBBBBBBBBBBBBBBBBB'],
     people: ['person-b', 'person-none'],
   })

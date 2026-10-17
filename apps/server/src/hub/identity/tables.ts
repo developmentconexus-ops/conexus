@@ -219,6 +219,14 @@ export const member = auth.table(
     transition(),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),
     policy(SCOPE_ROLES.PERSON, 'select', sql`user_id = ${personId}`),
+    // Provisional until the founder's word: the library's accept counts the company's members for
+    // its limit and reads back the member it adds, and the link's view reads whether the person
+    // joined and whether the company has a member yet.
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'select',
+      sql`exists (select 1 from auth.invitation i where i.id = ${invitationId} and i.company_id = member.company_id)`,
+    ),
     policy(
       SCOPE_ROLES.INVITATION,
       'insert',

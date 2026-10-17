@@ -1,0 +1,1 @@
+CREATE POLICY "invitation_select" ON "auth"."member" AS PERMISSIVE FOR SELECT TO "hub_invitation" USING (exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = member.company_id));
