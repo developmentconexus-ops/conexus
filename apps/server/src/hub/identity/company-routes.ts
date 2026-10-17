@@ -19,7 +19,7 @@ import type { SendMail } from '../../platform/mail.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { INVITATION_DECLINATION_PATH, INVITATION_PASSWORD_PATH } from './auth.ts'
 import { readCompany, readMembers, readMemberships } from './companies.ts'
-import { mailInvitation } from './invitation-mail.ts'
+import { deliveredOrRefused, mailInvitation } from './invitation-mail.ts'
 import { cancelInvitationCommand, renewInvitationCommand } from './invitation-management.ts'
 import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
@@ -64,18 +64,22 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
   const decline = declineCommand(deps)
   const accept = acceptCommand(deps)
 
-  serve(app, createInvitation, async ({ person, params, body, attemptKey, log, signal }) => {
-    const made = await invite({ person, ...params, ...body, attemptKey })
-    const { invitation } = made
-    if (made.created) {
-      log.info({ companyId: params.companyId }, 'INVITATION_CREATED')
-    }
-    const link = `${origin}/invitations/${invitation.id}`
-    if (made.mail !== undefined) {
-      await mailInvitation(deps, { invitation, ...made.mail, link, signal })
-    }
-    return answer({ invitation })
-  })
+  serve(
+    app,
+    createInvitation,
+    async ({ person, headers, params, body, attemptKey, log, signal }) => {
+      const made = await invite({ person, headers, ...params, ...body, attemptKey })
+      const { invitation } = made
+      if (made.created) {
+        log.info({ companyId: params.companyId }, 'INVITATION_CREATED')
+      }
+      const link = `${origin}/invitations/${invitation.id}`
+      if (made.mail !== undefined) {
+        deliveredOrRefused(await mailInvitation(deps, { invitation, ...made.mail, link, signal }))
+      }
+      return answer({ invitation })
+    },
+  )
 
   serve(app, createInvitationPassword, async ({ person, params, body, headers, log }) => {
     await countInvitationAttempt(deps, { headers, log, path: INVITATION_PASSWORD_PATH })
@@ -113,21 +117,22 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
 function registerManagement(app: FastifyInstance, deps: Deps): void {
   const cancel = cancelInvitationCommand(deps)
   const renew = renewInvitationCommand(deps)
-  serve(app, cancelInvitation, async ({ person, sessionToken, params, body, log }) => {
-    if (await cancel({ person, sessionToken, ...params, ...body }))
+  serve(app, cancelInvitation, async ({ person, sessionToken, headers, params, body, log }) => {
+    if (await cancel({ person, sessionToken, headers, ...params, ...body }))
       log.info({ companyId: params.companyId }, 'INVITATION_CANCELED')
     return answer(undefined)
   })
-  serve(app, renewInvitation, async ({ person, sessionToken, params, body, signal, log }) => {
-    const result = await renew({ person, sessionToken, ...params, ...body })
-    log.info({ companyId: params.companyId }, 'INVITATION_RENEWED')
-    await mailInvitation(deps, {
-      ...result,
-      link: `${deps.config.publicOrigin}/invitations/${result.invitation.id}`,
-      signal,
-    })
-    return answer({ invitation: result.invitation })
-  })
+  serve(
+    app,
+    renewInvitation,
+    async ({ person, sessionToken, headers, params, body, signal, log }) => {
+      const result = await renew({ person, sessionToken, headers, ...params, ...body })
+      log.info({ companyId: params.companyId }, 'INVITATION_RENEWED')
+      const link = `${deps.config.publicOrigin}/invitations/${result.invitation.id}`
+      deliveredOrRefused(await mailInvitation(deps, { ...result, link, signal }))
+      return answer({ invitation: result.invitation })
+    },
+  )
 }
 
 export function registerCompanyRoutes(app: FastifyInstance, deps: Deps): void {

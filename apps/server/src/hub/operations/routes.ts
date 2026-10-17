@@ -1,6 +1,5 @@
 import { correctClient, getClient, listClients, registerClient } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
-import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { Clients } from './clients.ts'
@@ -29,16 +28,15 @@ export function registerClientRoutes(
     if (made.created) {
       log.info({ companyId: made.client.companyId, personId: person.id }, 'CLIENT_REGISTERED')
     }
-    let mailBounced = false
-    if (made.mail !== undefined) {
-      try {
-        await identity.mailOwnerInvitation({ company: made.company, invitation: made.mail, signal })
-      } catch (error) {
-        if (!(error instanceof Failure && error.code === 'MAIL_BOUNCED')) throw error
-        mailBounced = true
-      }
-    }
-    return answer({ client: made.client, mailBounced })
+    const sent =
+      made.mail === undefined
+        ? undefined
+        : await identity.mailOwnerInvitation({
+            company: made.company,
+            invitation: made.mail,
+            signal,
+          })
+    return answer({ client: made.client, mailBounced: sent?.kind === 'BOUNCED' })
   })
 
   serve(app, correctClient, async ({ person, params, body, log }) => {
