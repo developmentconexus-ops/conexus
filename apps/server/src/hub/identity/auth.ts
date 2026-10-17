@@ -242,10 +242,15 @@ export async function hasPassword(auth: Auth, personId: PersonId): Promise<boole
 const KEY_FIELD = { type: 'string', required: true } as const
 // Left out of the plugin's request body (db/to-zod.mjs:17), so only the Hub's mark sets it.
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
+// The mark of a company the Central is deleting: only the Hub sets it, never a request.
+const DELETING_FIELD = { type: 'date', required: false, input: false } as const
 
 const ORGANIZATION = {
   schema: {
-    organization: { modelName: 'company', additionalFields: { attemptKey: KEY_FIELD } },
+    organization: {
+      modelName: 'company',
+      additionalFields: { attemptKey: KEY_FIELD, deletingSince: DELETING_FIELD },
+    },
     invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
   },
   // Only the Operations Central creates a company, through the adapter (step 4.2).
