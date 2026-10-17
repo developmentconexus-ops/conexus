@@ -152,9 +152,10 @@ and tests, and a `public.ts` with what others may use. The import law is
 command on the server; a merge alone publishes nothing [0035]. Migrations run before the program
 starts ([data D9](guides/data.md)).
 
-**Roll back.** One button puts back the image of an earlier release. Every migration only adds, so
-an earlier image runs on the migrated database ([data D6](guides/data.md)). Exception: step 4.2's
-P6 B deleted old test companies, unrecoverably. A Worker rolls back with Cloudflare's own versions.
+**Roll back.** One button restores an earlier release's image. Every migration only adds, so
+an earlier image runs on the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's
+P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. A Worker
+uses Cloudflare's versions.
 
 **Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
 paid one. Both Hub databases return to the same instant. A restore then sets every login password
@@ -194,7 +195,8 @@ handoff to an app and the Preview session are Conexus's own. Where an app's sess
 chosen in step 18 by test.
 
 **Isolation, in layers.** Hub admission on every read and write, with the company column on every
-table and the company carried in every transaction [0012]; row policies bound each transaction's scope [0039].
+table and the company carried in every transaction [0012]; row policies bound each transaction's
+scope [0039].
 One project per company and one login per app, so PostgreSQL refuses a cross read [0021]. An app
 without secret or network [0018]. The rows Mastra writes carry the company, built by the server,
 never by the browser.

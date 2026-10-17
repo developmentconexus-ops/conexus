@@ -97,9 +97,9 @@ or its origin.
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` guards it.
   The plugin's own transaction joins ours through `runWithTransaction` and, since
   `joiningTransaction`, through the adapter as well, so the test fails only when both are taken
-  out, and no single removal row proves either. The tests "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a
-  mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
-  `first-person-lock`).
+  out, and no single removal row proves either. The tests "ao mesmo tempo, com dois e-mails" and
+  "ao mesmo tempo, a mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock
+  (removal `first-person-lock`).
 
 ### The plain adapter joins that transaction too
 
@@ -496,9 +496,9 @@ or its origin.
   its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
-  "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since step 5
-  the person scope's member policy holds the same rule, so removing the anchor's filter alone
-  changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
+  "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since
+  step 5 the person scope's member policy holds the same rule, so removing the anchor's filter
+  alone changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
   `person-member-policy`).
 
 ### Every transaction opens in a scope
@@ -516,6 +516,9 @@ or its origin.
   command to the person's own scope for the invitation pace, and back. `installation` and
   `libraryInstallation` stay in the Hub's login, for the installation's own rows, the boot's checks
   and the first administrator. No `AsyncLocalStorage` carries a company: the scope is an argument.
+  `installationRead` reads the status page's starts in a read-only, repeatable-read transaction.
+  `FOR SHARE` and `FOR NO KEY UPDATE` need the UPDATE grant and policy, so a scope that locks a row
+  holds UPDATE on it, on one column no command writes where it only locks.
 - **Why.** Decision 0039 and [data D20, D25](../guides/data.md). In `isolation.test.ts`, "filtro
   esquecido" fails without the role switch (removal `scope-role-set`) and with the member policy
   opened (removal `rls-company-policy`); "o tipo" fails when a read stops naming its scope (removal

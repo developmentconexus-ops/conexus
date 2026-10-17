@@ -14,11 +14,11 @@ None written before. Brought from earlier work.
 
 ## Result
 
-Admission alone refused cross-company reads in the Builder trial. No policy proof yet.
+Admission alone refused cross-company reads in the Builder trial. Step 5 proved the policy with two companies, live since v0.5.0 [0039].
 
 ## Consequences
 
-Until a policy exists, the database does not hold a Hub mistake.
+Since step 5, row policies hold a Hub mistake in the database [0039].
 
 ## Reopens when
 
@@ -26,4 +26,4 @@ Step 5's list fails, or a route that forgot admission is found.
 
 ## State
 
-Brought. Founder, 2026-10-11: "primeiro deixar o app funcional, corretamente e depois fazemo defense in depth". Amended 2026-10-14 for installation tables, founder: "1. A". Step 5 proposes the policy: [0039].
+Brought. Founder, 2026-10-11: "primeiro deixar o app funcional, corretamente e depois fazemo defense in depth". Amended 2026-10-14 for installation tables, founder: "1. A". Step 5 decided the policy: [0039], accepted in use 2026-10-17.

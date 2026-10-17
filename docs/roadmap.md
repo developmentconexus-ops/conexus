@@ -26,6 +26,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
       Etapa 4.2 usada em 2026-10-17 em https://hub.conexus.fun (v0.4.2): "Legal tudo funcionou"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
    Cartão da etapa 5 aprovado em 2026-10-17 (commit 3fa479344c8bb02a21a75aaf84744b0b01e65a7e): "2A" (2026-10-16); "eu aprovo tudo que você trouxe"
+   Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
 8. **App de exemplo.** Abre um app escrito à mão.
@@ -80,13 +81,11 @@ Domínio próprio de empresa.
 
 ## 2. As etapas
 
-Os 17 testes de login (LT1 a LT17), as provas PD1 a PD9, as fichas e os
-estudos vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso dela fica na
-seção 1.
+Os testes de login (LT1 a LT17), as provas PD1 a PD9, fichas e estudos
+vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso fica na seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 5 Duas empresas | A 4.2 | Confirmar H antes da v0.5.1 | Nove itens da política, com o operador e sem criar pelo cliente |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
@@ -107,11 +106,11 @@ seção 1.
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 
 O teste do banco dormindo, da etapa 2, roda de novo em toda etapa que acrescenta algo que roda
-sozinho. Se o banco não dormir com o Mastra parado, a etapa 12 volta a você.
+sozinho; se falhar com o Mastra parado, a etapa 12 volta a você.
 
 ## 3. Como uma etapa roda
 
-Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), cada uma, menos o uso, com a sua
-skill ([`AGENTS.md`](../AGENTS.md)). A sua resposta 2 vive na regra do estudo
+Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), cada uma, menos o uso, com a skill.
+A sua resposta 2 vive na regra do estudo
 ([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão sua é pedida na
-etapa dela, com letras e exemplo.
+etapa dela.

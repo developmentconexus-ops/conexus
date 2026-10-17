@@ -6,18 +6,17 @@
 
 ## Decision
 
-Each transaction enters a typed scope (`SET LOCAL ROLE`, `set_config(…, true)`); row policies on
+Each transaction enters a typed scope; row policies on
 company tables and `auth.user` bound each role; no `FORCE` (D9). Basis: answers A, B, H.
 
 A1: policies call `auth.is_installation_administrator`, a NOLOGIN role's `SECURITY DEFINER`
-function. A2: the invitation scope reads its company's members. Founder approved 2026-10-17.
-
+function. A2: the invitation scope reads its company's members.
 ## Criterion
 
 **Question.** Do mandatory scope and row policies hold an unfiltered query or write, keeping 4.1
 and 4.2?
 
-**Fixed.** PostgreSQL 18 (patch in the result), Drizzle `1.0.0-rc.4`, pg 8.23.1, Better Auth 1.7.8,
+**Fixed.** PostgreSQL 18, Drizzle `1.0.0-rc.4`, pg 8.23.1, Better Auth 1.7.8,
 step 4.2's commit. Two synthetic companies; people in A, B, both, none.
 
 | # | Check | Passes when |
@@ -36,9 +35,8 @@ step 4.2's commit. Two synthetic companies; people in A, B, both, none.
 
 ## Result
 
-2026-10-17: B1–B8 pass locally (18.6), B1–B5 on Neon (18, patch at release), direct address, both
+2026-10-17: B1–B8 pass locally (18.6), B1–B5 on Neon (18, patch at release), both
 phases; items: PR 54.
-
 ## State
 
-Proposed 2026-10-17.
+Accepted 2026-10-17. Founder: A1, A2 and "Aprovo textos, apaga as sobras e todas empresas e continue".
