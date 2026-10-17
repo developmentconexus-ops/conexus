@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { serveEnvironment, spawnHub, TEST_ORIGIN } from '../../platform/test-database.ts'
+import {
+  serveEnvironment,
+  spawnHub,
+  TEST_ORIGIN,
+  WRITE_HEADERS,
+} from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA,
@@ -239,5 +244,35 @@ test('log: CLIENT_DELETED leva o trace e os ids, nunca o nome, o CNPJ ou o e-mai
   const output = JSON.stringify(lines)
   for (const kept of ['12ABC34501DE35', 'Empresa A', DAVI.email, ANA.email]) {
     assert.doesNotMatch(output, new RegExp(kept))
+  }
+})
+
+test('apagar: concorrência com o link, senha e recusa que esperavam o lock dão 404, nunca 500', async (t) => {
+  const hub = await hubWithMail(t)
+  const ana = await personOn(hub, ANA)
+  const actions = {
+    password: { name: 'Davi Costa', password: 'senha-nova-1', revision: 0 },
+    declination: { revision: 0 },
+  }
+  let round = 0
+  for (const [action, payload] of Object.entries(actions)) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      round += 1
+      const owner = `dono${round}@example.test`
+      const cnpj = ['11.222.333/0001-81', '45.997.418/0001-53', '12.ABC.345/01DE-35'][attempt]
+      const client = await register(hub, ana, { ...BODY_A, cnpj, ownerEmail: owner })
+      const [deleted, answered] = await Promise.all([
+        remove(hub, ana, client.companyId, { name: 'Empresa A', revision: 0 }),
+        hub.app.inject({
+          method: 'PUT',
+          url: `/api/invitations/${client.state.ownerInvitation.id}/${action}`,
+          headers: WRITE_HEADERS,
+          payload,
+        }),
+      ])
+      assert.equal(deleted.statusCode, 204)
+      assert.ok([200, 204, 404].includes(answered.statusCode), `${action} ${answered.statusCode}`)
+      assert.deepEqual(await rowsOf(hub, client.companyId), GONE)
+    }
   }
 })
