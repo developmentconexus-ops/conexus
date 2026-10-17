@@ -23,6 +23,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
       Etapa 4.1 usada em 2026-10-16 em https://hub.conexus.fun (v0.4.1): "Foi sim para lixo eletronico, mas nem ligo, podemos passar e tudo deu certo. cancelei e testei tudo e tudo foi validado"
    4.2 **Cadastro de cliente.** Cadastra um cliente na Central, e o administrador dele entra como dono.
       Cartão da etapa 4.2 aprovado em 2026-10-16 (commit 819b1157ca1edc62fb83a5f31d07faa391e32716): "Aprovo"
+      <!-- PLACEHOLDER: Etapa 4.2 usada em <data> em <endereço>: "<palavras do fundador>" -->
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
@@ -84,7 +85,6 @@ seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 4.2 Cadastro de cliente | A 4.1 | O grant da tabela do cliente | Convite de 4.1. Da issue 39, o item 23 |
 | 5 Duas empresas | A 4.2 | A política por linha no banco | Nove itens da política, com o operador e sem criar pelo cliente |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |

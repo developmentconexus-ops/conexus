@@ -1,5 +1,5 @@
-import type { Cnpj, Email, Person } from '@conexus/hub-api'
-import { Client, ClientSummary, CompanyId, PAGE_SIZE } from '@conexus/hub-api'
+import type { Client, Cnpj, Email, Person } from '@conexus/hub-api'
+import { ClientSummary, CompanyId, PAGE_SIZE } from '@conexus/hub-api'
 import { asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
@@ -15,8 +15,8 @@ type ClientData = { cnpj: Cnpj; legalName: string; name: string }
 const CNPJ_KEY = 'client_cnpj_key'
 const ClientRow = z.object({
   companyId: CompanyId,
-  cnpj: z.string(),
-  legalName: z.string(),
+  cnpj: ClientSummary.shape.cnpj,
+  legalName: z.string().min(1),
   revision: z.number().int().nonnegative(),
   registeredAt: z.date(),
 })
@@ -32,7 +32,12 @@ async function refusedIfCnpjTaken<T>(work: () => Promise<T>): Promise<T> {
 }
 
 /** Each record with its company's name and state, which identity owns (code C8). */
-async function clientsOf(deps: Deps, tx: ReadTx, admitted: OperatorProof, rows: unknown[]) {
+async function clientsOf(
+  deps: Deps,
+  tx: ReadTx,
+  admitted: OperatorProof,
+  rows: unknown[],
+): Promise<Client[]> {
   const parsed = rows.map((row) => ClientRow.parse(row))
   const companyIds = parsed.map((row) => row.companyId)
   const operated = await deps.identity.readOperatedCompanies(tx, { admitted, companyIds })
@@ -40,7 +45,7 @@ async function clientsOf(deps: Deps, tx: ReadTx, admitted: OperatorProof, rows: 
     const company = operated.get(row.companyId)
     if (company === undefined) return []
     const { registeredAt, ...kept } = row
-    return [Client.parse({ ...kept, ...company, registeredAt: registeredAt.toISOString() })]
+    return [{ ...kept, ...company, registeredAt: registeredAt.toISOString() }]
   })
 }
 
@@ -72,9 +77,6 @@ function register(deps: Deps, input: Registration) {
       if (same.cnpj !== input.cnpj || same.legalName !== input.legalName) {
         throw new Failure('IDEMPOTENCY_CONFLICT')
       }
-    } else if (await identity.isOperator(tx, input.ownerEmail)) {
-      // Conexus never becomes a member of a client (step 4.2).
-      throw new Failure('CLIENT_OWNER_IS_OPERATOR')
     }
     const registered = await identity.registerCompany(tx, {
       admitted,
@@ -168,7 +170,8 @@ function list(deps: Deps, person: Person, page: string | undefined) {
       .limit(PAGE_SIZE + 1)
     const listed = pageOf(rows, (row) => row.companyId)
     const clients = await clientsOf(deps, tx, admitted, listed.rows)
-    return { clients: clients.map((shown) => ClientSummary.parse(shown)), next: listed.next }
+    // The answer's schema keeps a summary's fields only, at the exit (code C27, C31).
+    return { clients, next: listed.next }
   })
 }
 

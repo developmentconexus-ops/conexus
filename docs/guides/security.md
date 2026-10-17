@@ -25,8 +25,9 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
 ## 2. Who may act (ASVS `V8`)
 
 - **S6.** Roles and actions **should** have one owner, resolved relative to the company that owns
-  the resource, including who can revoke another person's sessions. Failure: an administrator role
-  in one company is used to alter another. [review]
+  the resource, including who can revoke another person's sessions. The operator acts on a client's
+  company as a fact of the person, the installation role, never as a member of it. Failure: an
+  administrator role in one company is used to alter another. [review]
 - **S7.** Every read and write **must** go through admission, which returns a proof value. A write
   **must** require the proof, so a query before the check does not compile. [TypeScript]
 - **S8.** Authority consumption **should** recheck the exact resource and current state and
@@ -39,8 +40,8 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
   not-found, with the reason (`OUTSIDER`, `FORBIDDEN`, `INACTIVE`) only in diagnostic logs. Failure:
   403 for an existing id and 404 for an absent one allow company enumeration. [review]
 - **S11.** Administration **should** retain at least one active company owner and one installation
-  administrator, even under concurrent removals; installation authority is not a company role.
-  Failure: two transactions each see two owners and together remove both. [review]
+  administrator, even under concurrent removals; installation authority is not a company role, and
+  the operator is never a member of a client's company. Failure: two transactions each see two owners and together remove both. [review]
 - **S12.** Entry **should** be granted only to the invited e-mail verified by sign-in and with the
   role an authorized issuer stored, never a permission field from sign-up. Failure: forwarding a
   link to another e-mail transfers a role never granted to that person. [review]

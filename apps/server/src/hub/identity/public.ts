@@ -3,7 +3,7 @@ import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
-import { admitOperator, isOperator } from './admission.ts'
+import { admitOperator } from './admission.ts'
 import { createAuth, libraryCommandOn } from './auth.ts'
 import { readOperatedCompanies, registerCompanyOn, renameCompanyOn } from './clients.ts'
 import { registerCompanyRoutes } from './company-routes.ts'
@@ -42,7 +42,6 @@ export function createIdentity(deps: {
       libraryCommand,
       lockCompany,
       admitOperator,
-      isOperator,
       registerCompany: registerCompanyOn(auth),
       renameCompany: renameCompanyOn(auth),
       readOperatedCompanies,
