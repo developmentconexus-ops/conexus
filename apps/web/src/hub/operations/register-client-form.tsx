@@ -1,6 +1,7 @@
 import { registerClient } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
+import { useEffect } from 'react'
 import type { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import {
@@ -16,6 +17,19 @@ import { ClientFields, fieldOf, undecided } from './client-fields.tsx'
 import { sendRegistration } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos o cadastro. Veja a lista antes de tentar de novo.'
+// Set while a registration has no whole answer, in the tab's own storage, so a reload that loses the
+// attempt key shows the current list and asks instead of a blank form (the founder's answer J).
+const IN_FLIGHT = 'conexus-registration-in-flight'
+
+function inFlight(set?: boolean): boolean {
+  try {
+    if (set === true) sessionStorage.setItem(IN_FLIGHT, '1')
+    if (set === false) sessionStorage.removeItem(IN_FLIGHT)
+    return sessionStorage.getItem(IN_FLIGHT) !== null
+  } catch {
+    return false
+  }
+}
 
 /**
  * "Cadastrar cliente": the company is born with no member, and its administrator gets step 4.1's
@@ -32,6 +46,11 @@ export function RegisterClientForm() {
       }),
   })
   const attempt = useAttemptKey()
+  useEffect(() => {
+    if (!inFlight()) return
+    inFlight(false)
+    void router.navigate({ to: '/operations/clients', search: { notice: 'unconfirmed' } })
+  }, [router])
   const form = useSchemaForm(registerClient.input.body, {
     cnpj: '',
     legalName: '',
@@ -41,10 +60,15 @@ export function RegisterClientForm() {
 
   async function submit(body: z.output<typeof registerClient.input.body>) {
     try {
+      inFlight(true)
       await attempt((attemptKey) => send.mutateAsync({ body, attemptKey }))
+      inFlight(false)
     } catch (error) {
       if (undecided(error)) form.setError('root.server', { type: 'server', message: UNCONFIRMED })
-      else setServerError(form, error, fieldOf(error))
+      else {
+        inFlight(false)
+        setServerError(form, error, fieldOf(error))
+      }
     }
   }
 

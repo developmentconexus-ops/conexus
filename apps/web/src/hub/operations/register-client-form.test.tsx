@@ -149,7 +149,7 @@ test('enquanto envia, "Cadastrando…" bloqueado', async () => {
   await screen.findByRole('heading', { name: 'Empresa Teste' })
 })
 
-test('recarregar depois de uma resposta que não decide: a chave se perde, nada é refeito sozinho e a lista mostra o estado atual', async () => {
+test('recarregar durante um cadastro que não decidiu: mostra a lista atual e pergunta, a chave se perde e nada é refeito', async () => {
   const [, cut] = undecided('{"client":{"companyId":"bbb')[0] ?? []
   const sent = hub([cut ?? registered, registered])
   open()
@@ -157,10 +157,12 @@ test('recarregar depois de uma resposta que não decide: a chave se perde, nada 
   await screen.findByRole('alert')
   cleanup()
   const reloaded = open()
-  expect(await screen.findByText('Ele recebe um convite e entra como primeiro dono.')).toBeTruthy()
-  expect(screen.getByLabelText('Razão social')).toHaveProperty('value', '')
-  await reloaded.navigate({ to: '/operations/clients' })
-  expect(await screen.findByText('Empresa Teste')).toBeTruthy()
+  expect(
+    await screen.findByText('O último cadastro ficou sem resposta. O cliente está nesta lista?'),
+  ).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Central de Operação' })).toBeTruthy()
+  expect(screen.getByText('Empresa Teste')).toBeTruthy()
+  await waitFor(() => expect(reloaded.state.location.search).toEqual({}))
   expect(sent.length).toBe(1)
   await reloaded.navigate({ to: '/operations/clients/new' })
   await fill()

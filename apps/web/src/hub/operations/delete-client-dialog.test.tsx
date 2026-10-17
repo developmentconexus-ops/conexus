@@ -56,8 +56,12 @@ test('vazio: o título, o que sai, o campo com o foco, Cancelar e Apagar cliente
   const field = screen.getByLabelText('Digite o nome do cliente')
   await waitFor(() => expect(document.activeElement).toBe(field))
   expect(screen.getByRole('button', { name: 'Apagar cliente' })).toHaveProperty('disabled', true)
+  // Modal: the page behind is hidden from assistive technology while the dialog is open.
+  expect(screen.queryByRole('button', { name: 'Corrigir dados' })).toBeNull()
+  expect(screen.getAllByRole('button', { name: 'Apagar cliente' })).toHaveLength(1)
   fireEvent.click(screen.getByRole('button', { name: 'Cancelar' }))
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
+  expect(screen.getByRole('button', { name: 'Corrigir dados' })).toBeTruthy()
 })
 
 test('Enter sem o nome não confirma; um nome diferente também não', async () => {
