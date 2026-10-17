@@ -9,7 +9,7 @@ import {
 } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx } from '../../platform/database.ts'
+import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyProof, OwnerInviterProof } from './admission.ts'
 import { admitInviter, isOperator, mayInviteAs } from './admission.ts'
@@ -71,6 +71,11 @@ export async function lockCompany(tx: CommandTx, companyId: string): Promise<voi
     .for('no key update')
 }
 
+/** A company route's scope: the company its address names, for the person of the session. */
+export function companyScope(input: { person: Person; companyId: CompanyId }) {
+  return { kind: 'COMPANY', companyId: input.companyId, personId: input.person.id } as const
+}
+
 type Invite = {
   person: Person
   companyId: CompanyId
@@ -111,12 +116,19 @@ async function checkRoom(tx: CommandTx, admitted: CompanyProof, email: string): 
   if (live >= CAPACITY.openInvitations) throw new Failure('INVITATIONS_FULL')
 }
 
-export async function checkPace(tx: CommandTx, personId: string): Promise<void> {
-  const recent = await tx.$count(
-    invitation,
-    and(
-      eq(invitation.inviterId, personId),
-      sql`${invitation.createdAt} > statement_timestamp() - ${INVITATION_PACE.window}`,
+/** Counts what the person sent in every company, in the person's own scope (step 4, answer 6). */
+export async function checkPace(
+  database: Database,
+  tx: CommandTx,
+  personId: string,
+): Promise<void> {
+  const recent = await database.asPerson(tx, (personal) =>
+    personal.$count(
+      invitation,
+      and(
+        eq(invitation.inviterId, personId),
+        sql`${invitation.createdAt} > statement_timestamp() - ${INVITATION_PACE.window}`,
+      ),
     ),
   )
   if (recent >= INVITATION_PACE.most) throw new Failure('INVITATIONS_EXCEEDED')
@@ -212,9 +224,13 @@ async function cancelOpen(auth: Auth, tx: CommandTx, invitationId: string, super
  * Invites an e-mail. The Hub owns who may invite with which role, the count of open invitations
  * and the pace of each person, under the company's lock; the plugin's adapter writes the row.
  */
-export function createInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
+export function createInvitationCommand(deps: {
+  auth: Auth
+  database: Database
+  libraryCommand: LibraryCommand
+}) {
   return (input: Invite) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(companyScope(input), async (tx) => {
       const email = storedAddress(input.email)
       await lockCompany(tx, input.companyId)
       const personId = input.person.id
@@ -255,7 +271,7 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       }
       if (open !== undefined) await cancelOpen(deps.auth, tx, open.id, input.replaces !== undefined)
       await checkNotMember(tx, admitted, email)
-      await checkPace(tx, personId)
+      await checkPace(deps.database, tx, personId)
       const { attemptKey, role } = input
       const adapter = await organizationAdapter(deps.auth)
       const created = await adapter.createInvitation({

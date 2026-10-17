@@ -46,7 +46,7 @@ async function loginFails(test: TestDatabase, password: string): Promise<void> {
   const other = databaseWithPassword(test, password)
   try {
     await assert.rejects(
-      other.read((tx) => tx.execute(sql`select 1`)),
+      other.installation((tx) => tx.execute(sql`select 1`)),
       (error: unknown) => {
         assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
         assert.equal(error.cause.code, '28P01')
@@ -61,7 +61,7 @@ async function loginFails(test: TestDatabase, password: string): Promise<void> {
 async function loginWorks(test: TestDatabase, password: string): Promise<void> {
   const other = databaseWithPassword(test, password)
   try {
-    const result = await other.read((tx) => tx.execute(sql`select current_user as login`))
+    const result = await other.installation((tx) => tx.execute(sql`select current_user as login`))
     assert.deepEqual(result.rows, [{ login: 'hub_runtime' }])
   } finally {
     await other.close()
@@ -75,7 +75,7 @@ test('o login do Hub recebe 42501 em DELETE e em DDL', async (t) => {
     sql`create table public.planted (id int)`,
   ]) {
     await assert.rejects(
-      database.command((tx) => tx.execute(statement)),
+      database.installation((tx) => tx.execute(statement)),
       (error: unknown) => {
         assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
         assert.equal(error.cause.code, '42501')
@@ -91,11 +91,13 @@ test('migrate duas vezes: a segunda não aplica nada, e só a senha do arquivo e
   const first = await test.asOwner(applied)
   await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
   assert.deepEqual(await test.asOwner(applied), first)
-  const right = await test.database.read((tx) => tx.execute(sql`select current_user as login`))
+  const right = await test.database.installation((tx) =>
+    tx.execute(sql`select current_user as login`),
+  )
   assert.deepEqual(right.rows, [{ login: 'hub_runtime' }])
   const other = databaseWithPassword(test, 'not-the-file-password')
   await assert.rejects(
-    other.read((tx) => tx.execute(sql`select 1`)),
+    other.installation((tx) => tx.execute(sql`select 1`)),
     (error: unknown) => {
       assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
       assert.equal(error.cause.code, '28P01')

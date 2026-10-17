@@ -3,6 +3,7 @@ import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
+import type { OperatorProof } from './admission.ts'
 import { admitOperator, isOperator } from './admission.ts'
 import { createAuth, libraryCommandOn } from './auth.ts'
 import { readOperatedCompanies, registerCompanyOn, renameCompanyOn } from './clients.ts'
@@ -12,11 +13,13 @@ import { mailInvitation } from './invitation-mail.ts'
 import { registerIdentityRoutes } from './routes.ts'
 import { createSessionReader } from './session.ts'
 
-export type { OperatorProof } from './admission.ts'
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
 export { passwordLinkText } from './messages.ts'
+// The login's reach until step 5's second phase, for the Central's own table.
+export { transition } from './tables.ts'
+export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']
 
@@ -33,7 +36,7 @@ export function createIdentity(deps: {
     readSession,
     firstPerson: createFirstPerson({
       auth,
-      libraryCommand,
+      database: deps.database,
       publicOrigin: deps.config.publicOrigin,
     }),
     // What the Operations Central reaches identity through (code C4), in the caller's transaction.
@@ -46,11 +49,17 @@ export function createIdentity(deps: {
       readOperatedCompanies,
       /** The first owner's invitation, from Conexus, after the commit (step 4.1's E3). */
       mailOwnerInvitation: (input: {
+        admitted: OperatorProof
         company: Company
         invitation: PendingInvitation
         signal: AbortSignal
       }) =>
         mailInvitation(deps, {
+          scope: {
+            kind: 'OPERATOR',
+            personId: input.admitted.personId,
+            companyId: input.company.id,
+          },
           invitation: input.invitation,
           companyName: input.company.name,
           inviter: { kind: 'CONEXUS' },

@@ -13,7 +13,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
-import type { CommandTx, Database } from '../../platform/database.ts'
+import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -151,15 +151,27 @@ function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
   })
 }
 
-export type LibraryCommand = <T>(work: (tx: CommandTx) => Promise<T>) => Promise<T>
+export type LibraryCommand = <T>(scope: Scope, work: (tx: CommandTx) => Promise<T>) => Promise<T>
 
 /**
- * One command the library joins: it runs on our transaction as its own, so the plugin's accept,
- * which opens a transaction of its own, writes there too instead of on another connection (D22).
+ * One command the library joins, in the scope the caller entered: it runs on our transaction as its
+ * own, so the plugin's accept, which opens a transaction of its own, writes there too instead of on
+ * another connection (D22), and every query of its adapter meets the same row policies.
  */
 export function libraryCommandOn(auth: Auth, database: Database): LibraryCommand {
-  return (work) =>
+  return (scope, work) =>
     database.libraryCommand(
+      relations,
+      scope,
+      async (tx) =>
+        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),
+    )
+}
+
+/** The first administrator's command, which no person can scope yet. */
+export function libraryInstallationOn(auth: Auth, database: Database) {
+  return <T>(work: (tx: CommandTx) => Promise<T>) =>
+    database.libraryInstallation(
       relations,
       async (tx) =>
         await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),

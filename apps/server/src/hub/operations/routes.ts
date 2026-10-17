@@ -25,7 +25,8 @@ export function registerClientRoutes(
       log.info({ companyId: made.client.companyId, personId: person.id }, 'CLIENT_REGISTERED')
     }
     if (made.mail !== undefined) {
-      await identity.mailOwnerInvitation({ company: made.company, invitation: made.mail, signal })
+      const { admitted, company } = made
+      await identity.mailOwnerInvitation({ admitted, company, invitation: made.mail, signal })
     }
     return answer({ client: made.client })
   })

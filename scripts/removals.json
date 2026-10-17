@@ -559,5 +559,38 @@
       "file": "src/platform/access.test.ts",
       "name": "entrada: recusa a escrita de outro site"
     }
+  },
+  {
+    "id": "rls-company-policy",
+    "file": "apps/server/migrations/20261017042527_company_row_policies/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"auth\".\"member\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''))",
+    "replace": "CREATE POLICY \"company_all\" ON \"auth\".\"member\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "filtro esquecido"
+    }
+  },
+  {
+    "id": "scope-role-set",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "    await tx.execute(sql.raw(`set local role ${SCOPE_ROLES[scope.kind]}`))\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "filtro esquecido"
+    }
+  },
+  {
+    "id": "scope-in-signature",
+    "file": "apps/server/src/platform/database.ts",
+    "find": "  read<T>(scope: Scope, work: (tx: ReadTx) => Promise<T>): Promise<T>\n",
+    "replace": "  read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "o tipo"
+    }
   }
 ]

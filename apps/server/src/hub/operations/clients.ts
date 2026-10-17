@@ -51,6 +51,11 @@ async function clientOf(deps: Deps, tx: ReadTx, admitted: OperatorProof, company
   return found
 }
 
+/** The Central's scope, for the person of the session; a company only where a command needs all of its rows. */
+function operatorScope(person: Person, companyId: CompanyId | null) {
+  return { kind: 'OPERATOR', personId: person.id, companyId } as const
+}
+
 type Registration = ClientData & { person: Person; ownerEmail: Email; attemptKey: string }
 
 /**
@@ -59,7 +64,7 @@ type Registration = ClientData & { person: Person; ownerEmail: Email; attemptKey
  */
 function register(deps: Deps, input: Registration) {
   const { identity } = deps
-  return identity.libraryCommand(async (tx) => {
+  return identity.libraryCommand(operatorScope(input.person, null), async (tx) => {
     const { attemptKey: key } = input
     // Two registrations with one key at once: the second waits here and finds the first's.
     await transactionLock(tx, `conexus.client:${key}`)
@@ -87,6 +92,7 @@ function register(deps: Deps, input: Registration) {
       await insertClient(tx, { ...input, companyId, key })
     }
     return {
+      admitted,
       client: await clientOf(deps, tx, admitted, companyId),
       company: registered.company,
       mail: registered.mail,
@@ -115,7 +121,7 @@ type Correction = ClientData & { person: Person; companyId: CompanyId; revision:
 /** Corrects a client still awaiting its administrator, at the revision it read (code C38). */
 function correct(deps: Deps, input: Correction) {
   const { identity } = deps
-  return identity.libraryCommand(async (tx) => {
+  return identity.libraryCommand(operatorScope(input.person, input.companyId), async (tx) => {
     const personId = input.person.id
     const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })
     const [row] = await tx
@@ -144,7 +150,7 @@ function correct(deps: Deps, input: Correction) {
 
 /** The clients in the order they were registered, 50 a page (code C44). */
 function list(deps: Deps, person: Person, page: string | undefined) {
-  return deps.database.read(async (tx) => {
+  return deps.database.read(operatorScope(person, null), async (tx) => {
     const personId = person.id
     const admitted = await deps.identity.admitOperator({ tx, personId, action: 'operateClients' })
     const key = pageKey(page)
@@ -168,7 +174,7 @@ function list(deps: Deps, person: Person, page: string | undefined) {
 }
 
 function get(deps: Deps, person: Person, companyId: CompanyId) {
-  return deps.database.read(async (tx) => {
+  return deps.database.read(operatorScope(person, null), async (tx) => {
     const personId = person.id
     const admitted = await deps.identity.admitOperator({ tx, personId, action: 'operateClients' })
     return clientOf(deps, tx, admitted, companyId)

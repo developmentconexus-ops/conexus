@@ -64,7 +64,7 @@ test('password: an unknown link leaves the transaction pool connection reusable'
   const hub = await hubWithMail(t)
   const pool = hub.test.database.libraryOrm({}).$client
   const backends = `select pid from pg_stat_activity where datname = current_database() and usename = 'hub_runtime' order by pid`
-  await hub.test.database.read((tx) => tx.execute(sql`select 1`))
+  await hub.test.database.installation((tx) => tx.execute(sql`select 1`))
   const before = await hub.test.asOwner(backends)
   for (let round = 0; round < 3; round++) assert.equal((await write(hub, id())).statusCode, 404)
   assert.deepEqual([pool.totalCount, pool.idleCount], [1, 1])

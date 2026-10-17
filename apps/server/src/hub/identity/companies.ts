@@ -10,8 +10,8 @@ import { company, member, user } from './tables.ts'
 const PersonRole = z.object({ role: z.string().nullable() })
 const MemberRow = Member.extend({ id: z.string().regex(LIBRARY_ID) })
 
-export function readMemberships(database: Database, personId: string, page: string | undefined) {
-  return database.read(async (tx) => {
+export function readMemberships(database: Database, personId: PersonId, page: string | undefined) {
+  return database.read({ kind: 'PERSON', personId }, async (tx) => {
     const key = pageKey(page)
     const rows = await tx
       .select({ id: company.id, name: company.name, role: member.role })
@@ -57,7 +57,7 @@ export function readCompany(
   database: Database,
   input: { personId: PersonId; companyId: CompanyId },
 ) {
-  return database.read(async (tx) => {
+  return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
     const admitted = await admit({ tx, ...input, action: 'readCompany' })
     return {
       company: await companyById(tx, admitted.companyId),
@@ -72,7 +72,7 @@ export function readMembers(
   input: { personId: PersonId; companyId: CompanyId },
   page: string | undefined,
 ) {
-  return database.read(async (tx) => {
+  return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
     const admitted = await admit({ tx, ...input, action: 'readCompany' })
     const key = pageKey(page)
     const rows = await tx

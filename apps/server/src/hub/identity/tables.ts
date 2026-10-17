@@ -5,12 +5,14 @@ import {
   index,
   integer,
   jsonb,
+  pgPolicy,
   pgSchema,
   text,
   timestamp,
   unique,
   uniqueIndex,
 } from 'drizzle-orm/pg-core'
+import { RUNTIME_LOGIN, SCOPE_ROLES, scoped } from '../../platform/database.ts'
 
 // The models of @better-auth/core 1.7.8 (db/get-tables) and of its organization() and admin()
 // plugins: object keys are the library's field names.
@@ -20,19 +22,72 @@ function instant(name: string) {
   return timestamp(name, { withTimezone: true })
 }
 
-export const user = auth.table('user', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').notNull().default(false),
-  image: text('image'),
-  createdAt: instant('created_at').notNull().defaultNow(),
-  updatedAt: instant('updated_at').notNull().defaultNow(),
-  role: text('role'),
-  banned: boolean('banned').default(false),
-  banReason: text('ban_reason'),
-  banExpires: instant('ban_expires'),
-})
+// The row policies of decision 0039: each scope's role reaches only the rows its transaction's
+// scope names, and admission still decides what the person may do with them (security S7).
+const { companyId, personId, invitationId } = scoped
+const OPEN = sql`true`
+
+/**
+ * The Hub's login keeps its reach on a company's tables until step 5's second phase, so the release
+ * before this one still runs on the migrated database (data D6, the founder's answer H).
+ */
+export function transition() {
+  return pgPolicy('runtime_transition', {
+    for: 'all',
+    to: RUNTIME_LOGIN,
+    using: OPEN,
+    withCheck: OPEN,
+  })
+}
+
+type Rows = ReturnType<typeof sql>
+type Verb = 'select' | 'insert' | 'update' | 'delete'
+
+/** A role's policy for one verb: the rows it reads or changes, and the rows it may leave. */
+function policy(role: string, verb: Verb | 'all', rows: Rows) {
+  const name = `${role.replace('hub_', '')}_${verb}`
+  if (verb === 'select' || verb === 'delete')
+    return pgPolicy(name, { for: verb, to: role, using: rows })
+  if (verb === 'insert') return pgPolicy(name, { for: verb, to: role, withCheck: rows })
+  return pgPolicy(name, { for: verb, to: role, using: rows, withCheck: rows })
+}
+
+export const user = auth.table(
+  'user',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    email: text('email').notNull().unique(),
+    emailVerified: boolean('email_verified').notNull().default(false),
+    image: text('image'),
+    createdAt: instant('created_at').notNull().defaultNow(),
+    updatedAt: instant('updated_at').notNull().defaultNow(),
+    role: text('role'),
+    banned: boolean('banned').default(false),
+    banReason: text('ban_reason'),
+    banExpires: instant('ban_expires'),
+  },
+  () => [
+    // The login signs people in and reads them for the library, outside any scope.
+    // The login signs people in, outside any scope (step 3).
+    pgPolicy('runtime_sign_in', { for: 'all', to: RUNTIME_LOGIN, using: OPEN, withCheck: OPEN }),
+    policy(
+      SCOPE_ROLES.COMPANY,
+      'all',
+      sql`id = ${personId}
+        or exists (select 1 from auth.member m where m.user_id = "user".id and m.company_id = ${companyId})
+        or exists (select 1 from auth.invitation i where i.inviter_id = "user".id and i.company_id = ${companyId})`,
+    ),
+    policy(SCOPE_ROLES.PERSON, 'all', sql`id = ${personId}`),
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'all',
+      sql`id = ${personId}
+        or exists (select 1 from auth.invitation i where i.id = ${invitationId}
+          and (i.inviter_id = "user".id or lower(i.email) = "user".email))`,
+    ),
+  ],
+)
 
 export const session = auth.table(
   'session',
@@ -97,15 +152,32 @@ export const rateLimit = auth.table('rate_limit', {
 
 // The plugin's model "organization", named "company" by its own modelName option. The attempt key
 // is the create's Idempotency-Key (code C37), and the slug is that key too.
-export const company = auth.table('company', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  slug: text('slug').notNull().unique(),
-  logo: text('logo'),
-  metadata: text('metadata'),
-  createdAt: instant('created_at').notNull(),
-  attemptKey: text('attempt_key').notNull().unique(),
-})
+export const company = auth.table(
+  'company',
+  {
+    id: text('id').primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull().unique(),
+    logo: text('logo'),
+    metadata: text('metadata'),
+    createdAt: instant('created_at').notNull(),
+    attemptKey: text('attempt_key').notNull().unique(),
+  },
+  () => [
+    transition(),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`id = ${companyId}`),
+    policy(
+      SCOPE_ROLES.PERSON,
+      'select',
+      sql`exists (select 1 from auth.member m where m.company_id = company.id and m.user_id = ${personId})`,
+    ),
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'all',
+      sql`exists (select 1 from auth.invitation i where i.id = ${invitationId} and i.company_id = company.id)`,
+    ),
+  ],
+)
 
 export const member = auth.table(
   'member',
@@ -123,6 +195,15 @@ export const member = auth.table(
   (table) => [
     unique('member_company_id_user_id_key').on(table.organizationId, table.userId),
     index('member_user_id_idx').on(table.userId),
+    transition(),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),
+    policy(SCOPE_ROLES.PERSON, 'select', sql`user_id = ${personId}`),
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'insert',
+      sql`user_id = ${personId}
+        and exists (select 1 from auth.invitation i where i.id = ${invitationId} and i.company_id = member.company_id)`,
+    ),
   ],
 )
 
@@ -156,6 +237,15 @@ export const invitation = auth.table(
       .where(sql`${table.status} = 'pending'`),
     unique('invitation_company_id_attempt_key_key').on(table.organizationId, table.attemptKey),
     index('invitation_email_idx').on(table.email),
+    transition(),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),
+    policy(
+      SCOPE_ROLES.PERSON,
+      'select',
+      sql`inviter_id = ${personId}
+        or lower(email) = (select u.email from auth."user" u where u.id = ${personId})`,
+    ),
+    policy(SCOPE_ROLES.INVITATION, 'all', sql`id = ${invitationId}`),
   ],
 )
 

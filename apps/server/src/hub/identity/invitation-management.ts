@@ -1,7 +1,7 @@
 import type { CompanyId, InvitationId, Person } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx } from '../../platform/database.ts'
+import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { admitInviter, mayInviteAs } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
@@ -10,6 +10,7 @@ import { companyById } from './companies.ts'
 import {
   checkNotMember,
   checkPace,
+  companyScope,
   inviterOf,
   LIVE,
   lockCompany,
@@ -78,7 +79,7 @@ function current(row: z.infer<typeof ManagedRow>, input: Manage): void {
 
 export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: Manage) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(companyScope(input), async (tx) => {
       const { row } = await admittedInvitation(tx, input)
       if (row.status === 'canceled' && !row.superseded) return false
       current(row, input)
@@ -92,16 +93,20 @@ export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
     })
 }
 
-export function renewInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
+export function renewInvitationCommand(deps: {
+  auth: Auth
+  database: Database
+  libraryCommand: LibraryCommand
+}) {
   return (input: Manage) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(companyScope(input), async (tx) => {
       const { admitted, row } = await admittedInvitation(tx, input)
       current(row, input)
       if (!row.live) throw new Failure('INVITATION_CLOSED')
       if (!mayInviteAs(admitted).includes(row.role)) throw new Failure('INVITATION_ROLE_REFUSED')
       await lockedInviter(tx, input.person.id)
       await checkNotMember(tx, admitted, row.email)
-      await checkPace(tx, input.person.id)
+      await checkPace(deps.database, tx, input.person.id)
       const [renewed] = await tx
         .update(invitation)
         .set({

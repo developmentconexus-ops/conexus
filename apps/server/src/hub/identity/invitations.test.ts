@@ -215,6 +215,22 @@ test('limite: o 11º convite de uma pessoa em 60 s, 429 INVITATIONS_EXCEEDED; pa
   assert.equal((await invite(ana, INVITEE)).statusCode, 201)
 })
 
+test('ritmo entre empresas: o 11º convite em 60 s conta os enviados nas duas empresas da pessoa', async (t) => {
+  const { hub, ana, invite } = await companyOn(t)
+  const other = await plantCompany(hub.test, ana.id, 'Outra Empresa')
+  for (let index = 0; index < 5; index++) {
+    assert.equal((await invite(ana, `pessoa${index}@example.test`)).statusCode, 201)
+    const elsewhere = { email: `outra${index}@example.test`, role: 'member' }
+    assert.equal(
+      (await post(hub, ana, `/api/companies/${other}/invitations`, elsewhere)).statusCode,
+      201,
+    )
+  }
+  const eleventh = await invite(ana, INVITEE)
+  assert.deepEqual([eleventh.statusCode, codeOf(eleventh)], [429, 'INVITATIONS_EXCEEDED'])
+  assert.deepEqual(await rows(hub), [])
+})
+
 test('limite: com 99 vivos, dois convidantes juntos, um 201 e um 409 INVITATIONS_FULL', async (t) => {
   const { hub, ana, bruno, companyId, invite } = await companyOn(t)
   await seed(hub, companyId, ana.id, 99, true)

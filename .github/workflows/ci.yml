@@ -73,6 +73,9 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
+        # Phase 2 is step 5's second phase: the Hub's login without reach on a company's tables,
+        # which U7 ships after v0.5.0. This release must already run on it (the card's criterion 17).
+        phase: [1, 2]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -98,6 +101,7 @@ jobs:
       - run: npm test -w @conexus/server
         env:
           TEST_SHARD: ${{ matrix.shard }}/4
+          CONEXUS_TEST_PHASE: ${{ matrix.phase }}
 
   web:
     runs-on: [self-hosted, conexus]

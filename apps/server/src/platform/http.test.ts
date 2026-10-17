@@ -223,7 +223,7 @@ test('a porta de teste registra o código de falha que a operação não declara
       success: { status: 204 },
       failures,
     })
-    serve(app, read, () => database.read(async () => answer(undefined)))
+    serve(app, read, () => database.installation(async () => answer(undefined)))
   }
   const declared = await app.inject({ method: 'GET', url: '/api/notes/declared' })
   assert.deepEqual([declared.statusCode, declared.json().code], [503, 'DATABASE_UNAVAILABLE'])

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { check, integer, pgSchema, text, timestamp } from 'drizzle-orm/pg-core'
+import { transition } from '../identity/public.ts'
 
 export const operations = pgSchema('operations')
 
@@ -19,5 +20,6 @@ export const client = operations.table(
     check('client_cnpj_format', sql`${table.cnpj} ~ '^[0-9A-Z]{12}[0-9]{2}$'`),
     check('client_legal_name_length', sql`char_length(${table.legalName}) BETWEEN 1 AND 150`),
     check('client_revision_not_negative', sql`${table.revision} >= 0`),
+    transition(),
   ],
 )

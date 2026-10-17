@@ -1,4 +1,5 @@
 import { join } from 'node:path'
+import type { CompanyId, InvitationId, PersonId } from '@conexus/hub-api'
 import type { AnyRelations, EmptyRelations } from 'drizzle-orm'
 import { sql } from 'drizzle-orm'
 import { readMigrationFiles } from 'drizzle-orm/migrator'
@@ -41,16 +42,65 @@ export type ReadTx = Pick<Transaction, 'select' | 'selectDistinct' | 'execute'>
 export type CommandTx = Transaction
 type LibraryTx<R extends AnyRelations> = Transaction<R>
 
+/**
+ * Whose rows a transaction reaches (decision 0039): its kind sets the role, and its ids the values
+ * the row policies read. The caller takes it from the session or from a proof, never from a body.
+ */
+export type Scope =
+  | { kind: 'COMPANY'; companyId: CompanyId; personId: PersonId }
+  | { kind: 'PERSON'; personId: PersonId }
+  | { kind: 'INVITATION'; invitationId: InvitationId; personId: PersonId | null }
+  | { kind: 'OPERATOR'; personId: PersonId; companyId: CompanyId | null }
+
+// Constants of the program, so the role is never a value from outside (data D20).
+export const SCOPE_ROLES = {
+  COMPANY: 'hub_company',
+  PERSON: 'hub_person',
+  INVITATION: 'hub_invitation',
+  OPERATOR: 'hub_operator',
+} as const satisfies Record<Scope['kind'], string>
+
+const SETTINGS = {
+  companyId: 'conexus.company_id',
+  personId: 'conexus.person_id',
+  invitationId: 'conexus.invitation_id',
+} as const
+
+function setting(name: string) {
+  return sql.raw(`nullif(current_setting('${name}', true), '')`)
+}
+
+/** What a row policy reads of its transaction's scope: nothing, when the scope has no such id. */
+export const scoped = {
+  companyId: setting(SETTINGS.companyId),
+  personId: setting(SETTINGS.personId),
+  invitationId: setting(SETTINGS.invitationId),
+}
+
 export type Database = Readonly<{
-  read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>
-  command<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>
+  read<T>(scope: Scope, work: (tx: ReadTx) => Promise<T>): Promise<T>
+  command<T>(scope: Scope, work: (tx: CommandTx) => Promise<T>): Promise<T>
   /**
-   * For a library's own adapter, which checks the rows it reads itself (data D19, D21). The
-   * relations are the library's, so its joins run as one query each.
+   * For a library's own adapter outside a transaction, which checks the rows it reads itself (data
+   * D19, D21): sessions, accounts and people, never a company's tables. The relations are the
+   * library's, so its joins run as one query each.
    */
   libraryOrm<R extends AnyRelations>(relations: R): Orm<R>
   /** A command whose transaction carries the library's relations, for its adapter to join on. */
   libraryCommand<R extends AnyRelations, T>(
+    relations: R,
+    scope: Scope,
+    work: (tx: LibraryTx<R>) => Promise<T>,
+  ): Promise<T>
+  /**
+   * The person's own scope inside a company command, and back, for the invitation pace, which counts
+   * what the person sent in every company.
+   */
+  asPerson<T>(tx: CommandTx, work: (tx: CommandTx) => Promise<T>): Promise<T>
+  /** The installation's own rows, in the Hub's login: its starts, and the checks of the boot. */
+  installation<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>
+  /** The installation's first administrator, before any person exists to scope a command. */
+  libraryInstallation<R extends AnyRelations, T>(
     relations: R,
     work: (tx: LibraryTx<R>) => Promise<T>,
   ): Promise<T>
@@ -88,7 +138,23 @@ export async function transactionLock(tx: CommandTx, key: string): Promise<void>
 }
 
 const NO_RELATIONS: EmptyRelations = {}
+const READ = { isolationLevel: 'repeatable read', accessMode: 'read only' } as const
 const WRITE = { isolationLevel: 'read committed', accessMode: 'read write' } as const
+
+/** The values the row policies read, each bound and local to the transaction (data D20, D25). */
+async function enter(tx: CommandTx, scope: Scope): Promise<void> {
+  const companyId = 'companyId' in scope ? (scope.companyId ?? '') : ''
+  const invitationId = scope.kind === 'INVITATION' ? scope.invitationId : ''
+  try {
+    await tx.execute(sql.raw(`set local role ${SCOPE_ROLES[scope.kind]}`))
+    await tx.execute(sql`select set_config(${SETTINGS.companyId}, ${companyId}, true),
+      set_config(${SETTINGS.personId}, ${scope.personId ?? ''}, true),
+      set_config(${SETTINGS.invitationId}, ${invitationId}, true)`)
+  } catch (error) {
+    // Nothing runs outside its scope: a transaction that cannot enter it ends here.
+    throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
+  }
+}
 
 export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Database {
   const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
@@ -109,6 +175,8 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
     deadlines.delete(client)
   })
   let closing: Promise<void> | undefined
+  // The scope each open transaction entered, for asPerson to come back to.
+  const scopes = new WeakMap<CommandTx, Scope>()
 
   /**
    * The connection is lost where it is lost: the pool cannot connect, or the client emits `error`,
@@ -117,11 +185,9 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
    */
   async function inTransaction<R extends AnyRelations, T>(
     relations: R,
+    scope: Scope | undefined,
     work: (tx: LibraryTx<R>) => Promise<T>,
-    config: {
-      isolationLevel: 'repeatable read' | 'read committed'
-      accessMode: 'read only' | 'read write'
-    },
+    config: typeof READ | typeof WRITE,
   ): Promise<T> {
     let client: pg.PoolClient
     try {
@@ -136,7 +202,12 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
     }
     client.on('error', onError)
     try {
-      return await drizzle({ client, relations }).transaction(work, config)
+      return await drizzle({ client, relations }).transaction(async (tx) => {
+        if (scope === undefined) return work(tx)
+        await enter(tx, scope)
+        scopes.set(tx, scope)
+        return work(tx)
+      }, config)
     } catch (error) {
       if (lostWith === undefined) throw databaseFailure(error)
       throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
@@ -149,14 +220,24 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   }
 
   return Object.freeze({
-    read: (work) =>
-      inTransaction(NO_RELATIONS, work, {
-        isolationLevel: 'repeatable read',
-        accessMode: 'read only',
-      }),
-    command: (work) => inTransaction(NO_RELATIONS, work, WRITE),
+    read: (scope, work) => inTransaction(NO_RELATIONS, scope, work, READ),
+    command: (scope, work) => inTransaction(NO_RELATIONS, scope, work, WRITE),
     libraryOrm: (relations) => drizzle({ client: pool, relations }),
-    libraryCommand: (relations, work) => inTransaction(relations, work, WRITE),
+    libraryCommand: (relations, scope, work) => inTransaction(relations, scope, work, WRITE),
+    asPerson: async (tx, work) => {
+      const scope = scopes.get(tx)
+      if (scope?.kind !== 'COMPANY') {
+        throw new Failure('INTERNAL_UNEXPECTED', {
+          details: { reason: 'asPerson outside COMPANY' },
+        })
+      }
+      await enter(tx, { kind: 'PERSON', personId: scope.personId })
+      const result = await work(tx)
+      await enter(tx, scope)
+      return result
+    },
+    installation: (work) => inTransaction(NO_RELATIONS, undefined, work, WRITE),
+    libraryInstallation: (relations, work) => inTransaction(relations, undefined, work, WRITE),
     close: () => {
       closing ??= pool.end()
       return closing
@@ -168,7 +249,7 @@ const AppliedMigration = z.object({ name: z.string().nullable(), hash: z.string(
 
 export async function assertMigrated(database: Database): Promise<void> {
   const shipped = readMigrationFiles({ migrationsFolder: MIGRATIONS_FOLDER })
-  const applied = await database.read(async (tx) => {
+  const applied = await database.installation(async (tx) => {
     const table = await tx.execute(sql`select to_regclass('drizzle.__drizzle_migrations') as name`)
     if (table.rows[0]?.name == null) return []
     const rows = await tx.execute(sql`select name, hash from drizzle.__drizzle_migrations`)
@@ -190,7 +271,7 @@ export async function assertMigrated(database: Database): Promise<void> {
 export const RUNTIME_LOGIN = 'hub_runtime'
 
 export async function assertRuntimeLogin(database: Database): Promise<void> {
-  const login = await database.read(async (tx) => {
+  const login = await database.installation(async (tx) => {
     const rows = await tx.execute(sql`select current_user as name`)
     return z.object({ name: z.string() }).parse(rows.rows[0])
   })

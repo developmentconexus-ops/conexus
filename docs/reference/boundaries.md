@@ -86,10 +86,12 @@ or its origin.
   (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:291`), and on a failure resets the
   invitation in a second write (`:332-339`).
 - **Hand-made piece.** `libraryCommandOn` in `apps/server/src/hub/identity/auth.ts`. It opens one
-  `database.command` and runs the work in `runWithTransaction` on an adapter bound to that
-  transaction, so every call the library makes inside, nested ones included, writes there.
-  `createFirstPerson` in `first-person.ts` also takes `transactionLock` (`database.ts`, a
-  `pg_advisory_xact_lock`) on the key `conexus.first-person`, which ends with the transaction.
+  `database.libraryCommand` in the caller's scope and runs the work in `runWithTransaction` on an
+  adapter bound to that transaction, so every call the library makes inside, nested ones included,
+  writes there and meets the scope's row policies. `createFirstPerson` in `first-person.ts` runs
+  the same way through `libraryInstallationOn`, before any person exists to scope it, and takes
+  `transactionLock` (`database.ts`, a `pg_advisory_xact_lock`) on the key `conexus.first-person`,
+  which ends with the transaction.
 - **Why.** [Code C37 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
   in an accept leaves nothing, and `forgetLinks` deletes through the same transaction. The test
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` fails with
@@ -448,6 +450,26 @@ or its origin.
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
   "lista: só as empresas de quem pede" in `companies.test.ts` fails when the anchor leaves the
   list's scope (removal `membership-page-anchor-scoped`).
+
+### Every transaction opens in a scope
+
+- **Library line.** `drizzle-orm/node-postgres/session.js` (1.0.0-rc.4): `transaction` begins with
+  the isolation and access mode it is given and nothing else; neither Drizzle nor pg sets a role or
+  a setting for one transaction. Better Auth's adapter runs on the transaction it is handed
+  (`@better-auth/core/dist/context/transaction.mjs`). PostgreSQL offers `SET LOCAL ROLE` and
+  `set_config(name, value, true)`, both undone at the transaction's end.
+- **Hand-made piece.** `enter` in `apps/server/src/platform/database.ts`. `read`, `command` and
+  `libraryCommand` take a `Scope`; the transaction first switches to the scope's role, a constant of
+  the program, and sets `conexus.company_id`, `conexus.person_id` and `conexus.invitation_id` as
+  bound values, which the row policies of decision 0039 read through `scoped`. A failure there
+  ends the transaction as `DATABASE_UNAVAILABLE` before the work runs. `asPerson` switches a company
+  command to the person's own scope for the invitation pace, and back. `installation` and
+  `libraryInstallation` stay in the Hub's login, for the installation's own rows, the boot's checks
+  and the first administrator. No `AsyncLocalStorage` carries a company: the scope is an argument.
+- **Why.** Decision 0039 and [data D20, D25](../guides/data.md). In `isolation.test.ts`, "filtro
+  esquecido" fails without the role switch (removal `scope-role-set`) and with the member policy
+  opened (removal `rls-company-policy`); "o tipo" fails when a read stops naming its scope (removal
+  `scope-in-signature`).
 
 ### A deadline on every checkout of a database connection
 
