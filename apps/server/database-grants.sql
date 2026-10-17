@@ -26,7 +26,8 @@ ALTER TABLE hub.starts OWNER TO test_owner;
 ALTER TABLE operations.client OWNER TO test_owner;
 GRANT USAGE ON SCHEMA auth TO hub_runtime;
 -- Step 5 (decision 0039): the four scopes a Hub transaction enters, each with the verbs its routes'
--- commands use; UPDATE where a command only locks a row. Founder's word pending on this list (D11).
+-- commands use; UPDATE on one column where a command only locks a row. Founder's word pending on
+-- this list (D11).
 GRANT USAGE ON SCHEMA auth TO hub_company;
 GRANT USAGE ON SCHEMA auth TO hub_person;
 GRANT USAGE ON SCHEMA auth TO hub_invitation;
@@ -44,30 +45,36 @@ GRANT SELECT,INSERT ON TABLE auth.account TO hub_invitation;
 -- Step 4, founder 2026-10-15 (decision 8, "Aprovo"): the Hub never deletes a company, a member or an
 -- invitation.
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.company TO hub_runtime;
-GRANT SELECT,UPDATE ON TABLE auth.company TO hub_company;
+GRANT SELECT ON TABLE auth.company TO hub_company;
 GRANT SELECT ON TABLE auth.company TO hub_person;
-GRANT SELECT,UPDATE ON TABLE auth.company TO hub_invitation;
+GRANT SELECT ON TABLE auth.company TO hub_invitation;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.company TO hub_operator;
+GRANT UPDATE(created_at) ON TABLE auth.company TO hub_company;
+GRANT UPDATE(created_at) ON TABLE auth.company TO hub_invitation;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.invitation TO hub_runtime;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.invitation TO hub_company;
 GRANT SELECT ON TABLE auth.invitation TO hub_person;
 GRANT SELECT,UPDATE ON TABLE auth.invitation TO hub_invitation;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.invitation TO hub_operator;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.member TO hub_runtime;
-GRANT SELECT,UPDATE ON TABLE auth.member TO hub_company;
+GRANT SELECT ON TABLE auth.member TO hub_company;
 GRANT SELECT ON TABLE auth.member TO hub_person;
 GRANT SELECT,INSERT ON TABLE auth.member TO hub_invitation;
 GRANT SELECT,DELETE ON TABLE auth.member TO hub_operator;
+GRANT UPDATE(created_at) ON TABLE auth.member TO hub_company;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.rate_limit TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.session TO hub_runtime;
-GRANT SELECT,UPDATE ON TABLE auth.session TO hub_company;
+GRANT SELECT ON TABLE auth.session TO hub_company;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.session TO hub_invitation;
+GRANT UPDATE(updated_at) ON TABLE auth.session TO hub_company;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth."user" TO hub_runtime;
-GRANT SELECT,UPDATE ON TABLE auth."user" TO hub_company;
+GRANT SELECT ON TABLE auth."user" TO hub_company;
 GRANT SELECT ON TABLE auth."user" TO hub_person;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth."user" TO hub_invitation;
-GRANT SELECT,UPDATE ON TABLE auth."user" TO hub_operator;
+GRANT SELECT ON TABLE auth."user" TO hub_operator;
 GRANT SELECT(id) ON TABLE auth."user" TO hub_administrators;
+GRANT UPDATE(updated_at) ON TABLE auth."user" TO hub_company;
+GRANT UPDATE(updated_at) ON TABLE auth."user" TO hub_operator;
 GRANT SELECT(role) ON TABLE auth."user" TO hub_administrators;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.verification TO hub_runtime;
 GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
