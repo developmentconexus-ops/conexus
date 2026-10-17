@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
-import { createHub, identityOf, operationsOf } from '../../main.ts'
+import { createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -13,6 +13,7 @@ import {
   testConfig,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
+import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
 
 export type Mail = {
@@ -107,11 +108,18 @@ async function hubServing(t: TestContext, mailApiUrl?: string) {
   const test = await createTestDatabase(t)
   const config = testConfig(test.runtimeUrl, mailApiUrl)
   const status = createStatus({ version: config.version, database: test.database })
+  const neon = fakeNeon()
   const identity = identityOf({ database: test.database, config, log: silent })
   const operations = operationsOf(test.database, identity)
-  const app = await createHub(config, { status, identity, operations })
+  const projects = projectsOf({
+    database: test.database,
+    identity,
+    neon: neon.neon,
+    log: silent,
+  })
+  const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
-  return { app, test }
+  return { app, test, neon }
 }
 
 /** A Hub on a fresh test database; its mail goes nowhere. */
@@ -237,6 +245,25 @@ export function post(
   })
 }
 
+export function call(
+  hub: Hub,
+  person: Person,
+  method: 'GET' | 'DELETE',
+  url: string,
+  body?: object,
+) {
+  return hub.app.inject({
+    method,
+    url,
+    headers: {
+      origin: TEST_ORIGIN,
+      cookie: person.cookie,
+      ...(body ? { 'content-type': 'application/json' } : {}),
+    },
+    ...(body ? { payload: JSON.stringify(body) } : {}),
+  })
+}
+
 export function codeOf(response: { json(): unknown }): unknown {
   return Object(response.json()).code
 }
@@ -258,6 +285,17 @@ export async function plantCompany(test: TestDatabase, ownerId: string, name = '
     [id(), companyId, ownerId],
   )
   return companyId
+}
+
+/** A person with a password who is a member of the company at the role, planted as `plantCompany` is. */
+export async function memberOn(hub: Hub, companyId: string, who: Who, role: string) {
+  const person = await personOn(hub, who)
+  await hub.test.asOwner(
+    `insert into auth.member (id, company_id, user_id, role, created_at)
+      values ($1, $2, $3, $4, now())`,
+    [id(), companyId, person.id, role],
+  )
+  return person
 }
 
 /**

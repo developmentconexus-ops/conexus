@@ -9,16 +9,18 @@ import { hashPassword } from 'better-auth/crypto'
 import type { BrowserContext, Page } from 'playwright-core'
 import { build } from 'vite'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
-import { createHub, identityOf, operationsOf } from '../../apps/server/src/main.ts'
+import { createHub, identityOf, operationsOf, projectsOf } from '../../apps/server/src/main.ts'
+import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
 import {
   createTestDatabase,
   TEST_ORIGIN,
   testConfig,
 } from '../../apps/server/src/platform/test-database.ts'
+import { neonServer } from '../../apps/server/src/platform/test-neon.ts'
 
 // What the founder's journeys share: a real Hub on a real database, serving the built screens, and
-// the browser reaching it by its public name. Only the mail provider is faked, at its HTTP door
-// (testing T14, T16).
+// the browser reaching it by its public name. Only the mail provider and Neon are faked, at their
+// HTTP doors (testing T14, T16).
 export const PASSWORD = 'senha-certa-1'
 const silent = { info: () => undefined, error: () => undefined }
 
@@ -71,21 +73,29 @@ async function builtScreens(t: TestContext): Promise<string> {
 /** The Hub in this process, on the CI database, serving the built screens and mailing to the fake. */
 export async function liveHub(t: TestContext, mailUrl: string) {
   const database = await createTestDatabase(t)
-  const config = testConfig(database.runtimeUrl, mailUrl)
+  const neon = await neonServer(t)
+  const config = testConfig(database.runtimeUrl, mailUrl, neon.url)
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
   const operations = operationsOf(database.database, identity)
+  const projects = projectsOf({
+    database: database.database,
+    identity,
+    neon: createNeonProjects({ config, log: silent }),
+    log: silent,
+  })
   const app = await createHub(config, {
     status,
     identity,
     operations,
+    projects,
     webRoot: await builtScreens(t),
   })
   t.after(() => app.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
   const address = app.server.address()
   assert.ok(address !== null && typeof address === 'object')
-  return { port: address.port, database }
+  return { port: address.port, database, neon }
 }
 
 /**

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Version } from '@conexus/hub-api'
-import { createHub, identityOf, operationsOf } from '../../main.ts'
+import { createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
@@ -11,6 +11,7 @@ import {
   unreachableDatabase,
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
+import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
@@ -21,7 +22,13 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
   const operations = operationsOf(test.database, identity)
-  const app = await createHub(config, { status, identity, operations })
+  const projects = projectsOf({
+    database: test.database,
+    identity,
+    neon: fakeNeon().neon,
+    log: silent,
+  })
+  const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   return { app, status, test }
 }
@@ -89,7 +96,8 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
   const operations = operationsOf(database, identity)
-  const app = await createHub(config, { status, identity, operations })
+  const projects = projectsOf({ database: database, identity, neon: fakeNeon().neon, log: silent })
+  const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   const response = await app.inject(STATUS)
   assert.equal(response.statusCode, 503)

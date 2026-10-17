@@ -4,7 +4,7 @@
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/test-database|hub/identity/test-hub)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon)|hub/identity/test-hub)\\.ts$`
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */

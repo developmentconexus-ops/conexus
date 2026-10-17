@@ -10,6 +10,8 @@ import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
 import { createOperations } from './hub/operations/public.ts'
+import type { Projects } from './hub/projects/public.ts'
+import { createProjects } from './hub/projects/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { Config } from './platform/config.ts'
@@ -22,6 +24,8 @@ import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
 import { createMail } from './platform/mail.ts'
 import { migrate } from './platform/migrate.ts'
+import type { NeonProjects } from './platform/neon.ts'
+import { createNeonProjects } from './platform/neon.ts'
 
 const SHUTDOWN_DEADLINE_MS = 15_000
 const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
@@ -29,7 +33,13 @@ const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: { status: Status; identity: Identity; operations: Operations; webRoot?: string },
+  deps: {
+    status: Status
+    identity: Identity
+    operations: Operations
+    projects: Projects
+    webRoot?: string
+  },
 ): Promise<FastifyInstance> {
   const app = await createServer(config, {
     webRoot: deps.webRoot ?? WEB_ROOT,
@@ -39,6 +49,7 @@ export async function createHub(
   serve(app, getStatus, async () => answer(await deps.status.read()))
   deps.identity.routes(app)
   deps.operations.routes(app)
+  deps.projects.routes(app)
   await app.ready()
   return app
 }
@@ -55,6 +66,16 @@ export function identityOf(deps: {
 /** The Operations Central, reaching identity only through its ports (code C4). */
 export function operationsOf(database: Database, identity: Identity): Operations {
   return createOperations({ database, identity: identity.ports })
+}
+
+/** The Projects subject, reaching identity through its ports and Neon through the port it is given. */
+export function projectsOf(deps: {
+  database: Database
+  identity: Identity
+  neon: NeonProjects
+  log: FailureLog
+}): Projects {
+  return createProjects({ ...deps, identity: deps.identity.ports })
 }
 
 /** The first-person command logs to stderr: its stdout may be the run's summary, where the link goes. */
@@ -114,7 +135,9 @@ async function runServer(): Promise<void> {
     const status = createStatus({ version: config.version, database })
     const identity = identityOf({ database, config, log })
     const operations = operationsOf(database, identity)
-    const app = await createHub(config, { status, identity, operations })
+    const neon = createNeonProjects({ config, log })
+    const projects = projectsOf({ database, identity, neon, log })
+    const app = await createHub(config, { status, identity, operations, projects })
     const grace = shutDownOnSignal(app, database)
     try {
       await listenOnce(app, config.port)

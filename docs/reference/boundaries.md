@@ -845,3 +845,18 @@ or its origin.
 - **Why.** [Code C59](../guides/code.md). The test "resposta maior que o teto" in `neon.test.ts` fails
   without it. Revalidate when the SDK gains a reply cap.
 
+
+## The company's database claim
+
+- **Library line.** `@neon/sdk` 7.3.0 `projects.create` takes no idempotency key
+  (`node_modules/@neon/sdk/dist/neon/resources/projects.js`): two calls with one name make two
+  projects. PostgreSQL's native waits are a row lock or an advisory lock held across the call, which
+  [data D22 and D25](../guides/data.md) forbid.
+- **Hand-made piece.** `claimDatabase` and `releaseClaim` in `apps/server/src/hub/projects/company-database.ts`.
+  The first transaction writes `creating` with `claimed_until`, the Neon call runs with no
+  transaction open, and the second records `ready`. A claim past its time is taken over; the project
+  a cut reply left is found by its exact name (`find`) and adopted, never created twice. A refusal
+  from Neon releases the claim, silence keeps it until it ends (removals `company-database-claim`,
+  `neon-no-answer-keeps-claim`, `neon-exact-name`, `create-company-lock`).
+- **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_CALL_BUDGET_MS` plus 5 s, so a
+  claim outlives the call that holds it. Revalidate when `projects.create` gains an idempotency key.

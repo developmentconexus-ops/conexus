@@ -1,0 +1,37 @@
+import type { FailureRow } from './failure-row.ts'
+
+/** The failures of creating and deleting a Project, the company's database (step 7). */
+export const PROJECT_FAILURES = {
+  PROJECT_NAME_TAKEN: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Já existe um Projeto com esse nome nesta empresa.',
+    action: 'Escolha outro nome.',
+    actionKind: 'NONE',
+  },
+  PROJECT_NAME_MISMATCH: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'O nome não confere.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  COMPANY_DATABASE_PREPARING: {
+    category: 'USER',
+    settles: false,
+    status: 409,
+    phrase: 'O banco da empresa está sendo preparado.',
+    action: 'Tente de novo em alguns segundos.',
+    actionKind: 'RETRY',
+  },
+  COMPANY_DATABASE_UNAVAILABLE: {
+    category: 'THIRD_PARTY',
+    settles: false,
+    status: 503,
+    phrase: 'Não foi possível preparar o banco da empresa agora.',
+    action: 'Tente de novo em alguns minutos.',
+    actionKind: 'RETRY',
+  },
+} as const satisfies Record<string, FailureRow>
