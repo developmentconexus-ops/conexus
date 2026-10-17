@@ -17,8 +17,8 @@ import { createSessionReader } from './session.ts'
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
 export { passwordLinkText } from './messages.ts'
-// The login's reach until step 5's second phase, for the Central's own table.
-export { transition } from './tables.ts'
+// The row policies' pieces, for the Central's own table.
+export { ADMINISTRATOR, policy, transition } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']

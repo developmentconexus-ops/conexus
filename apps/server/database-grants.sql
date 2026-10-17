@@ -8,6 +8,10 @@ ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
+-- Step 5, provisional until the founder's word (firstmate, 2026-10-17): the operator's administrator
+-- check, one SECURITY DEFINER function owned by a role that cannot log in and reads only the
+-- administrators' rows; only hub_operator executes it.
+ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_administrators;
 ALTER TABLE auth.account OWNER TO test_owner;
 ALTER TABLE auth.company OWNER TO test_owner;
 ALTER TABLE auth.invitation OWNER TO test_owner;
@@ -27,10 +31,13 @@ GRANT USAGE ON SCHEMA auth TO hub_company;
 GRANT USAGE ON SCHEMA auth TO hub_person;
 GRANT USAGE ON SCHEMA auth TO hub_invitation;
 GRANT USAGE ON SCHEMA auth TO hub_operator;
+GRANT USAGE ON SCHEMA auth TO hub_administrators;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_operator;
+REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
+GRANT ALL ON FUNCTION auth.is_installation_administrator(person text) TO hub_operator;
 -- Step 3, founder 2026-10-14 ("0 Aprovo"): the Hub never deletes a person or a stored password.
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.account TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE auth.account TO hub_invitation;
@@ -60,6 +67,8 @@ GRANT SELECT,UPDATE ON TABLE auth."user" TO hub_company;
 GRANT SELECT ON TABLE auth."user" TO hub_person;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth."user" TO hub_invitation;
 GRANT SELECT,UPDATE ON TABLE auth."user" TO hub_operator;
+GRANT SELECT(id) ON TABLE auth."user" TO hub_administrators;
+GRANT SELECT(role) ON TABLE auth."user" TO hub_administrators;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.verification TO hub_runtime;
 GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
@@ -67,6 +76,8 @@ GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
 GRANT SELECT,INSERT,UPDATE ON TABLE operations.client TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations.client TO hub_operator;
+CREATE ROLE hub_administrators;
+ALTER ROLE hub_administrators WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 -- Step 5: the scope roles cannot log in, own nothing and pass no row policy.
 CREATE ROLE hub_company;
 ALTER ROLE hub_company WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
@@ -80,6 +91,7 @@ CREATE ROLE hub_runtime;
 ALTER ROLE hub_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
 ALTER ROLE hub_runtime SET statement_timeout TO '10s';
 ALTER ROLE hub_runtime SET idle_in_transaction_session_timeout TO '10s';
+GRANT hub_administrators TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 -- The Hub's login switches to a scope role for one transaction and inherits nothing from it.
 GRANT hub_company TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_company TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;

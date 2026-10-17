@@ -19,12 +19,15 @@ const ANA = PersonId.parse('person-a')
 const BRUNO = PersonId.parse('person-b')
 const CARLA = PersonId.parse('person-ab')
 const DAVI = PersonId.parse('person-none')
+const OPERATOR = PersonId.parse('person-op')
 const INVITATION_B = InvitationId.parse('invitationBBBBBBBBBBBBBBBBBBBBBB')
 
 const SEED = `
   insert into auth."user"(id, name, email) values
     ('person-a', 'Ana', 'ana@example.test'), ('person-b', 'Bruno', 'bruno@example.test'),
     ('person-ab', 'Carla', 'carla@example.test'), ('person-none', 'Davi', 'davi@example.test');
+  insert into auth."user"(id, name, email, role) values
+    ('person-op', 'Operadora', 'op@example.test', 'admin');
   insert into auth.company(id, name, slug, created_at, attempt_key) values
     ('companyAAAAAAAAAAAAAAAAAAAAAAAAA', 'Empresa A', 'key-a', now(), 'key-a'),
     ('companyBBBBBBBBBBBBBBBBBBBBBBBBB', 'Empresa B', 'key-b', now(), 'key-b');
@@ -206,6 +209,50 @@ test('escrita: no contexto A, gravar em B é recusado e UPDATE ou DELETE sem fil
   assert.deepEqual(await asOwner(`select count(*)::int as members from auth.member`), [
     { members: 4 },
   ])
+})
+
+test('operador sem papel: em OPERATOR, quem não é administrador, ou sem pessoa, lê zero e não grava', async (t) => {
+  const { database, asOwner } = await seeded(t)
+  const clients = sql`select coalesce(array_agg(company_id order by company_id), '{}') as ids
+    from operations.client`
+  for (const personId of [ANA, PersonId.parse('nobody')]) {
+    const scope: Scope = { kind: 'OPERATOR', personId, companyId: A }
+    const seen = await database.read(scope, async (tx) => ({
+      ...(await everything(tx)),
+      clients: (await tx.execute(clients)).rows[0]?.ids,
+    }))
+    assert.deepEqual(seen, { ...NOTHING, clients: [] }, personId)
+    const changed = await database.command(scope, (tx) =>
+      tx.execute(sql`update operations.client set legal_name = 'Outra' returning company_id`),
+    )
+    assert.deepEqual(changed.rows, [], personId)
+    await assert.rejects(
+      database.command(scope, (tx) =>
+        tx.execute(sql`insert into auth.company(id, name, slug, created_at, attempt_key)
+          values ('planted', 'Plantada', 'planted', now(), 'planted')`),
+      ),
+      refusedWith('42501'),
+    )
+  }
+  const operated = await database.read(
+    { kind: 'OPERATOR', personId: OPERATOR, companyId: null },
+    async (tx) => ({
+      ...(await everything(tx)),
+      clients: (await tx.execute(clients)).rows[0]?.ids,
+    }),
+  )
+  assert.deepEqual(operated, {
+    companies: [A, B],
+    members: ['member-a', 'member-b'],
+    invitations: [],
+    people: ['person-a', 'person-b', 'person-op'],
+    clients: [A, B],
+  })
+  assert.deepEqual(
+    await asOwner(`select count(*)::int as renamed from operations.client
+    where legal_name = 'Outra'`),
+    [{ renamed: 0 }],
+  )
 })
 
 test('conexão reciclada: A, B e sem contexto, com commit, rollback e savepoint, não deixam contexto', async (t) => {

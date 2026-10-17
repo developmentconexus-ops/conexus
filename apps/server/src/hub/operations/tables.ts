@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { check, integer, pgSchema, text, timestamp } from 'drizzle-orm/pg-core'
-import { transition } from '../identity/public.ts'
+import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
+import { ADMINISTRATOR, policy, transition } from '../identity/public.ts'
 
 export const operations = pgSchema('operations')
 
@@ -21,5 +22,14 @@ export const client = operations.table(
     check('client_legal_name_length', sql`char_length(${table.legalName}) BETWEEN 1 AND 150`),
     check('client_revision_not_negative', sql`${table.revision} >= 0`),
     transition(),
+    // Only the operator reaches a client: every one to read and write, one company's to delete.
+    policy(SCOPE_ROLES.OPERATOR, 'select', ADMINISTRATOR),
+    policy(SCOPE_ROLES.OPERATOR, 'insert', ADMINISTRATOR),
+    policy(SCOPE_ROLES.OPERATOR, 'update', ADMINISTRATOR),
+    policy(
+      SCOPE_ROLES.OPERATOR,
+      'delete',
+      sql`${ADMINISTRATOR} and company_id = ${scoped.companyId}`,
+    ),
   ],
 )

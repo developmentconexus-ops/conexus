@@ -40,11 +40,19 @@ export function transition() {
   })
 }
 
+/**
+ * The operator's policies hold only for an installation administrator (security S11), answered by
+ * the one function that reads auth.user as hub_administrators (migration
+ * installation_administrator_check). Provisional until the founder's word.
+ */
+export const ADMINISTRATOR = sql`auth.is_installation_administrator(${personId})`
+const ADMINISTRATORS = 'hub_administrators'
+
 type Rows = ReturnType<typeof sql>
 type Verb = 'select' | 'insert' | 'update' | 'delete'
 
 /** A role's policy for one verb: the rows it reads or changes, and the rows it may leave. */
-function policy(role: string, verb: Verb | 'all', rows: Rows) {
+export function policy(role: string, verb: Verb | 'all', rows: Rows) {
   const name = `${role.replace('hub_', '')}_${verb}`
   if (verb === 'select' || verb === 'delete')
     return pgPolicy(name, { for: verb, to: role, using: rows })
@@ -85,6 +93,18 @@ export const user = auth.table(
       sql`id = ${personId}
         or exists (select 1 from auth.invitation i where i.id = ${invitationId}
           and (i.inviter_id = "user".id or lower(i.email) = "user".email))`,
+    ),
+    // The function behind ADMINISTRATOR reads only the administrators.
+    pgPolicy('administrators_select', {
+      for: 'select',
+      to: ADMINISTRATORS,
+      using: sql`role = 'admin'`,
+    }),
+    policy(
+      SCOPE_ROLES.OPERATOR,
+      'all',
+      sql`${ADMINISTRATOR} and (role = 'admin'
+        or exists (select 1 from auth.member m where m.user_id = "user".id and m.role = 'owner'))`,
     ),
   ],
 )
@@ -176,6 +196,7 @@ export const company = auth.table(
       'all',
       sql`exists (select 1 from auth.invitation i where i.id = ${invitationId} and i.company_id = company.id)`,
     ),
+    policy(SCOPE_ROLES.OPERATOR, 'all', ADMINISTRATOR),
   ],
 )
 
@@ -204,6 +225,13 @@ export const member = auth.table(
       sql`user_id = ${personId}
         and exists (select 1 from auth.invitation i where i.id = ${invitationId} and i.company_id = member.company_id)`,
     ),
+    // Owners for the Central's list; with a company, all its members, for the delete to read.
+    policy(
+      SCOPE_ROLES.OPERATOR,
+      'select',
+      sql`${ADMINISTRATOR} and (role = 'owner' or company_id = ${companyId})`,
+    ),
+    policy(SCOPE_ROLES.OPERATOR, 'delete', sql`${ADMINISTRATOR} and company_id = ${companyId}`),
   ],
 )
 
@@ -246,6 +274,16 @@ export const invitation = auth.table(
         or lower(email) = (select u.email from auth."user" u where u.id = ${personId})`,
     ),
     policy(SCOPE_ROLES.INVITATION, 'all', sql`id = ${invitationId}`),
+    // First owners' invitations, which the Central sends; with a company, all of its invitations,
+    // because PostgreSQL reads a row through the SELECT policy before a filtered DELETE removes it.
+    policy(
+      SCOPE_ROLES.OPERATOR,
+      'select',
+      sql`${ADMINISTRATOR} and (role = 'owner' or company_id = ${companyId})`,
+    ),
+    policy(SCOPE_ROLES.OPERATOR, 'insert', sql`${ADMINISTRATOR} and role = 'owner'`),
+    policy(SCOPE_ROLES.OPERATOR, 'update', sql`${ADMINISTRATOR} and role = 'owner'`),
+    policy(SCOPE_ROLES.OPERATOR, 'delete', sql`${ADMINISTRATOR} and company_id = ${companyId}`),
   ],
 )
 

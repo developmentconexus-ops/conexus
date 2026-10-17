@@ -471,6 +471,22 @@ or its origin.
   opened (removal `rls-company-policy`); "o tipo" fails when a read stops naming its scope (removal
   `scope-in-signature`).
 
+### The operator's administrator, answered by one function (provisional)
+
+- **Library line.** PostgreSQL 18 expands a policy's subqueries with the policies of the tables they
+  read, and refuses a cycle: auth.member's operator policy reading auth.user, whose operator policy
+  reads auth.member for the owners, fails with "infinite recursion detected in policy".
+- **Hand-made piece.** `auth.is_installation_administrator(person)`, migration
+  `installation_administrator_check`: `SECURITY DEFINER`, `search_path` fixed, owned by
+  `hub_administrators`, which cannot log in and reads only the administrators' `id` and `role`
+  through its own policy; only `hub_operator` executes it. `ADMINISTRATOR` in `identity/tables.ts`
+  puts it in every operator policy. Firstmate chose it provisionally on 2026-10-17; it waits for the
+  founder's word, beside the U2 list.
+- **Why.** The card's rule that every operator policy needs an installation administrator
+  (security S11) with the Central's owners in auth.user. "operador sem papel" in
+  `isolation.test.ts` fails without the check on auth.member (removal
+  `operator-policy-admin-only`).
+
 ### A deadline on every checkout of a database connection
 
 - **Library line.** `pg/lib/client.js:702`. `query_timeout` times one query and leaves the
