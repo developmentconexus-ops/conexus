@@ -2,7 +2,7 @@
 
 ## Context
 
-Decision [0012] left the row policy to step 5.
+[0012] left the row policy to step 5.
 
 ## Decision
 
@@ -33,7 +33,8 @@ step 4.2's commit. Two synthetic companies; people of A, of B, of both, of none.
 
 ## Result
 
-2026-10-17: local PostgreSQL 18.6, B1–B8 pass; Neon PostgreSQL 18 (patch unread), branch database, direct address, phases 1–2: B1–B5 pass.
+2026-10-17: locally (18.6) B1–B8 pass; Neon branch (18; patch read at U7's release), direct address, phases 1–2:
+B1–B5 pass; items: PR 54.
 
 ## State
 
