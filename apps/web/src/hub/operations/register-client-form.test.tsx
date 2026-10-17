@@ -1,6 +1,6 @@
 import { Client, registerClient } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -147,4 +147,24 @@ test('enquanto envia, "Cadastrando…" bloqueado', async () => {
   expect(pending).toHaveProperty('disabled', true)
   answer.resolve()
   await screen.findByRole('heading', { name: 'Empresa Teste' })
+})
+
+test('recarregar depois de uma resposta que não decide: a chave se perde, nada é refeito sozinho e a lista mostra o estado atual', async () => {
+  const [, cut] = undecided('{"client":{"companyId":"bbb')[0] ?? []
+  const sent = hub([cut ?? registered, registered])
+  open()
+  await fill()
+  await screen.findByRole('alert')
+  cleanup()
+  const reloaded = open()
+  expect(await screen.findByText('Ele recebe um convite e entra como primeiro dono.')).toBeTruthy()
+  expect(screen.getByLabelText('Razão social')).toHaveProperty('value', '')
+  await reloaded.navigate({ to: '/operations/clients' })
+  expect(await screen.findByText('Empresa Teste')).toBeTruthy()
+  expect(sent.length).toBe(1)
+  await reloaded.navigate({ to: '/operations/clients/new' })
+  await fill()
+  await screen.findByRole('heading', { name: 'Empresa Teste' })
+  expect(sent.length).toBe(2)
+  expect(sent[1]?.key).not.toBe(sent[0]?.key)
 })

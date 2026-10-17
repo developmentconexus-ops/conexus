@@ -165,18 +165,6 @@ drawer:
   border: "right hairline, {colors.line}"
 drawer-backdrop:
   backgroundColor: "{colors.canvas}, 80% opacity"
-```
-
-These are the pieces with values of their own; a heading or an alert line is text in its tokens.
-The rail's places are `nav-item`, with an 18px icon (design V34). A `select-item` keeps 2rem on the right for its check mark, as shadcn's does. The select is shadcn's base-nova item with these departures: it drops `SelectGroup`, `SelectLabel` and `SelectSeparator`, since a role list has no groups; the trigger is 36px and the item 34px, the brand's control heights, not shadcn's 36px and padded rows; and the popup has a hairline and the brand's `sm` padding, with no shadow. The menu, the select and the drawer take a
-hairline, not a shadow, because the brand has no shadow token yet (design V3, V19). A `notice` is a
-`role="status"` line in the body color, so it is not mistaken for the grey subtitle under it. The wordmark's "nexus" and the mark take `mark`. A menu item that goes to an address, Base UI's
-`Menu.LinkItem`, is the same `menu-item`, and closes the menu as an item does; Base UI leaves it
-open by default (`closeOnClick`).
-
-## Brought from the old design, with no code yet
-
-```yaml
 button-danger:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.danger}"
@@ -191,6 +179,29 @@ button-danger-confirm:
   padding: "0 0.9rem"
   height: "34px"
   typography: "{typography.label}"
+alert-dialog:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text}"
+  rounded: "{rounded.card}"
+  width: "{containers.column}, at most the screen less 2rem"
+  padding: "{spacing.lg}"
+  border: "hairline, {colors.line}"
+alert-dialog-backdrop:
+  backgroundColor: "{colors.canvas}, 80% opacity"
+```
+
+These are the pieces with values of their own; a heading or an alert line is text in its tokens.
+The rail's places are `nav-item`, with an 18px icon (design V34). A `select-item` keeps 2rem on the right for its check mark, as shadcn's does. The select is shadcn's base-nova item with these departures: it drops `SelectGroup`, `SelectLabel` and `SelectSeparator`, since a role list has no groups; the trigger is 36px and the item 34px, the brand's control heights, not shadcn's 36px and padded rows; and the popup has a hairline and the brand's `sm` padding, with no shadow. The menu, the select and the drawer take a
+hairline, not a shadow, because the brand has no shadow token yet (design V3, V19). A `notice` is a
+`role="status"` line in the body color, so it is not mistaken for the grey subtitle under it. The wordmark's "nexus" and the mark take `mark`. A menu item that goes to an address, Base UI's
+`Menu.LinkItem`, is the same `menu-item`, and closes the menu as an item does; Base UI leaves it
+open by default (`closeOnClick`). The `alert-dialog` is Base UI's `AlertDialog` in the drawer's
+dress: a click outside does not close it, Escape and its buttons do, and its first field takes the
+focus. It holds the one `button-danger-confirm`; `button-danger` opens it (design V55).
+
+## Brought from the old design, with no code yet
+
+```yaml
 icon-button-round-hover:
   backgroundColor: "{colors.accent-soft}"
   textColor: "{colors.accent-text}"
