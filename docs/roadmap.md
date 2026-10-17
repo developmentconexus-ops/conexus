@@ -88,11 +88,11 @@ vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso f
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 6 Tirar uma pessoa | A 5 | Respondidas em 2026-10-17 | Revisão do login (B3). A regra do último dono |
-| 7 Projeto | A 6 | Dadas | As correções das telas de exclusão. A prova PD7 |
+| 7 Projeto | A 6 | Dadas | Correções das telas de exclusão. PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
 | 9 Enviar um app | A 8 | Nenhuma | Fichas `registry` e manifesto. Os tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Os limites de laço, prazo e consultas |
-| 11 Conta de modelo | A chave de cifra | Nenhuma | Ficha `model-account` |
+| 11 Conta de modelo | A chave, criada aqui ou na 9 | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Os testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Os onze achados do turno real. Fichas do motor, do sandbox e do Git. Os testes 11 e 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | As lacunas de instrução do Builder |

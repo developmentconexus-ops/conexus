@@ -18,8 +18,8 @@ segunda caixa e um membro na terceira.
    **Página não encontrada**. No console do Neon, o projeto de A sumiu da organização das empresas.
 
 **O que você faz.** Antes de U1: no console do Neon, cria a organização "Conexus empresas", no plano
-grátis, e uma chave dela; o firstmate a grava no servidor. Se o Neon recusar a segunda organização,
-a T3A volta a você. Com esta página, autoriza as chamadas da prova. Antes de U2: a palavra sobre o
+grátis, e uma chave dela; o firstmate a grava no servidor. Se o Neon recusar a segunda organização
+ou a chave dela, a T3A volta a você. Com esta página, autoriza as chamadas da prova. Antes de U2: a palavra sobre o
 grant (D11). No fim: o roteiro e os textos.
 
 **Decisões já dadas** (2026-10-17): P1 A, P2 A, P3 A, P4 A, T1A, T2A, T3A, T4A.
@@ -30,12 +30,14 @@ grant (D11). No fim: o roteiro e os textos.
   Projeto nela. A tela não promete recuperar em 7 dias: no grátis não está provado.
   Sem tentativa ao ligar: só **Tentar concluir exclusão** termina ("A", 2026-10-17).
 - **T1A.** A sua cópia da chave de cifra vai para a 9 ou a 11; o roteiro muda nas etapas 7, 11 e 19.
-- **T4A** é aposta: se a prova não recuperar, isso volta a você.
+- **T4A.** A prova recupera pelo SDK um banco apagado; a Central não recupera empresa. É aposta até
+  a prova rodar; se não recuperar, volta a você.
 
-**As chamadas da prova**, só na organização das empresas, em projetos `cx-prova-…`: listar por
-nome; criar em São Paulo, PostgreSQL 18; criar com a resposta cortada e listar; gravar uma linha;
-apagar durante a criação; apagar; apagar de novo; recuperar e ler a linha; ler o projeto do Hub com a chave das empresas;
-apagar no fim tudo o que a prova criou.
+**As chamadas da prova**, com a chave das empresas, em projetos `cx-prova-…`: `projects.list`;
+`projects.create` em São Paulo, PostgreSQL 18, também com a resposta cortada; `projects.get`;
+`postgres.connectionString`, que lê uma vez a senha do dono, só para gravar e ler uma linha;
+`projects.delete` durante a criação, depois, e de novo; `projects.recover`; `projects.get` do projeto
+do Hub, pelo id que o firstmate dá; no fim, `projects.delete` de tudo o que a prova criou.
 
 **O grant de U2.** Às rotas da empresa: ler, criar e apagar Projetos; ler, criar e marcar pronto o
 banco da empresa. À Central: ler e apagar os dois na empresa que apaga.
@@ -47,13 +49,12 @@ nenhum app roda na 7.
 
 ## O que mudou desde o estudo
 
-A leitura crítica corrigiu: o cartão da 6 está em `main`; a ação é `changeRole`; T1A toca três
-linhas do roteiro; criar não segura trava durante o Neon, reserva o banco por um prazo (D22); adotar
-pelo nome exige igualdade exata e recusa dois. Decidido aqui: a marca de exclusão é da identidade,
+Da leitura crítica: a ação é `changeRole`; criar não segura trava durante o Neon, reserva o banco
+por um prazo (D22); adotar exige nome exato e recusa dois. Decidido aqui: a marca de exclusão é da identidade,
 `auth.company.deleting_since`, que a admissão já lê e a Central já muda: sem grant cruzado (C8) nem
 cópia (C26). A senha de dono não é pedida ao Neon: ninguém a usa na 7 (C30).
 
-**Encaixes da etapa 6**, vistos em `40afe57` do ramo da 6; conferir quando ela entrar em `main`; se
+**Encaixes da etapa 6**, vistos em `650673d` do ramo da 6; conferir quando ela entrar em `main`; se
 um faltar, a construção para:
 
 | # | Encaixe | Onde |
@@ -71,8 +72,7 @@ um faltar, a construção para:
 | Issue | Na etapa 7? | Por quê |
 | --- | --- | --- |
 | 73, 74 | Sim | U5 reescreve `remove` e o diálogo de apagar cliente |
-| 39 itens 20, 23; 25 item 6 (`next-card`) | Não | Fora do que muda; nada roda sozinho |
-| As demais | Não | Fora do tema |
+| As demais, `next-card` incluídas | Não | Fora do tema; nada roda sozinho |
 
 ## As unidades
 
@@ -90,7 +90,8 @@ U2 e U3 correm juntas. Depois, servidor (U4, U5) e telas (U6, desde o contrato d
 revisão e um merge (L9, L13). A prova não cria release (L17).
 
 **Orçamento de código alterado** (sem testes nem gerados): U1 **0**; U2 **250**; U3 **300**; U4
-**700**; U5 **450**; U6 **1.100**; U7 **200**; espalhados **150**. Total **3.150**, teto 4.000 (L2).
+**700**; U5 **450**; U6 **1.100**; U7 **200**; espalhados **150**. Total **3.150**, teto 4.000 (L2). A
+6 passou 47% do seu U6: se uma unidade passar a sua conta, saem primeiro as issues 73 e 74.
 
 ## Os critérios de aceite
 
@@ -102,7 +103,7 @@ revisão e um merge (L9, L13). A prova não cria release (L17).
 | 4 | U3 | `find` só nome exato; `create` em São Paulo, PostgreSQL 18, na organização; `delete` de ausente: apagado; erro respondido: `REFUSED`; prazo ou rede: `NO_ANSWER`; `auth`: 500; a chave nunca em log | `platform/neon.test.ts`, `fetch` falso | must |
 | 5 | U3 | Chave ausente ou legível por outros, sem organização, `http` fora desta máquina: `CONFIG_INVALID` com o nome | `config.test.ts` | must |
 | 6 | U4 | Membro cria: 201; só o primeiro chama `create`; membro de B e a Central: 404 nas quatro rotas de A (S10) | `projects.test.ts` “criar” | must |
-| 7 | U4 | Dois cliques, uma chave: um Projeto; a chave com outro nome: 409 `IDEMPOTENCY_CONFLICT`; nome igual sem caixa: 409 `PROJECT_NAME_TAKEN`, também dois juntos | `projects.test.ts` “repetir” | must |
+| 7 | U4 | Dois cliques, uma chave: um Projeto; a chave com outro nome: 409 `IDEMPOTENCY_CONFLICT`; "Ação" contra "AÇÃO": 409 `PROJECT_NAME_TAKEN`, também dois juntos, no banco de teste | `projects.test.ts` “repetir” | must |
 | 8 | U4 | Recusa plantada entre o Neon e a transação 2, e a mesma chave: um banco, adotado, um Projeto; duas pessoas sem banco: um `create`, a segunda 409 `COMPANY_DATABASE_PREPARING`, depois 201; reserva vencida: assumida | `projects.test.ts` “banco”, com barreira (C65) | must |
 | 9 | U4 | Neon recusa: 503 `COMPANY_DATABASE_UNAVAILABLE`, reserva solta; prazo: 503, reserva até vencer; dois nomes exatos: 500, nenhum Projeto | `projects.test.ts` “Neon fora” | must |
 | 10 | U4 | Dono e administrador apagam: 204; membro: 404; outro nome: 422 `PROJECT_NAME_MISMATCH`; de novo: 404; o último não apaga o banco | `projects.test.ts` “apagar” | must |
@@ -110,7 +111,7 @@ revisão e um merge (L9, L13). A prova não cria release (L17).
 | 12 | U5 | Sem banco: o apagar da 5, numa transação | `client-deletion.test.ts` | must |
 | 13 | U5 | Com banco: o Neon apaga o id e todo nome exato; sai tudo da 5, mais Projetos e banco; 204 | `client-deletion.test.ts` “com banco” | must |
 | 14 | U5 | Neon fora, ou recusa antes da fase 3: 503 `CLIENT_DELETION_PENDING`; cliente `DELETING`; membros: 404 na empresa, que some de Suas empresas; convite: 404; a mesma rota termina, 404 do Neon conta como apagado | “exclusão em andamento” | must |
-| 15 | U5 | Reserva viva: 503, sem `delete`; vencida, apaga pelo nome; criar contra apagar, 20 vezes: nada sobra no Neon falso | “apagar contra criar” | must |
+| 15 | U5 | Reserva viva: 503, sem `delete`; vencida, apaga pelo nome; criar contra apagar, 20 vezes: nada sobra no Neon falso nem em `projects` | “apagar contra criar” | must |
 | 16 | U5 | Issues 73 (só nome e revisão) e 74 (a frase de `FAILURES`) | `client-deletion.test.ts`; `delete-client-dialog.test.tsx` | should |
 | 17 | U6 | Cada célula da matriz renderiza; a chave de tentativa (W24); T23 | `projects.test.tsx`, `project.test.tsx`, `client.test.tsx`, navegador | must |
 | 18 | U7 | Tirar qualquer proteção com linha em `removals.json` faz o seu teste falhar | `npm run removals` | must |
@@ -149,9 +150,9 @@ começou, mas o banco da empresa ainda não saiu." / "Tente concluir a exclusão
 
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada no meio | Dependência fora | O que imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| Criar, transação 1: reserva | trava da chave e da linha; 409 preparando | rollback | banco: 503 | — | 7, 8 |
+| Criar, transação 1: reserva | `lockCompany`, chave, linha; 409 preparando | rollback | banco: 503 | — | 7, 8 |
 | `find` e `create` no Neon | a reserva exclui; vencida, adota; dois: 500 | corte: reserva até vencer | Neon: 503 | `COMPANY_DATABASE_CREATED` | 8, 9 |
-| Criar, transação 2: `ready` e o Projeto | trava da chave; índice único | rollback; adotado depois | banco: 503 | `PROJECT_CREATED` | 7, 8 |
+| Criar, transação 2: `ready` e o Projeto | `lockCompany`, chave; índice único | rollback; adotado depois | banco: 503 | `PROJECT_CREATED` | 7, 8 |
 | Apagar Projeto | linha `FOR UPDATE`; o segundo, 404 | rollback | banco: 503 | `PROJECT_DELETED` | 10 |
 | Apagar empresa, fase 1: marca e convites | `lockCompany`; marca uma vez | rollback | banco: 503 | — | 13, 14 |
 | Fase 2: `delete` no Neon | 404 do Neon é apagado; reserva viva: pendente | marca fica | Neon: 503 pendente | `COMPANY_DATABASE_DELETED` | 13–15 |
@@ -165,7 +166,7 @@ começou, mas o banco da empresa ainda não saiu." / "Tente concluir a exclusão
 | Projetos e banco | nova | `hub/projects/`, `platform/neon.ts` | — | gravar a intenção antes do efeito (antigo `project/store.ts:61-82`); C37 |
 | Apagar em fases | nova | `operations/clients.ts` | — | de fora primeiro (antigo `deletion.ts:57-95`); propósito |
 
-**A medida do transplante.** Zero linhas: a ficha `project` supõe Git, Builder e esquema próprio.
+**A medida do transplante.** Zero linhas.
 **A dívida.** Nenhuma.
 
 ## U1 Registro e prova
@@ -180,8 +181,8 @@ começou, mas o banco da empresa ainda não saiu." / "Tente concluir a exclusão
 
 0040: T2A, T3A e o Critério: (1) criar `cx-prova-<uuid>` em `aws-sa-east-1`, PostgreSQL 18, com a
 chave das empresas, tempo medido; (2) resposta cortada, depois `find`: um só; (3) uma linha gravada
-pela URI da criação, apagar, `recover`, a linha volta (T4A); (4) apagar de novo: `not_found`; (5) uma
-operação com outra em curso: o SDK repete o 423 dentro do prazo; (6) a chave das empresas lê o
+por `postgres.connectionString`, apagar, `recover`, a linha volta (T4A); (4) apagar de novo: `not_found`; (5) apagar durante a
+criação: o SDK repete o 423 dentro do prazo; (6) a chave das empresas lê o
 projeto do Hub: recusada (T3A); (7) o tempo de `create` dá `NEON_DEADLINE_MS` e a reserva. Não
 coberto: plano pago, carga, apagado no limite de 100.
 
@@ -203,17 +204,18 @@ desta página aprovada. Regras: L13, L21, T14.
 | `apps/server/migrations/`, `platform/isolation.test.ts` | duas migrações; caso “projetos” | `migrate`, `catalog.test.ts` |
 | `apps/server/database-grants.sql` | muda, dono do retrato | `catalog.test.ts` |
 | `apps/server/src/hub/projects/tables.ts` | cria | U4, U5, migrações |
-| `apps/server/src/hub/identity/tables.ts` | `company.deletingSince` | admissão, U5 |
-| `scripts/removals.json` | `project-company-policy`, `company-database-policy` | `npm run removals` |
+| `apps/server/src/hub/identity/` | `tables.ts` `company.deletingSince`; `auth.ts`, o campo com `input: false`, como `mailedAt`; a lista de `tables.test.ts` | admissão, U5 |
+| `scripts/removals.json` | `project-company-policy`, `company-database-policy`, `project-name-lower` | `npm run removals` |
 
 ### Os contratos que a unidade cria
 
 Esquema `projects` (D4). `projects.project`: `id` text PK; `company_id` text, sem chave estrangeira
-(D17, como `operations.client`); `name` text, 1 a `COMPANY_NAME_MAX_LENGTH`; `attempt_key` text;
+(D17, como `operations.client`); `name` text, 1 a `PROJECT_NAME_MAX_LENGTH`; `attempt_key` text;
 `created_at` timestamptz; todos not null; únicos `(company_id, attempt_key)` e
 `project_company_name_key (company_id, lower(name))`. `projects.company_database`: `company_id` text PK; `state` text `creating | ready`;
 `neon_project_id` text único, anulável; `claimed_until` timestamptz; checks: `ready` se e só se há
-id, `creating` se e só se há prazo. `auth.company.deleting_since` timestamptz anulável. Políticas:
+id, `creating` se e só se há prazo. `ready` diz que o projeto existe no Neon, não que aceita
+conexão: o primeiro leitor (a 9) confere. `auth.company.deleting_since` timestamptz anulável. Políticas:
 `company_all` para `hub_company` com `company_id = conexus.company_id`; `operator_select` e
 `operator_delete` com `ADMINISTRATOR` e a empresa do escopo. Grants: `hub_company` SELECT, INSERT,
 DELETE em `project`; SELECT, INSERT, UPDATE(`state`, `neon_project_id`, `claimed_until`) em
@@ -240,14 +242,15 @@ no cabeçalho da migração (issue 72).
 | `.dependency-cruiser.cjs` | só `neon.ts` importa `@neon/sdk` (C56) | `npm run deps` |
 | `package.json`, `package-lock.json`, `apps/server/package.json` | `@neon/sdk` 7.3.0 exata | CI (L16) |
 | `infra/compose.yaml`, `infra/deploy.sh` | o segredo `hub_neon_api_key` | a publicação |
-| `docs/how-to/hub-company-databases.md`, `index.md`, `architecture.md` §7 e §11, `boundaries.md` | a chave no servidor; duas organizações e o risco da chave; nome exato antes de criar | firstmate, agentes |
+| `docs/how-to/hub-company-databases.md`, `index.md`, `architecture.md` §7 e §11, `boundaries.md` | a chave no servidor, conferida criando e apagando o projeto de uma empresa de teste no console; dois nomes exatos: apagar o sobrando no console (apagar a empresa já apaga todos); duas organizações; nome exato antes de criar | firstmate, agentes |
 
 ### Os contratos que a unidade cria
 
 `NeonProjectId` e `NeonProjectName` (marcados, C23). `NeonAnswer<T> = {kind: 'DONE'; value: T} |
 {kind: 'REFUSED'} | {kind: 'NO_ANSWER'}`. `NeonProjects = {find(name): Promise<NeonAnswer<NeonProjectId[]>>;
 create(name): Promise<NeonAnswer<NeonProjectId>>; delete(id): Promise<NeonAnswer<'deleted'>>}`.
-`createNeonProjects(config): NeonProjects`. Configuração: `HUB_NEON_API_URL` (https, ou http só nesta
+`createNeonProjects(config): NeonProjects`. O nome de uma empresa: `cx-<companyId>`.
+`NEON_CALL_BUDGET_MS` = `requestTimeoutMs` + `wait.timeoutMs`, exportado para a reserva. Configuração: `HUB_NEON_API_URL` (https, ou http só nesta
 máquina, como `MailApiUrl`), `HUB_NEON_ORG_ID`, `HUB_NEON_API_KEY_FILE` (S31), `NeonApiKey` como
 `Secret`. `NEON_DEADLINE_MS` do Result de 0040.
 
@@ -276,7 +279,7 @@ C57, C59, C67, S31, S36, S37, S41.
 | `apps/server/src/hub/projects/` | cria `projects.ts`, `company-database.ts`, `routes.ts`, `public.ts` e testes | `main.ts` |
 | `apps/server/src/hub/identity/` | `admission.ts`, `auth.ts`, `public.ts` | rotas de empresa, Projetos |
 | `apps/server/src/main.ts` | liga `projects` com o adaptador | — |
-| `scripts/removals.json` | `company-database-claim`, `neon-exact-name`, `project-delete-role`, `deleting-company-admission` | `npm run removals` |
+| `scripts/removals.json` | `company-database-claim`, `neon-exact-name`, `neon-no-answer-keeps-claim`, `create-company-lock`, `project-delete-role`, `deleting-company-admission` | `npm run removals` |
 | `docs/reference/boundaries.md` | a reserva com prazo | revisores |
 
 ### Os contratos que a unidade cria
@@ -295,15 +298,18 @@ C57, C59, C67, S31, S36, S37, S41.
   `deleteProject` (`{project: ['delete']}`). Quem cria e quem apaga vive num lugar só: os papéis
   que `auth.ts` dá ao plugin por `createAccessControl`, as instruções padrão mais `project`;
   `create` a todos, `delete` a dono e administrador (P1 A). `allows` lê esses papéis. `admit` e
-  `admitCompany` recusam empresa marcada: 404, motivo `DELETING`.
+  `admitCompany` recusam empresa marcada: 404, motivo `DELETING`. `readProjects` fica por vínculo,
+  como `readCompany`.
+- `ProjectName`: aparado, NFC, 1 a `PROJECT_NAME_MAX_LENGTH = 100`, decidido aqui igual ao nome de
+  empresa.
 
 ### A ordem do trabalho
 
-1. Criar. Transação 1 no escopo da empresa: `transactionLock` da chave; `admit`; replay pela chave;
+1. Criar. Transação 1 no escopo da empresa: `lockCompany`; `transactionLock` da chave; `admit`; replay pela chave;
    `company_database` `FOR UPDATE`: `ready`, insere o Projeto; ausente ou reserva vencida, grava
-   `creating` com `claimed_until` = agora + reserva; reserva viva, 409. Sem transação:
+   `creating` com `claimed_until` = agora + `NEON_CALL_BUDGET_MS` + margem; reserva viva, 409. Sem transação:
    `find`, um adota, nenhum cria, dois `SYSTEM`; `REFUSED` solta a reserva, `NO_ANSWER` a mantém.
-   Transação 2: chave; `admit` de novo (S8); `ready` com o id; o Projeto. Regras: C26, C29, C37,
+   Transação 2: `lockCompany`; chave; `admit` de novo (S8), que lê a marca; `ready` com o id; o Projeto. Regras: C26, C29, C37,
    C44, C48, C49, C65, D15, D22, S7, S8, S10, S41.
 2. Apagar: uma transação; `admit`; o Projeto `FOR UPDATE`; o nome; DELETE. Regras: C38, S10.
    Funções: better-auth 1.7.8 `createAccessControl`, `organization({ac, roles})`.
@@ -324,7 +330,7 @@ C57, C59, C67, S31, S36, S37, S41.
 | `apps/server/src/hub/projects/public.ts` | `releaseCompanyDatabase`, `deleteCompanyProjects` | operações |
 | `packages/hub-api/src/operations.ts`, `failures.ts` | `DELETING`; `CLIENT_DELETION_PENDING` | web |
 | `apps/web/src/hub/operations/delete-client-dialog.tsx` | issue 74 | Central |
-| `scripts/removals.json` | `deletion-live-claim`, `deletion-neon-not-found`, `deletion-mark-first` | `npm run removals` |
+| `scripts/removals.json` | `deletion-live-claim`, `deletion-neon-not-found`, `deletion-mark-first`, `mark-deletes-invitations`, `deletion-removes-projects` | `npm run removals` |
 
 ### Os contratos que a unidade cria
 
