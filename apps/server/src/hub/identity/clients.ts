@@ -9,7 +9,15 @@ import type { Auth } from './auth.ts'
 import { organizationAdapter, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
 import { stateOf } from './invitation-reads.ts'
-import { LIVE, lockedInviter, PendingRow, pending, pendingOf, Status } from './invitations.ts'
+import {
+  LIVE,
+  lockCompany,
+  lockedInviter,
+  PendingRow,
+  pending,
+  pendingOf,
+  Status,
+} from './invitations.ts'
 import { company, invitation, member, user } from './tables.ts'
 
 // The ports the Operations Central reaches identity through (code C4), each in the caller's
@@ -69,14 +77,16 @@ export function registerCompanyOn(auth: Auth) {
 }
 
 /**
- * Renames a company still awaiting its first owner (security S8). The caller holds the company's
- * lock, taken first in its transaction (`lockCompany`), so no acceptance adds a member until it ends.
+ * Renames a company still awaiting its first owner, under the company's lock so no acceptance adds
+ * a member until the transaction ends (security S8). The correction already took that lock first,
+ * for the lock order; taking it again here is a no-op that keeps the port safe on its own.
  */
 export function renameCompanyOn(auth: Auth) {
   return async (
     tx: CommandTx,
     input: { admitted: OperatorProof; companyId: CompanyId; name: string },
   ): Promise<{ ok: true } | { ok: false; reason: 'ACTIVE' }> => {
+    await lockCompany(tx, input.companyId)
     const members = await tx.$count(member, eq(member.organizationId, input.companyId))
     if (members > 0) return { ok: false, reason: 'ACTIVE' }
     if ((await companyById(tx, input.companyId)).name !== input.name) {

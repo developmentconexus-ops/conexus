@@ -568,7 +568,7 @@
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/client-reads.test.ts",
-      "name": "corrigir: contra o aceite que chega antes"
+      "name": "corrigir: contra a renovação do convite de dono"
     }
   }
 ]

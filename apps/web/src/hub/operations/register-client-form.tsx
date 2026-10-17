@@ -30,7 +30,10 @@ export function RegisterClientForm() {
       router.navigate({
         to: '/operations/clients/$companyId',
         params: { companyId: client.companyId },
-        search: mailBounced ? { convite: 'recusado' } : {},
+        search:
+          mailBounced && client.state.kind === 'AWAITING_OWNER'
+            ? { convite: client.state.ownerInvitation.id }
+            : {},
       }),
   })
   const attempt = useAttemptKey()

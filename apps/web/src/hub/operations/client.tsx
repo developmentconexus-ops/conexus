@@ -68,12 +68,14 @@ export function Client() {
       <p className="text-label text-text-2">
         {state.kind === 'ACTIVE' ? 'Ativo' : 'Aguardando o administrador'}
       </p>
-      {convite === 'recusado' && state.kind === 'AWAITING_OWNER' && (
-        <p role="status" className="text-text">
-          Cliente cadastrado, mas o e-mail do administrador recusou o convite. Cancele o convite e
-          use Convidar outro e-mail.
-        </p>
-      )}
+      {state.kind === 'AWAITING_OWNER' &&
+        state.ownerInvitation.id === convite &&
+        state.ownerInvitation.state === 'PENDING' && (
+          <p role="status" className="text-text">
+            Cliente cadastrado. Esse endereço não recebe e-mails. Cancele o convite e use Convidar
+            outro e-mail.
+          </p>
+        )}
       {correcting ? (
         <CorrectClientForm client={client} onDone={() => setCorrecting(false)} />
       ) : (
