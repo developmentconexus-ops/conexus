@@ -112,9 +112,11 @@ or its origin.
   `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, `createInvitationCommand` in
   `invitations.ts` and the cancel and renewal in `invitation-management.ts`. The Hub's admission
   decides who writes (`admitInviter`, `admitOperator`), `mayInviteAs` which role, and
-  `checkNotMember` refuses an address already in the company, as the endpoint did. The call carries
-  one `@ts-expect-error`: the parameter is typed `AuthContext<BetterAuthOptions>`, which no
-  configured auth's context matches.
+  `checkNotMember` refuses an address already in the company, as the endpoint did. The adapter
+  runs none of the endpoints' hooks: an `organizationHooks` invitation hook, `sendInvitationEmail`
+  or `cancelPendingInvitationsOnReInvite` turned on later would be bypassed, and none is on. The
+  call carries one `@ts-expect-error`: the parameter is typed `AuthContext<BetterAuthOptions>`,
+  which no configured auth's context matches.
 - **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus
   never becomes one, so the operator invites the first owner without a membership. One gate for
   members and the operator keeps one owner of who may invite ([code C26](../guides/code.md),

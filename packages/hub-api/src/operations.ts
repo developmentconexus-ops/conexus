@@ -98,13 +98,14 @@ export const registerClient = defineOperation({
   bodyLimit: 4096,
   input: { body: ClientData.extend({ ownerEmail: Email }) },
   attemptKey: true,
-  success: { status: 201, body: z.object({ client: Client }) },
+  // `mailBounced`: the client is registered, and the provider refused its administrator's address
+  // on this answer; the operator invites another e-mail from the client.
+  success: { status: 201, body: z.object({ client: Client, mailBounced: z.boolean() }) },
   failures: [
     'NOT_FOUND',
     'CLIENT_EXISTS',
     'CLIENT_OWNER_IS_OPERATOR',
     'IDEMPOTENCY_CONFLICT',
-    'MAIL_BOUNCED',
     'MAIL_UNAVAILABLE',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',

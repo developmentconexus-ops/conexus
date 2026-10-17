@@ -30,9 +30,83 @@ function hub(answers: (() => Response)[]) {
 }
 
 function registered() {
-  return HttpResponse.json(registerClient.success.body.parse({ client: Client.parse(CLIENT) }), {
-    status: 201,
+  return HttpResponse.json(
+    registerClient.success.body.parse({ client: Client.parse(CLIENT), mailBounced: false }),
+    { status: 201 },
+  )
+}
+
+test('o endereço do administrador recusado: o cliente foi cadastrado e abre, dizendo que o convite não chegou', async () => {
+  hub([
+    () =>
+      HttpResponse.json(
+        registerClient.success.body.parse({ client: Client.parse(CLIENT), mailBounced: true }),
+        { status: 201 },
+      ),
+  ])
+  const router = open()
+  await fill()
+  expect(await screen.findByRole('heading', { name: 'Empresa Teste' })).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`/operations/clients/${CLIENT.companyId}`)
+  expect((await screen.findByRole('status')).textContent).toBe(
+    'Cliente cadastrado. Esse endereço não recebe e-mails. Cancele o convite e use Convidar outro e-mail.',
+  )
+  expect(screen.getByRole('button', { name: 'Cancelar convite' })).toBeTruthy()
+})
+
+test('o aviso do endereço recusado vale só para aquele convite: some com o cancelamento e não volta com o convite novo', async () => {
+  let current = CLIENT
+  hub([
+    () =>
+      HttpResponse.json(
+        registerClient.success.body.parse({ client: Client.parse(CLIENT), mailBounced: true }),
+        { status: 201 },
+      ),
+  ])
+  server.use(
+    http.get('*/api/clients/:companyId', () => HttpResponse.json({ client: current })),
+    http.delete('*/api/companies/:companyId/invitations/:invitationId', () => {
+      current = invitationOf('CANCELED', owner(CLIENT).id, owner(CLIENT).email)
+      return new HttpResponse(null, { status: 204 })
+    }),
+    http.post('*/api/companies/:companyId/invitations', () => {
+      current = invitationOf('PENDING', 'd'.repeat(32), 'edu@example.test')
+      const { state: _, ...invitation } = owner(current)
+      return HttpResponse.json(
+        { invitation: { ...invitation, state: 'PENDING', role: 'owner' } },
+        { status: 201 },
+      )
+    }),
+  )
+  open()
+  await fill()
+  expect(await screen.findByRole('status')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Cancelar convite' }))
+  fireEvent.change(screen.getByLabelText('Confirmar e-mail'), {
+    target: { value: 'davi@example.test' },
   })
+  fireEvent.click(screen.getByRole('button', { name: /Confirmar cancelamento/ }))
+  expect(await screen.findByText('Convite cancelado')).toBeTruthy()
+  expect(screen.queryByRole('status')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Convidar outro e-mail' }))
+  fireEvent.change(screen.getByLabelText('E-mail do administrador'), {
+    target: { value: 'edu@example.test' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Convidar' }))
+  expect(await screen.findByText('edu@example.test')).toBeTruthy()
+  expect(screen.queryByRole('status')).toBeNull()
+})
+
+function invitationOf(state: 'PENDING' | 'CANCELED', id: string, email: string) {
+  return Client.parse({
+    ...CLIENT,
+    state: { kind: 'AWAITING_OWNER', ownerInvitation: { ...owner(CLIENT), id, email, state } },
+  })
+}
+
+function owner(client: Client) {
+  if (client.state.kind !== 'AWAITING_OWNER') throw new Error('the client has an owner')
+  return client.state.ownerInvitation
 }
 
 function open() {

@@ -7,7 +7,6 @@ import { TextField } from '../../ui/form.tsx'
 const FIELD_OF: Partial<Record<FailureCode, 'cnpj' | 'ownerEmail'>> = {
   CLIENT_EXISTS: 'cnpj',
   CLIENT_OWNER_IS_OPERATOR: 'ownerEmail',
-  MAIL_BOUNCED: 'ownerEmail',
 }
 
 export function fieldOf(error: unknown) {

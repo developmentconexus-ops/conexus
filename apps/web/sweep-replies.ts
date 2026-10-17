@@ -100,6 +100,7 @@ export const INVITATION_DETAILS = {
   company: { id: COMPANY.id, name: LONG_NAME },
   role: 'admin',
   inviterName: 'Ana Lima',
+  firstOwner: false,
   revision: 0,
   expiresAt: LIVE_INVITATION.expiresAt,
 } as const

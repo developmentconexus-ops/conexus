@@ -76,7 +76,11 @@ export function registerCompanyOn(auth: Auth) {
   }
 }
 
-/** Renames a company still awaiting its first owner, under the company's lock (security S8). */
+/**
+ * Renames a company still awaiting its first owner, under the company's lock so no acceptance adds
+ * a member until the transaction ends (security S8). The correction already took that lock first,
+ * for the lock order; taking it again here is a no-op that keeps the port safe on its own.
+ */
 export function renameCompanyOn(auth: Auth) {
   return async (
     tx: CommandTx,

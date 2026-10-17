@@ -39,10 +39,15 @@ export function RegisterClientForm() {
   const router = useRouter()
   const send = useMutation({
     ...sendRegistration,
-    onSuccess: ({ client }) =>
+    // A bounced address still registered the client: it opens, saying the invitation did not arrive.
+    onSuccess: ({ client, mailBounced }) =>
       router.navigate({
         to: '/operations/clients/$companyId',
         params: { companyId: client.companyId },
+        search:
+          mailBounced && client.state.kind === 'AWAITING_OWNER'
+            ? { convite: client.state.ownerInvitation.id }
+            : {},
       }),
   })
   const attempt = useAttemptKey()

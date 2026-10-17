@@ -6,11 +6,16 @@ import {
   registerClient,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { Clients } from './clients.ts'
 
-/** The owner's invitation leaves after the commit: a refused one answers its failure, the rows stay. */
+/**
+ * The owner's invitation leaves after the commit. A bounced address still answers the registered
+ * client, so the operator lands on it and invites another e-mail; a provider that may not have sent
+ * answers its failure, and a replay with the key sends again (code C37).
+ */
 export function registerClientRoutes(
   app: FastifyInstance,
   deps: { clients: Clients; identity: IdentityPorts },
@@ -30,11 +35,17 @@ export function registerClientRoutes(
     if (made.created) {
       log.info({ companyId: made.client.companyId, personId: person.id }, 'CLIENT_REGISTERED')
     }
+    let mailBounced = false
     if (made.mail !== undefined) {
-      const { admitted, company } = made
-      await identity.mailOwnerInvitation({ admitted, company, invitation: made.mail, signal })
+      try {
+        const { admitted, company } = made
+        await identity.mailOwnerInvitation({ admitted, company, invitation: made.mail, signal })
+      } catch (error) {
+        if (!(error instanceof Failure && error.code === 'MAIL_BOUNCED')) throw error
+        mailBounced = true
+      }
     }
-    return answer({ client: made.client })
+    return answer({ client: made.client, mailBounced })
   })
 
   serve(app, deleteClient, async ({ person, params, body, log }) => {

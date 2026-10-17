@@ -72,6 +72,8 @@ function register(deps: Deps, input: Registration) {
     const admitted = await identity.admitOperator({ tx, personId, action: 'registerClient' })
     const [same] = await tx.select().from(client).where(eq(client.attemptKey, key))
     if (same !== undefined) {
+      // The replay is compared with the client as it is now: after a correction, the first body
+      // is another request, 409 (code C37).
       if (same.cnpj !== input.cnpj || same.legalName !== input.legalName) {
         throw new Failure('IDEMPOTENCY_CONFLICT')
       }
