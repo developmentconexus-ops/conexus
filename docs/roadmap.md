@@ -24,6 +24,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    4.2 **Cadastro de cliente.** Cadastra um cliente na Central, e o administrador dele entra como dono.
       Cartão da etapa 4.2 aprovado em 2026-10-16 (commit 819b1157ca1edc62fb83a5f31d07faa391e32716): "Aprovo"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
+   Cartão da etapa 5 aprovado em 2026-10-17 (commit f64ebb5b8feb676723d5796e23bdda2de3aa7bd5): "2A"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
 8. **App de exemplo.** Abre um app escrito à mão.
