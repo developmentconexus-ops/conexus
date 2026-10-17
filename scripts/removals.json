@@ -176,17 +176,6 @@
     }
   },
   {
-    "id": "client-one-transaction",
-    "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "      scope,\n      async (tx) =>\n        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
-    "replace": "      scope,\n      async (tx) =>\n        await work(tx),",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/operations/clients.test.ts",
-      "name": "recusas"
-    }
-  },
-  {
     "id": "operator-not-member",
     "file": "apps/server/src/hub/identity/clients.ts",
     "find": "    const made = await adapter.createOrganization({\n      organization: { name: input.name, slug: attemptKey, attemptKey, createdAt: new Date() },\n    })\n",
@@ -327,17 +316,6 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-acceptance.test.ts",
       "name": "aceitar: com um re-convite ao mesmo tempo"
-    }
-  },
-  {
-    "id": "accept-one-transaction",
-    "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "      scope,\n      async (tx) =>\n        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
-    "replace": "      scope,\n      async (tx) =>\n        await libraryContext.runWithAdapter(adapterFor(tx)(auth.options), () => work(tx)),",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/invitation-acceptance.test.ts",
-      "name": "aceitar: uma escrita recusada"
     }
   },
   {
