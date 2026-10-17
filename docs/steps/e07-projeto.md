@@ -28,6 +28,7 @@ grant (D11). No fim: o roteiro e os textos.
 - **P3 muda a sua etapa 5.** Lá: "Apagar não deixa estado". Agora, "P3. A": a empresa com banco
   fica "Exclusão em andamento", com **Tentar concluir exclusão**, até o banco sair; e ninguém cria
   Projeto nela. A tela não promete recuperar em 7 dias: no grátis não está provado.
+  Sem tentativa ao ligar: só **Tentar concluir exclusão** termina ("A", 2026-10-17).
 - **T1A.** A sua cópia da chave de cifra vai para a 9 ou a 11; o roteiro muda nas etapas 7, 11 e 19.
 - **T4A** é aposta: se a prova não recuperar, isso volta a você.
 
@@ -42,17 +43,7 @@ banco da empresa. À Central: ler e apagar os dois na empresa que apaga.
 **Fica de fora.** Renomear Projeto. Logins e esquemas dentro do banco (a 9). Limite de computação:
 nenhum app roda na 7.
 
-**A decisão sua pedida nesta etapa.** A P3 A dizia também "o Hub tenta de novo sozinho quando liga".
-Isso pede ao Hub apagar ao ligar sem ninguém clicar: uma coluna (quem começou), uma leitura nova no
-grant de U2 e o teste do banco dormindo de novo.
-
-- **A.** Só **Tentar concluir exclusão** termina. Exemplo: o Neon cai no meio de apagar a Padaria e o
-  Hub é atualizado à noite; de manhã ela segue "Exclusão em andamento", ninguém dela entra, e você
-  clica.
-- **B.** Como respondido: a atualização da noite termina sozinha, se o Neon voltou.
-
-**Recomendo A**: o botão já mostra a verdade; B é autoridade sem pessoa para um caso de falha. O
-cartão está escrito com A.
+**A decisão sua pedida nesta etapa.** Nenhuma.
 
 ## O que mudou desde o estudo
 
@@ -80,7 +71,7 @@ um faltar, a construção para:
 | Issue | Na etapa 7? | Por quê |
 | --- | --- | --- |
 | 73, 74 | Sim | U5 reescreve `remove` e o diálogo de apagar cliente |
-| 39 itens 20, 23; 25 item 6 (`next-card`) | Não | Fora do que muda; com A, nada roda sozinho |
+| 39 itens 20, 23; 25 item 6 (`next-card`) | Não | Fora do que muda; nada roda sozinho |
 | As demais | Não | Fora do tema |
 
 ## As unidades
