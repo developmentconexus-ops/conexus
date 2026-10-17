@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,7 +59,7 @@ jobs:
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
   # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.
   scripts:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,7 +67,7 @@ jobs:
       - run: npm run test:scripts
 
   server:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -79,19 +79,20 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-superuser
         ports:
-          - 5432:5432
+          - 5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/install
       - uses: ./.github/actions/test-database
+        with:
+          port: ${{ job.services.postgres.ports['5432'] }}
       # One file at a time in a job: files that share CPU starve each other's real-time margins
       # and migrate.test.ts changes the roles of the whole server. The shards are the parallelism.
       - run: npm test -w @conexus/server
@@ -99,7 +100,7 @@ jobs:
           TEST_SHARD: ${{ matrix.shard }}/4
 
   web:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -108,7 +109,7 @@ jobs:
       - run: npm run build
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 15
     services:
       postgres:
@@ -116,24 +117,25 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-superuser
         ports:
-          - 5432:5432
+          - 5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/install
       - uses: ./.github/actions/test-database
+        with:
+          port: ${{ job.services.postgres.ports['5432'] }}
       - name: The founder's use script runs in a browser against a real Hub
         run: npm run e2e
 
   removals:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -145,25 +147,26 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-superuser
         ports:
-          - 5432:5432
+          - 5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/install
       - uses: ./.github/actions/test-database
+        with:
+          port: ${{ job.services.postgres.ports['5432'] }}
       - name: Each protection's test fails when the protection is taken out
         run: npm run removals -- --shard ${{ matrix.shard }}/3
 
   image:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 15
     services:
       postgres:
@@ -171,19 +174,20 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-superuser
         ports:
-          - 5432:5432
+          - 5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
     env:
-      CONEXUS_TEST_DATABASE_URL: postgres://conexus_owner:ci-owner@localhost:5432/postgres
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/install
       - uses: ./.github/actions/test-database
+        with:
+          port: ${{ job.services.postgres.ports['5432'] }}
       - name: The mail bundle the host test imports exists
         run: npm run build -w @conexus/server
       - name: The image builds
@@ -206,7 +210,7 @@ jobs:
   ci:
     if: always()
     needs: [check, scripts, server, web, e2e, removals, image]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, conexus]
     timeout-minutes: 5
     permissions:
       contents: read
