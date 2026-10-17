@@ -94,9 +94,10 @@ or its origin.
   which ends with the transaction.
 - **Why.** [Code C37 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
   in an accept leaves nothing, and `forgetLinks` deletes through the same transaction. The test
-  "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` fails with
-  `runWithAdapter`, which leaves the plugin's own transaction on another connection (removal
-  `accept-one-transaction`). The tests "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a
+  "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` guards it.
+  The plugin's own transaction joins ours through `runWithTransaction` and, since
+  `joiningTransaction`, through the adapter as well, so the test fails only when both are taken
+  out, and no single removal row proves either. The tests "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a
   mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
   `first-person-lock`).
 
@@ -146,8 +147,9 @@ or its origin.
   such row: the admission already requires `invitation: ["create"]`, every default role that holds
   it also holds `cancel`, and the endpoint writes the same status, so no test can tell the endpoint
   from the adapter there. The test "sem membro" in `hub/operations/clients.test.ts` fails when the
-  company is created by the endpoint (removal `operator-not-member`); "recusas" fails when the
-  adapter writes outside the Hub's transaction (removal `client-one-transaction`). When the library
+  company is created by the endpoint (removal `operator-not-member`); "recusas" guards that the
+  adapter writes inside the Hub's transaction, which it joins through `runWithTransaction` and
+  `joiningTransaction` alike, so no single removal row proves either. When the library
   changes, reread `getOrgAdapter`'s signature and these four methods.
 
 ### Deleting a company: the adapter, with the native route closed
