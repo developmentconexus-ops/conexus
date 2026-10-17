@@ -9,6 +9,7 @@ import { readOperatedCompanies, registerCompanyOn, renameCompanyOn } from './cli
 import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
+import { lockCompany } from './invitations.ts'
 import { registerIdentityRoutes } from './routes.ts'
 import { createSessionReader } from './session.ts'
 
@@ -39,6 +40,7 @@ export function createIdentity(deps: {
     // What the Operations Central reaches identity through (code C4), in the caller's transaction.
     ports: Object.freeze({
       libraryCommand,
+      lockCompany,
       admitOperator,
       isOperator,
       registerCompany: registerCompanyOn(auth),

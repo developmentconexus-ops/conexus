@@ -116,6 +116,9 @@ type Correction = ClientData & { person: Person; companyId: CompanyId; revision:
 function correct(deps: Deps, input: Correction) {
   const { identity } = deps
   return identity.libraryCommand(async (tx) => {
+    // The company's lock before the operator's row and the client's, the order the owner's
+    // invitation and its accept keep: the other order deadlocked them (step 5, criterion 11).
+    await identity.lockCompany(tx, input.companyId)
     const personId = input.person.id
     const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })
     const [row] = await tx

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import { ANA, BRUNO, CARLA, codeOf, hubWithMail, id, personOn, post } from '../identity/test-hub.ts'
@@ -153,4 +154,50 @@ test('ler: a lista pagina 50 por token; o ativo traz só os donos; empresa sem c
   }
   const malformed = await call(hub, ana, 'GET', '/api/clients?page=x')
   assert.deepEqual([malformed.statusCode, codeOf(malformed)], [400, 'REQUEST_MALFORMED'])
+})
+
+/** Resolves once `count` requests of this database wait on a lock. */
+async function queued(hub: Hub, count: number) {
+  const waiting = `select count(distinct l.pid)::int as waiting from pg_locks l
+    join pg_stat_activity a on a.pid = l.pid
+    where not l.granted and a.datname = current_database()`
+  const deadline = Date.now() + 5_000
+  while (Object((await hub.test.asOwner(waiting))[0]).waiting < count) {
+    assert.ok(Date.now() < deadline, `${count} requests never queued on the company`)
+    await setTimeout(20)
+  }
+}
+
+// The renewal queues on the company first and the correction second, the order that deadlocked
+// when a correction took the operator's row before the company's (step 5's lock order).
+test('corrigir: contra a renovação do convite de dono, os dois passam em fila, nunca 40P01', async (t) => {
+  const hub = await hubWithMail(t)
+  const ana = await personOn(hub, ANA)
+  const client = await registered(hub, ana)
+  const { companyId } = client
+  const holding = 'select pg_sleep(60)'
+  const holder = hub.test
+    .asOwner(`begin; select id from auth.company where id = '${companyId}' for update; ${holding}`)
+    .catch((error: unknown) => error)
+  const asleep = `select count(*)::int as held from pg_stat_activity where query like '%${holding}'
+    and state = 'active' and pid <> pg_backend_pid()`
+  while (Object((await hub.test.asOwner(asleep))[0]).held === 0) await setTimeout(20)
+  const invitation = `/api/companies/${companyId}/invitations/${client.state.ownerInvitation.id}`
+  const renewal = call(hub, ana, 'PUT', invitation, { revision: 0 })
+  await queued(hub, 1)
+  const correction = correct(hub, ana, companyId, { name: 'Nome Corrigido' })
+  await queued(hub, 2)
+  await hub.test.asOwner(
+    `select pg_cancel_backend(pid) from pg_stat_activity where query like '%${holding}'
+      and pid <> pg_backend_pid()`,
+  )
+  await holder
+  const answers = await Promise.all([renewal, correction])
+  assert.deepEqual(
+    answers.map((answer) => [answer.statusCode, codeOf(answer)]),
+    [
+      [200, undefined],
+      [200, undefined],
+    ],
+  )
 })
