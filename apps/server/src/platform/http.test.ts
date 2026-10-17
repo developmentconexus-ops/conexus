@@ -137,6 +137,7 @@ test('páginas: cada endereço das telas, com seus parâmetros, abre a página d
     '/',
     '/login',
     '/set-password',
+    '/forgot-password',
     '/login?redirect=%2F',
     '/set-password?redirect=%2Finvitations%2Fabc#token=t',
     '/companies/abc',

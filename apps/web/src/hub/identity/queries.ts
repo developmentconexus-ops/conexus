@@ -16,6 +16,7 @@ import {
   listMembers,
   removeMember,
   renewInvitation,
+  requestPasswordRecovery,
   setPassword,
 } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
@@ -28,6 +29,7 @@ export const sessionQuery = hubQuery(getSession)
 export const signIn = { ...hubMutation(createSession), meta: KEEP_CACHE }
 export const signOut = { ...hubMutation(deleteSession), meta: KEEP_CACHE }
 export const choosePassword = hubMutation(setPassword)
+export const requestRecovery = hubMutation(requestPasswordRecovery)
 
 export function companiesQuery(page: string | undefined) {
   return hubQuery(listCompanies, { query: { page } })

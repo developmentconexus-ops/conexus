@@ -7,6 +7,7 @@ export const PAGES = [
   '/',
   '/login',
   '/set-password',
+  '/forgot-password',
   '/companies/$companyId',
   '/operations/clients',
   '/operations/clients/new',
