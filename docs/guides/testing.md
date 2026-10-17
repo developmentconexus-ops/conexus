@@ -62,7 +62,8 @@ not authorize violating an approved contract or claiming proof that did not run;
   Preview, browser use and negative case. Failure: a test plants a file's mode and then claims
   setup produced it, or a scripted model is presented as a Builder proof. A simulation does not
   close the real use required by [delivery L17](delivery.md). This guide grants no service access.
-  [review]
+  No test reaches a third-party service: a double stands in, or the host is blocked (the leaked-password
+  service, step 6 review). [review]
 - **T17.** Tests **should not** change authority to pass. Failure: a test-only header still accepted
   in production bypasses the session. [code C67](code.md) restricts `NODE_ENV`, not every possible
   bypass spelling. [review]
