@@ -47,9 +47,12 @@ export function RegisterClientForm() {
   })
   const attempt = useAttemptKey()
   useEffect(() => {
-    if (!inFlight()) return
-    inFlight(false)
-    void router.navigate({ to: '/operations/clients', search: { notice: 'unconfirmed' } })
+    if (inFlight()) {
+      inFlight(false)
+      void router.navigate({ to: '/operations/clients', search: { notice: 'unconfirmed' } })
+    }
+    // Leaving the form inside the app clears the mark; only a reload, which runs no cleanup, keeps it.
+    return () => void inFlight(false)
   }, [router])
   const form = useSchemaForm(registerClient.input.body, {
     cnpj: '',
