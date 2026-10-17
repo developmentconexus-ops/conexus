@@ -23,7 +23,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
       Etapa 4.1 usada em 2026-10-16 em https://hub.conexus.fun (v0.4.1): "Foi sim para lixo eletronico, mas nem ligo, podemos passar e tudo deu certo. cancelei e testei tudo e tudo foi validado"
    4.2 **Cadastro de cliente.** Cadastra um cliente na Central, e o administrador dele entra como dono.
       Cartão da etapa 4.2 aprovado em 2026-10-16 (commit 819b1157ca1edc62fb83a5f31d07faa391e32716): "Aprovo"
-      <!-- PLACEHOLDER: Etapa 4.2 usada em <data> em <endereço>: "<palavras do fundador>" -->
+      Etapa 4.2 usada em 2026-10-17 em https://hub.conexus.fun (v0.4.2): "Legal tudo funcionou"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
