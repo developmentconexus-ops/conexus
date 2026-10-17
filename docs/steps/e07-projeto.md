@@ -34,11 +34,7 @@ Telas (estudo do mapa, 2026-10-17): `"D1: A D2: A D3: A"`: entra nos Projetos; b
 - **T4A.** A prova recupera pelo SDK um banco apagado; a Central não recupera empresa. É aposta até
   a prova rodar; se não recuperar, volta a você.
 
-**As chamadas da prova**, com a chave das empresas, em projetos `cx-prova-…`: `projects.list`;
-`projects.create` em São Paulo, PostgreSQL 18, também com a resposta cortada; `projects.get`;
-`postgres.connectionString`, que lê uma vez a senha do dono, só para gravar e ler uma linha;
-`projects.delete` durante a criação, depois, e de novo; `projects.recover`; `projects.get` do projeto
-do Hub, pelo id que o firstmate dá; no fim, `projects.delete` de tudo o que a prova criou.
+As chamadas da prova, autorizadas com "3A", e o resultado estão no registro 0040, criado em U1.
 
 **O grant de U2.** Às rotas da empresa: ler, criar e apagar Projetos; ler, criar e marcar pronto o
 banco da empresa. À Central: ler e apagar os dois na empresa que apaga.
