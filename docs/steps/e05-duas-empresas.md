@@ -67,7 +67,7 @@ Base: `main` `10c4e0f` mais 4.2; revisão pelo [checklist](../reference/checklis
 **F1** `ACTIONS`, `admitOperator`. **F2** `read`, `command`, `libraryCommand`; `libraryOrm` no
 pool. **F3** `organizationAdapter(auth)`. **F4** `operations.client` com `revision`, sem chave
 estrangeira nem `DELETE`. **F5** A correção trava o cliente, depois a empresa; convites e aceite,
-só a empresa. **F6** `client.tsx`, `NotFound`. **F7** `CLIENT_STALE`. **F8** sem criação pelo cliente.
+só a empresa. **F6** `client.tsx`. **F7** `CLIENT_STALE`. **F8** sem criação pelo cliente.
 
 ## Os critérios de aceite
 
@@ -96,7 +96,8 @@ As provas B1–B9 são as nove de B.
 
 ## A matriz de estados
 
-Apagar não deixa estado: a empresa existe ou dá 404 (C26).
+Apagar não deixa estado: a empresa existe ou dá 404 (C26). Repetir o cadastro com a chave antiga após
+apagar é cadastro novo (fundador, 2026-10-17: B).
 
 | Tela | Vazio | Carregando | Erro | Não encontrado | Vencido, recusado ou concorrência |
 | --- | --- | --- | --- | --- | --- |
@@ -136,9 +137,9 @@ Falha nova: `CLIENT_NAME_MISMATCH` 422, USER, settles, ação NONE (C48).
 | Escopo, papéis, políticas | nova | `platform/database.ts`, migrações, `tables.ts` | — | A, B; 0012 |
 | Apagar cliente e diálogo | nova | `identity/`, `operations/`, `ui/alert-dialog.tsx` | — | Q6 |
 
-**A medida do transplante.** Zero linhas antigas.
+**Transplante.** Zero linhas.
 
-**A dívida.** Nenhuma. Fechamento (L19): arquitetura e 0012 citam a política.
+**A dívida.** Nenhuma; no fechamento, arquitetura e 0012 citam a política.
 
 ## U1 A prova
 
@@ -162,7 +163,7 @@ sem `FORCE`: o dono só roda o `migrate` (D9).
    A, de B, das duas e de nenhuma. Responde o que o estudo deixou à prova: os predicados, as
    projeções de `auth.user`, o adapter no escopo, apagar sob política (o `SELECT` que o `DELETE`
    pede), o lock de linha sob RLS (`UPDATE` e política de quem trava), o ritmo global de convites,
-   o `libraryOrm` fora de transação, a exigência de administrador do operador.
+   o `libraryOrm`, a exigência de administrador.
 3. Local em Docker, depois no Neon (L): a prova cria um banco vazio num branch do Hub, migra do
    zero, nunca lê tabela de empresa e apaga o branch no fim. B5 roda no endereço do Hub. O Result diz quais asserções rodaram no Neon (a igualdade do catálogo é só do CI).
 4. Alcance além da matriz de U3, ou um `SECURITY DEFINER`, volta ao cartão.
@@ -207,7 +208,7 @@ grant comentado. Regras: D5, D10–D12.
 | `apps/server/src/platform/` | muda `database.ts`; cria `database.check.ts`, `isolation.test.ts` | identidade, operações, status, `main.ts` |
 | `apps/server/src/hub/identity/` | muda `tables.ts`, `auth.ts`, `admission.ts` e cada leitura e comando que abre transação | rotas, operações |
 | `apps/server/src/hub/operations/` | muda `tables.ts`, `clients.ts` | rotas |
-| `apps/server/src/hub/status/` | `store.ts` na transação de instalação | `main.ts` |
+| `apps/server/src/hub/status/` | `store.ts`, instalação | `main.ts` |
 | `apps/server/migrations/` | cria a migração das políticas e do RLS | `migrate` |
 | `scripts/removals.json` | `rls-company-policy`, `scope-role-set`, `operator-policy-admin-only` | `npm run removals` |
 | `docs/reference/boundaries.md` | o escopo na biblioteca (C75) | revisores |
@@ -245,7 +246,7 @@ nas quatro tabelas de empresa, para a v0.4.2 rodar no banco migrado (D6).
    com `is_local = true`, `SET LOCAL ROLE`.
 2. Escopo por chamador: rotas de empresa, `COMPANY` pela URL, a admissão decide dentro (S7, S10);
    Suas empresas e convites recebidos, `PERSON`; o link de convite, `INVITATION`; a Central,
-   `OPERATOR`; `checkPace` por `asPerson`. O e-mail pós-commit, outra transação no escopo (D22).
+   `OPERATOR`; `checkPace` por `asPerson`. E-mail pós-commit: outra transação (D22).
 3. O adapter roda no escopo pelo `runWithTransaction` de `libraryCommandOn` (`@better-auth/core`
    1.7.8); sem `AsyncLocalStorage` de empresa. O `libraryOrm` não toca tabela de empresa (B1).
 4. `pgPolicy` com `for`, `to`, `using` e `withCheck` explícitos, `table.withRLS` (drizzle-orm

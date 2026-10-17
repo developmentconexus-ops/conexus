@@ -6,8 +6,12 @@ Decision [0012] left the row policy to step 5.
 
 ## Decision
 
-Each transaction enters a typed scope (`SET LOCAL ROLE`, `set_config(…, true)`); row policies on the
-company tables and `auth.user` bound each role; no `FORCE` (D9). Basis: answers A, B, H.
+Each transaction opens in a typed scope: `SET LOCAL ROLE` and `set_config(…, true)`. Row policies on
+the company tables and `auth.user` limit each role; no `FORCE`, the owner only migrates (D9). Basis:
+the founder's answers A, B, H.
+
+A1: policies ask `auth.is_installation_administrator`, a `SECURITY DEFINER` function of a NOLOGIN
+role. A2: the invitation scope reads its company's members. Basis: founder's approval, 2026-10-17.
 
 ## Criterion
 
@@ -33,5 +37,4 @@ step 4.2's commit. Two synthetic companies; people of A, of B, of both, of none.
 
 ## State
 
-Proposed 2026-10-17. Provisional until PR 51: A1, a `SECURITY DEFINER` operator check; A2,
-invitations read members.
+Proposed 2026-10-17.
