@@ -43,17 +43,16 @@ GRANT SELECT,INSERT,UPDATE ON TABLE auth.account TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE auth.account TO hub_invitation;
 -- Step 4, founder 2026-10-15 (decision 8, "Aprovo"): the Hub never deletes a company, a member or an
 -- invitation.
-GRANT SELECT,INSERT,UPDATE ON TABLE auth.company TO hub_runtime;
+-- Step 5, second phase (U7): the Hub's login keeps no grant on a company's tables; each scope's role
+-- reaches them. Founder's word pending on this list (D11).
 GRANT SELECT,UPDATE ON TABLE auth.company TO hub_company;
 GRANT SELECT ON TABLE auth.company TO hub_person;
 GRANT SELECT,UPDATE ON TABLE auth.company TO hub_invitation;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.company TO hub_operator;
-GRANT SELECT,INSERT,UPDATE ON TABLE auth.invitation TO hub_runtime;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.invitation TO hub_company;
 GRANT SELECT ON TABLE auth.invitation TO hub_person;
 GRANT SELECT,UPDATE ON TABLE auth.invitation TO hub_invitation;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.invitation TO hub_operator;
-GRANT SELECT,INSERT,UPDATE ON TABLE auth.member TO hub_runtime;
 GRANT SELECT,UPDATE ON TABLE auth.member TO hub_company;
 GRANT SELECT ON TABLE auth.member TO hub_person;
 GRANT SELECT,INSERT ON TABLE auth.member TO hub_invitation;
@@ -74,7 +73,6 @@ GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
-GRANT SELECT,INSERT,UPDATE ON TABLE operations.client TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE operations.client TO hub_operator;
 CREATE ROLE hub_administrators;
 ALTER ROLE hub_administrators WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;

@@ -24,7 +24,7 @@ import { createSessionReader } from './session.ts'
 export { createAuth } from './auth.ts'
 export { passwordLinkText } from './messages.ts'
 // The row policies' pieces, for the Central's own table.
-export { ADMINISTRATOR, policy, transition } from './tables.ts'
+export { ADMINISTRATOR, policy } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']

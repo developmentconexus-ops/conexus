@@ -28,19 +28,6 @@ const { companyId, personId, invitationId } = scoped
 const OPEN = sql`true`
 
 /**
- * The Hub's login keeps its reach on a company's tables until step 5's second phase, so the release
- * before this one still runs on the migrated database (data D6, the founder's answer H).
- */
-export function transition() {
-  return pgPolicy('runtime_transition', {
-    for: 'all',
-    to: RUNTIME_LOGIN,
-    using: OPEN,
-    withCheck: OPEN,
-  })
-}
-
-/**
  * The operator's policies hold only for an installation administrator (security S11), answered by
  * the one function that reads auth.user as hub_administrators (migration
  * installation_administrator_check). Provisional until the founder's word.
@@ -184,7 +171,6 @@ export const company = auth.table(
     attemptKey: text('attempt_key').notNull().unique(),
   },
   () => [
-    transition(),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`id = ${companyId}`),
     policy(
       SCOPE_ROLES.PERSON,
@@ -216,7 +202,6 @@ export const member = auth.table(
   (table) => [
     unique('member_company_id_user_id_key').on(table.organizationId, table.userId),
     index('member_user_id_idx').on(table.userId),
-    transition(),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),
     policy(SCOPE_ROLES.PERSON, 'select', sql`user_id = ${personId}`),
     // Provisional until the founder's word: the library's accept counts the company's members for
@@ -273,7 +258,6 @@ export const invitation = auth.table(
       .where(sql`${table.status} = 'pending'`),
     unique('invitation_company_id_attempt_key_key').on(table.organizationId, table.attemptKey),
     index('invitation_email_idx').on(table.email),
-    transition(),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${companyId}`),
     policy(
       SCOPE_ROLES.PERSON,

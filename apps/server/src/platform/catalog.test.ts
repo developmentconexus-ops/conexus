@@ -7,7 +7,7 @@ import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { sql } from 'drizzle-orm'
 import type { TestDatabase } from './test-database.ts'
-import { createTestDatabase, testPhase, withRoleLock } from './test-database.ts'
+import { createTestDatabase, withRoleLock } from './test-database.ts'
 
 const run = promisify(execFile)
 
@@ -87,10 +87,6 @@ async function snapshotOf(test: Dumped): Promise<string> {
 }
 
 test('o instantâneo depois de migrate é o de database-grants.sql', async (t) => {
-  if (testPhase() === '2') {
-    t.skip('opt-in: the approved list is phase 1; phase 2 changes it with U7, in its own PR')
-    return
-  }
   const database = dumped(t, await createTestDatabase(t))
   if (database === undefined) return
   assert.equal(await withRoleLock(() => snapshotOf(database)), APPROVED)
@@ -213,11 +209,7 @@ test('as quatro tabelas de empresa e auth.user têm política por linha, sem FOR
   assert.equal(tables.filter((row) => row.enabled).length, policed.length)
 })
 
-test('na fase 2, o login do Hub não lê nem grava as tabelas de empresa', async (t) => {
-  if (testPhase() !== '2') {
-    t.skip('opt-in: CONEXUS_TEST_PHASE=2 applies the second phase')
-    return
-  }
+test('o login do Hub não lê nem grava as tabelas de empresa', async (t) => {
   const { database } = await createTestDatabase(t)
   for (const table of ['auth.company', 'auth.member', 'auth.invitation', 'operations.client']) {
     await assert.rejects(
