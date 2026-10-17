@@ -97,9 +97,9 @@ or its origin.
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` guards it.
   The plugin's own transaction joins ours through `runWithTransaction` and, since
   `joiningTransaction`, through the adapter as well, so the test fails only when both are taken
-  out, and no single removal row proves either. The tests "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a
-  mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
-  `first-person-lock`).
+  out, and no single removal row proves either. The tests "ao mesmo tempo, com dois e-mails" and
+  "ao mesmo tempo, a mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock
+  (removal `first-person-lock`).
 
 ### The plain adapter joins that transaction too
 
@@ -496,9 +496,9 @@ or its origin.
   its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
-  "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since step 5
-  the person scope's member policy holds the same rule, so removing the anchor's filter alone
-  changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
+  "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since
+  step 5 the person scope's member policy holds the same rule, so removing the anchor's filter
+  alone changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
   `person-member-policy`).
 
 ### Every transaction opens in a scope
