@@ -9,7 +9,6 @@ import { Route as AppIndexRouteImport } from './routes/_app/index.tsx'
 import { Route as PublicLoginRouteImport } from './routes/_public/login.tsx'
 import { Route as PublicSetPasswordRouteImport } from './routes/_public/set-password.tsx'
 import { Route as AppCompaniesCompanyIdRouteImport } from './routes/_app/companies/$companyId.tsx'
-import { Route as AppCompaniesNewRouteImport } from './routes/_app/companies/new.tsx'
 import { Route as PublicInvitationsInvitationIdRouteImport } from './routes/_public/invitations/$invitationId.tsx'
 import { Route as AppOperationsClientsIndexRouteImport } from './routes/_app/operations/clients/index.tsx'
 import { Route as AppOperationsClientsCompanyIdRouteImport } from './routes/_app/operations/clients/$companyId.tsx'
@@ -43,11 +42,6 @@ const AppCompaniesCompanyIdRoute = AppCompaniesCompanyIdRouteImport.update({
   path: '/companies/$companyId',
   getParentRoute: () => AppRouteRoute,
 } as any)
-const AppCompaniesNewRoute = AppCompaniesNewRouteImport.update({
-  id: '/companies/new',
-  path: '/companies/new',
-  getParentRoute: () => AppRouteRoute,
-} as any)
 const PublicInvitationsInvitationIdRoute =
   PublicInvitationsInvitationIdRouteImport.update({
     id: '/invitations/$invitationId',
@@ -77,7 +71,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
-  '/companies/new': typeof AppCompaniesNewRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/operations/clients/$companyId': typeof AppOperationsClientsCompanyIdRoute
   '/operations/clients/new': typeof AppOperationsClientsNewRoute
@@ -88,7 +81,6 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
-  '/companies/new': typeof AppCompaniesNewRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/operations/clients/$companyId': typeof AppOperationsClientsCompanyIdRoute
   '/operations/clients/new': typeof AppOperationsClientsNewRoute
@@ -102,7 +94,6 @@ export interface FileRoutesById {
   '/_public/set-password': typeof PublicSetPasswordRoute
   '/_app/': typeof AppIndexRoute
   '/_app/companies/$companyId': typeof AppCompaniesCompanyIdRoute
-  '/_app/companies/new': typeof AppCompaniesNewRoute
   '/_public/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/_app/operations/clients/$companyId': typeof AppOperationsClientsCompanyIdRoute
   '/_app/operations/clients/new': typeof AppOperationsClientsNewRoute
@@ -115,7 +106,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/set-password'
     | '/companies/$companyId'
-    | '/companies/new'
     | '/invitations/$invitationId'
     | '/operations/clients/$companyId'
     | '/operations/clients/new'
@@ -126,7 +116,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/set-password'
     | '/companies/$companyId'
-    | '/companies/new'
     | '/invitations/$invitationId'
     | '/operations/clients/$companyId'
     | '/operations/clients/new'
@@ -139,7 +128,6 @@ export interface FileRouteTypes {
     | '/_public/set-password'
     | '/_app/'
     | '/_app/companies/$companyId'
-    | '/_app/companies/new'
     | '/_public/invitations/$invitationId'
     | '/_app/operations/clients/$companyId'
     | '/_app/operations/clients/new'
@@ -195,13 +183,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdRouteImport
       parentRoute: typeof AppRouteRoute
     }
-    '/_app/companies/new': {
-      id: '/_app/companies/new'
-      path: '/companies/new'
-      fullPath: '/companies/new'
-      preLoaderRoute: typeof AppCompaniesNewRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
     '/_public/invitations/$invitationId': {
       id: '/_public/invitations/$invitationId'
       path: '/invitations/$invitationId'
@@ -236,7 +217,6 @@ declare module '@tanstack/react-router' {
 interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppCompaniesCompanyIdRoute: typeof AppCompaniesCompanyIdRoute
-  AppCompaniesNewRoute: typeof AppCompaniesNewRoute
   AppOperationsClientsCompanyIdRoute: typeof AppOperationsClientsCompanyIdRoute
   AppOperationsClientsNewRoute: typeof AppOperationsClientsNewRoute
   AppOperationsClientsIndexRoute: typeof AppOperationsClientsIndexRoute
@@ -245,7 +225,6 @@ interface AppRouteRouteChildren {
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppCompaniesCompanyIdRoute: AppCompaniesCompanyIdRoute,
-  AppCompaniesNewRoute: AppCompaniesNewRoute,
   AppOperationsClientsCompanyIdRoute: AppOperationsClientsCompanyIdRoute,
   AppOperationsClientsNewRoute: AppOperationsClientsNewRoute,
   AppOperationsClientsIndexRoute: AppOperationsClientsIndexRoute,

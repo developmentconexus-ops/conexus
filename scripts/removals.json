@@ -132,14 +132,14 @@
     }
   },
   {
-    "id": "company-create-administrator",
+    "id": "company-creation-closed",
     "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "allowUserToCreateOrganization: (person) => mayOperate(person.role),",
+    "find": "allowUserToCreateOrganization: false,",
     "replace": "allowUserToCreateOrganization: true,",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/identity/companies.test.ts",
-      "name": "criar: outra pessoa"
+      "file": "src/hub/identity/sign-up.test.ts",
+      "name": "empresa só pela Central"
     }
   },
   {
@@ -371,17 +371,6 @@
       "cwd": "apps/web",
       "file": "hub.test.ts",
       "name": "resposta que não decide"
-    }
-  },
-  {
-    "id": "company-attempt-replay",
-    "file": "apps/server/src/hub/identity/companies.ts",
-    "find": "if (found !== undefined) {",
-    "replace": "if (found === null) {",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/companies.test.ts",
-      "name": "criar: o administrador cria"
     }
   },
   {

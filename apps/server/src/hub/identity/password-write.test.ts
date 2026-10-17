@@ -11,7 +11,16 @@ import {
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 
-import { codeOf, companyOn, INVITEE, personOn, post, signIn, signOut } from './test-hub.ts'
+import {
+  codeOf,
+  companyOn,
+  INVITEE,
+  personOn,
+  plantCompany,
+  post,
+  signIn,
+  signOut,
+} from './test-hub.ts'
 
 // The library's scrypt hash is a hex salt and a hex key joined by a colon.
 const PASSWORD_HASH = /[0-9a-f]{16,}:[0-9a-f]{64,}/
@@ -82,13 +91,11 @@ test('invitation password rejects lengths, serializes concurrent writers and rol
 test('two companies inviting the same email cannot replace the winning password', async (t) => {
   const { hub, ana, invite } = await companyOn(t)
   const first = await invite()
-  const secondCompany = await post(hub, ana, '/api/companies', { name: 'Outra Empresa' })
-  const second = await post(
-    hub,
-    ana,
-    `/api/companies/${Object(secondCompany.json()).company.id}/invitations`,
-    { email: INVITEE, role: 'member' },
-  )
+  const secondCompany = await plantCompany(hub.test, ana.id, 'Outra Empresa')
+  const second = await post(hub, ana, `/api/companies/${secondCompany}/invitations`, {
+    email: INVITEE,
+    role: 'member',
+  })
   const ids = [first, String(Object(second.json()).invitation.id)]
   const passwords = ['first-password', 'second-password']
   const replies = await Promise.all(

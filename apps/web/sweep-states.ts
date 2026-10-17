@@ -145,12 +145,6 @@ export const STATES: State[] = [
     settle: (p) => waitFor(p, 'Outra Empresa'),
   },
   {
-    name: 'nova empresa',
-    path: '/companies/new',
-    replies: SIGNED_IN,
-    settle: (p) => waitFor(p, 'Criar empresa'),
-  },
-  {
     name: 'dono',
     path: `/companies/${COMPANY.id}`,
     replies: OWNER,

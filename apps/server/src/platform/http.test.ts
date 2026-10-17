@@ -139,9 +139,11 @@ test('páginas: cada endereço das telas, com seus parâmetros, abre a página d
     '/set-password',
     '/login?redirect=%2F',
     '/set-password?redirect=%2Finvitations%2Fabc#token=t',
-    '/companies/new',
     '/companies/abc',
     '/invitations/abc',
+    '/operations/clients',
+    '/operations/clients/new',
+    '/operations/clients/abc',
   ]
   for (const url of addresses) {
     const page = await app.inject({ method: 'GET', url })

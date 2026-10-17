@@ -1,7 +1,6 @@
 import {
   acceptInvitation,
   cancelInvitation,
-  createCompany,
   createInvitation,
   createInvitationPassword,
   declineInvitation,
@@ -19,7 +18,7 @@ import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { INVITATION_DECLINATION_PATH, INVITATION_PASSWORD_PATH } from './auth.ts'
-import { createCompanyCommand, readCompany, readMembers, readMemberships } from './companies.ts'
+import { readCompany, readMembers, readMemberships } from './companies.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { cancelInvitationCommand, renewInvitationCommand } from './invitation-management.ts'
 import { readInvitations, readReceived } from './invitation-reads.ts'
@@ -60,17 +59,10 @@ function registerReads(app: FastifyInstance, { database }: Deps): void {
 /** The e-mail leaves after the commit: a refused one answers its failure, and the rows stay. */
 function registerWrites(app: FastifyInstance, deps: Deps): void {
   const origin = deps.config.publicOrigin
-  const create = createCompanyCommand(deps)
   const invite = createInvitationCommand(deps)
   const password = passwordCommand(deps)
   const decline = declineCommand(deps)
   const accept = acceptCommand(deps)
-
-  serve(app, createCompany, async ({ person, headers, body, attemptKey, log }) => {
-    const { company, created } = await create({ person, headers, name: body.name, attemptKey })
-    if (created) log.info({ companyId: company.id, personId: person.id }, 'COMPANY_CREATED')
-    return answer({ company })
-  })
 
   serve(app, createInvitation, async ({ person, params, body, attemptKey, log, signal }) => {
     const made = await invite({ person, ...params, ...body, attemptKey })

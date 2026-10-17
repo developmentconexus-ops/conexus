@@ -102,17 +102,13 @@ test('sem empresas: "Você ainda não participa de nenhuma empresa."', async () 
   expect(await screen.findByText('Você ainda não participa de nenhuma empresa.')).toBeTruthy()
 })
 
-for (const [mayOperate, shown] of [
-  [true, 1],
-  [false, 0],
-] as const) {
-  test(`"Nova empresa" ${shown ? 'aparece' : 'não aparece'} quando mayOperate é ${mayOperate}`, async () => {
-    hub({ signedIn: true }, { companies: [], mayOperate, next: { kind: 'END' } })
-    open('/')
-    await screen.findByRole('heading', { name: 'Suas empresas' })
-    expect(screen.queryAllByRole('link', { name: 'Nova empresa' }).length).toBe(shown)
-  })
-}
+test('sem empresas, também para o operador: a lista não tem botão nem link, só a frase', async () => {
+  hub({ signedIn: true }, { companies: [], mayOperate: true, next: { kind: 'END' } })
+  open('/')
+  const list = (await screen.findByRole('heading', { name: 'Suas empresas' })).closest('section')
+  expect(list?.textContent).toBe('Suas empresasVocê ainda não participa de nenhuma empresa.')
+  expect(list?.querySelectorAll('a, button').length).toBe(0)
+})
 
 test('a lista mantém a página no endereço: "Ver mais" pede a página que segue e "Primeira página" volta', async () => {
   asked.length = 0

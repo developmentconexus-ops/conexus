@@ -8,9 +8,9 @@ and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the l
 piece of this file that a row of `scripts/removals.json` protects names that row, and its test
 "fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
 not name protect Hub rules that are not boundaries over a library: the mail adapter's refusal of a
-bounce, the replay of an attempt key, who may create a company, the state of a listed invitation,
-the log line of an undeclared failure, a write refused for its media type or its origin, and the
-library joins the Hub sets.
+bounce, the replay of an attempt key, that only the Operations Central creates a company, the state
+of a listed invitation, the log line of an undeclared failure, a write refused for its media type or
+its origin, and the library joins the Hub sets.
 
 ## GitHub Actions and git
 
@@ -544,7 +544,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `useAttemptKey` in `apps/web/src/platform/attempt-key.ts`. It keeps the
   attempt key until the Hub's answer settles the outcome.
 - **Why.** [Code C37](../guides/code.md) and [web W24](../guides/web.md). The two-click and
-  uncertain-reply tests in `create-company-form.test.tsx` and `invite-form.test.tsx` cover it.
+  uncertain-reply tests in `register-client-form.test.tsx` and `invite-form.test.tsx` cover it.
 
 ## Node 24.21.0
 

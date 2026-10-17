@@ -2,7 +2,6 @@ import type { CompanyId, InvitationId } from '@conexus/hub-api'
 import {
   acceptInvitation,
   cancelInvitation,
-  createCompany,
   createInvitation,
   createInvitationPassword,
   createSession,
@@ -43,7 +42,6 @@ export function receivedInvitationQuery(invitationId: InvitationId) {
   return hubQuery(getInvitation, { params: { invitationId } })
 }
 
-export const makeCompany = hubMutation(createCompany)
 export const inviteToCompany = hubMutation(createInvitation)
 export const cancelCompanyInvitation = hubMutation(cancelInvitation)
 export const renewCompanyInvitation = hubMutation(renewInvitation)

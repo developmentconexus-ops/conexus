@@ -5,7 +5,6 @@ export {
   Company,
   CompanyId,
   cancelInvitation,
-  createCompany,
   createInvitation,
   createInvitationPassword,
   declineInvitation,

@@ -106,19 +106,6 @@ export const listCompanies = defineOperation({
   failures: ['SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 
-export const createCompany = defineOperation({
-  id: 'createCompany',
-  summary: 'Creates a company with the installation administrator as its first owner.',
-  access: 'session',
-  method: 'POST',
-  path: '/api/companies',
-  bodyLimit: 4096,
-  input: { body: z.object({ name: CompanyName }) },
-  attemptKey: true,
-  success: { status: 201, body: z.object({ company: Company }) },
-  failures: ['NOT_FOUND', 'IDEMPOTENCY_CONFLICT', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-})
-
 export const getCompany = defineOperation({
   id: 'getCompany',
   summary: 'Reads a company the person belongs to, the role and the roles it may invite as.',

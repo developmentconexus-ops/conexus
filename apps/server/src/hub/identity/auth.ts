@@ -18,7 +18,6 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { statusOf } from '../../platform/http.ts'
-import { mayOperate } from './admission.ts'
 import {
   account,
   company,
@@ -198,7 +197,8 @@ const ORGANIZATION = {
     organization: { modelName: 'company', additionalFields: { attemptKey: KEY_FIELD } },
     invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
   },
-  allowUserToCreateOrganization: (person) => mayOperate(person.role),
+  // Only the Operations Central creates a company, through the adapter (step 4.2).
+  allowUserToCreateOrganization: false,
   // The Hub counts the open invitations itself, under the company's lock: the plugin reads
   // at most 100 rows of them, in no order (docs/reference/boundaries.md).
   invitationLimit: Number.POSITIVE_INFINITY,
