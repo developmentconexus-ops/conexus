@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
 import { createStatus } from './hub/status/public.ts'
-import { createHub, identityOf } from './main.ts'
+import { createHub, identityOf, operationsOf } from './main.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import {
   createTestDatabase,
@@ -36,7 +36,8 @@ async function hub(webRoot?: string) {
   const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
   const identity = identityOf({ database: shared.database, config, log: silent })
-  const app = await createHub(config, { status, identity, webRoot })
+  const operations = operationsOf(shared.database, identity)
+  const app = await createHub(config, { status, identity, operations, webRoot })
   apps.push(app)
   return app
 }

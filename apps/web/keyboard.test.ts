@@ -3,7 +3,7 @@ import { after, before, test } from 'node:test'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { OWNER, SIGNED_IN } from './sweep-replies.ts'
+import { OWNER } from './sweep-replies.ts'
 import { waitFor } from './sweep-states.ts'
 
 const harness = createHarness(import.meta.dirname)
@@ -13,32 +13,32 @@ after(async () => {
   assert.deepEqual(harness.unanswered, [], 'the page asked the Hub for something no reply covers')
 })
 
-const PRELOADED = '/api/companies'
+const COMPANIES = '/api/companies'
 
-/** Focuses the Início link of the page and waits for the response to the router's preload. */
-async function focusInicio(path: string, replies: Replies) {
-  const page = await harness.open(path, { viewport: DESKTOP, replies })
-  await waitFor(page, 'Criar empresa')
-  const preloaded = page.waitForResponse(
-    (response) => new URL(response.url()).pathname === PRELOADED,
-  )
-  await page.getByRole('link', { name: 'Início' }).focus()
-  return { page, response: await preloaded }
+/** Opens the company page, then reloads it: the account menu reads the company list on each load. */
+async function menuRead(replies: Replies) {
+  const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
+  await waitFor(page, 'Convidar pessoa')
+  const read = page.waitForResponse((response) => new URL(response.url()).pathname === COMPANIES)
+  await page.reload()
+  return { page, response: await read }
 }
 
-test('o foco no link Início de uma página com sessão pré-carrega a lista de empresas, e o Hub de teste responde', async () => {
+test('o menu da conta lê a lista de empresas a cada carga, e o Hub de teste responde', async () => {
   const before = harness.unanswered.length
-  const { page, response } = await focusInicio('/companies/new', SIGNED_IN)
+  const { page, response } = await menuRead(OWNER)
   assert.deepEqual([response.status(), harness.unanswered.length - before], [200, 0])
   await page.close()
 })
 
 test('um pedido que ninguém responde continua recusado: 500 e registrado como sem resposta', async () => {
-  const { 'GET /api/companies': _answered, ...unlisted } = SIGNED_IN
-  const { page, response } = await focusInicio('/companies/new', unlisted)
+  const { 'GET /api/companies': _answered, ...unlisted } = OWNER
+  const { page, response } = await menuRead(unlisted)
   assert.equal(response.status(), 500)
   // The refusal is the point of this case, so it is taken off the run's list before the final check.
-  assert.deepEqual(harness.unanswered.splice(0), ['GET /api/companies'])
+  const refused = harness.unanswered.splice(0)
+  assert.ok(refused.length > 0)
+  assert.deepEqual(new Set(refused), new Set(['GET /api/companies']))
   await page.close()
 })
 

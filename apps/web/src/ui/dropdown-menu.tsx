@@ -51,14 +51,29 @@ export function DropdownMenuLabel({ className, ...props }: MenuPrimitive.GroupLa
   )
 }
 
+const ITEM =
+  'flex h-[34px] cursor-default items-center gap-sm rounded-control px-sm font-body text-label select-none data-highlighted:bg-surface-3 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0'
+
 export function DropdownMenuItem({ className, ...props }: MenuPrimitive.Item.Props) {
   return (
-    <MenuPrimitive.Item
+    <MenuPrimitive.Item data-slot="dropdown-menu-item" className={cn(ITEM, className)} {...props} />
+  )
+}
+
+/**
+ * An item that goes to an address, the same row as `DropdownMenuItem`, and like it closes the menu:
+ * Base UI's link item stays open by default, over the page it opened.
+ */
+export function DropdownMenuLinkItem({
+  className,
+  closeOnClick = true,
+  ...props
+}: MenuPrimitive.LinkItem.Props) {
+  return (
+    <MenuPrimitive.LinkItem
       data-slot="dropdown-menu-item"
-      className={cn(
-        'flex h-[34px] cursor-default items-center gap-sm rounded-control px-sm font-body text-label select-none data-highlighted:bg-surface-3 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-        className,
-      )}
+      className={cn(ITEM, className)}
+      closeOnClick={closeOnClick}
       {...props}
     />
   )

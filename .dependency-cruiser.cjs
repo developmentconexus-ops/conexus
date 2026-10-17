@@ -26,9 +26,13 @@ module.exports = {
     },
     {
       name: 'subject-only-through-public',
-      comment: 'C4, W4: another subject is reached only through its public.ts.',
+      comment:
+        'C4, W4: another subject is reached only through its public.ts. A server test is held by T5 below, which also lets it use the test Hub.',
       severity: 'error',
-      from: { path: `^apps/(server|web)/src/(hub|builder)/([^/]+)/` },
+      from: {
+        path: `^apps/(server|web)/src/(hub|builder)/([^/]+)/`,
+        pathNot: `${SERVER}/.*\\.test\\.tsx?$`,
+      },
       to: {
         path: `^apps/$1/src/(hub|builder)/[^/]+/`,
         pathNot: [`^apps/$1/src/$2/$3/`, PUBLIC_DOOR],

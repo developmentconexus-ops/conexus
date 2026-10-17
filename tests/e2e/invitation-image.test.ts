@@ -126,25 +126,24 @@ test('final image executes the mail bundle through HTTP without a runtime mail t
     .filter(({ name }) => name.toLowerCase() === 'set-cookie')
     .map(({ value }) => value.split(';')[0])
     .join('; ')
-  const headers = { cookie, 'idempotency-key': randomUUID() }
-  const companyReply = await client.post('/api/companies', {
-    headers,
-    data: { name: 'Empresa Teste' },
+  // The first person is the operator: registering a client sends its owner's invitation.
+  const registered = await client.post('/api/clients', {
+    headers: { cookie, 'idempotency-key': randomUUID() },
+    data: {
+      cnpj: '12.ABC.345/01DE-35',
+      legalName: 'Empresa Teste Ltda',
+      name: 'Empresa Teste',
+      ownerEmail: 'davi@example.test',
+    },
   })
-  assert.equal(companyReply.status(), 201)
-  const { company } = await companyReply.json()
-  const invitationReply = await client.post(`/api/companies/${company.id}/invitations`, {
-    headers: { ...headers, 'idempotency-key': randomUUID() },
-    data: { email: 'davi@example.test', role: 'member' },
-  })
-  assert.equal(invitationReply.status(), 201)
-  const { invitation } = await invitationReply.json()
+  assert.equal(registered.status(), 201)
+  const invitation = (await registered.json()).client.state.ownerInvitation
   assert.equal(mail.sent.length, 1)
   const sent = mail.sent[0]
   assert.ok(sent)
   assert.deepEqual(sent.from, { address: 'convites@hub.example.test', name: 'Conexus' })
   assert.equal(sent.to, 'davi@example.test')
-  assert.equal(sent.subject, 'Convite para Empresa Teste')
+  assert.equal(sent.subject, 'Conexus convidou você para ser o primeiro dono de Empresa Teste')
   const link = `${TEST_ORIGIN}/invitations/${invitation.id}`
   assert.ok(sent.html.includes(`href="${link}"`))
   assert.ok(sent.html.includes('Ver convite'))

@@ -3,16 +3,26 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { MailHub, Person } from './test-hub.ts'
-import { ANA, BRUNO, CARLA, codeOf, hubWithMail, INVITEE, id, personOn, post } from './test-hub.ts'
+import {
+  ANA_OWNER,
+  BRUNO,
+  CARLA,
+  codeOf,
+  hubWithMail,
+  INVITEE,
+  id,
+  personOn,
+  plantCompany,
+  post,
+} from './test-hub.ts'
 
-/** Ana, the administrator, owns Empresa Teste; Bruno is its administrator, Carla its member. */
+/** Ana owns Empresa Teste; Bruno is its administrator, Carla its member. */
 async function companyOn(t: TestContext) {
   const hub = await hubWithMail(t)
-  const ana = await personOn(hub, ANA)
+  const ana = await personOn(hub, ANA_OWNER)
   const bruno = await personOn(hub, BRUNO)
   const carla = await personOn(hub, CARLA)
-  const created = await post(hub, ana, '/api/companies', { name: 'Empresa Teste' })
-  const companyId = String(Object(created.json()).company.id)
+  const companyId = await plantCompany(hub.test, ana.id)
   for (const [person, role] of [
     [bruno, 'admin'],
     [carla, 'member'],

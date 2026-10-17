@@ -7,6 +7,8 @@ import { CAPACITY, COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conex
 import { betterAuth } from 'better-auth'
 import { createAuthEndpoint } from 'better-auth/api'
 import { admin, organization } from 'better-auth/plugins'
+import type { OrganizationOptions } from 'better-auth/plugins/organization'
+import { getOrgAdapter } from 'better-auth/plugins/organization'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
@@ -16,7 +18,6 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { statusOf } from '../../platform/http.ts'
-import { mayCreateCompanies } from './admission.ts'
 import {
   account,
   company,
@@ -54,6 +55,11 @@ const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
 export const PASSWORD_LINK_SECONDS = 900
 // The founder's number, step 4 answer 4.
 const INVITATION_SECONDS = 2 * 24 * 60 * 60
+
+/** When an invitation renewed now ends, from the plugin's own option, as `getDate` computes it. */
+export function invitationExpiry(): Date {
+  return new Date(Date.now() + ORGANIZATION.invitationExpiresIn * 1000)
+}
 
 // The library logs without the request; a sign-in runs inside this store so its lines carry the trace id.
 const requestLog = new AsyncLocalStorage<FailureLog>()
@@ -186,6 +192,31 @@ const KEY_FIELD = { type: 'string', required: true } as const
 // Left out of the plugin's request body (db/to-zod.mjs:17), so only the Hub's mark sets it.
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
 
+const ORGANIZATION = {
+  schema: {
+    organization: { modelName: 'company', additionalFields: { attemptKey: KEY_FIELD } },
+    invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
+  },
+  // Only the Operations Central creates a company, through the adapter (step 4.2).
+  allowUserToCreateOrganization: false,
+  // The Hub counts the open invitations itself, under the company's lock: the plugin reads
+  // at most 100 rows of them, in no order (docs/reference/boundaries.md).
+  invitationLimit: Number.POSITIVE_INFINITY,
+  invitationExpiresIn: INVITATION_SECONDS,
+  membershipLimit: CAPACITY.members,
+} satisfies OrganizationOptions
+
+/**
+ * The plugin's own adapter, inside a library command: it writes a company and an invitation as its
+ * endpoints do, without their check that the caller is a member. The Hub's admission decides
+ * instead, for members and the operator alike (docs/reference/boundaries.md).
+ */
+export async function organizationAdapter(auth: Auth) {
+  const context = await auth.$context
+  // @ts-expect-error: better-auth 1.7.8 types the parameter AuthContext<BetterAuthOptions>, which no configured auth's context matches, its options being invariant there; the adapter reads only context.adapter (organization/adapter.mjs:126).
+  return getOrgAdapter(context, ORGANIZATION)
+}
+
 /**
  * A renewal never moves a session past 8 h from its creation, the founder's total. `getSession`
  * renews after placing the session it read on the context
@@ -243,9 +274,6 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       },
     },
     advanced: {
-      // One query per join, on the relations of tables.ts. Without it the library joins row by row,
-      // all at once, on a command's one connection, and pg warns of concurrent queries.
-      database: { joins: true },
       // __Host- comes from the names below; the library would otherwise prefix __Secure-.
       useSecureCookies: false,
       cookies: {
@@ -259,22 +287,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     // `# SERVER_ERROR` line of better-call's dist/router.mjs); thrown, it reaches inLibrary and
     // leaves as a code (S41).
     onAPIError: { throw: true },
-    plugins: [
-      INVITATION_ATTEMPTS,
-      organization({
-        schema: {
-          organization: { modelName: 'company', additionalFields: { attemptKey: KEY_FIELD } },
-          invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
-        },
-        allowUserToCreateOrganization: (person) => mayCreateCompanies(person.role),
-        // The Hub counts the open invitations itself, under the company's lock: the plugin reads
-        // at most 100 rows of them, in no order (docs/reference/boundaries.md).
-        invitationLimit: Number.POSITIVE_INFINITY,
-        invitationExpiresIn: INVITATION_SECONDS,
-        membershipLimit: CAPACITY.members,
-      }),
-      admin(),
-    ],
+    plugins: [INVITATION_ATTEMPTS, organization(ORGANIZATION), admin()],
     telemetry: { enabled: false },
     logger: {
       // Only a code leaves: the library's messages and arguments can hold an e-mail or an error (S41).

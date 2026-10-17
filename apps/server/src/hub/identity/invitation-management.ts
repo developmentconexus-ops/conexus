@@ -3,27 +3,29 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { admit } from './admission.ts'
+import { admitInviter, mayInviteAs } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { refusedAs } from './auth.ts'
+import { invitationExpiry, organizationAdapter } from './auth.ts'
 import { companyById } from './companies.ts'
 import {
+  checkNotMember,
   checkPace,
+  inviterOf,
   LIVE,
   lockCompany,
+  lockedInviter,
   PendingRow,
   pending,
   pendingOf,
   Status,
 } from './invitations.ts'
-import { invitation, session, user } from './tables.ts'
+import { invitation, session } from './tables.ts'
 
 type Manage = {
   person: Person
   companyId: CompanyId
   invitationId: InvitationId
   revision: number
-  headers: Headers
   sessionToken: string
 }
 const ManagedRow = PendingRow.extend({
@@ -47,7 +49,11 @@ async function admittedInvitation(tx: CommandTx, input: Manage) {
     )
     .for('share')
   if (active === undefined) throw new Failure('SESSION_REQUIRED')
-  await admit({ tx, companyId: input.companyId, personId: input.person.id, action: 'invite' })
+  const admitted = await admitInviter({
+    tx,
+    companyId: input.companyId,
+    personId: input.person.id,
+  })
   const [found] = await tx
     .select({
       ...pending,
@@ -62,7 +68,7 @@ async function admittedInvitation(tx: CommandTx, input: Manage) {
     )
   const row = ManagedRow.optional().parse(found)
   if (row === undefined) throw new Failure('NOT_FOUND')
-  return row
+  return { admitted, row }
 }
 
 function current(row: z.infer<typeof ManagedRow>, input: Manage): void {
@@ -73,13 +79,11 @@ function current(row: z.infer<typeof ManagedRow>, input: Manage): void {
 export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: Manage) =>
     deps.libraryCommand(async (tx) => {
-      const row = await admittedInvitation(tx, input)
+      const { row } = await admittedInvitation(tx, input)
       if (row.status === 'canceled' && !row.superseded) return false
       current(row, input)
-      await deps.auth.api.cancelInvitation({
-        headers: input.headers,
-        body: { invitationId: row.id },
-      })
+      const adapter = await organizationAdapter(deps.auth)
+      await adapter.updateInvitation({ invitationId: row.id, status: 'canceled' })
       await tx
         .update(invitation)
         .set({ revision: sql`${invitation.revision} + 1` })
@@ -91,43 +95,26 @@ export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
 export function renewInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: Manage) =>
     deps.libraryCommand(async (tx) => {
-      const row = await admittedInvitation(tx, input)
+      const { admitted, row } = await admittedInvitation(tx, input)
       current(row, input)
       if (!row.live) throw new Failure('INVITATION_CLOSED')
-      await tx
-        .select({ id: user.id })
-        .from(user)
-        .where(eq(user.id, input.person.id))
-        .for('no key update')
+      if (!mayInviteAs(admitted).includes(row.role)) throw new Failure('INVITATION_ROLE_REFUSED')
+      await lockedInviter(tx, input.person.id)
+      await checkNotMember(tx, admitted, row.email)
       await checkPace(tx, input.person.id)
-      await refusedAs(
-        () =>
-          deps.auth.api.createInvitation({
-            headers: input.headers,
-            body: {
-              email: row.email,
-              role: row.role,
-              organizationId: input.companyId,
-              resend: true,
-              attemptKey: row.attemptKey,
-            },
-          }),
-        {
-          USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'MEMBER_EXISTS',
-          YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE: 'INVITATION_ROLE_REFUSED',
-        },
-      )
       const [renewed] = await tx
         .update(invitation)
         .set({
           revision: sql`${invitation.revision} + 1`,
           mailedAt: null,
+          expiresAt: invitationExpiry(),
         })
         .where(eq(invitation.id, row.id))
         .returning(pending)
       return {
         invitation: pendingOf(PendingRow.parse(renewed)),
         companyName: (await companyById(tx, input.companyId)).name,
+        inviter: inviterOf(admitted, input.person),
       }
     })
 }

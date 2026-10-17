@@ -4,10 +4,11 @@ import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import { admit } from './admission.ts'
 import { storedAddress } from './auth.ts'
-import { after, pageKey, pageOf } from './companies.ts'
 import { LIVE, PendingRow, pending, pendingOf, Status } from './invitations.ts'
+import { CONEXUS } from './messages.ts'
 import { account, company, invitation, member, user } from './tables.ts'
 
 const ListedRow = PendingRow.extend({ live: z.boolean() })
@@ -17,6 +18,7 @@ const ReceivedRow = PendingRow.extend({
   companyId: CompanyId,
   companyName: z.string(),
   inviterName: z.string(),
+  firstOwner: z.boolean(),
   hasPassword: z.boolean(),
   joined: z.boolean(),
   superseded: z.boolean(),
@@ -57,7 +59,7 @@ export function readInvitations(
   })
 }
 
-function stateOf(status: z.infer<typeof Status>, live: boolean) {
+export function stateOf(status: z.infer<typeof Status>, live: boolean) {
   switch (status) {
     case 'accepted':
       return 'ACCEPTED'
@@ -94,6 +96,8 @@ export function readReceived(
         companyId: company.id,
         companyName: company.name,
         inviterName: user.name,
+        firstOwner: sql<boolean>`not exists (select 1 from ${member}
+          where ${member.organizationId} = ${invitation.organizationId})`,
       })
       .from(invitation)
       .innerJoin(company, eq(invitation.organizationId, company.id))
@@ -113,7 +117,9 @@ export function readReceived(
     const details = {
       company: targetCompany,
       role: row.role,
-      inviterName: row.inviterName,
+      // Only the Operations Central invites where no one is a member yet (step 4.2).
+      inviterName: row.firstOwner ? CONEXUS : row.inviterName,
+      firstOwner: row.firstOwner,
       expiresAt: row.expiresAt.toISOString(),
       revision: row.revision,
     }

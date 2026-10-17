@@ -9,6 +9,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@brazilian-utils/brazilian-utils": "2.5.0",
     "zod": "4.6.5"
   }
 }

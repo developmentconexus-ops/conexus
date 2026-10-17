@@ -2,25 +2,16 @@ import type { ListedInvitation } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
-import { z } from 'zod'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import {
-  Form,
-  FormAlert,
-  SubmitButton,
-  setServerError,
-  TextField,
-  useSchemaForm,
-} from '../../ui/form.tsx'
 import { List, PageTitle, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
+import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { CancelInvitationForm } from './cancel-invitation-form.tsx'
 import { InviteForm } from './invite-form.tsx'
-import { Pager } from './pager.tsx'
 import {
-  cancelCompanyInvitation,
   companyQuery,
   invitationsQuery,
   inviteToCompany,
@@ -59,55 +50,6 @@ function Members() {
       </List>
       <Pager next={data.next} param="members" page={page} list="Pessoas" />
     </section>
-  )
-}
-
-function CancelInvitation({
-  invitation,
-  onClose,
-}: {
-  invitation: ListedInvitation
-  onClose: () => void
-}) {
-  const { companyId } = route.useParams()
-  const cancel = useMutation(cancelCompanyInvitation)
-  const form = useSchemaForm(z.object({ email: z.literal(invitation.email) }), { email: '' })
-  async function submit() {
-    try {
-      await cancel.mutateAsync({
-        params: { companyId, invitationId: invitation.id },
-        body: { revision: invitation.revision },
-      })
-      onClose()
-    } catch (error) {
-      setServerError(form, error)
-    }
-  }
-  return (
-    <Form form={form} onSubmit={submit}>
-      <p className="break-all">Para cancelar, confirme {invitation.email}.</p>
-      <TextField
-        name="email"
-        type="email"
-        label="Confirmar e-mail"
-        autoComplete="off"
-        invalid="Digite o e-mail do convite."
-      />
-      <FormAlert />
-      <SubmitButton
-        idle="Confirmar cancelamento"
-        pending="Cancelando…"
-        label={`Confirmar cancelamento de convite para ${invitation.email}`}
-      />
-      <Button
-        type="button"
-        aria-label={`Voltar sem cancelar convite para ${invitation.email}`}
-        disabled={cancel.isPending}
-        onClick={onClose}
-      >
-        Voltar
-      </Button>
-    </Form>
   )
 }
 
@@ -166,7 +108,11 @@ function InvitationRow({ invitation }: { invitation: ListedInvitation }) {
           </Button>
         </span>
         {canceling && (
-          <CancelInvitation invitation={invitation} onClose={() => setCanceling(false)} />
+          <CancelInvitationForm
+            companyId={companyId}
+            invitation={invitation}
+            onClose={() => setCanceling(false)}
+          />
         )}
         {(send.isError || renew.isError) && (
           <p role="alert" className="basis-full text-label text-danger">

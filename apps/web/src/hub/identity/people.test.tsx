@@ -151,6 +151,14 @@ test('um id que não tem 32 letras e dígitos: a frase de "não encontrado"', as
   expect(await screen.findByText(/Não encontramos o que você procurou/)).toBeTruthy()
 })
 
+test('/companies/new, a página que criava empresa, não existe mais: a frase de "não encontrado"', async () => {
+  const conexus = createConexus(createMemoryHistory({ initialEntries: ['/companies/new'] }))
+  server.use(sessionRead(() => ANA))
+  render(<Conexus conexus={conexus} />)
+  expect(await screen.findByText(/Não encontramos o que você procurou/)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Criar empresa' })).toBeNull()
+})
+
 test('uma empresa que o Hub responde 404: a página de "não encontrado", não a de erro', async () => {
   server.use(
     sessionRead(() => ANA),
@@ -211,7 +219,12 @@ test('"Convidar de novo" manda o mesmo e-mail e papel com uma chave de tentativa
   fireEvent.click(
     await screen.findByRole('button', { name: 'Reenviar convite para eva@example.test' }),
   )
-  await waitFor(() => expect(reads).toEqual(['members', 'invitations', 'members', 'invitations']))
+  // The two lists are read side by side, in no set order: each is read once more after the send.
+  await waitFor(() => expect(reads.length).toBe(4))
+  expect([reads.slice(0, 2).sort(), reads.slice(2).sort()]).toEqual([
+    ['invitations', 'members'],
+    ['invitations', 'members'],
+  ])
   expect(sent.map(({ body }) => body)).toEqual([
     { email: 'eva@example.test', role: 'member', replaces: { id: EXPIRED.id, revision: 0 } },
   ])

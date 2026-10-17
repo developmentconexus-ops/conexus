@@ -5,7 +5,6 @@ export {
   Company,
   CompanyId,
   cancelInvitation,
-  createCompany,
   createInvitation,
   createInvitationPassword,
   declineInvitation,
@@ -52,5 +51,16 @@ export {
   isDeclaredOperation,
   type Operation,
 } from './operation.ts'
+export {
+  Client,
+  ClientSummary,
+  Cnpj,
+  correctClient,
+  getClient,
+  LEGAL_NAME_MAX_LENGTH,
+  listClients,
+  OwnerInvitation,
+  registerClient,
+} from './operations.ts'
 export { PAGES } from './pages.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'

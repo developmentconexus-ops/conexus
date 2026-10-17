@@ -8,9 +8,9 @@ and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the l
 piece of this file that a row of `scripts/removals.json` protects names that row, and its test
 "fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
 not name protect Hub rules that are not boundaries over a library: the mail adapter's refusal of a
-bounce, the replay of an attempt key, who may create a company, the state of a listed invitation,
-the log line of an undeclared failure, a write refused for its media type or its origin, and the
-library joins the Hub sets.
+bounce, the replay of an attempt key, that only the Operations Central creates a company, the state
+of a listed invitation, the log line of an undeclared failure, and a write refused for its media type
+or its origin.
 
 ## GitHub Actions and git
 
@@ -98,6 +98,32 @@ library joins the Hub sets.
   mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
   `first-person-lock`).
 
+### A company with no member and every invitation, through the plugin's adapter
+
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-org.mjs:74-100`.
+  `createOrganization` always writes the caller as a member with `creatorRole`. The invitation
+  endpoints admit only a member of the company (`routes/crud-invites.mjs:93-100` to create and
+  resend, `:430-434` to cancel). `getOrgAdapter`, exported by the plugin (`index.mjs:1-4`), writes
+  the same rows without those checks (`adapter.mjs:141`, `:352`, `:728`, `:793`), on
+  `getCurrentAdapter`, so inside `runWithTransaction` on the Hub's transaction.
+- **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, called by
+  `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, `createInvitationCommand` in
+  `invitations.ts` and the cancel and renewal in `invitation-management.ts`. The Hub's admission
+  decides who writes (`admitInviter`, `admitOperator`), `mayInviteAs` which role, and
+  `checkNotMember` refuses an address already in the company, as the endpoint did. The adapter
+  runs none of the endpoints' hooks: an `organizationHooks` invitation hook, `sendInvitationEmail`
+  or `cancelPendingInvitationsOnReInvite` turned on later would be bypassed, and none is on. The
+  call carries one `@ts-expect-error`: the parameter is typed `AuthContext<BetterAuthOptions>`,
+  which no configured auth's context matches.
+- **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus
+  never becomes one, so the operator invites the first owner without a membership. One gate for
+  members and the operator keeps one owner of who may invite ([code C26](../guides/code.md),
+  [security S6](../guides/security.md)). The test "sem membro" in
+  `hub/operations/clients.test.ts` fails when the company is created by the endpoint (removal
+  `operator-not-member`); "recusas" fails when the adapter writes outside the Hub's transaction
+  (removal `client-one-transaction`). When the library changes, reread `getOrgAdapter`'s
+  signature and these four methods.
+
 ### Sign-in and the first password reach the library through a request we build
 
 - **Library line.** `better-auth/dist/api/index.mjs:165-173`. The attempt limit runs in the
@@ -139,15 +165,21 @@ library joins the Hub sets.
   `:31` through `hasPermissionFn` (`permission.mjs:2`). The plugin checks a role inside each of its
   own endpoints, and its reads (`/organization/list-members`,
   `/organization/list-invitations`) answer an outsider 403 and read the company's whole roster.
-- **Hand-made piece.** `admit` in `apps/server/src/hub/identity/admission.ts`. It reads the
-  person's member row and decides with the plugin's `defaultRoles[role].authorize`, through one
-  table of actions. It answers an `Admitted` proof, which the Hub's reads and the invite require.
-- **Why.** [Security S6, S7 and S10](../guides/security.md). An outsider, an unknown company and a
-  role without the action get the same 404, with the reason only in the log. The test "fora: o
-  membro" in `companies.test.ts` fails when admission reads any member of the company (removal
-  `admission-reads-membership`); "convidar: o membro, ou quem é de outra empresa" in
-  `invitations.test.ts` covers it, and `admission.check.ts` fails to compile when a proof can be
-  forged.
+- **Hand-made piece.** `admit`, `admitInviter` and `admitOperator` in
+  `apps/server/src/hub/identity/admission.ts`, through one table of actions. `admit` reads the
+  person's member row and decides with the plugin's `defaultRoles[role].authorize`. The operator is
+  the person whose admin plugin role is `admin`, read in the command's transaction (S11): never a
+  member, admitted on the installation by `admitOperator`, and by `admitInviter` on a company with
+  no member yet, under the company's lock, only to invite its first owner. Each answers a nominal
+  proof, `MemberProof`, `OwnerInviterProof` or `OperatorProof`, which the Hub's reads and writes
+  require.
+- **Why.** [Security S6, S7, S8, S10 and S11](../guides/security.md). An outsider, an unknown
+  company and a role without the action get the same 404, with the reason only in the log. The test
+  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company
+  (removal `admission-reads-membership`); "fora: o operador" fails when a person who is not the
+  operator may invite on a company with no member (removal `owner-inviter-is-operator`);
+  "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
+  `admission.check.ts` fails to compile when any of the three proofs can be forged.
 
 ### The lists the Hub reads itself, 50 rows a page
 
@@ -157,7 +189,7 @@ library joins the Hub sets.
   `listMembers` pages by offset (`:186`).
 - **Hand-made piece.** `readMemberships` and `readMembers` in
   `apps/server/src/hub/identity/companies.ts`, `readInvitations` and `readReceived` in
-  `invitation-reads.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page
+  `invitation-reads.ts`, with `pageOf` and `pageKey` of `platform/pages.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page
   starts after the last row's id.
 - **Why.** A list past 100 rows would lose rows silently, and a page by offset shifts when a row
   arrives. The plugin's `getInvitation` also refuses an invitation that is no longer pending
@@ -186,11 +218,13 @@ library joins the Hub sets.
   (`routes/crud-invites.mjs:128-160`); cancel writes even a terminal status (`:428-450`).
 - **Hand-made piece.** `openOf` in `invitations.ts` finds the pending row without a clock. An
   explicit expired replacement compares its id/revision/email/role under the company lock, cancels
-  natively, stamps `superseded_at` and creates natively in one transaction. The old link reads
-  EXPIRED. The new row's `replaces` retains the original request for complete attempt-key payload
-  comparison. `invitation-management.ts` admits current administrators and recognizes explicit
+  through the plugin's adapter, stamps `superseded_at` and creates through the adapter in one
+  transaction. The old link reads EXPIRED. The new row's `replaces` retains the original request
+  for complete attempt-key payload comparison. `invitation-management.ts` admits current
+  administrators, and the operator on a company awaiting its first owner, and recognizes explicit
   canceled replay before comparing revision; accepted, declined and superseded rows cannot cancel.
-  Live renewal uses native resend, advances revision and clears `mailed_at`.
+  Live renewal writes the new `expires_at` itself, as native resend computes it
+  (`invitationExpiry` in `auth.ts`), advances revision and clears `mailed_at`.
 - **Why.** The founder's 4.1 decision B. An expired row still holds the unique pending-address
   index, and the native cancel alone cannot distinguish replacement from explicit cancellation.
   `invitation-lifecycle.test.ts` covers link identity, terminal replay without writes, full-payload
@@ -407,8 +441,9 @@ library joins the Hub sets.
 - **Library line.** `drizzle-orm/sql/expressions/conditions.js:101`. `gt(left, right)` renders
   `left > right` for any `SQLWrapper`, and a select builder as `right` renders as a parenthesized
   subquery. The builder has no row value, so the pair `(name, id)` cannot be built from columns.
-- **Hand-made piece.** `after` in `apps/server/src/hub/identity/companies.ts` and its three callers,
-  `readMemberships` and `readMembers` there and `readInvitations` in `invitation-reads.ts`. The pair
+- **Hand-made piece.** `after` in `apps/server/src/platform/pages.ts` and its four callers,
+  `readMemberships` and `readMembers` in `hub/identity/companies.ts`, `readInvitations` in
+  `invitation-reads.ts` and the client list in `hub/operations/clients.ts`. The pair
   is a `sql` template over the tables' own columns; the anchor row is a Drizzle select, scoped as
   its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
@@ -511,7 +546,7 @@ library joins the Hub sets.
 - **Hand-made piece.** `useAttemptKey` in `apps/web/src/platform/attempt-key.ts`. It keeps the
   attempt key until the Hub's answer settles the outcome.
 - **Why.** [Code C37](../guides/code.md) and [web W24](../guides/web.md). The two-click and
-  uncertain-reply tests in `create-company-form.test.tsx` and `invite-form.test.tsx` cover it.
+  uncertain-reply tests in `register-client-form.test.tsx` and `invite-form.test.tsx` cover it.
 
 ## Node 24.21.0
 
