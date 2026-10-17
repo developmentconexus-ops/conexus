@@ -79,22 +79,23 @@ As provas B1–B9 são as nove de B.
 | # | Unidade | Critério observável, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U2, U3 | B1: as quatro tabelas de empresa e `auth.user` têm RLS, sem `FORCE`; os papéis de escopo não entram, não são donos de nada, não têm `BYPASSRLS`; `hub_runtime` só é membro deles; sem contexto, também no segundo uso da conexão, um papel de escopo lê zero e não grava | `catalog.test.ts`; `isolation.test.ts` “sem contexto” | must |
-| 2 | U3 | B2: cada pessoa lê e grava a sua empresa; quem está nas duas vê só A no contexto A e só B no B; Suas empresas traz exatamente os vínculos | `isolation.test.ts` “positivo”; `companies.test.ts` | must |
-| 3 | U3 | B3: no contexto A, `select` sem filtro em empresa, membros, convites, cliente e pessoas (com junções e a âncora da página) não traz linha de B; traz as de A | `isolation.test.ts` “filtro esquecido” | must |
+| 2 | U3 | B2: cada pessoa lê e grava a sua empresa; quem está nas duas vê só A no contexto A; Suas empresas traz os vínculos | `isolation.test.ts` “positivo”; `companies.test.ts` | must |
+| 3 | U3 | B3: no contexto A, `select` sem filtro nas tabelas de empresa e pessoas (junções e âncora da página incluídas) não traz linha de B; traz as de A | `isolation.test.ts` “filtro esquecido” | must |
 | 4 | U3 | B4: no contexto A, INSERT com empresa B é recusado (42501); UPDATE que troca a empresa é recusado; UPDATE e DELETE sem filtro não mudam B; as linhas de B são conferidas depois | `isolation.test.ts` “escrita” | must |
 | 5 | U3 | B5: na mesma conexão, A, depois B, depois sem contexto, com commit, rollback e a transação aninhada da biblioteca: nenhum contexto sobra; uma falha ao fixar o contexto dá 503 e nada roda | `isolation.test.ts` “conexão reciclada” | must |
 | 6 | U3 | B6: as suítes de 4.1 e 4.2 passam sem mudar suas asserções; um id, token ou página de outro escopo não amplia o alcance; o limite de convites por pessoa segue contando todas as empresas; cadastro e convite de dono em `OPERATOR` criam a empresa sem membro operador | suítes existentes; `invitations.test.ts` “ritmo entre empresas” | must |
 | 7 | U3 | Abrir transação sem escopo não compila; o escopo vem da sessão ou da prova, nunca do corpo | `database.check.ts` | must |
 | 8 | U4 | B7: só o operador apaga: quem não é operador, dono incluído, recebe 404 em `DELETE /api/clients/{id}`; a rota nativa de apagar empresa é recusada a toda sessão | `clients.test.ts` “apagar: fora”; `companies.test.ts` | must |
 | 9 | U4 | Nome e revisão certos: 204; saem empresa, membros, convites e cadastro; pessoas, contas, senhas, sessões e a empresa B ficam | `clients.test.ts` “apagar” | must |
-| 10 | U4 | Revisão velha: 412 `CLIENT_STALE`; nome diferente: 422 `CLIENT_NAME_MISMATCH`; repetido depois de apagar: 404 igual ao de quem não existe; recusa plantada após cada escrita: nada sai | `clients.test.ts` “apagar: recusas” | must |
-| 11 | U4 | Apagar contra aceite, reenvio, correção e outro apagar: um vence pelo lock; nunca membro órfão nem empresa que volta; o link do convite de A apagada dá 404 | `clients.test.ts` “apagar: concorrência” | must |
-| 12 | U4 | `CLIENT_DELETED` leva trace e ids, nunca nome, CNPJ ou e-mail | `clients.test.ts` “log” | must |
-| 13 | U5 | Cada célula da matriz renderiza; corte, 502 ou 503 mantém o diálogo e diz que não confirmou; o foco começa no campo; Enter não confirma sem o nome; T23 nas três larguras, temas e teclado | `delete-client-dialog.test.tsx`, navegador | must |
+| 10 | U4 | Revisão velha: 412 `CLIENT_STALE`; nome diferente: 422 `CLIENT_NAME_MISMATCH`; repetido: 404 de quem não existe; recusa plantada após cada escrita: nada sai | `clients.test.ts` “apagar: recusas” | must |
+| 11 | U4 | Apagar contra aceite, reenvio, correção e outro apagar: um vence pelo lock; nunca membro órfão; o link do convite da apagada dá 404 | `clients.test.ts` “apagar: concorrência” | must |
+| 12 | U4 | `CLIENT_DELETED` leva só trace e ids | `clients.test.ts` “log” | must |
+| 13 | U5 | Cada célula da matriz renderiza; corte, 502 ou 503 mantém o diálogo; o foco começa no campo; Enter não confirma sem o nome; T23 | `delete-client-dialog.test.tsx`, navegador | must |
 | 14 | U5 | J: recarregar durante o cadastro perde a chave e mostra a lista atual, sem refazer sozinho | `register-client-form.test.tsx` “recarregar” | must |
-| 15 | U6 | B8: tirar a política, o `SET LOCAL ROLE`, a exigência de administrador nas políticas do operador ou a checagem de revisão faz o teste do critério falhar; tirar o escopo da assinatura faz `database.check.ts` falhar | `npm run removals` | must |
-| 16 | U6 | O roteiro da página | `tests/e2e/two-companies.test.ts` | must |
+| 15 | U6 | B8: tirar a política, o `SET LOCAL ROLE`, a exigência de administrador do operador (quebra “operador sem papel”) ou a revisão faz o teste do critério falhar; tirar o escopo da assinatura faz `database.check.ts` falhar | `npm run removals` | must |
+| 16 | U6 | O roteiro | `tests/e2e/two-companies.test.ts` | must |
 | 17 | U1, U7 | B9: a prova passa no PostgreSQL local e no Neon; a v0.5.0 volta à v0.4.2; a suíte passa também com a fase 2 desde U3; depois da v0.5.1 o login não alcança as tabelas de empresa; o banco ainda dorme | registro 0039 (Result); `catalog.test.ts`; suíte com a fase 2 | must |
+| 18 | U3 | Em `OPERATOR`, quem não é administrador, ou sem pessoa, lê zero linhas de empresa e não grava; o administrador lê todas | `isolation.test.ts` “operador sem papel” | must |
 
 ## A matriz de estados
 
@@ -227,7 +228,8 @@ grant comentado. Regras: D5, D10–D12.
   LOCAL ROLE` pelo `kind` (constante, D20) e os `conexus.*` por `set_config(…, true)` com valores
   ligados; as políticas os leem por `nullif(current_setting(…, true), '')`.
 - Toda política de `hub_operator` exige também que `conexus.person_id` seja uma pessoa com o papel
-  `admin` em `auth.user`.
+  `admin`: em `auth.user`, pelo papel da própria linha, sem subconsulta na mesma tabela; nas outras,
+  por `exists` em `auth.user`.
 - As linhas que cada papel alcança (política de `SELECT` e, para escrita, `WITH CHECK` igual):
 
 | Tabela | `hub_company` | `hub_person` | `hub_invitation` | `hub_operator` |
@@ -258,7 +260,7 @@ nas quatro tabelas de empresa, para a v0.4.2 rodar no banco migrado (D6).
 
 ### Como se prova
 
-1–7: `npm run test -w @conexus/server`, `npm run typecheck`, `npm run removals`; cada negativo com
+1–7, 18: `npm run test -w @conexus/server`, `npm run typecheck`, `npm run removals`; cada negativo com
 o positivo de A (T10). O CI roda a suíte também num segundo banco com a migração de U7 aplicada.
 
 ## U4 Apagar cliente no servidor
@@ -289,7 +291,7 @@ o positivo de A (T10). O CI roda a suíte também num segundo banco com a migra�
    `organization/adapter.mjs:370`: membros, convites, empresa, na transação corrente); commit; log;
    204. Não `auth.api.deleteOrganization`, que pede vínculo (`crud-org.mjs:264`). Zero linhas
    apagadas na empresa é defeito (C50), nunca 204. A empresa ativa das sessões não é lida pelo Hub
-   e fica (D18), salvo leitor achado em U1.
+   e fica (D18).
    Regras: C27, C28, C38, C48, C50, C52, C65, D22, S8, S10, S11, S41.
 
 ### Como se prova
