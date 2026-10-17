@@ -625,5 +625,16 @@
       "file": "src/hub/identity/sign-up.test.ts",
       "name": "apagar só pela Central"
     }
+  },
+  {
+    "id": "invitation-link-deleted",
+    "file": "apps/server/src/hub/identity/invitation-response.ts",
+    "find": "  const row = ActionRow.optional().parse(still)\n  if (row === undefined) throw new Failure('NOT_FOUND')\n",
+    "replace": "  const row = ActionRow.parse(still)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion.test.ts",
+      "name": "apagar: concorrência com o link"
+    }
   }
 ]

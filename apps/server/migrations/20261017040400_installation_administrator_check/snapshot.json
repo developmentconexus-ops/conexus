@@ -1,6 +1,6 @@
 {
-  "id": "d3c2d551-202d-4c11-bed0-83257e503e89",
-  "prevIds": ["d104b3ea-9930-4092-9d66-1dc98d092718"],
+  "id": "240847e2-1ba2-4dab-9e68-33052d7c814e",
+  "prevIds": ["abac5f63-dd0e-4747-a40b-8ec98fba5ec5"],
   "version": "8",
   "dialect": "postgres",
   "ddl": [
@@ -23,19 +23,19 @@
       "schema": "auth"
     },
     {
-      "isRlsEnabled": true,
+      "isRlsEnabled": false,
       "name": "company",
       "entityType": "tables",
       "schema": "auth"
     },
     {
-      "isRlsEnabled": true,
+      "isRlsEnabled": false,
       "name": "invitation",
       "entityType": "tables",
       "schema": "auth"
     },
     {
-      "isRlsEnabled": true,
+      "isRlsEnabled": false,
       "name": "member",
       "entityType": "tables",
       "schema": "auth"
@@ -53,7 +53,7 @@
       "schema": "auth"
     },
     {
-      "isRlsEnabled": true,
+      "isRlsEnabled": false,
       "name": "user",
       "entityType": "tables",
       "schema": "auth"
@@ -65,7 +65,7 @@
       "schema": "auth"
     },
     {
-      "isRlsEnabled": true,
+      "isRlsEnabled": false,
       "name": "client",
       "entityType": "tables",
       "schema": "operations"
@@ -1498,193 +1498,6 @@
       "entityType": "checks",
       "schema": "hub",
       "table": "starts"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_runtime"],
-      "using": "true",
-      "withCheck": "true",
-      "name": "runtime_transition",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "company"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_company"],
-      "using": "id = nullif(current_setting('conexus.company_id', true), '')",
-      "withCheck": "id = nullif(current_setting('conexus.company_id', true), '')",
-      "name": "company_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "company"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "SELECT",
-      "roles": ["hub_person"],
-      "using": "exists (select 1 from auth.member m where m.company_id = company.id and m.user_id = nullif(current_setting('conexus.person_id', true), ''))",
-      "withCheck": null,
-      "name": "person_select",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "company"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_invitation"],
-      "using": "exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = company.id)",
-      "withCheck": "exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = company.id)",
-      "name": "invitation_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "company"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_runtime"],
-      "using": "true",
-      "withCheck": "true",
-      "name": "runtime_transition",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "invitation"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_company"],
-      "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
-      "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
-      "name": "company_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "invitation"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "SELECT",
-      "roles": ["hub_person"],
-      "using": "inviter_id = nullif(current_setting('conexus.person_id', true), '')\n        or lower(email) = (select u.email from auth.\"user\" u where u.id = nullif(current_setting('conexus.person_id', true), ''))",
-      "withCheck": null,
-      "name": "person_select",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "invitation"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_invitation"],
-      "using": "id = nullif(current_setting('conexus.invitation_id', true), '')",
-      "withCheck": "id = nullif(current_setting('conexus.invitation_id', true), '')",
-      "name": "invitation_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "invitation"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_runtime"],
-      "using": "true",
-      "withCheck": "true",
-      "name": "runtime_transition",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "member"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_company"],
-      "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
-      "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
-      "name": "company_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "member"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "SELECT",
-      "roles": ["hub_person"],
-      "using": "user_id = nullif(current_setting('conexus.person_id', true), '')",
-      "withCheck": null,
-      "name": "person_select",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "member"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "INSERT",
-      "roles": ["hub_invitation"],
-      "using": null,
-      "withCheck": "user_id = nullif(current_setting('conexus.person_id', true), '')\n        and exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = member.company_id)",
-      "name": "invitation_insert",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "member"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_runtime"],
-      "using": "true",
-      "withCheck": "true",
-      "name": "runtime_sign_in",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "user"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_company"],
-      "using": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.member m where m.user_id = \"user\".id and m.company_id = nullif(current_setting('conexus.company_id', true), ''))\n        or exists (select 1 from auth.invitation i where i.inviter_id = \"user\".id and i.company_id = nullif(current_setting('conexus.company_id', true), ''))",
-      "withCheck": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.member m where m.user_id = \"user\".id and m.company_id = nullif(current_setting('conexus.company_id', true), ''))\n        or exists (select 1 from auth.invitation i where i.inviter_id = \"user\".id and i.company_id = nullif(current_setting('conexus.company_id', true), ''))",
-      "name": "company_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "user"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_person"],
-      "using": "id = nullif(current_setting('conexus.person_id', true), '')",
-      "withCheck": "id = nullif(current_setting('conexus.person_id', true), '')",
-      "name": "person_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "user"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_invitation"],
-      "using": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '')\n          and (i.inviter_id = \"user\".id or lower(i.email) = \"user\".email))",
-      "withCheck": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '')\n          and (i.inviter_id = \"user\".id or lower(i.email) = \"user\".email))",
-      "name": "invitation_all",
-      "entityType": "policies",
-      "schema": "auth",
-      "table": "user"
-    },
-    {
-      "as": "PERMISSIVE",
-      "for": "ALL",
-      "roles": ["hub_runtime"],
-      "using": "true",
-      "withCheck": "true",
-      "name": "runtime_transition",
-      "entityType": "policies",
-      "schema": "operations",
-      "table": "client"
     }
   ],
   "renames": []

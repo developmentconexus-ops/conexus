@@ -24,6 +24,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    4.2 **Cadastro de cliente.** Cadastra um cliente na Central, e o administrador dele entra como dono.
       Cartão da etapa 4.2 aprovado em 2026-10-16 (commit 819b1157ca1edc62fb83a5f31d07faa391e32716): "Aprovo"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
+   Cartão da etapa 5 aprovado em 2026-10-17 (commit f64ebb5b8feb676723d5796e23bdda2de3aa7bd5): "2A"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
 8. **App de exemplo.** Abre um app escrito à mão.
@@ -78,9 +79,8 @@ Domínio próprio de empresa.
 
 ## 2. As etapas
 
-Os 17 testes de login (LT1 a LT17), as provas PD1 a PD9, as fichas e os
-estudos vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso dela fica na
-seção 1.
+Testes de login LT1–LT17, provas PD1–PD9, fichas e estudos vivem fora do repositório.
+Uma etapa fechada sai desta tabela; sua linha de uso fica na seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
@@ -105,12 +105,12 @@ seção 1.
 | 22 Ensaio geral | A 20 | O lugar da cópia fora do Neon | Os ensaios das etapas 2, 7, 9, 12 e 13. O teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 
-O teste do banco dormindo, da etapa 2, roda de novo em toda etapa que acrescenta algo que roda
-sozinho. Se o banco não dormir com o Mastra parado, a etapa 12 volta a você.
+O teste do banco dormindo, da etapa 2, volta em toda etapa que acrescenta algo que roda sozinho.
+Se o banco não dormir com o Mastra parado, a etapa 12 volta a você.
 
 ## 3. Como uma etapa roda
 
-Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), cada uma, menos o uso, com a sua
-skill ([`AGENTS.md`](../AGENTS.md)). A sua resposta 2 vive na regra do estudo
+Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md); cada uma, menos o uso, tem a sua
+skill. A sua resposta 2 vive na regra do estudo
 ([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão sua é pedida na
 etapa dela, com letras e exemplo.

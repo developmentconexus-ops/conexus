@@ -99,6 +99,8 @@ export type Database = Readonly<{
   asPerson<T>(tx: CommandTx, work: (tx: CommandTx) => Promise<T>): Promise<T>
   /** The installation's own rows, in the Hub's login: its starts, and the checks of the boot. */
   installation<T>(work: (tx: CommandTx) => Promise<T>): Promise<T>
+  /** The installation's own rows, read only: the status page's starts. */
+  installationRead<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>
   /** The installation's first administrator, before any person exists to scope a command. */
   libraryInstallation<R extends AnyRelations, T>(
     relations: R,
@@ -232,11 +234,14 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
         })
       }
       await enter(tx, { kind: 'PERSON', personId: scope.personId })
-      const result = await work(tx)
-      await enter(tx, scope)
-      return result
+      try {
+        return await work(tx)
+      } finally {
+        await enter(tx, scope)
+      }
     },
     installation: (work) => inTransaction(NO_RELATIONS, undefined, work, WRITE),
+    installationRead: (work) => inTransaction(NO_RELATIONS, undefined, work, READ),
     libraryInstallation: (relations, work) => inTransaction(relations, undefined, work, WRITE),
     close: () => {
       closing ??= pool.end()

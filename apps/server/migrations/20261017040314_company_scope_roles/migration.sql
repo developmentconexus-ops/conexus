@@ -26,12 +26,17 @@ GRANT USAGE ON SCHEMA auth TO hub_company, hub_person, hub_invitation, hub_opera
 GRANT USAGE ON SCHEMA operations TO hub_operator;
 --> statement-breakpoint
 -- COMPANY, a company's routes: reads its company, members and people; invites, cancels and renews.
--- UPDATE on the company, a member, a person and a session is the row lock each command takes.
-GRANT SELECT, UPDATE ON TABLE auth.company, auth.member TO hub_company;
+-- A row lock needs UPDATE on one column; the company, a member, a person and a session are only
+-- locked, so each gets UPDATE on one column no command writes (data D12).
+GRANT SELECT ON TABLE auth.company, auth.member TO hub_company;
+--> statement-breakpoint
+GRANT UPDATE (created_at) ON TABLE auth.company, auth.member TO hub_company;
 --> statement-breakpoint
 GRANT SELECT, INSERT, UPDATE ON TABLE auth.invitation TO hub_company;
 --> statement-breakpoint
-GRANT SELECT, UPDATE ON TABLE auth."user", auth.session TO hub_company;
+GRANT SELECT ON TABLE auth."user", auth.session TO hub_company;
+--> statement-breakpoint
+GRANT UPDATE (updated_at) ON TABLE auth."user", auth.session TO hub_company;
 --> statement-breakpoint
 -- PERSON, the person's companies and the pace of what they sent: reads only.
 GRANT SELECT ON TABLE auth.company, auth.member, auth.invitation, auth."user" TO hub_person;
@@ -39,7 +44,8 @@ GRANT SELECT ON TABLE auth.company, auth.member, auth.invitation, auth."user" TO
 -- INVITATION, the invitation's link: reads it, sets the password, declines or accepts. Accepting
 -- adds the member and points the session at the company; the password creates the person, their
 -- credential and one-use link, and signs them in.
-GRANT SELECT, UPDATE ON TABLE auth.company TO hub_invitation;
+-- The company is only locked: UPDATE on one column no command writes.
+GRANT SELECT, UPDATE (created_at) ON TABLE auth.company TO hub_invitation;
 --> statement-breakpoint
 GRANT SELECT, INSERT ON TABLE auth.member TO hub_invitation;
 --> statement-breakpoint
@@ -58,6 +64,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE auth.company, auth.invitation TO h
 --> statement-breakpoint
 GRANT SELECT, DELETE ON TABLE auth.member TO hub_operator;
 --> statement-breakpoint
-GRANT SELECT, UPDATE ON TABLE auth."user" TO hub_operator;
+-- The operator's own row is only locked, to hold its role (security S11).
+GRANT SELECT, UPDATE (updated_at) ON TABLE auth."user" TO hub_operator;
 --> statement-breakpoint
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE operations.client TO hub_operator;

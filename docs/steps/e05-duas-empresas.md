@@ -19,7 +19,7 @@ de uma pessoa, um agente ou o Builder esquece o filtro. Só a Conexus apaga uma 
 
 **O que você faz, e quando.** Antes: as duas caixas. No começo: nada, a “2A” vale enquanto o
 cartão seguir as respostas abaixo. Antes de U2 e de U7: dá a palavra sobre a lista exata de papel,
-tabela e verbo de cada PR de grant, como no PR 48 (D11); a construção segue local enquanto isso. Na
+tabela e verbo de cada PR de grant, como no PR 48 (D11); a construção segue local. Na
 U7: confirma que a volta a antes da v0.5.0 deixa de funcionar (H). No fim: faz o roteiro, diz o que
 viu e aprova os textos das telas.
 

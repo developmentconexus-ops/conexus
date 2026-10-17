@@ -26,4 +26,4 @@ Step 5's list fails, or a route that forgot admission is found.
 
 ## State
 
-Brought. Founder, 2026-10-11: "primeiro deixar o app funcional, corretamente e depois fazemo defense in depth". Amended 2026-10-14 for installation tables, founder: "1. A".
+Brought. Founder, 2026-10-11: "primeiro deixar o app funcional, corretamente e depois fazemo defense in depth". Amended 2026-10-14 for installation tables, founder: "1. A". Step 5 proposes the policy: [0039].

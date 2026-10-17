@@ -1,6 +1,7 @@
 import type { ClientSummary } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
 import { dayOf } from '../../platform/dates.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { List, PageTitle, Row, rowBody } from '../../ui/list.tsx'
@@ -13,7 +14,11 @@ import { clientsQuery } from './queries.ts'
 const route = getRouteApi('/_app/operations/clients/')
 
 // What the list says after a deletion: the dialog's, or of a client already gone (step 5).
-const NOTICES = { deleted: 'Cliente apagado.', gone: 'Este cliente não existe mais.' } as const
+const NOTICES = {
+  deleted: 'Cliente apagado.',
+  gone: 'Este cliente não existe mais.',
+  unconfirmed: 'O último cadastro ficou sem resposta. O cliente está nesta lista?',
+} as const
 
 const INVITATION_STATE = {
   PENDING: 'Aguardando o administrador',
@@ -61,7 +66,13 @@ function ClientRow({ client }: { client: ClientSummary }) {
 
 /** The Operations Central's list of clients, 50 a page, the page in the address (web W18). */
 export function Clients() {
-  const { page, notice } = route.useSearch()
+  const { page, notice: arrived } = route.useSearch()
+  const navigate = route.useNavigate()
+  // The notice is for this visit: it leaves the address, so a reload or a copied link does not repeat it.
+  const [notice] = useState(arrived)
+  useEffect(() => {
+    if (arrived) void navigate({ search: { page }, replace: true })
+  }, [arrived, navigate, page])
   const { data } = useSuspenseQuery(clientsQuery(page))
   return (
     <div className="flex flex-col gap-xl">

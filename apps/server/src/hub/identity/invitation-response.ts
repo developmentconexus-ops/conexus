@@ -39,7 +39,9 @@ async function lockedInvitation(tx: CommandTx, input: InvitationAction) {
     .select({ ...pending, status: invitation.status, live: sql<boolean>`${LIVE}` })
     .from(invitation)
     .where(eq(invitation.id, input.invitationId))
-  const row = ActionRow.parse(still)
+  // A deletion of the company that committed while this waited on its lock leaves no row (step 5).
+  const row = ActionRow.optional().parse(still)
+  if (row === undefined) throw new Failure('NOT_FOUND')
   if (input.person !== undefined && storedAddress(input.person.email) !== storedAddress(row.email))
     throw new Failure('NOT_FOUND')
   return row

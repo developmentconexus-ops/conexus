@@ -194,7 +194,7 @@ handoff to an app and the Preview session are Conexus's own. Where an app's sess
 chosen in step 18 by test.
 
 **Isolation, in layers.** Hub admission on every read and write, with the company column on every
-table and the company carried in every transaction; the row policy is decided in step 5 [0012].
+table and the company carried in every transaction [0012]; row policies bound each transaction's scope [0039].
 One project per company and one login per app, so PostgreSQL refuses a cross read [0021]. An app
 without secret or network [0018]. The rows Mastra writes carry the company, built by the server,
 never by the browser.

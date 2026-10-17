@@ -8,7 +8,7 @@ export const Route = createFileRoute('/_app/operations/clients/')({
   beforeLoad: operatorOnly,
   staticData: { place: 'Central de Operação' },
   validateSearch: listClients.input.query
-    .extend({ notice: z.enum(['deleted', 'gone']).optional().catch(undefined) })
+    .extend({ notice: z.enum(['deleted', 'gone', 'unconfirmed']).optional().catch(undefined) })
     .catch({}),
   loaderDeps: ({ search }) => ({ page: search.page }),
   loader: ({ context, deps }) =>
