@@ -3,7 +3,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { admit } from './admission.ts'
+import { admitInviter } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { companyById } from './companies.ts'
@@ -47,7 +47,7 @@ async function admittedInvitation(tx: CommandTx, input: Manage) {
     )
     .for('share')
   if (active === undefined) throw new Failure('SESSION_REQUIRED')
-  await admit({ tx, companyId: input.companyId, personId: input.person.id, action: 'invite' })
+  await admitInviter({ tx, companyId: input.companyId, personId: input.person.id })
   const [found] = await tx
     .select({
       ...pending,

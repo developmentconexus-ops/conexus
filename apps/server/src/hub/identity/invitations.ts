@@ -11,8 +11,8 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Admitted } from './admission.ts'
-import { admit } from './admission.ts'
+import type { CompanyProof } from './admission.ts'
+import { admitInviter } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
@@ -80,7 +80,7 @@ type Invite = {
   replaces?: z.infer<typeof Replacement>
 }
 
-async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) {
+async function attemptOf(tx: CommandTx, admitted: CompanyProof, attemptKey: string) {
   const [same] = await tx
     .select({
       ...pending,
@@ -98,7 +98,7 @@ async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) 
 }
 
 /** Room for one more open invitation: the address's own, about to be replaced, does not count. */
-async function checkRoom(tx: CommandTx, admitted: Admitted, email: string): Promise<void> {
+async function checkRoom(tx: CommandTx, admitted: CompanyProof, email: string): Promise<void> {
   const live = await tx.$count(
     invitation,
     and(
@@ -126,7 +126,7 @@ export async function checkPace(tx: CommandTx, personId: string): Promise<void> 
  * The address's open invitation, by the unique index and with no clock: an expired one the plugin
  * no longer sees still holds the index, so it is canceled too (D15).
  */
-async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
+async function openOf(tx: CommandTx, admitted: CompanyProof, email: string) {
   const [open] = await tx
     .select({ ...pending, live: sql<boolean>`${LIVE}` })
     .from(invitation)
@@ -140,7 +140,7 @@ async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
   return OpenRow.optional().parse(open)
 }
 
-async function createdOf(tx: CommandTx, admitted: Admitted, invitationId: string) {
+async function createdOf(tx: CommandTx, admitted: CompanyProof, invitationId: string) {
   const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invitationId))
   if (row === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'invitation not read' } })
@@ -160,7 +160,7 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
       const { headers } = input
       await lockCompany(tx, input.companyId)
       const personId = input.person.id
-      const admitted = await admit({ tx, personId, companyId: input.companyId, action: 'invite' })
+      const admitted = await admitInviter({ tx, personId, companyId: input.companyId })
       await tx.select({ id: user.id }).from(user).where(eq(user.id, personId)).for('no key update')
       const same = await attemptOf(tx, admitted, input.attemptKey)
       if (same !== undefined) {

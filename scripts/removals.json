@@ -134,7 +134,7 @@
   {
     "id": "company-create-administrator",
     "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "allowUserToCreateOrganization: (person) => mayCreateCompanies(person.role),",
+    "find": "allowUserToCreateOrganization: (person) => mayOperate(person.role),",
     "replace": "allowUserToCreateOrganization: true,",
     "test": {
       "cwd": "apps/server",
@@ -151,6 +151,17 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/companies.test.ts",
       "name": "fora: o membro"
+    }
+  },
+  {
+    "id": "owner-inviter-is-operator",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "  if (!(await isOperatorPerson(tx, personId, ACTIONS.inviteOwner.locks))) return undefined\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/companies.test.ts",
+      "name": "fora: o operador"
     }
   },
   {

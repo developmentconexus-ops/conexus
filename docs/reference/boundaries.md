@@ -139,15 +139,21 @@ library joins the Hub sets.
   `:31` through `hasPermissionFn` (`permission.mjs:2`). The plugin checks a role inside each of its
   own endpoints, and its reads (`/organization/list-members`,
   `/organization/list-invitations`) answer an outsider 403 and read the company's whole roster.
-- **Hand-made piece.** `admit` in `apps/server/src/hub/identity/admission.ts`. It reads the
-  person's member row and decides with the plugin's `defaultRoles[role].authorize`, through one
-  table of actions. It answers an `Admitted` proof, which the Hub's reads and the invite require.
-- **Why.** [Security S6, S7 and S10](../guides/security.md). An outsider, an unknown company and a
-  role without the action get the same 404, with the reason only in the log. The test "fora: o
-  membro" in `companies.test.ts` fails when admission reads any member of the company (removal
-  `admission-reads-membership`); "convidar: o membro, ou quem é de outra empresa" in
-  `invitations.test.ts` covers it, and `admission.check.ts` fails to compile when a proof can be
-  forged.
+- **Hand-made piece.** `admit`, `admitInviter` and `admitOperator` in
+  `apps/server/src/hub/identity/admission.ts`, through one table of actions. `admit` reads the
+  person's member row and decides with the plugin's `defaultRoles[role].authorize`. The operator is
+  the person whose admin plugin role is `admin`, read in the command's transaction (S11): never a
+  member, admitted on the installation by `admitOperator`, and by `admitInviter` on a company with
+  no member yet, under the company's lock, only to invite its first owner. Each answers a nominal
+  proof, `MemberProof`, `OwnerInviterProof` or `OperatorProof`, which the Hub's reads and writes
+  require.
+- **Why.** [Security S6, S7, S8, S10 and S11](../guides/security.md). An outsider, an unknown
+  company and a role without the action get the same 404, with the reason only in the log. The test
+  "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company
+  (removal `admission-reads-membership`); "fora: o operador" fails when a person who is not the
+  operator may invite on a company with no member (removal `owner-inviter-is-operator`);
+  "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
+  `admission.check.ts` fails to compile when any of the three proofs can be forged.
 
 ### The lists the Hub reads itself, 50 rows a page
 

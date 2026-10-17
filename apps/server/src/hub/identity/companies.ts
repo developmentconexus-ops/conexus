@@ -6,7 +6,7 @@ import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { admit, mayCreateCompanies, mayInviteAs } from './admission.ts'
+import { admit, mayInviteAs, mayOperate } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { refusedAs } from './auth.ts'
 import { company, member, user } from './tables.ts'
@@ -79,7 +79,7 @@ export function readMemberships(database: Database, personId: string, page: stri
     const person = PersonRole.optional().parse(named)
     return {
       companies: listed.rows,
-      mayCreate: mayCreateCompanies(person?.role),
+      mayCreate: mayOperate(person?.role),
       next: listed.next,
     }
   })

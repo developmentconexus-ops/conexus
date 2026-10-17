@@ -5,6 +5,8 @@ import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from './test-hub.ts'
 import { ANA, BRUNO, CARLA, codeOf, hubOn, id, personOn, post } from './test-hub.ts'
 
+const CARLA_OPERATOR = { ...CARLA, role: 'admin' }
+
 function call(
   hub: Hub,
   person: Person | undefined,
@@ -274,4 +276,49 @@ test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreat
     mayCreate: false,
     next: { kind: 'END' },
   })
+})
+
+test('fora: o operador não lê empresa alguma, ativa ou sem membro: getCompany, listMembers e listInvitations dão 404, sem motivo na resposta; só o operador convida numa empresa sem membro, e não numa ativa', async (t) => {
+  const hub = await hubOn(t)
+  const operator = await personOn(hub, CARLA_OPERATOR)
+  const bruno = await personOn(hub, BRUNO)
+  const active = id()
+  const awaiting = id()
+  for (const [companyId, name] of [
+    [active, 'Empresa Ativa'],
+    [awaiting, 'Empresa Sem Membro'],
+  ] as const) {
+    await hub.test.asOwner(
+      `insert into auth.company (id, name, slug, created_at, attempt_key)
+        values ($1, $2, $3, now(), $3)`,
+      [companyId, name, randomUUID()],
+    )
+  }
+  await join(hub, active, bruno.id, 'owner')
+  for (const companyId of [active, awaiting]) {
+    for (const path of ['', '/members', '/invitations']) {
+      const response = await call(hub, operator, 'GET', `/api/companies/${companyId}${path}`)
+      assert.equal(response.statusCode, 404, path)
+      const { traceId: _, ...shown } = Object(response.json())
+      assert.deepEqual(shown, {
+        type: 'urn:conexus:problem:NOT_FOUND',
+        title: 'Não encontramos o que você procurou.',
+        status: 404,
+        code: 'NOT_FOUND',
+      })
+    }
+  }
+  assert.equal((await call(hub, bruno, 'GET', `/api/companies/${active}`)).statusCode, 200)
+  const invite = { email: 'davi@example.test', role: 'owner' }
+  for (const [person, companyId] of [
+    [bruno, awaiting],
+    [operator, active],
+  ] as const) {
+    const refused = await post(hub, person, `/api/companies/${companyId}/invitations`, invite)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
+  }
+  assert.deepEqual(
+    await hub.test.asOwner('select count(*)::int as invitations from auth.invitation'),
+    [{ invitations: 0 }],
+  )
 })
