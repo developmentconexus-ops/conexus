@@ -115,7 +115,7 @@ or its origin.
   `library-adapter-joins-transaction`), and so does "renovar: o administrador renovando o convite
   de um dono", where the second phase refuses the escaped write.
 
-### A company with no member and its first owner's invitation, through the plugin's adapter
+### The operator's invitation of an owner, through the plugin's adapter
 
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-org.mjs:74-100`.
   `createOrganization` always writes the caller as a member with `creatorRole`. The invitation
@@ -124,10 +124,11 @@ or its origin.
   the same rows without those checks (`adapter.mjs:141`, `:352`, `:728`, `:793`), on
   `getCurrentAdapter`, so inside `runWithTransaction` on the Hub's transaction.
 - **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, on the
-  operator's path only: `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and the first
-  owner's invitation, its cancel and its renewal when the admission is the operator's
+  operator's path only: `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and an owner's
+  invitation, its cancel and its renewal when the admission is the operator's
   (`CompanyOperatorProof`) in `invitations.ts` and `invitation-management.ts`. The Hub's admission
-  decides who writes (`admitOperator`, `admitInviter`), the role is only owner, and a renewal writes
+  decides who writes (`admitOperator`, `admitCompany`), the role is only owner
+  (`OPERATOR_INVITES_AS` in `hub-api`, read by the Hub and by the Central's form), and a renewal writes
   its expiry from the plugin's option (`invitationExpiry` in `auth.ts`). A member's invitation,
   cancel and renewal go through the endpoints, `auth.api.createInvitation`, `cancelInvitation` and
   `createInvitation` with `resend: true`, which own the roles, the member check and the expiry, as
@@ -137,8 +138,12 @@ or its origin.
   the parameter is typed `AuthContext<BetterAuthOptions>`, which no configured auth's context
   matches.
 - **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus never
-  becomes one, so the operator invites the first owner without a membership, which no endpoint
-  admits. Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
+  becomes one, so the operator invites an owner without a membership, which no endpoint admits.
+  Step 6 declared the departure: the Central also invites an owner into an active company, since
+  its card has it act on the people as an owner, so the rule "only a company with no member" is
+  gone and the mail says "primeiro dono" only for a company with no member (removal
+  `owner-invitation-first-owner`; "empresa ativa" in `owner-invitation.test.ts` also checks the
+  subject). Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
   2026-10-17 ([delivery L12](../guides/delivery.md)). "convidar: o administrador pedindo dono…" in
   `invitations.test.ts` fails when a member's invitation is written by the adapter instead (removal
   `invitation-member-native-endpoint`): the Hub no longer checks the creator role or an existing
@@ -181,9 +186,15 @@ or its origin.
   or the operator, `admitCompany`), decide by `rankAllows` in `admission.ts` and write through
   `deleteMember` and `updateMember` of the plugin's adapter (`organization/adapter.mjs:305`, `:295`),
   from `organizationAdapter`. `keepOwner` counts the owners under that lock, and
-  `cancelSentBy` cancels the invitations the removed person sent, in the same transaction.
+  `cancelSentBy` cancels the invitations the removed person sent, in the same transaction. Each
+  action carries the plugin's statement in `ACTIONS` (`member:delete` to remove, `member:update`
+  to change a role; leaving needs only the membership), so a role the plugin refuses is refused
+  here too.
 - **Why.** Step 6, P1: the Central acts on a company's people as an owner without being a member,
-  and the last-owner rule is one, under the company's lock. A removal row proves each part: the lock
+  and the last-owner rule is one, under the company's lock. The role table is the founder's
+  answer A on B1: the owner and the Central change any role; an administrator only between
+  administrator and member, also their own; a member none; the sole owner gets 409 `LAST_OWNER`
+  whoever asks, the Central included. A removal row proves each part: the lock
   (`member-company-lock`), the owner count (`member-last-owner`), the rank (`member-actor-rank`),
   the role the caller read (`member-role-from`) and the cancellation (`removed-person-invitations`).
   The plugin's `organizationHooks` for members are none today; one turned on later would be bypassed
@@ -234,15 +245,15 @@ or its origin.
   `apps/server/src/hub/identity/admission.ts`, through one table of actions. `admit` reads the
   person's member row and decides with the plugin's `defaultRoles[role].authorize`. The operator is
   the person whose admin plugin role is `admin`, read in the command's transaction (S11): never a
-  member, admitted on the installation by `admitOperator`, and by `admitInviter` on a company with
-  no member yet, under the company's lock, only to invite its first owner. Each answers a nominal
-  proof, `MemberProof`, `OwnerInviterProof` or `OperatorProof`, which the Hub's reads and writes
-  require.
+  member, admitted on the installation by `admitOperator`, and by `admitCompany` on any company, with
+  or without members, under the company's lock when the action writes: it reads and changes the
+  people as an owner and invites only an owner. Each answers a nominal proof, `MemberProof`,
+  `CompanyOperatorProof` or `OperatorProof`, which the Hub's reads and writes require.
 - **Why.** [Security S6, S7, S8, S10 and S11](../guides/security.md). An outsider, an unknown
   company and a role without the action get the same 404, with the reason only in the log. The test
   "fora: o membro" in `companies.test.ts` fails when admission reads any member of the company
   (removal `admission-reads-membership`); "fora: o operador" fails when a person who is not the
-  operator may invite on a company with no member (removal `owner-inviter-is-operator`);
+  operator may act on a company as the operator (removal `owner-inviter-is-operator`);
   "convidar: o membro, ou quem é de outra empresa" in `invitations.test.ts` covers it, and
   `admission.check.ts` fails to compile when any of the three proofs can be forged.
 
@@ -286,8 +297,7 @@ or its origin.
   through the plugin (a member's by the endpoint, the operator's by the adapter), stamps
   `superseded_at` and creates the same way, in one transaction. The old link reads EXPIRED. The new
   row's `replaces` retains the original request for complete attempt-key payload comparison.
-  `invitation-management.ts` admits current administrators, and the operator on a company awaiting
-  its first owner, and recognizes explicit canceled replay before comparing revision; accepted,
+  `invitation-management.ts` admits current administrators, and the operator on any company, and recognizes explicit canceled replay before comparing revision; accepted,
   declined and superseded rows cannot cancel. A member's live renewal is native `resend: true`; the
   operator's writes the new `expires_at` itself, as native resend computes it (`invitationExpiry` in
   `auth.ts`). Both advance revision and clear `mailed_at`.
@@ -459,8 +469,11 @@ or its origin.
   that function against a 3 second deadline, before the route opens a transaction, and answers
   `PASSWORD_COMPROMISED` or, for an error or the deadline, `PASSWORD_CHECK_UNAVAILABLE`. The plugin
   is not installed: its check would run inside the transaction that spends the link.
-- **Why.** [Security S36, S41](../guides/security.md). Tests plant `fetch` in
-  `createTestDatabase`, never the real service. Removals `password-check-before-link`,
+- **Why.** [Security S36, S41](../guides/security.md). No test reaches the real service. In-process
+  tests use the `fetch` that `createTestDatabase` plants (`platform/test-password-service.ts`).
+  Hubs that tests spawn load `platform/test-password-preload.ts`. The Docker image test
+  (`tests/e2e/invitation-image.test.ts`) blocks the host with `--add-host` and sets the password in
+  the database; the review found it reaching the service. Removals `password-check-before-link`,
   `password-check-invitation`, `password-check-deadline` and `password-check-error` take each
   protection out.
 
