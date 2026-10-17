@@ -27,11 +27,18 @@ export type Company = z.infer<typeof Company>
 export const Membership = z.object({ company: Company, role: Role })
 export type Membership = z.infer<typeof Membership>
 
+/**
+ * A person of a company. `mayRemove` and `mayChangeTo` are what the viewer may do to this row, the
+ * Hub's one answer (code C26); `invitationsSent` counts the invitations a removal would cancel.
+ */
 export const Member = z.object({
   personId: PersonId,
   name: z.string().min(1),
   email: Email,
   role: Role,
+  mayRemove: z.boolean(),
+  mayChangeTo: z.array(Role),
+  invitationsSent: z.number().int().nonnegative(),
 })
 export type Member = z.infer<typeof Member>
 
@@ -133,6 +140,32 @@ export const listMembers = defineOperation({
   input: { params: InCompany, query: Page },
   success: { status: 200, body: z.object({ members: z.array(Member), next: Next }) },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+})
+
+const OfMember = InCompany.extend({ personId: PersonId })
+
+export const removeMember = defineOperation({
+  id: 'removeMember',
+  summary: 'Removes a person from a company, or the person from theirs when it is their own.',
+  access: 'session',
+  method: 'DELETE',
+  path: '/api/companies/{companyId}/members/{personId}',
+  bodyLimit: 1024,
+  input: { params: OfMember },
+  success: { status: 204 },
+  failures: ['NOT_FOUND', 'LAST_OWNER', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+})
+
+export const changeMemberRole = defineOperation({
+  id: 'changeMemberRole',
+  summary: 'Changes the role of a person of a company, read at the role it names.',
+  access: 'session',
+  method: 'PUT',
+  path: '/api/companies/{companyId}/members/{personId}',
+  bodyLimit: 1024,
+  input: { params: OfMember, body: z.object({ role: Role, from: Role }) },
+  success: { status: 200, body: z.object({ member: Member }) },
+  failures: ['NOT_FOUND', 'LAST_OWNER', 'MEMBER_STALE', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 
 export const listInvitations = defineOperation({

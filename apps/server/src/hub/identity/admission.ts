@@ -1,7 +1,7 @@
 import type { CompanyId, Email, PersonId } from '@conexus/hub-api'
 import { Role } from '@conexus/hub-api'
 import { defaultRoles } from 'better-auth/plugins/organization/access'
-import { and, eq, notExists } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { storedAddress } from './auth.ts'
@@ -9,56 +9,87 @@ import { company, member, user } from './tables.ts'
 
 const INVITE = { invitation: ['create'] } as const
 type ActionRule = {
-  by: 'MEMBER' | 'OPERATOR'
+  by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
   statement?: typeof INVITE
-  role?: Role
 }
 
 /**
  * Each action, who takes it and what it needs (security S6). A member's needs the statement the
  * plugin's role must allow, and none needs only the membership. The operator's is a fact of the
- * person, not a company role (S11). `invite` also admits the operator on a company with no member
- * yet, through `inviteOwner`, and only with the role it names. `locks` holds the row that decided
- * until the write commits (S8).
+ * person, not a company role (S11). A `COMPANY` action also admits the operator on that company,
+ * with or without a member, as `COMPANY_OPERATOR`: it invites only with `COMPANY_OPERATOR_ROLE`,
+ * and the rank table decides what it may do to a member. `locks` holds the row that decided until
+ * the write commits (S8).
  */
 const ACTIONS = {
   readCompany: { by: 'MEMBER', statement: undefined, locks: false },
-  readInvitations: { by: 'MEMBER', statement: INVITE, locks: false },
-  invite: { by: 'MEMBER', statement: INVITE, locks: true },
+  readMembers: { by: 'COMPANY', statement: undefined, locks: false },
+  readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
+  invite: { by: 'COMPANY', statement: INVITE, locks: true },
+  removeMember: { by: 'COMPANY', statement: undefined, locks: true },
+  changeRole: { by: 'COMPANY', statement: undefined, locks: true },
   operateClients: { by: 'OPERATOR', locks: false },
   registerClient: { by: 'OPERATOR', locks: true },
   correctClient: { by: 'OPERATOR', locks: true },
   deleteClient: { by: 'OPERATOR', locks: true },
-  inviteOwner: { by: 'OPERATOR', locks: true, role: 'owner' },
 } as const satisfies Record<string, ActionRule>
 
 type Action = keyof typeof ACTIONS
-export type CompanyAction = {
-  [A in Action]: (typeof ACTIONS)[A]['by'] extends 'MEMBER' ? A : never
+type ActionBy<By extends ActionRule['by']> = {
+  [A in Action]: (typeof ACTIONS)[A]['by'] extends By ? A : never
 }[Action]
-type InstallationAction = Exclude<Action, CompanyAction | 'inviteOwner'>
+export type MemberAction = ActionBy<'MEMBER'>
+export type CompanyAction = ActionBy<'COMPANY'>
+type InstallationAction = ActionBy<'OPERATOR'>
 
-/** The one role the operator invites with: a client's first owner. */
-export const OWNER_INVITER_ROLE = ACTIONS.inviteOwner.role
+/** The one role the operator invites with: a company's owner. */
+export const COMPANY_OPERATOR_ROLE: Role = 'owner'
 
 // The plugin's creator role: only a member who holds it may invite with it.
 const CREATOR: Role = 'owner'
 /** The admin plugin's administrator role, on the person, not a company (security S11). */
 export const INSTALLATION_ADMINISTRATOR = 'admin'
 
-function allows(role: Role, action: CompanyAction): boolean {
+type RoleAction = MemberAction | CompanyAction
+
+function allows(role: Role, action: RoleAction): boolean {
   const { statement } = ACTIONS[action]
   if (statement === undefined) return true
   return defaultRoles[role].authorize({ invitation: [...statement.invitation] }).success
 }
 
+/** Who acts on a member: the role of a member of the company, or the operator, who has none. */
+export type Actor = Role | 'OPERATOR'
+
+/**
+ * Whether the actor may take a member of role `target` out of the company, or, when `next` names a
+ * role, change it to that (founder, step 6: 1A and the answer on who changes whom). The owner and
+ * the operator may do both to anyone; the administrator only to administrators and members, and
+ * never gives the owner role; the member to no one. A person may always take themselves out: the
+ * caller decides that, for the rank table knows no one by name.
+ */
+export function rankAllows(actor: Actor, target: Role, next?: Role): boolean {
+  switch (actor) {
+    case 'OPERATOR':
+    case 'owner':
+      return true
+    case 'admin':
+      return target !== 'owner' && next !== 'owner'
+    case 'member':
+      return false
+    default:
+      return actor satisfies never
+  }
+}
+
 let sealMember: (companyId: CompanyId, personId: PersonId, role: Role) => MemberProof
-let sealOwnerInviter: (
+let sealCompanyOperator: (
   companyId: CompanyId,
   personId: PersonId,
   inviter: OperatorRow,
-) => OwnerInviterProof
+  firstOwner: boolean,
+) => CompanyOperatorProof
 let sealOperator: (personId: PersonId, inviter: OperatorRow) => OperatorProof
 
 /** The operator's row, read and held by the admission, which the plugin's adapter names as inviter. */
@@ -86,23 +117,33 @@ export class MemberProof {
   }
 }
 
-/** The operator, on a company that has no member yet: it may invite the first owner. */
-export class OwnerInviterProof {
-  readonly kind = 'OWNER_INVITER'
+/**
+ * The operator on a company, whether it has members or not and without being one: it acts as an
+ * owner on the company's people and invites owners. `firstOwner` says the company has no member yet.
+ */
+export class CompanyOperatorProof {
+  readonly kind = 'COMPANY_OPERATOR'
   readonly companyId: CompanyId
   readonly personId: PersonId
   readonly inviter: OperatorRow
+  readonly firstOwner: boolean
   declare private readonly nominal: never
 
-  private constructor(companyId: CompanyId, personId: PersonId, inviter: OperatorRow) {
+  private constructor(
+    companyId: CompanyId,
+    personId: PersonId,
+    inviter: OperatorRow,
+    firstOwner: boolean,
+  ) {
     this.companyId = companyId
     this.personId = personId
     this.inviter = inviter
+    this.firstOwner = firstOwner
   }
 
   static {
-    sealOwnerInviter = (companyId, personId, inviter) =>
-      new OwnerInviterProof(companyId, personId, inviter)
+    sealCompanyOperator = (companyId, personId, inviter, firstOwner) =>
+      new CompanyOperatorProof(companyId, personId, inviter, firstOwner)
   }
 }
 
@@ -123,7 +164,12 @@ export class OperatorProof {
   }
 }
 
-export type CompanyProof = MemberProof | OwnerInviterProof
+export type CompanyProof = MemberProof | CompanyOperatorProof
+
+/** The rank the proof acts with on the company's people. */
+export function actorOf(admitted: CompanyProof): Actor {
+  return admitted.kind === 'MEMBER' ? admitted.role : 'OPERATOR'
+}
 
 /** Whether a person's installation role makes them the operator. */
 export function mayOperate(role: unknown): boolean {
@@ -147,28 +193,29 @@ async function operatorRow(tx: ReadTx, personId: PersonId, locks: boolean) {
 }
 
 /**
- * The operator on a company with no member, read under the company's lock the caller holds, so an
- * accept cannot add the first owner between this read and the invitation (security S8).
+ * The operator on an existing company, read under the company's lock the caller holds, so an accept
+ * cannot add the first owner between this read and the write (security S8).
  */
-async function admitOwnerInviter(tx: ReadTx, companyId: CompanyId, personId: PersonId) {
-  const operator = await operatorRow(tx, personId, ACTIONS.inviteOwner.locks)
+async function admitCompanyOperator(input: CompanyInput, action: CompanyAction) {
+  const operator = await operatorRow(input.tx, input.personId, ACTIONS[action].locks)
   if (operator === undefined) return undefined
-  const [awaiting] = await tx
+  const [found] = await input.tx
     .select({ id: company.id })
     .from(company)
-    .where(
-      and(
-        eq(company.id, companyId),
-        notExists(tx.select().from(member).where(eq(member.organizationId, company.id))),
-      ),
-    )
-  return awaiting === undefined ? undefined : sealOwnerInviter(companyId, personId, operator)
+    .where(eq(company.id, input.companyId))
+  if (found === undefined) return undefined
+  const [anyone] = await input.tx
+    .select({ id: member.id })
+    .from(member)
+    .where(eq(member.organizationId, input.companyId))
+    .limit(1)
+  return sealCompanyOperator(input.companyId, input.personId, operator, anyone === undefined)
 }
 
 type CompanyInput = { tx: ReadTx; personId: PersonId; companyId: CompanyId }
 
 /** The person's role in the company, or nothing for an outsider and an unknown company. */
-async function membershipOf(input: CompanyInput, action: CompanyAction) {
+async function membershipOf(input: CompanyInput, action: RoleAction) {
   const query = input.tx
     .select({ role: member.role })
     .from(member)
@@ -177,7 +224,7 @@ async function membershipOf(input: CompanyInput, action: CompanyAction) {
   return row === undefined ? undefined : Role.parse(row.role)
 }
 
-function admitMember(input: CompanyInput, role: Role, action: CompanyAction): MemberProof {
+function admitMember(input: CompanyInput, role: Role, action: RoleAction): MemberProof {
   if (!allows(role, action)) throw new Failure('NOT_FOUND', { details: { reason: 'FORBIDDEN' } })
   return sealMember(input.companyId, input.personId, role)
 }
@@ -186,22 +233,24 @@ function admitMember(input: CompanyInput, role: Role, action: CompanyAction): Me
  * Reads the person's membership and decides by its role. An outsider, an unknown company and a
  * role without the action get the same not-found; only the log tells them apart (security S10).
  */
-export async function admit(input: CompanyInput & { action: CompanyAction }): Promise<MemberProof> {
+export async function admit(input: CompanyInput & { action: MemberAction }): Promise<MemberProof> {
   const role = await membershipOf(input, input.action)
   if (role === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
   return admitMember(input, role, input.action)
 }
 
 /**
- * Admits an invitation's issuer: a member who may invite, or the operator while the company awaits
- * its first owner (`inviteOwner`). Anyone else gets `admit`'s not-found.
+ * Admits a member who may take the action, or the operator on the company. Anyone else gets
+ * `admit`'s not-found.
  */
-export async function admitInviter(input: CompanyInput): Promise<CompanyProof> {
-  const role = await membershipOf(input, 'invite')
-  if (role !== undefined) return admitMember(input, role, 'invite')
-  const inviter = await admitOwnerInviter(input.tx, input.companyId, input.personId)
-  if (inviter === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
-  return inviter
+export async function admitCompany(
+  input: CompanyInput & { action: CompanyAction },
+): Promise<CompanyProof> {
+  const role = await membershipOf(input, input.action)
+  if (role !== undefined) return admitMember(input, role, input.action)
+  const operator = await admitCompanyOperator(input, input.action)
+  if (operator === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
+  return operator
 }
 
 /** Admits the operator on the installation, by the role read in the caller's transaction (S11). */
@@ -217,15 +266,15 @@ export async function admitOperator(input: {
 
 /**
  * The roles an admitted proof may invite with: the plugin keeps its creator role to its holders,
- * and the operator invites only a first owner.
+ * and the operator invites only an owner.
  */
 export function mayInviteAs(admitted: CompanyProof): Role[] {
   switch (admitted.kind) {
     case 'MEMBER':
       if (!allows(admitted.role, 'invite')) return []
       return Role.options.filter((role) => role !== CREATOR || admitted.role === CREATOR)
-    case 'OWNER_INVITER':
-      return [OWNER_INVITER_ROLE]
+    case 'COMPANY_OPERATOR':
+      return [COMPANY_OPERATOR_ROLE]
     default:
       return admitted satisfies never
   }

@@ -126,7 +126,7 @@ or its origin.
 - **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, on the
   operator's path only: `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and the first
   owner's invitation, its cancel and its renewal when the admission is the operator's
-  (`OwnerInviterProof`) in `invitations.ts` and `invitation-management.ts`. The Hub's admission
+  (`CompanyOperatorProof`) in `invitations.ts` and `invitation-management.ts`. The Hub's admission
   decides who writes (`admitOperator`, `admitInviter`), the role is only owner, and a renewal writes
   its expiry from the plugin's option (`invitationExpiry` in `auth.ts`). A member's invitation,
   cancel and renewal go through the endpoints, `auth.api.createInvitation`, `cancelInvitation` and
@@ -167,6 +167,27 @@ or its origin.
   test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens (removal
   `client-delete-operator-only`); "apagar: concorrência" in `client-deletion.test.ts` deadlocks
   when the operator's row is locked before the company's.
+
+### Taking a person out and changing a role: the plugin's adapter, with the native routes unused
+
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-members.mjs:139` (remove),
+  `:236` (update the role) and `:406` (leave). Each admits only a caller who is a member of the
+  company (`:178`), which the operator is not. Each counts the owners and then writes, with no lock:
+  the step 4 proof left 0 owners in 20 of 20 races (`:197-200`, `:293-302`, `:419-427`). An
+  administrator who removes an owner is answered with the code of the last owner (`:195-196`), and
+  leaving calls no hook.
+- **Hand-made piece.** `removeMemberCommand` and `changeMemberRoleCommand` in
+  `apps/server/src/hub/identity/memberships.ts` take the company's lock, admit the caller (a member
+  or the operator, `admitCompany`), decide by `rankAllows` in `admission.ts` and write through
+  `deleteMember` and `updateMember` of the plugin's adapter (`organization/adapter.mjs:305`, `:295`),
+  from `organizationAdapter`. `keepOwner` counts the owners under that lock, and
+  `cancelSentBy` cancels the invitations the removed person sent, in the same transaction.
+- **Why.** Step 6, P1: the Central acts on a company's people as an owner without being a member,
+  and the last-owner rule is one, under the company's lock. A removal row proves each part: the lock
+  (`member-company-lock`), the owner count (`member-last-owner`), the rank (`member-actor-rank`),
+  the role the caller read (`member-role-from`) and the cancellation (`removed-person-invitations`).
+  The plugin's `organizationHooks` for members are none today; one turned on later would be bypassed
+  here. When the library changes, reread `deleteMember` and `updateMember`.
 
 ### Sign-in and the first password reach the library through a request we build
 

@@ -270,6 +270,22 @@ export const FAILURES = {
     action: 'Cancele-o antes de convidar outro e-mail.',
     actionKind: 'NONE',
   },
+  LAST_OWNER: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'A empresa precisa de pelo menos um dono.',
+    action: 'Torne outra pessoa dona antes de sair.',
+    actionKind: 'NONE',
+  },
+  MEMBER_STALE: {
+    category: 'USER',
+    settles: true,
+    status: 412,
+    phrase: 'Esta pessoa mudou de papel enquanto você olhava.',
+    action: 'Veja a lista de novo.',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

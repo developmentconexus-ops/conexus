@@ -84,7 +84,7 @@ test('o operador convida de novo um convite de dono vencido, pelo mesmo link de 
   )
 })
 
-test('empresa ativa: o operador recebe 404 ao convidar, reenviar e cancelar', async (t) => {
+test('empresa ativa: o operador convida outro dono, reenvia e cancela, também sem ser membro', async (t) => {
   const { hub, ana, invitations, first } = await awaiting(t)
   const davi = await personOn(hub, OWNER)
   const accepted = await hub.app.inject({
@@ -94,14 +94,13 @@ test('empresa ativa: o operador recebe 404 ao convidar, reenviar e cancelar', as
     payload: JSON.stringify({ revision: 0 }),
   })
   assert.equal(accepted.statusCode, 200)
-  const refused = [
-    await post(hub, ana, invitations, { email: 'edu@example.test', role: 'owner' }),
-    await manage(hub, ana, 'PUT', `${invitations}/${first}`, 1),
-    await manage(hub, ana, 'DELETE', `${invitations}/${first}`, 1),
-  ]
-  for (const response of refused) {
-    assert.deepEqual([response.statusCode, codeOf(response)], [404, 'NOT_FOUND'])
-  }
+  const invited = await post(hub, ana, invitations, { email: 'edu@example.test', role: 'owner' })
+  assert.equal(invited.statusCode, 201)
+  const second = String(Object(invited.json()).invitation.id)
+  const renewed = await manage(hub, ana, 'PUT', `${invitations}/${second}`, 0)
+  assert.equal(renewed.statusCode, 200)
+  const canceled = await manage(hub, ana, 'DELETE', `${invitations}/${second}`, 1)
+  assert.equal(canceled.statusCode, 204)
   assert.deepEqual(await hub.test.asOwner('select user_id, role from auth.member'), [
     { user_id: davi.id, role: 'owner' },
   ])

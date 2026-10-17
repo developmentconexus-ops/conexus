@@ -5,6 +5,7 @@ export {
   Company,
   CompanyId,
   cancelInvitation,
+  changeMemberRole,
   createInvitation,
   createInvitationPassword,
   declineInvitation,
@@ -24,6 +25,7 @@ export {
   PendingInvitation,
   ROLE_LABELS,
   Role,
+  removeMember,
   renewInvitation,
 } from './companies.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'

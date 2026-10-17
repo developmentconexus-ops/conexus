@@ -691,5 +691,60 @@
       "file": "src/platform/isolation.test.ts",
       "name": "sessões"
     }
+  },
+  {
+    "id": "member-company-lock",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "  await lockCompany(tx, input.companyId)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships-race.test.ts",
+      "name": "último dono sob corrida"
+    }
+  },
+  {
+    "id": "member-last-owner",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "  if (owners <= 1) throw new Failure('LAST_OWNER')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships-race.test.ts",
+      "name": "último dono sob corrida"
+    }
+  },
+  {
+    "id": "member-actor-rank",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "      return target !== 'owner' && next !== 'owner'",
+    "replace": "      return true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships.test.ts",
+      "name": "quem tira quem"
+    }
+  },
+  {
+    "id": "member-role-from",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "      if (target.role !== input.from) throw new Failure('MEMBER_STALE')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships.test.ts",
+      "name": "papel: a resposta"
+    }
+  },
+  {
+    "id": "removed-person-invitations",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "      await cancelSentBy(tx, { companyId, personId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships-invitations.test.ts",
+      "name": "convites do tirado"
+    }
   }
 ]

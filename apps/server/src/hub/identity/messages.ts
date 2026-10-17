@@ -6,7 +6,7 @@ import { renderInvitation } from './invitation-render.mjs'
 
 const LINK_MINUTES = PASSWORD_LINK_SECONDS / 60
 
-/** Who invites a company's first owner: only the Operations Central invites where no one is a member. */
+/** Who the Operations Central invites as: it invites a company's first owner, and another owner later. */
 export const CONEXUS = 'Conexus'
 
 /** The words that carry a one-use password link, in an e-mail or in the first person's summary. */
@@ -14,8 +14,8 @@ export function passwordLinkText(name: string, link: string): string {
   return `Link para ${name} criar a senha do Conexus. Vale ${LINK_MINUTES} minutos e uma vez só.\n\n${link}\n`
 }
 
-/** Who an invitation comes from: a member, or Conexus for the first owner of a client (step 4.2). */
-export type Inviter = { kind: 'MEMBER'; name: string } | { kind: 'CONEXUS' }
+/** Who an invitation comes from: a member, or Conexus, for a client's first owner or a later one. */
+export type Inviter = { kind: 'MEMBER'; name: string } | { kind: 'CONEXUS'; firstOwner: boolean }
 
 export async function invitationMail(input: {
   to: Email
@@ -25,7 +25,7 @@ export async function invitationMail(input: {
   link: string
   expiresAt: string
 }): Promise<MailMessage> {
-  const firstOwner = input.inviter.kind === 'CONEXUS'
+  const firstOwner = input.inviter.kind === 'CONEXUS' && input.inviter.firstOwner
   return {
     to: input.to,
     subject: firstOwner

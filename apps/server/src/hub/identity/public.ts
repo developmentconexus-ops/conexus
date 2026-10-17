@@ -69,7 +69,7 @@ export function createIdentity(deps: {
           },
           invitation: input.invitation,
           companyName: input.company.name,
-          inviter: { kind: 'CONEXUS' },
+          inviter: { kind: 'CONEXUS', firstOwner: true },
           link: `${deps.config.publicOrigin}/invitations/${input.invitation.id}`,
           signal: input.signal,
         }),

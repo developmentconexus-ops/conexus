@@ -1,6 +1,7 @@
 import {
   acceptInvitation,
   cancelInvitation,
+  changeMemberRole,
   createInvitation,
   createInvitationPassword,
   declineInvitation,
@@ -9,6 +10,7 @@ import {
   listCompanies,
   listInvitations,
   listMembers,
+  removeMember,
   renewInvitation,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -18,12 +20,13 @@ import { answer, serve } from '../../platform/http.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { INVITATION_DECLINATION_PATH, INVITATION_PASSWORD_PATH } from './auth.ts'
-import { readCompany, readMembers, readMemberships } from './companies.ts'
+import { readCompany, readMemberships } from './companies.ts'
 import { deliveredOrRefused, mailInvitation } from './invitation-mail.ts'
 import { cancelInvitationCommand, renewInvitationCommand } from './invitation-management.ts'
 import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { companyScope, createInvitationCommand } from './invitations.ts'
+import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
 import { countInvitationAttempt } from './routes.ts'
 
 type Deps = {
@@ -138,8 +141,26 @@ function registerManagement(app: FastifyInstance, deps: Deps): void {
   )
 }
 
+/** A change of people names who acted and on whom, by ids and the role, never by name (S41). */
+function registerMemberships(app: FastifyInstance, deps: Deps): void {
+  const remove = removeMemberCommand(deps)
+  const change = changeMemberRoleCommand(deps)
+  serve(app, removeMember, async ({ person, params, log }) => {
+    const role = await remove({ person, ...params })
+    if (role !== undefined) log.info({ ...params, by: person.id, role }, 'MEMBER_REMOVED')
+    return answer(undefined)
+  })
+  serve(app, changeMemberRole, async ({ person, params, body, log }) => {
+    const changed = await change({ person, ...params, ...body })
+    const fields = { ...params, by: person.id, from: body.from, role: changed.role }
+    if (body.role !== body.from) log.info(fields, 'MEMBER_ROLE_CHANGED')
+    return answer({ member: changed })
+  })
+}
+
 export function registerCompanyRoutes(app: FastifyInstance, deps: Deps): void {
   registerReads(app, deps)
   registerWrites(app, deps)
   registerManagement(app, deps)
+  registerMemberships(app, deps)
 }

@@ -11,8 +11,8 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { CompanyProof, OwnerInviterProof } from './admission.ts'
-import { admitInviter, isOperator, OWNER_INVITER_ROLE } from './admission.ts'
+import type { CompanyOperatorProof, CompanyProof } from './admission.ts'
+import { admitCompany, COMPANY_OPERATOR_ROLE, isOperator } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter, refusedAs, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
@@ -153,9 +153,11 @@ async function openOf(tx: CommandTx, admitted: CompanyProof, email: string) {
   return OpenRow.optional().parse(open)
 }
 
-/** On a company with no member only the operator invites, as Conexus, its first owner (step 4.2). */
+/** The operator invites as Conexus, a company's first owner or another (steps 4.2 and 6). */
 export function inviterOf(admitted: CompanyProof, person: Person): Inviter {
-  if (admitted.kind === 'OWNER_INVITER') return { kind: 'CONEXUS' }
+  if (admitted.kind === 'COMPANY_OPERATOR') {
+    return { kind: 'CONEXUS', firstOwner: admitted.firstOwner }
+  }
   return { kind: 'MEMBER', name: person.name }
 }
 
@@ -192,15 +194,15 @@ export async function checkOwnerNotOperator(tx: CommandTx, email: Email): Promis
 }
 
 /**
- * The operator invites one first owner at a time, only as owner. An expired one the operator
- * replaces is not live, so it does not count.
+ * The operator invites one owner at a time, only as owner. An expired one the operator replaces is
+ * not live, so it does not count.
  */
 async function checkOwnerInvitation(
   tx: CommandTx,
-  input: { admitted: OwnerInviterProof; email: Email; role: Role },
+  input: { admitted: CompanyOperatorProof; email: Email; role: Role },
 ) {
   const { admitted } = input
-  if (input.role !== OWNER_INVITER_ROLE) throw new Failure('INVITATION_ROLE_REFUSED')
+  if (input.role !== COMPANY_OPERATOR_ROLE) throw new Failure('INVITATION_ROLE_REFUSED')
   const live = await tx.$count(
     invitation,
     and(
@@ -248,7 +250,7 @@ async function cancelOpen(auth: Auth, tx: CommandTx, input: Open) {
 
 /**
  * Writes the invitation: a member's through the plugin's endpoint, which owns the roles and the
- * member check (K21r, K23); the first owner's, by the operator who is no member, through its adapter.
+ * member check (K21r, K23); the owner's, by the operator who is no member, through its adapter.
  */
 async function written(auth: Auth, admitted: CompanyProof, input: Invite, email: string) {
   const { role, attemptKey } = input
@@ -269,7 +271,7 @@ async function written(auth: Auth, admitted: CompanyProof, input: Invite, email:
 
 /**
  * Invites an e-mail. The Hub owns the count of open invitations and the pace of each person, under
- * the company's lock, and the operator's one first owner; the plugin writes the row.
+ * the company's lock, and the operator's one owner at a time; the plugin writes the row.
  */
 export function createInvitationCommand(deps: {
   auth: Auth
@@ -281,7 +283,12 @@ export function createInvitationCommand(deps: {
       const email = storedAddress(input.email)
       await lockCompany(tx, input.companyId)
       const personId = input.person.id
-      const admitted = await admitInviter({ tx, personId, companyId: input.companyId })
+      const admitted = await admitCompany({
+        tx,
+        personId,
+        companyId: input.companyId,
+        action: 'invite',
+      })
       // The operator's admission already holds the row.
       if (admitted.kind === 'MEMBER') await lockedInviter(tx, personId)
       const same = await attemptOf(tx, admitted, input.attemptKey)
@@ -303,7 +310,7 @@ export function createInvitationCommand(deps: {
         }
         return { invitation: pendingOf(same), mail: undefined, created: false }
       }
-      if (admitted.kind === 'OWNER_INVITER') {
+      if (admitted.kind === 'COMPANY_OPERATOR') {
         await checkOwnerInvitation(tx, { admitted, email: input.email, role: input.role })
       }
       await checkRoom(tx, admitted, email)
