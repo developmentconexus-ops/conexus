@@ -134,24 +134,8 @@ export function databaseWithPassword(test: TestDatabase, password: string): Data
   return openDatabase({ url: runtimeUrlWithPassword(test, password), log: silent })
 }
 
-// Step 5's second phase, which its unit U7 ships as a migration after v0.5.0: the Hub's login loses
-// its reach on a company's tables. With CONEXUS_TEST_PHASE=2 every suite runs on it, so no path of
-// this release leans on that reach.
-const SECOND_PHASE = [
-  'drop policy runtime_transition on auth.company',
-  'drop policy runtime_transition on auth.member',
-  'drop policy runtime_transition on auth.invitation',
-  'drop policy runtime_transition on operations.client',
-  'revoke all on table auth.company, auth.member, auth.invitation, operations.client from hub_runtime',
-]
-
-/** The phase a test database is made in: 2 applies step 5's second phase after migrate. */
-export function testPhase(): '1' | '2' {
-  return readTestDatabase().phase
-}
-
 export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
-  const { ownerUrl: serverUrl, runtimePassword, container, phase } = readTestDatabase()
+  const { ownerUrl: serverUrl, runtimePassword, container } = readTestDatabase()
   const name = `conexus_test_${randomUUID().replaceAll('-', '')}`
   const ownerUrl = withDatabase(serverUrl, name)
   const runtimeUrl = withDatabase(serverUrl, name, {
@@ -172,14 +156,6 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
     }
   })
   await withRoleLock(() => migrate({ ownerUrl, runtimeUrl }))
-  if (phase === '2') {
-    const owner = await connected(ownerUrl)
-    try {
-      for (const statement of SECOND_PHASE) await owner.query(statement)
-    } finally {
-      await owner.end()
-    }
-  }
   return {
     database,
     ownerUrl,

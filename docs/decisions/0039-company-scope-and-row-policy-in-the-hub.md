@@ -2,16 +2,15 @@
 
 ## Context
 
-Decision [0012] left the row policy to step 5.
+[0012] left the row policy to step 5.
 
 ## Decision
 
-Each transaction opens in a typed scope: `SET LOCAL ROLE` and `set_config(…, true)`. Row policies on
-the company tables and `auth.user` limit each role; no `FORCE`, the owner only migrates (D9). Basis:
-the founder's answers A, B, H.
+Each transaction enters a typed scope (`SET LOCAL ROLE`, `set_config(…, true)`); row policies on
+company tables and `auth.user` bound each role; no `FORCE` (D9). Basis: answers A, B, H.
 
-A1: policies ask `auth.is_installation_administrator`, a `SECURITY DEFINER` function of a NOLOGIN
-role. A2: the invitation scope reads its company's members. Basis: founder's approval, 2026-10-17.
+A1: policies call `auth.is_installation_administrator`, a NOLOGIN role's `SECURITY DEFINER`
+function. A2: the invitation scope reads its company's members. Founder approved 2026-10-17.
 
 ## Criterion
 
@@ -19,7 +18,7 @@ role. A2: the invitation scope reads its company's members. Basis: founder's app
 and 4.2?
 
 **Fixed.** PostgreSQL 18 (patch in the result), Drizzle `1.0.0-rc.4`, pg 8.23.1, Better Auth 1.7.8,
-step 4.2's commit. Two synthetic companies; people of A, of B, of both, of none.
+step 4.2's commit. Two synthetic companies; people in A, B, both, none.
 
 | # | Check | Passes when |
 | --- | --- | --- |
@@ -34,6 +33,11 @@ step 4.2's commit. Two synthetic companies; people of A, of B, of both, of none.
 | B9 | Operation | B1–B5 pass locally and on a Neon branch; v0.5.0 rolls back to v0.4.2; v0.5.1's login reaches no company table; the database sleeps |
 
 **Not covered.** The database owner, a stolen runtime credential, load.
+
+## Result
+
+2026-10-17: B1–B8 pass locally (18.6), B1–B5 on Neon (18, patch at release), direct address, both
+phases; items: PR 54.
 
 ## State
 
