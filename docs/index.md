@@ -9,9 +9,10 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each approval and use line.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
 - [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and putting back a Hub version.
-- [how-to/hub-mail.md](how-to/hub-mail.md): the invitation mail's token and addresses on the server.
+- [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): como restaurar o banco do Hub a um minuto e conferir.
-- [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 the server tests need.
+- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): the companies' Neon key.
+- [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 for tests.
 - [steps/](steps/): the card in construction; empty between steps.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes instead of its library's, with the library's line.
 - [reference/components.md](reference/components.md): each screen piece and its tokens (design V23).

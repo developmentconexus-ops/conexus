@@ -10,13 +10,16 @@ services:
       - hub_database_url
       - hub_session_secret
       - hub_mail_token
-    # HUB_MAIL_API_URL and HUB_MAIL_FROM: the send address names the account, so it stays out of Git.
+      - hub_neon_api_key
+    # HUB_MAIL_API_URL, HUB_MAIL_FROM and HUB_NEON_ORG_ID: they name accounts, so they stay out of Git.
     env_file: /etc/conexus/hub.env
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
       HUB_PUBLIC_ORIGIN: https://hub.conexus.fun
       HUB_SESSION_SECRET_FILE: /run/secrets/hub_session_secret
       HUB_MAIL_TOKEN_FILE: /run/secrets/hub_mail_token
+      HUB_NEON_API_URL: https://console.neon.tech/api/v2
+      HUB_NEON_API_KEY_FILE: /run/secrets/hub_neon_api_key
     healthcheck:
       test:
         - CMD
@@ -64,3 +67,5 @@ secrets:
     file: /etc/conexus/secrets/hub_session_secret
   hub_mail_token:
     file: /etc/conexus/secrets/hub_mail_token
+  hub_neon_api_key:
+    file: /etc/conexus/secrets/hub_neon_api_key

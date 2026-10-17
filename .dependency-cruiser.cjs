@@ -92,6 +92,13 @@ module.exports = {
       to: { path: '(^|node_modules/)(pg|drizzle-orm/node-postgres)(/|$)' },
     },
     {
+      name: 'neon-sdk-only-in-the-neon-adapter',
+      comment: 'C56: only neon.ts imports the Neon SDK.',
+      severity: 'error',
+      from: { pathNot: `${SERVER}/platform/neon\\.ts$` },
+      to: { path: '(^|node_modules/)@neon/sdk(/|$)' },
+    },
+    {
       name: 'web-tree-shape',
       comment:
         'W1: apps/web/src holds main.tsx, the generated routeTree.gen.ts and the folders routes, hub, builder, ui, platform, brand.',

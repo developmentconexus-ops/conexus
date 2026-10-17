@@ -831,3 +831,17 @@ or its origin.
   and 400 matched to the document's status and media type) cover it, and `npm run typecheck` fails
   on `apps/server/src/platform/http.check.ts` when `serve` takes an operation `defineOperation` did
   not declare. Revalidate by 2027-04-16, the only date, or when the Operation type gains a field.
+
+## @neon/sdk 7.3.0
+
+### The size of a reply
+
+- **Library line.** `node_modules/@neon/sdk/dist/client/client/client.gen.js:84,102` reads each
+  reply whole with the `fetch` it is given; it has no byte cap. A body that fails to read comes back
+  as a `NeonApiError` with a 2xx status.
+- **Hand-made piece.** `capReplies` in `apps/server/src/platform/neon.ts`, the SDK's own `fetch`
+  option. It ends a body past 1 MiB with an error, and `mapped` reads that error as `NO_ANSWER`: the
+  call may have taken effect, so a creation keeps its claim.
+- **Why.** [Code C59](../guides/code.md). The test "resposta maior que o teto" in `neon.test.ts` fails
+  without it. Revalidate when the SDK gains a reply cap.
+
