@@ -24,7 +24,7 @@ grant (D11). No fim: o roteiro e os textos.
 
 **Decisões já dadas** (2026-10-17): P1 A, P2 A, P3 A, P4 A, T1A, T2A, T3A, T4A.
 
-- **P1 espera o estudo de papéis**: segue A, e quem cria e quem apaga fica numa tabela só.
+- **Papéis** ("Q1 sua recomendação q2 A"): P1 A fica, e cada papel dá capacidades de Projeto.
 - **P3 muda a sua etapa 5.** Lá: "Apagar não deixa estado". Agora, "P3. A": a empresa com banco
   fica "Exclusão em andamento", com **Tentar concluir exclusão**, até o banco sair; e ninguém cria
   Projeto nela. A tela não promete recuperar em 7 dias: no grátis não está provado.
