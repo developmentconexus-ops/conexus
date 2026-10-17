@@ -49,6 +49,8 @@ async function accept(page: Page, company: string) {
     .getByRole('heading', { name: `Conexus convidou você para ser o primeiro dono de ${company}.` })
     .waitFor()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
+  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await page.getByRole('link', { name: 'Pessoas' }).first().click()
   await page.getByRole('heading', { name: company, exact: true }).waitFor()
 }
 

@@ -585,8 +585,8 @@
   {
     "id": "client-delete-revision",
     "file": "apps/server/src/hub/operations/clients.ts",
-    "find": "    if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')\n    if ((await clientOf(",
-    "replace": "    if ((await clientOf(",
+    "find": "  if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')\n  const { companyId } = input\n",
+    "replace": "  const { companyId } = input\n",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/client-deletion.test.ts",

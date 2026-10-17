@@ -29,7 +29,7 @@
     "test": "npm run test:scripts && npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "pree2e": "npm run build -w @conexus/server && npm exec -w @conexus/web -- playwright-core install chromium-headless-shell",
-    "e2e": "node --test --test-timeout=300000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation.test.ts tests/e2e/client.test.ts tests/e2e/two-companies.test.ts tests/e2e/remove-person.test.ts",
+    "e2e": "node --test --test-timeout=300000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation.test.ts tests/e2e/client.test.ts tests/e2e/projects.test.ts tests/e2e/two-companies.test.ts tests/e2e/remove-person.test.ts",
     "test:image": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation-image.test.ts",
     "test:scripts": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts scripts/*.test.ts"
   },
