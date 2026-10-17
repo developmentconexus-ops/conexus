@@ -559,5 +559,16 @@
       "file": "src/platform/access.test.ts",
       "name": "entrada: recusa a escrita de outro site"
     }
+  },
+  {
+    "id": "client-correction-company-lock",
+    "file": "apps/server/src/hub/operations/clients.ts",
+    "find": "    await identity.lockCompany(tx, input.companyId)\n    const personId = input.person.id\n    const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })",
+    "replace": "    const personId = input.person.id\n    const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-reads.test.ts",
+      "name": "corrigir: contra o aceite que chega antes"
+    }
   }
 ]

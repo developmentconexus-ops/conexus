@@ -211,7 +211,8 @@ test('migrate com o banco recusando a conexão: sai 1 com DATABASE_UNAVAILABLE, 
 
 test('a exceção de P6: a migração apaga cada empresa sem cliente, com membros e convites, e mais nada (A15)', async (t) => {
   const test = await createTestDatabase(t)
-  // The database is born migrated: P6 runs again on the rows planted after it.
+  // The database is born migrated: P6 runs again on the rows planted after it. The migrator runs
+  // every migration whose name it has not recorded, in any position, so later ones change nothing.
   await test.asOwner(
     "delete from drizzle.__drizzle_migrations where name like '%_p6b_test_companies'",
   )

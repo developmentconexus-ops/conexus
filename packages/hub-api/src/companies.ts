@@ -57,6 +57,8 @@ const OpenInvitation = z.object({
   company: Company,
   role: Role,
   inviterName: z.string().min(1),
+  /** The company has no member yet: Conexus invites its first owner (step 4.2). */
+  firstOwner: z.boolean(),
   expiresAt: z.iso.datetime(),
   revision: z.number().int().nonnegative(),
 })

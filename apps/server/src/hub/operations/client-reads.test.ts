@@ -71,24 +71,6 @@ test('corrigir: aguardando dá 200 com a revisão +1 e o nome novo no convite; r
   )
 })
 
-test('corrigir: contra o aceite, um vence sob o lock da empresa', async (t) => {
-  const hub = await hubWithMail(t)
-  const ana = await personOn(hub, ANA)
-  const davi = await personOn(hub, OWNER)
-  const client = await registered(hub, ana)
-  const [corrected, accepted] = await Promise.all([
-    correct(hub, ana, client.companyId, { name: 'Nome Corrigido' }),
-    accept(hub, davi, client.state.ownerInvitation.id),
-  ])
-  assert.equal(accepted.statusCode, 200)
-  const [row] = await hub.test.asOwner('select name from auth.company')
-  if (corrected.statusCode === 200) assert.deepEqual(row, { name: 'Nome Corrigido' })
-  else {
-    assert.deepEqual([corrected.statusCode, codeOf(corrected)], [409, 'CLIENT_ACTIVE'])
-    assert.deepEqual(row, { name: 'Empresa Teste' })
-  }
-})
-
 async function plant(hub: Hub, inviterId: string, index: number) {
   const companyId = id()
   const name = `Empresa ${String(index).padStart(2, '0')}`
@@ -168,6 +150,44 @@ async function queued(hub: Hub, count: number) {
   }
 }
 
+/**
+ * A test connection holds the company's row until `release`, so requests queue on it in the order
+ * they are sent, and the race runs the same way every time.
+ */
+async function holdCompany(hub: Hub, companyId: string) {
+  const holding = `select pg_sleep(60) -- ${companyId}`
+  const holder = hub.test
+    .asOwner(`begin; select id from auth.company where id = '${companyId}' for update; ${holding}`)
+    .catch((error: unknown) => error)
+  const asleep = `select count(*)::int as held from pg_stat_activity
+    where query like '%${holding}' and state = 'active' and pid <> pg_backend_pid()`
+  while (Object((await hub.test.asOwner(asleep))[0]).held === 0) await setTimeout(20)
+  return async () => {
+    await hub.test.asOwner(`select pg_cancel_backend(pid) from pg_stat_activity
+      where query like '%${holding}' and pid <> pg_backend_pid()`)
+    await holder
+  }
+}
+
+test('corrigir: contra o aceite que chega antes, 409 CLIENT_ACTIVE e o nome não muda; o lock da empresa decide', async (t) => {
+  const hub = await hubWithMail(t)
+  const ana = await personOn(hub, ANA)
+  const davi = await personOn(hub, OWNER)
+  const client = await registered(hub, ana)
+  const release = await holdCompany(hub, client.companyId)
+  const accepted = accept(hub, davi, client.state.ownerInvitation.id)
+  await queued(hub, 1)
+  const corrected = correct(hub, ana, client.companyId, { name: 'Nome Corrigido' })
+  await queued(hub, 2)
+  await release()
+  assert.equal((await accepted).statusCode, 200)
+  const refused = await corrected
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'CLIENT_ACTIVE'])
+  assert.deepEqual(await hub.test.asOwner('select name from auth.company'), [
+    { name: 'Empresa Teste' },
+  ])
+})
+
 // The renewal queues on the company first and the correction second, the order that deadlocked
 // when a correction took the operator's row before the company's (step 5's lock order).
 test('corrigir: contra a renovação do convite de dono, os dois passam em fila, nunca 40P01', async (t) => {
@@ -175,23 +195,13 @@ test('corrigir: contra a renovação do convite de dono, os dois passam em fila,
   const ana = await personOn(hub, ANA)
   const client = await registered(hub, ana)
   const { companyId } = client
-  const holding = 'select pg_sleep(60)'
-  const holder = hub.test
-    .asOwner(`begin; select id from auth.company where id = '${companyId}' for update; ${holding}`)
-    .catch((error: unknown) => error)
-  const asleep = `select count(*)::int as held from pg_stat_activity where query like '%${holding}'
-    and state = 'active' and pid <> pg_backend_pid()`
-  while (Object((await hub.test.asOwner(asleep))[0]).held === 0) await setTimeout(20)
+  const release = await holdCompany(hub, companyId)
   const invitation = `/api/companies/${companyId}/invitations/${client.state.ownerInvitation.id}`
   const renewal = call(hub, ana, 'PUT', invitation, { revision: 0 })
   await queued(hub, 1)
   const correction = correct(hub, ana, companyId, { name: 'Nome Corrigido' })
   await queued(hub, 2)
-  await hub.test.asOwner(
-    `select pg_cancel_backend(pid) from pg_stat_activity where query like '%${holding}'
-      and pid <> pg_backend_pid()`,
-  )
-  await holder
+  await release()
   const answers = await Promise.all([renewal, correction])
   assert.deepEqual(
     answers.map((answer) => [answer.statusCode, codeOf(answer)]),

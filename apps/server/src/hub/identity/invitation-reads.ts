@@ -119,6 +119,7 @@ export function readReceived(
       role: row.role,
       // Only the Operations Central invites where no one is a member yet (step 4.2).
       inviterName: row.firstOwner ? CONEXUS : row.inviterName,
+      firstOwner: row.firstOwner,
       expiresAt: row.expiresAt.toISOString(),
       revision: row.revision,
     }

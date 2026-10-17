@@ -30,10 +30,29 @@ function hub(answers: (() => Response)[]) {
 }
 
 function registered() {
-  return HttpResponse.json(registerClient.success.body.parse({ client: Client.parse(CLIENT) }), {
-    status: 201,
-  })
+  return HttpResponse.json(
+    registerClient.success.body.parse({ client: Client.parse(CLIENT), mailBounced: false }),
+    { status: 201 },
+  )
 }
+
+test('o endereço do administrador recusado: o cliente foi cadastrado e abre, dizendo que o convite não chegou', async () => {
+  hub([
+    () =>
+      HttpResponse.json(
+        registerClient.success.body.parse({ client: Client.parse(CLIENT), mailBounced: true }),
+        { status: 201 },
+      ),
+  ])
+  const router = open()
+  await fill()
+  expect(await screen.findByRole('heading', { name: 'Empresa Teste' })).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`/operations/clients/${CLIENT.companyId}`)
+  expect((await screen.findByRole('status')).textContent).toBe(
+    'Cliente cadastrado, mas o e-mail do administrador recusou o convite. Cancele o convite e use Convidar outro e-mail.',
+  )
+  expect(screen.getByRole('button', { name: 'Cancelar convite' })).toBeTruthy()
+})
 
 function open() {
   const conexus = createConexus(
