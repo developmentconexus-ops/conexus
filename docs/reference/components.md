@@ -170,7 +170,8 @@ drawer-backdrop:
 These are the pieces with values of their own; a heading or an alert line is text in its tokens.
 The rail's places are `nav-item`, with an 18px icon (design V34). A `select-item` keeps 2rem on the right for its check mark, as shadcn's does. The select is shadcn's base-nova item with these departures: it drops `SelectGroup`, `SelectLabel` and `SelectSeparator`, since a role list has no groups; the trigger is 36px and the item 34px, the brand's control heights, not shadcn's 36px and padded rows; and the popup has a hairline and the brand's `sm` padding, with no shadow. The menu, the select and the drawer take a
 hairline, not a shadow, because the brand has no shadow token yet (design V3, V19). A `notice` is a
-`role="status"` line in the body color, so it is not mistaken for the grey subtitle under it. The wordmark's "nexus" and the mark take `mark`.
+`role="status"` line in the body color, so it is not mistaken for the grey subtitle under it. The wordmark's "nexus" and the mark take `mark`. A menu item that goes to an address, Base UI's
+`Menu.LinkItem`, is the same `menu-item`.
 
 ## Brought from the old design, with no code yet
 

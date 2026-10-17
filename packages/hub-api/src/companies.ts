@@ -101,7 +101,7 @@ export const listCompanies = defineOperation({
   input: { query: Page },
   success: {
     status: 200,
-    body: z.object({ companies: z.array(Membership), mayCreate: z.boolean(), next: Next }),
+    body: z.object({ companies: z.array(Membership), mayOperate: z.boolean(), next: Next }),
   },
   failures: ['SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })

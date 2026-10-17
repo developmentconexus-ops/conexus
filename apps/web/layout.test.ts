@@ -29,7 +29,7 @@ const SIGNED_IN: Replies = {
   }),
   'GET /api/companies': ok(listCompanies, {
     companies: [],
-    mayCreate: false,
+    mayOperate: false,
     next: { kind: 'END' },
   }),
 }

@@ -5,3 +5,10 @@ const DAY_AND_HOUR = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', time
 export function dayAndHour(instant: string): string {
   return DAY_AND_HOUR.format(new Date(instant))
 }
+
+const DAY = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' })
+
+/** The day, as "17/10/2026". */
+export function dayOf(instant: string): string {
+  return DAY.format(new Date(instant))
+}

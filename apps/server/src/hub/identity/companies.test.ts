@@ -233,7 +233,7 @@ test('fora: um convite vencido fica em "Convites pendentes", marcado EXPIRED pel
   assert.deepEqual(page.next, { kind: 'END' })
 })
 
-test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreate só do administrador; a página de uma empresa alheia não abre nada', async (t) => {
+test('lista: só as empresas de quem pede, com o papel, 50 por página; mayOperate só do administrador; a página de uma empresa alheia não abre nada', async (t) => {
   const hub = await hubOn(t)
   const ana = await personOn(hub, ANA)
   const bruno = await personOn(hub, BRUNO)
@@ -256,24 +256,24 @@ test('lista: só as empresas de quem pede, com o papel, 50 por página; mayCreat
     company: { id: ids[0], name: 'Empresa 00' },
     role: 'owner',
   })
-  assert.equal(first.mayCreate, true)
+  assert.equal(first.mayOperate, true)
   const second = Object(
     (await call(hub, ana, 'GET', `/api/companies?page=${first.next.page}`)).json(),
   )
   assert.deepEqual(second, {
     companies: [{ company: { id: ids[50], name: 'Empresa 50' }, role: 'owner' }],
-    mayCreate: true,
+    mayOperate: true,
     next: { kind: 'END' },
   })
   assert.deepEqual((await call(hub, bruno, 'GET', '/api/companies')).json(), {
     companies: [{ company: { id: ids[3], name: 'Empresa 03' }, role: 'admin' }],
-    mayCreate: false,
+    mayOperate: false,
     next: { kind: 'END' },
   })
   const foreign = Buffer.from(ids[0] ?? '').toString('base64url')
   assert.deepEqual((await call(hub, bruno, 'GET', `/api/companies?page=${foreign}`)).json(), {
     companies: [],
-    mayCreate: false,
+    mayOperate: false,
     next: { kind: 'END' },
   })
 })

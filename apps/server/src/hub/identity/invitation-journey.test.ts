@@ -54,7 +54,7 @@ test('do convite à empresa: o convite, o e-mail novo cria a senha, entra, aceit
   })
   assert.deepEqual(listed.json(), {
     companies: [{ company: { id: companyId, name: 'Empresa Teste' }, role: 'admin' }],
-    mayCreate: false,
+    mayOperate: false,
     next: { kind: 'END' },
   })
 })

@@ -26,7 +26,11 @@ function hub(answers: (() => Response)[]) {
     sessionRead(() => ANA),
     http.get('*/api/companies', () =>
       HttpResponse.json(
-        listCompanies.success.body.parse({ companies: [], mayCreate: true, next: { kind: 'END' } }),
+        listCompanies.success.body.parse({
+          companies: [],
+          mayOperate: true,
+          next: { kind: 'END' },
+        }),
       ),
     ),
     http.get('*/api/status', () =>

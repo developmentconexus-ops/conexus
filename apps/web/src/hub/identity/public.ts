@@ -1,4 +1,5 @@
 export { AccountMenu } from './account-menu.tsx'
+export { CancelInvitationForm } from './cancel-invitation-form.tsx'
 export { Companies } from './companies.tsx'
 export { CreateCompanyForm } from './create-company-form.tsx'
 export { Greeting } from './greeting.tsx'

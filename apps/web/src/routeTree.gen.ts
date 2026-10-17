@@ -11,6 +11,9 @@ import { Route as PublicSetPasswordRouteImport } from './routes/_public/set-pass
 import { Route as AppCompaniesCompanyIdRouteImport } from './routes/_app/companies/$companyId.tsx'
 import { Route as AppCompaniesNewRouteImport } from './routes/_app/companies/new.tsx'
 import { Route as PublicInvitationsInvitationIdRouteImport } from './routes/_public/invitations/$invitationId.tsx'
+import { Route as AppOperationsClientsIndexRouteImport } from './routes/_app/operations/clients/index.tsx'
+import { Route as AppOperationsClientsCompanyIdRouteImport } from './routes/_app/operations/clients/$companyId.tsx'
+import { Route as AppOperationsClientsNewRouteImport } from './routes/_app/operations/clients/new.tsx'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -51,6 +54,23 @@ const PublicInvitationsInvitationIdRoute =
     path: '/invitations/$invitationId',
     getParentRoute: () => PublicRouteRoute,
   } as any)
+const AppOperationsClientsIndexRoute =
+  AppOperationsClientsIndexRouteImport.update({
+    id: '/operations/clients/',
+    path: '/operations/clients/',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppOperationsClientsCompanyIdRoute =
+  AppOperationsClientsCompanyIdRouteImport.update({
+    id: '/operations/clients/$companyId',
+    path: '/operations/clients/$companyId',
+    getParentRoute: () => AppRouteRoute,
+  } as any)
+const AppOperationsClientsNewRoute = AppOperationsClientsNewRouteImport.update({
+  id: '/operations/clients/new',
+  path: '/operations/clients/new',
+  getParentRoute: () => AppRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
@@ -59,6 +79,9 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/companies/new': typeof AppCompaniesNewRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
+  '/operations/clients/$companyId': typeof AppOperationsClientsCompanyIdRoute
+  '/operations/clients/new': typeof AppOperationsClientsNewRoute
+  '/operations/clients/': typeof AppOperationsClientsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
@@ -67,6 +90,9 @@ export interface FileRoutesByTo {
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/companies/new': typeof AppCompaniesNewRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
+  '/operations/clients/$companyId': typeof AppOperationsClientsCompanyIdRoute
+  '/operations/clients/new': typeof AppOperationsClientsNewRoute
+  '/operations/clients': typeof AppOperationsClientsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,6 +104,9 @@ export interface FileRoutesById {
   '/_app/companies/$companyId': typeof AppCompaniesCompanyIdRoute
   '/_app/companies/new': typeof AppCompaniesNewRoute
   '/_public/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
+  '/_app/operations/clients/$companyId': typeof AppOperationsClientsCompanyIdRoute
+  '/_app/operations/clients/new': typeof AppOperationsClientsNewRoute
+  '/_app/operations/clients/': typeof AppOperationsClientsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -88,6 +117,9 @@ export interface FileRouteTypes {
     | '/companies/$companyId'
     | '/companies/new'
     | '/invitations/$invitationId'
+    | '/operations/clients/$companyId'
+    | '/operations/clients/new'
+    | '/operations/clients/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -96,6 +128,9 @@ export interface FileRouteTypes {
     | '/companies/$companyId'
     | '/companies/new'
     | '/invitations/$invitationId'
+    | '/operations/clients/$companyId'
+    | '/operations/clients/new'
+    | '/operations/clients'
   id:
     | '__root__'
     | '/_app'
@@ -106,6 +141,9 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId'
     | '/_app/companies/new'
     | '/_public/invitations/$invitationId'
+    | '/_app/operations/clients/$companyId'
+    | '/_app/operations/clients/new'
+    | '/_app/operations/clients/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +209,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicInvitationsInvitationIdRouteImport
       parentRoute: typeof PublicRouteRoute
     }
+    '/_app/operations/clients/': {
+      id: '/_app/operations/clients/'
+      path: '/operations/clients'
+      fullPath: '/operations/clients/'
+      preLoaderRoute: typeof AppOperationsClientsIndexRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/operations/clients/$companyId': {
+      id: '/_app/operations/clients/$companyId'
+      path: '/operations/clients/$companyId'
+      fullPath: '/operations/clients/$companyId'
+      preLoaderRoute: typeof AppOperationsClientsCompanyIdRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
+    '/_app/operations/clients/new': {
+      id: '/_app/operations/clients/new'
+      path: '/operations/clients/new'
+      fullPath: '/operations/clients/new'
+      preLoaderRoute: typeof AppOperationsClientsNewRouteImport
+      parentRoute: typeof AppRouteRoute
+    }
   }
 }
 
@@ -178,12 +237,18 @@ interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
   AppCompaniesCompanyIdRoute: typeof AppCompaniesCompanyIdRoute
   AppCompaniesNewRoute: typeof AppCompaniesNewRoute
+  AppOperationsClientsCompanyIdRoute: typeof AppOperationsClientsCompanyIdRoute
+  AppOperationsClientsNewRoute: typeof AppOperationsClientsNewRoute
+  AppOperationsClientsIndexRoute: typeof AppOperationsClientsIndexRoute
 }
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
   AppCompaniesCompanyIdRoute: AppCompaniesCompanyIdRoute,
   AppCompaniesNewRoute: AppCompaniesNewRoute,
+  AppOperationsClientsCompanyIdRoute: AppOperationsClientsCompanyIdRoute,
+  AppOperationsClientsNewRoute: AppOperationsClientsNewRoute,
+  AppOperationsClientsIndexRoute: AppOperationsClientsIndexRoute,
 }
 
 const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(

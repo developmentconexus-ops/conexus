@@ -43,7 +43,7 @@ export function readMemberships(database: Database, personId: string, page: stri
     const person = PersonRole.optional().parse(named)
     return {
       companies: listed.rows,
-      mayCreate: mayOperate(person?.role),
+      mayOperate: mayOperate(person?.role),
       next: listed.next,
     }
   })

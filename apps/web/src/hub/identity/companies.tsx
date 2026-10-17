@@ -2,8 +2,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { buttonVariants } from '../../ui/button.tsx'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
+import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
-import { Pager } from './pager.tsx'
 import { companiesQuery } from './queries.ts'
 import { RoleBadge } from './role-badge.tsx'
 
@@ -16,7 +16,7 @@ export function Companies() {
     <section className="flex flex-col gap-lg">
       <div className="flex flex-wrap items-center justify-between gap-md">
         <SectionTitle>Suas empresas</SectionTitle>
-        {data.mayCreate && (
+        {data.mayOperate && (
           <Link to="/companies/new" className={buttonVariants()}>
             Nova empresa
           </Link>

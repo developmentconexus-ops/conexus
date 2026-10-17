@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
+import { homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 
@@ -51,4 +51,23 @@ test('enquanto sai, "Saindo…"; uma falha fica no menu com a frase', async () =
     'O banco do Conexus não respondeu. O erro foi registrado. Avise quem cuida do Conexus.',
   )
   expect(screen.getByText('Você entrou como Ana Lima.')).toBeTruthy()
+})
+
+test('"Central de Operação" só aparece para o operador e abre a Central', async () => {
+  server.use(
+    ...homeHub({ signedIn: true }, { ...NO_COMPANIES, mayOperate: true }),
+    http.get('*/api/clients', () => HttpResponse.json({ clients: [], next: { kind: 'END' } })),
+  )
+  const conexus = createConexus(createMemoryHistory({ initialEntries: ['/'] }))
+  render(<Conexus conexus={conexus} />)
+  await openMenu()
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Central de Operação' }))
+  expect(await screen.findByText('Nenhum cliente cadastrado.')).toBeTruthy()
+  expect(conexus.router.state.location.pathname).toBe('/operations/clients')
+})
+
+test('sem o papel, o menu não oferece a Central', async () => {
+  signedIn(() => new HttpResponse(null, { status: 204 }))
+  await openMenu()
+  expect(screen.queryByRole('menuitem', { name: 'Central de Operação' })).toBeNull()
 })
