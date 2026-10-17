@@ -66,7 +66,7 @@ test('banco fora na lista: a página de erro com a frase, nunca a lista vazia', 
   expect(screen.queryByText('Nenhum cliente cadastrado.')).toBeNull()
 })
 
-test('sem o papel de operador, /operations/clients e o detalhe dão a página 404, sem pedir a lista', async () => {
+test('sem o papel de operador, /operations/clients e o detalhe dão a página 404, sem nomear a Central nem pedir a lista', async () => {
   let asked = 0
   server.use(
     ...homeHub({ signedIn: true }, NO_COMPANIES),
@@ -81,6 +81,7 @@ test('sem o papel de operador, /operations/clients e o detalhe dão a página 40
       await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
     ).toBeTruthy()
     expect(view.state.location.pathname).toBe(path)
+    expect(screen.queryByText(/Central de Operação|Cliente|Cadastrar cliente/)).toBeNull()
     cleanup()
   }
   expect(asked).toBe(0)

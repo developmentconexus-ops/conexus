@@ -3,12 +3,13 @@ import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
-import { admitOperator, isOperator } from './admission.ts'
+import { admitOperator } from './admission.ts'
 import { createAuth, libraryCommandOn } from './auth.ts'
 import { readOperatedCompanies, registerCompanyOn, renameCompanyOn } from './clients.ts'
 import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
+import { lockCompany } from './invitations.ts'
 import { registerIdentityRoutes } from './routes.ts'
 import { createSessionReader } from './session.ts'
 
@@ -39,8 +40,8 @@ export function createIdentity(deps: {
     // What the Operations Central reaches identity through (code C4), in the caller's transaction.
     ports: Object.freeze({
       libraryCommand,
+      lockCompany,
       admitOperator,
-      isOperator,
       registerCompany: registerCompanyOn(auth),
       renameCompany: renameCompanyOn(auth),
       readOperatedCompanies,

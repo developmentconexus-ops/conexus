@@ -4,7 +4,11 @@ import { answer, serve } from '../../platform/http.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { Clients } from './clients.ts'
 
-/** The owner's invitation leaves after the commit: a refused one answers its failure, the rows stay. */
+/**
+ * The owner's invitation leaves after the commit. A bounced address still answers the registered
+ * client, so the operator lands on it and invites another e-mail; a provider that may not have sent
+ * answers its failure, and a replay with the key sends again (code C37).
+ */
 export function registerClientRoutes(
   app: FastifyInstance,
   deps: { clients: Clients; identity: IdentityPorts },
@@ -24,10 +28,15 @@ export function registerClientRoutes(
     if (made.created) {
       log.info({ companyId: made.client.companyId, personId: person.id }, 'CLIENT_REGISTERED')
     }
-    if (made.mail !== undefined) {
-      await identity.mailOwnerInvitation({ company: made.company, invitation: made.mail, signal })
-    }
-    return answer({ client: made.client })
+    const sent =
+      made.mail === undefined
+        ? undefined
+        : await identity.mailOwnerInvitation({
+            company: made.company,
+            invitation: made.mail,
+            signal,
+          })
+    return answer({ client: made.client, mailBounced: sent?.kind === 'BOUNCED' })
   })
 
   serve(app, correctClient, async ({ person, params, body, log }) => {

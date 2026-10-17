@@ -153,8 +153,8 @@ command on the server; a merge alone publishes nothing [0035]. Migrations run be
 starts ([data D9](guides/data.md)).
 
 **Roll back.** One button puts back the image of an earlier release. Every migration only adds, so
-an earlier image runs on the migrated database ([data D6](guides/data.md)). A Worker rolls back with
-Cloudflare's own versions.
+an earlier image runs on the migrated database ([data D6](guides/data.md)). Exception: step 4.2's
+P6 B deleted old test companies, unrecoverably. A Worker rolls back with Cloudflare's own versions.
 
 **Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
 paid one. Both Hub databases return to the same instant. A restore then sets every login password
