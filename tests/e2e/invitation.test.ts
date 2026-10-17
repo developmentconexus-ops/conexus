@@ -46,7 +46,7 @@ async function anaInvites(page: Page) {
   await page.getByRole('heading', { name: 'Empresa Teste', exact: true }).waitFor()
   await page.getByText('Dono').waitFor()
   await page.getByLabel('E-mail').fill(DAVI.email)
-  await page.getByLabel('Papel').click()
+  await page.getByRole('combobox', { name: 'Papel' }).click()
   await page.getByRole('option', { name: 'Administrador' }).click()
   await page.getByRole('button', { name: 'Enviar convite', exact: true }).click()
   await page.getByText(`Convite enviado para ${DAVI.email}.`).waitFor()

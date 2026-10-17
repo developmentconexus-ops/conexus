@@ -97,6 +97,8 @@ test('empresa ativa: o operador convida outro dono, reenvia e cancela, também s
   const invited = await post(hub, ana, invitations, { email: 'edu@example.test', role: 'owner' })
   assert.equal(invited.statusCode, 201)
   const second = String(Object(invited.json()).invitation.id)
+  // The company has an owner already: the mail asks for an owner, not for the first one.
+  assert.equal(hub.mail.sent.at(-1)?.subject, 'Convite para Empresa Teste')
   const renewed = await manage(hub, ana, 'PUT', `${invitations}/${second}`, 0)
   assert.equal(renewed.statusCode, 200)
   const canceled = await manage(hub, ana, 'DELETE', `${invitations}/${second}`, 1)
