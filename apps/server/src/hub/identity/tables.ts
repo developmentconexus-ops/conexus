@@ -77,7 +77,6 @@ export const user = auth.table(
   },
   () => [
     // The login signs people in and reads them for the library, outside any scope.
-    // The login signs people in, outside any scope (step 3).
     pgPolicy('runtime_sign_in', { for: 'all', to: RUNTIME_LOGIN, using: OPEN, withCheck: OPEN }),
     policy(
       SCOPE_ROLES.COMPANY,
