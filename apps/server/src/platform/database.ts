@@ -69,6 +69,16 @@ export function databaseFailure(error: unknown): Failure {
   return new Failure('INTERNAL_UNEXPECTED', { cause: error })
 }
 
+/** The constraint a unique violation (23505) names, read by SQLSTATE and name (code C52). */
+export function violatedConstraint(error: unknown): string | undefined {
+  for (let cause = error; cause instanceof Error; cause = cause.cause) {
+    if (cause instanceof pg.DatabaseError) {
+      return cause.code === '23505' ? cause.constraint : undefined
+    }
+  }
+  return undefined
+}
+
 /**
  * Makes a second command on the same key wait for the first one's transaction to end (code C65).
  * The key is hashed to the 64 bits of an advisory lock.

@@ -4,9 +4,9 @@ import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import { admit } from './admission.ts'
 import { storedAddress } from './auth.ts'
-import { after, pageKey, pageOf } from './companies.ts'
 import { LIVE, PendingRow, pending, pendingOf, Status } from './invitations.ts'
 import { account, company, invitation, member, user } from './tables.ts'
 
@@ -57,7 +57,7 @@ export function readInvitations(
   })
 }
 
-function stateOf(status: z.infer<typeof Status>, live: boolean) {
+export function stateOf(status: z.infer<typeof Status>, live: boolean) {
   switch (status) {
     case 'accepted':
       return 'ACCEPTED'

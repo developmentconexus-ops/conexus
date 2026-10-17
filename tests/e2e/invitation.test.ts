@@ -11,7 +11,7 @@ import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { chromium } from 'playwright-core'
 import { build } from 'vite'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
-import { createHub, identityOf } from '../../apps/server/src/main.ts'
+import { createHub, identityOf, operationsOf } from '../../apps/server/src/main.ts'
 import {
   createTestDatabase,
   TEST_ORIGIN,
@@ -78,7 +78,13 @@ async function liveHub(t: TestContext, mailUrl: string) {
   const config = testConfig(database.runtimeUrl, mailUrl)
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const app = await createHub(config, { status, identity, webRoot: await builtScreens(t) })
+  const operations = operationsOf(database.database, identity)
+  const app = await createHub(config, {
+    status,
+    identity,
+    operations,
+    webRoot: await builtScreens(t),
+  })
   t.after(() => app.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
   const address = app.server.address()

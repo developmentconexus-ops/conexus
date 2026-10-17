@@ -85,9 +85,9 @@ export const PAGE_SIZE = 50
 
 /** The longest company name, in characters. */
 export const COMPANY_NAME_MAX_LENGTH = 100
-const CompanyName = z.string().trim().min(1).max(COMPANY_NAME_MAX_LENGTH)
+export const CompanyName = z.string().trim().min(1).max(COMPANY_NAME_MAX_LENGTH)
 const PersonName = z.string().trim().min(1).max(100)
-const Page = z.object({ page: PageToken.optional() })
+export const Page = z.object({ page: PageToken.optional() })
 const InCompany = z.object({ companyId: CompanyId })
 const OfInvitation = z.object({ invitationId: InvitationId })
 
@@ -184,6 +184,8 @@ export const createInvitation = defineOperation({
     'INVITATION_STALE',
     'INVITATION_CLOSED',
     'MEMBER_EXISTS',
+    'OWNER_INVITATION_OPEN',
+    'CLIENT_OWNER_IS_OPERATOR',
     'INVITATIONS_FULL',
     'IDEMPOTENCY_CONFLICT',
     'INVITATIONS_EXCEEDED',

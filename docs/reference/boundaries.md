@@ -98,6 +98,30 @@ library joins the Hub sets.
   mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
   `first-person-lock`).
 
+### A company with no member and every invitation, through the plugin's adapter
+
+- **Library line.** `better-auth/dist/plugins/organization/routes/crud-org.mjs:74-100`.
+  `createOrganization` always writes the caller as a member with `creatorRole`. The invitation
+  endpoints admit only a member of the company (`routes/crud-invites.mjs:93-100` to create and
+  resend, `:430-434` to cancel). `getOrgAdapter`, exported by the plugin (`index.mjs:1-4`), writes
+  the same rows without those checks (`adapter.mjs:141`, `:352`, `:728`, `:793`), on
+  `getCurrentAdapter`, so inside `runWithTransaction` on the Hub's transaction.
+- **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, called by
+  `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, `createInvitationCommand` in
+  `invitations.ts` and the cancel and renewal in `invitation-management.ts`. The Hub's admission
+  decides who writes (`admitInviter`, `admitOperator`), `mayInviteAs` which role, and
+  `checkNotMember` refuses an address already in the company, as the endpoint did. The call carries
+  one `@ts-expect-error`: the parameter is typed `AuthContext<BetterAuthOptions>`, which no
+  configured auth's context matches.
+- **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus
+  never becomes one, so the operator invites the first owner without a membership. One gate for
+  members and the operator keeps one owner of who may invite ([code C26](../guides/code.md),
+  [security S6](../guides/security.md)). The test "sem membro" in
+  `hub/operations/clients.test.ts` fails when the company is created by the endpoint (removal
+  `operator-not-member`); "recusas" fails when the adapter writes outside the Hub's transaction
+  (removal `client-one-transaction`). When the library changes, reread `getOrgAdapter`'s
+  signature and these four methods.
+
 ### Sign-in and the first password reach the library through a request we build
 
 - **Library line.** `better-auth/dist/api/index.mjs:165-173`. The attempt limit runs in the
@@ -163,7 +187,7 @@ library joins the Hub sets.
   `listMembers` pages by offset (`:186`).
 - **Hand-made piece.** `readMemberships` and `readMembers` in
   `apps/server/src/hub/identity/companies.ts`, `readInvitations` and `readReceived` in
-  `invitation-reads.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page
+  `invitation-reads.ts`, with `pageOf` and `pageKey` of `platform/pages.ts`. Each reads in a fixed order, 51 rows for a page of 50, and the next page
   starts after the last row's id.
 - **Why.** A list past 100 rows would lose rows silently, and a page by offset shifts when a row
   arrives. The plugin's `getInvitation` also refuses an invitation that is no longer pending
@@ -192,11 +216,13 @@ library joins the Hub sets.
   (`routes/crud-invites.mjs:128-160`); cancel writes even a terminal status (`:428-450`).
 - **Hand-made piece.** `openOf` in `invitations.ts` finds the pending row without a clock. An
   explicit expired replacement compares its id/revision/email/role under the company lock, cancels
-  natively, stamps `superseded_at` and creates natively in one transaction. The old link reads
-  EXPIRED. The new row's `replaces` retains the original request for complete attempt-key payload
-  comparison. `invitation-management.ts` admits current administrators and recognizes explicit
+  through the plugin's adapter, stamps `superseded_at` and creates through the adapter in one
+  transaction. The old link reads EXPIRED. The new row's `replaces` retains the original request
+  for complete attempt-key payload comparison. `invitation-management.ts` admits current
+  administrators, and the operator on a company awaiting its first owner, and recognizes explicit
   canceled replay before comparing revision; accepted, declined and superseded rows cannot cancel.
-  Live renewal uses native resend, advances revision and clears `mailed_at`.
+  Live renewal writes the new `expires_at` itself, as native resend computes it
+  (`invitationExpiry` in `auth.ts`), advances revision and clears `mailed_at`.
 - **Why.** The founder's 4.1 decision B. An expired row still holds the unique pending-address
   index, and the native cancel alone cannot distinguish replacement from explicit cancellation.
   `invitation-lifecycle.test.ts` covers link identity, terminal replay without writes, full-payload
@@ -413,8 +439,9 @@ library joins the Hub sets.
 - **Library line.** `drizzle-orm/sql/expressions/conditions.js:101`. `gt(left, right)` renders
   `left > right` for any `SQLWrapper`, and a select builder as `right` renders as a parenthesized
   subquery. The builder has no row value, so the pair `(name, id)` cannot be built from columns.
-- **Hand-made piece.** `after` in `apps/server/src/hub/identity/companies.ts` and its three callers,
-  `readMemberships` and `readMembers` there and `readInvitations` in `invitation-reads.ts`. The pair
+- **Hand-made piece.** `after` in `apps/server/src/platform/pages.ts` and its four callers,
+  `readMemberships` and `readMembers` in `hub/identity/companies.ts`, `readInvitations` in
+  `invitation-reads.ts` and the client list in `hub/operations/clients.ts`. The pair
   is a `sql` template over the tables' own columns; the anchor row is a Drizzle select, scoped as
   its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset

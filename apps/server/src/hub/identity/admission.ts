@@ -1,4 +1,4 @@
-import type { CompanyId, PersonId } from '@conexus/hub-api'
+import type { CompanyId, Email, PersonId } from '@conexus/hub-api'
 import { Role } from '@conexus/hub-api'
 import { defaultRoles } from 'better-auth/plugins/organization/access'
 import { and, eq, notExists } from 'drizzle-orm'
@@ -111,6 +111,15 @@ export type CompanyProof = MemberProof | OwnerInviterProof
 /** Whether a person's installation role makes them the operator. */
 export function mayOperate(role: unknown): boolean {
   return role === INSTALLATION_ADMINISTRATOR
+}
+
+/** Whether the address belongs to the operator, as the library stores it, in lower case. */
+export async function isOperator(tx: ReadTx, email: Email): Promise<boolean> {
+  const [row] = await tx
+    .select({ role: user.role })
+    .from(user)
+    .where(eq(user.email, email.toLowerCase()))
+  return mayOperate(row?.role)
 }
 
 async function isOperatorPerson(tx: ReadTx, personId: PersonId, locks: boolean) {

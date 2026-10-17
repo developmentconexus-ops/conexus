@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
-import { createHub, identityOf } from '../../main.ts'
+import { createHub, identityOf, operationsOf } from '../../main.ts'
 import {
   createTestDatabase,
   silent,
@@ -105,7 +105,8 @@ async function hubServing(t: TestContext, mailApiUrl?: string) {
   const config = testConfig(test.runtimeUrl, mailApiUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const app = await createHub(config, { status, identity })
+  const operations = operationsOf(test.database, identity)
+  const app = await createHub(config, { status, identity, operations })
   t.after(() => app.close())
   return { app, test }
 }

@@ -165,6 +165,61 @@
     }
   },
   {
+    "id": "client-attempt-replay",
+    "file": "apps/server/src/hub/identity/clients.ts",
+    "find": "    if (found !== undefined) {\n",
+    "replace": "    if (found === null) {\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/clients.test.ts",
+      "name": "a chave"
+    }
+  },
+  {
+    "id": "client-one-transaction",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
+    "replace": "await work(tx),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/clients.test.ts",
+      "name": "recusas"
+    }
+  },
+  {
+    "id": "operator-not-member",
+    "file": "apps/server/src/hub/identity/clients.ts",
+    "find": "    const made = await adapter.createOrganization({\n      organization: { name: input.name, slug: attemptKey, attemptKey, createdAt: new Date() },\n    })\n",
+    "replace": "    const made = await auth.api.createOrganization({\n      body: { name: input.name, slug: attemptKey, attemptKey, userId: input.admitted.personId },\n    })\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/clients.test.ts",
+      "name": "sem membro"
+    }
+  },
+  {
+    "id": "client-owner-not-operator",
+    "file": "apps/server/src/hub/operations/clients.ts",
+    "find": "} else if (await identity.isOperator(tx, input.ownerEmail)) {",
+    "replace": "} else if (input.ownerEmail === undefined) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/clients.test.ts",
+      "name": "recusas"
+    }
+  },
+  {
+    "id": "owner-invitation-awaiting-only",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "        notExists(tx.select().from(member).where(eq(member.organizationId, company.id))),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/owner-invitation.test.ts",
+      "name": "empresa ativa"
+    }
+  },
+  {
     "id": "membership-page-anchor-scoped",
     "file": "apps/server/src/hub/identity/companies.ts",
     "find": ".where(and(eq(company.id, id), eq(member.userId, personId))),",
