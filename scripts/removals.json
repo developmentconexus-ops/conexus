@@ -603,5 +603,27 @@
       "file": "src/platform/isolation.test.ts",
       "name": "operador sem papel"
     }
+  },
+  {
+    "id": "client-delete-revision",
+    "file": "apps/server/src/hub/operations/clients.ts",
+    "find": "    if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')\n    if ((await clientOf(",
+    "replace": "    if ((await clientOf(",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion.test.ts",
+      "name": "apagar: recusas"
+    }
+  },
+  {
+    "id": "client-delete-operator-only",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "  disableOrganizationDeletion: true,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/sign-up.test.ts",
+      "name": "apagar só pela Central"
+    }
   }
 ]

@@ -132,3 +132,24 @@ export const correctClient = defineOperation({
     'DATABASE_UNAVAILABLE',
   ],
 })
+
+export const deleteClient = defineOperation({
+  id: 'deleteClient',
+  summary: 'Deletes a client with its company, members and invitations; its people stay.',
+  access: 'session',
+  method: 'DELETE',
+  path: '/api/clients/{companyId}',
+  bodyLimit: 1024,
+  input: {
+    params: OfClient,
+    body: z.object({ name: z.string(), revision: z.number().int().nonnegative() }),
+  },
+  success: { status: 204 },
+  failures: [
+    'NOT_FOUND',
+    'CLIENT_STALE',
+    'CLIENT_NAME_MISMATCH',
+    'SESSION_REQUIRED',
+    'DATABASE_UNAVAILABLE',
+  ],
+})

@@ -56,6 +56,7 @@ export {
   ClientSummary,
   Cnpj,
   correctClient,
+  deleteClient,
   getClient,
   LEGAL_NAME_MAX_LENGTH,
   listClients,

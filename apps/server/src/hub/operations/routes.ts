@@ -1,4 +1,10 @@
-import { correctClient, getClient, listClients, registerClient } from '@conexus/hub-api'
+import {
+  correctClient,
+  deleteClient,
+  getClient,
+  listClients,
+  registerClient,
+} from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
 import type { IdentityPorts } from '../identity/public.ts'
@@ -29,6 +35,12 @@ export function registerClientRoutes(
       await identity.mailOwnerInvitation({ admitted, company, invitation: made.mail, signal })
     }
     return answer({ client: made.client })
+  })
+
+  serve(app, deleteClient, async ({ person, params, body, log }) => {
+    await clients.remove({ person, ...params, ...body })
+    log.info({ companyId: params.companyId, personId: person.id }, 'CLIENT_DELETED')
+    return answer(undefined)
   })
 
   serve(app, correctClient, async ({ person, params, body, log }) => {

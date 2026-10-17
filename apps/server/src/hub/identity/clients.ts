@@ -93,6 +93,31 @@ export function renameCompanyOn(auth: Auth) {
   }
 }
 
+/**
+ * Deletes a client's company with its members and invitations, through the plugin's adapter
+ * (`organization/adapter.mjs:370`), in the caller's transaction: its endpoint asks for a
+ * membership (`crud-org.mjs:264`), and the Hub routes none to it. The caller took the company's
+ * lock first; taking it again holds it. A company still there afterwards is a defect, never a
+ * deletion (code C50).
+ */
+export function deleteCompanyOn(auth: Auth) {
+  return async (
+    tx: CommandTx,
+    input: { admitted: OperatorProof; companyId: CompanyId },
+  ): Promise<void> => {
+    await lockCompany(tx, input.companyId)
+    const adapter = await organizationAdapter(auth)
+    await adapter.deleteOrganization(input.companyId)
+    const [left] = await tx
+      .select({ id: company.id })
+      .from(company)
+      .where(eq(company.id, input.companyId))
+    if (left !== undefined) {
+      throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'company not deleted' } })
+    }
+  }
+}
+
 export type OperatedCompany = { name: string; state: Client['state'] }
 
 const InvitationRow = PendingRow.extend({

@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import { createTestDatabase, silent, testConfig } from '../../platform/test-database.ts'
 import { createAuth } from './public.ts'
-import { PASSWORD } from './test-hub.ts'
+import { ANA, BRUNO, hubOn, PASSWORD, personOn, plantCompany } from './test-hub.ts'
 
 test('cadastro fechado: signUpEmail no servidor é recusado e ninguém é criado', async (t) => {
   const test = await createTestDatabase(t)
@@ -57,5 +57,30 @@ test('empresa só pela Central: createOrganization direto é recusado ao operado
   }
   assert.deepEqual(await test.asOwner('select count(*)::int as companies from auth.company'), [
     { companies: 0 },
+  ])
+})
+
+test('apagar só pela Central: deleteOrganization direto é recusado ao dono e ao operador, e a empresa fica', async (t) => {
+  const hub = await hubOn(t)
+  const owner = await personOn(hub, BRUNO)
+  const operator = await personOn(hub, ANA)
+  const companyId = await plantCompany(hub.test, owner.id)
+  const auth = createAuth({
+    database: hub.test.database,
+    config: testConfig(hub.test.runtimeUrl),
+    log: silent,
+  })
+  for (const person of [owner, operator]) {
+    const headers = new Headers({ cookie: person.cookie })
+    await assert.rejects(
+      auth.api.deleteOrganization({ body: { organizationId: companyId }, headers }),
+      (error: unknown) => {
+        assert.equal(Object(Object(error).body).code, 'ORGANIZATION_DELETION_DISABLED')
+        return true
+      },
+    )
+  }
+  assert.deepEqual(await hub.test.asOwner('select count(*)::int as companies from auth.company'), [
+    { companies: 1 },
   ])
 })

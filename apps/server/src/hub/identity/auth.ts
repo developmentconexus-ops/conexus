@@ -211,6 +211,8 @@ const ORGANIZATION = {
   },
   // Only the Operations Central creates a company, through the adapter (step 4.2).
   allowUserToCreateOrganization: false,
+  // Only the Operations Central deletes a company, through the adapter (step 5, Q6).
+  disableOrganizationDeletion: true,
   // The Hub counts the open invitations itself, under the company's lock: the plugin reads
   // at most 100 rows of them, in no order (docs/reference/boundaries.md).
   invitationLimit: Number.POSITIVE_INFINITY,

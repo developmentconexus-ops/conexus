@@ -122,6 +122,9 @@ type Correction = ClientData & { person: Person; companyId: CompanyId; revision:
 function correct(deps: Deps, input: Correction) {
   const { identity } = deps
   return identity.libraryCommand(operatorScope(input.person, input.companyId), async (tx) => {
+    // The company's lock before the operator's row and the client's, the order the owner's
+    // invitation and its accept keep: the other order deadlocked them (step 5, criterion 11).
+    await identity.lockCompany(tx, input.companyId)
     const personId = input.person.id
     const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })
     const [row] = await tx
@@ -145,6 +148,34 @@ function correct(deps: Deps, input: Correction) {
         .where(eq(client.companyId, companyId)),
     )
     return clientOf(deps, tx, admitted, companyId)
+  })
+}
+
+type Deletion = { person: Person; companyId: CompanyId; name: string; revision: number }
+
+/**
+ * Deletes a client at the revision and display name the operator confirmed (code C38): its record,
+ * then through identity its company, members and invitations, in one transaction. Its people stay.
+ * The locks come in a correction's order; a deleted or unknown client is the same 404.
+ */
+function remove(deps: Deps, input: Deletion) {
+  const { identity } = deps
+  return identity.libraryCommand(operatorScope(input.person, input.companyId), async (tx) => {
+    await identity.lockCompany(tx, input.companyId)
+    const personId = input.person.id
+    const admitted = await identity.admitOperator({ tx, personId, action: 'deleteClient' })
+    const [row] = await tx
+      .select({ revision: client.revision })
+      .from(client)
+      .where(eq(client.companyId, input.companyId))
+      .for('update')
+    if (row === undefined) throw new Failure('NOT_FOUND')
+    if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')
+    if ((await clientOf(deps, tx, admitted, input.companyId)).name !== input.name) {
+      throw new Failure('CLIENT_NAME_MISMATCH')
+    }
+    await tx.delete(client).where(eq(client.companyId, input.companyId))
+    await identity.deleteCompany(tx, { admitted, companyId: input.companyId })
   })
 }
 
@@ -185,6 +216,7 @@ export function createClients(deps: Deps) {
   return Object.freeze({
     register: (input: Registration) => register(deps, input),
     correct: (input: Correction) => correct(deps, input),
+    remove: (input: Deletion) => remove(deps, input),
     list: (person: Person, page: string | undefined) => list(deps, person, page),
     get: (person: Person, companyId: CompanyId) => get(deps, person, companyId),
   })
