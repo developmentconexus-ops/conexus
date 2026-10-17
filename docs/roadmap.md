@@ -6,22 +6,23 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
 
 ### As etapas, e o que você faz na nuvem quando cada uma fecha
 
-1. **Hub no ar.** Publica uma mudança no Hub e volta atrás.
+1. **Hub no ar.** Publica e volta atrás.
    Cartão da etapa 1 aprovado em 2026-10-13 (commit 26b9bdee5dbd01546e59be68292e6354f2b48f91): "Sim"
    Etapa 1 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
    Cartão da etapa 2 aprovado em 2026-10-14 (commit 9d94e1a1402951b4aceae42b58e0349bf347717d): "Aprovo"
    Etapa 2 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
-3. **Entrar.** Entra com e-mail e senha, e sai.
+3. **Entrar.** Entra e sai.
    Cartão da etapa 3 aprovado em 2026-10-14 (commit 5a65e5348fd47f541a9c0447a3a11996a28d3b25): "Aprovo"
    Etapa 3 usada em 2026-10-15 em https://hub.conexus.fun: "Todos passos deram certo"
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
    Cartão da etapa 4 aprovado em 2026-10-15 (commit 9e9bff0e21742a2e04fbe6afb2f685d8ca5f6940): "1. A, sim poré mtem que configurar senha não? 2. A 3. A 4. A 5. A 6. Okay 7. A 8. Aprovo 9. A"
    Etapa 4 usada em 2026-10-16 em https://hub.conexus.fun: "Deu certo"; sobre o fluxo, "O fluxo não está bem pensando pesnando como um todo"
-   4.1 **Convite completo.** Cria a senha no convite, e cancela ou recusa um.
+   4.1 **Convite completo.** Cria a senha no convite, cancela ou recusa um.
       Cartão da etapa 4.1 aprovado em 2026-10-16 (commit 473338311584743520a5f5b1ddb4271252f8fc76): "A aprovo"
       Etapa 4.1 usada em 2026-10-16 em https://hub.conexus.fun (v0.4.1): "Foi sim para lixo eletronico, mas nem ligo, podemos passar e tudo deu certo. cancelei e testei tudo e tudo foi validado"
    4.2 **Cadastro de cliente.** Cadastra um cliente na Central, e o administrador dele entra como dono.
+      Cartão da etapa 4.2 aprovado em 2026-10-16 (commit 819b1157ca1edc62fb83a5f31d07faa391e32716): "Aprovo"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
