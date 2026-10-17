@@ -23,6 +23,7 @@ ou a chave dela, a T3A volta a você. Com esta página, autoriza as chamadas da 
 grant (D11). No fim: o roteiro e os textos.
 
 **Decisões já dadas** (2026-10-17): P1 A, P2 A, P3 A, P4 A, T1A, T2A, T3A, T4A.
+Telas (estudo do mapa, 2026-10-17): `"D1: A D2: A D3: A"`: entra nos Projetos; barra da empresa; estado do Hub na Central.
 
 - **Papéis** ("Q1 sua recomendação q2 A"): P1 A fica, e cada papel dá capacidades de Projeto.
 - **P3 muda a sua etapa 5.** Lá: "Apagar não deixa estado". Agora, "P3. A": a empresa com banco
@@ -33,11 +34,7 @@ grant (D11). No fim: o roteiro e os textos.
 - **T4A.** A prova recupera pelo SDK um banco apagado; a Central não recupera empresa. É aposta até
   a prova rodar; se não recuperar, volta a você.
 
-**As chamadas da prova**, com a chave das empresas, em projetos `cx-prova-…`: `projects.list`;
-`projects.create` em São Paulo, PostgreSQL 18, também com a resposta cortada; `projects.get`;
-`postgres.connectionString`, que lê uma vez a senha do dono, só para gravar e ler uma linha;
-`projects.delete` durante a criação, depois, e de novo; `projects.recover`; `projects.get` do projeto
-do Hub, pelo id que o firstmate dá; no fim, `projects.delete` de tudo o que a prova criou.
+As chamadas da prova, autorizadas com "3A", e o resultado estão no registro 0040, criado em U1.
 
 **O grant de U2.** Às rotas da empresa: ler, criar e apagar Projetos; ler, criar e marcar pronto o
 banco da empresa. À Central: ler e apagar os dois na empresa que apaga.
@@ -65,7 +62,7 @@ um faltar, a construção para:
 | E4 | `remove` em `operations/clients.ts` sem mudança na 6 | operações |
 | E5 | `test-hub.tsx`, `removals.json`, `boundaries.md` com a 6 | — |
 | E6 | A migração de U1 da 6 no catálogo antes da de U2 | `migrations/` |
-| E7 | A rota da empresa é Pessoas (`$companyId.tsx`) | `apps/web/src/routes/_app/companies/` |
+| E7 | A rota da empresa abre Projetos; Pessoas: `$companyId/people` | `apps/web/src/routes/_app/companies/` |
 
 ## As issues abertas
 
@@ -90,7 +87,7 @@ U2 e U3 correm juntas; depois servidor (U4, U5) e telas (U6). Uma revisão, um m
 A prova não cria release (L17).
 
 **Orçamento de código alterado** (sem testes nem gerados): U1 **0**; U2 **250**; U3 **300**; U4
-**700**; U5 **450**; U6 **1.100**; U7 **200**; espalhados **150**. Total **3.150**, teto 4.000 (L2). A
+**700**; U5 **450**; U6 **1.250**; U7 **200**; espalhados **150**. Total **3.300**, teto 4.000 (L2). A
 6 passou 47% do seu U6: se uma unidade passar a sua conta, saem primeiro as issues 73 e 74.
 
 ## Os critérios de aceite
@@ -357,8 +354,9 @@ retomada é a mesma rota com o mesmo corpo. Regras: C4, C38, C57, D22, S8, S10, 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/hub/projects/` | cria `projects.tsx`, `project.tsx`, `create-project-form.tsx`, `delete-project-dialog.tsx`, `queries.ts`, `public.ts` e testes | rotas |
-| `apps/web/src/routes/_app/companies/` | cria `$companyId/projects/index.tsx`, `$companyId/projects/$projectId.tsx`; Pessoas ganha o link | roteador |
-| `apps/web/src/hub/operations/` | `clients.tsx`, `client.tsx`, `delete-client-dialog.tsx` | rotas da Central |
+| `apps/web/src/routes/_app/companies/` | cria `$companyId/projects/index.tsx`, `$companyId/projects/$projectId.tsx`; Pessoas vai para `$companyId/people.tsx` (`getRouteApi` de `hub/identity/people.tsx`) | roteador |
+| `apps/web/src/routes/_app/route.tsx`, `index.tsx`, `ui/frame.tsx` | `PLACES` da empresa, troca de empresa; `beforeLoad` com uma empresa; sai o bloco de estado | todas as telas |
+| `apps/web/src/hub/operations/` | `clients.tsx` (bloco de estado), `client.tsx`, `delete-client-dialog.tsx` | rotas da Central |
 | `apps/web/src/platform/test-hub.tsx` | as operações de Projetos | testes |
 
 ### A ordem do trabalho

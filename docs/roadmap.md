@@ -31,7 +31,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Cartão da etapa 6 aprovado em 2026-10-17 (commit 69e6e72753f2bbf6624851c2a796c1bbb6d4e1fe): "Aprovo"
    Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
-   Cartão da etapa 7 aprovado em 2026-10-17 (commit 72737e9c339db25312d0c1f262fc8a0e3146233b): "Sim"
+   Cartão da etapa 7 aprovado em 2026-10-17 (commit 89798f576c9fd1670748c1580807ea8e513a5d8d): "Sim"; "`D1: A D2: A D3: A`"
 8. **App de exemplo.** Abre um app escrito à mão.
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
@@ -77,7 +77,7 @@ Domínio próprio de empresa.
    viram dívida listada. "2. A", e com ela: "Tem que ser muito bem estudado como vai ser feito,
    né, o código do zero, o que vai ser reaproveitado, para ele ser também já refatorado como
    código, ele ser no arquivo correto, ele não manter decisões antigas só porque elas já foram
-   feitas." Ver a seção 3.
+   feitas." Ver seção 3.
 3. **Toda linha lida do banco tem o formato conferido antes de ser usada.** "3. A".
 4. **A primeira etapa virou duas.** "4. B". Publicar e voltar atrás, e depois restaurar, o banco
    dormindo e o teste de dados.
@@ -85,8 +85,8 @@ Domínio próprio de empresa.
 
 ## 2. As etapas
 
-Testes de login, provas PD1 a PD9, fichas e estudos
-vivem fora. Etapa fechada sai desta tabela; o uso fica na seção 1.
+Testes de login, provas PD1 a PD9, fichas e estudos:
+fora. Etapa fechada sai desta tabela; o uso na seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
@@ -109,10 +109,10 @@ vivem fora. Etapa fechada sai desta tabela; o uso fica na seção 1.
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 
 O teste do banco dormindo, da etapa 2, roda em toda etapa que acrescenta algo que roda
-sozinho; se falhar com o Mastra parado, a etapa 12 volta a você.
+sozinho; se falhar com o Mastra parado, a 12 volta a você.
 
 ## 3. Como uma etapa roda
 
 Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), menos o uso, cada uma com skill.
-A sua resposta 2 vive na regra do estudo
-([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão sua vem na etapa dela.
+Sua resposta 2 vive na regra do estudo
+([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão vem na etapa dela.
