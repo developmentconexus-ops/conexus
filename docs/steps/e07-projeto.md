@@ -23,7 +23,7 @@ ou a chave dela, a T3A volta a você. Com esta página, autoriza as chamadas da 
 grant (D11). No fim: o roteiro e os textos.
 
 **Decisões já dadas** (2026-10-17): P1 A, P2 A, P3 A, P4 A, T1A, T2A, T3A, T4A.
-Telas (estudo do mapa, 2026-10-17): `"D1: A D2: A D3: A"`: uma empresa cai nos Projetos; a barra mostra Projetos, Pessoas e a troca de empresa; o estado do Hub fica só na Central.
+Telas (estudo do mapa, 2026-10-17): `"D1: A D2: A D3: A"`: entra nos Projetos; barra da empresa; estado do Hub na Central.
 
 - **Papéis** ("Q1 sua recomendação q2 A"): P1 A fica, e cada papel dá capacidades de Projeto.
 - **P3 muda a sua etapa 5.** Lá: "Apagar não deixa estado". Agora, "P3. A": a empresa com banco
@@ -66,7 +66,7 @@ um faltar, a construção para:
 | E4 | `remove` em `operations/clients.ts` sem mudança na 6 | operações |
 | E5 | `test-hub.tsx`, `removals.json`, `boundaries.md` com a 6 | — |
 | E6 | A migração de U1 da 6 no catálogo antes da de U2 | `migrations/` |
-| E7 | A rota da empresa abre Projetos; Pessoas mora em `companies/$companyId/people` | `apps/web/src/routes/_app/companies/` |
+| E7 | A rota da empresa abre Projetos; Pessoas: `$companyId/people` | `apps/web/src/routes/_app/companies/` |
 
 ## As issues abertas
 
@@ -358,9 +358,9 @@ retomada é a mesma rota com o mesmo corpo. Regras: C4, C38, C57, D22, S8, S10, 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/hub/projects/` | cria `projects.tsx`, `project.tsx`, `create-project-form.tsx`, `delete-project-dialog.tsx`, `queries.ts`, `public.ts` e testes | rotas |
-| `apps/web/src/routes/_app/companies/` | cria `$companyId/projects/index.tsx`, `$companyId/projects/$projectId.tsx`; `$companyId/index.tsx` abre Projetos; Pessoas vai para `$companyId/people.tsx`, e `hub/identity/people.tsx` troca o `getRouteApi` | roteador |
-| `apps/web/src/routes/_app/route.tsx`, `index.tsx`, `apps/web/src/ui/frame.tsx` | `PLACES` vira Projetos e Pessoas com empresa no endereço, mais a troca de empresa (duas ou mais); `beforeLoad` leva quem tem uma empresa aos Projetos; sai o bloco de estado do Hub | todas as telas |
-| `apps/web/src/hub/operations/` | `clients.tsx` (recebe o bloco de estado do Hub), `client.tsx`, `delete-client-dialog.tsx` | rotas da Central |
+| `apps/web/src/routes/_app/companies/` | cria `$companyId/projects/index.tsx`, `$companyId/projects/$projectId.tsx`; Pessoas vai para `$companyId/people.tsx` (`getRouteApi` de `hub/identity/people.tsx`) | roteador |
+| `apps/web/src/routes/_app/route.tsx`, `index.tsx`, `ui/frame.tsx` | `PLACES` da empresa, troca de empresa; `beforeLoad` com uma empresa; sai o bloco de estado | todas as telas |
+| `apps/web/src/hub/operations/` | `clients.tsx` (bloco de estado), `client.tsx`, `delete-client-dialog.tsx` | rotas da Central |
 | `apps/web/src/platform/test-hub.tsx` | as operações de Projetos | testes |
 
 ### A ordem do trabalho
