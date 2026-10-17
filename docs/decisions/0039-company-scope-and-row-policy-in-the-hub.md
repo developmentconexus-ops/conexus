@@ -10,6 +10,9 @@ Each transaction opens in a typed scope: `SET LOCAL ROLE` and `set_config(…, t
 the company tables and `auth.user` limit each role; no `FORCE`, the owner only migrates (D9). Basis:
 the founder's answers A, B, H.
 
+A1: policies ask `auth.is_installation_administrator`, a `SECURITY DEFINER` function of a NOLOGIN
+role. A2: the invitation scope reads its company's members. Basis: founder's approval, 2026-10-17.
+
 ## Criterion
 
 **Question.** Do mandatory scope and row policies hold an unfiltered query or write, keeping 4.1
