@@ -22,8 +22,8 @@ qualquer.
    tente `123456789`: "Esta senha apareceu em vazamentos de dados." O link continua valendo.
    Escolha outra senha e entre. A janela antiga dela, recarregada, pede para entrar de novo.
 
-**O que você faz, e quando.** Antes de U1: dá a palavra sobre a lista do grant (D11). No fim: faz
-o roteiro, diz o que viu e aprova os textos das telas.
+**O que você faz, e quando.** Antes de U1: a palavra sobre o grant (D11). No fim: faz o roteiro,
+diz o que viu e aprova os textos.
 
 **Decisões já dadas** (2026-10-17): 1A, 2A, 3A, 4A, 5A, 6A, 7B, T1A, T2A, T3A, T4B, e "Tudo A"
 para as quatro perguntas seguintes, aqui P1 a P4:
@@ -50,8 +50,9 @@ empresa. Junto, uma regra no banco que limita os dois às sessões da própria p
 
 **Fica de fora.** Banir no Conexus inteiro (3A). Avisar o dono do que a Central muda.
 
-**A decisão sua pedida nesta etapa.** Quem muda o papel de quem. O firstmate leva a pergunta; a
-tabela de U2 e o critério 5 esperam a sua resposta.
+**Quem muda o papel de quem** ("Respondo: A"). O dono e a Central mudam qualquer papel, sem
+deixar a empresa sem dono; a administradora, só entre administrador e membro, também a si; o
+membro, nenhum.
 
 ## O que mudou desde o estudo
 
@@ -65,18 +66,17 @@ rotas da empresa, só sem membro (`admission.ts:153-166`); a validade é uma op�
 
 | Issue | Na etapa 6? | Por quê |
 | --- | --- | --- |
-| 57 sessões sem política | Sim, só `auth.session` | U1 amplia a escrita de dois papéis nela |
-| 62 cliente ativo sem dono dá 500 | Sim | Tirar e mudar papel abrem o caso; critério 6 |
-| 39, item 12 (`next-card`) | Sim | U3 reescreve `people.tsx`: sai o `.catch(() => undefined)` em volta de `mutateAsync` |
-| 56, 66 política exigindo membro | Não | A Central age na empresa sem ser membro (P1); a admissão decide (S7) |
+| 57 sessões sem política | Sim, só `auth.session` | U1 amplia a escrita nela |
+| 62 cliente ativo sem dono | Sim | Critério 6 |
+| 39, item 12 (`next-card`) | Sim | U3 reescreve `people.tsx` e tira o `.catch` em volta de `mutateAsync` |
+| 56, 66 política exigindo membro | Não | A Central não é membro (P1); a admissão decide (S7) |
 | 59, 68 portas sem escopo | Não | `libraryInstallation`, que a recuperação chama, só alcança as tabelas do login; a cerca é um check (L20) |
-| 60 operador promovido | Não | Nada cria operador |
-| 76, 78 renovação | Não | Fora do tema; a 78 espera a biblioteca |
+| 60 operador promovido | Não | Fora do tema |
+| 76, 78 renovação | Não | Fora do tema |
 | 58, 61, 63, 64, 67, 69–74, 79 | Não | Fora do tema |
 | 45, 25, o resto da 39 | Não | Fora do tema |
 
-**Seguimentos** (issue futura): a checagem de senha antes de ler o link; o tempo do 202; o
-operador que também fosse membro (60).
+**Seguimentos** (issue futura): a senha checada antes do link; o tempo do 202; a issue 60.
 
 ## As unidades
 
@@ -105,8 +105,8 @@ frente só. Depois U7, uma revisão e um merge (L9, L13).
 | `scripts/removals.json` | as linhas de U2 | as de U4 e U5 |
 
 **Orçamento de código alterado** (sem testes nem gerados): U1 **150**; U2 **800**; U3 **1.000**;
-U4 **650**; U5 **250**; U6 **450**; U7 **100**. Total: **3.400**, mais cerca de **300** de
-textos, tipos e contratos espalhados: **3.700**, teto 4.000 (L2).
+U4 **650**; U5 **250**; U6 **450**; U7 **100**; e **300** espalhados. Total: **3.700**, teto
+4.000 (L2).
 
 ## Os critérios de aceite
 
@@ -116,10 +116,10 @@ textos, tipos e contratos espalhados: **3.700**, teto 4.000 (L2).
 | 2 | U1 | Sem filtro, o escopo do convite não apaga sessão de outra pessoa nem a de quem convidou, e o da empresa não muda a de outra | `isolation.test.ts` “sessões” | must |
 | 3 | U2 | Dono tira qualquer um; administrador tira administrador e membro, dono dá 404; membro só a si; quem não é da empresa: 404 (S10). 204; a tirada lê a empresa: 404 | `memberships.test.ts` “quem tira quem” | must |
 | 4 | U2 | Tirar ou sair cancela os convites pendentes que a pessoa enviou nessa empresa, pelo cancelamento de 4.1 (a revisão avança); `listMembers` os conta; uma recusa plantada entre apagar e cancelar não deixa nada | `memberships.test.ts` “convites do tirado” | must |
-| 5 | U2 | <!-- PENDENTE: a tabela de papéis do fundador; um caso por célula --> `from` velho: 412 `MEMBER_STALE`; o dono único não se rebaixa nem sai: 409 `LAST_OWNER` | `memberships.test.ts` “papel” | must |
+| 5 | U2 | Um caso por célula da tabela de papéis de U2, com o status dela; `from` velho: 412 `MEMBER_STALE` | `memberships.test.ts` “papel” | must |
 | 6 | U2 | Sob corrida (dois rebaixamentos, duas remoções, sair contra rebaixar, Central contra dono), 20 de 20 terminam com dono; a empresa ativa nunca volta a aguardando, e a Central a lê sem 500 (issue 62) | `memberships.test.ts` “último dono sob corrida” | must |
 | 7 | U2 | A Central, sem virar membro, lista pessoas e convites de empresa ativa, muda papéis, tira, convida dono; o último dono a recusa igual; outro: 404 | `memberships.test.ts` “Central”; `owner-invitation.test.ts` | must |
-| 8 | U2 | Sair com a sessão apontando a empresa funciona; esse campo fica e ninguém o lê | `memberships.test.ts` “sair” | must |
+| 8 | U2 | Sair com a sessão apontando a empresa funciona; o campo fica, sem leitor | `memberships.test.ts` “sair” | must |
 | 9 | U2 | `MEMBER_REMOVED`, `MEMBER_ROLE_CHANGED`: ids e papel, nunca nome ou e-mail (S41) | `memberships.test.ts` “log” | must |
 | 10 | U3 | Cada célula da matriz renderiza; as ações vêm de `mayRemove` e `mayChangeTo`; corte, 502 ou 503 mantém o diálogo; T23 | `people.test.tsx`, `client.test.tsx`, navegador | must |
 | 11 | U4 | `POST /api/password-recoveries`: 202 vazio com conta, sem conta, sem senha e no minuto do ritmo; só com senha, uma vez por minuto, envia, também com dois pedidos juntos; o link anterior para | `password-recovery.test.ts` | must |
@@ -233,8 +233,13 @@ S15. Funções: drizzle-orm 1.0.0-rc.4 `pgPolicy`, `table.withRLS`.
   operador numa empresa, com ou sem membro, admitido só em `readMembers`, `readInvitations`,
   `invite` (só papel dono), cancelar e renovar convite, `removeMember` e `changeRole`.
 - `rankAllows(actor: Role | 'OPERATOR', target: Role, next?: Role): boolean`. Tirar: a tabela de
-  1A. Mudar papel: <!-- PENDENTE: a tabela de papéis do fundador (ator ou Central, papel do alvo,
-  papel novo) --> a tabela que o fundador der, uma célula por caso no critério 5.
+  1A. Mudar papel, pela resposta A (a regra nativa de `crud-members.mjs:292` onde se aplica):
+
+| Quem muda | Dono a outro papel | Administrador e membro entre si | Alguém a dono |
+| --- | --- | --- | --- |
+| Dono ou Central | 200; o único dono: 409 `LAST_OWNER` | 200 | 200 |
+| Administrador | 404 | 200, também a si | 404 |
+| Membro | 404 | 404 | 404 |
 
 ### A ordem do trabalho
 
@@ -250,8 +255,7 @@ S15. Funções: drizzle-orm 1.0.0-rc.4 `pgPolicy`, `table.withRLS`.
 
 ### Como se prova
 
-3–9: `npm run test -w @conexus/server` (T6, T10), corrida com barreira no adaptador (K6, K7);
-`npm run openapi`.
+3–9: `npm run test -w @conexus/server` (T6, T10), corrida com barreira (K6, K7); `npm run openapi`.
 
 ## U3 Pessoas e Central (6a)
 
