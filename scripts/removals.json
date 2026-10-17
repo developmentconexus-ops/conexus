@@ -746,5 +746,49 @@
       "file": "src/hub/identity/memberships-invitations.test.ts",
       "name": "convites do tirado"
     }
+  },
+  {
+    "id": "password-check-before-link",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    await checkPassword(body.password)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "vazada em PUT"
+    }
+  },
+  {
+    "id": "password-check-invitation",
+    "file": "apps/server/src/hub/identity/company-routes.ts",
+    "find": "    await checkPassword(body.password)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "vazada no convite"
+    }
+  },
+  {
+    "id": "password-check-deadline",
+    "file": "apps/server/src/hub/identity/password-check.ts",
+    "find": "PASSWORD_CHECK_SECONDS = 3",
+    "replace": "PASSWORD_CHECK_SECONDS = 30",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "fora: sem resposta"
+    }
+  },
+  {
+    "id": "password-check-error",
+    "file": "apps/server/src/hub/identity/password-check.ts",
+    "find": ".catch(() => 'UNCHECKED' as const)",
+    "replace": ".catch(() => false)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "fora: o serviço com erro"
+    }
   }
 ]

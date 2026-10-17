@@ -27,6 +27,7 @@ import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { companyScope, createInvitationCommand } from './invitations.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
+import { checkPassword } from './password-check.ts'
 import { countInvitationAttempt } from './routes.ts'
 
 type Deps = {
@@ -88,6 +89,7 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
 
   serve(app, createInvitationPassword, async ({ person, params, body, headers, log }) => {
     await countInvitationAttempt(deps, { headers, log, path: INVITATION_PASSWORD_PATH })
+    await checkPassword(body.password)
     const cookies = await password({ person, headers, ...params, ...body })
     log.info({}, 'INVITATION_PASSWORD_CREATED')
     return answer(undefined, cookies)

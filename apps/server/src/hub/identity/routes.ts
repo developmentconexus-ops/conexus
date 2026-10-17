@@ -15,6 +15,7 @@ import {
   SIGN_IN_PATH,
   withRequestLog,
 } from './auth.ts'
+import { checkPassword } from './password-check.ts'
 
 const FORWARDED = ['origin', CLIENT_ADDRESS_HEADER, 'user-agent', 'cookie']
 const SignedIn = z.object({ user: Person })
@@ -68,6 +69,7 @@ export function registerIdentityRoutes(
   })
 
   serve(app, setPassword, async ({ body, headers, log }) => {
+    await checkPassword(body.password)
     const reset = { newPassword: body.password, token: body.token }
     const reply = await withRequestLog(log, () =>
       inLibrary(() =>

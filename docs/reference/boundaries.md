@@ -426,6 +426,21 @@ or its origin.
 - **Why.** [Security S28](../guides/security.md) and the card's A6. The native counter test in `invitation-journey.test.ts`
   reaches 429 after ten refused transactions, independently for both paths.
 
+### The leaked-password check is the library's function, run before the transaction
+
+- **Library line.** The `haveIBeenPwned` plugin checks inside the sign-up and reset endpoints and
+  sends the first five characters of the password's SHA-1 hash to `api.pwnedpasswords.com`. Its
+  `isPasswordCompromised` (`plugins/haveibeenpwned/index.mjs`) takes no `signal`, so a request past
+  its deadline runs on alone, and any failure comes back as one `INTERNAL_SERVER_ERROR`.
+- **Hand-made piece.** `checkPassword` in `apps/server/src/hub/identity/password-check.ts`. It calls
+  that function against a 3 second deadline, before the route opens a transaction, and answers
+  `PASSWORD_COMPROMISED` or, for an error or the deadline, `PASSWORD_CHECK_UNAVAILABLE`. The plugin
+  is not installed: its check would run inside the transaction that spends the link.
+- **Why.** [Security S36, S41](../guides/security.md). Tests plant `fetch` in
+  `createTestDatabase`, never the real service. Removals `password-check-before-link`,
+  `password-check-invitation`, `password-check-deadline` and `password-check-error` take each
+  protection out.
+
 ## TanStack Router 1.170.44: stable public-page data
 
 - **Native.** Route `loader` supplies a snapshot through `useLoaderData`; `beforeLoad` supplies

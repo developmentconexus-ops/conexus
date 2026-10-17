@@ -76,5 +76,10 @@ export const setPassword = defineOperation({
     }),
   },
   success: { status: 204 },
-  failures: ['PASSWORD_LINK_INVALID', 'DATABASE_UNAVAILABLE'],
+  failures: [
+    'PASSWORD_LINK_INVALID',
+    'PASSWORD_COMPROMISED',
+    'PASSWORD_CHECK_UNAVAILABLE',
+    'DATABASE_UNAVAILABLE',
+  ],
 })
