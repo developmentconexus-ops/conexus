@@ -64,8 +64,15 @@ export function identityOf(deps: {
 }
 
 /** The Operations Central, reaching identity only through its ports (code C4). */
-export function operationsOf(database: Database, identity: Identity): Operations {
-  return createOperations({ database, identity: identity.ports })
+export function operationsOf(
+  database: Database,
+  deps: { identity: Identity; projects: Projects },
+): Operations {
+  return createOperations({
+    database,
+    identity: deps.identity.ports,
+    projects: deps.projects.ports,
+  })
 }
 
 /** The Projects subject, reaching identity through its ports and Neon through the port it is given. */
@@ -134,9 +141,9 @@ async function runServer(): Promise<void> {
     await assertMigrated(database)
     const status = createStatus({ version: config.version, database })
     const identity = identityOf({ database, config, log })
-    const operations = operationsOf(database, identity)
     const neon = createNeonProjects({ config, log })
     const projects = projectsOf({ database, identity, neon, log })
+    const operations = operationsOf(database, { identity, projects })
     const app = await createHub(config, { status, identity, operations, projects })
     const grace = shutDownOnSignal(app, database)
     try {

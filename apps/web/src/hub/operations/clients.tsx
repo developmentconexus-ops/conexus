@@ -37,6 +37,8 @@ function stateText(state: ClientSummary['state']): string {
     }
     case 'ACTIVE':
       return 'Ativo'
+    case 'DELETING':
+      return 'Exclusão em andamento'
     default:
       return state satisfies never
   }

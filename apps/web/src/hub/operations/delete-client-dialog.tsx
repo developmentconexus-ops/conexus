@@ -62,7 +62,7 @@ function DeleteForm({ client, onCancel }: { client: Client; onCancel: () => void
         label="Digite o nome do cliente"
         type="text"
         autoComplete="off"
-        invalid="O nome não confere."
+        invalid={FAILURES.CLIENT_NAME_MISMATCH.phrase}
       />
       <FormAlert />
       <Confirm ready={ready} pending={send.isPending} />

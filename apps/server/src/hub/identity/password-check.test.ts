@@ -23,13 +23,13 @@ async function linked(t: TestContext) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const operations = operationsOf(test.database, identity)
   const projects = projectsOf({
     database: test.database,
     identity,
     neon: fakeNeon().neon,
     log: silent,
   })
+  const operations = operationsOf(test.database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   const { link } = await identity.firstPerson({

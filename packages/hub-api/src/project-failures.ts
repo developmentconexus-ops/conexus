@@ -1,6 +1,6 @@
 import type { FailureRow } from './failure-row.ts'
 
-/** The failures of creating and deleting a Project, the company's database (step 7). */
+/** The failures of creating and deleting a Project, the company's database, and a client's deletion in phases (step 7). */
 export const PROJECT_FAILURES = {
   PROJECT_NAME_TAKEN: {
     category: 'USER',
@@ -32,6 +32,14 @@ export const PROJECT_FAILURES = {
     status: 503,
     phrase: 'Não foi possível preparar o banco da empresa agora.',
     action: 'Tente de novo em alguns minutos.',
+    actionKind: 'RETRY',
+  },
+  CLIENT_DELETION_PENDING: {
+    category: 'THIRD_PARTY',
+    settles: false,
+    status: 503,
+    phrase: 'A exclusão começou, mas o banco da empresa ainda não saiu.',
+    action: 'Tente concluir a exclusão.',
     actionKind: 'RETRY',
   },
 } as const satisfies Record<string, FailureRow>

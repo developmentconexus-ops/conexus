@@ -110,13 +110,13 @@ async function hubServing(t: TestContext, mailApiUrl?: string) {
   const status = createStatus({ version: config.version, database: test.database })
   const neon = fakeNeon()
   const identity = identityOf({ database: test.database, config, log: silent })
-  const operations = operationsOf(test.database, identity)
   const projects = projectsOf({
     database: test.database,
     identity,
     neon: neon.neon,
     log: silent,
   })
+  const operations = operationsOf(test.database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   return { app, test, neon }
@@ -248,7 +248,7 @@ export function post(
 export function call(
   hub: Hub,
   person: Person,
-  method: 'GET' | 'DELETE',
+  method: 'GET' | 'PUT' | 'DELETE',
   url: string,
   body?: object,
 ) {

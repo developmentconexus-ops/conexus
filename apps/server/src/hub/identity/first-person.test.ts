@@ -66,9 +66,9 @@ async function hubOn(t: TestContext, test: TestDatabase) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const operations = operationsOf(test.database, identity)
   const { database } = test
   const projects = projectsOf({ database, identity, neon: fakeNeon().neon, log: silent })
+  const operations = operationsOf(database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   return app

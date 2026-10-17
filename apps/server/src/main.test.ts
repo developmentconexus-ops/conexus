@@ -37,13 +37,13 @@ async function hub(webRoot?: string) {
   const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
   const identity = identityOf({ database: shared.database, config, log: silent })
-  const operations = operationsOf(shared.database, identity)
   const projects = projectsOf({
     database: shared.database,
     identity,
     neon: fakeNeon().neon,
     log: silent,
   })
+  const operations = operationsOf(shared.database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects, webRoot })
   apps.push(app)
   return app

@@ -77,13 +77,13 @@ export async function liveHub(t: TestContext, mailUrl: string) {
   const config = testConfig(database.runtimeUrl, mailUrl, neon.url)
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const operations = operationsOf(database.database, identity)
   const projects = projectsOf({
     database: database.database,
     identity,
     neon: createNeonProjects({ config, log: silent }),
     log: silent,
   })
+  const operations = operationsOf(database.database, { identity, projects })
   const app = await createHub(config, {
     status,
     identity,

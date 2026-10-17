@@ -977,5 +977,60 @@
       "file": "src/hub/projects/projects-delete.test.ts",
       "name": "empresa marcada"
     }
+  },
+  {
+    "id": "deletion-live-claim",
+    "file": "apps/server/src/hub/projects/company-deletion.ts",
+    "find": "  if (row.held) throw new Failure('CLIENT_DELETION_PENDING')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "reserva viva"
+    }
+  },
+  {
+    "id": "deletion-neon-not-found",
+    "file": "apps/server/src/platform/neon.ts",
+    "find": "if (isNeonError(error) && error.kind === 'not_found') {\n          return { kind: 'DONE', value: 'deleted' }\n        }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/neon.test.ts",
+      "name": "o id ausente conta como apagado"
+    }
+  },
+  {
+    "id": "deletion-mark-first",
+    "file": "apps/server/src/hub/operations/clients.ts",
+    "find": "    await identity.markCompanyDeleting(tx, { admitted, companyId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "exclusão em andamento: o Neon fora"
+    }
+  },
+  {
+    "id": "mark-deletes-invitations",
+    "file": "apps/server/src/hub/identity/clients.ts",
+    "find": "  await tx.delete(invitation).where(eq(invitation.organizationId, input.companyId))\n}",
+    "replace": "}",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "exclusão em andamento: o Neon fora"
+    }
+  },
+  {
+    "id": "deletion-removes-projects",
+    "file": "apps/server/src/hub/projects/company-deletion.ts",
+    "find": "  await tx.delete(project).where(eq(project.companyId, input.companyId))\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "com banco"
+    }
   }
 ]

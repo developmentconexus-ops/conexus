@@ -38,6 +38,8 @@ const AwaitingOwner = z.object({
   ownerInvitation: OwnerInvitation,
 })
 const Active = z.object({ kind: z.literal('ACTIVE'), activeSince: z.iso.datetime() })
+/** The Central is deleting the client: the company is marked and its database may still be in Neon. */
+const Deleting = z.object({ kind: z.literal('DELETING') })
 const Owner = z.object({ name: z.string().min(1), email: Email })
 
 /** A client of Conexus: its record, and the company's name and state, which identity owns. */
@@ -47,7 +49,7 @@ export const ClientSummary = z.object({
   legalName: z.string().min(1),
   name: z.string().min(1),
   registeredAt: z.iso.datetime(),
-  state: z.discriminatedUnion('kind', [AwaitingOwner, Active]),
+  state: z.discriminatedUnion('kind', [AwaitingOwner, Active, Deleting]),
 })
 export type ClientSummary = z.infer<typeof ClientSummary>
 
@@ -57,6 +59,7 @@ export const Client = ClientSummary.extend({
   state: z.discriminatedUnion('kind', [
     AwaitingOwner,
     Active.extend({ owners: z.array(Owner).min(1) }),
+    Deleting,
   ]),
 })
 export type Client = z.infer<typeof Client>
@@ -136,7 +139,8 @@ export const correctClient = defineOperation({
 
 export const deleteClient = defineOperation({
   id: 'deleteClient',
-  summary: 'Deletes a client with its company, members and invitations; its people stay.',
+  summary:
+    'Deletes a client with its company, members, invitations, Projects and database; its people stay.',
   access: 'session',
   method: 'DELETE',
   path: '/api/clients/{companyId}',
@@ -150,6 +154,7 @@ export const deleteClient = defineOperation({
     'NOT_FOUND',
     'CLIENT_STALE',
     'CLIENT_NAME_MISMATCH',
+    'CLIENT_DELETION_PENDING',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],

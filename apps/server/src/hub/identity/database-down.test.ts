@@ -29,8 +29,8 @@ const UNAVAILABLE = {
 async function hubOn(t: TestContext, database: TestDatabase['database'], config: Config) {
   const status = createStatus({ version: config.version, database })
   const identity = identityOf({ database, config, log: silent })
-  const operations = operationsOf(database, identity)
   const projects = projectsOf({ database: database, identity, neon: fakeNeon().neon, log: silent })
+  const operations = operationsOf(database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   return app

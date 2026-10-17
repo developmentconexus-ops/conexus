@@ -21,13 +21,13 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
-  const operations = operationsOf(test.database, identity)
   const projects = projectsOf({
     database: test.database,
     identity,
     neon: fakeNeon().neon,
     log: silent,
   })
+  const operations = operationsOf(test.database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   return { app, status, test }
@@ -95,8 +95,8 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
-  const operations = operationsOf(database, identity)
   const projects = projectsOf({ database: database, identity, neon: fakeNeon().neon, log: silent })
+  const operations = operationsOf(database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects })
   t.after(() => app.close())
   const response = await app.inject(STATUS)

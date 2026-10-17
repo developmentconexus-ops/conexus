@@ -7,7 +7,9 @@ import type { OperatorProof } from './admission.ts'
 import { admit, admitOperator, allows } from './admission.ts'
 import { createAuth, libraryCommandOn } from './auth.ts'
 import {
+  companyNameOf,
   deleteCompanyOn,
+  markCompanyDeleting,
   readOperatedCompanies,
   registerCompanyOn,
   renameCompanyOn,
@@ -61,6 +63,8 @@ export function createIdentity(deps: {
       admitOperator,
       registerCompany: registerCompanyOn(auth),
       renameCompany: renameCompanyOn(auth),
+      markCompanyDeleting,
+      companyNameOf,
       deleteCompany: deleteCompanyOn(auth),
       readOperatedCompanies,
       /** The first owner's invitation, from Conexus, after the commit (step 4.1's E3). */
