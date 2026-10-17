@@ -13,6 +13,7 @@ import type { SessionReader } from '../../platform/access.ts'
 import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import type { Auth } from './auth.ts'
 import {
@@ -85,6 +86,7 @@ export function registerIdentityRoutes(
   })
 
   serve(app, setPassword, async ({ body, headers, log }) => {
+    if (!(await deps.recovery.linkIsLive(body.token))) throw new Failure('PASSWORD_LINK_INVALID')
     await checkPassword(body.password)
     const reset = { newPassword: body.password, token: body.token }
     const reply = await withRequestLog(log, () =>

@@ -39,6 +39,14 @@ async function linked(t: TestContext) {
       payload: JSON.stringify({ token, password }),
     })
   }
+  function tokenWith(other: string) {
+    return app.inject({
+      method: 'PUT',
+      url: '/api/passwords',
+      headers: WRITE_HEADERS,
+      payload: JSON.stringify({ token: other, password: CLEAN }),
+    })
+  }
   async function openTransactions() {
     const rows = await test.asOwner(
       `select count(*)::int as open from pg_stat_activity
@@ -46,7 +54,7 @@ async function linked(t: TestContext) {
     )
     return rows[0]?.open
   }
-  return { test, set, openTransactions }
+  return { test, set, tokenWith, openTransactions }
 }
 
 test('vazada em PUT /api/passwords: 422 PASSWORD_COMPROMISED, o link continua e a senha limpa passa', async (t) => {
@@ -114,4 +122,14 @@ test('fora: sem resposta em 3 s dá 503 e, enquanto espera, nenhuma transação 
   assert.ok(waited >= 2900 && waited < 4500, `the deadline is 3 seconds, not ${waited} ms`)
   db.passwords.mode = 'CLEAN'
   assert.equal((await set(CLEAN)).statusCode, 204)
+})
+
+test('link primeiro: um token inventado ou vencido dá PASSWORD_LINK_INVALID sem perguntar ao serviço de senhas vazadas', async (t) => {
+  const { test: db, set, tokenWith } = await linked(t)
+  const made = await tokenWith('inventado')
+  assert.deepEqual([made.statusCode, codeOf(made)], [422, 'PASSWORD_LINK_INVALID'])
+  await db.asOwner(`update auth.verification set expires_at = now() - interval '1 minute'`)
+  const expired = await set(CLEAN)
+  assert.deepEqual([expired.statusCode, codeOf(expired)], [422, 'PASSWORD_LINK_INVALID'])
+  assert.deepEqual(db.passwords.asked, [])
 })

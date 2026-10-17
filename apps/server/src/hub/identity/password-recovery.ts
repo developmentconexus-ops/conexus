@@ -71,6 +71,18 @@ export function createPasswordRecovery(deps: {
         const link = `${deps.publicOrigin}${SET_PASSWORD_PAGE}#token=${token}&kind=recovery`
         return { to: person.email, name: person.name, link }
       }),
+    /**
+     * Whether a password link is found and unexpired, read and never spent: the native order of
+     * `/reset-password` (api/routes/password.mjs:155-160), so a made-up token costs no outside call.
+     */
+    linkIsLive: (token: string): Promise<boolean> =>
+      libraryInstallation(async () => {
+        const { internalAdapter } = await deps.auth.$context
+        const found = await inLibrary(() =>
+          internalAdapter.findVerificationValue(`reset-password:${token}`),
+        )
+        return found !== null && found.expiresAt >= new Date()
+      }),
     send: async (mail: RecoveryMail): Promise<void> => {
       await deps.sendMail(await recoveryMail(mail), AbortSignal.timeout(MAIL_BUDGET_MS))
     },

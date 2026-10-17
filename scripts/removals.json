@@ -856,5 +856,16 @@
       "file": "src/hub/identity/password-recovery-disconnect.test.ts",
       "name": "desconexão"
     }
+  },
+  {
+    "id": "password-link-first",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    if (!(await deps.recovery.linkIsLive(body.token))) throw new Failure('PASSWORD_LINK_INVALID')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "link primeiro"
+    }
   }
 ]
