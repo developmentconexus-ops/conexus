@@ -54,8 +54,9 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
 | 1 | A conta Cloudflare com o domínio do Hub. O servidor de São Paulo | Servidor: não lido |
 | 2 | A organização do Neon, no plano grátis | US$ 0 |
 | 4 | O remetente dos convites, com o DNS | Workers Paid: US$ 5 por mês |
-| 7 | A sua cópia da chave de cifra | Nenhum |
+| 7 | Organização Neon das empresas | US$ 0 |
 | 8 | O segundo domínio, dos apps | Workers for Platforms: US$ 25 por mês |
+| 9 ou 11 | Cópia da chave de cifra | Nenhum |
 | 11, 19, 21 | As assinaturas de modelo. Um usuário só de leitura no sistema de uma empresa | Nenhum |
 | 13 | Uma chave do E2B só desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
@@ -87,11 +88,11 @@ vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso f
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 6 Tirar uma pessoa | A 5 | Respondidas em 2026-10-17 | Revisão do login (B3). A regra do último dono |
-| 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
+| 7 Projeto | A 6 | Dadas | As correções das telas de exclusão. A prova PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
 | 9 Enviar um app | A 8 | Nenhuma | Fichas `registry` e manifesto. Os tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Os limites de laço, prazo e consultas |
-| 11 Conta de modelo | A 7, pela chave de cifra | Nenhuma | Ficha `model-account` |
+| 11 Conta de modelo | A chave de cifra | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Os testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Os onze achados do turno real. Fichas do motor, do sandbox e do Git. Os testes 11 e 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | As lacunas de instrução do Builder |
@@ -99,7 +100,7 @@ vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso f
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Os consertos de execução da auditoria. Os testes 9 e 10 |
 | 17 Publicar | A 15 | Nenhuma | Os pré-requisitos de Release e Publish. O estudo 04 |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
-| 19 Ligar o sistema | A 7 | Usuário só de leitura (8) | Ficha `connectors` |
+| 19 Ligar o sistema | A 11 | Usuário só de leitura (8) | Ficha `connectors` |
 | 20 App com dados | A 18 e a 19 | Nenhuma | A porta do conector, refeita. Como um Worker alcança o Hub |
 | 21 Outras contas | A 12 | Nenhuma | A leitura do proxy do Google e dos termos da OpenAI |
 | 22 Ensaio geral | A 20 | O lugar da cópia fora do Neon | Os ensaios das etapas 2, 7, 9, 12 e 13. O teste de carga |
