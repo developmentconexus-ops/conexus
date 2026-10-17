@@ -32,6 +32,10 @@ step 4.2's commit. Two synthetic companies; people of A, of B, of both, of none.
 
 **Not covered.** The database owner, a stolen runtime credential, load.
 
+## Result
+
+Run 2026-10-17. B1–B8 pass locally. On a Neon branch at the direct address, B1–B5 pass, phases 1 and 2. Rollback and sleep: after release.
+
 ## State
 
 Proposed 2026-10-17.
