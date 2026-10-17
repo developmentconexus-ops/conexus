@@ -23,8 +23,9 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
       Etapa 4.1 usada em 2026-10-16 em https://hub.conexus.fun (v0.4.1): "Foi sim para lixo eletronico, mas nem ligo, podemos passar e tudo deu certo. cancelei e testei tudo e tudo foi validado"
    4.2 **Cadastro de cliente.** Cadastra um cliente na Central, e o administrador dele entra como dono.
       Cartão da etapa 4.2 aprovado em 2026-10-16 (commit 819b1157ca1edc62fb83a5f31d07faa391e32716): "Aprovo"
-      <!-- PLACEHOLDER: Etapa 4.2 usada em <data> em <endereço>: "<palavras do fundador>" -->
+      Etapa 4.2 usada em 2026-10-17 em https://hub.conexus.fun (v0.4.2): "Legal tudo funcionou"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
+   Cartão da etapa 5 aprovado em 2026-10-17 (commit 3fa479344c8bb02a21a75aaf84744b0b01e65a7e): "2A" (2026-10-16); "eu aprovo tudo que você trouxe"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
 8. **App de exemplo.** Abre um app escrito à mão.
@@ -85,7 +86,7 @@ seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 5 Duas empresas | A 4.2 | A política por linha no banco | Nove itens da política, com o operador e sem criar pelo cliente |
+| 5 Duas empresas | A 4.2 | Confirmar H antes da v0.5.1 | Nove itens da política, com o operador e sem criar pelo cliente |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
