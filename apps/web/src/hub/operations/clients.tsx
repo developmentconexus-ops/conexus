@@ -40,9 +40,9 @@ function ClientRow({ client }: { client: ClientSummary }) {
         to="/operations/clients/$companyId"
         params={{ companyId: client.companyId }}
         // Below sm the date goes under the text, which wraps: the CNPJ and the e-mail stay whole.
-        className={cn(rowBody({ kind: 'link' }), 'max-sm:flex-col max-sm:items-start')}
+        className={cn(rowBody({ kind: 'link' }), 'max-sm:flex-col max-sm:items-stretch')}
       >
-        <span className="flex min-w-0 flex-col break-words">
+        <span className="flex min-w-0 flex-col wrap-anywhere">
           <span>{client.name}</span>
           <span className="text-label text-text-2">
             {client.legalName} · {maskedCnpj(client.cnpj)}

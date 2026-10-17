@@ -61,7 +61,12 @@ for (const [state, text] of [
 }
 
 test('o primeiro dono de um cliente lê a frase de P5: Conexus o convida para ser o primeiro dono', async () => {
-  const firstOwner = { ...DETAILS, role: 'owner', inviterName: 'Conexus', firstOwner: true } as const
+  const firstOwner = {
+    ...DETAILS,
+    role: 'owner',
+    inviterName: 'Conexus',
+    firstOwner: true,
+  } as const
   hub({ kind: 'NEW', email: DAVI.email, ...firstOwner })
   open()
   expect(

@@ -122,20 +122,12 @@ function companiesOf(hub: Hub, cookie: string) {
   return hub.app.inject({ method: 'GET', url: '/api/companies', headers: { cookie } })
 }
 
-test('primeiro dono: convite e e-mail dizem Conexus, Dono e "primeiro dono"; aceito, o dono vê a empresa e o operador não; a mesma pessoa em dois cadastros é dona dos dois (A16)', async (t) => {
-  const { hub, ana, client, first } = await awaiting(t)
-  const [mail] = hub.mail.sent
-  assert.equal(mail?.subject, 'Conexus convidou você para ser o primeiro dono de Empresa Teste')
-  assert.ok(mail?.text.includes('Conexus convidou você para ser o primeiro dono de Empresa Teste'))
-  const view = Object((await received(hub, first)).json()).invitation
-  assert.deepEqual(
-    [view.kind, view.inviterName, view.role, view.firstOwner],
-    ['NEW', 'Conexus', 'owner', true],
-  )
+/** The owner creates a password in the invitation and signs in: their session cookie. */
+async function passwordFrom(hub: Hub, invitationId: string): Promise<string> {
   const password = { name: OWNER.name, password: 'senha-nova-1', revision: 0 }
   const set = await hub.app.inject({
     method: 'PUT',
-    url: `/api/invitations/${first}/password`,
+    url: `/api/invitations/${invitationId}/password`,
     headers: ENTRY,
     payload: JSON.stringify(password),
   })
@@ -146,7 +138,20 @@ test('primeiro dono: convite e e-mail dizem Conexus, Dono e "primeiro dono"; ace
     headers: ENTRY,
     payload: JSON.stringify({ email: OWNER.email, password: password.password }),
   })
-  const davi = String(signedIn.headers['set-cookie']).split(';')[0] ?? ''
+  return String(signedIn.headers['set-cookie']).split(';')[0] ?? ''
+}
+
+test('primeiro dono: convite e e-mail dizem Conexus, Dono e "primeiro dono"; aceito, o dono vê a empresa e o operador não; a mesma pessoa em dois cadastros é dona dos dois (A16)', async (t) => {
+  const { hub, ana, client, first } = await awaiting(t)
+  const [mail] = hub.mail.sent
+  assert.equal(mail?.subject, 'Conexus convidou você para ser o primeiro dono de Empresa Teste')
+  assert.ok(mail?.text.includes('Conexus convidou você para ser o primeiro dono de Empresa Teste'))
+  const view = Object((await received(hub, first)).json()).invitation
+  assert.deepEqual(
+    [view.kind, view.inviterName, view.role, view.firstOwner],
+    ['NEW', 'Conexus', 'owner', true],
+  )
+  const davi = await passwordFrom(hub, first)
   async function accept(invitationId: string, revision: number) {
     const response = await hub.app.inject({
       method: 'PUT',
