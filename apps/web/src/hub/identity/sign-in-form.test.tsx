@@ -3,8 +3,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { ANA } from '../../platform/fixtures.ts'
-import { homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { companyRead, homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 
@@ -80,17 +80,17 @@ test('enquanto envia, o botão fica desabilitado com "Entrando…"', async () =>
 
 test('entrar a caminho de outra página leva o foco ao título dela, não ao corpo (#32-4)', async () => {
   const state = { signedIn: false }
-  server.use(...homeHub(state))
+  server.use(...homeHub(state), ...companyRead({ role: 'owner' }))
   render(
     <Conexus
       conexus={createConexus(
-        createMemoryHistory({ initialEntries: ['/login?redirect=%2Fcompanies%2Fnew'] }),
+        createMemoryHistory({ initialEntries: [`/login?redirect=%2Fcompanies%2F${COMPANY.id}`] }),
       )}
     />,
   )
   fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-  const title = await screen.findByRole('heading', { name: 'Nova empresa' })
+  const title = await screen.findByRole('heading', { name: COMPANY.name })
   await waitFor(() => expect(document.activeElement).toBe(title))
 })

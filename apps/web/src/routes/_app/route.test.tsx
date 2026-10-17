@@ -85,7 +85,7 @@ test('Início lista as empresas com o papel de quem lê, e abre a empresa pelo n
         { company: EMPRESA, role: 'owner' },
         { company: { id: 'b'.repeat(32), name: 'Outra Empresa' }, role: 'member' },
       ],
-      mayCreate: true,
+      mayOperate: true,
       next: { kind: 'END' },
     },
   )
@@ -102,24 +102,20 @@ test('sem empresas: "Você ainda não participa de nenhuma empresa."', async () 
   expect(await screen.findByText('Você ainda não participa de nenhuma empresa.')).toBeTruthy()
 })
 
-for (const [mayCreate, shown] of [
-  [true, 1],
-  [false, 0],
-] as const) {
-  test(`"Nova empresa" ${shown ? 'aparece' : 'não aparece'} quando mayCreate é ${mayCreate}`, async () => {
-    hub({ signedIn: true }, { companies: [], mayCreate, next: { kind: 'END' } })
-    open('/')
-    await screen.findByRole('heading', { name: 'Suas empresas' })
-    expect(screen.queryAllByRole('link', { name: 'Nova empresa' }).length).toBe(shown)
-  })
-}
+test('sem empresas, também para o operador: a lista não tem botão nem link, só a frase', async () => {
+  hub({ signedIn: true }, { companies: [], mayOperate: true, next: { kind: 'END' } })
+  open('/')
+  const list = (await screen.findByRole('heading', { name: 'Suas empresas' })).closest('section')
+  expect(list?.textContent).toBe('Suas empresasVocê ainda não participa de nenhuma empresa.')
+  expect(list?.querySelectorAll('a, button').length).toBe(0)
+})
 
 test('a lista mantém a página no endereço: "Ver mais" pede a página que segue e "Primeira página" volta', async () => {
   asked.length = 0
   const next = { kind: 'MORE', page: 'c'.repeat(32) }
   hub(
     { signedIn: true },
-    { companies: [{ company: EMPRESA, role: 'owner' }], mayCreate: false, next },
+    { companies: [{ company: EMPRESA, role: 'owner' }], mayOperate: false, next },
   )
   const router = open('/')
   fireEvent.click(await screen.findByRole('link', { name: 'Ver mais: Empresas' }))

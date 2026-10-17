@@ -57,6 +57,8 @@ const OpenInvitation = z.object({
   company: Company,
   role: Role,
   inviterName: z.string().min(1),
+  /** The company has no member yet: Conexus invites its first owner (step 4.2). */
+  firstOwner: z.boolean(),
   expiresAt: z.iso.datetime(),
   revision: z.number().int().nonnegative(),
 })
@@ -85,9 +87,9 @@ export const PAGE_SIZE = 50
 
 /** The longest company name, in characters. */
 export const COMPANY_NAME_MAX_LENGTH = 100
-const CompanyName = z.string().trim().min(1).max(COMPANY_NAME_MAX_LENGTH)
+export const CompanyName = z.string().trim().min(1).max(COMPANY_NAME_MAX_LENGTH)
 const PersonName = z.string().trim().min(1).max(100)
-const Page = z.object({ page: PageToken.optional() })
+export const Page = z.object({ page: PageToken.optional() })
 const InCompany = z.object({ companyId: CompanyId })
 const OfInvitation = z.object({ invitationId: InvitationId })
 
@@ -101,22 +103,9 @@ export const listCompanies = defineOperation({
   input: { query: Page },
   success: {
     status: 200,
-    body: z.object({ companies: z.array(Membership), mayCreate: z.boolean(), next: Next }),
+    body: z.object({ companies: z.array(Membership), mayOperate: z.boolean(), next: Next }),
   },
   failures: ['SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-})
-
-export const createCompany = defineOperation({
-  id: 'createCompany',
-  summary: 'Creates a company with the installation administrator as its first owner.',
-  access: 'session',
-  method: 'POST',
-  path: '/api/companies',
-  bodyLimit: 4096,
-  input: { body: z.object({ name: CompanyName }) },
-  attemptKey: true,
-  success: { status: 201, body: z.object({ company: Company }) },
-  failures: ['NOT_FOUND', 'IDEMPOTENCY_CONFLICT', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 
 export const getCompany = defineOperation({
@@ -184,6 +173,8 @@ export const createInvitation = defineOperation({
     'INVITATION_STALE',
     'INVITATION_CLOSED',
     'MEMBER_EXISTS',
+    'OWNER_INVITATION_OPEN',
+    'CLIENT_OWNER_IS_OPERATOR',
     'INVITATIONS_FULL',
     'IDEMPOTENCY_CONFLICT',
     'INVITATIONS_EXCEEDED',

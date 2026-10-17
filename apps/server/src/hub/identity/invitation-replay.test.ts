@@ -10,20 +10,19 @@ import {
   startHub,
   TEST_ORIGIN,
 } from '../../platform/test-database.ts'
-import { ANA, INVITEE, id, mailServer, PASSWORD } from './test-hub.ts'
+import { ANA_OWNER, INVITEE, id, mailServer, PASSWORD, plantCompany } from './test-hub.ts'
 
 const WRITE = { origin: TEST_ORIGIN, 'content-type': 'application/json' }
 
 type TestDatabase = Awaited<ReturnType<typeof createTestDatabase>>
 
-/** Ana, the installation administrator, signed in on the Hub at `base`: her session cookie. */
-async function anaOn(test: TestDatabase, base: string): Promise<string> {
+/** Ana, owner of Empresa Teste, signed in on the Hub at `base`: her session cookie and company. */
+async function ownerOn(test: TestDatabase, base: string) {
   const personId = id()
-  await test.asOwner('insert into auth.user (id, name, email, role) values ($1, $2, $3, $4)', [
+  await test.asOwner('insert into auth.user (id, name, email) values ($1, $2, $3)', [
     personId,
-    ANA.name,
-    ANA.email,
-    ANA.role,
+    ANA_OWNER.name,
+    ANA_OWNER.email,
   ])
   await test.asOwner(
     `insert into auth.account (id, account_id, provider_id, user_id, password, updated_at)
@@ -33,10 +32,11 @@ async function anaOn(test: TestDatabase, base: string): Promise<string> {
   const signedIn = await fetch(`${base}/api/sessions/current`, {
     method: 'PUT',
     headers: { ...WRITE, 'cf-connecting-ip': '198.51.100.9' },
-    body: JSON.stringify({ email: ANA.email, password: PASSWORD }),
+    body: JSON.stringify({ email: ANA_OWNER.email, password: PASSWORD }),
   })
   assert.equal(signedIn.status, 200)
-  return signedIn.headers.getSetCookie()[0]?.split(';')[0] ?? ''
+  const cookie = signedIn.headers.getSetCookie()[0]?.split(';')[0] ?? ''
+  return { cookie, companyId: await plantCompany(test, personId) }
 }
 
 const COMMITTED = 'select status, mailed_at is not null as mailed from auth.invitation'
@@ -57,13 +57,12 @@ test('de novo com a mesma chave: o Hub parou entre o convite e o e-mail, e chega
   // Every Hub ends here, pass or fail: the test database is dropped before startHub's cleanup.
   try {
     const first = await listening()
-    const cookie = await anaOn(test, base)
+    const { cookie, companyId } = await ownerOn(test, base)
     function post(path: string, body: unknown, key: string) {
       const headers = { ...WRITE, cookie, 'idempotency-key': key }
       return fetch(`${base}${path}`, { method: 'POST', headers, body: JSON.stringify(body) })
     }
-    const created = await post('/api/companies', { name: 'Empresa Teste' }, randomUUID())
-    const path = `/api/companies/${Object(await created.json()).company.id}/invitations`
+    const path = `/api/companies/${companyId}/invitations`
     const key = randomUUID()
     function invite() {
       return post(path, { email: INVITEE, role: 'member' }, key)

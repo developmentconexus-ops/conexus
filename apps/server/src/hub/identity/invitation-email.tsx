@@ -63,8 +63,17 @@ function InvitationContent(props: InvitationMailProps) {
         Convite para {props.companyName}
       </Heading>
       <Text className="text" style={{ color: COLORS.text, fontSize: 16, lineHeight: '25px' }}>
-        {props.inviterName} convidou você para entrar em <strong>{props.companyName}</strong> no
-        Conexus, como {props.roleLabel}.
+        {props.firstOwner ? (
+          <>
+            {props.inviterName} convidou você para ser o primeiro dono de{' '}
+            <strong>{props.companyName}</strong>.
+          </>
+        ) : (
+          <>
+            {props.inviterName} convidou você para entrar em <strong>{props.companyName}</strong> no
+            Conexus, como {props.roleLabel}.
+          </>
+        )}
       </Text>
       <Button
         className="action"
@@ -116,7 +125,9 @@ function InvitationEmail(props: InvitationMailProps) {
         <style>{DARK}</style>
       </Head>
       <Preview>
-        {props.inviterName} convidou você para {props.companyName} no Conexus.
+        {props.firstOwner
+          ? `${props.inviterName} convidou você para ser o primeiro dono de ${props.companyName}.`
+          : `${props.inviterName} convidou você para ${props.companyName} no Conexus.`}
       </Preview>
       <Body
         className="canvas"

@@ -7,6 +7,7 @@ ALTER DATABASE hub_database OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
+ALTER SCHEMA operations OWNER TO test_owner;
 ALTER TABLE auth.account OWNER TO test_owner;
 ALTER TABLE auth.company OWNER TO test_owner;
 ALTER TABLE auth.invitation OWNER TO test_owner;
@@ -18,9 +19,11 @@ ALTER TABLE auth.verification OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
+ALTER TABLE operations.client OWNER TO test_owner;
 GRANT USAGE ON SCHEMA auth TO hub_runtime;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
+GRANT USAGE ON SCHEMA operations TO hub_runtime;
 -- Step 3, founder 2026-10-14 ("0 Aprovo"): the Hub never deletes a person or a stored password.
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.account TO hub_runtime;
 -- Step 4, founder 2026-10-15 (decision 8, "Aprovo"): the Hub never deletes a company, a member or an
@@ -34,6 +37,8 @@ GRANT SELECT,INSERT,UPDATE ON TABLE auth."user" TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.verification TO hub_runtime;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
+-- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
+GRANT SELECT,INSERT,UPDATE ON TABLE operations.client TO hub_runtime;
 CREATE ROLE hub_runtime;
 ALTER ROLE hub_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
 ALTER ROLE hub_runtime SET statement_timeout TO '10s';

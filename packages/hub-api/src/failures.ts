@@ -221,6 +221,47 @@ export const FAILURES = {
     action: 'Fale com quem convidou você.',
     actionKind: 'NONE',
   },
+  // The registration's own refusals: the two on a field show no action, as the card says.
+  CLIENT_EXISTS: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Já existe um cliente com este CNPJ.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  CLIENT_OWNER_IS_OPERATOR: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'Este e-mail é de um operador da Conexus.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  CLIENT_STALE: {
+    category: 'USER',
+    settles: true,
+    status: 412,
+    phrase: 'Este cliente mudou.',
+    action: 'Recarregue a página.',
+    actionKind: 'NONE',
+  },
+  CLIENT_ACTIVE: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Este cliente já está ativo.',
+    action: 'Recarregue a página.',
+    actionKind: 'NONE',
+  },
+  OWNER_INVITATION_OPEN: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Já há um convite de dono em aberto.',
+    action: 'Cancele-o antes de convidar outro e-mail.',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

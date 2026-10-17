@@ -4,8 +4,8 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { FailureCode } from '@conexus/hub-api'
-import { createCompany } from '@conexus/hub-api'
-import { problemOf } from './src/platform/fixtures.ts'
+import { createInvitation } from '@conexus/hub-api'
+import { COMPANY, problemOf } from './src/platform/fixtures.ts'
 import { HubFailure, hubMutation } from './src/platform/hub.ts'
 
 // hub.ts against a real socket, which MSW cannot express: a reply that ends after the headers
@@ -32,8 +32,12 @@ function problem(code: FailureCode) {
 }
 
 async function createdWith() {
-  const { mutationFn } = hubMutation(createCompany)
-  return mutationFn({ body: { name: 'Empresa Teste' }, attemptKey: crypto.randomUUID() }).then(
+  const { mutationFn } = hubMutation(createInvitation)
+  return mutationFn({
+    params: { companyId: COMPANY.id },
+    body: { email: 'davi@example.test', role: 'member' },
+    attemptKey: crypto.randomUUID(),
+  }).then(
     () => undefined,
     (error: unknown) => error,
   )

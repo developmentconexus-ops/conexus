@@ -202,8 +202,9 @@ export function InvitationEntry() {
       content = (
         <>
           <PageTitle>
-            {invitation.inviterName} convidou você para {invitation.company.name} como{' '}
-            {ROLE_LABELS[invitation.role]}.
+            {invitation.firstOwner
+              ? `${invitation.inviterName} convidou você para ser o primeiro dono de ${invitation.company.name}.`
+              : `${invitation.inviterName} convidou você para ${invitation.company.name} como ${ROLE_LABELS[invitation.role]}.`}
           </PageTitle>
           <p className="text-text-2">
             Válido até{' '}

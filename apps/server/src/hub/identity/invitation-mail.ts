@@ -3,6 +3,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
+import type { Inviter } from './messages.ts'
 import { invitationMail } from './messages.ts'
 import { invitation } from './tables.ts'
 
@@ -19,6 +20,9 @@ async function markMailed(tx: CommandTx, sent: PendingInvitation): Promise<void>
     )
 }
 
+/** What the provider answered: it took the e-mail, or it refused the address (code C49). */
+export type MailOutcome = { kind: 'SENT' } | { kind: 'BOUNCED' }
+
 /**
  * Sends the invitation's e-mail after the commit and marks it once the provider answered, delivered,
  * queued or bounced, so no replay sends it again. An unavailable provider may not have sent, so
@@ -29,18 +33,18 @@ export async function mailInvitation(
   input: {
     invitation: PendingInvitation
     companyName: string
-    inviterName: string
+    inviter: Inviter
     link: string
     signal: AbortSignal
   },
-): Promise<void> {
+): Promise<MailOutcome> {
   const { invitation: sent, signal } = input
   const message = await invitationMail({
     to: sent.email,
     role: sent.role,
     expiresAt: sent.expiresAt,
     companyName: input.companyName,
-    inviterName: input.inviterName,
+    inviter: input.inviter,
     link: input.link,
   })
   async function mark(): Promise<void> {
@@ -49,8 +53,15 @@ export async function mailInvitation(
   try {
     await deps.sendMail(message, signal)
   } catch (error) {
-    if (error instanceof Failure && error.code === 'MAIL_BOUNCED') await mark()
-    throw error
+    if (!(error instanceof Failure && error.code === 'MAIL_BOUNCED')) throw error
+    await mark()
+    return { kind: 'BOUNCED' }
   }
   await mark()
+  return { kind: 'SENT' }
+}
+
+/** A member's invitation to an address the provider refused answers that failure (step 4.1). */
+export function deliveredOrRefused(outcome: MailOutcome): void {
+  if (outcome.kind === 'BOUNCED') throw new Failure('MAIL_BOUNCED')
 }

@@ -1,8 +1,10 @@
 import {
+  getClient,
   getCompany,
   getInvitation,
   getSession,
   getStatus,
+  listClients,
   listCompanies,
   listInvitations,
   listMembers,
@@ -37,21 +39,21 @@ export const SIGNED_IN: Replies = {
   // The router preloads Início on focus (defaultPreload: 'intent').
   'GET /api/companies': ok(listCompanies, {
     companies: [],
-    mayCreate: false,
+    mayOperate: false,
     next: { kind: 'END' },
   }),
 }
 
 export function companies(
   list: { name: string; role: 'owner' | 'admin' | 'member' }[],
-  mayCreate: boolean,
+  mayOperate: boolean,
 ) {
   const body = {
     companies: list.map(({ name, role }, index) => ({
       company: { id: String(index).repeat(32), name },
       role,
     })),
-    mayCreate,
+    mayOperate,
     next: { kind: 'END' },
   } as const
   const preloaded = body.companies.map(({ company, role }) =>
@@ -98,6 +100,7 @@ export const INVITATION_DETAILS = {
   company: { id: COMPANY.id, name: LONG_NAME },
   role: 'admin',
   inviterName: 'Ana Lima',
+  firstOwner: false,
   revision: 0,
   expiresAt: LIVE_INVITATION.expiresAt,
 } as const
@@ -136,3 +139,38 @@ export const WITH_EXPIRED: Replies = {
   }),
 }
 export const NO_COMPANIES = companies([], false)
+
+export const CLIENT_ID = 'k'.repeat(32)
+const CLIENT = {
+  companyId: CLIENT_ID,
+  cnpj: '12ABC34501DE35',
+  legalName: `${LONG_NAME} Comércio e Serviços Ltda`,
+  name: LONG_NAME,
+  registeredAt: '2026-10-16T12:00:00.000Z',
+  revision: 0,
+  state: {
+    kind: 'AWAITING_OWNER',
+    ownerInvitation: { ...LIVE_INVITATION, state: 'EXPIRED' },
+  },
+} as const
+const ACTIVE = {
+  ...CLIENT,
+  state: {
+    kind: 'ACTIVE' as const,
+    activeSince: '2026-10-17T12:00:00.000Z',
+    owners: [{ name: 'Nome Completo Muito Comprido', email: LONG_EMAIL }],
+  },
+}
+
+/** The Operations Central as the operator sees it, with `client` behind its one row. */
+export function central(client: 'AWAITING' | 'ACTIVE' | 'NONE'): Replies {
+  const shown = client === 'ACTIVE' ? ACTIVE : CLIENT
+  return {
+    ...companies([], true),
+    'GET /api/clients': ok(listClients, {
+      clients: client === 'NONE' ? [] : [shown],
+      next: { kind: 'END' },
+    }),
+    [`GET /api/clients/${CLIENT_ID}`]: ok(getClient, { client: shown }),
+  }
+}

@@ -8,6 +8,8 @@ import Fastify from 'fastify'
 import { z } from 'zod'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
+import type { Operations } from './hub/operations/public.ts'
+import { createOperations } from './hub/operations/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { Config } from './platform/config.ts'
@@ -27,7 +29,7 @@ const WEB_ROOT = join(import.meta.dirname, '..', '..', 'web', 'dist')
 /** `webRoot` is where the built screens are; without them `/` answers 404. */
 export async function createHub(
   config: Config,
-  deps: { status: Status; identity: Identity; webRoot?: string },
+  deps: { status: Status; identity: Identity; operations: Operations; webRoot?: string },
 ): Promise<FastifyInstance> {
   const app = await createServer(config, {
     webRoot: deps.webRoot ?? WEB_ROOT,
@@ -36,6 +38,7 @@ export async function createHub(
   registerHealth(app)
   serve(app, getStatus, async () => answer(await deps.status.read()))
   deps.identity.routes(app)
+  deps.operations.routes(app)
   await app.ready()
   return app
 }
@@ -47,6 +50,11 @@ export function identityOf(deps: {
   log: FailureLog
 }): Identity {
   return createIdentity({ ...deps, sendMail: createMail(deps) })
+}
+
+/** The Operations Central, reaching identity only through its ports (code C4). */
+export function operationsOf(database: Database, identity: Identity): Operations {
+  return createOperations({ database, identity: identity.ports })
 }
 
 /** The first-person command logs to stderr: its stdout may be the run's summary, where the link goes. */
@@ -105,7 +113,8 @@ async function runServer(): Promise<void> {
     await assertMigrated(database)
     const status = createStatus({ version: config.version, database })
     const identity = identityOf({ database, config, log })
-    const app = await createHub(config, { status, identity })
+    const operations = operationsOf(database, identity)
+    const app = await createHub(config, { status, identity, operations })
     const grace = shutDownOnSignal(app, database)
     try {
       await listenOnce(app, config.port)

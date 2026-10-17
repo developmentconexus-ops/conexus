@@ -58,12 +58,18 @@ test('prazo ocioso: sem uso há mais de 1800 s, ninguém; usada depois de 60 s, 
   await signedOutRead(hub, cookie)
 })
 
-/** The clock moves forward: every time the library wrote moves back by the same span. */
-async function elapse(hub: Hub, seconds: number) {
+/**
+ * The clock moves until the session is `seconds` old: every time the library wrote moves back by the
+ * same span. The age is set, not added to, so the real time the test spends never counts.
+ */
+async function ageTo(hub: Hub, seconds: number) {
   await hub.test.asOwner(
-    `update auth.session set created_at = created_at - make_interval(secs => $1),
-      updated_at = updated_at - make_interval(secs => $1),
-      expires_at = expires_at - make_interval(secs => $1)`,
+    `update auth.session set created_at = created_at - make_interval(secs => shift),
+      updated_at = updated_at - make_interval(secs => shift),
+      expires_at = expires_at - make_interval(secs => shift)
+    from (select id, $1 - extract(epoch from statement_timestamp() - created_at) as shift
+      from auth.session) as span
+    where span.id = session.id`,
     [seconds],
   )
 }
@@ -72,12 +78,12 @@ test('prazo total: usada a cada 25 min, aberta até 8 h e ninguém depois; a lin
   const hub = await hubWithAna(t)
   const cookie = await signedIn(hub)
   for (let minutes = 25; minutes <= 475; minutes += 25) {
-    await elapse(hub, 25 * 60)
+    await ageTo(hub, minutes * 60)
     assert.equal(JSON.parse((await read(hub, cookie)).body).state, 'SIGNED_IN', `${minutes} min`)
   }
-  await elapse(hub, 5 * 60 - 1)
+  await ageTo(hub, 8 * 60 * 60 - 1)
   assert.equal(JSON.parse((await read(hub, cookie)).body).state, 'SIGNED_IN', '8 h menos 1 s')
-  await elapse(hub, 2)
+  await ageTo(hub, 8 * 60 * 60 + 1)
   await signedOutRead(hub, cookie)
   assert.deepEqual(await hub.test.asOwner('select count(*)::int as rows from auth.session'), [
     { rows: 0 },

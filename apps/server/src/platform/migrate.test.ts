@@ -208,3 +208,43 @@ test('migrate com o banco recusando a conexão: sai 1 com DATABASE_UNAVAILABLE, 
   const failures = lines.filter((line) => line.level !== 30).map((line) => [line.msg, line.code])
   assert.deepEqual(failures, [['DATABASE_UNAVAILABLE', 'ECONNREFUSED']])
 })
+
+test('a exceção de P6: a migração apaga cada empresa sem cliente, com membros e convites, e mais nada (A15)', async (t) => {
+  const test = await createTestDatabase(t)
+  // The database is born migrated: P6 runs again on the rows planted after it. The migrator runs
+  // every migration whose name it has not recorded, in any position, so later ones change nothing.
+  await test.asOwner(
+    "delete from drizzle.__drizzle_migrations where name like '%_p6b_test_companies'",
+  )
+  await test.asOwner(`insert into auth.user (id, name, email) values ('p1', 'Ana', 'ana@example.test');
+    insert into auth.company (id, name, slug, created_at, attempt_key) values
+      ('test', 'Empresa de teste', 'test', now(), 'test'),
+      ('client', 'Cliente', 'client', now(), 'client');
+    insert into operations.client (company_id, cnpj, legal_name, attempt_key, registered_at)
+      values ('client', '12ABC34501DE35', 'Cliente Ltda', 'client', now());
+    insert into auth.member (id, company_id, user_id, role, created_at) values
+      ('m1', 'test', 'p1', 'owner', now()), ('m2', 'client', 'p1', 'owner', now());
+    insert into auth.invitation
+        (id, company_id, email, role, status, expires_at, created_at, inviter_id, attempt_key) values
+      ('i1', 'test', 'bruno@example.test', 'member', 'pending', now(), now(), 'p1', 'i1'),
+      ('i2', 'client', 'bruno@example.test', 'member', 'pending', now(), now(), 'p1', 'i2');
+    insert into auth.session (id, expires_at, token, updated_at, user_id, active_organization_id)
+      values ('s1', now(), 't1', now(), 'p1', 'test'), ('s2', now(), 't2', now(), 'p1', 'client')`)
+  await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
+  const kept = await test.asOwner(`select
+      (select array_agg(id order by id) from auth.company) as companies,
+      (select array_agg(id order by id) from auth.member) as members,
+      (select array_agg(id order by id) from auth.invitation) as invitations,
+      (select array_agg(id || ':' || coalesce(active_organization_id, '-') order by id)
+         from auth.session) as sessions,
+      (select count(*)::int from auth.user) as people`)
+  assert.deepEqual(kept, [
+    {
+      companies: ['client'],
+      members: ['m2'],
+      invitations: ['i2'],
+      sessions: ['s1:-', 's2:client'],
+      people: 1,
+    },
+  ])
+})

@@ -38,7 +38,7 @@ test('401: uma leitura que acha a sessÃ£o terminada leva a /login com "Sua sessÃ
       HttpResponse.json({ state: 'SIGNED_IN', person: ANA }),
     ),
     http.get('*/api/companies', () =>
-      HttpResponse.json({ companies: [], mayCreate: false, next: { kind: 'END' } }),
+      HttpResponse.json({ companies: [], mayOperate: false, next: { kind: 'END' } }),
     ),
     http.get('*/api/status', () => refusal('SESSION_REQUIRED')),
   )

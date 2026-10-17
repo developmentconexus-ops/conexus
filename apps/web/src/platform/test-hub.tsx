@@ -1,5 +1,6 @@
 import type { FailureCode } from '@conexus/hub-api'
 import {
+  Client,
   FAILURES,
   getCompany,
   listCompanies,
@@ -14,7 +15,7 @@ import { ANA, COMPANY, problemOf } from './fixtures.ts'
 
 export const NO_COMPANIES = listCompanies.success.body.parse({
   companies: [],
-  mayCreate: false,
+  mayOperate: false,
   next: { kind: 'END' },
 })
 const STATUS = {
@@ -80,9 +81,60 @@ export function homeHub(
   ]
 }
 
-/** The Hub as a test sees it: no request goes unanswered, and each test starts with no handler. */
+const COMPANY_ID = 'b'.repeat(32)
+
+/** A client of the Central awaiting its administrator, its owner invitation in `state`. */
+export function awaitingClient(state: 'PENDING' | 'EXPIRED' | 'DECLINED' | 'CANCELED' = 'PENDING') {
+  return Client.parse({
+    companyId: COMPANY_ID,
+    cnpj: '12ABC34501DE35',
+    legalName: 'Empresa Teste Ltda',
+    name: 'Empresa Teste',
+    registeredAt: '2026-10-16T12:00:00.000Z',
+    revision: 0,
+    state: {
+      kind: 'AWAITING_OWNER',
+      ownerInvitation: {
+        id: 'c'.repeat(32),
+        email: 'davi@example.test',
+        state,
+        expiresAt: '2026-10-18T12:00:00.000Z',
+        revision: 0,
+      },
+    },
+  })
+}
+
+export const ACTIVE_CLIENT = Client.parse({
+  ...awaitingClient(),
+  state: {
+    kind: 'ACTIVE',
+    activeSince: '2026-10-17T12:00:00.000Z',
+    owners: [{ name: 'Davi Costa', email: 'davi@example.test' }],
+  },
+})
+
+/** The Hub as the operator sees it: the Central's list and each client of it. */
+export function centralHub(clients: Client[]) {
+  return [
+    ...homeHub({ signedIn: true }, { ...NO_COMPANIES, mayOperate: true }),
+    http.get('*/api/clients', () => HttpResponse.json({ clients, next: { kind: 'END' } })),
+    http.get('*/api/clients/:companyId', ({ params }) => {
+      const client = clients.find((one) => one.companyId === params.companyId)
+      return client ? HttpResponse.json({ client }) : refusal('NOT_FOUND')
+    }),
+  ]
+}
+
+/**
+ * The Hub as a test sees it: no request goes unanswered, and each test starts with nobody signed in
+ * and no company, which the account menu reads on every page of the frame.
+ */
 export function hubServer() {
-  const server = setupServer(sessionRead(() => undefined))
+  const server = setupServer(
+    sessionRead(() => undefined),
+    http.get('*/api/companies', () => HttpResponse.json(NO_COMPANIES)),
+  )
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
   afterEach(() => server.resetHandlers())
   afterAll(() => server.close())

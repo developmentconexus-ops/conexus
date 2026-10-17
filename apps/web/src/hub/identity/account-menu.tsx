@@ -1,7 +1,7 @@
 import type { Person } from '@conexus/hub-api'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from '@tanstack/react-router'
-import { LogOutIcon } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useRouter } from '@tanstack/react-router'
+import { BuildingIcon, LogOutIcon } from 'lucide-react'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Avatar, AvatarFallback } from '../../ui/avatar.tsx'
 import { Button } from '../../ui/button.tsx'
@@ -11,10 +11,11 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
-import { signOut } from './queries.ts'
+import { companiesQuery, signOut } from './queries.ts'
 
 function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/)
@@ -27,6 +28,9 @@ export function AccountMenu({ person }: { person: Person }) {
   const queryClient = useQueryClient()
   const router = useRouter()
   const send = useMutation(signOut)
+  // The installation's role comes with the company list, read once more only when it changes;
+  // without the role the link is not offered.
+  const { data: companies } = useQuery({ ...companiesQuery(undefined), refetchOnMount: false })
 
   function leave() {
     send.mutate(undefined, {
@@ -56,6 +60,14 @@ export function AccountMenu({ person }: { person: Person }) {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
+        {companies?.mayOperate && (
+          <DropdownMenuGroup>
+            <DropdownMenuLinkItem render={<Link to="/operations/clients" />}>
+              <BuildingIcon aria-hidden="true" />
+              Central de Operação
+            </DropdownMenuLinkItem>
+          </DropdownMenuGroup>
+        )}
         <DropdownMenuGroup>
           <DropdownMenuItem closeOnClick={false} disabled={send.isPending} onClick={leave}>
             <LogOutIcon aria-hidden="true" />

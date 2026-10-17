@@ -13,6 +13,7 @@ import {
   SMALL_PHONE,
 } from './layout-harness.ts'
 import { ANA } from './src/platform/fixtures.ts'
+import { central } from './sweep-replies.ts'
 
 // A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).
 const ZOOMED_PHONE = { width: 195, height: 422 }
@@ -29,7 +30,7 @@ const SIGNED_IN: Replies = {
   }),
   'GET /api/companies': ok(listCompanies, {
     companies: [],
-    mayCreate: false,
+    mayOperate: false,
     next: { kind: 'END' },
   }),
 }
@@ -153,7 +154,7 @@ test('a gaveta aberta pelo teclado prende o Tab, com contorno em cada parada', a
 })
 
 test('na gaveta, Início é um link: seguido, muda o endereço, fecha a gaveta e devolve o foco a "Abrir navegação"', async () => {
-  const page = await open('/companies/new', PHONE, SIGNED_IN)
+  const page = await open('/operations/clients/new', PHONE, central('NONE'))
   const opener = page.getByRole('button', { name: 'Abrir navegação' })
   await opener.click()
   await page
