@@ -3,7 +3,7 @@ import type { Socket } from 'node:net'
 import { connect, createServer } from 'node:net'
 import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
-import { PersonId } from '@conexus/hub-api'
+import { CompanyId, PersonId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import { DatabaseUrl, openDatabase } from './database.ts'
 import {
@@ -45,6 +45,30 @@ test('uma leitura não escreve', async (t) => {
     ),
     failsWith('INTERNAL_UNEXPECTED', '25006'),
   )
+})
+
+test('asPerson: a falha da consulta é a que sobe, não a da volta ao escopo da empresa', async (t) => {
+  const { database } = await createTestDatabase(t)
+  const scope = {
+    kind: 'COMPANY',
+    companyId: CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA'),
+    personId: PersonId.parse('someone'),
+  } as const
+  await assert.rejects(
+    database.command(scope, (tx) =>
+      database.asPerson(tx, (inner) => inner.execute(sql`select 1 / 0`)),
+    ),
+    failsWith('INTERNAL_UNEXPECTED', '22012'),
+  )
+  const back = await database.command(scope, async (tx) => {
+    await database
+      .asPerson(tx, async () => {
+        throw new Error('the work failed')
+      })
+      .catch(() => undefined)
+    return (await tx.execute(sql`select current_user as role`)).rows
+  })
+  assert.deepEqual(back, [{ role: 'hub_company' }])
 })
 
 test('o tempo do comando acaba como banco fora, pelo código do erro', async (t) => {

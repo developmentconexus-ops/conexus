@@ -234,11 +234,17 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
         })
       }
       await enter(tx, { kind: 'PERSON', personId: scope.personId })
+      let result: Awaited<ReturnType<typeof work>>
       try {
-        return await work(tx)
-      } finally {
-        await enter(tx, scope)
+        result = await work(tx)
+      } catch (error) {
+        // Back to the company scope for a caller that goes on; after a database error the
+        // transaction is aborted, re-entry fails, and the first failure is the one that tells why.
+        await enter(tx, scope).catch(() => undefined)
+        throw error
       }
+      await enter(tx, scope)
+      return result
     },
     installation: (work) => inTransaction(NO_RELATIONS, undefined, work, WRITE),
     installationRead: (work) => inTransaction(NO_RELATIONS, undefined, work, READ),
