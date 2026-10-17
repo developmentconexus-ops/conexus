@@ -1,6 +1,6 @@
 import { isValidCnpj } from '@brazilian-utils/brazilian-utils'
 import { z } from 'zod'
-import { CompanyId, CompanyName, InvitationId, Next, Page } from './companies.ts'
+import { CompanyId, CompanyName, InvitationId, Next, Page, Revision } from './companies.ts'
 import { Email } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -121,7 +121,7 @@ export const correctClient = defineOperation({
   bodyLimit: 1024,
   input: {
     params: OfClient,
-    body: ClientData.extend({ revision: z.number().int().nonnegative() }),
+    body: ClientData.extend(Revision.shape),
   },
   success: { status: 200, body: z.object({ client: Client }) },
   failures: [
@@ -129,6 +129,27 @@ export const correctClient = defineOperation({
     'CLIENT_EXISTS',
     'CLIENT_ACTIVE',
     'CLIENT_STALE',
+    'SESSION_REQUIRED',
+    'DATABASE_UNAVAILABLE',
+  ],
+})
+
+export const deleteClient = defineOperation({
+  id: 'deleteClient',
+  summary: 'Deletes a client with its company, members and invitations; its people stay.',
+  access: 'session',
+  method: 'DELETE',
+  path: '/api/clients/{companyId}',
+  bodyLimit: 1024,
+  input: {
+    params: OfClient,
+    body: Revision.extend({ name: CompanyName }),
+  },
+  success: { status: 204 },
+  failures: [
+    'NOT_FOUND',
+    'CLIENT_STALE',
+    'CLIENT_NAME_MISMATCH',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],

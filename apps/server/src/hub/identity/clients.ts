@@ -99,6 +99,25 @@ export function renameCompanyOn(auth: Auth) {
   }
 }
 
+/**
+ * Deletes a client's company with its members and invitations, through the plugin's adapter
+ * (`organization/adapter.mjs:370`), in the caller's transaction: its endpoint is closed
+ * (`crud-org.mjs:255`) and, open, refuses whoever is no member (`crud-org.mjs:264-268`), as the
+ * operator is not. The caller took the company's lock first; taking it again holds it. The adapter
+ * returns no row count, and a read afterwards goes through the same row policy as the DELETE, so it
+ * could not see a row the policy hid: no check follows.
+ */
+export function deleteCompanyOn(auth: Auth) {
+  return async (
+    tx: CommandTx,
+    input: { admitted: OperatorProof; companyId: CompanyId },
+  ): Promise<void> => {
+    await lockCompany(tx, input.companyId)
+    const adapter = await organizationAdapter(auth)
+    await adapter.deleteOrganization(input.companyId)
+  }
+}
+
 export type OperatedCompany = { name: string; state: Client['state'] }
 
 const InvitationRow = PendingRow.extend({

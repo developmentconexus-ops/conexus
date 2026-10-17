@@ -1,6 +1,6 @@
 import { Client, FAILURES, registerClient } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -221,4 +221,45 @@ test('enquanto envia, "Cadastrando…" bloqueado', async () => {
   expect(pending).toHaveProperty('disabled', true)
   answer.resolve()
   await screen.findByRole('heading', { name: 'Empresa Teste' })
+})
+
+test('recarregar durante um cadastro que não decidiu: mostra a lista atual e pergunta, a chave se perde e nada é refeito', async () => {
+  const [, cut] = undecided('{"client":{"companyId":"bbb')[0] ?? []
+  const sent = hub([cut ?? registered, registered])
+  open()
+  await fill()
+  await screen.findByRole('alert')
+  // A reload runs no React cleanup, and the tab's storage survives it.
+  const kept = Object.entries(sessionStorage)
+  cleanup()
+  for (const [key, value] of kept) sessionStorage.setItem(key, value)
+  const reloaded = open()
+  expect(
+    await screen.findByText('O último cadastro ficou sem resposta. O cliente está nesta lista?'),
+  ).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Central de Operação' })).toBeTruthy()
+  expect(screen.getByText('Empresa Teste')).toBeTruthy()
+  await waitFor(() => expect(reloaded.state.location.search).toEqual({}))
+  expect(sent.length).toBe(1)
+  await reloaded.navigate({ to: '/operations/clients/new' })
+  await fill()
+  await screen.findByRole('heading', { name: 'Empresa Teste' })
+  expect(sent.length).toBe(2)
+  expect(sent[1]?.key).not.toBe(sent[0]?.key)
+})
+
+test('sair do formulário pelo app depois de uma resposta que não decide: o próximo cadastro abre o formulário', async () => {
+  const [, cut] = undecided('{"client":{"companyId":"bbb')[0] ?? []
+  hub([cut ?? registered, registered])
+  const router = open()
+  await fill()
+  await screen.findByRole('alert')
+  await router.navigate({ to: '/operations/clients' })
+  await screen.findByRole('heading', { name: 'Central de Operação' })
+  expect(
+    screen.queryByText('O último cadastro ficou sem resposta. O cliente está nesta lista?'),
+  ).toBeNull()
+  await router.navigate({ to: '/operations/clients/new' })
+  expect(await screen.findByText('Ele recebe um convite e entra como primeiro dono.')).toBeTruthy()
+  expect(router.state.location.pathname).toBe('/operations/clients/new')
 })

@@ -29,6 +29,7 @@ const ACTIONS = {
   operateClients: { by: 'OPERATOR', locks: false },
   registerClient: { by: 'OPERATOR', locks: true },
   correctClient: { by: 'OPERATOR', locks: true },
+  deleteClient: { by: 'OPERATOR', locks: true },
   inviteOwner: { by: 'OPERATOR', locks: true, role: 'owner' },
 } as const satisfies Record<string, ActionRule>
 

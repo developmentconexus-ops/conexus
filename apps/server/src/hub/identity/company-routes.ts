@@ -23,7 +23,7 @@ import { deliveredOrRefused, mailInvitation } from './invitation-mail.ts'
 import { cancelInvitationCommand, renewInvitationCommand } from './invitation-management.ts'
 import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
-import { createInvitationCommand } from './invitations.ts'
+import { companyScope, createInvitationCommand } from './invitations.ts'
 import { countInvitationAttempt } from './routes.ts'
 
 type Deps = {
@@ -75,7 +75,9 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
       }
       const link = `${origin}/invitations/${invitation.id}`
       if (made.mail !== undefined) {
-        deliveredOrRefused(await mailInvitation(deps, { invitation, ...made.mail, link, signal }))
+        const scope = companyScope({ person, ...params })
+        const mail = { scope, invitation, ...made.mail, link, signal }
+        deliveredOrRefused(await mailInvitation(deps, mail))
       }
       return answer({ invitation })
     },
@@ -129,7 +131,8 @@ function registerManagement(app: FastifyInstance, deps: Deps): void {
       const result = await renew({ person, sessionToken, headers, ...params, ...body })
       log.info({ companyId: params.companyId }, 'INVITATION_RENEWED')
       const link = `${deps.config.publicOrigin}/invitations/${result.invitation.id}`
-      deliveredOrRefused(await mailInvitation(deps, { ...result, link, signal }))
+      const scope = companyScope({ person, ...params })
+      deliveredOrRefused(await mailInvitation(deps, { scope, ...result, link, signal }))
       return answer({ invitation: result.invitation })
     },
   )

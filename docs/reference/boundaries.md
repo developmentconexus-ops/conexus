@@ -86,10 +86,12 @@ or its origin.
   (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:291`), and on a failure resets the
   invitation in a second write (`:332-339`).
 - **Hand-made piece.** `libraryCommandOn` in `apps/server/src/hub/identity/auth.ts`. It opens one
-  `database.command` and runs the work in `runWithTransaction` on an adapter bound to that
-  transaction, so every call the library makes inside, nested ones included, writes there.
-  `createFirstPerson` in `first-person.ts` also takes `transactionLock` (`database.ts`, a
-  `pg_advisory_xact_lock`) on the key `conexus.first-person`, which ends with the transaction.
+  `database.libraryCommand` in the caller's scope and runs the work in `runWithTransaction` on an
+  adapter bound to that transaction, so every call the library makes inside, nested ones included,
+  writes there and meets the scope's row policies. `createFirstPerson` in `first-person.ts` runs
+  the same way through `libraryInstallationOn`, before any person exists to scope it, and takes
+  `transactionLock` (`database.ts`, a `pg_advisory_xact_lock`) on the key `conexus.first-person`,
+  which ends with the transaction.
 - **Why.** [Code C37 and C65](../guides/code.md), [data D22](../guides/data.md). A refusal anywhere
   in an accept leaves nothing, and `forgetLinks` deletes through the same transaction. The test
   "aceitar: uma escrita recusada no meio do aceite" in `invitation-acceptance.test.ts` fails with
@@ -97,6 +99,20 @@ or its origin.
   `accept-one-transaction`). The tests "ao mesmo tempo, com dois e-mails" and "ao mesmo tempo, a
   mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
   `first-person-lock`).
+
+### The plain adapter joins that transaction too
+
+- **Library line.** `@better-auth/core/context` exports `getCurrentAdapter`, which the internal
+  adapter and the organization plugin's adapter call to reach the open transaction. The invitation
+  endpoint's `resend` branch does not: it writes the new expiry through `ctx.context.adapter`
+  (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:135-143`), on the library's own
+  connection, as the Hub's login, outside the scope.
+- **Hand-made piece.** `joiningTransaction` in `apps/server/src/hub/identity/auth.ts` wraps the
+  adapter `createAuth` gives the library, so each of its calls goes to `getCurrentAdapter`.
+- **Why.** [Data D22](../guides/data.md). The test "renovar: o prazo novo do plugin cai" in
+  `invitations.test.ts` fails when the wrapper is taken out (removal
+  `library-adapter-joins-transaction`); with `CONEXUS_TEST_PHASE=2`, "renovar: o administrador
+  renovando o convite de um dono" fails too.
 
 ### A company with no member and its first owner's invitation, through the plugin's adapter
 
@@ -133,6 +149,21 @@ or its origin.
   company is created by the endpoint (removal `operator-not-member`); "recusas" fails when the
   adapter writes outside the Hub's transaction (removal `client-one-transaction`). When the library
   changes, reread `getOrgAdapter`'s signature and these four methods.
+
+### Deleting a company: the adapter, with the native route closed
+
+- **Library line.** `organization/routes/crud-org.mjs:255`: with `disableOrganizationDeletion`
+  the endpoint answers `ORGANIZATION_DELETION_DISABLED` before it reads the session. The adapter's
+  `deleteOrganization` (`adapter.mjs:370`) deletes the members, the invitations and the company
+  and returns the id whether or not a row was there.
+- **Hand-made piece.** `deleteCompanyOn` in `identity/clients.ts`, called by `remove` in
+  `operations/clients.ts` after the client's row is deleted. No check follows: the adapter
+  returns no row count, and a read afterwards passes the same row policy as the DELETE. A correction and a deletion lock the company, then the operator's row,
+  then the client, the order the invitations and the accept keep (`lockCompany` first).
+- **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The
+  test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens (removal
+  `client-delete-operator-only`); "apagar: concorrência" in `client-deletion.test.ts` deadlocks
+  when the operator's row is locked before the company's.
 
 ### Sign-in and the first password reach the library through a request we build
 
@@ -462,8 +493,46 @@ or its origin.
   its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
-  "lista: só as empresas de quem pede" in `companies.test.ts` fails when the anchor leaves the
-  list's scope (removal `membership-page-anchor-scoped`).
+  "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since step 5
+  the person scope's member policy holds the same rule, so removing the anchor's filter alone
+  changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
+  `person-member-policy`).
+
+### Every transaction opens in a scope
+
+- **Library line.** `drizzle-orm/node-postgres/session.js` (1.0.0-rc.4): `transaction` begins with
+  the isolation and access mode it is given and nothing else; neither Drizzle nor pg sets a role or
+  a setting for one transaction. Better Auth's adapter runs on the transaction it is handed
+  (`@better-auth/core/dist/context/transaction.mjs`). PostgreSQL offers `SET LOCAL ROLE` and
+  `set_config(name, value, true)`, both undone at the transaction's end.
+- **Hand-made piece.** `enter` in `apps/server/src/platform/database.ts`. `read`, `command` and
+  `libraryCommand` take a `Scope`; the transaction first switches to the scope's role, a constant of
+  the program, and sets `conexus.company_id`, `conexus.person_id` and `conexus.invitation_id` as
+  bound values, which the row policies of decision 0039 read through `scoped`. A failure there
+  ends the transaction as `DATABASE_UNAVAILABLE` before the work runs. `asPerson` switches a company
+  command to the person's own scope for the invitation pace, and back. `installation` and
+  `libraryInstallation` stay in the Hub's login, for the installation's own rows, the boot's checks
+  and the first administrator. No `AsyncLocalStorage` carries a company: the scope is an argument.
+- **Why.** Decision 0039 and [data D20, D25](../guides/data.md). In `isolation.test.ts`, "filtro
+  esquecido" fails without the role switch (removal `scope-role-set`) and with the member policy
+  opened (removal `rls-company-policy`); "o tipo" fails when a read stops naming its scope (removal
+  `scope-in-signature`).
+
+### The operator's administrator, answered by one function (provisional)
+
+- **Library line.** PostgreSQL 18 expands a policy's subqueries with the policies of the tables they
+  read, and refuses a cycle: auth.member's operator policy reading auth.user, whose operator policy
+  reads auth.member for the owners, fails with "infinite recursion detected in policy".
+- **Hand-made piece.** `auth.is_installation_administrator(person)`, migration
+  `installation_administrator_check`: `SECURITY DEFINER`, `search_path` fixed, owned by
+  `hub_administrators`, which cannot log in and reads only the administrators' `id` and `role`
+  through its own policy; only `hub_operator` executes it. `ADMINISTRATOR` in `identity/tables.ts`
+  puts it in every operator policy. Firstmate chose it provisionally on 2026-10-17; it waits for the
+  founder's word, beside the U2 list.
+- **Why.** The card's rule that every operator policy needs an installation administrator
+  (security S11) with the Central's owners in auth.user. "operador sem papel" in
+  `isolation.test.ts` fails without the check on auth.member (removal
+  `operator-policy-admin-only`).
 
 ### A deadline on every checkout of a database connection
 

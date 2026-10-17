@@ -246,6 +246,14 @@ export const FAILURES = {
     action: 'Recarregue a página.',
     actionKind: 'NONE',
   },
+  CLIENT_NAME_MISMATCH: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'O nome não confere.',
+    action: '',
+    actionKind: 'NONE',
+  },
   CLIENT_ACTIVE: {
     category: 'USER',
     settles: true,

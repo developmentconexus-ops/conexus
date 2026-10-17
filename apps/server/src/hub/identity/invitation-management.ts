@@ -1,7 +1,7 @@
 import type { CompanyId, InvitationId, Person } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx } from '../../platform/database.ts'
+import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyProof } from './admission.ts'
 import { admitInviter } from './admission.ts'
@@ -11,6 +11,7 @@ import { companyById } from './companies.ts'
 import {
   cancelThrough,
   checkPace,
+  companyScope,
   INVITATION_REFUSALS,
   inviterOf,
   LIVE,
@@ -81,7 +82,7 @@ function current(row: z.infer<typeof ManagedRow>, input: Manage): void {
 
 export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: Manage) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(companyScope(input), async (tx) => {
       const { admitted, row } = await admittedInvitation(tx, input)
       if (row.status === 'canceled' && !row.superseded) return false
       current(row, input)
@@ -129,15 +130,19 @@ async function renewed(
   return pendingOf(PendingRow.parse(renewal))
 }
 
-export function renewInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
+export function renewInvitationCommand(deps: {
+  auth: Auth
+  database: Database
+  libraryCommand: LibraryCommand
+}) {
   return (input: Manage) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(companyScope(input), async (tx) => {
       const { admitted, row } = await admittedInvitation(tx, input)
       current(row, input)
       if (!row.live) throw new Failure('INVITATION_CLOSED')
       // The operator's admission already holds the row.
       if (admitted.kind === 'MEMBER') await lockedInviter(tx, input.person.id)
-      await checkPace(tx, input.person.id)
+      await checkPace(deps.database, tx, input.person.id)
       return {
         invitation: await renewed(deps, tx, { admitted, row, headers: input.headers }),
         companyName: (await companyById(tx, input.companyId)).name,

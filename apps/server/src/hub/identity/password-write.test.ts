@@ -71,7 +71,7 @@ test('invitation password rejects lengths, serializes concurrent writers and rol
     })
   }
   for (const size of [7, 129]) assert.equal((await write('a'.repeat(size))).statusCode, 400)
-  await hub.test.asOwner('revoke insert on auth.session from hub_runtime')
+  await hub.test.asOwner('revoke insert on auth.session from hub_invitation')
   const failed = await write('a'.repeat(128))
   assert.equal(failed.statusCode, 503)
   assert.equal(failed.headers['set-cookie'], undefined)
@@ -81,7 +81,7 @@ test('invitation password rejects lengths, serializes concurrent writers and rol
     ]),
     [{ users: 0 }],
   )
-  await hub.test.asOwner('grant insert on auth.session to hub_runtime')
+  await hub.test.asOwner('grant insert on auth.session to hub_invitation')
   const results = await Promise.all([write('a'.repeat(128)), write('other-password')])
   assert.deepEqual(results.map((r) => r.statusCode).sort(), [204, 412])
   const winningPassword = results[0]?.statusCode === 204 ? 'a'.repeat(128) : 'other-password'

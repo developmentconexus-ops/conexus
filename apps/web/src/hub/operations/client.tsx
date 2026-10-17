@@ -8,6 +8,7 @@ import { Button } from '../../ui/button.tsx'
 import { List, PageTitle, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { maskedCnpj } from './cnpj.ts'
 import { CorrectClientForm } from './correct-client-form.tsx'
+import { DeleteClientDialog } from './delete-client-dialog.tsx'
 import { OwnerInvitationSection } from './owner-invitation.tsx'
 import { clientQuery } from './queries.ts'
 
@@ -54,7 +55,7 @@ function Owners({ owners }: { owners: { name: string; email: string }[] }) {
 
 /**
  * A client of the Operations Central: its data, and either its administrator's invitation and the
- * correction while it awaits, or its owners once active, with no action (step 4.2, P7).
+ * correction while it awaits, or its owners once active (step 4.2, P7); and its deletion (step 5).
  */
 export function Client() {
   const { companyId } = route.useParams()
@@ -90,6 +91,11 @@ export function Client() {
         </>
       )}
       {state.kind === 'ACTIVE' && <Owners owners={state.owners} />}
+      {!correcting && (
+        <div>
+          <DeleteClientDialog client={client} />
+        </div>
+      )}
     </div>
   )
 }

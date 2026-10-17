@@ -197,7 +197,8 @@ export const getInvitation = defineOperation({
   failures: ['NOT_FOUND', 'DATABASE_UNAVAILABLE'],
 })
 
-const Revision = z.object({ revision: z.number().int().nonnegative() })
+/** The revision a write was read at (code C38). */
+export const Revision = z.object({ revision: z.number().int().nonnegative() })
 
 const CompanyInvitation = InCompany.extend({ invitationId: InvitationId })
 

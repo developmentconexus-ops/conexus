@@ -1,11 +1,18 @@
 import type { Email } from '@conexus/hub-api'
 import { Person } from '@conexus/hub-api'
 import type { PublicOrigin } from '../../platform/config.ts'
+import type { Database } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { INSTALLATION_ADMINISTRATOR } from './admission.ts'
-import type { Auth, LibraryCommand } from './auth.ts'
-import { forgetLinks, hasPassword, linkTokenOf, storedAddress } from './auth.ts'
+import type { Auth } from './auth.ts'
+import {
+  forgetLinks,
+  hasPassword,
+  libraryInstallationOn,
+  linkTokenOf,
+  storedAddress,
+} from './auth.ts'
 
 const SET_PASSWORD_PAGE = '/set-password'
 
@@ -13,11 +20,12 @@ export type FirstPerson = (input: { name: string; email: Email }) => Promise<{ l
 
 export function createFirstPerson(deps: {
   auth: Auth
-  libraryCommand: LibraryCommand
+  database: Database
   publicOrigin: PublicOrigin
 }): FirstPerson {
+  const libraryInstallation = libraryInstallationOn(deps.auth, deps.database)
   return ({ name, email }) =>
-    deps.libraryCommand(async (tx) => {
+    libraryInstallation(async (tx) => {
       // Two runs at once would each see an empty installation; the second waits here.
       await transactionLock(tx, 'conexus.first-person')
       const { internalAdapter } = await deps.auth.$context

@@ -1,0 +1,7 @@
+-- contract: operator_all came in this step's own unreleased migration; it splits so the operator
+-- changes or deletes only the scope's company, as on members, invitations and clients (step 5).
+DROP POLICY "operator_all" ON "auth"."company";--> statement-breakpoint
+CREATE POLICY "operator_select" ON "auth"."company" AS PERMISSIVE FOR SELECT TO "hub_operator" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')));--> statement-breakpoint
+CREATE POLICY "operator_insert" ON "auth"."company" AS PERMISSIVE FOR INSERT TO "hub_operator" WITH CHECK (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')));--> statement-breakpoint
+CREATE POLICY "operator_update" ON "auth"."company" AS PERMISSIVE FOR UPDATE TO "hub_operator" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint
+CREATE POLICY "operator_delete" ON "auth"."company" AS PERMISSIVE FOR DELETE TO "hub_operator" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), ''));

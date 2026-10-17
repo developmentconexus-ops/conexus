@@ -3,6 +3,7 @@ import type { Socket } from 'node:net'
 import { connect, createServer } from 'node:net'
 import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
+import { CompanyId, PersonId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import { DatabaseUrl, openDatabase } from './database.ts'
 import {
@@ -29,7 +30,7 @@ test('depois de uma leitura o pool chega a zero conexões', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   const countRuntime = `select count(*)::int as open from pg_stat_activity
     where datname = current_database() and usename = 'hub_runtime'`
-  const read = await database.read((tx) => tx.execute(sql`select 1 as one`))
+  const read = await database.installation((tx) => tx.execute(sql`select 1 as one`))
   assert.deepEqual(read.rows, [{ one: 1 }])
   assert.deepEqual(await asOwner(countRuntime), [{ open: 1 }])
   await whenIdle(database)
@@ -39,15 +40,41 @@ test('depois de uma leitura o pool chega a zero conexões', async (t) => {
 test('uma leitura não escreve', async (t) => {
   const { database } = await createTestDatabase(t)
   await assert.rejects(
-    database.read((tx) => tx.execute(sql`create temp table scratch (id int)`)),
+    database.read({ kind: 'PERSON', personId: PersonId.parse('someone') }, (tx) =>
+      tx.execute(sql`create temp table scratch (id int)`),
+    ),
     failsWith('INTERNAL_UNEXPECTED', '25006'),
   )
+})
+
+test('asPerson: a falha da consulta é a que sobe, não a da volta ao escopo da empresa', async (t) => {
+  const { database } = await createTestDatabase(t)
+  const scope = {
+    kind: 'COMPANY',
+    companyId: CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA'),
+    personId: PersonId.parse('someone'),
+  } as const
+  await assert.rejects(
+    database.command(scope, (tx) =>
+      database.asPerson(tx, (inner) => inner.execute(sql`select 1 / 0`)),
+    ),
+    failsWith('INTERNAL_UNEXPECTED', '22012'),
+  )
+  const back = await database.command(scope, async (tx) => {
+    await database
+      .asPerson(tx, async () => {
+        throw new Error('the work failed')
+      })
+      .catch(() => undefined)
+    return (await tx.execute(sql`select current_user as role`)).rows
+  })
+  assert.deepEqual(back, [{ role: 'hub_company' }])
 })
 
 test('o tempo do comando acaba como banco fora, pelo código do erro', async (t) => {
   const { database } = await createTestDatabase(t)
   await assert.rejects(
-    database.read(async (tx) => {
+    database.installation(async (tx) => {
       await tx.execute(sql`set local statement_timeout = '50ms'`)
       return tx.execute(sql`select pg_sleep(5)`)
     }),
@@ -58,7 +85,7 @@ test('o tempo do comando acaba como banco fora, pelo código do erro', async (t)
 test('um erro de SQL que não é queda vira erro inesperado', async (t) => {
   const { database } = await createTestDatabase(t)
   await assert.rejects(
-    database.command((tx) => tx.execute(sql`select * from nowhere`)),
+    database.installation((tx) => tx.execute(sql`select * from nowhere`)),
     failsWith('INTERNAL_UNEXPECTED', '42P01'),
   )
 })
@@ -66,7 +93,7 @@ test('um erro de SQL que não é queda vira erro inesperado', async (t) => {
 test('o banco inalcançável vira DATABASE_UNAVAILABLE', async () => {
   const database = openDatabase({ url: await unreachableDatabaseUrl(), log: silent })
   await assert.rejects(
-    database.read((tx) => tx.execute(sql`select 1`)),
+    database.installation((tx) => tx.execute(sql`select 1`)),
     failsWith('DATABASE_UNAVAILABLE'),
   )
   await database.close()
@@ -82,7 +109,7 @@ test('o objeto é congelado e fechar duas vezes é seguro', async (t) => {
 test('a conexão derrubada no meio de um comando vira DATABASE_UNAVAILABLE e o processo segue', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   const started = Promise.withResolvers<number>()
-  const running = database.command(async (tx) => {
+  const running = database.installation(async (tx) => {
     const backend = await tx.execute(sql`select pg_backend_pid()::int as pid`)
     started.resolve(Number(backend.rows[0]?.pid))
     return tx.execute(sql`select pg_sleep(30)`)
@@ -99,7 +126,7 @@ test('a conexão derrubada no meio de um comando vira DATABASE_UNAVAILABLE e o p
     }
   })
   await refused
-  const next = await database.read((tx) => tx.execute(sql`select 1 as one`))
+  const next = await database.installation((tx) => tx.execute(sql`select 1 as one`))
   assert.deepEqual(next.rows, [{ one: 1 }])
 })
 
@@ -119,7 +146,7 @@ test('uma leitura parada além do prazo: 503, o soquete destruído solta as trav
   const started = Date.now()
   try {
     await assert.rejects(
-      database.read(async (tx) => {
+      database.installation(async (tx) => {
         await tx.execute(sql`set local statement_timeout = 0`)
         await tx.execute(sql`select pg_advisory_xact_lock(888)`)
         return tx.execute(sql`select pg_advisory_xact_lock(777)`)
@@ -133,7 +160,7 @@ test('uma leitura parada além do prazo: 503, o soquete destruído solta as trav
   }
   assert.equal(Object(await holder).code, '57014')
   assert.deepEqual(await asOwner('select pg_advisory_xact_lock(888)::text as held'), [{ held: '' }])
-  const next = await database.read((tx) => tx.execute(sql`select 1 as one`))
+  const next = await database.installation((tx) => tx.execute(sql`select 1 as one`))
   assert.deepEqual(next.rows, [{ one: 1 }])
 })
 
@@ -142,7 +169,7 @@ test('um erro do próprio programa na consulta não vira banco fora', async (t) 
   const circular: Record<string, unknown> = {}
   circular.self = circular
   await assert.rejects(
-    database.read((tx) => tx.execute(sql`select ${circular}::text`)),
+    database.installation((tx) => tx.execute(sql`select ${circular}::text`)),
     failsWith('INTERNAL_UNEXPECTED'),
   )
 })

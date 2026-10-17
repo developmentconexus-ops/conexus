@@ -56,6 +56,11 @@ async function clientOf(deps: Deps, tx: ReadTx, admitted: OperatorProof, company
   return found
 }
 
+/** The Central's scope, for the person of the session; a company only where a command needs all of its rows. */
+function operatorScope(person: Person, companyId: CompanyId | null) {
+  return { kind: 'OPERATOR', personId: person.id, companyId } as const
+}
+
 type Registration = ClientData & { person: Person; ownerEmail: Email; attemptKey: string }
 
 /**
@@ -64,7 +69,7 @@ type Registration = ClientData & { person: Person; ownerEmail: Email; attemptKey
  */
 function register(deps: Deps, input: Registration) {
   const { identity } = deps
-  return identity.libraryCommand(async (tx) => {
+  return identity.libraryCommand(operatorScope(input.person, null), async (tx) => {
     const { attemptKey: key } = input
     // Two registrations with one key at once: the second waits here and finds the first's.
     await transactionLock(tx, `conexus.client:${key}`)
@@ -91,6 +96,7 @@ function register(deps: Deps, input: Registration) {
       await insertClient(tx, { ...input, companyId, key })
     }
     return {
+      admitted,
       client: await clientOf(deps, tx, admitted, companyId),
       company: registered.company,
       mail: registered.mail,
@@ -119,7 +125,7 @@ type Correction = ClientData & { person: Person; companyId: CompanyId; revision:
 /** Corrects a client still awaiting its administrator, at the revision it read (code C38). */
 function correct(deps: Deps, input: Correction) {
   const { identity } = deps
-  return identity.libraryCommand(async (tx) => {
+  return identity.libraryCommand(operatorScope(input.person, input.companyId), async (tx) => {
     // The company's lock before the operator's row and the client's, the order the owner's
     // invitation and its accept keep: the other order deadlocked them (step 5, criterion 11).
     await identity.lockCompany(tx, input.companyId)
@@ -149,9 +155,37 @@ function correct(deps: Deps, input: Correction) {
   })
 }
 
+type Deletion = { person: Person; companyId: CompanyId; name: string; revision: number }
+
+/**
+ * Deletes a client at the revision and display name the operator confirmed (code C38): its record,
+ * then through identity its company, members and invitations, in one transaction. Its people stay.
+ * The locks come in a correction's order; a deleted or unknown client is the same 404.
+ */
+function remove(deps: Deps, input: Deletion) {
+  const { identity } = deps
+  return identity.libraryCommand(operatorScope(input.person, input.companyId), async (tx) => {
+    await identity.lockCompany(tx, input.companyId)
+    const personId = input.person.id
+    const admitted = await identity.admitOperator({ tx, personId, action: 'deleteClient' })
+    const [row] = await tx
+      .select({ revision: client.revision })
+      .from(client)
+      .where(eq(client.companyId, input.companyId))
+      .for('update')
+    if (row === undefined) throw new Failure('NOT_FOUND')
+    if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')
+    if ((await clientOf(deps, tx, admitted, input.companyId)).name !== input.name) {
+      throw new Failure('CLIENT_NAME_MISMATCH')
+    }
+    await tx.delete(client).where(eq(client.companyId, input.companyId))
+    await identity.deleteCompany(tx, { admitted, companyId: input.companyId })
+  })
+}
+
 /** The clients in the order they were registered, 50 a page (code C44). */
 function list(deps: Deps, person: Person, page: string | undefined) {
-  return deps.database.read(async (tx) => {
+  return deps.database.read(operatorScope(person, null), async (tx) => {
     const personId = person.id
     const admitted = await deps.identity.admitOperator({ tx, personId, action: 'operateClients' })
     const key = pageKey(page)
@@ -176,7 +210,7 @@ function list(deps: Deps, person: Person, page: string | undefined) {
 }
 
 function get(deps: Deps, person: Person, companyId: CompanyId) {
-  return deps.database.read(async (tx) => {
+  return deps.database.read(operatorScope(person, null), async (tx) => {
     const personId = person.id
     const admitted = await deps.identity.admitOperator({ tx, personId, action: 'operateClients' })
     return clientOf(deps, tx, admitted, companyId)
@@ -187,6 +221,7 @@ export function createClients(deps: Deps) {
   return Object.freeze({
     register: (input: Registration) => register(deps, input),
     correct: (input: Correction) => correct(deps, input),
+    remove: (input: Deletion) => remove(deps, input),
     list: (person: Person, page: string | undefined) => list(deps, person, page),
     get: (person: Person, companyId: CompanyId) => get(deps, person, companyId),
   })

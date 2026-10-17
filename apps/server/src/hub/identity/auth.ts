@@ -13,7 +13,7 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
 import type { Config } from '../../platform/config.ts'
-import type { CommandTx, Database } from '../../platform/database.ts'
+import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -151,15 +151,51 @@ function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
   })
 }
 
-export type LibraryCommand = <T>(work: (tx: CommandTx) => Promise<T>) => Promise<T>
+/**
+ * Each call of the library's adapter goes to the transaction open on this request, as its internal
+ * adapter's do: the plugin's resend writes through the plain adapter (`crud-invites.mjs:135-143`),
+ * which would leave the scope's transaction for the Hub's login.
+ */
+function joiningTransaction(adapter: ReturnType<typeof adapterFor>): ReturnType<typeof adapterFor> {
+  return (options) => {
+    const base = adapter(options)
+    const joining = new Proxy(base, {
+      get(target, key) {
+        const value = Reflect.get(target, key)
+        if (typeof value !== 'function') return value
+        return async (...args: unknown[]) => {
+          // Outside a transaction the library stores this adapter itself as the current one.
+          const found = await libraryContext.getCurrentAdapter(target)
+          const current = found === joining ? target : found
+          return Reflect.apply(Reflect.get(current, key), current, args)
+        }
+      },
+    })
+    return joining
+  }
+}
+
+export type LibraryCommand = <T>(scope: Scope, work: (tx: CommandTx) => Promise<T>) => Promise<T>
 
 /**
- * One command the library joins: it runs on our transaction as its own, so the plugin's accept,
- * which opens a transaction of its own, writes there too instead of on another connection (D22).
+ * One command the library joins, in the scope the caller entered: it runs on our transaction as its
+ * own, so the plugin's accept, which opens a transaction of its own, writes there too instead of on
+ * another connection (D22), and every query of its adapter meets the same row policies.
  */
 export function libraryCommandOn(auth: Auth, database: Database): LibraryCommand {
-  return (work) =>
+  return (scope, work) =>
     database.libraryCommand(
+      relations,
+      scope,
+      async (tx) =>
+        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),
+    )
+}
+
+/** The first administrator's command, which no person can scope yet. */
+export function libraryInstallationOn(auth: Auth, database: Database) {
+  return <T>(work: (tx: CommandTx) => Promise<T>) =>
+    database.libraryInstallation(
       relations,
       async (tx) =>
         await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),
@@ -199,6 +235,8 @@ const ORGANIZATION = {
   },
   // Only the Operations Central creates a company, through the adapter (step 4.2).
   allowUserToCreateOrganization: false,
+  // Only the Operations Central deletes a company, through the adapter (step 5, Q6).
+  disableOrganizationDeletion: true,
   // The Hub counts the open invitations itself, under the company's lock: the plugin reads
   // at most 100 rows of them, in no order (docs/reference/boundaries.md).
   invitationLimit: Number.POSITIVE_INFINITY,
@@ -248,7 +286,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     basePath: BASE_PATH,
     baseURL: deps.config.publicOrigin,
     secret: deps.config.sessionSecret.reveal(),
-    database: adapterFor(deps.database.libraryOrm(relations)),
+    database: joiningTransaction(adapterFor(deps.database.libraryOrm(relations))),
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,

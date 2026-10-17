@@ -39,7 +39,9 @@ async function lockedInvitation(tx: CommandTx, input: InvitationAction) {
     .select({ ...pending, status: invitation.status, live: sql<boolean>`${LIVE}` })
     .from(invitation)
     .where(eq(invitation.id, input.invitationId))
-  const row = ActionRow.parse(still)
+  // A deletion of the company that committed while this waited on its lock leaves no row (step 5).
+  const row = ActionRow.optional().parse(still)
+  if (row === undefined) throw new Failure('NOT_FOUND')
   if (input.person !== undefined && storedAddress(input.person.email) !== storedAddress(row.email))
     throw new Failure('NOT_FOUND')
   return row
@@ -56,9 +58,15 @@ async function advanceRevision(tx: CommandTx, invitationId: InvitationId): Promi
     .where(eq(invitation.id, invitationId))
 }
 
+/** The link's scope: the invitation its address names, and the person signed in, if any. */
+function invitationScope(input: { invitationId: InvitationId; person: Person | undefined }) {
+  const personId = input.person?.id ?? null
+  return { kind: 'INVITATION', invitationId: input.invitationId, personId } as const
+}
+
 export function passwordCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: InvitationAction & { name: string; password: string; headers: Headers }) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(invitationScope(input), async (tx) => {
       const open = await lockedInvitation(tx, input)
       if (open.status !== 'pending' || !open.live) throw new Failure('INVITATION_CLOSED')
       checkRevision(open.revision, input.revision)
@@ -99,7 +107,7 @@ export function passwordCommand(deps: { auth: Auth; libraryCommand: LibraryComma
 
 export function declineCommand(deps: { libraryCommand: LibraryCommand }) {
   return (input: InvitationAction) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(invitationScope(input), async (tx) => {
       const open = await lockedInvitation(tx, input)
       if (open.status === 'rejected') return false
       if (open.status !== 'pending' || !open.live) throw new Failure('INVITATION_CLOSED')
@@ -120,7 +128,7 @@ export function acceptCommand(deps: { auth: Auth; libraryCommand: LibraryCommand
     revision: number
     sessionToken: string
   }) =>
-    deps.libraryCommand(async (tx) => {
+    deps.libraryCommand(invitationScope(input), async (tx) => {
       const [listed] = await tx
         .select({ companyId: invitation.organizationId, email: invitation.email })
         .from(invitation)

@@ -28,7 +28,7 @@ export function readInvitations(
   input: { personId: PersonId; companyId: CompanyId },
   page: string | undefined,
 ) {
-  return database.read(async (tx) => {
+  return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
     const admitted = await admit({ tx, ...input, action: 'readInvitations' })
     const key = pageKey(page)
     const rows = await tx
@@ -79,7 +79,8 @@ export function readReceived(
   person: Person | undefined,
   invitationId: InvitationId,
 ) {
-  return database.read(async (tx) => {
+  const scope = { kind: 'INVITATION', invitationId, personId: person?.id ?? null } as const
+  return database.read(scope, async (tx) => {
     const [found] = await tx
       .select({
         ...pending,

@@ -7,7 +7,7 @@ import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { sql } from 'drizzle-orm'
 import type { TestDatabase } from './test-database.ts'
-import { createTestDatabase, withRoleLock } from './test-database.ts'
+import { createTestDatabase, testPhase, withRoleLock } from './test-database.ts'
 
 const run = promisify(execFile)
 
@@ -87,6 +87,10 @@ async function snapshotOf(test: Dumped): Promise<string> {
 }
 
 test('o instantâneo depois de migrate é o de database-grants.sql', async (t) => {
+  if (testPhase() === '2') {
+    t.skip('opt-in: the approved list is phase 1; phase 2 changes it with U7, in its own PR')
+    return
+  }
   const database = dumped(t, await createTestDatabase(t))
   if (database === undefined) return
   assert.equal(await withRoleLock(() => snapshotOf(database)), APPROVED)
@@ -178,7 +182,7 @@ for (const [name, statement] of REFUSED) {
   test(`o login do Hub recebe 42501 em ${name}`, async (t) => {
     const { database } = await createTestDatabase(t)
     await assert.rejects(
-      database.command((tx) => tx.execute(statement)),
+      database.installation((tx) => tx.execute(statement)),
       (error: unknown) => {
         assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
         assert.equal(error.cause.code, '42501')
@@ -187,3 +191,42 @@ for (const [name, statement] of REFUSED) {
     )
   })
 }
+
+test('as quatro tabelas de empresa e auth.user têm política por linha, sem FORCE', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  const tables = await asOwner(`select n.nspname || '.' || c.relname as name,
+      c.relrowsecurity as enabled, c.relforcerowsecurity as forced
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where c.relkind = 'r' and n.nspname in ('auth', 'operations', 'hub') order by 1`)
+  // The owner only runs migrate (data D9), so it passes the policies and nobody else does.
+  const policed = [
+    'auth.company',
+    'auth.invitation',
+    'auth.member',
+    'auth.user',
+    'operations.client',
+  ]
+  assert.deepEqual(
+    tables,
+    tables.map((row) => ({ ...row, enabled: policed.includes(String(row.name)), forced: false })),
+  )
+  assert.equal(tables.filter((row) => row.enabled).length, policed.length)
+})
+
+test('na fase 2, o login do Hub não lê nem grava as tabelas de empresa', async (t) => {
+  if (testPhase() !== '2') {
+    t.skip('opt-in: CONEXUS_TEST_PHASE=2 applies the second phase')
+    return
+  }
+  const { database } = await createTestDatabase(t)
+  for (const table of ['auth.company', 'auth.member', 'auth.invitation', 'operations.client']) {
+    await assert.rejects(
+      database.installation((tx) => tx.execute(sql.raw(`select 1 from ${table}`))),
+      (error: unknown) => {
+        assert.ok(error instanceof Error && error.cause instanceof Error && 'code' in error.cause)
+        assert.equal(error.cause.code, '42501', table)
+        return true
+      },
+    )
+  }
+})

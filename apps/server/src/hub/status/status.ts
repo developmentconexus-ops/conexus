@@ -16,9 +16,9 @@ export type Status = ReturnType<typeof createStatus>
 
 export function createStatus(deps: { version: Version; database: Database }) {
   return Object.freeze({
-    recordStart: () => deps.database.command((tx) => insertStart(tx, deps.version)),
+    recordStart: () => deps.database.installation((tx) => insertStart(tx, deps.version)),
     read: async (): Promise<HubStatus> => {
-      const [last, previous] = await deps.database.read(lastStarts)
+      const [last, previous] = await deps.database.installationRead(lastStarts)
       return { version: deps.version, lastStart: startOf(last), previousStart: startOf(previous) }
     },
   })

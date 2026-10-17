@@ -128,6 +128,11 @@ type ReadOptions<O extends Operation> = {
   queryFn: (context: QueryFunctionContext) => Promise<Output<O>>
 }
 
+/** The key every read of `operation` starts with, whatever its parameters: for an invalidation. */
+export function hubQueryPrefix(operation: Reading): QueryKey {
+  return [operation.id]
+}
+
 /** The key derives from the operation and its parameters, never written by a screen (web W11). */
 export function hubQuery<O extends Reading>(operation: O, ...args: ReadArgs<O>): ReadOptions<O>
 export function hubQuery(operation: Operation, ...args: unknown[]) {

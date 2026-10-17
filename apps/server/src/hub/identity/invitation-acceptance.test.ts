@@ -255,10 +255,10 @@ test('aceitar: uma escrita recusada no meio do aceite, ou no commit, não deixa 
   const { hub, invite } = await companyOn(t)
   const davi = await personOn(hub, DAVI)
   const invitationId = await invite()
-  await hub.test.asOwner('revoke insert on auth.member from hub_runtime')
+  await hub.test.asOwner('revoke insert on auth.member from hub_invitation')
   const refused = await accept(hub, davi, invitationId)
   assert.deepEqual([refused.statusCode, codeOf(refused)], [500, 'INTERNAL_UNEXPECTED'])
-  await hub.test.asOwner('grant insert on auth.member to hub_runtime')
+  await hub.test.asOwner('grant insert on auth.member to hub_invitation')
   // A refusal at commit, after the plugin wrote the member: only one transaction undoes it.
   await hub.test.asOwner(`create function auth.refuse_acceptance() returns trigger
     language plpgsql as $$ begin raise exception 'refused'; end $$`)

@@ -12,6 +12,9 @@ export const buttonVariants = cva(
         primary: 'bg-ink text-on-ink',
         default: 'border-line bg-surface text-text hover:bg-surface-3',
         ghost: 'bg-transparent text-text-2 hover:bg-surface-3 hover:text-text',
+        // A destructive action: neutral on the page, full danger only at its confirmation (V55).
+        danger: 'border-line bg-surface text-danger hover:bg-surface-3',
+        'danger-confirm': 'bg-danger text-on-ink',
       },
       size: {
         // Icons follow their neighbour: 16px beside a label, 14px in a toolbar (design V34).
