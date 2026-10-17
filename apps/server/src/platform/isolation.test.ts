@@ -122,10 +122,11 @@ test('positivo: cada pessoa lê e grava a sua empresa; quem está nas duas vê s
     invitations: ['invitationBBBBBBBBBBBBBBBBBBBBBB'],
     people: ['person-ab', 'person-b'],
   })
-  const renamed = await database.command(inA(CARLA), (tx) =>
-    tx.execute(sql`update auth.company set name = 'Empresa A Nova' returning id`),
+  // A company's routes write its invitations; the company row itself they only lock.
+  const renewed = await database.command(inA(CARLA), (tx) =>
+    tx.execute(sql`update auth.invitation set revision = revision + 1 returning id`),
   )
-  assert.deepEqual(renamed.rows, [{ id: 'companyAAAAAAAAAAAAAAAAAAAAAAAAA' }])
+  assert.deepEqual(renewed.rows, [{ id: 'invitationAAAAAAAAAAAAAAAAAAAAAA' }])
   const own = await database.read({ kind: 'PERSON', personId: CARLA }, async (tx) => {
     const rows = await tx.execute(sql`select c.id, m.role from auth.member m
       join auth.company c on c.id = m.company_id order by c.id`)
