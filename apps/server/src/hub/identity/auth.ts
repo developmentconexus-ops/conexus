@@ -222,8 +222,8 @@ const ORGANIZATION = {
 
 /**
  * The plugin's own adapter, inside a library command: it writes a company and an invitation as its
- * endpoints do, without their check that the caller is a member. The Hub's admission decides
- * instead, for members and the operator alike (docs/reference/boundaries.md).
+ * endpoints do, without their check that the caller is a member. Only the operator, who is never
+ * one, writes through it; the Hub's admission decides (docs/reference/boundaries.md).
  */
 export async function organizationAdapter(auth: Auth) {
   const context = await auth.$context

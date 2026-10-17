@@ -29,6 +29,8 @@ and with the lock one owner in 20 of 20. Not run: a browser, Neon, real e-mail.
 
 Changing later moves people and identifiers.
 
+Step 4.2: a memberless company awaits its first owner.
+
 ## Reopens when
 
 After the step 4 study closes it: a login test fails because of the chosen tables.

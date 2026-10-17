@@ -156,8 +156,8 @@
   {
     "id": "owner-inviter-is-operator",
     "file": "apps/server/src/hub/identity/admission.ts",
-    "find": "  if (!(await isOperatorPerson(tx, personId, ACTIONS.inviteOwner.locks))) return undefined\n",
-    "replace": "",
+    "find": "  const operator = await operatorRow(tx, personId, ACTIONS.inviteOwner.locks)\n",
+    "replace": "  const [operator] = await tx.select().from(user).where(eq(user.id, personId))\n",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/companies.test.ts",
@@ -199,9 +199,9 @@
   },
   {
     "id": "client-owner-not-operator",
-    "file": "apps/server/src/hub/operations/clients.ts",
-    "find": "} else if (await identity.isOperator(tx, input.ownerEmail)) {",
-    "replace": "} else if (input.ownerEmail === undefined) {",
+    "file": "apps/server/src/hub/identity/clients.ts",
+    "find": "    await checkOwnerNotOperator(tx, input.ownerEmail)\n",
+    "replace": "",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/clients.test.ts",
@@ -376,8 +376,8 @@
   {
     "id": "invitation-bounce-marked",
     "file": "apps/server/src/hub/identity/invitation-mail.ts",
-    "find": "if (error instanceof Failure && error.code === 'MAIL_BOUNCED') await mark()",
-    "replace": "",
+    "find": "    await mark()\n    return { kind: 'BOUNCED' }",
+    "replace": "    return { kind: 'BOUNCED' }",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitations.test.ts",
@@ -657,6 +657,28 @@
       "cwd": "apps/server",
       "file": "src/platform/isolation.test.ts",
       "name": "operador sem papel"
+    }
+  },
+  {
+    "id": "invitation-member-native-endpoint",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "    return refusedAs(\n      () => auth.api.createInvitation({ headers: input.headers, body }),\n      INVITATION_REFUSALS,\n    )",
+    "replace": "    return (await organizationAdapter(auth)).createInvitation({\n      invitation: { ...body, teamIds: [] },\n      user: { id: admitted.personId },\n    })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "convidar: o administrador pedindo dono"
+    }
+  },
+  {
+    "id": "invitation-member-native-renewal",
+    "file": "apps/server/src/hub/identity/invitation-management.ts",
+    "find": "  if (admitted.kind === 'MEMBER') {\n",
+    "replace": "  if (admitted.kind !== admitted.kind) {\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "renovar: o administrador renovando o convite de um dono"
     }
   }
 ]

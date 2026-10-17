@@ -4,7 +4,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { SendMail } from '../../platform/mail.ts'
 import type { OperatorProof } from './admission.ts'
-import { admitOperator, isOperator } from './admission.ts'
+import { admitOperator } from './admission.ts'
 import { createAuth, libraryCommandOn } from './auth.ts'
 import {
   deleteCompanyOn,
@@ -50,7 +50,6 @@ export function createIdentity(deps: {
       libraryCommand,
       lockCompany,
       admitOperator,
-      isOperator,
       registerCompany: registerCompanyOn(auth),
       renameCompany: renameCompanyOn(auth),
       deleteCompany: deleteCompanyOn(auth),

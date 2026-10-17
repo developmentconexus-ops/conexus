@@ -1,4 +1,4 @@
-import { Client, registerClient } from '@conexus/hub-api'
+import { Client, FAILURES, registerClient } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -49,7 +49,7 @@ test('o endereço do administrador recusado: o cliente foi cadastrado e abre, di
   expect(await screen.findByRole('heading', { name: 'Empresa Teste' })).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/operations/clients/${CLIENT.companyId}`)
   expect((await screen.findByRole('status')).textContent).toBe(
-    'Cliente cadastrado. Esse endereço não recebe e-mails. Cancele o convite e use Convidar outro e-mail.',
+    `Cliente cadastrado. ${FAILURES.MAIL_BOUNCED.phrase} Cancele o convite e use Convidar outro e-mail.`,
   )
   expect(screen.getByRole('button', { name: 'Cancelar convite' })).toBeTruthy()
 })

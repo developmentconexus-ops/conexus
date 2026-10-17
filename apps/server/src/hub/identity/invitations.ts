@@ -12,12 +12,12 @@ import { z } from 'zod'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyProof, OwnerInviterProof } from './admission.ts'
-import { admitInviter, isOperator, mayInviteAs } from './admission.ts'
+import { admitInviter, isOperator, OWNER_INVITER_ROLE } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { organizationAdapter, storedAddress } from './auth.ts'
+import { organizationAdapter, refusedAs, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
 import type { Inviter } from './messages.ts'
-import { company, invitation, member, user } from './tables.ts'
+import { company, invitation, user } from './tables.ts'
 
 // The founder's number, step 4 answer 6: invitations per person and minute.
 const INVITATION_PACE = { most: 10, window: sql`interval '1 minute'` }
@@ -78,6 +78,7 @@ export function companyScope(input: { person: Person; companyId: CompanyId }) {
 
 type Invite = {
   person: Person
+  headers: Headers
   companyId: CompanyId
   email: Email
   role: Role
@@ -179,21 +180,27 @@ export async function lockedInviter(tx: CommandTx, personId: string) {
   return inviter
 }
 
-/** The plugin's endpoints refuse an address already in the company; its adapter does not. */
-export async function checkNotMember(tx: CommandTx, admitted: CompanyProof, email: string) {
-  const [joined] = await tx
-    .select({ id: member.id })
-    .from(member)
-    .innerJoin(user, eq(user.id, member.userId))
-    .where(and(eq(member.organizationId, admitted.companyId), eq(user.email, email)))
-  if (joined !== undefined) throw new Failure('MEMBER_EXISTS')
+/** The library's refusals of a member's invitation, as the Hub's failures (step 4.1). */
+export const INVITATION_REFUSALS = {
+  USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'MEMBER_EXISTS',
+  YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE: 'INVITATION_ROLE_REFUSED',
+} as const
+
+/** A client's first owner is never an operator: Conexus is never a member (step 4.2). */
+export async function checkOwnerNotOperator(tx: CommandTx, email: Email): Promise<void> {
+  if (await isOperator(tx, email)) throw new Failure('CLIENT_OWNER_IS_OPERATOR')
 }
 
 /**
- * The operator invites one first owner at a time, never an operator: Conexus is never a member
- * (step 4.2). An expired one the operator replaces is not live, so it does not count.
+ * The operator invites one first owner at a time, only as owner. An expired one the operator
+ * replaces is not live, so it does not count.
  */
-async function checkOwnerInvitation(tx: CommandTx, admitted: OwnerInviterProof, email: Email) {
+async function checkOwnerInvitation(
+  tx: CommandTx,
+  input: { admitted: OwnerInviterProof; email: Email; role: Role },
+) {
+  const { admitted } = input
+  if (input.role !== OWNER_INVITER_ROLE) throw new Failure('INVITATION_ROLE_REFUSED')
   const live = await tx.$count(
     invitation,
     and(
@@ -204,13 +211,32 @@ async function checkOwnerInvitation(tx: CommandTx, admitted: OwnerInviterProof, 
     ),
   )
   if (live > 0) throw new Failure('OWNER_INVITATION_OPEN')
-  if (await isOperator(tx, email)) throw new Failure('CLIENT_OWNER_IS_OPERATOR')
+  await checkOwnerNotOperator(tx, input.email)
 }
 
-/** Cancels the address's open invitation; a replacement also marks it superseded (4.1 decision B). */
-async function cancelOpen(auth: Auth, tx: CommandTx, invitationId: string, superseded: boolean) {
+/**
+ * Cancels an invitation: a member's through the plugin's endpoint, which checks their permission,
+ * and the operator's, who is no member, through its adapter (docs/reference/boundaries.md).
+ */
+export async function cancelThrough(
+  auth: Auth,
+  input: { admitted: CompanyProof; headers: Headers; invitationId: string },
+): Promise<void> {
+  const { invitationId } = input
+  if (input.admitted.kind === 'MEMBER') {
+    await auth.api.cancelInvitation({ headers: input.headers, body: { invitationId } })
+    return
+  }
   const adapter = await organizationAdapter(auth)
   await adapter.updateInvitation({ invitationId, status: 'canceled' })
+}
+
+type Open = { admitted: CompanyProof; headers: Headers; invitationId: string; superseded: boolean }
+
+/** Cancels the address's open invitation; a replacement also marks it superseded (4.1 decision B). */
+async function cancelOpen(auth: Auth, tx: CommandTx, input: Open) {
+  const { invitationId, superseded } = input
+  await cancelThrough(auth, input)
   await tx
     .update(invitation)
     .set({
@@ -221,8 +247,29 @@ async function cancelOpen(auth: Auth, tx: CommandTx, invitationId: string, super
 }
 
 /**
- * Invites an e-mail. The Hub owns who may invite with which role, the count of open invitations
- * and the pace of each person, under the company's lock; the plugin's adapter writes the row.
+ * Writes the invitation: a member's through the plugin's endpoint, which owns the roles and the
+ * member check (K21r, K23); the first owner's, by the operator who is no member, through its adapter.
+ */
+async function written(auth: Auth, admitted: CompanyProof, input: Invite, email: string) {
+  const { role, attemptKey } = input
+  const organizationId = admitted.companyId
+  if (admitted.kind === 'MEMBER') {
+    const body = { email, role, organizationId, attemptKey }
+    return refusedAs(
+      () => auth.api.createInvitation({ headers: input.headers, body }),
+      INVITATION_REFUSALS,
+    )
+  }
+  const adapter = await organizationAdapter(auth)
+  return adapter.createInvitation({
+    invitation: { email, role, organizationId, teamIds: [], attemptKey },
+    user: admitted.inviter,
+  })
+}
+
+/**
+ * Invites an e-mail. The Hub owns the count of open invitations and the pace of each person, under
+ * the company's lock, and the operator's one first owner; the plugin writes the row.
  */
 export function createInvitationCommand(deps: {
   auth: Auth
@@ -235,7 +282,8 @@ export function createInvitationCommand(deps: {
       await lockCompany(tx, input.companyId)
       const personId = input.person.id
       const admitted = await admitInviter({ tx, personId, companyId: input.companyId })
-      const inviter = await lockedInviter(tx, personId)
+      // The operator's admission already holds the row.
+      if (admitted.kind === 'MEMBER') await lockedInviter(tx, personId)
       const same = await attemptOf(tx, admitted, input.attemptKey)
       if (same !== undefined) {
         if (
@@ -255,9 +303,10 @@ export function createInvitationCommand(deps: {
         }
         return { invitation: pendingOf(same), mail: undefined, created: false }
       }
-      if (!mayInviteAs(admitted).includes(input.role)) throw new Failure('INVITATION_ROLE_REFUSED')
+      if (admitted.kind === 'OWNER_INVITER') {
+        await checkOwnerInvitation(tx, { admitted, email: input.email, role: input.role })
+      }
       await checkRoom(tx, admitted, email)
-      if (admitted.kind === 'OWNER_INVITER') await checkOwnerInvitation(tx, admitted, input.email)
       const open = await openOf(tx, admitted, email)
       if (input.replaces !== undefined) {
         if (
@@ -269,15 +318,13 @@ export function createInvitationCommand(deps: {
         )
           throw new Failure('INVITATION_STALE')
       }
-      if (open !== undefined) await cancelOpen(deps.auth, tx, open.id, input.replaces !== undefined)
-      await checkNotMember(tx, admitted, email)
+      if (open !== undefined) {
+        const superseded = input.replaces !== undefined
+        const { headers } = input
+        await cancelOpen(deps.auth, tx, { admitted, headers, invitationId: open.id, superseded })
+      }
       await checkPace(deps.database, tx, personId)
-      const { attemptKey, role } = input
-      const adapter = await organizationAdapter(deps.auth)
-      const created = await adapter.createInvitation({
-        invitation: { email, role, organizationId: admitted.companyId, teamIds: [], attemptKey },
-        user: inviter,
-      })
+      const created = await written(deps.auth, admitted, input, email)
       if (input.replaces !== undefined)
         await tx
           .update(invitation)

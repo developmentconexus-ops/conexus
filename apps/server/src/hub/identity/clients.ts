@@ -1,5 +1,5 @@
-import type { CompanyId, Email } from '@conexus/hub-api'
-import { Client, Company, OwnerInvitation } from '@conexus/hub-api'
+import type { Client, CompanyId, OwnerInvitation } from '@conexus/hub-api'
+import { Company, Email } from '@conexus/hub-api'
 import { and, asc, eq, inArray, min, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
@@ -10,9 +10,9 @@ import { organizationAdapter, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
 import { stateOf } from './invitation-reads.ts'
 import {
+  checkOwnerNotOperator,
   LIVE,
   lockCompany,
-  lockedInviter,
   PendingRow,
   pending,
   pendingOf,
@@ -29,7 +29,8 @@ const SentRow = PendingRow.extend({ status: Status, unmailed: z.boolean() })
  * Creates a client's company with no member and the invitation of its first owner, through the
  * plugin's adapter: its endpoint would make the caller a member (`crud-org.mjs:80-100`). The
  * attempt key is the company's slug and key and the invitation's key, so a replay finds both; the
- * same key with another name or address is a conflict (code C37).
+ * same key with another name or address is a conflict (code C37). The first owner is never an
+ * operator, the same rule as the operator's next owner invitation.
  */
 export function registerCompanyOn(auth: Auth) {
   return async (
@@ -61,6 +62,7 @@ export function registerCompanyOn(auth: Auth) {
       const mail = sent.unmailed ? pendingOf(sent) : undefined
       return { company: Company.parse(found), mail, created: false }
     }
+    await checkOwnerNotOperator(tx, input.ownerEmail)
     const adapter = await organizationAdapter(auth)
     const { attemptKey } = input
     const made = await adapter.createOrganization({
@@ -69,7 +71,7 @@ export function registerCompanyOn(auth: Auth) {
     const created = Company.parse({ id: made.id, name: made.name })
     const invited = await adapter.createInvitation({
       invitation: { email, role: 'owner', organizationId: created.id, teamIds: [], attemptKey },
-      user: await lockedInviter(tx, input.admitted.personId),
+      user: input.admitted.inviter,
     })
     const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invited.id))
     return { company: created, mail: pendingOf(PendingRow.parse(row)), created: true }
@@ -123,6 +125,7 @@ const InvitationRow = PendingRow.extend({
   live: z.boolean(),
   companyId: z.string(),
 })
+const OwnerRow = z.object({ companyId: z.string(), name: z.string().min(1), email: Email })
 
 /** The last owner invitation of each company, the newest first (C26: derived, never stored). */
 async function lastOwnerInvitations(tx: ReadTx, companyIds: CompanyId[]) {
@@ -148,12 +151,13 @@ async function lastOwnerInvitations(tx: ReadTx, companyIds: CompanyId[]) {
 }
 
 /** The owner invitation a company awaiting its first owner shows; an accepted one never is. */
-function ownerInvitationOf(row: z.infer<typeof InvitationRow>) {
-  return OwnerInvitation.parse({
-    ...row,
-    state: stateOf(row.status, row.live),
-    expiresAt: row.expiresAt.toISOString(),
-  })
+function ownerInvitationOf(row: z.infer<typeof InvitationRow>): OwnerInvitation {
+  const state = stateOf(row.status, row.live)
+  if (state === 'ACCEPTED') {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'accepted with no member' } })
+  }
+  const { id, email, revision } = row
+  return { id, email, state, revision, expiresAt: row.expiresAt.toISOString() }
 }
 
 /**
@@ -175,12 +179,14 @@ export async function readOperatedCompanies(
     .from(member)
     .where(inArray(member.organizationId, companyIds))
     .groupBy(member.organizationId)
-  const owners = await tx
-    .select({ companyId: member.organizationId, name: user.name, email: user.email })
-    .from(member)
-    .innerJoin(user, eq(user.id, member.userId))
-    .where(and(inArray(member.organizationId, companyIds), eq(member.role, 'owner')))
-    .orderBy(asc(user.name), asc(user.id))
+  const owners = (
+    await tx
+      .select({ companyId: member.organizationId, name: user.name, email: user.email })
+      .from(member)
+      .innerJoin(user, eq(user.id, member.userId))
+      .where(and(inArray(member.organizationId, companyIds), eq(member.role, 'owner')))
+      .orderBy(asc(user.name), asc(user.id))
+  ).map((row) => OwnerRow.parse(row))
   const activeSince = new Map(since.map((row) => [row.companyId, row.since]))
   const invitations = await lastOwnerInvitations(tx, companyIds)
   const operated = new Map<CompanyId, OperatedCompany>()
@@ -189,9 +195,11 @@ export async function readOperatedCompanies(
     const first = activeSince.get(id)
     const last = invitations.get(id)
     if (first != null) {
-      const ownersOf = owners.filter((owner) => owner.companyId === id)
-      const active = { kind: 'ACTIVE', activeSince: first.toISOString(), owners: ownersOf }
-      operated.set(id, { name, state: Client.shape.state.parse(active) })
+      const ownersOf = owners
+        .filter((owner) => owner.companyId === id)
+        .map((owner) => ({ name: owner.name, email: owner.email }))
+      const active = { kind: 'ACTIVE' as const, activeSince: first.toISOString(), owners: ownersOf }
+      operated.set(id, { name, state: active })
     } else if (last !== undefined) {
       const ownerInvitation = ownerInvitationOf(last)
       operated.set(id, { name, state: { kind: 'AWAITING_OWNER', ownerInvitation } })

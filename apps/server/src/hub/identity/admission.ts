@@ -4,6 +4,7 @@ import { defaultRoles } from 'better-auth/plugins/organization/access'
 import { and, eq, notExists } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { storedAddress } from './auth.ts'
 import { company, member, user } from './tables.ts'
 
 const INVITE = { invitation: ['create'] } as const
@@ -38,6 +39,9 @@ export type CompanyAction = {
 }[Action]
 type InstallationAction = Exclude<Action, CompanyAction | 'inviteOwner'>
 
+/** The one role the operator invites with: a client's first owner. */
+export const OWNER_INVITER_ROLE = ACTIONS.inviteOwner.role
+
 // The plugin's creator role: only a member who holds it may invite with it.
 const CREATOR: Role = 'owner'
 /** The admin plugin's administrator role, on the person, not a company (security S11). */
@@ -50,8 +54,15 @@ function allows(role: Role, action: CompanyAction): boolean {
 }
 
 let sealMember: (companyId: CompanyId, personId: PersonId, role: Role) => MemberProof
-let sealOwnerInviter: (companyId: CompanyId, personId: PersonId) => OwnerInviterProof
-let sealOperator: (personId: PersonId) => OperatorProof
+let sealOwnerInviter: (
+  companyId: CompanyId,
+  personId: PersonId,
+  inviter: OperatorRow,
+) => OwnerInviterProof
+let sealOperator: (personId: PersonId, inviter: OperatorRow) => OperatorProof
+
+/** The operator's row, read and held by the admission, which the plugin's adapter names as inviter. */
+export type OperatorRow = typeof user.$inferSelect
 
 // Each proof is nominal: its constructor is private and its private member keeps an object of the
 // same shape from passing as one, so only this file makes a proof (security S7, code C16).
@@ -80,15 +91,18 @@ export class OwnerInviterProof {
   readonly kind = 'OWNER_INVITER'
   readonly companyId: CompanyId
   readonly personId: PersonId
+  readonly inviter: OperatorRow
   declare private readonly nominal: never
 
-  private constructor(companyId: CompanyId, personId: PersonId) {
+  private constructor(companyId: CompanyId, personId: PersonId, inviter: OperatorRow) {
     this.companyId = companyId
     this.personId = personId
+    this.inviter = inviter
   }
 
   static {
-    sealOwnerInviter = (companyId, personId) => new OwnerInviterProof(companyId, personId)
+    sealOwnerInviter = (companyId, personId, inviter) =>
+      new OwnerInviterProof(companyId, personId, inviter)
   }
 }
 
@@ -96,14 +110,16 @@ export class OwnerInviterProof {
 export class OperatorProof {
   readonly kind = 'OPERATOR'
   readonly personId: PersonId
+  readonly inviter: OperatorRow
   declare private readonly nominal: never
 
-  private constructor(personId: PersonId) {
+  private constructor(personId: PersonId, inviter: OperatorRow) {
     this.personId = personId
+    this.inviter = inviter
   }
 
   static {
-    sealOperator = (personId) => new OperatorProof(personId)
+    sealOperator = (personId, inviter) => new OperatorProof(personId, inviter)
   }
 }
 
@@ -114,19 +130,20 @@ export function mayOperate(role: unknown): boolean {
   return role === INSTALLATION_ADMINISTRATOR
 }
 
-/** Whether the address belongs to the operator, as the library stores it, in lower case. */
+/** Whether the address belongs to the operator, as the library stores it. */
 export async function isOperator(tx: ReadTx, email: Email): Promise<boolean> {
   const [row] = await tx
     .select({ role: user.role })
     .from(user)
-    .where(eq(user.email, email.toLowerCase()))
+    .where(eq(user.email, storedAddress(email)))
   return mayOperate(row?.role)
 }
 
-async function isOperatorPerson(tx: ReadTx, personId: PersonId, locks: boolean) {
-  const query = tx.select({ role: user.role }).from(user).where(eq(user.id, personId))
+/** The person's row when their role makes them the operator, held until commit when `locks`. */
+async function operatorRow(tx: ReadTx, personId: PersonId, locks: boolean) {
+  const query = tx.select().from(user).where(eq(user.id, personId))
   const [row] = await (locks ? query.for('no key update') : query)
-  return mayOperate(row?.role)
+  return row !== undefined && mayOperate(row.role) ? row : undefined
 }
 
 /**
@@ -134,7 +151,8 @@ async function isOperatorPerson(tx: ReadTx, personId: PersonId, locks: boolean) 
  * accept cannot add the first owner between this read and the invitation (security S8).
  */
 async function admitOwnerInviter(tx: ReadTx, companyId: CompanyId, personId: PersonId) {
-  if (!(await isOperatorPerson(tx, personId, ACTIONS.inviteOwner.locks))) return undefined
+  const operator = await operatorRow(tx, personId, ACTIONS.inviteOwner.locks)
+  if (operator === undefined) return undefined
   const [awaiting] = await tx
     .select({ id: company.id })
     .from(company)
@@ -144,7 +162,7 @@ async function admitOwnerInviter(tx: ReadTx, companyId: CompanyId, personId: Per
         notExists(tx.select().from(member).where(eq(member.organizationId, company.id))),
       ),
     )
-  return awaiting === undefined ? undefined : sealOwnerInviter(companyId, personId)
+  return awaiting === undefined ? undefined : sealOwnerInviter(companyId, personId, operator)
 }
 
 type CompanyInput = { tx: ReadTx; personId: PersonId; companyId: CompanyId }
@@ -192,10 +210,9 @@ export async function admitOperator(input: {
   personId: PersonId
   action: InstallationAction
 }): Promise<OperatorProof> {
-  if (!(await isOperatorPerson(input.tx, input.personId, ACTIONS[input.action].locks))) {
-    throw new Failure('NOT_FOUND', { details: { reason: 'FORBIDDEN' } })
-  }
-  return sealOperator(input.personId)
+  const operator = await operatorRow(input.tx, input.personId, ACTIONS[input.action].locks)
+  if (operator === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'FORBIDDEN' } })
+  return sealOperator(input.personId, operator)
 }
 
 /**
@@ -208,7 +225,7 @@ export function mayInviteAs(admitted: CompanyProof): Role[] {
       if (!allows(admitted.role, 'invite')) return []
       return Role.options.filter((role) => role !== CREATOR || admitted.role === CREATOR)
     case 'OWNER_INVITER':
-      return [ACTIONS.inviteOwner.role]
+      return [OWNER_INVITER_ROLE]
     default:
       return admitted satisfies never
   }

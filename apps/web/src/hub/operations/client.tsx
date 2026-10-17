@@ -1,4 +1,5 @@
 import type { Client as ClientRecord } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -73,8 +74,7 @@ export function Client() {
         state.ownerInvitation.id === convite &&
         state.ownerInvitation.state === 'PENDING' && (
           <p role="status" className="text-text">
-            Cliente cadastrado. Esse endereço não recebe e-mails. Cancele o convite e use Convidar
-            outro e-mail.
+            {`Cliente cadastrado. ${FAILURES.MAIL_BOUNCED.phrase} Cancele o convite e use Convidar outro e-mail.`}
           </p>
         )}
       {correcting ? (
