@@ -14,12 +14,12 @@ after(async () => {
   assert.deepEqual(harness.unanswered, [], 'the page asked the Hub for something no reply covers')
 })
 
-/** Every stop the key reaches before focus leaves the page. */
+/** Every stop the key reaches before focus leaves the page, or, in a modal, comes round again. */
 async function walk(page: Page, key: string): Promise<string[]> {
   const stops: string[] = []
   for (let stop = 0; stop < 40; stop++) {
     const [reached] = await presses(page, key, 1)
-    if (reached === undefined || reached === 'body') return stops
+    if (reached === undefined || reached === 'body' || stops.includes(reached)) return stops
     stops.push(reached)
   }
   throw new Error(`${key} never left the page`)

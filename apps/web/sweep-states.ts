@@ -89,7 +89,7 @@ export const STATES: State[] = [
     name: 'cliente ativo',
     path: `/operations/clients/${CLIENT_ID}`,
     replies: central('ACTIVE'),
-    settle: (p) => waitFor(p, 'Donos'),
+    settle: (p) => waitFor(p, 'Convidar pessoa'),
   },
   {
     name: 'sem sessão',
@@ -161,6 +161,24 @@ export const STATES: State[] = [
       }),
     },
     settle: (p) => waitFor(p, 'Nenhum convite pendente.'),
+  },
+  {
+    name: 'tirar uma pessoa, a confirmação',
+    path: `/companies/${COMPANY.id}`,
+    replies: OWNER,
+    settle: async (page) => {
+      await page.getByRole('button', { name: /^Tirar da empresa:/ }).click()
+      await waitFor(page, 'Perde o acesso agora.')
+    },
+  },
+  {
+    name: 'mudar o papel de uma pessoa',
+    path: `/companies/${COMPANY.id}`,
+    replies: OWNER,
+    settle: async (page) => {
+      await page.getByRole('button', { name: /^Mudar papel:/ }).click()
+      await waitFor(page, 'Papel atual: Membro.')
+    },
   },
   {
     name: 'convite vencido na lista',

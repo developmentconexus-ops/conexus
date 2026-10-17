@@ -177,6 +177,7 @@ const ACTIVE = {
 export function central(client: 'AWAITING' | 'ACTIVE' | 'NONE'): Replies {
   const shown = client === 'ACTIVE' ? ACTIVE : CLIENT
   return {
+    ...(client === 'ACTIVE' ? companyPage('owner', ['owner'], CLIENT_ID) : {}),
     ...companies([], true),
     'GET /api/clients': ok(listClients, {
       clients: client === 'NONE' ? [] : [shown],
