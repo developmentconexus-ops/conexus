@@ -1,13 +1,26 @@
 name: Test database
 description: Makes the PostgreSQL service look as the tests expect, like a developer's container.
+inputs:
+  port:
+    description: The host port the job's postgres service is published on.
+    required: true
 runs:
   using: composite
   steps:
+    - name: The container that serves the tests
+      shell: bash
+      env:
+        PORT: ${{ inputs.port }}
+      run: |
+        container="$(docker ps --filter "publish=$PORT" --format '{{.ID}}')"
+        if [ -z "$container" ]; then
+          echo "no container publishes port $PORT"
+          exit 1
+        fi
+        echo "CONEXUS_TEST_DATABASE_CONTAINER=$container" >> "$GITHUB_ENV"
+        echo "CONEXUS_TEST_DATABASE_URL=postgres://conexus_owner:ci-owner@localhost:$PORT/postgres" >> "$GITHUB_ENV"
     - name: The owner of the test databases is not a superuser
       shell: bash
       run: >-
-        psql postgres://postgres:ci-superuser@localhost:5432/postgres
-        -c "create role conexus_owner login createdb createrole password 'ci-owner'"
-    - name: The container that serves the tests dumps the catalog
-      shell: bash
-      run: echo "CONEXUS_TEST_DATABASE_CONTAINER=$(docker ps --filter publish=5432 --format '{{.ID}}')" >> "$GITHUB_ENV"
+        docker exec "$CONEXUS_TEST_DATABASE_CONTAINER" psql --username postgres
+        --command "create role conexus_owner login createdb createrole password 'ci-owner'"
