@@ -133,8 +133,8 @@ or its origin.
   `deleteOrganization` (`adapter.mjs:370`) deletes the members, the invitations and the company
   and returns the id whether or not a row was there.
 - **Hand-made piece.** `deleteCompanyOn` in `identity/clients.ts`, called by `remove` in
-  `operations/clients.ts` after the client's row is deleted; a company still there afterwards is
-  `INTERNAL_UNEXPECTED`. A correction and a deletion lock the company, then the operator's row,
+  `operations/clients.ts` after the client's row is deleted. No check follows: the adapter
+  returns no row count, and a read afterwards passes the same row policy as the DELETE. A correction and a deletion lock the company, then the operator's row,
   then the client, the order the invitations and the accept keep (`lockCompany` first).
 - **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The
   test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens (removal

@@ -1,5 +1,5 @@
 import type { Client } from '@conexus/hub-api'
-import { FAILURES, listClients } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/al
 import { Button } from '../../ui/button.tsx'
 import { Form, FormAlert, setServerError, TextField, useSchemaForm } from '../../ui/form.tsx'
 import { undecided } from './client-fields.tsx'
-import { clientQuery, sendDeletion } from './queries.ts'
+import { allClientsQueryKey, clientQuery, sendDeletion } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos a exclusão. Veja a lista antes de tentar de novo.'
 const LOST =
@@ -33,7 +33,7 @@ function DeleteForm({ client, onCancel }: { client: Client; onCancel: () => void
 
   // The client is gone, deleted now or before: its page leaves, the list is read again (step 5).
   async function leave(notice: 'deleted' | 'gone') {
-    await queryClient.invalidateQueries({ queryKey: [listClients.id], refetchType: 'all' })
+    await queryClient.invalidateQueries({ queryKey: allClientsQueryKey, refetchType: 'all' })
     await router.navigate({ to: '/operations/clients', search: { notice } })
     queryClient.removeQueries({ queryKey: clientQuery(client.companyId).queryKey })
   }

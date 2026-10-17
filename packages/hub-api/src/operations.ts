@@ -1,6 +1,6 @@
 import { isValidCnpj } from '@brazilian-utils/brazilian-utils'
 import { z } from 'zod'
-import { CompanyId, CompanyName, InvitationId, Next, Page } from './companies.ts'
+import { CompanyId, CompanyName, InvitationId, Next, Page, Revision } from './companies.ts'
 import { Email } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -121,7 +121,7 @@ export const correctClient = defineOperation({
   bodyLimit: 1024,
   input: {
     params: OfClient,
-    body: ClientData.extend({ revision: z.number().int().nonnegative() }),
+    body: ClientData.extend(Revision.shape),
   },
   success: { status: 200, body: z.object({ client: Client }) },
   failures: [
@@ -143,7 +143,7 @@ export const deleteClient = defineOperation({
   bodyLimit: 1024,
   input: {
     params: OfClient,
-    body: z.object({ name: z.string(), revision: z.number().int().nonnegative() }),
+    body: Revision.extend({ name: CompanyName }),
   },
   success: { status: 204 },
   failures: [
