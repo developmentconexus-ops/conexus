@@ -1,8 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "17f0b6dd-40e0-459b-900f-9d02590cf4d0",
-  "prevIds": ["16680336-1de0-46bc-91bc-37cec10e9062"],
+  "id": "a2bcceb4-7aa6-4b18-82bd-0c500fb16647",
+  "prevIds": ["dc663d0f-a8c3-41b7-96bf-7394eff640cb"],
   "ddl": [
     {
       "name": "auth",
@@ -1534,11 +1534,44 @@
     },
     {
       "as": "PERMISSIVE",
-      "for": "ALL",
+      "for": "SELECT",
       "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
+      "withCheck": null,
+      "name": "operator_select",
+      "entityType": "policies",
+      "schema": "auth",
+      "table": "company"
+    },
+    {
+      "as": "PERMISSIVE",
+      "for": "INSERT",
+      "roles": ["hub_operator"],
+      "using": null,
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
-      "name": "operator_all",
+      "name": "operator_insert",
+      "entityType": "policies",
+      "schema": "auth",
+      "table": "company"
+    },
+    {
+      "as": "PERMISSIVE",
+      "for": "UPDATE",
+      "roles": ["hub_operator"],
+      "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), '')",
+      "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), '')",
+      "name": "operator_update",
+      "entityType": "policies",
+      "schema": "auth",
+      "table": "company"
+    },
+    {
+      "as": "PERMISSIVE",
+      "for": "DELETE",
+      "roles": ["hub_operator"],
+      "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), '')",
+      "withCheck": null,
+      "name": "operator_delete",
       "entityType": "policies",
       "schema": "auth",
       "table": "company"

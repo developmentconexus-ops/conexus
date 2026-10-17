@@ -689,7 +689,7 @@
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitations.test.ts",
-      "name": "renovar: o prazo novo do plugin cai"
+      "name": "renovar: o prazo novo do plugin cai|renovar: o administrador renovando o convite de um dono"
     }
   }
 ]
