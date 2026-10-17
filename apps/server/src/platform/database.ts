@@ -158,6 +158,30 @@ async function enter(tx: CommandTx, scope: Scope): Promise<void> {
   }
 }
 
+/**
+ * Runs `work` as the person of the company scope `tx` entered, then enters that scope again. After a
+ * database error the transaction is aborted, re-entry fails, and the first failure is the one that
+ * tells why; otherwise a caller that goes on is back in the company's scope.
+ */
+async function asPersonIn<T>(
+  scope: Scope | undefined,
+  tx: CommandTx,
+  work: (tx: CommandTx) => Promise<T>,
+): Promise<T> {
+  if (scope?.kind !== 'COMPANY') {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'asPerson outside COMPANY' } })
+  }
+  await enter(tx, { kind: 'PERSON', personId: scope.personId })
+  let result: T
+  try {
+    result = await work(tx)
+  } catch (error) {
+    await enter(tx, scope).catch(() => undefined)
+    throw error
+  }
+  await enter(tx, scope)
+  return result
+}
 export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Database {
   const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
   function lost(error: Error): void {
@@ -226,26 +250,7 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
     command: (scope, work) => inTransaction(NO_RELATIONS, scope, work, WRITE),
     libraryOrm: (relations) => drizzle({ client: pool, relations }),
     libraryCommand: (relations, scope, work) => inTransaction(relations, scope, work, WRITE),
-    asPerson: async (tx, work) => {
-      const scope = scopes.get(tx)
-      if (scope?.kind !== 'COMPANY') {
-        throw new Failure('INTERNAL_UNEXPECTED', {
-          details: { reason: 'asPerson outside COMPANY' },
-        })
-      }
-      await enter(tx, { kind: 'PERSON', personId: scope.personId })
-      let result: Awaited<ReturnType<typeof work>>
-      try {
-        result = await work(tx)
-      } catch (error) {
-        // Back to the company scope for a caller that goes on; after a database error the
-        // transaction is aborted, re-entry fails, and the first failure is the one that tells why.
-        await enter(tx, scope).catch(() => undefined)
-        throw error
-      }
-      await enter(tx, scope)
-      return result
-    },
+    asPerson: (tx, work) => asPersonIn(scopes.get(tx), tx, work),
     installation: (work) => inTransaction(NO_RELATIONS, undefined, work, WRITE),
     installationRead: (work) => inTransaction(NO_RELATIONS, undefined, work, READ),
     libraryInstallation: (relations, work) => inTransaction(relations, undefined, work, WRITE),
