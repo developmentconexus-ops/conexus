@@ -567,7 +567,7 @@
     "replace": "  read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>\n",
     "test": {
       "cwd": "apps/server",
-      "file": "src/platform/isolation.test.ts",
+      "file": "src/platform/database-type.test.ts",
       "name": "o tipo"
     }
   },
@@ -668,6 +668,28 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/invitations.test.ts",
       "name": "renovar: o prazo novo do plugin cai|renovar: o administrador renovando o convite de um dono"
+    }
+  },
+  {
+    "id": "session-row-policy",
+    "file": "apps/server/migrations/20261017170749_session_row_policies/migration.sql",
+    "find": "TO \"hub_company\" USING (user_id = nullif(current_setting('conexus.person_id', true), '')) WITH CHECK (user_id = nullif(current_setting('conexus.person_id', true), ''));",
+    "replace": "TO \"hub_company\" USING (true) WITH CHECK (true);",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "sessões"
+    }
+  },
+  {
+    "id": "session-link-not-inviter",
+    "file": "apps/server/migrations/20261017170749_session_row_policies/migration.sql",
+    "find": "and u.id = session.user_id)) WITH CHECK (",
+    "replace": "and u.id = session.user_id) or user_id = (select inviter_id from auth.invitation where id = nullif(current_setting('conexus.invitation_id', true), ''))) WITH CHECK (",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "sessões"
     }
   }
 ]
