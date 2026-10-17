@@ -4,16 +4,16 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 
 ## Overview
 
-- [AGENTS.md](../AGENTS.md): what every agent reads first; which skill for which stage.
+- [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
 - [README.md](../README.md): what this repository is, for a person, in Portuguese.
-- [roadmap.md](roadmap.md): the steps in order, the one in construction, each card's approval and each use line.
+- [roadmap.md](roadmap.md): the steps in order, the one in construction, each approval and use line.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
 - [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and putting back a Hub version.
 - [how-to/hub-mail.md](how-to/hub-mail.md): the invitation mail's token and addresses on the server.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): como restaurar o banco do Hub a um minuto e conferir.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 the server tests need.
 - [steps/](steps/): the card in construction; empty between steps.
-- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes itself instead of its library's, with the library's line.
+- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes instead of its library's, with the library's line.
 - [reference/components.md](reference/components.md): each screen piece and its tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): questions only a reader answers; builder and reviewer run it.
 
@@ -68,6 +68,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [0037](decisions/0037-postgresql-18-and-drizzle-1-for-the-hub-database.md) PostgreSQL 18 and Drizzle 1.0.
 - [0038](decisions/0038-database-logins-by-sql-checked-by-a-catalog-snapshot.md) logins by SQL, catalog snapshot.
 - [0039](decisions/0039-company-scope-and-row-policy-in-the-hub.md) company row policy.
+- [0040](decisions/0040-company-database-through-neon.md) Neon.
 
 ## Skills
 
