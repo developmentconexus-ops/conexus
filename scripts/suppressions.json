@@ -1,6 +1,7 @@
 {
   "apps/server/src/hub/identity/admission.check.ts": 6,
   "apps/server/src/hub/identity/auth.ts": 1,
+  "apps/server/src/platform/database.check.ts": 6,
   "apps/server/src/platform/http.check.ts": 1,
   "apps/server/src/platform/http.test.ts": 1
 }
