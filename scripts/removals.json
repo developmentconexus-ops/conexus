@@ -867,5 +867,38 @@
       "file": "src/hub/identity/password-check.test.ts",
       "name": "link primeiro"
     }
+  },
+  {
+    "id": "project-company-policy",
+    "file": "apps/server/migrations/20261017223141_projects_tables/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"projects\".\"project\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''))",
+    "replace": "CREATE POLICY \"company_all\" ON \"projects\".\"project\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-projects.test.ts",
+      "name": "projetos: sem filtro"
+    }
+  },
+  {
+    "id": "company-database-policy",
+    "file": "apps/server/migrations/20261017223141_projects_tables/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"projects\".\"company_database\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''))",
+    "replace": "CREATE POLICY \"company_all\" ON \"projects\".\"company_database\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-projects.test.ts",
+      "name": "projetos: sem filtro"
+    }
+  },
+  {
+    "id": "project-name-lower",
+    "file": "apps/server/migrations/20261017223141_projects_tables/migration.sql",
+    "find": "CREATE UNIQUE INDEX \"project_company_name_key\" ON \"projects\".\"project\" (\"company_id\",lower(\"name\"))",
+    "replace": "CREATE UNIQUE INDEX \"project_company_name_key\" ON \"projects\".\"project\" (\"company_id\",\"name\")",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/tables.test.ts",
+      "name": "mesmo nome em outra caixa"
+    }
   }
 ]
