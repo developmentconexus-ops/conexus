@@ -182,6 +182,7 @@ async function asPersonIn<T>(
   await enter(tx, scope)
   return result
 }
+
 export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Database {
   const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
   function lost(error: Error): void {
