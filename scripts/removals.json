@@ -178,8 +178,8 @@
   {
     "id": "client-one-transaction",
     "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
-    "replace": "await work(tx),",
+    "find": "      scope,\n      async (tx) =>\n        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
+    "replace": "      scope,\n      async (tx) =>\n        await work(tx),",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/clients.test.ts",
@@ -220,14 +220,14 @@
     }
   },
   {
-    "id": "membership-page-anchor-scoped",
-    "file": "apps/server/src/hub/identity/companies.ts",
-    "find": ".where(and(eq(company.id, id), eq(member.userId, personId))),",
-    "replace": ".where(eq(company.id, id)),",
+    "id": "person-member-policy",
+    "file": "apps/server/migrations/20261017042527_company_row_policies/migration.sql",
+    "find": "CREATE POLICY \"person_select\" ON \"auth\".\"member\" AS PERMISSIVE FOR SELECT TO \"hub_person\" USING (user_id = nullif(current_setting('conexus.person_id', true), ''));",
+    "replace": "CREATE POLICY \"person_select\" ON \"auth\".\"member\" AS PERMISSIVE FOR SELECT TO \"hub_person\" USING (true);",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/identity/companies.test.ts",
-      "name": "lista: só as empresas de quem pede"
+      "file": "src/platform/isolation.test.ts",
+      "name": "positivo"
     }
   },
   {
@@ -332,8 +332,8 @@
   {
     "id": "accept-one-transaction",
     "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
-    "replace": "await libraryContext.runWithAdapter(adapterFor(tx)(auth.options), () => work(tx)),",
+    "find": "      scope,\n      async (tx) =>\n        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
+    "replace": "      scope,\n      async (tx) =>\n        await libraryContext.runWithAdapter(adapterFor(tx)(auth.options), () => work(tx)),",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-acceptance.test.ts",
@@ -646,6 +646,17 @@
       "cwd": "apps/server",
       "file": "src/hub/operations/client-reads.test.ts",
       "name": "corrigir: contra a renovação do convite de dono"
+    }
+  },
+  {
+    "id": "operator-company-scope",
+    "file": "apps/server/migrations/20261017110517_operator_company_scope/migration.sql",
+    "find": "FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), ''));",
+    "replace": "FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')));",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "operador sem papel"
     }
   }
 ]

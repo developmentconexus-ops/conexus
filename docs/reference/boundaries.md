@@ -465,8 +465,10 @@ or its origin.
   its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
-  "lista: só as empresas de quem pede" in `companies.test.ts` fails when the anchor leaves the
-  list's scope (removal `membership-page-anchor-scoped`).
+  "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since step 5
+  the person scope's member policy holds the same rule, so removing the anchor's filter alone
+  changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
+  `person-member-policy`).
 
 ### Every transaction opens in a scope
 
