@@ -41,7 +41,8 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
   403 for an existing id and 404 for an absent one allow company enumeration. [review]
 - **S11.** Administration **should** retain at least one active company owner and one installation
   administrator, even under concurrent removals; installation authority is not a company role, and
-  the operator is never a member of a client's company. Failure: two transactions each see two owners and together remove both. [review]
+  the operator is never a member of a client's company. Failure: two transactions each see two
+  owners and together remove both. [review]
 - **S12.** Entry **should** be granted only to the invited e-mail verified by sign-in and with the
   role an authorized issuer stored, never a permission field from sign-up. Failure: forwarding a
   link to another e-mail transfers a role never granted to that person. [review]

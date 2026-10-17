@@ -581,5 +581,16 @@
       "file": "src/hub/identity/invitations.test.ts",
       "name": "convidar: o administrador pedindo dono"
     }
+  },
+  {
+    "id": "invitation-member-native-renewal",
+    "file": "apps/server/src/hub/identity/invitation-management.ts",
+    "find": "  if (admitted.kind === 'MEMBER') {\n",
+    "replace": "  if (admitted.kind !== admitted.kind) {\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "renovar: o administrador renovando o convite de um dono"
+    }
   }
 ]

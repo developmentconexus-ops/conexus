@@ -111,25 +111,28 @@ or its origin.
   owner's invitation, its cancel and its renewal when the admission is the operator's
   (`OwnerInviterProof`) in `invitations.ts` and `invitation-management.ts`. The Hub's admission
   decides who writes (`admitOperator`, `admitInviter`), the role is only owner, and a renewal writes
-  its expiry from the plugin's option (`invitationExpiry` in `auth.ts`). A member's invitation, cancel
-  and renewal go through the endpoints, `auth.api.createInvitation`, `cancelInvitation` and
+  its expiry from the plugin's option (`invitationExpiry` in `auth.ts`). A member's invitation,
+  cancel and renewal go through the endpoints, `auth.api.createInvitation`, `cancelInvitation` and
   `createInvitation` with `resend: true`, which own the roles, the member check and the expiry, as
   in step 4.1. On the operator's path the adapter runs none of the endpoints' hooks: an
   `organizationHooks` invitation hook, `sendInvitationEmail` or `cancelPendingInvitationsOnReInvite`
   turned on later would be bypassed there, and none is on. The call carries one `@ts-expect-error`:
   the parameter is typed `AuthContext<BetterAuthOptions>`, which no configured auth's context
   matches.
-- **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus
-  never becomes one, so the operator invites the first owner without a membership, which no endpoint
+- **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus never
+  becomes one, so the operator invites the first owner without a membership, which no endpoint
   admits. Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
   2026-10-17 ([delivery L12](../guides/delivery.md)). "convidar: o administrador pedindo dono…" in
   `invitations.test.ts` fails when a member's invitation is written by the adapter instead (removal
   `invitation-member-native-endpoint`): the Hub no longer checks the creator role or an existing
-  member itself. The test "sem membro" in
-  `hub/operations/clients.test.ts` fails when the company is created by the endpoint (removal
-  `operator-not-member`); "recusas" fails when the adapter writes outside the Hub's transaction
-  (removal `client-one-transaction`). When the library changes, reread `getOrgAdapter`'s
-  signature and these four methods.
+  member itself. "renovar: o administrador renovando o convite de um dono…" fails when a member's
+  renewal skips the endpoint (removal `invitation-member-native-renewal`). A member's cancel has no
+  such row: the admission already requires `invitation: ["create"]`, every default role that holds
+  it also holds `cancel`, and the endpoint writes the same status, so no test can tell the endpoint
+  from the adapter there. The test "sem membro" in `hub/operations/clients.test.ts` fails when the
+  company is created by the endpoint (removal `operator-not-member`); "recusas" fails when the
+  adapter writes outside the Hub's transaction (removal `client-one-transaction`). When the library
+  changes, reread `getOrgAdapter`'s signature and these four methods.
 
 ### Sign-in and the first password reach the library through a request we build
 
@@ -226,13 +229,13 @@ or its origin.
 - **Hand-made piece.** `openOf` in `invitations.ts` finds the pending row without a clock. An
   explicit expired replacement compares its id/revision/email/role under the company lock, cancels
   through the plugin (a member's by the endpoint, the operator's by the adapter), stamps
-  `superseded_at` and creates the same way, in one transaction. The old link reads EXPIRED. The new row's `replaces` retains the original request
-  for complete attempt-key payload comparison. `invitation-management.ts` admits current
-  administrators, and the operator on a company awaiting its first owner, and recognizes explicit
-  canceled replay before comparing revision; accepted, declined and superseded rows cannot cancel.
-  A member's live renewal is native `resend: true`; the operator's writes the new `expires_at`
-  itself, as native resend computes it (`invitationExpiry` in `auth.ts`). Both advance revision and
-  clear `mailed_at`.
+  `superseded_at` and creates the same way, in one transaction. The old link reads EXPIRED. The new
+  row's `replaces` retains the original request for complete attempt-key payload comparison.
+  `invitation-management.ts` admits current administrators, and the operator on a company awaiting
+  its first owner, and recognizes explicit canceled replay before comparing revision; accepted,
+  declined and superseded rows cannot cancel. A member's live renewal is native `resend: true`; the
+  operator's writes the new `expires_at` itself, as native resend computes it (`invitationExpiry` in
+  `auth.ts`). Both advance revision and clear `mailed_at`.
 - **Why.** The founder's 4.1 decision B. An expired row still holds the unique pending-address
   index, and the native cancel alone cannot distinguish replacement from explicit cancellation.
   `invitation-lifecycle.test.ts` covers link identity, terminal replay without writes, full-payload
@@ -284,11 +287,10 @@ or its origin.
   bounce, and answers which (`MailOutcome`). A member's invitation to a refused address answers
   `MAIL_BOUNCED`; a client's registration still answers 201 with `mailBounced`, and the Central
   shows "Esse endereço não recebe e-mails." only while that invitation is the client's live one,
-  after which the address shows as an ordinary "Aguardando o administrador" invitation (step 4.2).
-  A replay with the same
-  attempt key of a pending, unexpired, unmarked invitation answers the mail data again, so the route
-  sends again: delivery is at least once. The mark compares the sent revision, so a late reply
-  for an earlier send cannot mark a renewed invitation. `mailed_at` is an
+  after which the address shows as an ordinary "Aguardando o administrador" invitation (step 4.2). A
+  replay with the same attempt key of a pending, unexpired, unmarked invitation answers the mail
+  data again, so the route sends again: delivery is at least once. The mark compares the sent
+  revision, so a late reply for an earlier send cannot mark a renewed invitation. `mailed_at` is an
   additional field with `input: false`, which leaves it out of the plugin's request body
   (`better-auth/dist/db/to-zod.mjs:17`).
 - **Why.** [Code C37](../guides/code.md). Sent inside the transaction, a slow provider holds the
