@@ -181,7 +181,11 @@ export const company = auth.table(
       'all',
       sql`exists (select 1 from auth.invitation i where i.id = ${invitationId} and i.company_id = company.id)`,
     ),
-    policy(SCOPE_ROLES.OPERATOR, 'all', ADMINISTRATOR),
+    // The Central reads and creates any company; it changes or deletes only its scope's company.
+    policy(SCOPE_ROLES.OPERATOR, 'select', ADMINISTRATOR),
+    policy(SCOPE_ROLES.OPERATOR, 'insert', ADMINISTRATOR),
+    policy(SCOPE_ROLES.OPERATOR, 'update', sql`${ADMINISTRATOR} and id = ${companyId}`),
+    policy(SCOPE_ROLES.OPERATOR, 'delete', sql`${ADMINISTRATOR} and id = ${companyId}`),
   ],
 )
 

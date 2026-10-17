@@ -57,6 +57,8 @@ const OpenInvitation = z.object({
   company: Company,
   role: Role,
   inviterName: z.string().min(1),
+  /** The company has no member yet: Conexus invites its first owner (step 4.2). */
+  firstOwner: z.boolean(),
   expiresAt: z.iso.datetime(),
   revision: z.number().int().nonnegative(),
 })
@@ -195,7 +197,8 @@ export const getInvitation = defineOperation({
   failures: ['NOT_FOUND', 'DATABASE_UNAVAILABLE'],
 })
 
-const Revision = z.object({ revision: z.number().int().nonnegative() })
+/** The revision a write was read at (code C38). */
+export const Revision = z.object({ revision: z.number().int().nonnegative() })
 
 const CompanyInvitation = InCompany.extend({ invitationId: InvitationId })
 

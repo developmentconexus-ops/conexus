@@ -55,6 +55,7 @@ test('read: the invitee sees the pending details; another session sees only itse
     company: { id: companyId, name: 'Empresa Teste' },
     role: 'admin',
     inviterName: 'Ana Lima',
+    firstOwner: false,
   })
   const refused = await read(hub, outsider, invitationId)
   assert.deepEqual(refused.json(), {

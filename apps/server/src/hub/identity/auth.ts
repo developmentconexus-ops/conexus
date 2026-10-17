@@ -56,9 +56,9 @@ export const PASSWORD_LINK_SECONDS = 900
 // The founder's number, step 4 answer 4.
 const INVITATION_SECONDS = 2 * 24 * 60 * 60
 
-/** When an invitation renewed now ends, as the plugin computes it for a new one (`getDate`). */
+/** When an invitation renewed now ends, from the plugin's own option, as `getDate` computes it. */
 export function invitationExpiry(): Date {
-  return new Date(Date.now() + INVITATION_SECONDS * 1000)
+  return new Date(Date.now() + ORGANIZATION.invitationExpiresIn * 1000)
 }
 
 // The library logs without the request; a sign-in runs inside this store so its lines carry the trace id.
@@ -151,6 +151,30 @@ function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
   })
 }
 
+/**
+ * Each call of the library's adapter goes to the transaction open on this request, as its internal
+ * adapter's do: the plugin's resend writes through the plain adapter (`crud-invites.mjs:135-143`),
+ * which would leave the scope's transaction for the Hub's login.
+ */
+function joiningTransaction(adapter: ReturnType<typeof adapterFor>): ReturnType<typeof adapterFor> {
+  return (options) => {
+    const base = adapter(options)
+    const joining = new Proxy(base, {
+      get(target, key) {
+        const value = Reflect.get(target, key)
+        if (typeof value !== 'function') return value
+        return async (...args: unknown[]) => {
+          // Outside a transaction the library stores this adapter itself as the current one.
+          const found = await libraryContext.getCurrentAdapter(target)
+          const current = found === joining ? target : found
+          return Reflect.apply(Reflect.get(current, key), current, args)
+        }
+      },
+    })
+    return joining
+  }
+}
+
 export type LibraryCommand = <T>(scope: Scope, work: (tx: CommandTx) => Promise<T>) => Promise<T>
 
 /**
@@ -222,8 +246,8 @@ const ORGANIZATION = {
 
 /**
  * The plugin's own adapter, inside a library command: it writes a company and an invitation as its
- * endpoints do, without their check that the caller is a member. The Hub's admission decides
- * instead, for members and the operator alike (docs/reference/boundaries.md).
+ * endpoints do, without their check that the caller is a member. Only the operator, who is never
+ * one, writes through it; the Hub's admission decides (docs/reference/boundaries.md).
  */
 export async function organizationAdapter(auth: Auth) {
   const context = await auth.$context
@@ -262,7 +286,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     basePath: BASE_PATH,
     baseURL: deps.config.publicOrigin,
     secret: deps.config.sessionSecret.reveal(),
-    database: adapterFor(deps.database.libraryOrm(relations)),
+    database: joiningTransaction(adapterFor(deps.database.libraryOrm(relations))),
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,
@@ -288,8 +312,6 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       },
     },
     advanced: {
-      // One query per join, on the relations of tables.ts, not one more per joined row.
-      database: { joins: true },
       // __Host- comes from the names below; the library would otherwise prefix __Secure-.
       useSecureCookies: false,
       cookies: {

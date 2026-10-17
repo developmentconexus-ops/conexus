@@ -136,9 +136,13 @@ test('apagar: recusas, revisão velha 412, nome diferente 422, repetido 404 igua
   const { hub, ana, a } = await twoClients(t)
   const stale = await remove(hub, ana, a.companyId, { name: 'Empresa A', revision: 1 })
   assert.deepEqual([stale.statusCode, codeOf(stale)], [412, 'CLIENT_STALE'])
-  for (const name of ['empresa a', 'Empresa A ', 'Empresa A Ltda', '']) {
+  for (const name of ['empresa a', 'Empresa A Ltda']) {
     const mismatch = await remove(hub, ana, a.companyId, { name, revision: 0 })
     assert.deepEqual([mismatch.statusCode, codeOf(mismatch)], [422, 'CLIENT_NAME_MISMATCH'], name)
+  }
+  for (const name of ['', ' ', 'A'.repeat(101)]) {
+    const malformed = await remove(hub, ana, a.companyId, { name, revision: 0 })
+    assert.deepEqual([malformed.statusCode, codeOf(malformed)], [400, 'REQUEST_MALFORMED'], name)
   }
   assert.deepEqual(await rowsOf(hub, a.companyId), ACTIVE)
   await hub.test.asOwner(`create function public.refuse_write() returns trigger

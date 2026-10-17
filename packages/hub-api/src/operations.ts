@@ -1,6 +1,6 @@
 import { isValidCnpj } from '@brazilian-utils/brazilian-utils'
 import { z } from 'zod'
-import { CompanyId, CompanyName, InvitationId, Next, Page } from './companies.ts'
+import { CompanyId, CompanyName, InvitationId, Next, Page, Revision } from './companies.ts'
 import { Email } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -98,13 +98,14 @@ export const registerClient = defineOperation({
   bodyLimit: 4096,
   input: { body: ClientData.extend({ ownerEmail: Email }) },
   attemptKey: true,
-  success: { status: 201, body: z.object({ client: Client }) },
+  // `mailBounced`: the client is registered, and the provider refused its administrator's address
+  // on this answer; the operator invites another e-mail from the client.
+  success: { status: 201, body: z.object({ client: Client, mailBounced: z.boolean() }) },
   failures: [
     'NOT_FOUND',
     'CLIENT_EXISTS',
     'CLIENT_OWNER_IS_OPERATOR',
     'IDEMPOTENCY_CONFLICT',
-    'MAIL_BOUNCED',
     'MAIL_UNAVAILABLE',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
@@ -120,7 +121,7 @@ export const correctClient = defineOperation({
   bodyLimit: 1024,
   input: {
     params: OfClient,
-    body: ClientData.extend({ revision: z.number().int().nonnegative() }),
+    body: ClientData.extend(Revision.shape),
   },
   success: { status: 200, body: z.object({ client: Client }) },
   failures: [
@@ -142,7 +143,7 @@ export const deleteClient = defineOperation({
   bodyLimit: 1024,
   input: {
     params: OfClient,
-    body: z.object({ name: z.string(), revision: z.number().int().nonnegative() }),
+    body: Revision.extend({ name: CompanyName }),
   },
   success: { status: 204 },
   failures: [

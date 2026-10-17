@@ -254,6 +254,21 @@ test('operador sem papel: em OPERATOR, quem não é administrador, ou sem pessoa
     where legal_name = 'Outra'`),
     [{ renamed: 0 }],
   )
+  // The administrator in A's scope changes and deletes A alone, with no filter written; C, with
+  // no member, invitation or client, could be deleted if the policy let it.
+  await asOwner(`insert into auth.company (id, name, slug, created_at, attempt_key)
+    values ('companyCCCCCCCCCCCCCCCCCCCCCCCCC', 'C', 'c', now(), 'c')`)
+  const inOperatedA: Scope = { kind: 'OPERATOR', personId: OPERATOR, companyId: A }
+  const touched = await database.command(inOperatedA, async (tx) => ({
+    renamed: (await tx.execute(sql`update auth.company set name = name returning id`)).rows,
+    deleted: (await tx.execute(sql`delete from auth.company where id <> ${A} returning id`)).rows,
+  }))
+  assert.deepEqual(touched, { renamed: [{ id: A }], deleted: [] })
+  assert.deepEqual(await asOwner('select id from auth.company order by id'), [
+    { id: A },
+    { id: B },
+    { id: 'companyCCCCCCCCCCCCCCCCCCCCCCCCC' },
+  ])
 })
 
 test('conexão reciclada: A, B e sem contexto, com commit, rollback e savepoint, não deixam contexto', async (t) => {

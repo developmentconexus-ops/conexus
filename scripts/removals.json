@@ -156,8 +156,8 @@
   {
     "id": "owner-inviter-is-operator",
     "file": "apps/server/src/hub/identity/admission.ts",
-    "find": "  if (!(await isOperatorPerson(tx, personId, ACTIONS.inviteOwner.locks))) return undefined\n",
-    "replace": "",
+    "find": "  const operator = await operatorRow(tx, personId, ACTIONS.inviteOwner.locks)\n",
+    "replace": "  const [operator] = await tx.select().from(user).where(eq(user.id, personId))\n",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/companies.test.ts",
@@ -178,8 +178,8 @@
   {
     "id": "client-one-transaction",
     "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
-    "replace": "await work(tx),",
+    "find": "      scope,\n      async (tx) =>\n        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
+    "replace": "      scope,\n      async (tx) =>\n        await work(tx),",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/clients.test.ts",
@@ -199,9 +199,9 @@
   },
   {
     "id": "client-owner-not-operator",
-    "file": "apps/server/src/hub/operations/clients.ts",
-    "find": "} else if (await identity.isOperator(tx, input.ownerEmail)) {",
-    "replace": "} else if (input.ownerEmail === undefined) {",
+    "file": "apps/server/src/hub/identity/clients.ts",
+    "find": "    await checkOwnerNotOperator(tx, input.ownerEmail)\n",
+    "replace": "",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/clients.test.ts",
@@ -220,14 +220,14 @@
     }
   },
   {
-    "id": "membership-page-anchor-scoped",
-    "file": "apps/server/src/hub/identity/companies.ts",
-    "find": ".where(and(eq(company.id, id), eq(member.userId, personId))),",
-    "replace": ".where(eq(company.id, id)),",
+    "id": "person-member-policy",
+    "file": "apps/server/migrations/20261017042527_company_row_policies/migration.sql",
+    "find": "CREATE POLICY \"person_select\" ON \"auth\".\"member\" AS PERMISSIVE FOR SELECT TO \"hub_person\" USING (user_id = nullif(current_setting('conexus.person_id', true), ''));",
+    "replace": "CREATE POLICY \"person_select\" ON \"auth\".\"member\" AS PERMISSIVE FOR SELECT TO \"hub_person\" USING (true);",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/identity/companies.test.ts",
-      "name": "lista: só as empresas de quem pede"
+      "file": "src/platform/isolation.test.ts",
+      "name": "positivo"
     }
   },
   {
@@ -332,8 +332,8 @@
   {
     "id": "accept-one-transaction",
     "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
-    "replace": "await libraryContext.runWithAdapter(adapterFor(tx)(auth.options), () => work(tx)),",
+    "find": "      scope,\n      async (tx) =>\n        await libraryContext.runWithTransaction(adapterFor(tx)(auth.options), () => work(tx)),",
+    "replace": "      scope,\n      async (tx) =>\n        await libraryContext.runWithAdapter(adapterFor(tx)(auth.options), () => work(tx)),",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-acceptance.test.ts",
@@ -376,8 +376,8 @@
   {
     "id": "invitation-bounce-marked",
     "file": "apps/server/src/hub/identity/invitation-mail.ts",
-    "find": "if (error instanceof Failure && error.code === 'MAIL_BOUNCED') await mark()",
-    "replace": "",
+    "find": "    await mark()\n    return { kind: 'BOUNCED' }",
+    "replace": "    return { kind: 'BOUNCED' }",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitations.test.ts",
@@ -635,6 +635,61 @@
       "cwd": "apps/server",
       "file": "src/hub/operations/client-deletion.test.ts",
       "name": "apagar: concorrência com o link"
+    }
+  },
+  {
+    "id": "client-correction-company-lock",
+    "file": "apps/server/src/hub/operations/clients.ts",
+    "find": "    await identity.lockCompany(tx, input.companyId)\n    const personId = input.person.id\n    const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })",
+    "replace": "    const personId = input.person.id\n    const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-reads.test.ts",
+      "name": "corrigir: contra a renovação do convite de dono"
+    }
+  },
+  {
+    "id": "operator-company-scope",
+    "file": "apps/server/migrations/20261017110517_operator_company_scope/migration.sql",
+    "find": "FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), ''));",
+    "replace": "FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')));",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "operador sem papel"
+    }
+  },
+  {
+    "id": "invitation-member-native-endpoint",
+    "file": "apps/server/src/hub/identity/invitations.ts",
+    "find": "    return refusedAs(\n      () => auth.api.createInvitation({ headers: input.headers, body }),\n      INVITATION_REFUSALS,\n    )",
+    "replace": "    return (await organizationAdapter(auth)).createInvitation({\n      invitation: { ...body, teamIds: [] },\n      user: { id: admitted.personId },\n    })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "convidar: o administrador pedindo dono"
+    }
+  },
+  {
+    "id": "invitation-member-native-renewal",
+    "file": "apps/server/src/hub/identity/invitation-management.ts",
+    "find": "  if (admitted.kind === 'MEMBER') {\n",
+    "replace": "  if (admitted.kind !== admitted.kind) {\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "renovar: o administrador renovando o convite de um dono"
+    }
+  },
+  {
+    "id": "library-adapter-joins-transaction",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    database: joiningTransaction(adapterFor(deps.database.libraryOrm(relations))),",
+    "replace": "    database: adapterFor(deps.database.libraryOrm(relations)),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "renovar: o prazo novo do plugin cai"
     }
   }
 ]

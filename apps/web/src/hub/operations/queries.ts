@@ -8,11 +8,13 @@ import {
   registerClient,
   renewInvitation,
 } from '@conexus/hub-api'
-import { hubMutation, hubQuery } from '../../platform/hub.ts'
+import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
 export function clientsQuery(page: string | undefined) {
   return hubQuery(listClients, { query: { page } })
 }
+/** Every page of the Central's list. */
+export const allClientsQueryKey = hubQueryPrefix(listClients)
 export function clientQuery(companyId: CompanyId) {
   return hubQuery(getClient, { params: { companyId } })
 }

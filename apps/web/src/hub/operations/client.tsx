@@ -1,4 +1,5 @@
 import type { Client as ClientRecord } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -41,8 +42,8 @@ function Owners({ owners }: { owners: { name: string; email: string }[] }) {
           <Row key={owner.email}>
             <div className={rowBody({ kind: 'wrapping' })}>
               <span className="flex min-w-0 flex-col">
-                <span className="truncate">{owner.name}</span>
-                <span className="truncate text-label text-text-2">{owner.email}</span>
+                <span className="break-words">{owner.name}</span>
+                <span className="break-words text-label text-text-2">{owner.email}</span>
               </span>
             </div>
           </Row>
@@ -58,16 +59,24 @@ function Owners({ owners }: { owners: { name: string; email: string }[] }) {
  */
 export function Client() {
   const { companyId } = route.useParams()
+  const { convite } = route.useSearch()
   const { data } = useSuspenseQuery(clientQuery(companyId))
   const { client } = data
   const [correcting, setCorrecting] = useState(false)
   const { state } = client
   return (
     <div className="flex flex-col gap-xl">
-      <PageTitle className="truncate">{client.name}</PageTitle>
+      <PageTitle className="break-words">{client.name}</PageTitle>
       <p className="text-label text-text-2">
         {state.kind === 'ACTIVE' ? 'Ativo' : 'Aguardando o administrador'}
       </p>
+      {state.kind === 'AWAITING_OWNER' &&
+        state.ownerInvitation.id === convite &&
+        state.ownerInvitation.state === 'PENDING' && (
+          <p role="status" className="text-text">
+            {`Cliente cadastrado. ${FAILURES.MAIL_BOUNCED.phrase} Cancele o convite e use Convidar outro e-mail.`}
+          </p>
+        )}
       {correcting ? (
         <CorrectClientForm client={client} onDone={() => setCorrecting(false)} />
       ) : (

@@ -18,7 +18,13 @@ export const Route = createFileRoute('/_app')({
 
 function AppFrame() {
   const { person } = Route.useRouteContext()
-  const place = useMatches({ select: (matches) => matches.at(-1)?.staticData.place })
+  // A page that is not found names no place: the Central's name is not shown to whoever it hides from.
+  const place = useMatches({
+    select: (matches) => {
+      const last = matches.at(-1)
+      return last?.status === 'notFound' ? undefined : last?.staticData.place
+    },
+  })
   return (
     <Frame place={place ?? ''} places={PLACES} account={<AccountMenu person={person} />}>
       <Outlet />

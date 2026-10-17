@@ -100,7 +100,21 @@ or its origin.
   mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
   `first-person-lock`).
 
-### A company with no member and every invitation, through the plugin's adapter
+### The plain adapter joins that transaction too
+
+- **Library line.** `@better-auth/core/context` exports `getCurrentAdapter`, which the internal
+  adapter and the organization plugin's adapter call to reach the open transaction. The invitation
+  endpoint's `resend` branch does not: it writes the new expiry through `ctx.context.adapter`
+  (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:135-143`), on the library's own
+  connection, as the Hub's login, outside the scope.
+- **Hand-made piece.** `joiningTransaction` in `apps/server/src/hub/identity/auth.ts` wraps the
+  adapter `createAuth` gives the library, so each of its calls goes to `getCurrentAdapter`.
+- **Why.** [Data D22](../guides/data.md). The test "renovar: o prazo novo do plugin cai" in
+  `invitations.test.ts` fails when the wrapper is taken out (removal
+  `library-adapter-joins-transaction`); with `CONEXUS_TEST_PHASE=2`, "renovar: o administrador
+  renovando o convite de um dono" fails too.
+
+### A company with no member and its first owner's invitation, through the plugin's adapter
 
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-org.mjs:74-100`.
   `createOrganization` always writes the caller as a member with `creatorRole`. The invitation
@@ -108,21 +122,33 @@ or its origin.
   resend, `:430-434` to cancel). `getOrgAdapter`, exported by the plugin (`index.mjs:1-4`), writes
   the same rows without those checks (`adapter.mjs:141`, `:352`, `:728`, `:793`), on
   `getCurrentAdapter`, so inside `runWithTransaction` on the Hub's transaction.
-- **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, called by
-  `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, `createInvitationCommand` in
-  `invitations.ts` and the cancel and renewal in `invitation-management.ts`. The Hub's admission
-  decides who writes (`admitInviter`, `admitOperator`), `mayInviteAs` which role, and
-  `checkNotMember` refuses an address already in the company, as the endpoint did. The call carries
-  one `@ts-expect-error`: the parameter is typed `AuthContext<BetterAuthOptions>`, which no
-  configured auth's context matches.
-- **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus
-  never becomes one, so the operator invites the first owner without a membership. One gate for
-  members and the operator keeps one owner of who may invite ([code C26](../guides/code.md),
-  [security S6](../guides/security.md)). The test "sem membro" in
-  `hub/operations/clients.test.ts` fails when the company is created by the endpoint (removal
-  `operator-not-member`); "recusas" fails when the adapter writes outside the Hub's transaction
-  (removal `client-one-transaction`). When the library changes, reread `getOrgAdapter`'s
-  signature and these four methods.
+- **Hand-made piece.** `organizationAdapter` in `apps/server/src/hub/identity/auth.ts`, on the
+  operator's path only: `registerCompanyOn` and `renameCompanyOn` in `clients.ts`, and the first
+  owner's invitation, its cancel and its renewal when the admission is the operator's
+  (`OwnerInviterProof`) in `invitations.ts` and `invitation-management.ts`. The Hub's admission
+  decides who writes (`admitOperator`, `admitInviter`), the role is only owner, and a renewal writes
+  its expiry from the plugin's option (`invitationExpiry` in `auth.ts`). A member's invitation,
+  cancel and renewal go through the endpoints, `auth.api.createInvitation`, `cancelInvitation` and
+  `createInvitation` with `resend: true`, which own the roles, the member check and the expiry, as
+  in step 4.1. On the operator's path the adapter runs none of the endpoints' hooks: an
+  `organizationHooks` invitation hook, `sendInvitationEmail` or `cancelPendingInvitationsOnReInvite`
+  turned on later would be bypassed there, and none is on. The call carries one `@ts-expect-error`:
+  the parameter is typed `AuthContext<BetterAuthOptions>`, which no configured auth's context
+  matches.
+- **Why.** Step 4.2: the company is born at the Operations Central with no member, and Conexus never
+  becomes one, so the operator invites the first owner without a membership, which no endpoint
+  admits. Members keep the native endpoints: the founder's answer A on the 4.2 code audit,
+  2026-10-17 ([delivery L12](../guides/delivery.md)). "convidar: o administrador pedindo dono…" in
+  `invitations.test.ts` fails when a member's invitation is written by the adapter instead (removal
+  `invitation-member-native-endpoint`): the Hub no longer checks the creator role or an existing
+  member itself. "renovar: o administrador renovando o convite de um dono…" fails when a member's
+  renewal skips the endpoint (removal `invitation-member-native-renewal`). A member's cancel has no
+  such row: the admission already requires `invitation: ["create"]`, every default role that holds
+  it also holds `cancel`, and the endpoint writes the same status, so no test can tell the endpoint
+  from the adapter there. The test "sem membro" in `hub/operations/clients.test.ts` fails when the
+  company is created by the endpoint (removal `operator-not-member`); "recusas" fails when the
+  adapter writes outside the Hub's transaction (removal `client-one-transaction`). When the library
+  changes, reread `getOrgAdapter`'s signature and these four methods.
 
 ### Deleting a company: the adapter, with the native route closed
 
@@ -131,8 +157,8 @@ or its origin.
   `deleteOrganization` (`adapter.mjs:370`) deletes the members, the invitations and the company
   and returns the id whether or not a row was there.
 - **Hand-made piece.** `deleteCompanyOn` in `identity/clients.ts`, called by `remove` in
-  `operations/clients.ts` after the client's row is deleted; a company still there afterwards is
-  `INTERNAL_UNEXPECTED`. A correction and a deletion lock the company, then the operator's row,
+  `operations/clients.ts` after the client's row is deleted. No check follows: the adapter
+  returns no row count, and a read afterwards passes the same row policy as the DELETE. A correction and a deletion lock the company, then the operator's row,
   then the client, the order the invitations and the accept keep (`lockCompany` first).
 - **Why.** Step 5: only the operator deletes, by the client's revision and name (code C38). The
   test "apagar só pela Central" in `sign-up.test.ts` fails when the endpoint opens (removal
@@ -233,13 +259,14 @@ or its origin.
   (`routes/crud-invites.mjs:128-160`); cancel writes even a terminal status (`:428-450`).
 - **Hand-made piece.** `openOf` in `invitations.ts` finds the pending row without a clock. An
   explicit expired replacement compares its id/revision/email/role under the company lock, cancels
-  through the plugin's adapter, stamps `superseded_at` and creates through the adapter in one
-  transaction. The old link reads EXPIRED. The new row's `replaces` retains the original request
-  for complete attempt-key payload comparison. `invitation-management.ts` admits current
-  administrators, and the operator on a company awaiting its first owner, and recognizes explicit
-  canceled replay before comparing revision; accepted, declined and superseded rows cannot cancel.
-  Live renewal writes the new `expires_at` itself, as native resend computes it
-  (`invitationExpiry` in `auth.ts`), advances revision and clears `mailed_at`.
+  through the plugin (a member's by the endpoint, the operator's by the adapter), stamps
+  `superseded_at` and creates the same way, in one transaction. The old link reads EXPIRED. The new
+  row's `replaces` retains the original request for complete attempt-key payload comparison.
+  `invitation-management.ts` admits current administrators, and the operator on a company awaiting
+  its first owner, and recognizes explicit canceled replay before comparing revision; accepted,
+  declined and superseded rows cannot cancel. A member's live renewal is native `resend: true`; the
+  operator's writes the new `expires_at` itself, as native resend computes it (`invitationExpiry` in
+  `auth.ts`). Both advance revision and clear `mailed_at`.
 - **Why.** The founder's 4.1 decision B. An expired row still holds the unique pending-address
   index, and the native cancel alone cannot distinguish replacement from explicit cancellation.
   `invitation-lifecycle.test.ts` covers link identity, terminal replay without writes, full-payload
@@ -288,10 +315,13 @@ or its origin.
   keeps no record that an e-mail left.
 - **Hand-made piece.** `mailInvitation` in `apps/server/src/hub/identity/invitation-mail.ts` sends
   after the commit and sets `mailed_at` once the provider answers delivered, queued or a permanent
-  bounce; the `createInvitation` route in `company-routes.ts` only calls it. A replay with the same
-  attempt key of a pending, unexpired, unmarked invitation answers the mail data again, so the route
-  sends again: delivery is at least once. The mark compares the sent revision, so a late reply
-  for an earlier send cannot mark a renewed invitation. `mailed_at` is an
+  bounce, and answers which (`MailOutcome`). A member's invitation to a refused address answers
+  `MAIL_BOUNCED`; a client's registration still answers 201 with `mailBounced`, and the Central
+  shows "Esse endereço não recebe e-mails." only while that invitation is the client's live one,
+  after which the address shows as an ordinary "Aguardando o administrador" invitation (step 4.2). A
+  replay with the same attempt key of a pending, unexpired, unmarked invitation answers the mail
+  data again, so the route sends again: delivery is at least once. The mark compares the sent
+  revision, so a late reply for an earlier send cannot mark a renewed invitation. `mailed_at` is an
   additional field with `input: false`, which leaves it out of the plugin's request body
   (`better-auth/dist/db/to-zod.mjs:17`).
 - **Why.** [Code C37](../guides/code.md). Sent inside the transaction, a slow provider holds the
@@ -463,8 +493,10 @@ or its origin.
   its list is. Only the pair is hand-written.
 - **Why.** [Code C44](../guides/code.md): a page that does not shift when a row arrives is a keyset
   on a unique tie-break, and names repeat, so a single-column `gt` cannot express it. The test
-  "lista: só as empresas de quem pede" in `companies.test.ts` fails when the anchor leaves the
-  list's scope (removal `membership-page-anchor-scoped`).
+  "lista: só as empresas de quem pede" in `companies.test.ts` covers the anchor's scope. Since step 5
+  the person scope's member policy holds the same rule, so removing the anchor's filter alone
+  changes nothing; `isolation.test.ts` "positivo" fails when that policy opens (removal
+  `person-member-policy`).
 
 ### Every transaction opens in a scope
 
