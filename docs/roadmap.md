@@ -31,7 +31,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Cartão da etapa 6 aprovado em 2026-10-17 (commit 69e6e72753f2bbf6624851c2a796c1bbb6d4e1fe): "Aprovo"
    Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
-   Cartão da etapa 7 aprovado em 2026-10-17 (commit e877695f8c1c6367e27a91698c95fd48a9f22898): "Sim"; "`D1: A D2: A D3: A`"
+   Cartão da etapa 7 aprovado em 2026-10-17 (commit 89798f576c9fd1670748c1580807ea8e513a5d8d): "Sim"; "`D1: A D2: A D3: A`"
 8. **App de exemplo.** Abre um app escrito à mão.
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
