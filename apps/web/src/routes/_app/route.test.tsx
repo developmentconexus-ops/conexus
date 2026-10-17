@@ -1,11 +1,18 @@
 import { listCompanies } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA } from '../../platform/fixtures.ts'
-import { homeHub, hubServer, NO_COMPANIES, refusal } from '../../platform/test-hub.tsx'
+import type { ProjectsView } from '../../platform/test-hub.tsx'
+import {
+  homeHub,
+  hubServer,
+  NO_COMPANIES,
+  projectsRead,
+  refusal,
+} from '../../platform/test-hub.tsx'
 
 const asked: string[] = []
 const server = hubServer()
@@ -30,11 +37,11 @@ test('sem sessão, / leva a /login com o endereço de volta, sem desenhar a mold
   expect(screen.queryByText(/Você entrou como/)).toBeNull()
 })
 
-test('com sessão, a moldura, "Você entrou como {nome}." e a versão do Hub', async () => {
+test('com sessão, a moldura e "Você entrou como {nome}.", sem o estado do Hub', async () => {
   hub({ signedIn: true })
   open('/')
   expect(await screen.findByText('Você entrou como Ana Lima.')).toBeTruthy()
-  expect(await screen.findByText('v0.1.0')).toBeTruthy()
+  expect(screen.queryByText('v0.1.0')).toBeNull()
   expect(screen.getByRole('button', { name: 'Conta de Ana Lima' })).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Abrir navegação' })).toBeTruthy()
   expect(screen.getAllByRole('link', { name: 'Início' }).length).toBeGreaterThan(0)
@@ -174,4 +181,48 @@ test('depois do foco no título, uma nova renderização não o puxa de volta', 
   await router.invalidate()
   await router.navigate({ href: `/?page=${'c'.repeat(32)}` })
   expect(document.activeElement).toBe(account)
+})
+
+const ONE = {
+  companies: [{ company: EMPRESA, role: 'member' }],
+  mayOperate: false,
+  next: { kind: 'END' },
+}
+const TWO = {
+  ...ONE,
+  companies: [
+    ...ONE.companies,
+    { company: { id: 'b'.repeat(32), name: 'Outra Empresa' }, role: 'owner' },
+  ],
+}
+
+function projectsOf(view: ProjectsView) {
+  server.use(...projectsRead(view))
+}
+
+test('com uma empresa, / abre os Projetos dela, e a moldura lista Projetos e Pessoas sem troca de empresa', async () => {
+  hub({ signedIn: true }, ONE)
+  projectsOf({ projects: [], databaseReady: false, mayDelete: false })
+  const router = open('/')
+  expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`/companies/${EMPRESA.id}/projects`)
+  const rail = screen.getAllByRole('navigation', { name: 'Navegação' })[0]
+  if (rail === undefined) throw new Error('the rail is missing')
+  expect(within(rail).getByRole('link', { name: 'Projetos' })).toBeTruthy()
+  expect(within(rail).getByRole('link', { name: 'Pessoas' })).toBeTruthy()
+  expect(within(rail).queryByRole('link', { name: 'Início' })).toBeNull()
+  expect(screen.queryByRole('button', { name: /Trocar de empresa/ })).toBeNull()
+})
+
+test('com duas empresas, / mostra a lista; dentro de uma, a troca de empresa leva à outra e a "Suas empresas"', async () => {
+  hub({ signedIn: true }, TWO)
+  projectsOf({ projects: [], databaseReady: true, mayDelete: false })
+  const router = open(`/companies/${EMPRESA.id}/projects`)
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Trocar de empresa. Agora: Empresa Teste' }),
+  )
+  expect(await screen.findByRole('menuitem', { name: 'Empresa Teste' })).toBeTruthy()
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Suas empresas' }))
+  expect(await screen.findByRole('heading', { name: 'Suas empresas' })).toBeTruthy()
+  expect(router.state.location.pathname).toBe('/')
 })

@@ -1,9 +1,19 @@
+import type { CompanyId } from '@conexus/hub-api'
 import { createFileRoute, Outlet, redirect, useMatches } from '@tanstack/react-router'
-import { HouseIcon } from 'lucide-react'
-import { AccountMenu, sessionQuery } from '../../hub/identity/public.ts'
+import { FolderIcon, HouseIcon, UsersIcon } from 'lucide-react'
+import { AccountMenu, CompanySwitcher, sessionQuery } from '../../hub/identity/public.ts'
 import { Frame } from '../../ui/frame.tsx'
 
-const PLACES = [{ to: '/', icon: HouseIcon, label: 'Início' }] as const
+const HOME = [{ to: '/', icon: HouseIcon, label: 'Início' }] as const
+
+/** The places of a company, which the rail lists while its address is open (screen map). */
+function placesOf(companyId: CompanyId) {
+  const params = { companyId }
+  return [
+    { to: '/companies/$companyId/projects', params, icon: FolderIcon, label: 'Projetos' },
+    { to: '/companies/$companyId/people', params, icon: UsersIcon, label: 'Pessoas' },
+  ] as const
+}
 
 export const Route = createFileRoute('/_app')({
   beforeLoad: async ({ context, location }) => {
@@ -25,8 +35,17 @@ function AppFrame() {
       return last?.status === 'notFound' ? undefined : last?.staticData.place
     },
   })
+  const companyId = useMatches({
+    select: (matches) =>
+      matches.find((match) => match.routeId === '/_app/companies/$companyId')?.params.companyId,
+  })
   return (
-    <Frame place={place ?? ''} places={PLACES} account={<AccountMenu person={person} />}>
+    <Frame
+      place={place ?? ''}
+      places={companyId === undefined ? HOME : placesOf(companyId)}
+      switcher={companyId === undefined ? undefined : <CompanySwitcher current={companyId} />}
+      account={<AccountMenu person={person} />}
+    >
       <Outlet />
     </Frame>
   )

@@ -9,6 +9,7 @@ import { List, PageTitle, Row, rowBody } from '../../ui/list.tsx'
 import { Notice } from '../../ui/notice.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { StatusPage } from '../status/public.ts'
 import { maskedCnpj } from './cnpj.ts'
 import { clientsQuery } from './queries.ts'
 
@@ -86,6 +87,7 @@ export function Clients() {
           Cadastrar cliente
         </Link>
       </div>
+      <StatusPage />
       {notice && <Notice>{NOTICES[notice]}</Notice>}
       {data.clients.length === 0 ? (
         <Empty>Nenhum cliente cadastrado.</Empty>

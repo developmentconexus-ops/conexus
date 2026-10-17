@@ -17,7 +17,7 @@ const COMPANIES = '/api/companies'
 
 /** Opens the company page, then reloads it: the account menu reads the company list on each load. */
 async function menuRead(replies: Replies) {
-  const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
+  const page = await harness.open(`/companies/${COMPANY.id}/people`, { viewport: DESKTOP, replies })
   await waitFor(page, 'Convidar pessoa')
   const read = page.waitForResponse((response) => new URL(response.url()).pathname === COMPANIES)
   await page.reload()
@@ -43,7 +43,7 @@ test('um pedido que ninguém responde continua recusado: 500 e registrado como s
 })
 
 test('o popup do papel, aberto pelo teclado, mostra o contorno de 2px inteiro dentro da lista', async () => {
-  const page = await harness.open(`/companies/${COMPANY.id}`, {
+  const page = await harness.open(`/companies/${COMPANY.id}/people`, {
     viewport: DESKTOP,
     replies: OWNER,
   })

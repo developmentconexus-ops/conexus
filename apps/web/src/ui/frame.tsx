@@ -21,7 +21,7 @@ export function Column({ children }: { children: ReactNode }) {
   )
 }
 
-type Place = { to: LinkProps['to']; icon: LucideIcon; label: string }
+type Place = Pick<LinkProps, 'to' | 'params'> & { icon: LucideIcon; label: string }
 
 /** A place in the rail; the router marks the current one active (design `nav-item`). */
 function NavItem({ place, onClick }: { place: Place; onClick?: () => void }) {
@@ -29,6 +29,7 @@ function NavItem({ place, onClick }: { place: Place; onClick?: () => void }) {
   return (
     <Link
       to={place.to}
+      params={place.params}
       onClick={onClick}
       className="flex h-[34px] items-center gap-sm rounded-control px-[0.6rem] text-label text-text-2 hover:bg-accent-soft hover:text-text data-[status=active]:bg-surface-3 data-[status=active]:text-text"
     >
@@ -50,11 +51,13 @@ function ThemeToggle() {
 
 /**
  * The frame of every page with a session: a top bar with the mark, the place, the theme and the
- * account; a rail on wide screens that becomes a drawer on a phone (design V1, V56).
+ * account; a rail on wide screens that becomes a drawer on a phone (design V1, V56). The switcher,
+ * when there is one, heads the rail and the drawer.
  */
 export function Frame(props: {
   place: string
   places: readonly Place[]
+  switcher?: ReactNode
   account: ReactNode
   children: ReactNode
 }) {
@@ -71,6 +74,7 @@ export function Frame(props: {
             <MenuIcon aria-hidden="true" />
           </SheetTrigger>
           <SheetContent title="Navegação">
+            {props.switcher}
             <nav className="flex flex-col gap-xs">
               {props.places.map((place) => (
                 <NavItem key={place.label} place={place} onClick={() => setDrawerOpen(false)} />
@@ -85,14 +89,14 @@ export function Frame(props: {
           {props.account}
         </div>
       </header>
-      <nav
-        aria-label="Navegação"
-        className="hidden flex-col gap-xs border-r border-line bg-surface p-md md:flex"
-      >
-        {props.places.map((place) => (
-          <NavItem key={place.label} place={place} />
-        ))}
-      </nav>
+      <div className="hidden flex-col gap-md border-r border-line bg-surface p-md md:flex">
+        {props.switcher}
+        <nav aria-label="Navegação" className="flex flex-col gap-xs">
+          {props.places.map((place) => (
+            <NavItem key={place.label} place={place} />
+          ))}
+        </nav>
+      </div>
       <main className="min-w-0 p-xl">{props.children}</main>
     </div>
   )

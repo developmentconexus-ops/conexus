@@ -51,7 +51,7 @@ test('vazio: o título, o que sai, o campo com o foco, Cancelar e Apagar cliente
   const dialog = await open()
   expect(screen.getByRole('heading', { name: 'Apagar Empresa Teste?' })).toBeTruthy()
   expect(dialog.textContent).toContain(
-    'Saem a empresa, os membros, os convites e o cadastro. As pessoas continuam com as contas delas.',
+    'Saem a empresa, os membros, os convites e o cadastro. Os Projetos e o banco da empresa também serão apagados. As pessoas continuam com as contas delas.',
   )
   const field = screen.getByLabelText('Digite o nome do cliente')
   await waitFor(() => expect(document.activeElement).toBe(field))

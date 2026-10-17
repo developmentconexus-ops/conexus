@@ -98,7 +98,7 @@ function sectionOf(heading: HTMLElement): HTMLElement {
 
 function open(search = '') {
   const conexus = createConexus(
-    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}${search}`] }),
+    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/people${search}`] }),
   )
   render(<Conexus conexus={conexus} />)
   return conexus.router

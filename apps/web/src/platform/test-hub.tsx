@@ -3,11 +3,14 @@ import {
   Client,
   FAILURES,
   getCompany,
+  getProject,
   listCompanies,
   listInvitations,
   listMembers,
+  listProjects,
   Member,
   PROBLEM_MEDIA_TYPE,
+  ProjectSummary,
   SessionState,
 } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
@@ -128,6 +131,9 @@ export const ACTIVE_CLIENT = Client.parse({
   },
 })
 
+/** A client the Central started to delete, its company's database still in Neon. */
+export const DELETING_CLIENT = Client.parse({ ...awaitingClient(), state: { kind: 'DELETING' } })
+
 /** The Hub as the operator sees it: the Central's list and each client of it. */
 export function centralHub(clients: Client[]) {
   return [
@@ -202,5 +208,42 @@ export function undecided(cut: string): [string, () => Response][] {
     ['502 da borda', () => edgePage(502)],
     ['504 da borda', () => edgePage(504)],
     ['banco sem resposta', () => refusal('DATABASE_UNAVAILABLE')],
+  ]
+}
+
+export const PEDIDOS = ProjectSummary.parse({
+  id: 'p'.repeat(32),
+  name: 'Pedidos',
+  createdAt: '2026-10-17T12:00:00.000Z',
+})
+
+/** What the Hub shows of Empresa Teste's Projects; a test changes it between reads. */
+export type ProjectsView = {
+  projects: ProjectSummary[]
+  databaseReady: boolean
+  mayDelete: boolean
+}
+
+/** The session and the Projects' two reads, which answer from `view` as it is at each read. */
+export function projectsRead(view: ProjectsView) {
+  return [
+    sessionRead(() => ANA),
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      HttpResponse.json(
+        listProjects.success.body.parse({
+          projects: view.projects,
+          next: { kind: 'END' },
+          databaseReady: view.databaseReady,
+        }),
+      ),
+    ),
+    http.get(`*/api/companies/${COMPANY.id}/projects/:projectId`, ({ params }) => {
+      const project = view.projects.find((one) => one.id === params.projectId)
+      return project
+        ? HttpResponse.json(
+            getProject.success.body.parse({ project: { ...project, mayDelete: view.mayDelete } }),
+          )
+        : refusal('NOT_FOUND')
+    }),
   ]
 }

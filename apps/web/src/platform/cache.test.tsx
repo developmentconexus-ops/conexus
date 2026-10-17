@@ -40,19 +40,21 @@ test('401: uma leitura que acha a sessão terminada leva a /login com "Sua sess�
     http.get('*/api/companies', () =>
       HttpResponse.json({ companies: [], mayOperate: false, next: { kind: 'END' } }),
     ),
-    http.get('*/api/status', () => refusal('SESSION_REQUIRED')),
+    http.get('*/api/companies/:companyId/projects', () => refusal('SESSION_REQUIRED')),
   )
   server.listen({ onUnhandledFrame: 'error' })
   try {
     const { Conexus, createConexus } = await import('../main.tsx')
-    const conexus = createConexus(createMemoryHistory({ initialEntries: ['/?from=link'] }))
+    const conexus = createConexus(
+      createMemoryHistory({ initialEntries: [`/companies/${'a'.repeat(32)}/projects`] }),
+    )
     // The first test mounted main.tsx into #root; this one reads only its own render.
     const page = within(render(<Conexus conexus={conexus} />).container)
     expect(await page.findByText('Sua sessão terminou. Entre de novo para continuar.')).toBeTruthy()
     expect(conexus.router.state.location.pathname).toBe('/login')
     expect(conexus.router.state.location.search).toEqual({
       reason: 'session-ended',
-      redirect: '/?from=link',
+      redirect: `/companies/${'a'.repeat(32)}/projects`,
     })
     expect(conexus.queryClient.getQueryCache().getAll()).toEqual([])
   } finally {

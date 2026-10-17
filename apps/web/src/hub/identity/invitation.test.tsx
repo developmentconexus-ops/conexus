@@ -2,8 +2,8 @@ import type { InvitationView } from '@conexus/hub-api'
 import {
   acceptInvitation,
   FAILURES,
-  getCompany,
   getInvitation,
+  listProjects,
   SessionState,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
@@ -189,7 +189,9 @@ test('acceptance is explicit and sends its revision before opening the company',
   )
   const router = open()
   fireEvent.click(await screen.findByRole('button', { name: 'Aceitar convite' }))
-  await waitFor(() => expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}`))
+  await waitFor(() =>
+    expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/projects`),
+  )
   expect(sent).toEqual([{ revision: 0 }])
 })
 
@@ -233,10 +235,14 @@ test('acceptance does not flash the joined invitation while the company is still
       state.invitation = { kind: 'JOINED', company: COMPANY }
       return HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY }))
     }),
-    http.get(`*/api/companies/${COMPANY.id}`, async () => {
+    http.get(`*/api/companies/${COMPANY.id}/projects`, async () => {
       await held
       return HttpResponse.json(
-        getCompany.success.body.parse({ company: COMPANY, role: 'admin', mayInviteAs: [] }),
+        listProjects.success.body.parse({
+          projects: [],
+          next: { kind: 'END' },
+          databaseReady: false,
+        }),
       )
     }),
   )
@@ -252,7 +258,7 @@ test('acceptance does not flash the joined invitation while the company is still
     await waitFor(() => expect(accepted).toBe(true))
     expect(screen.getByRole('button', { name: 'Aceitando…' })).toBeTruthy()
     release()
-    expect(await screen.findByRole('heading', { name: COMPANY.name })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeTruthy()
     expect(flashed).toBe(false)
   } finally {
     release()
