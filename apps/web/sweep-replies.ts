@@ -74,19 +74,30 @@ function companyPage(
 ) {
   const company = { id, name }
   const people = [
-    { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' },
+    {
+      personId: ANA.id,
+      name: ANA.name,
+      email: ANA.email,
+      role: 'owner',
+      mayRemove: false,
+      mayChangeTo: [],
+      invitationsSent: 0,
+    },
     {
       personId: 'person-long',
       name: 'Nome Completo Muito Comprido',
       email: LONG_EMAIL,
       role: 'member',
+      mayRemove: true,
+      mayChangeTo: ['admin'],
+      invitationsSent: 1,
     },
   ] as const
   return {
     ...SIGNED_IN,
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
-      members: [...people],
+      members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),
       next: { kind: 'END' },
     }),
     [`GET /api/companies/${id}/invitations`]: ok(listInvitations, {
@@ -166,6 +177,7 @@ const ACTIVE = {
 export function central(client: 'AWAITING' | 'ACTIVE' | 'NONE'): Replies {
   const shown = client === 'ACTIVE' ? ACTIVE : CLIENT
   return {
+    ...(client === 'ACTIVE' ? companyPage('owner', ['owner'], CLIENT_ID) : {}),
     ...companies([], true),
     'GET /api/clients': ok(listClients, {
       clients: client === 'NONE' ? [] : [shown],

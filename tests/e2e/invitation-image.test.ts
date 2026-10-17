@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir, userInfo } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
+import { hashPassword } from 'better-auth/crypto'
 import { request } from 'playwright-core'
 import { mailServer } from '../../apps/server/src/hub/identity/test-hub.ts'
 import {
@@ -17,6 +18,7 @@ import {
 } from '../../apps/server/src/platform/test-database.ts'
 
 const IMAGE = 'conexus-hub:ci'
+const PASSWORD = 'senha-certa-1'
 const execute = promisify(execFile)
 
 async function docker(args: string[]) {
@@ -46,6 +48,10 @@ async function imageHub(t: TestContext) {
     '--rm',
     '--network',
     'host',
+    // The leaked-password service is never reached from a test (testing T14): the name goes
+    // nowhere, so a password written through the image's door would be refused as unchecked.
+    '--add-host',
+    'api.pwnedpasswords.com:127.0.0.1',
     '--user',
     `${uid}:${gid}`,
     ...[...folders].flatMap((path) => ['--mount', `type=bind,src=${path},dst=${path}`]),
@@ -79,9 +85,7 @@ async function imageHub(t: TestContext) {
     if (health?.status() === 200) break
     if (Date.now() >= deadline) throw Error('image did not become healthy')
   }
-  const link = readFileSync(summary, 'utf8').match(/https:\/\/\S+/)?.[0]
-  assert.ok(link)
-  return { client, mail, token: new URLSearchParams(new URL(link).hash.slice(1)).get('token') }
+  return { client, mail, database }
 }
 
 test('final image executes the mail bundle through HTTP without a runtime mail toolchain or NODE_ENV', async (t) => {
@@ -112,13 +116,15 @@ test('final image executes the mail bundle through HTTP without a runtime mail t
   )
   assert.deepEqual(measured.installed, [])
   assert.ok(measured.bytes > 0)
-  const { client, mail, token } = await imageHub(t)
-  assert.equal(
-    (await client.put('/api/passwords', { data: { token, password: 'senha-certa-1' } })).status(),
-    204,
+  const { client, mail, database } = await imageHub(t)
+  // The first person has no password yet; the link that sets one would ask the leak service.
+  await database.asOwner(
+    `insert into auth.account (id, account_id, provider_id, user_id, password, updated_at)
+      select $1, id, 'credential', id, $2, now() from auth.user where email = 'ana@example.test'`,
+    [randomUUID(), await hashPassword(PASSWORD)],
   )
   const login = await client.put('/api/sessions/current', {
-    data: { email: 'ana@example.test', password: 'senha-certa-1' },
+    data: { email: 'ana@example.test', password: PASSWORD },
   })
   assert.equal(login.status(), 200)
   const cookie = login

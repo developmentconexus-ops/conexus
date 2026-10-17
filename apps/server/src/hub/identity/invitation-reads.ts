@@ -5,7 +5,7 @@ import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
-import { admit } from './admission.ts'
+import { admitCompany, INSTALLATION_ADMINISTRATOR } from './admission.ts'
 import { storedAddress } from './auth.ts'
 import { LIVE, PendingRow, pending, pendingOf, Status } from './invitations.ts'
 import { CONEXUS } from './messages.ts'
@@ -18,6 +18,7 @@ const ReceivedRow = PendingRow.extend({
   companyId: CompanyId,
   companyName: z.string(),
   inviterName: z.string(),
+  inviterIsOperator: z.boolean(),
   firstOwner: z.boolean(),
   hasPassword: z.boolean(),
   joined: z.boolean(),
@@ -29,7 +30,7 @@ export function readInvitations(
   page: string | undefined,
 ) {
   return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
-    const admitted = await admit({ tx, ...input, action: 'readInvitations' })
+    const admitted = await admitCompany({ tx, ...input, action: 'readInvitations' })
     const key = pageKey(page)
     const rows = await tx
       .select({ ...pending, live: sql<boolean>`${LIVE}` })
@@ -97,6 +98,7 @@ export function readReceived(
         companyId: company.id,
         companyName: company.name,
         inviterName: user.name,
+        inviterIsOperator: sql<boolean>`coalesce(${user.role} = ${INSTALLATION_ADMINISTRATOR}, false)`,
         firstOwner: sql<boolean>`not exists (select 1 from ${member}
           where ${member.organizationId} = ${invitation.organizationId})`,
       })
@@ -118,8 +120,8 @@ export function readReceived(
     const details = {
       company: targetCompany,
       role: row.role,
-      // Only the Operations Central invites where no one is a member yet (step 4.2).
-      inviterName: row.firstOwner ? CONEXUS : row.inviterName,
+      // The Operations Central invites as Conexus, where no one is a member yet and after (steps 4.2, 6).
+      inviterName: row.inviterIsOperator ? CONEXUS : row.inviterName,
       firstOwner: row.firstOwner,
       expiresAt: row.expiresAt.toISOString(),
       revision: row.revision,

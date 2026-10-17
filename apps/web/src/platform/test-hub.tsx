@@ -1,10 +1,12 @@
-import type { FailureCode } from '@conexus/hub-api'
+import type { FailureCode, Member as MemberRow } from '@conexus/hub-api'
 import {
   Client,
   FAILURES,
   getCompany,
   listCompanies,
+  listInvitations,
   listMembers,
+  Member,
   PROBLEM_MEDIA_TYPE,
   SessionState,
 } from '@conexus/hub-api'
@@ -34,11 +36,23 @@ export function sessionRead(signedIn: () => typeof ANA | undefined) {
   })
 }
 
+type MemberFields = {
+  personId: string
+  name: string
+  email: string
+  role: MemberRow['role']
+} & Partial<Pick<MemberRow, 'mayRemove' | 'mayChangeTo' | 'invitationsSent'>>
+
+/** A person of a company as the Hub lists them: nothing to do to them unless the test says so. */
+export function memberView(person: MemberFields) {
+  return Member.parse({ mayRemove: false, mayChangeTo: [], invitationsSent: 0, ...person })
+}
+
 /** The company page's reads: the company as `role` sees it, and its members. */
 export function companyRead(view: {
   role: string
   mayInviteAs?: string[]
-  members?: { personId: string; name: string; email: string; role: string }[]
+  members?: MemberFields[]
 }) {
   return [
     http.get(`*/api/companies/${COMPANY.id}`, () =>
@@ -123,6 +137,28 @@ export function centralHub(clients: Client[]) {
       const client = clients.find((one) => one.companyId === params.companyId)
       return client ? HttpResponse.json({ client }) : refusal('NOT_FOUND')
     }),
+    http.get(`*/api/companies/:companyId/members`, () =>
+      HttpResponse.json(
+        listMembers.success.body.parse({
+          members: [
+            memberView({
+              personId: 'person-davi',
+              name: 'Davi Costa',
+              email: 'davi@example.test',
+              role: 'owner',
+              mayRemove: true,
+              mayChangeTo: ['admin', 'member'],
+            }),
+          ],
+          next: { kind: 'END' },
+        }),
+      ),
+    ),
+    http.get(`*/api/companies/:companyId/invitations`, () =>
+      HttpResponse.json(
+        listInvitations.success.body.parse({ invitations: [], next: { kind: 'END' } }),
+      ),
+    ),
   ]
 }
 

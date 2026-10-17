@@ -188,7 +188,7 @@ for (const [name, statement] of REFUSED) {
   })
 }
 
-test('as quatro tabelas de empresa e auth.user têm política por linha, sem FORCE', async (t) => {
+test('as tabelas de empresa, auth.user e auth.session têm política por linha, sem FORCE', async (t) => {
   const { asOwner } = await createTestDatabase(t)
   const tables = await asOwner(`select n.nspname || '.' || c.relname as name,
       c.relrowsecurity as enabled, c.relforcerowsecurity as forced
@@ -199,6 +199,7 @@ test('as quatro tabelas de empresa e auth.user têm política por linha, sem FOR
     'auth.company',
     'auth.invitation',
     'auth.member',
+    'auth.session',
     'auth.user',
     'operations.client',
   ]

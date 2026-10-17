@@ -19,7 +19,10 @@ export type Operation = {
   input?: { params?: z.ZodType; query?: z.ZodType; body?: z.ZodType }
   /** The write takes the `ATTEMPT_KEY_HEADER` header, an `AttemptKey` (code C37). */
   attemptKey?: true
-  success: { status: 200; body: z.ZodType } | { status: 201; body: z.ZodType } | { status: 204 }
+  success:
+    | { status: 200; body: z.ZodType }
+    | { status: 201; body: z.ZodType }
+    | { status: 202 | 204 }
   failures: readonly FailureCode[]
 }
 

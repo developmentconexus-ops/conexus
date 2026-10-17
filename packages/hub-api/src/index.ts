@@ -5,6 +5,7 @@ export {
   Company,
   CompanyId,
   cancelInvitation,
+  changeMemberRole,
   createInvitation,
   createInvitationPassword,
   declineInvitation,
@@ -20,10 +21,12 @@ export {
   Member,
   Membership,
   Next,
+  OPERATOR_INVITES_AS,
   PAGE_SIZE,
   PendingInvitation,
   ROLE_LABELS,
   Role,
+  removeMember,
   renewInvitation,
 } from './companies.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
@@ -37,6 +40,7 @@ export {
   PASSWORD_LENGTH,
   Person,
   PersonId,
+  requestPasswordRecovery,
   SESSION_COOKIE,
   SessionState,
   setPassword,

@@ -1,7 +1,6 @@
-import type { FailureCode } from '@conexus/hub-api'
+import type { CompanyId, FailureCode } from '@conexus/hub-api'
 import { createInvitation, ROLE_LABELS, Role } from '@conexus/hub-api'
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { useMutation } from '@tanstack/react-query'
 import { Controller, useFormContext } from 'react-hook-form'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure } from '../../platform/hub.ts'
@@ -18,9 +17,7 @@ import {
 import { SectionTitle } from '../../ui/list.tsx'
 import { Notice } from '../../ui/notice.tsx'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select.tsx'
-import { companyQuery, inviteToCompany } from './queries.ts'
-
-const route = getRouteApi('/_app/companies/$companyId')
+import { inviteToCompany } from './queries.ts'
 
 const FIELD_OF: Partial<Record<FailureCode, 'email' | 'role'>> = {
   MEMBER_EXISTS: 'email',
@@ -63,10 +60,7 @@ function RoleField({ roles }: { roles: readonly Role[] }) {
 }
 
 /** "Convidar pessoa": the roles on offer are the ones the Hub says this person may invite as. */
-export function InviteForm() {
-  const { companyId } = route.useParams()
-  const { data: company } = useSuspenseQuery(companyQuery(companyId))
-  const roles = company.mayInviteAs
+export function InviteForm({ companyId, roles }: { companyId: CompanyId; roles: readonly Role[] }) {
   const send = useMutation(inviteToCompany)
   const attempt = useAttemptKey()
   // `Role.options` runs from the most to the least privileged; the form starts on the least offered.

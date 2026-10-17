@@ -76,5 +76,22 @@ export const setPassword = defineOperation({
     }),
   },
   success: { status: 204 },
-  failures: ['PASSWORD_LINK_INVALID', 'DATABASE_UNAVAILABLE'],
+  failures: [
+    'PASSWORD_LINK_INVALID',
+    'PASSWORD_COMPROMISED',
+    'PASSWORD_CHECK_UNAVAILABLE',
+    'DATABASE_UNAVAILABLE',
+  ],
+})
+
+export const requestPasswordRecovery = defineOperation({
+  id: 'requestPasswordRecovery',
+  summary: 'Asks for a password link by e-mail; the answer is the same whether or not it is sent.',
+  access: 'entry',
+  method: 'POST',
+  path: '/api/password-recoveries',
+  bodyLimit: 1024,
+  input: { body: z.object({ email: Email }) },
+  success: { status: 202 },
+  failures: ['RECOVERY_ATTEMPTS_EXCEEDED', 'DATABASE_UNAVAILABLE'],
 })

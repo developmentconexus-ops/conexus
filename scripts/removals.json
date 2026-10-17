@@ -156,8 +156,8 @@
   {
     "id": "owner-inviter-is-operator",
     "file": "apps/server/src/hub/identity/admission.ts",
-    "find": "  const operator = await operatorRow(tx, personId, ACTIONS.inviteOwner.locks)\n",
-    "replace": "  const [operator] = await tx.select().from(user).where(eq(user.id, personId))\n",
+    "find": "  const operator = await operatorRow(input.tx, input.personId, ACTIONS[action].locks)\n",
+    "replace": "  const [operator] = await input.tx.select().from(user).where(eq(user.id, input.personId))\n",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/companies.test.ts",
@@ -198,10 +198,10 @@
     }
   },
   {
-    "id": "owner-invitation-awaiting-only",
+    "id": "owner-invitation-first-owner",
     "file": "apps/server/src/hub/identity/admission.ts",
-    "find": "        notExists(tx.select().from(member).where(eq(member.organizationId, company.id))),\n",
-    "replace": "",
+    "find": "operator, anyone === undefined)",
+    "replace": "operator, true)",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/owner-invitation.test.ts",
@@ -567,7 +567,7 @@
     "replace": "  read<T>(work: (tx: ReadTx) => Promise<T>): Promise<T>\n",
     "test": {
       "cwd": "apps/server",
-      "file": "src/platform/isolation.test.ts",
+      "file": "src/platform/database-type.test.ts",
       "name": "o tipo"
     }
   },
@@ -668,6 +668,204 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/invitations.test.ts",
       "name": "renovar: o prazo novo do plugin cai|renovar: o administrador renovando o convite de um dono"
+    }
+  },
+  {
+    "id": "session-row-policy",
+    "file": "apps/server/migrations/20261017170749_session_row_policies/migration.sql",
+    "find": "TO \"hub_company\" USING (user_id = nullif(current_setting('conexus.person_id', true), '')) WITH CHECK (user_id = nullif(current_setting('conexus.person_id', true), ''));",
+    "replace": "TO \"hub_company\" USING (true) WITH CHECK (true);",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "sessões"
+    }
+  },
+  {
+    "id": "session-link-not-inviter",
+    "file": "apps/server/migrations/20261017170749_session_row_policies/migration.sql",
+    "find": "and u.id = session.user_id)) WITH CHECK (",
+    "replace": "and u.id = session.user_id) or user_id = (select inviter_id from auth.invitation where id = nullif(current_setting('conexus.invitation_id', true), ''))) WITH CHECK (",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation.test.ts",
+      "name": "sessões"
+    }
+  },
+  {
+    "id": "member-company-lock",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "  await lockCompany(tx, input.companyId)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships-race.test.ts",
+      "name": "último dono sob corrida"
+    }
+  },
+  {
+    "id": "member-last-owner",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "  if (owners <= 1) throw new Failure('LAST_OWNER')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships-race.test.ts",
+      "name": "último dono sob corrida"
+    }
+  },
+  {
+    "id": "member-actor-rank",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "      return target !== 'owner' && next !== 'owner'",
+    "replace": "      return true",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships.test.ts",
+      "name": "quem tira quem"
+    }
+  },
+  {
+    "id": "member-role-from",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "      if (target.role !== input.from) throw new Failure('MEMBER_STALE')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships.test.ts",
+      "name": "papel: a resposta"
+    }
+  },
+  {
+    "id": "removed-person-invitations",
+    "file": "apps/server/src/hub/identity/memberships.ts",
+    "find": "      await cancelSentBy(tx, { companyId, personId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/memberships-invitations.test.ts",
+      "name": "convites do tirado"
+    }
+  },
+  {
+    "id": "recovery-pace-per-person",
+    "file": "apps/server/src/hub/identity/password-recovery.ts",
+    "find": "        if (await givenWithinPace(tx, person.id)) return undefined\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "pedido: 202 vazio"
+    }
+  },
+  {
+    "id": "recovery-attempt-path",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    await countAttempt(deps, {\n      headers,\n      log,\n      path: PASSWORD_RECOVERY_PATH,\n      exceeded: 'RECOVERY_ATTEMPTS_EXCEEDED',\n    })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "limite: o quarto"
+    }
+  },
+  {
+    "id": "recovery-mail-after-commit",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    const mail = await deps.recovery.request(body.email)\n",
+    "replace": "    const mail = await deps.recovery.request(body.email)\n    if (mail !== undefined) await deps.recovery.send(mail)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "correio: o e-mail sai"
+    }
+  },
+  {
+    "id": "revoke-sessions-on-reset",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "      revokeSessionsOnPasswordReset: true,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "sessões: trocar a senha"
+    }
+  },
+  {
+    "id": "recovery-link-validity",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "export const PASSWORD_LINK_SECONDS = 3600\n",
+    "replace": "export const PASSWORD_LINK_SECONDS = 900\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery.test.ts",
+      "name": "pedido: 202 vazio"
+    }
+  },
+  {
+    "id": "password-check-before-link",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    await checkPassword(body.password)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "vazada em PUT"
+    }
+  },
+  {
+    "id": "password-check-invitation",
+    "file": "apps/server/src/hub/identity/company-routes.ts",
+    "find": "    await checkPassword(body.password)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "vazada no convite"
+    }
+  },
+  {
+    "id": "password-check-deadline",
+    "file": "apps/server/src/hub/identity/password-check.ts",
+    "find": "PASSWORD_CHECK_SECONDS = 3",
+    "replace": "PASSWORD_CHECK_SECONDS = 30",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "fora: sem resposta"
+    }
+  },
+  {
+    "id": "password-check-error",
+    "file": "apps/server/src/hub/identity/password-check.ts",
+    "find": ".catch(() => 'UNCHECKED' as const)",
+    "replace": ".catch(() => false)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "fora: o serviço com erro"
+    }
+  },
+  {
+    "id": "reply-end-on-close",
+    "file": "apps/server/src/platform/reply-lifetime.ts",
+    "find": "  if (reply.raw.destroyed) work()\n  else reply.raw.once('close', work)\n",
+    "replace": "  reply.raw.once('finish', work)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery-disconnect.test.ts",
+      "name": "desconexão"
+    }
+  },
+  {
+    "id": "password-link-first",
+    "file": "apps/server/src/hub/identity/routes.ts",
+    "find": "    if (!(await deps.recovery.linkIsLive(body.token))) throw new Failure('PASSWORD_LINK_INVALID')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-check.test.ts",
+      "name": "link primeiro"
     }
   }
 ]

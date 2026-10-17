@@ -24,6 +24,7 @@ import { enforceAccess, headersOf, invitationSessionOf, sessionOf } from './acce
 import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
+import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
 
 const REQUEST_TIMEOUT_MS = 30_000
 const CONNECTION_TIMEOUT_MS = 30_000
@@ -211,11 +212,22 @@ export async function createServer(
   return app
 }
 
-/** What every handler gives back: the body the operation's schema checks, and the cookies to set. */
-export type Answer<T> = Readonly<{ body: T; setCookie: readonly string[] }>
+/**
+ * What every handler gives back: the body the operation's schema checks, the cookies to set and
+ * work to run once the reply is sent, so the answer never waits for it.
+ */
+export type Answer<T> = Readonly<{
+  body: T
+  setCookie: readonly string[]
+  afterReply?: (() => Promise<void>) | undefined
+}>
 
-export function answer<T>(body: T, setCookie: readonly string[] = []): Answer<T> {
-  return { body, setCookie }
+export function answer<T>(
+  body: T,
+  setCookie: readonly string[] = [],
+  afterReply?: () => Promise<void>,
+): Answer<T> {
+  return { body, setCookie, afterReply }
 }
 
 type Body<O extends Operation> = O['success'] extends {
@@ -272,19 +284,6 @@ function partsOf(operation: Operation, request: FastifyRequest) {
   }
 }
 
-/**
- * Aborts when the client leaves before the reply is sent. Fastify's `request.signal` follows the
- * request's `close` (fastify/lib/request.js:218-229), which Node emits once the body is read, so a
- * write would abort its own e-mail (docs/reference/boundaries.md).
- */
-function untilClientLeaves(reply: FastifyReply): AbortSignal {
-  const left = new AbortController()
-  reply.raw.once('close', () => {
-    if (!reply.raw.writableFinished) left.abort()
-  })
-  return left.signal
-}
-
 /** The parts are parsed with the operation's schemas, and the reply checked before it is sent. */
 export function serve<O extends DeclaredOperation>(
   app: FastifyInstance,
@@ -321,11 +320,14 @@ export function serve(
           ? sessionOf(request)
           : (invitationSessionOf(request) ?? { person: undefined, sessionToken: undefined })),
       }
-      const { body, setCookie } = await handler(input)
+      const { body, setCookie, afterReply } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)
+      whenReplyEnds(reply, () => {
+        afterReply?.().catch((error: unknown) => logFailure(request.log, failureOf(error)))
+      })
       const { success } = operation
-      if (success.status === 204) return reply.code(204).send()
-      return reply.code(success.status).send(success.body.parse(body))
+      if ('body' in success) return reply.code(success.status).send(success.body.parse(body))
+      return reply.code(success.status).send()
     },
   })
 }

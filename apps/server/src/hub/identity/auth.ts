@@ -35,6 +35,7 @@ export const RESET_PASSWORD_PATH = '/reset-password'
 const BASE_PATH = '/api/auth'
 export const INVITATION_PASSWORD_PATH = '/invitation-password-attempt'
 export const INVITATION_DECLINATION_PATH = '/invitation-declination-attempt'
+export const PASSWORD_RECOVERY_PATH = '/password-recovery-attempt'
 const INVITATION_ATTEMPTS = {
   id: 'invitation-attempts',
   endpoints: {
@@ -50,9 +51,23 @@ const INVITATION_ATTEMPTS = {
     ),
   },
 }
+// A counting path: the recovery goes through `auth.api`, which skips the router's limit, so
+// the route counts its attempts here, as the invitation's do.
+const RECOVERY_ATTEMPTS = {
+  id: 'password-recovery-attempts',
+  endpoints: {
+    passwordRecoveryAttempt: createAuthEndpoint(
+      PASSWORD_RECOVERY_PATH,
+      { method: 'POST' },
+      async () => new Response(null, { status: 204 }),
+    ),
+  },
+}
 const LIFETIMES = { idleSeconds: 1800, renewAfterSeconds: 60, totalSeconds: 8 * 60 * 60 }
 const SIGN_IN_ATTEMPTS = { window: 60, max: 10 }
-export const PASSWORD_LINK_SECONDS = 900
+const RECOVERY_REQUESTS = { window: 60, max: 3 }
+// Every password link lives an hour, the first person's and a recovery's (step 6, P2).
+export const PASSWORD_LINK_SECONDS = 3600
 // The founder's number, step 4 answer 4.
 const INVITATION_SECONDS = 2 * 24 * 60 * 60
 
@@ -293,6 +308,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       minPasswordLength: PASSWORD_LENGTH.min,
       maxPasswordLength: PASSWORD_LENGTH.max,
       resetPasswordTokenExpiresIn: PASSWORD_LINK_SECONDS,
+      revokeSessionsOnPasswordReset: true,
       sendResetPassword: deliverLink,
     },
     session: {
@@ -309,6 +325,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
         [SIGN_IN_PATH]: SIGN_IN_ATTEMPTS,
         [INVITATION_PASSWORD_PATH]: SIGN_IN_ATTEMPTS,
         [INVITATION_DECLINATION_PATH]: SIGN_IN_ATTEMPTS,
+        [PASSWORD_RECOVERY_PATH]: RECOVERY_REQUESTS,
       },
     },
     advanced: {
@@ -325,7 +342,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     // `# SERVER_ERROR` line of better-call's dist/router.mjs); thrown, it reaches inLibrary and
     // leaves as a code (S41).
     onAPIError: { throw: true },
-    plugins: [INVITATION_ATTEMPTS, organization(ORGANIZATION), admin()],
+    plugins: [INVITATION_ATTEMPTS, RECOVERY_ATTEMPTS, organization(ORGANIZATION), admin()],
     telemetry: { enabled: false },
     logger: {
       // Only a code leaves: the library's messages and arguments can hold an e-mail or an error (S41).

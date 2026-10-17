@@ -111,7 +111,21 @@ export const session = auth.table(
     activeOrganizationId: text('active_organization_id'),
     impersonatedBy: text('impersonated_by'),
   },
-  (table) => [index('session_user_id_idx').on(table.userId)],
+  (table) => [
+    index('session_user_id_idx').on(table.userId),
+    // The login reads and signs sessions in for the library, outside any scope.
+    pgPolicy('runtime_all', { for: 'all', to: RUNTIME_LOGIN, using: OPEN, withCheck: OPEN }),
+    // A company's routes reach only the acting person's sessions (issue 57); the link's scope
+    // reaches the invited person's, never the person who invited.
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`user_id = ${personId}`),
+    policy(
+      SCOPE_ROLES.INVITATION,
+      'all',
+      sql`user_id = ${personId}
+        or exists (select 1 from auth.invitation i join auth."user" u on u.email = lower(i.email)
+          where i.id = ${invitationId} and u.id = session.user_id)`,
+    ),
+  ],
 )
 
 export const account = auth.table(

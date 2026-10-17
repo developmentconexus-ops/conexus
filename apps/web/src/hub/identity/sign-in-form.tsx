@@ -1,7 +1,8 @@
 import { createSession, FAILURES } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
+import { buttonVariants } from '../../ui/button.tsx'
 import {
   Form,
   FormAlert,
@@ -27,12 +28,13 @@ export const SameOriginPath = z
       new URL(path, ANY_ORIGIN).origin === ANY_ORIGIN,
   )
 
-type SignInReason = 'signed-out' | 'session-ended' | 'password-set'
+type SignInReason = 'signed-out' | 'session-ended' | 'password-set' | 'password-changed'
 
 const NOTICES: Record<SignInReason, string> = {
   'signed-out': 'Você saiu do Conexus.',
   'session-ended': `${FAILURES.SESSION_REQUIRED.phrase} ${FAILURES.SESSION_REQUIRED.action}`,
   'password-set': 'Senha criada. Entre com ela.',
+  'password-changed': 'Senha trocada. Entre com a nova senha.',
 }
 
 /**
@@ -107,6 +109,9 @@ export function SignInForm(props: {
         <FormAlert />
         <SubmitButton idle="Entrar" pending="Entrando…" />
       </Form>
+      <Link to="/forgot-password" className={buttonVariants({ variant: 'ghost' })}>
+        Esqueci minha senha
+      </Link>
     </section>
   )
 }

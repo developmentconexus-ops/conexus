@@ -28,7 +28,10 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Cartão da etapa 5 aprovado em 2026-10-17 (commit 3fa479344c8bb02a21a75aaf84744b0b01e65a7e): "2A" (2026-10-16); "eu aprovo tudo que você trouxe"
    Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
+   Cartão da etapa 6 aprovado em 2026-10-17 (commit 69e6e72753f2bbf6624851c2a796c1bbb6d4e1fe): "Aprovo"
+   Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
+   Cartão da etapa 7 aprovado em 2026-10-17 (commit 72737e9c339db25312d0c1f262fc8a0e3146233b): "Sim"
 8. **App de exemplo.** Abre um app escrito à mão.
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
@@ -54,9 +57,9 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
 | 1 | A conta Cloudflare com o domínio do Hub. O servidor de São Paulo | Servidor: não lido |
 | 2 | A organização do Neon, no plano grátis | US$ 0 |
 | 4 | O remetente dos convites, com o DNS | Workers Paid: US$ 5 por mês |
-| 7 | Organização Neon das empresas | US$ 0 |
+| 7 | Neon das empresas | US$ 0 |
 | 8 | O segundo domínio, dos apps | Workers for Platforms: US$ 25 por mês |
-| 9 ou 11 | Cópia da chave, da primeira que guardar segredo | Nenhum |
+| 9 ou 11 | Cópia da chave nova | Nenhum |
 | 11, 19, 21 | As assinaturas de modelo. Um usuário só de leitura no sistema de uma empresa | Nenhum |
 | 13 | Uma chave do E2B só desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
@@ -82,17 +85,16 @@ Domínio próprio de empresa.
 
 ## 2. As etapas
 
-Os testes de login (LT1 a LT17), as provas PD1 a PD9, fichas e estudos
-vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso fica na seção 1.
+Testes de login, provas PD1 a PD9, fichas e estudos
+vivem fora. Etapa fechada sai desta tabela; o uso fica na seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 6 Tirar uma pessoa | A 5 | Respondidas em 2026-10-17 | Revisão do login (B3). A regra do último dono |
-| 7 Projeto | A 6 | Dadas | Telas de exclusão. PD7 |
+| 7 Projeto | A 6 | Dadas | PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
 | 9 Enviar um app | A 8 | Nenhuma | Fichas `registry` e manifesto. Os tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Os limites de laço, prazo e consultas |
-| 11 Conta de modelo | A chave de cifra | Nenhuma | Ficha `model-account` |
+| 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Os testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Os onze achados do turno real. Fichas do motor, do sandbox e do Git. Os testes 11 e 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | As lacunas de instrução do Builder |
@@ -106,12 +108,11 @@ vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso f
 | 22 Ensaio geral | A 20 | O lugar da cópia fora do Neon | Os ensaios das etapas 2, 7, 9, 12 e 13. O teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 
-O teste do banco dormindo, da etapa 2, roda de novo em toda etapa que acrescenta algo que roda
+O teste do banco dormindo, da etapa 2, roda em toda etapa que acrescenta algo que roda
 sozinho; se falhar com o Mastra parado, a etapa 12 volta a você.
 
 ## 3. Como uma etapa roda
 
-Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), cada uma, menos o uso, com a skill.
+Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), menos o uso, cada uma com skill.
 A sua resposta 2 vive na regra do estudo
-([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão sua é pedida na
-etapa dela.
+([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão sua vem na etapa dela.

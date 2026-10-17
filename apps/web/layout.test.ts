@@ -103,10 +103,11 @@ for (const viewport of [SMALL_PHONE, ZOOMED_PHONE]) {
 test('o Tab passa pela entrada com contorno de 2px em cada parada', async () => {
   const page = await open('/login', DESKTOP, SIGNED_OUT)
   await page.getByRole('textbox', { name: 'E-mail' }).waitFor()
-  assert.deepEqual(await presses(page, 'Tab', 4), [
+  assert.deepEqual(await presses(page, 'Tab', 5), [
     'email solid 2px',
     'password solid 2px',
     'Entrar solid 2px',
+    'Esqueci minha senha solid 2px',
     'body',
   ])
   await page.close()
