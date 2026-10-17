@@ -1,8 +1,10 @@
 import { getInvitation, listInvitations } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
-import type { Replies } from './layout-harness.ts'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import type { State } from './sweep-kit.ts'
+import { waitFor } from './sweep-kit.ts'
+import { RECOVERY_STATES } from './sweep-recovery-states.ts'
 import {
   CLIENT_ID,
   central,
@@ -20,18 +22,6 @@ import {
   WITH_EXPIRED,
 } from './sweep-replies.ts'
 
-export type State = {
-  name: string
-  path: string
-  replies: Replies
-  /** Waits for the screen and brings it to the state: a form refused, a field filled. */
-  settle(page: Page): Promise<void>
-}
-
-export async function waitFor(page: Page, text: string) {
-  await page.getByText(text).first().waitFor()
-}
-
 /** Submits the invitation form, which the state's replies refuse, and waits for the refusal. */
 async function inviteRefused(page: Page, sentence: string) {
   await page.getByLabel('E-mail').fill('davi@example.test')
@@ -42,6 +32,7 @@ async function inviteRefused(page: Page, sentence: string) {
 const NEVER = new Promise<never>(() => undefined)
 
 export const STATES: State[] = [
+  ...RECOVERY_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',
@@ -89,7 +80,7 @@ export const STATES: State[] = [
     name: 'cliente ativo',
     path: `/operations/clients/${CLIENT_ID}`,
     replies: central('ACTIVE'),
-    settle: (p) => waitFor(p, 'Donos'),
+    settle: (p) => waitFor(p, 'Convidar pessoa'),
   },
   {
     name: 'sem sessão',
@@ -161,6 +152,24 @@ export const STATES: State[] = [
       }),
     },
     settle: (p) => waitFor(p, 'Nenhum convite pendente.'),
+  },
+  {
+    name: 'tirar uma pessoa, a confirmação',
+    path: `/companies/${COMPANY.id}`,
+    replies: OWNER,
+    settle: async (page) => {
+      await page.getByRole('button', { name: /^Tirar da empresa:/ }).click()
+      await waitFor(page, 'Perde o acesso agora.')
+    },
+  },
+  {
+    name: 'mudar o papel de uma pessoa',
+    path: `/companies/${COMPANY.id}`,
+    replies: OWNER,
+    settle: async (page) => {
+      await page.getByRole('button', { name: /^Mudar papel:/ }).click()
+      await waitFor(page, 'Papel atual: Membro.')
+    },
   },
   {
     name: 'convite vencido na lista',

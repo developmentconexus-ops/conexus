@@ -28,6 +28,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Cartão da etapa 5 aprovado em 2026-10-17 (commit 3fa479344c8bb02a21a75aaf84744b0b01e65a7e): "2A" (2026-10-16); "eu aprovo tudo que você trouxe"
    Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
+   Cartão da etapa 6 aprovado em 2026-10-17 (commit 69e6e72753f2bbf6624851c2a796c1bbb6d4e1fe): "Aprovo"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
 8. **App de exemplo.** Abre um app escrito à mão.
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
@@ -82,11 +83,11 @@ Domínio próprio de empresa.
 ## 2. As etapas
 
 Os testes de login (LT1 a LT17), as provas PD1 a PD9, fichas e estudos
-vivem fora do repositório. Uma etapa fechada sai desta tabela; a linha de uso fica na seção 1.
+vivem fora. Etapa fechada sai desta tabela; a linha de uso fica na seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 6 Tirar uma pessoa | A 5 | Respondidas em 2026-10-17 | Revisão do login (B3). A regra do último dono |
+| 6 Tirar uma pessoa | A 5 | Respondidas | Revisão do login (B3). Regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
 | 9 Enviar um app | A 8 | Nenhuma | Fichas `registry` e manifesto. Os tipos na fronteira da linha |

@@ -1,5 +1,5 @@
 import type { CompanyId, PersonId } from '@conexus/hub-api'
-import { Company, LIBRARY_ID, Member, Membership, PAGE_SIZE } from '@conexus/hub-api'
+import { Company, Membership, PAGE_SIZE } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
@@ -8,7 +8,6 @@ import { admit, mayInviteAs, mayOperate } from './admission.ts'
 import { company, member, user } from './tables.ts'
 
 const PersonRole = z.object({ role: z.string().nullable() })
-const MemberRow = Member.extend({ id: z.string().regex(LIBRARY_ID) })
 
 export function readMemberships(database: Database, personId: PersonId, page: string | undefined) {
   return database.read({ kind: 'PERSON', personId }, async (tx) => {
@@ -64,43 +63,5 @@ export function readCompany(
       role: admitted.role,
       mayInviteAs: mayInviteAs(admitted),
     }
-  })
-}
-
-export function readMembers(
-  database: Database,
-  input: { personId: PersonId; companyId: CompanyId },
-  page: string | undefined,
-) {
-  return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
-    const admitted = await admit({ tx, ...input, action: 'readCompany' })
-    const key = pageKey(page)
-    const rows = await tx
-      .select({
-        id: member.id,
-        personId: user.id,
-        name: user.name,
-        email: user.email,
-        role: member.role,
-      })
-      .from(member)
-      .innerJoin(user, eq(member.userId, user.id))
-      .where(
-        and(
-          eq(member.organizationId, admitted.companyId),
-          after(sql`(${user.name}, ${member.id})`, key, (id) =>
-            tx
-              .select({ name: user.name, id: member.id })
-              .from(member)
-              .innerJoin(user, eq(user.id, member.userId))
-              .where(and(eq(member.id, id), eq(member.organizationId, admitted.companyId))),
-          ),
-        ),
-      )
-      .orderBy(asc(user.name), asc(member.id))
-      .limit(PAGE_SIZE + 1)
-    const parsed = rows.map((row) => MemberRow.parse(row))
-    const listed = pageOf(parsed, (row) => row.id)
-    return { members: listed.rows.map(({ id: _id, ...shown }) => shown), next: listed.next }
   })
 }

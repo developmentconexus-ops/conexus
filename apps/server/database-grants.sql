@@ -56,15 +56,18 @@ GRANT SELECT,INSERT,UPDATE ON TABLE auth.invitation TO hub_company;
 GRANT SELECT ON TABLE auth.invitation TO hub_person;
 GRANT SELECT,UPDATE ON TABLE auth.invitation TO hub_invitation;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.invitation TO hub_operator;
-GRANT SELECT ON TABLE auth.member TO hub_company;
+-- Step 6, founder 2026-10-17 ("Aprovo"): a company's routes delete a member and change its role, and
+-- the invitation link deletes the invited person's sessions.
+GRANT SELECT,DELETE ON TABLE auth.member TO hub_company;
 GRANT SELECT ON TABLE auth.member TO hub_person;
 GRANT SELECT,INSERT ON TABLE auth.member TO hub_invitation;
 GRANT SELECT,DELETE ON TABLE auth.member TO hub_operator;
+GRANT UPDATE(role) ON TABLE auth.member TO hub_company;
 GRANT UPDATE(created_at) ON TABLE auth.member TO hub_company;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.rate_limit TO hub_runtime;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.session TO hub_runtime;
 GRANT SELECT ON TABLE auth.session TO hub_company;
-GRANT SELECT,INSERT,UPDATE ON TABLE auth.session TO hub_invitation;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.session TO hub_invitation;
 GRANT UPDATE(updated_at) ON TABLE auth.session TO hub_company;
 GRANT SELECT,INSERT,UPDATE ON TABLE auth."user" TO hub_runtime;
 GRANT SELECT ON TABLE auth."user" TO hub_company;

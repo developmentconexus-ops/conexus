@@ -1,10 +1,10 @@
-import type { CompanyId, InvitationId, Person } from '@conexus/hub-api'
+import type { CompanyId, InvitationId, Person, PersonId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyProof } from './admission.ts'
-import { admitInviter } from './admission.ts'
+import { admitCompany } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { invitationExpiry, refusedAs } from './auth.ts'
 import { companyById } from './companies.ts'
@@ -53,10 +53,11 @@ async function admittedInvitation(tx: CommandTx, input: Manage) {
     )
     .for('share')
   if (active === undefined) throw new Failure('SESSION_REQUIRED')
-  const admitted = await admitInviter({
+  const admitted = await admitCompany({
     tx,
     companyId: input.companyId,
     personId: input.person.id,
+    action: 'invite',
   })
   const [found] = await tx
     .select({
@@ -80,6 +81,27 @@ function current(row: z.infer<typeof ManagedRow>, input: Manage): void {
   if (row.revision !== input.revision) throw new Failure('INVITATION_STALE')
 }
 
+/**
+ * Cancels what a person sent to a company when they leave it, as a cancel does: the status closes
+ * and the revision advances, so a screen reading the old one meets INVITATION_STALE. An expired one
+ * still holds its address in the unique index, so it is canceled too (data D15).
+ */
+export async function cancelSentBy(
+  tx: CommandTx,
+  input: { companyId: CompanyId; personId: PersonId },
+): Promise<void> {
+  await tx
+    .update(invitation)
+    .set({ status: 'canceled', revision: sql`${invitation.revision} + 1` })
+    .where(
+      and(
+        eq(invitation.organizationId, input.companyId),
+        eq(invitation.inviterId, input.personId),
+        eq(invitation.status, 'pending'),
+      ),
+    )
+}
+
 export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: Manage) =>
     deps.libraryCommand(companyScope(input), async (tx) => {
@@ -97,7 +119,7 @@ export function cancelInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
 
 /**
  * Renews the invitation: a member's through the plugin's endpoint with `resend`, which owns the roles,
- * the member check and the new expiry; the first owner's, by the operator who is no member, here.
+ * the member check and the new expiry; the operator's, who is no member, here.
  */
 async function renewed(
   deps: { auth: Auth },
@@ -123,7 +145,7 @@ async function renewed(
     .set({
       revision: sql`${invitation.revision} + 1`,
       mailedAt: null,
-      ...(admitted.kind === 'OWNER_INVITER' ? { expiresAt: invitationExpiry() } : {}),
+      ...(admitted.kind === 'COMPANY_OPERATOR' ? { expiresAt: invitationExpiry() } : {}),
     })
     .where(eq(invitation.id, row.id))
     .returning(pending)

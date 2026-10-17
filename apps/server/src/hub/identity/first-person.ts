@@ -14,7 +14,7 @@ import {
   storedAddress,
 } from './auth.ts'
 
-const SET_PASSWORD_PAGE = '/set-password'
+export const SET_PASSWORD_PAGE = '/set-password'
 
 export type FirstPerson = (input: { name: string; email: Email }) => Promise<{ link: string }>
 

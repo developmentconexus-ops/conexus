@@ -3,8 +3,8 @@ import { after, before, test } from 'node:test'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
+import { waitFor } from './sweep-kit.ts'
 import { OWNER } from './sweep-replies.ts'
-import { waitFor } from './sweep-states.ts'
 
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())

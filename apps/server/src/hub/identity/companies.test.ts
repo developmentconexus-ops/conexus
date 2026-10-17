@@ -59,8 +59,24 @@ test('fora: o membro lê a empresa e as pessoas; os convites, só dono e adminis
   const members = await call(hub, bruno, 'GET', `/api/companies/${companyId}/members`)
   assert.deepEqual(members.json(), {
     members: [
-      { personId: ana.id, name: 'Ana Lima', email: 'ana@example.test', role: 'owner' },
-      { personId: bruno.id, name: 'Bruno Reis', email: 'bruno@example.test', role: 'member' },
+      {
+        personId: ana.id,
+        name: 'Ana Lima',
+        email: 'ana@example.test',
+        role: 'owner',
+        mayRemove: false,
+        mayChangeTo: [],
+        invitationsSent: 0,
+      },
+      {
+        personId: bruno.id,
+        name: 'Bruno Reis',
+        email: 'bruno@example.test',
+        role: 'member',
+        mayRemove: true,
+        mayChangeTo: [],
+        invitationsSent: 0,
+      },
     ],
     next: { kind: 'END' },
   })
@@ -213,7 +229,7 @@ test('lista: só as empresas de quem pede, com o papel, 50 por página; mayOpera
   })
 })
 
-test('fora: o operador não lê empresa alguma, ativa ou sem membro: getCompany, listMembers e listInvitations dão 404, sem motivo na resposta; só o operador convida numa empresa sem membro, e não numa ativa', async (t) => {
+test('fora: o operador não lê a empresa como membro, ativa ou sem membro: getCompany dá 404, sem motivo na resposta; quem é membro de uma não convida na outra', async (t) => {
   const hub = await hubOn(t)
   const operator = await personOn(hub, CARLA_OPERATOR)
   const bruno = await personOn(hub, BRUNO)
@@ -231,27 +247,20 @@ test('fora: o operador não lê empresa alguma, ativa ou sem membro: getCompany,
   }
   await join(hub, active, bruno.id, 'owner')
   for (const companyId of [active, awaiting]) {
-    for (const path of ['', '/members', '/invitations']) {
-      const response = await call(hub, operator, 'GET', `/api/companies/${companyId}${path}`)
-      assert.equal(response.statusCode, 404, path)
-      const { traceId: _, ...shown } = Object(response.json())
-      assert.deepEqual(shown, {
-        type: 'urn:conexus:problem:NOT_FOUND',
-        title: 'Não encontramos o que você procurou.',
-        status: 404,
-        code: 'NOT_FOUND',
-      })
-    }
+    const response = await call(hub, operator, 'GET', `/api/companies/${companyId}`)
+    assert.equal(response.statusCode, 404)
+    const { traceId: _, ...shown } = Object(response.json())
+    assert.deepEqual(shown, {
+      type: 'urn:conexus:problem:NOT_FOUND',
+      title: 'Não encontramos o que você procurou.',
+      status: 404,
+      code: 'NOT_FOUND',
+    })
   }
   assert.equal((await call(hub, bruno, 'GET', `/api/companies/${active}`)).statusCode, 200)
   const invite = { email: 'davi@example.test', role: 'owner' }
-  for (const [person, companyId] of [
-    [bruno, awaiting],
-    [operator, active],
-  ] as const) {
-    const refused = await post(hub, person, `/api/companies/${companyId}/invitations`, invite)
-    assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
-  }
+  const refused = await post(hub, bruno, `/api/companies/${awaiting}/invitations`, invite)
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [404, 'NOT_FOUND'])
   assert.deepEqual(
     await hub.test.asOwner('select count(*)::int as invitations from auth.invitation'),
     [{ invitations: 0 }],

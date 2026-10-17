@@ -13,7 +13,7 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { hubServer, memberView, refusal, sessionRead } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 
@@ -66,8 +66,8 @@ function hub(view: View) {
       return HttpResponse.json(
         listMembers.success.body.parse({
           members: [
-            { personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' },
-            { ...DAVI, role: 'member' },
+            memberView({ personId: ANA.id, name: ANA.name, email: ANA.email, role: 'owner' }),
+            memberView({ ...DAVI, role: 'member' }),
           ],
           next: view.membersNext ?? { kind: 'END' },
         }),

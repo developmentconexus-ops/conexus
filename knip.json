@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": { "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"] },
-    "apps/server": { "entry": ["src/**/*.check.ts"] },
+    "apps/server": { "entry": ["src/**/*.check.ts", "src/platform/test-password-preload.ts"] },
     "apps/web": { "ignore": ["src/routeTree.gen.ts"] }
   }
 }

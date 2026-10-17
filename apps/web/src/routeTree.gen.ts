@@ -6,6 +6,7 @@ import { Route as rootRouteImport } from './routes/__root.tsx'
 import { Route as AppRouteRouteImport } from './routes/_app/route.tsx'
 import { Route as PublicRouteRouteImport } from './routes/_public/route.tsx'
 import { Route as AppIndexRouteImport } from './routes/_app/index.tsx'
+import { Route as PublicForgotPasswordRouteImport } from './routes/_public/forgot-password.tsx'
 import { Route as PublicLoginRouteImport } from './routes/_public/login.tsx'
 import { Route as PublicSetPasswordRouteImport } from './routes/_public/set-password.tsx'
 import { Route as AppCompaniesCompanyIdRouteImport } from './routes/_app/companies/$companyId.tsx'
@@ -26,6 +27,11 @@ const AppIndexRoute = AppIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const PublicForgotPasswordRoute = PublicForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => PublicRouteRoute,
 } as any)
 const PublicLoginRoute = PublicLoginRouteImport.update({
   id: '/login',
@@ -68,6 +74,7 @@ const AppOperationsClientsNewRoute = AppOperationsClientsNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof AppIndexRoute
+  '/forgot-password': typeof PublicForgotPasswordRoute
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof AppIndexRoute
+  '/forgot-password': typeof PublicForgotPasswordRoute
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
   '/companies/$companyId': typeof AppCompaniesCompanyIdRoute
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_app': typeof AppRouteRouteWithChildren
   '/_public': typeof PublicRouteRouteWithChildren
+  '/_public/forgot-password': typeof PublicForgotPasswordRoute
   '/_public/login': typeof PublicLoginRoute
   '/_public/set-password': typeof PublicSetPasswordRoute
   '/_app/': typeof AppIndexRoute
@@ -103,6 +112,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/set-password'
     | '/companies/$companyId'
@@ -113,6 +123,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/set-password'
     | '/companies/$companyId'
@@ -124,6 +135,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_app'
     | '/_public'
+    | '/_public/forgot-password'
     | '/_public/login'
     | '/_public/set-password'
     | '/_app/'
@@ -161,6 +173,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/_public/forgot-password': {
+      id: '/_public/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof PublicForgotPasswordRouteImport
+      parentRoute: typeof PublicRouteRoute
     }
     '/_public/login': {
       id: '/_public/login'
@@ -235,12 +254,14 @@ const AppRouteRouteWithChildren = AppRouteRoute._addFileChildren(
 )
 
 interface PublicRouteRouteChildren {
+  PublicForgotPasswordRoute: typeof PublicForgotPasswordRoute
   PublicLoginRoute: typeof PublicLoginRoute
   PublicSetPasswordRoute: typeof PublicSetPasswordRoute
   PublicInvitationsInvitationIdRoute: typeof PublicInvitationsInvitationIdRoute
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
+  PublicForgotPasswordRoute: PublicForgotPasswordRoute,
   PublicLoginRoute: PublicLoginRoute,
   PublicSetPasswordRoute: PublicSetPasswordRoute,
   PublicInvitationsInvitationIdRoute: PublicInvitationsInvitationIdRoute,

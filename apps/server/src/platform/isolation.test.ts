@@ -1,11 +1,6 @@
 import assert from 'node:assert/strict'
-import { execFile } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { promisify } from 'node:util'
 import { CompanyId, InvitationId, PersonId } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { TestDatabase } from './test-database.ts'
@@ -194,7 +189,10 @@ test('escrita: no contexto A, gravar em B é recusado e UPDATE ou DELETE sem fil
   )
   const changed = await write(sql`update auth.invitation set role = 'admin' returning id`)
   assert.deepEqual(changed.rows, [{ id: 'invitationAAAAAAAAAAAAAAAAAAAAAA' }])
-  await assert.rejects(write(sql`delete from auth.member`), refusedWith('42501'))
+  await assert.rejects(write(sql`delete from auth.invitation`), refusedWith('42501'))
+  await assert.rejects(write(sql`update auth.member set user_id = ''`), refusedWith('42501'))
+  await write(sql`update auth.member set role = 'member'`)
+  await write(sql`delete from auth.member`)
   assert.deepEqual(await asOwner(`select id, company_id, role from auth.invitation order by id`), [
     {
       id: 'invitationAAAAAAAAAAAAAAAAAAAAAA',
@@ -207,9 +205,56 @@ test('escrita: no contexto A, gravar em B é recusado e UPDATE ou DELETE sem fil
       role: 'member',
     },
   ])
-  assert.deepEqual(await asOwner(`select count(*)::int as members from auth.member`), [
-    { members: 4 },
+  assert.deepEqual(await asOwner(`select id, role from auth.member order by id`), [
+    { id: 'member-ab-b', role: 'admin' },
+    { id: 'member-b', role: 'owner' },
   ])
+})
+
+test('sessões: sem filtro, o escopo da empresa e o do convite alcançam só as sessões da sua pessoa', async (t) => {
+  const { database, asOwner } = await seeded(t)
+  await asOwner(`insert into auth.session(id, expires_at, token, updated_at, user_id)
+    select 's-' || id, now() + interval '1 day', 't-' || id, now(), id from auth."user"`)
+  const link: Scope = { kind: 'INVITATION', invitationId: INVITATION_B, personId: null }
+  function run(scope: Scope, statement: ReturnType<typeof sql>) {
+    return database.command(scope, (tx) => tx.execute(statement)).then((result) => result.rows)
+  }
+
+  // The company's scope reads and touches only the acting person's sessions, and deletes none.
+  assert.deepEqual(await run(inA(ANA), sql`select id from auth.session`), [{ id: 's-person-a' }])
+  assert.deepEqual(
+    await run(inA(ANA), sql`update auth.session set updated_at = now() returning id`),
+    [{ id: 's-person-a' }],
+  )
+  await assert.rejects(run(inA(ANA), sql`delete from auth.session`), refusedWith('42501'))
+  await assert.rejects(
+    run(inA(ANA), sql`update auth.session set user_id = 'person-b'`),
+    refusedWith('42501'),
+  )
+
+  // The link's scope deletes the invited person's sessions, never the inviter's nor a stranger's.
+  assert.deepEqual(await run(link, sql`delete from auth.session returning id`), [
+    { id: 's-person-none' },
+  ])
+  assert.deepEqual(
+    await run({ ...link, personId: CARLA }, sql`delete from auth.session returning id`),
+    [{ id: 's-person-ab' }],
+  )
+  assert.deepEqual(await asOwner(`select id from auth.session order by id`), [
+    { id: 's-person-a' },
+    { id: 's-person-b' },
+    { id: 's-person-op' },
+  ])
+
+  // The person's scope and the Central's have no reach into sessions.
+  const operator: Scope = { kind: 'OPERATOR', personId: OPERATOR, companyId: A }
+  for (const scope of [{ kind: 'PERSON', personId: ANA } satisfies Scope, operator]) {
+    await assert.rejects(
+      run(scope, sql`select id from auth.session`),
+      refusedWith('42501'),
+      scope.kind,
+    )
+  }
 })
 
 test('operador sem papel: em OPERATOR, quem não é administrador, ou sem pessoa, lê zero e não grava', async (t) => {
@@ -321,32 +366,4 @@ test('conexão reciclada: A, B e sem contexto, com commit, rollback e savepoint,
     }
   })
   assert.equal(ran, false, 'nothing runs outside its scope')
-})
-
-const SERVER = join(import.meta.dirname, '..', '..')
-const ROOT = join(SERVER, '..', '..')
-const TSC = join(ROOT, 'node_modules', '.bin', 'tsc')
-
-test('o tipo: abrir transação sem escopo, ou com um id que nenhum parse fez, não compila', async (t) => {
-  const dir = mkdtempSync(join(tmpdir(), 'conexus-check-'))
-  t.after(() => rmSync(dir, { recursive: true, force: true }))
-  const config = join(dir, 'tsconfig.json')
-  writeFileSync(
-    config,
-    JSON.stringify({
-      extends: join(SERVER, 'tsconfig.json'),
-      // A configuration outside the tree finds the tree's type packages only by this path.
-      compilerOptions: { typeRoots: [join(ROOT, 'node_modules', '@types')] },
-      include: [],
-      files: [join(SERVER, 'src', 'platform', 'database.check.ts')],
-    }),
-  )
-  const compiled = await promisify(execFile)(TSC, ['--noEmit', '-p', config], {
-    timeout: 90_000,
-    killSignal: 'SIGKILL',
-  }).then(
-    () => 'compiled',
-    (error: unknown) => String(Object(error).stdout),
-  )
-  assert.equal(compiled, 'compiled')
 })

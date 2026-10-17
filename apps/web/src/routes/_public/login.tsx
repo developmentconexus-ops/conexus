@@ -5,7 +5,10 @@ import { receivedInvitationQuery, SameOriginPath, SignInForm } from '../../hub/i
 
 const Search = z.object({
   redirect: SameOriginPath.optional().catch(undefined),
-  reason: z.enum(['signed-out', 'session-ended', 'password-set']).optional().catch(undefined),
+  reason: z
+    .enum(['signed-out', 'session-ended', 'password-set', 'password-changed'])
+    .optional()
+    .catch(undefined),
 })
 
 export const Route = createFileRoute('/_public/login')({

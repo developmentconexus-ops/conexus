@@ -21,6 +21,8 @@ import { MailApiUrl, MailToken, PublicOrigin, readTestDatabase, SessionSecret } 
 import type { Database } from './database.ts'
 import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
+import type { PasswordService } from './test-password-service.ts'
+import { plantPasswordService } from './test-password-service.ts'
 
 // Roles belong to the whole server, so suites that touch them take turns on this lock.
 const SERVER_ROLES_LOCK_KEY = 4_207_000_001
@@ -89,6 +91,7 @@ export function testConfig(databaseUrl: DatabaseUrl, mailApiUrl = NO_MAIL_SERVER
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 export type TestDatabase = {
+  passwords: PasswordService
   database: Database
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
@@ -157,6 +160,7 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
   })
   await withRoleLock(() => migrate({ ownerUrl, runtimeUrl }))
   return {
+    passwords: plantPasswordService(t),
     database,
     ownerUrl,
     runtimeUrl,
@@ -248,6 +252,7 @@ export function serveEnvironment(t: TestContext, url: DatabaseUrl, port?: number
 }
 
 const MAIN = join(import.meta.dirname, '..', 'main.ts')
+const PASSWORD_PRELOAD = join(import.meta.dirname, 'test-password-preload.ts')
 export type HubProcess = {
   lines: LogLine[]
   /** Resolves on the first line with this message; rejects when the Hub ends without one. */
@@ -265,7 +270,10 @@ export function startHub(
   env: Record<string, string>,
   args: string[] = [],
 ): HubProcess {
-  const child = spawn(process.execPath, [MAIN, ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] })
+  const child = spawn(process.execPath, ['--import', PASSWORD_PRELOAD, MAIN, ...args], {
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
   const lines: LogLine[] = []
   // The test reporter refuses a raw line from an in-process test (scripts/test-reporter.ts); a
   // spawned Hub's pipes reach no reporter, so this is the same rule for them, decided by the same
