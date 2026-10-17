@@ -52,7 +52,7 @@ nenhum app roda na 7.
 Da leitura crítica: a ação é `changeRole`; criar não segura trava durante o Neon, reserva o banco
 por um prazo (D22); adotar exige nome exato e recusa dois. Decidido aqui: a marca de exclusão é da identidade,
 `auth.company.deleting_since`, que a admissão já lê e a Central já muda: sem grant cruzado (C8) nem
-cópia (C26). A senha de dono não é pedida ao Neon: ninguém a usa na 7 (C30).
+cópia (C26). O Hub não pede a senha de dono ao Neon: ninguém a usa na 7 (C30); só a prova a lê.
 
 **Encaixes da etapa 6**, vistos em `650673d` do ramo da 6; conferir quando ela entrar em `main`; se
 um faltar, a construção para:
@@ -86,8 +86,8 @@ um faltar, a construção para:
 | U6 | As telas | web | web | shadcn | U4; a Central, U5 |
 | U7 | Percurso e remoções | `tests/e2e/`, `scripts/` | testes | nenhuma | U5, U6 |
 
-U2 e U3 correm juntas. Depois, servidor (U4, U5) e telas (U6, desde o contrato de U4). Uma
-revisão e um merge (L9, L13). A prova não cria release (L17).
+U2 e U3 correm juntas; depois servidor (U4, U5) e telas (U6). Uma revisão, um merge (L9, L13).
+A prova não cria release (L17).
 
 **Orçamento de código alterado** (sem testes nem gerados): U1 **0**; U2 **250**; U3 **300**; U4
 **700**; U5 **450**; U6 **1.100**; U7 **200**; espalhados **150**. Total **3.150**, teto 4.000 (L2). A
@@ -193,7 +193,7 @@ desta página aprovada. Regras: L13, L21, T14.
 
 ### Como se prova
 
-1: o Result de 0040, com os números.
+1: o Result de 0040.
 
 ## U2 Tabelas, políticas e grants
 
@@ -307,7 +307,7 @@ C57, C59, C67, S31, S36, S37, S41.
 
 1. Criar. Transação 1 no escopo da empresa: `lockCompany`; `transactionLock` da chave; `admit`; replay pela chave;
    `company_database` `FOR UPDATE`: `ready`, insere o Projeto; ausente ou reserva vencida, grava
-   `creating` com `claimed_until` = agora + `NEON_CALL_BUDGET_MS` + margem; reserva viva, 409. Sem transação:
+   `creating` com `claimed_until` = agora + `NEON_CALL_BUDGET_MS` + 5 s (`CLAIM_MARGIN_MS`); reserva viva, 409. Sem transação:
    `find`, um adota, nenhum cria, dois `SYSTEM`; `REFUSED` solta a reserva, `NO_ANSWER` a mantém.
    Transação 2: `lockCompany`; chave; `admit` de novo (S8), que lê a marca; `ready` com o id; o Projeto. Regras: C26, C29, C37,
    C44, C48, C49, C65, D15, D22, S7, S8, S10, S41.
