@@ -2,19 +2,18 @@
 
 ## A página do fundador
 
-**No fim desta etapa** uma empresa não lê nem grava as linhas de outra, mesmo quando uma consulta
-esquece o filtro, seja ela escrita por uma pessoa, um agente ou o Builder: o banco recusa. E só a
+**No fim desta etapa** uma empresa não lê nem grava as linhas de outra, mesmo quando a consulta
+de uma pessoa, um agente ou o Builder esquece o filtro: o banco recusa. E só a
 Conexus apaga uma empresa, na Central de Operação.
 
-**O roteiro de uso.** No Hub publicado, sem terminal, com duas caixas que não são a sua (a segunda
-pode ser um apelido com `+` da primeira):
+**O roteiro de uso.** No Hub publicado, sem terminal, com duas caixas que não são a sua:
 
 1. Na Central, cadastre **Empresa A** com a segunda caixa e **Empresa B** com a terceira. Aceite cada
    convite numa janela anônima própria.
 2. Na janela do dono de A, **Suas empresas** mostra só A. Cole ali o endereço de B, copiado da outra
    janela: **Página não encontrada**.
-3. Na Central, abra B e clique **Apagar cliente**. O botão de confirmar só libera com o nome exato
-   de B digitado.
+3. Na Central, abra B e clique **Apagar cliente**. O botão de confirmar só libera com o nome de
+   exibição de B digitado.
 4. Confirme: B sai da lista, A continua.
 5. Na janela do dono de B, recarregue: **Página não encontrada**, e Suas empresas vazia. A pessoa
    ainda entra com a senha dela. O link do convite de B, aberto de novo, não abre.
@@ -30,26 +29,26 @@ roteiro, diz o que viu e aprova os textos das telas.
   uma consulta de membros sem `WHERE` de empresa, no contexto de A, devolve só A.
 - **B.** As nove provas; a 7 diz “só a Conexus apaga”.
 - **Q6.** Só a Conexus apaga, na Central, com o nome digitado e a revisão. Saem a empresa, os
-  membros, os convites e o cadastro; as pessoas ficam. Apagar de novo dá o mesmo 404 de quem não
-  existe.
-- **H.** Ativação em duas fases: a v0.5.0 traz o código com contexto e as políticas, e o login do
-  Hub ainda alcança as tabelas; a v0.5.1, depois de conferida a v0.5.0, retira esse alcance.
+  membros, os convites e o cadastro; as pessoas ficam, e o CNPJ pode ser cadastrado de novo.
+  Apagar de novo dá o mesmo 404 de quem não existe.
+- **H.** Duas fases: a v0.5.0 traz contexto e políticas, e o login ainda alcança as tabelas; a
+  v0.5.1 retira esse alcance.
 - **I.** Better Auth, Drizzle e pg ficam. **J.** Recarregar durante o cadastro mostra o estado atual
   e pergunta. **L.** Prova local, depois no Neon real.
-- **O grant.** Só o papel da Central apaga, e só a empresa, seus membros, convites e cadastro, e
-  limpa a empresa ativa das sessões (Q6; 4.2: “a exclusão é da etapa 5, com o grant dela”).
+- **O grant.** Só o papel da Central apaga: empresa, membros, convites e cadastro; e limpa a
+  empresa ativa das sessões (Q6; 4.2).
 
 **Fica de fora.** Apagar pela empresa (dono ou administrador). Lixeira, recibo da exclusão, aviso a
-outras abas (veem a ausência na leitura seguinte). Apps e bancos das empresas (etapas 7 e seguintes).
-Das issues `next-card`: o item 1 da 45 e os itens 8–22 e 25 da 39 esperam, a exclusão não precisa
-deles e nada novo roda sozinho; o 9 da 39 entra só nos testes tocados; 3 e 6 da 25 esperam o que
-pedem.
+outras abas (veem a ausência na leitura seguinte). SQL hostil com a própria senha do login do Hub,
+que pode trocar de papel; o login segue lendo pessoas para entrar. Apps e bancos das empresas (etapas 7 e seguintes).
+Das issues `next-card`: o 1 da 45, 8–22 e 25 da 39, 3 e 6 da 25 esperam, a etapa não precisa
+deles; o 9 da 39 só nos testes tocados.
 
 **A decisão sua pedida nesta etapa.** Nenhuma nova; se surgir uma, a construção para.
 
 ## As unidades
 
-Base: `main` `10c4e0f` e o código de 4.2 (U1–U6); revisão pelo [checklist](../reference/checklist.md).
+Base: `main` `10c4e0f` mais 4.2; revisão pelo [checklist](../reference/checklist.md).
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
 | --- | --- | --- | --- | --- | --- |
@@ -61,19 +60,17 @@ Base: `main` `10c4e0f` e o código de 4.2 (U1–U6); revisão pelo [checklist](.
 | U6 | Percurso de duas empresas e remoções | e2e, `scripts/` | testes | nenhuma | U5 |
 | U7 | Fase 2 (PR próprio, D11): o login perde o alcance | migrações, grants | dados | neon-postgres | v0.5.0 conferida |
 
-Sem paralelismo: U3 e U4 dividem a identidade.
-
 **Orçamento de código alterado** (sem testes nem gerados): U1 **0** (a prova fica fora do
 repositório); U2 **250**; U3 **1.500**; U4 **600**; U5 **550**; U6 **150**; U7 **100**. Total:
 **3.150**, teto 4.000 (L2). Se passar, divide-se sem cortar: **5a** (U1–U3, U7) e **5b** (U4–U6).
 
-**Encaixes de 4.2, a conferir no código de 4.2 em `main`** (a construção para se um não valer):
+**Encaixes de 4.2, a conferir quando 4.2 entrar em `main`** (a construção para se um não valer):
 
 - **F1.** `admission.ts`: união das três provas, `ACTIONS` com `by`, `admitOperator`, `mayOperate`.
 - **F2.** `database.ts`: `read`, `command`, `libraryCommand` por `inTransaction`; `libraryOrm` no pool.
 - **F3.** Portas da identidade, `organizationAdapter(auth)` (`getOrgAdapter`) entre elas.
 - **F4.** `operations.client` com `revision`, sem chave estrangeira nem `DELETE`; rotas `/api/clients`.
-- **F5.** `lockCompany`, a ordem de lock dos convites, da correção e do aceite.
+- **F5.** A correção trava o cliente (`FOR UPDATE`) e depois a empresa (`lockCompany`); convites e aceite, só a empresa.
 - **F6.** Web: `client.tsx`, `queries.ts`, `/operations/clients/$companyId`, `NotFound`.
 - **F7.** `Client.revision`; `CLIENT_STALE` 412. **F8.** `allowUserToCreateOrganization: false`.
 
@@ -88,7 +85,7 @@ As provas B1–B9 são as nove de B.
 | 3 | U3 | B3: no contexto A, `select` sem filtro em empresa, membros, convites, cliente e pessoas (com junções e a âncora da página) não traz linha de B; traz as de A | `isolation.test.ts` “filtro esquecido” | must |
 | 4 | U3 | B4: no contexto A, INSERT com empresa B é recusado (42501); UPDATE que troca a empresa é recusado; UPDATE e DELETE sem filtro não mudam B; as linhas de B são conferidas depois | `isolation.test.ts` “escrita” | must |
 | 5 | U3 | B5: na mesma conexão, A, depois B, depois sem contexto, com commit, rollback e a transação aninhada da biblioteca: nenhum contexto sobra; uma falha ao fixar o contexto dá 503 e nada roda | `isolation.test.ts` “conexão reciclada” | must |
-| 6 | U3 | B6: as suítes de 4.1 e 4.2 passam sem mudar suas asserções; um id, token ou página de outro escopo não amplia o alcance; o limite de convites por pessoa segue contando todas as empresas | suítes existentes; `invitations.test.ts` “ritmo entre empresas” | must |
+| 6 | U3 | B6: as suítes de 4.1 e 4.2 passam sem mudar suas asserções; um id, token ou página de outro escopo não amplia o alcance; o limite de convites por pessoa segue contando todas as empresas; cadastro e convite de dono em `OPERATOR` criam a empresa sem membro operador | suítes existentes; `invitations.test.ts` “ritmo entre empresas” | must |
 | 7 | U3 | Abrir transação sem escopo não compila; o escopo vem da sessão ou da prova, nunca do corpo | `database.check.ts` | must |
 | 8 | U4 | B7: só o operador apaga: quem não é operador, dono incluído, recebe 404 em `DELETE /api/clients/{id}`; a rota nativa de apagar empresa é recusada a toda sessão | `clients.test.ts` “apagar: fora”; `companies.test.ts` | must |
 | 9 | U4 | Nome e revisão certos: 204; saem empresa, membros, convites e cadastro, e a empresa ativa das sessões; pessoas, contas, senhas, sessões e a empresa B ficam | `clients.test.ts` “apagar” | must |
@@ -97,7 +94,7 @@ As provas B1–B9 são as nove de B.
 | 12 | U4 | `CLIENT_DELETED` leva trace e ids, nunca nome, CNPJ ou e-mail | `clients.test.ts` “log” | must |
 | 13 | U5 | Cada célula da matriz renderiza; corte, 502 ou 503 mantém o diálogo e diz que não confirmou; o foco começa no campo; Enter não confirma sem o nome; T23 nas três larguras, temas e teclado | `delete-client-dialog.test.tsx`, navegador | must |
 | 14 | U5 | J: recarregar durante o cadastro perde a chave e mostra a lista atual, sem refazer sozinho | `register-client-form.test.tsx` “recarregar” | must |
-| 15 | U6 | B8: tirar a política, o `SET LOCAL ROLE` ou a checagem de revisão faz o teste do critério deixar de passar | `npm run removals` | must |
+| 15 | U6 | B8: tirar a política, o `SET LOCAL ROLE` ou a checagem de revisão faz o teste do critério deixar de passar; tirar o escopo da assinatura faz `database.check.ts` compilar e falhar | `npm run removals` | must |
 | 16 | U6 | O roteiro: duas empresas, a recusa cruzada, apagar B, o dono de B ainda entra e A segue | `tests/e2e/two-companies.test.ts` | must |
 | 17 | U1, U7 | B9: a prova passa no PostgreSQL local e no Neon; a v0.5.0 volta à v0.4.2 e funciona; depois da v0.5.1 nenhuma consulta do login alcança as tabelas de empresa; o banco ainda dorme (nada novo roda sozinho) | registro 0039 (Result); `catalog.test.ts`; suíte com a fase 2 | must |
 
@@ -109,7 +106,7 @@ Dono: Hub. Apagar não deixa estado: a empresa existe ou dá 404 (C26, Q6).
 | --- | --- | --- | --- | --- | --- |
 | Central: cliente (aguardando ou ativo) | 4.2, com **Apagar cliente** | 4.2 | 4.2 | 404 | apagado noutra aba: a leitura seguinte dá 404 |
 | Apagar cliente (diálogo) | “Apagar {nome}?”, “Saem a empresa, os membros, os convites e o cadastro. As pessoas continuam com as contas delas.”, campo “Digite o nome do cliente”, Cancelar, **Apagar cliente** desabilitado | “Apagando…”, bloqueado; fechar não desfaz | corte, 502, 503: “Não confirmamos a exclusão. Veja a lista antes de tentar de novo.” | 404: fecha e vai à lista com “Este cliente não existe mais.” | 412: “Este cliente mudou.”, recarrega; 422 no campo: “O nome não confere.” |
-| Central: lista, depois de apagar | 4.2 | 4.2 | 4.2 | — | `Notice` “Cliente apagado.”; o item sai; cache do cliente removido |
+| Central: lista, depois de apagar | 4.2 | 4.2 | 4.2 | — | `Notice` “Cliente apagado.”; o item sai |
 | Empresa e Pessoas (membro) | 4.1 | 4.1 | 4.1 | apagada: `NotFound`, sem nome nem papel antigos | sem aviso instantâneo; a próxima leitura dá 404 |
 | Suas empresas | 4.2 | 4.1 | 4.1 | — | a apagada some na leitura seguinte |
 | Link do convite | 4.1 | 4.1 | 4.1 | empresa apagada: 404 de 4.1 | e-mail já entregue chega e não abre |
@@ -117,7 +114,7 @@ Dono: Hub. Apagar não deixa estado: a empresa existe ou dá 404 (C26, Q6).
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `Client.{name,revision}` (4.2) | operação de cliente | diálogo, comando de apagar |
+| `Client.{name,revision}` (4.2; `name` é o de exibição, não a razão social) | operação de cliente | diálogo, comando de apagar |
 | corpo `{name, revision}` de `deleteClient` | diálogo | comando, relido sob o lock |
 | 204 sem corpo | rota, depois do commit | mutação: remove o cache, navega |
 | `Scope` | a transação, da sessão ou da prova | `platform/database.ts`, as políticas pelo contexto |
@@ -170,7 +167,8 @@ Better Auth 1.7.8, o commit de 4.2; fora: dono do banco, credencial roubada, car
 1. O registro entra em `main` antes do código de prova.
 2. A prova, fora do repositório: os candidatos de U2 e U3, duas empresas sintéticas, pessoas só
    de A, só de B, nas duas e sem vínculo. Responde o que o estudo deixou à prova: os predicados, as
-   projeções de `auth.user`, o adapter no escopo, apagar sob política, o ritmo global de convites,
+   projeções de `auth.user`, o adapter no escopo, apagar sob política (o `SELECT` que o `DELETE`
+   pede), o lock de linha sob RLS (`UPDATE` e política de quem trava), o ritmo global de convites,
    o `libraryOrm` fora de transação.
 3. Local em Docker, depois no Neon: um banco novo e vazio num branch do Hub, migrado do zero e
    apagado no fim (L), sem ler linha de empresa.
@@ -220,7 +218,7 @@ Regras: D5, D10–D12.
 | `apps/server/src/hub/status/` | muda `store.ts` para a transação de instalação | `main.ts` |
 | `apps/server/migrations/` | cria a migração das políticas e do RLS | `migrate` |
 | `scripts/removals.json` | `rls-company-policy`, `scope-role-set` | `npm run removals` |
-| `docs/reference/boundaries.md` | o escopo na fronteira da biblioteca (C75) | revisores |
+| `docs/reference/boundaries.md` | o escopo na biblioteca (C75) | revisores |
 
 ### Os contratos que a unidade cria
 
@@ -236,10 +234,10 @@ Regras: D5, D10–D12.
 | Tabela | `hub_company` | `hub_person` | `hub_invitation` | `hub_operator` |
 | --- | --- | --- | --- | --- |
 | `auth.company` | `id` = empresa | as dos vínculos da pessoa | a do convite | todas |
-| `auth.member` | da empresa | da pessoa | só INSERT: a pessoa, na empresa do convite | donos; DELETE da empresa |
+| `auth.member` | da empresa | da pessoa | só INSERT: a pessoa, na empresa do convite | donos; com `companyId`, todos dela, para apagar |
 | `auth.invitation` | da empresa | para o e-mail da pessoa, ou enviados por ela (ritmo) | `id` = convite | de dono; DELETE da empresa |
 | `operations.client` | nenhuma | nenhuma | nenhuma | todas; DELETE da empresa |
-| `auth.user` | membros e convidantes da empresa, e a pessoa | a pessoa | convidante, convidado, a pessoa | donos das empresas |
+| `auth.user` | membros e convidantes da empresa, e a pessoa | a pessoa | convidante, convidado, a pessoa | a pessoa, os operadores, os donos |
 
 `hub_runtime` ganha a política aberta de `auth.user` que o login usa e, até U7, uma de transição
 nas quatro tabelas de empresa, para a v0.4.2 rodar no banco migrado (D6).
@@ -249,16 +247,14 @@ nas quatro tabelas de empresa, para a v0.4.2 rodar no banco migrado (D6).
 1. `Scope` e a transação; `read`/`command` sem escopo deixam de existir. Regras: C16, C21, C22, C63,
    D19, D20, D22, D25. Funções: drizzle-orm 1.0.0-rc.4 `transaction`; PostgreSQL 18 `set_config`
    com `is_local = true`, `SET LOCAL ROLE`.
-2. Cada chamador recebe o escopo: rotas de empresa, `COMPANY` pela URL, e a admissão decide dentro
-   (S7, S10); Suas empresas e convites recebidos, `PERSON`; o link de convite e suas escritas,
-   `INVITATION`; a Central, `OPERATOR`; `checkPace` por `within(…, PERSON)`. O envio de e-mail
-   pós-commit abre outra transação com o mesmo escopo, sem lock (D22).
-3. O adapter da biblioteca roda no escopo pelo `runWithTransaction` já usado em `libraryCommandOn`
-   (`@better-auth/core` 1.7.8 `context/transaction.mjs`); sem `AsyncLocalStorage` próprio de
-   empresa. O que roda em `libraryOrm` fora de transação não toca tabela de empresa (B1).
-4. Políticas por `pgPolicy` com `for`, `to`, `using` e `withCheck` explícitos e
-   `pgSchema(…).table.withRLS` (drizzle-orm 1.0.0-rc.4 `pg-core/policies.js`); SQL próprio só no que
-   não gera (D5). Sem `FORCE`: o dono só roda o `migrate` (D9, D10).
+2. Escopo por chamador: rotas de empresa, `COMPANY` pela URL, a admissão decide dentro (S7, S10);
+   Suas empresas e convites recebidos, `PERSON`; o link de convite, `INVITATION`; a Central,
+   `OPERATOR`; `checkPace` por `within(…, PERSON)`. O e-mail pós-commit abre outra transação no mesmo
+   escopo, sem lock (D22).
+3. O adapter roda no escopo pelo `runWithTransaction` de `libraryCommandOn` (`@better-auth/core`
+   1.7.8); sem `AsyncLocalStorage` de empresa. O `libraryOrm` não toca tabela de empresa (B1).
+4. `pgPolicy` com `for`, `to`, `using` e `withCheck` explícitos, `table.withRLS` (drizzle-orm
+   1.0.0-rc.4); SQL próprio só no que não gera (D5). Sem `FORCE`: o dono só roda o `migrate` (D9).
 5. Regras: S6–S10, S15, D6, D12, T10, T12.
 
 ### Como se prova
@@ -288,8 +284,8 @@ o positivo de A (T10).
 
 ### A ordem do trabalho
 
-1. Numa `libraryCommand` com `OPERATOR {companyId}`: `admitOperator`; `lockCompany` (F5); lê
-   cliente e nome (ausente: 404); revisão (412) e nome literal (422); UPDATE de
+1. Numa `libraryCommand` com `OPERATOR {companyId}`: `admitOperator`; trava o cliente e depois a
+   empresa, a ordem da correção (F5; ausente: 404); revisão (412) e `name` literal (422); UPDATE de
    `active_organization_id` para `NULL` nas sessões que apontam a ela; DELETE do cliente;
    `organizationAdapter(auth).deleteOrganization(companyId)` (better-auth 1.7.8
    `organization/adapter.mjs:370`: membros, convites, empresa, na transação corrente); commit; log;
@@ -315,7 +311,7 @@ o positivo de A (T10).
 
 ### A ordem do trabalho
 
-Sem endereço novo: o diálogo abre no cliente. Regras: W9–W13, W15, W17, W21–W24, W28, V23, V55. `hubMutation` sem retry; no 204 e no 404,
+O diálogo abre no cliente. Regras: W9–W13, W15, W17, W21–W24, W28, V23, V55. `hubMutation` sem retry; no 204 e no 404,
 `removeQueries` do cliente, `invalidateQueries` da lista, navega à lista. Base UI 1.9.0
 `AlertDialog`, pelo registro shadcn.
 
