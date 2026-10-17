@@ -22,14 +22,13 @@ qualquer.
    tente `123456789`: "Esta senha apareceu em vazamentos de dados." O link continua valendo.
    Escolha outra senha e entre. A janela antiga dela, recarregada, pede para entrar de novo.
 
-**O que você faz, e quando.** Antes de U1: a palavra sobre o grant (D11). No fim: faz o roteiro,
-diz o que viu e aprova os textos.
+**O que você faz.** Antes de U1: a palavra sobre o grant (D11). No fim: o roteiro e os textos.
 
 **Decisões já dadas** (2026-10-17): 1A, 2A, 3A, 4A, 5A, 6A, 7B, T1A, T2A, T3A, T4B, e "Tudo A"
 para as quatro perguntas seguintes, aqui P1 a P4:
 
-- **P1.** A Central age nas pessoas como um dono, sem virar membro: muda papéis, tira, convida
-  dono numa empresa ativa; o último dono vale para ela; nunca mexe em senha ou sessão.
+- **P1.** A Central age nas pessoas como um dono, sem virar membro: lê nome e e-mail de todas,
+  muda papéis, tira, convida dono; o último dono vale para ela; nunca mexe em senha ou sessão.
 - **P2.** Todo link de senha vale 1 hora. **Isto muda a sua aprovação da etapa 3** ("vale 15
   minutos"), pelo seu "Tudo A": o link da primeira pessoa passa a 1 hora.
 - **P3.** Um e-mail de recuperação por pessoa por minuto.
@@ -73,8 +72,7 @@ rotas da empresa, só sem membro (`admission.ts:153-166`); a validade é uma op�
 | 59, 68 portas sem escopo | Não | `libraryInstallation`, que a recuperação chama, só alcança as tabelas do login; a cerca é um check (L20) |
 | 60 operador promovido | Não | Fora do tema |
 | 76, 78 renovação | Não | Fora do tema |
-| 58, 61, 63, 64, 67, 69–74, 79 | Não | Fora do tema |
-| 45, 25, o resto da 39 | Não | Fora do tema |
+| 45, 25, o resto da 39; 58, 61, 63, 64, 67, 69–74, 79 | Não | Fora do tema |
 
 **Seguimentos** (issue futura): a senha checada antes do link; o tempo do 202; a issue 60.
 
@@ -116,7 +114,7 @@ U4 **650**; U5 **250**; U6 **450**; U7 **100**; e **300** espalhados. Total: **3
 | 2 | U1 | Sem filtro, o escopo do convite não apaga sessão de outra pessoa nem a de quem convidou, e o da empresa não muda a de outra | `isolation.test.ts` “sessões” | must |
 | 3 | U2 | Dono tira qualquer um; administrador tira administrador e membro, dono dá 404; membro só a si; quem não é da empresa: 404 (S10). 204; a tirada lê a empresa: 404 | `memberships.test.ts` “quem tira quem” | must |
 | 4 | U2 | Tirar ou sair cancela os convites pendentes que a pessoa enviou nessa empresa, pelo cancelamento de 4.1 (a revisão avança); `listMembers` os conta; uma recusa plantada entre apagar e cancelar não deixa nada | `memberships.test.ts` “convites do tirado” | must |
-| 5 | U2 | Um caso por célula da tabela de papéis de U2, com o status dela; `from` velho: 412 `MEMBER_STALE` | `memberships.test.ts` “papel” | must |
+| 5 | U2 | Um caso por célula e por resultado da tabela de U2, o 409 também para a Central; `from` velho: 412 | `memberships.test.ts` “papel” | must |
 | 6 | U2 | Sob corrida (dois rebaixamentos, duas remoções, sair contra rebaixar, Central contra dono), 20 de 20 terminam com dono; a empresa ativa nunca volta a aguardando, e a Central a lê sem 500 (issue 62) | `memberships.test.ts` “último dono sob corrida” | must |
 | 7 | U2 | A Central, sem virar membro, lista pessoas e convites de empresa ativa, muda papéis, tira, convida dono; o último dono a recusa igual; outro: 404 | `memberships.test.ts` “Central”; `owner-invitation.test.ts` | must |
 | 8 | U2 | Sair com a sessão apontando a empresa funciona; o campo fica, sem leitor | `memberships.test.ts` “sair” | must |
@@ -138,7 +136,7 @@ U4 **650**; U5 **250**; U6 **450**; U7 **100**; e **300** espalhados. Total: **3
 | --- | --- | --- | --- | --- | --- |
 | Pessoas, linha | nome, e-mail, papel; **Mudar papel** e **Tirar da empresa** só se o contrato permitir; na própria, **Sair da empresa** | 4.1 | 4.1 | a empresa: `NotFound` de 4.1 | relê a lista depois de cada ação |
 | Mudar papel (diálogo) | os papéis de `mayChangeTo`, o atual marcado | “Salvando…” | corte, 502, 503: “Não confirmamos a mudança. Veja a lista.” | pessoa já tirada: fecha e relê | 412: “Esta pessoa mudou de papel enquanto você olhava.”; 409 `LAST_OWNER` |
-| Tirar (diálogo) | “Tirar {nome} de {empresa}? Perde o acesso agora. A conta continua.”; com convites, “Os {n} convites que {nome} enviou serão cancelados.” (um: no singular) | “Tirando…” | como acima | já tirada: 204, relê | 409 `LAST_OWNER` |
+| Tirar (diálogo) | “Tirar {nome} de {empresa}? Perde o acesso agora. A conta continua.”; com convites, “Os {n} convites que {nome} enviou serão cancelados.” ou, com um, “O convite que {nome} enviou será cancelado.” | “Tirando…” | como acima | já tirada: 204, relê | 409 `LAST_OWNER` |
 | Sair (diálogo) | “Sair de {empresa}? Você perde o acesso agora.”; com convites, “Os {n} convites que você enviou serão cancelados.” | “Saindo…” | como acima | — | 409: “Torne outra pessoa dona antes de sair.”; sucesso: Suas empresas |
 | Central, cliente ativo | 4.2, mais **Pessoas** (a mesma lista, ações e convites; convite só de dono) | 4.2 | 4.2 | 404 | como Pessoas |
 | Esqueci minha senha | campo de e-mail | “Enviando…” | 429 `RECOVERY_ATTEMPTS_EXCEEDED` | — | corte, 502, 503: o texto do enviado |
@@ -283,7 +281,7 @@ UI 1.9.0 por `ui/alert-dialog.tsx` e `ui/select.tsx`.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/` | `identity.ts`, `index.ts` | web, OpenAPI |
+| `packages/hub-api/src/` | `identity.ts`, `index.ts`, `failures.ts` | web, OpenAPI |
 | `apps/server/src/hub/identity/` | cria `password-recovery.ts`, `password-recovery-email.tsx`; muda `auth.ts`, `routes.ts`, `public.ts`, `messages.ts` | `main.ts` |
 | `docs/how-to/hub-server.md` | 15 minutos vira 1 hora (P2) | o fundador |
 | `scripts/removals.json` | `recovery-pace-per-person`, `recovery-attempt-path`, `recovery-mail-after-commit`, `revoke-sessions-on-reset` | `npm run removals` |
