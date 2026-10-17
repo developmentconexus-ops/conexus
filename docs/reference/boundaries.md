@@ -9,8 +9,8 @@ piece of this file that a row of `scripts/removals.json` protects names that row
 "fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
 not name protect Hub rules that are not boundaries over a library: the mail adapter's refusal of a
 bounce, the replay of an attempt key, that only the Operations Central creates a company, the state
-of a listed invitation, the log line of an undeclared failure, a write refused for its media type or
-its origin, and the library joins the Hub sets.
+of a listed invitation, the log line of an undeclared failure, and a write refused for its media type
+or its origin.
 
 ## GitHub Actions and git
 

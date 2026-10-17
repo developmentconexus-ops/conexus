@@ -274,8 +274,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
       },
     },
     advanced: {
-      // One query per join, on the relations of tables.ts. Without it the library joins row by row,
-      // all at once, on a command's one connection, and pg warns of concurrent queries.
+      // One query per join, on the relations of tables.ts, not one more per joined row.
       database: { joins: true },
       // __Host- comes from the names below; the library would otherwise prefix __Secure-.
       useSecureCookies: false,

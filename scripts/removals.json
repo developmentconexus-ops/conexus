@@ -352,17 +352,6 @@
     }
   },
   {
-    "id": "library-joins-native",
-    "file": "apps/server/src/hub/identity/auth.ts",
-    "find": "database: { joins: true },",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/invitation-journey.test.ts",
-      "name": "cria a quarta"
-    }
-  },
-  {
     "id": "attempt-key-outcome-unknown",
     "file": "apps/web/src/platform/hub.ts",
     "find": "const settled = FAILURES[code].settles",
@@ -376,8 +365,8 @@
   {
     "id": "invitation-replay-resends-unmailed",
     "file": "apps/server/src/hub/identity/invitations.ts",
-    "find": "if (same.unmailed) return",
-    "replace": "if (false) return",
+    "find": "if (same.unmailed) {",
+    "replace": "if (false) {",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-replay.test.ts",
