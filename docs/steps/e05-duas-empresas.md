@@ -67,7 +67,7 @@ Base: `main` `10c4e0f` mais 4.2; revisão pelo [checklist](../reference/checklis
 **F1** `ACTIONS`, `admitOperator`. **F2** `read`, `command`, `libraryCommand`; `libraryOrm` no
 pool. **F3** `organizationAdapter(auth)`. **F4** `operations.client` com `revision`, sem chave
 estrangeira nem `DELETE`. **F5** A correção trava o cliente, depois a empresa; convites e aceite,
-só a empresa. **F6** `client.tsx`, `NotFound`. **F7** `CLIENT_STALE`. **F8** sem criação pelo cliente.
+só a empresa. **F6** `client.tsx`. **F7** `CLIENT_STALE`. **F8** sem criação pelo cliente.
 
 ## Os critérios de aceite
 
@@ -96,7 +96,8 @@ As provas B1–B9 são as nove de B.
 
 ## A matriz de estados
 
-Apagar não deixa estado: a empresa existe ou dá 404 (C26).
+Apagar não deixa estado: a empresa existe ou dá 404 (C26). Um cadastro repetido com a chave antiga
+depois de apagar é um cadastro novo (fundador, 2026-10-17: B).
 
 | Tela | Vazio | Carregando | Erro | Não encontrado | Vencido, recusado ou concorrência |
 | --- | --- | --- | --- | --- | --- |
@@ -138,7 +139,7 @@ Falha nova: `CLIENT_NAME_MISMATCH` 422, USER, settles, ação NONE (C48).
 
 **A medida do transplante.** Zero linhas antigas.
 
-**A dívida.** Nenhuma. Fechamento (L19): arquitetura e 0012 citam a política.
+**A dívida.** Nenhuma; no fechamento, arquitetura e 0012 citam a política.
 
 ## U1 A prova
 
