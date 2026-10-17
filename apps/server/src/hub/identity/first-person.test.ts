@@ -7,7 +7,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { Email } from '@conexus/hub-api'
-import { createHub, identityOf } from '../../main.ts'
+import { createHub, identityOf, operationsOf } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -65,7 +65,8 @@ async function hubOn(t: TestContext, test: TestDatabase) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const app = await createHub(config, { status, identity })
+  const operations = operationsOf(test.database, identity)
+  const app = await createHub(config, { status, identity, operations })
   t.after(() => app.close())
   return app
 }

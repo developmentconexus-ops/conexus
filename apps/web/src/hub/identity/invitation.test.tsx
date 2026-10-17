@@ -22,6 +22,7 @@ const DETAILS = {
   company: COMPANY,
   role: 'admin',
   inviterName: 'Ana Lima',
+  firstOwner: false,
   expiresAt: '2026-10-20T12:00:00.000Z',
   revision: 0,
 } as const
@@ -58,6 +59,22 @@ for (const [state, text] of [
     expect(screen.queryByRole('button', { name: /convite|senha/ })).toBeNull()
   })
 }
+
+test('o primeiro dono de um cliente lê a frase de P5: Conexus o convida para ser o primeiro dono', async () => {
+  const firstOwner = {
+    ...DETAILS,
+    role: 'owner',
+    inviterName: 'Conexus',
+    firstOwner: true,
+  } as const
+  hub({ kind: 'NEW', email: DAVI.email, ...firstOwner })
+  open()
+  expect(
+    await screen.findByRole('heading', {
+      name: 'Conexus convidou você para ser o primeiro dono de Empresa Teste.',
+    }),
+  ).toBeTruthy()
+})
 
 test('another session sees only its address and can sign out to read the invitation', async () => {
   const state = hub({ kind: 'OTHER', signedInAs: DAVI.email })

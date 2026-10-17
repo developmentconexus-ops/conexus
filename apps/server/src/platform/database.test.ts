@@ -108,6 +108,14 @@ test('uma leitura parada além do prazo: 503, o soquete destruído solta as trav
   const holder = asOwner('select pg_advisory_xact_lock(777), pg_sleep(60)').catch(
     (error: unknown) => error,
   )
+  // The read must find 777 taken: it starts once the holder has it, never on a guess of when.
+  const held = `select count(*)::int as held from pg_locks
+    where locktype = 'advisory' and objid = 777 and granted`
+  const deadline = Date.now() + 5_000
+  while (Object((await asOwner(held))[0]).held === 0) {
+    assert.ok(Date.now() < deadline, 'the holder never took lock 777')
+    await setTimeout(20)
+  }
   const started = Date.now()
   try {
     await assert.rejects(

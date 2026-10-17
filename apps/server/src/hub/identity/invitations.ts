@@ -11,11 +11,12 @@ import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { Admitted } from './admission.ts'
-import { admit } from './admission.ts'
+import type { CompanyProof, OwnerInviterProof } from './admission.ts'
+import { admitInviter, isOperator, OWNER_INVITER_ROLE } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
-import { refusedAs, storedAddress } from './auth.ts'
+import { organizationAdapter, refusedAs, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
+import type { Inviter } from './messages.ts'
 import { company, invitation, user } from './tables.ts'
 
 // The founder's number, step 4 answer 6: invitations per person and minute.
@@ -80,7 +81,7 @@ type Invite = {
   replaces?: z.infer<typeof Replacement>
 }
 
-async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) {
+async function attemptOf(tx: CommandTx, admitted: CompanyProof, attemptKey: string) {
   const [same] = await tx
     .select({
       ...pending,
@@ -98,7 +99,7 @@ async function attemptOf(tx: CommandTx, admitted: Admitted, attemptKey: string) 
 }
 
 /** Room for one more open invitation: the address's own, about to be replaced, does not count. */
-async function checkRoom(tx: CommandTx, admitted: Admitted, email: string): Promise<void> {
+async function checkRoom(tx: CommandTx, admitted: CompanyProof, email: string): Promise<void> {
   const live = await tx.$count(
     invitation,
     and(
@@ -126,7 +127,7 @@ export async function checkPace(tx: CommandTx, personId: string): Promise<void> 
  * The address's open invitation, by the unique index and with no clock: an expired one the plugin
  * no longer sees still holds the index, so it is canceled too (D15).
  */
-async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
+async function openOf(tx: CommandTx, admitted: CompanyProof, email: string) {
   const [open] = await tx
     .select({ ...pending, live: sql<boolean>`${LIVE}` })
     .from(invitation)
@@ -140,28 +141,133 @@ async function openOf(tx: CommandTx, admitted: Admitted, email: string) {
   return OpenRow.optional().parse(open)
 }
 
-async function createdOf(tx: CommandTx, admitted: Admitted, invitationId: string) {
+/** On a company with no member only the operator invites, as Conexus, its first owner (step 4.2). */
+export function inviterOf(admitted: CompanyProof, person: Person): Inviter {
+  if (admitted.kind === 'OWNER_INVITER') return { kind: 'CONEXUS' }
+  return { kind: 'MEMBER', name: person.name }
+}
+
+async function createdOf(
+  tx: CommandTx,
+  input: { admitted: CompanyProof; person: Person; invitationId: string },
+) {
+  const { admitted, invitationId } = input
   const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invitationId))
   if (row === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'invitation not read' } })
   }
   const companyName = (await companyById(tx, admitted.companyId)).name
-  return { invitation: pendingOf(PendingRow.parse(row)), mail: { companyName } }
+  const inviter = inviterOf(admitted, input.person)
+  return { invitation: pendingOf(PendingRow.parse(row)), mail: { companyName, inviter } }
+}
+
+/** The inviter's row, held until commit: the pace counts their invitations one at a time. */
+export async function lockedInviter(tx: CommandTx, personId: string) {
+  const [inviter] = await tx.select().from(user).where(eq(user.id, personId)).for('no key update')
+  if (inviter === undefined) throw new Failure('SESSION_REQUIRED')
+  return inviter
+}
+
+/** The library's refusals of a member's invitation, as the Hub's failures (step 4.1). */
+export const INVITATION_REFUSALS = {
+  USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'MEMBER_EXISTS',
+  YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE: 'INVITATION_ROLE_REFUSED',
+} as const
+
+/** A client's first owner is never an operator: Conexus is never a member (step 4.2). */
+export async function checkOwnerNotOperator(tx: CommandTx, email: Email): Promise<void> {
+  if (await isOperator(tx, email)) throw new Failure('CLIENT_OWNER_IS_OPERATOR')
+}
+
+/**
+ * The operator invites one first owner at a time, only as owner. An expired one the operator
+ * replaces is not live, so it does not count.
+ */
+async function checkOwnerInvitation(
+  tx: CommandTx,
+  input: { admitted: OwnerInviterProof; email: Email; role: Role },
+) {
+  const { admitted } = input
+  if (input.role !== OWNER_INVITER_ROLE) throw new Failure('INVITATION_ROLE_REFUSED')
+  const live = await tx.$count(
+    invitation,
+    and(
+      eq(invitation.organizationId, admitted.companyId),
+      eq(invitation.role, 'owner'),
+      eq(invitation.status, 'pending'),
+      LIVE,
+    ),
+  )
+  if (live > 0) throw new Failure('OWNER_INVITATION_OPEN')
+  await checkOwnerNotOperator(tx, input.email)
+}
+
+/**
+ * Cancels an invitation: a member's through the plugin's endpoint, which checks their permission,
+ * and the operator's, who is no member, through its adapter (docs/reference/boundaries.md).
+ */
+export async function cancelThrough(
+  auth: Auth,
+  input: { admitted: CompanyProof; headers: Headers; invitationId: string },
+): Promise<void> {
+  const { invitationId } = input
+  if (input.admitted.kind === 'MEMBER') {
+    await auth.api.cancelInvitation({ headers: input.headers, body: { invitationId } })
+    return
+  }
+  const adapter = await organizationAdapter(auth)
+  await adapter.updateInvitation({ invitationId, status: 'canceled' })
+}
+
+type Open = { admitted: CompanyProof; headers: Headers; invitationId: string; superseded: boolean }
+
+/** Cancels the address's open invitation; a replacement also marks it superseded (4.1 decision B). */
+async function cancelOpen(auth: Auth, tx: CommandTx, input: Open) {
+  const { invitationId, superseded } = input
+  await cancelThrough(auth, input)
+  await tx
+    .update(invitation)
+    .set({
+      revision: sql`${invitation.revision} + 1`,
+      ...(superseded ? { supersededAt: sql`statement_timestamp()` } : {}),
+    })
+    .where(eq(invitation.id, invitationId))
+}
+
+/**
+ * Writes the invitation: a member's through the plugin's endpoint, which owns the roles and the
+ * member check (K21r, K23); the first owner's, by the operator who is no member, through its adapter.
+ */
+async function written(auth: Auth, admitted: CompanyProof, input: Invite, email: string) {
+  const { role, attemptKey } = input
+  const organizationId = admitted.companyId
+  if (admitted.kind === 'MEMBER') {
+    const body = { email, role, organizationId, attemptKey }
+    return refusedAs(
+      () => auth.api.createInvitation({ headers: input.headers, body }),
+      INVITATION_REFUSALS,
+    )
+  }
+  const adapter = await organizationAdapter(auth)
+  return adapter.createInvitation({
+    invitation: { email, role, organizationId, teamIds: [], attemptKey },
+    user: admitted.inviter,
+  })
 }
 
 /**
  * Invites an e-mail. The Hub owns the count of open invitations and the pace of each person, under
- * the company's lock; the plugin owns the roles, the member check and the row (K21r, K23).
+ * the company's lock, and the operator's one first owner; the plugin writes the row.
  */
 export function createInvitationCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: Invite) =>
     deps.libraryCommand(async (tx) => {
       const email = storedAddress(input.email)
-      const { headers } = input
       await lockCompany(tx, input.companyId)
       const personId = input.person.id
-      const admitted = await admit({ tx, personId, companyId: input.companyId, action: 'invite' })
-      await tx.select({ id: user.id }).from(user).where(eq(user.id, personId)).for('no key update')
+      const admitted = await admitInviter({ tx, personId, companyId: input.companyId })
+      // The operator's admission already holds the row.
+      if (admitted.kind === 'MEMBER') await lockedInviter(tx, personId)
       const same = await attemptOf(tx, admitted, input.attemptKey)
       if (same !== undefined) {
         if (
@@ -175,8 +281,14 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
         if (same.status !== 'pending' || !same.live) throw new Failure('INVITATION_CLOSED')
         // Committed but never answered by the provider, as when the Hub stopped before the send:
         // the replay sends it again, so delivery is at least once (C64).
-        if (same.unmailed) return { ...(await createdOf(tx, admitted, same.id)), created: false }
+        if (same.unmailed) {
+          const replayed = { admitted, person: input.person, invitationId: same.id }
+          return { ...(await createdOf(tx, replayed)), created: false }
+        }
         return { invitation: pendingOf(same), mail: undefined, created: false }
+      }
+      if (admitted.kind === 'OWNER_INVITER') {
+        await checkOwnerInvitation(tx, { admitted, email: input.email, role: input.role })
       }
       await checkRoom(tx, admitted, email)
       const open = await openOf(tx, admitted, email)
@@ -191,27 +303,18 @@ export function createInvitationCommand(deps: { auth: Auth; libraryCommand: Libr
           throw new Failure('INVITATION_STALE')
       }
       if (open !== undefined) {
-        await deps.auth.api.cancelInvitation({ headers, body: { invitationId: open.id } })
-        await tx
-          .update(invitation)
-          .set({
-            revision: sql`${invitation.revision} + 1`,
-            ...(input.replaces !== undefined ? { supersededAt: sql`statement_timestamp()` } : {}),
-          })
-          .where(eq(invitation.id, open.id))
+        const superseded = input.replaces !== undefined
+        const { headers } = input
+        await cancelOpen(deps.auth, tx, { admitted, headers, invitationId: open.id, superseded })
       }
       await checkPace(tx, personId)
-      const { attemptKey, role } = input
-      const body = { email, role, organizationId: admitted.companyId, attemptKey }
-      const created = await refusedAs(() => deps.auth.api.createInvitation({ headers, body }), {
-        USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION: 'MEMBER_EXISTS',
-        YOU_ARE_NOT_ALLOWED_TO_INVITE_USER_WITH_THIS_ROLE: 'INVITATION_ROLE_REFUSED',
-      })
+      const created = await written(deps.auth, admitted, input, email)
       if (input.replaces !== undefined)
         await tx
           .update(invitation)
           .set({ replaces: input.replaces })
           .where(eq(invitation.id, created.id))
-      return { ...(await createdOf(tx, admitted, created.id)), created: true }
+      const made = { admitted, person: input.person, invitationId: created.id }
+      return { ...(await createdOf(tx, made)), created: true }
     })
 }

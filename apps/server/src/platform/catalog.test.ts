@@ -170,6 +170,8 @@ const REFUSED: [string, ReturnType<typeof sql>][] = [
   ['DELETE de auth.company', sql`delete from auth.company`],
   ['DELETE de auth.member', sql`delete from auth.member`],
   ['DELETE de auth.invitation', sql`delete from auth.invitation`],
+  // Step 4.2: the Hub never deletes a client; step 5 brings that grant.
+  ['DELETE de operations.client', sql`delete from operations.client`],
   ['DDL em auth', sql`alter table auth.session add column planted text`],
 ]
 for (const [name, statement] of REFUSED) {

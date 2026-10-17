@@ -4,7 +4,8 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
-import { createHub, identityOf } from '../../main.ts'
+import { createHub, identityOf, operationsOf } from '../../main.ts'
+import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
   silent,
@@ -96,6 +97,8 @@ export const SESSION_COOKIE =
   /^__Host-conexus_session=([^;]+); Max-Age=1800; Path=\/; HttpOnly; Secure; SameSite=Lax$/
 export const ANA_ACCOUNT = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
 export const ANA = { name: 'Ana Lima', email: 'ana@example.test', role: 'admin' }
+/** Ana as a person who owns a company, not the operator. */
+export const ANA_OWNER = { name: ANA.name, email: ANA.email }
 export const BRUNO = { name: 'Bruno Reis', email: 'bruno@example.test' }
 export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
@@ -105,7 +108,8 @@ async function hubServing(t: TestContext, mailApiUrl?: string) {
   const config = testConfig(test.runtimeUrl, mailApiUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const app = await createHub(config, { status, identity })
+  const operations = operationsOf(test.database, identity)
+  const app = await createHub(config, { status, identity, operations })
   t.after(() => app.close())
   return { app, test }
 }
@@ -237,12 +241,33 @@ export function codeOf(response: { json(): unknown }): unknown {
   return Object(response.json()).code
 }
 
-/** Ana, the administrator, owns Empresa Teste; `invite` has her invite as an administrator. */
+/**
+ * A company as its rows, with `ownerId` its owner: since step 4.2 only the Operations Central
+ * creates one, and it is born with no member.
+ */
+export async function plantCompany(test: TestDatabase, ownerId: string, name = 'Empresa Teste') {
+  const companyId = id()
+  await test.asOwner(
+    `insert into auth.company (id, name, slug, created_at, attempt_key)
+      values ($1, $2, $1, now(), $1)`,
+    [companyId, name],
+  )
+  await test.asOwner(
+    `insert into auth.member (id, company_id, user_id, role, created_at)
+      values ($1, $2, $3, 'owner', now())`,
+    [id(), companyId, ownerId],
+  )
+  return companyId
+}
+
+/**
+ * Ana owns Empresa Teste, as a person and not the operator, who is never a member (step 4.2);
+ * `invite` has her invite as an administrator.
+ */
 export async function companyOn(t: TestContext) {
   const hub = await hubWithMail(t)
-  const ana = await personOn(hub, ANA)
-  const created = await post(hub, ana, '/api/companies', { name: 'Empresa Teste' })
-  const companyId = String(Object(created.json()).company.id)
+  const ana = await personOn(hub, ANA_OWNER)
+  const companyId = await plantCompany(hub.test, ana.id)
   async function invite(email = INVITEE, key?: string): Promise<string> {
     const body = { email, role: 'admin' }
     const response = await post(hub, ana, `/api/companies/${companyId}/invitations`, body, key)

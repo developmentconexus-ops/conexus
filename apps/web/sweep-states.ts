@@ -4,6 +4,8 @@ import type { Replies } from './layout-harness.ts'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import {
+  CLIENT_ID,
+  central,
   companies,
   INVITATION,
   INVITATION_DETAILS,
@@ -40,6 +42,55 @@ async function inviteRefused(page: Page, sentence: string) {
 const NEVER = new Promise<never>(() => undefined)
 
 export const STATES: State[] = [
+  {
+    name: 'Central sem clientes',
+    path: '/operations/clients',
+    replies: central('NONE'),
+    settle: (p) => waitFor(p, 'Nenhum cliente cadastrado.'),
+  },
+  {
+    name: 'Central com um cliente',
+    path: '/operations/clients',
+    replies: central('AWAITING'),
+    settle: (p) => waitFor(p, `Convite vencido: ${LONG_EMAIL}`),
+  },
+  {
+    name: 'cadastrar cliente, recusado no campo',
+    path: '/operations/clients/new',
+    replies: { ...central('NONE'), 'POST /api/clients': failure('CLIENT_EXISTS') },
+    settle: async (page) => {
+      await page.getByLabel('CNPJ').fill('12.ABC.345/01DE-35')
+      await page.getByLabel('Razão social').fill(LONG_NAME)
+      await page.getByLabel('Nome de exibição').fill('Empresa Teste')
+      await page.getByLabel('E-mail do administrador').fill(LONG_EMAIL)
+      await page.getByRole('button', { name: 'Cadastrar cliente', exact: true }).click()
+      await waitFor(page, 'Já existe um cliente com este CNPJ.')
+    },
+  },
+  {
+    name: 'cliente aguardando, convidar outro e-mail',
+    path: `/operations/clients/${CLIENT_ID}`,
+    replies: central('AWAITING'),
+    settle: async (page) => {
+      await page.getByRole('button', { name: 'Convidar outro e-mail' }).click()
+      await page.getByLabel('E-mail do administrador').waitFor()
+    },
+  },
+  {
+    name: 'cliente aguardando, corrigir dados',
+    path: `/operations/clients/${CLIENT_ID}`,
+    replies: central('AWAITING'),
+    settle: async (page) => {
+      await page.getByRole('button', { name: 'Corrigir dados' }).click()
+      await page.getByLabel('Razão social').waitFor()
+    },
+  },
+  {
+    name: 'cliente ativo',
+    path: `/operations/clients/${CLIENT_ID}`,
+    replies: central('ACTIVE'),
+    settle: (p) => waitFor(p, 'Donos'),
+  },
   {
     name: 'sem sessão',
     path: '/login',
@@ -92,12 +143,6 @@ export const STATES: State[] = [
       true,
     ),
     settle: (p) => waitFor(p, 'Outra Empresa'),
-  },
-  {
-    name: 'nova empresa',
-    path: '/companies/new',
-    replies: SIGNED_IN,
-    settle: (p) => waitFor(p, 'Criar empresa'),
   },
   {
     name: 'dono',

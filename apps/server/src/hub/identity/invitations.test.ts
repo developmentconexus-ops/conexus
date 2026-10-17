@@ -2,17 +2,28 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { MailHub, Person } from './test-hub.ts'
-import { ANA, BRUNO, CARLA, codeOf, hubWithMail, INVITEE, id, personOn, post } from './test-hub.ts'
+import {
+  ANA_OWNER,
+  BRUNO,
+  CARLA,
+  codeOf,
+  hubWithMail,
+  INVITEE,
+  id,
+  personOn,
+  plantCompany,
+  post,
+} from './test-hub.ts'
 
-/** Ana, the administrator, owns Empresa Teste; Bruno is its administrator, Carla its member. */
+/** Ana owns Empresa Teste; Bruno is its administrator, Carla its member. */
 async function companyOn(t: TestContext) {
   const hub = await hubWithMail(t)
-  const ana = await personOn(hub, ANA)
+  const ana = await personOn(hub, ANA_OWNER)
   const bruno = await personOn(hub, BRUNO)
   const carla = await personOn(hub, CARLA)
-  const created = await post(hub, ana, '/api/companies', { name: 'Empresa Teste' })
-  const companyId = String(Object(created.json()).company.id)
+  const companyId = await plantCompany(hub.test, ana.id)
   for (const [person, role] of [
     [bruno, 'admin'],
     [carla, 'member'],
@@ -95,6 +106,27 @@ test('convidar: o membro, ou quem é de outra empresa, 404 e nenhuma linha', asy
   assert.deepEqual(await rows(hub), [])
   assert.equal(companyId.length, 32)
   assert.deepEqual(hub.mail.sent, [])
+})
+
+// The creator-role refusal of a renewal lives only in the plugin's endpoint (crud-invites.mjs:123).
+test('renovar: o administrador renovando o convite de um dono, 403 INVITATION_ROLE_REFUSED; o dono renova', async (t) => {
+  const { hub, ana, bruno, companyId, invite } = await companyOn(t)
+  const invited = await invite(ana, INVITEE, 'owner')
+  assert.equal(invited.statusCode, 201)
+  const url = `/api/companies/${companyId}/invitations/${Object(invited.json()).invitation.id}`
+  function renew(by: Person) {
+    return hub.app.inject({
+      method: 'PUT',
+      url,
+      headers: { origin: TEST_ORIGIN, cookie: by.cookie, 'content-type': 'application/json' },
+      payload: JSON.stringify({ revision: 0 }),
+    })
+  }
+  const refused = await renew(bruno)
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [403, 'INVITATION_ROLE_REFUSED'])
+  assert.equal(hub.mail.sent.length, 1)
+  const renewed = await renew(ana)
+  assert.deepEqual([renewed.statusCode, Object(renewed.json()).invitation.revision], [200, 1])
 })
 
 test('convidar: o administrador pedindo dono, 403 INVITATION_ROLE_REFUSED; quem já é membro, 409 MEMBER_EXISTS', async (t) => {

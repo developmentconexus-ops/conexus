@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Operation } from '@conexus/hub-api'
-import { createCompany, createSession, getHealth, listCompanies } from '@conexus/hub-api'
+import { createSession, getHealth, listCompanies, registerClient } from '@conexus/hub-api'
 import { z } from 'zod'
 import { emitOpenApi } from '../../../scripts/emit-openapi.ts'
 import { hubOn } from './hub/identity/test-hub.ts'
@@ -67,7 +67,7 @@ async function refusal(
 }
 
 test('a recusa de origem de uma escrita sai com o status e o tipo que o documento declara', async (t) => {
-  const response = await refusal(t, createCompany, {
+  const response = await refusal(t, registerClient, {
     headers: { 'content-type': 'application/json', 'cf-connecting-ip': '203.0.113.7' },
     payload: '{"name":"Acme"}',
   })
