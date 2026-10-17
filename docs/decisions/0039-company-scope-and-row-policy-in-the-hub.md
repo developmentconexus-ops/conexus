@@ -33,7 +33,7 @@ step 4.2's commit. Two synthetic companies; people of A, of B, of both, of none.
 
 ## Result
 
-2026-10-17: local PostgreSQL 18.6, B1–B8 pass; Neon PostgreSQL 18 (patch unread), new branch database, direct address, phases 1–2: B1–B5 pass.
+2026-10-17: local PostgreSQL 18.6, B1–B8 pass; Neon PostgreSQL 18 (patch unread), branch database, direct address, phases 1–2: B1–B5 pass.
 
 ## State
 
