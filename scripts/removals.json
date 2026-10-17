@@ -680,5 +680,16 @@
       "file": "src/hub/identity/invitations.test.ts",
       "name": "renovar: o administrador renovando o convite de um dono"
     }
+  },
+  {
+    "id": "library-adapter-joins-transaction",
+    "file": "apps/server/src/hub/identity/auth.ts",
+    "find": "    database: joiningTransaction(adapterFor(deps.database.libraryOrm(relations))),",
+    "replace": "    database: adapterFor(deps.database.libraryOrm(relations)),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/invitations.test.ts",
+      "name": "renovar: o prazo novo do plugin cai"
+    }
   }
 ]

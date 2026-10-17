@@ -129,6 +129,33 @@ test('renovar: o administrador renovando o convite de um dono, 403 INVITATION_RO
   assert.deepEqual([renewed.statusCode, Object(renewed.json()).invitation.revision], [200, 1])
 })
 
+test('renovar: o prazo novo do plugin cai com a transação do Hub quando a gravação seguinte é recusada', async (t) => {
+  const { hub, ana, companyId, invite } = await companyOn(t)
+  const invited = await invite(ana, INVITEE)
+  const invitationId = Object(invited.json()).invitation.id
+  await hub.test.asOwner(`update auth.invitation set expires_at = '2030-01-01' where id = $1`, [
+    invitationId,
+  ])
+  await hub.test.asOwner(`create function public.refuse_revision() returns trigger
+    language plpgsql as $$ begin raise exception 'refused'; end $$`)
+  await hub.test.asOwner(`create trigger refuse_revision before update on auth.invitation
+    for each row when (new.revision <> old.revision) execute function public.refuse_revision()`)
+  const refused = await hub.app.inject({
+    method: 'PUT',
+    url: `/api/companies/${companyId}/invitations/${invitationId}`,
+    headers: { origin: TEST_ORIGIN, cookie: ana.cookie, 'content-type': 'application/json' },
+    payload: JSON.stringify({ revision: 0 }),
+  })
+  assert.equal(refused.statusCode, 500)
+  assert.deepEqual(
+    await hub.test.asOwner(
+      `select to_char(expires_at, 'YYYY-MM-DD') as day from auth.invitation where id = $1`,
+      [invitationId],
+    ),
+    [{ day: '2030-01-01' }],
+  )
+})
+
 test('convidar: o administrador pedindo dono, 403 INVITATION_ROLE_REFUSED; quem já é membro, 409 MEMBER_EXISTS', async (t) => {
   const { hub, ana, bruno, invite } = await companyOn(t)
   const owner = await invite(bruno, INVITEE, 'owner')

@@ -151,6 +151,30 @@ function adapterFor(db: Parameters<typeof drizzleAdapter>[0]) {
   })
 }
 
+/**
+ * Each call of the library's adapter goes to the transaction open on this request, as its internal
+ * adapter's do: the plugin's resend writes through the plain adapter (`crud-invites.mjs:135-143`),
+ * which would leave the scope's transaction for the Hub's login.
+ */
+function joiningTransaction(adapter: ReturnType<typeof adapterFor>): ReturnType<typeof adapterFor> {
+  return (options) => {
+    const base = adapter(options)
+    const joining = new Proxy(base, {
+      get(target, key) {
+        const value = Reflect.get(target, key)
+        if (typeof value !== 'function') return value
+        return async (...args: unknown[]) => {
+          // Outside a transaction the library stores this adapter itself as the current one.
+          const found = await libraryContext.getCurrentAdapter(target)
+          const current = found === joining ? target : found
+          return Reflect.apply(Reflect.get(current, key), current, args)
+        }
+      },
+    })
+    return joining
+  }
+}
+
 export type LibraryCommand = <T>(scope: Scope, work: (tx: CommandTx) => Promise<T>) => Promise<T>
 
 /**
@@ -262,7 +286,7 @@ export function createAuth(deps: { database: Database; config: Config; log: Fail
     basePath: BASE_PATH,
     baseURL: deps.config.publicOrigin,
     secret: deps.config.sessionSecret.reveal(),
-    database: adapterFor(deps.database.libraryOrm(relations)),
+    database: joiningTransaction(adapterFor(deps.database.libraryOrm(relations))),
     emailAndPassword: {
       enabled: true,
       disableSignUp: true,

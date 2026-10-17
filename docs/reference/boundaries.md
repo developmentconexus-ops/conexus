@@ -100,6 +100,20 @@ or its origin.
   mesma pessoa duas vezes" in `first-person.test.ts` fail without the lock (removal
   `first-person-lock`).
 
+### The plain adapter joins that transaction too
+
+- **Library line.** `@better-auth/core/context` exports `getCurrentAdapter`, which the internal
+  adapter and the organization plugin's adapter call to reach the open transaction. The invitation
+  endpoint's `resend` branch does not: it writes the new expiry through `ctx.context.adapter`
+  (`better-auth/dist/plugins/organization/routes/crud-invites.mjs:135-143`), on the library's own
+  connection, as the Hub's login, outside the scope.
+- **Hand-made piece.** `joiningTransaction` in `apps/server/src/hub/identity/auth.ts` wraps the
+  adapter `createAuth` gives the library, so each of its calls goes to `getCurrentAdapter`.
+- **Why.** [Data D22](../guides/data.md). The test "renovar: o prazo novo do plugin cai" in
+  `invitations.test.ts` fails when the wrapper is taken out (removal
+  `library-adapter-joins-transaction`); with `CONEXUS_TEST_PHASE=2`, "renovar: o administrador
+  renovando o convite de um dono" fails too.
+
 ### A company with no member and its first owner's invitation, through the plugin's adapter
 
 - **Library line.** `better-auth/dist/plugins/organization/routes/crud-org.mjs:74-100`.
