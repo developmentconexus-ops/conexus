@@ -84,7 +84,7 @@ seção 1.
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 4.2 Cadastro de cliente | A 4.1 | O grant da tabela do cliente | Convite de 4.1. Da issue 39, o item 23 |
-| 5 Duas empresas | A 4.2 | A política por linha no banco | Nove itens da política, com o operador e sem criar pelo cliente |
+| 5 Duas empresas | A 4.2 | Nenhuma nova (A, B, H, I, J, L, Q6 dadas); confirma H antes da v0.5.1 | Nove itens da política, com o operador e sem criar pelo cliente |
 | 6 Tirar uma pessoa | A 5 | Senha vazada antes de gastar o link | Revisão do login (B3). A regra do último dono |
 | 7 Projeto | A organização do Neon com chave | Nenhuma | Ficha `project`. As correções das telas de exclusão. A prova PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
