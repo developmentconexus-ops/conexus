@@ -438,7 +438,7 @@ or its origin.
   then, in one installation transaction under the address lock, asks for a link only for a person
   who has a password and no link younger than a minute (the library stamps links with the
   application's clock, so the pace reads that clock), forgetting the earlier link. The e-mail is
-  sent after the commit and after the answer, with `Answer.afterReply` in `platform/http.ts`:
+  sent after the commit and after the answer, with `Answer.afterReply` (run by `whenReplyEnds` in `platform/reply-lifetime.ts`):
   the answer is 202 and empty whether or not a mail leaves, and an unavailable provider is logged
   as `MAIL_UNAVAILABLE`, never answered. The library has no per-person pace and no way to ask for
   a link without sending it.
@@ -535,8 +535,9 @@ or its origin.
 
 - **Library line.** `fastify/lib/request.js:218-229`. `request.signal` aborts on the request's
   `close`, which Node emits once the body is read, not when the client leaves.
-- **Hand-made piece.** `untilClientLeaves` in `apps/server/src/platform/http.ts`. It aborts when the
-  reply closes before it finished.
+- **Hand-made piece.** `untilClientLeaves` in `apps/server/src/platform/reply-lifetime.ts`. It aborts when the
+  reply closes before it finished; `whenReplyEnds` runs `Answer.afterReply` on `close`, since `finish`
+  never comes for a client that left (the test "desconexão", removal `reply-end-on-close`).
 - **Why.** With `request.signal`, every e-mail a write sends after reading its body is aborted
   (U4: the request's signal reaches the mail adapter). The test "registro" in
   `invitation-journey.test.ts`, against a Hub on a real socket, fails with it (removal

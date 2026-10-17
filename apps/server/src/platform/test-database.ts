@@ -252,6 +252,7 @@ export function serveEnvironment(t: TestContext, url: DatabaseUrl, port?: number
 }
 
 const MAIN = join(import.meta.dirname, '..', 'main.ts')
+const PASSWORD_PRELOAD = join(import.meta.dirname, 'test-password-preload.ts')
 export type HubProcess = {
   lines: LogLine[]
   /** Resolves on the first line with this message; rejects when the Hub ends without one. */
@@ -269,7 +270,10 @@ export function startHub(
   env: Record<string, string>,
   args: string[] = [],
 ): HubProcess {
-  const child = spawn(process.execPath, [MAIN, ...args], { env, stdio: ['ignore', 'pipe', 'pipe'] })
+  const child = spawn(process.execPath, ['--import', PASSWORD_PRELOAD, MAIN, ...args], {
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
   const lines: LogLine[] = []
   // The test reporter refuses a raw line from an in-process test (scripts/test-reporter.ts); a
   // spawned Hub's pipes reach no reporter, so this is the same rule for them, decided by the same

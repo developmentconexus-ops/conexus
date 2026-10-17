@@ -845,5 +845,16 @@
       "file": "src/hub/identity/password-check.test.ts",
       "name": "fora: o serviço com erro"
     }
+  },
+  {
+    "id": "reply-end-on-close",
+    "file": "apps/server/src/platform/reply-lifetime.ts",
+    "find": "  if (reply.raw.destroyed) work()\n  else reply.raw.once('close', work)\n",
+    "replace": "  reply.raw.once('finish', work)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/password-recovery-disconnect.test.ts",
+      "name": "desconexão"
+    }
   }
 ]

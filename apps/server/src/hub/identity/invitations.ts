@@ -4,6 +4,7 @@ import {
   createInvitation,
   Email,
   InvitationId,
+  OPERATOR_INVITES_AS,
   PendingInvitation,
   Role,
 } from '@conexus/hub-api'
@@ -12,7 +13,7 @@ import { z } from 'zod'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { CompanyOperatorProof, CompanyProof } from './admission.ts'
-import { admitCompany, COMPANY_OPERATOR_ROLE, isOperator } from './admission.ts'
+import { admitCompany, isOperator } from './admission.ts'
 import type { Auth, LibraryCommand } from './auth.ts'
 import { organizationAdapter, refusedAs, storedAddress } from './auth.ts'
 import { companyById } from './companies.ts'
@@ -202,7 +203,7 @@ async function checkOwnerInvitation(
   input: { admitted: CompanyOperatorProof; email: Email; role: Role },
 ) {
   const { admitted } = input
-  if (input.role !== COMPANY_OPERATOR_ROLE) throw new Failure('INVITATION_ROLE_REFUSED')
+  if (!OPERATOR_INVITES_AS.includes(input.role)) throw new Failure('INVITATION_ROLE_REFUSED')
   const live = await tx.$count(
     invitation,
     and(

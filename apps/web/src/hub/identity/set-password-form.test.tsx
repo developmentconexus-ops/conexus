@@ -163,7 +163,11 @@ test('422 PASSWORD_LINK_INVALID oferece "Pedir outro link", que leva a /forgot-p
   server.use(http.put('*/api/passwords', () => refusal('PASSWORD_LINK_INVALID')))
   const router = open('/set-password#token=tok-usado&kind=recovery')
   await choose('senha-nova-1')
-  fireEvent.click(await screen.findByRole('link', { name: 'Pedir outro link' }))
+  const ask = await screen.findByRole('link', { name: 'Pedir outro link' })
+  // The link is dead: the fields and the button that would use it are gone.
+  expect(screen.queryByLabelText('Senha')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Criar a senha' })).toBeNull()
+  fireEvent.click(ask)
   expect(await screen.findByRole('heading', { name: 'Esqueci minha senha' })).toBeTruthy()
   expect(router.state.location.pathname).toBe('/forgot-password')
 })

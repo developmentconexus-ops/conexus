@@ -24,6 +24,7 @@ import { enforceAccess, headersOf, invitationSessionOf, sessionOf } from './acce
 import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
+import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
 
 const REQUEST_TIMEOUT_MS = 30_000
 const CONNECTION_TIMEOUT_MS = 30_000
@@ -283,19 +284,6 @@ function partsOf(operation: Operation, request: FastifyRequest) {
   }
 }
 
-/**
- * Aborts when the client leaves before the reply is sent. Fastify's `request.signal` follows the
- * request's `close` (fastify/lib/request.js:218-229), which Node emits once the body is read, so a
- * write would abort its own e-mail (docs/reference/boundaries.md).
- */
-function untilClientLeaves(reply: FastifyReply): AbortSignal {
-  const left = new AbortController()
-  reply.raw.once('close', () => {
-    if (!reply.raw.writableFinished) left.abort()
-  })
-  return left.signal
-}
-
 /** The parts are parsed with the operation's schemas, and the reply checked before it is sent. */
 export function serve<O extends DeclaredOperation>(
   app: FastifyInstance,
@@ -334,7 +322,7 @@ export function serve(
       }
       const { body, setCookie, afterReply } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)
-      reply.raw.once('finish', () => {
+      whenReplyEnds(reply, () => {
         afterReply?.().catch((error: unknown) => logFailure(request.log, failureOf(error)))
       })
       const { success } = operation

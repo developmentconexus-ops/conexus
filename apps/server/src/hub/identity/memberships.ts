@@ -90,7 +90,7 @@ type OfMember = { person: Person; companyId: CompanyId; personId: PersonId }
 /** The company's lock, then the admission, then the member the action names: the order of every change of people. */
 async function admittedTarget(
   tx: CommandTx,
-  input: OfMember & { action: 'removeMember' | 'changeRole' },
+  input: OfMember & { action: 'removeMember' | 'leaveCompany' | 'changeRole' },
 ) {
   await lockCompany(tx, input.companyId)
   const admitted = await admitCompany({
@@ -136,9 +136,10 @@ function refused(): Failure {
 export function removeMemberCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
   return (input: OfMember) =>
     deps.libraryCommand(companyScope(input), async (tx) => {
-      const { admitted, target } = await admittedTarget(tx, { ...input, action: 'removeMember' })
-      if (target === undefined) return undefined
       const leaving = input.person.id === input.personId
+      const action = leaving ? 'leaveCompany' : 'removeMember'
+      const { admitted, target } = await admittedTarget(tx, { ...input, action })
+      if (target === undefined) return undefined
       if (!leaving && !rankAllows(actorOf(admitted), target.role)) throw refused()
       await keepOwner(tx, { companyId: input.companyId, leaving: target.role })
       const adapter = await organizationAdapter(deps.auth)

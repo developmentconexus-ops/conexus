@@ -36,6 +36,18 @@ function AskAgain({ variant }: { variant: 'primary' | 'default' }) {
   )
 }
 
+/** A link that cannot be used again: nothing to fill in, only the way to a new one. */
+function DeadLink() {
+  return (
+    <section className="flex w-full flex-col gap-lg">
+      <p role="alert" className="text-danger">
+        {LINK_INVALID}
+      </p>
+      <AskAgain variant="primary" />
+    </section>
+  )
+}
+
 function Heading({ kind }: { kind: PasswordLinkKind }) {
   return (
     <header className="flex flex-col gap-xs">
@@ -57,14 +69,7 @@ export function SetPasswordForm(props: {
   if (props.token !== undefined) {
     return <ChoosePassword token={props.token} kind={props.kind} redirect={props.redirect} />
   }
-  return (
-    <section className="flex w-full flex-col gap-lg">
-      <p role="alert" className="text-danger">
-        {LINK_INVALID}
-      </p>
-      <AskAgain variant="primary" />
-    </section>
-  )
+  return <DeadLink />
 }
 
 function ChoosePassword(props: {
@@ -89,6 +94,7 @@ function ChoosePassword(props: {
     await router.navigate({ to: '/login', search: { reason, redirect: props.redirect } })
   }
 
+  if (linkLost) return <DeadLink />
   return (
     <section className="flex w-full flex-col gap-lg">
       <Heading kind={props.kind} />
@@ -110,7 +116,6 @@ function ChoosePassword(props: {
         <FormAlert />
         <SubmitButton idle="Criar a senha" pending="Criando…" />
       </Form>
-      {linkLost && <AskAgain variant="default" />}
     </section>
   )
 }

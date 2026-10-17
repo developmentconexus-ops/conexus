@@ -21,6 +21,7 @@ export {
   Member,
   Membership,
   Next,
+  OPERATOR_INVITES_AS,
   PAGE_SIZE,
   PendingInvitation,
   ROLE_LABELS,

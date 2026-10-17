@@ -14,6 +14,9 @@ export type InvitationId = z.infer<typeof InvitationId>
 export const Role = z.enum(['owner', 'admin', 'member'])
 export type Role = z.infer<typeof Role>
 
+/** The roles the Operations Central invites with in a client: the rule, read by the Hub and its form. */
+export const OPERATOR_INVITES_AS: readonly Role[] = ['owner']
+
 /** The Portuguese name of each role, on the screens and in the mail. */
 export const ROLE_LABELS: Record<Role, string> = {
   owner: 'Dono',

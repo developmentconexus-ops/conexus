@@ -1,5 +1,5 @@
 import type { Client as ClientRecord } from '@conexus/hub-api'
-import { FAILURES } from '@conexus/hub-api'
+import { FAILURES, OPERATOR_INVITES_AS } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -75,7 +75,7 @@ export function Client() {
         <CompanyPeople
           company={{ id: companyId, name: client.name }}
           pages={pages}
-          mayInviteAs={['owner']}
+          mayInviteAs={OPERATOR_INVITES_AS}
         />
       )}
       {!correcting && (

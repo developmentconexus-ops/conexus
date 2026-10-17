@@ -1,5 +1,5 @@
 import type { CompanyId, Email, PersonId } from '@conexus/hub-api'
-import { Role } from '@conexus/hub-api'
+import { OPERATOR_INVITES_AS, Role } from '@conexus/hub-api'
 import { defaultRoles } from 'better-auth/plugins/organization/access'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
@@ -8,17 +8,19 @@ import { storedAddress } from './auth.ts'
 import { company, member, user } from './tables.ts'
 
 const INVITE = { invitation: ['create'] } as const
+const REMOVE = { member: ['delete'] } as const
+const CHANGE_ROLE = { member: ['update'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
-  statement?: typeof INVITE
+  statement?: typeof INVITE | typeof REMOVE | typeof CHANGE_ROLE
 }
 
 /**
  * Each action, who takes it and what it needs (security S6). A member's needs the statement the
  * plugin's role must allow, and none needs only the membership. The operator's is a fact of the
  * person, not a company role (S11). A `COMPANY` action also admits the operator on that company,
- * with or without a member, as `COMPANY_OPERATOR`: it invites only with `COMPANY_OPERATOR_ROLE`,
+ * with or without a member, as `COMPANY_OPERATOR`: it invites only with `OPERATOR_INVITES_AS`,
  * and the rank table decides what it may do to a member. `locks` holds the row that decided until
  * the write commits (S8).
  */
@@ -27,8 +29,9 @@ const ACTIONS = {
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
-  removeMember: { by: 'COMPANY', statement: undefined, locks: true },
-  changeRole: { by: 'COMPANY', statement: undefined, locks: true },
+  removeMember: { by: 'COMPANY', statement: REMOVE, locks: true },
+  leaveCompany: { by: 'COMPANY', statement: undefined, locks: true },
+  changeRole: { by: 'COMPANY', statement: CHANGE_ROLE, locks: true },
   operateClients: { by: 'OPERATOR', locks: false },
   registerClient: { by: 'OPERATOR', locks: true },
   correctClient: { by: 'OPERATOR', locks: true },
@@ -43,9 +46,6 @@ export type MemberAction = ActionBy<'MEMBER'>
 export type CompanyAction = ActionBy<'COMPANY'>
 type InstallationAction = ActionBy<'OPERATOR'>
 
-/** The one role the operator invites with: a company's owner. */
-export const COMPANY_OPERATOR_ROLE: Role = 'owner'
-
 // The plugin's creator role: only a member who holds it may invite with it.
 const CREATOR: Role = 'owner'
 /** The admin plugin's administrator role, on the person, not a company (security S11). */
@@ -56,7 +56,7 @@ type RoleAction = MemberAction | CompanyAction
 function allows(role: Role, action: RoleAction): boolean {
   const { statement } = ACTIONS[action]
   if (statement === undefined) return true
-  return defaultRoles[role].authorize({ invitation: [...statement.invitation] }).success
+  return defaultRoles[role].authorize(statement).success
 }
 
 /** Who acts on a member: the role of a member of the company, or the operator, who has none. */
@@ -274,7 +274,7 @@ export function mayInviteAs(admitted: CompanyProof): Role[] {
       if (!allows(admitted.role, 'invite')) return []
       return Role.options.filter((role) => role !== CREATOR || admitted.role === CREATOR)
     case 'COMPANY_OPERATOR':
-      return [COMPANY_OPERATOR_ROLE]
+      return [...OPERATOR_INVITES_AS]
     default:
       return admitted satisfies never
   }
