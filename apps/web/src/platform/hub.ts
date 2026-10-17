@@ -128,9 +128,16 @@ type ReadOptions<O extends Operation> = {
   queryFn: (context: QueryFunctionContext) => Promise<Output<O>>
 }
 
-/** The key every read of `operation` starts with, whatever its parameters: for an invalidation. */
-export function hubQueryPrefix(operation: Reading): QueryKey {
-  return [operation.id]
+type PrefixArgs<O extends Operation> =
+  Has<O, 'params'> extends true ? [params?: PartOf<O, 'params'>] : []
+
+/**
+ * The key every read of `operation` starts with, whatever its query, or only the reads of the
+ * address `params` name: for an invalidation or a removal.
+ */
+export function hubQueryPrefix<O extends Reading>(operation: O, ...args: PrefixArgs<O>): QueryKey {
+  const [params] = args
+  return params === undefined ? [operation.id] : [operation.id, { params }]
 }
 
 /** The key derives from the operation and its parameters, never written by a screen (web W11). */

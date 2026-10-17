@@ -5,7 +5,8 @@ import { getRouteApi } from '@tanstack/react-router'
 import { useState } from 'react'
 import { dayOf } from '../../platform/dates.ts'
 import { Button } from '../../ui/button.tsx'
-import { List, PageTitle, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
+import { PageTitle } from '../../ui/list.tsx'
+import { CompanyPeople } from '../identity/public.ts'
 import { maskedCnpj } from './cnpj.ts'
 import { CorrectClientForm } from './correct-client-form.tsx'
 import { DeleteClientDialog } from './delete-client-dialog.tsx'
@@ -33,33 +34,13 @@ function Data({ client }: { client: ClientRecord }) {
   )
 }
 
-function Owners({ owners }: { owners: { name: string; email: string }[] }) {
-  return (
-    <section className="flex flex-col gap-lg">
-      <SectionTitle>Donos</SectionTitle>
-      <List>
-        {owners.map((owner) => (
-          <Row key={owner.email}>
-            <div className={rowBody({ kind: 'wrapping' })}>
-              <span className="flex min-w-0 flex-col">
-                <span className="break-words">{owner.name}</span>
-                <span className="break-words text-label text-text-2">{owner.email}</span>
-              </span>
-            </div>
-          </Row>
-        ))}
-      </List>
-    </section>
-  )
-}
-
 /**
  * A client of the Operations Central: its data, and either its administrator's invitation and the
- * correction while it awaits, or its owners once active (step 4.2, P7); and its deletion (step 5).
+ * correction while it awaits, or its people once active, whom the Central takes out and invites owners to (step 6); and its deletion (step 5).
  */
 export function Client() {
   const { companyId } = route.useParams()
-  const { convite } = route.useSearch()
+  const { convite, ...pages } = route.useSearch()
   const { data } = useSuspenseQuery(clientQuery(companyId))
   const { client } = data
   const [correcting, setCorrecting] = useState(false)
@@ -90,7 +71,13 @@ export function Client() {
           <OwnerInvitationSection companyId={companyId} invitation={state.ownerInvitation} />
         </>
       )}
-      {state.kind === 'ACTIVE' && <Owners owners={state.owners} />}
+      {state.kind === 'ACTIVE' && !correcting && (
+        <CompanyPeople
+          company={{ id: companyId, name: client.name }}
+          pages={pages}
+          mayInviteAs={['owner']}
+        />
+      )}
       {!correcting && (
         <div>
           <DeleteClientDialog client={client} />

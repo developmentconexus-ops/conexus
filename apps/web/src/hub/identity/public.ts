@@ -3,7 +3,7 @@ export { CancelInvitationForm } from './cancel-invitation-form.tsx'
 export { Companies } from './companies.tsx'
 export { Greeting } from './greeting.tsx'
 export { InvitationEntry, InvitationNotFound } from './invitation.tsx'
-export { People } from './people.tsx'
+export { CompanyPeople, People } from './people.tsx'
 export {
   companiesQuery,
   companyQuery,

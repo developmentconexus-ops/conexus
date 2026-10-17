@@ -2,6 +2,7 @@ import type { CompanyId, InvitationId } from '@conexus/hub-api'
 import {
   acceptInvitation,
   cancelInvitation,
+  changeMemberRole,
   createInvitation,
   createInvitationPassword,
   createSession,
@@ -13,10 +14,12 @@ import {
   listCompanies,
   listInvitations,
   listMembers,
+  removeMember,
   renewInvitation,
   setPassword,
 } from '@conexus/hub-api'
-import { hubMutation, hubQuery } from '../../platform/hub.ts'
+import type { QueryClient } from '@tanstack/react-query'
+import { hubMutation, hubQuery, hubQueryPrefix } from '../../platform/hub.ts'
 
 // A session write replaces the cache itself (web W28), so it keeps the cache the others refresh.
 const KEEP_CACHE = { keepCache: true } as const
@@ -48,3 +51,13 @@ export const renewCompanyInvitation = hubMutation(renewInvitation)
 export const createReceivedPassword = { ...hubMutation(createInvitationPassword), meta: KEEP_CACHE }
 export const declineReceivedInvitation = hubMutation(declineInvitation)
 export const acceptReceivedInvitation = hubMutation(acceptInvitation)
+
+export const removePerson = hubMutation(removeMember)
+export const changePersonRole = hubMutation(changeMemberRole)
+
+/** What the cache holds of a company the person has left: its page, its people and its invitations. */
+export function forgetCompany(queryClient: QueryClient, companyId: CompanyId): void {
+  for (const read of [getCompany, listMembers, listInvitations]) {
+    queryClient.removeQueries({ queryKey: hubQueryPrefix(read, { companyId }) })
+  }
+}

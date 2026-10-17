@@ -138,15 +138,17 @@ test('convidar outro e-mail: o e-mail de um operador fica no campo; Convidando�
   )
 })
 
-test('detalhe ativo: "Ativo desde", os donos e nenhuma ação', async () => {
+test('detalhe ativo: "Ativo desde", as pessoas com tirar e mudar papel, e o convite só de dono', async () => {
   server.use(...centralHub([ACTIVE_CLIENT]))
   open(DETAIL)
   expect(await screen.findByText('17/10/2026')).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Donos' })).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Pessoas' })).toBeTruthy()
   expect(screen.getByText('Davi Costa')).toBeTruthy()
-  expect(screen.queryAllByRole('button', { name: /Reenviar|Cancelar|Corrigir|Convidar/ })).toEqual(
-    [],
-  )
+  for (const name of ['Mudar papel: Davi Costa', 'Tirar da empresa: Davi Costa']) {
+    expect(screen.getByRole('button', { name })).toBeTruthy()
+  }
+  expect(await screen.findByRole('heading', { name: 'Convidar pessoa' })).toBeTruthy()
+  expect(screen.queryAllByRole('button', { name: /Reenviar|Corrigir|Convidar outro/ })).toEqual([])
 })
 
 test('cliente que não existe: a página 404', async () => {
