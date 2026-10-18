@@ -32,6 +32,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
    Cartão da etapa 7 aprovado em 2026-10-17 (commit 89798f576c9fd1670748c1580807ea8e513a5d8d): "Sim"; "`D1: A D2: A D3: A`"
+   Etapa 7 usada em 2026-10-17 em https://hub.conexus.fun (v0.7.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), console do Neon conferido por ele: "Tudo certo nenhum projeto"
 8. **App de exemplo.** Abre um app escrito à mão.
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
@@ -85,12 +86,10 @@ Domínio próprio de empresa.
 
 ## 2. As etapas
 
-Testes de login, provas PD1 a PD9, fichas e estudos:
-fora. Etapa fechada sai desta tabela; o uso na seção 1.
+Etapa fechada sai desta tabela; o uso na seção 1.
 
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 7 Projeto | A 6 | Dadas | PD7 |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
 | 9 Enviar um app | A 8 | Nenhuma | Fichas `registry` e manifesto. Os tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Os limites de laço, prazo e consultas |
@@ -114,5 +113,5 @@ sozinho; se falhar com o Mastra parado, a 12 volta a você.
 ## 3. Como uma etapa roda
 
 Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), menos o uso, cada uma com skill.
-Sua resposta 2 vive na regra do estudo
-([`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5). Cada decisão vem na etapa dela.
+Sua resposta 2 vive no
+[`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5.

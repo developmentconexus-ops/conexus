@@ -50,6 +50,9 @@ Database roles and grants live beside the migrations, not in a second list here.
   password, is refused with 28P01. Each `ALTER ROLE ... PASSWORD` stores a new SCRAM salt even for the
   same password; on Neon a restart that rewrote it answered one request with 500, read as a new login
   refused while Neon's proxy still held the old verifier. [`migrate.test.ts`, the verifier unchanged]
+- **D33.** An index on an ICU collation (the Projects' unique name, `und-x-icu`) **must** be rebuilt
+  with `REINDEX` when the provider's ICU major version changes. PostgreSQL only warns of the
+  mismatch, and a stale index lets a duplicate in or hides a row. Failure: "Ação" and "AÇÃO" both insert after an upgrade. [review]
 
 A database is reproducible when every change is a versioned file applied the same way everywhere.
 Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [0038].
