@@ -1,4 +1,4 @@
-import type { CompanyId } from '@conexus/hub-api'
+import type { CompanyId, CompanyNickname } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -14,7 +14,7 @@ const CLAIM_UNTIL = sql`statement_timestamp() + ${CLAIM_MS} * interval '1 millis
 /**
  * Takes the right to call Neon for the company, or finds its database ready. The row is locked, so
  * two creations at once see one claim; a claim past its time is taken over, because its holder
- * either finished, in which case the project is found by name, or never will (decision 0040).
+ * either finished, in which case the project is found by the company's key, or never will (0040).
  */
 export async function claimDatabase(
   tx: CommandTx,
@@ -55,20 +55,22 @@ export async function releaseClaim(tx: CommandTx, companyId: CompanyId): Promise
 type Prepared = { kind: 'READY'; id: NeonProjectId } | { kind: 'REFUSED' } | { kind: 'NO_ANSWER' }
 
 /**
- * The company's project in Neon, found by its exact name or created, with no transaction open (data
- * D22). A project a cut reply left is found and adopted; two with the name are a defect only a
- * person can settle.
+ * The company's project in Neon, found by the exact `-<companyId>` ending of its name or created as
+ * `<nickname>-<companyId>`, with no transaction open (data D22, decision 0048). A project a cut reply
+ * left is found and adopted; two with the key are a defect only a person can settle.
  */
-export async function prepareDatabase(neon: NeonProjects, companyId: CompanyId): Promise<Prepared> {
-  const name = companyProjectName(companyId)
-  const found = await neon.find(name)
+export async function prepareDatabase(
+  neon: NeonProjects,
+  input: { companyId: CompanyId; nickname: CompanyNickname },
+): Promise<Prepared> {
+  const found = await neon.find(input.companyId)
   if (found.kind !== 'DONE') return found
   if (found.value.length > 1) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'TWO_NEON_PROJECTS' } })
   }
   const [existing] = found.value
-  if (existing !== undefined) return { kind: 'READY', id: existing }
-  const made = await neon.create(name)
+  if (existing !== undefined) return { kind: 'READY', id: existing.id }
+  const made = await neon.create(companyProjectName(input))
   return made.kind === 'DONE' ? { kind: 'READY', id: made.value } : made
 }
 

@@ -49,4 +49,4 @@ is released. The deadline rests on one measured create.
 
 ## State
 
-Proposed 2026-10-17. Founder: T2A, T3A, T4A ("3A").
+Proposed 2026-10-17. Founder: T2A, T3A, T4A ("3A"). Its find key: 0048.

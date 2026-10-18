@@ -82,13 +82,16 @@ function viewOf(deps: Deps, input: { row: ProjectRow; rights: Rights }): Project
   return { ...summaryOf(input.row), ...input.rights, address }
 }
 
-/** The address a new Project is born with: its name and the company's nickname (decision 0024). */
-async function hostLabelFor(deps: Deps, tx: CommandTx, input: Creation): Promise<HostLabel> {
+/**
+ * The address a new Project is born with, its name and the company's nickname (decision 0024), and
+ * the nickname, which also names the company's Neon project (0048).
+ */
+async function hostLabelFor(deps: Deps, tx: CommandTx, input: Creation) {
   const nickname = await deps.identity.companyNicknameOf(tx, input.companyId)
   if (nickname === null) throw new Failure('COMPANY_SETUP_PENDING')
-  const label = hostLabelOf({ name: input.name, nickname })
-  if (label === undefined) throw new Failure('PROJECT_NAME_NO_ADDRESS')
-  return label
+  const hostLabel = hostLabelOf({ name: input.name, nickname })
+  if (hostLabel === undefined) throw new Failure('PROJECT_NAME_NO_ADDRESS')
+  return { hostLabel, nickname }
 }
 
 /**
@@ -148,13 +151,13 @@ async function enterCreation(deps: Deps, tx: CommandTx, input: Creation) {
   const rights = rightsOf(deps, admitted.role)
   const replay = await replayOf(tx, { ...input })
   if (replay !== undefined) return { kind: 'REPLAY', rights, row: replay } as const
-  return { kind: 'NEW', rights, hostLabel: await hostLabelFor(deps, tx, input) } as const
+  return { kind: 'NEW', rights, ...(await hostLabelFor(deps, tx, input)) } as const
 }
 
 /**
  * Creates a Project. A company with no database reserves the right to prepare it in a first
  * transaction, calls Neon with none open, and records the database with the Project in a second
- * (data D22): a claim that ends without the Project lets the next attempt find the database by name.
+ * (data D22): a claim that ends without the Project lets the next attempt find the database by its key.
  */
 async function create(deps: Deps, input: Creation): Promise<Created> {
   const { database } = deps
@@ -166,7 +169,7 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
       return { kind: 'DONE', created: false, row: entered.row, rights } as const
     }
     if ((await claimDatabase(tx, input.companyId)) === 'CLAIMED') {
-      return { kind: 'CLAIMED', rights } as const
+      return { kind: 'CLAIMED', rights, nickname: entered.nickname } as const
     }
     const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
     return { kind: 'DONE', created: true, row, rights } as const
@@ -175,7 +178,8 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
     const { row, rights, created } = started
     return { project: viewOf(deps, { row, rights }), created, databaseCreated: false }
   }
-  const prepared = await prepareDatabase(deps.neon, input.companyId)
+  const { nickname } = started
+  const prepared = await prepareDatabase(deps.neon, { companyId: input.companyId, nickname })
   if (prepared.kind !== 'READY') {
     // A refusal leaves nothing in Neon, so the next attempt may go at once; silence may have left a project.
     if (prepared.kind === 'REFUSED')
@@ -201,7 +205,7 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
       return { project: viewOf(deps, { row, rights }), created: true, databaseCreated }
     })
   } catch (error) {
-    // The project in Neon stays, and the next attempt finds it by name instead of waiting out the claim.
+    // The project in Neon stays, and the next attempt finds it by its key instead of waiting out the claim.
     await database
       .command(scope, (tx) => releaseClaim(tx, input.companyId))
       .catch((releaseError: unknown) => logFailure(deps.log, databaseFailure(releaseError)))

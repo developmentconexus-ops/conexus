@@ -924,14 +924,14 @@
     }
   },
   {
-    "id": "neon-exact-name",
+    "id": "neon-exact-suffix",
     "file": "apps/server/src/platform/neon.ts",
-    "find": "const exact = projects.filter((project) => project.name === name)",
+    "find": "const exact = projects.filter((project) => isCompanys(project.name, companyId))",
     "replace": "const exact = projects",
     "test": {
       "cwd": "apps/server",
       "file": "src/platform/neon.test.ts",
-      "name": "find devolve só o nome exato"
+      "name": "find devolve só o final exato"
     }
   },
   {
