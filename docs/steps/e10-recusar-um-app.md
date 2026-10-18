@@ -32,10 +32,11 @@ por SQL; pelo HTTP, uma gravação em `db.query` e dois comandos num texto (as d
 `pg_sleep(6)` e um lote de 7 s (cortados em 5 s e 6 s); suspender o computador do projeto pela API
 três vezes e medir a primeira consulta.
 
-**Decisões já dadas** (2026-10-18). P1 A: `db.query` só lê, gravar é `db.batch`, um por chamada; a
-9 fez a leitura, a 10 conta os lotes. P2 A: a versão que a Cloudflare recusa a 9 guarda como
-"Falhou · O app não inicia". P3 A: CPU 50 ms; consultas por chamada pelo limite nativo, se a prova
-mostrar que ele conta o `db`, senão um contador, com o número medido; 10 s por chamada;
+**Decisões já dadas** (2026-10-18). P1 A: `db.query` só lê, gravar é `db.batch`; a 9 fez
+a leitura. Depois da prova, C: nenhum lote é contado, cada um é uma transação, como no PostgREST, no
+Supabase, no D1 e no Neon; "um lote por ação" fica na skill do Builder (13). P2 A: a versão que a Cloudflare recusa a 9 guarda como
+"Falhou · O app não inicia". P3 A: CPU 50 ms; 50 chamadas ao `db` por chamada pelo limite nativo, que
+a prova mostrou contar o `db`; 10 s por chamada;
 `statement_timeout` 5 s e `transaction_timeout` 6 s no login de execução do app. P4 A, P6 A: na 9.
 P5 A: o despachante não lê o texto das instruções. "Tirar verificador": nenhuma conferência lê o
 código no envio; o banco e o despachante recusam na primeira chamada, como fazem as referências.
@@ -86,8 +87,8 @@ Uma revisão, um merge (L9, L13); a prova não cria release (L17).
 | # | Unidade | Critério observável, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Registro "proposed" antes da prova; Result com versões, o número de consultas, onde a contagem vive, os tempos do banco acordando; nada `cx-prova-` vivo | os registros | must |
-| 2 | U2 | Numa chamada do app, o segundo `db.batch`: `DB_SECOND_BATCH`, sem rede, o primeiro gravado; na chamada seguinte, um lote passa | `dispatcher.test.ts`, app dublê | must |
-| 3 | U2 | Numa chamada, a consulta N (`queriesPerCall`) passa e a N+1 é recusada: pelo limite nativo, a página `EDGE_APP_FAILED`; pelo contador, `DB_QUERY_LIMIT` ao app, sem rede | idem | must |
+| 2 | U2 | Numa chamada do app, dois `db.batch`: cada um uma transação, os dois gravados; nenhum lote contado (C) | `dispatcher-limits.test.ts`, app dublê | must |
+| 3 | U2 | O Worker da versão e o exemplo recebem `limits.subRequests` = `dbCallsPerCall` (50): a chamada 51 ao `db` lança no app (0047, 3) | idem, `removals` | must |
 | 4 | U2 | App que espera: aos 10 s, a página `EDGE_APP_FAILED`, registro `EDGE_APP_DEADLINE`; `db` chamado depois do prazo: `DB_DEADLINE`, sem rede; o `ctx.props` do app não traz prazo nem contagem | idem | must |
 | 5 | U2 | Os números vêm só de `APP_CALL_LIMITS`: o upload leva `cpuMs`, o login os prazos, o `db` o prazo da chamada | `removals` | must |
 | 6 | U2 | Login de execução com `statement_timeout` 5 s e `transaction_timeout` 6 s, também o da 9 depois do reparo; `pg_sleep(6)` por ele: 57014; o login de migração sem esses prazos | `company-postgres.test.ts`, `repair.test.ts` | must |
@@ -102,15 +103,15 @@ Uma revisão, um merge (L9, L13); a prova não cria release (L17).
 | --- | --- | --- | --- | --- | --- |
 | Enviar versão | a da 9 | a da 9 | as da 9, com 422 `APP_VERSION_NOT_STARTING` | a da 9 | as da 9 |
 | Versões | a da 9 | a da 9 | a da 9 | a da 9 | a da 9, com "Falhou · O app não inicia" |
-| App | o exemplo | — | laço, prazo, consultas: a página `EDGE_APP_FAILED` da 8; gravação em `query`, segundo lote: o código ao app, e o app diz o seu texto | a da 8 | — |
+| App | o exemplo | — | laço, prazo: a página `EDGE_APP_FAILED` da 8; gravação em `query`, chamada 51 ao `db`: o código ou a exceção ao app, e o app diz o seu texto | a da 8 | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `APP_CALL_LIMITS` `cpuMs`, `queriesPerCall`, `callDeadlineMs`, `statementTimeoutMs`, `transactionTimeoutMs` | `app-contract`, números do registro | envio, `CompanyPostgres`, despachante |
-| A contagem e o prazo de uma chamada | despachante, onde o registro disser | o `db` da chamada |
+| `APP_CALL_LIMITS` `cpuMs`, `dbCallsPerCall`, `callDeadlineMs`, `statementTimeoutMs`, `transactionTimeoutMs` | `app-contract`, números do registro | envio, `CompanyPostgres`, despachante |
+| O prazo de uma chamada | despachante, nos `props` do `Db`, que o app não lê | o `db` da chamada |
 
 Nenhuma falha nova em `FAILURES`. Códigos que o `db` dá ao app e o despachante registra:
-`DB_SECOND_BATCH`, `DB_QUERY_LIMIT`, `DB_DEADLINE`, `EDGE_APP_DEADLINE`; a gravação em `query` chega
+`DB_DEADLINE`, `EDGE_APP_DEADLINE`; a gravação em `query` chega
 ao app como o 25006 do PostgreSQL (H1).
 
 ## A tabela de falhas
@@ -118,7 +119,7 @@ ao app como o 25006 do PostgreSQL (H1).
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada no meio | Dependência fora | O que imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | `ALTER ROLE … SET transaction_timeout`, no comando de login da 9 | repetível | o reparo refaz | Neon: 502 da 9 | `APP_DATABASE_READY` | 6 |
-| Contagem e prazo da chamada | por chamada | o lote já enviado termina ou cai inteiro pelo banco (6 s); quem chama vê a página | Neon: o código | `DB_SECOND_BATCH`, `DB_QUERY_LIMIT`, `DB_DEADLINE` | 2–4 |
+| Prazo da chamada no `db` | por chamada | o lote já enviado termina ou cai inteiro pelo banco (6 s); quem chama vê a página | Neon: o código | `DB_DEADLINE` | 2–4 |
 | Prazo no despachante | por chamada | a página aos 10 s | nenhuma | `EDGE_APP_DEADLINE` | 4 |
 
 ## O que nasce novo e o que é trazido
@@ -181,25 +182,23 @@ Regras: L13, L21, T13, T14.
 | `packages/app-contract/src/limits.ts` | `APP_CALL_LIMITS` | edge, servidor |
 | `apps/server/src/hub/apps/send.ts` | `APP_CPU_MS` sai, lido de `APP_CALL_LIMITS` | rotas |
 | `apps/server/src/platform/company-postgres.ts` | `'5s'` sai; os dois prazos só no login de execução | `main.ts`, reparo |
-| `scripts/removals.json` | `edge-second-batch`, `edge-query-limit`, `edge-call-deadline`, `call-limits-one-owner`, `run-login-timeouts` | `npm run removals` |
+| `scripts/removals.json` | `edge-db-calls-limit`, `edge-call-deadline`, `edge-db-deadline`, `call-limits-one-owner`, `run-login-timeouts` | `npm run removals` |
 
 ### Os contratos que a unidade cria
 
-`APP_CALL_LIMITS = {cpuMs: 50, queriesPerCall, callDeadlineMs: 10_000, statementTimeoutMs: 5_000,
-transactionTimeoutMs: 6_000}`, `queriesPerCall` do registro. O `db` de `AppProps` continua do tipo
-`Db`; o que o despachante passa é o lugar que o registro escolher (U1 (4)). Pelo limite nativo:
-`DISPATCHER.get(nome, {props}, {outbound, limits: {subRequests: queriesPerCall}})`; senão a mesma
-contagem dos lotes conta as consultas.
+`APP_CALL_LIMITS = {cpuMs: 50, dbCallsPerCall: 50, callDeadlineMs: 10_000, statementTimeoutMs:
+5_000, transactionTimeoutMs: 6_000}`. O `db` de `AppProps` continua o stub da 9 (C): um `RpcTarget`
+em `props` a Cloudflare recusa (0047, 4). Pelo limite nativo: `DISPATCHER.get(nome, {props},
+{outbound, limits: {subRequests: dbCallsPerCall}})`.
 
 ### A ordem do trabalho
 
 1. O despachante marca o prazo da chamada e corre a resposta do app contra ele; vencido, a página
    `EDGE_APP_FAILED` e o registro `EDGE_APP_DEADLINE`. Regras: C50, C57, C73.
-2. O `db` da chamada conta lotes e consultas e recusa sem rede depois do prazo; o sinal dado ao
-   driver termina no prazo da chamada, no lugar do `QUERY_DEADLINE_MS` por pedido. Regras: C26,
-   C27, C57, S4. Funções: `@neondatabase/serverless` de 0043, `transaction(queries, {readOnly})`,
-   `neon(url, {fetchOptions})`; `AbortSignal.timeout`; `RpcTarget` de `cloudflare:workers`, se U1
-   (4).
+2. O `db` da chamada recusa sem rede depois do prazo; o sinal dado ao driver termina no prazo da
+   chamada, no lugar do `QUERY_DEADLINE_MS` por pedido; o `DISPATCHER.get` leva o limite nativo.
+   Regras: C26, C27, C57, S4. Funções: `@neondatabase/serverless` de 0043, `transaction(queries,
+   {readOnly})`, `neon(url, {fetchOptions})`; `AbortSignal.timeout`; `limits.subRequests`.
 3. Os três números de H4 passam a ler `APP_CALL_LIMITS` (C26, C75). O comando de login da 9 põe
    os dois prazos só no login de execução: no de migração, o `transaction_timeout` cortaria a
    transação única de 0046; o reparo o repete. Regras: D20, D25. Funções: `ALTER ROLE … SET`.
