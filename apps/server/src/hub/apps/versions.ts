@@ -213,7 +213,8 @@ export async function storeAppVersion(input: {
     })
   }
   const unique = new Map(received.files.map((file) => [file.sha256, file.bytes]))
-  for (const [sha256, bytes] of unique) {
+  // In the prune's order, so a send and a prune that share blobs never wait on each other in a ring.
+  for (const [sha256, bytes] of [...unique].sort(([a], [b]) => (a < b ? -1 : 1))) {
     await tx
       .insert(blob)
       .values({ companyId: ids.companyId, sha256, bytes })

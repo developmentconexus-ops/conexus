@@ -1,6 +1,6 @@
 import type { AppVersionId, CompanyId, ProjectId } from '@conexus/hub-api'
 import { appWorkerOf, AppVersionId as VersionId } from '@conexus/hub-api'
-import { and, desc, eq, inArray, ne, notInArray } from 'drizzle-orm'
+import { and, desc, eq, inArray, ne, notExists, notInArray } from 'drizzle-orm'
 import type { CloudflareApps } from '../../platform/cloudflare.ts'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -41,26 +41,25 @@ export async function markPrune(tx: CommandTx, input: Ids & { liveVersionId: str
 }
 
 /**
- * Removes the company's bytes no version names any more, one at a time: a blob another send has
- * just named, in this company, refuses with 23503 and stays (decision 0012).
+ * Removes the company's bytes no version names any more, in two statements whatever their number.
+ * Locking them first waits out a send that is naming one and keeps a new file from naming one
+ * until this transaction ends; the delete then reads every file committed before (decision 0012).
  */
 export async function deleteUnusedBlobs(tx: CommandTx, companyId: CompanyId, shas: string[]) {
-  for (const sha256 of new Set(shas)) {
-    try {
-      await tx.transaction((savepoint) =>
-        savepoint.delete(blob).where(and(eq(blob.companyId, companyId), eq(blob.sha256, sha256))),
-      )
-    } catch (error) {
-      if (!isForeignKeyViolation(error)) throw error
-    }
-  }
-}
-
-function isForeignKeyViolation(error: unknown): boolean {
-  for (let cause = error; cause instanceof Error; cause = cause.cause) {
-    if ('code' in cause && cause.code === '23503') return true
-  }
-  return false
+  const candidates = [...new Set(shas)].sort()
+  if (candidates.length === 0) return
+  const ofCandidates = and(eq(blob.companyId, companyId), inArray(blob.sha256, candidates))
+  await tx
+    .select({ sha256: blob.sha256 })
+    .from(blob)
+    .where(ofCandidates)
+    .orderBy(blob.sha256)
+    .for('update')
+  const named = tx
+    .select({ sha256: versionFile.sha256 })
+    .from(versionFile)
+    .where(and(eq(versionFile.companyId, blob.companyId), eq(versionFile.sha256, blob.sha256)))
+  await tx.delete(blob).where(and(ofCandidates, notExists(named)))
 }
 
 /** Deletes the versions' rows, their files with them, then the bytes nothing names any more. */

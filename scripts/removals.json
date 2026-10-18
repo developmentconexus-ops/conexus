@@ -2154,5 +2154,27 @@
       "file": "src/hub/apps/versions.test.ts",
       "name": "versões: cada uma diz quem a enviou"
     }
+  },
+  {
+    "id": "prune-blobs-locked-first",
+    "file": "apps/server/src/hub/apps/prune.ts",
+    "find": "    .orderBy(blob.sha256)\n    .for('update')\n",
+    "replace": "    .orderBy(blob.sha256)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/prune.test.ts",
+      "name": "poda: o arquivo que outro Projeto nomeia no mesmo instante fica"
+    }
+  },
+  {
+    "id": "prune-blobs-unnamed-only",
+    "file": "apps/server/src/hub/apps/prune.ts",
+    "find": "await tx.delete(blob).where(and(ofCandidates, notExists(named)))",
+    "replace": "await tx.delete(blob).where(ofCandidates)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/prune.test.ts",
+      "name": "poda: o arquivo que outro Projeto nomeia no mesmo instante fica"
+    }
   }
 ]
