@@ -26,8 +26,9 @@ import { createSessionReader } from './session.ts'
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
 export { passwordLinkText } from './messages.ts'
-// The row policies' pieces, for the Central's own table.
-export { ADMINISTRATOR, policy } from './tables.ts'
+// The row policies' pieces, for the Central's own table, and the Hub session's table, for the apps'
+// foreign keys (code C8).
+export { ADMINISTRATOR, policy, session } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']

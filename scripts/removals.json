@@ -1032,5 +1032,38 @@
       "file": "src/hub/operations/client-deletion-database.test.ts",
       "name": "com banco"
     }
+  },
+  {
+    "id": "nickname-unique",
+    "file": "apps/server/migrations/20261018101318_app_addresses/migration.sql",
+    "find": "ALTER TABLE \"auth\".\"company\" ADD CONSTRAINT \"company_nickname_key\" UNIQUE(\"nickname\");--> statement-breakpoint\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-apps.test.ts",
+      "name": "um apelido e um endereço valem"
+    }
+  },
+  {
+    "id": "host-label-unique",
+    "file": "apps/server/migrations/20261018101318_app_addresses/migration.sql",
+    "find": "ALTER TABLE \"projects\".\"project\" ADD CONSTRAINT \"project_host_label_key\" UNIQUE(\"host_label\");--> statement-breakpoint\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-apps.test.ts",
+      "name": "um apelido e um endereço valem"
+    }
+  },
+  {
+    "id": "host-lookup-definer",
+    "file": "apps/server/migrations/20261018101320_app_grants/migration.sql",
+    "find": "LANGUAGE sql STABLE SECURITY DEFINER",
+    "replace": "LANGUAGE sql STABLE SECURITY INVOKER",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-apps.test.ts",
+      "name": "a função dá ao login do Hub"
+    }
   }
 ]

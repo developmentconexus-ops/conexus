@@ -251,6 +251,8 @@ const KEY_FIELD = { type: 'string', required: true } as const
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
 // The mark of a company the Central is deleting: only the Hub sets it, never a request.
 const DELETING_FIELD = { type: 'date', required: false, input: false } as const
+// The company's nickname in its apps' addresses: only the owner's choice through the Hub sets it.
+const NICKNAME_FIELD = { type: 'string', required: false, input: false } as const
 
 const accessControl = createAccessControl({ ...defaultStatements, project: ['create', 'delete'] })
 
@@ -271,7 +273,11 @@ const ORGANIZATION = {
   schema: {
     organization: {
       modelName: 'company',
-      additionalFields: { attemptKey: KEY_FIELD, deletingSince: DELETING_FIELD },
+      additionalFields: {
+        attemptKey: KEY_FIELD,
+        deletingSince: DELETING_FIELD,
+        nickname: NICKNAME_FIELD,
+      },
     },
     invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
   },

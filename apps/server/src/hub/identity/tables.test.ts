@@ -43,6 +43,7 @@ test('catálogo: as colunas de empresa, membro e convite, e as dos plugins em pe
       `company.created_at ${ts} NO`,
       'company.attempt_key text NO',
       `company.deleting_since ${ts} YES`,
+      'company.nickname text YES',
       'invitation.id text NO',
       'invitation.company_id text NO',
       'invitation.email text NO',
@@ -85,6 +86,7 @@ test('catálogo: os únicos, as chaves estrangeiras RESTRICT das novas tabelas e
     unique.map((row) => row.unique),
     [
       'company attempt_key',
+      'company nickname',
       'company slug',
       'invitation company_id,attempt_key',
       'member company_id,user_id',
