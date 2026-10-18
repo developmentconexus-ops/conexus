@@ -9,9 +9,8 @@ Run `wrangler` from `apps/edge` with the installed version, using a token of you
 1. The namespace: `wrangler dispatch-namespace create conexus-apps`. It needs Workers for Platforms on the account.
 2. The VPC service, over the server's existing tunnel (cloudflared reaches Cloudflare on QUIC, UDP 7844, so no inbound port opens):
    `wrangler vpc service create conexus-hub-borda --type http --tunnel-id <tunnel id> --hostname hub --http-port 8081`.
-   Copy the id it prints into `vpc_services` in `apps/edge/wrangler.jsonc`, and commit that. The
-   Hub listens on 8081 only when `HUB_EDGE_PORT` is set; `infra/compose.yaml` sets it and never lists
-   it under `ports:`, so the port stays on the Compose network.
+   Copy the id it prints into `vpc_services` in `apps/edge/wrangler.jsonc`, and commit that.
+   `infra/compose.yaml` keeps 8081 off `ports:`.
 3. The DNS record in the apps' zone: `*`, type `AAAA`, value `100::`, proxied. It only sends every
    host to Cloudflare, where the dispatcher's route `*.<apps domain>/*` answers.
 4. Keep Web Analytics off for that zone. Its beacon breaks the apps' content security policy (0041).
@@ -35,16 +34,14 @@ The dispatcher's route and the Hub's `HUB_APPS_DOMAIN` name the same apps domain
 
 ## The runner's gate
 
-`infra/setup-runner-hook.sh`, which `infra/setup-server.sh` runs, names the root-owned
-`infra/runner-job-started.sh` in the runner's `.env` as `ACTIONS_RUNNER_HOOK_JOB_STARTED`. Before any
-step of any job, the hook accepts only a Release or a manual run of `main` whose commit is on `main`,
-read from a mirror it fetches first; anything else fails before a step can reach the token or the
-Hub's keys (0035). Voltar atrás checks the version's commit the same way before `npm ci`.
+`infra/setup-runner-hook.sh` names `infra/runner-job-started.sh` in the runner's `.env`. Before any
+job's first step, the hook refuses all but a Release or a manual run of `main` whose commit is on `main`,
+read from a mirror it fetches first (0035). Voltar atrás checks the version's commit too.
 
 ## The runner's mirror
 
-After step 8 merges, as root on the server from a checkout of `main`. No `hub` workflow until
-step 7 passes. Step 2 names the hook first: a failed mirror refuses every job.
+After step 8 merges, as root on the server from a checkout of `main`, while no job runs. No `hub`
+workflow until step 7 passes. Step 2 names the hook first: a failed mirror refuses every job.
 
 1. `ssh-keygen -t ed25519 -N '' -f /root/main-mirror`; add the `.pub` file as a read-only
    deploy key.
@@ -55,10 +52,14 @@ step 7 passes. Step 2 names the hook first: a failed mirror refuses every job.
 4. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the founder.
 5. The `conexus-hub` package's Actions access: this repository alone, branches included;
    Voltar atrás deploys only recorded digests.
-6. Each kept version's `live:` reference in its Publish log, as `runner` from a clone of the mirror:
-   `infra/releases.sh record <version> <reference>`.
-7. Reiniciar o Hub runs on `main`; on another branch, or the hook run as a release of a commit
-   outside `main`, says `refused`.
+6. Each kept version's green run of `gh run list --workflow publish.yml --event release`, on a
+   commit of `main`, logged `live: <reference>` (`gh run view <run> --log | grep 'live: '`). The
+   live version's equals `docker ps --filter label=com.docker.compose.service=hub --format '{{.Image}}'`.
+   `sudo -u runner git clone --quiet --branch main /var/lib/conexus/main.git /tmp/conexus-main`, then
+   `sudo -u runner /tmp/conexus-main/infra/releases.sh record <version> <reference>`; its
+   `find <version>` prints the reference. `rm -rf /tmp/conexus-main`.
+7. Reiniciar o Hub runs on `main` and says `refused` on another branch, as does
+   `sudo -u runner env GITHUB_EVENT_NAME=release GITHUB_SHA=0000000000000000000000000000000000000000 /etc/conexus/runner-job-started.sh`.
 
 ## Publish
 
