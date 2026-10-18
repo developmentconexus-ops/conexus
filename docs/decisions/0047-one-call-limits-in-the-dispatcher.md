@@ -2,14 +2,15 @@
 
 ## Context
 
-Step 9 left a call's batches uncounted [0045], and its numbers in three files, none proved.
+Step 9 left an app call's numbers in three files, none proved [0045].
 
 ## Decision
 
-`APP_CALL_LIMITS` in `app-contract` owns a call's numbers: CPU 50 ms, queries per call, a 10 s
-deadline, and on the run login `statement_timeout` 5 s and `transaction_timeout` 6 s. The
-dispatcher counts one call's batches and queries, and races the app's answer against the deadline,
-where this proof says the count lives. Basis: founder's answers P1 A, P3 A, 2026-10-18.
+`APP_CALL_LIMITS` in `app-contract` owns a call's numbers: CPU 50 ms, 50 `db` calls, a 10 s
+deadline, and on the run login `statement_timeout` 5 s and `transaction_timeout` 6 s. Native
+`limits.subRequests` bounds the `db` calls; the dispatcher races the app's answer against the
+deadline. No batch is counted: each is one transaction, as in PostgREST, Supabase, D1 and Neon;
+amends [0045]. Basis: founder's P1 A, P3 A, then C after this proof, 2026-10-18.
 
 ## Criterion
 
@@ -40,4 +41,4 @@ time limit.", 2.2 s. 6: 57014, 5.0 s; 25P04, 6.1 s. 7: 10021. 8: 654, 609, 612 m
 
 ## State
 
-Proposed 2026-10-18.
+Accepted 2026-10-18. Founder: C.
