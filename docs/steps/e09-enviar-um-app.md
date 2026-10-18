@@ -25,7 +25,7 @@ token da prova (papel Admin dos Workers) e uma chave de prova do Neon na organiz
 apagados no fim (a chave das empresas só existe no servidor). Antes de U2: a
 palavra do grant (D11). Antes do Release: o token do Hub para os apps (papel Admin dos Workers) num
 arquivo do servidor, separado do da 8; o firstmate gera no servidor a chave dos logins dos apps e lhe
-entrega a cópia num arquivo, que você guarda fora do servidor. No fim: o roteiro e os textos.
+deixa a cópia num arquivo no seu computador, para guardar fora dele. No fim: o roteiro e os textos.
 
 **As chamadas da prova U1**, todas `cx-prova-`, apagadas no fim: na Cloudflare, um namespace, um
 despachante em `workers.dev` com a chave por `wrangler secret put`, três Workers de app pela API; no
@@ -95,18 +95,18 @@ U7 400; U8 150; espalhados 100. Total **2.520**, teto 4.000 (L2).
 | 9 | U4 | 422: caminho com `..` ou absoluto, repetido, arquivo ausente ou a mais; 413 acima do teto, sem ler o resto | idem | must |
 | 10 | U4 | Neon ou Cloudflare fora: 502, "falhou", ponteiro igual; migração que falha: 422, sem SQL | idem, dublês (T14) | must |
 | 11 | U4 | Login por SQL; repetido após corte, acha login e esquema e não migra duas vezes | `app-database.test.ts` | must |
-| 12 | U4 | `checkAppCall` com versão: `version`, `database`; sem: `{example: true}`, `null` | `app-handoff.test.ts` | must |
-| 13 | U5 | `setLiveVersion`: 200, a chamada seguinte já usa; podada, outro Projeto, membro: 404; trava viva: 409; vencida: 200 | `live-version.test.ts` | must |
-| 14 | U5 | Com a 5 no ar ficam 2 a 5; a 1 sai com Worker e arquivos; "falhou" sai no próximo envio certo; arquivo de outro Projeto no mesmo instante fica | `prune.test.ts`, barreira | must |
-| 15 | U5 | Apagar: a marca dá 404 nas leituras e na checagem; Workers, esquema, logins antes das linhas; trava viva: 409; envio vencido vê a marca e apaga seu Worker | `projects-delete.test.ts`, `client-deletion.test.ts` | must |
-| 16 | U5 | Ao subir: Workers que faltam e esquema, logins, migrações da do ar, recriados; "enviando" vencida vira "falhou"; apagar marcado termina; Cloudflare fora: sobe | `repair.test.ts` | must |
-| 17 | U6 | `props` só `caller`, `db`; login derivado; a senha fora de `props`, resposta, registro; erro só com código | `db.test.ts` | must |
-| 18 | U6 | Versão sem Worker: a 502 da 8; `APP_VERSION_MISSING` se U1 (12) achar erro estável, senão `EDGE_APP_FAILED`; sem versão: o exemplo | `dispatcher.test.ts` | must |
-| 19 | U7 | Cada célula da matriz; T23 | navegador | must |
-| 20 | U8 | Cada linha nova de `removals.json`: `caught` | `removals` | must |
-| 21 | U8 | O roteiro com Hub real e dublês | `tests/e2e/versions.test.ts` | must |
-| 22 | U8 | Publicado: passos 1 a 5; ataque recusado em outro esquema e outra empresa; restaurar a Empresa A e reiniciar devolve o app do minuto | firstmate (T13, T14) | must |
-| 23 | U4 | Logins do app 1 no esquema do app 2, ler e gravar: 42501. Outra empresa é outro projeto Neon: U1 (3) e o 22 | `app-database.test.ts` | must |
+| 12 | U4 | Logins do app 1 no esquema do app 2, ler e gravar: 42501. Outra empresa é outro projeto Neon: U1 (3) e o 23 | `app-database.test.ts` | must |
+| 13 | U4 | `checkAppCall` com versão: `version`, `database`; sem: `{example: true}`, `null` | `app-handoff.test.ts` | must |
+| 14 | U5 | `setLiveVersion`: 200, a chamada seguinte já usa; podada, outro Projeto, membro: 404; trava viva: 409; vencida: 200 | `live-version.test.ts` | must |
+| 15 | U5 | Com a 5 no ar ficam 2 a 5; a 1 sai com Worker e arquivos; "falhou" sai no próximo envio certo; arquivo de outro Projeto no mesmo instante fica | `prune.test.ts`, barreira | must |
+| 16 | U5 | Apagar: a marca dá 404 nas leituras e na checagem; Workers, esquema, logins antes das linhas; trava viva: 409; envio vencido vê a marca e apaga seu Worker | `projects-delete.test.ts`, `client-deletion.test.ts` | must |
+| 17 | U5 | Ao subir: Workers que faltam e esquema, logins, migrações da do ar, recriados; "enviando" vencida vira "falhou"; apagar marcado termina; Cloudflare fora: sobe | `repair.test.ts` | must |
+| 18 | U6 | `props` só `caller`, `db`; login derivado; a senha fora de `props`, resposta, registro; erro só com código | `db.test.ts` | must |
+| 19 | U6 | Versão sem Worker: a 502 da 8; registro `APP_VERSION_MISSING` se U1 (12) achar código fixo, senão `EDGE_APP_FAILED`; sem versão: o exemplo | `dispatcher.test.ts` | must |
+| 20 | U7 | Cada célula da matriz; T23 | navegador | must |
+| 21 | U8 | Cada linha nova de `removals.json`: `caught` | `removals` | must |
+| 22 | U8 | O roteiro, Hub real, dublês | `tests/e2e/versions.test.ts` | must |
+| 23 | U8 | Publicado: passos 1 a 5; ataque recusado em outro esquema e outra empresa; restaurar a Empresa A e reiniciar devolve o app do minuto | firstmate (T13, T14) | must |
 
 ## A matriz de estados
 
@@ -134,22 +134,22 @@ versão do Conexus." / "Escolha a pasta montada pelo app."; `APP_VERSION_TOO_LAR
 passa de 10 MB ou de 1.000 arquivos."; `APP_VERSION_SENDING` 409, "Já tem uma versão sendo
 enviada neste Projeto." / "Espere ela terminar."; `APP_VERSION_FAILED` 502, THIRD_PARTY, RETRY,
 "A versão não entrou."; `APP_MIGRATION_FAILED` 422, "Uma migração do app falhou no banco." / "Corrija e envie de novo."; `APP_VERSION_NOT_FOUND` 404, "Essa versão não existe mais."
-"Falhou" é final: **Tentar de novo** é um envio novo. `APP_VERSION_MISSING`: só registro.
+"Falhou" é final: **Tentar de novo** é um envio novo.
 
 ## A tabela de falhas
 
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada no meio | Dependência fora | O que imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | Transação 1: `apps.app`, `blob` por `ON CONFLICT DO UPDATE`, versão | trava viva: 409; vencida: a anterior "falhou" | rollback | banco: 503 | `APP_VERSION_RECEIVED` | 7–9 |
-| Fora: `prepareDatabase`, `host` numa transação curta; login, esquema, migrações | a trava | conferidos antes; migração e registro numa transação | Neon: 502 | `APP_DATABASE_READY` | 10, 11, 23 |
+| Fora: `prepareDatabase`, `host` numa transação curta; login, esquema, migrações | a trava | conferidos antes; migração e registro numa transação | Neon: 502 | `APP_DATABASE_READY` | 10, 11, 12 |
 | Worker `v-<id>` | a trava | `PUT` repete; sessão nova após 1 hora | Cloudflare: 502 | `APP_VERSION_UPLOADED` | 10 |
-| Transação 2: dona da trava, sem marca; no ar | a trava | rollback; vencida ou marcada: "falhou", o Worker sai | banco: 503 | `APP_VERSION_LIVE` | 7, 14, 15 |
-| Poda: Workers, linhas, `blob` sem dono | a trava; `blob` reusado: 23503, fica | 404 é apagado; repete | fica `pruning` | `APP_VERSION_PRUNED` | 14 |
-| `setLiveVersion` | a trava; envio: 409 | rollback | banco: 503 | `APP_VERSION_LIVE` | 13 |
-| Apagar: trava e marca; Workers, esquema; linhas | trava viva: 409 | marcado; o reparo termina | fica marcado | `PROJECT_APP_DELETED` | 15, 16 |
-| Reparo ao subir | uma passagem | o próximo repete | registra; sobe | `APP_REPAIRED`, `APP_REPAIR_FAILED` | 16 |
-| `APP_LOGIN_KEY` no despachante | `concurrency` | a anterior segue | o Release falha | `wrangler`, sem a chave | 22 |
-| `db.query`, `db.batch` | o PostgreSQL | uma transação cada | Neon: 502 | código | 17 |
+| Transação 2: dona da trava, sem marca; no ar | a trava | rollback; vencida ou marcada: "falhou", o Worker sai | banco: 503 | `APP_VERSION_LIVE` | 7, 15, 16 |
+| Poda: Workers, linhas, `blob` sem dono | a trava; `blob` reusado: 23503, fica | 404 é apagado; repete | fica `pruning` | `APP_VERSION_PRUNED` | 15 |
+| `setLiveVersion` | a trava; envio: 409 | rollback | banco: 503 | `APP_VERSION_LIVE` | 14 |
+| Apagar: trava e marca; Workers, esquema; linhas | trava viva: 409 | marcado; o reparo termina | fica marcado | `PROJECT_APP_DELETED` | 16, 17 |
+| Reparo ao subir | uma passagem | o próximo repete | registra; sobe | `APP_REPAIRED`, `APP_REPAIR_FAILED` | 17 |
+| `APP_LOGIN_KEY` no despachante | `concurrency` | a anterior segue | o Release falha | `wrangler`, sem a chave | 23 |
+| `db.query`, `db.batch` | o PostgreSQL | uma transação cada | Neon: 502 | código | 18 |
 | Migrações do Hub | `migrate` (D9) | uma transação | falha | código | 2 |
 
 ## O que nasce novo e o que é trazido
@@ -248,8 +248,8 @@ D17, D18. Funções: drizzle-orm 1.0.0-rc.4 `customType` (`bytea`), `uniqueIndex
 `z.strictObject`: `{contract: 1, entry, operations: {nome: {input, output}}, migrations: [{id,
 statements}], assets}`, um comando por item, para `transaction()` aplicar cada migração inteira; formas por união discriminada, `null` declarável. `APP_LIMITS`: 10 MB, 1.000
 arquivos (C26). `serveApp({manifest, handlers})`: `POST /api/<operação>` vira `handler(input, {db,
-caller})`; os arquivos estáticos a plataforma serve antes do Worker, sem binding [0018].
-`APP_COMPATIBILITY_DATE`, uma por versão do contrato: o dia em que o contrato 1 entra. `appLogin(projectId)` → `{schema, runLogin, migrateLogin}`;
+caller})`; a plataforma serve os estáticos antes do Worker, sem binding [0018]; caminho desconhecido vai ao
+Worker: 404. `APP_COMPATIBILITY_DATE` por versão do contrato, fixada por U1 (12). `appLogin(projectId)` → `{schema, runLogin, migrateLogin}`;
 `appLoginPassword({key, login})`, Web Crypto. A pasta: `manifest.json`, `worker.js`, `assets/`.
 
 ### A ordem do trabalho
@@ -291,16 +291,16 @@ compatibilityDate, files, tags, cpuMs})`, `remove`, `exists`. `CompanyPostgres`:
 
 1. Transação 1: admissão (S7); Zod e tamanhos; `blob`, `version_file`, `app_version`, a trava.
    Regras: C27, C37, C59, C65, D15.
-2. Sem transação (D22): `prepareDatabase` e o `host`; esquema e logins conferidos antes,
-   `statement_timeout` 5 s, `search_path`; migrações pelo login de migração; o Worker com
-   `limits.cpu_ms` 50 e tags `company-<id>`, `project-<id>`. Regras: C50, C56, C57, S14,
-   S36, S41.
-3. Transação 2: confere a admissão, a trava ainda sua e a marca de apagar (S8); no ar, a trava
+2. Sem transação (D22), trava e marca conferidas no início e antes do Worker: `prepareDatabase` e
+   `host`; esquema e logins conferidos, `statement_timeout` 5 s, `search_path`; migrações pelo login
+   de migração; Worker com `limits.cpu_ms` 50 e tags `company-<id>`, `project-<id>`. Regras: C50,
+   C56, C57, S14, S36, S41.
+3. Transação 2: admissão, a trava sua e a marca de apagar (S8); no ar, a trava
    solta, a poda marcada.
 
 ### Como se prova
 
-7–12, 23: `npm run test -w @conexus/server`, o banco da empresa no PostgreSQL de teste pelo
+7–13: `npm run test -w @conexus/server`, o banco da empresa no PostgreSQL de teste pelo
 transporte `pg`, Cloudflare dublê (T5, T10, T14).
 
 ## U5 Voltar, poda, apagar e o reparo
@@ -329,7 +329,7 @@ C8, C21, C30, C65, D13, D22, D27, S8.
 
 ### Como se prova
 
-13–16: `npm run test -w @conexus/server`.
+14–17: `npm run test -w @conexus/server`.
 
 ## U6 O despachante entrega `db`
 
@@ -351,7 +351,7 @@ C8, C21, C30, C65, D13, D22, D27, S8.
 
 ### Como se prova
 
-17, 18: `npm run test -w @conexus/edge`.
+18, 19: `npm run test -w @conexus/edge`.
 
 ## U7 As telas
 
@@ -371,7 +371,7 @@ V55.
 
 ### Como se prova
 
-19: `npm run test -w @conexus/web`; navegador em 1366, 390 e 320 px, dois temas, teclado (T23).
+20: `npm run test -w @conexus/web`; navegador em 1366, 390 e 320 px, dois temas, teclado (T23).
 
 ## U8 A chave, o Release, o ensaio e o percurso
 
@@ -385,4 +385,4 @@ V55.
 
 ### Como se prova
 
-20, 21: `npm run removals`, `npm run e2e`; 22 após o Release. Regras: S31, S33, S36, T12–T14.
+21, 22: `npm run removals`, `npm run e2e`; 23 após o Release. Regras: S31, S33, S36, T12–T14.
