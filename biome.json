@@ -158,6 +158,7 @@
       "includes": [
         "apps/web/**/*.test.tsx",
         "apps/web/src/platform/test-hub.tsx",
+        "apps/web/src/platform/test-hub-versions.tsx",
         "apps/web/vitest.*",
         "apps/web/vite.config.ts"
       ],

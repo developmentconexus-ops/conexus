@@ -28,6 +28,7 @@ export {
   HANDOFF_SECONDS,
   listAppVersions,
   setLiveVersion,
+  VERSION_SEND_DEADLINE_MS,
   VersionFileInput,
 } from './apps.ts'
 export { CAPACITY } from './capacity.ts'

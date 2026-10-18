@@ -102,6 +102,12 @@ export const checkAppCall = defineOperation({
 export const AppSessionToken = DoorSecret.brand('AppSessionToken')
 export type AppSessionToken = z.infer<typeof AppSessionToken>
 
+/**
+ * How long the screen waits for a send's answer: the Worker's upload and the database's migrations
+ * take seconds, so the Hub's usual deadline is too short; Cloudflare's edge cuts any answer at 100 s.
+ */
+export const VERSION_SEND_DEADLINE_MS = 100_000
+
 /** The ceiling of a send's body: the version's 10 MB in base64, with the JSON around it. */
 const VERSION_BODY_LIMIT = 14 * 1024 * 1024
 

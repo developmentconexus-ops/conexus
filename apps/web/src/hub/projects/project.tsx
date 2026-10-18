@@ -1,12 +1,12 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { dayOf } from '../../platform/dates.ts'
 import { buttonVariants } from '../../ui/button.tsx'
 import { PageTitle } from '../../ui/list.tsx'
 import { DeleteProjectDialog } from './delete-project-dialog.tsx'
 import { projectQuery } from './queries.ts'
 
-const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
+const route = getRouteApi('/_app/companies/$companyId/projects/$projectId/')
 
 /** A Project: its name and date, and for those the Hub lets delete it, its deletion. */
 export function Project() {
@@ -28,6 +28,17 @@ export function Project() {
           >
             Abrir app
           </a>
+        </div>
+      )}
+      {project.mayManageVersions && (
+        <div>
+          <Link
+            to="/companies/$companyId/projects/$projectId/settings"
+            params={{ companyId, projectId }}
+            className={buttonVariants()}
+          >
+            Configurações
+          </Link>
         </div>
       )}
       {project.mayDelete && (

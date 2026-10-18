@@ -13,6 +13,7 @@ export const PAGES = [
   '/companies/$companyId/setup',
   '/companies/$companyId/projects',
   '/companies/$companyId/projects/$projectId',
+  '/companies/$companyId/projects/$projectId/settings',
   '/companies/$companyId/people',
   '/operations/clients',
   '/operations/clients/new',
