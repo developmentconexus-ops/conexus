@@ -60,7 +60,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
 | 4 | O remetente dos convites, com o DNS | Workers Paid: US$ 5 por mês |
 | 7 | Neon das empresas | US$ 0 |
 | 8 | O segundo domínio, dos apps | Workers for Platforms: US$ 25 por mês |
-| 9 ou 11 | Cópia da chave nova | Nenhum |
+| 9, 11 | Token dos apps. Cópia das chaves | Nenhum |
 | 11, 19, 21 | As assinaturas de modelo. Um usuário só de leitura no sistema de uma empresa | Nenhum |
 | 13 | Uma chave do E2B só desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
@@ -91,7 +91,7 @@ Etapa fechada sai desta tabela; o uso na seção 1.
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
-| 9 Enviar um app | A 8 | Nenhuma | Fichas `registry` e manifesto. Os tipos na fronteira da linha |
+| 9 Enviar um app | A 8 | Duas | Fichas `registry` e manifesto. Tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Os limites de laço, prazo e consultas |
 | 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Os testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
