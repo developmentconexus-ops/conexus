@@ -1,6 +1,6 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { AppVersionId } from '@conexus/hub-api'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { CloudflareApps } from '../../platform/cloudflare.ts'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
@@ -36,6 +36,20 @@ export async function claimForDeletion(tx: CommandTx, ids: Ids): Promise<void> {
   if (row.held) throw new Failure('APP_VERSION_SENDING')
   const failure = 'APP_VERSION_FAILED'
   await failVersion(tx, { projectId: ids.projectId, versionId: row.sendingVersionId, failure })
+}
+
+/**
+ * Takes back what the repair made for a Projeto that a deletion marked meanwhile: the deletion may
+ * have removed everything before the repair made it again (code C65).
+ */
+export async function takeBackRepair(
+  deps: RemovalDeps,
+  input: Ids & { scope: Scope; versionId: AppVersionId },
+): Promise<void> {
+  const { left } = await removeWorkers(deps.cloudflare, [input.versionId])
+  if (left > 0 || !(await dropAppDatabase(deps, input))) {
+    throw new Failure('APP_VERSION_FAILED', { details: { reason: 'TAKE_BACK_LEFT' } })
+  }
 }
 
 /** The app's schema and logins in the company's database; one never made drops nothing. */
@@ -104,12 +118,21 @@ export async function removeCompanyWorkers(
   deps: RemovalDeps,
   input: { scope: Scope; companyId: CompanyId },
 ): Promise<void> {
-  const versions = await deps.database.read(input.scope, (tx) =>
-    tx
+  // Read after the mark: a send that still holds its claim may yet upload its Worker, so the
+  // deletion waits for it; any later send sees the mark and stops (code C65).
+  const { versions, sending } = await deps.database.read(input.scope, async (tx) => ({
+    versions: await tx
       .select({ id: appVersion.id })
       .from(appVersion)
       .where(eq(appVersion.companyId, input.companyId)),
-  )
+    sending: await tx
+      .select({ projectId: app.projectId })
+      .from(app)
+      .where(and(eq(app.companyId, input.companyId), CLAIM_HELD)),
+  }))
+  if (sending.length > 0) {
+    throw new Failure('CLIENT_DELETION_PENDING', { details: { sending: sending.length } })
+  }
   const ids = versions.map(({ id }) => AppVersionId.parse(id))
   const { left } = await removeWorkers(deps.cloudflare, ids)
   if (left > 0) throw new Failure('CLIENT_DELETION_PENDING', { details: { workersLeft: left } })

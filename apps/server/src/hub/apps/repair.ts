@@ -14,9 +14,9 @@ import { Failure } from '../../platform/failure.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { migrateApp, openAppDatabase } from './app-database.ts'
 import type { RemovalDeps } from './removal.ts'
-import { removeProjectApp } from './removal.ts'
+import { removeProjectApp, takeBackRepair } from './removal.ts'
 import type { SendDeps } from './send.ts'
-import { uploadVersion } from './send.ts'
+import { projectLive, uploadVersion } from './send.ts'
 import { app, appVersion, blob, versionFile } from './tables.ts'
 import { CLAIM_HELD, failVersion } from './versions.ts'
 
@@ -98,6 +98,13 @@ async function restoreWorker(
   }
 }
 
+function stillLive(
+  deps: RepairDeps,
+  ids: { scope: Scope; companyId: CompanyId; projectId: ProjectId },
+) {
+  return deps.database.read(ids.scope, (tx) => projectLive(deps, tx, ids))
+}
+
 /**
  * Brings each live app back to what the Hub holds: its Worker, if Cloudflare lost it, and its
  * schema, logins and migrations, if a restore of the company's database took them (founder, P2 A).
@@ -111,6 +118,8 @@ async function restoreLive(
   let workers = 0
   for (const live of await liveVersions(deps, scope)) {
     if (input.marked.has(live.projectId)) continue
+    const ids = { scope, companyId, projectId: live.projectId }
+    if (!(await stillLive(deps, ids))) continue
     const found = await deps.cloudflare.exists(appWorkerOf(live.versionId))
     if (found.kind !== 'DONE')
       throw new Failure('APP_VERSION_FAILED', { details: { reason: 'NO_ANSWER' } })
@@ -118,11 +127,13 @@ async function restoreLive(
       await restoreWorker(deps, scope, { ...live, companyId })
       workers += 1
     }
-    const ids = { scope, companyId, projectId: live.projectId }
     const opened = await openAppDatabase(deps, { ...ids, databaseReady: false })
     if (opened.kind === 'FAILED') throw new Failure(opened.failure)
     const failure = await migrateApp(deps, { ...ids, owner: opened.owner, manifest: live.manifest })
     if (failure !== undefined) throw new Failure(failure)
+    // A deletion marked after the read above may have removed it all before this pass made it.
+    if (!(await stillLive(deps, ids)))
+      await takeBackRepair(deps, { ...ids, versionId: live.versionId })
   }
   return workers
 }

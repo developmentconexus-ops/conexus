@@ -232,3 +232,25 @@ test('com apps: os Workers saem antes do banco no Neon; Cloudflare fora deixa DE
   )
   assert.deepEqual(left, [{ n: 0 }])
 })
+
+test('com apps: um envio com a trava deixa DELETING; ele vê a marca e para, e a retomada termina', async (t) => {
+  const { hub, ana, davi } = await world(t)
+  const a = await clientWithDatabase(hub, ana, davi, 'Empresa A')
+  const [neonProject] = hub.neon.projects()
+  if (neonProject === undefined) throw new Error('no company database')
+  hub.neon.ownedBy(neonProject.id, await createCompanyDatabase(t))
+  const [project] = await hub.test.asOwner(
+    'select id from projects.project where company_id = $1',
+    [a.companyId],
+  )
+  const held = hub.cloudflare.holdUpload()
+  const sending = send(hub, davi, `/api/companies/${a.companyId}/projects/${project?.id}/versions`)
+  await held.arrived
+  const pending = await call(hub, ana, 'DELETE', a.url, a.body)
+  assert.deepEqual([pending.statusCode, codeOf(pending)], [503, 'CLIENT_DELETION_PENDING'])
+  held.release()
+  assert.equal((await sending).statusCode, 404)
+  assert.equal((await call(hub, ana, 'DELETE', a.url, a.body)).statusCode, 204)
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  assert.deepEqual(await rows(hub, a.companyId), GONE)
+})

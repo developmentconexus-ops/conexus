@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ProjectId } from '@conexus/hub-api'
-import { appTablesOf, forgetApp } from '../../platform/test-company-postgres.ts'
+import { appLoginsOf, appTablesOf, forgetApp } from '../../platform/test-company-postgres.ts'
 import { whenIdle } from '../../platform/test-database.ts'
 import { post } from '../identity/test-hub.ts'
 import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
@@ -63,4 +63,21 @@ test('reparo: Cloudflare fora, a empresa fica para a próxima e o Hub segue', as
   await hub.repair()
   const sent = await send(hub, ana, versions, folder({}, '#6b2fa3'))
   assert.equal(sent.statusCode, 201)
+})
+
+test('reparo: o Projeto marcado para apagar enquanto o reparo o refaz perde o que ele refez', async (t) => {
+  const { hub, ana, owner, projectId, versions } = await companyForVersions(t)
+  await send(hub, ana, versions)
+  const id = ProjectId.parse(projectId)
+  assert.equal(await forgetApp(owner, id, hub.config.appLoginKey), 'DONE')
+  const held = hub.postgres.holdMigrate()
+  const repaired = hub.repair()
+  await held.arrived
+  // A deletion marks the Projeto while the repair migrates its app.
+  await hub.test.asOwner('update projects.project set deleting_since = now()')
+  held.release()
+  await repaired
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  assert.deepEqual(await appLoginsOf(owner, id), [])
+  assert.deepEqual((await appTablesOf(owner, id)).tables, [])
 })

@@ -2176,5 +2176,38 @@
       "file": "src/hub/apps/prune.test.ts",
       "name": "poda: o arquivo que outro Projeto nomeia no mesmo instante fica"
     }
+  },
+  {
+    "id": "send-company-mark",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "  if (await deps.identity.markedDeleting(tx, ids.companyId)) return false\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-guards.test.ts",
+      "name": "envio: a empresa marcada para apagar"
+    }
+  },
+  {
+    "id": "client-deletion-waits-for-send",
+    "file": "apps/server/src/hub/apps/removal.ts",
+    "find": "  if (sending.length > 0) {\n",
+    "replace": "  if (sending.length < 0) {\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "com apps: um envio com a trava deixa DELETING"
+    }
+  },
+  {
+    "id": "repair-takes-back",
+    "file": "apps/server/src/hub/apps/repair.ts",
+    "find": "    if (!(await stillLive(deps, ids)))\n      await takeBackRepair(deps, { ...ids, versionId: live.versionId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/repair.test.ts",
+      "name": "reparo: o Projeto marcado para apagar enquanto"
+    }
   }
 ]

@@ -70,10 +70,16 @@ export function uploadVersion(
 
 type Standing = 'GO' | 'LOST' | 'GONE'
 
-/** Whether the send may go on: the Projeto is not being deleted and the claim is still its own. */
+/** Whether neither the Projeto nor its company is deleted or marked for deletion. */
+export async function projectLive(deps: Admitting, tx: ReadTx, ids: Ids): Promise<boolean> {
+  if (await deps.identity.markedDeleting(tx, ids.companyId)) return false
+  return (await deps.projects.liveProjectOf(tx, ids)) !== undefined
+}
+
+/** Whether the send may go on: nothing is being deleted and the claim is still its own. */
 function standing(deps: SendDeps, sending: Sending): Promise<Standing> {
   return deps.database.read(sending.scope, async (tx) => {
-    if ((await deps.projects.liveProjectOf(tx, sending)) === undefined) return 'GONE'
+    if (!(await projectLive(deps, tx, sending))) return 'GONE'
     return (await holdsClaim(tx, sending)) ? 'GO' : 'LOST'
   })
 }

@@ -91,3 +91,19 @@ test('envio: quem deixou de ser administrador no meio do envio não põe a vers�
   assert.deepEqual(await claimOf(hub), [{ sending_version_id: null, claimed_until: null }])
   assert.deepEqual(hub.cloudflare.workers(), [])
 })
+
+test('envio: a empresa marcada para apagar no meio do envio para antes do banco, e o Worker sai', async (t) => {
+  const { hub, ana, versions } = await companyForVersions(t)
+  const held = hub.cloudflare.holdUpload()
+  const sent = send(hub, ana, versions)
+  await held.arrived
+  await hub.test.asOwner('update auth.company set deleting_since = now()')
+  held.release()
+  const answer = await sent
+  assert.deepEqual([answer.statusCode, codeOf(answer)], [404, 'NOT_FOUND'])
+  assert.deepEqual(
+    hub.neon.calls.filter((call) => call === 'ownerConnection'),
+    [],
+  )
+  assert.deepEqual(hub.cloudflare.workers(), [])
+})
