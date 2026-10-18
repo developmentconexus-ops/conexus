@@ -1120,5 +1120,93 @@
       "file": "src/hub/identity/nickname.test.ts",
       "name": "apelido: o dono escolhe uma vez"
     }
+  },
+  {
+    "id": "edge-outbound-wall",
+    "file": "apps/edge/wrangler.jsonc",
+    "find": ",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/outbound.test.ts",
+      "name": "o muro"
+    }
+  },
+  {
+    "id": "edge-strip-hub-cookies",
+    "file": "apps/edge/src/headers.ts",
+    "find": "    .filter(([name]) => !name.startsWith(COOKIE_PREFIX))\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: não recebe os cookies"
+    }
+  },
+  {
+    "id": "edge-strip-conexus-path",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  if (url.pathname.startsWith(DISPATCHER_PATHS)) return failurePage('APP_NOT_FOUND')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: não recebe /__conexus/"
+    }
+  },
+  {
+    "id": "edge-drop-app-cookie",
+    "file": "apps/edge/src/headers.ts",
+    "find": "if (!line.trimStart().startsWith(COOKIE_PREFIX)) ",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: o Set-Cookie dele"
+    }
+  },
+  {
+    "id": "edge-cross-site-write",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  if (isCrossSiteWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: escrita de outro site"
+    }
+  },
+  {
+    "id": "edge-csp",
+    "file": "apps/edge/src/headers.ts",
+    "find": "  headers.set('Content-Security-Policy', contentSecurityPolicy)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: a CSP do app"
+    }
+  },
+  {
+    "id": "edge-props-caller-only",
+    "file": "apps/edge/src/hub.ts",
+    "find": "input.operation.success.body.safeParse(json)",
+    "replace": "{ success: true, data: json }",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: props leva só caller"
+    }
+  },
+  {
+    "id": "edge-port-only",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "} else if ((access === 'edge') !== (listener.kind === 'EDGE')) {",
+    "replace": "} else if (access === undefined) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "borda: uma rota edge na escuta pública"
+    }
   }
 ]
