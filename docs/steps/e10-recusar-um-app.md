@@ -19,7 +19,7 @@ pastas `recados-defeito`, `recados-nao-inicia` e `recados-laco` da página da v0
 
 **O que você faz, e quando.** Antes de U1: autoriza aqui as chamadas da prova, e cria o token da
 prova (papel Admin dos Workers) e uma chave de prova do Neon na organização das empresas, apagados
-no fim, como na 9. No fim: o roteiro e os textos. Gasto novo: nenhum.
+no fim. No fim: o roteiro e os textos. Gasto novo: nenhum.
 
 **As chamadas da prova U1**, todas `cx-prova-`, apagadas no fim. Na Cloudflare: um namespace; um
 despachante em `workers.dev` com a chave por `wrangler secret put`; pela API, quatro Workers de app:
@@ -28,7 +28,7 @@ conta o `db`), um em laço de CPU, um que espera 15 s, e um que falha ao iniciar
 No Neon: um projeto pelo SDK em `aws-sa-east-1`, um esquema e dois
 logins por SQL; pelo HTTP, uma gravação em `db.query` e dois comandos num texto (as duas recusadas),
 `pg_sleep(6)` e um lote de 7 s (cortados em 5 s e 6 s); suspender o computador do projeto pela API
-três vezes e medir a primeira consulta. O que a 9 já tiver provado sobre `db.query` não se repete.
+três vezes e medir a primeira consulta. O que a 9 já provou de `db.query` não se repete.
 
 **Decisões já dadas** (2026-10-18). P1 A: `db.query` só lê, gravar é `db.batch`, um por chamada;
 entra na construção da 9, e esta etapa constrói em cima. P2 A: a versão que o Hub recusa não é
@@ -37,6 +37,7 @@ P3 A: CPU 50 ms; consultas por chamada pelo limite nativo, se a prova mostrar qu
 senão um contador, com o número medido; 10 s por chamada; `statement_timeout` 5 s e
 `transaction_timeout` 6 s no login de execução do app. P4 A e P6 A: na 9. P5 A: o despachante não
 lê o texto das instruções; a conferência do envio acusa esses textos quando escritos no código.
+Motivos A: a recusa leva a lista na própria resposta.
 
 **O que muda.** A arquitetura §8 perde a leitura do texto no despachante e ganha os números da
 prova; sai da §11 o risco "o verificador perde duas gravações": o banco recusa.
@@ -123,8 +124,9 @@ lotes separados. Junte num `db.batch`."; `DATABASE_SETTING` "Em `{operação}`: 
 configuração do banco."; `UNREADABLE` "O `worker.js` não é JavaScript válido." Registros do despachante:
 `DB_QUERY_LIMIT`, `DB_DEADLINE`, `EDGE_APP_DEADLINE`.
 
-`Problem.reasons` é um membro de extensão do RFC 9457, só códigos, nomes e linhas do próprio app:
-exceção declarada à C51, levada ao fechamento (L20).
+`Problem.reasons` é um membro de extensão do RFC 9457, só `code`, `operation` e `line` do app de
+quem envia: exceção escrita à C51, limitada a esses três campos, levada ao fechamento (L20).
+Fundador, 2026-10-18: "A".
 
 ## A tabela de falhas
 
