@@ -1419,6 +1419,50 @@
     }
   },
   {
+    "id": "ci-on-github-machines",
+    "file": ".github/workflows/ci.yml",
+    "find": "  check:\n    runs-on: ubuntu-24.04\n",
+    "replace": "  check:\n    runs-on: [self-hosted, conexus]\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara"
+    }
+  },
+  {
+    "id": "ci-no-secret",
+    "file": ".github/workflows/ci.yml",
+    "find": "GH_TOKEN: ${{ github.token }}",
+    "replace": "GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara"
+    }
+  },
+  {
+    "id": "server-runner-manual-and-release-only",
+    "file": ".github/workflows/restart.yml",
+    "find": "on:\n  workflow_dispatch:\n",
+    "replace": "on:\n  workflow_dispatch:\n  pull_request:\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "só o Release e o disparo manual chegam ao runner do servidor"
+    }
+  },
+  {
+    "id": "server-runner-environment",
+    "file": ".github/workflows/restart.yml",
+    "find": "    environment: production\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "todo trabalho no runner do servidor passa pelo ambiente production do GitHub"
+    }
+  },
+  {
     "id": "rollback-version-on-main",
     "file": ".github/workflows/rollback.yml",
     "find": "          if ! git merge-base --is-ancestor HEAD origin/main; then\n            echo \"the commit of $VERSION is not on main\"\n            exit 1\n          fi\n",

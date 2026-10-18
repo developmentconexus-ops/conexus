@@ -20,9 +20,9 @@ How the server is prepared, and how the Hub is published and put back. Decision:
 
 ## Check the GitHub settings
 
-- Actions, General, fork pull request workflows: require approval for all outside collaborators, and
-  never run workflows from forks on the self-hosted runner. Only `release` and `workflow_dispatch`
-  reach it.
+- Actions, General, fork pull request workflows: require approval for all external contributors, and
+  never run workflows from forks on the self-hosted runner.
+- Environment `production`: only `main` and `v*` tags deploy.
 - Actions, General, workflow permissions: read only by default.
 - Packages: the `conexus-hub` image is private.
 

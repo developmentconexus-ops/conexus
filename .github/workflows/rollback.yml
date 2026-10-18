@@ -20,6 +20,7 @@ jobs:
   # Hub moves, and both jobs below put back that one version.
   record:
     runs-on: [self-hosted, hub]
+    environment: production
     timeout-minutes: 5
     permissions:
       contents: read
@@ -49,6 +50,7 @@ jobs:
   edge:
     needs: record
     runs-on: [self-hosted, hub]
+    environment: production
     timeout-minutes: 15
     permissions:
       contents: read
@@ -78,6 +80,7 @@ jobs:
   rollback:
     needs: [record, edge]
     runs-on: [self-hosted, hub]
+    environment: production
     timeout-minutes: 10
     permissions:
       contents: read

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { test } from 'node:test'
 import { parse } from 'yaml'
@@ -14,13 +14,20 @@ type Step = {
 type Job = {
   needs?: string | string[]
   'runs-on': string | string[]
+  environment?: string
   outputs?: Record<string, string>
   steps: Step[]
 }
-type Workflow = { jobs: Record<string, Job> }
+type Workflow = { on: Record<string, unknown>; jobs: Record<string, Job> }
+
+const FOLDER = resolve(import.meta.dirname, '../.github/workflows')
+
+function text(name: string): string {
+  return readFileSync(resolve(FOLDER, name), 'utf8')
+}
 
 function workflow(name: string): Workflow {
-  return parse(readFileSync(resolve(import.meta.dirname, '../.github/workflows', name), 'utf8'))
+  return parse(text(name))
 }
 
 // The workflows' own expressions, as GitHub reads them.
@@ -29,6 +36,7 @@ const VERSION = ['${{', 'inputs.version', '}}'].join(' ')
 const RECORDED = ['${{', 'needs.record.outputs.reference', '}}'].join(' ')
 const publish = workflow('publish.yml')
 const rollback = workflow('rollback.yml')
+const ci = workflow('ci.yml')
 
 test('o Release publica o Hub depois da imagem, e a borda depois do Hub', () => {
   assert.equal(publish.jobs.deploy?.needs, 'image')
@@ -95,4 +103,29 @@ test('o Release registra o digest depois que o deploy deu certo', () => {
     (step) => step.run === 'infra/releases.sh record "$VERSION" "$REFERENCE"',
   )
   assert.ok(deploy >= 0 && record > deploy, `${deploy} ${record}`)
+})
+
+test('a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara', () => {
+  for (const [name, job] of Object.entries(ci.jobs))
+    assert.equal(job['runs-on'], 'ubuntu-24.04', name)
+  assert.doesNotMatch(text('ci.yml'), /secrets\./)
+})
+
+test('só o Release e o disparo manual chegam ao runner do servidor', () => {
+  for (const name of readdirSync(FOLDER)) {
+    const file = workflow(name)
+    const onServer = Object.values(file.jobs).some((job) =>
+      [job['runs-on']].flat().includes('self-hosted'),
+    )
+    if (!onServer) continue
+    for (const event of Object.keys(file.on))
+      assert.ok(['release', 'workflow_dispatch'].includes(event), `${name}: ${event}`)
+  }
+})
+
+test('todo trabalho no runner do servidor passa pelo ambiente production do GitHub', () => {
+  for (const name of readdirSync(FOLDER))
+    for (const [id, job] of Object.entries(workflow(name).jobs))
+      if ([job['runs-on']].flat().includes('self-hosted'))
+        assert.equal(job.environment, 'production', `${name}: ${id}`)
 })

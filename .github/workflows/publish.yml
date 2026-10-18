@@ -17,9 +17,10 @@ env:
 # Every job checks out github.sha, the commit the runner's hook checked: the tag can move after the
 # event.
 jobs:
-  # A GitHub-hosted machine, new for each job: the self-hosted CI runners also run every branch and
-  # pull request, so what they leave behind would reach main's image. Only the digest crosses to
-  # the server's runner, which the hook guards.
+  # A GitHub-hosted machine, new for each job, so nothing an earlier job left behind reaches main's
+  # image. Only the digest crosses to the server's runner. Every job there names the environment
+  # `production`, whose deployment rules admit only main and v* tags: GitHub's own gate beside the
+  # runner's hook.
   image:
     if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-24.04
@@ -74,6 +75,7 @@ jobs:
   deploy:
     needs: image
     runs-on: [self-hosted, hub]
+    environment: production
     timeout-minutes: 10
     permissions:
       contents: read
@@ -101,6 +103,7 @@ jobs:
   edge:
     needs: deploy
     runs-on: [self-hosted, hub]
+    environment: production
     timeout-minutes: 15
     permissions:
       contents: read
