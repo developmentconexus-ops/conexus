@@ -55,3 +55,25 @@ describe('varredura', { concurrency: 4 }, () => {
     }
   }
 })
+
+// The router preloads a link's page once it keeps focus past its 50ms delay, so a Tab stop that
+// lingers on the rail's Projetos link asks the Hub for the Projects. The walk above only lingers
+// when the machine is slow; here every state lingers, and a state with no reply for it fails the
+// run's unanswered check.
+describe('pré-carga do trilho', { concurrency: 4 }, () => {
+  for (const state of STATES) {
+    test(`${state.name}: o foco parado em Projetos pede só o que há resposta`, async () => {
+      const page = await harness.open(state.path, {
+        viewport: DESKTOP,
+        replies: state.replies,
+      })
+      await state.settle(page)
+      const link = page.locator('a[href$="/projects"]').first()
+      if (await link.count()) {
+        await link.focus()
+        await page.waitForTimeout(250)
+      }
+      await page.close()
+    })
+  }
+})
