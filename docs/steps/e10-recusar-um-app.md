@@ -86,17 +86,17 @@ espalhados 40. Total **600**, teto 4.000 (L2).
 | 1 | U1 | Registro "proposed" antes da prova; Result com versões, o número de consultas e os tempos do banco acordando; nada `cx-prova-` vivo | os registros | must |
 | 2 | U2 | Numa chamada, a consulta N passa e a N+1 é recusada: pelo limite nativo, a página `EDGE_APP_FAILED`; pelo contador, `DB_QUERY_LIMIT` ao app, sem rede | `db.test.ts`, `dispatcher.test.ts` | must |
 | 3 | U2 | App que espera: aos 10 s, a página `EDGE_APP_FAILED`, registro `EDGE_APP_DEADLINE`; consulta depois do prazo: `DB_DEADLINE`, sem rede | idem | must |
-| 4 | U2 | `props` do `Db` levam o prazo; o app não o recebe | `db.test.ts` | must |
+| 4 | U2 | Um app dublê chama `db` depois do prazo: `DB_DEADLINE`; o `ctx.props` do app não traz o prazo | `dispatcher.test.ts` | must |
 | 5 | U3 | Acusa, com código, operação e linha: texto literal que grava em `query`; dois `batch` numa função; `statement_timeout`, `set_config`, `ALTER ROLE`, `DO $$` no texto. O Recados passa. Gravação montada em execução passa (o banco recusa) | `verify.test.ts` | must |
-| 6 | U3 | `worker.js` sem sintaxe válida: um motivo, sem exceção; o maior `worker.js` do teto do envio: o tempo registrado, o envio dentro de `SEND_CLAIM_MS` | idem | must |
+| 6 | U3 | `worker.js` sem sintaxe válida: um motivo, sem exceção; o maior `worker.js` do teto do envio: o envio dentro de `SEND_CLAIM_MS`; o tempo da conferência só registrado | idem | must |
 | 7 | U4 | `createAppVersion` com `recados-defeito`: 422 `APP_VERSION_REFUSED` e `reasons`; nenhuma linha, nenhum `blob`, nenhuma chamada fora; o próximo envio certo leva o número seguinte ao último guardado | `versions.test.ts` | must |
-| 8 | U4 | Cloudflare dublê com 10021: 422 `APP_DOES_NOT_START`, versão "falhou" com esse código, nenhuma migração, ponteiro igual; outro erro: 502 `APP_VERSION_FAILED` | idem, dublês (T14) | must |
+| 8 | U4 | Cloudflare dublê com 10021: 422 `APP_DOES_NOT_START`, versão "falhou" com esse código, nenhuma migração, ponteiro igual; outro erro: 502 `APP_VERSION_FAILED`, como na 9; o upload leva `limits.cpu_ms` de `APP_LIMITS` | idem, dublês (T14) | must |
 | 9 | U4 | Login de execução com `statement_timeout` 5 s e `transaction_timeout` 6 s, também o da 9 depois do reparo; `pg_sleep(6)` por ele: 57014 | `app-database.test.ts` | must |
-| 10 | U4 | A porta `storeAppVersion` devolve a recusa com os motivos | `versions.test.ts` | must |
+| 10 | U4 | A porta `storeAppVersion`, por `hub/apps/public.ts`, devolve a recusa com os motivos | `versions.test.ts` | must |
 | 11 | U5 | Cada célula da matriz; T23 | navegador | must |
 | 12 | U6 | Cada linha nova de `removals.json`: `caught` | `removals` | must |
 | 13 | U6 | O roteiro, Hub real, dublês | `tests/e2e/refusals.test.ts` | must |
-| 14 | U6 | Publicado: passos 1 a 4; o laço não atrasa outro app aberto ao mesmo tempo | firstmate (T13, T14) | must |
+| 14 | U6 | Publicado: passos 1 a 4; durante o laço, outro Projeto abre o seu app | firstmate (T13, T14) | must |
 
 ## A matriz de estados
 
@@ -119,8 +119,8 @@ Falhas novas (C48), USER, settles: `APP_VERSION_REFUSED` 422, "O Hub recusou est
 "Corrija o que está listado e envie de novo."; `APP_DOES_NOT_START` 422, "O app não inicia." /
 "Corrija o código e envie de novo." Motivos, com `{operação}` quando achada: `WRITE_IN_QUERY` "Em
 `{operação}`: grava com `db.query`. Grave com `db.batch`."; `TWO_BATCHES` "Em `{operação}`: dois
-lotes separados. Junte num `db.batch`."; `DATABASE_SETTING` "O app muda uma configuração do
-banco."; `UNREADABLE` "O `worker.js` não é JavaScript válido." Registros do despachante:
+lotes separados. Junte num `db.batch`."; `DATABASE_SETTING` "Em `{operação}`: muda uma
+configuração do banco."; `UNREADABLE` "O `worker.js` não é JavaScript válido." Registros do despachante:
 `DB_QUERY_LIMIT`, `DB_DEADLINE`, `EDGE_APP_DEADLINE`.
 
 `Problem.reasons` é um membro de extensão do RFC 9457, só códigos, nomes e linhas do próprio app:
@@ -172,8 +172,8 @@ READ WRITE; INSERT` num texto: recusado; (3) se as chamadas a `ctx.exports.Db` c
 (4) o que o despachante recebe quando a CPU estoura; (5) `statement_timeout` e
 `transaction_timeout` do login valem pelo HTTP, com os códigos; (6) o upload de um Worker que falha
 ao iniciar, num nome novo pela API de WfP: o código; (7) a primeira consulta depois de suspender o
-computador, três vezes, em ms. Se (2) passar, P1 volta ao fundador; se (7) chegar ao prazo de
-10 s, P3 volta.
+computador, três vezes, em ms. Se (2) passar, P1 volta ao fundador; se (4) não cortar o laço, se (5)
+não valer pelo HTTP, ou se (7) chegar ao prazo de 10 s, P3 volta.
 
 ### A ordem do trabalho
 
@@ -256,7 +256,7 @@ S15. Funções: acorn 8.18.0 `parse` (`ecmaVersion: 'latest'`, `sourceType: 'mod
 
 `createAppVersion` ganha 422 `APP_VERSION_REFUSED` com `reasons` e 422 `APP_DOES_NOT_START`.
 `storeAppVersion` ganha `{kind: 'REFUSED', reasons}`. `CloudflareApps.upload` devolve
-`UploadResult`; só 10021 vira recusa (o 10027 não cabe no teto de 10 MB).
+`UploadResult`; só 10021 vira recusa (P2 A); os outros códigos seguem a 9.
 
 ### A ordem do trabalho
 
