@@ -23,6 +23,7 @@ test('catálogo: as colunas, os únicos e as restrições de Projeto e do banco 
       'project.name text NO',
       'project.attempt_key text NO',
       `project.created_at ${TS} NO`,
+      'project.host_label text YES',
     ],
   )
   const constraints = await asOwner(
@@ -36,6 +37,8 @@ test('catálogo: as colunas, os únicos e as restrições de Projeto e do banco 
     { name: 'company_database_ready_has_project', type: 'c' },
     { name: 'company_database_state', type: 'c' },
     { name: 'project_company_id_attempt_key_key', type: 'u' },
+    { name: 'project_host_label_form', type: 'c' },
+    { name: 'project_host_label_key', type: 'u' },
     { name: 'project_name_length', type: 'c' },
     { name: 'project_pkey', type: 'p' },
   ])
@@ -63,6 +66,7 @@ test('catálogo: as políticas de linha, e o mesmo nome em outra caixa é recusa
       'company_database operator_delete {hub_operator} DELETE',
       'company_database operator_select {hub_operator} SELECT',
       'project company_all {hub_company} ALL',
+      'project hosts_select {hub_hosts} SELECT',
       'project operator_delete {hub_operator} DELETE',
       'project operator_select {hub_operator} SELECT',
     ],

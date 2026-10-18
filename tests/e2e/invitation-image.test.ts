@@ -34,7 +34,8 @@ async function imageHub(t: TestContext) {
   const database = await createTestDatabase(t)
   const mail = await mailServer(t)
   const port = await freePort()
-  const env = { ...serveEnvironment(t, database.runtimeUrl, port), HUB_MAIL_API_URL: mail.url }
+  const ports = { port, edgePort: await freePort() }
+  const env = { ...serveEnvironment(t, database.runtimeUrl, ports), HUB_MAIL_API_URL: mail.url }
   const summaryDir = mkdtempSync(join(tmpdir(), 'conexus-image-summary-'))
   t.after(() => rmSync(summaryDir, { recursive: true, force: true }))
   const { uid, gid } = userInfo()

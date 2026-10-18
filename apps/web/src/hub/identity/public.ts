@@ -1,6 +1,7 @@
 export { AccountMenu } from './account-menu.tsx'
 export { CancelInvitationForm } from './cancel-invitation-form.tsx'
 export { Companies } from './companies.tsx'
+export { CompanySetup } from './company-setup.tsx'
 export { CompanySwitcher } from './company-switcher.tsx'
 export { ForgotPasswordForm } from './forgot-password-form.tsx'
 export { Greeting } from './greeting.tsx'

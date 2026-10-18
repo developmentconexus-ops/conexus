@@ -14,11 +14,11 @@ import {
   freePort,
   runtimeUrlWithPassword,
   serveEnvironment,
-  startHub,
   unreachableDatabaseUrl,
   urlFile,
   withRoleLock,
 } from './test-database.ts'
+import { startHub } from './test-hub-process.ts'
 
 const run = promisify(execFile)
 
@@ -202,7 +202,10 @@ test('migrate dá senha ao login do Hub que voltou de uma restauração sem ela'
 
 test('migrate com o banco recusando a conexão: sai 1 com DATABASE_UNAVAILABLE, não erro inesperado', async (t) => {
   const env = {
-    ...serveEnvironment(t, await unreachableDatabaseUrl('hub_runtime'), await freePort()),
+    ...serveEnvironment(t, await unreachableDatabaseUrl('hub_runtime'), {
+      port: await freePort(),
+      edgePort: await freePort(),
+    }),
     HUB_MIGRATION_DATABASE_URL_FILE: urlFile(t, await unreachableDatabaseUrl()),
   }
   const { lines, exited } = startHub(t, env, ['migrate'])

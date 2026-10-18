@@ -20,6 +20,9 @@ services:
       HUB_MAIL_TOKEN_FILE: /run/secrets/hub_mail_token
       HUB_NEON_API_URL: https://console.neon.tech/api/v2
       HUB_NEON_API_KEY_FILE: /run/secrets/hub_neon_api_key
+      # The dispatcher's listener, reached over the Tunnel by Workers VPC: never under `ports:` (0041).
+      HUB_EDGE_PORT: "8081"
+      HUB_APPS_DOMAIN: conexusapp.tech
     healthcheck:
       test:
         - CMD

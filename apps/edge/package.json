@@ -1,0 +1,17 @@
+{
+  "name": "@conexus/edge",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "wrangler types --check && tsc -p tsconfig.json",
+    "test": "node --test --test-timeout=60000 --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\" \"example/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@conexus/app-contract": "*",
+    "@conexus/hub-api": "*",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.1"
+  }
+}

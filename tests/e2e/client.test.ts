@@ -5,6 +5,8 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
+  chooseNickname,
+  closeBrowser,
   linkIn,
   liveHub,
   mailProvider,
@@ -49,7 +51,7 @@ async function accept(page: Page, company: string) {
     .getByRole('heading', { name: `Conexus convidou você para ser o primeiro dono de ${company}.` })
     .waitFor()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await chooseNickname(page)
   await page.getByRole('link', { name: 'Pessoas' }).first().click()
   await page.getByRole('heading', { name: company, exact: true }).waitFor()
 }
@@ -59,7 +61,7 @@ test('o roteiro da Central: cadastrar, o administrador cria a senha e entra como
   const { port, database } = await liveHub(t, mail.url)
   await personWithPassword(database, ANA)
   const browser: Browser = await chromium.launch()
-  t.after(() => browser.close())
+  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   const anaContext = await browser.newContext()
   const daviContext = await browser.newContext()

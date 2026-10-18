@@ -136,7 +136,7 @@ function logServed(request: FastifyRequest, reply: FastifyReply): void {
  * A read of an unknown address outside /api/ and /assets/ gets the screens' page with 404, so the
  * person reads "Não encontramos o que você procurou." and the browser still learns it found nothing.
  */
-function installErrorHandling(app: FastifyInstance, page: { built: boolean }): void {
+export function installErrorHandling(app: FastifyInstance, page: { built: boolean }): void {
   app.setNotFoundHandler((request, reply) => {
     const read = request.method === 'GET' || request.method === 'HEAD'
     if (page.built && read && !NOT_A_PAGE.test(request.url)) {
@@ -177,10 +177,8 @@ function installPages(app: FastifyInstance): void {
   })
 }
 
-export async function createServer(
-  config: Config,
-  deps: { webRoot: string; readSession: SessionReader },
-): Promise<FastifyInstance> {
+/** The Fastify instance both listeners share: its limits, its logs and its failure output. */
+export async function baseServer(config: Config): Promise<FastifyInstance> {
   const app: FastifyInstance = Fastify({
     logger: { level: config.logLevel },
     logController: new LogController({ disableRequestLogging: true, requestIdLogLabel: 'traceId' }),
@@ -202,11 +200,20 @@ export async function createServer(
   // Fastify answers 415 for a body with no parser; JSON is left the only one (security S25).
   app.removeContentTypeParser('text/plain')
   await app.register(fastifyHelmet, HELMET_OPTIONS)
+  return app
+}
+
+export async function createServer(
+  config: Config,
+  deps: { webRoot: string; readSession: SessionReader },
+): Promise<FastifyInstance> {
+  const app = await baseServer(config)
   const built = existsSync(join(deps.webRoot, 'index.html'))
   // The plugin would warn about a missing root in prose; the Hub says it by its code (code C50).
   await app.register(fastifyStatic, { root: deps.webRoot, serve: false, suppressWarning: true })
   if (!built) app.log.warn('WEB_PAGE_MISSING')
-  enforceAccess(app, { publicOrigin: config.publicOrigin, readSession: deps.readSession })
+  const { publicOrigin } = config
+  enforceAccess(app, { kind: 'PUBLIC', publicOrigin, readSession: deps.readSession })
   installErrorHandling(app, { built })
   installPages(app)
   return app

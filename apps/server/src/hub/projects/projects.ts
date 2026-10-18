@@ -1,8 +1,9 @@
 import { randomBytes } from 'node:crypto'
 import type { CompanyId, Person, Project, ProjectName } from '@conexus/hub-api'
-import { PAGE_SIZE, ProjectId } from '@conexus/hub-api'
+import { appHostOf, HostLabel, hostLabelOf, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import type { AppsDomain } from '../../platform/config.ts'
 import type { CommandTx, Database, Scope } from '../../platform/database.ts'
 import { databaseFailure, transactionLock, violatedConstraint } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -13,13 +14,30 @@ import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
 import { companyDatabase, project } from './tables.ts'
 
-type Deps = { database: Database; identity: IdentityPorts; neon: NeonProjects; log: FailureLog }
+type Deps = {
+  database: Database
+  identity: IdentityPorts
+  neon: NeonProjects
+  log: FailureLog
+  appsDomain: AppsDomain
+}
 
 const NAME_KEY = 'project_company_name_key'
-const ProjectRow = z.object({ id: ProjectId, name: z.string().min(1), createdAt: z.date() })
+const ADDRESS_KEY = 'project_host_label_key'
+const ProjectRow = z.object({
+  id: ProjectId,
+  name: z.string().min(1),
+  createdAt: z.date(),
+  hostLabel: HostLabel.nullable(),
+})
 type ProjectRow = z.infer<typeof ProjectRow>
 
-const columns = { id: project.id, name: project.name, createdAt: project.createdAt }
+const columns = {
+  id: project.id,
+  name: project.name,
+  createdAt: project.createdAt,
+  hostLabel: project.hostLabel,
+}
 
 function scopeOf(person: Person, companyId: CompanyId): Scope {
   return { kind: 'COMPANY', companyId, personId: person.id }
@@ -29,15 +47,33 @@ function summaryOf(row: ProjectRow) {
   return { id: row.id, name: row.name, createdAt: row.createdAt.toISOString() }
 }
 
-/** The Project as a viewer with this role sees it: whether they may delete it is the Hub's answer (code C26). */
-function viewOf(input: { row: ProjectRow; mayDelete: boolean }): Project {
-  return { ...summaryOf(input.row), mayDelete: input.mayDelete }
+/**
+ * The Project as a viewer with this role sees it: whether they may delete it is the Hub's answer
+ * (code C26), and its app's address the host its label names under the apps' domain.
+ */
+function viewOf(deps: Deps, input: { row: ProjectRow; mayDelete: boolean }): Project {
+  const { hostLabel } = input.row
+  const address =
+    hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
+  return { ...summaryOf(input.row), mayDelete: input.mayDelete, address }
 }
 
-/** A name the company already holds, in any case, is refused by the index, also between two at once. */
+/** The address a new Project is born with: its name and the company's nickname (decision 0024). */
+async function hostLabelFor(deps: Deps, tx: CommandTx, input: Creation): Promise<HostLabel> {
+  const nickname = await deps.identity.companyNicknameOf(tx, input.companyId)
+  if (nickname === null) throw new Failure('COMPANY_SETUP_PENDING')
+  const label = hostLabelOf({ name: input.name, nickname })
+  if (label === undefined) throw new Failure('PROJECT_NAME_NO_ADDRESS')
+  return label
+}
+
+/**
+ * A name or an address the company already holds is refused by its unique index, also between two
+ * at once: "Ação" after "Acao" is another name with the same address.
+ */
 async function insertProject(
   tx: CommandTx,
-  input: { companyId: CompanyId; name: ProjectName; attemptKey: string },
+  input: { companyId: CompanyId; name: ProjectName; attemptKey: string; hostLabel: HostLabel },
 ): Promise<ProjectRow> {
   const id = ProjectId.parse(randomBytes(16).toString('hex'))
   try {
@@ -47,9 +83,9 @@ async function insertProject(
       .returning(columns)
     return ProjectRow.parse(row)
   } catch (error) {
-    if (violatedConstraint(error) === NAME_KEY) {
-      throw new Failure('PROJECT_NAME_TAKEN', { cause: error })
-    }
+    const violated = violatedConstraint(error)
+    if (violated === NAME_KEY) throw new Failure('PROJECT_NAME_TAKEN', { cause: error })
+    if (violated === ADDRESS_KEY) throw new Failure('PROJECT_ADDRESS_TAKEN', { cause: error })
     throw error
   }
 }
@@ -73,7 +109,8 @@ type Created = { project: Project; created: boolean; databaseCreated: boolean }
 
 /**
  * The company's lock, the attempt's, then the admission: the order every creation keeps, so two at
- * once, or a creation and a deletion of the company, meet in one place (code C65, S8).
+ * once, or a creation and a deletion of the company, meet in one place (code C65, S8). A new attempt
+ * learns its address here, before any call to Neon.
  */
 async function enterCreation(deps: Deps, tx: CommandTx, input: Creation) {
   await deps.identity.lockCompany(tx, input.companyId)
@@ -85,7 +122,9 @@ async function enterCreation(deps: Deps, tx: CommandTx, input: Creation) {
     action: 'createProject',
   })
   const mayDelete = deps.identity.allows(admitted.role, 'deleteProject')
-  return { mayDelete, replay: await replayOf(tx, { ...input }) }
+  const replay = await replayOf(tx, { ...input })
+  if (replay !== undefined) return { kind: 'REPLAY', mayDelete, row: replay } as const
+  return { kind: 'NEW', mayDelete, hostLabel: await hostLabelFor(deps, tx, input) } as const
 }
 
 /**
@@ -97,19 +136,20 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
   const { database } = deps
   const scope = scopeOf(input.person, input.companyId)
   const started = await database.command(scope, async (tx) => {
-    const { mayDelete, replay } = await enterCreation(deps, tx, input)
-    if (replay !== undefined) {
-      return { kind: 'DONE', created: false, row: replay, mayDelete } as const
+    const entered = await enterCreation(deps, tx, input)
+    const { mayDelete } = entered
+    if (entered.kind === 'REPLAY') {
+      return { kind: 'DONE', created: false, row: entered.row, mayDelete } as const
     }
     if ((await claimDatabase(tx, input.companyId)) === 'CLAIMED') {
       return { kind: 'CLAIMED', mayDelete } as const
     }
-    const row = await insertProject(tx, input)
+    const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
     return { kind: 'DONE', created: true, row, mayDelete } as const
   })
   if (started.kind === 'DONE') {
     const { row, mayDelete, created } = started
-    return { project: viewOf({ row, mayDelete }), created, databaseCreated: false }
+    return { project: viewOf(deps, { row, mayDelete }), created, databaseCreated: false }
   }
   const prepared = await prepareDatabase(deps.neon, input.companyId)
   if (prepared.kind !== 'READY') {
@@ -120,10 +160,11 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
   }
   try {
     return await database.command(scope, async (tx) => {
-      const { mayDelete, replay } = await enterCreation(deps, tx, input)
-      if (replay !== undefined) {
+      const entered = await enterCreation(deps, tx, input)
+      const { mayDelete } = entered
+      if (entered.kind === 'REPLAY') {
         return {
-          project: viewOf({ row: replay, mayDelete }),
+          project: viewOf(deps, { row: entered.row, mayDelete }),
           created: false,
           databaseCreated: false,
         }
@@ -132,8 +173,8 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
         companyId: input.companyId,
         neonProjectId: prepared.id,
       })
-      const row = await insertProject(tx, input)
-      return { project: viewOf({ row, mayDelete }), created: true, databaseCreated }
+      const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
+      return { project: viewOf(deps, { row, mayDelete }), created: true, databaseCreated }
     })
   } catch (error) {
     // The project in Neon stays, and the next attempt finds it by name instead of waiting out the claim.
@@ -186,7 +227,7 @@ function get(deps: Deps, input: OfProject) {
       .where(and(eq(project.id, input.projectId), eq(project.companyId, input.companyId)))
     if (row === undefined) throw new Failure('NOT_FOUND')
     const mayDelete = deps.identity.allows(admitted.role, 'deleteProject')
-    return { project: viewOf({ row: ProjectRow.parse(row), mayDelete }) }
+    return { project: viewOf(deps, { row: ProjectRow.parse(row), mayDelete }) }
   })
 }
 

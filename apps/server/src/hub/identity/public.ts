@@ -18,16 +18,18 @@ import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
+import { companyNicknameOf } from './nickname.ts'
 import { createPasswordRecovery } from './password-recovery.ts'
 import { registerIdentityRoutes } from './routes.ts'
-import { createSessionReader } from './session.ts'
+import { createSessionReader, liveHubSession, personNameOf } from './session.ts'
 
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
 export { passwordLinkText } from './messages.ts'
-// The row policies' pieces, for the Central's own table.
-export { ADMINISTRATOR, policy } from './tables.ts'
+// The row policies' pieces, for the Central's own table, and the Hub session's table, for the apps'
+// foreign keys (code C8).
+export { ADMINISTRATOR, policy, session } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']
@@ -67,6 +69,9 @@ export function createIdentity(deps: {
       companyNameOf,
       deleteCompany: deleteCompanyOn(auth),
       readOperatedCompanies,
+      companyNicknameOf,
+      liveHubSession,
+      personNameOf,
       /** The first owner's invitation, from Conexus, after the commit (step 4.1's E3). */
       mailOwnerInvitation: (input: {
         admitted: OperatorProof

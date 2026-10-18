@@ -1,8 +1,30 @@
+export {
+  appHostOf,
+  CompanyNickname,
+  HostLabel,
+  hostLabelOf,
+  isReservedNickname,
+  NICKNAME_MAX_LENGTH,
+  NICKNAME_MIN_LENGTH,
+  RESERVED_NICKNAMES,
+  suggestedNickname,
+} from './address.ts'
+export {
+  APP_SESSION_HEADER,
+  AppCaller,
+  AppSessionToken,
+  checkAppCall,
+  createAppHandoff,
+  createAppSession,
+  HANDOFF_PATH,
+  HANDOFF_SECONDS,
+} from './apps.ts'
 export { CAPACITY } from './capacity.ts'
 export {
   acceptInvitation,
   COMPANY_NAME_MAX_LENGTH,
   Company,
+  CompanyDetail,
   CompanyId,
   cancelInvitation,
   changeMemberRole,
@@ -45,6 +67,7 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export { setCompanyNickname } from './nickname.ts'
 export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,

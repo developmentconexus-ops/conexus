@@ -6,7 +6,14 @@ import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
-import { hubServer, PEDIDOS, projectsRead, refusal, undecided } from '../../platform/test-hub.tsx'
+import {
+  hubServer,
+  PEDIDOS,
+  PEDIDOS_ADDRESS,
+  projectsRead,
+  refusal,
+  undecided,
+} from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const PROJECTS = `/companies/${COMPANY.id}/projects`
@@ -34,7 +41,9 @@ function hub(
         state.projects = [project, ...state.projects]
         state.databaseReady = true
         return HttpResponse.json(
-          createProject.success.body.parse({ project: { ...project, mayDelete: true } }),
+          createProject.success.body.parse({
+            project: { ...project, mayDelete: true, address: PEDIDOS_ADDRESS },
+          }),
           { status: 201 },
         )
       }
@@ -154,6 +163,33 @@ test('409 de nome repetido: a frase no campo', async () => {
     expect(screen.getByLabelText('Nome do Projeto').getAttribute('aria-invalid')).toBe('true'),
   )
 })
+
+test('o endereço do app se monta enquanto se digita o nome, e some se o nome não dá endereço', async () => {
+  hub({})
+  open()
+  await screen.findByText('Nenhum Projeto ainda.')
+  expect(screen.queryByText(/Endereço do app:/)).toBeNull()
+  fireEvent.change(screen.getByLabelText('Nome do Projeto'), { target: { value: 'Ação Rápida' } })
+  expect(await screen.findByText('acao-rapida--empresa-teste.apps.example.test')).toBeTruthy()
+  fireEvent.change(screen.getByLabelText('Nome do Projeto'), { target: { value: 'TI' } })
+  await waitFor(() => expect(screen.queryByText(/Endereço do app:/)).toBeNull())
+})
+
+for (const [code, phrase] of [
+  ['PROJECT_ADDRESS_TAKEN', 'Já existe um Projeto com esse endereço nesta empresa. Mude o nome.'],
+  ['PROJECT_NAME_NO_ADDRESS', 'O nome precisa ter ao menos três letras ou números.'],
+] as const) {
+  test(`${code}: a frase no campo Nome`, async () => {
+    hub({}, () => refusal(code))
+    open()
+    await screen.findByText('Nenhum Projeto ainda.')
+    create('Pedidos')
+    const field = screen.getByLabelText('Nome do Projeto')
+    expect((await screen.findByText(phrase)).getAttribute('role')).toBe('alert')
+    await waitFor(() => expect(field.getAttribute('aria-invalid')).toBe('true'))
+    expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  })
+}
 
 for (const code of ['COMPANY_DATABASE_PREPARING', 'COMPANY_DATABASE_UNAVAILABLE'] as const) {
   test(`${code}: a frase e "Tentar de novo", que manda o pedido outra vez`, async () => {

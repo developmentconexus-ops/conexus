@@ -15,12 +15,72 @@ concurrency:
   group: hub-server
   cancel-in-progress: false
 
-env:
-  IMAGE: ghcr.io/developmentconexus-ops/conexus-hub
-
 jobs:
-  rollback:
+  # The record comes first: a version main's Publish never deployed ends here, before the edge or the
+  # Hub moves, and both jobs below put back that one version.
+  record:
     runs-on: [self-hosted, hub]
+    environment: production
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      reference: ${{ steps.reference.outputs.reference }}
+    steps:
+      - name: The version is a version name
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "$VERSION is not a version name"
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Find the digest main's Publish recorded for the version
+        id: reference
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          reference="$(infra/releases.sh find "$VERSION")"
+          echo "reference=$reference" >> "$GITHUB_OUTPUT"
+
+  # The edge goes back before the Hub, by publishing the earlier release's code with the script
+  # that publishes. Not `wrangler rollback`: a Worker in a namespace has no versions, so it would
+  # put back only the other two (C75). A release with no apps/edge leaves the edge as it is.
+  edge:
+    needs: record
+    runs-on: [self-hosted, hub]
+    environment: production
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.version }}
+          fetch-depth: 0
+      # The runner's hook checked main's commit, not this one: a version tag on a commit outside main
+      # ends here, before its npm ci or its publish can read the token.
+      - name: The version is a commit of main
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "the commit of $VERSION is not on main"
+            exit 1
+          fi
+      # An earlier release has no script of its own: the tools come from main.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: tooling
+      - if: ${{ hashFiles('apps/edge/package.json') != '' }}
+        uses: ./tooling/.github/actions/install
+      - run: tooling/infra/publish-edge.sh
+
+  rollback:
+    needs: [record, edge]
+    runs-on: [self-hosted, hub]
+    environment: production
     timeout-minutes: 10
     permissions:
       contents: read
@@ -32,20 +92,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Find the image kept for the version
-        id: reference
-        env:
-          VERSION: ${{ inputs.version }}
-        run: |
-          if ! [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "$VERSION is not a version name"
-            exit 1
-          fi
-          if ! digest="$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{.Manifest.Digest}}')"; then
-            echo "no image is kept for $VERSION"
-            exit 1
-          fi
-          echo "reference=$IMAGE@$digest" >> "$GITHUB_OUTPUT"
       - env:
-          REFERENCE: ${{ steps.reference.outputs.reference }}
+          REFERENCE: ${{ needs.record.outputs.reference }}
         run: infra/deploy.sh "$REFERENCE"

@@ -2,12 +2,8 @@ import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { SESSION_COOKIE } from '@conexus/hub-api'
-import {
-  serveEnvironment,
-  spawnHub,
-  TEST_ORIGIN,
-  WRITE_HEADERS,
-} from '../../platform/test-database.ts'
+import { serveEnvironment, TEST_ORIGIN, WRITE_HEADERS } from '../../platform/test-database.ts'
+import { spawnHub } from '../../platform/test-hub-process.ts'
 import type { MailHub } from './test-hub.ts'
 import {
   ANA_OWNER,

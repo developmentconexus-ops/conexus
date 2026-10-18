@@ -2,6 +2,7 @@ import { defineRelations, sql } from 'drizzle-orm'
 import {
   bigint,
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -171,7 +172,8 @@ export const rateLimit = auth.table('rate_limit', {
 })
 
 // The plugin's model "organization", named "company" by its own modelName option. The attempt key
-// is the create's Idempotency-Key (code C37), and the slug is that key too.
+// is the create's Idempotency-Key (code C37), and the slug is that key too. The nickname names the
+// company in its apps' addresses: chosen once by its owner, unique across Conexus (decision 0024).
 export const company = auth.table(
   'company',
   {
@@ -183,8 +185,13 @@ export const company = auth.table(
     createdAt: instant('created_at').notNull(),
     attemptKey: text('attempt_key').notNull().unique(),
     deletingSince: instant('deleting_since'),
+    nickname: text('nickname').unique('company_nickname_key'),
   },
-  () => [
+  (table) => [
+    check(
+      'company_nickname_form',
+      sql`${table.nickname} ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and char_length(${table.nickname}) BETWEEN 3 AND 30`,
+    ),
     policy(SCOPE_ROLES.COMPANY, 'all', sql`id = ${companyId}`),
     policy(
       SCOPE_ROLES.PERSON,

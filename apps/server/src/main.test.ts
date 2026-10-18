@@ -7,17 +7,16 @@ import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
 import { createStatus } from './hub/status/public.ts'
-import { createHub, identityOf, operationsOf, projectsOf } from './main.ts'
+import { appsOf, createHub, identityOf, operationsOf, projectsOf } from './main.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import {
   createTestDatabase,
   freePort,
   serveEnvironment,
   silent,
-  spawnHub,
-  startHub,
   testConfig,
 } from './platform/test-database.ts'
+import { spawnHub, startHub } from './platform/test-hub-process.ts'
 import { fakeNeon } from './platform/test-neon.ts'
 
 const apps: FastifyInstance[] = []
@@ -38,13 +37,22 @@ async function hub(webRoot?: string) {
   const status = createStatus({ version: config.version, database: shared.database })
   const identity = identityOf({ database: shared.database, config, log: silent })
   const projects = projectsOf({
+    config,
     database: shared.database,
     identity,
     neon: fakeNeon().neon,
     log: silent,
   })
   const operations = operationsOf(shared.database, { identity, projects })
-  const app = await createHub(config, { status, identity, operations, projects, webRoot })
+  const door = appsOf({ database: shared.database, config, identity, projects })
+  const app = await createHub(config, {
+    status,
+    identity,
+    operations,
+    projects,
+    apps: door,
+    webRoot,
+  })
   apps.push(app)
   return app
 }
@@ -207,7 +215,8 @@ test('desligamento', async (t) => {
 
 test('segundo sinal', async (t) => {
   const port = await freePort()
-  const { kill, exited, until, lines } = startHub(t, serveEnvironment(t, shared.runtimeUrl, port))
+  const ports = { port, edgePort: await freePort() }
+  const { kill, exited, until, lines } = startHub(t, serveEnvironment(t, shared.runtimeUrl, ports))
   await until('LISTENING')
   const stuck = connect(port, '127.0.0.1')
   stuck.on('error', () => stuck.destroy())

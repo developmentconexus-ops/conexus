@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/@biomejs/biome/configuration_schema.json",
+  "root": false,
+  "extends": "//",
+  "files": { "includes": ["**", "!worker-configuration.d.ts"] },
+  "overrides": [
+    { "includes": ["**", "!src/hub.ts"], "plugins": ["./hub-binding.grit"] },
+    {
+      "includes": ["src/dispatcher.ts", "src/outbound.ts", "example/src/index.ts"],
+      "linter": { "rules": { "style": { "noDefaultExport": "off" } } }
+    }
+  ]
+}

@@ -6,6 +6,8 @@ import closeWithGrace from 'close-with-grace'
 import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
 import { z } from 'zod'
+import type { Apps } from './hub/apps/public.ts'
+import { createApps } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
@@ -18,6 +20,7 @@ import type { Config } from './platform/config.ts'
 import { readConfig } from './platform/config.ts'
 import type { Database } from './platform/database.ts'
 import { assertMigrated, assertRuntimeLogin, openDatabase } from './platform/database.ts'
+import { createEdgeServer } from './platform/edge-server.ts'
 import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
 import { registerHealth } from './platform/health.ts'
@@ -38,6 +41,7 @@ export async function createHub(
     identity: Identity
     operations: Operations
     projects: Projects
+    apps: Apps
     webRoot?: string
   },
 ): Promise<FastifyInstance> {
@@ -50,8 +54,20 @@ export async function createHub(
   deps.identity.routes(app)
   deps.operations.routes(app)
   deps.projects.routes(app)
+  deps.apps.routes(app)
   await app.ready()
   return app
+}
+
+/** The listener on `HUB_EDGE_PORT`: the apps' dispatcher's calls and nothing else (security S48). */
+export async function createEdgeHub(
+  config: Config,
+  deps: { apps: Apps },
+): Promise<FastifyInstance> {
+  const edge = await createEdgeServer(config)
+  deps.apps.edgeRoutes(edge)
+  await edge.ready()
+  return edge
 }
 
 /** The identity subject, sending its mail through the provider the configuration names. */
@@ -78,20 +94,41 @@ export function operationsOf(
 /** The Projects subject, reaching identity through its ports and Neon through the port it is given. */
 export function projectsOf(deps: {
   database: Database
+  config: Config
   identity: Identity
   neon: NeonProjects
   log: FailureLog
 }): Projects {
-  return createProjects({ ...deps, identity: deps.identity.ports })
+  const { config, ...rest } = deps
+  return createProjects({ ...rest, identity: deps.identity.ports, appsDomain: config.appsDomain })
 }
 
-/** The first-person command logs to stderr: its stdout may be the run's summary, where the link goes. */
+/** The door of the apps' hosts, reaching identity and Projects through their ports (code C4). */
+export function appsOf(deps: {
+  database: Database
+  config: Config
+  identity: Identity
+  projects: Projects
+}): Apps {
+  return createApps({
+    database: deps.database,
+    identity: deps.identity.ports,
+    projects: deps.projects.ports,
+    appsDomain: deps.config.appsDomain,
+  })
+}
+
+/**
+ * The first-person command logs to stderr: its stdout is the terminal of infra/first-person.sh,
+ * where the link goes.
+ */
 function bootLog(level: Config['logLevel'], command = process.argv[2]) {
   const stream = command === 'first-person' ? process.stderr : process.stdout
   return Fastify({ logger: { level, stream } }).log
 }
 
-async function listenOnce(app: FastifyInstance, port: number): Promise<void> {
+/** Fastify's own listening line is prose; the Hub logs its code once both listeners are up (C50). */
+async function listenQuietly(app: FastifyInstance, port: number): Promise<void> {
   const { level } = app.log
   app.log.level = 'silent'
   try {
@@ -99,14 +136,13 @@ async function listenOnce(app: FastifyInstance, port: number): Promise<void> {
   } finally {
     app.log.level = level
   }
-  app.log.info('LISTENING')
 }
 
 /**
  * close-with-grace's own lines are prose, so its logger is off and each of its cases logs a code
  * here (code C50).
  */
-function shutDownOnSignal(app: FastifyInstance, database: Database) {
+function shutDownOnSignal(app: FastifyInstance, edge: FastifyInstance, database: Database) {
   function unexpected(cause: unknown) {
     logFailure(app.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
   }
@@ -122,7 +158,7 @@ function shutDownOnSignal(app: FastifyInstance, database: Database) {
       if (err) unexpected(err)
       app.log.info(signal === undefined ? {} : { signal }, 'SHUTTING_DOWN')
       try {
-        await app.close()
+        await Promise.all([app.close(), edge.close()])
         await database.close()
       } catch (error) {
         unexpected(error)
@@ -142,16 +178,20 @@ async function runServer(): Promise<void> {
     const status = createStatus({ version: config.version, database })
     const identity = identityOf({ database, config, log })
     const neon = createNeonProjects({ config, log })
-    const projects = projectsOf({ database, identity, neon, log })
+    const projects = projectsOf({ database, config, identity, neon, log })
     const operations = operationsOf(database, { identity, projects })
-    const app = await createHub(config, { status, identity, operations, projects })
-    const grace = shutDownOnSignal(app, database)
+    const apps = appsOf({ database, config, identity, projects })
+    const app = await createHub(config, { status, identity, operations, projects, apps })
+    const edge = await createEdgeHub(config, { apps })
+    const grace = shutDownOnSignal(app, edge, database)
     try {
-      await listenOnce(app, config.port)
+      await listenQuietly(edge, config.edgePort)
+      await listenQuietly(app, config.port)
+      app.log.info('LISTENING')
       await status.recordStart()
     } catch (error) {
       grace.uninstall()
-      await app.close()
+      await Promise.all([app.close(), edge.close()])
       throw error
     }
   } catch (error) {

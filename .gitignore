@@ -9,3 +9,4 @@ coverage/
 *.key
 secrets/
 /apps/server/src/hub/identity/invitation-render.mjs
+.wrangler/

@@ -5,8 +5,11 @@ import type { FailureCode } from './failures.ts'
 export const ATTEMPT_KEY_HEADER = 'Idempotency-Key'
 export const AttemptKey = z.uuid()
 
-/** `entry` is a write made without a session; `session` reads the session first. */
-export type AccessKind = 'page' | 'public' | 'entry' | 'session'
+/**
+ * `entry` is a write made without a session; `session` reads the session first; `edge` exists only
+ * on the listener the apps' dispatcher alone reaches (security S48).
+ */
+export type AccessKind = 'page' | 'public' | 'entry' | 'session' | 'edge'
 
 export type Operation = {
   id: string

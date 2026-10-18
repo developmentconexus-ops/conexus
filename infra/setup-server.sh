@@ -3,6 +3,8 @@
 # RUNNER_TOKEN_FILE. The runner reads its registration token only from a command line, from its
 # environment or from a terminal prompt, never from a file (decision 0036): the token is set in the
 # environment of the config.sh call alone, never exported to this script and never in a command line.
+# The runner also gets, through setup-runner-hook.sh, a hook that refuses every job but a release or
+# a manual run of main whose commit is on main; MIRROR_URL passes through to it.
 set -euo pipefail
 
 : "${RUNNER_URL:?RUNNER_URL is required}"
@@ -26,6 +28,7 @@ if [ "${CONEXUS_SETUP_TEST:-}" = 1 ]; then
   home="${RUNNER_HOME:?}"
 fi
 cloudflared_uid=65532
+here="$(dirname "$0")"
 
 # Every command that can wait on the network or on a prompt has a deadline and is killed after it.
 limit() { timeout --kill-after=10 "$@"; }
@@ -81,6 +84,7 @@ if [ ! -f .runner ]; then
     limit 120 sudo --preserve-env=ACTIONS_RUNNER_INPUT_TOKEN -u runner ./config.sh --unattended \
     --url "$RUNNER_URL" --labels hub --name hub --replace
 fi
+"$BASH" "$here/setup-runner-hook.sh"
 limit 60 ./svc.sh install runner
 limit 60 ./svc.sh start
 echo "server ready"

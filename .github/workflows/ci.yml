@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   check:
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -58,7 +58,7 @@ jobs:
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
   # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.
   scripts:
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -66,7 +66,7 @@ jobs:
       - run: npm run test:scripts
 
   server:
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -99,7 +99,7 @@ jobs:
           TEST_SHARD: ${{ matrix.shard }}/4
 
   web:
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -108,7 +108,7 @@ jobs:
       - run: npm run build
 
   e2e:
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -134,12 +134,12 @@ jobs:
         run: npm run e2e
 
   removals:
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -161,11 +161,11 @@ jobs:
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: Each protection's test fails when the protection is taken out
-        run: npm run removals -- --shard ${{ matrix.shard }}/3
+        run: npm run removals -- --shard ${{ matrix.shard }}/4
 
   image:
     if: github.event_name == 'pull_request'
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     services:
       postgres:
@@ -209,7 +209,7 @@ jobs:
   ci:
     if: always()
     needs: [check, scripts, server, web, e2e, removals, image]
-    runs-on: [self-hosted, conexus]
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read

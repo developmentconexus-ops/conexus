@@ -251,16 +251,27 @@ const KEY_FIELD = { type: 'string', required: true } as const
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
 // The mark of a company the Central is deleting: only the Hub sets it, never a request.
 const DELETING_FIELD = { type: 'date', required: false, input: false } as const
+// The company's nickname in its apps' addresses: only the owner's choice through the Hub sets it.
+const NICKNAME_FIELD = { type: 'string', required: false, input: false } as const
 
-const accessControl = createAccessControl({ ...defaultStatements, project: ['create', 'delete'] })
+const accessControl = createAccessControl({
+  ...defaultStatements,
+  project: ['create', 'delete'],
+  company: ['nickname'],
+})
 
 /**
  * The plugin's roles: its defaults and what each does to a Project (founder, step 7, P1 A). Every
- * member creates one; only an owner or an administrator deletes one. `allows` in admission reads
- * these, so who may do what lives here alone (code C26).
+ * member creates one; only an owner or an administrator deletes one. Only the owner chooses the
+ * company's nickname (step 8, N1). `allows` in admission reads these, so who may do what lives here
+ * alone (code C26).
  */
 export const COMPANY_ROLES = {
-  owner: accessControl.newRole({ ...ownerAc.statements, project: ['create', 'delete'] }),
+  owner: accessControl.newRole({
+    ...ownerAc.statements,
+    project: ['create', 'delete'],
+    company: ['nickname'],
+  }),
   admin: accessControl.newRole({ ...adminAc.statements, project: ['create', 'delete'] }),
   member: accessControl.newRole({ ...memberAc.statements, project: ['create'] }),
 }
@@ -271,7 +282,11 @@ const ORGANIZATION = {
   schema: {
     organization: {
       modelName: 'company',
-      additionalFields: { attemptKey: KEY_FIELD, deletingSince: DELETING_FIELD },
+      additionalFields: {
+        attemptKey: KEY_FIELD,
+        deletingSince: DELETING_FIELD,
+        nickname: NICKNAME_FIELD,
+      },
     },
     invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
   },

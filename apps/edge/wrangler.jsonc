@@ -1,0 +1,29 @@
+// The dispatcher: every request to an app's host passes here first (decision 0041).
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "conexus-dispatcher",
+  "main": "src/dispatcher.ts",
+  "compatibility_date": "2026-10-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "*.conexusapp.tech/*", "zone_name": "conexusapp.tech" }],
+  "dispatch_namespaces": [
+    {
+      "binding": "DISPATCHER",
+      "namespace": "conexus-apps",
+      "outbound": { "service": "conexus-outbound" }
+    }
+  ],
+  // The Hub's edge listener, hub:8081 through the server's Tunnel: the VPC service conexus-hub-borda.
+  "vpc_services": [{ "binding": "HUB", "service_id": "01a14eb3-4962-75b3-9e12-3d97648e50cf" }],
+  "vars": {
+    "HUB_PUBLIC_ORIGIN": "https://hub.conexus.fun",
+    "APPS_DOMAIN": "conexusapp.tech"
+  },
+  // A pass travels in the query string: the logs keep the path without it (security S41).
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "traces": { "enabled": true }
+  }
+}

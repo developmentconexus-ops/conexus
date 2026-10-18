@@ -19,7 +19,7 @@ function refusal(env: Record<string, string | undefined>, variables: string) {
 }
 
 test('configuração: a chave, a organização e o endereço do Neon entram na leitura', async (t) => {
-  const env = serveEnvironment(t, await unreachableDatabaseUrl(), 8080)
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
   const config = readConfig('serve', env)
   assert.equal(config.neonApiUrl, 'http://127.0.0.1:9/api/v2')
   assert.equal(config.neonOrgId, 'org-test-0000')
@@ -27,14 +27,14 @@ test('configuração: a chave, a organização e o endereço do Neon entram na l
 })
 
 test('configuração: sem a organização, o arquivo da chave ou o endereço, nomeia a variável', async (t) => {
-  const env = serveEnvironment(t, await unreachableDatabaseUrl(), 8080)
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
   for (const name of ['HUB_NEON_API_URL', 'HUB_NEON_ORG_ID', 'HUB_NEON_API_KEY_FILE']) {
     refusal({ ...env, [name]: undefined }, name)
   }
 })
 
 test('configuração: o endereço do Neon fora desta máquina só vale em https', async (t) => {
-  const env = serveEnvironment(t, await unreachableDatabaseUrl(), 8080)
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
   refusal({ ...env, HUB_NEON_API_URL: 'http://neon.example.test/api/v2' }, 'HUB_NEON_API_URL')
   assert.equal(
     readConfig('serve', { ...env, HUB_NEON_API_URL: 'https://neon.example.test/api/v2' })
@@ -44,7 +44,7 @@ test('configuração: o endereço do Neon fora desta máquina só vale em https'
 })
 
 test('configuração: o arquivo da chave legível por outros ou vazio é recusado', async (t) => {
-  const env = serveEnvironment(t, await unreachableDatabaseUrl(), 8080)
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
   const path = env.HUB_NEON_API_KEY_FILE
   chmodSync(path, 0o644)
   refusal(env, 'HUB_NEON_API_KEY_FILE')
