@@ -46,10 +46,9 @@ export async function takeBackRepair(
   deps: RemovalDeps,
   input: Ids & { scope: Scope; versionId: AppVersionId },
 ): Promise<void> {
-  const { left } = await removeWorkers(deps.cloudflare, [input.versionId])
-  if (left > 0 || !(await dropAppDatabase(deps, input))) {
-    throw new Failure('APP_VERSION_FAILED', { details: { reason: 'TAKE_BACK_LEFT' } })
-  }
+  const { removed } = await removeWorkers(deps.cloudflare, [input.versionId])
+  const dropped = removed.length === 1 && (await dropAppDatabase(deps, input))
+  if (!dropped) throw new Failure('APP_VERSION_FAILED', { details: { reason: 'TAKE_BACK_LEFT' } })
 }
 
 /** The app's schema and logins in the company's database; one never made drops nothing. */
