@@ -66,10 +66,11 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [0034](decisions/0034-vitest-for-screen-files.md) Vitest for screens.
 - [0035](decisions/0035-publish-through-a-runner-on-the-server.md) publish through a runner.
 - [0036](decisions/0036-runner-token-in-one-call-environment.md) runner token per call.
-- [0037](decisions/0037-postgresql-18-and-drizzle-1-for-the-hub-database.md) PostgreSQL 18 and Drizzle 1.0.
+- [0037](decisions/0037-postgresql-18-and-drizzle-1-for-the-hub-database.md) PostgreSQL 18, Drizzle 1.0.
 - [0038](decisions/0038-database-logins-by-sql-checked-by-a-catalog-snapshot.md) logins by SQL, catalog snapshot.
 - [0039](decisions/0039-company-scope-and-row-policy-in-the-hub.md) company row policy.
 - [0040](decisions/0040-company-database-through-neon.md) Neon.
+- [0041](decisions/0041-app-session-check-through-workers-vpc.md) Workers VPC.
 
 ## Skills
 
