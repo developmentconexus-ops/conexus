@@ -49,10 +49,8 @@ as rotas da empresa gravam o apelido.
 **Fica de fora.** Banco da empresa, versões e envio (a 9). Limites (a 10). Preview (a 14). Quem só
 usa um app (a 18). Renomear.
 
-**A decisão sua pedida nesta etapa.** Quem publica a borda. A (recomendada, a deste cartão): o
-runner do servidor, com o token num arquivo de lá (0035). B: um trabalho do GitHub, com o token num
-segredo do GitHub, reabrindo 0035. Quem usa não vê diferença; com B, quem muda o fluxo alcança
-o token.
+**A decisão sua pedida nesta etapa.** Respondida, "A": o runner do servidor publica a borda, com o
+token num arquivo de lá (0035), e recusa trabalho que não venha de `main`.
 
 ## O que mudou desde o estudo
 
@@ -60,9 +58,8 @@ O registro é 0041 (a 7 tomou 0040). O `--` dispensa código de colisão. A sess
 vive com a do Hub (S18), sem **Sair**. Todo Projeto roda o exemplo (C30). **Abrir app** passa por
 uma tela do Hub, para que o login volte a ela (C33, C35, C36, S48).
 
-**Encaixes da etapa 7** (cartão em `main`; construção em `feat/conexus-e07-build`,
-https://github.com/developmentconexus-ops/conexus/pull/95, lida em `1cab638`), conferidos quando a 7
-entrar; se um faltar, a construção para:
+**Encaixes da etapa 7** (https://github.com/developmentconexus-ops/conexus/pull/95, lida em
+`1cab638`), conferidos quando a 7 entrar; se um faltar, a construção para:
 
 | # | Encaixe | Onde |
 | --- | --- | --- |
@@ -74,9 +71,8 @@ entrar; se um faltar, a construção para:
 
 ## As issues abertas
 
-88, 89 e 90 são da 6, fora do tema; nenhuma `next-card`. **Issues futuras**, abertas no fechamento:
-a Public Suffix List e cookies entre apps irmãos (a 18); o que muda na borda se a prova
-cair em 4B; um trabalho agendado que apague passagens vencidas.
+88, 89 e 90 são da 6; nenhuma `next-card`. **Issues futuras**, no fechamento: a Public Suffix List
+e cookies entre apps irmãos (a 18); a borda em 4B; apagar passagens vencidas.
 
 ## As unidades
 
@@ -94,7 +90,7 @@ U4 e U5 correm após o contrato de U3. Uma revisão, um merge (L9, L13); a prova
 não cria release (L17).
 
 **Orçamento de código alterado** (sem testes nem gerados): U1 **0**; U2 **200**; U3 **650**, ~250
-trazidas; U4 **600**; U5 **400**; U6 **200**; U7 **150**; espalhados **100**. Total **2.300**, teto
+trazidas; U4 **600**; U5 **400**; U6 **260**; U7 **150**; espalhados **100**. Total **2.360**, teto
 4.000 (L2).
 
 ## Os critérios de aceite
@@ -112,10 +108,11 @@ trazidas; U4 **600**; U5 **400**; U6 **200**; U7 **150**; espalhados **100**. To
 | 9 | U3 | Chamada a uma `edge` na porta pública, ou a outra na de borda: 404; registrar `edge` na pública: o servidor não sobe | `access.test.ts` | must |
 | 10 | U3 | Os registros da tabela de falhas, com ids; nunca código, sessão ou nome (S41) | idem | must |
 | 11 | U4 | Primeira visita: vínculo, 303 ao Hub; passagem certa: sessão, 303 a `/`; 401: ao Hub; o resto, as páginas da matriz | `dispatcher.test.ts` | must |
-| 12 | U4 | O app não recebe cookie `__Host-conexus-*` nem `/__conexus/`; o `Set-Cookie` dele com o prefixo sai; escrita de outro site: 403; CSP e cabeçalhos de S24 | `dispatcher.test.ts` “app” | must |
-| 13 | U4 | `props` leva só `caller`; o exemplo mostra o nome da pessoa e do Projeto | `apps/edge/example/example.test.ts` | must |
+| 12 | U4 | O app não recebe `__Host-conexus-*` nem `/__conexus/`; o `Set-Cookie` dele com o prefixo sai; escrita de outro site: 403; CSP e cabeçalhos de S24 | `dispatcher.test.ts` “app” | must |
+| 13 | U4 | `props` leva só `caller`; o exemplo mostra pessoa e Projeto | `example.test.ts` | must |
 | 14 | U5 | Cada célula da matriz; sem apelido, só a configuração; **Abrir app** a todos; `/apps/open` sem sessão: **Entrar** e volta; T23, também nas páginas do despachante | os testes de U5, navegador | must |
 | 15 | U6 | O Release publica o Hub e depois a borda; a volta, a borda antes; na 7.x voltada, Criar Projeto funciona; o token fora de log | Release de ensaio | must |
+| 19 | U6 | Gancho do runner: `push` ou outro ramo, recusado; Release e disparo manual de `main`, aceitos | `scripts/runner-hook.test.ts` | must |
 | 16 | U7 | Tirar qualquer proteção com linha em `removals.json` faz o seu teste falhar | `npm run removals` | must |
 | 17 | U7 | O roteiro, despachante em Node, namespace falso, Hub real nas duas portas | `tests/e2e/app.test.ts` | must |
 | 18 | U7 | Publicado: passos 2 a 5; um app de ataque; LT13; a 8081 calada de fora | firstmate (T13, T14) | must |
@@ -128,8 +125,7 @@ trazidas; U4 **600**; U5 **400**; U6 **200**; U7 **150**; espalhados **100**. To
 | Criar Projeto | 7, e o endereço montado | 7 | 409, 422 de endereço no campo Nome | 7 | 7 |
 | Projeto | nome, data, endereço, **Abrir app**; sem endereço, sem o botão | 7 | 7 | 7 | — |
 | Hub, abrir app (`/apps/open`) | — | "Abrindo o app…" | 503 e **Tentar de novo** | "Este app não existe ou você não tem acesso a ele." | sem sessão: **Entrar**, e volta |
-| App, primeira visita | vai ao Hub e volta | — | — | — | — |
-| App | o exemplo | — | Hub fora: "O Conexus está fora do ar. Tente de novo em alguns minutos." 503; app: "O app não conseguiu responder agora." 502 | "Este app não existe." 404 | código recusado: "Este link de acesso não vale mais. Abra o app pelo Conexus." 403; tirado: "Você não tem acesso a este app." 403 |
+| App | o exemplo; na primeira visita, vai ao Hub e volta | — | Hub fora: "O Conexus está fora do ar. Tente de novo em alguns minutos." 503; app: "O app não conseguiu responder agora." 502 | "Este app não existe." 404 | código recusado: "Este link de acesso não vale mais. Abra o app pelo Conexus." 403; tirado: "Você não tem acesso a este app." 403 |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -152,9 +148,9 @@ precisa ter ao menos três letras ou números."; `COMPANY_SETUP_PENDING` 409, SY
 | --- | --- | --- | --- | --- | --- |
 | Apelido; endereço em `insertProject` | `lockCompany`; único: 409 | rollback | banco: 503 | `COMPANY_NICKNAME_CHOSEN`, `PROJECT_CREATED` | 4, 5 |
 | Emitir; resgatar por `DELETE … RETURNING` | cada uma vale uma vez; o segundo, 403 | rollback | banco: 503; corte: de novo ao Hub | `APP_HANDOFF_CREATED`, `APP_SESSION_CREATED` | 6, 7, 11 |
-| Checar (leitura) | — | — | banco ou VPC: 503 | `APP_ACCESS_REFUSED` | 8, 11 |
-| Migrações de U2 | uma vez no `migrate` (D9) | uma transação | `migrate` falha | código do `migrate` | 2 |
-| Publicar a borda (runner) | `concurrency` do workflow | a borda anterior segue | Cloudflare: o Release falha | a saída do `wrangler` | 15 |
+| Checar | — | — | banco ou VPC: 503 | `APP_ACCESS_REFUSED` | 8, 11 |
+| Migrações | `migrate` (D9) | uma transação | falha | código | 2 |
+| Publicar a borda | `concurrency` | a anterior segue | o Release falha | saída do `wrangler` | 15, 19 |
 
 ## O que nasce novo e o que é trazido
 
@@ -343,6 +339,7 @@ o guarda de `_app`, que já leva a **Entrar** e volta, chama
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `publish.yml`, `rollback.yml`; `infra/compose.yaml` | o runner do servidor publica a borda depois do Hub, e a volta antes; `HUB_EDGE_PORT` sem `ports:` | Release |
+| `infra/runner-job-started.sh`, `setup-server.sh`, `removals.json` | o gancho; `ACTIONS_RUNNER_HOOK_JOB_STARTED`; `runner-job-gate` | runner |
 | `docs/decisions/0042-cloudflare-token-in-one-call-environment.md` | cria: a exceção de 0036 vale para o token, que o `wrangler` só lê do ambiente | `check-docs` |
 | `docs/how-to/apps-edge.md`, `index.md`, `architecture.md` §7 | namespace `conexus-apps`, VPC `conexus-hub-borda` a `hub:8081`, DNS `*`; o token; a volta | firstmate |
 
@@ -351,12 +348,13 @@ o guarda de `_app`, que já leva a **Entrar** e volta, chama
 `wrangler deploy` (e `--dispatch-namespace conexus-apps`) do código do Release, com
 `CLOUDFLARE_API_TOKEN` lido do arquivo como em 0036, só no ambiente dessa chamada.
 A volta publica o código antigo, um mecanismo para os três: um Worker de app não tem versões, e
-`wrangler rollback` só voltaria os outros dois (C75). Regras: L16, L17,
-[0035], [0036], S31, S36.
+`wrangler rollback` só voltaria os outros dois (C75). O gancho nativo de início de trabalho
+(actions/runner) aceita só `release` de um commit de `main` e `workflow_dispatch` em
+`refs/heads/main`; o resto falha antes de tocar o token ou as chaves do Hub. Regras: L16, L17, [0035], [0036], S31, S36.
 
 ### Como se prova
 
-15: um Release de ensaio, fora do esquema de L17, publicado e voltado.
+15: um Release de ensaio, fora do esquema de L17, publicado e voltado. 19: `npm run test:scripts`.
 
 ## U7 Percurso e remoções
 
