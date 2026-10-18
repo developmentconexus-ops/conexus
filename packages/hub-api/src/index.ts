@@ -11,17 +11,18 @@ export {
 } from './address.ts'
 export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
 export {
+  APP_OPEN_PATH,
   APP_SESSION_HEADER,
   AppCall,
   AppCaller,
   AppDatabase,
+  AppOpenQuery,
   AppSessionToken,
   AppVersion,
   AppVersionId,
   AppWorker,
   appWorkerOf,
   checkAppCall,
-  createAppHandoff,
   createAppSession,
   createAppVersion,
   HANDOFF_PATH,

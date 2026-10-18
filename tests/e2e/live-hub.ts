@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { createServer } from 'node:http'
+import { createServer, get } from 'node:http'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
@@ -10,6 +10,7 @@ import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../apps/server/src/main.ts'
 import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
+import type { Config } from '../../apps/server/src/platform/config.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
 import { pgTransport } from '../../apps/server/src/platform/test-company-postgres.ts'
 import {
@@ -72,12 +73,21 @@ function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
   return address.port
 }
 
-/** The Hub in this process, on the CI database, serving the built screens on its public port and the dispatcher's calls on its edge port. */
-export async function liveHub(t: TestContext, mailUrl: string, cloudflareUrl?: string) {
+/**
+ * The Hub in this process, on the CI database, serving the built screens on its public port and the
+ * dispatcher's calls on its edge port; `names` are its public origin and apps' domain, when a
+ * browser reaches it by the names the dispatcher is built with.
+ */
+export async function liveHub(
+  t: TestContext,
+  mailUrl: string,
+  cloudflareUrl?: string,
+  names: Partial<Pick<Config, 'publicOrigin' | 'appsDomain'>> = {},
+) {
   assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
-  const config = testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl)
+  const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
   const { projects, operations, apps } = subjectsOf({
@@ -106,6 +116,25 @@ export async function liveHub(t: TestContext, mailUrl: string, cloudflareUrl?: s
   await app.listen({ host: '127.0.0.1', port: 0 })
   await edge.listen({ host: '127.0.0.1', port: 0 })
   return { port: portOf(app), edgePort: portOf(edge), database, neon, config }
+}
+
+/**
+ * The handoff as the browser asks it after the dispatcher's 303, a navigation from the app's host,
+ * which Node's fetch cannot send: it always says `cors`. The pass is in the answer's `Location`.
+ */
+export function openOnHub(port: number, path: string, cookie: string) {
+  const headers = {
+    cookie,
+    'sec-fetch-site': 'cross-site',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-dest': 'document',
+  }
+  return new Promise<{ status: number; location: string }>((resolve, reject) => {
+    get(`http://127.0.0.1:${port}${path}`, { headers }, (response) => {
+      response.resume()
+      resolve({ status: response.statusCode ?? 0, location: response.headers.location ?? '' })
+    }).on('error', reject)
+  })
 }
 
 /**

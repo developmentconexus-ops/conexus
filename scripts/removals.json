@@ -1221,6 +1221,28 @@
     }
   },
   {
+    "id": "handoff-navigation-only",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "    if (access === 'handoff') checkNavigation(request)\n    else checkSite(request)\n",
+    "replace": "    if (access !== 'handoff') checkSite(request)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "passagem: só uma navegação de documento; um fetch"
+    }
+  },
+  {
+    "id": "handoff-get-only",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "  handoff: { methods: ['GET'], ",
+    "replace": "  handoff: { methods: ['GET', 'POST'], ",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "tipo: a rota handoff só GET"
+    }
+  },
+  {
     "id": "nickname-owner-once",
     "file": "apps/server/src/hub/identity/nickname.ts",
     "find": "    if (chosen !== null) throw new Failure('COMPANY_NICKNAME_SET')\n",

@@ -9,8 +9,8 @@ import { Route as AppIndexRouteImport } from './routes/_app/index.tsx'
 import { Route as PublicForgotPasswordRouteImport } from './routes/_public/forgot-password.tsx'
 import { Route as PublicLoginRouteImport } from './routes/_public/login.tsx'
 import { Route as PublicSetPasswordRouteImport } from './routes/_public/set-password.tsx'
-import { Route as AppAppsOpenRouteImport } from './routes/_app/apps/open.tsx'
 import { Route as AppCompaniesCompanyIdRouteImport } from './routes/_app/companies/$companyId.tsx'
+import { Route as PublicAppsOpenRouteImport } from './routes/_public/apps/open.tsx'
 import { Route as PublicInvitationsInvitationIdRouteImport } from './routes/_public/invitations/$invitationId.tsx'
 import { Route as AppCompaniesCompanyIdIndexRouteImport } from './routes/_app/companies/$companyId/index.tsx'
 import { Route as AppCompaniesCompanyIdPeopleRouteImport } from './routes/_app/companies/$companyId/people.tsx'
@@ -51,15 +51,15 @@ const PublicSetPasswordRoute = PublicSetPasswordRouteImport.update({
   path: '/set-password',
   getParentRoute: () => PublicRouteRoute,
 } as any)
-const AppAppsOpenRoute = AppAppsOpenRouteImport.update({
-  id: '/apps/open',
-  path: '/apps/open',
-  getParentRoute: () => AppRouteRoute,
-} as any)
 const AppCompaniesCompanyIdRoute = AppCompaniesCompanyIdRouteImport.update({
   id: '/companies/$companyId',
   path: '/companies/$companyId',
   getParentRoute: () => AppRouteRoute,
+} as any)
+const PublicAppsOpenRoute = PublicAppsOpenRouteImport.update({
+  id: '/apps/open',
+  path: '/apps/open',
+  getParentRoute: () => PublicRouteRoute,
 } as any)
 const PublicInvitationsInvitationIdRoute =
   PublicInvitationsInvitationIdRouteImport.update({
@@ -132,8 +132,8 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof PublicForgotPasswordRoute
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
-  '/apps/open': typeof AppAppsOpenRoute
   '/companies/$companyId': typeof AppCompaniesCompanyIdRouteWithChildren
+  '/apps/open': typeof PublicAppsOpenRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/companies/$companyId/people': typeof AppCompaniesCompanyIdPeopleRoute
   '/companies/$companyId/setup': typeof AppCompaniesCompanyIdSetupRoute
@@ -151,7 +151,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof PublicForgotPasswordRoute
   '/login': typeof PublicLoginRoute
   '/set-password': typeof PublicSetPasswordRoute
-  '/apps/open': typeof AppAppsOpenRoute
+  '/apps/open': typeof PublicAppsOpenRoute
   '/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/companies/$companyId/people': typeof AppCompaniesCompanyIdPeopleRoute
   '/companies/$companyId/setup': typeof AppCompaniesCompanyIdSetupRoute
@@ -171,8 +171,8 @@ export interface FileRoutesById {
   '/_public/login': typeof PublicLoginRoute
   '/_public/set-password': typeof PublicSetPasswordRoute
   '/_app/': typeof AppIndexRoute
-  '/_app/apps/open': typeof AppAppsOpenRoute
   '/_app/companies/$companyId': typeof AppCompaniesCompanyIdRouteWithChildren
+  '/_public/apps/open': typeof PublicAppsOpenRoute
   '/_public/invitations/$invitationId': typeof PublicInvitationsInvitationIdRoute
   '/_app/companies/$companyId/people': typeof AppCompaniesCompanyIdPeopleRoute
   '/_app/companies/$companyId/setup': typeof AppCompaniesCompanyIdSetupRoute
@@ -192,8 +192,8 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/set-password'
-    | '/apps/open'
     | '/companies/$companyId'
+    | '/apps/open'
     | '/invitations/$invitationId'
     | '/companies/$companyId/people'
     | '/companies/$companyId/setup'
@@ -230,8 +230,8 @@ export interface FileRouteTypes {
     | '/_public/login'
     | '/_public/set-password'
     | '/_app/'
-    | '/_app/apps/open'
     | '/_app/companies/$companyId'
+    | '/_public/apps/open'
     | '/_public/invitations/$invitationId'
     | '/_app/companies/$companyId/people'
     | '/_app/companies/$companyId/setup'
@@ -294,19 +294,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicSetPasswordRouteImport
       parentRoute: typeof PublicRouteRoute
     }
-    '/_app/apps/open': {
-      id: '/_app/apps/open'
-      path: '/apps/open'
-      fullPath: '/apps/open'
-      preLoaderRoute: typeof AppAppsOpenRouteImport
-      parentRoute: typeof AppRouteRoute
-    }
     '/_app/companies/$companyId': {
       id: '/_app/companies/$companyId'
       path: '/companies/$companyId'
       fullPath: '/companies/$companyId'
       preLoaderRoute: typeof AppCompaniesCompanyIdRouteImport
       parentRoute: typeof AppRouteRoute
+    }
+    '/_public/apps/open': {
+      id: '/_public/apps/open'
+      path: '/apps/open'
+      fullPath: '/apps/open'
+      preLoaderRoute: typeof PublicAppsOpenRouteImport
+      parentRoute: typeof PublicRouteRoute
     }
     '/_public/invitations/$invitationId': {
       id: '/_public/invitations/$invitationId'
@@ -431,7 +431,6 @@ const AppCompaniesCompanyIdRouteWithChildren =
 
 interface AppRouteRouteChildren {
   AppIndexRoute: typeof AppIndexRoute
-  AppAppsOpenRoute: typeof AppAppsOpenRoute
   AppCompaniesCompanyIdRoute: typeof AppCompaniesCompanyIdRouteWithChildren
   AppOperationsClientsCompanyIdRoute: typeof AppOperationsClientsCompanyIdRoute
   AppOperationsClientsNewRoute: typeof AppOperationsClientsNewRoute
@@ -440,7 +439,6 @@ interface AppRouteRouteChildren {
 
 const AppRouteRouteChildren: AppRouteRouteChildren = {
   AppIndexRoute: AppIndexRoute,
-  AppAppsOpenRoute: AppAppsOpenRoute,
   AppCompaniesCompanyIdRoute: AppCompaniesCompanyIdRouteWithChildren,
   AppOperationsClientsCompanyIdRoute: AppOperationsClientsCompanyIdRoute,
   AppOperationsClientsNewRoute: AppOperationsClientsNewRoute,
@@ -455,6 +453,7 @@ interface PublicRouteRouteChildren {
   PublicForgotPasswordRoute: typeof PublicForgotPasswordRoute
   PublicLoginRoute: typeof PublicLoginRoute
   PublicSetPasswordRoute: typeof PublicSetPasswordRoute
+  PublicAppsOpenRoute: typeof PublicAppsOpenRoute
   PublicInvitationsInvitationIdRoute: typeof PublicInvitationsInvitationIdRoute
 }
 
@@ -462,6 +461,7 @@ const PublicRouteRouteChildren: PublicRouteRouteChildren = {
   PublicForgotPasswordRoute: PublicForgotPasswordRoute,
   PublicLoginRoute: PublicLoginRoute,
   PublicSetPasswordRoute: PublicSetPasswordRoute,
+  PublicAppsOpenRoute: PublicAppsOpenRoute,
   PublicInvitationsInvitationIdRoute: PublicInvitationsInvitationIdRoute,
 }
 

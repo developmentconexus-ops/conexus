@@ -14,6 +14,7 @@ import {
   silent,
   TEST_ORIGIN,
   testConfig,
+  testWebRoot,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
@@ -123,7 +124,8 @@ async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog =
     ...ports,
     log,
   })
-  const app = await createHub(config, { status, identity, operations, projects, apps })
+  const webRoot = testWebRoot(t)
+  const app = await createHub(config, { status, identity, operations, projects, apps, webRoot })
   t.after(() => app.close())
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
