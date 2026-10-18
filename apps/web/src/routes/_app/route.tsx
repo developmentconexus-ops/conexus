@@ -28,8 +28,9 @@ export const Route = createFileRoute('/_app')({
 
 function AppFrame() {
   const { person } = Route.useRouteContext()
-  // A page that is not found, in the page or in its company's guard, names no place and no company: the Central's name is not shown to
-  // whoever it hides from, and the rail lists only the places of a company that was found.
+  // A page that is not found, by the page or by its company's guard, names no place and no
+  // company: the Central's name is not shown to whoever it hides from, and the rail lists only the
+  // places of a company that was found.
   const place = useMatches({
     select: (matches) =>
       matches.some((match) => match.status === 'notFound')
