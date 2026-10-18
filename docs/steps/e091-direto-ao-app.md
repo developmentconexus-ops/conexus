@@ -21,9 +21,10 @@ dela no nome.
 5. Crie uma empresa de teste, escolha o apelido e crie o primeiro Projeto: o projeto novo no Neon
    já nasce com `<apelido>-<id>`. Apague a empresa na Central: o projeto sai do console.
 
-**O que você faz, e quando.** No começo: aprova esta página, e com ela as regras abaixo e as
+**O que você faz, e quando.** No começo: aprova esta página, com as regras abaixo e as
 chamadas da prova de U2. U2 usa a chave de prova da organização das empresas que já existe
-(`cx-prova-e09`), a mesma da etapa 10; ela é apagada no fim da última das duas. Não há chave nova. No fim: faz o roteiro, diz o que viu e aprova os textos.
+(`cx-prova-e09`), a mesma da etapa 10; ela é apagada no fim da última das duas.
+No fim: faz o roteiro, diz o que viu e aprova os textos.
 
 **As chamadas da prova de U2**, todas em projetos `cx-prova-`, apagados no fim: criar dois
 projetos pelo SDK, buscar pelo id e por um pedaço do nome, renomear um e abrir uma conexão antes e
