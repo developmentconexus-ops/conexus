@@ -40,9 +40,13 @@ export type CloudflareApps = {
   exists(worker: string): Promise<CloudflareAnswer<boolean>>
 }
 
+// The envelope as the API documents it: the asset upload session answers `"errors": null`.
 const Reply = z.looseObject({
   success: z.boolean(),
-  errors: z.array(z.looseObject({ code: z.number() })).default([]),
+  errors: z
+    .array(z.looseObject({ code: z.number() }))
+    .nullish()
+    .transform((errors) => errors ?? []),
   result: z.unknown(),
 })
 type Reply = z.infer<typeof Reply>
@@ -50,7 +54,8 @@ const Session = z.looseObject({
   jwt: z.string().min(1),
   buckets: z.array(z.array(z.string())).default([]),
 })
-const Completion = z.looseObject({ jwt: z.string().min(1).optional() })
+// Only the last bucket carries the completion token; Cloudflare's example reads it as `response?.jwt`.
+const Completion = z.looseObject({ jwt: z.string().min(1).nullish() })
 const Script = z.looseObject({ script: z.unknown() })
 
 const ASSET_PREFIX = 'assets/'
@@ -65,16 +70,25 @@ function assetHash(file: WorkerFile): string {
   return createHash('sha256').update(`${base64}${extension}`).digest('hex').slice(0, 32)
 }
 
-/** A reply read up to the cap; past it, or unreadable, it is silence (code C59). */
-async function readReply(response: Response): Promise<Reply | undefined> {
+type Read = { kind: 'READ'; reply: Reply } | { kind: 'UNREADABLE'; why: string }
+
+/**
+ * A reply read up to the cap; past it, or unreadable, it is silence (code C59). The reason names
+ * the envelope's fields that did not fit, never their values.
+ */
+async function readReply(response: Response): Promise<Read> {
   const text = await cappedText(response.body, REPLY_CAP_BYTES)
-  if (text === undefined) return undefined
+  if (text === undefined) return { kind: 'UNREADABLE', why: 'past cap' }
+  let json: unknown
   try {
-    const parsed = Reply.safeParse(JSON.parse(text))
-    return parsed.success ? parsed.data : undefined
+    json = JSON.parse(text)
   } catch {
-    return undefined
+    return { kind: 'UNREADABLE', why: 'not json' }
   }
+  const parsed = Reply.safeParse(json)
+  if (parsed.success) return { kind: 'READ', reply: parsed.data }
+  const fields = parsed.error.issues.map((issue) => issue.path.join('.') || '(root)')
+  return { kind: 'UNREADABLE', why: [...new Set(fields)].join(',') }
 }
 
 type Api = { account: string; scripts: string; token: string; log: FailureLog }
@@ -98,12 +112,13 @@ async function send(api: Api, url: string, init: Call): Promise<Sent> {
       body: init.json === undefined ? init.body : JSON.stringify(init.json),
       signal: init.signal,
     })
-    const reply = await readReply(response)
-    if (reply === undefined) {
-      api.log.error({ reason: 'unreadable', status: response.status }, 'CLOUDFLARE_FAILED')
+    const read = await readReply(response)
+    if (read.kind === 'UNREADABLE') {
+      const { status } = response
+      api.log.error({ reason: 'unreadable', status, fields: read.why }, 'CLOUDFLARE_FAILED')
       return { kind: 'NO_ANSWER' }
     }
-    return { kind: 'REPLY', status: response.status, reply }
+    return { kind: 'REPLY', status: response.status, reply: read.reply }
   } catch (error) {
     api.log.error({ reason: error instanceof Error ? error.name : 'unknown' }, 'CLOUDFLARE_FAILED')
     return { kind: 'NO_ANSWER' }
@@ -139,7 +154,11 @@ async function uploadBucket(
     signal: input.signal,
   })
   if (sent.kind !== 'REPLY' || !sent.reply.success) return refused(api, sent)
-  return { kind: 'DONE', value: Completion.parse(sent.reply.result ?? {}).jwt }
+  const completion = Completion.safeParse(sent.reply.result ?? {})
+  return {
+    kind: 'DONE',
+    value: completion.success ? (completion.data.jwt ?? undefined) : undefined,
+  }
 }
 
 /** Uploads the static files Cloudflare does not hold yet; the answer is the token the Worker names. */
