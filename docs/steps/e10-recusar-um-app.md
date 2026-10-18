@@ -33,10 +33,10 @@ por SQL; pelo HTTP, uma gravação em `db.query` e dois comandos num texto (as d
 três vezes e medir a primeira consulta.
 
 **Decisões já dadas** (2026-10-18). P1 A: `db.query` só lê, gravar é `db.batch`; a 9 fez
-a leitura. Depois da prova, C: nenhum lote é contado, cada um é uma transação, como no PostgREST, no
-Supabase, no D1 e no Neon; "um lote por ação" fica na skill do Builder (13). P2 A: a versão que a Cloudflare recusa a 9 guarda como
+a leitura. Depois da prova, C: nenhum lote é contado, cada um é uma transação, como no PostgREST,
+Supabase, D1 e Neon; "um lote por ação" fica na skill do Builder (13). P2 A: a versão que a Cloudflare recusa a 9 guarda como
 "Falhou · O app não inicia". P3 A: CPU 50 ms; 50 chamadas ao `db` por chamada pelo limite nativo, que
-a prova mostrou contar o `db`; 10 s por chamada;
+as conta (prova); 10 s por chamada;
 `statement_timeout` 5 s e `transaction_timeout` 6 s no login de execução do app. P4 A, P6 A: na 9.
 P5 A: o despachante não lê o texto das instruções. "Tirar verificador": nenhuma conferência lê o
 código no envio; o banco e o despachante recusam na primeira chamada, como fazem as referências.
