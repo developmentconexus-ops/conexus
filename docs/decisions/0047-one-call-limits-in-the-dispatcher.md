@@ -2,8 +2,7 @@
 
 ## Context
 
-Step 10 refuses an app that misbehaves at run time [0045]. Step 9 left a call's batches uncounted,
-and its CPU, deadline and statement numbers in three files, none from a proof.
+Step 9 left a call's batches uncounted [0045], and its numbers in three files, none proved.
 
 ## Decision
 
@@ -31,6 +30,13 @@ count live?
 
 If 1 or 2 fails, or 4 finds no place, P1 returns to the founder; if 5 does not cut, 6 does not hold
 over HTTP, or 8 reaches 10 s, P3 returns. **Not covered.** Load, the published Hub.
+
+## Result
+
+2026-10-18, 23:01–23:07Z. 1: 25006. 2: 42601. 3: the stub's calls count; at 10, call 11 throws
+"Too many subrequests"; unlimited, 40 pass; an `RpcTarget`'s calls do not count. 4: `DataCloneError`;
+the count survives in an `RpcTarget` from `open()` or as an RPC argument. 5: "Worker exceeded CPU
+time limit.", 2.2 s. 6: 57014, 5.0 s; 25P04, 6.1 s. 7: 10021. 8: 654, 609, 612 ms. All deleted.
 
 ## State
 
