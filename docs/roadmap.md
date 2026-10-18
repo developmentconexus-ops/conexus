@@ -91,7 +91,7 @@ Etapa fechada sai desta tabela; o uso na seção 1.
 | Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 8 App de exemplo | O segundo domínio. Workers for Platforms | Nenhuma | A prova PD9. LT2 e LT13. Uma ligação provisória do Worker ao Hub |
-| 9 Enviar um app | A 8 | Duas | Fichas `registry` e manifesto. Tipos na fronteira da linha |
+| 9 Enviar um app | A 8 | Dadas | Fichas `registry` e manifesto. Tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Os limites de laço, prazo e consultas |
 | 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Os testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |

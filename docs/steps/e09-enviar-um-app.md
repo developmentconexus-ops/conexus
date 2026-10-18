@@ -31,7 +31,10 @@ Neon, dois projetos pelo SDK, logins e esquemas por SQL. **Depois do Release (U8
 apagado no fim; restaurar a um minuto, no console do Neon, o projeto da Empresa A.
 
 **Decisões já dadas** (2026-10-18): 1A; 2, Versões nas Configurações; 3A; 4A; 5A; 6C, ficam a do ar
-e as 3 anteriores; 7A; 8A, risco aceito.
+e as 3 anteriores; 7A; 8A, risco aceito. P1A: o Release da 9 traz `recados-1.zip` e `recados-2.zip`,
+que você baixa na página da v0.9.0 e descompacta. P2A: depois de restaurar, "Reiniciar o Hub" recria
+os Workers e os logins dos apps. P3A: só dono e administrador veem Versões e voltam; uma versão que
+falhou gasta o número e mostra "Falhou" até o próximo envio certo.
 
 **O que muda.** O 0043 substitui o 0022 (sua 4A), depois da prova. No mapa de telas das etapas
 12 e 14, o "Versão 3 ▾" sai do topo do Projeto para **Configurações**; **Publicar** é da 17.
@@ -40,19 +43,7 @@ e as 3 anteriores; 7A; 8A, risco aceito.
 antiga não aguenta (a 15). Preview (a 14). Publicar (a 17). Levar Apagar para Configurações (a 18).
 As issues `next-card` 25, 39 e 45: nada nas pastas da 9.
 
-**As decisões suas pedidas nesta etapa.**
-
-**P1. Como as pastas `recados-1` e `recados-2` chegam ao seu computador, sem terminal?**
-**A.** O Release da 9 traz `recados-1.zip` e `recados-2.zip`: você baixa na página da v0.9.0 e
-descompacta. **B.** As pastas montadas ficam no repositório. **C.** O firstmate envia por você no
-Chromium. Recomendo **A**: a 10 usa o mesmo caminho para o app com defeito.
-
-**P2. Depois de restaurar um banco, o que recria os Workers e os logins dos apps?**
-**A.** "Reiniciar o Hub", já obrigatório depois de restaurar. **B.** O próximo envio de cada app.
-**C.** Um botão na Central. Recomendo **A**: nenhum passo a mais.
-
-**P3. Quem vê as Versões e volta?** **A.** Só dono e administrador; uma versão que falhou gasta o
-número e mostra "Falhou" até o próximo envio certo. **B.** O membro também vê a lista. Recomendo **A**.
+**A decisão sua pedida nesta etapa.** Nenhuma pendente.
 
 ## O que mudou desde o estudo
 
