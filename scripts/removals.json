@@ -1388,12 +1388,12 @@
   {
     "id": "rollback-edge-before-hub",
     "file": ".github/workflows/rollback.yml",
-    "find": "    needs: edge\n",
-    "replace": "",
+    "find": "    needs: [record, edge]\n",
+    "replace": "    needs: record\n",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
-      "name": "a volta põe a borda de volta antes do Hub"
+      "name": "a volta acha o registro antes de mexer na borda, e põe a borda de volta antes do Hub"
     }
   },
   {
@@ -1478,6 +1478,28 @@
     "file": ".github/workflows/rollback.yml",
     "find": "reference=\"$(infra/releases.sh find \"$VERSION\")\"",
     "replace": "reference=\"$(docker buildx imagetools inspect \"$IMAGE:$VERSION\")\"",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR"
+    }
+  },
+  {
+    "id": "rollback-record-before-edge",
+    "file": ".github/workflows/rollback.yml",
+    "find": "    needs: record\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta acha o registro antes de mexer na borda, e põe a borda de volta antes do Hub"
+    }
+  },
+  {
+    "id": "rollback-deploys-recorded",
+    "file": ".github/workflows/rollback.yml",
+    "find": "          REFERENCE: ${{ needs.record.outputs.reference }}",
+    "replace": "          REFERENCE: ghcr.io/developmentconexus-ops/conexus-hub:${{ inputs.version }}",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",

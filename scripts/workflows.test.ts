@@ -4,8 +4,15 @@ import { resolve } from 'node:path'
 import { test } from 'node:test'
 import { parse } from 'yaml'
 
-type Step = { name?: string; uses?: string; run?: string; with?: Record<string, unknown> }
-type Workflow = { jobs: Record<string, { needs?: string; steps: Step[] }> }
+type Step = {
+  name?: string
+  uses?: string
+  run?: string
+  with?: Record<string, unknown>
+  env?: Record<string, string>
+}
+type Job = { needs?: string | string[]; outputs?: Record<string, string>; steps: Step[] }
+type Workflow = { jobs: Record<string, Job> }
 
 function workflow(name: string): Workflow {
   return parse(readFileSync(resolve(import.meta.dirname, '../.github/workflows', name), 'utf8'))
@@ -14,6 +21,7 @@ function workflow(name: string): Workflow {
 // The workflows' own expressions, as GitHub reads them.
 const SHA = ['${{', 'github.sha', '}}'].join(' ')
 const VERSION = ['${{', 'inputs.version', '}}'].join(' ')
+const RECORDED = ['${{', 'needs.record.outputs.reference', '}}'].join(' ')
 const publish = workflow('publish.yml')
 const rollback = workflow('rollback.yml')
 
@@ -22,9 +30,10 @@ test('o Release publica o Hub depois da imagem, e a borda depois do Hub', () => 
   assert.equal(publish.jobs.edge?.needs, 'deploy')
 })
 
-test('a volta põe a borda de volta antes do Hub', () => {
-  assert.equal(rollback.jobs.edge?.needs, undefined)
-  assert.equal(rollback.jobs.rollback?.needs, 'edge')
+test('a volta acha o registro antes de mexer na borda, e põe a borda de volta antes do Hub', () => {
+  assert.equal(rollback.jobs.record?.needs, undefined)
+  assert.equal(rollback.jobs.edge?.needs, 'record')
+  assert.deepEqual(rollback.jobs.rollback?.needs, ['record', 'edge'])
 })
 
 test('cada trabalho do Release usa o commit que o gancho conferiu, não a tag', () => {
@@ -51,11 +60,19 @@ test('a volta da borda recusa uma versão fora de main antes do npm ci e do toke
 })
 
 test('a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR', () => {
-  const steps = rollback.jobs.rollback?.steps ?? []
-  const find = steps.findIndex((step) => step.run?.includes('infra/releases.sh find "$VERSION"'))
-  const deploy = steps.findIndex((step) => step.run === 'infra/deploy.sh "$REFERENCE"')
-  assert.ok(find >= 0 && deploy >= 0 && find < deploy, `${find} ${deploy}`)
-  for (const step of steps) assert.doesNotMatch(step.run ?? '', /imagetools/)
+  const record = rollback.jobs.record
+  const find = record?.steps.find((step) => step.run?.includes('infra/releases.sh find "$VERSION"'))
+  assert.ok(find, 'the record job finds no record')
+  assert.equal(
+    record?.outputs?.reference,
+    ['${{', 'steps.reference.outputs.reference', '}}'].join(' '),
+  )
+  const deploy = rollback.jobs.rollback?.steps.find(
+    (step) => step.run === 'infra/deploy.sh "$REFERENCE"',
+  )
+  assert.equal(deploy?.env?.REFERENCE, RECORDED)
+  for (const job of Object.values(rollback.jobs))
+    for (const step of job.steps) assert.doesNotMatch(step.run ?? '', /imagetools/)
 })
 
 test('o Release registra o digest depois que o deploy deu certo', () => {
