@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import { post } from '../identity/test-hub.ts'
+import { PRUNE_BUDGET_MS } from './prune.ts'
 import { companyForVersions, folder, send } from './test-versions.ts'
 
 function idOf(response: { json(): unknown }): string {
@@ -88,4 +89,23 @@ test('poda: o arquivo que outro Projeto nomeia no mesmo instante fica', async (t
     [sheet],
   )
   assert.deepEqual(bytes, [{ n: 1 }])
+})
+
+test('poda: um Cloudflare lento não segura a resposta do envio além do orçamento; a versão fica marcada', async (t) => {
+  const { hub, ana, versions } = await companyForVersions(t)
+  const first = idOf(await send(hub, ana, versions, folder({}, color(1))))
+  for (const n of [2, 3, 4]) await send(hub, ana, versions, folder({}, color(n)))
+  const slow = hub.cloudflare.holdRemove()
+  // Cloudflare answers at last, well past the budget: a send that waited for it answers late.
+  const late = setTimeout(slow.release, PRUNE_BUDGET_MS + 5_000)
+  t.after(() => clearTimeout(late))
+  const started = performance.now()
+  const answer = await send(hub, ana, versions, folder({}, color(5)))
+  assert.equal(answer.statusCode, 201)
+  assert.ok(performance.now() - started < PRUNE_BUDGET_MS + 2_000)
+  const [marked] = await hub.test.asOwner('select state from apps.app_version where id = $1', [
+    first,
+  ])
+  assert.deepEqual(marked, { state: 'pruning' })
+  assert.ok(hub.cloudflare.workers().includes(`v-${first}`))
 })

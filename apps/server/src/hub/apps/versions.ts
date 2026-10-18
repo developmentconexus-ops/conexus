@@ -58,7 +58,7 @@ export function receiveVersion(input: {
   const expected = new Set(versionFiles(manifest.data))
   const sizes = input.files.map((file) => decodedSize(file.base64))
   const total = sizes.reduce((sum, size) => sum + size, 0)
-  if (input.files.length > APP_LIMITS.files + 1 || total > APP_LIMITS.bytes) {
+  if (input.files.length > APP_LIMITS.files || total > APP_LIMITS.bytes) {
     throw new Failure('APP_VERSION_TOO_LARGE', { details: { files: input.files.length, total } })
   }
   const paths = new Set(input.files.map((file) => file.path))
@@ -84,7 +84,16 @@ export function receiveVersion(input: {
   return { manifest: manifest.data, files, digest }
 }
 
-type VersionRow = typeof appVersion.$inferSelect
+/** The columns a version is shown from; the manifest and the files stay unread. */
+export const VERSION_VIEW = {
+  id: appVersion.id,
+  number: appVersion.number,
+  state: appVersion.state,
+  failure: appVersion.failure,
+  sentBy: appVersion.sentBy,
+  createdAt: appVersion.createdAt,
+}
+type VersionRow = Pick<typeof appVersion.$inferSelect, keyof typeof VERSION_VIEW>
 const FAILURE_CODES = [
   'APP_VERSION_FAILED',
   'APP_VERSION_NOT_STARTING',
@@ -149,7 +158,7 @@ export async function failVersion(
  */
 async function replayOf(tx: CommandTx, input: OfProject & { attemptKey: string; digest: string }) {
   const [row] = await tx
-    .select()
+    .select({ ...VERSION_VIEW, digest: appVersion.digest })
     .from(appVersion)
     .where(
       and(eq(appVersion.projectId, input.projectId), eq(appVersion.attemptKey, input.attemptKey)),
@@ -260,7 +269,7 @@ export async function listVersions(tx: ReadTx, ids: OfProject): Promise<AppVersi
     .from(app)
     .where(eq(app.projectId, ids.projectId))
   const rows = await tx
-    .select()
+    .select(VERSION_VIEW)
     .from(appVersion)
     .where(
       and(

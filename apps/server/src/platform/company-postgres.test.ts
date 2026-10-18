@@ -100,6 +100,10 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
     tables: ['conexus_migration', 'recado'],
     ledger: [MIGRATION.id],
   })
+  // Voltar to a version without a later migration: the repair finds nothing to do, not a change.
+  const later = [MIGRATION, { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] }]
+  assert.deepEqual(await postgres.migrate(owner, id, later), { kind: 'DONE', applied: 1 })
+  assert.deepEqual(await postgres.migrate(owner, id, migrations), { kind: 'DONE', applied: 0 })
 })
 
 test('banco do app: os logins de um app não leem nem gravam no esquema de outro', async (t) => {

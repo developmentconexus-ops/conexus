@@ -12,6 +12,7 @@ import {
   PAGES,
   PROBLEM_MEDIA_TYPE,
   Problem,
+  VERSION_SEND_DEADLINE_MS,
 } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
@@ -27,7 +28,9 @@ import { Failure, logFailure } from './failure.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
 
 const REQUEST_TIMEOUT_MS = 30_000
-const CONNECTION_TIMEOUT_MS = 30_000
+// How long a socket may stay silent, the wait for an answer included: above the longest answer a
+// screen waits for, a version's send.
+export const CONNECTION_TIMEOUT_MS = VERSION_SEND_DEADLINE_MS + 10_000
 // Above the 90 s keep-alive of cloudflared's connection to its origin, so the Hub never closes first.
 const KEEP_ALIVE_TIMEOUT_MS = 95_000
 const ONE_YEAR_MS = 31_536_000_000

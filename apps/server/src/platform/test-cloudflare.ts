@@ -30,6 +30,7 @@ export function fakeCloudflare() {
   const calls: { call: Call; worker: string }[] = []
   const scripts: Record<Call, Scripted[]> = { upload: [], remove: [], exists: [] }
   const holds: { arrived: PromiseWithResolvers<void>; released: PromiseWithResolvers<void> }[] = []
+  const removeHolds: typeof holds = []
 
   function scripted<T>(
     call: Call,
@@ -54,7 +55,16 @@ export function fakeCloudflare() {
       workers.set(input.worker, input)
       return { kind: 'DONE', value: 'UPLOADED' }
     },
-    async remove(worker) {
+    async remove(worker, signal) {
+      const held = removeHolds.shift()
+      if (held !== undefined) {
+        held.arrived.resolve()
+        const aborted = new Promise<void>((resolve) =>
+          signal?.addEventListener('abort', () => resolve()),
+        )
+        await Promise.race([held.released.promise, aborted])
+        if (signal?.aborted) return { kind: 'NO_ANSWER' }
+      }
       const next = scripted<never>('remove', worker)
       if (next !== undefined && next !== 'NOT_STARTING') return next
       workers.delete(worker)
@@ -80,6 +90,15 @@ export function fakeCloudflare() {
         released: Promise.withResolvers<void>(),
       }
       holds.push(held)
+      return { arrived: held.arrived.promise, release: () => held.released.resolve() }
+    },
+    /** Keeps the next removal until released or until its caller's signal ends the wait. */
+    holdRemove() {
+      const held = {
+        arrived: Promise.withResolvers<void>(),
+        released: Promise.withResolvers<void>(),
+      }
+      removeHolds.push(held)
       return { arrived: held.arrived.promise, release: () => held.released.resolve() }
     },
     /** The next call of this kind answers so. */

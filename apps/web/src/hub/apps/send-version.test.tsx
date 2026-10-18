@@ -125,7 +125,8 @@ test('manifest.json que não é JSON: recusa antes de enviar', async () => {
 
 test('mais de 1.000 arquivos: recusa antes de enviar, com a frase de 413', async () => {
   const sent = await open(accepted)
-  const many = Array.from({ length: 1001 }, (_, at) => picked(`recados-1/assets/${at}.txt`))
+  // The packed folder holds two files the Hub keeps besides the manifest: 999 more make 1,001.
+  const many = Array.from({ length: 999 }, (_, at) => picked(`recados-1/assets/${at}.txt`))
   pick([...packed(), ...many])
   expect((await screen.findByRole('alert')).textContent).toBe(
     'A versão passa de 10 MB ou de 1.000 arquivos.',

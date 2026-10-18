@@ -58,7 +58,10 @@ export async function removeProjectApp(
 ): Promise<'DONE' | 'LEFT'> {
   const { companyId, projectId, scope } = input
   const found = await deps.database.read(scope, async (tx) => {
-    const [row] = await tx.select().from(app).where(eq(app.projectId, projectId))
+    const [row] = await tx
+      .select({ projectId: app.projectId })
+      .from(app)
+      .where(eq(app.projectId, projectId))
     const ids = await tx
       .select({ id: appVersion.id })
       .from(appVersion)

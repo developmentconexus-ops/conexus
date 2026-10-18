@@ -158,8 +158,8 @@ async function ensureApp(
 
 /**
  * Every pending migration in one transaction with its ledger rows, as the migration login; an
- * applied one whose statements changed, or that the version no longer names, refuses them all
- * (decision 0046).
+ * applied one whose statements changed refuses them all (decision 0046). One the version does not
+ * name is a later version's, kept when Voltar put an earlier one back: its tables stay as they are.
  */
 async function migrate(
   context: Context,
@@ -173,7 +173,7 @@ async function migrate(
   if (read.kind !== 'DONE') return read
   const digests = new Map(input.migrations.map((one) => [one.id, migrationDigest(one)]))
   const applied = (read.value[0] ?? []).map(appliedOf)
-  const changed = applied.find((row) => digests.get(row.id) !== row.sha256)
+  const changed = applied.find((row) => digests.has(row.id) && digests.get(row.id) !== row.sha256)
   if (changed !== undefined) return { kind: 'CHANGED', id: changed.id }
   const done = new Set(applied.map((row) => row.id))
   const pending = input.migrations.filter((one) => !done.has(one.id))

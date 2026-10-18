@@ -111,8 +111,8 @@
   },
   {
     "id": "mail-reply-cap",
-    "file": "apps/server/src/platform/mail.ts",
-    "find": "if (size > REPLY_CAP_BYTES) return undefined",
+    "file": "apps/server/src/platform/capped-text.ts",
+    "find": "if (size > capBytes) return undefined",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -1068,9 +1068,9 @@
   },
   {
     "id": "host-lookup-definer",
-    "file": "apps/server/migrations/20261018101320_app_grants/migration.sql",
-    "find": "LANGUAGE sql STABLE SECURITY DEFINER",
-    "replace": "LANGUAGE sql STABLE SECURITY INVOKER",
+    "file": "apps/server/migrations/20261018182441_app_versions_grants/migration.sql",
+    "find": "LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog\n  AS $$ SELECT p.id, p.company_id",
+    "replace": "LANGUAGE sql STABLE SECURITY INVOKER SET search_path = pg_catalog\n  AS $$ SELECT p.id, p.company_id",
     "test": {
       "cwd": "apps/server",
       "file": "src/platform/isolation-apps.test.ts",
@@ -1112,7 +1112,7 @@
   },
   {
     "id": "edge-strip-conexus-path",
-    "file": "apps/edge/src/dispatcher.ts",
+    "file": "apps/edge/src/dispatch.ts",
     "find": "  if (url.pathname.startsWith(DISPATCHER_PATHS)) return failurePage('APP_NOT_FOUND')\n",
     "replace": "",
     "test": {
@@ -1134,7 +1134,7 @@
   },
   {
     "id": "edge-cross-site-write",
-    "file": "apps/edge/src/dispatcher.ts",
+    "file": "apps/edge/src/dispatch.ts",
     "find": "  if (isForeignWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')\n",
     "replace": "",
     "test": {
@@ -1161,8 +1161,8 @@
     "replace": "{ success: true, data: json }",
     "test": {
       "cwd": "apps/edge",
-      "file": "src/dispatcher.test.ts",
-      "name": "app: props leva só caller"
+      "file": "src/dispatcher-versions.test.ts",
+      "name": "sem versão no ar: o exemplo, com props só caller"
     }
   },
   {
@@ -1255,7 +1255,7 @@
   },
   {
     "id": "edge-sec-fetch-site",
-    "file": "apps/edge/src/dispatcher.ts",
+    "file": "apps/edge/src/dispatch.ts",
     "find": "(site !== null && site !== 'same-origin') || ",
     "replace": "",
     "test": {
@@ -1266,7 +1266,7 @@
   },
   {
     "id": "edge-write-needs-origin",
-    "file": "apps/edge/src/dispatcher.ts",
+    "file": "apps/edge/src/dispatch.ts",
     "find": "request.headers.get('Origin') !== url.origin",
     "replace": "(request.headers.get('Origin') ?? url.origin) !== url.origin",
     "test": {
@@ -1277,7 +1277,7 @@
   },
   {
     "id": "edge-cross-site-get",
-    "file": "apps/edge/src/dispatcher.ts",
+    "file": "apps/edge/src/dispatch.ts",
     "find": "  if (request.method === 'GET' || request.method === 'HEAD') return false\n",
     "replace": "",
     "test": {
@@ -1288,7 +1288,7 @@
   },
   {
     "id": "edge-303-headers",
-    "file": "apps/edge/src/dispatcher.ts",
+    "file": "apps/edge/src/dispatch.ts",
     "find": "headers: withSecurityHeaders(headers) })",
     "replace": "headers })",
     "test": {
@@ -1299,13 +1299,13 @@
   },
   {
     "id": "edge-missing-script",
-    "file": "apps/edge/src/dispatcher.ts",
-    "find": "  try {\n    const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })\n",
-    "replace": "  const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })\n  try {\n",
+    "file": "apps/edge/src/dispatch.ts",
+    "find": "  try {\n    const app =\n      call.database === null\n        ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, { outbound: {} })\n        : visit.env.DISPATCHER.get(\n            call.version.worker,\n            {\n              props: { caller, db: visit.exports.Db({ props: call.database }) } satisfies AppProps,\n            },\n            { outbound: {} },\n          )\n",
+    "replace": "  const app =\n    call.database === null\n    ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, { outbound: {} })\n    : visit.env.DISPATCHER.get(\n        call.version.worker,\n        {\n          props: { caller, db: visit.exports.Db({ props: call.database }) } satisfies AppProps,\n        },\n        { outbound: {} },\n      )\n  try {\n",
     "test": {
       "cwd": "apps/edge",
-      "file": "src/dispatcher-guards.test.ts",
-      "name": "matriz, o Worker do app"
+      "file": "src/dispatcher-versions.test.ts",
+      "name": "versão no ar cujo Worker sumiu"
     }
   },
   {
@@ -1465,8 +1465,8 @@
   {
     "id": "publish-image-on-fresh-machine",
     "file": ".github/workflows/publish.yml",
-    "find": "    runs-on: ubuntu-24.04\n",
-    "replace": "    runs-on: [self-hosted, conexus]\n",
+    "find": "  image:\n    if: ${{ !github.event.release.prerelease }}\n    runs-on: ubuntu-24.04\n",
+    "replace": "  image:\n    if: ${{ !github.event.release.prerelease }}\n    runs-on: [self-hosted, conexus]\n",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
@@ -1711,7 +1711,7 @@
     "replace": "LOGIN CREATEROLE PASSWORD '${password}'",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/apps/app-database.test.ts",
+      "file": "src/platform/company-postgres.test.ts",
       "name": "banco do app: logins por SQL"
     }
   },
@@ -1722,7 +1722,7 @@
     "replace": "text: `SELECT $1::text, $2::text`",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/apps/app-database.test.ts",
+      "file": "src/platform/company-postgres.test.ts",
       "name": "banco do app: logins por SQL"
     }
   },
@@ -1733,7 +1733,7 @@
     "replace": "    { text: `GRANT USAGE ON SCHEMA ${s} TO PUBLIC` },\n    { text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT SELECT, INSERT ON TABLES TO PUBLIC` },\n",
     "test": {
       "cwd": "apps/server",
-      "file": "src/hub/apps/app-database.test.ts",
+      "file": "src/platform/company-postgres.test.ts",
       "name": "banco do app: os logins de um app não leem"
     }
   },
@@ -1812,6 +1812,39 @@
       "cwd": ".",
       "file": "scripts/deploy.test.ts",
       "name": "sem hub_app_login_key recusa antes de migrate e não sobe o Hub"
+    }
+  },
+  {
+    "id": "cloudflare-reply-cap",
+    "file": "apps/server/src/platform/cloudflare.ts",
+    "find": "cappedText(response.body, REPLY_CAP_BYTES)",
+    "replace": "cappedText(response.body, Number.POSITIVE_INFINITY)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/cloudflare.test.ts",
+      "name": "cloudflare: uma resposta sem tamanho declarado"
+    }
+  },
+  {
+    "id": "migration-unnamed-kept",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "digests.has(row.id) && digests.get(row.id) !== row.sha256",
+    "replace": "digests.get(row.id) !== row.sha256",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/company-postgres.test.ts",
+      "name": "banco do app: logins por SQL"
+    }
+  },
+  {
+    "id": "prune-budget",
+    "file": "apps/server/src/hub/apps/prune.ts",
+    "find": "    AbortSignal.timeout(PRUNE_BUDGET_MS),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/prune.test.ts",
+      "name": "poda: um Cloudflare lento"
     }
   }
 ]

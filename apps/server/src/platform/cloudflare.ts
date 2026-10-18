@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
+import { cappedText } from './capped-text.ts'
 import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 
@@ -32,8 +33,8 @@ export type WorkerUpload = Readonly<{
 export type CloudflareApps = {
   /** Uploads the Worker, or answers that its code does not start (decision 0046). */
   upload(input: WorkerUpload): Promise<CloudflareAnswer<'UPLOADED' | 'NOT_STARTING'>>
-  /** Removes the Worker; one already gone is removed. */
-  remove(worker: string): Promise<CloudflareAnswer<'REMOVED'>>
+  /** Removes the Worker; one already gone is removed. A caller's signal can end the wait sooner. */
+  remove(worker: string, signal?: AbortSignal): Promise<CloudflareAnswer<'REMOVED'>>
   /** Whether the namespace holds the Worker: a removed one answers `script: null` (0043, check 5). */
   exists(worker: string): Promise<CloudflareAnswer<boolean>>
 }
@@ -60,10 +61,8 @@ function assetHash(bytes: Uint8Array): string {
 
 /** A reply read up to the cap; past it, or unreadable, it is silence (code C59). */
 async function readReply(response: Response): Promise<Reply | undefined> {
-  const length = Number(response.headers.get('content-length') ?? 0)
-  if (length > REPLY_CAP_BYTES) return undefined
-  const text = await response.text()
-  if (text.length > REPLY_CAP_BYTES) return undefined
+  const text = await cappedText(response.body, REPLY_CAP_BYTES)
+  if (text === undefined) return undefined
   try {
     const parsed = Reply.safeParse(JSON.parse(text))
     return parsed.success ? parsed.data : undefined
@@ -223,8 +222,13 @@ async function upload(
   return refused(api, sent)
 }
 
-async function remove(api: Api, worker: string): Promise<CloudflareAnswer<'REMOVED'>> {
-  const signal = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)
+async function remove(
+  api: Api,
+  worker: string,
+  budget?: AbortSignal,
+): Promise<CloudflareAnswer<'REMOVED'>> {
+  const deadline = AbortSignal.timeout(CLOUDFLARE_DEADLINE_MS)
+  const signal = budget === undefined ? deadline : AbortSignal.any([deadline, budget])
   const sent = await send(api, `${api.scripts}/${worker}`, { method: 'DELETE', signal })
   const gone =
     sent.kind === 'REPLY' &&
@@ -257,7 +261,7 @@ export function createCloudflareApps(deps: { config: Config; log: FailureLog }):
   }
   return Object.freeze({
     upload: (input: WorkerUpload) => upload(api, input),
-    remove: (worker: string) => remove(api, worker),
+    remove: (worker: string, signal?: AbortSignal) => remove(api, worker, signal),
     exists: (worker: string) => exists(api, worker),
   })
 }

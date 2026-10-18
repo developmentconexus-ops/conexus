@@ -65,7 +65,12 @@ export async function createCompanyDatabase(t: Lifetime): Promise<DatabaseUrl> {
       await admin.query(`drop database ${name}`)
       await withRoleLock(async () => {
         for (const { rolname } of roles.rows) {
-          await admin.query(`drop role if exists "${String(rolname).replaceAll('"', '""')}"`)
+          // Logins belong to the whole server: one another test's database still uses stays for it.
+          await admin
+            .query(`drop role if exists "${String(rolname).replaceAll('"', '""')}"`)
+            .catch((error: unknown) => {
+              if (!(error instanceof pg.DatabaseError && error.code === '2BP01')) throw error
+            })
         }
       })
     } finally {

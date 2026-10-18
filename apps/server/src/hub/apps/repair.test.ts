@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ProjectId } from '@conexus/hub-api'
 import { appTablesOf, forgetApp } from '../../platform/test-company-postgres.ts'
+import { whenIdle } from '../../platform/test-database.ts'
 import { post } from '../identity/test-hub.ts'
 import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
 
@@ -34,6 +35,8 @@ test('reparo: Worker que falta e esquema, logins e migrações da versão no ar 
     [estoque.id, 'd'.repeat(32)],
   )
   await hub.repair()
+  // The repair runs alone at start; after it no connection stays, so the database can sleep (D27).
+  await whenIdle(hub.test.database)
   assert.deepEqual(hub.cloudflare.workers(), [`v-${live.id}`])
   const restored = hub.cloudflare.upload(`v-${live.id}`)
   assert.deepEqual(

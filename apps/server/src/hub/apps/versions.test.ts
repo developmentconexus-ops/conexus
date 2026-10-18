@@ -113,6 +113,14 @@ test('envio: 422 para caminho com .. ou absoluto, repetido, ausente ou a mais; 4
     files: [worker, index, { ...style, base64: big }],
   })
   assert.deepEqual([tooBig.statusCode, codeOf(tooBig)], [413, 'APP_VERSION_TOO_LARGE'])
+  // The ceiling counts the files the Hub keeps, as the screen does: 1,000 pass it, 1,001 do not.
+  function many(count: number) {
+    return Array.from({ length: count }, (_, at) => ({ ...style, path: `assets/${at}.css` }))
+  }
+  const atCeiling = await send(hub, ana, versions, { ...base, files: many(1000) })
+  assert.deepEqual([atCeiling.statusCode, codeOf(atCeiling)], [422, 'APP_VERSION_INVALID'])
+  const overCeiling = await send(hub, ana, versions, { ...base, files: many(1001) })
+  assert.deepEqual([overCeiling.statusCode, codeOf(overCeiling)], [413, 'APP_VERSION_TOO_LARGE'])
   const huge = await send(hub, ana, versions, { ...base, padding: 'x'.repeat(15 * 1024 * 1024) })
   assert.equal(huge.statusCode, 413)
   assert.deepEqual(await hub.test.asOwner('select id from apps.app_version'), [])

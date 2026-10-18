@@ -1,5 +1,6 @@
 import type { Email } from '@conexus/hub-api'
 import { z } from 'zod'
+import { cappedText } from './capped-text.ts'
 import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure } from './failure.ts'
@@ -28,19 +29,6 @@ const SendReply = z.discriminatedUnion('success', [
 ])
 
 type Refusal = 'status' | 'unsuccessful' | 'shape' | 'too-large' | 'unreachable'
-
-/** Reads at most the cap; past it, it stops reading and answers undefined (C59). */
-async function cappedText(body: ReadableStream<Uint8Array> | null): Promise<string | undefined> {
-  if (body === null) return ''
-  const chunks: Uint8Array[] = []
-  let size = 0
-  for await (const chunk of body) {
-    size += chunk.byteLength
-    if (size > REPLY_CAP_BYTES) return undefined
-    chunks.push(chunk)
-  }
-  return Buffer.concat(chunks).toString('utf8')
-}
 
 /** The one adapter to the mail provider: one request, no retry, sent as the installation (C56, C58). */
 export function createMail(deps: { config: Config; log: FailureLog }): SendMail {
@@ -72,7 +60,7 @@ export function createMail(deps: { config: Config; log: FailureLog }): SendMail 
       await response.body?.cancel()
       return refuse('status', undefined, response.status)
     }
-    const text = await cappedText(response.body)
+    const text = await cappedText(response.body, REPLY_CAP_BYTES)
     if (text === undefined) return refuse('too-large')
     try {
       return JSON.parse(text)

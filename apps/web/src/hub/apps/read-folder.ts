@@ -66,15 +66,18 @@ async function manifestOf(file: File): Promise<unknown> {
 
 /**
  * Reads what `npm run app:pack` made: `manifest.json` is the manifest, every other file is sent
- * with its path. The count and size are checked against the ceiling before any file is read.
+ * with its path. The files sent are checked against the ceiling, as the Hub counts them, before
+ * any is read.
  */
 export async function readFolder(picked: File[]): Promise<FolderRead> {
   const name = picked[0]?.webkitRelativePath.split('/')[0] ?? ''
   const bytes = picked.reduce((sum, file) => sum + file.size, 0)
-  if (picked.length > APP_LIMITS.files || bytes > APP_LIMITS.bytes) {
+  const entries = inside(picked)
+  const sent = entries.filter((entry) => entry.path !== MANIFEST).map(({ file }) => file)
+  const sentBytes = sent.reduce((sum, file) => sum + file.size, 0)
+  if (sent.length > APP_LIMITS.files || sentBytes > APP_LIMITS.bytes) {
     return { refusal: 'APP_VERSION_TOO_LARGE' }
   }
-  const entries = inside(picked)
   const manifestFile = entries.find((entry) => entry.path === MANIFEST)
   const manifest = manifestFile && (await manifestOf(manifestFile.file))
   if (manifest === undefined) return { refusal: 'APP_VERSION_INVALID' }

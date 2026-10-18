@@ -1,3 +1,4 @@
+import { APP_LIMITS } from '@conexus/app-contract'
 import { sql } from 'drizzle-orm'
 import type { PgTableExtraConfigValue } from 'drizzle-orm/pg-core'
 import {
@@ -78,8 +79,8 @@ const COMPANY_POLICIES = [
   policy(SCOPE_ROLES.OPERATOR, 'select', OPERATOR_COMPANY),
   policy(SCOPE_ROLES.OPERATOR, 'delete', OPERATOR_COMPANY),
 ]
-/** The send's ceiling in bytes (APP_LIMITS), which no single file passes. */
-const FILE_MAX_BYTES = 10 * 1024 * 1024
+/** The send's ceiling in bytes, which no single file passes. */
+const FILE_MAX_BYTES = APP_LIMITS.bytes
 
 /**
  * One row per Projeto with an app: the version on the air (null: the example), the send in course

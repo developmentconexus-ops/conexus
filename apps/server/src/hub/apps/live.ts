@@ -4,7 +4,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { SendDeps } from './send.ts'
 import { admitManager } from './send.ts'
 import { app, appVersion } from './tables.ts'
-import { failVersion, lockApp, versionView } from './versions.ts'
+import { failVersion, lockApp, VERSION_VIEW, versionView } from './versions.ts'
 
 /**
  * Puts a kept version back on the air, in one transaction: only the pointer changes, so the data
@@ -27,7 +27,7 @@ export function setLiveVersion(
       await failVersion(tx, { projectId, versionId: held.sendingVersionId, failure })
     }
     const [row] = await tx
-      .select()
+      .select(VERSION_VIEW)
       .from(appVersion)
       .where(
         and(
