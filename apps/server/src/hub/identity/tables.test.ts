@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import {
-  createTestDatabase,
-  serveEnvironment,
-  startHub,
-  urlFile,
-} from '../../platform/test-database.ts'
+import { createTestDatabase, serveEnvironment, urlFile } from '../../platform/test-database.ts'
+import { startHub } from '../../platform/test-hub-process.ts'
 
 test('catálogo: o esquema auth tem as tabelas da biblioteca e as três do plugin de organização', async (t) => {
   const { asOwner } = await createTestDatabase(t)
@@ -171,7 +167,7 @@ for (const [name, adminBefore, expected] of [
     const migrate = startHub(
       t,
       {
-        ...serveEnvironment(t, test.runtimeUrl, 1),
+        ...serveEnvironment(t, test.runtimeUrl, { port: 1, edgePort: 2 }),
         HUB_MIGRATION_DATABASE_URL_FILE: urlFile(t, test.ownerUrl),
       },
       ['migrate'],

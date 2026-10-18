@@ -1065,5 +1065,60 @@
       "file": "src/platform/isolation-apps.test.ts",
       "name": "a função dá ao login do Hub"
     }
+  },
+  {
+    "id": "handoff-atomic",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "    const [taken] = await tx\n      .delete(handoff)\n",
+    "replace": "    const [taken] = await tx\n      .select()\n      .from(handoff)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: duas trocas juntas"
+    }
+  },
+  {
+    "id": "handoff-binding",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "          eq(handoff.bindingHash, hashOf(input.binding)),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: outro vínculo"
+    }
+  },
+  {
+    "id": "handoff-host",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "          eq(handoff.hostLabel, input.host),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: outro vínculo"
+    }
+  },
+  {
+    "id": "app-session-cascade",
+    "file": "apps/server/migrations/20261018101318_app_addresses/migration.sql",
+    "find": "FOREIGN KEY (\"hub_session_id\") REFERENCES \"auth\".\"session\"(\"id\") ON DELETE CASCADE;--> statement-breakpoint\nALTER TABLE \"apps\".\"handoff\"",
+    "replace": "FOREIGN KEY (\"hub_session_id\") REFERENCES \"auth\".\"session\"(\"id\");--> statement-breakpoint\nALTER TABLE \"apps\".\"handoff\"",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "checagem: 200 com quem chama"
+    }
+  },
+  {
+    "id": "nickname-owner-once",
+    "file": "apps/server/src/hub/identity/nickname.ts",
+    "find": "    if (chosen !== null) throw new Failure('COMPANY_NICKNAME_SET')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/nickname.test.ts",
+      "name": "apelido: o dono escolhe uma vez"
+    }
   }
 ]

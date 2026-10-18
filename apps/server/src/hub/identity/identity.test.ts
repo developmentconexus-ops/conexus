@@ -4,11 +4,11 @@ import type { InjectOptions } from 'fastify'
 import {
   CLIENT,
   serveEnvironment,
-  spawnHub,
   TEST_ORIGIN,
   WRITE_HEADERS,
   whenIdle,
 } from '../../platform/test-database.ts'
+import { spawnHub } from '../../platform/test-hub-process.ts'
 import {
   ANA_ACCOUNT,
   hubWithAna,

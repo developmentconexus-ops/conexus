@@ -9,7 +9,14 @@ import { hashPassword } from 'better-auth/crypto'
 import type { BrowserContext, Page } from 'playwright-core'
 import { build } from 'vite'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
-import { createHub, identityOf, operationsOf, projectsOf } from '../../apps/server/src/main.ts'
+import {
+  appsOf,
+  createEdgeHub,
+  createHub,
+  identityOf,
+  operationsOf,
+  projectsOf,
+} from '../../apps/server/src/main.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
 import {
   createTestDatabase,
@@ -70,7 +77,13 @@ async function builtScreens(t: TestContext): Promise<string> {
   return outDir
 }
 
-/** The Hub in this process, on the CI database, serving the built screens and mailing to the fake. */
+function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
+  const address = server.server.address()
+  assert.ok(address !== null && typeof address === 'object')
+  return address.port
+}
+
+/** The Hub in this process, on the CI database, serving the built screens on its public port and the dispatcher's calls on its edge port. */
 export async function liveHub(t: TestContext, mailUrl: string) {
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
@@ -78,24 +91,28 @@ export async function liveHub(t: TestContext, mailUrl: string) {
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
   const projects = projectsOf({
+    config,
     database: database.database,
     identity,
     neon: createNeonProjects({ config, log: silent }),
     log: silent,
   })
   const operations = operationsOf(database.database, { identity, projects })
+  const apps = appsOf({ database: database.database, config, identity, projects })
   const app = await createHub(config, {
     status,
     identity,
     operations,
     projects,
+    apps,
     webRoot: await builtScreens(t),
   })
   t.after(() => app.close())
+  const edge = await createEdgeHub(config, { apps })
+  t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
-  const address = app.server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  return { port: address.port, database, neon }
+  await edge.listen({ host: '127.0.0.1', port: 0 })
+  return { port: portOf(app), edgePort: portOf(edge), database, neon }
 }
 
 /**

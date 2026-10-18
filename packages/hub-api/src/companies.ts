@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CompanyNickname } from './address.ts'
 import { Email, Password, PersonId } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -26,6 +27,16 @@ export const ROLE_LABELS: Record<Role, string> = {
 
 export const Company = z.object({ id: CompanyId, name: z.string().min(1) })
 export type Company = z.infer<typeof Company>
+
+/**
+ * The company as its own pages read it: the nickname in its apps' addresses, `null` until its owner
+ * chooses it, and the apps' domain, so a form shows an address before the Hub stores it.
+ */
+export const CompanyDetail = Company.extend({
+  nickname: CompanyNickname.nullable(),
+  appsDomain: z.string().min(1),
+})
+export type CompanyDetail = z.infer<typeof CompanyDetail>
 
 export const Membership = z.object({ company: Company, role: Role })
 export type Membership = z.infer<typeof Membership>
@@ -100,7 +111,7 @@ export const COMPANY_NAME_MAX_LENGTH = 100
 export const CompanyName = z.string().trim().min(1).max(COMPANY_NAME_MAX_LENGTH)
 const PersonName = z.string().trim().min(1).max(100)
 export const Page = z.object({ page: PageToken.optional() })
-const InCompany = z.object({ companyId: CompanyId })
+export const InCompany = z.object({ companyId: CompanyId })
 const OfInvitation = z.object({ invitationId: InvitationId })
 
 export const listCompanies = defineOperation({
@@ -128,7 +139,7 @@ export const getCompany = defineOperation({
   input: { params: InCompany },
   success: {
     status: 200,
-    body: z.object({ company: Company, role: Role, mayInviteAs: z.array(Role) }),
+    body: z.object({ company: CompanyDetail, role: Role, mayInviteAs: z.array(Role) }),
   },
   failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })

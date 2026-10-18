@@ -24,8 +24,14 @@ export const ProjectSummary = z.object({
 })
 export type ProjectSummary = z.infer<typeof ProjectSummary>
 
-/** `mayDelete` is what the viewer's role allows, the Hub's one answer (code C26). */
-export const Project = ProjectSummary.extend({ mayDelete: z.boolean() })
+/**
+ * `mayDelete` is what the viewer's role allows, the Hub's one answer (code C26). `address` is the
+ * app's host name, `null` for a Projeto made while the Hub ran step 7's image.
+ */
+export const Project = ProjectSummary.extend({
+  mayDelete: z.boolean(),
+  address: z.string().min(1).nullable(),
+})
 export type Project = z.infer<typeof Project>
 
 const InCompany = z.object({ companyId: CompanyId })
@@ -78,6 +84,9 @@ export const createProject = defineOperation({
   failures: [
     'NOT_FOUND',
     'PROJECT_NAME_TAKEN',
+    'PROJECT_ADDRESS_TAKEN',
+    'PROJECT_NAME_NO_ADDRESS',
+    'COMPANY_SETUP_PENDING',
     'COMPANY_DATABASE_PREPARING',
     'IDEMPOTENCY_CONFLICT',
     'COMPANY_DATABASE_UNAVAILABLE',

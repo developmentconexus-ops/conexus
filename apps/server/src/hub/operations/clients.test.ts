@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { serveEnvironment, spawnHub, TEST_ORIGIN } from '../../platform/test-database.ts'
+import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
+import { spawnHub } from '../../platform/test-hub-process.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import { ANA, BRUNO, codeOf, hubWithMail, PASSWORD, personOn, post } from '../identity/test-hub.ts'
 

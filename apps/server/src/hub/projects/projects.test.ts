@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { TEST_APPS_DOMAIN } from '../../platform/test-database.ts'
 import {
   ANA_OWNER,
   BRUNO,
@@ -31,6 +32,7 @@ test('criar: o membro cria, só o primeiro Projeto chama o Neon e o banco da emp
     name: 'Pedidos',
     createdAt: project.createdAt,
     mayDelete: false,
+    address: `pedidos--empresa-${companyId.slice(0, 8)}.${TEST_APPS_DOMAIN}`,
   })
   assert.match(project.id, /^[0-9a-f]{32}$/)
   const second = await post(hub, bruno, projects, { name: 'Estoque' })
@@ -124,4 +126,35 @@ test('criar: a empresa de um dono sem outro membro cria também; o nome vazio é
   const made = await post(hub, ana, projects, { name: 'Pedidos' })
   assert.equal(made.statusCode, 201)
   assert.equal(Object(made.json()).project.mayDelete, true)
+})
+
+test('endereço: o nome e o apelido; "Acao" após "Ação" é 409, menos de três letras 422, sem apelido 409', async (t) => {
+  const hub = await hubWithMail(t)
+  const ana = await personOn(hub, ANA_OWNER)
+  const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')
+  const projects = `/api/companies/${companyId}/projects`
+  const made = await post(hub, ana, projects, { name: 'Ação' })
+  assert.equal(made.statusCode, 201)
+  assert.equal(Object(made.json()).project.address, `acao--empresa-a.${TEST_APPS_DOMAIN}`)
+  const read = await call(hub, ana, 'GET', `${projects}/${Object(made.json()).project.id}`)
+  assert.equal(Object(read.json()).project.address, `acao--empresa-a.${TEST_APPS_DOMAIN}`)
+  const answers = await Promise.all(
+    ['Acao', 'TI', 'R&D'].map((name) => post(hub, ana, projects, { name })),
+  )
+  assert.deepEqual(
+    answers.map((response) => [response.statusCode, codeOf(response)]),
+    [
+      [409, 'PROJECT_ADDRESS_TAKEN'],
+      [422, 'PROJECT_NAME_NO_ADDRESS'],
+      [422, 'PROJECT_NAME_NO_ADDRESS'],
+    ],
+  )
+  const pending = await plantCompany(hub.test, ana.id, 'Empresa B', null)
+  const early = await post(hub, ana, `/api/companies/${pending}/projects`, { name: 'Pedidos' })
+  assert.equal(early.statusCode, 409)
+  assert.equal(codeOf(early), 'COMPANY_SETUP_PENDING')
+  assert.deepEqual(hub.neon.calls, ['find', 'create'])
+  assert.deepEqual(await hub.test.asOwner(`select name, host_label from projects.project`), [
+    { name: 'Ação', host_label: 'acao--empresa-a' },
+  ])
 })

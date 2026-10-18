@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { serveEnvironment, spawnHub, WRITE_HEADERS } from '../../platform/test-database.ts'
+import { serveEnvironment, WRITE_HEADERS } from '../../platform/test-database.ts'
+import { spawnHub } from '../../platform/test-hub-process.ts'
 import type { MailHub } from './test-hub.ts'
 import {
   ANA_OWNER,

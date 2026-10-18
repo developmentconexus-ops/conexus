@@ -7,7 +7,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { Email } from '@conexus/hub-api'
-import { createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -44,7 +44,7 @@ async function firstPerson(
     '--summary',
     summary,
   ]
-  const env = serveEnvironment(t, test.runtimeUrl, 1)
+  const env = serveEnvironment(t, test.runtimeUrl, { port: 1, edgePort: 2 })
   const result = await run(process.execPath, args, { env, timeout: 60_000 }).then(
     (output) => ({ code: 0, ...output }),
     (error: { code: number; stdout: string; stderr: string }) => error,
@@ -67,9 +67,10 @@ async function hubOn(t: TestContext, test: TestDatabase) {
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
   const { database } = test
-  const projects = projectsOf({ database, identity, neon: fakeNeon().neon, log: silent })
+  const projects = projectsOf({ config, database, identity, neon: fakeNeon().neon, log: silent })
   const operations = operationsOf(database, { identity, projects })
-  const app = await createHub(config, { status, identity, operations, projects })
+  const apps = appsOf({ database, config, identity, projects })
+  const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   return app
 }

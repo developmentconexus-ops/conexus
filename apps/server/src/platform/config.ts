@@ -26,6 +26,13 @@ export const SessionSecret = {
   },
 }
 
+/** The domain the apps' hosts live one label under, such as `<name>--<nickname>.<domain>` (0024). */
+export const AppsDomain = z
+  .string()
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*(\.[a-z0-9]+(-[a-z0-9]+)*)+$/)
+  .brand('AppsDomain')
+export type AppsDomain = z.infer<typeof AppsDomain>
+
 const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]']
 
 /** A credential leaves only over https; plain http is allowed only to this machine, where no wire sees it. */
@@ -70,6 +77,8 @@ type BaseConfig = {
   databaseUrl: DatabaseUrl
 }
 export type Config = BaseConfig & {
+  edgePort: number
+  appsDomain: AppsDomain
   publicOrigin: PublicOrigin
   sessionSecret: SessionSecret
   mailApiUrl: MailApiUrl
@@ -81,14 +90,17 @@ export type Config = BaseConfig & {
 }
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
+const Port = z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(65535))
 const Environment = z.object({
   CONEXUS_VERSION: Version,
-  HUB_PORT: z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(65535)),
+  HUB_PORT: Port,
   LOG_LEVEL: z.enum(LOG_LEVELS),
   HUB_DATABASE_URL_FILE: z.string().min(1),
 })
 const MigrationKey = z.object({ HUB_MIGRATION_DATABASE_URL_FILE: z.string().min(1) })
 const ServeEnvironment = z.object({
+  HUB_EDGE_PORT: Port,
+  HUB_APPS_DOMAIN: AppsDomain,
   HUB_PUBLIC_ORIGIN: PublicOrigin,
   HUB_SESSION_SECRET_FILE: z.string().min(1),
   HUB_MAIL_API_URL: MailApiUrl,
@@ -149,8 +161,11 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     }
   }
   const serve = parsed(ServeEnvironment, env)
+  if (serve.HUB_EDGE_PORT === data.HUB_PORT) throw invalid('HUB_EDGE_PORT', 'equals HUB_PORT')
   return {
     ...baseConfig(data),
+    edgePort: serve.HUB_EDGE_PORT,
+    appsDomain: serve.HUB_APPS_DOMAIN,
     publicOrigin: serve.HUB_PUBLIC_ORIGIN,
     sessionSecret: readSecret(
       'HUB_SESSION_SECRET_FILE',

@@ -10,6 +10,22 @@ export const PROJECT_FAILURES = {
     action: 'Escolha outro nome.',
     actionKind: 'NONE',
   },
+  PROJECT_ADDRESS_TAKEN: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Já existe um Projeto com esse endereço nesta empresa.',
+    action: 'Mude o nome.',
+    actionKind: 'NONE',
+  },
+  PROJECT_NAME_NO_ADDRESS: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'O nome precisa ter ao menos três letras ou números.',
+    action: '',
+    actionKind: 'NONE',
+  },
   PROJECT_NAME_MISMATCH: {
     category: 'USER',
     settles: true,

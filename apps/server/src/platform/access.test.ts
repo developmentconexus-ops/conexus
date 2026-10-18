@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import Fastify from 'fastify'
+import type { Listener } from './access.ts'
 import { enforceAccess } from './access.ts'
 import { TEST_ORIGIN } from './test-database.ts'
 
@@ -10,12 +11,19 @@ type Route = {
   config?: Record<string, unknown>
 }
 
-async function start(route: Route, onHandle: () => void = () => undefined) {
+const PUBLIC: Listener = {
+  kind: 'PUBLIC',
+  publicOrigin: TEST_ORIGIN,
+  readSession: async () => ({ kind: 'SIGNED_OUT' }),
+}
+
+async function start(
+  route: Route,
+  onHandle: () => void = () => undefined,
+  listener: Listener = PUBLIC,
+) {
   const app = Fastify({ exposeHeadRoutes: false })
-  enforceAccess(app, {
-    publicOrigin: TEST_ORIGIN,
-    readSession: async () => ({ kind: 'SIGNED_OUT' }),
-  })
+  enforceAccess(app, listener)
   app.route({
     ...route,
     handler: async () => {
@@ -53,6 +61,27 @@ test('tipo: recusa o que o tipo não permite', async () => {
   for (const route of refused) {
     await assert.rejects(start(route), new RegExp(`route=${route.method} ${route.url} `))
   }
+})
+
+test('borda: uma rota edge na escuta pública, ou outra na de borda, o servidor não sobe (S48)', async () => {
+  const edge = { method: 'POST', url: '/api/app-sessions', config: { access: 'edge' } } as const
+  await assert.rejects(start(edge), /edge access does not live on the PUBLIC listener/)
+  for (const access of ['public', 'session', 'entry']) {
+    const route = { method: 'GET', url: '/api/other', config: { access } } as const
+    await assert.rejects(
+      start(route, undefined, { kind: 'EDGE' }),
+      new RegExp(`${access} access does not live on the EDGE listener`),
+    )
+  }
+})
+
+test('borda: a rota edge responde sem sessão, cookie nem Origin', async () => {
+  let handled = 0
+  const route = { method: 'POST', url: '/api/app-sessions', config: { access: 'edge' } } as const
+  const app = await start(route, () => handled++, { kind: 'EDGE' })
+  const answer = await app.inject({ method: 'POST', url: '/api/app-sessions', payload: {} })
+  assert.equal(answer.statusCode, 200)
+  assert.equal(handled, 1)
 })
 
 test('aceita uma rota pública em /api/', async () => {

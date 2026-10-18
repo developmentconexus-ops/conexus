@@ -4,7 +4,14 @@ import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
-import { createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import {
+  appsOf,
+  createEdgeHub,
+  createHub,
+  identityOf,
+  operationsOf,
+  projectsOf,
+} from '../../main.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -112,15 +119,19 @@ async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog =
   const neon = fakeNeon()
   const identity = identityOf({ database: test.database, config, log: silent })
   const projects = projectsOf({
+    config,
     database: test.database,
     identity,
     neon: neon.neon,
     log,
   })
   const operations = operationsOf(test.database, { identity, projects })
-  const app = await createHub(config, { status, identity, operations, projects })
+  const apps = appsOf({ database: test.database, config, identity, projects })
+  const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
-  return { app, test, neon }
+  const edge = await createEdgeHub(config, { apps })
+  t.after(() => edge.close())
+  return { app, edge, test, neon }
 }
 
 /** A Hub on a fresh test database; its mail goes nowhere. */
@@ -281,14 +292,20 @@ export function codeOf(response: { json(): unknown }): unknown {
 
 /**
  * A company as its rows, with `ownerId` its owner: since step 4.2 only the Operations Central
- * creates one, and it is born with no member.
+ * creates one, and it is born with no member. Its owner has chosen a nickname, unless `nickname`
+ * says `null`.
  */
-export async function plantCompany(test: TestDatabase, ownerId: string, name = 'Empresa Teste') {
+export async function plantCompany(
+  test: TestDatabase,
+  ownerId: string,
+  name = 'Empresa Teste',
+  nickname?: string | null,
+) {
   const companyId = id()
   await test.asOwner(
-    `insert into auth.company (id, name, slug, created_at, attempt_key)
-      values ($1, $2, $1, now(), $1)`,
-    [companyId, name],
+    `insert into auth.company (id, name, slug, created_at, attempt_key, nickname)
+      values ($1, $2, $1, now(), $1, $3)`,
+    [companyId, name, nickname === undefined ? `empresa-${companyId.slice(0, 8)}` : nickname],
   )
   await test.asOwner(
     `insert into auth.member (id, company_id, user_id, role, created_at)

@@ -10,11 +10,10 @@ import {
   createTestDatabase,
   freePort,
   serveEnvironment,
-  spawnHub,
-  startHub,
   unreachableDatabaseUrl,
   urlFile,
 } from './platform/test-database.ts'
+import { spawnHub, startHub } from './platform/test-hub-process.ts'
 
 type Line = Record<string, unknown>
 
@@ -33,6 +32,8 @@ const GOOD_ENV = { CONEXUS_VERSION: 'v0.1.0', HUB_PORT: '8080', LOG_LEVEL: 'info
 const WITH_FILE = {
   ...GOOD_ENV,
   HUB_DATABASE_URL_FILE: '/nowhere/hub_database_url',
+  HUB_EDGE_PORT: '8081',
+  HUB_APPS_DOMAIN: 'apps.example.test',
   HUB_PUBLIC_ORIGIN: 'https://hub.example.test',
   HUB_SESSION_SECRET_FILE: '/nowhere/hub_session_secret',
   HUB_MAIL_API_URL: 'https://mail.example.test/email/sending/send',
@@ -57,6 +58,10 @@ const OUT_OF_FORMAT = [
   ['HUB_PORT', 'abc'],
   ['HUB_PORT', '70000'],
   ['LOG_LEVEL', 'loud'],
+  ['HUB_EDGE_PORT', 'abc'],
+  ['HUB_EDGE_PORT', '8080'],
+  ['HUB_APPS_DOMAIN', 'Apps.Example.Test'],
+  ['HUB_APPS_DOMAIN', 'localhost'],
   ['HUB_PUBLIC_ORIGIN', 'http://hub.example.test'],
   ['HUB_PUBLIC_ORIGIN', 'https://hub.example.test/'],
   ['HUB_MAIL_API_URL', 'ftp://mail.example.test/send'],
@@ -73,8 +78,8 @@ for (const [name, value] of OUT_OF_FORMAT) {
 
 async function serverEnv(t: TestContext, extra: Record<string, string> = {}) {
   const database = await createTestDatabase(t)
-  const port = await freePort()
-  const env = serveEnvironment(t, database.runtimeUrl, port)
+  const ports = { port: await freePort(), edgePort: await freePort() }
+  const env = serveEnvironment(t, database.runtimeUrl, ports)
   return { database, env: { ...env, ...extra } }
 }
 

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { serveEnvironment, spawnHub, TEST_ORIGIN } from '../../platform/test-database.ts'
+import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
+import { spawnHub } from '../../platform/test-hub-process.ts'
 import { neonServer } from '../../platform/test-neon.ts'
 import {
   ANA_OWNER,

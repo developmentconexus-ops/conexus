@@ -18,9 +18,10 @@ import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
+import { companyNicknameOf } from './nickname.ts'
 import { createPasswordRecovery } from './password-recovery.ts'
 import { registerIdentityRoutes } from './routes.ts'
-import { createSessionReader } from './session.ts'
+import { createSessionReader, liveHubSession, personNameOf } from './session.ts'
 
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
@@ -68,6 +69,9 @@ export function createIdentity(deps: {
       companyNameOf,
       deleteCompany: deleteCompanyOn(auth),
       readOperatedCompanies,
+      companyNicknameOf,
+      liveHubSession,
+      personNameOf,
       /** The first owner's invitation, from Conexus, after the commit (step 4.1's E3). */
       mailOwnerInvitation: (input: {
         admitted: OperatorProof
