@@ -858,5 +858,5 @@ or its origin.
   a cut reply left is found by its exact name (`find`) and adopted, never created twice. A refusal
   from Neon releases the claim, silence keeps it until it ends (removals `company-database-claim`,
   `neon-no-answer-keeps-claim`, `neon-exact-name`, `create-company-lock`).
-- **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_CALL_BUDGET_MS` plus 5 s, so a
-  claim outlives the call that holds it. Revalidate when `projects.create` gains an idempotency key.
+- **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_PREPARE_BUDGET_MS` (the `find`,
+  then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when `projects.create` gains an idempotency key.

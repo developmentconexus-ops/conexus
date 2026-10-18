@@ -22,7 +22,10 @@ export const project = projects.table(
   },
   (table) => [
     unique('project_company_id_attempt_key_key').on(table.companyId, table.attemptKey),
-    uniqueIndex('project_company_name_key').on(table.companyId, sql`lower(${table.name})`),
+    uniqueIndex('project_company_name_key').on(
+      table.companyId,
+      sql`lower(${table.name} collate "und-x-icu")`,
+    ),
     check('project_name_length', sql`char_length(${table.name}) BETWEEN 1 AND 100`),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
     policy(SCOPE_ROLES.OPERATOR, 'select', OPERATOR_COMPANY),

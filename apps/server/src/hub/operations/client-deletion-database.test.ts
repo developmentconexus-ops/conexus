@@ -7,6 +7,7 @@ import {
   BRUNO,
   call,
   codeOf,
+  hubWithLog,
   hubWithMail,
   personOn,
   plantCompany,
@@ -66,6 +67,27 @@ test('com banco: o Neon apaga o id e todo nome exato; saem tudo da 5, os Projeto
     [`cx-${b.companyId}`],
   )
   assert.deepEqual((await rows(hub, b.companyId))[0]?.databases, 1)
+})
+
+test('log: COMPANY_DATABASE_DELETED leva a empresa e o id do projeto no Neon, um por projeto apagado', async (t) => {
+  const hub = await hubWithLog(t)
+  const ana = await personOn(hub, ANA)
+  const davi = await personOn(hub, DAVI)
+  const a = await clientWithDatabase(hub, ana, davi, 'Empresa A')
+  const planted = hub.neon.plant(`cx-${a.companyId}`)
+  const recorded = hub.neon.projects().map((project) => project.id)
+  assert.equal(recorded.length, 2)
+  assert.equal((await call(hub, ana, 'DELETE', a.url, a.body)).statusCode, 204)
+  const logged = hub.lines.filter((line) => line.message === 'COMPANY_DATABASE_DELETED')
+  assert.deepEqual(
+    logged
+      .map((line) => line.fields)
+      .sort((x, y) => String(x.neonProjectId).localeCompare(String(y.neonProjectId))),
+    recorded
+      .map((neonProjectId) => ({ companyId: a.companyId, neonProjectId }))
+      .sort((x, y) => x.neonProjectId.localeCompare(y.neonProjectId)),
+  )
+  assert.ok(recorded.includes(planted))
 })
 
 test('exclusão em andamento: o Neon fora deixa o cliente DELETING, sem acesso, e a mesma rota termina', async (t) => {

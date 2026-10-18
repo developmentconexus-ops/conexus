@@ -23,7 +23,7 @@ CREATE TABLE "projects"."project" (
 --> statement-breakpoint
 ALTER TABLE "projects"."project" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "auth"."company" ADD COLUMN "deleting_since" timestamp with time zone;--> statement-breakpoint
-CREATE UNIQUE INDEX "project_company_name_key" ON "projects"."project" ("company_id",lower("name"));--> statement-breakpoint
+CREATE UNIQUE INDEX "project_company_name_key" ON "projects"."project" ("company_id",lower("name" collate "und-x-icu"));--> statement-breakpoint
 CREATE POLICY "company_all" ON "projects"."company_database" AS PERMISSIVE FOR ALL TO "hub_company" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint
 CREATE POLICY "operator_select" ON "projects"."company_database" AS PERMISSIVE FOR SELECT TO "hub_operator" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint
 CREATE POLICY "operator_delete" ON "projects"."company_database" AS PERMISSIVE FOR DELETE TO "hub_operator" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint

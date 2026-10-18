@@ -1,6 +1,7 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { createProject, PROJECT_NAME_MAX_LENGTH } from '@conexus/hub-api'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from '@tanstack/react-router'
 import { keepsAttemptKey, useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
@@ -12,7 +13,7 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
-import { sendProject } from './queries.ts'
+import { allProjectsQueryKey, sendProject } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos a criação. Tente de novo.'
 // The two refusals that leave no Project and say to try again, with the button that does.
@@ -23,6 +24,8 @@ const RETRYING = ['COMPANY_DATABASE_PREPARING', 'COMPANY_DATABASE_UNAVAILABLE']
  * says so while it does. The attempt key stays until the Hub settles the outcome (web W24).
  */
 export function CreateProjectForm(props: { companyId: CompanyId; databaseReady: boolean }) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const send = useMutation(sendProject)
   const attempt = useAttemptKey()
   const form = useSchemaForm(createProject.input.body, { name: '' })
@@ -35,7 +38,11 @@ export function CreateProjectForm(props: { companyId: CompanyId; databaseReady: 
       form.reset({ name: '' })
     } catch (error) {
       if (!(error instanceof HubFailure)) setServerError(form, error)
-      else if (error.code === 'PROJECT_NAME_TAKEN') setServerError(form, error, 'name')
+      else if (error.code === 'NOT_FOUND') {
+        // The company is gone for this person: the page reads again and shows what the Hub says.
+        queryClient.removeQueries({ queryKey: allProjectsQueryKey(props.companyId) })
+        await router.invalidate()
+      } else if (error.code === 'PROJECT_NAME_TAKEN') setServerError(form, error, 'name')
       else if (RETRYING.includes(error.code)) {
         form.setError('root.server', { type: 'retry', message: sentenceOf(error) })
       } else if (keepsAttemptKey(error)) {

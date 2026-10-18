@@ -143,7 +143,8 @@ export function databaseWithPassword(test: TestDatabase, password: string): Data
   return openDatabase({ url: runtimeUrlWithPassword(test, password), log: silent })
 }
 
-export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
+/** A fresh database; `locale: 'C'` makes one whose `LC_CTYPE` knows no case outside ASCII. */
+export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<TestDatabase> {
   const { ownerUrl: serverUrl, runtimePassword, container } = readTestDatabase()
   const name = `conexus_test_${randomUUID().replaceAll('-', '')}`
   const ownerUrl = withDatabase(serverUrl, name)
@@ -152,7 +153,9 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
     password: runtimePassword,
   })
   const admin = await connected(serverUrl)
-  await admin.query(`create database ${name}`)
+  const localeClause =
+    locale && `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
+  await admin.query(`create database ${name} ${localeClause ?? ''}`)
   const database = openDatabase({ url: runtimeUrl, log: silent })
   t.after(async () => {
     try {

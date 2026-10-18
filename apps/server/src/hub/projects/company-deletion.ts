@@ -1,6 +1,7 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { eq, sql } from 'drizzle-orm'
 import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import { companyProjectName, NeonProjectId } from '../../platform/neon.ts'
@@ -25,7 +26,7 @@ export async function hasCompanyDatabase(tx: ReadTx, input: Of): Promise<boolean
  * is deleted until it ends; any answer short of done leaves the deletion to be retried.
  */
 export async function releaseCompanyDatabase(
-  deps: { database: Database; neon: NeonProjects },
+  deps: { database: Database; neon: NeonProjects; log: FailureLog },
   input: Of,
 ): Promise<void> {
   const scope = {
@@ -50,6 +51,7 @@ export async function releaseCompanyDatabase(
   const recorded = row.neonProjectId === null ? [] : [NeonProjectId.parse(row.neonProjectId)]
   for (const id of new Set([...recorded, ...named.value])) {
     if ((await deps.neon.delete(id)).kind !== 'DONE') throw new Failure('CLIENT_DELETION_PENDING')
+    deps.log.info({ companyId: input.companyId, neonProjectId: id }, 'COMPANY_DATABASE_DELETED')
   }
 }
 

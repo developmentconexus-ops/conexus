@@ -893,8 +893,8 @@
   {
     "id": "project-name-lower",
     "file": "apps/server/migrations/20261017223141_projects_tables/migration.sql",
-    "find": "CREATE UNIQUE INDEX \"project_company_name_key\" ON \"projects\".\"project\" (\"company_id\",lower(\"name\"))",
-    "replace": "CREATE UNIQUE INDEX \"project_company_name_key\" ON \"projects\".\"project\" (\"company_id\",\"name\")",
+    "find": "(\"company_id\",lower(\"name\" collate \"und-x-icu\"))",
+    "replace": "(\"company_id\",\"name\")",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/projects/tables.test.ts",

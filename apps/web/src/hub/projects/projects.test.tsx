@@ -209,6 +209,19 @@ test('a empresa que o Hub não acha: a página de "não encontrado"', async () =
   ).toBeTruthy()
 })
 
+test('Criar Projeto numa empresa que o Hub já não acha: a página de "não encontrado"', async () => {
+  const { state } = hub({}, () => refusal('NOT_FOUND'))
+  open()
+  await screen.findByText('Nenhum Projeto ainda.')
+  server.use(http.get(`*/api/companies/${COMPANY.id}/projects`, () => refusal('NOT_FOUND')))
+  create('Pedidos')
+  expect(
+    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+  ).toBeTruthy()
+  expect(state.projects).toEqual([])
+  expect(screen.queryByRole('button', { name: 'Criar Projeto' })).toBeNull()
+})
+
 test('"Projeto apagado." chega uma vez e sai do endereço', async () => {
   hub({ projects: [PEDIDOS] })
   const router = open(`${PROJECTS}?notice=deleted`)

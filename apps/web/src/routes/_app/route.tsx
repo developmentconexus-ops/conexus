@@ -28,7 +28,8 @@ export const Route = createFileRoute('/_app')({
 
 function AppFrame() {
   const { person } = Route.useRouteContext()
-  // A page that is not found names no place: the Central's name is not shown to whoever it hides from.
+  // A page that is not found names no place and no company: the Central's name is not shown to
+  // whoever it hides from, and the rail lists only the places of a company that was found.
   const place = useMatches({
     select: (matches) => {
       const last = matches.at(-1)
@@ -37,7 +38,9 @@ function AppFrame() {
   })
   const companyId = useMatches({
     select: (matches) =>
-      matches.find((match) => match.routeId === '/_app/companies/$companyId')?.params.companyId,
+      matches.at(-1)?.status === 'notFound'
+        ? undefined
+        : matches.find((match) => match.routeId === '/_app/companies/$companyId')?.params.companyId,
   })
   return (
     <Frame

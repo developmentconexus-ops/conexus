@@ -4,7 +4,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { awaitingClient, centralHub, hubServer, refusal } from '../../platform/test-hub.tsx'
+import {
+  awaitingClient,
+  centralHub,
+  DELETING_CLIENT,
+  hubServer,
+  refusal,
+} from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const CLIENT = awaitingClient()
@@ -152,4 +158,23 @@ test('422: "O nome não confere." no campo', async () => {
       'true',
     ),
   )
+})
+
+test('503 exclusão em andamento: a página do cliente e a lista da Central leem de novo', async () => {
+  const clients = [CLIENT]
+  server.use(
+    http.delete('*/api/clients/:companyId', () => {
+      clients[0] = DELETING_CLIENT
+      return refusal('CLIENT_DELETION_PENDING')
+    }),
+    ...centralHub(clients),
+  )
+  const conexus = createConexus(createMemoryHistory({ initialEntries: ['/operations/clients'] }))
+  render(<Conexus conexus={conexus} />)
+  fireEvent.click(await screen.findByRole('link', { name: /Empresa Teste/ }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar cliente' }))
+  confirm()
+  expect(await screen.findByText('Exclusão em andamento.')).toBeTruthy()
+  await conexus.router.navigate({ to: '/operations/clients' })
+  expect(await screen.findByText('Exclusão em andamento')).toBeTruthy()
 })

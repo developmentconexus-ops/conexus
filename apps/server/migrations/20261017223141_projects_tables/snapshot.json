@@ -1389,7 +1389,7 @@
           "opclass": null
         },
         {
-          "value": "lower(\"name\")",
+          "value": "lower(\"name\" collate \"und-x-icu\")",
           "isExpression": true,
           "asc": true,
           "nullsFirst": false,

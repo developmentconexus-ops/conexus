@@ -51,6 +51,11 @@ test('banco: duas pessoas sem banco dão um create, a segunda 409 preparando, de
   const held = hub.neon.hold()
   const first = post(hub, bruno, projects, { name: 'Pedidos' })
   await held.arrived
+  const [claim] = await hub.test.asOwner(
+    `select extract(epoch from claimed_until - now())::int as seconds from projects.company_database`,
+  )
+  // The find and the create at their longest, 75 s, and the margin: 80 s.
+  assert.ok(Number(claim?.seconds) >= 79 && Number(claim?.seconds) <= 80, String(claim?.seconds))
   const second = await post(hub, carla, projects, { name: 'Estoque' })
   assert.equal(second.statusCode, 409)
   assert.equal(codeOf(second), 'COMPANY_DATABASE_PREPARING')

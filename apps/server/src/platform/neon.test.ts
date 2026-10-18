@@ -8,6 +8,7 @@ import {
   companyProjectName,
   createNeonProjects,
   NEON_CALL_BUDGET_MS,
+  NEON_PREPARE_BUDGET_MS,
   NeonProjectId,
   NeonProjectName,
 } from './neon.ts'
@@ -188,4 +189,8 @@ test('neon: o nome de projeto só aceita cx- e o id da empresa', () => {
 
 test('neon: o orçamento de uma chamada soma o pedido e a espera', () => {
   assert.equal(NEON_CALL_BUDGET_MS, 60_000)
+})
+
+test('neon: a criação soma o find e a chamada', () => {
+  assert.equal(NEON_PREPARE_BUDGET_MS, 75_000)
 })

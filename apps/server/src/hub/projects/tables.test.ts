@@ -45,7 +45,7 @@ test('catálogo: as colunas, os únicos e as restrições de Projeto e do banco 
   assert.deepEqual(index, [
     {
       indexdef:
-        'CREATE UNIQUE INDEX project_company_name_key ON projects.project USING btree (company_id, lower(name))',
+        'CREATE UNIQUE INDEX project_company_name_key ON projects.project USING btree (company_id, lower((name COLLATE "und-x-icu")))',
     },
   ])
 })
@@ -117,4 +117,17 @@ test('catálogo: o banco da empresa pronto tem o projeto; o em criação tem o p
     ),
     { code: '23514' },
   )
+})
+
+test('catálogo: num banco com LC_CTYPE=C, "Ação" e "AÇÃO" ainda são o mesmo nome', async (t) => {
+  const { asOwner } = await createTestDatabase(t, 'C')
+  function insert(id: string, name: string) {
+    return asOwner(
+      `insert into projects.project (id, company_id, name, attempt_key, created_at)
+        values ($1, 'empresa', $2, $1, now())`,
+      [id, name],
+    )
+  }
+  await insert('um', 'Ação')
+  await assert.rejects(insert('dois', 'AÇÃO'), { code: '23505' })
 })

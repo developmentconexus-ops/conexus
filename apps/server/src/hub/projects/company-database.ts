@@ -3,12 +3,12 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { CommandTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { NeonProjectId, NeonProjects } from '../../platform/neon.ts'
-import { companyProjectName, NEON_CALL_BUDGET_MS } from '../../platform/neon.ts'
+import { companyProjectName, NEON_PREPARE_BUDGET_MS } from '../../platform/neon.ts'
 import { companyDatabase } from './tables.ts'
 
-/** Past the Neon call's own budget, so a claim outlives the call that holds it (docs/reference/boundaries.md). */
+/** Past the `find` and `create` the holder makes, so a claim outlives the calls that hold it (docs/reference/boundaries.md). */
 const CLAIM_MARGIN_MS = 5_000
-const CLAIM_MS = NEON_CALL_BUDGET_MS + CLAIM_MARGIN_MS
+const CLAIM_MS = NEON_PREPARE_BUDGET_MS + CLAIM_MARGIN_MS
 const CLAIM_UNTIL = sql`statement_timestamp() + ${CLAIM_MS} * interval '1 millisecond'`
 
 /**

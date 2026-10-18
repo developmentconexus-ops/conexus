@@ -33,6 +33,8 @@ const REQUEST_TIMEOUT_MS = 15_000
 const WAIT_TIMEOUT_MS = 45_000
 /** The longest one call can take: its requests and retries, then the wait for the operation. */
 export const NEON_CALL_BUDGET_MS = REQUEST_TIMEOUT_MS + WAIT_TIMEOUT_MS
+/** The longest a creation holds Neon: the `find` for the name, then the `create`. */
+export const NEON_PREPARE_BUDGET_MS = REQUEST_TIMEOUT_MS + NEON_CALL_BUDGET_MS
 const REPLY_CAP_BYTES = 1024 * 1024
 const REGION_ID = 'aws-sa-east-1'
 const PG_VERSION = 18

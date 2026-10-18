@@ -226,3 +226,26 @@ test('com duas empresas, / mostra a lista; dentro de uma, a troca de empresa lev
   expect(await screen.findByRole('heading', { name: 'Suas empresas' })).toBeTruthy()
   expect(router.state.location.pathname).toBe('/')
 })
+
+test('a empresa que o Hub não acha: "não encontrado" sem os lugares dela nem a troca de empresa', async () => {
+  hub({ signedIn: true }, TWO)
+  const asked: string[] = []
+  server.use(
+    http.get(`*/api/companies/${EMPRESA.id}/projects`, ({ request }) => {
+      asked.push(request.url)
+      return refusal('NOT_FOUND')
+    }),
+  )
+  open(`/companies/${EMPRESA.id}/projects`)
+  expect(
+    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+  ).toBeTruthy()
+  const rail = screen.getAllByRole('navigation', { name: 'Navegação' })[0]
+  if (rail === undefined) throw new Error('the rail is missing')
+  expect(within(rail).getByRole('link', { name: 'Início' })).toBeTruthy()
+  for (const name of ['Projetos', 'Pessoas']) {
+    expect(within(rail).queryByRole('link', { name })).toBeNull()
+  }
+  expect(screen.queryByRole('button', { name: /Trocar de empresa/ })).toBeNull()
+  expect(asked).toHaveLength(1)
+})

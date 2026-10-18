@@ -5,6 +5,7 @@ import type { TestContext } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import { createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -104,7 +105,7 @@ export const BRUNO = { name: 'Bruno Reis', email: 'bruno@example.test' }
 export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
-async function hubServing(t: TestContext, mailApiUrl?: string) {
+async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog = silent) {
   const test = await createTestDatabase(t)
   const config = testConfig(test.runtimeUrl, mailApiUrl)
   const status = createStatus({ version: config.version, database: test.database })
@@ -114,7 +115,7 @@ async function hubServing(t: TestContext, mailApiUrl?: string) {
     database: test.database,
     identity,
     neon: neon.neon,
-    log: silent,
+    log,
   })
   const operations = operationsOf(test.database, { identity, projects })
   const app = await createHub(config, { status, identity, operations, projects })
@@ -129,6 +130,16 @@ export function hubOn(t: TestContext) {
 
 export type Hub = Awaited<ReturnType<typeof hubOn>>
 export type MailHub = Hub & { mail: Awaited<ReturnType<typeof mailServer>> }
+
+/** A Hub whose Projects log into `lines`, as the fields and the message of each line. */
+export async function hubWithLog(t: TestContext) {
+  const lines: { fields: Record<string, unknown>; message: string }[] = []
+  const log = {
+    info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
+    error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
+  }
+  return { ...(await hubServing(t, undefined, log)), lines }
+}
 
 /** A Hub whose mail goes to a fake of the provider. */
 export async function hubWithMail(t: TestContext): Promise<MailHub> {
