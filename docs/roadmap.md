@@ -40,6 +40,7 @@ Desenho: `architecture.md`.
    Cartão da etapa 9 aprovado em 2026-10-18 (commit 8e1b461325f3064ba5690dfb28ace027554c0efa): "Aprovo"
    Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "aceito A"; "Restaurei"; "Sim"
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
+    Cartão da etapa 10 aprovado em 2026-10-18 (commit ef7a377d9e992bbb7702d48f6cd1ed5dcc79de5b): "oPÇÃO A tirar verificador."; "1. Aprovo"
 11. **Conta de modelo.** Liga a sua assinatura e a testa.
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.

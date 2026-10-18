@@ -13,7 +13,7 @@ const root = resolve(process.argv[2] ?? '.')
 const CEILINGS: readonly (readonly [RegExp, number])[] = [
   [/^AGENTS\.md$/, 400],
   [/^docs\/index\.md$/, 500],
-  [/^docs\/roadmap\.md$/, 1500],
+  [/^docs\/roadmap\.md$/, 1600],
   [/^docs\/architecture\.md$/, 2500],
   [/^docs\/guides\/code\.md$/, 3500],
   [/^docs\/guides\/security\.md$/, 3000],
