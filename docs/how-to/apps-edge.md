@@ -21,11 +21,9 @@ The dispatcher's route and the Hub's `HUB_APPS_DOMAIN` name the same apps domain
 ## The publish token
 
 1. In the Cloudflare dashboard, create an account-owned API token with only:
-   - Workers Scripts: Edit (account);
-   - Workers Routes: Edit (zone, the apps' zone only).
-
-   These are the permissions step 8's card names. The first publish may name one more, such as a
-   Connectivity Directory permission to bind the VPC service; add only what the error names.
+   - Workers Scripts: Edit (account): the dispatcher, the wall and the example in the namespace;
+   - Connectivity Directory: Bind (account): the dispatcher's binding to the VPC service;
+   - Workers Routes: Edit (zone, the apps' zone only): the route `*.conexusapp.tech/*`.
 2. On the server, as root, write `/etc/conexus/cloudflare.env` with two lines, `CLOUDFLARE_API_TOKEN=…`
    and `CLOUDFLARE_ACCOUNT_ID=…` (the account id stays out of Git), then `chown runner:runner` it and
    `chmod 0400` it. `/etc/conexus` is traversable by the runner; `secrets/` is not, so the file sits
@@ -66,5 +64,5 @@ the edge as it is, and puts the Hub back; Criar Projeto works on that Hub.
 ## Para o fundador
 
 - Antes da primeira publicação da borda: abra a porta 22 enquanto o Firstmate grava o arquivo do
-  token, e feche-a depois. O token é só de publicar; crie-o no painel, com as duas permissões
+  token, e feche-a depois. O token é só de publicar; crie-o no painel, com as três permissões
   acima, e entregue o valor ao Firstmate sem colar no chat.

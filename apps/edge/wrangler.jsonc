@@ -14,8 +14,8 @@
       "outbound": { "service": "conexus-outbound" }
     }
   ],
-  // The Hub's edge listener, through the server's Tunnel. The id exists once the service is created.
-  "vpc_services": [{ "binding": "HUB", "service_id": "00000000-0000-0000-0000-000000000000" }],
+  // The Hub's edge listener, hub:8081 through the server's Tunnel: the VPC service conexus-hub-borda.
+  "vpc_services": [{ "binding": "HUB", "service_id": "01a14eb3-4962-75b3-9e12-3d97648e50cf" }],
   "vars": {
     "HUB_PUBLIC_ORIGIN": "https://hub.conexus.fun",
     "APPS_DOMAIN": "conexusapp.tech"
