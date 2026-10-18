@@ -174,15 +174,15 @@ route both e-mail the founder; the route does not touch the database, so a hung 
 **The data path of an app** [0045]. The capability, inside the dispatcher, picks that app's login
 and talks to Neon's HTTP driver. `db.query(text, values)` runs one statement in a read-only
 transaction, so PostgreSQL refuses a write; `db.batch` runs every write of a call in one transaction.
-Nothing carries from one call to the next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand here:
+Nothing carries from one call to the next; the rule for apps is [data D28](guides/data.md). A
+call's numbers are `APP_CALL_LIMITS` [0047]: the platform cuts its CPU at 50 ms and its 51st `db`
+call (`limits.subRequests`, which counts the capability's calls). Pieces still made by hand here:
 
 | Piece | Why it remains | Basis |
 | --- | --- | --- |
 | Session check | No call reaches an app without it | Purpose |
-| Statement text reading | Refuses a login changing its own password and anonymous code blocks | Purpose |
-| 5 s deadline per call | No platform limit cuts an app that only waits | The number: implemented so, revisited in step 10 |
-| 50 queries per call | Platform limits do not count capability calls | The number: only tested so, revisited in step 10 |
-| Statement timeout on each app login | A slow statement keeps running after the caller gets the error | Purpose |
+| 10 s deadline per call | No platform limit cuts an app that only waits | Measured [0047] |
+| Statement and transaction timeouts on the run login | A slow statement or batch keeps running after the caller gets the error | Measured [0047] |
 
 **Who may enter** [0013] [0014] [0015] [0016]. The Hub's session has three guarantees: no stored
 row works alone to sign in, the cookie is valid for one exact host, and the session has an idle and
@@ -221,7 +221,7 @@ with it.
 | Risk | What a person would see | Where it is handled |
 | --- | --- | --- |
 | Vendor terms forbid subscription sign-in inside a third-party service | A model account blocked without notice [0030] | Accepted by the founder |
-| Two batches in one call | An action left half done [0045] | Step 10 counts them |
+| Two batches in one action | The second fails and the first stays [0047] | The Builder's skill, step 13 |
 | The app login key leaks | Its holder enters every app's database [0043] | Rotation in the how-to |
 | CPU limits act in seconds, with tolerance | Many looping apps at once slow others | Step 22 load test |
 | The Hub's database never sleeps | The free allowance ends near day 17 and Neon suspends it [0009] | Step 2 test; back to the founder if it fails |
