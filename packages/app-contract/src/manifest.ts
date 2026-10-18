@@ -86,10 +86,26 @@ function depthOf(shape: Shape): number {
 
 const Operation = z.strictObject({ input: Shape, output: Shape })
 
+/**
+ * A statement that ends, splits or reconfigures the migrations' one transaction (0046): a COMMIT
+ * would keep the earlier migrations alone, and a SET would lift the statement's time ceiling.
+ * Read at the statement's first word, past any leading comment.
+ */
+const SESSION_CONTROL =
+  /^(?:\s|--[^\n]*\n|\/\*[\s\S]*?\*\/)*(?:begin|start|commit|end|rollback|abort|savepoint|release|prepare|set|reset|discard)\b/i
+
 const Migration = z.strictObject({
   id: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/),
   // One statement per item, so a migration is applied whole in one transaction (0043, check 11).
-  statements: z.array(z.string().trim().min(1)).min(1),
+  statements: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1)
+        .refine((statement) => !SESSION_CONTROL.test(statement)),
+    )
+    .min(1),
 })
 
 function unique(values: readonly string[]): boolean {

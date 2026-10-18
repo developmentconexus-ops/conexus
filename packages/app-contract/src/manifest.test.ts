@@ -89,6 +89,34 @@ test('recusa caminho absoluto, com .., repetido, e entrada que não é .js', () 
   refuses((m) => ({ ...m, entry: 'worker.ts' }))
 })
 
+test('recusa comando que encerra, divide ou reconfigura a transação das migrações', () => {
+  for (const statement of [
+    'COMMIT',
+    'rollback',
+    'BEGIN',
+    'START TRANSACTION',
+    'END',
+    'SAVEPOINT a',
+    'RELEASE SAVEPOINT a',
+    "PREPARE TRANSACTION 'x'",
+    'SET statement_timeout = 0',
+    'set role postgres',
+    'RESET ALL',
+    'DISCARD ALL',
+    '-- fim\nCOMMIT',
+    '/* fim */ commit',
+  ]) {
+    refuses((m) => ({ ...m, migrations: [{ id: '001', statements: [statement] }] }))
+  }
+  const set =
+    'CREATE FUNCTION f() RETURNS int LANGUAGE sql SET search_path = pg_catalog AS $$ SELECT 1 $$'
+  assert.equal(
+    Manifest.safeParse({ ...GOOD, migrations: [{ id: '001', statements: [set, 'SELECT 1'] }] })
+      .success,
+    true,
+  )
+})
+
 test('recusa migração sem comando e ids repetidos', () => {
   refuses((m) => ({ ...m, migrations: [{ id: '001', statements: [] }] }))
   refuses((m) => ({

@@ -2132,5 +2132,16 @@
       "file": "src/platform/config.test.ts",
       "name": "configuração: a chave dos logins dos apps"
     }
+  },
+  {
+    "id": "migration-session-control",
+    "file": "packages/app-contract/src/manifest.ts",
+    "find": ".refine((statement) => !SESSION_CONTROL.test(statement))",
+    "replace": ".refine((statement) => statement.length > 0)",
+    "test": {
+      "cwd": "packages/app-contract",
+      "file": "src/manifest.test.ts",
+      "name": "recusa comando que encerra, divide ou reconfigura"
+    }
   }
 ]
