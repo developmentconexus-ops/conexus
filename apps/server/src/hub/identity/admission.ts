@@ -11,6 +11,7 @@ const REMOVE = { member: ['delete'] } as const
 const CHANGE_ROLE = { member: ['update'] } as const
 const CREATE_PROJECT = { project: ['create'] } as const
 const DELETE_PROJECT = { project: ['delete'] } as const
+const CHOOSE_NICKNAME = { company: ['nickname'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -20,6 +21,7 @@ type ActionRule = {
     | typeof CHANGE_ROLE
     | typeof CREATE_PROJECT
     | typeof DELETE_PROJECT
+    | typeof CHOOSE_NICKNAME
 }
 
 /**
@@ -35,6 +37,7 @@ const ACTIONS = {
   readProjects: { by: 'MEMBER', statement: undefined, locks: false },
   createProject: { by: 'MEMBER', statement: CREATE_PROJECT, locks: true },
   deleteProject: { by: 'MEMBER', statement: DELETE_PROJECT, locks: true },
+  chooseNickname: { by: 'MEMBER', statement: CHOOSE_NICKNAME, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },

@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import type { HubProcess } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
   freePort,
   serveEnvironment,
-  startHub,
   TEST_ORIGIN,
 } from '../../platform/test-database.ts'
+import type { HubProcess } from '../../platform/test-hub-process.ts'
+import { startHub } from '../../platform/test-hub-process.ts'
 import { ANA_OWNER, INVITEE, id, mailServer, PASSWORD, plantCompany } from './test-hub.ts'
 
 const WRITE = { origin: TEST_ORIGIN, 'content-type': 'application/json' }
@@ -46,10 +46,11 @@ test('de novo com a mesma chave: o Hub parou entre o convite e o e-mail, e chega
   const mail = await mailServer(t)
   const env = { ...serveEnvironment(t, test.runtimeUrl), HUB_MAIL_API_URL: mail.url }
   const port = await freePort()
+  const edgePort = await freePort()
   const base = `http://127.0.0.1:${port}`
   const hubs: HubProcess[] = []
   async function listening() {
-    const hub = startHub(t, { ...env, HUB_PORT: String(port) })
+    const hub = startHub(t, { ...env, HUB_PORT: String(port), HUB_EDGE_PORT: String(edgePort) })
     hubs.push(hub)
     await hub.until('LISTENING')
     return hub

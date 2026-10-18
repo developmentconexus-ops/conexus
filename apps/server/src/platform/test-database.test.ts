@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { pathToFileURL } from 'node:url'
-import { startHub } from './test-database.ts'
+import { startHub } from './test-hub-process.ts'
 
 function lifetime() {
   const cleanups: (() => Promise<void> | void)[] = []

@@ -7,6 +7,7 @@ import { List, PageTitle, Row, rowBody } from '../../ui/list.tsx'
 import { Notice } from '../../ui/notice.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
+import { companyQuery } from '../identity/public.ts'
 import { CreateProjectForm } from './create-project-form.tsx'
 import { projectsQuery } from './queries.ts'
 
@@ -40,11 +41,12 @@ export function Projects() {
     if (arrived) void navigate({ search: { page }, replace: true })
   }, [arrived, navigate, page])
   const { data } = useSuspenseQuery(projectsQuery(companyId, page))
+  const { company } = useSuspenseQuery(companyQuery(companyId)).data
   return (
     <div className="flex flex-col gap-xl">
       <PageTitle>Projetos</PageTitle>
       {notice && <Notice>Projeto apagado.</Notice>}
-      <CreateProjectForm companyId={companyId} databaseReady={data.databaseReady} />
+      <CreateProjectForm company={company} databaseReady={data.databaseReady} />
       {data.projects.length === 0 ? (
         <Empty>Nenhum Projeto ainda.</Empty>
       ) : (

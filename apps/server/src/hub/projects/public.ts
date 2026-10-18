@@ -1,4 +1,6 @@
+import type { HostLabel } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import type { AppsDomain } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
@@ -8,6 +10,7 @@ import {
   hasCompanyDatabase,
   releaseCompanyDatabase,
 } from './company-deletion.ts'
+import { admitToApp, projectOfHost } from './hosts.ts'
 import { createProjectStore } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
@@ -23,6 +26,7 @@ export function createProjects(deps: {
   identity: IdentityPorts
   neon: NeonProjects
   log: FailureLog
+  appsDomain: AppsDomain
 }) {
   const store = createProjectStore(deps)
   return Object.freeze({
@@ -33,6 +37,9 @@ export function createProjects(deps: {
       releaseCompanyDatabase: (input: Parameters<typeof hasCompanyDatabase>[1]) =>
         releaseCompanyDatabase(deps, input),
       deleteCompanyProjects,
+      // What the apps' door reaches Projects through: a host's Projeto, and who may open it now.
+      projectOfHost: (label: HostLabel) => projectOfHost(deps.database, label),
+      admitToApp: (input: Parameters<typeof admitToApp>[1]) => admitToApp(deps, input),
     }),
   })
 }

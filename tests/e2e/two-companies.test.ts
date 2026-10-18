@@ -5,6 +5,8 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
+  chooseNickname,
+  closeBrowser,
   linkIn,
   liveHub,
   mailProvider,
@@ -45,7 +47,7 @@ async function join(page: Page, next: () => Promise<Mail>, owner: typeof OWNERS.
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await chooseNickname(page)
   await page.getByRole('link', { name: 'Pessoas' }).first().click()
   await page.getByRole('heading', { name: owner.company, exact: true }).waitFor()
   return link
@@ -56,7 +58,7 @@ test('o roteiro de duas empresas: a recusa cruzada, apagar B, o dono de B ainda 
   const { port, database } = await liveHub(t, mail.url)
   await personWithPassword(database, ANA)
   const browser: Browser = await chromium.launch()
-  t.after(() => browser.close())
+  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   async function window(ip: string) {
     const context = await browser.newContext()

@@ -17,6 +17,7 @@ import {
   removeMember,
   renewInvitation,
   requestPasswordRecovery,
+  setCompanyNickname,
   setPassword,
 } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
@@ -47,6 +48,7 @@ export function receivedInvitationQuery(invitationId: InvitationId) {
   return hubQuery(getInvitation, { params: { invitationId } })
 }
 
+export const chooseNickname = hubMutation(setCompanyNickname)
 export const inviteToCompany = hubMutation(createInvitation)
 export const cancelCompanyInvitation = hubMutation(cancelInvitation)
 export const renewCompanyInvitation = hubMutation(renewInvitation)

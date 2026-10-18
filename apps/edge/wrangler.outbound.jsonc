@@ -1,0 +1,14 @@
+// The wall: every fetch an app makes lands here and is refused (decision 0041).
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "conexus-outbound",
+  "main": "src/outbound.ts",
+  "compatibility_date": "2026-10-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "traces": { "enabled": true }
+  }
+}

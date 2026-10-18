@@ -5,7 +5,7 @@ import type { PublicOrigin } from './config.ts'
 import { Failure } from './failure.ts'
 
 const AccessConfig = z.looseObject({
-  access: z.enum(['page', 'public', 'entry', 'session']).optional(),
+  access: z.enum(['page', 'public', 'entry', 'session', 'edge']).optional(),
 })
 const READS = ['GET', 'HEAD']
 /** The Tunnel puts the client's address here; the attempt limits key on it (security S28, S29). */
@@ -38,7 +38,16 @@ const ALLOWED: Record<AccessKind, Shape> = {
   public: { methods: ['GET'], path: /^\/api\// },
   entry: { methods: ['POST', 'PUT'], path: /^\/api\// },
   session: { methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], path: /^\/api\// },
+  edge: { methods: ['GET', 'POST'], path: /^\/api\// },
 }
+
+/**
+ * Which listener a server is: the public one, behind the Tunnel's public hostname, or the edge one
+ * on `HUB_EDGE_PORT`, which only the apps' dispatcher reaches (security S48).
+ */
+export type Listener =
+  | { kind: 'PUBLIC'; publicOrigin: PublicOrigin; readSession: SessionReader }
+  | { kind: 'EDGE' }
 
 function declared(config: unknown): AccessKind | undefined {
   const parsed = AccessConfig.safeParse(config ?? {})
@@ -81,16 +90,15 @@ function checkWrite(request: FastifyRequest, publicOrigin: PublicOrigin): void {
   }
 }
 
-export function enforceAccess(
-  app: FastifyInstance,
-  deps: { publicOrigin: PublicOrigin; readSession: SessionReader },
-): void {
+export function enforceAccess(app: FastifyInstance, listener: Listener): void {
   app.addHook('onRoute', (route) => {
     const methods = [route.method].flat()
     const where = `${methods.join('|')} ${route.url}`
     const access = declared(route.config)
     if (access === undefined) {
       refuse(where, 'the route declares no known access kind')
+    } else if ((access === 'edge') !== (listener.kind === 'EDGE')) {
+      refuse(where, `${access} access does not live on the ${listener.kind} listener`)
     } else {
       const allowed = ALLOWED[access]
       const outside = methods.some((method) => !allowed.methods.includes(method))
@@ -99,6 +107,14 @@ export function enforceAccess(
       }
     }
   })
+  if (listener.kind === 'EDGE') {
+    // An edge route reads no session, cookie or Origin: the dispatcher alone reaches this listener.
+    app.addHook('onRequest', async (request) => {
+      if (declared(request.routeOptions.config) === undefined) throw new Failure('NOT_FOUND')
+    })
+    return
+  }
+  const deps = listener
   app.addHook('onRequest', async (request, reply) => {
     const access = declared(request.routeOptions.config)
     // Every route declares its kind when it is added, so none means no route. A write is refused

@@ -1,15 +1,20 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { createServer } from 'node:http'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import type { BrowserContext, Page } from 'playwright-core'
-import { build } from 'vite'
+import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
-import { createHub, identityOf, operationsOf, projectsOf } from '../../apps/server/src/main.ts'
+import {
+  appsOf,
+  createEdgeHub,
+  createHub,
+  identityOf,
+  operationsOf,
+  projectsOf,
+} from '../../apps/server/src/main.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
 import {
   createTestDatabase,
@@ -62,40 +67,46 @@ export async function mailProvider(t: TestContext) {
   }
 }
 
-async function builtScreens(t: TestContext): Promise<string> {
-  const outDir = mkdtempSync(join(tmpdir(), 'conexus-e2e-web-'))
-  t.after(() => rmSync(outDir, { recursive: true, force: true }))
-  const root = join(import.meta.dirname, '..', '..', 'apps', 'web')
-  await build({ root, logLevel: 'silent', build: { outDir } })
-  return outDir
+/** The screens `npm run e2e` builds once before any file runs (pree2e), served by every Hub here. */
+const WEB_ROOT = join(import.meta.dirname, '..', '..', 'apps', 'web', 'dist')
+
+function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
+  const address = server.server.address()
+  assert.ok(address !== null && typeof address === 'object')
+  return address.port
 }
 
-/** The Hub in this process, on the CI database, serving the built screens and mailing to the fake. */
+/** The Hub in this process, on the CI database, serving the built screens on its public port and the dispatcher's calls on its edge port. */
 export async function liveHub(t: TestContext, mailUrl: string) {
+  assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
   const config = testConfig(database.runtimeUrl, mailUrl, neon.url)
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
   const projects = projectsOf({
+    config,
     database: database.database,
     identity,
     neon: createNeonProjects({ config, log: silent }),
     log: silent,
   })
   const operations = operationsOf(database.database, { identity, projects })
+  const apps = appsOf({ database: database.database, config, identity, projects })
   const app = await createHub(config, {
     status,
     identity,
     operations,
     projects,
-    webRoot: await builtScreens(t),
+    apps,
+    webRoot: WEB_ROOT,
   })
   t.after(() => app.close())
+  const edge = await createEdgeHub(config, { apps })
+  t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
-  const address = app.server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  return { port: address.port, database, neon }
+  await edge.listen({ host: '127.0.0.1', port: 0 })
+  return { port: portOf(app), edgePort: portOf(edge), database, neon }
 }
 
 /**
@@ -111,6 +122,15 @@ export async function reachHub(context: BrowserContext, port: number, ip: string
   })
 }
 
+/**
+ * Ends the browser once every context has let go of `reachHub`'s route, so a fetch still in flight
+ * when the test ends is dropped instead of failing on a closed target.
+ */
+export async function closeBrowser(browser: Browser) {
+  for (const context of browser.contexts()) await context.unrouteAll({ behavior: 'ignoreErrors' })
+  await browser.close()
+}
+
 /** What would show in the console as a refusal of the page itself, never as a refusal it shows. */
 export function watchConsole(page: Page, problems: string[]) {
   page.on('pageerror', (error) => problems.push(error.message))
@@ -123,6 +143,13 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByLabel('E-mail').fill(email)
   await page.getByLabel('Senha').fill(password)
   await page.getByRole('button', { name: 'Entrar' }).click()
+}
+
+/** The first owner of a company the Central made keeps the suggested nickname, and Projetos opens. */
+export async function chooseNickname(page: Page) {
+  await page.getByRole('heading', { name: 'Configurar a empresa' }).waitFor()
+  await page.getByRole('button', { name: 'Salvar', exact: true }).click()
+  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
 }
 
 export function linkIn(mail: Mail): string {

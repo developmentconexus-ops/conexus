@@ -56,7 +56,7 @@
   },
   {
     "id": "raw-output-spawned-hub",
-    "file": "apps/server/src/platform/test-database.ts",
+    "file": "apps/server/src/platform/test-hub-process.ts",
     "find": "if (line === undefined) raw.push(text)",
     "replace": "if (line === undefined) return",
     "test": {
@@ -404,6 +404,17 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/first-person.test.ts",
       "name": "com a pessoa ainda sem senha"
+    }
+  },
+  {
+    "id": "first-person-link-to-terminal",
+    "file": "infra/first-person.sh",
+    "find": "--summary /dev/stdout",
+    "replace": "--summary /dev/stderr",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/first-person.test.ts",
+      "name": "a primeira pessoa: o link vai só ao terminal, o nome e o e-mail entram como argumentos inteiros"
     }
   },
   {
@@ -1031,6 +1042,578 @@
       "cwd": "apps/server",
       "file": "src/hub/operations/client-deletion-database.test.ts",
       "name": "com banco"
+    }
+  },
+  {
+    "id": "nickname-unique",
+    "file": "apps/server/migrations/20261018101318_app_addresses/migration.sql",
+    "find": "ALTER TABLE \"auth\".\"company\" ADD CONSTRAINT \"company_nickname_key\" UNIQUE(\"nickname\");--> statement-breakpoint\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-apps.test.ts",
+      "name": "um apelido e um endereço valem"
+    }
+  },
+  {
+    "id": "host-label-unique",
+    "file": "apps/server/migrations/20261018101318_app_addresses/migration.sql",
+    "find": "ALTER TABLE \"projects\".\"project\" ADD CONSTRAINT \"project_host_label_key\" UNIQUE(\"host_label\");--> statement-breakpoint\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-apps.test.ts",
+      "name": "um apelido e um endereço valem"
+    }
+  },
+  {
+    "id": "host-lookup-definer",
+    "file": "apps/server/migrations/20261018101320_app_grants/migration.sql",
+    "find": "LANGUAGE sql STABLE SECURITY DEFINER",
+    "replace": "LANGUAGE sql STABLE SECURITY INVOKER",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-apps.test.ts",
+      "name": "a função dá ao login do Hub"
+    }
+  },
+  {
+    "id": "runner-job-gate",
+    "file": "infra/runner-job-started.sh",
+    "find": "[ \"${GITHUB_REF:-}\" = refs/heads/main ] ||",
+    "replace": "true ||",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um disparo manual de outro ramo é recusado"
+    }
+  },
+  {
+    "id": "edge-outbound-wall",
+    "file": "apps/edge/wrangler.jsonc",
+    "find": ",\n      \"outbound\": { \"service\": \"conexus-outbound\" }",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/outbound.test.ts",
+      "name": "o muro"
+    }
+  },
+  {
+    "id": "edge-strip-hub-cookies",
+    "file": "apps/edge/src/headers.ts",
+    "find": "    .filter(([name]) => !name.startsWith(COOKIE_PREFIX))\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: não recebe os cookies"
+    }
+  },
+  {
+    "id": "edge-strip-conexus-path",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  if (url.pathname.startsWith(DISPATCHER_PATHS)) return failurePage('APP_NOT_FOUND')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: não recebe /__conexus/"
+    }
+  },
+  {
+    "id": "edge-drop-app-cookie",
+    "file": "apps/edge/src/headers.ts",
+    "find": "if (!line.startsWith(COOKIE_PREFIX)) ",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: o Set-Cookie dele"
+    }
+  },
+  {
+    "id": "edge-cross-site-write",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  if (isForeignWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: escrita de outro site"
+    }
+  },
+  {
+    "id": "edge-csp",
+    "file": "apps/edge/src/headers.ts",
+    "find": "  headers.set('Content-Security-Policy', contentSecurityPolicy)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: a CSP do app"
+    }
+  },
+  {
+    "id": "edge-props-caller-only",
+    "file": "apps/edge/src/hub.ts",
+    "find": "input.operation.success.body.safeParse(json)",
+    "replace": "{ success: true, data: json }",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher.test.ts",
+      "name": "app: props leva só caller"
+    }
+  },
+  {
+    "id": "handoff-atomic",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "    const [taken] = await tx\n      .delete(handoff)\n",
+    "replace": "    const [taken] = await tx\n      .select()\n      .from(handoff)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: duas trocas juntas"
+    }
+  },
+  {
+    "id": "handoff-binding",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "          eq(handoff.bindingHash, hashOf(input.binding)),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: outro vínculo"
+    }
+  },
+  {
+    "id": "handoff-host",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "          eq(handoff.hostLabel, input.host),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "resgate: outro vínculo"
+    }
+  },
+  {
+    "id": "app-session-cascade",
+    "file": "apps/server/migrations/20261018101318_app_addresses/migration.sql",
+    "find": "FOREIGN KEY (\"hub_session_id\") REFERENCES \"auth\".\"session\"(\"id\") ON DELETE CASCADE;--> statement-breakpoint\nALTER TABLE \"apps\".\"handoff\"",
+    "replace": "FOREIGN KEY (\"hub_session_id\") REFERENCES \"auth\".\"session\"(\"id\");--> statement-breakpoint\nALTER TABLE \"apps\".\"handoff\"",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "checagem: 200 com quem chama"
+    }
+  },
+  {
+    "id": "edge-port-only",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "} else if ((access === 'edge') !== (listener.kind === 'EDGE')) {",
+    "replace": "} else if (access === undefined) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "borda: uma rota edge na escuta pública"
+    }
+  },
+  {
+    "id": "nickname-owner-once",
+    "file": "apps/server/src/hub/identity/nickname.ts",
+    "find": "    if (chosen !== null) throw new Failure('COMPANY_NICKNAME_SET')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/nickname.test.ts",
+      "name": "apelido: o dono escolhe uma vez"
+    }
+  },
+  {
+    "id": "app-session-project-replaced",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "  if (current.projectId !== ids.projectId) {",
+    "replace": "  if (current.projectId === undefined) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "checagem: o Projeto apagado e criado de novo"
+    }
+  },
+  {
+    "id": "nickname-company-lock",
+    "file": "apps/server/src/hub/identity/nickname.ts",
+    "find": "    await lockCompany(tx, input.companyId)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/nickname.test.ts",
+      "name": "apelido: duas escolhas juntas"
+    }
+  },
+  {
+    "id": "edge-sec-fetch-site",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "(site !== null && site !== 'same-origin') || ",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "escrita: Sec-Fetch-Site"
+    }
+  },
+  {
+    "id": "edge-write-needs-origin",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "request.headers.get('Origin') !== url.origin",
+    "replace": "(request.headers.get('Origin') ?? url.origin) !== url.origin",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "escrita: sem Origin"
+    }
+  },
+  {
+    "id": "edge-cross-site-get",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  if (request.method === 'GET' || request.method === 'HEAD') return false\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "GET de outro site"
+    }
+  },
+  {
+    "id": "edge-303-headers",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "headers: withSecurityHeaders(headers) })",
+    "replace": "headers })",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "os 303"
+    }
+  },
+  {
+    "id": "edge-missing-script",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  try {\n    const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })\n",
+    "replace": "  const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })\n  try {\n",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "matriz, o Worker do app"
+    }
+  },
+  {
+    "id": "edge-log-timeout",
+    "file": "apps/edge/src/hub.ts",
+    "find": "reason: timedOut ? 'TIMEOUT' : 'NETWORK'",
+    "replace": "reason: 'NETWORK'",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-log.test.ts",
+      "name": "log do Hub sem resposta: TIMEOUT"
+    }
+  },
+  {
+    "id": "edge-log-reason",
+    "file": "apps/edge/src/pages.ts",
+    "find": "const line = { msg: code, status, reason }",
+    "replace": "const line = { msg: code, status }",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-log.test.ts",
+      "name": "log do Hub sem resposta: NETWORK"
+    }
+  },
+  {
+    "id": "runner-commit-on-main",
+    "file": "infra/runner-job-started.sh",
+    "find": "\"${git[@]}\" merge-base --is-ancestor \"$commit\" refs/heads/main > /dev/null 2>&1 \\\n  || refuse \"the commit $commit is not on main\"\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um Release de um commit fora de main é recusado"
+    }
+  },
+  {
+    "id": "runner-dispatch-commit-on-main",
+    "file": "infra/runner-job-started.sh",
+    "find": "refs/heads/main > /dev/null 2>&1 \\\n  || refuse",
+    "replace": "refs/heads/main > /dev/null 2>&1 \\\n  || true || refuse",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um disparo manual de main num commit fora de main é recusado"
+    }
+  },
+  {
+    "id": "runner-mirror-fetch",
+    "file": "infra/runner-job-started.sh",
+    "find": "timeout --kill-after=5 60 \"${git[@]}\" fetch --quiet --no-tags origin refs/heads/main:refs/heads/main \\\n  > /dev/null 2>&1 || refuse \"could not fetch main into $mirror\"\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um Release de um commit de main é aceito, também o que o espelho ainda não tinha"
+    }
+  },
+  {
+    "id": "runner-mirror-fetch-fails-closed",
+    "file": "infra/runner-job-started.sh",
+    "find": "  > /dev/null 2>&1 || refuse \"could not fetch main into $mirror\"\n",
+    "replace": "  > /dev/null 2>&1 || true\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "sem espelho, ou sem conseguir buscar main, tudo é recusado"
+    }
+  },
+  {
+    "id": "runner-commit-shape",
+    "file": "infra/runner-job-started.sh",
+    "find": "[[ $commit =~ ^[0-9a-f]{40}$ ]] || refuse \"'$commit' is not a commit\"\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um commit que não é um nome de commit é recusado"
+    }
+  },
+  {
+    "id": "publish-edge-after-hub",
+    "file": ".github/workflows/publish.yml",
+    "find": "  edge:\n    needs: deploy\n",
+    "replace": "  edge:\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release publica o Hub depois da imagem, e a borda depois do Hub"
+    }
+  },
+  {
+    "id": "rollback-edge-before-hub",
+    "file": ".github/workflows/rollback.yml",
+    "find": "    needs: [record, edge]\n",
+    "replace": "    needs: record\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta acha o registro antes de mexer na borda, e põe a borda de volta antes do Hub"
+    }
+  },
+  {
+    "id": "publish-checks-out-checked-commit",
+    "file": ".github/workflows/publish.yml",
+    "find": "          ref: ${{ github.sha }}\n      - uses: docker/login-action",
+    "replace": "          ref: ${{ github.event.release.tag_name }}\n      - uses: docker/login-action",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "cada trabalho do Release usa o commit que o gancho conferiu, não a tag"
+    }
+  },
+  {
+    "id": "publish-image-on-fresh-machine",
+    "file": ".github/workflows/publish.yml",
+    "find": "    runs-on: ubuntu-24.04\n",
+    "replace": "    runs-on: [self-hosted, conexus]\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor"
+    }
+  },
+  {
+    "id": "ci-on-github-machines",
+    "file": ".github/workflows/ci.yml",
+    "find": "  check:\n    runs-on: ubuntu-24.04\n",
+    "replace": "  check:\n    runs-on: [self-hosted, conexus]\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara"
+    }
+  },
+  {
+    "id": "ci-no-secret",
+    "file": ".github/workflows/ci.yml",
+    "find": "GH_TOKEN: ${{ github.token }}",
+    "replace": "GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara"
+    }
+  },
+  {
+    "id": "ci-no-secret-by-index",
+    "file": ".github/workflows/ci.yml",
+    "find": "GH_TOKEN: ${{ github.token }}",
+    "replace": "GH_TOKEN: ${{ secrets['GITHUB_TOKEN'] }}",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara"
+    }
+  },
+  {
+    "id": "server-runner-manual-and-release-only",
+    "file": ".github/workflows/restart.yml",
+    "find": "on:\n  workflow_dispatch:\n",
+    "replace": "on:\n  workflow_dispatch:\n  pull_request:\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "só o Release e o disparo manual chegam ao runner do servidor"
+    }
+  },
+  {
+    "id": "server-runner-environment",
+    "file": ".github/workflows/restart.yml",
+    "find": "    environment: production\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "todo trabalho no runner do servidor passa pelo ambiente production do GitHub"
+    }
+  },
+  {
+    "id": "server-runner-bare-label",
+    "file": ".github/workflows/restart.yml",
+    "find": "    runs-on: [self-hosted, hub]\n    environment: production\n",
+    "replace": "    runs-on: hub\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "todo trabalho no runner do servidor passa pelo ambiente production do GitHub"
+    }
+  },
+  {
+    "id": "rollback-version-on-main",
+    "file": ".github/workflows/rollback.yml",
+    "find": "          if ! git merge-base --is-ancestor HEAD origin/main; then\n            echo \"the commit of $VERSION is not on main\"\n            exit 1\n          fi\n",
+    "replace": "          true\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta da borda recusa uma versão fora de main antes do npm ci e do token"
+    }
+  },
+  {
+    "id": "rollback-tag-history",
+    "file": ".github/workflows/rollback.yml",
+    "find": "          ref: ${{ inputs.version }}\n          fetch-depth: 0\n",
+    "replace": "          ref: ${{ inputs.version }}\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta da borda recusa uma versão fora de main antes do npm ci e do token"
+    }
+  },
+  {
+    "id": "edge-env-owner",
+    "file": "infra/publish-edge.sh",
+    "find": "\"400 $(id -un)\" | \"600 $(id -un)\") ;;",
+    "replace": "\"400 \"* | \"600 \"*) ;;",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/publish-edge.test.ts",
+      "name": "recusa um arquivo cujo dono não é quem publica"
+    }
+  },
+  {
+    "id": "mirror-url-github-https",
+    "file": "infra/setup-runner-hook.sh",
+    "find": "^https://github\\.com/[A-Za-z0-9_.-]+",
+    "replace": "^https://[A-Za-z0-9_.-]+",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/setup-runner-hook.test.ts",
+      "name": "recusa um endereço que não é o https do GitHub, antes de tocar o espelho"
+    }
+  },
+  {
+    "id": "release-recorded-after-deploy",
+    "file": ".github/workflows/publish.yml",
+    "find": "run: infra/releases.sh record \"$VERSION\" \"$REFERENCE\"",
+    "replace": "run: \"true\"",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release registra o digest depois que o deploy deu certo"
+    }
+  },
+  {
+    "id": "rollback-reads-record",
+    "file": ".github/workflows/rollback.yml",
+    "find": "reference=\"$(infra/releases.sh find \"$VERSION\")\"",
+    "replace": "reference=\"$(docker buildx imagetools inspect \"$IMAGE:$VERSION\")\"",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR"
+    }
+  },
+  {
+    "id": "rollback-record-before-edge",
+    "file": ".github/workflows/rollback.yml",
+    "find": "    needs: record\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta acha o registro antes de mexer na borda, e põe a borda de volta antes do Hub"
+    }
+  },
+  {
+    "id": "rollback-deploys-recorded",
+    "file": ".github/workflows/rollback.yml",
+    "find": "          REFERENCE: ${{ needs.record.outputs.reference }}",
+    "replace": "          REFERENCE: ghcr.io/developmentconexus-ops/conexus-hub:${{ inputs.version }}",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR"
+    }
+  },
+  {
+    "id": "record-reference-pattern",
+    "file": "infra/releases.sh",
+    "find": "    [[ $reference =~ $reference_pattern ]] || {\n      echo \"$reference is not an image reference by digest\" >&2\n      exit 1\n    }\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/releases.test.ts",
+      "name": "recusa registrar um nome de versão ou uma referência que não são os esperados"
+    }
+  },
+  {
+    "id": "find-revalidates-record",
+    "file": "infra/releases.sh",
+    "find": "    [[ $reference =~ $reference_pattern ]] || {\n      echo \"the record of $version is not an image reference by digest\" >&2\n      exit 1\n    }\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/releases.test.ts",
+      "name": "um registro adulterado que não é um digest é recusado ao procurar"
+    }
+  },
+  {
+    "id": "hook-named-before-mirror",
+    "file": "infra/setup-runner-hook.sh",
+    "find": "name_the_hook\ninstall -d",
+    "replace": "install -d",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/setup-runner-hook.test.ts",
+      "name": "se o espelho falha, o .env já nomeia o gancho e a falha é do espelho"
     }
   }
 ]

@@ -12,6 +12,7 @@ import {
   listMembers,
   removeMember,
   renewInvitation,
+  setCompanyNickname,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import type { Config } from '../../platform/config.ts'
@@ -27,6 +28,7 @@ import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { companyScope, createInvitationCommand } from './invitations.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
+import { chooseNickname } from './nickname.ts'
 import { checkPassword } from './password-check.ts'
 import { countAttempt } from './routes.ts'
 
@@ -38,14 +40,16 @@ type Deps = {
   sendMail: SendMail
 }
 
-function registerReads(app: FastifyInstance, { database }: Deps): void {
+function registerReads(app: FastifyInstance, deps: Deps): void {
+  const { database } = deps
   serve(app, listCompanies, async ({ person, query }) =>
     answer(await readMemberships(database, person.id, query.page)),
   )
 
-  serve(app, getCompany, async ({ person, params }) =>
-    answer(await readCompany(database, { personId: person.id, ...params })),
-  )
+  serve(app, getCompany, async ({ person, params }) => {
+    const { appsDomain } = deps.config
+    return answer(await readCompany(database, { personId: person.id, ...params, appsDomain }))
+  })
 
   serve(app, listMembers, async ({ person, params, query }) =>
     answer(await readMembers(database, { personId: person.id, ...params }, query.page)),
@@ -110,6 +114,13 @@ function registerWrites(app: FastifyInstance, deps: Deps): void {
     const changed = await decline({ person, ...params, ...body })
     if (changed) log.info({}, 'INVITATION_DECLINED')
     return answer(undefined)
+  })
+
+  serve(app, setCompanyNickname, async ({ person, params, body, log }) => {
+    const { appsDomain } = deps.config
+    const made = await chooseNickname(deps.database, { person, ...params, ...body, appsDomain })
+    if (made.chosen) log.info({ companyId: params.companyId }, 'COMPANY_NICKNAME_CHOSEN')
+    return answer({ company: made.company })
   })
 
   serve(app, acceptInvitation, async ({ person, sessionToken, headers, params, body, log }) => {

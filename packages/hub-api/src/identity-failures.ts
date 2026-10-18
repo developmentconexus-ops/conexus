@@ -1,6 +1,6 @@
 import type { FailureRow } from './failure-row.ts'
 
-/** What goes wrong signing in, ending a session, handling a password link and answering an invitation's password. */
+/** What goes wrong signing in, ending a session, handling a password link, answering an invitation's password and choosing the company's nickname. */
 export const IDENTITY_FAILURES = {
   SIGN_IN_REFUSED: {
     category: 'USER',
@@ -64,6 +64,39 @@ export const IDENTITY_FAILURES = {
     status: 409,
     phrase: 'Já existe uma pessoa nesta instalação.',
     action: 'Entre com a pessoa que já existe.',
+    actionKind: 'NONE',
+  },
+  COMPANY_NICKNAME_TAKEN: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'Esse apelido já é usado por outra empresa.',
+    action: 'Escolha outro.',
+    actionKind: 'NONE',
+  },
+  COMPANY_NICKNAME_RESERVED: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'Esse apelido é reservado.',
+    action: 'Escolha outro.',
+    actionKind: 'NONE',
+  },
+  COMPANY_NICKNAME_SET: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'O apelido já foi escolhido.',
+    action: '',
+    actionKind: 'NONE',
+  },
+  // The screens open the setup before any Projeto, so only a client out of step meets this.
+  COMPANY_SETUP_PENDING: {
+    category: 'SYSTEM',
+    settles: true,
+    status: 409,
+    phrase: 'A empresa ainda não escolheu o apelido.',
+    action: 'O dono escolhe o apelido ao entrar na empresa.',
     actionKind: 'NONE',
   },
 } as const satisfies Record<string, FailureRow>

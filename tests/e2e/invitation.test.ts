@@ -6,6 +6,7 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { LiveDatabase, Mail } from './live-hub.ts'
 import {
+  closeBrowser,
   linkIn,
   liveHub,
   mailProvider,
@@ -26,8 +27,8 @@ async function ownerOfCompany(database: LiveDatabase) {
   const id = await personWithPassword(database, ANA)
   const companyId = randomBytes(16).toString('hex')
   await database.asOwner(
-    `insert into auth.company (id, name, slug, created_at, attempt_key)
-      values ($1, 'Empresa Teste', $1, now(), $1)`,
+    `insert into auth.company (id, name, slug, created_at, attempt_key, nickname)
+      values ($1, 'Empresa Teste', $1, now(), $1, 'empresa-teste')`,
     [companyId],
   )
   await database.asOwner(
@@ -84,7 +85,7 @@ test('o roteiro de uso: convidar, criar a senha, aceitar e ver a empresa com as 
   const { port, database } = await liveHub(t, mail.url)
   await ownerOfCompany(database)
   const browser: Browser = await chromium.launch()
-  t.after(() => browser.close())
+  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   const anaContext = await browser.newContext()
   const daviContext = await browser.newContext()

@@ -1,10 +1,9 @@
 # Architecture
 
-What Conexus is, its parts, where each runs and who owns what. It states what is decided. A choice
-that is expensive to undo has a record in [`decisions/`](decisions/), cited here as [0020]; the
-record holds the reason, the founder's words and what reopens it. The rules that follow from this design live in the
-[guides](guides/). The sections follow arc42 (1, 3, 5, 7, 8 and 11), with C4 context and
-container levels.
+What Conexus is, its parts, where each runs and who owns what. A choice that is expensive to undo
+has a record in [`decisions/`](decisions/), cited here as [0020]; the record holds the reason, the
+founder's words and what reopens it. The rules that follow from this design live in the
+[guides](guides/). The sections follow arc42, with C4 context and container levels.
 
 Step numbers follow the [roadmap](roadmap.md).
 
@@ -19,7 +18,7 @@ operates the whole installation, for a handful of invited companies at launch.
 1. **Isolation.** A company never reads another company's rows. An app never reads another app's
    data. Generated code holds no secret and reaches no network.
 2. **Recoverable by one person.** Every part can be published, rolled back and restored by the
-   founder, without a terminal. Restoring is rehearsed in the step that creates each part.
+   founder, without a terminal.
 3. **Cheap at rest.** With nobody using it, Conexus leaves its databases asleep [0009].
 4. **Native first.** A platform or library feature comes before Conexus code. Each exception names
    the line where the library does less.
@@ -148,13 +147,13 @@ and tests, and a `public.ts` with what others may use. The import law is
 | E2B | Build machines, under a key used by this installation only | [0028] |
 
 **Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
-command on the server; a merge alone publishes nothing [0035]. Migrations run before the program
-starts ([data D9](guides/data.md)).
+command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the
+program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image. Every migration only adds, so
 an earlier image runs on the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's
-P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. A Worker
-uses Cloudflare's versions.
+P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. The edge goes
+back first.
 
 **Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
 paid one. Both Hub databases return to the same instant. A restore then sets every login password
@@ -190,8 +189,8 @@ next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand
 row works alone to sign in, the cookie is valid for one exact host, and the session has an idle and
 a total deadline. Who holds it, and where companies, members and invitations live, are reopened
 [0013] [0015]. Better Auth handles password, reset and the attempt limit. App sessions, the one-use
-handoff to an app and the Preview session are Conexus's own. Where an app's session check lives is
-chosen in step 18 by test.
+handoff to an app and the Preview session are Conexus's own. An app session lives inside the
+Hub's, with no sign-out of its own [0041].
 
 **Isolation, in layers.** Hub admission on every read and write, with the company column on every
 table and the company carried in every transaction [0012]; row policies bound each transaction's
@@ -240,8 +239,9 @@ with it.
 **Debt.** Small fixes left on a brought part are listed here, one line each, with the step that
 removes them.
 
-- Expired rows of `auth.session` and `auth.verification` leave only when presented, until the first
-  scheduled job.
+- Until the first scheduled job, expired rows of `auth.session` and `auth.verification` leave only
+  when presented; expired app handoffs, and a deleted Projeto's, only with their Hub session.
+- `projects.project.host_label` stays nullable until step 9.
 - `createUser`, `listUsers` and `findCredentialAccount` are the library's internal calls, with no
   public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
 - Trace ids are Fastify's request ids: the Hub audit's `telemetry` part has no step in the roadmap

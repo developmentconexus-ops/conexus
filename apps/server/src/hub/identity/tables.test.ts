@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import {
-  createTestDatabase,
-  serveEnvironment,
-  startHub,
-  urlFile,
-} from '../../platform/test-database.ts'
+import { createTestDatabase, serveEnvironment, urlFile } from '../../platform/test-database.ts'
+import { startHub } from '../../platform/test-hub-process.ts'
 
 test('catálogo: o esquema auth tem as tabelas da biblioteca e as três do plugin de organização', async (t) => {
   const { asOwner } = await createTestDatabase(t)
@@ -43,6 +39,7 @@ test('catálogo: as colunas de empresa, membro e convite, e as dos plugins em pe
       `company.created_at ${ts} NO`,
       'company.attempt_key text NO',
       `company.deleting_since ${ts} YES`,
+      'company.nickname text YES',
       'invitation.id text NO',
       'invitation.company_id text NO',
       'invitation.email text NO',
@@ -85,6 +82,7 @@ test('catálogo: os únicos, as chaves estrangeiras RESTRICT das novas tabelas e
     unique.map((row) => row.unique),
     [
       'company attempt_key',
+      'company nickname',
       'company slug',
       'invitation company_id,attempt_key',
       'member company_id,user_id',
@@ -169,7 +167,7 @@ for (const [name, adminBefore, expected] of [
     const migrate = startHub(
       t,
       {
-        ...serveEnvironment(t, test.runtimeUrl, 1),
+        ...serveEnvironment(t, test.runtimeUrl, { port: 1, edgePort: 2 }),
         HUB_MIGRATION_DATABASE_URL_FILE: urlFile(t, test.ownerUrl),
       },
       ['migrate'],

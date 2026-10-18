@@ -10,18 +10,19 @@ How the server is prepared, and how the Hub is published and put back. Decision:
 3. As root on the server, save the Cloudflare tunnel token and the runner registration token each in
    a file only root can read (mode 0400 or 0600), then run
    `RUNNER_URL=… RUNNER_VERSION=… RUNNER_SHA256=… TUNNEL_TOKEN_FILE=… RUNNER_TOKEN_FILE=… infra/setup-server.sh`
-   and delete both files. The script runs once and refuses a file others can read. It installs Docker, copies the
-   tunnel token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a
-   service of the user `runner`, which has no login and sits in the `docker` group.
+   and delete both files. It installs Docker, copies the tunnel token to
+   `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a service of
+   `runner`, a user with no login, in the `docker` group. Then set
+   [the runner's mirror](apps-edge.md#the-runners-mirror).
 4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the provider's main
    SSH configuration may lack the `Include` that reads a drop-in.
 5. Close SSH last, after the provider's console is proved to work. Without a console, stop and ask.
 
 ## Check the GitHub settings
 
-- Actions, General, fork pull request workflows: require approval for all outside collaborators, and
-  never run workflows from forks on the self-hosted runner. Only `release` and `workflow_dispatch`
-  reach it.
+- Actions, General, fork pull request workflows: require approval for all external contributors.
+  Only the hook refuses a branch's or fork's job on the server.
+- Environment `production`, made first: main's workflows run only from `main` and `v*` tags.
 - Actions, General, workflow permissions: read only by default.
 - Packages: the `conexus-hub` image is private.
 
@@ -55,16 +56,16 @@ Hub, ends every session.
 
 - Enquanto o Firstmate grava um segredo no servidor, abra a porta 22 no firewall do provedor e
   feche-a depois. O e-mail dos convites: [hub-mail](hub-mail.md).
-- Em Actions, rode "Criar a primeira pessoa". O resumo da execução, nunca o log, mostra um link
-  `/set-password` de uso único, que vale 1 hora. Rodar de novo dá um link novo enquanto não
-  houver senha.
+- A primeira pessoa: como root no servidor, o Firstmate roda
+  `infra/first-person.sh "<nome>" "<e-mail>"`. O link de uso único, válido por 1 hora, aparece só
+  nesse terminal. Rodar de novo dá outro link enquanto não houver senha.
 
 ## Publish
 
 Merging into `main` publishes nothing. Create a GitHub Release whose tag is `v<n>.<n>.<n>` on a commit of
 `main`. The workflow Publish builds the image, keeps the last ten, and runs `infra/deploy.sh` on the
-server. A tag on another commit ends red and the Hub does not change. Counting the ten kept images
-needs a token that can read packages.
+server. A tag on another commit ends red and the Hub does not change. Keeping ten images needs
+Admin in the package's Actions access ([apps-edge](apps-edge.md)).
 
 Before it starts the new image, `deploy.sh` runs `migrate` for 60 seconds, but only when the image
 carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the
@@ -83,9 +84,9 @@ those 502s and no 500.
 
 ## Put back
 
-Actions, Voltar atrás, Run workflow, with one of the last ten versions. An unknown version ends red.
-Running it twice with the same version changes nothing. An image from before step 2 has no label, so
-putting it back skips `migrate`.
+Actions, Voltar atrás, Run workflow, with a version whose digest main's Publish recorded on the
+server. No record ends red. Running it again changes nothing. An image from before step 2 has no
+label, so putting it back skips `migrate`.
 
 ## When it fails
 

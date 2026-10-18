@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Version } from '@conexus/hub-api'
-import { createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
 import {
   createTestDatabase,
   serveEnvironment,
   silent,
-  spawnHub,
   testConfig,
   unreachableDatabase,
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
+import { spawnHub } from '../../platform/test-hub-process.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from './public.ts'
 
@@ -22,13 +22,15 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
   const projects = projectsOf({
+    config,
     database: test.database,
     identity,
     neon: fakeNeon().neon,
     log: silent,
   })
   const operations = operationsOf(test.database, { identity, projects })
-  const app = await createHub(config, { status, identity, operations, projects })
+  const apps = appsOf({ database: test.database, config, identity, projects })
+  const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   return { app, status, test }
 }
@@ -95,9 +97,16 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
-  const projects = projectsOf({ database: database, identity, neon: fakeNeon().neon, log: silent })
+  const projects = projectsOf({
+    config,
+    database: database,
+    identity,
+    neon: fakeNeon().neon,
+    log: silent,
+  })
   const operations = operationsOf(database, { identity, projects })
-  const app = await createHub(config, { status, identity, operations, projects })
+  const apps = appsOf({ database, config, identity, projects })
+  const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   const response = await app.inject(STATUS)
   assert.equal(response.statusCode, 503)

@@ -6,10 +6,10 @@ import {
   createTestDatabase,
   serveEnvironment,
   silent,
-  spawnHub,
   testConfig,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
+import { spawnHub } from '../../platform/test-hub-process.ts'
 
 import {
   codeOf,

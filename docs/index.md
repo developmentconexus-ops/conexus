@@ -1,6 +1,6 @@
 # Documentation map
 
-One line per document, with the subject it owns; `check-docs` refuses a document without one.
+One line per document and its subject; `check-docs` refuses a document without one.
 
 ## Overview
 
@@ -8,15 +8,16 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [README.md](../README.md): what this repository is, for a person, in Portuguese.
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each approval and use line.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
-- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and putting back a Hub version.
+- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub.
+- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge.
 - [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): como restaurar o banco do Hub a um minuto e conferir.
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): the companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 for tests.
 - [steps/](steps/): the card in construction; empty between steps.
-- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes instead of its library's, with the library's line.
+- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's, with the library's line.
 - [reference/components.md](reference/components.md): each screen piece and its tokens (design V23).
-- [reference/checklist.md](reference/checklist.md): questions only a reader answers; builder and reviewer run it.
+- [reference/checklist.md](reference/checklist.md): questions only a reader answers.
 
 ## Guides: the rules
 
@@ -66,14 +67,17 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [0034](decisions/0034-vitest-for-screen-files.md) Vitest for screens.
 - [0035](decisions/0035-publish-through-a-runner-on-the-server.md) publish through a runner.
 - [0036](decisions/0036-runner-token-in-one-call-environment.md) runner token per call.
-- [0037](decisions/0037-postgresql-18-and-drizzle-1-for-the-hub-database.md) PostgreSQL 18 and Drizzle 1.0.
+- [0037](decisions/0037-postgresql-18-and-drizzle-1-for-the-hub-database.md) PostgreSQL 18, Drizzle 1.0.
 - [0038](decisions/0038-database-logins-by-sql-checked-by-a-catalog-snapshot.md) logins by SQL, catalog snapshot.
 - [0039](decisions/0039-company-scope-and-row-policy-in-the-hub.md) company row policy.
 - [0040](decisions/0040-company-database-through-neon.md) Neon.
+- [0041](decisions/0041-app-session-check-through-workers-vpc.md) Workers VPC.
+- [0042](decisions/0042-cloudflare-token-in-one-call-environment.md) publish token.
+- [0044](decisions/0044-release-image-built-on-a-github-hosted-machine.md) hosted image.
 
 ## Skills
 
-- [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md) and [proof](../.agents/skills/conexus-study/references/proof.md): the study of a step; its report template; a small proof.
+- [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md) and [proof](../.agents/skills/conexus-study/references/proof.md): studying a step; the report; a proof.
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md): the step's card and its template.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md) and [bug](../.agents/skills/conexus-build/references/bug.md): building a unit; bringing old code; a defect.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md): the review of a step, its rubric and its delta checks.

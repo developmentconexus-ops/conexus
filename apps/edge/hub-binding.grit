@@ -1,0 +1,11 @@
+// Code C56: the Hub's VPC binding has one adapter, src/hub.ts, which holds its deadline, its byte
+// cap and the contract's parse. Every other file of the edge gets a HubPort from it.
+// Revalidate by 2027-04-18, or when Biome changes its GritQL node names.
+or {
+  `$_.HUB`,
+  `$_['HUB']`,
+  JsObjectBindingPatternShorthandProperty(identifier=$name) where { $name <: `HUB` },
+  JsObjectBindingPatternProperty(member=$name) where { $name <: `HUB` }
+} as $access where {
+  register_diagnostic(span=$access, message="Only src/hub.ts reaches the Hub's binding, env.HUB (code C56).")
+}

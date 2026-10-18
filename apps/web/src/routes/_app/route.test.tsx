@@ -231,7 +231,7 @@ test('a empresa que o Hub não acha: "não encontrado" sem os lugares dela nem a
   hub({ signedIn: true }, TWO)
   const asked: string[] = []
   server.use(
-    http.get(`*/api/companies/${EMPRESA.id}/projects`, ({ request }) => {
+    http.get(`*/api/companies/${EMPRESA.id}`, ({ request }) => {
       asked.push(request.url)
       return refusal('NOT_FOUND')
     }),

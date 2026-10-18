@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../platform/test-database.ts'
 import type { Hub, Person } from './test-hub.ts'
 import {
   ANA_OWNER,
@@ -44,13 +44,14 @@ test('fora: o membro lê a empresa e as pessoas; os convites, só dono e adminis
   const ana = await personOn(hub, ANA_OWNER)
   const bruno = await personOn(hub, BRUNO)
   const carla = await personOn(hub, CARLA)
-  const companyId = await plantCompany(hub.test, ana.id, 'Empresa Teste')
+  const companyId = await plantCompany(hub.test, ana.id, 'Empresa Teste', 'empresa-teste')
   await plantCompany(hub.test, ana.id, 'Outra Empresa')
   await join(hub, companyId, bruno.id, 'member')
   const read = await call(hub, bruno, 'GET', `/api/companies/${companyId}`)
   assert.equal(read.statusCode, 200)
+  const address = { nickname: 'empresa-teste', appsDomain: TEST_APPS_DOMAIN }
   assert.deepEqual(read.json(), {
-    company: { id: companyId, name: 'Empresa Teste' },
+    company: { id: companyId, name: 'Empresa Teste', ...address },
     role: 'member',
     mayInviteAs: [],
   })
