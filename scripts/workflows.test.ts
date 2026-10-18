@@ -13,7 +13,7 @@ type Step = {
 }
 type Job = {
   needs?: string | string[]
-  'runs-on': string | string[]
+  'runs-on': unknown
   environment?: string
   outputs?: Record<string, string>
   steps: Step[]
@@ -37,6 +37,12 @@ const RECORDED = ['${{', 'needs.record.outputs.reference', '}}'].join(' ')
 const publish = workflow('publish.yml')
 const rollback = workflow('rollback.yml')
 const ci = workflow('ci.yml')
+
+/** Only a GitHub-hosted machine is not the server: a label list, a group or a bare label may reach it. */
+function onServer(job: Job): boolean {
+  const labels = job['runs-on']
+  return !(typeof labels === 'string' && labels.startsWith('ubuntu-'))
+}
 
 test('o Release publica o Hub depois da imagem, e a borda depois do Hub', () => {
   assert.equal(publish.jobs.deploy?.needs, 'image')
@@ -108,16 +114,13 @@ test('o Release registra o digest depois que o deploy deu certo', () => {
 test('a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara', () => {
   for (const [name, job] of Object.entries(ci.jobs))
     assert.equal(job['runs-on'], 'ubuntu-24.04', name)
-  assert.doesNotMatch(text('ci.yml'), /secrets\./)
+  assert.doesNotMatch(text('ci.yml'), /\bsecrets\b/)
 })
 
 test('só o Release e o disparo manual chegam ao runner do servidor', () => {
   for (const name of readdirSync(FOLDER)) {
     const file = workflow(name)
-    const onServer = Object.values(file.jobs).some((job) =>
-      [job['runs-on']].flat().includes('self-hosted'),
-    )
-    if (!onServer) continue
+    if (!Object.values(file.jobs).some(onServer)) continue
     for (const event of Object.keys(file.on))
       assert.ok(['release', 'workflow_dispatch'].includes(event), `${name}: ${event}`)
   }
@@ -126,6 +129,5 @@ test('só o Release e o disparo manual chegam ao runner do servidor', () => {
 test('todo trabalho no runner do servidor passa pelo ambiente production do GitHub', () => {
   for (const name of readdirSync(FOLDER))
     for (const [id, job] of Object.entries(workflow(name).jobs))
-      if ([job['runs-on']].flat().includes('self-hosted'))
-        assert.equal(job.environment, 'production', `${name}: ${id}`)
+      if (onServer(job)) assert.equal(job.environment, 'production', `${name}: ${id}`)
 })

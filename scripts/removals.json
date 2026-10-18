@@ -1441,6 +1441,17 @@
     }
   },
   {
+    "id": "ci-no-secret-by-index",
+    "file": ".github/workflows/ci.yml",
+    "find": "GH_TOKEN: ${{ github.token }}",
+    "replace": "GH_TOKEN: ${{ secrets['GITHUB_TOKEN'] }}",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a CI roda em máquinas do GitHub e não usa segredo, porque um pull request de fora a dispara"
+    }
+  },
+  {
     "id": "server-runner-manual-and-release-only",
     "file": ".github/workflows/restart.yml",
     "find": "on:\n  workflow_dispatch:\n",
@@ -1456,6 +1467,17 @@
     "file": ".github/workflows/restart.yml",
     "find": "    environment: production\n",
     "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "todo trabalho no runner do servidor passa pelo ambiente production do GitHub"
+    }
+  },
+  {
+    "id": "server-runner-bare-label",
+    "file": ".github/workflows/restart.yml",
+    "find": "    runs-on: [self-hosted, hub]\n    environment: production\n",
+    "replace": "    runs-on: hub\n",
     "test": {
       "cwd": ".",
       "file": "scripts/workflows.test.ts",
