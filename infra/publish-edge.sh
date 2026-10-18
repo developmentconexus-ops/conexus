@@ -43,7 +43,14 @@ done
 # The key the apps' login passwords derive from (decision 0043): wrangler reads it on its standard
 # input, so it is never in a command line or a log. APP_LOGIN_KEY_FILE exists only for the test.
 key="${APP_LOGIN_KEY_FILE:-/etc/conexus/app-login-key}"
-check_owner_file "$key" docs/how-to/apps-edge.md
+check_owner_file "$key" docs/how-to/apps-token-and-key.md
+# What `openssl rand -hex 32` writes, as the Hub requires too: any other byte would derive other
+# passwords on each side. The key stays in this shell, never in a command line.
+key_text="$(< "$key")"
+if ! [[ $key_text =~ ^[0-9a-f]{64}$ ]]; then
+  echo "$key is not 64 hexadecimal digits; write it again (docs/how-to/apps-token-and-key.md)" >&2
+  exit 1
+fi
 
 wrangler="$PWD/node_modules/.bin/wrangler"
 cd apps/edge
@@ -55,7 +62,6 @@ publish --config wrangler.outbound.jsonc
 publish --config example/wrangler.jsonc --dispatch-namespace conexus-apps
 # Before the dispatcher's code, which requires the secret (wrangler.jsonc `secrets.required`).
 echo "setting the dispatcher's APP_LOGIN_KEY"
-# The Hub trims its file; wrangler keeps every byte it reads, so the newline goes here.
-tr -d '\n' < "$key" | timeout --kill-after=10 120 "$wrangler" secret put APP_LOGIN_KEY --env-file "$file"
+printf '%s' "$key_text" | timeout --kill-after=10 120 "$wrangler" secret put APP_LOGIN_KEY --env-file "$file"
 publish
 echo "edge published"

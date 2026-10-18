@@ -10,7 +10,7 @@ const dir = mkdtempSync(join(tmpdir(), 'conexus-edge-'))
 after(() => rmSync(dir, { recursive: true, force: true }))
 
 const TOKEN = 'cloudflare-token-value'
-const KEY = 'app-login-key-value'
+const KEY = 'a1'.repeat(32)
 // The stub records its arguments and whether its own environment holds the token; the third call
 // can be made to fail.
 const WRANGLER = `#!/bin/bash
@@ -29,6 +29,7 @@ function publish(
     failAt?: number
     user?: string
     keyMode?: number
+    key?: string
   } = {},
 ) {
   const root = mkdtempSync(join(dir, 'release-'))
@@ -45,7 +46,7 @@ function publish(
   )
   chmodSync(file, options.mode ?? 0o400)
   const key = join(root, 'app-login-key')
-  writeFileSync(key, `${KEY}\n`)
+  writeFileSync(key, options.key ?? `${KEY}\n`)
   chmodSync(key, options.keyMode ?? 0o400)
   const calls = join(root, 'calls')
   writeFileSync(calls, '')
@@ -91,6 +92,20 @@ test('o token e a chave não estão na linha de comando, no ambiente do script n
   assert.doesNotMatch(seen, new RegExp(TOKEN))
   assert.doesNotMatch(seen, new RegExp(KEY))
 })
+
+for (const [label, text] of [
+  ['com espaço', `${KEY} \n`],
+  ['com CR', `${KEY}\r\n`],
+  ['curta', 'a1\n'],
+  ['maiúscula', `${KEY.toUpperCase()}\n`],
+]) {
+  test(`recusa a chave ${label}, que daria outras senhas: nada se publica`, () => {
+    const { run, recorded } = publish({ key: text })
+    assert.equal(run.status, 1)
+    assert.match(run.stderr, /is not 64 hexadecimal digits/)
+    assert.deepEqual(recorded, [])
+  })
+}
 
 test('recusa a chave legível por outros: nada se publica', () => {
   const { run, recorded } = publish({ keyMode: 0o644 })
