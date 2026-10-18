@@ -98,7 +98,7 @@ espalhados 40. Total **550**, teto 4.000 (L2).
 | 7 | U3 | `worker.js` sem sintaxe válida: um motivo, sem exceção; o maior `worker.js` do teto do envio: conferido dentro de `SEND_CLAIM_MS`, o tempo só registrado | idem | must |
 | 8 | U4 | `createAppVersion` com `recados-defeito`: 422 `APP_VERSION_REFUSED` e `reasons`; nenhuma linha, nenhum `blob`, nenhuma chamada fora; o próximo envio certo leva o número seguinte ao último guardado | `versions.test.ts` | must |
 | 9 | U4 | Outra falha qualquer: o `Problem` sem `reasons` | `http.test.ts` | must |
-| 10 | U4 | Login de execução com `statement_timeout` 5 s e `transaction_timeout` 6 s, também o da 9 depois do reparo; `pg_sleep(6)` por ele: 57014 | `app-database.test.ts`, `repair.test.ts` | must |
+| 10 | U4 | Login de execução com `statement_timeout` 5 s e `transaction_timeout` 6 s, também o da 9 depois do reparo; `pg_sleep(6)` por ele: 57014; o login de migração sem esses prazos | `company-postgres.test.ts`, `repair.test.ts` | must |
 | 11 | U5 | Cada célula da matriz; T23 | navegador | must |
 | 12 | U6 | Cada linha nova de `removals.json`: `caught` | `removals` | must |
 | 13 | U6 | O roteiro, Hub real, dublês | `tests/e2e/refusals.test.ts` | must |
@@ -123,8 +123,8 @@ Falha nova (C48), USER, settles: `APP_VERSION_REFUSED` 422, "O Hub recusou esta 
 "Corrija o que está listado e envie de novo." Motivos, com `{operação}` quando achada:
 `WRITE_IN_QUERY` "Em `{operação}`: grava com `db.query`. Grave com `db.batch`."; `TWO_BATCHES` "Em
 `{operação}`: dois lotes separados. Junte num `db.batch`."; `DATABASE_SETTING` "Em `{operação}`:
-muda uma configuração do banco."; `UNREADABLE` "O `worker.js` não é JavaScript válido." Códigos do
-`db` e do despachante: `DB_SECOND_BATCH`, `DB_QUERY_LIMIT`, `DB_DEADLINE`, `EDGE_APP_DEADLINE`.
+muda uma configuração do banco."; `UNREADABLE` "O `worker.js` não é JavaScript válido." Códigos que o
+`db` dá ao app e o despachante registra, fora de `FAILURES`: `DB_SECOND_BATCH`, `DB_QUERY_LIMIT`, `DB_DEADLINE`, `EDGE_APP_DEADLINE`.
 
 `Problem.reasons` é um membro de extensão do RFC 9457, só `code`, `operation` e `line` do app de
 quem envia: exceção escrita à C51, limitada a esses três campos, levada ao fechamento (L20).
@@ -199,7 +199,7 @@ Regras: L13, L21, T13, T14.
 | `apps/edge/src/` | `db.ts`, `dispatch.ts`, `dispatcher.ts`, `pages.ts` | o runner |
 | `packages/app-contract/src/limits.ts` | `APP_CALL_LIMITS` | edge, servidor |
 | `apps/server/src/hub/apps/send.ts`, `platform/company-postgres.ts` | `APP_CPU_MS` e `'5s'` saem, lidos de `APP_CALL_LIMITS` | `main.ts` |
-| `scripts/removals.json` | `edge-second-batch`, `edge-query-limit`, `edge-call-deadline` | `npm run removals` |
+| `scripts/removals.json` | `edge-second-batch`, `edge-query-limit`, `edge-call-deadline`, `call-limits-one-owner` | `npm run removals` |
 
 ### Os contratos que a unidade cria
 
@@ -274,7 +274,8 @@ lança `Failure('APP_VERSION_REFUSED', {reasons})`, a mesma recusa que a porta d
 
 1. Depois de `receiveVersion`, antes da transação 1: `verifyAppVersion`; com motivos, a recusa,
    sem gravar (P2 A). Regras: C27, C48, C49, C51 com a exceção, D22.
-2. O comando de login da 9 põe os dois prazos de `APP_CALL_LIMITS`; o reparo o repete. Regras: D20,
+2. O comando de login da 9 põe os dois prazos de `APP_CALL_LIMITS` só no login de execução: no de
+   migração, o `transaction_timeout` cortaria a transação única de 0046; o reparo o repete. Regras: D20,
    D25. Funções: `ALTER ROLE … SET`.
 
 ### Como se prova
