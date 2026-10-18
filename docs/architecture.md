@@ -240,7 +240,7 @@ removes them.
 
 - Until the first scheduled job, expired rows of `auth.session` and `auth.verification` leave only
   when presented; expired app handoffs, and a deleted Projeto's, only with their Hub session.
-- `projects.project.host_label` stays nullable until step 9.
+- `projects.project.host_label` stays nullable: a Projeto made under a rolled-back 7.x has none.
 - `createUser`, `listUsers` and `findCredentialAccount` are the library's internal calls, with no
   public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
 - Trace ids are Fastify's request ids: the Hub audit's `telemetry` part has no step in the roadmap
