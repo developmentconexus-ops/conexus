@@ -41,24 +41,22 @@ read from a mirror it fetches first (0035). Voltar atrás checks the version's c
 ## The runner's mirror
 
 After step 8 merges, as root on the server from a checkout of `main`, while no job runs. No `hub`
-workflow until step 7 passes. Step 2 names the hook first: a failed mirror refuses every job.
+workflow until step 6 passes. Step 1 names the hook first: a failed mirror refuses every job.
 
-1. `ssh-keygen -t ed25519 -N '' -f /root/main-mirror`; add the `.pub` file as a read-only
-   deploy key.
-2. `MIRROR_URL=git@github.com:developmentconexus-ops/conexus.git DEPLOY_KEY_FILE=/root/main-mirror infra/setup-runner-hook.sh`
-   prints `mirror of main ready`, then `runner hook ready`.
-3. `rm /root/main-mirror*`; `sudo -u runner git --git-dir=/var/lib/conexus/main.git rev-parse main`
-   prints `main`'s head.
-4. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the founder.
-5. The `conexus-hub` package's Actions access: this repository alone, branches included;
+1. `MIRROR_URL=https://github.com/developmentconexus-ops/conexus.git infra/setup-runner-hook.sh`
+   prints `mirror of main ready`, then `runner hook ready`. The repository is public, so no key;
+   if it turns private, the fetch fails and every job is refused.
+2. `sudo -u runner git --git-dir=/var/lib/conexus/main.git rev-parse main` prints `main`'s head.
+3. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the founder.
+4. The `conexus-hub` package's Actions access: this repository alone, branches included;
    Voltar atrás deploys only recorded digests.
-6. Each kept version's green run of `gh run list --workflow publish.yml --event release`, on a
+5. Each kept version's green run of `gh run list --workflow publish.yml --event release`, on a
    commit of `main`, logged `live: <reference>` (`gh run view <run> --log | grep 'live: '`). The
    live version's equals `docker ps --filter label=com.docker.compose.service=hub --format '{{.Image}}'`.
    `sudo -u runner git clone --quiet --branch main /var/lib/conexus/main.git /tmp/conexus-main`, then
    `sudo -u runner /tmp/conexus-main/infra/releases.sh record <version> <reference>`; its
    `find <version>` prints the reference. `rm -rf /tmp/conexus-main`.
-7. Reiniciar o Hub runs on `main` and says `refused` on another branch, as does
+6. Reiniciar o Hub runs on `main` and says `refused` on another branch, as does
    `sudo -u runner env GITHUB_EVENT_NAME=release GITHUB_SHA=0000000000000000000000000000000000000000 /etc/conexus/runner-job-started.sh`.
 
 ## Publish

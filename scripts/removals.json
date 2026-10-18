@@ -1496,25 +1496,14 @@
     }
   },
   {
-    "id": "mirror-key-owner-only",
+    "id": "mirror-url-github-https",
     "file": "infra/setup-runner-hook.sh",
-    "find": "    400 | 600) ;;\n",
-    "replace": "    *) ;;\n",
+    "find": "^https://github\\.com/[A-Za-z0-9_.-]+",
+    "replace": "^https://[A-Za-z0-9_.-]+",
     "test": {
       "cwd": ".",
       "file": "scripts/setup-runner-hook.test.ts",
-      "name": "recusa uma chave legível por outros ou um endereço que não é do GitHub, antes de instalar"
-    }
-  },
-  {
-    "id": "mirror-host-key-pinned",
-    "file": "infra/setup-runner-hook.sh",
-    "find": "-o StrictHostKeyChecking=yes",
-    "replace": "-o StrictHostKeyChecking=no",
-    "test": {
-      "cwd": ".",
-      "file": "scripts/setup-runner-hook.test.ts",
-      "name": "com a chave de leitura, o gancho prepara o espelho de main só para o runner"
+      "name": "recusa um endereço que não é o https do GitHub, antes de tocar o espelho"
     }
   },
   {

@@ -6,7 +6,7 @@
 #
 # The commit is checked, not a name: a release event names the default branch as its target even for
 # a tag on any commit. Main comes from a bare mirror of GitHub's main on this server, fetched first,
-# with the read-only key setup-runner-hook.sh configured; a missing mirror or a failed fetch refuses.
+# anonymously over HTTPS from the public repository; a missing mirror or a failed fetch refuses.
 # The runner passes the hook no argument, so the first one exists only for scripts/runner-hook.test.ts.
 set -euo pipefail
 

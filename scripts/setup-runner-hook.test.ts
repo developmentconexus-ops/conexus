@@ -3,7 +3,7 @@ import { spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { HOOK_SCRIPT, secret, setup } from './setup-harness.ts'
+import { HOOK_SCRIPT, setup } from './setup-harness.ts'
 
 // What the hook step alone reads: none of the tokens setup-server.sh needs (founder, 2026-10-18: B).
 const NO_TOKENS = {
@@ -38,55 +38,38 @@ test('o gancho sozinho roda sem token, instala git e o gancho, e reinicia o runn
   )
 })
 
-const MIRROR_URL = 'git@github.com:owner/repo.git'
-const DEPLOY_KEY = 'deploy-key-value'
+const MIRROR_URL = 'https://github.com/owner/repo.git'
 function hookAlone(extra: Record<string, string>) {
   return setup('', '', { ...NO_TOKENS, ...extra }, false, '', HOOK_SCRIPT)
 }
 
-test('com a chave de leitura, o gancho prepara o espelho de main só para o runner', () => {
-  const key = secret('deploy-key', `${DEPLOY_KEY}\n`, 0o600)
-  const { run, calls, env, config } = hookAlone({ MIRROR_URL, DEPLOY_KEY_FILE: key })
+test('com o endereço do GitHub, o gancho prepara o espelho de main só para o runner, sem chave', () => {
+  const { run, calls, env } = hookAlone({ MIRROR_URL })
   assert.equal(run.status, 0, run.stderr)
-  const [at, copy, hosts] = [
-    env.MIRROR_DIR,
-    `${config}/main-mirror.key`,
-    `${config}/github-known-hosts`,
-  ]
+  const at = env.MIRROR_DIR
   const git = `sudo -u runner git --git-dir=${at}`
   assert.deepEqual(
-    calls.filter((call) => call.includes(at) || call.includes(copy)),
+    calls.filter((call) => call.includes(at)),
     [
-      `install -m 0400 -o runner -g runner ${key} ${copy}`,
       `install -d -o runner -g runner -m 0700 ${at}`,
       `${git} init --quiet --bare --initial-branch=main`,
-      `${git} config core.sshCommand ssh -i ${copy} -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${hosts}`,
       `${git} config remote.origin.url ${MIRROR_URL}`,
       `timeout-for ${git} fetch --no-tags origin refs/heads/main:refs/heads/main`,
       `${git} fetch --no-tags origin refs/heads/main:refs/heads/main`,
     ],
   )
-  assert.equal(
-    readFileSync(hosts, 'utf8'),
-    'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl\n',
-  )
-  assert.doesNotMatch(`${calls.join('\n')}${run.stdout}${run.stderr}`, new RegExp(DEPLOY_KEY))
 })
 
-test('recusa uma chave legível por outros ou um endereço que não é do GitHub, antes de instalar', () => {
-  const open = hookAlone({ MIRROR_URL, DEPLOY_KEY_FILE: secret('open-key', 'k\n', 0o644) })
-  assert.equal(open.run.status, 1)
-  assert.match(open.run.stderr, /open-key must be readable by its owner only/)
-  const key = secret('key-for-url', 'k\n', 0o600)
-  const wrong = hookAlone({ MIRROR_URL: 'https://example.invalid/x.git', DEPLOY_KEY_FILE: key })
-  assert.equal(wrong.run.status, 1)
-  assert.match(wrong.run.stderr, /MIRROR_URL must be git@github.com:<owner>\/<repo>.git/)
-  for (const { calls } of [open, wrong]) {
-    assert.ok(!calls.some((call) => call.includes('main-mirror.key') || call.includes('sudo')))
+test('recusa um endereço que não é o https do GitHub, antes de tocar o espelho', () => {
+  for (const url of ['https://example.invalid/x.git', 'git@github.com:owner/repo.git']) {
+    const { run, calls } = hookAlone({ MIRROR_URL: url })
+    assert.equal(run.status, 1)
+    assert.match(run.stderr, /MIRROR_URL must be https:\/\/github.com\/<owner>\/<repo>.git/)
+    assert.ok(!calls.some((call) => call.startsWith('sudo')), url)
   }
 })
 
-test('sem a chave e sem espelho, o gancho fica instalado e diz que recusa tudo', () => {
+test('sem endereço e sem espelho, o gancho fica instalado e diz que recusa tudo', () => {
   const { run, calls } = hookAlone({})
   assert.equal(run.status, 0, run.stderr)
   assert.match(run.stderr, /no mirror of main at .*: the hook refuses every job until/)
@@ -100,11 +83,10 @@ test('o gancho cria a pasta dos registros de versão só para o runner', () => {
 })
 
 test('se o espelho falha, o .env já nomeia o gancho e a falha é do espelho', () => {
-  const key = secret('failing-key', 'k\n', 0o600)
   const { run, calls, config } = setup(
     '',
     '',
-    { ...NO_TOKENS, MIRROR_URL, DEPLOY_KEY_FILE: key, FAIL_FETCH: '1' },
+    { ...NO_TOKENS, MIRROR_URL, FAIL_FETCH: '1' },
     false,
     'LANG=C\n',
     HOOK_SCRIPT,
@@ -116,5 +98,5 @@ test('se o espelho falha, o .env já nomeia o gancho e a falha é do espelho', (
     env,
     `LANG=C\nACTIONS_RUNNER_HOOK_JOB_STARTED=${join(config, 'runner-job-started.sh')}\n`,
   )
-  assert.ok(calls.some((call) => call.startsWith('install -m 0400')))
+  assert.ok(calls.some((call) => call.includes(' fetch ')))
 })

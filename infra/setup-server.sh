@@ -4,7 +4,7 @@
 # environment or from a terminal prompt, never from a file (decision 0036): the token is set in the
 # environment of the config.sh call alone, never exported to this script and never in a command line.
 # The runner also gets, through setup-runner-hook.sh, a hook that refuses every job but a release or
-# a manual run of main whose commit is on main; MIRROR_URL and DEPLOY_KEY_FILE pass through to it.
+# a manual run of main whose commit is on main; MIRROR_URL passes through to it.
 set -euo pipefail
 
 : "${RUNNER_URL:?RUNNER_URL is required}"
