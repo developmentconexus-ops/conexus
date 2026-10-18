@@ -17,6 +17,7 @@ import { packed, picked } from './test-folder.ts'
 const server = hubServer()
 const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/settings`
 const GONE = 'Não confirmamos o envio. Tente de novo.'
+const EMPTY = 'Nenhuma versão enviada. O endereço mostra o app de exemplo.'
 
 function pick(files: File[]) {
   fireEvent.change(screen.getByLabelText('Pasta da versão', { selector: 'input' }), {
@@ -42,7 +43,7 @@ async function open(answer: (sent: Sent, count: number) => Response | Promise<Re
     }),
   )
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [SETTINGS] }))} />)
-  await screen.findByText('Nenhuma versão enviada. O endereço mostra o app de exemplo.')
+  await screen.findByText(EMPTY)
   return sent
 }
 
@@ -71,7 +72,7 @@ test('a pasta escolhida: nome, arquivos e tamanho; vai o manifesto e os outros a
   })
 })
 
-test('na espera: "Enviando a versão…"', async () => {
+test('na espera: "Enviando a versão…", sem a frase da lista vazia; no ar, a linha da pasta sai', async () => {
   const held = Promise.withResolvers<void>()
   await open(async () => {
     await held.promise
@@ -79,9 +80,11 @@ test('na espera: "Enviando a versão…"', async () => {
   })
   pick(packed())
   expect(await screen.findByText('Enviando a versão…')).toBeTruthy()
+  expect(screen.queryByText(EMPTY)).toBeNull()
   held.resolve()
   await live()
   expect(screen.queryByText('Enviando a versão…')).toBeNull()
+  await waitFor(() => expect(screen.queryByText('recados-1')).toBeNull())
 })
 
 for (const [name, code, phrase] of [
@@ -102,6 +105,7 @@ for (const [name, code, phrase] of [
     pick(packed())
     expect((await screen.findByRole('alert')).textContent).toBe(phrase)
     expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+    expect(screen.queryByText(EMPTY)).toBeNull()
   })
 }
 

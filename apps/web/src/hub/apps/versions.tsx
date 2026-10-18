@@ -65,11 +65,12 @@ function Loading() {
 export function Versions(scope: Scope) {
   const read = useQuery(versionsQuery(scope.companyId, scope.projectId))
   const [stale, setStale] = useState<string>()
+  const [picking, setPicking] = useState(false)
   if (read.error instanceof HubFailure && read.error.code === 'NOT_FOUND') return <NotFound />
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">
       <SectionTitle>Versões</SectionTitle>
-      <SendVersion {...scope} />
+      <SendVersion {...scope} onPicking={setPicking} />
       {stale !== undefined && (
         <p role="alert" className="text-danger">
           {stale}
@@ -84,7 +85,7 @@ export function Versions(scope: Scope) {
           <Button onClick={() => void read.refetch()}>Tentar de novo</Button>
         </div>
       )}
-      {read.data?.versions.length === 0 && (
+      {read.data?.versions.length === 0 && !picking && (
         <Empty>Nenhuma versão enviada. O endereço mostra o app de exemplo.</Empty>
       )}
       {read.data !== undefined && read.data.versions.length > 0 && (

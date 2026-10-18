@@ -26,7 +26,12 @@ function Summary({ folder }: { folder: Folder }) {
  * Sends one picked folder as soon as it mounts, and again on "Tentar de novo". It is keyed by the
  * pick, so a new folder gets a new attempt key; the same folder keeps its key after a cut (web W24).
  */
-function SendFolder(props: { companyId: CompanyId; projectId: ProjectId; folder: Folder }) {
+function SendFolder(props: {
+  companyId: CompanyId
+  projectId: ProjectId
+  folder: Folder
+  onSent: () => void
+}) {
   const { companyId, projectId, folder } = props
   const router = useRouter()
   const send = useMutation(sendVersion)
@@ -43,6 +48,8 @@ function SendFolder(props: { companyId: CompanyId; projectId: ProjectId; folder:
           attemptKey,
         }),
       )
+      // The list now shows the version: the folder's line has nothing more to say.
+      props.onSent()
     } catch (error) {
       // The Projeto is gone for this person: the page reads again and shows what the Hub says.
       if (error instanceof HubFailure && error.code === 'NOT_FOUND') await router.invalidate()
@@ -77,11 +84,22 @@ type Pick = { id: number; read: { folder: Folder } | { refusal: FolderRefusal } 
 
 /**
  * "Enviar versão": the person picks the folder `npm run app:pack` made and it goes at once. The
- * picker is native; the folder's files are read here, not by the Hub (web W9).
+ * picker is native; the folder's files are read here, not by the Hub (web W9). The page hears
+ * whether a pick is on screen, from the pick until its send succeeds.
  */
-export function SendVersion(props: { companyId: CompanyId; projectId: ProjectId }) {
+export function SendVersion(props: {
+  companyId: CompanyId
+  projectId: ProjectId
+  onPicking: (picking: boolean) => void
+}) {
+  const { companyId, projectId, onPicking } = props
   const input = useRef<HTMLInputElement>(null)
   const [pick, setPick] = useState<Pick>()
+
+  function sent() {
+    setPick(undefined)
+    onPicking(false)
+  }
 
   async function picked(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.currentTarget.files ?? [])
@@ -90,6 +108,7 @@ export function SendVersion(props: { companyId: CompanyId; projectId: ProjectId 
     if (files.length === 0) return
     const read = await readFolder(files)
     setPick((last) => ({ id: (last?.id ?? 0) + 1, read }))
+    onPicking(true)
   }
 
   return (
@@ -112,7 +131,13 @@ export function SendVersion(props: { companyId: CompanyId; projectId: ProjectId 
         </p>
       )}
       {pick && 'folder' in pick.read && (
-        <SendFolder key={pick.id} {...props} folder={pick.read.folder} />
+        <SendFolder
+          key={pick.id}
+          companyId={companyId}
+          projectId={projectId}
+          folder={pick.read.folder}
+          onSent={sent}
+        />
       )}
     </div>
   )
