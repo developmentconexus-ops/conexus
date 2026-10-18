@@ -130,7 +130,7 @@
       }
     },
     {
-      "includes": ["scripts/test-reporter.ts", "**/*.config.ts"],
+      "includes": ["scripts/test-reporter.ts", "**/*.config.ts", "tests/apps/*/src/index.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -140,7 +140,12 @@
       }
     },
     {
-      "includes": ["apps/web/src/platform/hub.ts", "scripts/**", "apps/server/**"],
+      "includes": [
+        "apps/web/src/platform/hub.ts",
+        "scripts/**",
+        "apps/server/**",
+        "tests/apps/*/assets/**"
+      ],
       "linter": {
         "rules": {
           "style": {

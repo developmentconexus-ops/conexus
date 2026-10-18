@@ -1,13 +1,7 @@
-// What a Projeto's app receives from the platform (decision 0019, security S4). Everything here is
-// visible to the app's code, so it carries only what the app may know. Step 9 adds `db`.
+// The contract between the platform and a Projeto's app, version 1 (decision 0019).
 
-/** Who calls the app: the person and the Projeto, never an e-mail, a company or a role. */
-export type Caller = Readonly<{
-  personId: string
-  personName: string
-  projectId: string
-  projectName: string
-}>
-
-/** The dispatcher's `props` to the app's Worker, which reads them as `ctx.props`. */
-export type AppProps = Readonly<{ caller: Caller }>
+export type { Db, DbResult, Row, Statement } from './db.ts'
+export { APP_COMPATIBILITY_DATE, APP_LIMITS } from './limits.ts'
+export { ASSETS_FOLDER, FilePath, Manifest, Shape, versionFiles } from './manifest.ts'
+export type { AppProps, Caller } from './props.ts'
+export { type Handler, serveApp } from './runtime.ts'

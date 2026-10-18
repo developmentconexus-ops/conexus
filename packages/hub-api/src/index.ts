@@ -9,6 +9,7 @@ export {
   RESERVED_NICKNAMES,
   suggestedNickname,
 } from './address.ts'
+export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
 export {
   APP_SESSION_HEADER,
   AppCaller,

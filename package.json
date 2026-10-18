@@ -12,7 +12,7 @@
   "scripts": {
     "verify": "npm run lint && npm run typecheck && npm run deps && npm run knip && npm run docs && npm run openapi > /dev/null && npm run suppressions && npm run test && npm run build",
     "lint": "biome check .",
-    "typecheck": "tsc -p scripts/tsconfig.json && tsc -p tests/e2e/tsconfig.json && npm run typecheck --workspaces --if-present",
+    "typecheck": "tsc -p scripts/tsconfig.json && tsc -p tests/e2e/tsconfig.json && tsc -p tests/apps/tsconfig.json && npm run typecheck --workspaces --if-present",
     "deps": "depcruise . --config .dependency-cruiser.cjs",
     "knip": "knip",
     "docs": "node scripts/check-docs.ts",
@@ -28,6 +28,7 @@
     "change-budget": "node scripts/change-budget.ts",
     "test": "npm run test:scripts && npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
+    "app:pack": "node scripts/app-pack.ts tests/apps/recados dist/apps/recados-1 && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-2 tests/apps/recados/cor-2",
     "pree2e": "npm run build -w @conexus/server && npm run build -w @conexus/web && npm exec -w @conexus/web -- playwright-core install chromium-headless-shell",
     "e2e": "node --test --test-concurrency=1 --test-timeout=300000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation.test.ts tests/e2e/client.test.ts tests/e2e/projects.test.ts tests/e2e/two-companies.test.ts tests/e2e/remove-person.test.ts tests/e2e/app.test.ts",
     "test:image": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation-image.test.ts",
