@@ -171,11 +171,10 @@ route both e-mail the founder; the route does not touch the database, so a hung 
 
 ## 8. Crosscutting concepts
 
-**The data path of an app** [0020]. The app calls `db.query(text, values)`. The capability, inside
-the dispatcher, reads the statement text, counts queries, picks that app's login and sends one
-statement over Neon's HTTP driver; Neon runs it as one transaction. `db.batch` sends several
-statements as one transaction, for all-or-nothing writes. Nothing carries from one query to the
-next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand here:
+**The data path of an app** [0045]. The capability, inside the dispatcher, picks that app's login
+and talks to Neon's HTTP driver. `db.query(text, values)` runs one statement in a read-only
+transaction, so PostgreSQL refuses a write; `db.batch` runs every write of a call in one transaction.
+Nothing carries from one call to the next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand here:
 
 | Piece | Why it remains | Basis |
 | --- | --- | --- |
@@ -222,7 +221,7 @@ with it.
 | Risk | What a person would see | Where it is handled |
 | --- | --- | --- |
 | Vendor terms forbid subscription sign-in inside a third-party service | A model account blocked without notice [0030] | Accepted by the founder |
-| The verifier misses two separate writes built at runtime | An action left half done [0020] | Step 10 |
+| Two batches in one call | An action left half done [0045] | Step 10 counts them |
 | The app login key leaks | Its holder enters every app's database [0043] | Rotation in the how-to |
 | CPU limits act in seconds, with tolerance | Many looping apps at once slow others | Step 22 load test |
 | The Hub's database never sleeps | The free allowance ends near day 17 and Neon suspends it [0009] | Step 2 test; back to the founder if it fails |
