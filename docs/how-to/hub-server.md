@@ -64,8 +64,8 @@ Hub, ends every session.
 
 Merging into `main` publishes nothing. Create a GitHub Release whose tag is `v<n>.<n>.<n>` on a commit of
 `main`. The workflow Publish builds the image, keeps the last ten, and runs `infra/deploy.sh` on the
-server. A tag on another commit ends red and the Hub does not change. Counting the ten kept images
-needs a token that can read packages.
+server. A tag on another commit ends red and the Hub does not change. Keeping ten images needs
+Admin in the package's Actions access ([apps-edge](apps-edge.md)).
 
 Before it starts the new image, `deploy.sh` runs `migrate` for 60 seconds, but only when the image
 carries the label `conexus.migrate=1`. A failed `migrate` leaves the live Hub as it is and ends the

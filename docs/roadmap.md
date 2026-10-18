@@ -1,10 +1,10 @@
 # Roteiro do Conexus no repositório novo
 
-Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
+Desenho: `architecture.md`.
 
 ## 1. A página do fundador
 
-### As etapas, e o que você faz na nuvem quando cada uma fecha
+### As etapas, e o que você faz quando cada uma fecha
 
 1. **Hub no ar.** Publica e volta atrás.
    Cartão da etapa 1 aprovado em 2026-10-13 (commit 26b9bdee5dbd01546e59be68292e6354f2b48f91): "Sim"
@@ -35,6 +35,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
    Etapa 7 usada em 2026-10-17 em https://hub.conexus.fun (v0.7.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), console do Neon conferido por ele: "Tudo certo nenhum projeto"
 8. **App de exemplo.** Abre um app escrito à mão.
    Cartão da etapa 8 aprovado em 2026-10-17 (commit ea0421001f792139ad0ee1b1d08e2c865347f52d): "Aprovo Nome A"
+   Etapa 8 usada em 2026-10-18 em https://hub.conexus.fun (v0.8.0), roteiro feito pelo fundador: "Cara, eu já testei e tá tudo aprovado, tá bom? Pode já fazer o merge mesmo."
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
 11. **Conta de modelo.** Liga a sua assinatura e a testa.
@@ -51,6 +52,7 @@ Proposta e respostas de 2026-10-13. Desenho: `architecture.md`.
     confirmarem.
 22. **Ensaio geral.** Restaura tudo junto, pelo procedimento.
 23. **Primeira empresa.** Uma empresa de verdade usa um app.
+24. **Conectores de serviços.** Liga contas de serviços aos agentes e apps (resposta B, 2026-10-18).
 
 ### O que você fornece, e quando
 
@@ -79,19 +81,17 @@ Domínio próprio de empresa.
    viram dívida listada. "2. A", e com ela: "Tem que ser muito bem estudado como vai ser feito,
    né, o código do zero, o que vai ser reaproveitado, para ele ser também já refatorado como
    código, ele ser no arquivo correto, ele não manter decisões antigas só porque elas já foram
-   feitas." Ver seção 3.
+   feitas." Vive no [`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5.
 3. **Toda linha lida do banco tem o formato conferido antes de ser usada.** "3. A".
-4. **A primeira etapa virou duas.** "4. B". Publicar e voltar atrás, e depois restaurar, o banco
-   dormindo e o teste de dados.
+4. **A primeira etapa virou duas.** "4. B".
 5. **A ordem fica.** "5. A".
 
 ## 2. As etapas
 
 Etapa fechada sai desta tabela; o uso na seção 1.
 
-| Etapa | O que precisa ser verdade antes | Decisão sua pedida nela | Conhecimento trazido |
+| Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 8 App de exemplo | O domínio dos apps | Dadas | LT2, LT13, Workers VPC |
 | 9 Enviar um app | A 8 | Nenhuma | PD9. Fichas `registry` e manifesto. Os tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Os limites de laço, prazo e consultas |
 | 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
@@ -107,12 +107,7 @@ Etapa fechada sai desta tabela; o uso na seção 1.
 | 21 Outras contas | A 12 | Nenhuma | A leitura do proxy do Google e dos termos da OpenAI |
 | 22 Ensaio geral | A 20 | O lugar da cópia fora do Neon | Os ensaios das etapas 2, 7, 9, 12 e 13. O teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
+| 24 Conectores de serviços | A 23 | Quem faz o OAuth | O estudo do Mastra Platform e Connect (2026-10-18), só referência, nunca dependência |
 
 O teste do banco dormindo, da etapa 2, roda em toda etapa que acrescenta algo que roda
 sozinho; se falhar com o Mastra parado, a 12 volta a você.
-
-## 3. Como uma etapa roda
-
-Cada etapa passa pelas cinco fases de [AGENTS.md](../AGENTS.md), menos o uso, cada uma com skill.
-Sua resposta 2 vive no
-[`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5.

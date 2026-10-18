@@ -40,16 +40,16 @@ read from a mirror it fetches first (0035). Voltar atrás checks the version's c
 
 ## The runner's mirror
 
-After step 8 merges, as root on the server from a checkout of `main`, while no job runs. No `hub`
-workflow until step 6 passes. Step 1 names the hook first: a failed mirror refuses every job.
+As root on the server, from a checkout of `main`, while no job runs. No `hub` workflow until step 6
+passes. Step 1 names the hook first: a failed mirror refuses every job.
 
 1. `MIRROR_URL=https://github.com/developmentconexus-ops/conexus.git infra/setup-runner-hook.sh`
    prints `mirror of main ready`, then `runner hook ready`. The repository is public, so no key;
    if it turns private, the fetch fails and every job is refused.
 2. `sudo -u runner git --git-dir=/var/lib/conexus/main.git rev-parse main` prints `main`'s head.
 3. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the founder.
-4. The `conexus-hub` package's Actions access: this repository alone, branches included;
-   Voltar atrás deploys only recorded digests.
+4. The `conexus-hub` package's Actions access: this repository alone, role Admin (not Write),
+   branches included; Voltar atrás deploys only recorded digests.
 5. Each kept version's green run of `gh run list --workflow publish.yml --event release`, on a
    commit of `main`, logged `live: <reference>` (`gh run view <run> --log | grep 'live: '`). The
    live version's equals `docker ps --filter label=com.docker.compose.service=hub --format '{{.Image}}'`.
