@@ -85,8 +85,8 @@ those 502s and no 500.
 ## Put back
 
 Actions, Voltar atrás, Run workflow, with a version whose digest main's Publish recorded on the
-server. No record ends red. Running it again changes nothing. An image from before step 2 has no label, so
-putting it back skips `migrate`.
+server. No record ends red. Running it again changes nothing. An image from before step 2 has no
+label, so putting it back skips `migrate`.
 
 ## When it fails
 

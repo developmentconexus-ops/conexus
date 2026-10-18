@@ -35,29 +35,30 @@ The dispatcher's route and the Hub's `HUB_APPS_DOMAIN` name the same apps domain
 
 ## The runner's gate
 
-`infra/setup-runner-hook.sh`, which `infra/setup-server.sh` runs, installs
-`infra/runner-job-started.sh` as root's file and names it in the runner's `.env` as
-`ACTIONS_RUNNER_HOOK_JOB_STARTED`. Before any step of any job on this runner, the
-hook accepts only a Release or a manual run of `main` whose commit is on `main`, read from the mirror
-of `main` in `/var/lib/conexus/main.git` that it fetches first. A push, another branch, a pull
-request, a commit outside `main`, a missing mirror or a failed fetch fails the job before a step can
-reach the token or the Hub's keys. Voltar atrás checks the version's own commit the same way before
-its `npm ci`.
+`infra/setup-runner-hook.sh`, which `infra/setup-server.sh` runs, names the root-owned
+`infra/runner-job-started.sh` in the runner's `.env` as `ACTIONS_RUNNER_HOOK_JOB_STARTED`. Before any
+step of any job, the hook accepts only a Release or a manual run of `main` whose commit is on `main`,
+read from a mirror it fetches first; anything else fails before a step can reach the token or the
+Hub's keys (0035). Voltar atrás checks the version's commit the same way before `npm ci`.
 
 ## The runner's mirror
 
-Once, after step 8 merges, as root on the server from a checkout of `main`, while no job runs. One
-run installs the hook and the mirror, so no job is refused in between.
+After step 8 merges, as root on the server from a checkout of `main`. No `hub` workflow until
+step 7 passes. Step 2 names the hook first: a failed mirror refuses every job.
 
-1. `ssh-keygen -t ed25519 -N '' -f /root/main-mirror`; add `/root/main-mirror.pub` as a deploy
-   key, write access off.
+1. `ssh-keygen -t ed25519 -N '' -f /root/main-mirror`; add the `.pub` file as a read-only
+   deploy key.
 2. `MIRROR_URL=git@github.com:developmentconexus-ops/conexus.git DEPLOY_KEY_FILE=/root/main-mirror infra/setup-runner-hook.sh`
    prints `mirror of main ready`, then `runner hook ready`.
 3. `rm /root/main-mirror*`; `sudo -u runner git --git-dir=/var/lib/conexus/main.git rev-parse main`
    prints `main`'s head.
-4. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion; the founder bypasses it.
-5. The `conexus-hub` package's Actions access lists this repository alone.
-6. Reiniciar o Hub runs on `main` and fails at the hook on another branch.
+4. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the founder.
+5. The `conexus-hub` package's Actions access: this repository alone, branches included;
+   Voltar atrás deploys only recorded digests.
+6. Each kept version's `live:` reference in its Publish log, as `runner` from a clone of the mirror:
+   `infra/releases.sh record <version> <reference>`.
+7. Reiniciar o Hub runs on `main`; on another branch, or the hook run as a release of a commit
+   outside `main`, says `refused`.
 
 ## Publish
 
@@ -71,8 +72,8 @@ never the token.
 
 ## Put back
 
-Actions, Voltar atrás, with one of the last ten versions. The edge goes first, by publishing that
-version's code with the same script, then the Hub. `wrangler rollback` is not used: a Worker in a
+Actions, Voltar atrás, with a recorded version. The edge goes first, publishing that
+version's code with the same script, then the Hub. Not `wrangler rollback`: a Worker in a
 namespace has no versions. A version from before step 8 has no `apps/edge`: the run says so, leaves
 the edge as it is, and puts the Hub back; Criar Projeto works on that Hub.
 
