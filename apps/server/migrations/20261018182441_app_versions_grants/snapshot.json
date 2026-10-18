@@ -1,10 +1,8 @@
 {
+  "id": "0dfba2f8-f9a8-4037-bd01-acb9e342ba6e",
+  "prevIds": ["610e87f6-ca7d-4ff5-b05a-c9e1195a6eed"],
   "version": "8",
   "dialect": "postgres",
-  "id": "4e0186a8-3ae7-4668-bc5f-314b3e2e5c54",
-  "prevIds": [
-    "bcf2d9c4-6450-4543-82fb-615862e1a5d2"
-  ],
   "ddl": [
     {
       "name": "apps",
@@ -2022,14 +2020,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "project_id"
-      ],
+      "columns": ["project_id"],
       "schemaTo": "projects",
       "tableTo": "project",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "app_project_id_fkey",
@@ -2039,16 +2033,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "project_id",
-        "live_version_id"
-      ],
+      "columns": ["project_id", "live_version_id"],
       "schemaTo": "apps",
       "tableTo": "app_version",
-      "columnsTo": [
-        "project_id",
-        "id"
-      ],
+      "columnsTo": ["project_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "name": "app_live_version_fkey",
@@ -2058,16 +2046,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "project_id",
-        "sending_version_id"
-      ],
+      "columns": ["project_id", "sending_version_id"],
       "schemaTo": "apps",
       "tableTo": "app_version",
-      "columnsTo": [
-        "project_id",
-        "id"
-      ],
+      "columnsTo": ["project_id", "id"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "name": "app_sending_version_fkey",
@@ -2077,14 +2059,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "hub_session_id"
-      ],
+      "columns": ["hub_session_id"],
       "schemaTo": "auth",
       "tableTo": "session",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "app_session_hub_session_id_fkey",
@@ -2094,14 +2072,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "project_id"
-      ],
+      "columns": ["project_id"],
       "schemaTo": "apps",
       "tableTo": "app",
-      "columnsTo": [
-        "project_id"
-      ],
+      "columnsTo": ["project_id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "app_version_project_id_fkey",
@@ -2111,14 +2085,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "hub_session_id"
-      ],
+      "columns": ["hub_session_id"],
       "schemaTo": "auth",
       "tableTo": "session",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "handoff_hub_session_id_fkey",
@@ -2128,14 +2098,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "version_id"
-      ],
+      "columns": ["version_id"],
       "schemaTo": "apps",
       "tableTo": "app_version",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "version_file_version_id_fkey",
@@ -2145,16 +2111,10 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "company_id",
-        "sha256"
-      ],
+      "columns": ["company_id", "sha256"],
       "schemaTo": "apps",
       "tableTo": "blob",
-      "columnsTo": [
-        "company_id",
-        "sha256"
-      ],
+      "columnsTo": ["company_id", "sha256"],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "name": "version_file_blob_fkey",
@@ -2164,14 +2124,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "account_user_id_user_id_fkey",
@@ -2181,14 +2137,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "company_id"
-      ],
+      "columns": ["company_id"],
       "schemaTo": "auth",
       "tableTo": "company",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "invitation_company_id_company_id_fkey",
@@ -2198,14 +2150,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "inviter_id"
-      ],
+      "columns": ["inviter_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "invitation_inviter_id_user_id_fkey",
@@ -2215,14 +2163,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "company_id"
-      ],
+      "columns": ["company_id"],
       "schemaTo": "auth",
       "tableTo": "company",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "member_company_id_company_id_fkey",
@@ -2232,14 +2176,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "RESTRICT",
       "name": "member_user_id_user_id_fkey",
@@ -2249,14 +2189,10 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "user_id"
-      ],
+      "columns": ["user_id"],
       "schemaTo": "auth",
       "tableTo": "user",
-      "columnsTo": [
-        "id"
-      ],
+      "columnsTo": ["id"],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
       "name": "session_user_id_user_id_fkey",
@@ -2265,10 +2201,7 @@
       "table": "session"
     },
     {
-      "columns": [
-        "company_id",
-        "sha256"
-      ],
+      "columns": ["company_id", "sha256"],
       "nameExplicit": true,
       "name": "blob_pkey",
       "entityType": "pks",
@@ -2276,10 +2209,7 @@
       "table": "blob"
     },
     {
-      "columns": [
-        "version_id",
-        "path"
-      ],
+      "columns": ["version_id", "path"],
       "nameExplicit": true,
       "name": "version_file_pkey",
       "entityType": "pks",
@@ -2287,9 +2217,7 @@
       "table": "version_file"
     },
     {
-      "columns": [
-        "project_id"
-      ],
+      "columns": ["project_id"],
       "nameExplicit": false,
       "name": "app_pkey",
       "schema": "apps",
@@ -2297,9 +2225,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "token_hash"
-      ],
+      "columns": ["token_hash"],
       "nameExplicit": false,
       "name": "app_session_pkey",
       "schema": "apps",
@@ -2307,9 +2233,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "app_version_pkey",
       "schema": "apps",
@@ -2317,9 +2241,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "code_hash"
-      ],
+      "columns": ["code_hash"],
       "nameExplicit": false,
       "name": "handoff_pkey",
       "schema": "apps",
@@ -2327,9 +2249,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "account_pkey",
       "schema": "auth",
@@ -2337,9 +2257,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "company_pkey",
       "schema": "auth",
@@ -2347,9 +2265,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "invitation_pkey",
       "schema": "auth",
@@ -2357,9 +2273,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "member_pkey",
       "schema": "auth",
@@ -2367,9 +2281,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "rate_limit_pkey",
       "schema": "auth",
@@ -2377,9 +2289,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "session_pkey",
       "schema": "auth",
@@ -2387,9 +2297,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "user_pkey",
       "schema": "auth",
@@ -2397,9 +2305,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "verification_pkey",
       "schema": "auth",
@@ -2407,9 +2313,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "company_id"
-      ],
+      "columns": ["company_id"],
       "nameExplicit": false,
       "name": "client_pkey",
       "schema": "operations",
@@ -2417,9 +2321,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "company_id"
-      ],
+      "columns": ["company_id"],
       "nameExplicit": false,
       "name": "company_database_pkey",
       "schema": "projects",
@@ -2427,9 +2329,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "project_pkey",
       "schema": "projects",
@@ -2437,9 +2337,7 @@
       "entityType": "pks"
     },
     {
-      "columns": [
-        "id"
-      ],
+      "columns": ["id"],
       "nameExplicit": false,
       "name": "starts_pkey",
       "schema": "hub",
@@ -2448,10 +2346,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "project_id",
-        "number"
-      ],
+      "columns": ["project_id", "number"],
       "nullsNotDistinct": false,
       "name": "app_version_project_id_number_key",
       "entityType": "uniques",
@@ -2460,10 +2355,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "project_id",
-        "attempt_key"
-      ],
+      "columns": ["project_id", "attempt_key"],
       "nullsNotDistinct": false,
       "name": "app_version_project_id_attempt_key_key",
       "entityType": "uniques",
@@ -2472,10 +2364,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "project_id",
-        "id"
-      ],
+      "columns": ["project_id", "id"],
       "nullsNotDistinct": false,
       "name": "app_version_project_id_id_key",
       "entityType": "uniques",
@@ -2484,10 +2373,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "company_id",
-        "attempt_key"
-      ],
+      "columns": ["company_id", "attempt_key"],
       "nullsNotDistinct": false,
       "name": "invitation_company_id_attempt_key_key",
       "entityType": "uniques",
@@ -2496,10 +2382,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "company_id",
-        "user_id"
-      ],
+      "columns": ["company_id", "user_id"],
       "nullsNotDistinct": false,
       "name": "member_company_id_user_id_key",
       "entityType": "uniques",
@@ -2508,10 +2391,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "company_id",
-        "attempt_key"
-      ],
+      "columns": ["company_id", "attempt_key"],
       "nullsNotDistinct": false,
       "name": "project_company_id_attempt_key_key",
       "entityType": "uniques",
@@ -2520,9 +2400,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "slug"
-      ],
+      "columns": ["slug"],
       "nullsNotDistinct": false,
       "name": "company_slug_key",
       "schema": "auth",
@@ -2531,9 +2409,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "attempt_key"
-      ],
+      "columns": ["attempt_key"],
       "nullsNotDistinct": false,
       "name": "company_attempt_key_key",
       "schema": "auth",
@@ -2542,9 +2418,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "nickname"
-      ],
+      "columns": ["nickname"],
       "nullsNotDistinct": false,
       "name": "company_nickname_key",
       "schema": "auth",
@@ -2553,9 +2427,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "key"
-      ],
+      "columns": ["key"],
       "nullsNotDistinct": false,
       "name": "rate_limit_key_key",
       "schema": "auth",
@@ -2564,9 +2436,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "token"
-      ],
+      "columns": ["token"],
       "nullsNotDistinct": false,
       "name": "session_token_key",
       "schema": "auth",
@@ -2575,9 +2445,7 @@
     },
     {
       "nameExplicit": false,
-      "columns": [
-        "email"
-      ],
+      "columns": ["email"],
       "nullsNotDistinct": false,
       "name": "user_email_key",
       "schema": "auth",
@@ -2586,9 +2454,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "cnpj"
-      ],
+      "columns": ["cnpj"],
       "nullsNotDistinct": false,
       "name": "client_cnpj_key",
       "schema": "operations",
@@ -2597,9 +2463,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "attempt_key"
-      ],
+      "columns": ["attempt_key"],
       "nullsNotDistinct": false,
       "name": "client_attempt_key_key",
       "schema": "operations",
@@ -2608,9 +2472,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "neon_project_id"
-      ],
+      "columns": ["neon_project_id"],
       "nullsNotDistinct": false,
       "name": "company_database_neon_project_id_key",
       "schema": "projects",
@@ -2619,9 +2481,7 @@
     },
     {
       "nameExplicit": true,
-      "columns": [
-        "host_label"
-      ],
+      "columns": ["host_label"],
       "nullsNotDistinct": false,
       "name": "project_host_label_key",
       "schema": "projects",
@@ -2757,9 +2617,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -2770,9 +2628,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_select",
@@ -2783,9 +2639,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -2795,10 +2649,19 @@
     },
     {
       "as": "PERMISSIVE",
+      "for": "SELECT",
+      "roles": ["hub_app_companies"],
+      "using": "true",
+      "withCheck": null,
+      "name": "companies_select",
+      "entityType": "policies",
+      "schema": "apps",
+      "table": "app"
+    },
+    {
+      "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -2809,9 +2672,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_select",
@@ -2822,9 +2683,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -2835,9 +2694,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -2848,9 +2705,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_select",
@@ -2861,9 +2716,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -2874,9 +2727,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -2887,9 +2738,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_select",
@@ -2900,9 +2749,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -2913,9 +2760,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -2926,9 +2771,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_person"
-      ],
+      "roles": ["hub_person"],
       "using": "exists (select 1 from auth.member m where m.company_id = company.id and m.user_id = nullif(current_setting('conexus.person_id', true), ''))",
       "withCheck": null,
       "name": "person_select",
@@ -2939,9 +2782,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_invitation"
-      ],
+      "roles": ["hub_invitation"],
       "using": "exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = company.id)",
       "withCheck": "exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = company.id)",
       "name": "invitation_all",
@@ -2952,9 +2793,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
       "withCheck": null,
       "name": "operator_select",
@@ -2965,9 +2804,7 @@
     {
       "as": "PERMISSIVE",
       "for": "INSERT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": null,
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
       "name": "operator_insert",
@@ -2978,9 +2815,7 @@
     {
       "as": "PERMISSIVE",
       "for": "UPDATE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "operator_update",
@@ -2991,9 +2826,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -3004,9 +2837,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -3017,9 +2848,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_person"
-      ],
+      "roles": ["hub_person"],
       "using": "inviter_id = nullif(current_setting('conexus.person_id', true), '')\n        or lower(email) = (select u.email from auth.\"user\" u where u.id = nullif(current_setting('conexus.person_id', true), ''))",
       "withCheck": null,
       "name": "person_select",
@@ -3030,9 +2859,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_invitation"
-      ],
+      "roles": ["hub_invitation"],
       "using": "id = nullif(current_setting('conexus.invitation_id', true), '')",
       "withCheck": "id = nullif(current_setting('conexus.invitation_id', true), '')",
       "name": "invitation_all",
@@ -3043,9 +2870,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and (role = 'owner' or company_id = nullif(current_setting('conexus.company_id', true), ''))",
       "withCheck": null,
       "name": "operator_select",
@@ -3056,9 +2881,7 @@
     {
       "as": "PERMISSIVE",
       "for": "INSERT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": null,
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and role = 'owner'",
       "name": "operator_insert",
@@ -3069,9 +2892,7 @@
     {
       "as": "PERMISSIVE",
       "for": "UPDATE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and role = 'owner'",
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and role = 'owner'",
       "name": "operator_update",
@@ -3082,9 +2903,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -3095,9 +2914,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -3108,9 +2925,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_person"
-      ],
+      "roles": ["hub_person"],
       "using": "user_id = nullif(current_setting('conexus.person_id', true), '')",
       "withCheck": null,
       "name": "person_select",
@@ -3121,9 +2936,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_invitation"
-      ],
+      "roles": ["hub_invitation"],
       "using": "exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = member.company_id)",
       "withCheck": null,
       "name": "invitation_select",
@@ -3134,9 +2947,7 @@
     {
       "as": "PERMISSIVE",
       "for": "INSERT",
-      "roles": [
-        "hub_invitation"
-      ],
+      "roles": ["hub_invitation"],
       "using": null,
       "withCheck": "user_id = nullif(current_setting('conexus.person_id', true), '')\n        and exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '') and i.company_id = member.company_id)",
       "name": "invitation_insert",
@@ -3147,9 +2958,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and (role = 'owner' or company_id = nullif(current_setting('conexus.company_id', true), ''))",
       "withCheck": null,
       "name": "operator_select",
@@ -3160,9 +2969,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -3173,9 +2980,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_runtime"
-      ],
+      "roles": ["hub_runtime"],
       "using": "true",
       "withCheck": "true",
       "name": "runtime_all",
@@ -3186,9 +2991,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "user_id = nullif(current_setting('conexus.person_id', true), '')",
       "withCheck": "user_id = nullif(current_setting('conexus.person_id', true), '')",
       "name": "company_all",
@@ -3199,9 +3002,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_invitation"
-      ],
+      "roles": ["hub_invitation"],
       "using": "user_id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.invitation i join auth.\"user\" u on u.email = lower(i.email)\n          where i.id = nullif(current_setting('conexus.invitation_id', true), '') and u.id = session.user_id)",
       "withCheck": "user_id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.invitation i join auth.\"user\" u on u.email = lower(i.email)\n          where i.id = nullif(current_setting('conexus.invitation_id', true), '') and u.id = session.user_id)",
       "name": "invitation_all",
@@ -3212,9 +3013,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_runtime"
-      ],
+      "roles": ["hub_runtime"],
       "using": "true",
       "withCheck": "true",
       "name": "runtime_sign_in",
@@ -3225,9 +3024,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.member m where m.user_id = \"user\".id and m.company_id = nullif(current_setting('conexus.company_id', true), ''))\n        or exists (select 1 from auth.invitation i where i.inviter_id = \"user\".id and i.company_id = nullif(current_setting('conexus.company_id', true), ''))",
       "withCheck": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.member m where m.user_id = \"user\".id and m.company_id = nullif(current_setting('conexus.company_id', true), ''))\n        or exists (select 1 from auth.invitation i where i.inviter_id = \"user\".id and i.company_id = nullif(current_setting('conexus.company_id', true), ''))",
       "name": "company_all",
@@ -3238,9 +3035,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_person"
-      ],
+      "roles": ["hub_person"],
       "using": "id = nullif(current_setting('conexus.person_id', true), '')",
       "withCheck": "id = nullif(current_setting('conexus.person_id', true), '')",
       "name": "person_all",
@@ -3251,9 +3046,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_invitation"
-      ],
+      "roles": ["hub_invitation"],
       "using": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '')\n          and (i.inviter_id = \"user\".id or lower(i.email) = \"user\".email))",
       "withCheck": "id = nullif(current_setting('conexus.person_id', true), '')\n        or exists (select 1 from auth.invitation i where i.id = nullif(current_setting('conexus.invitation_id', true), '')\n          and (i.inviter_id = \"user\".id or lower(i.email) = \"user\".email))",
       "name": "invitation_all",
@@ -3264,9 +3057,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_administrators"
-      ],
+      "roles": ["hub_administrators"],
       "using": "role = 'admin'",
       "withCheck": null,
       "name": "administrators_select",
@@ -3277,9 +3068,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and (role = 'admin'\n        or exists (select 1 from auth.member m where m.user_id = \"user\".id and m.role = 'owner'))",
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and (role = 'admin'\n        or exists (select 1 from auth.member m where m.user_id = \"user\".id and m.role = 'owner'))",
       "name": "operator_all",
@@ -3290,9 +3079,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
       "withCheck": null,
       "name": "operator_select",
@@ -3303,9 +3090,7 @@
     {
       "as": "PERMISSIVE",
       "for": "INSERT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": null,
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
       "name": "operator_insert",
@@ -3316,9 +3101,7 @@
     {
       "as": "PERMISSIVE",
       "for": "UPDATE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
       "withCheck": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), ''))",
       "name": "operator_update",
@@ -3329,9 +3112,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -3342,9 +3123,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -3355,9 +3134,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_select",
@@ -3368,9 +3145,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -3381,9 +3156,7 @@
     {
       "as": "PERMISSIVE",
       "for": "ALL",
-      "roles": [
-        "hub_company"
-      ],
+      "roles": ["hub_company"],
       "using": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": "company_id = nullif(current_setting('conexus.company_id', true), '')",
       "name": "company_all",
@@ -3394,9 +3167,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_select",
@@ -3407,9 +3178,7 @@
     {
       "as": "PERMISSIVE",
       "for": "DELETE",
-      "roles": [
-        "hub_operator"
-      ],
+      "roles": ["hub_operator"],
       "using": "auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), '')",
       "withCheck": null,
       "name": "operator_delete",
@@ -3420,9 +3189,7 @@
     {
       "as": "PERMISSIVE",
       "for": "SELECT",
-      "roles": [
-        "hub_hosts"
-      ],
+      "roles": ["hub_hosts"],
       "using": "true",
       "withCheck": null,
       "name": "hosts_select",

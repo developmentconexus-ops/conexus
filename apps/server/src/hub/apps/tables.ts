@@ -7,6 +7,7 @@ import {
   foreignKey,
   integer,
   jsonb,
+  pgPolicy,
   pgSchema,
   primaryKey,
   text,
@@ -117,6 +118,9 @@ export const app = apps.table(
       sql`(${table.sendingVersionId} IS NULL) = (${table.claimedUntil} IS NULL)`,
     ),
     ...COMPANY_POLICIES,
+    // The function behind the repair at start lists the companies that have an app, before any
+    // company is known (migration app_versions_grants); its role reads one column and cannot log in.
+    pgPolicy('companies_select', { for: 'select', to: 'hub_app_companies', using: sql`true` }),
   ],
 )
 

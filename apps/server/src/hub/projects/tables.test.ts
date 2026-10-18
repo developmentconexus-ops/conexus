@@ -18,12 +18,14 @@ test('catálogo: as colunas, os únicos e as restrições de Projeto e do banco 
       'company_database.state text NO',
       'company_database.neon_project_id text YES',
       `company_database.claimed_until ${TS} YES`,
+      'company_database.host text YES',
       'project.id text NO',
       'project.company_id text NO',
       'project.name text NO',
       'project.attempt_key text NO',
       `project.created_at ${TS} NO`,
       'project.host_label text YES',
+      `project.deleting_since ${TS} YES`,
     ],
   )
   const constraints = await asOwner(
