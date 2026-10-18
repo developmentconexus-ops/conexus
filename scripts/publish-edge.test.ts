@@ -18,7 +18,7 @@ if [ "$(wc -l < "$CALLS")" = "\${STUB_FAIL_AT:-0}" ]; then echo "the upload fail
 `
 
 function publish(
-  options: { edge?: boolean; content?: string; mode?: number; failAt?: number } = {},
+  options: { edge?: boolean; content?: string; mode?: number; failAt?: number; user?: string } = {},
 ) {
   const root = mkdtempSync(join(dir, 'release-'))
   if (options.edge !== false) {
@@ -35,12 +35,19 @@ function publish(
   chmodSync(file, options.mode ?? 0o400)
   const calls = join(root, 'calls')
   writeFileSync(calls, '')
+  // A stub `id` stands for a runner that is not the file's owner.
+  const bin = join(root, 'bin')
+  mkdirSync(bin)
+  if (options.user !== undefined) {
+    writeFileSync(join(bin, 'id'), `#!/bin/bash\necho ${options.user}\n`)
+    chmodSync(join(bin, 'id'), 0o755)
+  }
   const run = spawnSync('bash', [SCRIPT], {
     cwd: root,
     encoding: 'utf8',
     timeout: 30_000,
     env: {
-      PATH: process.env.PATH,
+      PATH: `${bin}:${process.env.PATH}`,
       CALLS: calls,
       CLOUDFLARE_ENV_FILE: file,
       STUB_FAIL_AT: String(options.failAt ?? 0),
@@ -93,4 +100,11 @@ test('recusa um arquivo legível por outros, vazio ou sem a chave', () => {
   assert.equal(noAccount.run.status, 1)
   assert.match(noAccount.run.stderr, /has no CLOUDFLARE_ACCOUNT_ID/)
   assert.deepEqual([...open.recorded, ...empty.recorded, ...noAccount.recorded], [])
+})
+
+test('recusa um arquivo cujo dono não é quem publica', () => {
+  const { run, recorded } = publish({ user: 'someone-else' })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /must be readable by its owner only, and the owner must be someone-else/)
+  assert.deepEqual(recorded, [])
 })

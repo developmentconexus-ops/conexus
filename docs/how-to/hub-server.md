@@ -13,7 +13,7 @@ How the server is prepared, and how the Hub is published and put back. Decision:
    and delete both files. It refuses a file others can read. It installs Docker, copies the
    tunnel token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a
    service of `runner`, a user with no login, in the `docker` group. Its hook step,
-   `infra/setup-runner-hook.sh`, needs no token.
+   [`infra/setup-runner-hook.sh`](apps-edge.md), needs no token.
 4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the provider's main
    SSH configuration may lack the `Include` that reads a drop-in.
 5. Close SSH last, after the provider's console is proved to work. Without a console, stop and ask.

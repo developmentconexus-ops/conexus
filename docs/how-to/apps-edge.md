@@ -38,11 +38,19 @@ The dispatcher's route and the Hub's `HUB_APPS_DOMAIN` name the same apps domain
 `infra/setup-runner-hook.sh`, which `infra/setup-server.sh` runs, installs
 `infra/runner-job-started.sh` as root's file and names it in the runner's `.env` as
 `ACTIONS_RUNNER_HOOK_JOB_STARTED`. Before any step of any job on this runner, the
-hook accepts only a Release whose target is `main` and a manual run of `main`; a push, another
-branch or a pull request fails the job before a step can reach the token or the Hub's keys. Create
-the Release with its target set to `main`, not to a commit.
+hook accepts only a Release or a manual run of `main` whose commit is on `main`, read from the mirror
+of `main` in `/var/lib/conexus/main.git` that it fetches first. A push, another branch, a pull
+request, a commit outside `main`, a missing mirror or a failed fetch fails the job before a step can
+reach the token or the Hub's keys. Voltar atrás checks the version's own commit the same way before
+its `npm ci`.
 A server prepared before this hook gets it from firstmate, as root from a checkout of `main`:
-`infra/setup-runner-hook.sh`. It reads no token, installs `jq`, and restarts the runner's service.
+`infra/setup-runner-hook.sh`, with the mirror's two variables. It installs `git` and restarts the
+runner's service.
+
+The mirror, once, as root: `ssh-keygen -t ed25519 -N '' -f <file>`; add `<file>.pub` in the
+repository's GitHub settings as a deploy key without write access; run
+`MIRROR_URL=git@github.com:<owner>/<repo>.git DEPLOY_KEY_FILE=<file> infra/setup-runner-hook.sh`;
+delete both files. Until then the hook refuses every job.
 
 ## Publish
 
