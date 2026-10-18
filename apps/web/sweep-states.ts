@@ -4,6 +4,7 @@ import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
+import { PROJECT_STATES } from './sweep-project-states.ts'
 import { RECOVERY_STATES } from './sweep-recovery-states.ts'
 import {
   CLIENT_ID,
@@ -33,6 +34,7 @@ const NEVER = new Promise<never>(() => undefined)
 
 export const STATES: State[] = [
   ...RECOVERY_STATES,
+  ...PROJECT_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',
@@ -137,13 +139,13 @@ export const STATES: State[] = [
   },
   {
     name: 'dono',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: OWNER,
     settle: (p) => waitFor(p, 'Convidar pessoa'),
   },
   {
     name: 'sem convites pendentes',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: {
       ...OWNER,
       [`GET /api/companies/${COMPANY.id}/invitations`]: ok(listInvitations, {
@@ -155,7 +157,7 @@ export const STATES: State[] = [
   },
   {
     name: 'tirar uma pessoa, a confirmação',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: OWNER,
     settle: async (page) => {
       await page.getByRole('button', { name: /^Tirar da empresa:/ }).click()
@@ -164,7 +166,7 @@ export const STATES: State[] = [
   },
   {
     name: 'mudar o papel de uma pessoa',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: OWNER,
     settle: async (page) => {
       await page.getByRole('button', { name: /^Mudar papel:/ }).click()
@@ -173,13 +175,13 @@ export const STATES: State[] = [
   },
   {
     name: 'convite vencido na lista',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: WITH_EXPIRED,
     settle: (p) => waitFor(p, 'Reenviar'),
   },
   {
     name: 'convidar de novo recusado',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: {
       ...WITH_EXPIRED,
       [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MEMBER_EXISTS'),
@@ -194,13 +196,13 @@ export const STATES: State[] = [
   },
   {
     name: 'empresa que o Hub não acha',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: { ...SIGNED_IN, [`GET /api/companies/${COMPANY.id}`]: failure('NOT_FOUND') },
     settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
   },
   {
     name: 'membro',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: MEMBER,
     settle: (p) => waitFor(p, 'Pessoas'),
   },
@@ -233,7 +235,7 @@ export const STATES: State[] = [
   },
   {
     name: 'erro de campo',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: {
       ...OWNER,
       [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MEMBER_EXISTS'),
@@ -248,7 +250,7 @@ export const STATES: State[] = [
   },
   {
     name: '502',
-    path: `/companies/${COMPANY.id}`,
+    path: `/companies/${COMPANY.id}/people`,
     replies: {
       ...OWNER,
       [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MAIL_UNAVAILABLE'),

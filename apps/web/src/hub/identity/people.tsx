@@ -22,7 +22,7 @@ import {
 } from './queries.ts'
 import { RoleBadge } from './role-badge.tsx'
 
-const route = getRouteApi('/_app/companies/$companyId')
+const route = getRouteApi('/_app/companies/$companyId/people')
 
 function Lines({ main, under }: { main: string; under: string }) {
   return (

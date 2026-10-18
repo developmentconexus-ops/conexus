@@ -93,6 +93,7 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
     'pg',
     { 'apps/server/src/hub/a/mapper.ts': importing('drizzle-orm/node-postgres') },
   ],
+  'neon-sdk-only-in-the-neon-adapter': ['apps/server/src/hub/a/vendor.ts', '@neon/sdk', {}],
   'web-tree-shape': [
     'apps/web/src/components/button.ts',
     '../platform/hub.ts',

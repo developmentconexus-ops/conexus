@@ -123,7 +123,7 @@ test('--restart cujo Hub não fica saudável diz como voltar atrás', () => {
   assert.match(run.stderr, /Voltar atrás/)
 })
 
-for (const secret of ['hub_session_secret', 'hub_mail_token']) {
+for (const secret of ['hub_session_secret', 'hub_mail_token', 'hub_neon_api_key']) {
   test(`sem ${secret} recusa antes de migrate e não sobe o Hub`, () => {
     const { run, count } = deploy('hub@sha256:new', {
       running: 'hub@sha256:old',
@@ -146,7 +146,7 @@ for (const secret of ['hub_session_secret', 'hub_mail_token']) {
 test('os segredos são conferidos na imagem nova, sem rede, como o usuário do Hub', () => {
   const { run, log } = deploy('hub@sha256:new')
   assert.equal(run.status, 0, run.stderr)
-  for (const secret of ['hub_session_secret', 'hub_mail_token']) {
+  for (const secret of ['hub_session_secret', 'hub_mail_token', 'hub_neon_api_key']) {
     assert.ok(
       log.includes(
         `run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/${secret},target=/run/check,readonly --entrypoint test hub@sha256:new -s /run/check [HUB_IMAGE=]`,

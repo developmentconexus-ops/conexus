@@ -36,6 +36,8 @@ async function join(page: Page, mail: Mail, person: { name: string }) {
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
+  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await page.getByRole('link', { name: 'Pessoas' }).first().click()
   await page.getByRole('heading', { name: COMPANY, exact: true }).waitFor()
 }
 
@@ -102,7 +104,7 @@ async function centralChanges(w: Windows, mail: Mailbox) {
   await invite(w.ana, CARLA.email, 'Dono')
   await w.carla.goto(linkIn(await mail.next()))
   await w.carla.getByRole('button', { name: 'Aceitar convite' }).click()
-  await w.carla.getByRole('heading', { name: COMPANY, exact: true }).waitFor()
+  await w.carla.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
   await w.ana.reload()
   await w.ana.getByRole('button', { name: `Mudar papel: ${DAVI.name}` }).click()
   await w.ana.getByRole('combobox', { name: 'Papel' }).click()
@@ -139,7 +141,7 @@ async function recover(w: Windows, mail: Mailbox) {
     await page.getByText(outcome).waitFor()
   }
   await signIn(page, CARLA.email, CHOSEN)
-  await page.getByRole('heading', { name: 'Suas empresas' }).waitFor()
+  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
   await w.carla.reload()
   await w.carla.getByRole('button', { name: 'Entrar' }).waitFor()
 }

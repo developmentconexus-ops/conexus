@@ -1,19 +1,25 @@
 import type { CompanyId, Email, PersonId } from '@conexus/hub-api'
 import { OPERATOR_INVITES_AS, Role } from '@conexus/hub-api'
-import { defaultRoles } from 'better-auth/plugins/organization/access'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { storedAddress } from './auth.ts'
+import { COMPANY_ROLES, storedAddress } from './auth.ts'
 import { company, member, user } from './tables.ts'
 
 const INVITE = { invitation: ['create'] } as const
 const REMOVE = { member: ['delete'] } as const
 const CHANGE_ROLE = { member: ['update'] } as const
+const CREATE_PROJECT = { project: ['create'] } as const
+const DELETE_PROJECT = { project: ['delete'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
-  statement?: typeof INVITE | typeof REMOVE | typeof CHANGE_ROLE
+  statement?:
+    | typeof INVITE
+    | typeof REMOVE
+    | typeof CHANGE_ROLE
+    | typeof CREATE_PROJECT
+    | typeof DELETE_PROJECT
 }
 
 /**
@@ -26,6 +32,9 @@ type ActionRule = {
  */
 const ACTIONS = {
   readCompany: { by: 'MEMBER', statement: undefined, locks: false },
+  readProjects: { by: 'MEMBER', statement: undefined, locks: false },
+  createProject: { by: 'MEMBER', statement: CREATE_PROJECT, locks: true },
+  deleteProject: { by: 'MEMBER', statement: DELETE_PROJECT, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
@@ -53,10 +62,11 @@ export const INSTALLATION_ADMINISTRATOR = 'admin'
 
 type RoleAction = MemberAction | CompanyAction
 
-function allows(role: Role, action: RoleAction): boolean {
+/** Whether the role takes the action, read from the roles the plugin is given (auth.ts). */
+export function allows(role: Role, action: RoleAction): boolean {
   const { statement } = ACTIONS[action]
   if (statement === undefined) return true
-  return defaultRoles[role].authorize(statement).success
+  return COMPANY_ROLES[role].authorize(statement).success
 }
 
 /** Who acts on a member: the role of a member of the company, or the operator, who has none. */
@@ -230,13 +240,28 @@ function admitMember(input: CompanyInput, role: Role, action: RoleAction): Membe
 }
 
 /**
+ * A company the Central is deleting admits no one, the operator included: the same not-found as
+ * any other, with the reason only in the log (security S10). The mark is read after the caller's
+ * company lock, so a deletion that has marked the company is seen (S8).
+ */
+async function refuseIfDeleting(input: CompanyInput): Promise<void> {
+  const [row] = await input.tx
+    .select({ since: company.deletingSince })
+    .from(company)
+    .where(eq(company.id, input.companyId))
+  if (row?.since != null) throw new Failure('NOT_FOUND', { details: { reason: 'DELETING' } })
+}
+
+/**
  * Reads the person's membership and decides by its role. An outsider, an unknown company and a
  * role without the action get the same not-found; only the log tells them apart (security S10).
  */
 export async function admit(input: CompanyInput & { action: MemberAction }): Promise<MemberProof> {
   const role = await membershipOf(input, input.action)
   if (role === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
-  return admitMember(input, role, input.action)
+  const admitted = admitMember(input, role, input.action)
+  await refuseIfDeleting(input)
+  return admitted
 }
 
 /**
@@ -247,10 +272,13 @@ export async function admitCompany(
   input: CompanyInput & { action: CompanyAction },
 ): Promise<CompanyProof> {
   const role = await membershipOf(input, input.action)
-  if (role !== undefined) return admitMember(input, role, input.action)
-  const operator = await admitCompanyOperator(input, input.action)
-  if (operator === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
-  return operator
+  const admitted =
+    role === undefined
+      ? await admitCompanyOperator(input, input.action)
+      : admitMember(input, role, input.action)
+  if (admitted === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })
+  await refuseIfDeleting(input)
+  return admitted
 }
 
 /** Admits the operator on the installation, by the role read in the caller's transaction (S11). */

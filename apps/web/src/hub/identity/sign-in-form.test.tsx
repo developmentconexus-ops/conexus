@@ -84,7 +84,9 @@ test('entrar a caminho de outra página leva o foco ao título dela, não ao cor
   render(
     <Conexus
       conexus={createConexus(
-        createMemoryHistory({ initialEntries: [`/login?redirect=%2Fcompanies%2F${COMPANY.id}`] }),
+        createMemoryHistory({
+          initialEntries: [`/login?redirect=%2Fcompanies%2F${COMPANY.id}%2Fpeople`],
+        }),
       )}
     />,
   )

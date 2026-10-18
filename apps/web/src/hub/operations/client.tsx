@@ -10,10 +10,17 @@ import { CompanyPeople } from '../identity/public.ts'
 import { maskedCnpj } from './cnpj.ts'
 import { CorrectClientForm } from './correct-client-form.tsx'
 import { DeleteClientDialog } from './delete-client-dialog.tsx'
+import { FinishDeletion } from './finish-deletion.tsx'
 import { OwnerInvitationSection } from './owner-invitation.tsx'
 import { clientQuery } from './queries.ts'
 
 const route = getRouteApi('/_app/operations/clients/$companyId')
+
+const STATE_TEXT = {
+  ACTIVE: 'Ativo',
+  AWAITING_OWNER: 'Aguardando o administrador',
+  DELETING: 'Exclusão em andamento',
+} as const
 
 function Data({ client }: { client: ClientRecord }) {
   const rows = [
@@ -48,9 +55,7 @@ export function Client() {
   return (
     <div className="flex flex-col gap-xl">
       <PageTitle className="break-words">{client.name}</PageTitle>
-      <p className="text-label text-text-2">
-        {state.kind === 'ACTIVE' ? 'Ativo' : 'Aguardando o administrador'}
-      </p>
+      <p className="text-label text-text-2">{STATE_TEXT[state.kind]}</p>
       {state.kind === 'AWAITING_OWNER' &&
         state.ownerInvitation.id === convite &&
         state.ownerInvitation.state === 'PENDING' && (
@@ -78,7 +83,8 @@ export function Client() {
           mayInviteAs={OPERATOR_INVITES_AS}
         />
       )}
-      {!correcting && (
+      {state.kind === 'DELETING' && <FinishDeletion client={client} />}
+      {!correcting && state.kind !== 'DELETING' && (
         <div>
           <DeleteClientDialog client={client} />
         </div>

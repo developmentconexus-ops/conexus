@@ -182,6 +182,7 @@ export const company = auth.table(
     metadata: text('metadata'),
     createdAt: instant('created_at').notNull(),
     attemptKey: text('attempt_key').notNull().unique(),
+    deletingSince: instant('deleting_since'),
   },
   () => [
     policy(SCOPE_ROLES.COMPANY, 'all', sql`id = ${companyId}`),

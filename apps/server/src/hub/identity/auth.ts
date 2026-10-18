@@ -7,8 +7,15 @@ import { CAPACITY, COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conex
 import { betterAuth } from 'better-auth'
 import { createAuthEndpoint } from 'better-auth/api'
 import { admin, organization } from 'better-auth/plugins'
+import { createAccessControl } from 'better-auth/plugins/access'
 import type { OrganizationOptions } from 'better-auth/plugins/organization'
 import { getOrgAdapter } from 'better-auth/plugins/organization'
+import {
+  adminAc,
+  defaultStatements,
+  memberAc,
+  ownerAc,
+} from 'better-auth/plugins/organization/access'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
@@ -242,10 +249,30 @@ export async function hasPassword(auth: Auth, personId: PersonId): Promise<boole
 const KEY_FIELD = { type: 'string', required: true } as const
 // Left out of the plugin's request body (db/to-zod.mjs:17), so only the Hub's mark sets it.
 const MAILED_FIELD = { type: 'date', required: false, input: false } as const
+// The mark of a company the Central is deleting: only the Hub sets it, never a request.
+const DELETING_FIELD = { type: 'date', required: false, input: false } as const
+
+const accessControl = createAccessControl({ ...defaultStatements, project: ['create', 'delete'] })
+
+/**
+ * The plugin's roles: its defaults and what each does to a Project (founder, step 7, P1 A). Every
+ * member creates one; only an owner or an administrator deletes one. `allows` in admission reads
+ * these, so who may do what lives here alone (code C26).
+ */
+export const COMPANY_ROLES = {
+  owner: accessControl.newRole({ ...ownerAc.statements, project: ['create', 'delete'] }),
+  admin: accessControl.newRole({ ...adminAc.statements, project: ['create', 'delete'] }),
+  member: accessControl.newRole({ ...memberAc.statements, project: ['create'] }),
+}
 
 const ORGANIZATION = {
+  ac: accessControl,
+  roles: COMPANY_ROLES,
   schema: {
-    organization: { modelName: 'company', additionalFields: { attemptKey: KEY_FIELD } },
+    organization: {
+      modelName: 'company',
+      additionalFields: { attemptKey: KEY_FIELD, deletingSince: DELETING_FIELD },
+    },
     invitation: { additionalFields: { attemptKey: KEY_FIELD, mailedAt: MAILED_FIELD } },
   },
   // Only the Operations Central creates a company, through the adapter (step 4.2).

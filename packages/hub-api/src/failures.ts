@@ -3,6 +3,7 @@ import { CAPACITY } from './capacity.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
 import { PEOPLE_FAILURES } from './people-failures.ts'
+import { PROJECT_FAILURES } from './project-failures.ts'
 
 export const FAILURES = {
   INTERNAL_UNEXPECTED: {
@@ -209,6 +210,7 @@ export const FAILURES = {
     actionKind: 'NONE',
   },
   ...PEOPLE_FAILURES,
+  ...PROJECT_FAILURES,
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES
