@@ -5,7 +5,7 @@
 **No fim desta etapa** quem é da empresa e está no Hub abre o app de um Projeto no endereço dele;
 mais ninguém abre; apagar o Projeto fecha o endereço.
 
-**O roteiro de uso.** No Hub publicado, sem terminal. Antes: a Central cadastra a Empresa A, com o
+**O roteiro de uso.** No Hub publicado. Antes: a Central cadastra a Empresa A, com o
 dono na segunda caixa.
 
 1. Na segunda caixa, aceite o convite: antes dos lugares da empresa, o Hub pede só o apelido,
@@ -40,7 +40,8 @@ apelido: o dono o escolhe na configuração inicial (troca 2.1A); fixo na 8, a C
 guardado, único, até 63; renomear não o muda. Por isso o nome de um Projeto precisa de três letras
 ou números ("TI" daria `ti--`, forma reservada), e um nome longo é cortado no endereço.
 
-**O que muda na regra.** Um acesso novo, `edge`, só do despachante, no fechamento da 7 (L20).
+**O que muda na regra.** Um acesso novo, `edge`, só do despachante: issue 97, no PR de fechamento
+da 7 (L20).
 
 **O grant de U2.** O login do Hub grava passagens e sessões de app e acha o Projeto pelo endereço;
 as rotas da empresa gravam o apelido.
@@ -55,7 +56,7 @@ o token.
 
 ## O que mudou desde o estudo
 
-O registro é 0041 (a 7 tomou 0040). O `--` do endereço dispensa código de colisão. A sessão do app
+O registro é 0041 (a 7 tomou 0040). O `--` dispensa código de colisão. A sessão do app
 vive com a do Hub (S18), sem **Sair**. Todo Projeto roda o exemplo (C30). **Abrir app** passa por
 uma tela do Hub, para que o login volte a ela (C33, C35, C36, S48).
 
@@ -74,7 +75,7 @@ entrar; se um faltar, a construção para:
 ## As issues abertas
 
 88, 89 e 90 são da 6, fora do tema; nenhuma `next-card`. **Issues futuras**, abertas no fechamento:
-a Public Suffix List e o alcance de cookies entre apps irmãos (a 18); o que muda na borda se a prova
+a Public Suffix List e cookies entre apps irmãos (a 18); o que muda na borda se a prova
 cair em 4B; um trabalho agendado que apague passagens vencidas.
 
 ## As unidades
@@ -83,13 +84,13 @@ cair em 4B; um trabalho agendado que apague passagens vencidas.
 | --- | --- | --- | --- | --- | --- |
 | U1 | Registro 0041 e a prova | `docs/decisions/` | testes | cloudflare:wrangler, cloudflare:workers-best-practices | autorização |
 | U2 | Tabelas, função, grants (PR próprio) | migrações | dados | neon-postgres | U1, D11, a 7 em `main` |
-| U3 | Apelido, endereço, passagem, checagem | servidor, `hub-api` | segurança | better-auth-best-practices, fastify-best-practices | U2, a emenda de `edge` |
+| U3 | Apelido, endereço, passagem, checagem | servidor, `hub-api` | segurança | better-auth-best-practices, fastify-best-practices | U2, a issue 97 |
 | U4 | Despachante, muro, contrato, exemplo | `apps/edge/`, `app-contract` | segurança | cloudflare:workers-best-practices, cloudflare:wrangler | U1; o contrato de U3 |
 | U5 | As telas | web | web | shadcn | U3 |
 | U6 | Publicar e voltar a borda; 0042 | `.github/`, `infra/` | entrega | cloudflare:wrangler | U4, a decisão |
 | U7 | Percurso e remoções | `tests/e2e/`, `scripts/` | testes | nenhuma | U5, U6 |
 
-U4 e U5 correm com U3 depois do contrato dele. Uma revisão, um merge (L9, L13); a prova
+U4 e U5 correm após o contrato de U3. Uma revisão, um merge (L9, L13); a prova
 não cria release (L17).
 
 **Orçamento de código alterado** (sem testes nem gerados): U1 **0**; U2 **200**; U3 **650**, ~250
@@ -108,7 +109,7 @@ trazidas; U4 **600**; U5 **400**; U6 **200**; U7 **150**; espalhados **100**. To
 | 6 | U3 | `createAppHandoff`, membro: 201; sem sessão: 401; host desconhecido, outra empresa, empresa marcada: a mesma 404 (S10) | `app-handoff.test.ts` | must |
 | 7 | U3 | Código com outro vínculo, outro host, vencido, certo, de novo: 403, 403, 403, 201, 403 (LT2); dois juntos: um 201 | idem, barreira | must |
 | 8 | U3 | Checagem: 200; outro host, sessão do Hub apagada ou vencida: 401; tirado, empresa marcada: 403; Projeto apagado: 404; na chamada seguinte | idem | must |
-| 9 | U3 | Na porta pública, uma `edge`, ou outra na de borda: 404; registrar uma `edge` na pública: o servidor não sobe | `access.test.ts` | must |
+| 9 | U3 | Chamada a uma `edge` na porta pública, ou a outra na de borda: 404; registrar `edge` na pública: o servidor não sobe | `access.test.ts` | must |
 | 10 | U3 | Os registros da tabela de falhas, com ids; nunca código, sessão ou nome (S41) | idem | must |
 | 11 | U4 | Primeira visita: vínculo, 303 ao Hub; passagem certa: sessão, 303 a `/`; 401: ao Hub; o resto, as páginas da matriz | `dispatcher.test.ts` | must |
 | 12 | U4 | O app não recebe cookie `__Host-conexus-*` nem `/__conexus/`; o `Set-Cookie` dele com o prefixo sai; escrita de outro site: 403; CSP e cabeçalhos de S24 | `dispatcher.test.ts` “app” | must |
@@ -243,12 +244,12 @@ D10–D12, D15, D17, [0039]. Funções: drizzle-orm 1.0.0-rc.4 `pgSchema`, `uniq
 | `packages/hub-api/src/` | cria `apps.ts`, `app-failures.ts`, `address.ts`; muda `operation.ts` (`edge`), `companies.ts`, `identity-failures.ts`, `projects.ts`, `project-failures.ts`, `failures.ts`, `index.ts` | servidor, despachante, web, OpenAPI |
 | `hub/apps/`; `hub/projects/` | cria `handoff.ts`, `routes.ts`, `public.ts`; o endereço em `insertProject`, a porta `projectOfHost` | `main.ts`, `hub/apps` |
 | `hub/identity/` | `nickname.ts`; `company-routes.ts`, `companies.ts`; `admission.ts`, `setCompanyNickname`; `public.ts`, a sessão do Hub pelo id | Projetos, apps |
-| `platform/access.ts`, `http.ts`, `config.ts`; `main.ts` | `edge`; a segunda escuta; `HUB_EDGE_PORT`, `APPS_DOMAIN`; liga tudo | — |
+| `platform/access.ts`, `http.ts`, `config.ts`; `main.ts` | `edge`; a escuta de borda; `HUB_EDGE_PORT`, `APPS_DOMAIN`; liga tudo | — |
 | `scripts/removals.json` | `handoff-atomic`, `handoff-binding`, `handoff-host`, `app-session-cascade`, `edge-port-only`, `nickname-owner-once` | `npm run removals` |
 
 ### Os contratos que a unidade cria
 
-- `edge`, o texto da emenda de C33 e S48: "Uma rota `edge` só existe na escuta `HUB_EDGE_PORT`, que
+- `edge`, o texto de S48 da issue 97: "Uma rota `edge` só existe na escuta `HUB_EDGE_PORT`, que
   só o despachante alcança; não lê sessão nem cookie, e não confere `Origin` nem `Sec-Fetch-Site`."
 - `createAppHandoff`: POST `/api/apps/handoffs`, `session`, `{host, binding}`; 201 `{location}`, a
   `https://<host>.<APPS_DOMAIN>/__conexus/passagem?code=`; 404 a página única (S10). Passagem de 60 s.
@@ -297,14 +298,14 @@ D10–D12, D15, D17, [0039]. Funções: drizzle-orm 1.0.0-rc.4 `pgSchema`, `uniq
 `Caller = {personId, personName, projectId, projectName}`, sem e-mail, empresa ou papel, pois o app
 vê `props`. `AppProps = {caller}`. Cookies de S17, sem `Max-Age`: `__Host-conexus-binding`, apagado
 no resgate, e `__Host-conexus-app`. `HubPort`, um adaptador sobre `env.HUB` com
-`HUB_CHECK_DEADLINE_MS` (C56, C57).
+`HUB_CHECK_DEADLINE_MS` (C56, C57). `HUB_PUBLIC_ORIGIN` em `vars`, do 303.
 
 ### A ordem do trabalho
 
 `wrangler.jsonc`: `compatibility_date` do dia, `observability` e `traces`; `dispatch_namespaces`
 com `outbound.service` ao muro; `vpc_services`; a rota. `Env` por `wrangler types` (C27). `env.DISPATCHER.get(nome, props,
 {outbound})`, sem `limits` na chamada (falhou em D6 e D9); `limits.cpu_ms` 50 no envio do exemplo.
-`crypto.getRandomValues` no vínculo. Toda exceção vira página (C50): HTML sem script, um `<style>`
+`crypto.getRandomValues` no vínculo. Exceção vira página (C50): HTML sem script, um `<style>`
 com hash na CSP, os tokens do Hub. O exemplo: HTML sem script, de `ctx.props.caller`. Regras: C27, C50, C56, C57, S4, S5, S17, S24, S36.
 
 ### Como se prova
@@ -325,9 +326,10 @@ usa só `fetch`, `Headers` e `crypto`; `props`, `outbound`, `limits` e VPC, U1 e
 
 ### A ordem do trabalho
 
-A configuração: um campo, sugerido do nome da empresa por `address.ts`, até 30, e o endereço de
-exemplo com `appsDomain` ao digitar; nada além. **Abrir app**: um link para `Project.address`.
-`/apps/open?host&binding`: sob o guarda de `_app`, que já leva a **Entrar** e volta, chama
+A configuração: um campo, sugerido por `address.ts`, e o endereço com `appsDomain` ao digitar.
+**Abrir app**: um link para `Project.address`.
+`/apps/open?host&binding`, lidos por `validateSearch` com zod, o vínculo fora de log (S41): sob
+o guarda de `_app`, que já leva a **Entrar** e volta, chama
 `createAppHandoff` e faz `location.assign` ao `location`. Regras: W1, W8–W13, W21–W24, V29, V35, V39.
 
 ### Como se prova
