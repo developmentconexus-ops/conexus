@@ -82,11 +82,13 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   `unsafe-inline`, strict `Referrer-Policy` and `frame-ancestors 'none'`. Failure: a cross-site
   authenticated GET discloses the person, or a form post bypasses admission. Existing configuration
   and header tests stay; Fastify does not supply this policy automatically. [review]
-- **S48.** The four access kinds of [code C33](code.md) mean: `page`, a read of any address outside
+- **S48.** The five access kinds of [code C33](code.md) mean: `page`, a read of any address outside
   `/api/`, where an unknown one gets the screens' page with 404, shown in Portuguese (founder,
   2026-10-15: "1 A 2. A"); `public`, an API `GET` with no session; `entry`, a write with no
   session that also needs `cf-connecting-ip` (S29); `session`, a request whose session is read
-  first. Writes follow S24. The four came with step 3's approved card.
+  first; `edge`, a route that exists only on the `HUB_EDGE_PORT` listener, which only the dispatcher
+  reaches, and that reads no session or cookie and does not check `Origin` or `Sec-Fetch-Site`.
+  Writes follow S24. The first four came with step 3's approved card, the fifth with step 8's.
   [`access.test.ts`, `http.test.ts`]
 
 ## 5. Abuse
