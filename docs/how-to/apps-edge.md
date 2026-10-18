@@ -47,7 +47,9 @@ passes. Step 1 names the hook first: a failed mirror refuses every job.
    prints `mirror of main ready`, then `runner hook ready`. The repository is public, so no key;
    if it turns private, the fetch fails and every job is refused.
 2. `sudo -u runner git --git-dir=/var/lib/conexus/main.git rev-parse main` prints `main`'s head.
-3. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the founder.
+3. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion, bypassed by the Write
+   role, today only the founder's working account (an admin tags anyway); granting Write grants
+   `v*` tags, so review it then.
 4. The `conexus-hub` package's Actions access: this repository alone, role Admin (not Write),
    branches included; Voltar atrás deploys only recorded digests.
 5. Each kept version's green run of `gh run list --workflow publish.yml --event release`, on a
@@ -66,15 +68,13 @@ A Release publishes the Hub, then the edge from the Release's own commit: the wa
 conexus-apps`), then the dispatcher (`conexus-dispatcher`). Two publishes never overlap (the
 `hub-server` concurrency group). A failed step fails the Release: the Hub stays new, the Workers
 already published stay, and the others keep their earlier code. Rerun the failed job once the cause
-is fixed; publishing the same code again changes nothing. The log has `wrangler`'s own output and
-never the token.
+is fixed; publishing the same code again changes nothing. The log never has the token.
 
 ## Put back
 
 Actions, Voltar atrás, with a recorded version. The edge goes first, publishing that
-version's code with the same script, then the Hub. Not `wrangler rollback`: a Worker in a
-namespace has no versions. A version from before step 8 has no `apps/edge`: the run says so, leaves
-the edge as it is, and puts the Hub back; Criar Projeto works on that Hub.
+version's code with the same script, then the Hub. A version from before step 8 has no
+`apps/edge`: the run says so, leaves the edge as it is, and puts the Hub back.
 
 ## Para o fundador
 

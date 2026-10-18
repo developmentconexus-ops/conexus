@@ -1,4 +1,4 @@
-# 0043. The release image is built on a GitHub-hosted machine
+# 0044. The release image is built on a GitHub-hosted machine
 
 ## Context
 

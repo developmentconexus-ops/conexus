@@ -147,7 +147,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 | E2B | Build machines, under a key used by this installation only | [0028] |
 
 **Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
-command on the server; a merge alone publishes nothing [0035] [0043]. Migrations run before the
+command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the
 program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image. Every migration only adds, so

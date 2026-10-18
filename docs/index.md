@@ -73,7 +73,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0040](decisions/0040-company-database-through-neon.md) Neon.
 - [0041](decisions/0041-app-session-check-through-workers-vpc.md) Workers VPC.
 - [0042](decisions/0042-cloudflare-token-in-one-call-environment.md) publish token.
-- [0043](decisions/0043-release-image-built-on-a-github-hosted-machine.md) hosted image.
+- [0044](decisions/0044-release-image-built-on-a-github-hosted-machine.md) hosted image.
 
 ## Skills
 

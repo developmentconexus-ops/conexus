@@ -40,4 +40,4 @@ A check fails, or runners cost money.
 
 ## State
 
-Proposed 2026-10-13. Founder, 2026-10-13: "4. a 5A". Accepted 2026-10-14, when the founder used it: "Deu certo". Amended 2026-10-18 by [0043].
+Proposed 2026-10-13. Founder, 2026-10-13: "4. a 5A". Accepted 2026-10-14, when the founder used it: "Deu certo". Amended 2026-10-18 by [0044].
