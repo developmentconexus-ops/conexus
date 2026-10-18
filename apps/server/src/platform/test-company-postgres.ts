@@ -3,7 +3,8 @@ import type { ProjectId } from '@conexus/hub-api'
 import { appLogin } from '@conexus/hub-api'
 import pg from 'pg'
 import type { SqlAnswer, SqlStatement } from './company-postgres.ts'
-import { answerOf } from './company-postgres.ts'
+import { answerOf, createCompanyPostgres } from './company-postgres.ts'
+import type { AppLoginKey } from './config.ts'
 import { readTestDatabase } from './config.ts'
 import { DatabaseUrl } from './database.ts'
 import type { Lifetime } from './test-database.ts'
@@ -94,4 +95,17 @@ export async function appTablesOf(owner: DatabaseUrl, projectId: ProjectId) {
   } finally {
     await client.end()
   }
+}
+
+/**
+ * Takes the app's schema and logins out of the company's database, as a restore to a minute before
+ * its first send would: the Hub's repair must bring them back.
+ */
+export async function forgetApp(
+  owner: DatabaseUrl,
+  projectId: ProjectId,
+  appLoginKey: AppLoginKey,
+) {
+  const postgres = createCompanyPostgres({ transport: pgTransport, appLoginKey })
+  return (await postgres.dropApp(owner, projectId)).kind
 }

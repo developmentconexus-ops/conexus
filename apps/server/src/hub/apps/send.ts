@@ -1,3 +1,4 @@
+import type { Manifest } from '@conexus/app-contract'
 import { APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
 import type {
   AppVersion,
@@ -9,13 +10,14 @@ import type {
 } from '@conexus/hub-api'
 import { appWorkerOf } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
-import type { CloudflareApps } from '../../platform/cloudflare.ts'
+import type { CloudflareApps, WorkerFile } from '../../platform/cloudflare.ts'
 import type { CommandTx, ReadTx, Scope } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { migrateApp, openAppDatabase } from './app-database.ts'
+import { markPrune, prune } from './prune.ts'
 import { app, appVersion } from './tables.ts'
 import type { ReceivedVersion, VersionFailure } from './versions.ts'
 import { failVersion, holdsClaim, lockApp, receiveVersion, storeAppVersion } from './versions.ts'
@@ -51,40 +53,67 @@ export function admitReader(deps: Admitting, tx: ReadTx, input: Ids & { person: 
   return admitTo(deps, tx, { ...input, action: 'readAppVersions' })
 }
 
-/** Whether the send may go on: its claim is still its own and the Projeto is not being deleted. */
-function mayGoOn(deps: SendDeps, sending: Sending): Promise<boolean> {
-  return deps.database.read(sending.scope, async (tx) => {
-    const project = await deps.projects.liveProjectOf(tx, sending)
-    return project !== undefined && (await holdsClaim(tx, sending))
+/** A version's Worker in the namespace, tagged with its company and Projeto (decision 0043). */
+export function uploadVersion(
+  cloudflare: CloudflareApps,
+  input: Ids & { versionId: AppVersionId; manifest: Manifest; files: readonly WorkerFile[] },
+) {
+  return cloudflare.upload({
+    worker: appWorkerOf(input.versionId),
+    mainModule: input.manifest.entry,
+    compatibilityDate: APP_COMPATIBILITY_DATE[input.manifest.contract],
+    files: input.files,
+    tags: [`company-${input.companyId}`, `project-${input.projectId}`],
+    cpuMs: APP_CPU_MS,
   })
 }
+
+type Standing = 'GO' | 'LOST' | 'GONE'
+
+/** Whether the send may go on: the Projeto is not being deleted and the claim is still its own. */
+function standing(deps: SendDeps, sending: Sending): Promise<Standing> {
+  return deps.database.read(sending.scope, async (tx) => {
+    if ((await deps.projects.liveProjectOf(tx, sending)) === undefined) return 'GONE'
+    return (await holdsClaim(tx, sending)) ? 'GO' : 'LOST'
+  })
+}
+
+type Prepared =
+  | { kind: 'READY' }
+  | { kind: 'FAILED'; failure: VersionFailure }
+  | { kind: 'STOPPED'; why: Exclude<Standing, 'GO'> }
 
 /**
  * Everything outside a transaction (data D22), in the order of decision 0046: the Worker first, so
  * code that does not start touches no database; then the app's schema and logins, and its pending
- * migrations in one transaction. The claim and the deletion mark are read before each.
+ * migrations in one transaction. The deletion mark and the claim are read before each.
  */
 async function prepare(
   deps: SendDeps,
   sending: Sending & { databaseReady: boolean },
-): Promise<VersionFailure | undefined> {
+): Promise<Prepared> {
   const { companyId, projectId, received } = sending
-  if (!(await mayGoOn(deps, sending))) return 'APP_VERSION_FAILED'
-  const uploaded = await deps.cloudflare.upload({
-    worker: appWorkerOf(sending.versionId),
-    mainModule: received.manifest.entry,
-    compatibilityDate: APP_COMPATIBILITY_DATE[received.manifest.contract],
-    files: received.files,
-    tags: [`company-${companyId}`, `project-${projectId}`],
-    cpuMs: APP_CPU_MS,
-  })
-  if (uploaded.kind !== 'DONE') return 'APP_VERSION_FAILED'
-  if (uploaded.value === 'NOT_STARTING') return 'APP_VERSION_NOT_STARTING'
+  async function stopped() {
+    const now = await standing(deps, sending)
+    return now === 'GO' ? undefined : ({ kind: 'STOPPED', why: now } as const)
+  }
+  const before = await stopped()
+  if (before !== undefined) return before
+  const uploaded = await uploadVersion(deps.cloudflare, { ...sending, ...received })
+  if (uploaded.kind !== 'DONE') return { kind: 'FAILED', failure: 'APP_VERSION_FAILED' }
+  if (uploaded.value === 'NOT_STARTING') {
+    return { kind: 'FAILED', failure: 'APP_VERSION_NOT_STARTING' }
+  }
   deps.log.info({ companyId, projectId, versionId: sending.versionId }, 'APP_VERSION_UPLOADED')
+  const uploadedThen = await stopped()
+  if (uploadedThen !== undefined) return uploadedThen
   const opened = await openAppDatabase(deps, sending)
-  if (opened.kind === 'FAILED') return opened.failure
-  if (!(await mayGoOn(deps, sending))) return 'APP_VERSION_FAILED'
-  return migrateApp(deps, { ...sending, owner: opened.owner, manifest: received.manifest })
+  if (opened.kind === 'FAILED') return opened
+  const openedThen = await stopped()
+  if (openedThen !== undefined) return openedThen
+  const owner = opened.owner
+  const failure = await migrateApp(deps, { ...sending, owner, manifest: received.manifest })
+  return failure === undefined ? { kind: 'READY' } : { kind: 'FAILED', failure }
 }
 
 /** A send that cannot finish leaves its version failed; the next send fails it if this cannot. */
@@ -96,9 +125,18 @@ async function fail(deps: SendDeps, sending: Sending, failure: VersionFailure): 
     .catch((error: unknown) => logFailure(deps.log, databaseFailure(error)))
 }
 
-/** The Worker of a version that will never be on the air; one Cloudflare keeps goes with the prune. */
-async function removeWorker(deps: SendDeps, versionId: AppVersionId): Promise<void> {
-  await deps.cloudflare.remove(appWorkerOf(versionId))
+/**
+ * Ends a send another act overtook: a deletion of its Projeto, or a send that took its claim. Its
+ * version fails and its Worker goes now, for no prune of that Projeto may come.
+ */
+async function stop(deps: SendDeps, sending: Sending, why: 'LOST' | 'GONE'): Promise<never> {
+  await fail(deps, sending, 'APP_VERSION_FAILED')
+  await deps.cloudflare.remove(appWorkerOf(sending.versionId))
+  const { companyId, projectId } = sending
+  if (why === 'GONE') throw new Failure('NOT_FOUND', { details: { reason: 'DELETING' } })
+  throw new Failure('APP_VERSION_FAILED', {
+    details: { companyId, projectId, reason: 'CLAIM_LOST' },
+  })
 }
 
 /**
@@ -107,7 +145,15 @@ async function removeWorker(deps: SendDeps, versionId: AppVersionId): Promise<vo
  */
 function finish(deps: SendDeps, sending: Sending & { person: Person }) {
   return deps.database.command(sending.scope, async (tx) => {
-    await admitManager(deps, tx, sending)
+    const { person, companyId } = sending
+    await deps.identity.admitMember({
+      tx,
+      personId: person.id,
+      companyId,
+      action: 'manageAppVersions',
+    })
+    if ((await deps.projects.liveProjectOf(tx, sending)) === undefined)
+      return { kind: 'GONE' } as const
     const held = await lockApp(tx, sending)
     if (held.sendingVersionId !== sending.versionId) return { kind: 'LOST' } as const
     await tx.update(appVersion).set({ state: 'ready' }).where(eq(appVersion.id, sending.versionId))
@@ -120,6 +166,7 @@ function finish(deps: SendDeps, sending: Sending & { person: Person }) {
         databaseReady: true,
       })
       .where(eq(app.projectId, sending.projectId))
+    await markPrune(tx, { ...sending, liveVersionId: sending.versionId })
     return { kind: 'LIVE' } as const
   })
 }
@@ -157,25 +204,22 @@ export async function sendVersion(
   const versionId = stored.version.id
   const sending: Sending = { scope, companyId, projectId, versionId, received }
   deps.log.info({ companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')
-  const failure = await prepare(deps, { ...sending, databaseReady: stored.databaseReady })
-  if (failure !== undefined) {
-    await fail(deps, sending, failure)
-    throw new Failure(failure, { details: { companyId, projectId, versionId } })
+  const prepared = await prepare(deps, { ...sending, databaseReady: stored.databaseReady })
+  if (prepared.kind === 'FAILED') {
+    await fail(deps, sending, prepared.failure)
+    throw new Failure(prepared.failure, { details: { companyId, projectId, versionId } })
   }
+  if (prepared.kind === 'STOPPED') return stop(deps, sending, prepared.why)
   let finished: Awaited<ReturnType<typeof finish>>
   try {
     finished = await finish(deps, { ...sending, person })
   } catch (error) {
     await fail(deps, sending, 'APP_VERSION_FAILED')
-    if (error instanceof Failure && error.code === 'NOT_FOUND') await removeWorker(deps, versionId)
     throw error
   }
-  if (finished.kind === 'LOST') {
-    await removeWorker(deps, versionId)
-    throw new Failure('APP_VERSION_FAILED', {
-      details: { companyId, projectId, reason: 'CLAIM_LOST' },
-    })
-  }
+  if (finished.kind !== 'LIVE') return stop(deps, sending, finished.kind)
   deps.log.info({ companyId, projectId, versionId }, 'APP_VERSION_LIVE')
+  // The version is on the air: a prune that cannot finish now is retried by the next one.
+  await prune(deps, sending).catch((error: unknown) => logFailure(deps.log, databaseFailure(error)))
   return { version: { ...stored.version, state: 'ready', live: true }, created: true }
 }

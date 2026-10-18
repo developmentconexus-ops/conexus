@@ -1736,5 +1736,38 @@
       "file": "src/hub/apps/app-database.test.ts",
       "name": "banco do app: os logins de um app não leem"
     }
+  },
+  {
+    "id": "live-same-project",
+    "file": "apps/server/src/hub/apps/live.ts",
+    "find": "          eq(appVersion.projectId, projectId),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/live-version.test.ts",
+      "name": "voltar: 200"
+    }
+  },
+  {
+    "id": "prune-keeps-three",
+    "file": "apps/server/src/hub/apps/prune.ts",
+    "find": "export const KEPT_OLD_VERSIONS = 3",
+    "replace": "export const KEPT_OLD_VERSIONS = 4",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/prune.test.ts",
+      "name": "poda: com a 5 no ar"
+    }
+  },
+  {
+    "id": "delete-workers-first",
+    "file": "apps/server/src/hub/apps/removal.ts",
+    "find": "if (left > 0 || !(await dropAppDatabase(deps, input)))",
+    "replace": "if (!(await dropAppDatabase(deps, input)))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-delete.test.ts",
+      "name": "apagar com app"
+    }
   }
 ]

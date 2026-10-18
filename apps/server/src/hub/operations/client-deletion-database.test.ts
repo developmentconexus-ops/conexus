@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
+import { send } from '../apps/test-versions.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA,
@@ -203,4 +205,30 @@ test('apagar contra criar, 20 vezes: nada sobra no Neon nem em projects', async 
     assert.deepEqual(await rows(hub, companyId), GONE, String(round))
   }
   assert.deepEqual(hub.neon.projects(), [])
+})
+
+test('com apps: os Workers saem antes do banco no Neon; Cloudflare fora deixa DELETING, e a retomada termina', async (t) => {
+  const { hub, ana, davi } = await world(t)
+  const a = await clientWithDatabase(hub, ana, davi, 'Empresa A')
+  const [neonProject] = hub.neon.projects()
+  if (neonProject === undefined) throw new Error('no company database')
+  hub.neon.ownedBy(neonProject.id, await createCompanyDatabase(t))
+  const [project] = await hub.test.asOwner(
+    'select id from projects.project where company_id = $1',
+    [a.companyId],
+  )
+  const versions = `/api/companies/${a.companyId}/projects/${project?.id}/versions`
+  assert.equal((await send(hub, davi, versions)).statusCode, 201)
+  hub.cloudflare.script('remove', 'NO_ANSWER')
+  const pending = await call(hub, ana, 'DELETE', a.url, a.body)
+  assert.deepEqual([pending.statusCode, codeOf(pending)], [503, 'CLIENT_DELETION_PENDING'])
+  assert.equal(hub.neon.projects().length, 1, 'the database waits for the Workers')
+  assert.equal((await call(hub, ana, 'DELETE', a.url, a.body)).statusCode, 204)
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  assert.deepEqual(await rows(hub, a.companyId), GONE)
+  const left = await hub.test.asOwner(
+    'select count(*)::int as n from apps.blob where company_id = $1',
+    [a.companyId],
+  )
+  assert.deepEqual(left, [{ n: 0 }])
 })

@@ -7,7 +7,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { Email } from '@conexus/hub-api'
-import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { createHub, identityOf, subjectsOf } from '../../main.ts'
 import { testAppPorts } from '../../platform/test-app-ports.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -17,7 +17,6 @@ import {
   testConfig,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
-import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
 
 const run = promisify(execFile)
@@ -66,11 +65,10 @@ function tokenOf(summary: string): string {
 async function hubOn(t: TestContext, test: TestDatabase) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
-  const identity = identityOf({ database: test.database, config, log: silent })
   const { database } = test
-  const projects = projectsOf({ config, database, identity, neon: fakeNeon().neon, log: silent })
-  const operations = operationsOf(database, { identity, projects })
-  const apps = appsOf({ database, config, identity, projects, ...testAppPorts(config) })
+  const identity = identityOf({ database, config, log: silent })
+  const ports = { ...testAppPorts(config), log: silent }
+  const { projects, operations, apps } = subjectsOf({ database, config, identity, ...ports })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   return app

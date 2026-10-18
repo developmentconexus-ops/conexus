@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { Email } from '@conexus/hub-api'
-import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { createHub, identityOf, subjectsOf } from '../../main.ts'
 import { testAppPorts } from '../../platform/test-app-ports.ts'
 import {
   createTestDatabase,
@@ -10,7 +10,6 @@ import {
   testConfig,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
-import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
 import { codeOf, companyOn, INVITEE } from './test-hub.ts'
 
@@ -24,20 +23,12 @@ async function linked(t: TestContext) {
   const config = testConfig(test.runtimeUrl)
   const status = createStatus({ version: config.version, database: test.database })
   const identity = identityOf({ database: test.database, config, log: silent })
-  const projects = projectsOf({
-    config,
-    database: test.database,
-    identity,
-    neon: fakeNeon().neon,
-    log: silent,
-  })
-  const operations = operationsOf(test.database, { identity, projects })
-  const apps = appsOf({
+  const { projects, operations, apps } = subjectsOf({
     database: test.database,
     config,
     identity,
-    projects,
     ...testAppPorts(config),
+    log: silent,
   })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())

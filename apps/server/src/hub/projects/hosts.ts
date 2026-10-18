@@ -52,7 +52,13 @@ export function admitToApp(
     const [row] = await tx
       .select({ name: project.name })
       .from(project)
-      .where(and(eq(project.id, input.projectId), eq(project.companyId, input.companyId)))
+      .where(
+        and(
+          eq(project.id, input.projectId),
+          eq(project.companyId, input.companyId),
+          isNull(project.deletingSince),
+        ),
+      )
     if (row === undefined) return { kind: 'NOT_FOUND' } as const
     return { kind: 'ADMITTED', projectName: row.name } as const
   })

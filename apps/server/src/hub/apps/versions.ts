@@ -15,7 +15,8 @@ const CLAIM_MARGIN_MS = 5_000
 export const SEND_CLAIM_MS =
   NEON_PREPARE_BUDGET_MS + 2 * NEON_CALL_BUDGET_MS + CLOUDFLARE_DEADLINE_MS + CLAIM_MARGIN_MS
 const CLAIM_UNTIL = sql`statement_timestamp() + ${SEND_CLAIM_MS} * interval '1 millisecond'`
-const CLAIM_HELD = sql<boolean>`${app.claimedUntil} > statement_timestamp()`
+/** Whether the Projeto's claim is still alive, read by the database's clock. */
+export const CLAIM_HELD = sql<boolean>`${app.claimedUntil} > statement_timestamp()`
 
 const MediaType = z.string().regex(/^[a-z]+\/[a-z0-9.+-]+(;\s?charset=[a-z0-9-]+)?$/)
 

@@ -29,6 +29,7 @@ export function fakeCloudflare() {
   const workers = new Map<string, WorkerUpload>()
   const calls: { call: Call; worker: string }[] = []
   const scripts: Record<Call, Scripted[]> = { upload: [], remove: [], exists: [] }
+  const holds: { arrived: PromiseWithResolvers<void>; released: PromiseWithResolvers<void> }[] = []
 
   function scripted<T>(
     call: Call,
@@ -42,6 +43,11 @@ export function fakeCloudflare() {
 
   const cloudflare: CloudflareApps = {
     async upload(input) {
+      const held = holds.shift()
+      if (held !== undefined) {
+        held.arrived.resolve()
+        await held.released.promise
+      }
       const next = scripted<never>('upload', input.worker)
       if (next === 'NOT_STARTING') return { kind: 'DONE', value: 'NOT_STARTING' }
       if (next !== undefined) return next
@@ -67,6 +73,15 @@ export function fakeCloudflare() {
     /** The Workers the namespace holds now, by name. */
     workers: () => [...workers.keys()].sort(),
     upload: (worker: string) => workers.get(worker),
+    /** Keeps the next upload before its effect; `arrived` resolves when it is waiting. */
+    holdUpload() {
+      const held = {
+        arrived: Promise.withResolvers<void>(),
+        released: Promise.withResolvers<void>(),
+      }
+      holds.push(held)
+      return { arrived: held.arrived.promise, release: () => held.released.resolve() }
+    },
     /** The next call of this kind answers so. */
     script(call: Call, answer: Scripted) {
       scripts[call].push(answer)

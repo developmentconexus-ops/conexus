@@ -100,12 +100,18 @@ export const createProject = defineOperation({
 export const deleteProject = defineOperation({
   id: 'deleteProject',
   summary:
-    'Deletes a Project for an owner or administrator who typed its name; the database stays.',
+    'Deletes a Project with its app, the app’s data and versions, for an owner or administrator who typed its name; the company’s database stays.',
   access: 'session',
   method: 'DELETE',
   path: '/api/companies/{companyId}/projects/{projectId}',
   bodyLimit: 1024,
   input: { params: OfProject, body: Named },
   success: { status: 204 },
-  failures: ['NOT_FOUND', 'PROJECT_NAME_MISMATCH', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+  failures: [
+    'NOT_FOUND',
+    'PROJECT_NAME_MISMATCH',
+    'APP_VERSION_SENDING',
+    'SESSION_REQUIRED',
+    'DATABASE_UNAVAILABLE',
+  ],
 })

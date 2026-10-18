@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
 import { z } from 'zod'
 import type { Apps } from './hub/apps/public.ts'
-import { createApps } from './hub/apps/public.ts'
+import { createAppRemoval, createApps } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
@@ -23,7 +23,12 @@ import { createCompanyPostgres, neonTransport } from './platform/company-postgre
 import type { Config } from './platform/config.ts'
 import { readConfig } from './platform/config.ts'
 import type { Database } from './platform/database.ts'
-import { assertMigrated, assertRuntimeLogin, openDatabase } from './platform/database.ts'
+import {
+  assertMigrated,
+  assertRuntimeLogin,
+  databaseFailure,
+  openDatabase,
+} from './platform/database.ts'
 import { createEdgeServer } from './platform/edge-server.ts'
 import type { FailureLog } from './platform/failure.ts'
 import { Failure, logFailure } from './platform/failure.ts'
@@ -83,51 +88,33 @@ export function identityOf(deps: {
   return createIdentity({ ...deps, sendMail: createMail(deps) })
 }
 
-/** The Operations Central, reaching identity only through its ports (code C4). */
-export function operationsOf(
-  database: Database,
-  deps: { identity: Identity; projects: Projects },
-): Operations {
-  return createOperations({
-    database,
-    identity: deps.identity.ports,
-    projects: deps.projects.ports,
-  })
-}
-
-/** The Projects subject, reaching identity through its ports and Neon through the port it is given. */
-export function projectsOf(deps: {
-  database: Database
-  config: Config
-  identity: Identity
-  neon: NeonProjects
-  log: FailureLog
-}): Projects {
-  const { config, ...rest } = deps
-  return createProjects({ ...rest, identity: deps.identity.ports, appsDomain: config.appsDomain })
-}
-
 /**
- * The apps of the Projetos, reaching identity and Projects through their ports (code C4), and Neon,
- * the companies' databases and Cloudflare through the ports it is given (C56).
+ * The subjects past identity, each reaching another only through its ports (code C4), and Neon,
+ * the companies' databases and Cloudflare only through the ports it is given (C56). Deleting a
+ * Projeto or a client reaches its apps through the apps' removal, made before either subject.
  */
-export function appsOf(deps: {
+export function subjectsOf(deps: {
   database: Database
   config: Config
   identity: Identity
-  projects: Projects
   neon: NeonProjects
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
   log: FailureLog
-}): Apps {
-  const { config, identity, projects, ...rest } = deps
-  return createApps({
-    ...rest,
-    identity: identity.ports,
+}): { projects: Projects; operations: Operations; apps: Apps } {
+  const { database, config, log, neon } = deps
+  const identity = deps.identity.ports
+  const appsDomain = config.appsDomain
+  const appRemoval = createAppRemoval(deps)
+  const projects = createProjects({ database, identity, neon, log, appsDomain, appRemoval })
+  const operations = createOperations({
+    database,
+    identity,
     projects: projects.ports,
-    appsDomain: config.appsDomain,
+    appRemoval,
   })
+  const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain })
+  return { projects, operations, apps }
 }
 
 /**
@@ -190,15 +177,13 @@ async function runServer(): Promise<void> {
     const status = createStatus({ version: config.version, database })
     const identity = identityOf({ database, config, log })
     const neon = createNeonProjects({ config, log })
-    const projects = projectsOf({ database, config, identity, neon, log })
-    const operations = operationsOf(database, { identity, projects })
     const companyPostgres = createCompanyPostgres({
       transport: neonTransport,
       appLoginKey: config.appLoginKey,
     })
     const cloudflare = createCloudflareApps({ config, log })
-    const apps = appsOf({
-      ...{ database, config, identity, projects },
+    const { projects, operations, apps } = subjectsOf({
+      ...{ database, config, identity },
       ...{ neon, companyPostgres, cloudflare, log },
     })
     const app = await createHub(config, { status, identity, operations, projects, apps })
@@ -209,6 +194,8 @@ async function runServer(): Promise<void> {
       await listenQuietly(app, config.port)
       app.log.info('LISTENING')
       await status.recordStart()
+      // The repair runs after the Hub answers: a Cloudflare or Neon out never keeps it down.
+      void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
     } catch (error) {
       grace.uninstall()
       await Promise.all([app.close(), edge.close()])

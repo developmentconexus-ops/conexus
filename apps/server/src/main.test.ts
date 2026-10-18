@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
 import { createStatus } from './hub/status/public.ts'
-import { appsOf, createHub, identityOf, operationsOf, projectsOf } from './main.ts'
+import { createHub, identityOf, subjectsOf } from './main.ts'
 import { testAppPorts } from './platform/test-app-ports.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import {
@@ -18,7 +18,6 @@ import {
   testConfig,
 } from './platform/test-database.ts'
 import { spawnHub, startHub } from './platform/test-hub-process.ts'
-import { fakeNeon } from './platform/test-neon.ts'
 
 const apps: FastifyInstance[] = []
 const dirs: string[] = []
@@ -37,20 +36,16 @@ async function hub(webRoot?: string) {
   const config = testConfig(shared.runtimeUrl)
   const status = createStatus({ version: config.version, database: shared.database })
   const identity = identityOf({ database: shared.database, config, log: silent })
-  const projects = projectsOf({
-    config,
-    database: shared.database,
-    identity,
-    neon: fakeNeon().neon,
-    log: silent,
-  })
-  const operations = operationsOf(shared.database, { identity, projects })
-  const door = appsOf({
-    database: shared.database,
-    config,
-    identity,
+  const {
     projects,
+    operations,
+    apps: door,
+  } = subjectsOf({
+    database: shared.database,
+    config,
+    identity,
     ...testAppPorts(config),
+    log: silent,
   })
   const app = await createHub(config, {
     status,

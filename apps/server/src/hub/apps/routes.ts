@@ -4,6 +4,7 @@ import {
   createAppSession,
   createAppVersion,
   listAppVersions,
+  setLiveVersion,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
@@ -28,6 +29,9 @@ export function registerVersionRoutes(app: FastifyInstance, versions: AppVersion
     const sent = await versions.send({ person, ...params, ...body, attemptKey })
     return answer({ version: sent.version })
   })
+  serve(app, setLiveVersion, async ({ person, params, body }) =>
+    answer({ version: await versions.setLive({ person, ...params, versionId: body.versionId }) }),
+  )
 }
 
 /** The dispatcher's two calls, on the edge listener alone (security S48). */
