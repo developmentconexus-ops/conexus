@@ -50,8 +50,8 @@ export async function neonTransport(
   }
 }
 
-export type AppMigration = Manifest['migrations'][number]
-export type MigrateAnswer =
+type AppMigration = Manifest['migrations'][number]
+type MigrateAnswer =
   | { kind: 'DONE'; applied: number }
   | { kind: 'CHANGED'; id: string }
   | { kind: 'REFUSED'; code: string }
@@ -76,7 +76,7 @@ function quoted(name: string): string {
 const LEDGER = 'conexus_migration'
 
 /** The SHA-256 of a migration's statements, which the ledger keeps (decision 0046). */
-export function migrationDigest(migration: AppMigration): string {
+function migrationDigest(migration: AppMigration): string {
   return createHash('sha256').update(JSON.stringify(migration.statements)).digest('hex')
 }
 

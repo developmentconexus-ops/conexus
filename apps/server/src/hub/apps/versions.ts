@@ -12,7 +12,7 @@ import { app, appVersion, blob, versionFile } from './tables.ts'
 
 /** Past the calls a send makes with no transaction open, so its claim outlives them (0043). */
 const CLAIM_MARGIN_MS = 5_000
-export const SEND_CLAIM_MS =
+const SEND_CLAIM_MS =
   NEON_PREPARE_BUDGET_MS + 2 * NEON_CALL_BUDGET_MS + CLOUDFLARE_DEADLINE_MS + CLAIM_MARGIN_MS
 const CLAIM_UNTIL = sql`statement_timestamp() + ${SEND_CLAIM_MS} * interval '1 millisecond'`
 /** Whether the Projeto's claim is still alive, read by the database's clock. */
@@ -21,7 +21,7 @@ export const CLAIM_HELD = sql<boolean>`${app.claimedUntil} > statement_timestamp
 const MediaType = z.string().regex(/^[a-z]+\/[a-z0-9.+-]+(;\s?charset=[a-z0-9-]+)?$/)
 
 /** One file of a version, decoded and named by its content. */
-export type VersionFile = Readonly<{
+type VersionFile = Readonly<{
   path: string
   mediaType: string
   sha256: string

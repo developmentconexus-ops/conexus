@@ -9,9 +9,9 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each approval and use line.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
 - [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub.
-- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge.
+- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
-- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub a um minuto.
+- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): the companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 for tests.
 - [steps/](steps/): the card in construction; empty between steps.
@@ -75,7 +75,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0042](decisions/0042-cloudflare-token-in-one-call-environment.md) publish token.
 - [0043](decisions/0043-app-logins-derived-from-one-key.md) derived logins.
 - [0044](decisions/0044-release-image-built-on-a-github-hosted-machine.md) hosted image.
-- [0045](decisions/0045-app-reads-by-query-writes-by-one-batch.md) reads, one batch.
+- [0045](decisions/0045-app-reads-by-query-writes-by-one-batch.md) one batch.
 - [0046](decisions/0046-version-worker-first-migrations-in-one-transaction.md) Worker first.
 
 ## Skills

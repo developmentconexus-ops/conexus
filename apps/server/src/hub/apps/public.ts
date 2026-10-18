@@ -17,7 +17,6 @@ import { registerEdgeRoutes, registerHandoffRoute, registerVersionRoutes } from 
 export { PRUNE_BUDGET_MS } from './prune.ts'
 
 export type Apps = ReturnType<typeof createApps>
-export type AppRemovalPort = ReturnType<typeof createAppRemoval>
 
 /**
  * How deleting a Projeto, or a client, removes its apps: Workers, schemas and logins before rows

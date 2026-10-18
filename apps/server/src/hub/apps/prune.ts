@@ -7,7 +7,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { app, appVersion, blob, versionFile } from './tables.ts'
 
 /** The versions kept besides the one on the air, so Voltar has somewhere to go (founder, 6C). */
-export const KEPT_OLD_VERSIONS = 3
+const KEPT_OLD_VERSIONS = 3
 
 type Ids = { companyId: CompanyId; projectId: ProjectId }
 
@@ -64,7 +64,7 @@ function isForeignKeyViolation(error: unknown): boolean {
 }
 
 /** Deletes the versions' rows, their files with them, then the bytes nothing names any more. */
-export async function deleteVersionRows(tx: CommandTx, companyId: CompanyId, ids: string[]) {
+async function deleteVersionRows(tx: CommandTx, companyId: CompanyId, ids: string[]) {
   if (ids.length === 0) return
   const files = await tx
     .select({ sha256: versionFile.sha256 })
