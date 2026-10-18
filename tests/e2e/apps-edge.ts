@@ -49,7 +49,7 @@ async function storeAssets(memory: Memory, request: Request, bearer: string): Pr
       mediaType: file.type,
     })
   }
-  return ok({ jwt: `done-${bearer}` })
+  return [201, { success: true, errors: [], messages: [], result: { jwt: `done-${bearer}` } }]
 }
 
 /** The session asks for the files it does not hold yet, in one bucket. */
@@ -61,7 +61,9 @@ async function openSession(memory: Memory, request: Request): Promise<ApiReply> 
   const missing = Object.values<{ hash: string }>(manifest)
     .map(({ hash }) => hash)
     .filter((hash) => !memory.blobs.has(hash))
-  return ok({ jwt, buckets: missing.length === 0 ? [] : [missing] })
+  // The shape Cloudflare's direct-upload guide documents for the session: `errors` is null.
+  const result = { jwt, buckets: missing.length === 0 ? [] : [missing] }
+  return [200, { result, success: true, errors: null, messages: null }]
 }
 
 /** The script's module and metadata; its static files are the ones its completion token names. */

@@ -106,14 +106,24 @@ test('cloudflare: o envio com arquivos estáticos, nas formas da API, do pedido 
   const page = { path: 'assets/index.html', bytes: style, mediaType: 'text/html' }
   const sheet = { path: 'assets/style.css', bytes: style, mediaType: 'text/css' }
   const upload = { ...UPLOAD, files: [...UPLOAD.files, page, sheet] }
-  const answers = [
-    { jwt: 'sessao', buckets: [[hashOf(page), hashOf(sheet)]] },
-    { jwt: 'pronto' },
-    { id: 'v-1' },
+  // Each answer as Cloudflare's direct-upload guide documents it: the session's `errors` is null.
+  const answers: [number, unknown][] = [
+    [
+      200,
+      {
+        result: { jwt: 'sessao', buckets: [[hashOf(page), hashOf(sheet)]] },
+        success: true,
+        errors: null,
+        messages: null,
+      },
+    ],
+    [201, { success: true, errors: [], messages: [], result: { jwt: 'pronto' } }],
+    [200, { success: true, errors: [], messages: [], result: { id: 'v-1' } }],
   ]
-  const { cloudflare, received, config } = await cloudflareAt(t, (response) =>
-    json(response, 200, { success: true, errors: [], result: answers.shift() }),
-  )
+  const { cloudflare, received, config } = await cloudflareAt(t, (response) => {
+    const [status, body] = answers.shift() ?? [500, {}]
+    json(response, status, body)
+  })
   assert.deepEqual(await cloudflare.upload(upload), { kind: 'DONE', value: 'UPLOADED' })
   const [session, bucket, script] = received
   const token = `Bearer ${config.cloudflareAppsToken.reveal()}`
@@ -154,3 +164,33 @@ function hashOf(file: { path: string; bytes: Uint8Array }): string {
   const base64 = Buffer.from(file.bytes).toString('base64')
   return createHash('sha256').update(`${base64}${extension}`).digest('hex').slice(0, 32)
 }
+
+test('cloudflare: um envelope fora do formato é silêncio, e o registro diz qual campo, nunca o valor', async (t) => {
+  const { cloudflare, logged } = await cloudflareAt(t, (response) =>
+    json(response, 200, { success: 'sim', errors: 'nenhum', result: null }),
+  )
+  assert.deepEqual(await cloudflare.remove('v-1'), { kind: 'NO_ANSWER' })
+  assert.deepEqual(logged, [{ reason: 'unreadable', status: 200, fields: 'success,errors' }])
+})
+
+test('cloudflare: dois baldes, o primeiro sem token; o Worker leva o token do último', async (t) => {
+  const style = new TextEncoder().encode(':root{}')
+  const page = { path: 'assets/index.html', bytes: style, mediaType: 'text/html' }
+  const sheet = { path: 'assets/style.css', bytes: style, mediaType: 'text/css' }
+  const buckets = [[hashOf(page)], [hashOf(sheet)]]
+  const answers: [number, unknown][] = [
+    [200, { result: { jwt: 'sessao', buckets }, success: true, errors: null, messages: null }],
+    [202, { success: true, errors: [], messages: [], result: { jwt: null } }],
+    [201, { success: true, errors: [], messages: [], result: { jwt: 'pronto' } }],
+    [200, { success: true, errors: [], messages: [], result: { id: 'v-1' } }],
+  ]
+  const { cloudflare, received } = await cloudflareAt(t, (response) => {
+    const [status, body] = answers.shift() ?? [500, {}]
+    json(response, status, body)
+  })
+  const upload = { ...UPLOAD, files: [...UPLOAD.files, page, sheet] }
+  assert.deepEqual(await cloudflare.upload(upload), { kind: 'DONE', value: 'UPLOADED' })
+  const form = await received[3]?.body.formData()
+  const metadata = JSON.parse(await Object(form?.get('metadata')).text())
+  assert.equal(metadata.assets.jwt, 'pronto')
+})

@@ -2220,5 +2220,16 @@
       "file": "src/platform/company-postgres.test.ts",
       "name": "transporte do Neon: a resposta sem tamanho declarado"
     }
+  },
+  {
+    "id": "cloudflare-null-errors",
+    "file": "apps/server/src/platform/cloudflare.ts",
+    "find": "    .nullish()\n    .transform((errors) => errors ?? []),\n",
+    "replace": "    .default([]),\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/cloudflare.test.ts",
+      "name": "cloudflare: o envio com arquivos estáticos"
+    }
   }
 ]
