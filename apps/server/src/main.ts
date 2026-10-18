@@ -16,6 +16,10 @@ import type { Projects } from './hub/projects/public.ts'
 import { createProjects } from './hub/projects/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
+import type { CloudflareApps } from './platform/cloudflare.ts'
+import { createCloudflareApps } from './platform/cloudflare.ts'
+import type { CompanyPostgres } from './platform/company-postgres.ts'
+import { createCompanyPostgres, neonTransport } from './platform/company-postgres.ts'
 import type { Config } from './platform/config.ts'
 import { readConfig } from './platform/config.ts'
 import type { Database } from './platform/database.ts'
@@ -103,18 +107,26 @@ export function projectsOf(deps: {
   return createProjects({ ...rest, identity: deps.identity.ports, appsDomain: config.appsDomain })
 }
 
-/** The door of the apps' hosts, reaching identity and Projects through their ports (code C4). */
+/**
+ * The apps of the Projetos, reaching identity and Projects through their ports (code C4), and Neon,
+ * the companies' databases and Cloudflare through the ports it is given (C56).
+ */
 export function appsOf(deps: {
   database: Database
   config: Config
   identity: Identity
   projects: Projects
+  neon: NeonProjects
+  companyPostgres: CompanyPostgres
+  cloudflare: CloudflareApps
+  log: FailureLog
 }): Apps {
+  const { config, identity, projects, ...rest } = deps
   return createApps({
-    database: deps.database,
-    identity: deps.identity.ports,
-    projects: deps.projects.ports,
-    appsDomain: deps.config.appsDomain,
+    ...rest,
+    identity: identity.ports,
+    projects: projects.ports,
+    appsDomain: config.appsDomain,
   })
 }
 
@@ -180,7 +192,15 @@ async function runServer(): Promise<void> {
     const neon = createNeonProjects({ config, log })
     const projects = projectsOf({ database, config, identity, neon, log })
     const operations = operationsOf(database, { identity, projects })
-    const apps = appsOf({ database, config, identity, projects })
+    const companyPostgres = createCompanyPostgres({
+      transport: neonTransport,
+      appLoginKey: config.appLoginKey,
+    })
+    const cloudflare = createCloudflareApps({ config, log })
+    const apps = appsOf({
+      ...{ database, config, identity, projects },
+      ...{ neon, companyPostgres, cloudflare, log },
+    })
     const app = await createHub(config, { status, identity, operations, projects, apps })
     const edge = await createEdgeHub(config, { apps })
     const grace = shutDownOnSignal(app, edge, database)

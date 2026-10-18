@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Version } from '@conexus/hub-api'
 import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { testAppPorts } from '../../platform/test-app-ports.ts'
 import {
   createTestDatabase,
   serveEnvironment,
@@ -29,7 +30,13 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     log: silent,
   })
   const operations = operationsOf(test.database, { identity, projects })
-  const apps = appsOf({ database: test.database, config, identity, projects })
+  const apps = appsOf({
+    database: test.database,
+    config,
+    identity,
+    projects,
+    ...testAppPorts(config),
+  })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   return { app, status, test }
@@ -105,7 +112,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     log: silent,
   })
   const operations = operationsOf(database, { identity, projects })
-  const apps = appsOf({ database, config, identity, projects })
+  const apps = appsOf({ database, config, identity, projects, ...testAppPorts(config) })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   const response = await app.inject(STATUS)

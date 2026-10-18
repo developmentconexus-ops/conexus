@@ -1331,6 +1331,50 @@
     }
   },
   {
+    "id": "edge-db-own-login",
+    "file": "apps/edge/src/dispatch.ts",
+    "find": "db: visit.exports.Db({ props: call.database })",
+    "replace": "db: visit.exports.Db({ props: { ...call.database, login: 'neondb_owner' } })",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-versions.test.ts",
+      "name": "versão no ar: o Worker dela"
+    }
+  },
+  {
+    "id": "edge-password-not-in-props",
+    "file": "apps/edge/src/dispatch.ts",
+    "find": "props: { caller, db: visit.exports.Db({ props: call.database }) } satisfies AppProps,",
+    "replace": "props: { caller, db: visit.exports.Db({ props: call.database }), key: visit.env.APP_LOGIN_KEY },",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-versions.test.ts",
+      "name": "versão no ar: o Worker dela"
+    }
+  },
+  {
+    "id": "edge-db-error-code-only",
+    "file": "apps/edge/src/db.ts",
+    "find": "return { error: { code: code ?? NO_CONNECTION } }",
+    "replace": "return { error: { code: code ?? NO_CONNECTION, message: String(error) } }",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/db.test.ts",
+      "name": "db: a recusa do PostgreSQL leva só o código"
+    }
+  },
+  {
+    "id": "edge-db-query-read-only",
+    "file": "apps/edge/src/db.ts",
+    "find": "readOnly: true,",
+    "replace": "readOnly: false,",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/db.test.ts",
+      "name": "db: query só lê"
+    }
+  },
+  {
     "id": "runner-commit-on-main",
     "file": "infra/runner-job-started.sh",
     "find": "\"${git[@]}\" merge-base --is-ancestor \"$commit\" refs/heads/main > /dev/null 2>&1 \\\n  || refuse \"the commit $commit is not on main\"\n",
@@ -1636,6 +1680,61 @@
       "cwd": "apps/server",
       "file": "src/platform/isolation-versions.test.ts",
       "name": "versões: sem filtro, a empresa lê só as suas"
+    }
+  },
+  {
+    "id": "send-admission",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "  await deps.identity.admitMember({ tx, personId: person.id, companyId, action })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/versions.test.ts",
+      "name": "envio: dono e administrador 201"
+    }
+  },
+  {
+    "id": "send-lock",
+    "file": "apps/server/src/hub/apps/versions.ts",
+    "find": "    if (held.held) throw new Failure('APP_VERSION_SENDING')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/versions.test.ts",
+      "name": "envio: a mesma chave dá a mesma versão"
+    }
+  },
+  {
+    "id": "login-not-superuser",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "LOGIN PASSWORD '${password}'",
+    "replace": "LOGIN CREATEROLE PASSWORD '${password}'",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-database.test.ts",
+      "name": "banco do app: logins por SQL"
+    }
+  },
+  {
+    "id": "migration-ledger",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "text: `INSERT INTO ${ledger} (id, sha256) VALUES ($1, $2)`",
+    "replace": "text: `SELECT $1::text, $2::text`",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-database.test.ts",
+      "name": "banco do app: logins por SQL"
+    }
+  },
+  {
+    "id": "app-schema-isolated",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "    { text: `GRANT USAGE ON SCHEMA ${s} TO ${run}` },\n",
+    "replace": "    { text: `GRANT USAGE ON SCHEMA ${s} TO PUBLIC` },\n    { text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT SELECT, INSERT ON TABLES TO PUBLIC` },\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-database.test.ts",
+      "name": "banco do app: os logins de um app não leem"
     }
   }
 ]

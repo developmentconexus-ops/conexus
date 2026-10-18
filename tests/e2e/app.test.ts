@@ -4,7 +4,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import example from '../../apps/edge/example/src/index.ts'
-import dispatcher from '../../apps/edge/src/dispatcher.ts'
+import { serveDispatch } from '../../apps/edge/src/dispatch.ts'
 import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { liveHub, PASSWORD, personWithPassword } from './live-hub.ts'
 
@@ -74,11 +74,19 @@ async function plantCompany(database: Database, owner: string, member: string) {
   return companyId
 }
 
+/** This journey sends no version, so no call reaches a version's `db`. */
+const NO_VERSION = {
+  Db(): never {
+    throw new Error('no version is on the air in this journey')
+  },
+}
+
 /** The dispatcher's bindings: the Hub's edge port, and a namespace that runs the example app. */
 function edgeEnv(edgePort: number) {
   return {
     HUB_PUBLIC_ORIGIN: HUB_ORIGIN,
     APPS_DOMAIN: EDGE_DOMAIN,
+    APP_LOGIN_KEY: 'k'.repeat(43),
     HUB: {
       async fetch(input: RequestInfo | URL, init?: RequestInit) {
         const url = new URL(new Request(input).url)
@@ -142,9 +150,10 @@ async function scenario(t: TestContext) {
   async function visit(jar: Jar, path: string): Promise<Reply> {
     const headers = new Headers()
     if (jar.header() !== '') headers.set('Cookie', jar.header())
-    const response = await dispatcher.fetch(
+    const response = await serveDispatch(
       new Request(`${APP}${path}`, { headers, redirect: 'manual' }),
       env,
+      NO_VERSION,
     )
     jar.absorb(response.headers)
     return { status: response.status, headers: response.headers, text: await response.text() }

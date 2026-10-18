@@ -42,7 +42,12 @@ function hub(
         state.databaseReady = true
         return HttpResponse.json(
           createProject.success.body.parse({
-            project: { ...project, mayDelete: true, address: PEDIDOS_ADDRESS },
+            project: {
+              ...project,
+              mayDelete: true,
+              mayManageVersions: true,
+              address: PEDIDOS_ADDRESS,
+            },
           }),
           { status: 201 },
         )

@@ -255,6 +255,8 @@ export function projectsRead(view: ProjectsView) {
               project: {
                 ...project,
                 mayDelete: view.mayDelete,
+                // Owners and administrators delete a Project and manage its versions alike.
+                mayManageVersions: view.mayDelete,
                 address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
               },
             }),

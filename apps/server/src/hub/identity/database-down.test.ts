@@ -3,6 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { testAppPorts } from '../../platform/test-app-ports.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -32,7 +33,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
   const neon = fakeNeon().neon
   const projects = projectsOf({ config, database, identity, neon, log: silent })
   const operations = operationsOf(database, { identity, projects })
-  const apps = appsOf({ database, config, identity, projects })
+  const apps = appsOf({ database, config, identity, projects, ...testAppPorts(config) })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   return app

@@ -1,0 +1,238 @@
+import { createHash } from 'node:crypto'
+import type { Manifest } from '@conexus/app-contract'
+import type { ProjectId } from '@conexus/hub-api'
+import { appLogin, appLoginPassword } from '@conexus/hub-api'
+import { NeonDbError, neon } from '@neondatabase/serverless'
+import type { AppLoginKey } from './config.ts'
+import { DatabaseUrl } from './database.ts'
+import { NEON_CALL_BUDGET_MS } from './neon.ts'
+
+export type SqlStatement = Readonly<{ text: string; values?: readonly unknown[] }>
+type Row = Readonly<Record<string, unknown>>
+
+/** What PostgreSQL said to one transaction: a SQLSTATE left no effect; silence may have left it. */
+export type SqlAnswer =
+  | { kind: 'DONE'; value: Row[][] }
+  | { kind: 'REFUSED'; code: string }
+  | { kind: 'NO_ANSWER' }
+
+/** Runs the statements in one transaction as the URL's login, all or none. */
+export type SqlTransport = (
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+) => Promise<SqlAnswer>
+
+// Classes 08 and 57P0: the connection or the server went away, and the commit may have happened.
+const CONNECTION_LOST = /^(08|57P0)/
+
+/** A SQLSTATE refuses; none, or a lost connection, is silence. */
+export function answerOf(code: string | undefined): SqlAnswer {
+  return code === undefined || CONNECTION_LOST.test(code)
+    ? { kind: 'NO_ANSWER' }
+    : { kind: 'REFUSED', code }
+}
+
+/** The program's transport: Neon's HTTP proxy, one request per transaction (decision 0043). */
+export async function neonTransport(
+  url: DatabaseUrl,
+  statements: readonly SqlStatement[],
+  signal: AbortSignal,
+): Promise<SqlAnswer> {
+  try {
+    const sql = neon(url.reveal(), { fetchOptions: { signal } })
+    const value: Row[][] = await sql.transaction(
+      statements.map(({ text, values }) => sql.query(text, [...(values ?? [])])),
+    )
+    return { kind: 'DONE', value }
+  } catch (error) {
+    return answerOf(error instanceof NeonDbError ? error.code : undefined)
+  }
+}
+
+export type AppMigration = Manifest['migrations'][number]
+export type MigrateAnswer =
+  | { kind: 'DONE'; applied: number }
+  | { kind: 'CHANGED'; id: string }
+  | { kind: 'REFUSED'; code: string }
+  | { kind: 'NO_ANSWER' }
+
+export type CompanyPostgres = {
+  ensureApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+  migrate(
+    owner: DatabaseUrl,
+    projectId: ProjectId,
+    migrations: readonly AppMigration[],
+  ): Promise<MigrateAnswer>
+  dropApp(owner: DatabaseUrl, projectId: ProjectId): Promise<SqlAnswer>
+}
+
+/** An identifier as SQL reads it: the Projeto's id keeps its case. */
+function quoted(name: string): string {
+  return `"${name.replaceAll('"', '""')}"`
+}
+
+/** The ledger of the app's migrations, in its schema; the run login cannot read it. */
+const LEDGER = 'conexus_migration'
+
+/** The SHA-256 of a migration's statements, which the ledger keeps (decision 0046). */
+export function migrationDigest(migration: AppMigration): string {
+  return createHash('sha256').update(JSON.stringify(migration.statements)).digest('hex')
+}
+
+function appliedOf(row: Row) {
+  return { id: String(row.id), sha256: String(row.sha256) }
+}
+
+type Context = { transport: SqlTransport; key: string }
+
+/** The address of one of the app's logins, its password derived for this act alone. */
+async function asLogin(context: Context, owner: DatabaseUrl, login: string): Promise<DatabaseUrl> {
+  const url = new URL(owner.reveal())
+  url.username = login
+  url.password = await appLoginPassword({ key: context.key, login })
+  return DatabaseUrl.parse(url.toString())
+}
+
+async function existingRoles(
+  context: Context,
+  owner: DatabaseUrl,
+  names: string[],
+  signal: AbortSignal,
+) {
+  const found = await context.transport(
+    owner,
+    [{ text: 'SELECT rolname FROM pg_roles WHERE rolname = ANY($1::text[])', values: [names] }],
+    signal,
+  )
+  if (found.kind !== 'DONE') return found
+  const existing = new Set(found.value[0]?.map((row) => String(row.rolname)))
+  return { kind: 'DONE', names: existing } as const
+}
+
+/**
+ * The schema's statements: owned by the migration login, which the owner holds by SET alone and
+ * never inherits; the ledger is made before the default grants, so the run login never reaches it.
+ */
+function schemaStatements(projectId: ProjectId): SqlStatement[] {
+  const { schema, runLogin, migrateLogin } = appLogin(projectId)
+  const [s, run, migrate] = [schema, runLogin, migrateLogin].map(quoted)
+  return [
+    { text: `GRANT ${migrate} TO CURRENT_USER WITH INHERIT FALSE, SET TRUE` },
+    { text: `CREATE SCHEMA IF NOT EXISTS ${s} AUTHORIZATION ${migrate}` },
+    ...[run, migrate].flatMap((login) => [
+      { text: `ALTER ROLE ${login} SET search_path = ${s}` },
+      { text: `ALTER ROLE ${login} SET statement_timeout = '5s'` },
+    ]),
+    { text: `SET LOCAL ROLE ${migrate}` },
+    {
+      text: `CREATE TABLE IF NOT EXISTS ${s}.${LEDGER} (id text PRIMARY KEY, sha256 text NOT NULL,
+        applied_at timestamptz NOT NULL DEFAULT statement_timestamp())`,
+    },
+    { text: `GRANT USAGE ON SCHEMA ${s} TO ${run}` },
+    {
+      text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ${run}`,
+    },
+    { text: `ALTER DEFAULT PRIVILEGES IN SCHEMA ${s} GRANT USAGE, SELECT ON SEQUENCES TO ${run}` },
+  ]
+}
+
+/** The schema and both logins, in one transaction; what a cut run left is found, not made twice. */
+async function ensureApp(
+  context: Context,
+  owner: DatabaseUrl,
+  projectId: ProjectId,
+): Promise<SqlAnswer> {
+  const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
+  const { runLogin, migrateLogin } = appLogin(projectId)
+  const roles = await existingRoles(context, owner, [migrateLogin, runLogin], signal)
+  if (roles.kind !== 'DONE') return roles
+  const created: SqlStatement[] = []
+  for (const login of [migrateLogin, runLogin]) {
+    if (roles.names.has(login)) continue
+    const password = await appLoginPassword({ key: context.key, login })
+    created.push({ text: `CREATE ROLE ${quoted(login)} LOGIN PASSWORD '${password}'` })
+  }
+  return context.transport(owner, [...created, ...schemaStatements(projectId)], signal)
+}
+
+/**
+ * Every pending migration in one transaction with its ledger rows, as the migration login; an
+ * applied one whose statements changed, or that the version no longer names, refuses them all
+ * (decision 0046).
+ */
+async function migrate(
+  context: Context,
+  input: { owner: DatabaseUrl; projectId: ProjectId; migrations: readonly AppMigration[] },
+): Promise<MigrateAnswer> {
+  const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
+  const { schema, migrateLogin } = appLogin(input.projectId)
+  const ledger = `${quoted(schema)}.${LEDGER}`
+  const url = await asLogin(context, input.owner, migrateLogin)
+  const read = await context.transport(url, [{ text: `SELECT id, sha256 FROM ${ledger}` }], signal)
+  if (read.kind !== 'DONE') return read
+  const digests = new Map(input.migrations.map((one) => [one.id, migrationDigest(one)]))
+  const applied = (read.value[0] ?? []).map(appliedOf)
+  const changed = applied.find((row) => digests.get(row.id) !== row.sha256)
+  if (changed !== undefined) return { kind: 'CHANGED', id: changed.id }
+  const done = new Set(applied.map((row) => row.id))
+  const pending = input.migrations.filter((one) => !done.has(one.id))
+  if (pending.length === 0) return { kind: 'DONE', applied: 0 }
+  const ran = await context.transport(
+    url,
+    pending.flatMap((one) => [
+      ...one.statements.map((text) => ({ text })),
+      {
+        text: `INSERT INTO ${ledger} (id, sha256) VALUES ($1, $2)`,
+        values: [one.id, digests.get(one.id)],
+      },
+    ]),
+    signal,
+  )
+  return ran.kind === 'DONE' ? { kind: 'DONE', applied: pending.length } : ran
+}
+
+/** The schema with every table of the app, then both logins; what is already gone is skipped. */
+async function dropApp(
+  context: Context,
+  owner: DatabaseUrl,
+  projectId: ProjectId,
+): Promise<SqlAnswer> {
+  const signal = AbortSignal.timeout(NEON_CALL_BUDGET_MS)
+  const { schema, runLogin, migrateLogin } = appLogin(projectId)
+  const roles = await existingRoles(context, owner, [migrateLogin, runLogin], signal)
+  if (roles.kind !== 'DONE') return roles
+  const schemaGone: SqlStatement[] = roles.names.has(migrateLogin)
+    ? [
+        { text: `SET LOCAL ROLE ${quoted(migrateLogin)}` },
+        { text: `DROP SCHEMA IF EXISTS ${quoted(schema)} CASCADE` },
+        { text: 'RESET ROLE' },
+      ]
+    : []
+  return context.transport(
+    owner,
+    [
+      ...schemaGone,
+      { text: `DROP ROLE IF EXISTS ${quoted(runLogin)}` },
+      { text: `DROP ROLE IF EXISTS ${quoted(migrateLogin)}` },
+    ],
+    signal,
+  )
+}
+
+/**
+ * The apps' schemas and logins in a company's database, by SQL as its owner (decision 0043): each
+ * act is one transaction, repeatable after a cut, and the app's logins' passwords are derived from
+ * the key here, never kept.
+ */
+export function createCompanyPostgres(deps: {
+  transport: SqlTransport
+  appLoginKey: AppLoginKey
+}): CompanyPostgres {
+  const context: Context = { transport: deps.transport, key: deps.appLoginKey.reveal() }
+  return Object.freeze({
+    ensureApp: (owner, projectId) => ensureApp(context, owner, projectId),
+    migrate: (owner, projectId, migrations) => migrate(context, { owner, projectId, migrations }),
+    dropApp: (owner, projectId) => dropApp(context, owner, projectId),
+  })
+}

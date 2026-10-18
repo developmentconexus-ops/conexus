@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CALLER, CODE, edge, SESSION } from './test-edge.ts'
+import { CODE, EXAMPLE_CALL, edge, SESSION } from './test-edge.ts'
 
 const LIVE = { Cookie: `__Host-conexus-app=${SESSION}; __Host-conexus-binding=bindingsecreta` }
 
@@ -18,7 +18,7 @@ async function logged(hub: () => Response | Promise<Response>, path = '/') {
 
 const CASES = [
   ['NETWORK', () => Promise.reject(new TypeError('Network connection lost.'))],
-  ['TOO_LARGE', () => Response.json({ caller: CALLER, padding: 'x'.repeat(20_000) })],
+  ['TOO_LARGE', () => Response.json({ ...EXAMPLE_CALL, padding: 'x'.repeat(20_000) })],
   ['UNREADABLE', () => Response.json({ caller: { personName: 'Ana' } })],
   ['UNEXPECTED_STATUS', () => new Response('<html>bad gateway</html>', { status: 502 })],
   ['TIMEOUT', () => Promise.reject(new DOMException('The operation timed out.', 'TimeoutError'))],

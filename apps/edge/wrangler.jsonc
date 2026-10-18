@@ -16,6 +16,8 @@
   ],
   // The Hub's edge listener, hub:8081 through the server's Tunnel: the VPC service conexus-hub-borda.
   "vpc_services": [{ "binding": "HUB", "service_id": "01a14eb3-4962-75b3-9e12-3d97648e50cf" }],
+  // The key app logins' passwords derive from (decision 0043), put by the Release's runner.
+  "secrets": { "required": ["APP_LOGIN_KEY"] },
   "vars": {
     "HUB_PUBLIC_ORIGIN": "https://hub.conexus.fun",
     "APPS_DOMAIN": "conexusapp.tech"

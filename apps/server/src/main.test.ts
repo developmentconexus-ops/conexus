@@ -8,6 +8,7 @@ import { after, before, test } from 'node:test'
 import type { FastifyInstance } from 'fastify'
 import { createStatus } from './hub/status/public.ts'
 import { appsOf, createHub, identityOf, operationsOf, projectsOf } from './main.ts'
+import { testAppPorts } from './platform/test-app-ports.ts'
 import type { TestDatabase } from './platform/test-database.ts'
 import {
   createTestDatabase,
@@ -44,7 +45,13 @@ async function hub(webRoot?: string) {
     log: silent,
   })
   const operations = operationsOf(shared.database, { identity, projects })
-  const door = appsOf({ database: shared.database, config, identity, projects })
+  const door = appsOf({
+    database: shared.database,
+    config,
+    identity,
+    projects,
+    ...testAppPorts(config),
+  })
   const app = await createHub(config, {
     status,
     identity,

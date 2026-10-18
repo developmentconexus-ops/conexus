@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { test } from 'node:test'
-import { BINDING, CALLER, CODE, edge, HOST, pageText, problem, SESSION } from './test-edge.ts'
+import { BINDING, CODE, EXAMPLE_CALL, edge, HOST, pageText, problem, SESSION } from './test-edge.ts'
 
 const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Lax'
 const HUB_OPEN = 'https://hub.conexus.fun/apps/open'
@@ -131,7 +131,7 @@ const MATRIX = [
   ],
   [
     'resposta do Hub acima do teto',
-    () => Response.json({ caller: CALLER, padding: 'x'.repeat(20_000) }),
+    () => Response.json({ ...EXAMPLE_CALL, padding: 'x'.repeat(20_000) }),
     503,
     '<h1>O Conexus está fora do ar.</h1><p>Tente de novo em alguns minutos.</p>',
   ],
@@ -282,19 +282,4 @@ test('app: a CSP do app e os cabeçalhos de S24 substituem os dele', async () =>
   )
   assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer')
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff')
-})
-
-test('app: props leva só caller, sem o que mais o Hub disser', async () => {
-  const door = edge({
-    hub: () =>
-      Response.json({
-        caller: { ...CALLER, email: 'ana@example.com', role: 'OWNER' },
-        companyId: 'c1',
-      }),
-  })
-  await door.fetch('/', { headers: LIVE })
-  const [call] = door.appCalls
-  assert.equal(call?.name, 'conexus-example')
-  assert.deepEqual(call?.args, { props: { caller: CALLER } })
-  assert.deepEqual(call?.options, { outbound: {} })
 })

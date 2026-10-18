@@ -13,6 +13,8 @@ import {
   projectsOf,
 } from '../../main.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { testAppPorts } from '../../platform/test-app-ports.ts'
+import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -126,12 +128,14 @@ async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog =
     log,
   })
   const operations = operationsOf(test.database, { identity, projects })
-  const apps = appsOf({ database: test.database, config, identity, projects })
+  const cloudflare = fakeCloudflare()
+  const ports = testAppPorts(config, { neon, cloudflare })
+  const apps = appsOf({ database: test.database, config, identity, projects, ...ports })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
-  return { app, edge, test, neon }
+  return { app, edge, test, neon, cloudflare }
 }
 
 /** A Hub on a fresh test database; its mail goes nowhere. */

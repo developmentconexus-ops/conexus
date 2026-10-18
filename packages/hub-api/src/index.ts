@@ -12,13 +12,23 @@ export {
 export { type AppLogin, appLogin, appLoginPassword } from './app-login.ts'
 export {
   APP_SESSION_HEADER,
+  AppCall,
   AppCaller,
+  AppDatabase,
   AppSessionToken,
+  AppVersion,
+  AppVersionId,
+  AppWorker,
+  appWorkerOf,
   checkAppCall,
   createAppHandoff,
   createAppSession,
+  createAppVersion,
   HANDOFF_PATH,
   HANDOFF_SECONDS,
+  listAppVersions,
+  setLiveVersion,
+  VersionFileInput,
 } from './apps.ts'
 export { CAPACITY } from './capacity.ts'
 export {

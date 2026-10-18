@@ -25,11 +25,13 @@ export const ProjectSummary = z.object({
 export type ProjectSummary = z.infer<typeof ProjectSummary>
 
 /**
- * `mayDelete` is what the viewer's role allows, the Hub's one answer (code C26). `address` is the
+ * `mayDelete` and `mayManageVersions` are what the viewer's role allows, the Hub's one answer (code C26). `address` is the
  * app's host name, `null` for a Projeto made while the Hub ran step 7's image.
  */
 export const Project = ProjectSummary.extend({
   mayDelete: z.boolean(),
+  /** Whether the viewer sees the Projeto's settings: sends versions and puts one back (step 9). */
+  mayManageVersions: z.boolean(),
   address: z.string().min(1).nullable(),
 })
 export type Project = z.infer<typeof Project>

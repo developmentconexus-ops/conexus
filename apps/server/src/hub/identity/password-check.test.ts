@@ -3,6 +3,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { Email } from '@conexus/hub-api'
 import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { testAppPorts } from '../../platform/test-app-ports.ts'
 import {
   createTestDatabase,
   silent,
@@ -31,7 +32,13 @@ async function linked(t: TestContext) {
     log: silent,
   })
   const operations = operationsOf(test.database, { identity, projects })
-  const apps = appsOf({ database: test.database, config, identity, projects })
+  const apps = appsOf({
+    database: test.database,
+    config,
+    identity,
+    projects,
+    ...testAppPorts(config),
+  })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   const { link } = await identity.firstPerson({

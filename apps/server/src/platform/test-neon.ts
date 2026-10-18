@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { NeonApiKey, NeonApiUrl, NeonOrgId } from './config.ts'
+import type { DatabaseUrl } from './database.ts'
 import type { NeonProjects } from './neon.ts'
 import { NeonProjectId, NeonProjectName } from './neon.ts'
 
@@ -18,8 +19,12 @@ export function testNeon(apiUrl = NO_NEON_SERVER) {
   }
 }
 
-type Call = 'find' | 'create' | 'delete'
+type Call = 'find' | 'create' | 'delete' | 'ownerConnection'
 type Scripted = { answer: 'REFUSED' | 'NO_ANSWER'; takesEffect: boolean }
+
+function noScripts(): Record<Call, Scripted[]> {
+  return { find: [], create: [], delete: [], ownerConnection: [] }
+}
 
 /**
  * A Neon of memory (T14, T15) that answers like the adapter does: the projects it holds by id and
@@ -29,7 +34,8 @@ type Scripted = { answer: 'REFUSED' | 'NO_ANSWER'; takesEffect: boolean }
 export function fakeNeon() {
   const live = new Map<NeonProjectId, NeonProjectName>()
   const calls: Call[] = []
-  const scripts: Record<Call, Scripted[]> = { find: [], create: [], delete: [] }
+  const scripts = noScripts()
+  const owners = new Map<NeonProjectId, DatabaseUrl>()
   const holds: { arrived: PromiseWithResolvers<void>; released: PromiseWithResolvers<void> }[] = []
   const afterCreate: ((id: NeonProjectId) => Promise<void>)[] = []
   let serial = 0
@@ -71,6 +77,12 @@ export function fakeNeon() {
       live.delete(id)
       return next === undefined ? { kind: 'DONE', value: 'deleted' } : { kind: next.answer }
     },
+    async ownerConnection(id) {
+      const next = scripted('ownerConnection')
+      const owner = owners.get(id)
+      if (next !== undefined || owner === undefined) return { kind: next?.answer ?? 'REFUSED' }
+      return { kind: 'DONE', value: owner }
+    },
   }
 
   return {
@@ -79,6 +91,10 @@ export function fakeNeon() {
     /** The projects Neon holds now, by id and name. */
     projects: () => [...live].map(([id, name]) => ({ id, name })),
     plant,
+    /** The owner's address the project answers with: a database of the test server (T19). */
+    ownedBy(id: NeonProjectId, owner: DatabaseUrl) {
+      owners.set(id, owner)
+    },
     /** The next call of this kind answers so; `takesEffect` says the call happened before the answer was lost. */
     script(call: Call, answer: Scripted['answer'], takesEffect = false) {
       scripts[call].push({ answer, takesEffect })

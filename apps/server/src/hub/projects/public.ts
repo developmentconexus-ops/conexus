@@ -5,12 +5,13 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
+import { readyDatabaseOf, recordDatabaseHost } from './company-database.ts'
 import {
   deleteCompanyProjects,
   hasCompanyDatabase,
   releaseCompanyDatabase,
 } from './company-deletion.ts'
-import { admitToApp, projectOfHost } from './hosts.ts'
+import { admitToApp, liveProjectOf, projectOfHost } from './hosts.ts'
 import { createProjectStore } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
@@ -43,6 +44,10 @@ export function createProjects(deps: {
       // What the apps' door reaches Projects through: a host's Projeto, and who may open it now.
       projectOfHost: (label: HostLabel) => projectOfHost(deps.database, label),
       admitToApp: (input: Parameters<typeof admitToApp>[1]) => admitToApp(deps, input),
+      // What the apps' versions reach Projects through: the Projeto, and its company's database.
+      liveProjectOf,
+      readyDatabaseOf,
+      recordDatabaseHost,
     }),
   })
 }

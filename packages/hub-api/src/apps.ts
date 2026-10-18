@@ -1,6 +1,7 @@
 import type { Caller } from '@conexus/app-contract'
 import { z } from 'zod'
 import { HostLabel } from './address.ts'
+import { CompanyId, LIBRARY_ID } from './companies.ts'
 import { PersonId } from './identity.ts'
 import { defineOperation } from './operation.ts'
 import { ProjectId } from './projects.ts'
@@ -51,6 +52,39 @@ export const createAppSession = defineOperation({
   failures: ['APP_HANDOFF_INVALID', 'DATABASE_UNAVAILABLE'],
 })
 
+export const AppVersionId = z.string().regex(LIBRARY_ID).brand('AppVersionId')
+export type AppVersionId = z.infer<typeof AppVersionId>
+
+/** A version's Worker in the namespace, named by its id (decision 0043). */
+export const AppWorker = z.string().regex(/^v-[A-Za-z0-9]{32}$/)
+export function appWorkerOf(versionId: AppVersionId) {
+  return AppWorker.parse(`v-${versionId}`)
+}
+
+/**
+ * Where the app's run login reaches the company's database; its `search_path` names the app's
+ * schema, and the password is the dispatcher's to derive (decision 0043).
+ */
+export const AppDatabase = z.object({
+  host: z.string().min(1),
+  database: z.string().min(1),
+  login: z.string().min(1),
+})
+
+/**
+ * What the dispatcher needs for one call: who calls, and either the live version's Worker with its
+ * database, or the example app of step 8 when no version is on the air.
+ */
+export const AppCall = z.union([
+  z.object({ caller: AppCaller, version: z.object({ worker: AppWorker }), database: AppDatabase }),
+  z.object({
+    caller: AppCaller,
+    version: z.object({ example: z.literal(true) }),
+    database: z.null(),
+  }),
+])
+export type AppCall = z.infer<typeof AppCall>
+
 export const checkAppCall = defineOperation({
   id: 'checkAppCall',
   summary:
@@ -60,10 +94,101 @@ export const checkAppCall = defineOperation({
   path: '/api/app-sessions/current',
   bodyLimit: 1024,
   input: { query: OnHost },
-  success: { status: 200, body: z.object({ caller: AppCaller }) },
+  success: { status: 200, body: AppCall },
   failures: ['APP_SESSION_INVALID', 'APP_ACCESS_REFUSED', 'APP_NOT_FOUND', 'DATABASE_UNAVAILABLE'],
 })
 
 /** The session the dispatcher read from the app's cookie, parsed at the edge door. */
 export const AppSessionToken = DoorSecret.brand('AppSessionToken')
 export type AppSessionToken = z.infer<typeof AppSessionToken>
+
+/** The ceiling of a send's body: the version's 10 MB in base64, with the JSON around it. */
+const VERSION_BODY_LIMIT = 14 * 1024 * 1024
+
+export const AppVersion = z.object({
+  id: AppVersionId,
+  number: z.int().positive(),
+  state: z.enum(['sending', 'ready', 'failed']),
+  /** Why a failed version did not enter: its code is the failure's, read by the screen (C48). */
+  failure: z
+    .enum([
+      'APP_VERSION_FAILED',
+      'APP_VERSION_NOT_STARTING',
+      'APP_MIGRATION_FAILED',
+      'APP_MIGRATION_CHANGED',
+    ])
+    .nullable(),
+  sentBy: z.string().min(1),
+  createdAt: z.iso.datetime(),
+  live: z.boolean(),
+})
+export type AppVersion = z.infer<typeof AppVersion>
+
+const OfProject = z.object({ companyId: CompanyId, projectId: ProjectId })
+
+/** One file of the folder, as the screen read it; the Hub checks it against the manifest. */
+export const VersionFileInput = z.object({
+  path: z.string(),
+  mediaType: z.string(),
+  base64: z.base64(),
+})
+export type VersionFileInput = z.infer<typeof VersionFileInput>
+
+export const createAppVersion = defineOperation({
+  id: 'createAppVersion',
+  summary:
+    'Sends a version of a Projeto’s app, for an owner or administrator, and puts it on the air.',
+  access: 'session',
+  method: 'POST',
+  path: '/api/companies/{companyId}/projects/{projectId}/versions',
+  bodyLimit: VERSION_BODY_LIMIT,
+  input: {
+    params: OfProject,
+    body: z.object({ manifest: z.unknown(), files: z.array(VersionFileInput) }),
+  },
+  attemptKey: true,
+  success: { status: 201, body: z.object({ version: AppVersion }) },
+  failures: [
+    'NOT_FOUND',
+    'APP_VERSION_INVALID',
+    'APP_VERSION_TOO_LARGE',
+    'APP_VERSION_SENDING',
+    'APP_VERSION_FAILED',
+    'APP_VERSION_NOT_STARTING',
+    'APP_MIGRATION_FAILED',
+    'APP_MIGRATION_CHANGED',
+    'IDEMPOTENCY_CONFLICT',
+    'SESSION_REQUIRED',
+    'DATABASE_UNAVAILABLE',
+  ],
+})
+
+export const listAppVersions = defineOperation({
+  id: 'listAppVersions',
+  summary: 'Lists the kept versions of a Projeto’s app, for an owner or administrator.',
+  access: 'session',
+  method: 'GET',
+  path: '/api/companies/{companyId}/projects/{projectId}/versions',
+  bodyLimit: 1024,
+  input: { params: OfProject },
+  success: { status: 200, body: z.object({ versions: z.array(AppVersion) }) },
+  failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+})
+
+export const setLiveVersion = defineOperation({
+  id: 'setLiveVersion',
+  summary: 'Puts a kept version of a Projeto’s app back on the air; the data stay as they are.',
+  access: 'session',
+  method: 'PUT',
+  path: '/api/companies/{companyId}/projects/{projectId}/live-version',
+  bodyLimit: 1024,
+  input: { params: OfProject, body: z.object({ versionId: AppVersionId }) },
+  success: { status: 200, body: z.object({ version: AppVersion }) },
+  failures: [
+    'NOT_FOUND',
+    'APP_VERSION_NOT_FOUND',
+    'APP_VERSION_SENDING',
+    'SESSION_REQUIRED',
+    'DATABASE_UNAVAILABLE',
+  ],
+})

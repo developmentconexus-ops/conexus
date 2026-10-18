@@ -15,7 +15,10 @@ import {
   operationsOf,
   projectsOf,
 } from '../../apps/server/src/main.ts'
+import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
+import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
+import { pgTransport } from '../../apps/server/src/platform/test-company-postgres.ts'
 import {
   createTestDatabase,
   TEST_ORIGIN,
@@ -84,15 +87,28 @@ export async function liveHub(t: TestContext, mailUrl: string) {
   const config = testConfig(database.runtimeUrl, mailUrl, neon.url)
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
+  const neonProjects = createNeonProjects({ config, log: silent })
   const projects = projectsOf({
     config,
     database: database.database,
     identity,
-    neon: createNeonProjects({ config, log: silent }),
+    neon: neonProjects,
     log: silent,
   })
   const operations = operationsOf(database.database, { identity, projects })
-  const apps = appsOf({ database: database.database, config, identity, projects })
+  const apps = appsOf({
+    database: database.database,
+    config,
+    identity,
+    projects,
+    neon: neonProjects,
+    companyPostgres: createCompanyPostgres({
+      transport: pgTransport,
+      appLoginKey: config.appLoginKey,
+    }),
+    cloudflare: createCloudflareApps({ config, log: silent }),
+    log: silent,
+  })
   const app = await createHub(config, {
     status,
     identity,
