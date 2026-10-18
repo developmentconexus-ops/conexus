@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto'
 import type { Manifest } from '@conexus/app-contract'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
-import { NeonDbError, neon } from '@neondatabase/serverless'
+import { NeonDbError, neon, neonConfig } from '@neondatabase/serverless'
+import { cappedText } from './capped-text.ts'
 import type { AppLoginKey } from './config.ts'
 import { DatabaseUrl } from './database.ts'
 import { NEON_CALL_BUDGET_MS } from './neon.ts'
@@ -32,6 +33,21 @@ export function answerOf(code: string | undefined): SqlAnswer {
     ? { kind: 'NO_ANSWER' }
     : { kind: 'REFUSED', code }
 }
+
+/** A SQL reply past this is silence: the Hub's own statements read a few rows (code C59). */
+const REPLY_CAP_BYTES = 1024 * 1024
+
+/** Neon's reply read only up to the cap; past it the call fails as silence. */
+async function cappedFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
+  const response = await fetch(input, init)
+  const text = await cappedText(response.body, REPLY_CAP_BYTES)
+  if (text === undefined) throw new Error('NEON_REPLY_PAST_CAP')
+  const type = response.headers.get('content-type') ?? 'application/json'
+  return new Response(text, { status: response.status, headers: { 'content-type': type } })
+}
+
+// The SDK reads a reply whole, and takes its own fetch only for the whole process.
+neonConfig.fetchFunction = cappedFetch
 
 /** The program's transport: Neon's HTTP proxy, one request per transaction (decision 0043). */
 export async function neonTransport(

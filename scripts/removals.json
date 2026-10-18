@@ -2209,5 +2209,16 @@
       "file": "src/hub/apps/repair.test.ts",
       "name": "reparo: o Projeto marcado para apagar enquanto"
     }
+  },
+  {
+    "id": "neon-reply-cap",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "neonConfig.fetchFunction = cappedFetch\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/neon-transport.test.ts",
+      "name": "transporte do Neon: a resposta sem tamanho declarado"
+    }
   }
 ]

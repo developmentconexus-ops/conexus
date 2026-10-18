@@ -39,8 +39,8 @@ If 3 or 11 fails, step 9 returns to the founder. **Not covered.** Load, key rota
 2026-10-18, 17:44–17:49Z. 1: in none. 2, 6, 9: entered. 3: 42501 on schema, write, `SET ROLE`;
 B refused the password. 4: 6.1 s, then 2.9 s. 5: yes; a deleted Worker's GET answers `script:
 null`. 7: in none. 8: 1,000 files, 10 MB: 14.9 s, then 3.4 s. 10: equal. 11: 42P01, no table, no
-row. 12: served before the Worker; missing: "Worker not found.", no code. Deleted:
-`purple-bird-52327247`, `twilight-bonus-27069412`, namespace, dispatcher, three apps.
+row. 12: served before the Worker; missing: "Worker not found.", no code. Deleted: both `cx-prova-`
+projects, namespace, dispatcher, three apps.
 
 ## Consequences
 
