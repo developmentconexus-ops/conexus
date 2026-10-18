@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": { "lib": ["esnext", "dom", "dom.iterable"] },
-  "include": ["*.ts"]
+  "include": ["*.ts", "../../apps/edge/worker-configuration.d.ts"]
 }
