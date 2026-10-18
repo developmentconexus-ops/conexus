@@ -5,7 +5,13 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
+import {
+  hubServer,
+  PEDIDOS,
+  PEDIDOS_ADDRESS,
+  projectsRead,
+  refusal,
+} from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
@@ -57,6 +63,29 @@ test('o membro não vê "Apagar Projeto"', async () => {
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
   expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Apagar Projeto' })).toBeNull()
+})
+
+for (const role of ['owner', 'admin', 'member'] as const) {
+  test(`${role}: o endereço e "Abrir app", um link para https://<endereço>/`, async () => {
+    server.use(
+      ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: false, role }),
+    )
+    render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+    expect(await screen.findByText(PEDIDOS_ADDRESS)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(
+      `https://${PEDIDOS_ADDRESS}/`,
+    )
+  })
+}
+
+test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', async () => {
+  server.use(
+    ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, address: null }),
+  )
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(screen.queryByText(/Endereço do app:/)).toBeNull()
+  expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
 })
 
 test('um Projeto que o Hub não acha: a página de "não encontrado"', async () => {

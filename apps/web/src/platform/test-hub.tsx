@@ -56,12 +56,16 @@ export function companyRead(view: {
   role: string
   mayInviteAs?: string[]
   members?: MemberFields[]
+  nickname?: string | null
 }) {
   return [
     http.get(`*/api/companies/${COMPANY.id}`, () =>
       HttpResponse.json(
         getCompany.success.body.parse({
-          company: COMPANY,
+          company: {
+            ...COMPANY,
+            nickname: view.nickname === undefined ? COMPANY.nickname : view.nickname,
+          },
           role: view.role,
           mayInviteAs: view.mayInviteAs ?? [],
         }),
@@ -211,6 +215,8 @@ export function undecided(cut: string): [string, () => Response][] {
   ]
 }
 
+export const PEDIDOS_ADDRESS = 'pedidos--empresa-teste.apps.example.test'
+
 export const PEDIDOS = ProjectSummary.parse({
   id: 'p'.repeat(32),
   name: 'Pedidos',
@@ -222,12 +228,16 @@ export type ProjectsView = {
   projects: ProjectSummary[]
   databaseReady: boolean
   mayDelete: boolean
+  /** The Projects' address, `null` for those made by step 7's image; Pedidos' own by default. */
+  address?: string | null
+  role?: string
 }
 
-/** The session and the Projects' two reads, which answer from `view` as it is at each read. */
+/** The session, the company and the Projects' two reads, which answer from `view` at each read. */
 export function projectsRead(view: ProjectsView) {
   return [
     sessionRead(() => ANA),
+    ...companyRead({ role: view.role ?? 'owner' }),
     http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
       HttpResponse.json(
         listProjects.success.body.parse({
@@ -241,7 +251,13 @@ export function projectsRead(view: ProjectsView) {
       const project = view.projects.find((one) => one.id === params.projectId)
       return project
         ? HttpResponse.json(
-            getProject.success.body.parse({ project: { ...project, mayDelete: view.mayDelete } }),
+            getProject.success.body.parse({
+              project: {
+                ...project,
+                mayDelete: view.mayDelete,
+                address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
+              },
+            }),
           )
         : refusal('NOT_FOUND')
     }),

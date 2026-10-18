@@ -2,7 +2,12 @@ import type { FailureCode } from '@conexus/hub-api'
 import { FAILURES, Problem } from '@conexus/hub-api'
 
 export const ANA = { id: 'person-ana', name: 'Ana Lima', email: 'ana@example.test' }
-export const COMPANY = { id: 'a'.repeat(32), name: 'Empresa Teste' }
+export const COMPANY = {
+  id: 'a'.repeat(32),
+  name: 'Empresa Teste',
+  nickname: 'empresa-teste',
+  appsDomain: 'apps.example.test',
+}
 
 /** The Problem body the Hub sends for a failure code, built from the failure table. */
 export function problemOf(code: FailureCode) {

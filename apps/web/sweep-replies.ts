@@ -74,7 +74,7 @@ function companyPage(
   id = COMPANY.id,
   name = LONG_NAME,
 ) {
-  const company = { id, name }
+  const company = { id, name, nickname: 'empresa-teste', appsDomain: 'apps.example.test' }
   const people = [
     {
       personId: ANA.id,
@@ -111,6 +111,7 @@ function companyPage(
   }
 }
 
+const ADDRESS = 'projeto-com-um-nome-muito-comprido--empresa-teste.apps.example.test'
 const PROJECT = {
   id: 'r'.repeat(32),
   name: `Projeto com um nome muito comprido que não cabe em uma linha de telefone pequeno`,
@@ -129,7 +130,7 @@ export function projectsPage(
       databaseReady: !view.empty,
     }),
     [`GET /api/companies/${id}/projects/${PROJECT.id}`]: ok(getProject, {
-      project: { ...PROJECT, mayDelete: view.mayDelete ?? true },
+      project: { ...PROJECT, mayDelete: view.mayDelete ?? true, address: ADDRESS },
     }),
   }
 }

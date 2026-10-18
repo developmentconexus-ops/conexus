@@ -40,7 +40,7 @@ test('401: uma leitura que acha a sessÃ£o terminada leva a /login com "Sua sessÃ
     http.get('*/api/companies', () =>
       HttpResponse.json({ companies: [], mayOperate: false, next: { kind: 'END' } }),
     ),
-    http.get('*/api/companies/:companyId/projects', () => refusal('SESSION_REQUIRED')),
+    http.get('*/api/companies/:companyId', () => refusal('SESSION_REQUIRED')),
   )
   server.listen({ onUnhandledFrame: 'error' })
   try {
