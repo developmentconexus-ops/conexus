@@ -15,9 +15,6 @@ concurrency:
   group: hub-server
   cancel-in-progress: false
 
-env:
-  IMAGE: ghcr.io/developmentconexus-ops/conexus-hub
-
 jobs:
   # The edge goes back before the Hub, by publishing the earlier release's code with the script
   # that publishes. Not `wrangler rollback`: a Worker in a namespace has no versions, so it would
@@ -72,7 +69,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Find the image kept for the version
+      - name: Find the digest main's Publish recorded for the version
         id: reference
         env:
           VERSION: ${{ inputs.version }}
@@ -81,11 +78,8 @@ jobs:
             echo "$VERSION is not a version name"
             exit 1
           fi
-          if ! digest="$(docker buildx imagetools inspect "$IMAGE:$VERSION" --format '{{.Manifest.Digest}}')"; then
-            echo "no image is kept for $VERSION"
-            exit 1
-          fi
-          echo "reference=$IMAGE@$digest" >> "$GITHUB_OUTPUT"
+          reference="$(infra/releases.sh find "$VERSION")"
+          echo "reference=$reference" >> "$GITHUB_OUTPUT"
       - env:
           REFERENCE: ${{ steps.reference.outputs.reference }}
         run: infra/deploy.sh "$REFERENCE"

@@ -49,3 +49,20 @@ test('a volta da borda recusa uma versão fora de main antes do npm ci e do toke
   assert.ok(tag >= 0 && install >= 0 && publishEdge >= 0)
   assert.ok(tag < check && check < install && install < publishEdge, `${tag} ${check} ${install}`)
 })
+
+test('a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR', () => {
+  const steps = rollback.jobs.rollback?.steps ?? []
+  const find = steps.findIndex((step) => step.run?.includes('infra/releases.sh find "$VERSION"'))
+  const deploy = steps.findIndex((step) => step.run === 'infra/deploy.sh "$REFERENCE"')
+  assert.ok(find >= 0 && deploy >= 0 && find < deploy, `${find} ${deploy}`)
+  for (const step of steps) assert.doesNotMatch(step.run ?? '', /imagetools/)
+})
+
+test('o Release registra o digest depois que o deploy deu certo', () => {
+  const steps = publish.jobs.deploy?.steps ?? []
+  const deploy = steps.findIndex((step) => step.run === 'infra/deploy.sh "$REFERENCE"')
+  const record = steps.findIndex(
+    (step) => step.run === 'infra/releases.sh record "$VERSION" "$REFERENCE"',
+  )
+  assert.ok(deploy >= 0 && record > deploy, `${deploy} ${record}`)
+})

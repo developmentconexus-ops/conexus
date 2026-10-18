@@ -89,6 +89,11 @@ jobs:
       - env:
           REFERENCE: ${{ needs.image.outputs.reference }}
         run: infra/deploy.sh "$REFERENCE"
+      # Voltar atrás deploys only what is recorded here: a tag can be rewritten, a digest cannot.
+      - env:
+          VERSION: ${{ github.event.release.tag_name }}
+          REFERENCE: ${{ needs.image.outputs.reference }}
+        run: infra/releases.sh record "$VERSION" "$REFERENCE"
 
   # After the Hub, from the Release's own commit. A failed step fails the Release; the Hub stays
   # new and each Worker already published stays, and the rest keep the previous code.
