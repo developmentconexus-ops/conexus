@@ -1,6 +1,6 @@
 # Documentation map
 
-One line per document, with the subject it owns; `check-docs` refuses a document without one.
+One line per document and its subject; `check-docs` refuses a document without one.
 
 ## Overview
 
@@ -15,7 +15,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): the companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 for tests.
 - [steps/](steps/): the card in construction; empty between steps.
-- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes instead of its library's, with the library's line.
+- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's, with the library's line.
 - [reference/components.md](reference/components.md): each screen piece and its tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): questions only a reader answers.
 
@@ -73,6 +73,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [0040](decisions/0040-company-database-through-neon.md) Neon.
 - [0041](decisions/0041-app-session-check-through-workers-vpc.md) Workers VPC.
 - [0042](decisions/0042-cloudflare-token-in-one-call-environment.md) publish token.
+- [0044](decisions/0044-release-image-built-on-a-github-hosted-machine.md) hosted image.
 
 ## Skills
 

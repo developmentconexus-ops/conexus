@@ -589,7 +589,11 @@ or its origin.
   ends the transaction as `DATABASE_UNAVAILABLE` before the work runs. `asPerson` switches a company
   command to the person's own scope for the invitation pace, and back. `installation` and
   `libraryInstallation` stay in the Hub's login, for the installation's own rows, the boot's checks
-  and the first administrator. No `AsyncLocalStorage` carries a company: the scope is an argument.
+  and the first administrator. Since step 8, `installation` and `installationRead` also read the
+  apps' handoffs and sessions, found by hash before the company is known, and call
+  `projects.project_of_host` for a Projeto's host: `hub_runtime` holds USAGE on `projects` and no
+  table right there (`isolation-apps.test.ts`). No `AsyncLocalStorage` carries a company: the scope
+  is an argument.
   `installationRead` reads the status page's starts in a read-only, repeatable-read transaction.
   `FOR SHARE` and `FOR NO KEY UPDATE` need the UPDATE grant and policy, so a scope that locks a row
   holds UPDATE on it, on one column no command writes where it only locks.

@@ -32,11 +32,11 @@ If 1 or 2 fails, step 8 returns to the founder with 4B. **Not covered.** The rea
 ## Result
 
 2026-10-18, `wrangler` 4.151.1. 1: 200. 2: timed out; ingress has only `hub:8080`. 3:
-`fetch`, WebSocket 403; `connect` threw (the dispatcher's connected). 4: 2.1 s. 5:
+`fetch`, WebSocket 403; `connect` threw (the dispatcher's read `SSH-2.0`). 4: 2.1 s. 5:
 valid on `x.`, `pedidos--empresa-a.`; none on `a.b.`. 6: `{caller}` arrived. 7: CSP blocked
 inline script and both fetches; forged `__Host-` cookies refused. 8: first 72–119 ms, warm
-31–40 ms. Created and deleted: `cx-prova-ns`, VPC `cx-prova-borda`, the `*` record, the route,
-Workers `cx-prova-despachante`, `-muro`, `-app-props`, `-app-laco`, `-app-ataque`, the container.
+31–40 ms. The API then listed no `cx-prova-` Worker, namespace, VPC service, DNS record or route;
+the server, no container.
 
 ## Consequences
 
