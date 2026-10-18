@@ -38,6 +38,7 @@ Desenho: `architecture.md`.
    Etapa 8 usada em 2026-10-18 em https://hub.conexus.fun (v0.8.0), roteiro feito pelo fundador: "Cara, eu já testei e tá tudo aprovado, tá bom? Pode já fazer o merge mesmo."
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
    Cartão da etapa 9 aprovado em 2026-10-18 (commit 8e1b461325f3064ba5690dfb28ace027554c0efa): "Aprovo"
+   Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "aceito A"; "Restaurei"; "Sim"
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
 11. **Conta de modelo.** Liga a sua assinatura e a testa.
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
@@ -93,7 +94,6 @@ Etapa fechada sai desta tabela; o uso na seção 1.
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 9 Enviar um app | A 8 | Dadas | PD9. Fichas `registry` e manifesto. Tipos na fronteira da linha |
 | 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Limites de laço, prazo e consultas |
 | 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
