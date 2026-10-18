@@ -87,3 +87,19 @@ jobs:
       - env:
           REFERENCE: ${{ needs.image.outputs.reference }}
         run: infra/deploy.sh "$REFERENCE"
+
+  # After the Hub, from the Release's own commit. A failed step fails the Release; the Hub stays
+  # new and each Worker already published stays, and the rest keep the previous code.
+  edge:
+    needs: deploy
+    runs-on: [self-hosted, hub]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name }}
+      - if: ${{ hashFiles('apps/edge/package.json') != '' }}
+        uses: ./.github/actions/install
+      - run: infra/publish-edge.sh

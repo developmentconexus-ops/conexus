@@ -15,6 +15,7 @@ import { join, resolve } from 'node:path'
 import { after, test } from 'node:test'
 
 const SCRIPT = resolve(import.meta.dirname, '../infra/setup-server.sh')
+const HOOK_SCRIPT = resolve(import.meta.dirname, '../infra/setup-runner-hook.sh')
 const dir = mkdtempSync(join(tmpdir(), 'conexus-setup-'))
 after(() => rmSync(dir, { recursive: true, force: true }))
 
@@ -23,6 +24,7 @@ const TUNNEL_TOKEN = 'tunnel-token-value'
 // The commands the script calls that must not touch the machine are stubs that record what they got.
 const STUBBED = [
   'apt-get',
+  'chown',
   'curl',
   'id',
   'install',
@@ -32,7 +34,7 @@ const STUBBED = [
   'usermod',
   'useradd',
 ]
-const REAL = ['cat', 'rm', 'stat']
+const REAL = ['cat', 'dirname', 'grep', 'mv', 'rm', 'stat']
 
 function secret(name: string, content: string, mode: number): string {
   const path = join(dir, name)
@@ -64,12 +66,15 @@ function setup(
   runner: string,
   extra: Record<string, string | undefined> = {},
   withDocker = false,
+  runnerEnv?: string,
+  script = SCRIPT,
 ) {
   const work = mkdtempSync(join(dir, 'work-'))
   const bin = join(work, 'bin')
   const log = join(work, 'calls.log')
   mkdirSync(bin)
   mkdirSync(join(work, 'runner'))
+  if (runnerEnv !== undefined) writeFileSync(join(work, 'runner', '.env'), runnerEnv)
   writeFileSync(join(work, 'os-release'), 'VERSION_CODENAME=test\n')
   for (const name of withDocker ? [...STUBBED, 'docker'] : STUBBED) {
     const record = `printf "%s %s\\n" "\${0##*/}" "$*" >> "$CALLS"`
@@ -97,11 +102,8 @@ function setup(
     writeFileSync(join(work, 'runner', name), `#!/bin/bash\n${body}\n`)
     chmodSync(join(work, 'runner', name), 0o755)
   }
-  const run = spawnSync('/bin/bash', [SCRIPT], {
-    encoding: 'utf8',
-    timeout: 120_000,
-    env: { ...environment(tunnel, runner, work, bin), CALLS: log, SETUP_ROOT: work, ...extra },
-  })
+  const env = { ...environment(tunnel, runner, work, bin), CALLS: log, SETUP_ROOT: work, ...extra }
+  const run = spawnSync('/bin/bash', [script], { encoding: 'utf8', timeout: 120_000, env })
   const calls = (() => {
     try {
       return readFileSync(log, 'utf8').split('\n').filter(Boolean)
@@ -109,7 +111,7 @@ function setup(
       return []
     }
   })()
-  return { run, calls, config: join(work, 'config') }
+  return { run, calls, env, config: join(work, 'config') }
 }
 
 const good = secret('good', `${TUNNEL_TOKEN}\n`, 0o600)
@@ -205,4 +207,61 @@ test('os ajustes de teste só valem com CONEXUS_SETUP_TEST=1', () => {
   const { calls } = setup(good, goodRunner, { CONEXUS_SETUP_TEST: undefined }, true)
   assert.ok(calls.some((call) => call.includes('/etc/conexus/secrets/tunnel_token')))
   assert.ok(!calls.some((call) => call.includes('work-')))
+})
+
+test('o runner recebe o gancho de início de trabalho, instalado fora do alcance dele', () => {
+  const { run, calls, config } = setup(good, goodRunner)
+  assert.equal(run.status, 0, run.stderr)
+  assert.ok(
+    calls.some((call) =>
+      /^install -m 0755 .*runner-job-started\.sh .*\/runner-job-started\.sh$/.test(call),
+    ),
+  )
+  const env = readFileSync(join(config, '..', 'runner', '.env'), 'utf8')
+  assert.equal(env, `ACTIONS_RUNNER_HOOK_JOB_STARTED=${join(config, 'runner-job-started.sh')}\n`)
+  assert.ok(calls.indexOf('chown runner:runner .env.next') < calls.indexOf('svc.sh install runner'))
+})
+
+test('rodar o setup de novo troca a linha do gancho e guarda as outras', () => {
+  const stale = 'LANG=C\nACTIONS_RUNNER_HOOK_JOB_STARTED=/old/hook.sh\n'
+  const { run, config } = setup(good, goodRunner, {}, false, stale)
+  assert.equal(run.status, 0, run.stderr)
+  const env = readFileSync(join(config, '..', 'runner', '.env'), 'utf8')
+  assert.equal(
+    env,
+    `LANG=C\nACTIONS_RUNNER_HOOK_JOB_STARTED=${join(config, 'runner-job-started.sh')}\n`,
+  )
+})
+
+// What the hook step alone reads: none of the tokens setup-server.sh needs (founder, 2026-10-18: B).
+const NO_TOKENS = {
+  RUNNER_URL: undefined,
+  RUNNER_VERSION: undefined,
+  RUNNER_SHA256: undefined,
+  TUNNEL_TOKEN_FILE: undefined,
+  RUNNER_TOKEN_FILE: undefined,
+}
+
+test('o gancho sozinho roda sem token, instala jq e o gancho, e reinicia o runner já instalado', () => {
+  const service = 'LANG=C\n'
+  const { run, calls, env: used, config } = setup('', '', NO_TOKENS, false, service, HOOK_SCRIPT)
+  assert.equal(run.status, 0, run.stderr)
+  assert.ok(calls.includes('timeout-for apt-get install -y jq'))
+  const env = readFileSync(join(config, '..', 'runner', '.env'), 'utf8')
+  assert.equal(
+    env,
+    `LANG=C\nACTIONS_RUNNER_HOOK_JOB_STARTED=${join(config, 'runner-job-started.sh')}\n`,
+  )
+  assert.ok(!calls.some((call) => call.startsWith('svc.sh')))
+  writeFileSync(join(config, '..', 'runner', '.service'), 'actions.runner.hub.service\n')
+  const again = spawnSync('/bin/bash', [HOOK_SCRIPT], {
+    encoding: 'utf8',
+    env: { ...used, CALLS: join(config, '..', 'again.log') },
+  })
+  assert.equal(again.status, 0, again.stderr)
+  const restarted = readFileSync(join(config, '..', 'again.log'), 'utf8').split('\n')
+  assert.deepEqual(
+    restarted.filter((call) => call.startsWith('svc.sh')),
+    ['svc.sh stop', 'svc.sh start'],
+  )
 })

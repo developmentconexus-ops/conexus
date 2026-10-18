@@ -10,9 +10,10 @@ How the server is prepared, and how the Hub is published and put back. Decision:
 3. As root on the server, save the Cloudflare tunnel token and the runner registration token each in
    a file only root can read (mode 0400 or 0600), then run
    `RUNNER_URL=… RUNNER_VERSION=… RUNNER_SHA256=… TUNNEL_TOKEN_FILE=… RUNNER_TOKEN_FILE=… infra/setup-server.sh`
-   and delete both files. The script runs once and refuses a file others can read. It installs Docker, copies the
+   and delete both files. It refuses a file others can read. It installs Docker, copies the
    tunnel token to `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a
-   service of the user `runner`, which has no login and sits in the `docker` group.
+   service of `runner`, a user with no login, in the `docker` group. Its hook step,
+   `infra/setup-runner-hook.sh`, needs no token.
 4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the provider's main
    SSH configuration may lack the `Include` that reads a drop-in.
 5. Close SSH last, after the provider's console is proved to work. Without a console, stop and ask.

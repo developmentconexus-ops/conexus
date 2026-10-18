@@ -153,8 +153,8 @@ starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image. Every migration only adds, so
 an earlier image runs on the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's
-P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. A Worker
-uses Cloudflare's versions.
+P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. The edge goes
+back first.
 
 **Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
 paid one. Both Hub databases return to the same instant. A restore then sets every login password

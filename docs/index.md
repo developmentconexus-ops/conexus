@@ -8,7 +8,8 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [README.md](../README.md): what this repository is, for a person, in Portuguese.
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each approval and use line.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
-- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and putting back a Hub version.
+- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub.
+- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge.
 - [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): como restaurar o banco do Hub a um minuto e conferir.
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): the companies' Neon key.
@@ -16,7 +17,7 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [steps/](steps/): the card in construction; empty between steps.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes instead of its library's, with the library's line.
 - [reference/components.md](reference/components.md): each screen piece and its tokens (design V23).
-- [reference/checklist.md](reference/checklist.md): questions only a reader answers; builder and reviewer run it.
+- [reference/checklist.md](reference/checklist.md): questions only a reader answers.
 
 ## Guides: the rules
 
@@ -71,10 +72,11 @@ One line per document, with the subject it owns; `check-docs` refuses a document
 - [0039](decisions/0039-company-scope-and-row-policy-in-the-hub.md) company row policy.
 - [0040](decisions/0040-company-database-through-neon.md) Neon.
 - [0041](decisions/0041-app-session-check-through-workers-vpc.md) Workers VPC.
+- [0042](decisions/0042-cloudflare-token-in-one-call-environment.md) publish token.
 
 ## Skills
 
-- [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md) and [proof](../.agents/skills/conexus-study/references/proof.md): the study of a step; its report template; a small proof.
+- [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md) and [proof](../.agents/skills/conexus-study/references/proof.md): studying a step; the report; a proof.
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md): the step's card and its template.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md) and [bug](../.agents/skills/conexus-build/references/bug.md): building a unit; bringing old code; a defect.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md): the review of a step, its rubric and its delta checks.
