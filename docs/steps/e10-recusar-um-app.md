@@ -5,17 +5,19 @@
 **No fim desta etapa** você envia uma versão com defeito e vê o Hub recusá-la, com o motivo, sem
 tirar do ar a versão que funciona; e um app que trava é cortado em segundos, sem afetar o resto.
 
-**O roteiro de uso.** No Hub publicado, com a Empresa A e o Projeto Pedidos da 9 na Versão 2, e as
-pastas `recados-defeito`, `recados-nao-inicia` e `recados-laco` da página da v0.10.0.
+**O roteiro de uso.** No Hub publicado, na Empresa A, com as pastas `recados-1`, `recados-2`,
+`recados-defeito`, `recados-nao-inicia` e `recados-laco` da página da v0.10.0.
 
-1. Em Pedidos, **Configurações**, **Enviar versão**, escolha `recados-defeito`: a janela diz "O Hub
+1. Crie o Projeto Pedidos; em **Configurações**, envie `recados-1` e depois `recados-2`: "Versão 2 ·
+   no ar".
+2. **Enviar versão**, escolha `recados-defeito`: a janela diz "O Hub
    recusou esta versão." e a lista, por exemplo "Em `criarRecado`: grava com `db.query`. Grave com
    `db.batch`." A lista de versões não muda; a Versão 2 segue no ar.
-2. Envie `recados-nao-inicia`: "Versão 3 · Falhou · O app não inicia". **Abrir app**: o Recados da
+3. Envie `recados-nao-inicia`: "Versão 3 · Falhou · O app não inicia". **Abrir app**: o Recados da
    Versão 2, com os recados lá.
-3. Envie `recados-laco`: "Versão 4 · no ar"; a Versão 3 sai da lista. Abra o app e clique em
+4. Envie `recados-laco`: "Versão 4 · no ar"; a Versão 3 sai da lista. Abra o app e clique em
    **Travar**: em cerca de 2 segundos, "O app não conseguiu responder agora." O Hub segue normal.
-4. Na Versão 2, **Voltar para esta**: o app funciona, os recados lá.
+5. Na Versão 2, **Voltar para esta**: o app funciona, os recados lá.
 
 **O que você faz, e quando.** Antes de U1: autoriza aqui as chamadas da prova, e cria o token da
 prova (papel Admin dos Workers) e uma chave de prova do Neon na organização das empresas, apagados
@@ -40,7 +42,7 @@ instruções; a conferência do envio acusa esses textos quando escritos no cód
 recusa leva a lista na própria resposta.
 
 **O que muda.** A arquitetura §8 perde a leitura do texto no despachante e ganha os números da
-prova; sai da §11 o risco "o verificador perde duas gravações": o banco recusa.
+prova; a §11 perde o risco do verificador.
 
 **Fica de fora.** A regra S5 (estado no módulo): o pacote montado não a mostra; vai para a 13, no
 código que o Builder escreve. Ler as migrações como SQL e recusar a que a versão antiga não aguenta
@@ -102,7 +104,7 @@ espalhados 40. Total **550**, teto 4.000 (L2).
 | 11 | U5 | Cada célula da matriz; T23 | navegador | must |
 | 12 | U6 | Cada linha nova de `removals.json`: `caught` | `removals` | must |
 | 13 | U6 | O roteiro, Hub real, dublês | `tests/e2e/refusals.test.ts` | must |
-| 14 | U6 | Publicado: passos 1 a 4; durante o laço, outro Projeto abre o seu app | firstmate (T13, T14) | must |
+| 14 | U6 | Publicado: passos 1 a 5; durante o laço, outro Projeto abre o seu app | firstmate (T13, T14) | must |
 
 ## A matriz de estados
 
