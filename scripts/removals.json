@@ -1769,5 +1769,49 @@
       "file": "src/hub/projects/projects-delete.test.ts",
       "name": "apagar com app"
     }
+  },
+  {
+    "id": "publish-edge-key-before-dispatcher",
+    "file": "infra/publish-edge.sh",
+    "find": "tr -d '\\n' < \"$key\" | timeout --kill-after=10 120 \"$wrangler\" secret put APP_LOGIN_KEY --env-file \"$file\"\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/publish-edge.test.ts",
+      "name": "publica o muro, o exemplo no espaço de nomes, a chave e o despachante, nessa ordem"
+    }
+  },
+  {
+    "id": "publish-edge-key-newline",
+    "file": "infra/publish-edge.sh",
+    "find": "tr -d '\\n' < \"$key\" |",
+    "replace": "cat \"$key\" |",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/publish-edge.test.ts",
+      "name": "publica o muro, o exemplo no espaço de nomes, a chave e o despachante, nessa ordem"
+    }
+  },
+  {
+    "id": "publish-edge-key-owner-only",
+    "file": "infra/publish-edge.sh",
+    "find": "check_owner_file \"$key\" docs/how-to/apps-edge.md\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/publish-edge.test.ts",
+      "name": "recusa a chave legível por outros: nada se publica"
+    }
+  },
+  {
+    "id": "deploy-requires-app-secrets",
+    "file": "infra/deploy.sh",
+    "find": " hub_app_login_key hub_cloudflare_apps_token",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/deploy.test.ts",
+      "name": "sem hub_app_login_key recusa antes de migrate e não sobe o Hub"
+    }
   }
 ]

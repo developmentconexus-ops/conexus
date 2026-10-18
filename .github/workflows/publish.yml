@@ -72,6 +72,30 @@ jobs:
           package-type: container
           min-versions-to-keep: 10
 
+  # The two versions of Recados the founder sends from Configurações (P1 A), built from the Release's
+  # commit on a GitHub-hosted machine and attached to the Release as zip files, once the image job
+  # found that commit on main.
+  apps:
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+      - uses: ./.github/actions/install
+      - run: npm run app:pack
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event.release.tag_name }}
+        working-directory: dist/apps
+        run: |
+          zip --quiet --recurse-paths recados-1.zip recados-1
+          zip --quiet --recurse-paths recados-2.zip recados-2
+          gh release upload "$VERSION" recados-1.zip recados-2.zip --clobber --repo "$GITHUB_REPOSITORY"
+
   deploy:
     needs: image
     runs-on: [self-hosted, hub]

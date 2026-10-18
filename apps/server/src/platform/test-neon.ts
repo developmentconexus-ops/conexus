@@ -119,10 +119,11 @@ const FINISHED = [{ id: 'op-1', project_id: 'p', status: 'finished', action: 'cr
 
 /**
  * Neon's API of memory behind a port, for a Hub that runs as a program (T14): list by name, create
- * and delete a project, the three calls the adapter makes.
+ * and delete a project, and the owner's address of one, the calls the adapter makes.
  */
 export async function neonServer(t: TestContext) {
   const live = new Map<string, string>()
+  const owners = new Map<string, DatabaseUrl>()
   const server = createServer((request, response) => {
     const chunks: Buffer[] = []
     request.on('data', (chunk: Buffer) => chunks.push(chunk))
@@ -132,6 +133,11 @@ export async function neonServer(t: TestContext) {
       function send(status: number, body: unknown) {
         response.writeHead(status, { 'content-type': 'application/json' })
         response.end(JSON.stringify(body))
+      }
+      if (request.method === 'GET' && id === 'connection_uri') {
+        const owner = owners.get(url.pathname.split('/').at(-2) ?? '')
+        if (owner === undefined) return send(404, { code: '', message: 'project not found' })
+        return send(200, { uri: owner.reveal() })
       }
       if (request.method === 'GET') {
         const search = url.searchParams.get('search') ?? ''
@@ -160,5 +166,9 @@ export async function neonServer(t: TestContext) {
   return {
     url: `http://127.0.0.1:${address.port}/api/v2`,
     projects: () => [...live].map(([id, name]) => ({ id, name })),
+    /** The project's owner address is this database's. */
+    ownedBy(id: string, owner: DatabaseUrl) {
+      owners.set(id, owner)
+    },
   }
 }

@@ -90,6 +90,7 @@ export function testConfig(
   databaseUrl: DatabaseUrl,
   mailApiUrl = NO_MAIL_SERVER,
   neonApiUrl = NO_NEON_SERVER,
+  cloudflareApiUrl = NO_CLOUDFLARE_SERVER,
 ): Config {
   return {
     version: Version.parse('v0.1.0'),
@@ -104,7 +105,7 @@ export function testConfig(
     mailFrom: Email.parse(TEST_MAIL_FROM),
     mailToken: MailToken.parse(randomBytes(16).toString('hex')),
     ...testNeon(neonApiUrl),
-    ...testAppsConfig(),
+    ...testAppsConfig(cloudflareApiUrl),
   }
 }
 

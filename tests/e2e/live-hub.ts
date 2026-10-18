@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { randomBytes } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
@@ -7,14 +7,7 @@ import type { TestContext } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
-import {
-  appsOf,
-  createEdgeHub,
-  createHub,
-  identityOf,
-  operationsOf,
-  projectsOf,
-} from '../../apps/server/src/main.ts'
+import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../apps/server/src/main.ts'
 import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
 import { createCompanyPostgres } from '../../apps/server/src/platform/company-postgres.ts'
 import { createNeonProjects } from '../../apps/server/src/platform/neon.ts'
@@ -27,8 +20,8 @@ import {
 import { neonServer } from '../../apps/server/src/platform/test-neon.ts'
 
 // What the founder's journeys share: a real Hub on a real database, serving the built screens, and
-// the browser reaching it by its public name. Only the mail provider and Neon are faked, at their
-// HTTP doors (testing T14, T16).
+// the browser reaching it by its public name. Only the mail provider, Neon and Cloudflare are faked,
+// at their HTTP doors (testing T14, T16).
 export const PASSWORD = 'senha-certa-1'
 const silent = { info: () => undefined, error: () => undefined }
 
@@ -80,28 +73,18 @@ function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
 }
 
 /** The Hub in this process, on the CI database, serving the built screens on its public port and the dispatcher's calls on its edge port. */
-export async function liveHub(t: TestContext, mailUrl: string) {
+export async function liveHub(t: TestContext, mailUrl: string, cloudflareUrl?: string) {
   assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
-  const config = testConfig(database.runtimeUrl, mailUrl, neon.url)
+  const config = testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl)
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const neonProjects = createNeonProjects({ config, log: silent })
-  const projects = projectsOf({
-    config,
-    database: database.database,
-    identity,
-    neon: neonProjects,
-    log: silent,
-  })
-  const operations = operationsOf(database.database, { identity, projects })
-  const apps = appsOf({
+  const { projects, operations, apps } = subjectsOf({
     database: database.database,
     config,
     identity,
-    projects,
-    neon: neonProjects,
+    neon: createNeonProjects({ config, log: silent }),
     companyPostgres: createCompanyPostgres({
       transport: pgTransport,
       appLoginKey: config.appLoginKey,
@@ -122,7 +105,7 @@ export async function liveHub(t: TestContext, mailUrl: string) {
   t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
   await edge.listen({ host: '127.0.0.1', port: 0 })
-  return { port: portOf(app), edgePort: portOf(edge), database, neon }
+  return { port: portOf(app), edgePort: portOf(edge), database, neon, config }
 }
 
 /**
@@ -194,4 +177,25 @@ export async function personWithPassword(
     [randomBytes(16).toString('hex'), id, await hashPassword(PASSWORD)],
   )
   return id
+}
+
+/** Empresa A with Ana its owner and Carla a member, and no nickname yet. */
+export async function plantCompany(database: LiveDatabase, owner: string, member: string) {
+  const companyId = randomUUID().replaceAll('-', '')
+  await database.asOwner(
+    `insert into auth.company (id, name, slug, created_at, attempt_key, nickname)
+      values ($1, 'Empresa A', $1, now(), $1, null)`,
+    [companyId],
+  )
+  for (const [user, role] of [
+    [owner, 'owner'],
+    [member, 'member'],
+  ]) {
+    await database.asOwner(
+      `insert into auth.member (id, company_id, user_id, role, created_at)
+        values ($1, $2, $3, $4, now())`,
+      [randomUUID().replaceAll('-', ''), companyId, user, role],
+    )
+  }
+  return companyId
 }

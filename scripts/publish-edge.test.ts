@@ -10,15 +10,26 @@ const dir = mkdtempSync(join(tmpdir(), 'conexus-edge-'))
 after(() => rmSync(dir, { recursive: true, force: true }))
 
 const TOKEN = 'cloudflare-token-value'
+const KEY = 'app-login-key-value'
 // The stub records its arguments and whether its own environment holds the token; the third call
 // can be made to fail.
 const WRANGLER = `#!/bin/bash
-echo "wrangler $* [token-in-env=\${CLOUDFLARE_API_TOKEN:+yes}]" >> "$CALLS"
+stdin=""
+# The bytes wrangler reads, counted: a newline would count.
+if [ "$1" = secret ]; then stdin="$(wc --bytes)"; fi
+echo "wrangler $* [token-in-env=\${CLOUDFLARE_API_TOKEN:+yes}]\${stdin:+ [stdin=$stdin]}" >> "$CALLS"
 if [ "$(wc -l < "$CALLS")" = "\${STUB_FAIL_AT:-0}" ]; then echo "the upload failed" >&2; exit 1; fi
 `
 
 function publish(
-  options: { edge?: boolean; content?: string; mode?: number; failAt?: number; user?: string } = {},
+  options: {
+    edge?: boolean
+    content?: string
+    mode?: number
+    failAt?: number
+    user?: string
+    keyMode?: number
+  } = {},
 ) {
   const root = mkdtempSync(join(dir, 'release-'))
   if (options.edge !== false) {
@@ -33,6 +44,9 @@ function publish(
     options.content ?? `CLOUDFLARE_API_TOKEN=${TOKEN}\nCLOUDFLARE_ACCOUNT_ID=account\n`,
   )
   chmodSync(file, options.mode ?? 0o400)
+  const key = join(root, 'app-login-key')
+  writeFileSync(key, `${KEY}\n`)
+  chmodSync(key, options.keyMode ?? 0o400)
   const calls = join(root, 'calls')
   writeFileSync(calls, '')
   // A stub `id` stands for a runner that is not the file's owner.
@@ -50,6 +64,7 @@ function publish(
       PATH: `${bin}:${process.env.PATH}`,
       CALLS: calls,
       CLOUDFLARE_ENV_FILE: file,
+      APP_LOGIN_KEY_FILE: key,
       STUB_FAIL_AT: String(options.failAt ?? 0),
     },
   })
@@ -57,21 +72,31 @@ function publish(
   return { run, recorded, file }
 }
 
-test('publica o muro, o exemplo no espaço de nomes e o despachante, nessa ordem', () => {
+test('publica o muro, o exemplo no espaço de nomes, a chave e o despachante, nessa ordem', () => {
   const { run, recorded, file } = publish()
   assert.equal(run.status, 0, run.stderr)
   assert.deepEqual(recorded, [
     `wrangler deploy --env-file ${file} --config wrangler.outbound.jsonc [token-in-env=]`,
     `wrangler deploy --env-file ${file} --config example/wrangler.jsonc --dispatch-namespace conexus-apps [token-in-env=]`,
+    `wrangler secret put APP_LOGIN_KEY --env-file ${file} [token-in-env=] [stdin=${KEY.length}]`,
     `wrangler deploy --env-file ${file} [token-in-env=]`,
   ])
   assert.match(run.stdout, /edge published\n$/)
 })
 
-test('o token não está na linha de comando, no ambiente do script nem na saída', () => {
+test('o token e a chave não estão na linha de comando, no ambiente do script nem na saída', () => {
   const { run, recorded } = publish()
   assert.equal(run.status, 0, run.stderr)
-  assert.doesNotMatch(`${recorded.join('\n')}${run.stdout}${run.stderr}`, new RegExp(TOKEN))
+  const seen = `${recorded.join('\n')}${run.stdout}${run.stderr}`
+  assert.doesNotMatch(seen, new RegExp(TOKEN))
+  assert.doesNotMatch(seen, new RegExp(KEY))
+})
+
+test('recusa a chave legível por outros: nada se publica', () => {
+  const { run, recorded } = publish({ keyMode: 0o644 })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /app-login-key must be readable by its owner only/)
+  assert.deepEqual(recorded, [])
 })
 
 test('um passo que falha para os seguintes e falha a publicação', () => {

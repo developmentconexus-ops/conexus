@@ -6,7 +6,8 @@ import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import example from '../../apps/edge/example/src/index.ts'
 import { serveDispatch } from '../../apps/edge/src/dispatch.ts'
 import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
-import { liveHub, PASSWORD, personWithPassword } from './live-hub.ts'
+import { Jar } from './apps-edge.ts'
+import { liveHub, PASSWORD, personWithPassword, plantCompany } from './live-hub.ts'
 
 // Step 8's journey without Cloudflare: the real Hub on both ports, the real dispatcher in Node,
 // the namespace a fake that runs the example app. Cookies travel by hand, as a browser would
@@ -27,52 +28,6 @@ const MEMBER_IP = '203.0.113.10'
 const send = globalThis.fetch
 
 type Reply = { status: number; headers: Headers; text: string }
-
-/** The cookies a browser keeps for one host, changed by each answer's `Set-Cookie`. */
-class Jar {
-  cookies = new Map<string, string>()
-  absorb(headers: Headers) {
-    for (const line of headers.getSetCookie()) {
-      const [pair = '', ...attributes] = line.split(';')
-      const at = pair.indexOf('=')
-      const name = pair.slice(0, at)
-      const gone = pair.slice(at + 1) === '' || attributes.some((a) => a.trim() === 'Max-Age=0')
-      if (gone) this.cookies.delete(name)
-      else this.cookies.set(name, pair.slice(at + 1))
-    }
-  }
-  header() {
-    return [...this.cookies].map(([name, value]) => `${name}=${value}`).join('; ')
-  }
-  copy() {
-    const jar = new Jar()
-    jar.cookies = new Map(this.cookies)
-    return jar
-  }
-}
-
-type Database = Parameters<typeof personWithPassword>[0]
-
-/** Empresa A with Ana its owner and Carla a member, and no nickname yet. */
-async function plantCompany(database: Database, owner: string, member: string) {
-  const companyId = randomUUID().replaceAll('-', '')
-  await database.asOwner(
-    `insert into auth.company (id, name, slug, created_at, attempt_key, nickname)
-      values ($1, 'Empresa A', $1, now(), $1, null)`,
-    [companyId],
-  )
-  for (const [user, role] of [
-    [owner, 'owner'],
-    [member, 'member'],
-  ]) {
-    await database.asOwner(
-      `insert into auth.member (id, company_id, user_id, role, created_at)
-        values ($1, $2, $3, $4, now())`,
-      [randomUUID().replaceAll('-', ''), companyId, user, role],
-    )
-  }
-  return companyId
-}
 
 /** This journey sends no version, so no call reaches a version's `db`. */
 const NO_VERSION = {
