@@ -6,6 +6,7 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { LiveDatabase, Mail } from './live-hub.ts'
 import {
+  closeBrowser,
   linkIn,
   liveHub,
   mailProvider,
@@ -84,7 +85,7 @@ test('o roteiro de uso: convidar, criar a senha, aceitar e ver a empresa com as 
   const { port, database } = await liveHub(t, mail.url)
   await ownerOfCompany(database)
   const browser: Browser = await chromium.launch()
-  t.after(() => browser.close())
+  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   const anaContext = await browser.newContext()
   const daviContext = await browser.newContext()

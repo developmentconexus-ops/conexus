@@ -6,6 +6,7 @@ import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
   chooseNickname,
+  closeBrowser,
   linkIn,
   liveHub,
   mailProvider,
@@ -154,7 +155,7 @@ test('o roteiro de tirar uma pessoa: o último dono não sai, tirar, a Central c
   database.passwords.leaked.add(LEAKED)
   await personWithPassword(database, ANA)
   const browser: Browser = await chromium.launch()
-  t.after(() => browser.close())
+  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   async function window(ip: string) {
     const context = await browser.newContext()

@@ -6,6 +6,7 @@ import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
   chooseNickname,
+  closeBrowser,
   linkIn,
   liveHub,
   mailProvider,
@@ -120,7 +121,7 @@ test('o roteiro de Projetos: criar, nome repetido, apagar por quem pode e a empr
   const { port, database, neon } = await liveHub(t, mail.url)
   await personWithPassword(database, ANA)
   const browser: Browser = await chromium.launch()
-  t.after(() => browser.close())
+  t.after(() => closeBrowser(browser))
   const problems: string[] = []
   async function window(ip: string) {
     const context = await browser.newContext()

@@ -1,13 +1,11 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { createServer } from 'node:http'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import type { BrowserContext, Page } from 'playwright-core'
-import { build } from 'vite'
+import type { Browser, BrowserContext, Page } from 'playwright-core'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import {
   appsOf,
@@ -69,13 +67,8 @@ export async function mailProvider(t: TestContext) {
   }
 }
 
-async function builtScreens(t: TestContext): Promise<string> {
-  const outDir = mkdtempSync(join(tmpdir(), 'conexus-e2e-web-'))
-  t.after(() => rmSync(outDir, { recursive: true, force: true }))
-  const root = join(import.meta.dirname, '..', '..', 'apps', 'web')
-  await build({ root, logLevel: 'silent', build: { outDir } })
-  return outDir
-}
+/** The screens `npm run e2e` builds once before any file runs (pree2e), served by every Hub here. */
+const WEB_ROOT = join(import.meta.dirname, '..', '..', 'apps', 'web', 'dist')
 
 function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
   const address = server.server.address()
@@ -85,6 +78,7 @@ function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
 
 /** The Hub in this process, on the CI database, serving the built screens on its public port and the dispatcher's calls on its edge port. */
 export async function liveHub(t: TestContext, mailUrl: string) {
+  assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
   const config = testConfig(database.runtimeUrl, mailUrl, neon.url)
@@ -105,7 +99,7 @@ export async function liveHub(t: TestContext, mailUrl: string) {
     operations,
     projects,
     apps,
-    webRoot: await builtScreens(t),
+    webRoot: WEB_ROOT,
   })
   t.after(() => app.close())
   const edge = await createEdgeHub(config, { apps })
@@ -126,6 +120,15 @@ export async function reachHub(context: BrowserContext, port: number, ip: string
     const headers = { ...(await request.allHeaders()), 'cf-connecting-ip': ip }
     return route.fulfill({ response: await route.fetch({ url, headers }) })
   })
+}
+
+/**
+ * Ends the browser once every context has let go of `reachHub`'s route, so a fetch still in flight
+ * when the test ends is dropped instead of failing on a closed target.
+ */
+export async function closeBrowser(browser: Browser) {
+  for (const context of browser.contexts()) await context.unrouteAll({ behavior: 'ignoreErrors' })
+  await browser.close()
 }
 
 /** What would show in the console as a refusal of the page itself, never as a refusal it shows. */
