@@ -142,6 +142,13 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Entrar' }).click()
 }
 
+/** The first owner of a company the Central made keeps the suggested nickname, and Projetos opens. */
+export async function chooseNickname(page: Page) {
+  await page.getByRole('heading', { name: 'Configurar a empresa' }).waitFor()
+  await page.getByRole('button', { name: 'Salvar', exact: true }).click()
+  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+}
+
 export function linkIn(mail: Mail): string {
   const link = mail.text.match(/https:\/\/\S+/)?.[0]
   assert.ok(link, 'the e-mail carries no link')

@@ -26,8 +26,8 @@ async function ownerOfCompany(database: LiveDatabase) {
   const id = await personWithPassword(database, ANA)
   const companyId = randomBytes(16).toString('hex')
   await database.asOwner(
-    `insert into auth.company (id, name, slug, created_at, attempt_key)
-      values ($1, 'Empresa Teste', $1, now(), $1)`,
+    `insert into auth.company (id, name, slug, created_at, attempt_key, nickname)
+      values ($1, 'Empresa Teste', $1, now(), $1, 'empresa-teste')`,
     [companyId],
   )
   await database.asOwner(

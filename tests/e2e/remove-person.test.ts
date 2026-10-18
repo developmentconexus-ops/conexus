@@ -5,6 +5,7 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
+  chooseNickname,
   linkIn,
   liveHub,
   mailProvider,
@@ -28,15 +29,16 @@ const LEAKED = '123456789'
 const CHOSEN = 'outra-senha-forte-9'
 const NOT_FOUND = 'Não encontramos o que você procurou.'
 
-/** Opens an invitation's mail as a new person, creates the password and accepts. */
-async function join(page: Page, mail: Mail, person: { name: string }) {
+/** Opens an invitation's mail as a new person, creates the password and accepts; a first owner sets the company up. */
+async function join(page: Page, mail: Mail, person: { name: string }, firstOwner = false) {
   await page.goto(linkIn(mail))
   await page.getByLabel('Nome').fill(person.name)
   await page.getByLabel('Senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  if (firstOwner) await chooseNickname(page)
+  else await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
   await page.getByRole('link', { name: 'Pessoas' }).first().click()
   await page.getByRole('heading', { name: COMPANY, exact: true }).waitFor()
 }
@@ -69,7 +71,7 @@ async function setUp(w: Windows, mail: Mailbox) {
   await w.ana.getByLabel('E-mail do administrador').fill(DAVI.email)
   await w.ana.getByRole('button', { name: 'Cadastrar cliente' }).click()
   await w.ana.getByRole('heading', { name: COMPANY, exact: true }).waitFor()
-  await join(w.davi, await mail.next(), DAVI)
+  await join(w.davi, await mail.next(), DAVI, true)
   await w.davi.getByRole('heading', { name: 'Pessoas' }).waitFor()
   await invite(w.davi, CARLA.email, 'Administrador')
   await join(w.carla, await mail.next(), CARLA)

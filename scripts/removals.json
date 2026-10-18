@@ -56,7 +56,7 @@
   },
   {
     "id": "raw-output-spawned-hub",
-    "file": "apps/server/src/platform/test-database.ts",
+    "file": "apps/server/src/platform/test-hub-process.ts",
     "find": "if (line === undefined) raw.push(text)",
     "replace": "if (line === undefined) return",
     "test": {

@@ -5,6 +5,7 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
+  chooseNickname,
   linkIn,
   liveHub,
   mailProvider,
@@ -45,7 +46,7 @@ async function join(page: Page, next: () => Promise<Mail>, owner: typeof OWNERS.
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await chooseNickname(page)
   await page.getByRole('link', { name: 'Pessoas' }).first().click()
   await page.getByRole('heading', { name: owner.company, exact: true }).waitFor()
   return link
