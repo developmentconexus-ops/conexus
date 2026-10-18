@@ -11,7 +11,12 @@ type Step = {
   with?: Record<string, unknown>
   env?: Record<string, string>
 }
-type Job = { needs?: string | string[]; outputs?: Record<string, string>; steps: Step[] }
+type Job = {
+  needs?: string | string[]
+  'runs-on': string | string[]
+  outputs?: Record<string, string>
+  steps: Step[]
+}
 type Workflow = { jobs: Record<string, Job> }
 
 function workflow(name: string): Workflow {
@@ -34,6 +39,14 @@ test('a volta acha o registro antes de mexer na borda, e põe a borda de volta a
   assert.equal(rollback.jobs.record?.needs, undefined)
   assert.equal(rollback.jobs.edge?.needs, 'record')
   assert.deepEqual(rollback.jobs.rollback?.needs, ['record', 'edge'])
+})
+
+test('a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor', () => {
+  assert.equal(publish.jobs.image?.['runs-on'], 'ubuntu-24.04')
+  const server = [...Object.entries(publish.jobs), ...Object.entries(rollback.jobs)].filter(
+    ([name]) => name !== 'image',
+  )
+  for (const [name, job] of server) assert.deepEqual(job['runs-on'], ['self-hosted', 'hub'], name)
 })
 
 test('cada trabalho do Release usa o commit que o gancho conferiu, não a tag', () => {

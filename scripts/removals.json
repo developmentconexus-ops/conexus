@@ -1408,6 +1408,17 @@
     }
   },
   {
+    "id": "publish-image-on-fresh-machine",
+    "file": ".github/workflows/publish.yml",
+    "find": "    runs-on: ubuntu-24.04\n",
+    "replace": "    runs-on: [self-hosted, conexus]\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor"
+    }
+  },
+  {
     "id": "rollback-version-on-main",
     "file": ".github/workflows/rollback.yml",
     "find": "          if ! git merge-base --is-ancestor HEAD origin/main; then\n            echo \"the commit of $VERSION is not on main\"\n            exit 1\n          fi\n",
