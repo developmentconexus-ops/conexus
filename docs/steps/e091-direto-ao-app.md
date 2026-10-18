@@ -6,23 +6,24 @@
 app, sem nenhuma tela do Hub no meio. No console do Neon, o projeto de cada empresa leva o apelido
 dela no nome.
 
-**O roteiro de uso.** No Hub publicado, com a Empresa A e o Projeto Pedidos da etapa 9.
+**O roteiro de uso.** No Hub publicado, com a Empresa A e a pasta `recados-1` da etapa 9.
 
-1. Saia do Hub. Abra `https://pedidos--<apelido da Empresa A>.conexusapp.tech/`: aparece **Entrar
-   no Conexus**. Entre: a próxima tela é o Recados. Não aparecem o menu do Hub, o título "Abrir
-   app" nem "Abrindo o app…".
-2. No Hub, em Pedidos, aperte **Abrir app**: o Recados abre direto.
+1. Na Empresa A, crie o Projeto Pedidos (ou outro nome) e, em **Configurações**, envie
+   `recados-1`. Aperte **Abrir app**: o Recados abre direto. Escreva um recado.
+2. Saia do Hub. Abra `https://pedidos--<apelido da Empresa A>.conexusapp.tech/`: aparece **Entrar
+   no Conexus**. Entre: a próxima tela é o Recados, com o recado. Não aparecem o menu do Hub, o
+   título "Abrir app" nem "Abrindo o app…".
 3. Troque `pedidos` por `nada` no endereço: "Este app não existe ou você não tem acesso a ele.",
    sem o menu do Hub, com o link **Ir para o Início**. O mesmo aparece para quem não é da empresa.
 4. No console do Neon, na organização das empresas, o projeto da Empresa A se chama
    `<apelido>-<id da empresa>`, por exemplo `metalnobre-<32 letras e números>`, não
-   mais `cx-…`. Abra o Recados de novo: os recados continuam lá.
+   mais `cx-…`. Abra o Recados de novo: o recado continua lá.
 5. Crie uma empresa de teste, escolha o apelido e crie o primeiro Projeto: o projeto novo no Neon
    já nasce com `<apelido>-<id>`. Apague a empresa na Central: o projeto sai do console.
 
 **O que você faz, e quando.** No começo: aprova esta página, e com ela as regras abaixo e as
-chamadas da prova de U2. Antes de U2: cria uma chave de prova do Neon na organização das empresas,
-apagada no fim, como na 9. No fim: faz o roteiro, diz o que viu e aprova os textos.
+chamadas da prova de U2. U2 usa a chave de prova da organização das empresas que já existe
+(`cx-prova-e09`), a mesma da etapa 10; ela é apagada no fim da última das duas. Não há chave nova. No fim: faz o roteiro, diz o que viu e aprova os textos.
 
 **As chamadas da prova de U2**, todas em projetos `cx-prova-`, apagados no fim: criar dois
 projetos pelo SDK, buscar pelo id e por um pedaço do nome, renomear um e abrir uma conexão antes e
@@ -42,7 +43,7 @@ os projetos que já existem são renomeados uma vez, sozinhos, quando o Hub sobe
 - **S24 ganha uma frase**: esse endereço é a única exceção à mesma origem.
 - **C36 ganha a exceção**: o passe de 60 s que esse GET grava, como o OAuth faz. **C35** diz que
   vale só para as operações da API; `/apps/open` não é uma.
-- **O registro 0047** troca a chave do projeto no Neon de "o nome exato" (0040) para "o final
+- **O registro 0048** troca a chave do projeto no Neon de "o nome exato" (0040) para "o final
   `-<id>` exato", com a prova acima.
 
 O texto delas fica na seção "As regras que mudam"; entra nos guias no pull request de fechamento
@@ -61,7 +62,7 @@ Base: `main` `20cde67` (v0.9.1). Estudo de 2026-10-18 e as respostas "Decisao 1:
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
 | --- | --- | --- | --- | --- | --- |
 | U1 | Passagem por redirecionamento | `packages/hub-api/`, `apps/server/src/platform/`, `apps/server/src/hub/apps/`, `apps/web/src/`, `tests/e2e/`, `scripts/removals.json`, `package.json` | segurança | fastify-best-practices | a 9 fechada |
-| U2 | Nome `<apelido>-<id>`, 0047 e a prova | `docs/decisions/`, `apps/server/src/platform/`, `apps/server/src/hub/projects/`, `apps/server/src/hub/operations/`, `docs/how-to/`, `docs/reference/`, `scripts/removals.json` | dados | neon:neon-postgres-agent-platforms | a chave de prova |
+| U2 | Nome `<apelido>-<id>`, 0048 e a prova | `docs/decisions/`, `apps/server/src/platform/`, `apps/server/src/hub/projects/`, `apps/server/src/hub/operations/`, `docs/how-to/`, `docs/reference/`, `scripts/removals.json` | dados | neon:neon-postgres-agent-platforms | a chave `cx-prova-e09` |
 | U3 | Renomear na partida | `apps/server/src/hub/projects/`, `apps/server/src/main.ts` | dados | neon:neon-postgres-agent-platforms | U2 |
 
 U1 e U2 dividem `apps/server/src/platform/` e `scripts/removals.json`: uma depois da outra. Uma
@@ -84,7 +85,7 @@ U2 120; U3 70. Total **450**, teto 4.000 (L2).
 | 8 | U1 | A tela `/apps/open`: sem moldura, a frase e **Ir para o Início**; a leitura da sessão falha: o `Error` comum; o roteador responde a `PAGES` e a `APP_OPEN_PATH` | `app-refused.test.tsx` (novo), `__root.test.tsx` | must |
 | 9 | U1 | Chromium: endereço do app sem sessão do Hub → `/login` → o app; nenhum documento do Hub entre o login e o app; com sessão, **Abrir app** → o app; o Hub recebeu o cookie, `cross-site`, `navigate` e `document`; um `fetch` do app para `/apps/open`: recusado | `tests/e2e/app-open.test.ts` (novo) | must |
 | 10 | U1 | Linhas `handoff-navigation-only` e `handoff-get-only` de `removals.json`: `caught` | `removals` | must |
-| 11 | U2 | 0047 "Proposed" antes da prova; Result com as checagens 1 a 4 e as versões; nada `cx-prova-` vivo | o registro | must |
+| 11 | U2 | 0048 "Proposed" antes da prova; Result com as checagens 1 a 4 e as versões; nada `cx-prova-` vivo | o registro | must |
 | 12 | U2 | `companyProjectName` dá `<apelido>-<id>`; `find(companyId)` acha `cx-<id>` e `<apelido>-<id>`, não acha `<x>-<id>y`, `<id>-x` nem outro id; o apelido de 30 dá 63 caracteres | `neon.test.ts` | must |
 | 13 | U2 | O primeiro Projeto cria `<apelido>-<id>`; resposta cortada e nova tentativa adotam o achado pelo final, sem criar outro | `projects-database.test.ts` | must |
 | 14 | U2 | Apagar a empresa apaga o projeto achado pelo final, `cx-<id>` incluído | `client-deletion-database.test.ts` | must |
@@ -148,14 +149,14 @@ Texto para o pull request de fechamento (L20); a construção segue o cartão ap
 - **C35**, ao fim: "An operation's path; the `handoff` route of security S48 is not an operation."
 - **C36**, ao fim: "The `handoff` kind of security S48 writes a one-use pass on `GET`, as an OAuth
   authorization endpoint does; a prefetch makes at most a pass that expires unused."
-- **0047. A company's Neon project named by its nickname and id.** Decision: 2A, `<nickname>-<companyId>`;
+- **0048. A company's Neon project named by its nickname and id.** Decision: 2A, `<nickname>-<companyId>`;
   `find` lists with `search` set to the id and keeps the names ending exactly in `-<companyId>`, so
   `cx-<id>` still matches; the start renames once. Amends 0040's criterion 2 ("One exact name").
   Criterion: 1, create `cx-prova-<21 characters>-<32-character id>`, 63 characters: the name comes back
   exact; 2, `list` with `search` set to the 32-character id, and to a middle piece of the name, finds it; 3, `update`
   renames: project id, endpoint host and the owner connection string unchanged, a connection opened
   before answers after; 4, none left. If 2 fails, `find` lists the organization without `search`
-  (0040 T3A: it holds only companies' projects). 0040 gains under State: "Its find key: 0047."
+  (0040 T3A: it holds only companies' projects). 0040 gains under State: "Its find key: 0048."
 
 ## U1 Passagem por redirecionamento
 
@@ -215,7 +216,7 @@ para e volta ao cartão.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `docs/decisions/0047-…md`, `0040-…md`, `docs/index.md` | Cria; muda o State; a linha do 0047 | — |
+| `docs/decisions/0048-…md`, `0040-…md`, `docs/index.md` | Cria; muda o State; a linha do 0048 | — |
 | `apps/server/src/platform/neon.ts`, `test-neon.ts`, `neon.test.ts` | Muda | `hub/projects/`, `hub/operations/`, `main.ts`, `platform/test-app-ports.ts`, `hub/identity/test-hub.ts` |
 | `projects-database.test.ts`, `projects-delete.test.ts`, `client-deletion-database.test.ts` | Muda: o nome novo e `find(companyId)` | — |
 | `apps/server/src/hub/projects/company-database.ts`, `projects.ts`, `company-deletion.ts` | Muda | `hub/operations/` |
@@ -238,7 +239,7 @@ para e volta ao cartão.
 
 ### A ordem do trabalho
 
-1. 0047 "Proposed", a prova com a chave de prova, o Result. Regras: T14, L21. Funções:
+1. 0048 "Proposed", a prova com a chave `cx-prova-e09`, o Result. Regras: T14, L21. Funções:
    `@neon/sdk` 7.3.0: `projects.list({ search, org_id })`, `projects.update({ projectId, name })`,
    `postgres.connectionString`.
 2. O adaptador, o falso e os chamadores. Regras: C56, C37, D22. O falso busca como a prova mostrou.
