@@ -1447,7 +1447,7 @@
     "replace": "    *) ;;\n",
     "test": {
       "cwd": ".",
-      "file": "scripts/setup-server.test.ts",
+      "file": "scripts/setup-runner-hook.test.ts",
       "name": "recusa uma chave legível por outros ou um endereço que não é do GitHub, antes de instalar"
     }
   },
@@ -1458,8 +1458,63 @@
     "replace": "-o StrictHostKeyChecking=no",
     "test": {
       "cwd": ".",
-      "file": "scripts/setup-server.test.ts",
+      "file": "scripts/setup-runner-hook.test.ts",
       "name": "com a chave de leitura, o gancho prepara o espelho de main só para o runner"
+    }
+  },
+  {
+    "id": "release-recorded-after-deploy",
+    "file": ".github/workflows/publish.yml",
+    "find": "run: infra/releases.sh record \"$VERSION\" \"$REFERENCE\"",
+    "replace": "run: \"true\"",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release registra o digest depois que o deploy deu certo"
+    }
+  },
+  {
+    "id": "rollback-reads-record",
+    "file": ".github/workflows/rollback.yml",
+    "find": "reference=\"$(infra/releases.sh find \"$VERSION\")\"",
+    "replace": "reference=\"$(docker buildx imagetools inspect \"$IMAGE:$VERSION\")\"",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta lê o registro do servidor antes do deploy, sem perguntar à GHCR"
+    }
+  },
+  {
+    "id": "record-reference-pattern",
+    "file": "infra/releases.sh",
+    "find": "    [[ $reference =~ $reference_pattern ]] || {\n      echo \"$reference is not an image reference by digest\" >&2\n      exit 1\n    }\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/releases.test.ts",
+      "name": "recusa registrar um nome de versão ou uma referência que não são os esperados"
+    }
+  },
+  {
+    "id": "find-revalidates-record",
+    "file": "infra/releases.sh",
+    "find": "    [[ $reference =~ $reference_pattern ]] || {\n      echo \"the record of $version is not an image reference by digest\" >&2\n      exit 1\n    }\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/releases.test.ts",
+      "name": "um registro adulterado que não é um digest é recusado ao procurar"
+    }
+  },
+  {
+    "id": "hook-named-before-mirror",
+    "file": "infra/setup-runner-hook.sh",
+    "find": "name_the_hook\ninstall -d",
+    "replace": "install -d",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/setup-runner-hook.test.ts",
+      "name": "se o espelho falha, o .env já nomeia o gancho e a falha é do espelho"
     }
   }
 ]

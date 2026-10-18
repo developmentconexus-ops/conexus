@@ -57,6 +57,8 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
     },
     DISPATCHER: {
       get(name: string, args: { props: AppProps }, options: unknown) {
+        // Stands for a namespace that raises "Worker not found" from `get`; one that raises it from the
+        // stub's `fetch` lands in the same `try` of the dispatcher's `toApp`, so the 502 page is the same.
         if (doubles.missingScript) throw new Error(`Worker not found: ${name}`)
         return {
           async fetch(input: RequestInfo | URL, init?: RequestInit) {
