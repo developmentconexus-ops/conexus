@@ -14,6 +14,9 @@ import { admitToApp, projectOfHost } from './hosts.ts'
 import { createProjectStore } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
+/** For the apps' foreign key alone (code C8). */
+export { project } from './tables.ts'
+
 export type Projects = ReturnType<typeof createProjects>
 export type ProjectPorts = Projects['ports']
 

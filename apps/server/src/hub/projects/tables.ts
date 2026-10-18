@@ -31,6 +31,9 @@ export const project = projects.table(
     // The app's host label, `<name>--<nickname>`, stored at birth and never parsed (decision 0024).
     // Null only for a Project made by step 7's image after a rollback; step 9's contract fills it.
     hostLabel: text('host_label').unique('project_host_label_key'),
+    // Set when its deletion starts: the Projeto is gone for every reader while its app's Workers,
+    // schema and logins leave, and the rows go last (step 9).
+    deletingSince: timestamp('deleting_since', { withTimezone: true }),
   },
   (table) => [
     check(
@@ -61,6 +64,9 @@ export const companyDatabase = projects.table(
     state: text('state', { enum: ['creating', 'ready'] }).notNull(),
     neonProjectId: text('neon_project_id').unique('company_database_neon_project_id_key'),
     claimedUntil: timestamp('claimed_until', { withTimezone: true }),
+    // The project's endpoint host, read once from Neon when its first app is sent: the dispatcher
+    // reaches the database by it.
+    host: text('host'),
   },
   (table) => [
     check('company_database_state', sql`${table.state} IN ('creating', 'ready')`),
