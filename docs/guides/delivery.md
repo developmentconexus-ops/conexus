@@ -116,7 +116,7 @@ only with the founder's word.
 | --- | ---: |
 | `AGENTS.md` | 400 |
 | `docs/index.md` | 500 |
-| `docs/roadmap.md` | 1,500 |
+| `docs/roadmap.md` | 1,600 |
 | `docs/architecture.md` | 2,500 |
 | `docs/guides/code.md` | 3,500 |
 | `docs/guides/security.md` | 3,000 |
