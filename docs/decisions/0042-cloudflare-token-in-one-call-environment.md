@@ -6,7 +6,7 @@ Security S31 asks every secret to be read from a file. The Release publishes the
 
 ## Decision
 
-No exception to S31. The token and the account id sit in `/etc/conexus/cloudflare.env`, owned by the runner's user, mode 0400 or 0600. `infra/publish-edge.sh` refuses a file that is missing, empty, readable by others, owned by another user or without either key, and passes only its path to each `wrangler deploy --env-file`. The token is in no command line, in no environment of the script or the workflow, and in no log. Basis: the evidence above and the founder's answer.
+No exception to S31. The token and the account id sit in `/etc/conexus/cloudflare.env`, owned by the runner's user, mode 0400 or 0600. `infra/publish-edge.sh` refuses a file that is missing, empty, readable by others, owned by another user or without either key, and passes only its path to each `wrangler deploy --env-file`. The token is in no command line, in no environment of the script or the workflow, and in no log. Basis: the evidence above, read in the installed `wrangler`; the founder's answer chose only who publishes.
 
 Lost: the 0036 form, a reader that sets the variable in the call (the same effect, but the value would pass through the shell). If a later `wrangler` stops loading its credentials from `--env-file`, the 0036 form returns as an exception and this record reopens.
 
@@ -20,4 +20,4 @@ The runner's user can read the token, so any job that runs there can; the hook `
 
 ## State
 
-Proposed 2026-10-18. Founder, 2026-10-17: "A", the server's runner publishes the edge.
+Proposed 2026-10-18. Founder, 2026-10-17: "A", the server's runner publishes the edge; the form of the token is this record's, from the evidence.

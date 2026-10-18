@@ -1113,7 +1113,7 @@
   {
     "id": "edge-drop-app-cookie",
     "file": "apps/edge/src/headers.ts",
-    "find": "if (!line.trimStart().startsWith(COOKIE_PREFIX)) ",
+    "find": "if (!line.startsWith(COOKIE_PREFIX)) ",
     "replace": "",
     "test": {
       "cwd": "apps/edge",
@@ -1124,7 +1124,7 @@
   {
     "id": "edge-cross-site-write",
     "file": "apps/edge/src/dispatcher.ts",
-    "find": "  if (isCrossSiteWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')\n",
+    "find": "  if (isForeignWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')\n",
     "replace": "",
     "test": {
       "cwd": "apps/edge",
@@ -1218,6 +1218,248 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/nickname.test.ts",
       "name": "apelido: o dono escolhe uma vez"
+    }
+  },
+  {
+    "id": "app-session-project-replaced",
+    "file": "apps/server/src/hub/apps/handoff.ts",
+    "find": "  if (current.projectId !== ids.projectId) {",
+    "replace": "  if (current.projectId === undefined) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/app-handoff.test.ts",
+      "name": "checagem: o Projeto apagado e criado de novo"
+    }
+  },
+  {
+    "id": "nickname-company-lock",
+    "file": "apps/server/src/hub/identity/nickname.ts",
+    "find": "    await lockCompany(tx, input.companyId)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/identity/nickname.test.ts",
+      "name": "apelido: duas escolhas juntas"
+    }
+  },
+  {
+    "id": "edge-sec-fetch-site",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "(site !== null && site !== 'same-origin') || ",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "escrita: Sec-Fetch-Site"
+    }
+  },
+  {
+    "id": "edge-write-needs-origin",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "request.headers.get('Origin') !== url.origin",
+    "replace": "(request.headers.get('Origin') ?? url.origin) !== url.origin",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "escrita: sem Origin"
+    }
+  },
+  {
+    "id": "edge-cross-site-get",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  if (request.method === 'GET' || request.method === 'HEAD') return false\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "GET de outro site"
+    }
+  },
+  {
+    "id": "edge-303-headers",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "headers: withSecurityHeaders(headers) })",
+    "replace": "headers })",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "os 303"
+    }
+  },
+  {
+    "id": "edge-missing-script",
+    "file": "apps/edge/src/dispatcher.ts",
+    "find": "  try {\n    const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })\n",
+    "replace": "  const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })\n  try {\n",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-guards.test.ts",
+      "name": "matriz, o Worker do app"
+    }
+  },
+  {
+    "id": "edge-log-timeout",
+    "file": "apps/edge/src/hub.ts",
+    "find": "reason: timedOut ? 'TIMEOUT' : 'NETWORK'",
+    "replace": "reason: 'NETWORK'",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-log.test.ts",
+      "name": "log do Hub sem resposta: TIMEOUT"
+    }
+  },
+  {
+    "id": "edge-log-reason",
+    "file": "apps/edge/src/pages.ts",
+    "find": "const line = { msg: code, status, reason }",
+    "replace": "const line = { msg: code, status }",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-log.test.ts",
+      "name": "log do Hub sem resposta: NETWORK"
+    }
+  },
+  {
+    "id": "runner-commit-on-main",
+    "file": "infra/runner-job-started.sh",
+    "find": "\"${git[@]}\" merge-base --is-ancestor \"$commit\" refs/heads/main > /dev/null 2>&1 \\\n  || refuse \"the commit $commit is not on main\"\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um Release de um commit fora de main é recusado"
+    }
+  },
+  {
+    "id": "runner-dispatch-commit-on-main",
+    "file": "infra/runner-job-started.sh",
+    "find": "refs/heads/main > /dev/null 2>&1 \\\n  || refuse",
+    "replace": "refs/heads/main > /dev/null 2>&1 \\\n  || true || refuse",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um disparo manual de main num commit fora de main é recusado"
+    }
+  },
+  {
+    "id": "runner-mirror-fetch",
+    "file": "infra/runner-job-started.sh",
+    "find": "timeout --kill-after=5 60 \"${git[@]}\" fetch --quiet --no-tags origin refs/heads/main:refs/heads/main \\\n  > /dev/null 2>&1 || refuse \"could not fetch main into $mirror\"\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um Release de um commit de main é aceito, também o que o espelho ainda não tinha"
+    }
+  },
+  {
+    "id": "runner-mirror-fetch-fails-closed",
+    "file": "infra/runner-job-started.sh",
+    "find": "  > /dev/null 2>&1 || refuse \"could not fetch main into $mirror\"\n",
+    "replace": "  > /dev/null 2>&1 || true\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "sem espelho, ou sem conseguir buscar main, tudo é recusado"
+    }
+  },
+  {
+    "id": "runner-commit-shape",
+    "file": "infra/runner-job-started.sh",
+    "find": "[[ $commit =~ ^[0-9a-f]{40}$ ]] || refuse \"'$commit' is not a commit\"\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/runner-hook.test.ts",
+      "name": "um commit que não é um nome de commit é recusado"
+    }
+  },
+  {
+    "id": "publish-edge-after-hub",
+    "file": ".github/workflows/publish.yml",
+    "find": "  edge:\n    needs: deploy\n",
+    "replace": "  edge:\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "o Release publica o Hub depois da imagem, e a borda depois do Hub"
+    }
+  },
+  {
+    "id": "rollback-edge-before-hub",
+    "file": ".github/workflows/rollback.yml",
+    "find": "    needs: edge\n",
+    "replace": "",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta põe a borda de volta antes do Hub"
+    }
+  },
+  {
+    "id": "publish-checks-out-checked-commit",
+    "file": ".github/workflows/publish.yml",
+    "find": "          ref: ${{ github.sha }}\n      - uses: docker/login-action",
+    "replace": "          ref: ${{ github.event.release.tag_name }}\n      - uses: docker/login-action",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "cada trabalho do Release usa o commit que o gancho conferiu, não a tag"
+    }
+  },
+  {
+    "id": "rollback-version-on-main",
+    "file": ".github/workflows/rollback.yml",
+    "find": "          if ! git merge-base --is-ancestor HEAD origin/main; then\n            echo \"the commit of $VERSION is not on main\"\n            exit 1\n          fi\n",
+    "replace": "          true\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta da borda recusa uma versão fora de main antes do npm ci e do token"
+    }
+  },
+  {
+    "id": "rollback-tag-history",
+    "file": ".github/workflows/rollback.yml",
+    "find": "          ref: ${{ inputs.version }}\n          fetch-depth: 0\n",
+    "replace": "          ref: ${{ inputs.version }}\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "a volta da borda recusa uma versão fora de main antes do npm ci e do token"
+    }
+  },
+  {
+    "id": "edge-env-owner",
+    "file": "infra/publish-edge.sh",
+    "find": "\"400 $(id -un)\" | \"600 $(id -un)\") ;;",
+    "replace": "\"400 \"* | \"600 \"*) ;;",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/publish-edge.test.ts",
+      "name": "recusa um arquivo cujo dono não é quem publica"
+    }
+  },
+  {
+    "id": "mirror-key-owner-only",
+    "file": "infra/setup-runner-hook.sh",
+    "find": "    400 | 600) ;;\n",
+    "replace": "    *) ;;\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/setup-server.test.ts",
+      "name": "recusa uma chave legível por outros ou um endereço que não é do GitHub, antes de instalar"
+    }
+  },
+  {
+    "id": "mirror-host-key-pinned",
+    "file": "infra/setup-runner-hook.sh",
+    "find": "-o StrictHostKeyChecking=yes",
+    "replace": "-o StrictHostKeyChecking=no",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/setup-server.test.ts",
+      "name": "com a chave de leitura, o gancho prepara o espelho de main só para o runner"
     }
   }
 ]
