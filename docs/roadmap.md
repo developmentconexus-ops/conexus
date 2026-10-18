@@ -94,7 +94,7 @@ Etapa fechada sai desta tabela; o uso na seção 1.
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 10 Recusar um app | A 9 | Nenhuma | Ficha do verificador. A regra "2A". Limites de laço, prazo e consultas |
+| 10 Recusar um app | A 9 | Dadas | Ficha do verificador. A regra "2A". Limites de laço, prazo e consultas |
 | 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, do sandbox e do Git. Testes 11 e 12 |
