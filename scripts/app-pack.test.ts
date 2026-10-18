@@ -26,20 +26,24 @@ function pack(name: string, ...extra: string[]) {
 const one = pack('recados-1')
 const two = pack('recados-2', 'tests/apps/recados/cor-2')
 
-/** A database double that answers Recados's two statements from a list in memory. */
+/**
+ * A database double that answers Recados's statements from a list in memory, and refuses a write in
+ * `query` as the read-only transaction does (decision 0045).
+ */
 function fakeDb(): Db {
   const recados: { id: number; texto: string }[] = []
   return {
-    async query(text, values = []) {
-      if (text.startsWith('INSERT')) {
+    async query(text) {
+      if (!text.startsWith('SELECT')) return { error: { code: '25006' } }
+      return { rows: [...recados].reverse() }
+    },
+    async batch(statements) {
+      const results = statements.map(({ values = [] }) => {
         const id = recados.length + 1
         recados.push({ id, texto: String(values[0]) })
         return { rows: [{ id }] }
-      }
-      return { rows: [...recados].reverse() }
-    },
-    async batch() {
-      return { error: { code: '0A000' } }
+      })
+      return { results }
     },
   }
 }

@@ -20,10 +20,11 @@ export default serveApp({
     listarRecados: async (_input, { db }) =>
       rowsOf(await db.query('SELECT id, texto FROM recado ORDER BY id DESC LIMIT 100')),
     escreverRecado: async (input, { db }) => {
-      const [row] = await rowsOf(
-        await db.query('INSERT INTO recado (texto) VALUES ($1) RETURNING id', [textoOf(input)]),
-      )
-      return row
+      const written = await db.batch([
+        { text: 'INSERT INTO recado (texto) VALUES ($1) RETURNING id', values: [textoOf(input)] },
+      ])
+      if ('error' in written) throw new Error(`Banco recusou: ${written.error.code}`)
+      return written.results[0]?.rows[0]
     },
   },
 })

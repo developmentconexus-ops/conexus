@@ -37,7 +37,7 @@ const app = serveApp({
   manifest: MANIFEST,
   handlers: {
     escrever: async (input, { db, caller }) => {
-      const result = await db.query('INSERT INTO recado (texto) VALUES ($1) RETURNING id', [input])
+      const result = await db.query('SELECT 7 AS id', [input])
       assert.equal(caller.personName, 'Ana')
       return 'rows' in result ? result.rows[0] : result
     },

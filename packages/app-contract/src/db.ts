@@ -8,8 +8,9 @@ export type Row = Readonly<Record<string, unknown>>
 export type DbResult = Readonly<{ rows: readonly Row[] }> | Readonly<{ error: { code: string } }>
 
 /**
- * The app's database (decision 0020, data D28): `query` runs one statement in one transaction;
- * `batch` runs its statements in one transaction, all or none.
+ * The app's database (decision 0045): `query` only reads, in a read-only transaction, so a write
+ * there is refused with 25006; every write of a call goes in one `batch`, one transaction, all or
+ * none.
  */
 export type Db = Readonly<{
   query(text: string, values?: readonly unknown[]): Promise<DbResult>
