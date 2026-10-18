@@ -13,6 +13,9 @@ import type { RepairDeps } from './repair.ts'
 import { repairApps } from './repair.ts'
 import { registerEdgeRoutes, registerHandoffRoute, registerVersionRoutes } from './routes.ts'
 
+/** How long a send's answer waits for its prune: a test of the send names it. */
+export { PRUNE_BUDGET_MS } from './prune.ts'
+
 export type Apps = ReturnType<typeof createApps>
 export type AppRemovalPort = ReturnType<typeof createAppRemoval>
 

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { queued, withOwnerLock } from '../../platform/test-database.ts'
 import { post } from '../identity/test-hub.ts'
-import { PRUNE_BUDGET_MS } from './prune.ts'
+import { PRUNE_BUDGET_MS } from './public.ts'
 import { companyForVersions, folder, send } from './test-versions.ts'
 
 function idOf(response: { json(): unknown }): string {
