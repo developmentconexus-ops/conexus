@@ -52,3 +52,15 @@ test('configuração: o arquivo da chave legível por outros ou vazio é recusad
   writeFileSync(path, '\n')
   refusal(env, 'HUB_NEON_API_KEY_FILE')
 })
+
+test('configuração: a chave dos logins dos apps só vale com 64 dígitos hexadecimais', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  const path = env.HUB_APP_LOGIN_KEY_FILE
+  for (const key of ['a1'.repeat(31), 'A1'.repeat(32), `${'a1'.repeat(31)}a\r1`]) {
+    chmodSync(path, 0o600)
+    writeFileSync(path, `${key}\n`)
+    refusal(env, 'HUB_APP_LOGIN_KEY_FILE')
+  }
+  writeFileSync(path, `${'a1'.repeat(32)}\n`)
+  assert.equal(String(readConfig('serve', env).appLoginKey), '[AppLoginKey]')
+})

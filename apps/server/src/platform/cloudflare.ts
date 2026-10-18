@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { extname } from 'node:path'
 import { z } from 'zod'
 import { cappedText } from './capped-text.ts'
 import type { Config } from './config.ts'
@@ -54,9 +55,14 @@ const Script = z.looseObject({ script: z.unknown() })
 
 const ASSET_PREFIX = 'assets/'
 
-/** Cloudflare names a static file by the first 32 hex digits of its SHA-256. */
-function assetHash(bytes: Uint8Array): string {
-  return createHash('sha256').update(bytes).digest('hex').slice(0, 32)
+/**
+ * Cloudflare names a static file as its direct-upload guide does: the first 32 hex digits of the
+ * SHA-256 of its base64 and its extension, so the same bytes under two types are two files.
+ */
+function assetHash(file: WorkerFile): string {
+  const extension = extname(file.path).slice(1)
+  const base64 = Buffer.from(file.bytes).toString('base64')
+  return createHash('sha256').update(`${base64}${extension}`).digest('hex').slice(0, 32)
 }
 
 /** A reply read up to the cap; past it, or unreadable, it is silence (code C59). */
@@ -144,7 +150,7 @@ async function uploadAssets(
 ): Promise<CloudflareAnswer<string | undefined>> {
   const assets = input.files
     .filter((file) => file.path.startsWith(ASSET_PREFIX))
-    .map((file) => ({ ...file, hash: assetHash(file.bytes) }))
+    .map((file) => ({ ...file, hash: assetHash(file) }))
   if (assets.length === 0) return { kind: 'DONE', value: undefined }
   const manifest = Object.fromEntries(
     assets.map((file) => [

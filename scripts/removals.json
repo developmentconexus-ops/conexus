@@ -2110,5 +2110,27 @@
       "file": "scripts/workflows.test.ts",
       "name": "nenhum trabalho que instala dependências tem um token que escreve no repositório"
     }
+  },
+  {
+    "id": "cloudflare-asset-hash",
+    "file": "apps/server/src/platform/cloudflare.ts",
+    "find": ".update(`${base64}${extension}`)",
+    "replace": ".update(base64)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/cloudflare.test.ts",
+      "name": "cloudflare: o envio com arquivos estáticos"
+    }
+  },
+  {
+    "id": "hub-app-login-key-format",
+    "file": "apps/server/src/platform/config.ts",
+    "find": "if (!/^[0-9a-f]{64}$/.test(value)) throw",
+    "replace": "if (value.length === 0) throw",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/config.test.ts",
+      "name": "configuração: a chave dos logins dos apps"
+    }
   }
 ]

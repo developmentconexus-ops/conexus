@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import type { ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
@@ -10,13 +11,26 @@ import { testConfig, unreachableDatabaseUrl } from './test-database.ts'
 
 // Cloudflare's API at its HTTP door (T14): each test names the answer, and every request is kept.
 type Answer = (response: ServerResponse, path: string) => void
+type Received = { method: string; path: string; authorization: string; body: Request }
 
 async function cloudflareAt(t: TestContext, answer: Answer) {
   const paths: string[] = []
+  const received: Received[] = []
   const server = createServer((request, response) => {
-    request.resume()
+    const chunks: Buffer[] = []
+    request.on('data', (chunk: Buffer) => chunks.push(chunk))
     request.on('end', () => {
       paths.push(`${request.method} ${request.url}`)
+      received.push({
+        method: request.method ?? '',
+        path: request.url ?? '',
+        authorization: request.headers.authorization ?? '',
+        body: new Request('http://cloudflare.example.test/', {
+          method: 'POST',
+          headers: { 'content-type': request.headers['content-type'] ?? 'text/plain' },
+          body: new Uint8Array(Buffer.concat(chunks)),
+        }),
+      })
       answer(response, request.url ?? '')
     })
   })
@@ -33,7 +47,7 @@ async function cloudflareAt(t: TestContext, answer: Answer) {
   }
   const logged: unknown[] = []
   const log = { info: () => undefined, error: (fields: unknown) => logged.push(fields) }
-  return { cloudflare: createCloudflareApps({ config, log }), paths, logged }
+  return { cloudflare: createCloudflareApps({ config, log }), paths, received, logged, config }
 }
 
 function json(response: ServerResponse, status: number, body: unknown) {
@@ -86,3 +100,57 @@ test('cloudflare: o script removido lê como ausente, e remover o que já saiu �
     /^GET \/client\/v4\/accounts\/a{32}\/workers\/dispatch\/namespaces\/conexus-apps-test\/scripts\/v-1$/,
   )
 })
+
+test('cloudflare: o envio com arquivos estáticos, nas formas da API, do pedido de sessão ao script', async (t) => {
+  const style = new TextEncoder().encode(':root{}')
+  const page = { path: 'assets/index.html', bytes: style, mediaType: 'text/html' }
+  const sheet = { path: 'assets/style.css', bytes: style, mediaType: 'text/css' }
+  const upload = { ...UPLOAD, files: [...UPLOAD.files, page, sheet] }
+  const answers = [
+    { jwt: 'sessao', buckets: [[hashOf(page), hashOf(sheet)]] },
+    { jwt: 'pronto' },
+    { id: 'v-1' },
+  ]
+  const { cloudflare, received, config } = await cloudflareAt(t, (response) =>
+    json(response, 200, { success: true, errors: [], result: answers.shift() }),
+  )
+  assert.deepEqual(await cloudflare.upload(upload), { kind: 'DONE', value: 'UPLOADED' })
+  const [session, bucket, script] = received
+  const token = `Bearer ${config.cloudflareAppsToken.reveal()}`
+  assert.match(session?.path ?? '', /\/scripts\/v-1\/assets-upload-session$/)
+  assert.equal(session?.authorization, token)
+  assert.deepEqual(await session?.body.json(), {
+    manifest: {
+      '/index.html': { hash: hashOf(page), size: style.byteLength },
+      '/style.css': { hash: hashOf(sheet), size: style.byteLength },
+    },
+  })
+  // The same bytes under two types are two files, as Cloudflare's direct-upload guide hashes them.
+  assert.notEqual(hashOf(page), hashOf(sheet))
+  assert.equal(
+    bucket?.path,
+    `/client/v4/accounts/${'a'.repeat(32)}/workers/assets/upload?base64=true`,
+  )
+  assert.equal(bucket?.authorization, 'Bearer sessao')
+  const parts = await bucket?.body.formData()
+  assert.equal(await Object(parts?.get(hashOf(page))).text(), Buffer.from(style).toString('base64'))
+  assert.equal(script?.method, 'PUT')
+  assert.equal(script?.authorization, token)
+  const form = await script?.body.formData()
+  assert.deepEqual(JSON.parse(await Object(form?.get('metadata')).text()), {
+    main_module: 'worker.js',
+    compatibility_date: '2026-10-18',
+    bindings: [],
+    assets: { jwt: 'pronto', config: { run_worker_first: false, not_found_handling: 'none' } },
+    limits: { cpu_ms: 50 },
+    tags: ['company-c', 'project-p'],
+  })
+  assert.equal(await Object(form?.get('worker.js')).text(), 'export default {}')
+})
+
+/** Cloudflare's direct-upload hash: the SHA-256 of the base64 and the extension, 32 hex digits. */
+function hashOf(file: { path: string; bytes: Uint8Array }): string {
+  const extension = file.path.split('.').at(-1) ?? ''
+  const base64 = Buffer.from(file.bytes).toString('base64')
+  return createHash('sha256').update(`${base64}${extension}`).digest('hex').slice(0, 32)
+}

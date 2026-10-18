@@ -70,10 +70,15 @@ export const NeonApiKey = {
   },
 }
 
-/** Derives every app login's password (decision 0043); `createCompanyPostgres` reveals it into its SQL. */
+/**
+ * Derives every app login's password (decision 0043); `createCompanyPostgres` reveals it into its SQL.
+ * It is what `openssl rand -hex 32` writes, as `publish-edge.sh` requires of the dispatcher's copy:
+ * any other byte would derive other passwords on each side.
+ */
 export type AppLoginKey = Secret<'AppLoginKey'>
 export const AppLoginKey = {
   parse(value: string): AppLoginKey {
+    if (!/^[0-9a-f]{64}$/.test(value)) throw new TypeError('app login key not 64 hex digits')
     return new Secret('AppLoginKey', value)
   },
 }

@@ -10,7 +10,7 @@ export const TEST_NAMESPACE = 'conexus-apps-test'
 /** The apps' part of a test configuration; the key and the token are fresh for each call. */
 export function testAppsConfig(apiUrl = NO_CLOUDFLARE_SERVER) {
   return {
-    appLoginKey: AppLoginKey.parse(randomBytes(32).toString('base64url')),
+    appLoginKey: AppLoginKey.parse(randomBytes(32).toString('hex')),
     cloudflareApiUrl: CloudflareApiUrl.parse(apiUrl),
     cloudflareAccountId: CloudflareName.parse(TEST_ACCOUNT),
     appsNamespace: CloudflareName.parse(TEST_NAMESPACE),

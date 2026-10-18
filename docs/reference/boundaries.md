@@ -687,17 +687,18 @@ or its origin.
 ### The apps' Workers through Cloudflare's API
 
 - **Library line.** The Cloudflare SDK 7.3.0 has the namespace's script upload and the asset upload
-  session, but reads each reply whole and retries a request twice on its own, so one call's time is
-  not the Hub's deadline and silence after a retry cannot be told from a refusal. `wrangler` 4.151.1
-  uploads from a command line, not from the Hub's process.
+  session, and takes `maxRetries: 0`, a `timeout` and a caller's `signal`, but it reads each reply
+  whole: a reply with no declared size has no cap. `wrangler` 4.151.1 uploads from a command line,
+  not from the Hub's process.
 - **Hand-made piece.** `createCloudflareApps` in `apps/server/src/platform/cloudflare.ts`: the asset
   upload session, its buckets and the script's multipart `PUT`, the `GET` and the `DELETE`, over
   `fetch` with one `AbortSignal` per call and `cappedText` at 1 MiB. A `10021` is a version that
   does not start (decision 0046); a `10007` is a script already gone.
 - **Why.** [Code C57, C59](../guides/code.md) and no dependency for three calls (decision 0043 read
   them by the API). The tests in `cloudflare.test.ts` fail without the cap (removal
-  `cloudflare-reply-cap`); `tests/e2e/versions.test.ts` runs the whole upload against the API's
-  shapes. Revalidate when the SDK takes a reply cap and a caller's signal without retrying.
+  `cloudflare-reply-cap`) and check each request's shape and the asset hash, the SHA-256 of the
+  base64 and the extension as Cloudflare's direct-upload guide writes it (removal
+  `cloudflare-asset-hash`). Revalidate when the SDK caps a reply.
 
 ## TanStack Query 5.104.0, Better Auth 1.7.8 and the browser's `fetch`
 
