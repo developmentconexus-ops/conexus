@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ProjectId } from '@conexus/hub-api'
-import { appLoginsOf, appTablesOf, forgetApp } from '../../platform/test-company-postgres.ts'
+import { appLogin, ProjectId } from '@conexus/hub-api'
+import {
+  appLoginsOf,
+  appLoginTimeoutsOf,
+  appTablesOf,
+  forgetApp,
+  pgTransport,
+} from '../../platform/test-company-postgres.ts'
 import { whenIdle } from '../../platform/test-database.ts'
 import { post } from '../identity/test-hub.ts'
 import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
@@ -54,6 +60,28 @@ test('reparo: Worker que falta e esquema, logins e migrações da versão no ar 
     ['d'.repeat(32)],
   )
   assert.deepEqual(failed, { state: 'failed', failure: 'APP_VERSION_FAILED' })
+})
+
+test('reparo: os logins da etapa 9 ganham os prazos da chamada só no login de execução', async (t) => {
+  const { hub, ana, owner, projectId, versions } = await companyForVersions(t)
+  assert.equal((await send(hub, ana, versions)).statusCode, 201)
+  const id = ProjectId.parse(projectId)
+  const { runLogin, migrateLogin } = appLogin(id)
+  // As step 9 made them: a statement timeout on both, no transaction timeout.
+  const stepNine = await pgTransport(
+    owner,
+    [
+      { text: `ALTER ROLE "${runLogin}" RESET transaction_timeout` },
+      { text: `ALTER ROLE "${migrateLogin}" SET statement_timeout = '5s'` },
+    ],
+    AbortSignal.timeout(5_000),
+  )
+  assert.equal(stepNine.kind, 'DONE')
+  await hub.repair()
+  assert.deepEqual(await appLoginTimeoutsOf(owner, id), {
+    run: ['statement_timeout=5000', 'transaction_timeout=6000'],
+    migrate: [],
+  })
 })
 
 test('reparo: Cloudflare fora, a empresa fica para a próxima e o Hub segue', async (t) => {

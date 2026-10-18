@@ -1,4 +1,5 @@
 import type { AppProps } from '@conexus/app-contract'
+import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { AppCall, HostLabel as Label } from '@conexus/hub-api'
 import { AppSessionToken, createAppSession, HANDOFF_PATH, HostLabel } from '@conexus/hub-api'
 import type { DbProps } from './db.ts'
@@ -90,34 +91,62 @@ async function redeem(visit: Visit): Promise<Response> {
 }
 
 /**
+ * The app's Worker runs under the native limit on its subrequests, which counts each call to its
+ * `db` (decision 0047); the outbound Worker refuses any other.
+ */
+const DISPATCH_OPTIONS = {
+  outbound: {},
+  limits: { subRequests: APP_CALL_LIMITS.dbCallsPerCall },
+} as const
+
+/** Settles at the call's deadline: no platform limit cuts an app that only waits (decision 0047). */
+function deadlineOf(ms: number) {
+  const endsAt = Date.now() + ms
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const passed = new Promise<'PASSED'>((resolve) => {
+    timer = setTimeout(() => resolve('PASSED'), ms)
+  })
+  return { endsAt, passed, end: () => clearTimeout(timer) }
+}
+
+/**
  * The live version's Worker with a `db` bound to its run login, or the example app, which gets only
- * the caller. Its answer leaves with the dispatcher's headers; an app that throws, or a version whose
- * Worker is gone ("Worker not found.", no code: decision 0043), gets the 502 page.
+ * the caller. Its answer leaves with the dispatcher's headers; an app that throws, its CPU limit
+ * included, or a version whose Worker is gone ("Worker not found.", no code: decision 0043), gets the
+ * 502 page, and so does one that has not answered at the call's deadline.
  */
 async function toApp(visit: Visit, call: AppCall): Promise<Response> {
   const { caller } = call
+  const deadline = deadlineOf(APP_CALL_LIMITS.callDeadlineMs)
   try {
     const app =
       call.database === null
-        ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, { outbound: {} })
+        ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, DISPATCH_OPTIONS)
         : visit.env.DISPATCHER.get(
             call.version.worker,
             {
-              props: { caller, db: visit.exports.Db({ props: call.database }) } satisfies AppProps,
+              props: {
+                caller,
+                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),
+              } satisfies AppProps,
             },
-            { outbound: {} },
+            DISPATCH_OPTIONS,
           )
-    const response = await app.fetch(
-      new Request(visit.request, { headers: headersToApp(visit.request.headers) }),
-    )
+    const response = await Promise.race([
+      app.fetch(new Request(visit.request, { headers: headersToApp(visit.request.headers) })),
+      deadline.passed,
+    ])
+    if (response === 'PASSED') return failurePage('EDGE_APP_DEADLINE')
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers: headersFromApp(response.headers),
     })
   } catch {
-    // The app's own error, its CPU limit included, stays in its Worker's logs.
+    // The app's own error stays in its Worker's logs.
     return failurePage('EDGE_APP_FAILED')
+  } finally {
+    deadline.end()
   }
 }
 

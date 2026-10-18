@@ -3,8 +3,10 @@ import { base64Of, sha256Of } from './digest.ts'
 import { withSecurityHeaders } from './headers.ts'
 import type { NoAnswerReason } from './hub.ts'
 
-// What each page says: the Hub's own rows, and two the dispatcher alone meets, which never pass
-// through the Hub (step 8's state matrix).
+// What each page says: the Hub's own rows, and the ones the dispatcher alone meets, which never
+// pass through the Hub (step 8's state matrix). An app past its call's deadline reads as one that
+// failed, and its log line says which (decision 0047).
+const APP_FAILED = { status: 502, phrase: 'O app não conseguiu responder agora.', action: '' }
 const PAGES = {
   APP_HANDOFF_INVALID: FAILURES.APP_HANDOFF_INVALID,
   APP_ACCESS_REFUSED: FAILURES.APP_ACCESS_REFUSED,
@@ -16,7 +18,8 @@ const PAGES = {
     phrase: 'O Conexus está fora do ar.',
     action: 'Tente de novo em alguns minutos.',
   },
-  EDGE_APP_FAILED: { status: 502, phrase: 'O app não conseguiu responder agora.', action: '' },
+  EDGE_APP_FAILED: APP_FAILED,
+  EDGE_APP_DEADLINE: APP_FAILED,
 } as const satisfies Record<string, { status: number; phrase: string; action: string }>
 export type PageCode = keyof typeof PAGES
 

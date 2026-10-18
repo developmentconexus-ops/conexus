@@ -1,5 +1,5 @@
 import type { Manifest } from '@conexus/app-contract'
-import { APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
+import { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
 import type {
   AppVersion,
   AppVersionId,
@@ -23,9 +23,6 @@ import type { ReceivedVersion, VersionFailure } from './versions.ts'
 import { failVersion, holdsClaim, lockApp, receiveVersion, storeAppVersion } from './versions.ts'
 
 export type SendDeps = AppDatabaseDeps & { identity: IdentityPorts; cloudflare: CloudflareApps }
-
-/** The CPU each call of an app may use until step 10 sets the limits of execution. */
-const APP_CPU_MS = 50
 
 type Ids = { companyId: CompanyId; projectId: ProjectId }
 type Sending = Ids & { scope: Scope; versionId: AppVersionId; received: ReceivedVersion }
@@ -64,7 +61,7 @@ export function uploadVersion(
     compatibilityDate: APP_COMPATIBILITY_DATE[input.manifest.contract],
     files: input.files,
     tags: [`company-${input.companyId}`, `project-${input.projectId}`],
-    cpuMs: APP_CPU_MS,
+    cpuMs: APP_CALL_LIMITS.cpuMs,
   })
 }
 

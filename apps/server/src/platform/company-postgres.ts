@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import type { Manifest } from '@conexus/app-contract'
+import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import type { ProjectId } from '@conexus/hub-api'
 import { appLogin, appLoginPassword } from '@conexus/hub-api'
 import { NeonDbError, neon, neonConfig } from '@neondatabase/serverless'
@@ -129,6 +130,9 @@ async function existingRoles(
 /**
  * The schema's statements: owned by the migration login, which the owner holds by SET alone and
  * never inherits; the ledger is made before the default grants, so the run login never reaches it.
+ * Only the run login has the call's timeouts (decision 0047): on the migration login the
+ * transaction timeout would cut a version's one migration transaction (decision 0046), so the
+ * repair takes back the statement timeout step 9 gave it.
  */
 function schemaStatements(projectId: ProjectId): SqlStatement[] {
   const { schema, runLogin, migrateLogin } = appLogin(projectId)
@@ -136,10 +140,11 @@ function schemaStatements(projectId: ProjectId): SqlStatement[] {
   return [
     { text: `GRANT ${migrate} TO CURRENT_USER WITH INHERIT FALSE, SET TRUE` },
     { text: `CREATE SCHEMA IF NOT EXISTS ${s} AUTHORIZATION ${migrate}` },
-    ...[run, migrate].flatMap((login) => [
-      { text: `ALTER ROLE ${login} SET search_path = ${s}` },
-      { text: `ALTER ROLE ${login} SET statement_timeout = '5s'` },
-    ]),
+    { text: `ALTER ROLE ${run} SET search_path = ${s}` },
+    { text: `ALTER ROLE ${migrate} SET search_path = ${s}` },
+    { text: `ALTER ROLE ${run} SET statement_timeout = ${APP_CALL_LIMITS.statementTimeoutMs}` },
+    { text: `ALTER ROLE ${run} SET transaction_timeout = ${APP_CALL_LIMITS.transactionTimeoutMs}` },
+    { text: `ALTER ROLE ${migrate} RESET statement_timeout` },
     { text: `SET LOCAL ROLE ${migrate}` },
     {
       text: `CREATE TABLE IF NOT EXISTS ${s}.${LEDGER} (id text PRIMARY KEY, sha256 text NOT NULL,
