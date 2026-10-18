@@ -41,8 +41,20 @@ company in the Central: the project leaves the console.
   and use **Tentar concluir exclusão**; nothing else finishes it.
 - **A refused key.** The Hub answers 500 and logs the failure without the key. Write a new key as above.
 
+## Restore a company
+
+A restore of a company's Neon project to an earlier point can take an app's schema, logins and
+migrations with it. In Neon's console, restore the project's branch to the chosen time, then
+Reiniciar o Hub. At start the Hub's repair (architecture §8) brings each live app back: its Worker,
+if Cloudflare lost it, then its schema and logins, then the live version's migrations, each one at
+most once by its ledger. The log has `APP_REPAIRED` with the company's id; `APP_REPAIR_FAILED`
+leaves that company for the next start, and the others go on. The app's rows are those of the
+restored point.
+
 ## Para o fundador
 
 - No console do Neon, crie a organização "Conexus empresas" no plano grátis e uma chave de API dela.
   Entregue a chave ao Firstmate; nunca a cole em Git ou em pull request.
 - Se o Neon recusar a segunda organização ou a chave dela, avise o Firstmate: a decisão volta a você.
+- Restaurar uma empresa volta os dados dos apps dela ao instante escolhido; o que foi gravado depois
+  se perde. Escolha o instante com o Firstmate.

@@ -85,7 +85,10 @@ export function DeleteProjectDialog(props: { companyId: CompanyId; project: Proj
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger render={<Button variant="danger" />}>Apagar Projeto</AlertDialogTrigger>
-      <AlertDialogContent title={`Apagar ${props.project.name}?`} description="Isto não se desfaz.">
+      <AlertDialogContent
+        title={`Apagar ${props.project.name}?`}
+        description="Isto não se desfaz. O app, o banco dele e as versões vão junto com o Projeto."
+      >
         <DeleteForm {...props} onCancel={() => setOpen(false)} />
       </AlertDialogContent>
     </AlertDialog>

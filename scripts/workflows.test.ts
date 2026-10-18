@@ -13,6 +13,7 @@ type Step = {
 }
 type Job = {
   needs?: string | string[]
+  permissions?: Record<string, string>
   'runs-on': unknown
   environment?: string
   outputs?: Record<string, string>
@@ -49,6 +50,28 @@ test('o Release publica o Hub depois da imagem, e a borda depois do Hub', () => 
   assert.equal(publish.jobs.edge?.needs, 'deploy')
 })
 
+test('os zips do Recados saem de uma máquina nova do GitHub, depois da imagem conferir main', () => {
+  assert.equal(publish.jobs.apps?.needs, 'image')
+  assert.equal(publish.jobs.apps?.['runs-on'], 'ubuntu-24.04')
+  assert.equal(publish.jobs['apps-release']?.needs, 'apps')
+  assert.equal(publish.jobs['apps-release']?.['runs-on'], 'ubuntu-24.04')
+})
+
+test('nenhum trabalho que instala dependências tem um token que escreve no repositório', () => {
+  for (const workflow of [publish, rollback, ci]) {
+    for (const [name, job] of Object.entries(workflow.jobs)) {
+      if (job.permissions?.contents !== 'write') continue
+      const installs = job.steps.filter(
+        (step) =>
+          step.uses?.startsWith('actions/checkout@') ||
+          step.uses === './.github/actions/install' ||
+          /\bnpm\b/.test(step.run ?? ''),
+      )
+      assert.deepEqual(installs, [], name)
+    }
+  }
+})
+
 test('a volta acha o registro antes de mexer na borda, e põe a borda de volta antes do Hub', () => {
   assert.equal(rollback.jobs.record?.needs, undefined)
   assert.equal(rollback.jobs.edge?.needs, 'record')
@@ -58,7 +81,7 @@ test('a volta acha o registro antes de mexer na borda, e põe a borda de volta a
 test('a imagem do Release nasce numa máquina nova do GitHub, e o resto roda no runner do servidor', () => {
   assert.equal(publish.jobs.image?.['runs-on'], 'ubuntu-24.04')
   const server = [...Object.entries(publish.jobs), ...Object.entries(rollback.jobs)].filter(
-    ([name]) => name !== 'image',
+    ([name]) => !['image', 'apps', 'apps-release'].includes(name),
   )
   for (const [name, job] of server) assert.deepEqual(job['runs-on'], ['self-hosted', 'hub'], name)
 })
@@ -67,7 +90,7 @@ test('cada trabalho do Release usa o commit que o gancho conferiu, não a tag', 
   const checkouts = Object.values(publish.jobs).flatMap((job) =>
     job.steps.filter((step) => step.uses?.startsWith('actions/checkout@')),
   )
-  assert.equal(checkouts.length, 3)
+  assert.equal(checkouts.length, 4)
   for (const step of checkouts) assert.equal(step.with?.ref, SHA)
 })
 

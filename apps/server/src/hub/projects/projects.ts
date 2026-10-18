@@ -1,10 +1,10 @@
 import { randomBytes } from 'node:crypto'
-import type { CompanyId, Person, Project, ProjectName } from '@conexus/hub-api'
+import type { CompanyId, Person, Project, ProjectName, Role } from '@conexus/hub-api'
 import { appHostOf, HostLabel, hostLabelOf, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AppsDomain } from '../../platform/config.ts'
-import type { CommandTx, Database, Scope } from '../../platform/database.ts'
+import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
 import { databaseFailure, transactionLock, violatedConstraint } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -14,9 +14,26 @@ import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
 import { companyDatabase, project } from './tables.ts'
 
+/**
+ * What deleting a Projeto asks of its app (code C4): Projects names the port, and `main.ts` hands
+ * it the apps' own, made before either subject exists.
+ */
+export type AppRemoval = {
+  claimForDeletion(
+    tx: CommandTx,
+    ids: { companyId: CompanyId; projectId: ProjectId },
+  ): Promise<void>
+  removeProjectApp(input: {
+    scope: Scope
+    companyId: CompanyId
+    projectId: ProjectId
+  }): Promise<'DONE' | 'LEFT'>
+}
+
 type Deps = {
   database: Database
   identity: IdentityPorts
+  appRemoval: AppRemoval
   neon: NeonProjects
   log: FailureLog
   appsDomain: AppsDomain
@@ -47,15 +64,22 @@ function summaryOf(row: ProjectRow) {
   return { id: row.id, name: row.name, createdAt: row.createdAt.toISOString() }
 }
 
-/**
- * The Project as a viewer with this role sees it: whether they may delete it is the Hub's answer
- * (code C26), and its app's address the host its label names under the apps' domain.
- */
-function viewOf(deps: Deps, input: { row: ProjectRow; mayDelete: boolean }): Project {
+type Rights = { mayDelete: boolean; mayManageVersions: boolean }
+
+/** What a viewer with this role may do to a Project: the Hub's answer, never the screen's (code C26). */
+function rightsOf(deps: Deps, role: Role): Rights {
+  return {
+    mayDelete: deps.identity.allows(role, 'deleteProject'),
+    mayManageVersions: deps.identity.allows(role, 'manageAppVersions'),
+  }
+}
+
+/** The Project as a viewer with these rights sees it, its app's address under the apps' domain. */
+function viewOf(deps: Deps, input: { row: ProjectRow; rights: Rights }): Project {
   const { hostLabel } = input.row
   const address =
     hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
-  return { ...summaryOf(input.row), mayDelete: input.mayDelete, address }
+  return { ...summaryOf(input.row), ...input.rights, address }
 }
 
 /** The address a new Project is born with: its name and the company's nickname (decision 0024). */
@@ -121,10 +145,10 @@ async function enterCreation(deps: Deps, tx: CommandTx, input: Creation) {
     companyId: input.companyId,
     action: 'createProject',
   })
-  const mayDelete = deps.identity.allows(admitted.role, 'deleteProject')
+  const rights = rightsOf(deps, admitted.role)
   const replay = await replayOf(tx, { ...input })
-  if (replay !== undefined) return { kind: 'REPLAY', mayDelete, row: replay } as const
-  return { kind: 'NEW', mayDelete, hostLabel: await hostLabelFor(deps, tx, input) } as const
+  if (replay !== undefined) return { kind: 'REPLAY', rights, row: replay } as const
+  return { kind: 'NEW', rights, hostLabel: await hostLabelFor(deps, tx, input) } as const
 }
 
 /**
@@ -137,19 +161,19 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
   const scope = scopeOf(input.person, input.companyId)
   const started = await database.command(scope, async (tx) => {
     const entered = await enterCreation(deps, tx, input)
-    const { mayDelete } = entered
+    const { rights } = entered
     if (entered.kind === 'REPLAY') {
-      return { kind: 'DONE', created: false, row: entered.row, mayDelete } as const
+      return { kind: 'DONE', created: false, row: entered.row, rights } as const
     }
     if ((await claimDatabase(tx, input.companyId)) === 'CLAIMED') {
-      return { kind: 'CLAIMED', mayDelete } as const
+      return { kind: 'CLAIMED', rights } as const
     }
     const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
-    return { kind: 'DONE', created: true, row, mayDelete } as const
+    return { kind: 'DONE', created: true, row, rights } as const
   })
   if (started.kind === 'DONE') {
-    const { row, mayDelete, created } = started
-    return { project: viewOf(deps, { row, mayDelete }), created, databaseCreated: false }
+    const { row, rights, created } = started
+    return { project: viewOf(deps, { row, rights }), created, databaseCreated: false }
   }
   const prepared = await prepareDatabase(deps.neon, input.companyId)
   if (prepared.kind !== 'READY') {
@@ -161,10 +185,10 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
   try {
     return await database.command(scope, async (tx) => {
       const entered = await enterCreation(deps, tx, input)
-      const { mayDelete } = entered
+      const { rights } = entered
       if (entered.kind === 'REPLAY') {
         return {
-          project: viewOf(deps, { row: entered.row, mayDelete }),
+          project: viewOf(deps, { row: entered.row, rights }),
           created: false,
           databaseCreated: false,
         }
@@ -174,7 +198,7 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
         neonProjectId: prepared.id,
       })
       const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
-      return { project: viewOf(deps, { row, mayDelete }), created: true, databaseCreated }
+      return { project: viewOf(deps, { row, rights }), created: true, databaseCreated }
     })
   } catch (error) {
     // The project in Neon stays, and the next attempt finds it by name instead of waiting out the claim.
@@ -187,10 +211,16 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
 
 type OfProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
 
-/** Deletes a Project for an owner or administrator who typed its name; the company's database stays. */
-function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
+/**
+ * Deletes a Project for an owner or administrator who typed its name; the company's database stays.
+ * A first transaction marks it, so every read and its app's host see it gone at once; its app's
+ * Workers, schema and logins go with no transaction open (data D22), then its row. What the app's
+ * removal could not finish stays marked for the repair at start.
+ */
+async function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
   const scope = scopeOf(input.person, input.companyId)
-  return deps.database.command(scope, async (tx) => {
+  const ids = { companyId: input.companyId, projectId: input.projectId }
+  await deps.database.command(scope, async (tx) => {
     await deps.identity.admitMember({
       tx,
       personId: input.person.id,
@@ -200,17 +230,41 @@ function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
     const [row] = await tx
       .select({ name: project.name })
       .from(project)
-      .where(and(eq(project.id, input.projectId), eq(project.companyId, input.companyId)))
+      .where(and(ofProject(ids), isNull(project.deletingSince)))
     if (row === undefined) throw new Failure('NOT_FOUND')
     if (row.name !== input.name) throw new Failure('PROJECT_NAME_MISMATCH')
-    // The delete takes the row's lock itself, for the company's grant has no UPDATE: a second
-    // deletion of the Project waits for the first and finds nothing (code C65).
-    const deleted = await tx
-      .delete(project)
-      .where(and(eq(project.id, input.projectId), eq(project.companyId, input.companyId)))
+    await deps.appRemoval.claimForDeletion(tx, ids)
+    // The mark takes the row's lock: a second deletion waits for the first and finds it marked.
+    const marked = await tx
+      .update(project)
+      .set({ deletingSince: sql`statement_timestamp()` })
+      .where(and(ofProject(ids), isNull(project.deletingSince)))
       .returning({ id: project.id })
-    if (deleted.length === 0) throw new Failure('NOT_FOUND')
+    if (marked.length === 0) throw new Failure('NOT_FOUND')
   })
+  if ((await deps.appRemoval.removeProjectApp({ scope, ...ids })) === 'LEFT') return
+  await deps.database.command(scope, (tx) => deleteMarkedProject(tx, ids))
+}
+
+function ofProject(ids: { companyId: CompanyId; projectId: ProjectId }) {
+  return and(eq(project.id, ids.projectId), eq(project.companyId, ids.companyId))
+}
+
+/** The company's Projetos marked for deletion, which the repair at start finishes. */
+export async function markedProjectsOf(tx: ReadTx, companyId: CompanyId): Promise<ProjectId[]> {
+  const rows = await tx
+    .select({ id: project.id })
+    .from(project)
+    .where(and(eq(project.companyId, companyId), isNotNull(project.deletingSince)))
+  return rows.map(({ id }) => ProjectId.parse(id))
+}
+
+/** The row of a Projeto marked for deletion, once its app is gone. */
+export async function deleteMarkedProject(
+  tx: CommandTx,
+  ids: { companyId: CompanyId; projectId: ProjectId },
+): Promise<void> {
+  await tx.delete(project).where(and(ofProject(ids), isNotNull(project.deletingSince)))
 }
 
 function get(deps: Deps, input: OfProject) {
@@ -224,10 +278,10 @@ function get(deps: Deps, input: OfProject) {
     const [row] = await tx
       .select(columns)
       .from(project)
-      .where(and(eq(project.id, input.projectId), eq(project.companyId, input.companyId)))
+      .where(and(ofProject(input), isNull(project.deletingSince)))
     if (row === undefined) throw new Failure('NOT_FOUND')
-    const mayDelete = deps.identity.allows(admitted.role, 'deleteProject')
-    return { project: viewOf(deps, { row: ProjectRow.parse(row), mayDelete }) }
+    const rights = rightsOf(deps, admitted.role)
+    return { project: viewOf(deps, { row: ProjectRow.parse(row), rights }) }
   })
 }
 
@@ -251,6 +305,7 @@ function list(
       .where(
         and(
           eq(project.companyId, companyId),
+          isNull(project.deletingSince),
           after(sql`(${project.name}, ${project.id})`, key, (id) =>
             tx
               .select({ name: project.name, id: project.id })

@@ -12,9 +12,12 @@ function escaped(text: string): string {
   return text.replaceAll(/[&<>"']/g, (character) => ESCAPES[character] ?? character)
 }
 
+/** The example runs with no database: it gets the caller alone. */
+type ExampleProps = Pick<AppProps, 'caller'>
+
 /** The example app: it greets the person the platform names in `props`, and runs no script. */
 export default {
-  fetch(_request: Request, _env: unknown, ctx: { props: AppProps }) {
+  fetch(_request: Request, _env: unknown, ctx: { props: ExampleProps }) {
     const { personName, projectName } = ctx.props.caller
     const html = [
       '<!doctype html>',
@@ -26,4 +29,4 @@ export default {
     ].join('\n')
     return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8' } })
   },
-} satisfies ExportedHandler<unknown, unknown, unknown, AppProps>
+} satisfies ExportedHandler<unknown, unknown, unknown, ExampleProps>

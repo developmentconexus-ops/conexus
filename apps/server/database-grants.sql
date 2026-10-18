@@ -13,13 +13,21 @@ ALTER SCHEMA projects OWNER TO test_owner;
 -- Step 5, provisional until the founder's word (firstmate, 2026-10-17): the operator's administrator
 -- check, one SECURITY DEFINER function owned by a role that cannot log in and reads only the
 -- administrators' rows; only hub_operator executes it.
+-- Step 9, founder 2026-10-18 ("Tudo A"): the companies that have an app, for the repair at start, one
+-- SECURITY DEFINER function owned by a role that cannot log in and reads one column of the apps;
+-- only hub_runtime executes it.
+ALTER FUNCTION apps.companies_with_apps() OWNER TO hub_app_companies;
 ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_administrators;
 -- Step 8, founder 2026-10-17 ("Grant A"): a host's Project and company, one SECURITY DEFINER function
 -- owned by a role that cannot log in and reads three columns of the Projects; only hub_runtime
 -- executes it.
 ALTER FUNCTION projects.project_of_host(label text) OWNER TO hub_hosts;
+ALTER TABLE apps.app OWNER TO test_owner;
 ALTER TABLE apps.app_session OWNER TO test_owner;
+ALTER TABLE apps.app_version OWNER TO test_owner;
+ALTER TABLE apps.blob OWNER TO test_owner;
 ALTER TABLE apps.handoff OWNER TO test_owner;
+ALTER TABLE apps.version_file OWNER TO test_owner;
 ALTER TABLE auth.account OWNER TO test_owner;
 ALTER TABLE auth.company OWNER TO test_owner;
 ALTER TABLE auth.invitation OWNER TO test_owner;
@@ -35,6 +43,9 @@ ALTER TABLE operations.client OWNER TO test_owner;
 ALTER TABLE projects.company_database OWNER TO test_owner;
 ALTER TABLE projects.project OWNER TO test_owner;
 GRANT USAGE ON SCHEMA apps TO hub_runtime;
+GRANT USAGE ON SCHEMA apps TO hub_company;
+GRANT USAGE ON SCHEMA apps TO hub_operator;
+GRANT USAGE ON SCHEMA apps TO hub_app_companies;
 GRANT USAGE ON SCHEMA auth TO hub_runtime;
 -- Step 5 (decision 0039): the four scopes a Hub transaction enters, each with the verbs its routes'
 -- commands use; UPDATE on one column where a command only locks a row. Founder's word pending on
@@ -52,14 +63,27 @@ GRANT USAGE ON SCHEMA projects TO hub_company;
 GRANT USAGE ON SCHEMA projects TO hub_operator;
 GRANT USAGE ON SCHEMA projects TO hub_hosts;
 GRANT USAGE ON SCHEMA projects TO hub_runtime;
+REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;
+GRANT ALL ON FUNCTION apps.companies_with_apps() TO hub_runtime;
 REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
 GRANT ALL ON FUNCTION auth.is_installation_administrator(person text) TO hub_operator;
 REVOKE ALL ON FUNCTION projects.project_of_host(label text) FROM PUBLIC;
 GRANT ALL ON FUNCTION projects.project_of_host(label text) TO hub_runtime;
+-- Step 9, founder 2026-10-18 ("Tudo A"): a company's routes send, list, put back and delete its apps'
+-- versions; the Central, deleting a company, reads and deletes them. The Hub's login reaches none.
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE apps.app TO hub_company;
+GRANT SELECT,DELETE ON TABLE apps.app TO hub_operator;
+GRANT SELECT(company_id) ON TABLE apps.app TO hub_app_companies;
 -- Step 8, founder 2026-10-17 ("Grant A"): the Hub's login writes and redeems app handoffs and
 -- sessions, with no scope, as it does the Hub's sessions; it never changes one.
 GRANT SELECT,INSERT,DELETE ON TABLE apps.app_session TO hub_runtime;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE apps.app_version TO hub_company;
+GRANT SELECT,DELETE ON TABLE apps.app_version TO hub_operator;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE apps.blob TO hub_company;
+GRANT SELECT,DELETE ON TABLE apps.blob TO hub_operator;
 GRANT SELECT,INSERT,DELETE ON TABLE apps.handoff TO hub_runtime;
+GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE apps.version_file TO hub_company;
+GRANT SELECT,DELETE ON TABLE apps.version_file TO hub_operator;
 -- Step 3, founder 2026-10-14 ("0 Aprovo"): the Hub never deletes a person or a stored password.
 GRANT SELECT,INSERT,UPDATE ON TABLE auth.account TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE auth.account TO hub_invitation;
@@ -118,13 +142,20 @@ GRANT SELECT,DELETE ON TABLE projects.company_database TO hub_operator;
 GRANT UPDATE(state) ON TABLE projects.company_database TO hub_company;
 GRANT UPDATE(neon_project_id) ON TABLE projects.company_database TO hub_company;
 GRANT UPDATE(claimed_until) ON TABLE projects.company_database TO hub_company;
+-- Step 9, founder 2026-10-18 ("Tudo A"): a company's routes record its database's host, and mark a
+-- Projeto being deleted, whose mark the host lookup reads.
+GRANT UPDATE(host) ON TABLE projects.company_database TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE projects.project TO hub_company;
 GRANT SELECT,DELETE ON TABLE projects.project TO hub_operator;
 GRANT SELECT(id) ON TABLE projects.project TO hub_hosts;
 GRANT SELECT(company_id) ON TABLE projects.project TO hub_hosts;
 GRANT SELECT(host_label) ON TABLE projects.project TO hub_hosts;
+GRANT UPDATE(deleting_since) ON TABLE projects.project TO hub_company;
+GRANT SELECT(deleting_since) ON TABLE projects.project TO hub_hosts;
 CREATE ROLE hub_administrators;
 ALTER ROLE hub_administrators WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+CREATE ROLE hub_app_companies;
+ALTER ROLE hub_app_companies WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 -- Step 5: the scope roles cannot log in, own nothing and pass no row policy.
 CREATE ROLE hub_company;
 ALTER ROLE hub_company WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
@@ -141,6 +172,7 @@ ALTER ROLE hub_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN 
 ALTER ROLE hub_runtime SET statement_timeout TO '10s';
 ALTER ROLE hub_runtime SET idle_in_transaction_session_timeout TO '10s';
 GRANT hub_administrators TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
+GRANT hub_app_companies TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 -- The Hub's login switches to a scope role for one transaction and inherits nothing from it.
 GRANT hub_company TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_company TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;

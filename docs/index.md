@@ -9,23 +9,23 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, each approval and use line.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
 - [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub.
-- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge.
+- [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
-- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): como restaurar o banco do Hub a um minuto e conferir.
+- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): the companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 for tests.
 - [steps/](steps/): the card in construction; empty between steps.
-- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's, with the library's line.
-- [reference/components.md](reference/components.md): each screen piece and its tokens (design V23).
+- [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
+- [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): questions only a reader answers.
 
 ## Guides: the rules
 
-- [code](guides/code.md): modules, imports, layers, types, errors, the API, outside calls, state.
+- [code](guides/code.md): modules, imports, layers, types, errors, the API, outside calls.
 - [data](guides/data.md): stores, schema, migrations, database access, apps' data.
 - [security](guides/security.md): trust zones, authority, sessions, browser, abuse, secrets, logs.
-- [testing](guides/testing.md): test tools, what a test asserts, doubles.
-- [delivery](guides/delivery.md): how a step goes from card to use; what the repository keeps; every ceiling.
+- [testing](guides/testing.md): test tools, assertions, doubles.
+- [delivery](guides/delivery.md): how a step goes from card to use; what the repository keeps.
 - [design](guides/design.md): how screens look, move and speak.
 - [web](guides/web.md): how the Hub's screens are organized and call the Hub.
 
@@ -73,7 +73,10 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0040](decisions/0040-company-database-through-neon.md) Neon.
 - [0041](decisions/0041-app-session-check-through-workers-vpc.md) Workers VPC.
 - [0042](decisions/0042-cloudflare-token-in-one-call-environment.md) publish token.
+- [0043](decisions/0043-app-logins-derived-from-one-key.md) derived logins.
 - [0044](decisions/0044-release-image-built-on-a-github-hosted-machine.md) hosted image.
+- [0045](decisions/0045-app-reads-by-query-writes-by-one-batch.md) one batch.
+- [0046](decisions/0046-version-worker-first-migrations-in-one-transaction.md) Worker first.
 
 ## Skills
 

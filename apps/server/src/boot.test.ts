@@ -42,6 +42,11 @@ const WITH_FILE = {
   HUB_NEON_API_URL: 'https://neon.example.test/api/v2',
   HUB_NEON_ORG_ID: 'org-test-0000',
   HUB_NEON_API_KEY_FILE: '/nowhere/hub_neon_api_key',
+  HUB_APP_LOGIN_KEY_FILE: '/nowhere/hub_app_login_key',
+  HUB_CLOUDFLARE_API_URL: 'https://cloudflare.example.test/client/v4',
+  HUB_CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
+  HUB_APPS_NAMESPACE: 'conexus-apps',
+  HUB_CLOUDFLARE_APPS_TOKEN_FILE: '/nowhere/hub_cloudflare_apps_token',
 }
 
 for (const name of Object.keys(WITH_FILE)) {
@@ -67,6 +72,9 @@ const OUT_OF_FORMAT = [
   ['HUB_MAIL_API_URL', 'ftp://mail.example.test/send'],
   ['HUB_MAIL_API_URL', 'http://mail.example.test/send'],
   ['HUB_MAIL_FROM', 'convites'],
+  ['HUB_CLOUDFLARE_API_URL', 'http://cloudflare.example.test/client/v4'],
+  ['HUB_CLOUDFLARE_ACCOUNT_ID', 'Conta'],
+  ['HUB_APPS_NAMESPACE', 'conexus_apps'],
 ] as const
 for (const [name, value] of OUT_OF_FORMAT) {
   test(`configuração: recusa subir com ${name}=${value} fora do formato`, async (t) => {

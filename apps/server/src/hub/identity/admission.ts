@@ -12,6 +12,7 @@ const CHANGE_ROLE = { member: ['update'] } as const
 const CREATE_PROJECT = { project: ['create'] } as const
 const DELETE_PROJECT = { project: ['delete'] } as const
 const CHOOSE_NICKNAME = { company: ['nickname'] } as const
+const MANAGE_VERSIONS = { appVersion: ['create'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -22,6 +23,7 @@ type ActionRule = {
     | typeof CREATE_PROJECT
     | typeof DELETE_PROJECT
     | typeof CHOOSE_NICKNAME
+    | typeof MANAGE_VERSIONS
 }
 
 /**
@@ -38,6 +40,10 @@ const ACTIONS = {
   createProject: { by: 'MEMBER', statement: CREATE_PROJECT, locks: true },
   deleteProject: { by: 'MEMBER', statement: DELETE_PROJECT, locks: true },
   chooseNickname: { by: 'MEMBER', statement: CHOOSE_NICKNAME, locks: true },
+  // Listing reads in a read-only transaction, which cannot hold the member's row; sending and
+  // putting a version back hold it until they commit.
+  readAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: false },
+  manageAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },

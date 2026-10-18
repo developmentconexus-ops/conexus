@@ -25,11 +25,13 @@ export const ProjectSummary = z.object({
 export type ProjectSummary = z.infer<typeof ProjectSummary>
 
 /**
- * `mayDelete` is what the viewer's role allows, the Hub's one answer (code C26). `address` is the
+ * `mayDelete` and `mayManageVersions` are what the viewer's role allows, the Hub's one answer (code C26). `address` is the
  * app's host name, `null` for a Projeto made while the Hub ran step 7's image.
  */
 export const Project = ProjectSummary.extend({
   mayDelete: z.boolean(),
+  /** Whether the viewer sees the Projeto's settings: sends versions and puts one back (step 9). */
+  mayManageVersions: z.boolean(),
   address: z.string().min(1).nullable(),
 })
 export type Project = z.infer<typeof Project>
@@ -98,12 +100,18 @@ export const createProject = defineOperation({
 export const deleteProject = defineOperation({
   id: 'deleteProject',
   summary:
-    'Deletes a Project for an owner or administrator who typed its name; the database stays.',
+    'Deletes a Project with its app, the app’s data and versions, for an owner or administrator who typed its name; the company’s database stays.',
   access: 'session',
   method: 'DELETE',
   path: '/api/companies/{companyId}/projects/{projectId}',
   bodyLimit: 1024,
   input: { params: OfProject, body: Named },
   success: { status: 204 },
-  failures: ['NOT_FOUND', 'PROJECT_NAME_MISMATCH', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+  failures: [
+    'NOT_FOUND',
+    'PROJECT_NAME_MISMATCH',
+    'APP_VERSION_SENDING',
+    'SESSION_REQUIRED',
+    'DATABASE_UNAVAILABLE',
+  ],
 })

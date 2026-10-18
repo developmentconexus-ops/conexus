@@ -43,8 +43,12 @@ async function failureOf(response: Response): Promise<HubFailure> {
 }
 
 /** The one fetch to the Hub: same origin, with cookies, under a deadline (web W9). */
-async function hubFetch(path: string, init: RequestInit = {}): Promise<Response> {
-  const signals = [AbortSignal.timeout(DEADLINE_MS), ...(init.signal ? [init.signal] : [])]
+async function hubFetch(
+  path: string,
+  init: RequestInit = {},
+  deadlineMs = DEADLINE_MS,
+): Promise<Response> {
+  const signals = [AbortSignal.timeout(deadlineMs), ...(init.signal ? [init.signal] : [])]
   return fetch(new URL(path, globalThis.location.origin), {
     ...init,
     credentials: 'same-origin',
@@ -101,17 +105,26 @@ function addressOf(operation: Operation, sent: Sent): string {
   return query.size === 0 ? path : `${path}?${query}`
 }
 
-async function send(operation: Operation, sent: Sent = {}, signal?: AbortSignal) {
+async function send(
+  operation: Operation,
+  sent: Sent = {},
+  options: { signal?: AbortSignal; deadlineMs?: number } = {},
+) {
   const headers = {
     ...(sent.body === undefined ? {} : { 'content-type': 'application/json' }),
     ...(sent.attemptKey === undefined ? {} : { [ATTEMPT_KEY_HEADER]: sent.attemptKey }),
   }
-  const response = await hubFetch(addressOf(operation, sent), {
-    method: operation.method,
-    headers,
-    ...(sent.body === undefined ? {} : { body: JSON.stringify(sent.body) }),
-    ...(signal ? { signal } : {}),
-  })
+  const { signal, deadlineMs } = options
+  const response = await hubFetch(
+    addressOf(operation, sent),
+    {
+      method: operation.method,
+      headers,
+      ...(sent.body === undefined ? {} : { body: JSON.stringify(sent.body) }),
+      ...(signal ? { signal } : {}),
+    },
+    deadlineMs,
+  )
   if (!response.ok) throw await failureOf(response)
   return response
 }
@@ -147,7 +160,7 @@ export function hubQuery(operation: Operation, ...args: unknown[]) {
   return {
     queryKey: [operation.id, ...(Object.keys(sent).length === 0 ? [] : [sent])],
     queryFn: async ({ signal }: QueryFunctionContext) =>
-      parsed(operation, await send(operation, sent, signal)),
+      parsed(operation, await send(operation, sent, { signal })),
   }
 }
 
@@ -156,11 +169,16 @@ type WriteOptions<O extends Operation> = {
   mutationFn: (variables: WriteVariables<O>) => Promise<Output<O>>
 }
 
-export function hubMutation<O extends Operation>(operation: O): WriteOptions<O>
-export function hubMutation(operation: Operation) {
+export function hubMutation<O extends Operation>(
+  operation: O,
+  options?: { deadlineMs: number },
+): WriteOptions<O>
+/** A write's deadline is the Hub's default unless its operation names a longer answer. */
+export function hubMutation(operation: Operation, options?: { deadlineMs: number }) {
   return mutationOptions({
     mutationKey: [operation.id],
-    mutationFn: async (variables: never) => parsed(operation, await send(operation, variables)),
+    mutationFn: async (variables: never) =>
+      parsed(operation, await send(operation, variables, { deadlineMs: options?.deadlineMs })),
   })
 }
 

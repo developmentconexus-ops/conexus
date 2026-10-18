@@ -17,6 +17,7 @@ import {
   plantCompany,
   post,
 } from '../identity/test-hub.ts'
+import { companyForVersions, send } from './test-versions.ts'
 
 const PEDIDOS = 'pedidos--empresa-a'
 const ESTOQUE = 'estoque--empresa-a'
@@ -195,6 +196,8 @@ test('checagem: 200 com quem chama; outro host e sem sessão 401; sessão do Hub
   assert.equal(checked.statusCode, 200)
   assert.deepEqual(checked.json(), {
     caller: { personId: bruno.id, personName: 'Bruno Reis', projectId, projectName: 'Pedidos' },
+    version: { example: true },
+    database: null,
   })
   const missing = await hub.edge.inject({
     method: 'GET',
@@ -300,4 +303,20 @@ test('borda: as rotas do despachante só na porta de borda, as do Hub só na pú
     [...onPublic, ...onEdge].map((answer) => [answer.statusCode, codeOf(answer)]),
     Array(6).fill([404, 'NOT_FOUND']),
   )
+})
+
+test('checagem com versão no ar: o Worker dela e o banco do login de execução; sem versão, o exemplo', async (t) => {
+  const { hub, ana, bruno, projectId, versions, owner } = await companyForVersions(t)
+  const session = await sessionOf(hub, bruno, PEDIDOS)
+  assert.deepEqual(Object(Object(await check(hub, PEDIDOS, session)).json()).version, {
+    example: true,
+  })
+  const version = Object(Object(await send(hub, ana, versions)).json()).version
+  const checked = Object(Object(await check(hub, PEDIDOS, session)).json())
+  assert.deepEqual(checked.version, { worker: `v-${version.id}` })
+  assert.deepEqual(checked.database, {
+    host: new URL(owner.reveal()).hostname,
+    database: 'neondb',
+    login: `app_${projectId}_run`,
+  })
 })

@@ -25,6 +25,12 @@ import {
 import type { Database } from './database.ts'
 import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
+import {
+  NO_CLOUDFLARE_SERVER,
+  TEST_ACCOUNT,
+  TEST_NAMESPACE,
+  testAppsConfig,
+} from './test-cloudflare.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
 import type { PasswordService } from './test-password-service.ts'
 import { plantPasswordService } from './test-password-service.ts'
@@ -84,6 +90,7 @@ export function testConfig(
   databaseUrl: DatabaseUrl,
   mailApiUrl = NO_MAIL_SERVER,
   neonApiUrl = NO_NEON_SERVER,
+  cloudflareApiUrl = NO_CLOUDFLARE_SERVER,
 ): Config {
   return {
     version: Version.parse('v0.1.0'),
@@ -98,6 +105,7 @@ export function testConfig(
     mailFrom: Email.parse(TEST_MAIL_FROM),
     mailToken: MailToken.parse(randomBytes(16).toString('hex')),
     ...testNeon(neonApiUrl),
+    ...testAppsConfig(cloudflareApiUrl),
   }
 }
 
@@ -294,5 +302,10 @@ export function serveEnvironment(
     HUB_NEON_API_URL: NO_NEON_SERVER,
     HUB_NEON_ORG_ID: TEST_NEON_ORG,
     HUB_NEON_API_KEY_FILE: keyFile(t, 'hub_neon_api_key', randomBytes(16).toString('hex')),
+    HUB_APP_LOGIN_KEY_FILE: keyFile(t, 'hub_app_login_key', randomBytes(32).toString('hex')),
+    HUB_CLOUDFLARE_API_URL: NO_CLOUDFLARE_SERVER,
+    HUB_CLOUDFLARE_ACCOUNT_ID: TEST_ACCOUNT,
+    HUB_APPS_NAMESPACE: TEST_NAMESPACE,
+    HUB_CLOUDFLARE_APPS_TOKEN_FILE: keyFile(t, 'hub_apps_token', randomBytes(16).toString('hex')),
   }
 }

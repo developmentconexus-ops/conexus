@@ -4,7 +4,7 @@
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-hub-process)|hub/identity/test-hub)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports)|hub/identity/test-hub|hub/apps/test-versions)\\.ts$`
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
@@ -31,7 +31,7 @@ module.exports = {
       severity: 'error',
       from: {
         path: `^apps/(server|web)/src/(hub|builder)/([^/]+)/`,
-        pathNot: `${SERVER}/.*\\.test\\.tsx?$`,
+        pathNot: [`${SERVER}/.*\\.test\\.tsx?$`, TEST_DATABASE],
       },
       to: {
         path: `^apps/$1/src/(hub|builder)/[^/]+/`,
@@ -97,6 +97,16 @@ module.exports = {
       severity: 'error',
       from: { pathNot: `${SERVER}/platform/neon\\.ts$` },
       to: { path: '(^|node_modules/)@neon/sdk(/|$)' },
+    },
+    {
+      name: 'neon-http-driver-only-in-its-adapters',
+      comment:
+        "C56, decision 0043: only the Hub's company-postgres.ts and the dispatcher's db.ts import Neon's HTTP driver.",
+      severity: 'error',
+      from: {
+        pathNot: `(${SERVER}/platform/company-postgres\\.ts|^apps/edge/src/db\\.ts)$`,
+      },
+      to: { path: '(^|node_modules/)@neondatabase/serverless(/|$)' },
     },
     {
       name: 'web-tree-shape',

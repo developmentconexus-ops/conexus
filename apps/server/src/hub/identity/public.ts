@@ -10,6 +10,7 @@ import {
   companyNameOf,
   deleteCompanyOn,
   markCompanyDeleting,
+  markedDeleting,
   readOperatedCompanies,
   registerCompanyOn,
   renameCompanyOn,
@@ -27,9 +28,9 @@ import { createSessionReader, liveHubSession, personNameOf } from './session.ts'
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
 export { passwordLinkText } from './messages.ts'
-// The row policies' pieces, for the Central's own table, and the Hub session's table, for the apps'
-// foreign keys (code C8).
-export { ADMINISTRATOR, policy, session } from './tables.ts'
+// The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
+// foreign keys (code C8), and a person's name, for the version that person sent.
+export { ADMINISTRATOR, personNameColumn, policy, session } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']
@@ -66,6 +67,7 @@ export function createIdentity(deps: {
       registerCompany: registerCompanyOn(auth),
       renameCompany: renameCompanyOn(auth),
       markCompanyDeleting,
+      markedDeleting,
       companyNameOf,
       deleteCompany: deleteCompanyOn(auth),
       readOperatedCompanies,

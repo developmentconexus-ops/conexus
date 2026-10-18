@@ -6,6 +6,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "zod": "4.6.5"
   }
 }

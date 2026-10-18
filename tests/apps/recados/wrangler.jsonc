@@ -1,0 +1,7 @@
+// Recados, the app step 9 sends by hand: `npm run app:pack` bundles it with this file and --dry-run.
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "recados",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-18"
+}

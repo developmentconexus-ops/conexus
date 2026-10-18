@@ -1,6 +1,8 @@
 import type { AppProps } from '@conexus/app-contract'
 import { FAILURES } from '@conexus/hub-api'
-import dispatcher from './dispatcher.ts'
+import type { DbProps } from './db.ts'
+import type { Exports } from './dispatch.ts'
+import { serveDispatch } from './dispatch.ts'
 
 // Doubles of the two bindings, answering as the contract does: the Hub through its VPC service and
 // the namespace that holds the apps' Workers.
@@ -27,9 +29,22 @@ export function problem(code: keyof typeof FAILURES): Response {
   )
 }
 
-/** A Hub that admits the session and names `CALLER`. */
+/** What the Hub answers for a Projeto with no version on the air: the example app of step 8. */
+export const EXAMPLE_CALL = { caller: CALLER, version: { example: true }, database: null } as const
+/** What the Hub answers for a Projeto with a version on the air. */
+export const VERSION_CALL = {
+  caller: CALLER,
+  version: { worker: `v-${'V'.repeat(32)}` },
+  database: {
+    host: 'ep-exemplo.neon.tech',
+    database: 'neondb',
+    login: `app_${CALLER.projectId}_run`,
+  },
+} as const
+
+/** A Hub that admits the session and names `CALLER`, with no version on the air. */
 function admits(): Response {
-  return Response.json({ caller: CALLER })
+  return Response.json(EXAMPLE_CALL)
 }
 
 function greets(_request: Request, ctx: { props: AppProps }): Response {
@@ -41,10 +56,30 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
   const hub = doubles.hub ?? admits
   const app = doubles.app ?? greets
   const hubCalls: Request[] = []
-  const appCalls: { name: string; args: unknown; options: unknown; request: Request }[] = []
+  const appCalls: {
+    name: string
+    args: { props: AppProps }
+    options: unknown
+    request: Request
+  }[] = []
+  const dbBindings: DbProps[] = []
+  const exports: Exports = {
+    Db({ props }) {
+      dbBindings.push(props)
+      return {
+        async query() {
+          return { rows: [] }
+        },
+        async batch() {
+          return { results: [] }
+        },
+      }
+    },
+  }
   const env = {
     HUB_PUBLIC_ORIGIN: 'https://hub.conexus.fun',
     APPS_DOMAIN: 'conexusapp.tech',
+    APP_LOGIN_KEY: 'k'.repeat(43),
     HUB: {
       async fetch(input: RequestInfo | URL, init?: RequestInit) {
         const request = new Request(input, init)
@@ -76,8 +111,9 @@ export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } 
   return {
     hubCalls,
     appCalls,
+    dbBindings,
     fetch(path: string, init: RequestInit = {}, origin = APP_ORIGIN): Promise<Response> {
-      return dispatcher.fetch(new Request(`${origin}${path}`, init), env)
+      return serveDispatch(new Request(`${origin}${path}`, init), env, exports)
     },
   }
 }

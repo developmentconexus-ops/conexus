@@ -9,6 +9,7 @@
   "dependencies": {
     "@conexus/app-contract": "*",
     "@conexus/hub-api": "*",
+    "@neondatabase/serverless": "1.2.0",
     "zod": "4.6.5"
   },
   "devDependencies": {

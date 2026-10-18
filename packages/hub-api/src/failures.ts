@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { APP_FAILURES } from './app-failures.ts'
+import { APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
 import { CAPACITY } from './capacity.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
@@ -213,6 +213,7 @@ export const FAILURES = {
   ...PEOPLE_FAILURES,
   ...PROJECT_FAILURES,
   ...APP_FAILURES,
+  ...APP_VERSION_FAILURES,
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

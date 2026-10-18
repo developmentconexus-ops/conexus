@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { NeonApiKey, NeonApiUrl, NeonOrgId } from './config.ts'
+import type { DatabaseUrl } from './database.ts'
 import type { NeonProjects } from './neon.ts'
 import { NeonProjectId, NeonProjectName } from './neon.ts'
 
@@ -18,8 +19,12 @@ export function testNeon(apiUrl = NO_NEON_SERVER) {
   }
 }
 
-type Call = 'find' | 'create' | 'delete'
+type Call = 'find' | 'create' | 'delete' | 'ownerConnection'
 type Scripted = { answer: 'REFUSED' | 'NO_ANSWER'; takesEffect: boolean }
+
+function noScripts(): Record<Call, Scripted[]> {
+  return { find: [], create: [], delete: [], ownerConnection: [] }
+}
 
 /**
  * A Neon of memory (T14, T15) that answers like the adapter does: the projects it holds by id and
@@ -29,7 +34,8 @@ type Scripted = { answer: 'REFUSED' | 'NO_ANSWER'; takesEffect: boolean }
 export function fakeNeon() {
   const live = new Map<NeonProjectId, NeonProjectName>()
   const calls: Call[] = []
-  const scripts: Record<Call, Scripted[]> = { find: [], create: [], delete: [] }
+  const scripts = noScripts()
+  const owners = new Map<NeonProjectId, DatabaseUrl>()
   const holds: { arrived: PromiseWithResolvers<void>; released: PromiseWithResolvers<void> }[] = []
   const afterCreate: ((id: NeonProjectId) => Promise<void>)[] = []
   let serial = 0
@@ -71,6 +77,12 @@ export function fakeNeon() {
       live.delete(id)
       return next === undefined ? { kind: 'DONE', value: 'deleted' } : { kind: next.answer }
     },
+    async ownerConnection(id) {
+      const next = scripted('ownerConnection')
+      const owner = owners.get(id)
+      if (next !== undefined || owner === undefined) return { kind: next?.answer ?? 'REFUSED' }
+      return { kind: 'DONE', value: owner }
+    },
   }
 
   return {
@@ -79,6 +91,10 @@ export function fakeNeon() {
     /** The projects Neon holds now, by id and name. */
     projects: () => [...live].map(([id, name]) => ({ id, name })),
     plant,
+    /** The owner's address the project answers with: a database of the test server (T19). */
+    ownedBy(id: NeonProjectId, owner: DatabaseUrl) {
+      owners.set(id, owner)
+    },
     /** The next call of this kind answers so; `takesEffect` says the call happened before the answer was lost. */
     script(call: Call, answer: Scripted['answer'], takesEffect = false) {
       scripts[call].push({ answer, takesEffect })
@@ -103,10 +119,11 @@ const FINISHED = [{ id: 'op-1', project_id: 'p', status: 'finished', action: 'cr
 
 /**
  * Neon's API of memory behind a port, for a Hub that runs as a program (T14): list by name, create
- * and delete a project, the three calls the adapter makes.
+ * and delete a project, and the owner's address of one, the calls the adapter makes.
  */
 export async function neonServer(t: TestContext) {
   const live = new Map<string, string>()
+  const owners = new Map<string, DatabaseUrl>()
   const server = createServer((request, response) => {
     const chunks: Buffer[] = []
     request.on('data', (chunk: Buffer) => chunks.push(chunk))
@@ -116,6 +133,11 @@ export async function neonServer(t: TestContext) {
       function send(status: number, body: unknown) {
         response.writeHead(status, { 'content-type': 'application/json' })
         response.end(JSON.stringify(body))
+      }
+      if (request.method === 'GET' && id === 'connection_uri') {
+        const owner = owners.get(url.pathname.split('/').at(-2) ?? '')
+        if (owner === undefined) return send(404, { code: '', message: 'project not found' })
+        return send(200, { uri: owner.reveal() })
       }
       if (request.method === 'GET') {
         const search = url.searchParams.get('search') ?? ''
@@ -144,5 +166,9 @@ export async function neonServer(t: TestContext) {
   return {
     url: `http://127.0.0.1:${address.port}/api/v2`,
     projects: () => [...live].map(([id, name]) => ({ id, name })),
+    /** The project's owner address is this database's. */
+    ownedBy(id: string, owner: DatabaseUrl) {
+      owners.set(id, owner)
+    },
   }
 }
