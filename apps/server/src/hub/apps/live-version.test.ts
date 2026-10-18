@@ -35,6 +35,11 @@ test('voltar: 200 e a checagem seguinte já usa; podada, de outro Projeto e o me
     refused.map((answer) => [answer.statusCode, codeOf(answer)]),
     Array(2).fill([404, 'APP_VERSION_NOT_FOUND']),
   )
+  // A version the prune is removing is gone for Voltar, its Worker may be already.
+  await hub.test.asOwner(`update apps.app_version set state = 'pruning' where id = $1`, [two.id])
+  const pruning = await call(hub, ana, 'PUT', live, { versionId: two.id })
+  assert.deepEqual([pruning.statusCode, codeOf(pruning)], [404, 'APP_VERSION_NOT_FOUND'])
+  await hub.test.asOwner(`update apps.app_version set state = 'ready' where id = $1`, [two.id])
   const member = await call(hub, bruno, 'PUT', live, { versionId: two.id })
   assert.deepEqual([member.statusCode, codeOf(member)], [404, 'NOT_FOUND'])
   // A send in course on Pedidos: its version, and the claim it holds for a minute.

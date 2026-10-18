@@ -1751,8 +1751,8 @@
   {
     "id": "prune-keeps-three",
     "file": "apps/server/src/hub/apps/prune.ts",
-    "find": "export const KEPT_OLD_VERSIONS = 3",
-    "replace": "export const KEPT_OLD_VERSIONS = 4",
+    "find": "const KEPT_OLD_VERSIONS = 3",
+    "replace": "const KEPT_OLD_VERSIONS = 4",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/apps/prune.test.ts",
@@ -1773,19 +1773,8 @@
   {
     "id": "publish-edge-key-before-dispatcher",
     "file": "infra/publish-edge.sh",
-    "find": "tr -d '\\n' < \"$key\" | timeout --kill-after=10 120 \"$wrangler\" secret put APP_LOGIN_KEY --env-file \"$file\"\n",
+    "find": "printf '%s' \"$key_text\" | timeout --kill-after=10 120 \"$wrangler\" secret put APP_LOGIN_KEY --env-file \"$file\"\n",
     "replace": "",
-    "test": {
-      "cwd": ".",
-      "file": "scripts/publish-edge.test.ts",
-      "name": "publica o muro, o exemplo no espaço de nomes, a chave e o despachante, nessa ordem"
-    }
-  },
-  {
-    "id": "publish-edge-key-newline",
-    "file": "infra/publish-edge.sh",
-    "find": "tr -d '\\n' < \"$key\" |",
-    "replace": "cat \"$key\" |",
     "test": {
       "cwd": ".",
       "file": "scripts/publish-edge.test.ts",
@@ -1795,7 +1784,7 @@
   {
     "id": "publish-edge-key-owner-only",
     "file": "infra/publish-edge.sh",
-    "find": "check_owner_file \"$key\" docs/how-to/apps-edge.md\n",
+    "find": "check_owner_file \"$key\" docs/how-to/apps-token-and-key.md\n",
     "replace": "",
     "test": {
       "cwd": ".",
@@ -1845,6 +1834,281 @@
       "cwd": "apps/server",
       "file": "src/hub/apps/prune.test.ts",
       "name": "poda: um Cloudflare lento"
+    }
+  },
+  {
+    "id": "app-company-all-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"apps\".\"app\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"company_all\" ON \"apps\".\"app\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: sem filtro, a empresa lê só as suas"
+    }
+  },
+  {
+    "id": "app-operator-select-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_select\" ON \"apps\".\"app\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"operator_select\" ON \"apps\".\"app\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "app-operator-delete-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_delete\" ON \"apps\".\"app\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"operator_delete\" ON \"apps\".\"app\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "app-version-operator-select-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_select\" ON \"apps\".\"app_version\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"operator_select\" ON \"apps\".\"app_version\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "app-version-operator-delete-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_delete\" ON \"apps\".\"app_version\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"operator_delete\" ON \"apps\".\"app_version\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "blob-company-all-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"apps\".\"blob\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"company_all\" ON \"apps\".\"blob\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: sem filtro, a empresa lê só as suas"
+    }
+  },
+  {
+    "id": "blob-operator-select-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_select\" ON \"apps\".\"blob\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"operator_select\" ON \"apps\".\"blob\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "blob-operator-delete-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_delete\" ON \"apps\".\"blob\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"operator_delete\" ON \"apps\".\"blob\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "version-file-company-all-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"apps\".\"version_file\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"company_all\" ON \"apps\".\"version_file\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: sem filtro, a empresa lê só as suas"
+    }
+  },
+  {
+    "id": "version-file-operator-select-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_select\" ON \"apps\".\"version_file\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));--> statement-breakpoint",
+    "replace": "CREATE POLICY \"operator_select\" ON \"apps\".\"version_file\" AS PERMISSIVE FOR SELECT TO \"hub_operator\" USING (true);--> statement-breakpoint",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "companies-with-apps-not-public",
+    "file": "apps/server/migrations/20261018182441_app_versions_grants/migration.sql",
+    "find": "REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: o login do Hub lista só as empresas com app"
+    }
+  },
+  {
+    "id": "app-sending-has-claim",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CONSTRAINT \"app_sending_has_claim\" CHECK ((\"sending_version_id\" IS NULL) = (\"claimed_until\" IS NULL))",
+    "replace": "CONSTRAINT \"app_sending_has_claim\" CHECK (true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: uma versão em envio sempre tem a trava"
+    }
+  },
+  {
+    "id": "project-of-host-mark",
+    "file": "apps/server/migrations/20261018182441_app_versions_grants/migration.sql",
+    "find": "WHERE p.host_label = label AND p.deleting_since IS NULL $$;",
+    "replace": "WHERE p.host_label = label $$;",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "um Projeto marcado para apagar não tem mais endereço"
+    }
+  },
+  {
+    "id": "app-admission-mark",
+    "file": "apps/server/src/hub/projects/hosts.ts",
+    "find": "          isNull(project.deletingSince),\n        ),\n      )\n    if (row === undefined) return { kind: 'NOT_FOUND' } as const",
+    "replace": "        ),\n      )\n    if (row === undefined) return { kind: 'NOT_FOUND' } as const",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-delete.test.ts",
+      "name": "apagar com app"
+    }
+  },
+  {
+    "id": "drop-app-roles",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "      { text: `DROP ROLE IF EXISTS ${quoted(runLogin)}` },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-delete.test.ts",
+      "name": "apagar com app"
+    }
+  },
+  {
+    "id": "drop-app-before-rows",
+    "file": "apps/server/src/hub/apps/removal.ts",
+    "find": "if (left > 0 || !(await dropAppDatabase(deps, input))) {",
+    "replace": "if (left > 0 || !((await dropAppDatabase(deps, input)) || true)) {",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-delete.test.ts",
+      "name": "apagar com app"
+    }
+  },
+  {
+    "id": "live-ready-only",
+    "file": "apps/server/src/hub/apps/live.ts",
+    "find": "          eq(appVersion.state, 'ready'),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/live-version.test.ts",
+      "name": "voltar: 200"
+    }
+  },
+  {
+    "id": "send-abandon-on-throw",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "    async (error: unknown) => {\n      await abandon(deps, sending)\n      throw error\n    },",
+    "replace": "    async (error: unknown) => {\n      throw error\n    },",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-guards.test.ts",
+      "name": "envio: um erro no meio"
+    }
+  },
+  {
+    "id": "send-takeover-fails-earlier",
+    "file": "apps/server/src/hub/apps/versions.ts",
+    "find": "    if (held.held) throw new Failure('APP_VERSION_SENDING')\n    await failVersion(tx, {\n      projectId: ids.projectId,\n      versionId: held.sendingVersionId,\n      failure: 'APP_VERSION_FAILED',\n    })\n",
+    "replace": "    if (held.held) throw new Failure('APP_VERSION_SENDING')\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-guards.test.ts",
+      "name": "envio: a trava vencida é tomada"
+    }
+  },
+  {
+    "id": "send-lost-after-upload",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "  const uploadedThen = await stopped()\n  if (uploadedThen !== undefined) return uploadedThen\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-guards.test.ts",
+      "name": "envio: a trava vencida é tomada"
+    }
+  },
+  {
+    "id": "send-lost-in-finish",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "    if (held.sendingVersionId !== sending.versionId) return { kind: 'LOST' } as const\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-guards.test.ts",
+      "name": "envio: a trava perdida depois das migrações"
+    }
+  },
+  {
+    "id": "send-readmission",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "    await deps.identity.admitMember({\n      tx,\n      personId: person.id,\n      companyId,\n      action: 'manageAppVersions',\n    })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-guards.test.ts",
+      "name": "envio: quem deixou de ser administrador"
+    }
+  },
+  {
+    "id": "version-file-operator-delete-policy",
+    "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
+    "find": "CREATE POLICY \"operator_delete\" ON \"apps\".\"version_file\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));",
+    "replace": "CREATE POLICY \"operator_delete\" ON \"apps\".\"version_file\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (true);",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-versions.test.ts",
+      "name": "versões: a Central lê e apaga só as da empresa do escopo"
+    }
+  },
+  {
+    "id": "publish-edge-key-format",
+    "file": "infra/publish-edge.sh",
+    "find": "if ! [[ $key_text =~ ^[0-9a-f]{64}$ ]]; then",
+    "replace": "if false; then",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/publish-edge.test.ts",
+      "name": "recusa a chave com CR"
+    }
+  },
+  {
+    "id": "release-upload-without-install",
+    "file": ".github/workflows/publish.yml",
+    "find": "  apps:\n    needs: image\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    permissions:\n      contents: read\n",
+    "replace": "  apps:\n    needs: image\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    permissions:\n      contents: write\n",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/workflows.test.ts",
+      "name": "nenhum trabalho que instala dependências tem um token que escreve no repositório"
     }
   }
 ]

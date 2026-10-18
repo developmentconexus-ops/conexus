@@ -102,6 +102,22 @@ export async function appTablesOf(owner: DatabaseUrl, projectId: ProjectId) {
   }
 }
 
+/** The app's logins the server still holds: none once its app is deleted (decision 0043). */
+export async function appLoginsOf(owner: DatabaseUrl, projectId: ProjectId): Promise<string[]> {
+  const { runLogin, migrateLogin } = appLogin(projectId)
+  const client = new pg.Client({ connectionString: owner.reveal() })
+  await client.connect()
+  try {
+    const roles = await client.query(
+      'select rolname from pg_roles where rolname = any($1) order by 1',
+      [[runLogin, migrateLogin]],
+    )
+    return roles.rows.map((row) => String(row.rolname))
+  } finally {
+    await client.end()
+  }
+}
+
 /**
  * Takes the app's schema and logins out of the company's database, as a restore to a minute before
  * its first send would: the Hub's repair must bring them back.

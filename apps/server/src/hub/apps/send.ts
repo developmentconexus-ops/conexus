@@ -126,12 +126,17 @@ async function fail(deps: SendDeps, sending: Sending, failure: VersionFailure): 
 }
 
 /**
- * Ends a send another act overtook: a deletion of its Projeto, or a send that took its claim. Its
- * version fails and its Worker goes now, for no prune of that Projeto may come.
+ * A send that cannot go on: its version fails and frees the claim now, not when the claim ends
+ * (code C65), and its Worker, if one was uploaded, goes now, for no prune of it may come.
  */
-async function stop(deps: SendDeps, sending: Sending, why: 'LOST' | 'GONE'): Promise<never> {
+async function abandon(deps: SendDeps, sending: Sending): Promise<void> {
   await fail(deps, sending, 'APP_VERSION_FAILED')
   await deps.cloudflare.remove(appWorkerOf(sending.versionId))
+}
+
+/** Ends a send another act overtook: a deletion of its Projeto, or a send that took its claim. */
+async function stop(deps: SendDeps, sending: Sending, why: 'LOST' | 'GONE'): Promise<never> {
+  await abandon(deps, sending)
   const { companyId, projectId } = sending
   if (why === 'GONE') throw new Failure('NOT_FOUND', { details: { reason: 'DELETING' } })
   throw new Failure('APP_VERSION_FAILED', {
@@ -204,7 +209,13 @@ export async function sendVersion(
   const versionId = stored.version.id
   const sending: Sending = { scope, companyId, projectId, versionId, received }
   deps.log.info({ companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')
-  const prepared = await prepare(deps, { ...sending, databaseReady: stored.databaseReady })
+  // A throw on the way (the Hub's database, Neon refusing its key) abandons the send as well.
+  const prepared = await prepare(deps, { ...sending, databaseReady: stored.databaseReady }).catch(
+    async (error: unknown) => {
+      await abandon(deps, sending)
+      throw error
+    },
+  )
   if (prepared.kind === 'FAILED') {
     await fail(deps, sending, prepared.failure)
     throw new Failure(prepared.failure, { details: { companyId, projectId, versionId } })
@@ -214,7 +225,7 @@ export async function sendVersion(
   try {
     finished = await finish(deps, { ...sending, person })
   } catch (error) {
-    await fail(deps, sending, 'APP_VERSION_FAILED')
+    await abandon(deps, sending)
     throw error
   }
   if (finished.kind !== 'LIVE') return stop(deps, sending, finished.kind)

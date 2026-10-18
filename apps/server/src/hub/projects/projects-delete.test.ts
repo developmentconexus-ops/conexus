@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { ProjectId } from '@conexus/hub-api'
-import { appTablesOf } from '../../platform/test-company-postgres.ts'
+import { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import { appLoginsOf, appTablesOf } from '../../platform/test-company-postgres.ts'
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
 import { neonServer } from '../../platform/test-neon.ts'
@@ -168,7 +168,7 @@ test('empresa marcada: nenhuma rota da empresa admite quem é dela, de Projeto o
 })
 
 test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 404 já; trava viva 409', async (t) => {
-  const { hub, ana, projectId, owner, versions, projects } = await companyForVersions(t)
+  const { hub, ana, companyId, projectId, owner, versions, projects } = await companyForVersions(t)
   const url = `${projects}/${projectId}`
   const version = Object(Object((await send(hub, ana, versions)).json()).version)
   await hub.test.asOwner(
@@ -188,21 +188,38 @@ test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 40
   )
   const listed = Object((await call(hub, ana, 'GET', projects)).json()).projects
   assert.deepEqual(listed, [])
+  // The app's admission reads the mark, for a deletion that lands between the host and the Projeto.
+  const ids = {
+    personId: PersonId.parse(ana.id),
+    companyId: CompanyId.parse(companyId),
+    projectId: ProjectId.parse(projectId),
+  }
+  assert.deepEqual(await hub.projects.ports.admitToApp(ids), { kind: 'NOT_FOUND' })
   assert.deepEqual(hub.cloudflare.workers(), [`v-${version.id}`])
   const again = await call(hub, ana, 'DELETE', url, { name: 'Pedidos' })
   assert.equal(again.statusCode, 404)
-  // The repair at start finishes it: the Worker, then the schema and logins, then the rows.
+  // The repair at start: the Worker goes, then Neon refuses the drop, so the rows stay.
+  t.mock.method(hub.postgres.companyPostgres, 'dropApp', async () => ({ kind: 'NO_ANSWER' }), {
+    times: 1,
+  })
   await hub.repair()
   assert.deepEqual(hub.cloudflare.workers(), [])
-  assert.deepEqual(await appTablesOf(owner, ProjectId.parse(projectId)), { tables: [], ledger: [] })
+  const kept = await hub.test.asOwner('select count(*)::int as n from apps.app_version')
+  assert.deepEqual(kept, [{ n: 1 }])
+  // The next one finishes it: the schema and logins, then the rows.
+  await hub.repair()
+  const id = ProjectId.parse(projectId)
+  assert.deepEqual(await appTablesOf(owner, id), { tables: [], ledger: [] })
+  assert.deepEqual(await appLoginsOf(owner, id), [])
   const left = await hub.test.asOwner(
     `select (select count(*)::int from projects.project) as projects,
             (select count(*)::int from apps.app_version) as versions,
             (select count(*)::int from apps.blob) as blobs`,
   )
   assert.deepEqual(left, [{ projects: 0, versions: 0, blobs: 0 }])
+  // Once refused, then by each repair: a Worker already gone is removed again, at no cost.
   const removed = hub.cloudflare.calls.filter(({ call: kind }) => kind === 'remove')
-  assert.equal(removed.length, 2)
+  assert.equal(removed.length, 3)
 })
 
 test('apagar: o envio vencido vê a marca, falha e tira o próprio Worker', async (t) => {

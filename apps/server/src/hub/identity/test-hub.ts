@@ -6,7 +6,7 @@ import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../main.ts'
 import type { FailureLog } from '../../platform/failure.ts'
-import { testAppPorts } from '../../platform/test-app-ports.ts'
+import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
@@ -114,7 +114,8 @@ async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog =
   const neon = fakeNeon()
   const identity = identityOf({ database: test.database, config, log: silent })
   const cloudflare = fakeCloudflare()
-  const ports = testAppPorts(config, { neon, cloudflare })
+  const postgres = heldCompanyPostgres(config)
+  const ports = testAppPorts(config, { neon, cloudflare, postgres })
   const { projects, operations, apps } = subjectsOf({
     database: test.database,
     config,
@@ -126,7 +127,7 @@ async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog =
   t.after(() => app.close())
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
-  return { app, edge, test, config, neon, cloudflare, repair: apps.repair }
+  return { app, edge, test, config, neon, cloudflare, postgres, projects, repair: apps.repair }
 }
 
 /** A Hub on a fresh test database; its mail goes nowhere. */

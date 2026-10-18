@@ -114,8 +114,19 @@ test('versões: a Central lê e apaga só as da empresa do escopo, e não grava'
     operating(OPERATOR, sql`update apps.app set database_ready = true`),
     refusedWith('42501'),
   )
+  // Every delete of the Central reaches only the scope's company, table by table.
   await operating(OPERATOR, sql`delete from apps.app`)
-  assert.deepEqual(await asOwner(`select project_id from apps.app`), [{ project_id: 'project-a' }])
+  await operating(OPERATOR, sql`delete from apps.version_file`)
+  await operating(OPERATOR, sql`delete from apps.app_version`)
+  await operating(OPERATOR, sql`delete from apps.blob`)
+  const left = await asOwner(`select
+    (select array_agg(project_id) from apps.app) as apps,
+    (select array_agg(id) from apps.app_version) as versions,
+    (select array_agg(version_id) from apps.version_file) as files,
+    (select array_agg(sha256) from apps.blob) as blobs`)
+  assert.deepEqual(left, [
+    { apps: ['project-a'], versions: ['version-a'], files: ['version-a'], blobs: [SHA_A] },
+  ])
 })
 
 test('versões: o login do Hub lista só as empresas com app, sem ler uma linha delas', async (t) => {
@@ -128,6 +139,26 @@ test('versões: o login do Hub lista só as empresas com app, sem ler uma linha 
   await assert.rejects(
     database.installation((tx) => tx.execute(sql`select company_id from apps.app`)),
     refusedWith('42501'),
+  )
+  // Only the Hub's login lists them: a company's scope does not learn which others have an app.
+  await assert.rejects(
+    database.command({ kind: 'COMPANY', companyId: A, personId: ANA }, (tx) =>
+      tx.execute(sql`select company_id from apps.companies_with_apps()`),
+    ),
+    refusedWith('42501'),
+  )
+})
+
+test('versões: uma versão em envio sempre tem a trava que a encerra', async (t) => {
+  const { asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  await assert.rejects(
+    asOwner(`update apps.app set sending_version_id = 'version-a' where project_id = 'project-a'`),
+    /app_sending_has_claim/,
+  )
+  await assert.rejects(
+    asOwner(`update apps.app set claimed_until = now() where project_id = 'project-a'`),
+    /app_sending_has_claim/,
   )
 })
 
