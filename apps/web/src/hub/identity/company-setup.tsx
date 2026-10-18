@@ -9,8 +9,7 @@ import {
 } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useRouter } from '@tanstack/react-router'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
-import { Button } from '../../ui/button.tsx'
+import { HubFailure } from '../../platform/hub.ts'
 import {
   Form,
   FormAlert,
@@ -62,9 +61,8 @@ export function CompanySetup() {
         queryClient.removeQueries({ queryKey: companyQuery(companyId).queryKey })
         await router.invalidate()
       } else if (ON_THE_FIELD.includes(error.code)) setServerError(form, error, 'nickname')
-      else if (error.code === 'DATABASE_UNAVAILABLE') {
-        form.setError('root.server', { type: 'retry', message: sentenceOf(error) })
-      } else setServerError(form, error)
+      // The rest above the button, in its row's words; none of this operation's rows asks to retry.
+      else setServerError(form, error)
     }
   }
 
@@ -93,11 +91,6 @@ export function CompanySetup() {
           </p>
         )}
         <FormAlert />
-        {form.formState.errors.root?.server?.type === 'retry' && (
-          <Button type="button" onClick={() => void form.handleSubmit(submit)()}>
-            Tentar de novo
-          </Button>
-        )}
         <SubmitButton idle="Salvar" pending="Salvando…" />
       </Form>
     </section>

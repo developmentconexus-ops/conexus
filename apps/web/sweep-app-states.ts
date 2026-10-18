@@ -44,10 +44,7 @@ export const APP_STATES: State[] = [
     name: 'configurar, banco fora',
     path: SETUP,
     replies: { ...UNSET, [NICKNAME]: failure('DATABASE_UNAVAILABLE') },
-    settle: async (page) => {
-      await saveRefused(page, 'O banco do Conexus não respondeu.')
-      await page.getByRole('button', { name: 'Tentar de novo' }).waitFor()
-    },
+    settle: (page) => saveRefused(page, 'O banco do Conexus não respondeu.'),
   },
   {
     name: 'criar Projeto, nome sem endereço',
@@ -79,6 +76,6 @@ export const APP_STATES: State[] = [
     name: 'abrir app, banco fora',
     path: OPEN,
     replies: { ...SIGNED_IN, [HANDOFF]: failure('DATABASE_UNAVAILABLE') },
-    settle: (p) => p.getByRole('button', { name: 'Tentar de novo' }).waitFor(),
+    settle: (p) => waitFor(p, 'O banco do Conexus não respondeu.'),
   },
 ]

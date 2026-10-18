@@ -111,16 +111,13 @@ for (const [name, path] of [
   })
 }
 
-test('503: a frase e "Tentar de novo", que pede outra passagem', async () => {
-  let refuse = true
-  const sent = hub(true, () => (refuse ? refusal('DATABASE_UNAVAILABLE') : given()))
+test('503: a frase da linha, que não pede "Tentar de novo"', async () => {
+  const sent = hub(true, () => refusal('DATABASE_UNAVAILABLE'))
   open()
   expect((await screen.findByRole('alert')).textContent).toBe(
     'O banco do Conexus não respondeu. O erro foi registrado. Avise quem cuida do Conexus.',
   )
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   expect(assign).not.toHaveBeenCalled()
-  refuse = false
-  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
-  await waitFor(() => expect(assign).toHaveBeenCalledWith(APP))
-  expect(sent).toHaveLength(2)
+  expect(sent).toHaveLength(1)
 })

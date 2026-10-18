@@ -155,7 +155,7 @@ test('COMPANY_NICKNAME_SET: relê a empresa e abre os Projetos', async () => {
   expect(router.state.location.pathname).toBe(PROJECTS)
 })
 
-test('503: a frase e "Tentar de novo", que manda o pedido outra vez', async () => {
+test('503: a frase da linha, que não pede "Tentar de novo"; Salvar manda o pedido outra vez', async () => {
   let refuse = true
   const { sent } = hub('owner', () => (refuse ? refusal('DATABASE_UNAVAILABLE') : saved()))
   open()
@@ -166,8 +166,9 @@ test('503: a frase e "Tentar de novo", que manda o pedido outra vez', async () =
       'O banco do Conexus não respondeu. O erro foi registrado. Avise quem cuida do Conexus.',
     ),
   ).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   refuse = false
-  fireEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
+  save('empresa-a')
   expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeTruthy()
   expect(sent).toEqual([{ nickname: 'empresa-a' }, { nickname: 'empresa-a' }])
 })

@@ -2,7 +2,6 @@ import { useMutation } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
-import { Button } from '../../ui/button.tsx'
 import { PageTitle } from '../../ui/list.tsx'
 import { Notice } from '../../ui/notice.tsx'
 import { openAppHandoff } from './queries.ts'
@@ -22,7 +21,6 @@ export function OpenApp() {
 
   async function open() {
     if (host === undefined || binding === undefined) return
-    setFailure(undefined)
     try {
       const { location } = await send.mutateAsync({ body: { host, binding } })
       globalThis.location.assign(location)
@@ -44,18 +42,8 @@ export function OpenApp() {
       <PageTitle>Abrir app</PageTitle>
       {refused && <p role="alert">{NO_SUCH_APP}</p>}
       {!refused && failure === undefined && <Notice>Abrindo o app…</Notice>}
-      {!refused && failure !== undefined && (
-        <>
-          <p role="alert">{sentenceOf(failure)}</p>
-          {failure instanceof HubFailure && failure.code === 'DATABASE_UNAVAILABLE' && (
-            <div>
-              <Button variant="primary" onClick={() => void open()}>
-                Tentar de novo
-              </Button>
-            </div>
-          )}
-        </>
-      )}
+      {/* The failure's row says what to do; none of this operation's rows asks to retry. */}
+      {!refused && failure !== undefined && <p role="alert">{sentenceOf(failure)}</p>}
     </div>
   )
 }
