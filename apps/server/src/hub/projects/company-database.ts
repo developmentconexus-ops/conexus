@@ -1,9 +1,9 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { and, eq, sql } from 'drizzle-orm'
-import type { CommandTx } from '../../platform/database.ts'
+import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import type { NeonProjectId, NeonProjects } from '../../platform/neon.ts'
-import { companyProjectName, NEON_PREPARE_BUDGET_MS } from '../../platform/neon.ts'
+import type { NeonProjects } from '../../platform/neon.ts'
+import { companyProjectName, NEON_PREPARE_BUDGET_MS, NeonProjectId } from '../../platform/neon.ts'
 import { companyDatabase } from './tables.ts'
 
 /** Past the `find` and `create` the holder makes, so a claim outlives the calls that hold it (docs/reference/boundaries.md). */
@@ -91,4 +91,25 @@ export async function markReady(
     .set({ state: 'ready', neonProjectId: input.neonProjectId, claimedUntil: null })
     .where(eq(companyDatabase.companyId, input.companyId))
   return true
+}
+
+/** The company's database once ready: its Neon project, and the host its apps reach, once read. */
+export async function readyDatabaseOf(tx: ReadTx, companyId: CompanyId) {
+  const [row] = await tx
+    .select({ neonProjectId: companyDatabase.neonProjectId, host: companyDatabase.host })
+    .from(companyDatabase)
+    .where(and(eq(companyDatabase.companyId, companyId), eq(companyDatabase.state, 'ready')))
+  if (row?.neonProjectId == null) return undefined
+  return { neonProjectId: NeonProjectId.parse(row.neonProjectId), host: row.host }
+}
+
+/** Records the host Neon gave for the company's project, the one the dispatcher reaches. */
+export async function recordDatabaseHost(
+  tx: CommandTx,
+  input: { companyId: CompanyId; host: string },
+): Promise<void> {
+  await tx
+    .update(companyDatabase)
+    .set({ host: input.host })
+    .where(eq(companyDatabase.companyId, input.companyId))
 }

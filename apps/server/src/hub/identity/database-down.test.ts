@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
-import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { testAppPorts } from '../../platform/test-app-ports.ts'
 import type { TestDatabase } from '../../platform/test-database.ts'
 import {
   createTestDatabase,
@@ -12,7 +13,6 @@ import {
   unreachableDatabase,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
-import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
 
 type Config = ReturnType<typeof testConfig>
@@ -29,10 +29,13 @@ const UNAVAILABLE = {
 async function hubOn(t: TestContext, database: TestDatabase['database'], config: Config) {
   const status = createStatus({ version: config.version, database })
   const identity = identityOf({ database, config, log: silent })
-  const neon = fakeNeon().neon
-  const projects = projectsOf({ config, database, identity, neon, log: silent })
-  const operations = operationsOf(database, { identity, projects })
-  const apps = appsOf({ database, config, identity, projects })
+  const { projects, operations, apps } = subjectsOf({
+    database,
+    config,
+    identity,
+    ...testAppPorts(config),
+    log: silent,
+  })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   return app

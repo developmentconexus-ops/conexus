@@ -100,7 +100,8 @@ export function renameCompanyOn(auth: Auth) {
   }
 }
 
-async function markedDeleting(tx: ReadTx, companyId: CompanyId): Promise<boolean> {
+/** Whether the Central marked the company for deletion; its apps' sends and repair read it too. */
+export async function markedDeleting(tx: ReadTx, companyId: CompanyId): Promise<boolean> {
   const [row] = await tx
     .select({ since: company.deletingSince })
     .from(company)

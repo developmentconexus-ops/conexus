@@ -26,4 +26,4 @@ An action left half done that the verifier missed.
 
 ## State
 
-Brought. Founder, 2026-10-12: "2A". Replaces the rule of 2026-10-09.
+Superseded by [0045].

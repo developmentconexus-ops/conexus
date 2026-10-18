@@ -2,7 +2,7 @@ import type { Client, Cnpj, Email, Person } from '@conexus/hub-api'
 import { ClientSummary, CompanyId, PAGE_SIZE } from '@conexus/hub-api'
 import { asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
-import type { CommandTx, Database, ReadTx } from '../../platform/database.ts'
+import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
 import { transactionLock, violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
@@ -10,7 +10,21 @@ import type { IdentityPorts, OperatorProof } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
 import { client } from './tables.ts'
 
-type Deps = { database: Database; identity: IdentityPorts; projects: ProjectPorts }
+/**
+ * What deleting a client asks of its apps (code C4, C8): the Central names the port, and `main.ts`
+ * hands it the apps' own.
+ */
+export type CompanyAppRemoval = {
+  removeCompanyWorkers(input: { scope: Scope; companyId: CompanyId }): Promise<void>
+  deleteCompanyBlobs(tx: CommandTx, companyId: CompanyId): Promise<void>
+}
+
+type Deps = {
+  database: Database
+  identity: IdentityPorts
+  projects: ProjectPorts
+  appRemoval: CompanyAppRemoval
+}
 type ClientData = { cnpj: Cnpj; legalName: string; name: string }
 
 const CNPJ_KEY = 'client_cnpj_key'
@@ -186,9 +200,10 @@ async function removeRows(deps: Deps, tx: CommandTx, admitted: OperatorProof, in
  * Deletes a client in phases, because its database is outside this one (data D22). Without a
  * database it is one transaction: the record, then through identity the company, members and
  * invitations; its people stay. With one, the first transaction marks the company, which ends every
- * person's admission and every link; Neon frees the database with no transaction open; the last
- * transaction removes Projects, database row, record and company. A failure after the mark leaves
- * the client `DELETING`, and the same request with the same body resumes it.
+ * person's admission and every link; its apps' Workers go and Neon frees the database with no
+ * transaction open; the last transaction removes Projects, their apps, database row, record and
+ * company. A failure after the mark leaves the client `DELETING`, and the same request with the
+ * same body resumes it.
  */
 async function remove(deps: Deps, input: Deletion): Promise<void> {
   const { identity, projects } = deps
@@ -207,12 +222,14 @@ async function remove(deps: Deps, input: Deletion): Promise<void> {
     return admitted
   })
   if (first === undefined) return
+  await deps.appRemoval.removeCompanyWorkers({ scope, companyId })
   await projects.releaseCompanyDatabase({ admitted: first, companyId })
   await identity.libraryCommand(scope, async (tx) => {
     await identity.lockCompany(tx, companyId)
     const admitted = await identity.admitOperator({ tx, personId, action: 'deleteClient' })
     await confirmed(deps, tx, admitted, input)
     await projects.deleteCompanyProjects(tx, { admitted, companyId })
+    await deps.appRemoval.deleteCompanyBlobs(tx, companyId)
     await removeRows(deps, tx, admitted, input)
   })
 }

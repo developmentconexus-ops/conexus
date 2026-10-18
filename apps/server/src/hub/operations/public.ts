@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import type { Database } from '../../platform/database.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
+import type { CompanyAppRemoval } from './clients.ts'
 import { createClients } from './clients.ts'
 import { registerClientRoutes } from './routes.ts'
 
@@ -15,6 +16,7 @@ export function createOperations(deps: {
   database: Database
   identity: IdentityPorts
   projects: ProjectPorts
+  appRemoval: CompanyAppRemoval
 }) {
   const clients = createClients(deps)
   return Object.freeze({

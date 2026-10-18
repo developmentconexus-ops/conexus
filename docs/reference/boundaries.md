@@ -678,11 +678,27 @@ or its origin.
   `Agent({ maxResponseSize })` has one, but the `undici` bundled with Node refuses that dispatcher
   through the global `fetch` (`UND_ERR_INVALID_ARG`), so the cap would need a separate `undici`
   dependency. The Cloudflare SDK 7.3.0 reads the whole body and retries twice.
-- **Hand-made piece.** `cappedText` in `apps/server/src/platform/mail.ts`. It reads the reply
-  stream and stops at 16 KiB.
+- **Hand-made piece.** `cappedText` in `apps/server/src/platform/capped-text.ts`, which `mail.ts`
+  calls with 16 KiB. It reads the reply stream and stops at the cap.
 - **Why.** [Code C59](../guides/code.md), and no dependency for about 12 lines. The test "correio:
   resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` fails without the
   cap (removal `mail-reply-cap`).
+
+### The apps' Workers through Cloudflare's API
+
+- **Library line.** The Cloudflare SDK 7.3.0 has the namespace's script upload and the asset upload
+  session, and takes `maxRetries: 0`, a `timeout` and a caller's `signal`, but it reads each reply
+  whole: a reply with no declared size has no cap. `wrangler` 4.151.1 uploads from a command line,
+  not from the Hub's process.
+- **Hand-made piece.** `createCloudflareApps` in `apps/server/src/platform/cloudflare.ts`: the asset
+  upload session, its buckets and the script's multipart `PUT`, the `GET` and the `DELETE`, over
+  `fetch` with one `AbortSignal` per call and `cappedText` at 1 MiB. A `10021` is a version that
+  does not start (decision 0046); a `10007` is a script already gone.
+- **Why.** [Code C57, C59](../guides/code.md) and no dependency for three calls (decision 0043 read
+  them by the API). The tests in `cloudflare.test.ts` fail without the cap (removal
+  `cloudflare-reply-cap`) and check each request's shape and the asset hash, the SHA-256 of the
+  base64 and the extension as Cloudflare's direct-upload guide writes it (removal
+  `cloudflare-asset-hash`). Revalidate when the SDK caps a reply.
 
 ## TanStack Query 5.104.0, Better Auth 1.7.8 and the browser's `fetch`
 

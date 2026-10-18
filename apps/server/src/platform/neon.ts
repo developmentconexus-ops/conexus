@@ -2,6 +2,7 @@ import type { CompanyId } from '@conexus/hub-api'
 import { createNeonClient, isNeonError } from '@neon/sdk'
 import { z } from 'zod'
 import type { Config } from './config.ts'
+import { DatabaseUrl } from './database.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure } from './failure.ts'
 
@@ -26,7 +27,15 @@ export type NeonProjects = {
   find(name: NeonProjectName): Promise<NeonAnswer<NeonProjectId[]>>
   create(name: NeonProjectName): Promise<NeonAnswer<NeonProjectId>>
   delete(id: NeonProjectId): Promise<NeonAnswer<'deleted'>>
+  /** The owner login's address, its password read now for one act and never kept (0043). */
+  ownerConnection(id: NeonProjectId): Promise<NeonAnswer<DatabaseUrl>>
 }
+
+// The role and database Neon makes with each project; once apps' logins exist, the SDK must be told
+// which role's address it gives (decision 0043).
+const OWNER_ROLE = 'neondb_owner'
+/** The database each company's project holds, where its apps' schemas live. */
+export const COMPANY_DATABASE = 'neondb'
 
 // Measured in decision 0040: a create took 4.6 s; the budget is thirteen times that.
 const REQUEST_TIMEOUT_MS = 15_000
@@ -122,6 +131,19 @@ export function createNeonProjects(deps: { config: Config; log: FailureLog }): N
         if (isNeonError(error) && error.kind === 'not_found') {
           return { kind: 'DONE', value: 'deleted' }
         }
+        return mapped(error)
+      }
+    },
+    async ownerConnection(id) {
+      try {
+        const url = await neon.postgres.connectionString({
+          projectId: id,
+          pooled: false,
+          roleName: OWNER_ROLE,
+          databaseName: COMPANY_DATABASE,
+        })
+        return { kind: 'DONE', value: DatabaseUrl.parse(url) }
+      } catch (error) {
         return mapped(error)
       }
     },

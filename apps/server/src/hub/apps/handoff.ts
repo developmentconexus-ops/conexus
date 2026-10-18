@@ -1,9 +1,12 @@
 import { createHash, randomBytes } from 'node:crypto'
-import type { AppCaller, HostLabel, Person } from '@conexus/hub-api'
+import type { AppCall, AppCaller, HostLabel, Person } from '@conexus/hub-api'
 import {
   APP_SESSION_HEADER,
   AppSessionToken,
+  AppVersionId,
   appHostOf,
+  appLogin,
+  appWorkerOf,
   CompanyId,
   HANDOFF_PATH,
   HANDOFF_SECONDS,
@@ -14,9 +17,10 @@ import { and, eq, gt, sql } from 'drizzle-orm'
 import type { AppsDomain } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
+import { COMPANY_DATABASE } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import type { ProjectPorts } from '../projects/public.ts'
-import { appSession, handoff } from './tables.ts'
+import { app, appSession, handoff } from './tables.ts'
 
 export type AppDeps = {
   database: Database
@@ -109,12 +113,13 @@ function redeemHandoff(deps: AppDeps, input: { host: HostLabel; code: string; bi
 /**
  * Checks one call to an app: its session on this host, the Hub session it lives in (security S18),
  * then the person's admission and the Projeto, read now, so a removal or a deletion refuses the next
- * call (S8, S13). The app sees only the caller.
+ * call (S8, S13). The app sees only the caller; the dispatcher also learns the version on the air
+ * and the database its run login reaches, or that the Projeto runs the example app.
  */
 async function checkCall(
   deps: AppDeps,
   input: { host: HostLabel; headers: Headers },
-): Promise<{ caller: AppCaller }> {
+): Promise<AppCall> {
   const token = AppSessionToken.safeParse(input.headers.get(APP_SESSION_HEADER))
   if (!token.success) throw new Failure('APP_SESSION_INVALID', { details: { reason: 'NO_TOKEN' } })
   const found = await deps.database.installationRead(async (tx) => {
@@ -157,11 +162,41 @@ async function checkCall(
     case 'ADMITTED': {
       const { personId, personName } = found
       const { projectName } = admitted
-      return { caller: { personId, personName, projectId: ids.projectId, projectName } }
+      const caller = { personId, personName, projectId: ids.projectId, projectName }
+      return callTo(deps, { ...ids, caller })
     }
     default:
       return admitted satisfies never
   }
+}
+
+/** The live version's Worker and the run login's database, or the example app when none is live. */
+function callTo(
+  deps: AppDeps,
+  input: { companyId: CompanyId; projectId: ProjectId; caller: AppCaller },
+): Promise<AppCall> {
+  const { companyId, projectId, caller } = input
+  const scope = { kind: 'COMPANY', companyId, personId: caller.personId } as const
+  return deps.database.read(scope, async (tx): Promise<AppCall> => {
+    const [row] = await tx
+      .select({ liveVersionId: app.liveVersionId })
+      .from(app)
+      .where(eq(app.projectId, projectId))
+    if (row?.liveVersionId == null) return { caller, version: { example: true }, database: null }
+    const ready = await deps.projects.readyDatabaseOf(tx, companyId)
+    if (ready?.host == null) {
+      throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'LIVE_WITHOUT_HOST' } })
+    }
+    return {
+      caller,
+      version: { worker: appWorkerOf(AppVersionId.parse(row.liveVersionId)) },
+      database: {
+        host: ready.host,
+        database: COMPANY_DATABASE,
+        login: appLogin(projectId).runLogin,
+      },
+    }
+  })
 }
 
 /** The door's three acts, each bound to its dependencies. */

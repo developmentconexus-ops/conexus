@@ -45,9 +45,10 @@ type LibraryTx<R extends AnyRelations> = Transaction<R>
 /**
  * Whose rows a transaction reaches (decision 0039): its kind sets the role, and its ids the values
  * the row policies read. The caller takes it from the session or from a proof, never from a body.
+ * A company scope with no person is the Hub's own work on that company: the apps' repair at start.
  */
 export type Scope =
-  | { kind: 'COMPANY'; companyId: CompanyId; personId: PersonId }
+  | { kind: 'COMPANY'; companyId: CompanyId; personId: PersonId | null }
   | { kind: 'PERSON'; personId: PersonId }
   | { kind: 'INVITATION'; invitationId: InvitationId; personId: PersonId | null }
   | { kind: 'OPERATOR'; personId: PersonId; companyId: CompanyId | null }
@@ -168,7 +169,7 @@ async function asPersonIn<T>(
   tx: CommandTx,
   work: (tx: CommandTx) => Promise<T>,
 ): Promise<T> {
-  if (scope?.kind !== 'COMPANY') {
+  if (scope?.kind !== 'COMPANY' || scope.personId === null) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'asPerson outside COMPANY' } })
   }
   await enter(tx, { kind: 'PERSON', personId: scope.personId })

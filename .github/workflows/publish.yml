@@ -72,6 +72,51 @@ jobs:
           package-type: container
           min-versions-to-keep: 10
 
+  # The two versions of Recados the founder sends from Configurações (P1 A), built from the Release's
+  # commit on a GitHub-hosted machine once the image job found that commit on main. The build runs
+  # every dependency's install with a read-only token; only the next job, with no checkout and no
+  # npm, may write to the Release.
+  apps:
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/install
+      - run: npm run app:pack
+      - working-directory: dist/apps
+        run: |
+          zip --quiet --recurse-paths recados-1.zip recados-1
+          zip --quiet --recurse-paths recados-2.zip recados-2
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: recados
+          path: |
+            dist/apps/recados-1.zip
+            dist/apps/recados-2.zip
+          if-no-files-found: error
+          retention-days: 1
+
+  apps-release:
+    needs: apps
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: recados
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.event.release.tag_name }}
+        run: gh release upload "$VERSION" recados-1.zip recados-2.zip --clobber --repo "$GITHUB_REPOSITORY"
+
   deploy:
     needs: image
     runs-on: [self-hosted, hub]

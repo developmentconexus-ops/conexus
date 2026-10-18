@@ -130,7 +130,12 @@ export function projectsPage(
       databaseReady: !view.empty,
     }),
     [`GET /api/companies/${id}/projects/${PROJECT.id}`]: ok(getProject, {
-      project: { ...PROJECT, mayDelete: view.mayDelete ?? true, address: ADDRESS },
+      project: {
+        ...PROJECT,
+        mayDelete: view.mayDelete ?? true,
+        mayManageVersions: view.mayDelete ?? true,
+        address: ADDRESS,
+      },
     }),
   }
 }

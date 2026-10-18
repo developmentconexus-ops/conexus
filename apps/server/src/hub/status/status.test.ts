@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { Version } from '@conexus/hub-api'
-import { appsOf, createHub, identityOf, operationsOf, projectsOf } from '../../main.ts'
+import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { testAppPorts } from '../../platform/test-app-ports.ts'
 import {
   createTestDatabase,
   serveEnvironment,
@@ -11,7 +12,6 @@ import {
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
-import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
@@ -21,15 +21,13 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
-  const projects = projectsOf({
-    config,
+  const { projects, operations, apps } = subjectsOf({
     database: test.database,
+    config,
     identity,
-    neon: fakeNeon().neon,
+    ...testAppPorts(config),
     log: silent,
   })
-  const operations = operationsOf(test.database, { identity, projects })
-  const apps = appsOf({ database: test.database, config, identity, projects })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   return { app, status, test }
@@ -97,15 +95,13 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
-  const projects = projectsOf({
+  const { projects, operations, apps } = subjectsOf({
+    database,
     config,
-    database: database,
     identity,
-    neon: fakeNeon().neon,
+    ...testAppPorts(config),
     log: silent,
   })
-  const operations = operationsOf(database, { identity, projects })
-  const apps = appsOf({ database, config, identity, projects })
   const app = await createHub(config, { status, identity, operations, projects, apps })
   t.after(() => app.close())
   const response = await app.inject(STATUS)

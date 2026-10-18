@@ -1,0 +1,39 @@
+{
+  "contract": 1,
+  "entry": "worker.js",
+  "operations": {
+    "listarRecados": {
+      "input": { "type": "object", "properties": {} },
+      "output": {
+        "type": "array",
+        "maxItems": 100,
+        "items": {
+          "type": "object",
+          "properties": { "id": { "type": "integer" }, "texto": { "type": "string" } },
+          "required": ["id", "texto"]
+        }
+      }
+    },
+    "escreverRecado": {
+      "input": {
+        "type": "object",
+        "properties": { "texto": { "type": "string", "minLength": 1, "maxLength": 500 } },
+        "required": ["texto"]
+      },
+      "output": {
+        "type": "object",
+        "properties": { "id": { "type": "integer" } },
+        "required": ["id"]
+      }
+    }
+  },
+  "migrations": [
+    {
+      "id": "001_recado",
+      "statements": [
+        "CREATE TABLE recado (id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY, texto text NOT NULL CHECK (char_length(texto) BETWEEN 1 AND 500))"
+      ]
+    }
+  ],
+  "assets": ["index.html", "recados.js", "style.css"]
+}

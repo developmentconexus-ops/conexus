@@ -258,21 +258,24 @@ const accessControl = createAccessControl({
   ...defaultStatements,
   project: ['create', 'delete'],
   company: ['nickname'],
+  appVersion: ['create'],
 })
+
+const MANAGE_PROJECTS = { project: ['create', 'delete'], appVersion: ['create'] } as const
 
 /**
  * The plugin's roles: its defaults and what each does to a Project (founder, step 7, P1 A). Every
- * member creates one; only an owner or an administrator deletes one. Only the owner chooses the
- * company's nickname (step 8, N1). `allows` in admission reads these, so who may do what lives here
- * alone (code C26).
+ * member creates one; only an owner or an administrator deletes one, and sends, lists and puts back
+ * a version of its app (step 9, P3 A). Only the owner chooses the company's nickname (step 8, N1).
+ * `allows` in admission reads these, so who may do what lives here alone (code C26).
  */
 export const COMPANY_ROLES = {
   owner: accessControl.newRole({
     ...ownerAc.statements,
-    project: ['create', 'delete'],
+    ...MANAGE_PROJECTS,
     company: ['nickname'],
   }),
-  admin: accessControl.newRole({ ...adminAc.statements, project: ['create', 'delete'] }),
+  admin: accessControl.newRole({ ...adminAc.statements, ...MANAGE_PROJECTS }),
   member: accessControl.newRole({ ...memberAc.statements, project: ['create'] }),
 }
 

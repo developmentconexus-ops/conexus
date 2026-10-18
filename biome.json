@@ -130,7 +130,7 @@
       }
     },
     {
-      "includes": ["scripts/test-reporter.ts", "**/*.config.ts"],
+      "includes": ["scripts/test-reporter.ts", "**/*.config.ts", "tests/apps/*/src/index.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -140,7 +140,12 @@
       }
     },
     {
-      "includes": ["apps/web/src/platform/hub.ts", "scripts/**", "apps/server/**"],
+      "includes": [
+        "apps/web/src/platform/hub.ts",
+        "scripts/**",
+        "apps/server/**",
+        "tests/apps/*/assets/**"
+      ],
       "linter": {
         "rules": {
           "style": {
@@ -153,6 +158,7 @@
       "includes": [
         "apps/web/**/*.test.tsx",
         "apps/web/src/platform/test-hub.tsx",
+        "apps/web/src/platform/test-hub-versions.tsx",
         "apps/web/vitest.*",
         "apps/web/vite.config.ts"
       ],

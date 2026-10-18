@@ -99,7 +99,7 @@ flowchart TB
 | --- | --- | --- |
 | Server program | The Hub: screens' API, sign-in, companies, invitations, Projects, connectors, publishing. The Builder: the agent, conversations, runs, the build machine, the Git of each app, model accounts [0006] | Nothing on disk but the Git |
 | Web | The Hub's screens, served by the server program | Nothing |
-| Dispatcher | Checks the session, hands the app a `db` capability bound to that app's login, calls the app [0019] [0022] | One secret per app login |
+| Dispatcher | Checks the session, hands the app a `db` capability bound to that app's login, calls the app [0019] [0043] | The key app passwords derive from |
 | Outbound wall | Refuses every network call from an app | Nothing |
 | Generated app | One Worker per app version, with its screen files inside, no binding and no secret [0018] | Nothing |
 | Hub database | Companies, people, sessions, Projects; the Builder's space holds runs and model accounts [0011] | Company column on every table [0012] |
@@ -157,8 +157,8 @@ back first.
 
 **Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
 paid one. Both Hub databases return to the same instant. A restore then sets every login password
-again, invalidates sessions, rewrites the dispatcher's secrets and recreates every Worker from the
-built files the Hub keeps for each app version. A company's project restores alone. Restoring is
+again and invalidates sessions; the Hub's start recreates app logins, and missing
+Workers from the built files it keeps [0043]. A company's project restores alone. Restoring is
 rehearsed in the step that creates each thing: the Hub in step 2, the Git in step 13, a company and
 its Workers in steps 7 and 9, everything together in step 22.
 
@@ -171,11 +171,10 @@ route both e-mail the founder; the route does not touch the database, so a hung 
 
 ## 8. Crosscutting concepts
 
-**The data path of an app** [0020]. The app calls `db.query(text, values)`. The capability, inside
-the dispatcher, reads the statement text, counts queries, picks that app's login and sends one
-statement over Neon's HTTP driver; Neon runs it as one transaction. `db.batch` sends several
-statements as one transaction, for all-or-nothing writes. Nothing carries from one query to the
-next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand here:
+**The data path of an app** [0045]. The capability, inside the dispatcher, picks that app's login
+and talks to Neon's HTTP driver. `db.query(text, values)` runs one statement in a read-only
+transaction, so PostgreSQL refuses a write; `db.batch` runs every write of a call in one transaction.
+Nothing carries from one call to the next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand here:
 
 | Piece | Why it remains | Basis |
 | --- | --- | --- |
@@ -222,8 +221,8 @@ with it.
 | Risk | What a person would see | Where it is handled |
 | --- | --- | --- |
 | Vendor terms forbid subscription sign-in inside a third-party service | A model account blocked without notice [0030] | Accepted by the founder |
-| The verifier misses two separate writes built at runtime | An action left half done [0020] | Step 10 |
-| The dispatcher holds 128 secrets | Near 100 app logins, no new app can be created [0022] | One dispatcher per company, built when the count nears it |
+| Two batches in one call | An action left half done [0045] | Step 10 counts them |
+| The app login key leaks | Its holder enters every app's database [0043] | Rotation in the how-to |
 | CPU limits act in seconds, with tolerance | Many looping apps at once slow others | Step 22 load test |
 | The Hub's database never sleeps | The free allowance ends near day 17 and Neon suspends it [0009] | Step 2 test; back to the founder if it fails |
 | Six hours of history on the free plan | A mistake seen the next day cannot be undone | Paid plan with the first company [0009] |
@@ -232,7 +231,7 @@ with it.
 | One E2B key | A cleanup in another installation deletes a machine | A key of this installation only [0028] |
 | The publish runner runs as root on the server | Any writer of the repository can command the server [0035] | Accepted by the founder; forks never reach the runner |
 | The runner registration token passes through one call's environment, not a file (S31) | A token readable by root for one call on the server | Accepted by the founder [0036] |
-| The owner login's key rests on the server | Root there reads it | Accepted with the runner row [0035] |
+| The owner login's key, the app key and the Workers token rest on the server | Root there reads them and changes the edge | Accepted with the runner row [0035] |
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
 

@@ -1,3 +1,4 @@
+import type { SQLWrapper } from 'drizzle-orm'
 import { defineRelations, sql } from 'drizzle-orm'
 import {
   bigint,
@@ -95,6 +96,14 @@ export const user = auth.table(
     ),
   ],
 )
+
+/**
+ * A person's name, read beside another subject's row: the company scope's policy shows only the
+ * company's people, so one who left reads null.
+ */
+export function personNameColumn(personId: SQLWrapper) {
+  return sql<string | null>`(select ${user.name} from ${user} where ${user.id} = ${personId})`
+}
 
 export const session = auth.table(
   'session',

@@ -192,3 +192,26 @@ test('404: fecha e vai à lista, sem "Projeto apagado."', async () => {
   expect(screen.queryByText('Projeto apagado.')).toBeNull()
   expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/projects`)
 })
+
+for (const [role, sees] of [
+  ['owner', true],
+  ['admin', true],
+  ['member', false],
+] as const) {
+  test(`${role}: ${sees ? 'vê' : 'não vê'} "Configurações" no Projeto`, async () => {
+    server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: sees, role }))
+    render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+    expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+    const link = screen.queryByRole('link', { name: 'Configurações' })
+    if (sees) expect(link?.getAttribute('href')).toBe(`${PROJECT}/settings`)
+    else expect(link).toBeNull()
+  })
+}
+
+test('o aviso de apagar diz que o app, o banco e as versões vão junto', async () => {
+  hub(done)
+  await open()
+  expect(screen.getByRole('alertdialog').textContent).toContain(
+    'O app, o banco dele e as versões vão junto com o Projeto.',
+  )
+})

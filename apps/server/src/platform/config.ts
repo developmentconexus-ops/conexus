@@ -70,6 +70,38 @@ export const NeonApiKey = {
   },
 }
 
+/**
+ * Derives every app login's password (decision 0043); `createCompanyPostgres` reveals it into its SQL.
+ * It is what `openssl rand -hex 32` writes, as `publish-edge.sh` requires of the dispatcher's copy:
+ * any other byte would derive other passwords on each side.
+ */
+export type AppLoginKey = Secret<'AppLoginKey'>
+export const AppLoginKey = {
+  parse(value: string): AppLoginKey {
+    if (!/^[0-9a-f]{64}$/.test(value)) throw new TypeError('app login key not 64 hex digits')
+    return new Secret('AppLoginKey', value)
+  },
+}
+
+/** Cloudflare's API the apps' token is sent to: the one place it goes (S36). */
+export const CloudflareApiUrl = z.string().refine(overHttpsOrLoopback).brand('CloudflareApiUrl')
+export type CloudflareApiUrl = z.infer<typeof CloudflareApiUrl>
+
+/** Uploads and removes the versions' Workers in the apps' namespace (decision 0043). */
+export type CloudflareAppsToken = Secret<'CloudflareAppsToken'>
+export const CloudflareAppsToken = {
+  parse(value: string): CloudflareAppsToken {
+    return new Secret('CloudflareAppsToken', value)
+  },
+}
+
+/** The account and the dispatch namespace that hold the apps' Workers. */
+export const CloudflareName = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]{0,62}$/)
+  .brand('CloudflareName')
+export type CloudflareName = z.infer<typeof CloudflareName>
+
 type BaseConfig = {
   version: Version
   port: number
@@ -87,6 +119,11 @@ export type Config = BaseConfig & {
   neonApiUrl: NeonApiUrl
   neonOrgId: NeonOrgId
   neonApiKey: NeonApiKey
+  appLoginKey: AppLoginKey
+  cloudflareApiUrl: CloudflareApiUrl
+  cloudflareAccountId: CloudflareName
+  appsNamespace: CloudflareName
+  cloudflareAppsToken: CloudflareAppsToken
 }
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
@@ -109,6 +146,11 @@ const ServeEnvironment = z.object({
   HUB_NEON_API_URL: NeonApiUrl,
   HUB_NEON_ORG_ID: NeonOrgId,
   HUB_NEON_API_KEY_FILE: z.string().min(1),
+  HUB_APP_LOGIN_KEY_FILE: z.string().min(1),
+  HUB_CLOUDFLARE_API_URL: CloudflareApiUrl,
+  HUB_CLOUDFLARE_ACCOUNT_ID: CloudflareName,
+  HUB_APPS_NAMESPACE: CloudflareName,
+  HUB_CLOUDFLARE_APPS_TOKEN_FILE: z.string().min(1),
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -178,6 +220,19 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     neonApiUrl: serve.HUB_NEON_API_URL,
     neonOrgId: serve.HUB_NEON_ORG_ID,
     neonApiKey: readSecret('HUB_NEON_API_KEY_FILE', serve.HUB_NEON_API_KEY_FILE, NeonApiKey.parse),
+    appLoginKey: readSecret(
+      'HUB_APP_LOGIN_KEY_FILE',
+      serve.HUB_APP_LOGIN_KEY_FILE,
+      AppLoginKey.parse,
+    ),
+    cloudflareApiUrl: serve.HUB_CLOUDFLARE_API_URL,
+    cloudflareAccountId: serve.HUB_CLOUDFLARE_ACCOUNT_ID,
+    appsNamespace: serve.HUB_APPS_NAMESPACE,
+    cloudflareAppsToken: readSecret(
+      'HUB_CLOUDFLARE_APPS_TOKEN_FILE',
+      serve.HUB_CLOUDFLARE_APPS_TOKEN_FILE,
+      CloudflareAppsToken.parse,
+    ),
   }
 }
 

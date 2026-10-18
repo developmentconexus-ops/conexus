@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Recados</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script type="module" src="/recados.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Recados</h1>
+      <form id="escrever">
+        <label for="texto">Novo recado</label>
+        <input id="texto" name="texto" maxlength="500" required autocomplete="off" />
+        <button type="submit">Guardar</button>
+      </form>
+      <p id="aviso" role="status"></p>
+      <ul id="recados"></ul>
+    </main>
+  </body>
+</html>

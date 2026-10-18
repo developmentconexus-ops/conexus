@@ -65,7 +65,8 @@ passes. Step 1 names the hook first: a failed mirror refuses every job.
 
 A Release publishes the Hub, then the edge from the Release's own commit: the wall
 (`conexus-outbound`), the example into the namespace (`conexus-example`, `--dispatch-namespace
-conexus-apps`), then the dispatcher (`conexus-dispatcher`). Two publishes never overlap (the
+conexus-apps`), [its key](apps-token-and-key.md), then the dispatcher (`conexus-dispatcher`).
+Two publishes never overlap (the
 `hub-server` concurrency group). A failed step fails the Release: the Hub stays new, the Workers
 already published stay, and the others keep their earlier code. Rerun the failed job once the cause
 is fixed; publishing the same code again changes nothing. The log never has the token.
