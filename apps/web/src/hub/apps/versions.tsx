@@ -35,7 +35,10 @@ function VersionRow(props: Scope & { version: AppVersion; onStale: (message?: st
           <span>
             Versão {version.number} <State version={version} />
           </span>
-          <span className="text-label text-text-2">{dayAndHour(version.createdAt)}</span>
+          <span className="text-label text-text-2">
+            {dayAndHour(version.createdAt)}
+            {version.sentByName !== null && ` · ${version.sentByName}`}
+          </span>
         </span>
         {version.state === 'ready' && !version.live && <PutBack {...props} />}
       </div>

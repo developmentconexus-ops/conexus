@@ -3,7 +3,15 @@ import { test } from 'node:test'
 import { ProjectId } from '@conexus/hub-api'
 import { appTablesOf } from '../../platform/test-company-postgres.ts'
 import { queued, WRITE_HEADERS, withOwnerLock } from '../../platform/test-database.ts'
-import { CARLA, call, codeOf, personOn, plantCompany } from '../identity/test-hub.ts'
+import {
+  ANA_OWNER,
+  BRUNO,
+  CARLA,
+  call,
+  codeOf,
+  personOn,
+  plantCompany,
+} from '../identity/test-hub.ts'
 import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
 
 const KEY = '6f1c2a4e-0b7d-4c1e-9a3f-2d5b8e7c1a90'
@@ -190,4 +198,21 @@ test('envio: Neon ou Cloudflare fora 502 e "falhou"; código que não inicia e m
       [1, true],
     ],
   )
+})
+
+test('versões: cada uma diz quem a enviou; quem saiu da empresa fica sem nome', async (t) => {
+  const { hub, ana, bruno, companyId, versions } = await companyForVersions(t)
+  await hub.test.asOwner(`update auth.member set role = 'admin' where user_id = $1`, [bruno.id])
+  assert.equal(versionOf(await send(hub, ana, versions)).sentByName, ANA_OWNER.name)
+  assert.equal((await send(hub, bruno, versions, folder({}, '#6b2fa3'))).statusCode, 201)
+  async function names() {
+    const listed = Object((await call(hub, ana, 'GET', versions)).json()).versions
+    return listed.map((version: { sentByName: string | null }) => version.sentByName)
+  }
+  assert.deepEqual(await names(), [BRUNO.name, ANA_OWNER.name])
+  await hub.test.asOwner('delete from auth.member where user_id = $1 and company_id = $2', [
+    bruno.id,
+    companyId,
+  ])
+  assert.deepEqual(await names(), [null, ANA_OWNER.name])
 })

@@ -48,13 +48,13 @@ test('carregando: o Skeleton até a lista chegar', async () => {
   expect(screen.queryByText('Carregando as versões…')).toBeNull()
 })
 
-test('cada versão: número, data e estado em palavras; só a guardada tem "Voltar para esta"', async () => {
+test('cada versão: número, data, quem e estado em palavras; só a guardada tem "Voltar para esta"', async () => {
   await open({
     versions: [
       versionView(5, { state: 'sending' }),
       versionView(4, { state: 'failed', failure: 'APP_MIGRATION_FAILED' }),
       versionView(3, { live: true }),
-      versionView(2),
+      versionView(2, { sentByName: null }),
     ],
   })
   const rows = await screen.findAllByRole('listitem')
@@ -64,6 +64,9 @@ test('cada versão: número, data e estado em palavras; só a guardada tem "Volt
   expect(rows[1]?.textContent).toContain('Falhou: Uma migração do app falhou no banco.')
   expect(rows[2]?.textContent).toContain('Versão 3 · no ar')
   expect(rows[2]?.textContent).toContain('18/10/2026')
+  expect(rows[2]?.textContent).toContain(' · Ana Lima')
+  // One who left the company is no longer named.
+  expect(rows[3]?.textContent).not.toContain('·')
   expect(screen.getAllByRole('button', { name: 'Voltar para esta' })).toHaveLength(1)
   expect(rows[3]?.textContent).toContain('Voltar para esta')
 })

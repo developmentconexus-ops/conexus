@@ -8,6 +8,7 @@ import { CLOUDFLARE_DEADLINE_MS } from '../../platform/cloudflare.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { NEON_CALL_BUDGET_MS, NEON_PREPARE_BUDGET_MS } from '../../platform/neon.ts'
+import { personNameColumn } from '../identity/public.ts'
 import { app, appVersion, blob, versionFile } from './tables.ts'
 
 /** Past the calls a send makes with no transaction open, so its claim outlives them (0043). */
@@ -91,9 +92,13 @@ export const VERSION_VIEW = {
   state: appVersion.state,
   failure: appVersion.failure,
   sentBy: appVersion.sentBy,
+  sentByName: personNameColumn(appVersion.sentBy),
   createdAt: appVersion.createdAt,
 }
-type VersionRow = Pick<typeof appVersion.$inferSelect, keyof typeof VERSION_VIEW>
+type VersionRow = Pick<
+  typeof appVersion.$inferSelect,
+  Exclude<keyof typeof VERSION_VIEW, 'sentByName'>
+> & { sentByName: string | null }
 const FAILURE_CODES = [
   'APP_VERSION_FAILED',
   'APP_VERSION_NOT_STARTING',
@@ -113,6 +118,7 @@ export function versionView(row: VersionRow, liveVersionId: string | null): AppV
     state: ShownState.parse(row.state),
     failure: row.failure === null ? null : VersionFailure.parse(row.failure),
     sentBy: row.sentBy,
+    sentByName: row.sentByName,
     createdAt: row.createdAt.toISOString(),
     live: row.id === liveVersionId,
   }
@@ -230,7 +236,7 @@ export async function storeAppVersion(input: {
       attemptKey: input.attemptKey,
       createdAt: sql`statement_timestamp()`,
     })
-    .returning()
+    .returning({ ...VERSION_VIEW })
   if (row === undefined) throw new Failure('INTERNAL_UNEXPECTED')
   await tx.insert(versionFile).values(
     received.files.map((file) => ({

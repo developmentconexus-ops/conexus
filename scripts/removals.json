@@ -2143,5 +2143,16 @@
       "file": "src/manifest.test.ts",
       "name": "recusa comando que encerra, divide ou reconfigura"
     }
+  },
+  {
+    "id": "version-sender-name",
+    "file": "apps/server/src/hub/apps/versions.ts",
+    "find": "sentByName: personNameColumn(appVersion.sentBy),",
+    "replace": "sentByName: sql<string | null>`null`,",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/versions.test.ts",
+      "name": "versões: cada uma diz quem a enviou"
+    }
   }
 ]

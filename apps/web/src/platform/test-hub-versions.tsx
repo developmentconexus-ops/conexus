@@ -15,6 +15,7 @@ export function versionView(number: number, fields: Partial<AppVersion> = {}) {
     state: 'ready',
     failure: null,
     sentBy: 'person-ana',
+    sentByName: 'Ana Lima',
     createdAt: '2026-10-18T12:00:00.000Z',
     live: false,
     ...fields,

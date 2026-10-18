@@ -125,6 +125,8 @@ export const AppVersion = z.object({
     ])
     .nullable(),
   sentBy: z.string().min(1),
+  /** The sender's name; null once that person left the company. */
+  sentByName: z.string().min(1).nullable(),
   createdAt: z.iso.datetime(),
   live: z.boolean(),
 })
