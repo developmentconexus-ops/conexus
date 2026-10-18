@@ -56,9 +56,9 @@ Hub, ends every session.
 
 - Enquanto o Firstmate grava um segredo no servidor, abra a porta 22 no firewall do provedor e
   feche-a depois. O e-mail dos convites: [hub-mail](hub-mail.md).
-- Em Actions, rode "Criar a primeira pessoa". O resumo da execução, nunca o log, mostra um link
-  `/set-password` de uso único, que vale 1 hora. Rodar de novo dá um link novo enquanto não
-  houver senha.
+- A primeira pessoa: como root no servidor, o Firstmate roda
+  `infra/first-person.sh "<nome>" "<e-mail>"`. O link de uso único, válido por 1 hora, aparece só
+  nesse terminal. Rodar de novo dá outro link enquanto não houver senha.
 
 ## Publish
 

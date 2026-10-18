@@ -407,6 +407,17 @@
     }
   },
   {
+    "id": "first-person-link-to-terminal",
+    "file": "infra/first-person.sh",
+    "find": "--summary /dev/stdout",
+    "replace": "--summary /dev/stderr",
+    "test": {
+      "cwd": ".",
+      "file": "scripts/first-person.test.ts",
+      "name": "a primeira pessoa: o link vai só ao terminal, o nome e o e-mail entram como argumentos inteiros"
+    }
+  },
+  {
     "id": "sign-in-through-router",
     "file": "apps/server/src/hub/identity/routes.ts",
     "find": "deps.auth.handler(libraryRequest(deps.config, { path: SIGN_IN_PATH, headers, body })),",

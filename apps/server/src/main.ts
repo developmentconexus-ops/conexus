@@ -118,7 +118,10 @@ export function appsOf(deps: {
   })
 }
 
-/** The first-person command logs to stderr: its stdout may be the run's summary, where the link goes. */
+/**
+ * The first-person command logs to stderr: its stdout is the terminal of infra/first-person.sh,
+ * where the link goes.
+ */
 function bootLog(level: Config['logLevel'], command = process.argv[2]) {
   const stream = command === 'first-person' ? process.stderr : process.stdout
   return Fastify({ logger: { level, stream } }).log
