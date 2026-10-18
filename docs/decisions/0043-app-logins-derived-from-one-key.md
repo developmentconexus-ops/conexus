@@ -49,4 +49,4 @@ Worker is `EDGE_APP_FAILED`.
 
 ## State
 
-Proposed 2026-10-18. Founder: 4A.
+Accepted 2026-10-18. Founder: 4A.
