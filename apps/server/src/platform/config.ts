@@ -28,18 +28,15 @@ export const SessionSecret = {
 
 const LOOPBACK = ['127.0.0.1', 'localhost', '[::1]']
 
-/**
- * The mail provider's send address, with the account in it: the one place mail goes (S36). The
- * token leaves only over https; plain http is allowed only to this machine, where no wire sees it.
- */
-export const MailApiUrl = z
-  .string()
-  .refine((value) => {
-    const url = URL.parse(value)
-    if (url?.protocol === 'https:') return true
-    return url?.protocol === 'http:' && LOOPBACK.includes(url.hostname)
-  })
-  .brand('MailApiUrl')
+/** A credential leaves only over https; plain http is allowed only to this machine, where no wire sees it. */
+function overHttpsOrLoopback(value: string): boolean {
+  const url = URL.parse(value)
+  if (url?.protocol === 'https:') return true
+  return url?.protocol === 'http:' && LOOPBACK.includes(url.hostname)
+}
+
+/** The mail provider's send address, with the account in it: the one place mail goes (S36). */
+export const MailApiUrl = z.string().refine(overHttpsOrLoopback).brand('MailApiUrl')
 export type MailApiUrl = z.infer<typeof MailApiUrl>
 
 /** Sends mail as the installation; `createMail` in mail.ts reveals it into its request (S35). */
@@ -47,6 +44,22 @@ export type MailToken = Secret<'MailToken'>
 export const MailToken = {
   parse(value: string): MailToken {
     return new Secret('MailToken', value)
+  },
+}
+
+/** The Neon API the companies' key is sent to: the one place it goes (S36). */
+export const NeonApiUrl = z.string().refine(overHttpsOrLoopback).brand('NeonApiUrl')
+export type NeonApiUrl = z.infer<typeof NeonApiUrl>
+
+/** The Neon organization that holds the companies' projects, apart from the Hub's own (decision 0040). */
+export const NeonOrgId = z.string().min(1).brand('NeonOrgId')
+export type NeonOrgId = z.infer<typeof NeonOrgId>
+
+/** Creates and deletes the companies' Neon projects; `createNeonProjects` reveals it into its client (S36). */
+export type NeonApiKey = Secret<'NeonApiKey'>
+export const NeonApiKey = {
+  parse(value: string): NeonApiKey {
+    return new Secret('NeonApiKey', value)
   },
 }
 
@@ -62,6 +75,9 @@ export type Config = BaseConfig & {
   mailApiUrl: MailApiUrl
   mailFrom: Email
   mailToken: MailToken
+  neonApiUrl: NeonApiUrl
+  neonOrgId: NeonOrgId
+  neonApiKey: NeonApiKey
 }
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
@@ -78,6 +94,9 @@ const ServeEnvironment = z.object({
   HUB_MAIL_API_URL: MailApiUrl,
   HUB_MAIL_FROM: Email,
   HUB_MAIL_TOKEN_FILE: z.string().min(1),
+  HUB_NEON_API_URL: NeonApiUrl,
+  HUB_NEON_ORG_ID: NeonOrgId,
+  HUB_NEON_API_KEY_FILE: z.string().min(1),
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -141,6 +160,9 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     mailApiUrl: serve.HUB_MAIL_API_URL,
     mailFrom: serve.HUB_MAIL_FROM,
     mailToken: readSecret('HUB_MAIL_TOKEN_FILE', serve.HUB_MAIL_TOKEN_FILE, MailToken.parse),
+    neonApiUrl: serve.HUB_NEON_API_URL,
+    neonOrgId: serve.HUB_NEON_ORG_ID,
+    neonApiKey: readSecret('HUB_NEON_API_KEY_FILE', serve.HUB_NEON_API_KEY_FILE, NeonApiKey.parse),
   }
 }
 

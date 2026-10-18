@@ -7,9 +7,10 @@ import { transactionLock, violatedConstraint } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts, OperatorProof } from '../identity/public.ts'
+import type { ProjectPorts } from '../projects/public.ts'
 import { client } from './tables.ts'
 
-type Deps = { database: Database; identity: IdentityPorts }
+type Deps = { database: Database; identity: IdentityPorts; projects: ProjectPorts }
 type ClientData = { cnpj: Cnpj; legalName: string; name: string }
 
 const CNPJ_KEY = 'client_cnpj_key'
@@ -158,28 +159,61 @@ function correct(deps: Deps, input: Correction) {
 type Deletion = { person: Person; companyId: CompanyId; name: string; revision: number }
 
 /**
- * Deletes a client at the revision and display name the operator confirmed (code C38): its record,
- * then through identity its company, members and invitations, in one transaction. Its people stay.
- * The locks come in a correction's order; a deleted or unknown client is the same 404.
+ * The client at the revision and name the operator confirmed (code C38), its row held until commit.
+ * Only the revision and the company's name are read (issue 73): the locks come in a correction's
+ * order, and a deleted or unknown client is the same 404.
  */
-function remove(deps: Deps, input: Deletion) {
-  const { identity } = deps
-  return identity.libraryCommand(operatorScope(input.person, input.companyId), async (tx) => {
-    await identity.lockCompany(tx, input.companyId)
-    const personId = input.person.id
+async function confirmed(deps: Deps, tx: CommandTx, admitted: OperatorProof, input: Deletion) {
+  const [row] = await tx
+    .select({ revision: client.revision })
+    .from(client)
+    .where(eq(client.companyId, input.companyId))
+    .for('update')
+  if (row === undefined) throw new Failure('NOT_FOUND')
+  if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')
+  const { companyId } = input
+  if ((await deps.identity.companyNameOf(tx, { admitted, companyId })) !== input.name) {
+    throw new Failure('CLIENT_NAME_MISMATCH')
+  }
+}
+
+async function removeRows(deps: Deps, tx: CommandTx, admitted: OperatorProof, input: Deletion) {
+  await tx.delete(client).where(eq(client.companyId, input.companyId))
+  await deps.identity.deleteCompany(tx, { admitted, companyId: input.companyId })
+}
+
+/**
+ * Deletes a client in phases, because its database is outside this one (data D22). Without a
+ * database it is one transaction: the record, then through identity the company, members and
+ * invitations; its people stay. With one, the first transaction marks the company, which ends every
+ * person's admission and every link; Neon frees the database with no transaction open; the last
+ * transaction removes Projects, database row, record and company. A failure after the mark leaves
+ * the client `DELETING`, and the same request with the same body resumes it.
+ */
+async function remove(deps: Deps, input: Deletion): Promise<void> {
+  const { identity, projects } = deps
+  const { companyId } = input
+  const scope = operatorScope(input.person, companyId)
+  const personId = input.person.id
+  const first = await identity.libraryCommand(scope, async (tx) => {
+    await identity.lockCompany(tx, companyId)
     const admitted = await identity.admitOperator({ tx, personId, action: 'deleteClient' })
-    const [row] = await tx
-      .select({ revision: client.revision })
-      .from(client)
-      .where(eq(client.companyId, input.companyId))
-      .for('update')
-    if (row === undefined) throw new Failure('NOT_FOUND')
-    if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')
-    if ((await clientOf(deps, tx, admitted, input.companyId)).name !== input.name) {
-      throw new Failure('CLIENT_NAME_MISMATCH')
+    await confirmed(deps, tx, admitted, input)
+    if (!(await projects.hasCompanyDatabase(tx, { admitted, companyId }))) {
+      await removeRows(deps, tx, admitted, input)
+      return undefined
     }
-    await tx.delete(client).where(eq(client.companyId, input.companyId))
-    await identity.deleteCompany(tx, { admitted, companyId: input.companyId })
+    await identity.markCompanyDeleting(tx, { admitted, companyId })
+    return admitted
+  })
+  if (first === undefined) return
+  await projects.releaseCompanyDatabase({ admitted: first, companyId })
+  await identity.libraryCommand(scope, async (tx) => {
+    await identity.lockCompany(tx, companyId)
+    const admitted = await identity.admitOperator({ tx, personId, action: 'deleteClient' })
+    await confirmed(deps, tx, admitted, input)
+    await projects.deleteCompanyProjects(tx, { admitted, companyId })
+    await removeRows(deps, tx, admitted, input)
   })
 }
 

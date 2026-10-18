@@ -4,7 +4,7 @@
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/test-database|hub/identity/test-hub)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon)|hub/identity/test-hub)\\.ts$`
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
@@ -90,6 +90,13 @@ module.exports = {
       severity: 'error',
       from: { pathNot: DRIVER_MODULES },
       to: { path: '(^|node_modules/)(pg|drizzle-orm/node-postgres)(/|$)' },
+    },
+    {
+      name: 'neon-sdk-only-in-the-neon-adapter',
+      comment: 'C56: only neon.ts imports the Neon SDK.',
+      severity: 'error',
+      from: { pathNot: `${SERVER}/platform/neon\\.ts$` },
+      to: { path: '(^|node_modules/)@neon/sdk(/|$)' },
     },
     {
       name: 'web-tree-shape',

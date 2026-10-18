@@ -4,7 +4,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { awaitingClient, centralHub, hubServer, refusal } from '../../platform/test-hub.tsx'
+import {
+  awaitingClient,
+  centralHub,
+  DELETING_CLIENT,
+  hubServer,
+  refusal,
+} from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const CLIENT = awaitingClient()
@@ -51,7 +57,7 @@ test('vazio: o título, o que sai, o campo com o foco, Cancelar e Apagar cliente
   const dialog = await open()
   expect(screen.getByRole('heading', { name: 'Apagar Empresa Teste?' })).toBeTruthy()
   expect(dialog.textContent).toContain(
-    'Saem a empresa, os membros, os convites e o cadastro. As pessoas continuam com as contas delas.',
+    'Saem a empresa, os membros, os convites e o cadastro. Os Projetos e o banco da empresa também serão apagados. As pessoas continuam com as contas delas.',
   )
   const field = screen.getByLabelText('Digite o nome do cliente')
   await waitFor(() => expect(document.activeElement).toBe(field))
@@ -152,4 +158,23 @@ test('422: "O nome não confere." no campo', async () => {
       'true',
     ),
   )
+})
+
+test('503 exclusão em andamento: a página do cliente e a lista da Central leem de novo', async () => {
+  const clients = [CLIENT]
+  server.use(
+    http.delete('*/api/clients/:companyId', () => {
+      clients[0] = DELETING_CLIENT
+      return refusal('CLIENT_DELETION_PENDING')
+    }),
+    ...centralHub(clients),
+  )
+  const conexus = createConexus(createMemoryHistory({ initialEntries: ['/operations/clients'] }))
+  render(<Conexus conexus={conexus} />)
+  fireEvent.click(await screen.findByRole('link', { name: /Empresa Teste/ }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apagar cliente' }))
+  confirm()
+  expect(await screen.findByText('Exclusão em andamento.')).toBeTruthy()
+  await conexus.router.navigate({ to: '/operations/clients' })
+  expect(await screen.findByText('Exclusão em andamento')).toBeTruthy()
 })

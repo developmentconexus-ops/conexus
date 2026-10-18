@@ -831,3 +831,33 @@ or its origin.
   and 400 matched to the document's status and media type) cover it, and `npm run typecheck` fails
   on `apps/server/src/platform/http.check.ts` when `serve` takes an operation `defineOperation` did
   not declare. Revalidate by 2027-04-16, the only date, or when the Operation type gains a field.
+
+## @neon/sdk 7.3.0
+
+### The size of a reply
+
+- **Library line.** `node_modules/@neon/sdk/dist/client/client/client.gen.js:84,102` reads each
+  reply whole with the `fetch` it is given; it has no byte cap. A body that fails to read comes back
+  as a `NeonApiError` with a 2xx status.
+- **Hand-made piece.** `capReplies` in `apps/server/src/platform/neon.ts`, the SDK's own `fetch`
+  option. It ends a body past 1 MiB with an error, and `mapped` reads that error as `NO_ANSWER`: the
+  call may have taken effect, so a creation keeps its claim.
+- **Why.** [Code C59](../guides/code.md). The test "resposta maior que o teto" in `neon.test.ts` fails
+  without it. Revalidate when the SDK gains a reply cap.
+
+
+## The company's database claim
+
+- **Library line.** `@neon/sdk` 7.3.0 `projects.create` takes no idempotency key
+  (`node_modules/@neon/sdk/dist/neon/resources/projects.js`): two calls with one name make two
+  projects. PostgreSQL's native waits are a row lock or an advisory lock held across the call, which
+  [data D22 and D25](../guides/data.md) forbid.
+- **Hand-made piece.** `claimDatabase` and `releaseClaim` in `apps/server/src/hub/projects/company-database.ts`.
+  The first transaction writes `creating` with `claimed_until`, the Neon call runs with no
+  transaction open, and the second records `ready`. A claim past its time is taken over; the project
+  a cut reply left is found by its exact name (`find`) and adopted, never created twice. A refusal
+  from Neon releases the claim, silence keeps it until it ends (removals `company-database-claim`,
+  `neon-no-answer-keeps-claim`, `neon-exact-name`, `create-company-lock`).
+- **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_PREPARE_BUDGET_MS` (the `find`,
+  then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
+  `projects.create` gains an idempotency key.

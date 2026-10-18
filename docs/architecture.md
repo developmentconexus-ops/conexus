@@ -2,12 +2,11 @@
 
 What Conexus is, its parts, where each runs and who owns what. It states what is decided. A choice
 that is expensive to undo has a record in [`decisions/`](decisions/), cited here as [0020]; the
-record holds the reason, the founder's words and what reopens it. The evidence behind the records
-lives outside this repository. The rules that follow from this design live in the
-[guides](guides/). The sections follow arc42 (1, 3, 5, 7, 8 and 11), with the C4 context and
+record holds the reason, the founder's words and what reopens it. The rules that follow from this design live in the
+[guides](guides/). The sections follow arc42 (1, 3, 5, 7, 8 and 11), with C4 context and
 container levels.
 
-Step numbers are the steps of the [roadmap](roadmap.md).
+Step numbers follow the [roadmap](roadmap.md).
 
 ## 1. Introduction and goals
 
@@ -135,7 +134,7 @@ packages/
 docs/  scripts/  infra/  tests/e2e/  .agents/skills/  .github/
 ```
 
-Subject names are fixed in the step that brings each one. A subject holds its own routes, tables
+A subject holds its own routes, tables
 and tests, and a `public.ts` with what others may use. The import law is
 [code C3 to C8](guides/code.md); the web side's tree is [web W1](guides/web.md).
 
@@ -145,7 +144,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 | --- | --- | --- |
 | A rented server in São Paulo | The server program, from an image built by GitHub Actions and run with Compose, behind the Cloudflare Tunnel. The server opens no port | [0007] |
 | Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app and environment | [0018] [0023] [0024] |
-| Neon | An organization of Conexus's own. One project for the Hub, with two databases; one project per company | [0008] [0009] [0021] |
+| Neon | Two organizations of Conexus's own: the Hub's, one project with two databases; the companies', one project each, under a key that cannot reach the Hub's | [0008] [0009] [0021] [0040] |
 | E2B | Build machines, under a key used by this installation only | [0028] |
 
 **Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
@@ -177,7 +176,7 @@ route both e-mail the founder; the route does not touch the database, so a hung 
 the dispatcher, reads the statement text, counts queries, picks that app's login and sends one
 statement over Neon's HTTP driver; Neon runs it as one transaction. `db.batch` sends several
 statements as one transaction, for all-or-nothing writes. Nothing carries from one query to the
-next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand on this path, each with its basis:
+next; the rule for apps is [data D28](guides/data.md). Pieces still made by hand here:
 
 | Piece | Why it remains | Basis |
 | --- | --- | --- |
@@ -217,7 +216,7 @@ a scale that does not exist. Every job is shaped to let the database sleep:
 | The lease | Renewed by activity, not by clock |
 
 **Shutdown.** The program waits for live Builder turns to end before it exits; an update waits
-with it. This wait is Conexus code.
+with it.
 
 ## 11. Risks and technical debt
 
@@ -236,6 +235,7 @@ with it. This wait is Conexus code.
 | The runner registration token passes through one call's environment, not a file (S31) | A token readable by root for one call on the server | Accepted by the founder [0036] |
 | The owner login's key rests on the server | Root there reads it | Accepted with the runner row [0035] |
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
+| A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
 
 **Debt.** Small fixes left on a brought part are listed here, one line each, with the step that
 removes them.

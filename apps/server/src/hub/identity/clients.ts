@@ -89,6 +89,7 @@ export function renameCompanyOn(auth: Auth) {
     input: { admitted: OperatorProof; companyId: CompanyId; name: string },
   ): Promise<{ ok: true } | { ok: false; reason: 'ACTIVE' }> => {
     await lockCompany(tx, input.companyId)
+    if (await markedDeleting(tx, input.companyId)) throw new Failure('NOT_FOUND')
     const members = await tx.$count(member, eq(member.organizationId, input.companyId))
     if (members > 0) return { ok: false, reason: 'ACTIVE' }
     if ((await companyById(tx, input.companyId)).name !== input.name) {
@@ -97,6 +98,43 @@ export function renameCompanyOn(auth: Auth) {
     }
     return { ok: true }
   }
+}
+
+async function markedDeleting(tx: ReadTx, companyId: CompanyId): Promise<boolean> {
+  const [row] = await tx
+    .select({ since: company.deletingSince })
+    .from(company)
+    .where(eq(company.id, companyId))
+  return row?.since != null
+}
+
+/**
+ * Marks the company as being deleted and deletes its invitations, under the company's lock, so
+ * every person's admission and every link stop at once (decision 0040). Marking again changes
+ * nothing: the first mark's time stays, and a retry of the deletion starts here.
+ */
+export async function markCompanyDeleting(
+  tx: CommandTx,
+  input: { admitted: OperatorProof; companyId: CompanyId },
+): Promise<void> {
+  await lockCompany(tx, input.companyId)
+  await tx
+    .update(company)
+    .set({ deletingSince: sql`coalesce(${company.deletingSince}, statement_timestamp())` })
+    .where(eq(company.id, input.companyId))
+  await tx.delete(invitation).where(eq(invitation.organizationId, input.companyId))
+}
+
+/** The company's name, read under the locks the caller holds, for a deletion that needs no more (issue 73). */
+export async function companyNameOf(
+  tx: ReadTx,
+  input: { admitted: OperatorProof; companyId: CompanyId },
+): Promise<string | undefined> {
+  const [row] = await tx
+    .select({ name: company.name })
+    .from(company)
+    .where(eq(company.id, input.companyId))
+  return row?.name
 }
 
 /**
@@ -171,7 +209,11 @@ export async function readOperatedCompanies(
   const { companyIds } = input
   if (companyIds.length === 0) return new Map()
   const named = await tx
-    .select({ id: company.id, name: company.name })
+    .select({
+      id: company.id,
+      name: company.name,
+      deleting: sql<boolean>`${company.deletingSince} is not null`,
+    })
     .from(company)
     .where(inArray(company.id, companyIds))
   const since = await tx
@@ -192,6 +234,10 @@ export async function readOperatedCompanies(
   const operated = new Map<CompanyId, OperatedCompany>()
   for (const row of named) {
     const { id, name } = Company.parse(row)
+    if (row.deleting) {
+      operated.set(id, { name, state: { kind: 'DELETING' } })
+      continue
+    }
     const first = activeSince.get(id)
     const last = invitations.get(id)
     if (first != null) {

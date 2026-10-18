@@ -1,6 +1,6 @@
 import type { CompanyId, PersonId } from '@conexus/hub-api'
 import { Company, Membership, PAGE_SIZE } from '@conexus/hub-api'
-import { and, asc, eq, sql } from 'drizzle-orm'
+import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database, ReadTx } from '../../platform/database.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
@@ -19,6 +19,7 @@ export function readMemberships(database: Database, personId: PersonId, page: st
       .where(
         and(
           eq(member.userId, personId),
+          isNull(company.deletingSince),
           after(sql`(${company.name}, ${company.id})`, key, (id) =>
             tx
               .select({ name: company.name, id: company.id })

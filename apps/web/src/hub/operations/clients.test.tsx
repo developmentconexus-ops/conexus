@@ -8,6 +8,7 @@ import {
   ACTIVE_CLIENT,
   awaitingClient,
   centralHub,
+  DELETING_CLIENT,
   homeHub,
   hubServer,
   NO_COMPANIES,
@@ -157,4 +158,17 @@ test('cliente que não existe: a página 404', async () => {
   expect(
     await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
   ).toBeTruthy()
+})
+
+test('a lista traz o estado do Hub, que não está mais no início', async () => {
+  server.use(...centralHub([]))
+  open('/operations/clients')
+  expect(await screen.findByText('Hub do Conexus no ar.')).toBeTruthy()
+  expect(await screen.findByText('v0.1.0')).toBeTruthy()
+})
+
+test('um cliente que está sendo apagado diz "Exclusão em andamento" na lista', async () => {
+  server.use(...centralHub([DELETING_CLIENT]))
+  open('/operations/clients')
+  expect(await screen.findByText('Exclusão em andamento')).toBeTruthy()
 })

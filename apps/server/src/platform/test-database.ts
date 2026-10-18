@@ -21,6 +21,7 @@ import { MailApiUrl, MailToken, PublicOrigin, readTestDatabase, SessionSecret } 
 import type { Database } from './database.ts'
 import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
+import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
 import type { PasswordService } from './test-password-service.ts'
 import { plantPasswordService } from './test-password-service.ts'
 
@@ -74,7 +75,11 @@ const NO_MAIL_SERVER = 'http://127.0.0.1:9/email/sending/send'
 const TEST_MAIL_FROM = 'convites@hub.example.test'
 
 /** The configuration a test Hub serves with, its secrets fresh for each call; mail goes to `mailApiUrl`. */
-export function testConfig(databaseUrl: DatabaseUrl, mailApiUrl = NO_MAIL_SERVER): Config {
+export function testConfig(
+  databaseUrl: DatabaseUrl,
+  mailApiUrl = NO_MAIL_SERVER,
+  neonApiUrl = NO_NEON_SERVER,
+): Config {
   return {
     version: Version.parse('v0.1.0'),
     port: 1,
@@ -85,6 +90,7 @@ export function testConfig(databaseUrl: DatabaseUrl, mailApiUrl = NO_MAIL_SERVER
     mailApiUrl: MailApiUrl.parse(mailApiUrl),
     mailFrom: Email.parse(TEST_MAIL_FROM),
     mailToken: MailToken.parse(randomBytes(16).toString('hex')),
+    ...testNeon(neonApiUrl),
   }
 }
 
@@ -137,7 +143,8 @@ export function databaseWithPassword(test: TestDatabase, password: string): Data
   return openDatabase({ url: runtimeUrlWithPassword(test, password), log: silent })
 }
 
-export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
+/** A fresh database; `locale: 'C'` makes one whose `LC_CTYPE` knows no case outside ASCII. */
+export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<TestDatabase> {
   const { ownerUrl: serverUrl, runtimePassword, container } = readTestDatabase()
   const name = `conexus_test_${randomUUID().replaceAll('-', '')}`
   const ownerUrl = withDatabase(serverUrl, name)
@@ -146,7 +153,9 @@ export async function createTestDatabase(t: Lifetime): Promise<TestDatabase> {
     password: runtimePassword,
   })
   const admin = await connected(serverUrl)
-  await admin.query(`create database ${name}`)
+  const localeClause =
+    locale && `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
+  await admin.query(`create database ${name} ${localeClause ?? ''}`)
   const database = openDatabase({ url: runtimeUrl, log: silent })
   t.after(async () => {
     try {
@@ -248,6 +257,9 @@ export function serveEnvironment(t: TestContext, url: DatabaseUrl, port?: number
     HUB_MAIL_API_URL: NO_MAIL_SERVER,
     HUB_MAIL_FROM: TEST_MAIL_FROM,
     HUB_MAIL_TOKEN_FILE: keyFile(t, 'hub_mail_token', randomBytes(16).toString('hex')),
+    HUB_NEON_API_URL: NO_NEON_SERVER,
+    HUB_NEON_ORG_ID: TEST_NEON_ORG,
+    HUB_NEON_API_KEY_FILE: keyFile(t, 'hub_neon_api_key', randomBytes(16).toString('hex')),
   }
 }
 

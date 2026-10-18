@@ -45,6 +45,8 @@ async function join(page: Page, next: () => Promise<Mail>, owner: typeof OWNERS.
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
+  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await page.getByRole('link', { name: 'Pessoas' }).first().click()
   await page.getByRole('heading', { name: owner.company, exact: true }).waitFor()
   return link
 }
@@ -76,9 +78,9 @@ test('o roteiro de duas empresas: a recusa cruzada, apagar B, o dono de B ainda 
   const linkB = await join(edu, mail.next, OWNERS.B)
   const addressB = edu.url()
 
+  // Davi owns one company, so the entry opens its Projects; B's address is not found for him.
   await davi.goto(`${TEST_ORIGIN}/`)
-  await davi.getByRole('link', { name: `${OWNERS.A.company} Dono` }).waitFor()
-  assert.equal(await davi.getByRole('link', { name: `${OWNERS.B.company} Dono` }).count(), 0)
+  await davi.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
   await davi.goto(addressB)
   await davi.getByRole('heading', { name: NOT_FOUND }).waitFor()
 
@@ -107,7 +109,8 @@ test('o roteiro de duas empresas: a recusa cruzada, apagar B, o dono de B ainda 
   await edu.getByRole('heading', { name: NOT_FOUND }).waitFor()
 
   await davi.goto(`${TEST_ORIGIN}/`)
-  await davi.getByRole('link', { name: `${OWNERS.A.company} Dono` }).click()
+  await davi.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await davi.getByRole('link', { name: 'Pessoas' }).first().click()
   await davi.getByRole('heading', { name: OWNERS.A.company, exact: true }).waitFor()
   assert.deepEqual(problems, [])
 })

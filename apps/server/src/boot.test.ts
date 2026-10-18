@@ -38,6 +38,9 @@ const WITH_FILE = {
   HUB_MAIL_API_URL: 'https://mail.example.test/email/sending/send',
   HUB_MAIL_FROM: 'convites@hub.example.test',
   HUB_MAIL_TOKEN_FILE: '/nowhere/hub_mail_token',
+  HUB_NEON_API_URL: 'https://neon.example.test/api/v2',
+  HUB_NEON_ORG_ID: 'org-test-0000',
+  HUB_NEON_API_KEY_FILE: '/nowhere/hub_neon_api_key',
 }
 
 for (const name of Object.keys(WITH_FILE)) {

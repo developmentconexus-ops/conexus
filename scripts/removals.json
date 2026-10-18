@@ -585,8 +585,8 @@
   {
     "id": "client-delete-revision",
     "file": "apps/server/src/hub/operations/clients.ts",
-    "find": "    if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')\n    if ((await clientOf(",
-    "replace": "    if ((await clientOf(",
+    "find": "  if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')\n  const { companyId } = input\n",
+    "replace": "  const { companyId } = input\n",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/operations/client-deletion.test.ts",
@@ -866,6 +866,171 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/password-check.test.ts",
       "name": "link primeiro"
+    }
+  },
+  {
+    "id": "project-company-policy",
+    "file": "apps/server/migrations/20261017223141_projects_tables/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"projects\".\"project\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''))",
+    "replace": "CREATE POLICY \"company_all\" ON \"projects\".\"project\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-projects.test.ts",
+      "name": "projetos: sem filtro"
+    }
+  },
+  {
+    "id": "company-database-policy",
+    "file": "apps/server/migrations/20261017223141_projects_tables/migration.sql",
+    "find": "CREATE POLICY \"company_all\" ON \"projects\".\"company_database\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (company_id = nullif(current_setting('conexus.company_id', true), '')) WITH CHECK (company_id = nullif(current_setting('conexus.company_id', true), ''))",
+    "replace": "CREATE POLICY \"company_all\" ON \"projects\".\"company_database\" AS PERMISSIVE FOR ALL TO \"hub_company\" USING (true) WITH CHECK (true)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/isolation-projects.test.ts",
+      "name": "projetos: sem filtro"
+    }
+  },
+  {
+    "id": "project-name-lower",
+    "file": "apps/server/migrations/20261017223141_projects_tables/migration.sql",
+    "find": "(\"company_id\",lower(\"name\" collate \"und-x-icu\"))",
+    "replace": "(\"company_id\",\"name\")",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/tables.test.ts",
+      "name": "mesmo nome em outra caixa"
+    }
+  },
+  {
+    "id": "company-database-claim",
+    "file": "apps/server/src/hub/projects/company-database.ts",
+    "find": "  if (row?.held) throw new Failure('COMPANY_DATABASE_PREPARING')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-database.test.ts",
+      "name": "banco: a reserva viva"
+    }
+  },
+  {
+    "id": "neon-exact-name",
+    "file": "apps/server/src/platform/neon.ts",
+    "find": "const exact = projects.filter((project) => project.name === name)",
+    "replace": "const exact = projects",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/neon.test.ts",
+      "name": "find devolve só o nome exato"
+    }
+  },
+  {
+    "id": "neon-no-answer-keeps-claim",
+    "file": "apps/server/src/hub/projects/projects.ts",
+    "find": "    if (prepared.kind === 'REFUSED')\n      await database.command(",
+    "replace": "    await database.command(",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-database.test.ts",
+      "name": "o prazo mantém a reserva"
+    }
+  },
+  {
+    "id": "create-company-lock",
+    "file": "apps/server/src/hub/projects/projects.ts",
+    "find": "  await deps.identity.lockCompany(tx, input.companyId)\n  await transactionLock(tx, `conexus.project",
+    "replace": "  await transactionLock(tx, `conexus.project",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-database.test.ts",
+      "name": "duas pessoas ao mesmo tempo"
+    }
+  },
+  {
+    "id": "project-delete-role",
+    "file": "apps/server/src/hub/projects/projects.ts",
+    "find": "      action: 'deleteProject',\n    })\n    const [row] = await tx\n      .select({ name: project.name })",
+    "replace": "      action: 'readProjects',\n    })\n    const [row] = await tx\n      .select({ name: project.name })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-delete.test.ts",
+      "name": "apagar: dono e administrador"
+    }
+  },
+  {
+    "id": "deleting-company-admission",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "  const admitted = admitMember(input, role, input.action)\n  await refuseIfDeleting(input)\n",
+    "replace": "  const admitted = admitMember(input, role, input.action)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-delete.test.ts",
+      "name": "empresa marcada"
+    }
+  },
+  {
+    "id": "deleting-company-admission-operator",
+    "file": "apps/server/src/hub/identity/admission.ts",
+    "find": "  if (admitted === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })\n  await refuseIfDeleting(input)\n",
+    "replace": "  if (admitted === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'OUTSIDER' } })\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/projects/projects-delete.test.ts",
+      "name": "empresa marcada"
+    }
+  },
+  {
+    "id": "deletion-live-claim",
+    "file": "apps/server/src/hub/projects/company-deletion.ts",
+    "find": "  if (row.held) throw new Failure('CLIENT_DELETION_PENDING')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "reserva viva"
+    }
+  },
+  {
+    "id": "deletion-neon-not-found",
+    "file": "apps/server/src/platform/neon.ts",
+    "find": "if (isNeonError(error) && error.kind === 'not_found') {\n          return { kind: 'DONE', value: 'deleted' }\n        }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/neon.test.ts",
+      "name": "o id ausente conta como apagado"
+    }
+  },
+  {
+    "id": "deletion-mark-first",
+    "file": "apps/server/src/hub/operations/clients.ts",
+    "find": "    await identity.markCompanyDeleting(tx, { admitted, companyId })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "exclusão em andamento: o Neon fora"
+    }
+  },
+  {
+    "id": "mark-deletes-invitations",
+    "file": "apps/server/src/hub/identity/clients.ts",
+    "find": "  await tx.delete(invitation).where(eq(invitation.organizationId, input.companyId))\n}",
+    "replace": "}",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "exclusão em andamento: o Neon fora"
+    }
+  },
+  {
+    "id": "deletion-removes-projects",
+    "file": "apps/server/src/hub/projects/company-deletion.ts",
+    "find": "  await tx.delete(project).where(eq(project.companyId, input.companyId))\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-deletion-database.test.ts",
+      "name": "com banco"
     }
   }
 ]

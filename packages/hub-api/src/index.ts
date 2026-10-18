@@ -68,4 +68,15 @@ export {
   registerClient,
 } from './operations.ts'
 export { PAGES } from './pages.ts'
+export {
+  createProject,
+  deleteProject,
+  getProject,
+  listProjects,
+  PROJECT_NAME_MAX_LENGTH,
+  Project,
+  ProjectId,
+  ProjectName,
+  ProjectSummary,
+} from './projects.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'

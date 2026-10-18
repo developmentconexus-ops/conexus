@@ -2,12 +2,14 @@ import {
   getClient,
   getCompany,
   getInvitation,
+  getProject,
   getSession,
   getStatus,
   listClients,
   listCompanies,
   listInvitations,
   listMembers,
+  listProjects,
 } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
@@ -93,8 +95,10 @@ function companyPage(
       invitationsSent: 1,
     },
   ] as const
+  // The rail's Projetos link preloads its page on focus, so every company page has its Projects too.
   return {
     ...SIGNED_IN,
+    ...projectsPage(id),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),
@@ -106,6 +110,32 @@ function companyPage(
     }),
   }
 }
+
+const PROJECT = {
+  id: 'r'.repeat(32),
+  name: `Projeto com um nome muito comprido que não cabe em uma linha de telefone pequeno`,
+  createdAt: '2026-10-17T12:00:00.000Z',
+} as const
+
+/** A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when `empty`. */
+export function projectsPage(
+  id: string,
+  view: { empty?: boolean; mayDelete?: boolean } = {},
+): Replies {
+  return {
+    [`GET /api/companies/${id}/projects`]: ok(listProjects, {
+      projects: view.empty ? [] : [PROJECT],
+      next: { kind: 'END' },
+      databaseReady: !view.empty,
+    }),
+    [`GET /api/companies/${id}/projects/${PROJECT.id}`]: ok(getProject, {
+      project: { ...PROJECT, mayDelete: view.mayDelete ?? true },
+    }),
+  }
+}
+
+export const PROJECT_ID = PROJECT.id
+export const PROJECT_NAME = PROJECT.name
 
 export const INVITATION_DETAILS = {
   company: { id: COMPANY.id, name: LONG_NAME },
@@ -173,9 +203,11 @@ const ACTIVE = {
   },
 }
 
+const DELETING = { ...CLIENT, state: { kind: 'DELETING' as const } }
+
 /** The Operations Central as the operator sees it, with `client` behind its one row. */
-export function central(client: 'AWAITING' | 'ACTIVE' | 'NONE'): Replies {
-  const shown = client === 'ACTIVE' ? ACTIVE : CLIENT
+export function central(client: 'AWAITING' | 'ACTIVE' | 'DELETING' | 'NONE'): Replies {
+  const shown = { ACTIVE, DELETING, AWAITING: CLIENT, NONE: CLIENT }[client]
   return {
     ...(client === 'ACTIVE' ? companyPage('owner', ['owner'], CLIENT_ID) : {}),
     ...companies([], true),
