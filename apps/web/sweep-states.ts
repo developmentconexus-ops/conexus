@@ -17,6 +17,7 @@ import {
   MEMBER,
   NO_COMPANIES,
   OWNER,
+  projectsPage,
   received,
   SIGNED_IN,
   SIGNED_OUT,
@@ -197,7 +198,11 @@ export const STATES: State[] = [
   {
     name: 'empresa que o Hub não acha',
     path: `/companies/${COMPANY.id}/people`,
-    replies: { ...SIGNED_IN, [`GET /api/companies/${COMPANY.id}`]: failure('NOT_FOUND') },
+    replies: {
+      ...SIGNED_IN,
+      ...projectsPage(COMPANY.id),
+      [`GET /api/companies/${COMPANY.id}`]: failure('NOT_FOUND'),
+    },
     settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
   },
   {
