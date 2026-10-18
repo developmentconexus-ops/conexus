@@ -64,7 +64,7 @@ if [ -n "${MIRROR_URL:-}" ] || [ -n "${DEPLOY_KEY_FILE:-}" ]; then
   limit 60 sudo -u runner git --git-dir="$mirror" fetch --no-tags origin refs/heads/main:refs/heads/main
   echo "mirror of main ready"
 elif ! [ -f "$mirror/HEAD" ]; then
-  echo "no mirror of main at $mirror: the hook refuses every job until MIRROR_URL and DEPLOY_KEY_FILE are given (docs/how-to/hub-server.md)" >&2
+  echo "no mirror of main at $mirror: the hook refuses every job until MIRROR_URL and DEPLOY_KEY_FILE are given (docs/how-to/apps-edge.md)" >&2
 fi
 
 cd "$home"

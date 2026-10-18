@@ -43,14 +43,21 @@ of `main` in `/var/lib/conexus/main.git` that it fetches first. A push, another 
 request, a commit outside `main`, a missing mirror or a failed fetch fails the job before a step can
 reach the token or the Hub's keys. Voltar atrás checks the version's own commit the same way before
 its `npm ci`.
-A server prepared before this hook gets it from firstmate, as root from a checkout of `main`:
-`infra/setup-runner-hook.sh`, with the mirror's two variables. It installs `git` and restarts the
-runner's service.
 
-The mirror, once, as root: `ssh-keygen -t ed25519 -N '' -f <file>`; add `<file>.pub` in the
-repository's GitHub settings as a deploy key without write access; run
-`MIRROR_URL=git@github.com:<owner>/<repo>.git DEPLOY_KEY_FILE=<file> infra/setup-runner-hook.sh`;
-delete both files. Until then the hook refuses every job.
+## The runner's mirror
+
+Once, after step 8 merges, as root on the server from a checkout of `main`, while no job runs. One
+run installs the hook and the mirror, so no job is refused in between.
+
+1. `ssh-keygen -t ed25519 -N '' -f /root/main-mirror`; add `/root/main-mirror.pub` as a deploy
+   key, write access off.
+2. `MIRROR_URL=git@github.com:developmentconexus-ops/conexus.git DEPLOY_KEY_FILE=/root/main-mirror infra/setup-runner-hook.sh`
+   prints `mirror of main ready`, then `runner hook ready`.
+3. `rm /root/main-mirror*`; `sudo -u runner git --git-dir=/var/lib/conexus/main.git rev-parse main`
+   prints `main`'s head.
+4. A tag ruleset on `refs/tags/v*` restricts creation, update and deletion; the founder bypasses it.
+5. The `conexus-hub` package's Actions access lists this repository alone.
+6. Reiniciar o Hub runs on `main` and fails at the hook on another branch.
 
 ## Publish
 
