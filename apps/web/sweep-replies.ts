@@ -63,6 +63,7 @@ export function companies(
   )
   return {
     ...Object.assign({}, ...preloaded),
+    ...Object.assign({}, ...body.companies.map(({ company }) => projectsPage(company.id))),
     ...SIGNED_IN,
     'GET /api/companies': ok(listCompanies, body),
   }
@@ -95,10 +96,8 @@ function companyPage(
       invitationsSent: 1,
     },
   ] as const
-  // The rail's Projetos link preloads its page, so every company page has its Projects too.
   return {
     ...SIGNED_IN,
-    ...projectsPage(id),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),
@@ -155,7 +154,9 @@ export function received(state: 'PENDING' | 'EXPIRED' | 'ACCEPTED' | 'CANCELED')
   } as const
   return {
     ...SIGNED_IN,
-    ...(state === 'ACCEPTED' ? companyPage('admin', ['admin', 'member']) : {}),
+    ...(state === 'ACCEPTED'
+      ? { ...companyPage('admin', ['admin', 'member']), ...projectsPage(COMPANY.id) }
+      : {}),
     [`GET /api/invitations/${INVITATION}`]: ok(getInvitation, { invitation: views[state] }),
   }
 }
