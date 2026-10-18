@@ -11,7 +11,7 @@ zero (2026-10-18).
 `db.query` runs its statement in a read-only transaction (`transaction([q], { readOnly: true })` of
 `@neondatabase/serverless`; the driver sends read-only only for a list), so PostgreSQL refuses any
 write with 25006. Every write goes through `db.batch`, one transaction, all or none, at most one per
-call, counted by the dispatcher. Supersedes [0020]. Basis: founder's answer P1 A, 2026-10-18;
+call, counted by the dispatcher from step 10. Supersedes [0020]. Basis: founder's answer P1 A, 2026-10-18;
 PostgREST runs reads the same way.
 
 ## Criterion
@@ -37,7 +37,9 @@ held; a failing batch left nothing.
 
 A write in `db.query`, `nextval()` or `FOR UPDATE` there fails at the first click; an import goes in
 one batch or several calls. Step 9 builds the read-only query; the count of batches per call joins
-the count of queries in step 10. Step 10's proof checks 25006 through Neon.
+the count of queries in step 10. The count cannot live in the dispatcher's `Db` entrypoint, which
+is built anew for each call to it, so step 10's proof chooses where it lives. Step 10's proof checks
+25006 through Neon.
 
 ## Reopens when
 
