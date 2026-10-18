@@ -3,7 +3,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { APP_SESSION_HEADER } from '@conexus/hub-api'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -163,15 +163,26 @@ test('resgate: outro vínculo, outro host, vencido 403; o certo 201; de novo 403
   })
 })
 
-test('resgate: duas trocas juntas do mesmo código, uma vale', async (t) => {
+// The pass's row is held, so both redemptions queue on it and the race runs the same way every
+// time: the first takes the row, the second finds it gone (code C65).
+test('resgate: duas trocas juntas do mesmo código, a primeira vale, a segunda 403', async (t) => {
   const { hub, bruno } = await companyWithApps(t)
   const { binding, hash } = browser()
   const code = await codeFor(hub, bruno, PEDIDOS, hash)
-  const both = await Promise.all([
-    redeem(hub, { host: PEDIDOS, code, binding }),
-    redeem(hub, { host: PEDIDOS, code, binding }),
-  ])
-  assert.deepEqual(both.map((response) => response.statusCode).sort(), [201, 403])
+  const codeHash = createHash('sha256').update(code).digest('base64url')
+  const holdPass = 'select code_hash from apps.handoff where code_hash = $1 for update'
+  const both = await withOwnerLock(hub.test, holdPass, [codeHash], async (release) => {
+    const first = redeem(hub, { host: PEDIDOS, code, binding })
+    await queued(hub.test, 1, first)
+    const second = redeem(hub, { host: PEDIDOS, code, binding })
+    await queued(hub.test, 2, second)
+    await release()
+    return Promise.all([first, second])
+  })
+  assert.deepEqual(
+    both.map((response) => response.statusCode),
+    [201, 403],
+  )
   assert.deepEqual(await hub.test.asOwner(`select count(*)::int as n from apps.app_session`), [
     { n: 1 },
   ])
@@ -240,6 +251,24 @@ test('checagem: tirado e empresa marcada 403, Projeto apagado 404, já na chamad
   ])
   const marked = await check(hub, ESTOQUE, estoque)
   assert.deepEqual([marked.statusCode, codeOf(marked)], [403, 'APP_ACCESS_REFUSED'])
+})
+
+test('checagem: o Projeto apagado e criado de novo com o nome pede outra entrada, 401, e a sessão velha sai', async (t) => {
+  const { hub, ana, project } = await companyWithApps(t)
+  const old = await sessionOf(hub, ana, PEDIDOS)
+  assert.equal((await call(hub, ana, 'DELETE', project, { name: 'Pedidos' })).statusCode, 204)
+  const projects = project.slice(0, project.lastIndexOf('/'))
+  assert.equal((await post(hub, ana, projects, { name: 'Pedidos' })).statusCode, 201)
+  const stale = await check(hub, PEDIDOS, old)
+  assert.deepEqual([stale.statusCode, codeOf(stale)], [401, 'APP_SESSION_INVALID'])
+  assert.deepEqual(
+    await hub.test.asOwner(
+      `select count(*)::int as n from apps.app_session where host_label = $1`,
+      [PEDIDOS],
+    ),
+    [{ n: 0 }],
+  )
+  assert.equal((await check(hub, PEDIDOS, await sessionOf(hub, ana, PEDIDOS))).statusCode, 200)
 })
 
 test('borda: as rotas do despachante só na porta de borda, as do Hub só na pública: 404', async (t) => {

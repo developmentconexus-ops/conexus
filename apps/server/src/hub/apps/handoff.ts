@@ -138,6 +138,16 @@ async function checkCall(
   })
   if (found === undefined) throw new Failure('APP_SESSION_INVALID')
   const { ids } = found
+  // The host names its Projeto now: a Projeto deleted and created again under the same name is
+  // another app, so the old session goes and the person passes through the Hub again (code C26).
+  const current = await deps.projects.projectOfHost(input.host)
+  if (current === undefined) throw new Failure('APP_NOT_FOUND', { details: ids })
+  if (current.projectId !== ids.projectId) {
+    await deps.database.installation((tx) =>
+      tx.delete(appSession).where(eq(appSession.tokenHash, hashOf(token.data))),
+    )
+    throw new Failure('APP_SESSION_INVALID', { details: { ...ids, reason: 'PROJECT_REPLACED' } })
+  }
   const admitted = await deps.projects.admitToApp({ personId: found.personId, ...ids })
   switch (admitted.kind) {
     case 'REFUSED':

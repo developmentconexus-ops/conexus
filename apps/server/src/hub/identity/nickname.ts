@@ -47,11 +47,11 @@ export function chooseNickname(
       companyId: input.companyId,
       action: 'chooseNickname',
     })
-    if (isReservedNickname(input.nickname)) throw new Failure('COMPANY_NICKNAME_RESERVED')
     const chosen = await companyNicknameOf(tx, input.companyId)
     if (chosen === input.nickname)
       return { company: await companyDetailOf(tx, input), chosen: false }
     if (chosen !== null) throw new Failure('COMPANY_NICKNAME_SET')
+    if (isReservedNickname(input.nickname)) throw new Failure('COMPANY_NICKNAME_RESERVED')
     try {
       await tx
         .update(company)

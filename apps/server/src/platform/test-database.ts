@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { after } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import { Email, PROBLEM_MEDIA_TYPE, Version } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import pg from 'pg'
@@ -208,6 +209,26 @@ export async function withOwnerLock<T>(
     return await work(async () => void (await client.query('commit')))
   } finally {
     await client.end()
+  }
+}
+
+/**
+ * Resolves once `count` sessions of this database wait on a lock, the barrier of a race test under
+ * `withOwnerLock` (code C65); or once `request` has answered, so a request that never queues fails
+ * on its own answer instead of here.
+ */
+export async function queued(test: TestDatabase, count: number, request?: Promise<unknown>) {
+  let answered = false
+  void request?.then(() => {
+    answered = true
+  })
+  const waiting = `select count(distinct l.pid)::int as waiting from pg_locks l
+    join pg_stat_activity a on a.pid = l.pid
+    where not l.granted and a.datname = current_database()`
+  const deadline = Date.now() + 5_000
+  while (!answered && Object((await test.asOwner(waiting))[0]).waiting < count) {
+    assert.ok(Date.now() < deadline, `${count} requests never queued on the lock`)
+    await setTimeout(20)
   }
 }
 
