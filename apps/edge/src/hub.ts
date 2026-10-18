@@ -2,11 +2,19 @@ import type { AppSessionToken, FailureCode, Operation } from '@conexus/hub-api'
 import { APP_SESSION_HEADER, checkAppCall, createAppSession, Problem } from '@conexus/hub-api'
 import type { z } from 'zod'
 
+/** Why the Hub gave no answer; it names no request data, so the log line can carry it (S41). */
+export type NoAnswerReason =
+  | 'TIMEOUT'
+  | 'NETWORK'
+  | 'TOO_LARGE'
+  | 'UNREADABLE'
+  | 'UNEXPECTED_STATUS'
+
 /** What the Hub said: a refusal by its code, or no answer the dispatcher can read in time. */
 type HubAnswer<T> =
   | { kind: 'DONE'; value: T }
   | { kind: 'REFUSED'; code: FailureCode }
-  | { kind: 'NO_ANSWER' }
+  | { kind: 'NO_ANSWER'; reason: NoAnswerReason }
 
 type SessionRequest = z.infer<typeof createAppSession.input.body>
 type CheckRequest = z.infer<typeof checkAppCall.input.query> & { session: AppSessionToken }
@@ -19,8 +27,8 @@ export type HubPort = {
   checkAppCall(input: CheckRequest): Promise<HubAnswer<z.infer<typeof checkAppCall.success.body>>>
 }
 
-// Decision 0041 measured 31 to 119 ms through Workers VPC; the deadline is about forty
-// times the slowest.
+// Decision 0041: the VPC took 31 to 119 ms and the sleeping database takes up to 1.6 s; the
+// deadline of 5 s covers both.
 const HUB_CHECK_DEADLINE_MS = 5000
 const REPLY_CAP_BYTES = 16 * 1024
 // The VPC service fixes the host and the port: the URL only carries the path.
@@ -63,18 +71,21 @@ export function hubOf(env: Env): HubPort {
         signal: AbortSignal.timeout(HUB_CHECK_DEADLINE_MS),
       })
       const text = response.body === null ? '' : await cappedText(response.body)
-      if (text === undefined) return { kind: 'NO_ANSWER' }
+      if (text === undefined) return { kind: 'NO_ANSWER', reason: 'TOO_LARGE' }
       const json = parsedJson(text)
       if (response.status === input.operation.success.status) {
         const value = input.operation.success.body.safeParse(json)
-        return value.success ? { kind: 'DONE', value: value.data } : { kind: 'NO_ANSWER' }
+        if (value.success) return { kind: 'DONE', value: value.data }
+        return { kind: 'NO_ANSWER', reason: 'UNREADABLE' }
       }
       const problem = Problem.safeParse(json)
-      return problem.success ? { kind: 'REFUSED', code: problem.data.code } : { kind: 'NO_ANSWER' }
-    } catch {
+      if (problem.success) return { kind: 'REFUSED', code: problem.data.code }
+      return { kind: 'NO_ANSWER', reason: 'UNEXPECTED_STATUS' }
+    } catch (error) {
       // A lost connection, a passed deadline or a cut body: the Hub gave no answer to act on, and
-      // the dispatcher's page logs it.
-      return { kind: 'NO_ANSWER' }
+      // the dispatcher's page logs why.
+      const timedOut = error instanceof Error && error.name === 'TimeoutError'
+      return { kind: 'NO_ANSWER', reason: timedOut ? 'TIMEOUT' : 'NETWORK' }
     }
   }
 

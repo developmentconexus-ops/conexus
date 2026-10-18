@@ -49,12 +49,15 @@ export function headersToApp(from: Headers): Headers {
   return headers
 }
 
-/** The app's headers as the browser receives them: an app cannot set the dispatcher's cookies. */
+/**
+ * The app's headers as the browser receives them: an app cannot set the dispatcher's cookies.
+ * `Headers` strips leading whitespace from a value, so a line never starts with a space.
+ */
 export function headersFromApp(from: Headers): Headers {
   const headers = new Headers(from)
   headers.delete('Set-Cookie')
   for (const line of from.getSetCookie()) {
-    if (!line.trimStart().startsWith(COOKIE_PREFIX)) headers.append('Set-Cookie', line)
+    if (!line.startsWith(COOKIE_PREFIX)) headers.append('Set-Cookie', line)
   }
   return withSecurityHeaders(headers)
 }

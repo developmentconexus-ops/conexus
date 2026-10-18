@@ -9,6 +9,7 @@ import {
   headersFromApp,
   headersToApp,
   setCookie,
+  withSecurityHeaders,
 } from './headers.ts'
 import type { HubPort } from './hub.ts'
 import { hubOf } from './hub.ts'
@@ -26,15 +27,14 @@ type Visit = { request: Request; env: Env; hub: HubPort; url: URL; label: Label 
 function redirect(location: string, cookies: string[]): Response {
   const headers = new Headers({ Location: location, 'Cache-Control': 'no-store' })
   for (const cookie of cookies) headers.append('Set-Cookie', cookie)
-  return new Response(null, { status: 303, headers })
+  return new Response(null, { status: 303, headers: withSecurityHeaders(headers) })
 }
 
-/** A write sent by another site, which the browser names in `Sec-Fetch-Site` or `Origin` (S24). */
-function isCrossSiteWrite(request: Request, url: URL): boolean {
+/** A write without this host's exact `Origin`, or that `Sec-Fetch-Site` calls cross-site (S24). */
+function isForeignWrite(request: Request, url: URL): boolean {
   if (request.method === 'GET' || request.method === 'HEAD') return false
   const site = request.headers.get('Sec-Fetch-Site')
-  const origin = request.headers.get('Origin')
-  return (site !== null && site !== 'same-origin') || (origin !== null && origin !== url.origin)
+  return (site !== null && site !== 'same-origin') || request.headers.get('Origin') !== url.origin
 }
 
 /**
@@ -72,13 +72,16 @@ async function redeem(visit: Visit): Promise<Response> {
   if (answer.kind === 'REFUSED' && answer.code === 'APP_HANDOFF_INVALID') {
     return failurePage('APP_HANDOFF_INVALID')
   }
-  return failurePage('EDGE_HUB_UNAVAILABLE')
+  return failurePage(
+    'EDGE_HUB_UNAVAILABLE',
+    answer.kind === 'NO_ANSWER' ? answer.reason : undefined,
+  )
 }
 
 /** The app's answer, with the dispatcher's headers; an app that throws gets the 502 page. */
 async function toApp(visit: Visit, props: AppProps): Promise<Response> {
-  const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })
   try {
+    const app = visit.env.DISPATCHER.get(APP_SCRIPT, { props }, { outbound: {} })
     const response = await app.fetch(
       new Request(visit.request, { headers: headersToApp(visit.request.headers) }),
     )
@@ -105,7 +108,7 @@ async function dispatch(request: Request, env: Env): Promise<Response> {
     url.hostname.endsWith(domain) ? url.hostname.slice(0, -domain.length) : '',
   )
   if (!label.success) return failurePage('APP_NOT_FOUND')
-  if (isCrossSiteWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')
+  if (isForeignWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')
   const visit: Visit = { request, env, hub: hubOf(env), url, label: label.data }
   if (url.pathname === HANDOFF_PATH) return redeem(visit)
   if (url.pathname.startsWith(DISPATCHER_PATHS)) return failurePage('APP_NOT_FOUND')
@@ -118,7 +121,10 @@ async function dispatch(request: Request, env: Env): Promise<Response> {
     return toHub(visit, [setCookie(APP_SESSION_COOKIE, '')])
   }
   const refusal = answer.kind === 'REFUSED' ? CHECK_REFUSALS[answer.code] : undefined
-  return failurePage(refusal ?? 'EDGE_HUB_UNAVAILABLE')
+  return failurePage(
+    refusal ?? 'EDGE_HUB_UNAVAILABLE',
+    answer.kind === 'NO_ANSWER' ? answer.reason : undefined,
+  )
 }
 
 export default {

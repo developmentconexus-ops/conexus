@@ -37,7 +37,7 @@ function greets(_request: Request, ctx: { props: AppProps }): Response {
 }
 
 /** The dispatcher with both doubles; every call each double received is kept. */
-export function edge(doubles: { hub?: Hub; app?: App } = {}) {
+export function edge(doubles: { hub?: Hub; app?: App; missingScript?: boolean } = {}) {
   const hub = doubles.hub ?? admits
   const app = doubles.app ?? greets
   const hubCalls: Request[] = []
@@ -57,6 +57,7 @@ export function edge(doubles: { hub?: Hub; app?: App } = {}) {
     },
     DISPATCHER: {
       get(name: string, args: { props: AppProps }, options: unknown) {
+        if (doubles.missingScript) throw new Error(`Worker not found: ${name}`)
         return {
           async fetch(input: RequestInfo | URL, init?: RequestInit) {
             const request = new Request(input, init)

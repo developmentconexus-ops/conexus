@@ -1,6 +1,7 @@
 import { FAILURES } from '@conexus/hub-api'
 import { base64Of, sha256Of } from './digest.ts'
 import { withSecurityHeaders } from './headers.ts'
+import type { NoAnswerReason } from './hub.ts'
 
 // What each page says: the Hub's own rows, and two the dispatcher alone meets, which never pass
 // through the Hub (step 8's state matrix).
@@ -32,12 +33,14 @@ const STYLE = [
 
 /**
  * The page of a failure, in Portuguese and without script. Its log line has the Hub's shape, a pino
- * level and a code (scripts/log-line.ts), and nothing the person sent (security S41).
+ * level and a code (scripts/log-line.ts), and nothing the person sent (security S41);
+ * a `reason` is one of the fixed words of a no-answer from the Hub.
  */
-export async function failurePage(code: PageCode): Promise<Response> {
+export async function failurePage(code: PageCode, reason?: NoAnswerReason): Promise<Response> {
   const { status, phrase, action } = PAGES[code]
-  if (status >= 500) console.error(JSON.stringify({ level: 50, msg: code, status }))
-  else console.log(JSON.stringify({ level: 30, msg: code, status }))
+  const line = { msg: code, status, reason }
+  if (status >= 500) console.error(JSON.stringify({ level: 50, ...line }))
+  else console.log(JSON.stringify({ level: 30, ...line }))
   const styleHash = base64Of(await sha256Of(STYLE))
   const html = [
     '<!doctype html>',
