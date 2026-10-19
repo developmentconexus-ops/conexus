@@ -20,6 +20,8 @@ import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
+import { openGoogleCalls } from '../model-accounts/public.ts'
+import { createBuilder } from './builder.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-5'
 export const KEY = 'sk-ant-conversation-key-0001'
@@ -168,4 +170,24 @@ export async function asked(
 /** The notices of a turn, in order. */
 export function noticesOf(events: ConversationEvent[]): string[] {
   return events.flatMap((event) => (event.type === 'notice' ? [event.text] : []))
+}
+
+/**
+ * What the Builder's real controller answers when a tool is asked for approval, on a session it
+ * opens as the conversations do: `allow`, `deny` or `ask` (which would park the turn).
+ */
+export async function approvalsOf(t: TestContext, hub: Hub, toolNames: string[]) {
+  const { config, test } = hub
+  const { database } = test
+  const { cliProxy, sealKeys } = config
+  const google = openGoogleCalls({ cliProxy, log: silent, database, sealKeys })
+  t.after(() => google.stop())
+  const identity = identityOf({ database, config, log: silent }).ports
+  const queue = { database, identity, sealKeys, googleCalls: google.googleCalls }
+  const builder = createBuilder({ pool: test.mastraPool, queue, log: silent })
+  const session = await builder.controller.createSession({
+    resourceId: 'company:approvals:person:approvals',
+    scope: randomUUID(),
+  })
+  return Object.fromEntries(toolNames.map((name) => [name, session.resolveToolApproval(name)]))
 }

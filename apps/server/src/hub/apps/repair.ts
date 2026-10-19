@@ -46,8 +46,7 @@ async function failExpiredSends(deps: RepairDeps, scope: Scope): Promise<number>
 
 /**
  * The Projetos whose deletion stopped after their mark: their apps go, then their conversations
- * and their rows. The ones
- * still marked are never brought back.
+ * and their rows. The ones still marked are never brought back.
  */
 async function finishDeletions(deps: RepairDeps, scope: Scope, companyId: CompanyId) {
   const marked = await deps.database.read(scope, (tx) =>

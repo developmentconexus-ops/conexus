@@ -44,9 +44,12 @@ notice. Check 4 failed on both paths: the turn never ended. The recording shows
 `tool_approval_required` at the first `web_fetch`, with no `tool_end` and no `agent_end`. The
 controller asks before each tool unless its state says `yolo` (`resolveToolApproval`), and the
 Builder has no screen that answers; checks 1 to 3 and the controls answered without a tool, and
-the offline rehearsal's double never called `web_fetch`, so nothing showed it before. Mastra Code
-starts its controller with `yolo: true`; the Builder now does too, and a `web_fetch` turn in
-`conversation.test.ts` completes. Claude's search itself ran (a search, five sites, Portuguese
+the offline rehearsal's double never called `web_fetch`, so nothing showed it before. The Builder
+now gives the controller its native rules instead: a category resolver puts `web_fetch`,
+`web_search` and `recall` in `read`, and the rules allow `read` and deny every other category, so
+a tool added later is refused until a rule names it (not `yolo`, which frees every tool; founder,
+step 13 D7). A `web_fetch` turn in `conversation.test.ts` completes, and the controller answers
+`deny` for a tool outside `read`. Claude's search itself ran (a search, five sites, Portuguese
 text). Gemini called only `web_fetch` before it stopped, so whether it searches through CLIProxy
 is still open. Check 4 runs again on both paths; this record changes with it.
 

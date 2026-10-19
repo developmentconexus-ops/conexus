@@ -1,6 +1,6 @@
 import type { ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
-import type { BuiltinToolId } from '@mastra/core/agent-controller'
+import type { BuiltinToolId, PermissionRules, ToolCategory } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
 import { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -42,6 +42,19 @@ const BUILTIN_TOOLS: BuiltinToolId[] = [
   'task_check',
   'subagent',
 ]
+
+// The Builder's own tools only read; `recall` is Mastra memory's, added by `retrieval: true`.
+const READ_TOOLS = new Set(['web_fetch', 'web_search', 'recall'])
+// The controller asks before any tool it has no rule for and parks the turn on the answer, and no
+// screen answers: every category has a rule, and what is not `read` is denied.
+const PERMISSION_RULES: PermissionRules = {
+  categories: { read: 'allow', edit: 'deny', execute: 'deny', mcp: 'deny', other: 'deny' },
+  tools: {},
+}
+
+function toolCategory(toolName: string): ToolCategory {
+  return READ_TOOLS.has(toolName) ? 'read' : 'other'
+}
 
 function isRouterId(modelId: string): modelId is `${string}/${string}` {
   return modelId.includes('/')
@@ -129,9 +142,8 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     agent,
     modes: [{ id: CONVERSATION_MODE }],
     disableBuiltinTools: BUILTIN_TOOLS,
-    // The controller asks the person before every tool by default and parks the turn on the
-    // answer; the Builder's tools are its own and no screen asks, so none waits.
-    initialState: { yolo: true },
+    toolCategoryResolver: toolCategory,
+    initialState: { permissionRules: PERMISSION_RULES },
   })
   const mastra = new Mastra({
     logger: new BuilderLogger(deps.log),

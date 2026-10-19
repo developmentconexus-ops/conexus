@@ -8,7 +8,7 @@ import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { conversing, KEY, sent, started, streamOf } from './test-conversation.ts'
+import { approvalsOf, conversing, KEY, sent, started, streamOf } from './test-conversation.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
@@ -138,6 +138,19 @@ test('um modelo fora dos quatro fornecedores de busca: só `web_fetch`; nos quat
   )
 })
 
+test('as ferramentas de leitura do Builder rodam sem pedir; qualquer outra é negada, nenhuma espera por aprovação', async (t) => {
+  const { hub } = await conversing(t, () => ({ kind: 'text', text: 'Resposta' }))
+  const names = ['web_fetch', 'web_search', 'recall', 'write_file', 'execute_command', 'mcp_tool']
+  assert.deepEqual(await approvalsOf(t, hub, names), {
+    web_fetch: 'allow',
+    web_search: 'allow',
+    recall: 'allow',
+    write_file: 'deny',
+    execute_command: 'deny',
+    mcp_tool: 'deny',
+  })
+})
+
 /** A server on 127.0.0.1 that counts what reaches it and answers `reply`. */
 async function served(
   t: TestContext,
@@ -222,6 +235,7 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   assert.equal((await sent(hub, ana, url, 'Abra estas páginas')).statusCode, 202)
   const events = await stream.turn()
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.ok(!events.some((event) => event.type === 'failure'))
   assert.equal(textOf(events), 'Não consegui abrir.')
   const page = { type: 'page', url: 'http://site.example.test/cardapio', title: null }
   assert.deepEqual(
