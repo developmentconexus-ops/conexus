@@ -32,7 +32,6 @@ test('envio: dono e administrador 201, no ar; membro, outra empresa, Projeto mar
   assert.deepEqual(hub.cloudflare.workers(), [`v-${version.id}`])
   const upload = hub.cloudflare.upload(`v-${version.id}`)
   assert.deepEqual(upload?.tags, [`company-${companyId}`, `project-${projectId}`])
-  assert.equal(upload?.cpuMs, 50)
   const [app] = await hub.test.asOwner(
     'select live_version_id, sending_version_id, database_ready from apps.app',
   )

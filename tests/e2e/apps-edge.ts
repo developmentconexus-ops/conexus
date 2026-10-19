@@ -12,6 +12,7 @@ import example from '../../apps/edge/example/src/index.ts'
 import type { DbProps } from '../../apps/edge/src/db.ts'
 import { serveDispatch } from '../../apps/edge/src/dispatch.ts'
 import type { DatabaseUrl } from '../../apps/server/src/platform/database.ts'
+import { threads } from './app-threads.ts'
 
 // The apps' side of the journey without Cloudflare: its API of memory at its HTTP door, the
 // namespace running the Workers uploaded there, and each version's `db` on the test server as
@@ -66,19 +67,51 @@ async function openSession(memory: Memory, request: Request): Promise<ApiReply> 
   return [200, { result, success: true, errors: null, messages: null }]
 }
 
+/**
+ * Cloudflare runs a script's top level on upload and refuses one that throws, in the shape record
+ * 0047 saw: 400, the four envelope fields, code 10021 with the exception, and nothing stored.
+ */
+async function startsUp(main: Buffer): Promise<ApiReply | undefined> {
+  const folder = mkdtempSync(join(tmpdir(), 'conexus-startup-'))
+  try {
+    const file = join(folder, 'index.mjs')
+    writeFileSync(file, main)
+    await import(pathToFileURL(file).href)
+    return undefined
+  } catch (error) {
+    const message = `Uncaught Error: ${Object(error).message}\n  at index.js\n`
+    const documentation_url =
+      'https://developers.cloudflare.com/workers/observability/errors/#validation-errors-10021'
+    return [
+      400,
+      {
+        success: false,
+        errors: [{ code: 10_021, message, documentation_url }],
+        messages: [],
+        result: null,
+      },
+    ]
+  } finally {
+    rmSync(folder, { recursive: true, force: true })
+  }
+}
+
 /** The script's module and metadata; its static files are the ones its completion token names. */
 async function putScript(memory: Memory, request: Request, worker: string): Promise<ApiReply> {
   const form = await request.formData()
   const metadata = JSON.parse(String(await Object(form.get('metadata')).text()))
   const main = form.get(metadata.main_module)
   assert.ok(main instanceof File)
+  const bytes = Buffer.from(await main.arrayBuffer())
+  const refused = await startsUp(bytes)
+  if (refused !== undefined) return refused
   const assets = new Map<string, Asset>()
   for (const [path, { hash }] of Object.entries(memory.sessions.get(metadata.assets?.jwt) ?? {})) {
     const blob = memory.blobs.get(hash)
     assert.ok(blob, `the asset ${path} was never uploaded`)
     assets.set(path, blob)
   }
-  memory.workers.set(worker, { main: Buffer.from(await main.arrayBuffer()), assets })
+  memory.workers.set(worker, { main: bytes, assets })
   return ok({ id: worker })
 }
 
@@ -184,28 +217,13 @@ export function dbExport(owner: DatabaseUrl, key: string) {
   }
 }
 
-/** Runs a Worker's module as the namespace would, each one imported once from its own file. */
-function modules(t: TestContext) {
-  const folder = mkdtempSync(join(tmpdir(), 'conexus-workers-'))
-  t.after(() => rmSync(folder, { recursive: true, force: true }))
-  const loaded = new Map<string, Promise<{ default: typeof example }>>()
-  return (name: string, main: Buffer) => {
-    let module = loaded.get(name)
-    if (module === undefined) {
-      const file = join(folder, `${name}.mjs`)
-      writeFileSync(file, main)
-      module = import(pathToFileURL(file).href)
-      loaded.set(name, module)
-    }
-    return module
-  }
-}
+type Props = Parameters<typeof example.fetch>[2]['props']
 
 /** The namespace: the example, or the uploaded Worker with its static files served first. */
 export function namespace(t: TestContext, cloudflare: Cloudflare) {
-  const load = modules(t)
+  const serve = threads(t)
   return {
-    get(name: string, args: { props: Parameters<typeof example.fetch>[2]['props'] }) {
+    get(name: string, args: { props: Props }, options: { limits: { cpuMs: number } }) {
       if (name === 'conexus-example') {
         return { fetch: async (request: Request) => example.fetch(request, {}, args), connect }
       }
@@ -220,7 +238,12 @@ export function namespace(t: TestContext, cloudflare: Cloudflare) {
               headers: { 'content-type': asset.mediaType },
             })
           }
-          return (await load(name, worker.main)).default.fetch(request, {}, args)
+          return serve(
+            name,
+            { main: worker.main, cpuMs: options.limits.cpuMs },
+            request,
+            args.props,
+          )
         },
         connect,
       }

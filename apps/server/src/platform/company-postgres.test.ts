@@ -9,7 +9,12 @@ import { neonConfig } from '@neondatabase/serverless'
 import pg from 'pg'
 import { createCompanyPostgres, neonTransport } from './company-postgres.ts'
 import { testAppsConfig } from './test-cloudflare.ts'
-import { appTablesOf, createCompanyDatabase, pgTransport } from './test-company-postgres.ts'
+import {
+  appLoginTimeoutsOf,
+  appTablesOf,
+  createCompanyDatabase,
+  pgTransport,
+} from './test-company-postgres.ts'
 import { unreachableDatabaseUrl } from './test-database.ts'
 
 const KEY = testAppsConfig().appLoginKey
@@ -77,9 +82,10 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
       rolbypassrls: false,
     },
   ])
-  assert.deepEqual(await asLogin(owner, runLogin, 'show statement_timeout'), [
-    { statement_timeout: '5s' },
-  ])
+  assert.deepEqual(await appLoginTimeoutsOf(owner, id), {
+    run: ['statement_timeout=5000', 'transaction_timeout=6000'],
+    migrate: [],
+  })
   const migrations = [MIGRATION]
   assert.deepEqual(await postgres.migrate(owner, id, migrations), { kind: 'DONE', applied: 1 })
   assert.deepEqual(await postgres.migrate(owner, id, migrations), { kind: 'DONE', applied: 0 })
@@ -109,6 +115,17 @@ test('banco do app: logins por SQL, nenhum superusuário; repetido após corte a
   const later = [MIGRATION, { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] }]
   assert.deepEqual(await postgres.migrate(owner, id, later), { kind: 'DONE', applied: 1 })
   assert.deepEqual(await postgres.migrate(owner, id, migrations), { kind: 'DONE', applied: 0 })
+})
+
+test('banco do app: o login de execução corta uma instrução de 6 s com 57014; o de migração não tem prazo', async (t) => {
+  const owner = await createCompanyDatabase(t)
+  const id = projectId()
+  assert.equal((await postgres.ensureApp(owner, id)).kind, 'DONE')
+  const { runLogin, migrateLogin } = appLogin(id)
+  assert.deepEqual(await asLogin(owner, runLogin, 'select pg_sleep(6)'), { refused: '57014' })
+  assert.deepEqual(await asLogin(owner, migrateLogin, 'show statement_timeout'), [
+    { statement_timeout: '0' },
+  ])
 })
 
 test('banco do app: os logins de um app não leem nem gravam no esquema de outro', async (t) => {

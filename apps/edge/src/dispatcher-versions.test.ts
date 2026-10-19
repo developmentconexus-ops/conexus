@@ -17,7 +17,7 @@ test('sem versão no ar: o exemplo, com props só caller, sem o que mais o Hub d
   const [call] = door.appCalls
   assert.equal(call?.name, 'conexus-example')
   assert.deepEqual(call?.args, { props: { caller: CALLER } })
-  assert.deepEqual(call?.options, { outbound: {} })
+  assert.deepEqual(call?.options, { outbound: {}, limits: { subRequests: 50, cpuMs: 50 } })
   assert.deepEqual(door.dbBindings, [])
 })
 
@@ -28,7 +28,10 @@ test('versão no ar: o Worker dela, com props só caller e db, e o db preso ao l
   const [call] = door.appCalls
   assert.equal(call?.name, VERSION_CALL.version.worker)
   assert.deepEqual(Object.keys(call?.args.props ?? {}), ['caller', 'db'])
-  assert.deepEqual(door.dbBindings, [VERSION_CALL.database])
+  assert.deepEqual(
+    door.dbBindings.map(({ endsAt: _endsAt, ...login }) => login),
+    [VERSION_CALL.database],
+  )
 })
 
 test('versão no ar cujo Worker sumiu: a 502 da etapa 8, nunca o exemplo', async () => {
