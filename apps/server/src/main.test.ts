@@ -40,6 +40,7 @@ async function hub(webRoot?: string) {
     projects,
     operations,
     apps: door,
+    modelAccounts,
   } = subjectsOf({
     database: shared.database,
     config,
@@ -53,6 +54,7 @@ async function hub(webRoot?: string) {
     operations,
     projects,
     apps: door,
+    modelAccounts,
     webRoot,
   })
   apps.push(app)

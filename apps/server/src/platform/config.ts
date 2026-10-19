@@ -2,6 +2,8 @@ import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
+import type { SealKeys } from './seal.ts'
+import { parseSealKeys } from './seal.ts'
 import { Secret } from './secret.ts'
 import { readSecretFile } from './secret-file.ts'
 
@@ -124,7 +126,24 @@ export type Config = BaseConfig & {
   cloudflareAccountId: CloudflareName
   appsNamespace: CloudflareName
   cloudflareAppsToken: CloudflareAppsToken
+  sealKeys: SealKeys
+  cliProxy: CliProxy
 }
+/**
+ * CLIProxyAPI's program for Google's sign-in, the sha256 it must have to run, and how long it keeps
+ * a login open (decision 0049).
+ */
+export type CliProxy = Readonly<{ binary: string; sha256: string; loginSeconds: number }>
+
+// v8.0.33 (2422c6b0), as hub.Dockerfile installs it and the step's live proof ran it.
+const CLIPROXY: CliProxy = {
+  binary: '/opt/cliproxy/cli-proxy-api',
+  sha256: 'e78e2ea753a1f6f020b3f9558081a0f433968b86e500fcb8c556365ee13c90dc',
+  // An Antigravity login fails after five minutes
+  // (internal/api/handlers/management/auth_files_provider_oauth.go:402).
+  loginSeconds: 300,
+}
+
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
 const Port = z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(65535))
@@ -151,6 +170,7 @@ const ServeEnvironment = z.object({
   HUB_CLOUDFLARE_ACCOUNT_ID: CloudflareName,
   HUB_APPS_NAMESPACE: CloudflareName,
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: z.string().min(1),
+  HUB_SEAL_KEYS_FILE: z.string().min(1),
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -233,6 +253,8 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
       serve.HUB_CLOUDFLARE_APPS_TOKEN_FILE,
       CloudflareAppsToken.parse,
     ),
+    sealKeys: readSecret('HUB_SEAL_KEYS_FILE', serve.HUB_SEAL_KEYS_FILE, parseSealKeys),
+    cliProxy: CLIPROXY,
   }
 }
 

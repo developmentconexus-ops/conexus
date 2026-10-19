@@ -16,13 +16,24 @@ COPY apps/web apps/web
 COPY apps/server apps/server
 RUN npm run build -w @conexus/web && npm run build -w @conexus/server
 
+# Google's sign-in program (decision 0049): the release by its sha256, then the binary by its own,
+# the one platform/config.ts pins.
+FROM ${NODE_IMAGE} AS cliproxy
+ADD --checksum=sha256:16c40b08ace32c5b8956d61385d9d41c312b744412fd10cb547139809cf9e49b \
+  https://github.com/router-for-me/CLIProxyAPI/releases/download/v8.0.33/CLIProxyAPI_8.0.33_linux_amd64.tar.gz /tmp/cliproxy.tar.gz
+RUN mkdir /opt/cliproxy \
+  && tar -xzf /tmp/cliproxy.tar.gz -C /opt/cliproxy cli-proxy-api LICENSE \
+  && echo "e78e2ea753a1f6f020b3f9558081a0f433968b86e500fcb8c556365ee13c90dc  /opt/cliproxy/cli-proxy-api" | sha256sum -c -
+
 FROM ${NODE_IMAGE}
 ARG CONEXUS_VERSION
-LABEL conexus.migrate=1
+LABEL conexus.migrate=1 conexus.reseal=1
 ENV CONEXUS_VERSION=${CONEXUS_VERSION} \
     HUB_PORT=8080 \
     HUB_EDGE_PORT=8081 \
     LOG_LEVEL=info
+# CLIProxyAPI is a Go binary and reads the system roots; node:24-slim ships none (Node carries its own bundle).
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/server/package.json apps/server/
@@ -36,6 +47,7 @@ COPY packages/hub-api packages/hub-api
 COPY packages/app-contract packages/app-contract
 COPY apps/server apps/server
 COPY --from=build /app/apps/web/dist apps/web/dist
+COPY --from=cliproxy /opt/cliproxy /opt/cliproxy
 COPY --from=build /app/apps/server/src/hub/identity/invitation-render.mjs apps/server/src/hub/identity/invitation-render.mjs
 USER node
 EXPOSE 8080

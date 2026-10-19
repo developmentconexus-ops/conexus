@@ -90,7 +90,7 @@ export async function liveHub(
   const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const { projects, operations, apps } = subjectsOf({
+  const { projects, operations, apps, modelAccounts } = subjectsOf({
     database: database.database,
     config,
     identity,
@@ -108,6 +108,7 @@ export async function liveHub(
     operations,
     projects,
     apps,
+    modelAccounts,
     webRoot: WEB_ROOT,
   })
   t.after(() => app.close())

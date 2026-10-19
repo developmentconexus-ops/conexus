@@ -25,6 +25,8 @@ import {
 import type { Database } from './database.ts'
 import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
+import { parseSealKeys } from './seal.ts'
+import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
   NO_CLOUDFLARE_SERVER,
   TEST_ACCOUNT,
@@ -106,7 +108,14 @@ export function testConfig(
     mailToken: MailToken.parse(randomBytes(16).toString('hex')),
     ...testNeon(neonApiUrl),
     ...testAppsConfig(cloudflareApiUrl),
+    sealKeys: parseSealKeys(testSealKeyLine()),
+    cliProxy: testCliProxy(),
   }
+}
+
+/** One fresh key line of the installation's seal file, as `openssl rand -base64 32` gives it. */
+export function testSealKeyLine(id = 'k1'): string {
+  return `${id}:${randomBytes(32).toString('base64')}`
 }
 
 export type Lifetime = { after(cleanup: () => Promise<void> | void): void }
@@ -318,5 +327,6 @@ export function serveEnvironment(
     HUB_CLOUDFLARE_ACCOUNT_ID: TEST_ACCOUNT,
     HUB_APPS_NAMESPACE: TEST_NAMESPACE,
     HUB_CLOUDFLARE_APPS_TOKEN_FILE: keyFile(t, 'hub_apps_token', randomBytes(16).toString('hex')),
+    HUB_SEAL_KEYS_FILE: keyFile(t, 'hub_seal_keys', testSealKeyLine()),
   }
 }

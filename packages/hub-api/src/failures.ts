@@ -3,6 +3,7 @@ import { APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
 import { CAPACITY } from './capacity.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
+import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
 import { PEOPLE_FAILURES } from './people-failures.ts'
 import { PROJECT_FAILURES } from './project-failures.ts'
 
@@ -214,6 +215,7 @@ export const FAILURES = {
   ...PROJECT_FAILURES,
   ...APP_FAILURES,
   ...APP_VERSION_FAILURES,
+  ...MODEL_ACCOUNT_FAILURES,
 } as const satisfies Record<string, FailureRow>
 
 export type FailureCode = keyof typeof FAILURES

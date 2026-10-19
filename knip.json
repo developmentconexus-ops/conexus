@@ -6,7 +6,8 @@
       "ignoreBinaries": ["openssl"]
     },
     "apps/server": {
-      "entry": ["src/**/*.check.ts"]
+      "entry": ["src/**/*.check.ts"],
+      "ignoreBinaries": ["setpriv"]
     },
     "apps/edge": {
       "ignoreDependencies": ["cloudflare"]

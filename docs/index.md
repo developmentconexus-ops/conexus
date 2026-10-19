@@ -5,10 +5,10 @@ One line per document and its subject; `check-docs` refuses a document without o
 ## Overview
 
 - [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
-- [README.md](../README.md): what this repository is, for a person, in Portuguese.
-- [roadmap.md](roadmap.md): the steps in order, the one in construction, each approval and use line.
+- [README.md](../README.md): this repository, for a person, in Portuguese.
+- [roadmap.md](roadmap.md): the steps in order, the one in construction, approvals, use lines.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
-- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub.
+- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
@@ -17,7 +17,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [steps/](steps/): the card in construction; empty between steps.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
-- [reference/checklist.md](reference/checklist.md): questions only a reader answers.
+- [reference/checklist.md](reference/checklist.md): questions for readers.
 
 ## Guides: the rules
 
@@ -60,7 +60,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0027](decisions/0027-mastra-builder-engine.md) Mastra engine.
 - [0028](decisions/0028-e2b-build-machine.md) E2B.
 - [0029](decisions/0029-git-on-server-disk.md) Git on disk.
-- [0030](decisions/0030-model-accounts-company-and-person.md) model accounts.
+- [0030](decisions/0030-model-accounts-company-and-person.md) old accounts.
 - [0031](decisions/0031-connectors-single-executor.md) connectors.
 - [0032](decisions/0032-data-leaving-brazil-told.md) data leaving Brazil.
 - [0033](decisions/0033-own-visual-pieces.md) own visual pieces.
@@ -79,6 +79,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0046](decisions/0046-version-worker-first-migrations-in-one-transaction.md) Worker first.
 - [0047](decisions/0047-one-call-limits-in-the-dispatcher.md) call limits.
 - [0048](decisions/0048-company-neon-project-named-by-nickname-and-id.md) Neon name.
+- [0049](decisions/0049-model-accounts-keys-sign-ins-queues.md) accounts.
 
 ## Skills
 

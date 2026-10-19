@@ -1,6 +1,7 @@
-import type { CompanyId, InvitationId } from '@conexus/hub-api'
+import type { CompanyId, InvitationId, Member } from '@conexus/hub-api'
 import {
   acceptInvitation,
+  CAPACITY,
   cancelInvitation,
   changeMemberRole,
   createInvitation,
@@ -40,6 +41,26 @@ export function companyQuery(companyId: CompanyId) {
 }
 export function membersQuery(companyId: CompanyId, page: string | undefined) {
   return hubQuery(listMembers, { params: { companyId }, query: { page } })
+}
+/**
+ * Every member of a company, page after page up to the company's capacity, for a screen that
+ * names or picks people and cannot stop at the first page.
+ */
+export function everyMemberQuery(companyId: CompanyId) {
+  const first = membersQuery(companyId, undefined)
+  return {
+    queryKey: [...hubQueryPrefix(listMembers, { companyId }), 'every'],
+    queryFn: async (context: Parameters<typeof first.queryFn>[0]) => {
+      const members: Member[] = []
+      let page: string | undefined
+      do {
+        const read = await membersQuery(companyId, page).queryFn(context)
+        members.push(...read.members)
+        page = read.next.kind === 'MORE' ? read.next.page : undefined
+      } while (page !== undefined && members.length < CAPACITY.members)
+      return members
+    },
+  }
 }
 export function invitationsQuery(companyId: CompanyId, page: string | undefined) {
   return hubQuery(listInvitations, { params: { companyId }, query: { page } })

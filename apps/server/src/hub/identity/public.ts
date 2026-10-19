@@ -29,8 +29,9 @@ import { createSessionReader, liveHubSession, personNameOf } from './session.ts'
 export { createAuth } from './auth.ts'
 export { passwordLinkText } from './messages.ts'
 // The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
-// foreign keys (code C8), and a person's name, for the version that person sent.
-export { ADMINISTRATOR, personNameColumn, policy, session } from './tables.ts'
+// and the model accounts' foreign keys (code C8), and a person's name, for the version that
+// person sent.
+export { ADMINISTRATOR, company, member, personNameColumn, policy, session } from './tables.ts'
 export type { OperatorProof }
 export type Identity = ReturnType<typeof createIdentity>
 export type IdentityPorts = Identity['ports']

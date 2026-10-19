@@ -199,9 +199,9 @@ One project per company and one login per app, so PostgreSQL refuses a cross rea
 without secret or network [0018]. The rows Mastra writes carry the company, built by the server,
 never by the browser.
 
-**Model accounts** [0030]. The credential is sealed in the Builder's space and opened only inside
-the program. In a conversation the person's account comes before the company's ([security
-S34](guides/security.md)).
+**Model accounts** [0049]. One queue per provider for the company and for each person; the
+credential is sealed with the installation key in the Builder's space and opened only inside the
+program.
 
 **Work that runs alone.** Scheduled jobs run on timers in the program, with a lease row naming the
 copy of the program that owns them. Basis: implemented so; accepted because queues and Redis serve
@@ -221,7 +221,7 @@ with it.
 
 | Risk | What a person would see | Where it is handled |
 | --- | --- | --- |
-| Vendor terms forbid subscription sign-in inside a third-party service | A model account blocked without notice [0030] | Accepted by the founder |
+| Vendor terms forbid subscription sign-in inside a third-party service | A model account blocked, its owner suspended [0049] | Accepted; operators choose kinds |
 | Two batches in one action | The second fails and the first stays [0047] | The Builder's skill, step 13 |
 | The app login key leaks | Its holder enters every app's database [0043] | Rotation in the how-to |
 | CPU limits act in seconds, with tolerance | Many looping apps at once slow others | Step 22 load test |

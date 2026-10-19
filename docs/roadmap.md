@@ -45,8 +45,9 @@ Desenho: `architecture.md`.
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
     Cartão da etapa 10 aprovado em 2026-10-18 (commit 458f5d17473aeb947c009de2b472dabdfebb4748): "oPÇÃO A tirar verificador."; "1. Aprovo"; "1. C porém me explica exemplo caso real, quero entender"
     Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), roteiro pelo firstmate, a pedido do fundador: "1 sim 2. Sim 3. Sim"; "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
-11. **Conta de modelo.** Liga a sua assinatura e a testa.
+11. **Conta de modelo.** Liga chaves de API, assinatura Claude e Google, em filas por fornecedor.
     Cartão da etapa 11 aprovado em 2026-10-19 (commit e5d89abfd62b4441073323f1f780fe79054bfceb): "2. a"; "3 SIM"; "4. sIM"; "sM APROVO E CONFIRMO"
+    Etapa 11 usada em 2026-10-19 em https://hub.conexus.fun (v0.11.0, v0.11.1), roteiro pelo firstmate e fundador: "okay, aguardo"; "Loguei google pela empresa, quer validar?"
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
@@ -56,8 +57,7 @@ Desenho: `architecture.md`.
 18. **Entrar num app.** Convida alguém só para um app, e tira o acesso.
 19. **Ligar o sistema da empresa.** Cadastra a ligação e a testa.
 20. **App com dados da empresa.** Abre um app com dados desse sistema.
-21. **Outras contas.** Liga a do Google, se o login novo funcionar, e a da OpenAI, se os termos
-    confirmarem.
+21. **Outras contas.** Liga a da OpenAI, se os termos confirmarem.
 22. **Ensaio geral.** Restaura tudo junto, pelo procedimento.
 23. **Primeira empresa.** Uma empresa de verdade usa um app.
 24. **Conectores de serviços.** Liga contas de serviços aos agentes e apps (resposta B, 2026-10-18).
@@ -100,7 +100,6 @@ Etapa fechada sai daqui; o uso, na seção 1.
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8 do Builder. O banco dormindo e a restauração dos dois bancos, de novo |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, do sandbox e do Git. Testes 11 e 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |
@@ -110,7 +109,7 @@ Etapa fechada sai daqui; o uso, na seção 1.
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
 | 19 Ligar o sistema | A 11 | Usuário só de leitura (8) | Ficha `connectors` |
 | 20 App com dados | A 18 e a 19 | Nenhuma | A porta do conector, refeita. Como um Worker alcança o Hub |
-| 21 Outras contas | A 12 | Nenhuma | A leitura do proxy do Google e dos termos da OpenAI |
+| 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
 | 22 Ensaio geral | A 20 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 | 24 Conectores de serviços | A 23 | Quem faz o OAuth | O estudo do Mastra Platform e Connect (2026-10-18), só referência, nunca dependência |

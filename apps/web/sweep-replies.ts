@@ -1,4 +1,5 @@
 import {
+  getAccountKinds,
   getClient,
   getCompany,
   getInvitation,
@@ -9,6 +10,8 @@ import {
   listCompanies,
   listInvitations,
   listMembers,
+  listModelAccounts,
+  listModelProviders,
   listProjects,
 } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
@@ -99,6 +102,7 @@ function companyPage(
   return {
     ...SIGNED_IN,
     ...projectsPage(id),
+    ...modelAccountsPage(id, role !== 'member'),
     [`GET /api/companies/${id}`]: ok(getCompany, { company, role, mayInviteAs }),
     [`GET /api/companies/${id}/members`]: ok(listMembers, {
       members: people.map((one) => ({ ...one, mayChangeTo: [...one.mayChangeTo] })),
@@ -107,6 +111,23 @@ function companyPage(
     [`GET /api/companies/${id}/invitations`]: ok(listInvitations, {
       invitations: [LIVE_INVITATION],
       next: { kind: 'END' },
+    }),
+  }
+}
+
+/** The company's model accounts and the providers of their keys, which the rail preloads on focus. */
+function modelAccountsPage(id: string, mayManage: boolean): Replies {
+  return {
+    [`GET /api/companies/${id}/model-accounts`]: ok(listModelAccounts, {
+      company: [],
+      mine: [],
+      order: [],
+      kinds: [],
+      defaultModel: null,
+      mayManage,
+    }),
+    'GET /api/model-providers': ok(listModelProviders, {
+      providers: [{ id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4'] }],
     }),
   }
 }
@@ -222,5 +243,6 @@ export function central(client: 'AWAITING' | 'ACTIVE' | 'DELETING' | 'NONE'): Re
       next: { kind: 'END' },
     }),
     [`GET /api/clients/${CLIENT_ID}`]: ok(getClient, { client: shown }),
+    [`GET /api/clients/${CLIENT_ID}/account-kinds`]: ok(getAccountKinds, { kinds: [] }),
   }
 }

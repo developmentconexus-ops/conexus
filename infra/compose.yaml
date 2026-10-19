@@ -13,6 +13,7 @@ services:
       - hub_neon_api_key
       - hub_app_login_key
       - hub_cloudflare_apps_token
+      - hub_seal_keys
     # HUB_MAIL_API_URL, HUB_MAIL_FROM, HUB_NEON_ORG_ID and HUB_CLOUDFLARE_ACCOUNT_ID: they name
     # accounts, so they stay out of Git.
     env_file: /etc/conexus/hub.env
@@ -32,6 +33,13 @@ services:
       HUB_CLOUDFLARE_API_URL: https://api.cloudflare.com/client/v4
       HUB_CLOUDFLARE_APPS_TOKEN_FILE: /run/secrets/hub_cloudflare_apps_token
       HUB_APPS_NAMESPACE: conexus-apps
+      # The installation's seal keys (security S32, S33): the last line seals, the others only open.
+      HUB_SEAL_KEYS_FILE: /run/secrets/hub_seal_keys
+      # The router's registry is the one bundled in the image, never refreshed (decision 0049).
+      MASTRA_OFFLINE: "1"
+    # A Google sign-in's process keeps its config and login file here, in memory, never on disk (S36).
+    tmpfs:
+      - /tmp:mode=1777,size=64m
     healthcheck:
       test:
         - CMD
@@ -85,3 +93,5 @@ secrets:
     file: /etc/conexus/secrets/hub_app_login_key
   hub_cloudflare_apps_token:
     file: /etc/conexus/secrets/hub_cloudflare_apps_token
+  hub_seal_keys:
+    file: /etc/conexus/secrets/hub_seal_keys

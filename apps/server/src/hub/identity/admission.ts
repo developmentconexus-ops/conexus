@@ -3,7 +3,8 @@ import { OPERATOR_INVITES_AS, Role } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { COMPANY_ROLES, storedAddress } from './auth.ts'
+import { storedAddress } from './auth.ts'
+import { COMPANY_ROLES } from './roles.ts'
 import { company, member, user } from './tables.ts'
 
 const INVITE = { invitation: ['create'] } as const
@@ -13,6 +14,7 @@ const CREATE_PROJECT = { project: ['create'] } as const
 const DELETE_PROJECT = { project: ['delete'] } as const
 const CHOOSE_NICKNAME = { company: ['nickname'] } as const
 const MANAGE_VERSIONS = { appVersion: ['create'] } as const
+const MANAGE_MODEL_ACCOUNTS = { modelAccount: ['manage'] } as const
 type ActionRule = {
   by: 'MEMBER' | 'COMPANY' | 'OPERATOR'
   locks: boolean
@@ -24,6 +26,7 @@ type ActionRule = {
     | typeof DELETE_PROJECT
     | typeof CHOOSE_NICKNAME
     | typeof MANAGE_VERSIONS
+    | typeof MANAGE_MODEL_ACCOUNTS
 }
 
 /**
@@ -44,6 +47,11 @@ const ACTIONS = {
   // putting a version back hold it until they commit.
   readAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: false },
   manageAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: true },
+  // Every member reads the company's model accounts and links, orders and removes their own; only
+  // an owner or an administrator changes the company's (step 11, D4).
+  readModelAccounts: { by: 'MEMBER', statement: undefined, locks: false },
+  manageOwnModelAccounts: { by: 'MEMBER', statement: undefined, locks: true },
+  manageModelAccounts: { by: 'MEMBER', statement: MANAGE_MODEL_ACCOUNTS, locks: true },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },
@@ -54,6 +62,7 @@ const ACTIONS = {
   registerClient: { by: 'OPERATOR', locks: true },
   correctClient: { by: 'OPERATOR', locks: true },
   deleteClient: { by: 'OPERATOR', locks: true },
+  setAccountKinds: { by: 'OPERATOR', locks: true },
 } as const satisfies Record<string, ActionRule>
 
 type Action = keyof typeof ACTIONS
