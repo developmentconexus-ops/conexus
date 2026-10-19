@@ -5,7 +5,8 @@ import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { Database, Scope } from '../../platform/database.ts'
-import { Failure } from '../../platform/failure.ts'
+import type { FailureLog } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../platform/seal.ts'
 import { open } from '../../platform/seal.ts'
 import { contextOf, sealContext } from './accounts.ts'
@@ -17,17 +18,21 @@ import { isRegistryModel } from './providers.ts'
 import { companyModel, modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
 
-/** The process of a Google account that takes its calls on this machine (step 12 U10). */
+/**
+ * The process of a Google account that takes its calls on this machine (step 12 U10); `hold`
+ * keeps it while a call runs and gives back its release.
+ */
 export type GoogleCalls = (
   account: GoogleAccount,
   scope: Scope,
-) => Promise<{ url: string; apiKey: string }>
+) => Promise<{ url: string; apiKey: string; hold: () => () => void }>
 
 export type QueueDeps = {
   database: Database
   identity: IdentityPorts
   sealKeys: SealKeys
   googleCalls: GoogleCalls
+  log: FailureLog
 }
 
 /**
@@ -191,10 +196,11 @@ async function pickedOf(
   }
   const target = { providerId: row.provider, modelId: name }
   if (row.kind === 'google_cliproxy') {
-    const { url, apiKey } = await deps.googleCalls(
+    const { url, apiKey, hold } = await deps.googleCalls(
       { ...row, companyId: turn.companyId, credential },
       scopeOf(turn),
     )
+    turn.held.push(hold())
     return { ...base, model: await callModel({ ...target, url, apiKey }) }
   }
   return { ...base, model: await callModel({ ...target, apiKey: credential.reveal() }) }
@@ -228,7 +234,7 @@ export async function pickAccount(
 /**
  * The provider's refusal kept on the account (study D3, security S34): a limit until its time, a
  * refusal as `refused`, which the account screen shows "Ligue de novo". The same mark twice is the
- * same row.
+ * same row; with the database out, the account goes unmarked and its failure is logged.
  */
 export async function markAccount(
   deps: QueueDeps,
@@ -238,10 +244,17 @@ export async function markAccount(
 ): Promise<void> {
   const set =
     failure.kind === 'limited' ? { limitedUntil: failure.until } : { state: 'refused' as const }
-  await deps.database.command(scopeOf(turn), (tx) =>
-    tx
-      .update(modelAccount)
-      .set(set)
-      .where(and(eq(modelAccount.id, accountId), eq(modelAccount.companyId, turn.companyId))),
-  )
+  try {
+    await deps.database.command(scopeOf(turn), (tx) =>
+      tx
+        .update(modelAccount)
+        .set(set)
+        .where(and(eq(modelAccount.id, accountId), eq(modelAccount.companyId, turn.companyId))),
+    )
+    const code = failure.kind === 'limited' ? 'MODEL_ACCOUNT_LIMITED' : 'MODEL_ACCOUNT_REFUSED'
+    deps.log.info({ companyId: turn.companyId, accountId }, code)
+  } catch (error) {
+    if (!(error instanceof Failure) || error.code !== 'DATABASE_UNAVAILABLE') throw error
+    logFailure(deps.log, error)
+  }
 }

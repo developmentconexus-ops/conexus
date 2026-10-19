@@ -29,11 +29,20 @@ export class Turn {
   modelId: string | undefined
   switched = false
   account: Picked | undefined
+  /** The pick in flight, which every processor asking for the account meanwhile awaits. */
+  picking: Promise<Picked | undefined> | undefined
   outcome: 'exhausted' | 'failed' | undefined
+  /** What the turn's accounts keep open while it runs, such as a CLIProxy process. */
+  readonly held: Array<() => void> = []
 
   constructor(owner: { companyId: CompanyId; personId: PersonId }) {
     this.companyId = owner.companyId
     this.personId = owner.personId
+  }
+
+  /** Lets go of what the turn's accounts kept open, once its run has ended. */
+  end(): void {
+    for (const release of this.held.splice(0)) release()
   }
 }
 

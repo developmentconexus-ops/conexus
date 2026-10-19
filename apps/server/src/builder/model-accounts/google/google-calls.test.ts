@@ -127,7 +127,7 @@ test('uma conta, um processo em 127.0.0.1, chave aleatória, pasta 0700 com o lo
   const [one, two] = [await plant(), await plant()]
   const first = await calls.googleCalls(one, SCOPE)
   const again = await calls.googleCalls(one, SCOPE)
-  assert.deepEqual(again, first)
+  assert.deepEqual([again.url, again.apiKey], [first.url, first.apiKey])
   const other = await calls.googleCalls(two, SCOPE)
   assert.notEqual(other.apiKey, first.apiKey)
   assert.notEqual(other.url, first.url)
@@ -163,6 +163,23 @@ test('10 minutos sem chamada: o processo sai e a pasta some; a chamada seguinte 
   assert.equal(existsSync(run.dir), false)
   await calls.googleCalls(account, SCOPE)
   assert.equal(runsOf(double.control).length, 2)
+})
+
+test('uma chamada mais longa que o tempo parado: o processo fica até ela acabar, e sai depois do tempo parado', async (t) => {
+  const { double, calls, plant } = await setup(t, 400)
+  const account = await plant()
+  const opened = await calls.googleCalls(account, SCOPE)
+  const release = opened.hold()
+  const [run] = runsOf(double.control)
+  assert.ok(run !== undefined)
+  await sleep(900)
+  assert.ok(alive(run.pid), 'a call in flight keeps the process')
+  release()
+  await sleep(250)
+  assert.ok(alive(run.pid), 'the idle time counts from the call end')
+  await sleep(500)
+  assert.equal(alive(run.pid), false)
+  assert.equal(existsSync(run.dir), false)
 })
 
 test('fim do programa: o login renovado volta lacrado à conta, por revisão; sem renovação, a linha fica', async (t) => {

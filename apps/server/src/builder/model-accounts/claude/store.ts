@@ -1,6 +1,7 @@
 import { setTimeout } from 'node:timers/promises'
 import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
 import type { Database, Scope } from '../../../platform/database.ts'
+import type { FailureLog } from '../../../platform/failure.ts'
 import { Failure } from '../../../platform/failure.ts'
 import type { SealKeys } from '../../../platform/seal.ts'
 import { Credential, open, seal } from '../../../platform/seal.ts'
@@ -26,13 +27,17 @@ export type SubscriptionAccount = {
   credential: Credential
 }
 
-type Deps = { database: Database; sealKeys: SealKeys; scope: Scope }
+type Deps = { database: Database; sealKeys: SealKeys; scope: Scope; log: FailureLog }
 
 /** The account's tokens as sealed, with its revision, read again after another refresh. */
 async function reread(deps: Deps, account: SubscriptionAccount) {
   return deps.database.read(deps.scope, async (tx) => {
     const [row] = await tx
-      .select({ revision: modelAccount.revision, refreshUntil: modelAccount.refreshUntil })
+      .select({
+        revision: modelAccount.revision,
+        state: modelAccount.state,
+        refreshUntil: modelAccount.refreshUntil,
+      })
       .from(modelAccount)
       .where(eq(modelAccount.id, account.id))
     const sealed = await tx.execute(
@@ -61,6 +66,7 @@ async function reserve(deps: Deps, account: SubscriptionAccount): Promise<boolea
         and(
           eq(modelAccount.id, account.id),
           eq(modelAccount.revision, account.revision),
+          eq(modelAccount.state, 'ready'),
           or(isNull(modelAccount.refreshUntil), lt(modelAccount.refreshUntil, sql`now()`)),
         ),
       )
@@ -89,10 +95,24 @@ async function store(deps: Deps, account: SubscriptionAccount, tokens: Subscript
 }
 
 /**
+ * A refresh that failed gives the account back, `refused` when Anthropic refused its token (S34),
+ * so the caller waiting for it stops now rather than at the lease's end.
+ */
+async function release(deps: Deps, account: SubscriptionAccount, refused: boolean) {
+  const set = refused ? { refreshUntil: null, state: 'refused' as const } : { refreshUntil: null }
+  await deps.database.command(deps.scope, (tx) =>
+    tx
+      .update(modelAccount)
+      .set(set)
+      .where(and(eq(modelAccount.id, account.id), eq(modelAccount.revision, account.revision))),
+  )
+}
+
+/**
  * The subscription's access token for one call (security S34): the sealed one while it lives;
  * otherwise one refresh, reserved in the database, so two turns call Anthropic once, with no
- * transaction open during the call (data D22). The other caller waits for the reserved one to land.
- * `force` refreshes a token Anthropic refused before the account is called refused.
+ * transaction open during the call (data D22). The other caller waits for the reserved one to land,
+ * or to fail. `force` refreshes a token Anthropic refused before the account is called refused.
  */
 export async function subscriptionAccess(
   deps: Deps,
@@ -107,21 +127,27 @@ export async function subscriptionAccess(
       renewed = await refreshAnthropicTokens(tokens.refresh)
     } catch (error) {
       const refused = error instanceof AnthropicRefusal && (error.status ?? 500) < 500
+      await release(deps, account, refused)
       throw new Failure(refused ? 'MODEL_ACCOUNT_REFUSED' : 'MODEL_ACCOUNT_UNAVAILABLE', {
         details: { provider: account.provider },
         cause: error,
       })
     }
     await store(deps, account, renewed)
+    deps.log.info({ companyId: account.companyId, accountId: account.id }, 'MODEL_TOKEN_REFRESHED')
     return renewed.access
   }
   const deadline = Date.now() + LEASE_MS
-  while (Date.now() < deadline) {
+  for (;;) {
     const now = await reread(deps, account)
     if (now.revision !== account.revision) {
       return Tokens.parse(JSON.parse(now.credential.reveal())).access
     }
+    const details = { provider: account.provider }
+    if (now.state === 'refused') throw new Failure('MODEL_ACCOUNT_REFUSED', { details })
+    const leased = now.refreshUntil !== null && now.refreshUntil.getTime() > Date.now()
+    if (!leased || Date.now() >= deadline)
+      throw new Failure('MODEL_ACCOUNT_UNAVAILABLE', { details })
     await setTimeout(WAIT_STEP_MS)
   }
-  throw new Failure('MODEL_ACCOUNT_UNAVAILABLE', { details: { provider: account.provider } })
 }

@@ -79,10 +79,6 @@ function noAccountModel(modelId: string) {
 
 type Notifier = { writer?: Writer; requestContext?: RequestContext }
 
-/**
- * The account for the turn's next attempt: in its model's queue, then in each next model of the
- * company's automatic switch, with its notice; none left, the notice that the accounts ended.
- */
 /** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
 async function sayRefused(args: Notifier, turn: Turn, next: Picked) {
   for (const label of turn.unsaid.splice(0)) {
@@ -91,13 +87,10 @@ async function sayRefused(args: Notifier, turn: Turn, next: Picked) {
   }
 }
 
-async function choose(deps: QueueDeps, turn: Turn, args: Notifier) {
-  const picked = await chooseAccount(deps, turn, args)
-  if (picked === undefined) turn.unsaid.length = 0
-  else await sayRefused(args, turn, picked)
-  return picked
-}
-
+/**
+ * The account for the turn's next attempt: in its model's queue, then in each next model of the
+ * company's automatic switch, with its notice; none left, the notice that the accounts ended.
+ */
 async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
   const chosen = turn.modelId ?? ''
   const picked = await pickAccount(deps, turn, chosen)
@@ -122,6 +115,24 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
 }
 
 /**
+ * The turn's account, picked once for all who ask meanwhile: the agent's step, its error lane, the
+ * title and the observer await the same pick, so none overwrites another's or opens it twice.
+ */
+function accountOf(deps: QueueDeps, turn: Turn, args: Notifier): Promise<Picked | undefined> {
+  if (turn.account !== undefined || turn.outcome !== undefined) return Promise.resolve(turn.account)
+  turn.picking ??= chooseAccount(deps, turn, args)
+    .then((picked) => {
+      turn.account = picked
+      if (picked === undefined) turn.unsaid.length = 0
+      return picked
+    })
+    .finally(() => {
+      turn.picking = undefined
+    })
+  return turn.picking
+}
+
+/**
  * Input lane only (no `processAPIError`): the runner walks input processors first on an error, and
  * the queue must come after Mastra's retries (Mastra Code, `account-rotation-processor.ts:12-20`).
  * Each attempt gets its account's model; after the automatic switch, the new model reads pages
@@ -135,11 +146,9 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       const turn = turnIn(args.requestContext)
       if (turn === undefined) return {}
       turn.modelId ??= chosenModel(args.requestContext)
-      if (turn.account === undefined && turn.outcome === undefined) {
-        turn.account = await choose(deps, turn, args)
-      }
-      const account = turn.account
+      const account = await accountOf(deps, turn, args)
       if (account === undefined) return { model: await noAccountModel(turn.modelId) }
+      await sayRefused(args, turn, account)
       const result: ProcessInputStepResult = { model: account.model }
       if (turn.switched) {
         result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)
@@ -173,12 +182,14 @@ export function accountQueue(deps: QueueDeps): ErrorProcessor {
       const account = turn?.account
       if (turn === undefined || account === undefined) return { retry: false }
       const failure = callFailureOf(args.error)
+      const fields = { companyId: turn.companyId, accountId: account.id, failure: failure.kind }
+      deps.log.info(fields, 'MODEL_CALL_REFUSED')
       if (failure.kind === 'unknown') {
         turn.outcome = 'failed'
         return { retry: false }
       }
       const resubscribe = failure.kind === 'refused' && account.kind === 'claude_subscription'
-      // A first refusal of a subscription refreshes it; a refused refresh is said by `choose`.
+      // A first refusal of a subscription refreshes it; a refused refresh is said by `sayRefused`.
       const refreshing = resubscribe && !turn.refreshed.has(account.id)
       if (refreshing) {
         turn.refreshed.add(account.id)
@@ -197,9 +208,10 @@ export function accountQueue(deps: QueueDeps): ErrorProcessor {
         )
         return { retry: false }
       }
-      const next = await choose(deps, turn, args)
-      turn.account = next
+      turn.account = undefined
+      const next = await accountOf(deps, turn, args)
       if (next === undefined) return { retry: false }
+      await sayRefused(args, turn, next)
       if (!refreshing && next.modelId === account.modelId && next.id !== account.id) {
         await notify(
           args,
@@ -214,15 +226,16 @@ export function accountQueue(deps: QueueDeps): ErrorProcessor {
 
 /**
  * The model of Mastra's own calls in a turn, the title's and the observer's: the turn's account,
- * or the queue's next one when the observer runs before the queue (`agent.ts:2392-2404`).
+ * the pick in flight, or the queue's next one when the observer runs before the queue
+ * (`agent.ts:2392-2404`).
  */
 export function accountModel(deps: QueueDeps) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
     const turn = turnIn(requestContext)
     if (turn === undefined) return noAccountModel('')
     turn.modelId ??= chosenModel(requestContext)
-    turn.account ??= await pickAccount(deps, turn, turn.modelId)
-    return turn.account?.model ?? noAccountModel(turn.modelId)
+    const account = await accountOf(deps, turn, { requestContext })
+    return account?.model ?? noAccountModel(turn.modelId)
   }
 }
 

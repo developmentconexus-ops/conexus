@@ -250,3 +250,24 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   const states = await f.states()
   assert.equal(states['Conta 11']?.state, 'ready')
 })
+
+test('banco fora ao marcar o limite: a conta fica sem marca, o código vai ao log e a próxima assume', async (t) => {
+  const f = await fleet(t, { 'Time 1': { kind: 'refuse', status: 429 } })
+  await f.add('Dois')
+  await f.hub.test.asOwner(`
+    create function builder.refuse_mark() returns trigger language plpgsql as $$
+      begin raise exception using errcode = '57014'; end $$;
+    create trigger refuse_mark before update on builder.model_account for each row
+      when (new.limited_until is distinct from old.limited_until or new.state = 'refused')
+      execute function builder.refuse_mark()`)
+  const { events } = await f.ask()
+  assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
+  assert.match(
+    noticesOf(events)[0] ?? '',
+    /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/,
+  )
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal((await f.states())['Time 1']?.limitedUntil, null)
+  const logged = f.lines.filter((line) => line.message === 'DATABASE_UNAVAILABLE')
+  assert.equal(logged.length, 1, JSON.stringify(f.lines.map((line) => line.message)))
+})
