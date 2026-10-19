@@ -61,6 +61,12 @@ function toolsOf(modelId: string): ToolsInput {
   return tools
 }
 
+/**
+ * Each model call's budget (code C57): a provider that sends nothing for a minute, or holds one
+ * call ten minutes, fails the call instead of holding the turn and the shutdown's drain.
+ */
+const MODEL_TIMEOUT = { firstChunkMs: 60_000, stepMs: 600_000 }
+
 /** The owner Mastra keeps a conversation under: the company with the person (criterion 8). */
 export function memoryOwner(owner: { companyId: string; personId: string }): string {
   return `company:${owner.companyId}:person:${owner.personId}`
@@ -74,7 +80,8 @@ export function memoryOwner(owner: { companyId: string; personId: string }): str
 export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: FailureLog }) {
   const storage = createMastraStorage(deps.pool)
   const model = accountModel(deps.queue)
-  const failSoft = { model, maxRetries: 0, failurePolicy: 'continue' as const }
+  const modelSettings = { timeout: MODEL_TIMEOUT }
+  const failSoft = { model, modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
   const memory = new Memory({
     storage,
     options: {
@@ -112,6 +119,7 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     errorProcessors: accountErrorProcessors(deps.queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,
+    defaultOptions: { modelSettings },
     memory,
   })
   const controller = new AgentController({
