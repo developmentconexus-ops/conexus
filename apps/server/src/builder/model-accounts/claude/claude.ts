@@ -1,24 +1,21 @@
 import { ProviderId } from '@conexus/hub-api'
-import {
-  completeAnthropicLogin,
-  startAnthropicLogin,
-} from '@mastra/code-sdk/auth/providers/anthropic'
 import { Failure } from '../../../platform/failure.ts'
 import { Credential } from '../../../platform/seal.ts'
 import type { SignInFlow } from '../sign-ins.ts'
+import { AnthropicRefusal, completeAnthropicLogin, startAnthropicLogin } from './anthropic-login.ts'
 
-// The trade's own refusal names the vendor's status; 5xx is the vendor down, not the code wrong.
-const EXCHANGE_STATUS = /^Token exchange failed: (\d{3})$/
+// A wrong, used or late code is the person's to fix; a 5xx, no answer or a malformed reply is the
+// vendor down (502).
+// How long the Hub keeps a started Claude sign-in's verifier for its code (decision 0049).
+const CODE_SECONDS = 600
 
 function failureOf(error: unknown): Failure {
-  const status = error instanceof Error ? EXCHANGE_STATUS.exec(error.message)?.[1] : undefined
-  const unreachable =
-    error instanceof TypeError ||
-    (error instanceof DOMException && ['TimeoutError', 'AbortError'].includes(error.name)) ||
-    (status !== undefined && Number(status) >= 500)
-  return unreachable
-    ? new Failure('MODEL_ACCOUNT_UNAVAILABLE', { details: { provider: 'anthropic' }, cause: error })
-    : new Failure('MODEL_ACCOUNT_REFUSED', { details: { provider: 'anthropic' }, cause: error })
+  const refused =
+    error instanceof AnthropicRefusal && (error.status === undefined || error.status < 500)
+  const details = { provider: 'anthropic' }
+  return refused
+    ? new Failure('MODEL_ACCOUNT_REFUSED', { details, cause: error })
+    : new Failure('MODEL_ACCOUNT_UNAVAILABLE', { details, cause: error })
 }
 
 /**
@@ -28,8 +25,9 @@ function failureOf(error: unknown): Failure {
 export function claudeSignIn(): SignInFlow {
   return {
     provider: ProviderId.parse('anthropic'),
+    seconds: CODE_SECONDS,
     async start() {
-      const { url, verifier } = await startAnthropicLogin()
+      const { url, verifier } = startAnthropicLogin()
       return { url, pending: Credential.parse(verifier) }
     },
     async complete(pending, code) {

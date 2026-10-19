@@ -20,6 +20,11 @@ export function testCliProxy(): Double {
   const double = join(import.meta.dirname, 'test-cliproxy.ts')
   const text = `#!/bin/sh\nexec "${process.execPath}" "${double}" --control "${dir}" "$@"\n`
   writeFileSync(binary, text, { mode: 0o700 })
-  cliProxyDouble = { binary, control: dir, sha256: createHash('sha256').update(text).digest('hex') }
+  cliProxyDouble = {
+    binary,
+    control: dir,
+    loginSeconds: 300,
+    sha256: createHash('sha256').update(text).digest('hex'),
+  }
   return cliProxyDouble
 }

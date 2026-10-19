@@ -3,6 +3,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
 import {
   ANA_OWNER,
   codeOf,
@@ -24,8 +25,8 @@ function alive(pid: number): boolean {
   }
 }
 
-async function google(t: TestContext) {
-  const hub = await hubWithLog(t)
+async function google(t: TestContext, change?: Parameters<typeof hubWithLog>[1]) {
+  const hub = await hubWithLog(t, change)
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
   await hub.test.asOwner(
@@ -99,6 +100,20 @@ test('state errado: 410 e o processo para; tarde: 410; login recusado: 422 e o p
   assert.equal(alive(second.pid), false)
   assert.equal(existsSync(second.dir), false)
   assert.deepEqual(await hub.test.asOwner(`select id from builder.model_account`), [])
+})
+
+test('entrada abandonada: o processo para quando a janela do login acaba, e a pasta vai com ele', async (t) => {
+  const { start, complete } = await google(t, (config) => ({
+    ...config,
+    cliProxy: { ...config.cliProxy, loginSeconds: 1 },
+  }))
+  const started = await start()
+  assert.ok(alive(started.pid))
+  await sleep(2_500)
+  assert.equal(alive(started.pid), false)
+  assert.equal(existsSync(started.dir), false)
+  const late = await complete(started.url, started.state)
+  assert.deepEqual([late.statusCode, codeOf(late)], [410, 'MODEL_ACCOUNT_SIGN_IN_EXPIRED'])
 })
 
 test('binário diferente do sha256 fixado: não inicia', async (t) => {

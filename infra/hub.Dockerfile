@@ -27,7 +27,7 @@ RUN mkdir /opt/cliproxy \
 
 FROM ${NODE_IMAGE}
 ARG CONEXUS_VERSION
-LABEL conexus.migrate=1
+LABEL conexus.migrate=1 conexus.reseal=1
 ENV CONEXUS_VERSION=${CONEXUS_VERSION} \
     HUB_PORT=8080 \
     HUB_EDGE_PORT=8081 \

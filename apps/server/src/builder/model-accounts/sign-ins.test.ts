@@ -55,7 +55,7 @@ test('tipo desligado: start e complete dão 422 MODEL_ACCOUNT_KIND_OFF, na fila 
   assert.equal((await hub.test.asOwner(`select id from builder.model_account_sign_in`)).length, 2)
 })
 
-test('entrar: só dono e administrador pela empresa (404), o nome é conferido, e o Google ainda não tem processo', async (t) => {
+test('entrar: só dono e administrador pela empresa (404), o nome é conferido', async (t) => {
   const { hub, ana, companyId } = await companyOn(t)
   const bruno = await memberOn(hub, companyId, BRUNO, 'admin')
   const carla = await memberOn(hub, companyId, CARLA, 'member')

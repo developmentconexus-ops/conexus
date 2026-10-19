@@ -100,7 +100,6 @@ export {
   ProviderId,
   ProviderOrder,
   removeModelAccount,
-  SIGN_IN_SECONDS,
   SignInId,
   SignInKind,
   setAccountKinds,

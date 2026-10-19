@@ -105,3 +105,28 @@ test('contas de modelo: o papel da empresa recebe 42501 ao pedir sealed; a funç
   )
   assert.deepEqual(companies.rows, [{ ids: [A, B] }])
 })
+
+test('contas de modelo: as entradas e as atribuições seguem a política de linha da própria tabela', async (t) => {
+  const { database, asOwner } = await createTestDatabase(t)
+  await asOwner(`${SEED}
+    insert into builder.model_account_assignee(account_id, company_id, person_id) values
+      ('${ACCOUNT_A}', '${A}', 'person-a');
+    insert into builder.model_account_sign_in(id, company_id, person_id, owner, kind, label, sealed,
+      key_id, expires_at) values
+      ('00000000-0000-4000-8000-0000000000e1', '${A}', 'person-a', 'me', 'claude_subscription',
+      'Assinatura', '\\x04', 'k1', now() + interval '5 minutes');`)
+  function run(companyId: CompanyId, personId: PersonId, statement: ReturnType<typeof sql>) {
+    return database.command({ kind: 'COMPANY', companyId, personId }, (tx) => tx.execute(statement))
+  }
+  const signIns = sql`select count(*)::int as n from builder.model_account_sign_in`
+  const assignees = sql`select count(*)::int as n from builder.model_account_assignee`
+  assert.deepEqual((await run(B, BRUNO, signIns)).rows, [{ n: 0 }])
+  assert.deepEqual((await run(B, BRUNO, assignees)).rows, [{ n: 0 }])
+  assert.deepEqual((await run(A, BRUNO, signIns)).rows, [{ n: 0 }])
+  const taken = await run(A, BRUNO, sql`delete from builder.model_account_sign_in returning id`)
+  assert.deepEqual(taken.rows, [])
+  assert.deepEqual((await run(A, ANA, signIns)).rows, [{ n: 1 }])
+  assert.deepEqual((await run(A, BRUNO, assignees)).rows, [{ n: 1 }])
+  await run(B, BRUNO, sql`delete from builder.model_account_assignee`)
+  assert.deepEqual((await run(A, ANA, assignees)).rows, [{ n: 1 }])
+})

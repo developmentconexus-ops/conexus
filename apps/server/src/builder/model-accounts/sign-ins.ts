@@ -17,6 +17,8 @@ import { modelAccountSignIn } from './tables.ts'
  */
 export type SignInFlow = {
   provider: ProviderId
+  /** How long a started sign-in waits for its code. */
+  seconds: number
   start(): Promise<{ url: string; pending: Credential }>
   complete(pending: Credential, code: string): Promise<Credential>
 }
@@ -49,16 +51,16 @@ async function admitOpen(
 
 /**
  * Starts a sign-in (criteria 19, 20): the admission and the open kind first, then the vendor's
- * address, and what it must keep sealed to the row for ten minutes (SIGN_IN_SECONDS).
+ * address, and what it must keep sealed to the row for the flow's `seconds`.
  */
 export async function startSignIn(
   deps: Deps & { flows: SignInFlows },
   input: Viewer & { owner: Owner; kind: SignInKind; label: string },
 ) {
-  const label = labelOf(input.label)
   await deps.database.command(scopeOf(input), (tx) =>
     admitOpen(deps, tx, input, input.owner, input.kind),
   )
+  const label = labelOf(input.label)
   const flow = deps.flows[input.kind]
   const { url, pending } = await flow.start()
   const signIn = {
@@ -87,7 +89,7 @@ export async function startSignIn(
         label,
         sealed: Buffer.from(sealed.blob),
         keyId: sealed.keyId,
-        expiresAt: sql`statement_timestamp() + interval '600 seconds'`,
+        expiresAt: sql`statement_timestamp() + make_interval(secs => ${flow.seconds})`,
       })
       .returning({ expiresAt: modelAccountSignIn.expiresAt })
   })

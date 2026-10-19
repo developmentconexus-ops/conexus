@@ -231,9 +231,6 @@ export const setAccountKinds = defineOperation({
   failures: READ_FAILURES,
 })
 
-/** How long a started sign-in waits for its code, in seconds. */
-export const SIGN_IN_SECONDS = 600
-
 export const startModelAccountSignIn = defineOperation({
   id: 'startModelAccountSignIn',
   summary:

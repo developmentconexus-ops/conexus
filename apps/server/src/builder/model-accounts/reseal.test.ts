@@ -77,4 +77,10 @@ test('reseal muda as contas da chave antiga para a última, sem perda, e roda de
   const only = keysFile(t, current)
   assert.equal(await link(only), 201)
   assert.equal(await link(only, { key: `${KEY}-outra` }), 409)
+  // A wrong key file opens nothing: the command fails rather than report a clean run.
+  const ports = { HUB_PORT: '8080', HUB_EDGE_PORT: '8081' }
+  const wrong = keysFile(t, testSealKeyLine('k2'))
+  const run = startHub(t, { ...environment, ...ports, HUB_SEAL_KEYS_FILE: wrong }, ['reseal'])
+  assert.notEqual(await run.exited, 0)
+  assert.ok(run.lines.some((line) => line.msg === 'SEAL_REFUSED'))
 })

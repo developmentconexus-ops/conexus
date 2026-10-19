@@ -1,7 +1,7 @@
 // A double of CLIProxyAPI v8.0.33's management API for Google's sign-in (T15), run as the program:
 // it reads the config it is given, refuses to listen off 127.0.0.1, and writes one login file once
 // the callback brings its state. In the folder after `--control`, the file `mode` says `refuse` to
-// fail the login or `silent` never to answer, and `runs` gets its pid and folder, a line per run.
+// fail the login, and `runs` gets its pid and folder, a line per run.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
@@ -64,5 +64,4 @@ const server = createServer(async (request, response) => {
   }
   return reply(404, {})
 })
-if (mode !== 'silent') server.listen(Number(port), host)
-else setInterval(() => undefined, 60_000)
+server.listen(Number(port), host)

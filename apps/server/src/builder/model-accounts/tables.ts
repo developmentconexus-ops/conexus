@@ -151,7 +151,8 @@ export const companyAccountKind = builder.table(
 
 /**
  * A sign-in between its start and its completion: what the vendor's flow needs to finish, sealed,
- * for the one person who started it. It is spent once (security S22) and lives ten minutes.
+ * for the one person who started it. It is spent once (security S22) and lives until its flow's
+ * window for the code ends.
  */
 export const modelAccountSignIn = builder.table(
   'model_account_sign_in',

@@ -6,7 +6,7 @@ import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { ProviderId, SIGN_IN_SECONDS } from '@conexus/hub-api'
+import { ProviderId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { CliProxy } from '../../../platform/config.ts'
 import type { FailureLog } from '../../../platform/failure.ts'
@@ -84,7 +84,7 @@ async function launch(deps: Deps): Promise<Process> {
     cwd: dir,
     stdio: 'ignore',
   })
-  // A login left waiting never holds the Hub open: it dies with it, or after ten minutes.
+  // A login left waiting never holds the Hub open: it dies with it, or when its window ends.
   child.unref()
   const started = { child, dir, port, key }
   child.once('error', (error) => deps.log.error({ port, cause: error.name }, 'CLIPROXY_STOPPED'))
@@ -135,7 +135,7 @@ async function finish(process: Process, state: string, code: string): Promise<Cr
 
 /**
  * Google's sign-in through CLIProxyAPI's Antigravity login (decision 0049, criteria 21, 22): one
- * process per sign-in, stopped when its login ends or after ten minutes, its folder with it. The
+ * process per sign-in, stopped when its login ends or when CLIProxy's window does, its folder with it. The
  * login file it writes is the credential, sealed whole; the account is `google`, in Google's queue.
  */
 export function googleSignIn(deps: Deps): SignInFlow {
@@ -150,6 +150,7 @@ export function googleSignIn(deps: Deps): SignInFlow {
   }
   return {
     provider: ProviderId.parse('google'),
+    seconds: deps.cliProxy.loginSeconds,
     async start() {
       const process = await launch(deps)
       deps.log.info({ port: process.port }, 'CLIPROXY_STARTED')
@@ -160,7 +161,7 @@ export function googleSignIn(deps: Deps): SignInFlow {
         throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NO_URL' } })
       }
       const { url, state } = parsed.data
-      const timer = setTimeout(() => void stop(state), SIGN_IN_SECONDS * 1000)
+      const timer = setTimeout(() => void stop(state), deps.cliProxy.loginSeconds * 1000)
       timer.unref()
       running.set(state, { ...process, timer })
       return { url, pending: Credential.parse(state) }

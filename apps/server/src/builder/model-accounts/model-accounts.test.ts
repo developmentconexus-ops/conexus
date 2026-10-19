@@ -138,6 +138,7 @@ test('o membro lê a fila da empresa e não a muda (404); ninguém vê conta pes
   const url = `${accounts}/${companyAccount.id}`
   const answers = await Promise.all([
     link(hub, carla, accounts, {}),
+    link(hub, carla, accounts, { provider: 'nenhum', key: '' }),
     patch(hub, carla, url, { revision: 1, state: 'paused' }),
     call(hub, carla, 'PUT', `${url}/assignees`, { personIds: [carla.id] }),
     call(hub, carla, 'PUT', `${base}/model-account-orders/company/anthropic`, {
@@ -148,9 +149,9 @@ test('o membro lê a fila da empresa e não a muda (404); ninguém vê conta pes
   ])
   assert.deepEqual(
     answers.map((answer) => answer.statusCode),
-    [404, 404, 404, 404, 404, 404],
+    Array(7).fill(404),
   )
-  assert.deepEqual(answers.map(codeOf).slice(0, 5), Array(5).fill('NOT_FOUND'))
+  assert.deepEqual(answers.map(codeOf).slice(0, 6), Array(6).fill('NOT_FOUND'))
   const asAna = Object((await call(hub, ana, 'GET', accounts)).json())
   assert.deepEqual(
     asAna.mine.map(({ id }: { id: string }) => id),
@@ -220,6 +221,8 @@ test('modelo padrão: dono e administrador, qualquer do registro; membro 404; fo
     (await call(hub, carla, 'PUT', url, { model: 'openai/gpt-4o-mini' })).statusCode,
     404,
   )
+  // The admission comes before the model's check: a member learns nothing from a wrong model.
+  assert.equal((await call(hub, carla, 'PUT', url, { model: 'nenhum/x' })).statusCode, 404)
   for (const model of ['anthropic/claude-nenhum', 'claude-sonnet-4-5', 'nenhum/x']) {
     const refused = await call(hub, ana, 'PUT', url, { model })
     assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'MODEL_UNKNOWN'])

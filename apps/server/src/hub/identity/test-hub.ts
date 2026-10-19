@@ -5,6 +5,7 @@ import type { TestContext } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../main.ts'
+import type { Config } from '../../platform/config.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
@@ -38,6 +39,9 @@ export async function mailServer(t: TestContext) {
   const state: { mode: MailMode } = { mode: 'DELIVER' }
   const held = Promise.withResolvers<void>()
   const heldReplies: (() => void)[] = []
+  function keep({ to, subject, text, html, from }: Mail) {
+    sent.push({ to, subject, text, html, from })
+  }
   const server = createServer((request, response) => {
     const chunks: Buffer[] = []
     request.on('data', (chunk: Buffer) => chunks.push(chunk))
@@ -45,31 +49,15 @@ export async function mailServer(t: TestContext) {
       const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
       if (state.mode === 'HOLD') {
         heldReplies.push(() => {
-          sent.push({
-            to: body.to,
-            subject: body.subject,
-            text: body.text,
-            html: body.html,
-            from: body.from,
-          })
+          keep(body)
+          const result = { delivered: [body.to], permanent_bounces: [], queued: [] }
           response.writeHead(200, { 'content-type': 'application/json' })
-          response.end(
-            JSON.stringify({
-              success: true,
-              result: { delivered: [body.to], permanent_bounces: [], queued: [] },
-            }),
-          )
+          response.end(JSON.stringify({ success: true, result }))
         })
         return held.resolve()
       }
       if (state.mode === 'FAIL') return response.writeHead(500).end()
-      sent.push({
-        to: body.to,
-        subject: body.subject,
-        text: body.text,
-        html: body.html,
-        from: body.from,
-      })
+      keep(body)
       const bounced = state.mode === 'BOUNCE' ? [body.to] : []
       const delivered = state.mode === 'DELIVER' ? [body.to] : []
       const result = { delivered, permanent_bounces: bounced, queued: [] }
@@ -108,9 +96,16 @@ export const BRUNO = { name: 'Bruno Reis', email: 'bruno@example.test' }
 export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
 export const INVITEE = 'davi@example.test'
 
-async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog = silent) {
+type Change = (config: Config) => Config
+
+async function hubServing(
+  t: TestContext,
+  mailApiUrl?: string,
+  log: FailureLog = silent,
+  change?: Change,
+) {
   const test = await createTestDatabase(t)
-  const config = testConfig(test.runtimeUrl, mailApiUrl)
+  const config = (change ?? ((same) => same))(testConfig(test.runtimeUrl, mailApiUrl))
   const status = createStatus({ version: config.version, database: test.database })
   const neon = fakeNeon()
   const identity = identityOf({ database: test.database, config, log: silent })
@@ -148,14 +143,14 @@ export function hubOn(t: TestContext) {
 export type Hub = Awaited<ReturnType<typeof hubOn>>
 export type MailHub = Hub & { mail: Awaited<ReturnType<typeof mailServer>> }
 
-/** A Hub whose Projects log into `lines`, as the fields and the message of each line. */
-export async function hubWithLog(t: TestContext) {
+/** A Hub logging into `lines`, fields and message; `change` sets its config apart from the test one. */
+export async function hubWithLog(t: TestContext, change?: Change) {
   const lines: { fields: Record<string, unknown>; message: string }[] = []
   const log = {
     info: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
     error: (fields: Record<string, unknown>, message: string) => lines.push({ fields, message }),
   }
-  return { ...(await hubServing(t, undefined, log)), lines }
+  return { ...(await hubServing(t, undefined, log, change)), lines }
 }
 
 /** A Hub whose mail goes to a fake of the provider. */

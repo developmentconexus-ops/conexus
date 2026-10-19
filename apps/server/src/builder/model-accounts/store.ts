@@ -109,10 +109,10 @@ function parsedConnection(input: Connection) {
  * the same key with another body is another request (code C37), compared with the sealed key.
  */
 async function connect(deps: Deps, input: Connection) {
-  const parsed = parsedConnection(input)
   return deps.database.command(scopeOf(input), async (tx) => {
     await transactionLock(tx, `conexus.model-account:${input.companyId}:${input.attemptKey}`)
     await admitFor(deps, tx, input, input.owner)
+    const parsed = parsedConnection(input)
     const [found] = await tx
       .select(columns)
       .from(modelAccount)
