@@ -35,7 +35,7 @@ If 2 or 3 fails, that kind stays off and returns to the founder.
 subscription: sign-in 200, raw `expires_in` 28,800 s, refresh 200 with 28,800 s, 20 of 20 turns 200.
 3: 11:12Z, CLIProxyAPI v8.0.33: login 200, 8 models served 2 s after it, the first call 200, and
 after a restart on the same login 8 models at once and a call 200. 4: no refusal.
-No live key call: the founder holds no API key; tests prove the key path against a double.
+No live key call: the founder waived it ("Não precisa de prova da chave de API"); tests prove the key path.
 
 ## State
 
