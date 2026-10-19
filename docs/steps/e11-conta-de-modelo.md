@@ -32,9 +32,10 @@ uma fila por dono na ordem que vocês põem; na 12, a conversa passa à próxima
 fila da pessoa, depois a da empresa. 8: chave, assinatura Claude e Google na 11; ChatGPT na 21. 9:
 só a Conexus liga tipos; chave sempre ligada. 10: sem endereço próprio. 4 e 5 como no estudo.
 
-**Em aberto (7): dar uma conta da empresa a uma pessoa.** Leitura padrão até a sua resposta: o
-dono ou o administrador dá a Time 2 à Ana; só ela a usa, logo depois da fila dela; ele a tira ou
-troca; a Ana a testa, mas não a remove nem a reordena.
+**Em aberto: a forma da fila (3, 6, 7), até o terceiro estudo.** Já dito: P1 A, a conta dada sai
+da fila da empresa; P2 A, a da pessoa, depois as dadas a ela, depois a da empresa; P3 A, uma conta
+pode ir a várias pessoas. Falta: escolher Claude ou GPT à parte de quem paga, e o alcance
+(empresa, grupo, pessoa). Tabelas e telas da fila esperam.
 
 **Decisão sua: a permissão (D11).** Exemplo: um defeito manda a credencial lacrada para a tela.
 **A.** O papel da empresa grava a coluna mas não a lê; uma função do banco a entrega, uma conta
@@ -93,7 +94,7 @@ Google nem telas medidas. Base aqui: Projetos (um dono, criar e apagar) tem 782 
 | 16 | U5 | Pausar e retomar à mão; testar de novo abre o lacre e grava estado e hora; `refused` vira "Ligue de novo"; mudar com revisão velha: 412 | `model-accounts.test.ts` | must |
 | 17 | U5 | Tipo desligado: ligar dá 422 `MODEL_ACCOUNT_KIND_OFF`; as contas dele, "desligada pela Conexus", não testam; religar as devolve | `model-account-kinds.test.ts` | must |
 | 18 | U5 | Só o operador muda os tipos; dono de empresa: 404; chave de API fica | idem | must |
-| 19 | U5 | Dar a conta: aberto (página); na leitura padrão, só dono e administrador dão, tiram e trocam; dar a quem não é membro: 404 | `model-accounts-assign.test.ts` | must |
+| 19 | U5 | Dar a conta (aberto): só dono e administrador dão, tiram e trocam; a quem não é membro: 404 | `model-accounts-assign.test.ts` | must |
 | 20 | U6 | `start` dá o endereço da Anthropic e guarda o verificador lacrado 10 min; `complete` troca o código, testa e grava; repetido ou tarde: 410 `MODEL_ACCOUNT_SIGN_IN_EXPIRED` | `claude.test.ts`, Anthropic dublê | must |
 | 21 | U6 | Duas renovações juntas chamam a Anthropic uma vez (S34); renovação recusada grava `refused` | idem | must |
 | 22 | U6 | A chamada leva o cabeçalho e a frase do `claudeCodeMiddleware` e o token da conta; duas contas em paralelo não se trocam | idem | must |
@@ -228,8 +229,8 @@ sealed): Secret`; `Sealed = {keyId: string; blob: Uint8Array}`; `SealContext = {
 
 `builder.model_account`: `id` uuid; `company_id`, `person_id` nulo, para `auth.member`, `ON DELETE CASCADE`; `kind` em (`api_key`, `claude_subscription`,
 `google_cliproxy`); `provider`, `model`, `label` texto; `position` inteiro; `state` em (`ready`,
-`paused`, `refused`); `sealed` bytea; `key_id`; `hint` nulo; `assigned_to` nulo, para
-`auth.member`, `ON DELETE SET NULL (assigned_to)`, só na da empresa (aberto); `refresh_reserved_until` nulo;
+`paused`, `refused`); `sealed` bytea; `key_id`; `hint` nulo; a quem é dada: aberto (P3,
+várias pessoas; terceiro estudo); `refresh_reserved_until` nulo;
 `linked_by`, `linked_at`, `tested_at`, `revision`. Única `NULLS NOT DISTINCT (company_id, person_id,
 position)` adiável (não provada: crit. 15). `builder.company_account_kind (company_id,
 kind)`. `builder.model_account_sign_in`: `id`, `company_id`,
