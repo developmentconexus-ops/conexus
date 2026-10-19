@@ -34,6 +34,7 @@ If 2 or 3 fails, that kind stays off and returns to the founder.
 `databricks`, `snowflake-cortex`, `neon`, `infomaniak`, `netlify`. 2: 10:59Z, the founder's
 subscription: sign-in 200, raw `expires_in` 28,800 s, refresh 200 with 28,800 s, 20 of 20 turns 200.
 3: login 200, but the proof's model list came back empty and no call ran; to rerun. 4: no refusal.
+No live key call: the founder holds no API key; tests prove the key path against a double.
 
 ## State
 
