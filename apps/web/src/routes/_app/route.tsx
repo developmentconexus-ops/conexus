@@ -1,6 +1,6 @@
 import type { CompanyId } from '@conexus/hub-api'
 import { createFileRoute, Outlet, redirect, useMatches } from '@tanstack/react-router'
-import { FolderIcon, HouseIcon, UsersIcon } from 'lucide-react'
+import { FolderIcon, HouseIcon, KeyRoundIcon, SettingsIcon, UsersIcon } from 'lucide-react'
 import { AccountMenu, CompanySwitcher, sessionQuery } from '../../hub/identity/public.ts'
 import { Frame } from '../../ui/frame.tsx'
 
@@ -12,6 +12,18 @@ function placesOf(companyId: CompanyId) {
   return [
     { to: '/companies/$companyId/projects', params, icon: FolderIcon, label: 'Projetos' },
     { to: '/companies/$companyId/people', params, icon: UsersIcon, label: 'Pessoas' },
+    {
+      to: '/companies/$companyId/model-account',
+      params,
+      icon: KeyRoundIcon,
+      label: 'Minha conta de modelo',
+    },
+    {
+      to: '/companies/$companyId/setup',
+      params,
+      icon: SettingsIcon,
+      label: 'Configurar a empresa',
+    },
   ] as const
 }
 
