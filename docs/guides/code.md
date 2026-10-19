@@ -107,9 +107,12 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   read credential cookies and the `Origin`, `Cookie` and `Sec-Fetch-*` headers. [boot check, review]
 - **C35.** Paths **must** live under `/api/`, name resources with plural nouns and ids, and **must
   not** select an operation (an `{operationSlug}` variable or an `execute` segment). A path
-  namespace grants nothing. [CI]
+  namespace grants nothing. The rule covers an operation's path; the `handoff` route of security
+  S48 is not an operation. [CI]
 - **C36.** `GET` and `HEAD` **should** have no business side effects. Failure: a browser's link
-  prefetch confirms an action the person never requested. [review]
+  prefetch confirms an action the person never requested. The `handoff` kind of security S48
+  writes a one-use pass on `GET`, as an OAuth authorization endpoint does; a prefetch makes at most
+  a pass that expires unused. [review]
 - **C37.** A creation attempt **should** keep one `Idempotency-Key`, scoped to operation and subject;
   reusing it with another payload answers `IDEMPOTENCY_CONFLICT`. Retries, concurrent clicks,
   restart and response loss keep the same identity without a second effect; an ambiguous downstream
