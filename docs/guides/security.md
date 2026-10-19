@@ -124,7 +124,7 @@ choice, including the guarantee that a database copy alone opens no Hub session.
 - **S36.** A privileged adapter **should** have one owner, its own credential and a configured
   authorized destination, never a generic `fetch(url, secret)`; the Builder's credential-free web
   fetch uses the Hub guard. Durable privileged credentials stay out of sandboxes, generated apps,
-  browsers and logs; model calls stay in the server as architecture and [0030] decide. Failure:
+  browsers and logs; model calls stay in the server as architecture and [0049] decide. Failure:
   a requester-controlled URL receives another system's token. A syntax ban cannot prove this
   secret flow. [review]
 - **S37.** Environment files **must** stay out of Git and out of the image. [gitignore, review]
