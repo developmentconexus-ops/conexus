@@ -40,9 +40,10 @@ Desenho: `architecture.md`.
    Cartão da etapa 9 aprovado em 2026-10-18 (commit 8e1b461325f3064ba5690dfb28ace027554c0efa): "Aprovo"
    Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "aceito A"; "Restaurei"; "Sim"
    9.1 **Direto ao app.** Entra e vê o app, sem o Hub no meio; o Neon mostra o apelido.
+      Cartão da etapa 9.1 aprovado em 2026-10-18 (commit 19d2d2528221ed7aad57fe177a6ac238374d640c): "1. Aprovo 2. Autorizo"
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
     Cartão da etapa 10 aprovado em 2026-10-18 (commit 458f5d17473aeb947c009de2b472dabdfebb4748): "oPÇÃO A tirar verificador."; "1. Aprovo"; "1. C porém me explica exemplo caso real, quero entender"
-    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "1 sim 2. Sim 3. Sim"; sobre o passo 4, cortado aos 10 s na v0.10.0 e em 2,5 s na v0.10.1, "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
+    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "1 sim 2. Sim 3. Sim"; "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
 11. **Conta de modelo.** Liga a sua assinatura e a testa.
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
