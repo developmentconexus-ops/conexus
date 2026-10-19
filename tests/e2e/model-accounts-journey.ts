@@ -44,12 +44,23 @@ export async function rowsText(rows: Locator): Promise<string[]> {
   return texts.map((text) => text.replaceAll(/\s+/g, ' ').trim())
 }
 
+/** Picks `option` in the UI's select labelled `label`; its list opens at the page's end. */
+export async function pick(
+  page: Page,
+  scope: Locator | Page,
+  label: string,
+  option: string | RegExp,
+) {
+  await scope.getByLabel(label, { exact: true }).click()
+  await page.getByRole('option', { name: option }).first().click()
+}
+
 /** Opens "Ligar conta" and links an API key of Anthropic. */
 export async function linkKey(page: Page, label: string, key: string) {
   await page.getByRole('button', { name: 'Ligar conta', exact: true }).click()
   const panel = page.getByRole('region', { name: 'Ligar conta' })
   await panel.getByLabel('Buscar fornecedor').fill('Anthropic')
-  await panel.getByLabel('Fornecedor', { exact: true }).selectOption({ label: 'Anthropic' })
+  await pick(page, panel, 'Fornecedor', 'Anthropic')
   await panel.getByLabel('Nome da conta').fill(label)
   await panel.getByLabel('Chave de API', { exact: true }).fill(key)
   await panel.getByRole('button', { name: 'Ligar conta', exact: true }).click()
@@ -73,11 +84,11 @@ export async function linkSignIn(
   await page.getByRole('button', { name: 'Ligar conta', exact: true }).click()
   const panel = page.getByRole('region', { name: 'Ligar conta' })
   await panel.getByRole('button', { name: 'Entrar com assinatura' }).click()
-  await panel.getByLabel('Tipo de assinatura').selectOption({ label: kind })
+  await pick(page, panel, 'Tipo de assinatura', kind)
   await panel.getByLabel('Nome da conta').fill(label)
   await panel.getByRole('button', { name: 'Gerar endereço de entrada' }).click()
   const state = await stateOfAddress(panel)
-  const field = kind === 'Google' ? 'Endereço ou código do Google' : 'Código da Anthropic'
+  const field = kind === 'Google' ? 'Endereço de retorno do Google' : 'Código da Anthropic'
   await panel.getByLabel(field).fill(pasted(state))
   await panel.getByRole('button', { name: 'Entrar', exact: true }).click()
 }

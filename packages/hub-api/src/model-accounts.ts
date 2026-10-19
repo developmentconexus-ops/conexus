@@ -125,7 +125,7 @@ export const listModelProviders = defineOperation({
   path: '/api/model-providers',
   bodyLimit: 1024,
   success: { status: 200, body: z.object({ providers: z.array(Provider) }) },
-  failures: ['SESSION_REQUIRED'],
+  failures: ['SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
 })
 
 export const connectModelAccount = defineOperation({

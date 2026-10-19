@@ -20,6 +20,7 @@ import {
   linkKey,
   linkSignIn,
   OWN_KEY,
+  pick,
   queueRows,
   rowsText,
 } from './model-accounts-journey.ts'
@@ -78,16 +79,17 @@ async function arrange(owner: Page) {
   const [first, second] = await rowsText(queueRows(owner, 'Anthropic'))
   assert.match(first ?? '', /^Time 2.*Assinatura Claude · ligada · para todos/)
   assert.match(second ?? '', /^Time 1.*chave …x7Qa · pausada/)
-  const model = owner.getByLabel('Modelo padrão')
-  const values = await model
-    .locator('option')
-    .evaluateAll((options) => options.map((one) => one.getAttribute('value') ?? ''))
-  const sonnet = values.find((value) => /^anthropic\/.*sonnet/i.test(value))
-  assert.ok(sonnet, 'the registry lists no Claude Sonnet model')
-  await model.selectOption(sonnet)
+  await pick(owner, owner, 'Fornecedor do modelo padrão', 'Anthropic')
+  await owner.getByLabel('Buscar modelo').fill('sonnet')
+  await pick(owner, owner, 'Modelo padrão', /sonnet/i)
+  const chosen = await owner.getByText(/^Escolhido: anthropic\/.*sonnet/i).innerText()
   await owner.getByRole('button', { name: 'Salvar modelo padrão' }).click()
+  await owner
+    .getByRole('button', { name: 'Salvar modelo padrão' })
+    .and(owner.locator(':disabled'))
+    .waitFor()
   await owner.reload()
-  assert.equal(await owner.getByLabel('Modelo padrão').inputValue(), sonnet)
+  assert.equal(await owner.getByText(/^Escolhido: /).innerText(), chosen)
 }
 
 /** Step 5: Time 2 goes to Carla, who reads her order and links a key of her own. */
