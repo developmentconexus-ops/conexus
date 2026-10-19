@@ -77,12 +77,24 @@ const OfAccount = InCompany.extend({ accountId: ModelAccountId })
 const OfQueue = InCompany.extend({ owner: Owner, provider: ProviderId })
 const OfSignIn = InCompany.extend({ signInId: SignInId })
 
+/** The most models the company's automatic switch tries, in order. */
+export const MODEL_FALLBACK_MAX_LENGTH = 50
+
+/** The company's automatic switch: off with no models and revision 0 until someone sets it. */
+export const ModelFallback = z.object({
+  enabled: z.boolean(),
+  chain: z.array(z.string().max(200)).max(MODEL_FALLBACK_MAX_LENGTH),
+  revision: z.number().int().nonnegative(),
+})
+export type ModelFallback = z.infer<typeof ModelFallback>
+
 const Accounts = z.object({
   company: z.array(ModelAccount),
   mine: z.array(ModelAccount),
   order: z.array(ProviderOrder),
   kinds: z.array(SignInKind),
   defaultModel: z.string().nullable(),
+  fallback: ModelFallback,
   /** Whether the viewer changes the company's accounts and default model: the Hub's answer (C26). */
   mayManage: z.boolean(),
 })
@@ -200,6 +212,19 @@ export const orderModelAccounts = defineOperation({
   input: { params: OfQueue, body: z.object({ ids: z.array(ModelAccountId).max(500) }) },
   success: { status: 200, body: z.object({ accounts: z.array(ModelAccount) }) },
   failures: [...READ_FAILURES, 'MODEL_ACCOUNT_ORDER_STALE'],
+})
+
+export const setModelFallback = defineOperation({
+  id: 'setModelFallback',
+  summary:
+    'Turns the company’s automatic model switch on or off and sets its chain, at the revision the person read.',
+  access: 'session',
+  method: 'PUT',
+  path: '/api/companies/{companyId}/model-fallback',
+  bodyLimit: 16 * 1024,
+  input: { params: InCompany, body: ModelFallback },
+  success: { status: 200, body: ModelFallback },
+  failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_FALLBACK_STALE'],
 })
 
 export const removeModelAccount = defineOperation({

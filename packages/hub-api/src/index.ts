@@ -92,8 +92,10 @@ export {
   getAccountKinds,
   listModelAccounts,
   listModelProviders,
+  MODEL_FALLBACK_MAX_LENGTH,
   ModelAccount,
   ModelAccountId,
+  ModelFallback,
   Owner,
   orderModelAccounts,
   Provider,
@@ -104,6 +106,7 @@ export {
   SignInKind,
   setAccountKinds,
   setDefaultModel,
+  setModelFallback,
   startModelAccountSignIn,
 } from './model-accounts.ts'
 export { setCompanyNickname } from './nickname.ts'

@@ -19,9 +19,9 @@ import {
   viewOf,
 } from './accounts.ts'
 import type { Change } from './changes.ts'
-import { assign, change, order, remove, setDefault } from './changes.ts'
+import { assign, change, order, remove, setDefault, setFallback } from './changes.ts'
 import { keyProviderOf } from './providers.ts'
-import { companyModel, modelAccount } from './tables.ts'
+import { companyModel, companyModelFallback, modelAccount } from './tables.ts'
 
 /**
  * The person's order for each provider (P2): their own, then the company's given to them, then the
@@ -75,12 +75,21 @@ function list(deps: Deps, viewer: Viewer) {
       .select({ model: companyModel.model })
       .from(companyModel)
       .where(eq(companyModel.companyId, viewer.companyId))
+    const [switched] = await tx
+      .select({
+        enabled: companyModelFallback.enabled,
+        chain: companyModelFallback.chain,
+        revision: companyModelFallback.revision,
+      })
+      .from(companyModelFallback)
+      .where(eq(companyModelFallback.companyId, viewer.companyId))
     return {
       company: rows.filter((row) => row.personId === null).map((row) => viewOf(row, context)),
       mine: rows.filter((row) => row.personId !== null).map((row) => viewOf(row, context)),
       order: ordersOf(viewer, rows, context),
       kinds: [...context.open].sort(),
       defaultModel: chosen?.model ?? null,
+      fallback: switched ?? { enabled: false, chain: [], revision: 0 },
       mayManage: deps.identity.allows(admitted.role, 'manageModelAccounts'),
     }
   })
@@ -152,6 +161,7 @@ export function createModelAccountStore(deps: Deps) {
     change: (input: Change) => change(deps, input),
     assign: (input: Parameters<typeof assign>[1]) => assign(deps, input),
     setDefault: (input: Parameters<typeof setDefault>[1]) => setDefault(deps, input),
+    setFallback: (input: Parameters<typeof setFallback>[1]) => setFallback(deps, input),
     order: (input: Parameters<typeof order>[1]) => order(deps, input),
     remove: (input: Parameters<typeof remove>[1]) => remove(deps, input),
   })
