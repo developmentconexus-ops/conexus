@@ -127,7 +127,17 @@ export type Config = BaseConfig & {
   appsNamespace: CloudflareName
   cloudflareAppsToken: CloudflareAppsToken
   sealKeys: SealKeys
+  cliProxy: CliProxy
 }
+/** CLIProxyAPI's program for Google's sign-in, and the sha256 it must have to run (decision 0049). */
+export type CliProxy = Readonly<{ binary: string; sha256: string }>
+
+// v8.0.33 (2422c6b0), as hub.Dockerfile installs it and the step's live proof ran it.
+const CLIPROXY: CliProxy = {
+  binary: '/opt/cliproxy/cli-proxy-api',
+  sha256: 'e78e2ea753a1f6f020b3f9558081a0f433968b86e500fcb8c556365ee13c90dc',
+}
+
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
 const Port = z.string().regex(/^\d+$/).transform(Number).pipe(z.number().int().min(1).max(65535))
@@ -238,6 +248,7 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
       CloudflareAppsToken.parse,
     ),
     sealKeys: readSecret('HUB_SEAL_KEYS_FILE', serve.HUB_SEAL_KEYS_FILE, parseSealKeys),
+    cliProxy: CLIPROXY,
   }
 }
 

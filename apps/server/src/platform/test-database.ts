@@ -26,6 +26,7 @@ import type { Database } from './database.ts'
 import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
+import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
   NO_CLOUDFLARE_SERVER,
   TEST_ACCOUNT,
@@ -108,6 +109,7 @@ export function testConfig(
     ...testNeon(neonApiUrl),
     ...testAppsConfig(cloudflareApiUrl),
     sealKeys: parseSealKeys(testSealKeyLine()),
+    cliProxy: testCliProxy(),
   }
 }
 

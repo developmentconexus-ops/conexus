@@ -123,8 +123,13 @@ export function subjectsOf(deps: {
     appRemoval,
   })
   const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain })
-  const sealKeys = config.sealKeys
-  const modelAccounts = createModelAccounts({ database, identity, sealKeys, flows: signInFlows() })
+  const flows = signInFlows({ cliProxy: config.cliProxy, log })
+  const modelAccounts = createModelAccounts({
+    database,
+    identity,
+    sealKeys: config.sealKeys,
+    flows,
+  })
   return { projects, operations, apps, modelAccounts }
 }
 

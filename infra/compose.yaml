@@ -37,6 +37,9 @@ services:
       HUB_SEAL_KEYS_FILE: /run/secrets/hub_seal_keys
       # The router's registry is the one bundled in the image, never refreshed (decision 0049).
       MASTRA_OFFLINE: "1"
+    # A Google sign-in's process keeps its config and login file here, in memory, never on disk (S36).
+    tmpfs:
+      - /tmp:mode=1777,size=64m
     healthcheck:
       test:
         - CMD
