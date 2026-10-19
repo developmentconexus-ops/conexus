@@ -3,41 +3,40 @@
 ## A página do fundador
 
 **No fim desta etapa** você liga numa empresa várias contas de modelo (chave de API de qualquer
-fornecedor do Mastra, a sua assinatura Claude, a sua conta Google pelo CLIProxy), as põe na ordem
-que quiser, testa e pausa cada uma, e vê o estado de todas. A Conexus escolhe os tipos de cada
-empresa.
+fornecedor do Mastra, a sua assinatura Claude, a sua conta Google pelo CLIProxy), uma fila por
+fornecedor na ordem que quiser, testa, pausa, dá contas a pessoas e escolhe o modelo padrão. A
+Conexus escolhe os tipos de cada empresa.
 
 **O roteiro de uso.** No Hub publicado.
 
 1. Em **Clientes › Empresa A › Tipos de conta**, ligue "Assinatura Claude" e "Google". Na Empresa
    B só aparece "Chave de API".
-2. Na A, **Configuração › Conta de modelo › Ligar conta**: Anthropic, Claude Haiku 4.5, "Time 1",
-   a sua chave: "Funciona", e "Time 1 · chave …x7Qa · pronta". Uma chave errada: "A Anthropic
-   recusou esta chave.", nada guardado.
-3. **Assinatura Claude**: cola o código da Anthropic, "Time 2 · pronta". **Google**: entra com a
-   sua conta, "Time 3 · pronta".
-4. Suba a Time 3 ao topo, pause a Time 1, teste a Time 2: "Funciona".
-5. Como membro comum: a fila sem botões; em **Minha conta de modelo**, uma chave só sua.
+2. Na A, **Configuração › Conta de modelo › Ligar conta**: Anthropic, "Time 1", a sua chave:
+   "Funciona", e "Time 1 · chave …x7Qa · pronta". Uma chave errada: "A Anthropic recusou esta
+   chave.", nada guardado.
+3. **Assinatura Claude**: cola o código da Anthropic, "Time 2". **Google**: entra, "Google 1".
+4. Na fila Anthropic, suba a Time 2; pause a Time 1; escolha Claude Sonnet como modelo padrão.
+5. Dê a Time 2 à Ana: ela some da fila da empresa. Como Ana, em **Minha conta de modelo**: "Sua
+   ordem para Anthropic: Time 2, Time 1", e uma chave só sua; a fila da empresa sem botões.
 6. Remova a Time 1: "Apague também a chave no Console da Anthropic".
 
 **O que você faz, e quando.** Antes de U1: autoriza as chamadas da prova e entra nela com a sua
 assinatura Claude, a sua conta Google e uma chave da Anthropic com crédito. Antes de U2: gera a
-chave da instalação e guarda cópia fora do servidor (S33). Antes de U3: a palavra da permissão
-(D11). No fim: o roteiro e os textos. Gasto: centavos.
+chave da instalação e guarda cópia fora do servidor (S33). Antes de U3: a palavra da permissão. No fim: o roteiro e os textos. Gasto: centavos.
 
-**As suas respostas, como o cartão as lê; confirme ou corrija.** 1 B: fica a assinatura da 0030,
-mais a chave de API; o risco de suspensão da conta pessoal de quem liga continua seu. 2: todo
-fornecedor do roteador que funciona só com chave (210 de 216), num formulário. 3 e 6: sem limite,
-uma fila por dono na ordem que vocês põem; na 12, a conversa passa à próxima quando uma acaba. 7:
-fila da pessoa, depois a da empresa. 8: chave, assinatura Claude e Google na 11; ChatGPT na 21. 9:
-só a Conexus liga tipos; chave sempre ligada. 10: sem endereço próprio. 4 e 5 como no estudo.
+**As suas respostas, como o cartão as lê; confirme ou corrija.** 1 B: a assinatura da 0030 e a
+chave; o risco de suspender a conta pessoal de quem liga é seu. 2: todo fornecedor que funciona só
+com chave (210 de 216). 3, 6, 11: sem limite; uma fila por fornecedor em cada dono, na ordem de
+vocês. 7, P1–P3: pessoa, depois as dadas a ela, depois a empresa, por fornecedor; a conta dada sai
+da fila da empresa e pode ir a várias pessoas. 12: a conta não guarda modelo; a pessoa escolhe o
+modelo na 12; dono e administrador definem o padrão. 14: sem grupos. 8: chave, Claude e Google na
+11; ChatGPT na 21. 9: só a Conexus liga tipos. 10: sem endereço próprio. 4, 5: como no estudo.
 
-**Em aberto: a forma da fila (3, 6, 7), até o terceiro estudo.** Já dito: P1 A, a conta dada sai
-da fila da empresa; P2 A, a da pessoa, depois as dadas a ela, depois a da empresa; P3 A, uma conta
-pode ir a várias pessoas. Falta: escolher Claude ou GPT à parte de quem paga, e o alcance
-(empresa, grupo, pessoa). Tabelas e telas da fila esperam.
+**13, a troca automática.** Na 12, acabadas as contas do fornecedor, o Builder para e avisa. A sua
+pergunta, a troca automática, ficaria como ajuste da empresa, desligado, que dono e administrador
+ligam com uma cadeia ("se o Claude acabar, GPT-5"): é da 12, pendente da sua confirmação.
 
-**Decisão sua: a permissão (D11).** Exemplo: um defeito manda a credencial lacrada para a tela.
+**Decisão sua: a permissão (regra D11).** Exemplo: um defeito manda a credencial lacrada para a tela.
 **A.** O papel da empresa grava a coluna mas não a lê; uma função do banco a entrega, uma conta
 por vez, como o Grant A da 8; o banco recusa. **B.** Lê a linha inteira; só a revisão impede.
 **Recomendação: A** (D12).
@@ -46,8 +45,7 @@ por vez, como o Grant A da 8; o banco recusa. **B.** Lê a linha inteira; só a 
 se o Google entra pelo CLIProxy; se um fornecedor recusa no meio. Falhou: o tipo fica desligado e
 volta a você.
 
-**Fica de fora.** A troca automática na conversa, a pausa por limite e o aviso de troca: da 12, a
-primeira com conversa. ChatGPT (21). As issues `next-card` 25, 39 e 45: nada nestas pastas.
+**Fica de fora.** Escolher o modelo na conversa, a troca de conta, a pausa por limite: da 12. ChatGPT (21). As issues `next-card` 25, 39 e 45: nada nestas pastas.
 
 ## As unidades
 
@@ -66,63 +64,65 @@ primeira com conversa. ChatGPT (21). As issues `next-card` 25, 39 e 45: nada nes
 U2 e U4 correm em paralelo; U6, U7 e U8 também. Uma revisão, um merge (L9, L13); U3 em PR próprio
 (D11).
 
-**Orçamento de código alterado** (sem testes nem gerados): U2 180; U3 150; U4 250; U5 850; U6 350;
-U7 550; U8 900; U9 30. Total **3.260**, teto 4.000 (L2). Os estudos davam 1.500 a 1.900 com testes, sem
-Google nem telas medidas. Base aqui: Projetos (um dono, criar e apagar) tem 782 linhas no servidor,
-354 nas telas e 117 no contrato; a fila tem três donos, ordem, pausa, tipos e duas entradas. Google:
-550 contra 663 do antigo (`google-ai-pro/`, `e0353c36`), sem o roteador local de 72.
+**Orçamento de código alterado** (sem testes nem gerados): U2 180; U3 170; U4 250; U5 950; U6 350;
+U7 550; U8 980; U9 30. Total **3.460**, teto 4.000 (L2). Os estudos: 1.500 a 1.900 com testes, sem
+Google nem telas. Base: Projetos tem 782 linhas no servidor, 354 nas telas, 117 no contrato, para um
+dono; aqui, três donos, filas por fornecedor, atribuição, tipos, duas entradas. Google: 550 contra
+663 do antigo (`google-ai-pro/`, `e0353c36`), sem o roteador local.
 
 ## Os critérios de aceite
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | 0048 "proposed" antes da prova; Result com versões, os fornecedores só com chave e os 6 de fora; nenhuma credencial | o registro | must |
-| 2 | U1 | Prova ao vivo, assinatura Claude: entrar pelo fluxo do `@mastra/code-sdk` 1.14.0, chamada de 1 token, `expires_in` anotado, uma renovação aceita, 20 turnos sem 401/403 | o registro | must |
-| 3 | U1 | Prova ao vivo, Google: CLIProxyAPI v8.0.33 por sha256, entrar pelo Antigravity, chamada de 1 token em `127.0.0.1`; o arquivo de login renovado volta ao processo | o registro | must |
+| 2 | U1 | Ao vivo, Claude: entrar pelo `@mastra/code-sdk` 1.14.0, 1 token, `expires_in` anotado, uma renovação, 20 turnos sem 401/403 | o registro | must |
+| 3 | U1 | Ao vivo, Google: CLIProxyAPI v8.0.33 por sha256, entrar pelo Antigravity, 1 token em `127.0.0.1`; o login renovado volta | o registro | must |
 | 4 | U1 | Detecção: cada resposta da prova anotada com status e código; uma recusa por termos volta ao fundador | o registro | must |
-| 5 | U2 | Sem `HUB_SEAL_KEYS_FILE`, vazio, legível por outros ou com chave fora de 32 bytes: não inicia, `CONFIG_INVALID` com o nome da variável | `config.test.ts` | must |
+| 5 | U2 | `HUB_SEAL_KEYS_FILE` ausente, vazio, legível por outros ou chave fora de 32 bytes: não inicia, `CONFIG_INVALID` | `config.test.ts` | must |
 | 6 | U2 | Lacre em outra linha, dono, tipo ou fornecedor, ou um bit virado: recusado; chave aposentada abre; depois do `reseal` a antiga sai sem perda | `seal.test.ts` | must |
 | 7 | U3 | A Empresa B não lê nem grava conta da A; o papel da empresa recebe 42501 ao ler `sealed` (A); o retrato bate | `isolation-model-accounts.test.ts`, `catalog.test.ts` | must |
-| 8 | U3 | Tirar a pessoa da empresa apaga as contas dela ali e solta as que lhe foram dadas; apagar a empresa apaga todas | `model-accounts-removal.test.ts` | must |
-| 9 | U4 | Cada fornecedor da lista, `fetch` dublê: a chave no cabeçalho do registro, a recusa com status; chave vazia recusada antes da rede; nenhum `*_API_KEY` ou `*_BASE_URL` lido | `check.test.ts` | must |
+| 8 | U3 | Tirar a pessoa apaga as contas dela e as atribuições a ela; apagar a empresa apaga tudo | `model-accounts-removal.test.ts` | must |
+| 9 | U4 | Cada fornecedor, `fetch` dublê: a chave no cabeçalho do registro, recusa com status; chave vazia recusada sem rede; nenhum `*_API_KEY` ou `*_BASE_URL` lido | `check.test.ts` | must |
 | 10 | U4 | Mapa: 200 `works`; 401 `refused`; 403 `no_access`; 402 e 400 de crédito `no_credit`; 429 `limited`; 5xx, corte, prazo de 15 s `unavailable`; sem repetição | idem | must |
 | 11 | U4 | Chave plantada não aparece no log, na resposta nem na falha | idem | must |
-| 12 | U5 | Ligar por chave: só `works` grava, no fim da fila; `refused` responde 422 `MODEL_ACCOUNT_REFUSED` e a fila fica igual; a chave nunca volta, só `…` e quatro caracteres | `model-accounts.test.ts` | must |
+| 12 | U5 | Ligar por chave, modelo de teste não guardado: só `works` grava, no fim da fila do fornecedor; `refused`: 422 `MODEL_ACCOUNT_REFUSED`; a chave nunca volta, só `…` e quatro caracteres | `model-accounts.test.ts` | must |
 | 13 | U5 | Mesmo `Idempotency-Key`: uma conta; outro corpo: `IDEMPOTENCY_CONFLICT` | idem | must |
-| 14 | U5 | Membro comum: lê a fila da empresa; mudar nela dá 404 (S10); muda só a sua; B não vê a fila pessoal de A | idem | must |
-| 15 | U5 | Ordenar com a lista inteira dos ids: grava; lista velha ou faltando um: 409 `MODEL_ACCOUNT_ORDER_STALE`; duas ordens juntas: uma vence, posições sem buraco | `model-accounts-order.test.ts` | must |
-| 16 | U5 | Pausar e retomar à mão; testar de novo abre o lacre e grava estado e hora; `refused` vira "Ligue de novo"; mudar com revisão velha: 412 | `model-accounts.test.ts` | must |
-| 17 | U5 | Tipo desligado: ligar dá 422 `MODEL_ACCOUNT_KIND_OFF`; as contas dele, "desligada pela Conexus", não testam; religar as devolve | `model-account-kinds.test.ts` | must |
+| 14 | U5 | Membro comum lê a fila da empresa; mudá-la: 404 (S10); B não vê a fila pessoal de A | idem | must |
+| 15 | U5 | Ordenar uma fila (dono e fornecedor) com todos os seus ids: grava; lista velha, incompleta ou de outro fornecedor: 409 `MODEL_ACCOUNT_ORDER_STALE`; duas juntas: uma vence | `model-accounts-order.test.ts` | must |
+| 16 | U5 | Pausar e retomar à mão; testar de novo abre o lacre, grava estado e hora; `refused`: "Ligue de novo"; revisão velha: 412 | `model-accounts.test.ts` | must |
+| 17 | U5 | Tipo desligado: ligar dá 422 `MODEL_ACCOUNT_KIND_OFF`; as contas dele não testam; religar as devolve | `model-account-kinds.test.ts` | must |
 | 18 | U5 | Só o operador muda os tipos; dono de empresa: 404; chave de API fica | idem | must |
-| 19 | U5 | Dar a conta (aberto): só dono e administrador dão, tiram e trocam; a quem não é membro: 404 | `model-accounts-assign.test.ts` | must |
-| 20 | U6 | `start` dá o endereço da Anthropic e guarda o verificador lacrado 10 min; `complete` troca o código, testa e grava; repetido ou tarde: 410 `MODEL_ACCOUNT_SIGN_IN_EXPIRED` | `claude.test.ts`, Anthropic dublê | must |
+| 19 | U5 | Dar uma conta da empresa a uma ou várias pessoas: sai da fila geral; a ordem de cada uma é própria, dadas, empresa; só dono e administrador; não membro: 404; conta pessoal: 422 | `model-accounts-assign.test.ts` | must |
+| 20 | U6 | `start` dá o endereço e guarda o verificador lacrado 10 min; `complete` troca, testa, grava; repetido ou tarde: 410 `MODEL_ACCOUNT_SIGN_IN_EXPIRED` | `claude.test.ts`, Anthropic dublê | must |
 | 21 | U6 | Duas renovações juntas: uma chamada (S34); recusada grava `refused` | idem | must |
-| 22 | U6 | A chamada leva o cabeçalho e a frase do `claudeCodeMiddleware` e o token da conta; duas contas em paralelo não se trocam | idem | must |
-| 23 | U7 | Um processo por conta, em `127.0.0.1`; binário diferente: não inicia; ocioso, para; o arquivo renovado é relacrado e a pasta apagada | `google.test.ts`, CLIProxy dublê | must |
+| 22 | U6 | A chamada leva cabeçalho e frase do `claudeCodeMiddleware` e o token da conta; duas em paralelo não se trocam | idem | must |
+| 23 | U7 | Um processo por conta, em `127.0.0.1`; binário diferente: não inicia; ocioso, para; o renovado é relacrado, a pasta apagada | `google.test.ts`, CLIProxy dublê | must |
 | 24 | U7 | Entrar pelo endereço de gestão; `state` errado ou tarde: 410; o roteador chega por `url` e chave do processo | idem | must |
-| 25 | U8 | As telas da matriz de estados, com textos, teclado para ordenar e foco | `model-accounts.test.tsx` | must |
+| 25 | U8 | As telas da matriz, textos, teclado e foco | `model-accounts.test.tsx` | must |
 | 26 | U8 | 390 px, 200%, dois temas, sem erro de CSP | navegador (T23) | should |
 | 27 | U9 | O roteiro, Hub real, dublês | `tests/e2e/model-accounts.test.ts` | must |
 | 28 | U9 | Publicado: passos 1 a 6 | firstmate, fundador (T14) | must |
+| 29 | U5 | Modelo padrão: dono e administrador o definem do registro; membro: 404; fora do registro: 422 `MODEL_UNKNOWN` | `model-accounts.test.ts` | must |
 
 ## A matriz de estados
 
 | Tela | Vazio | Carregando | Erro | Não encontrado | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- |
-| Conta de modelo da empresa | "Nenhuma conta ligada" e **Ligar conta** (dono e administrador) | a lista partilhada | a de `ui/` | a da empresa | por conta: "recusada · Ligue de novo", "pausada", "desligada pela Conexus" |
-| Minha conta de modelo | "Nenhuma conta sua", e as dadas a você | idem | idem | idem | idem |
-| Ligar conta | fornecedor com busca | "Testando…" | a mensagem do mapa (crit. 10) | modelo fora do registro: 422 | tipo desligado: 422 |
+| Conta de modelo da empresa | "Nenhuma conta ligada", **Ligar conta** | a partilhada | a de `ui/` | a da empresa | "recusada · Ligue de novo", "pausada", "desligada pela Conexus" |
+| Minha conta de modelo | "Nenhuma conta sua"; a sua ordem por fornecedor | idem | idem | idem | idem |
+| Ligar conta | fornecedor com busca, modelo de teste | "Testando…" | a mensagem do mapa (crit. 10) | fora do registro: 422 | tipo desligado: 422 |
 | Entrar com assinatura | o endereço e o campo do código | "Entrando…" | idem | — | "O código venceu. Entre de novo." |
 | Tipos de conta (operador) | só "Chave de API" | idem | idem | a do cliente | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
-| `id`, `owner`, `kind`, `provider`, `model`, `label`; `position` | ligar; ordenar | telas; a 12 |
+| `id`, `owner`, `kind`, `provider`, `label`; `position` | ligar; ordenar | telas; a 12 |
 | `state` (`ready`, `paused`, `refused`), `testedAt` | ligar, testar, pausar, renovar | telas; a 12 |
 | `hint`, `linkedBy`, `linkedAt` | ligar | telas |
-| `assignedTo` (aberto) | dar, tirar | telas; a 12 |
+| `assignees` | dar | telas, a ordem da pessoa; a 12 |
+| `defaultModel` | dono, administrador | tela; a 12 |
 | `revision` | ligar, mudar | mudar (412) |
-| `kindOff` (derivado dos tipos) | operador | telas, rotas |
+| `kindOff` (derivado) | operador | telas, rotas |
 | `signInId`, `url`, `expiresAt` | `start` | tela de entrar |
 
 ## A tabela de falhas
@@ -130,15 +130,15 @@ Google nem telas medidas. Base aqui: Projetos (um dono, criar e apagar) tem 782 
 | Gravação ou comando | Duas vezes ao mesmo tempo | Recusada no meio | Dependência fora | O que imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 | Ligar por chave: teste, depois `INSERT` | `Idempotency-Key` | teste fora da transação (D22) | fornecedor: o mapa | `MODEL_ACCOUNT_CHECKED`, resultado e status | 10, 12, 13 |
-| `start` da assinatura | duas linhas | — | — | `MODEL_ACCOUNT_SIGN_IN_STARTED` | 20 |
-| `complete` | `DELETE … RETURNING` consome uma vez (S22) | código trocado e teste falho: nada grava, "Entre de novo" | Anthropic ou CLIProxy: 502 `MODEL_ACCOUNT_UNAVAILABLE` | o resultado | 20, 24 |
+| `start` | duas linhas | — | — | `MODEL_ACCOUNT_SIGN_IN_STARTED` | 20 |
+| `complete` | `DELETE … RETURNING`, uma vez (S22) | teste falho: nada grava, "Entre de novo" | 502 `MODEL_ACCOUNT_UNAVAILABLE` | o resultado | 20, 24 |
 | Testar de novo | duas: a última grava | o estado só muda com a resposta | o mapa | idem | 16 |
-| Mudar, pausar, dar | revisão (412) | uma instrução | banco: 503 da 2 | `MODEL_ACCOUNT_CHANGED` | 16, 19 |
+| Mudar, pausar, dar, modelo padrão | revisão (412); dar envia o estado final | uma transação | banco: 503 da 2 | `MODEL_ACCOUNT_CHANGED` | 16, 19, 29 |
 | Ordenar | linhas travadas na ordem; restrição adiável | transação inteira | idem | `MODEL_ACCOUNTS_ORDERED` | 15 |
 | Remover | o segundo responde 204 | uma instrução | idem | `MODEL_ACCOUNT_REMOVED` | 6, 12 |
 | Tipos do operador | estado final enviado | uma transação | idem | `ACCOUNT_KINDS_SET` | 17, 18 |
 | Renovar token Claude | reserva na linha (S34) | reserva vence em 30 s | Anthropic: `refused` ou `unavailable` | `MODEL_ACCOUNT_REFRESHED` | 21 |
-| Processo CLIProxy | um por conta | morre com o programa; a partida limpa | Google: o mapa | `CLIPROXY_STARTED`, `CLIPROXY_STOPPED` | 23 |
+| Processo CLIProxy | um por conta | morre com o programa | Google: o mapa | `CLIPROXY_STARTED`, `_STOPPED` | 23 |
 | `reseal` | idempotente por `key_id` | linha a linha | banco | quantas linhas | 6 |
 | Tirar pessoa, apagar empresa | as da 5 e da 6 | a chave estrangeira | — | os da 5 e da 6 | 8 |
 
@@ -152,9 +152,8 @@ Google nem telas medidas. Base aqui: Projetos (um dono, criar e apagar) tem 782 
 | Assinatura Claude | nova, sobre o `@mastra/code-sdk` | `claude/` | — | "colar o código", que é o fluxo do Mastra |
 | Google pelo CLIProxy | nova, o antigo como especificação | `google/` | — | processo por conta, `127.0.0.1`, sha256, morre com o pai (`pool.ts:57-80,188`), por propósito |
 
-**A medida do transplante.** Nada é copiado. O lacre antigo (146 linhas) mudaria mais de um terço
-(estudo 1). `pool.ts` e `login.ts` (505 linhas) mudam a chave da instância, o lacre do arquivo e a
-volta do renovado: especificação.
+**A medida do transplante.** Nada é copiado: o lacre antigo (146 linhas) mudaria mais de um terço;
+`pool.ts` e `login.ts` (505) mudam a chave da instância e o lacre: especificação.
 
 **A dívida.** Nenhuma. No fechamento (L20), S34 cita a 0048.
 
@@ -166,11 +165,11 @@ volta do renovado: especificação.
 | --- | --- | --- |
 | `docs/decisions/0048-…`, `index.md` | cria | U4 a U7 |
 | `0030` | estado: substituída pela 0048 | — |
-| `architecture.md` §8, §11 | contas em fila, tipos por empresa; o risco aponta a 0048 | `check-docs` |
+| `architecture.md` §8, §11 | filas, tipos; o risco aponta a 0048 | `check-docs` |
 
 ### Os contratos que a unidade cria
 
-O registro 0048: tipos, fila, pessoa antes da empresa, tipos por operador, chave da instalação.
+O registro 0048: tipos, filas por fornecedor, ordem P2, tipos por operador, chave da instalação.
 Criterion: (1) o dublê do estudo 2, refeito sobre `@mastra/core` 1.78.0: os fornecedores só com
 chave e o campo que separa os 6; (2) a assinatura Claude pelo fluxo do `@mastra/code-sdk`
 (`mastracode/sdk/src/auth/providers/anthropic.ts:39,61,130`, fork `ce7e9c30`), como no crit. 2; (3)
@@ -195,7 +194,7 @@ PR só de documentos (L13); credenciais da prova apagadas. Regras: L21, T14, S40
 | `apps/server/src/platform/seal.ts` | cria | U5–U7 |
 | `platform/config.ts` | `HUB_SEAL_KEYS_FILE` | `main.ts` e os leitores de `config` |
 | `main.ts` | subcomando `reseal` | `infra/deploy.sh` |
-| `infra/compose.yaml`, `setup-server.sh`, `docs/how-to/hub-server.md` | o arquivo, 0600; a troca | publicar |
+| `infra/compose.yaml`, `setup-server.sh`, `how-to/hub-server.md` | o arquivo, 0600; a troca | publicar |
 
 ### Os contratos que a unidade cria
 
@@ -206,10 +205,10 @@ sealed): Secret`; `Sealed = {keyId: string; blob: Uint8Array}`; `SealContext = {
 
 ### A ordem do trabalho
 
-1. Ler o arquivo no `config`. Regras: S31, S33, C67. Funções: `readSecretFile`.
+1. Ler o arquivo. Regras: S31, S33, C67. Funções: `readSecretFile`.
 2. Lacrar e abrir. Regras: S32, S41, C27. Funções: `node:crypto` `createCipheriv('aes-256-gcm')`,
    IV de 12 bytes de `randomBytes`, `setAAD`, etiqueta de 16 bytes.
-3. `reseal`: relacra o que está em chave antiga; ensaio de três fases no teste (S32).
+3. `reseal` relacra o que está em chave antiga; ensaio de três fases (S32).
 
 ### Como se prova
 
@@ -228,13 +227,14 @@ sealed): Secret`; `Sealed = {keyId: string; blob: Uint8Array}`; `SealContext = {
 ### Os contratos que a unidade cria
 
 `builder.model_account`: `id` uuid; `company_id`, `person_id` nulo, para `auth.member`, `ON DELETE CASCADE`; `kind` em (`api_key`, `claude_subscription`,
-`google_cliproxy`); `provider`, `model`, `label` texto; `position` inteiro; `state` em (`ready`,
-`paused`, `refused`); `sealed` bytea; `key_id`; `hint` nulo; a quem é dada: aberto (P3,
-várias pessoas; terceiro estudo); `refresh_reserved_until` nulo;
+`google_cliproxy`); `provider`, `label` texto, sem modelo; `position` inteiro; `state` em (`ready`,
+`paused`, `refused`); `sealed` bytea; `key_id`; `hint` nulo; `refresh_reserved_until` nulo;
 `linked_by`, `linked_at`, `tested_at`, `revision`. Única `NULLS NOT DISTINCT (company_id, person_id,
-position)` adiável (não provada: crit. 15). `builder.company_account_kind (company_id,
+provider, position)` adiável (não provada: crit. 15). `builder.model_account_assignee (account_id,
+company_id, person_id)`, para a conta e para `auth.member`, `ON DELETE CASCADE`.
+`builder.company_model (company_id, model)`. `builder.company_account_kind (company_id,
 kind)`. `builder.model_account_sign_in`: `id`, `company_id`,
-`person_id`, `owner`, `kind`, `label`, `model`, `sealed`, `key_id`, `expires_at`. Política de linha
+`person_id`, `owner`, `kind`, `label`, `sealed`, `key_id`, `expires_at`. Política de linha
 (0039). Com A: `hub_company` sem `SELECT` em `sealed`; `SECURITY DEFINER`
 `builder.sealed_of(account uuid)` presa à empresa da transação.
 
@@ -269,8 +269,7 @@ models: string[]}`, do `PROVIDER_REGISTRY` menos os 6 do Result.
 1. A lista. Regras: C26, C75. Funções: `@mastra/core/llm` `PROVIDER_REGISTRY`, `parseModelString`.
 2. O teste. Regras: C49, C52, C56, C57, C59, S36, S41. Funções: `ModelRouterLanguageModel({id,
    apiKey})` (`router.ts:111,137`), `doGenerate({prompt, maxOutputTokens: 1, maxRetries: 0,
-   abortSignal})`; reconhecer pelo `statusCode`, nunca pelo `instanceof`; `TypeError` sem status é
-   `unavailable`.
+   abortSignal})`; pelo `statusCode`, nunca `instanceof`.
 
 ### Como se prova
 
@@ -285,7 +284,7 @@ models: string[]}`, do `PROVIDER_REGISTRY` menos os 6 do Result.
 | `builder/model-accounts/` | `store.ts`, `routes.ts`, `kinds.ts`, `public.ts` | `main.ts` |
 | `packages/hub-api/src/model-accounts.ts`, `failures.ts`, `index.ts` | as operações e falhas | web, OpenAPI |
 | `hub/identity/admission.ts`, `auth.ts` | ações e a permissão `MANAGE_MODEL_ACCOUNTS` (dono, administrador) | Builder |
-| `apps/server/src/main.ts` | liga o Builder | — |
+| `main.ts` | liga o Builder | — |
 
 ### Os contratos que a unidade cria
 
@@ -294,19 +293,22 @@ Ações: `readModelAccounts`, `manageModelAccounts`, `manageOwnModelAccounts` (`
 
 | Operação | Método e caminho | Saída e falhas |
 | --- | --- | --- |
-| `listModelAccounts` | `GET /model-accounts` | `{company, mine, kinds}` |
+| `listModelAccounts` | `GET /model-accounts` | `{company, mine, order, kinds, defaultModel}` |
 | `listModelProviders` | `GET /api/model-providers` | `Provider[]` |
-| `connectModelAccount` | `POST /model-accounts`, `Idempotency-Key`; `{owner, provider, model, label, key}` | 201; 422 do mapa, `MODEL_ACCOUNT_KIND_OFF`, `MODEL_UNKNOWN` |
-| `startModelAccountSignIn` | `POST /model-account-sign-ins`; `{owner, kind, model, label}` | 201 `{signInId, url, expiresAt}` |
+| `connectModelAccount` | `POST /model-accounts`, `Idempotency-Key`; `{owner, provider, label, key, testModel}` | 201; 422 do mapa, `MODEL_ACCOUNT_KIND_OFF`, `MODEL_UNKNOWN` |
+| `startModelAccountSignIn` | `POST /model-account-sign-ins`; `{owner, kind, label, testModel}` | 201 `{signInId, url, expiresAt}` |
 | `completeModelAccountSignIn` | `POST /model-account-sign-ins/{signInId}`; `{code}` | 201; 410; 422 do mapa |
 | `testModelAccount` | `POST /model-accounts/{accountId}/tests` | `CheckResult` |
-| `changeModelAccount` | `PATCH /model-accounts/{accountId}`, `If-Match`; `{label?, model?, state?: 'ready' \| 'paused', assignedTo?}` | 200; 412 |
-| `orderModelAccounts` | `PUT /model-account-orders/{owner}`; `{ids}` | 200; 409 |
+| `changeModelAccount` | `PATCH /model-accounts/{accountId}`, `If-Match`; `{label?, state?: 'ready' \| 'paused'}` | 200; 412 |
+| `assignModelAccount` | `PUT /model-accounts/{accountId}/assignees`; `{personIds}` | 200; 404; 422 |
+| `setDefaultModel` | `PUT /default-model`; `{model}` | 200; 422 |
+| `orderModelAccounts` | `PUT /model-account-orders/{owner}/{provider}`; `{ids}` | 200; 409 |
 | `removeModelAccount` | `DELETE /model-accounts/{accountId}` | 204 |
 | `setAccountKinds` | `PUT /api/operations/clients/{companyId}/account-kinds`; `{kinds}` | 200 |
 
 Porta das entradas, uma por tipo (U6, U7): `type SignInKind = {start(): Promise<{url; pending:
-Secret}>; complete(pending, code): Promise<Secret>; model(credential): LanguageModel}`.
+Secret}>; complete(pending, code): Promise<Secret>; model(credential, modelId): LanguageModel}`.
+`order` é a ordem da pessoa por fornecedor (P2), lida pela tela e, na 12, pela conversa.
 
 ### A ordem do trabalho
 
@@ -316,7 +318,7 @@ Secret}>; complete(pending, code): Promise<Secret>; model(credential): LanguageM
 
 ### Como se prova
 
-12–19: `npm run test -w @conexus/server`, `fetch` dublê; T10 com membro, outra empresa e operador.
+12–19, 29: `npm run test -w @conexus/server`; T10 com membro, outra empresa, operador.
 
 ## U6 Assinatura Claude
 
@@ -329,8 +331,8 @@ Secret}>; complete(pending, code): Promise<Secret>; model(credential): LanguageM
 
 ### Os contratos que a unidade cria
 
-Um `CredentialStore` por conta (`auth/types.ts:139-152`): `getApiKey` abre o lacre e renova com a
-reserva (S34); nunca o global `getAuthStorage`.
+Um `CredentialStore` por conta (`auth/types.ts:139-152`): `getApiKey` abre o lacre e renova com
+reserva (S34); nunca o global.
 
 ### A ordem do trabalho
 
@@ -363,8 +365,8 @@ sweepIdle(signal); close()}`; `Lease = {url; proxyKey: Secret; release()}`. Falh
 ### A ordem do trabalho
 
 1. Processo: `server.host` `127.0.0.1`, `access.api-keys` aleatória, `--local-model`,
-   `management.secret-key` só no login (`config.example.yaml:25-27,86-89,104-111`, `2422c6b0`);
-   `setpriv --pdeathsig`. Regras: C57, C62, S36, S37.
+   `management.secret-key` só no login (`config.example.yaml:25-27,86-89,104-111`, `2422c6b0`).
+   Regras: C57, C62, S36, S37.
 2. Entrar: `/antigravity-auth-url`, `/get-auth-status`, `/oauth-callback`. Regras: S22, S41.
 3. Volta do arquivo renovado: relacrar ao parar. Regras: S32.
 
@@ -379,7 +381,7 @@ sweepIdle(signal); close()}`; `Lease = {url; proxyKey: Secret; release()}`. Falh
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/builder/model-accounts/` | fila, formulário, entrar, tipos | rotas |
-| `routes/_app/companies/$companyId/setup.tsx`, `model-account.tsx`; `operations/clients/$companyId.tsx` | as seções | `routeTree.gen.ts` |
+| `routes/_app/companies/$companyId/setup.tsx`, `model-account.tsx`, `operations/clients/$companyId.tsx` | as seções | `routeTree.gen.ts` |
 
 ### A ordem do trabalho
 
@@ -394,4 +396,4 @@ Regras: W1, W4, W6, W8, W9, W12, W17, W23, W24; V29–V31, V35, V39, V55. Ordena
 
 ### Como se prova
 
-27: `npm run e2e`; 28: após o Release, pelo firstmate e pelo fundador (T13, T14).
+27: `npm run e2e`; 28: após o Release (T13, T14).
