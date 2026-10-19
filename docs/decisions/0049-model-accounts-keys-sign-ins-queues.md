@@ -31,8 +31,9 @@ If 2 or 3 fails, that kind stays off and returns to the founder.
 
 1: 2026-10-19, offline, zero `fetch`: 216 providers, 210 key-only (gateway `models.dev`, no
 `${VAR}` URL; Google's two variables name one key), 7,778 models. Out: `cloudflare-workers-ai`,
-`databricks`, `snowflake-cortex`, `neon`, `infomaniak`, `netlify`. 2 to 4: not run, waiting for the
-founder's credentials.
+`databricks`, `snowflake-cortex`, `neon`, `infomaniak`, `netlify`. 2: 10:59Z, the founder's
+subscription: sign-in 200, raw `expires_in` 28,800 s, refresh 200 with 28,800 s, 20 of 20 turns 200.
+3: login 200, but the proof's model list came back empty and no call ran; to rerun. 4: no refusal.
 
 ## State
 
