@@ -137,6 +137,7 @@ export async function refusedAs<T>(work: () => Promise<T>, refusals: Refusals): 
  * or the database for a 5xx, its one outside system.
  */
 export async function refusedReply(reply: Response, refusals: Refusals): Promise<Failure> {
+  // biome-ignore lint/plugin: an unreadable body is a refusal with no code, and refusalOf parses what it reads (C27, C53)
   const body: unknown = await reply.json().catch(() => null)
   const refusal = refusalOf(refusals, reply.status, body)
   if (refusal !== undefined)
@@ -222,7 +223,7 @@ export function libraryInstallationOn(auth: Auth, database: Database) {
  * An earlier link of the same person stops working when a new one is given (C64). The library
  * stores each link under a hash of its token, so only the person's id, the stored value, finds it.
  */
-export async function forgetLinks(tx: CommandTx, personId: string): Promise<void> {
+export async function forgetLinks(tx: CommandTx, personId: PersonId): Promise<void> {
   await tx.delete(verification).where(eq(verification.value, personId))
 }
 

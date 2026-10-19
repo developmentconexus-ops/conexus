@@ -4,6 +4,7 @@
 // Revalidate by 2027-04-13, or when Biome or TypeScript gain a second suppression syntax.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
+import { z } from 'zod'
 
 const root = resolve(process.argv[2] ?? '.')
 const SKIPPED = new Set(['node_modules', '.git', 'dist', 'coverage'])
@@ -44,7 +45,7 @@ for (const path of walk(root).filter((file) => SOURCE.test(file))) {
 
 const recordPath = join(root, 'scripts/suppressions.json')
 const recorded: Record<string, number> = existsSync(recordPath)
-  ? JSON.parse(readFileSync(recordPath, 'utf8'))
+  ? z.record(z.string(), z.number()).parse(JSON.parse(readFileSync(recordPath, 'utf8')))
   : {}
 for (const file of new Set([...Object.keys(counts), ...Object.keys(recorded)])) {
   const real = counts[file] ?? 0

@@ -111,6 +111,7 @@ const VersionFailure = z.enum(FAILURE_CODES)
 const ShownState = z.enum(['sending', 'ready', 'failed'])
 
 /** A version as the list shows it; one being pruned is never shown. */
+// biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
 export function versionView(row: VersionRow, liveVersionId: string | null): AppVersion {
   return {
     id: AppVersionId.parse(row.id),
@@ -146,6 +147,7 @@ export async function lockApp(tx: CommandTx, ids: OfProject) {
 /** Ends a send that did not put its version on the air: the version fails with its reason. */
 export async function failVersion(
   tx: CommandTx,
+  // biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
   input: { projectId: ProjectId; versionId: string; failure: VersionFailure },
 ): Promise<void> {
   await tx
@@ -261,6 +263,7 @@ export async function storeAppVersion(input: {
 }
 
 /** Whether the send still holds the Projeto's claim: no other send took it over. */
+// biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
 export async function holdsClaim(tx: ReadTx, input: { projectId: ProjectId; versionId: string }) {
   const [row] = await tx
     .select({ held: CLAIM_HELD })

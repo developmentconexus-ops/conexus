@@ -58,8 +58,10 @@ function inside(files: File[]) {
 
 async function manifestOf(file: File): Promise<unknown> {
   try {
+    // biome-ignore lint/plugin: the caller parses the unknown manifest with its schema (C27)
     return JSON.parse(await file.text())
   } catch {
+    // biome-ignore lint/plugin: a manifest that is not JSON is the same refusal as a missing one (C53)
     return undefined
   }
 }

@@ -48,7 +48,7 @@ export function readMemberships(database: Database, personId: PersonId, page: st
 
 const named = { id: company.id, name: company.name }
 
-export async function companyById(tx: ReadTx, companyId: string): Promise<Company> {
+export async function companyById(tx: ReadTx, companyId: CompanyId): Promise<Company> {
   const [row] = await tx.select(named).from(company).where(eq(company.id, companyId))
   return Company.parse(row)
 }

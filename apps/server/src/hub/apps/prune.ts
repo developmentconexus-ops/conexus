@@ -15,6 +15,7 @@ type Ids = { companyId: CompanyId; projectId: ProjectId }
  * Marks for the prune, in the transaction that put `liveVersionId` on the air: every failed version,
  * and the ready ones past the newest three other than the live one. A version being sent stays.
  */
+// biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
 export async function markPrune(tx: CommandTx, input: Ids & { liveVersionId: string }) {
   const kept = await tx
     .select({ id: appVersion.id })
