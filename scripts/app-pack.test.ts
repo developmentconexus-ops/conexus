@@ -143,5 +143,5 @@ test('app-pack recusa um arquivo da sobreposição que não substitui nenhum e o
   writeFileSync(join(overlay, 'assets', 'stlye.css'), 'body {}')
   const run = packing(join(dir, 'recados-erro'), overlay)
   assert.equal(run.status, 1)
-  assert.match(run.stderr, /assets\/stlye\.css replaces no file/)
+  assert.match(run.stderr, /the folder holds .*assets\/stlye\.css/)
 })

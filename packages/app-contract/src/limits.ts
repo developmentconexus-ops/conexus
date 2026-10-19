@@ -8,9 +8,9 @@ export const APP_LIMITS = Object.freeze({ bytes: 10 * 1024 * 1024, files: 1000 }
 export const APP_COMPATIBILITY_DATE = Object.freeze({ 1: '2026-10-18' })
 
 /**
- * What one call of an app may use (decision 0047): the CPU its Worker is uploaded with, the `db`
- * calls the platform lets it make and the time the dispatcher grants it, and the run login's
- * statement and transaction timeouts.
+ * What one call of an app may use (decision 0047): the CPU its Worker is uploaded with and the
+ * dispatcher sets on each call, the `db` calls the platform lets it make and the time the dispatcher
+ * grants it, and the run login's statement and transaction timeouts.
  */
 export const APP_CALL_LIMITS = Object.freeze({
   cpuMs: 50,
