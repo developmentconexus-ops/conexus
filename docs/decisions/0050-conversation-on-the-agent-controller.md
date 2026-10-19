@@ -49,9 +49,12 @@ now gives the controller its native rules instead: a category resolver puts `web
 `web_search` and `recall` in `read`, and the rules allow `read` and deny every other category, so
 a tool added later is refused until a rule names it (not `yolo`, which frees every tool; founder,
 step 13 D7). A `web_fetch` turn in `conversation.test.ts` completes, and the controller answers
-`deny` for a tool outside `read`. Claude's search itself ran (a search, five sites, Portuguese
-text). Gemini called only `web_fetch` before it stopped, so whether it searches through CLIProxy
-is still open. Check 4 runs again on both paths; this record changes with it.
+`deny` for a tool outside `read`. Re-run the same day with those rules, on the founder's sign-ins: checks 1 to 3 passed
+again; the subscription's turn completed with a search in the stream, five sites read and a
+Portuguese answer, so Claude passes 4. Gemini through CLIProxy completed in Portuguese and read
+one page, but no search showed in the stream: that path fails 4. As the card says (U4: `web_search`
+only for the four, Google through CLIProxy out until this check passes), the Builder gives Gemini
+`web_fetch` only, and Gemini's search leaves the step and returns to the founder.
 
 Check 5: ours. `@mastra/playground-ui` 64.0.0, read: 43 dependencies, 10 peers with `client-js`; its chat takes Mastra's types from routes the Hub lacks (S39), adds a second Zod, has no `role="log"`. Ours takes the stream as is, adds no dependency and no `@mastra/*` to the bundle (W7); `conversation.test.tsx` proves it. Reopens if `playground-ui` drops `client-js`.
 
