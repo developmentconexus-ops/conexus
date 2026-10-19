@@ -49,6 +49,7 @@ Desenho: `architecture.md`.
     Cartão da etapa 11 aprovado em 2026-10-19 (commit e5d89abfd62b4441073323f1f780fe79054bfceb): "2. a"; "3 SIM"; "4. sIM"; "sM APROVO E CONFIRMO"
     Etapa 11 usada em 2026-10-19 em https://hub.conexus.fun (v0.11.0, v0.11.1), roteiro pelo firstmate e fundador: "okay, aguardo"; "Loguei google pela empresa, quer validar?"
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
+    Cartão da etapa 12 aprovado em 2026-10-19 (commit be086108e6e98df037b74344f180aaa670ef76b0): "1. A"; "2. Autorizo"; "3. Sim"
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
@@ -96,12 +97,12 @@ Domínio próprio de empresa.
 
 ## 2. As etapas
 
-Etapa fechada sai daqui; o uso, na seção 1.
+Etapa fechada sai daqui (uso: seção 1).
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8 do Builder. O banco dormindo e a restauração dos dois bancos, de novo |
-| 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, do sandbox e do Git. Testes 11 e 12 |
+| 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8. Banco dormindo e restauração dos dois bancos |
+| 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox e Git. Testes 11 e 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |
 | 15 Mudar o app | A 14 | Nenhuma | Migrações atômicas de app. O lote |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
@@ -114,5 +115,5 @@ Etapa fechada sai daqui; o uso, na seção 1.
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 | 24 Conectores de serviços | A 23 | Quem faz o OAuth | O estudo do Mastra Platform e Connect (2026-10-18), só referência, nunca dependência |
 
-O teste do banco dormindo, da etapa 2, roda em toda etapa que acrescenta algo que roda
-sozinho; se falhar com o Mastra parado, a 12 volta a você.
+O teste do banco dormindo (etapa 2) roda em toda etapa com algo autônomo; falhando com o Mastra
+parado, a 12 volta a você.
