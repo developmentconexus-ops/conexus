@@ -5,24 +5,24 @@
 **No fim desta etapa** o Builder responde num Projeto, em português, aos poucos, buscando na web,
 pela conta certa da fila, e avisa quando troca de conta ou elas acabam.
 
-**O roteiro de uso.** Empresa A: fila Anthropic com Time 1 e Time 3 (chave errada); Ana com chave
-própria; a conta Google da empresa.
+**O roteiro de uso.** Empresa A, sem chave de API sua: fila Anthropic com Time 1 (a sua assinatura
+Claude) e Time 3 (chave inventada, que a Anthropic recusa); fila Google com a sua conta. A conta
+própria de Ana e o limite (429) correm no percurso, com o fornecedor dublê.
 
 1. Como **Ana**, "Encomendas" › **Conversa** › **Nova conversa**: o seletor mostra o padrão da
    empresa e só fornecedores com conta. "Compare dois apps de encomenda de padaria da
    internet": a resposta vem aos poucos, com as páginas lidas, e a conversa ganha um título.
-2. Pause a conta de Ana e suba a Time 3: "Time 3 foi recusada. Ligue de novo; continuei pela Time
+2. Suba a Time 3: "Time 3 foi recusada. Ligue de novo; continuei pela Time
    1." Em **Conta de modelo**: "recusada · Ligue de novo".
 3. Pause a Time 1: "As contas Anthropic que você pode usar estão indisponíveis. Escolha outro
    modelo ou fale com quem administra a empresa."
-4. Como dono, ligue a **troca automática** "Claude Sonnet → GPT": a pergunta segue no GPT, com
-   "Troquei para GPT pela troca automática da empresa". A seguinte tenta o Claude.
-5. Escolha o Gemini: ele responde pela conta Google.
-6. Como **Diego**: a conversa de Ana não aparece; na Empresa B, nada. Dez minutos sem conversa: o
+4. Como dono, ligue a **troca automática** "Claude Sonnet → Gemini": a pergunta segue no Gemini,
+   com "Troquei para Gemini pela troca automática da empresa". A seguinte tenta o Claude.
+5. Como **Diego**: a conversa de Ana não aparece; na Empresa B, nada. Dez minutos sem conversa: o
    Neon mostra o banco "Idle" (os dois bancos, um ramo). Firstmate restaura o ramo: a conversa
    depois do ponto some.
 
-**O que você faz, e quando.** Antes de U1: autoriza turnos reais pela sua chave, assinatura e
+**O que você faz, e quando.** Antes de U1: autoriza turnos reais só pela assinatura Claude e pela
 conta Google. Depois: esta página; no fim, o roteiro e os textos.
 
 **As suas respostas ao estudo.** 1 A: a conversa é de quem a começou. 2: busca e leitura nativas,
@@ -44,7 +44,7 @@ nativo: o controller leva o aviso (`info`) e o guarda. 5 A, 6 A, 7 A.
 7. No máximo 10 tentativas por pergunta.
 8. Sem apagar conversa: ela some com o Projeto, a pessoa ou a empresa.
 
-**Fica de fora.** As issues `next-card` 25, 39, 45: outras pastas.
+**Fica de fora.** Issues `next-card` 25, 39, 45: outras pastas.
 
 **A decisão sua: as permissões (regra D11).** **A.** O login do Mastra só entra no banco dele; o
 banco recusa ler as contas do Hub com ele. **B.** O Mastra num schema do banco do Hub.
@@ -69,8 +69,7 @@ banco recusa ler as contas do Hub com ele. **B.** O Mastra num schema do banco d
 P0 antes (L20); U3 em PR próprio (D11); U6, U7, U10 em paralelo; uma revisão, um merge (L9, L13).
 
 **Orçamento de código alterado** (sem testes nem gerados): U2 220; U3 250; U4 340; U5 620; U6 330;
-U7 560; U8 950; U9 60; U10 320. Total **3.650**, teto 4.000 (L2). Base: a 11 orçou 780 (fila,
-rotas), 900 (telas), 350 (login Google).
+U7 560; U8 950; U9 60; U10 320. Total **3.650**, teto 4.000 (L2).
 
 ## O que é do Mastra e o que é nosso
 
@@ -80,18 +79,18 @@ da fonte do pacote publicado, pelo mapa de fonte; nomes no Context7 (`/mastra-ai
 | Mecanismo | Nativo do Mastra | Nosso, e por quê |
 | --- | --- | --- |
 | Conversa | `createSession`, `deleteSession` (`agent-controller.ts:526`, `:841`); `sendMessage`, `abort` (`session.ts:5258`, `:4591`) | rotas do Hub (S39) |
-| Modelo por conversa | `session.model.switch({modelId, scope: 'thread'})` (`session.ts:2597`) | o seletor |
-| Chave por tentativa | `processInputStep` dá o `model` (`processors/index.ts:249`); `processAPIError`, `{retry}` (`:591`) | ordem, pausa até um horário, "recusada" |
-| Aviso de troca | `writer.custom` guarda; `emitEvent({type: 'info'})` leva ao vivo (`types.ts:922`, `:1184`; `agent-controller.ts:2594`), pois `data-*` cai ao vivo (`session-run-engine.ts:1580`); assim o Mastra Code (`account-rotation-processor.ts:390-406`) | o texto em português |
-| Troca automática | `Agent({model: [...]})` **não**: abre todas as chaves (`agent.ts:7577-7582`), troca em qualquer erro (`llm-execution-step.ts:1168-1185`) | o processador (resposta 1) |
+| Modelo por conversa | `session.model.switch(modelId)`, guardado por thread (`session.ts:2466-2480`) | o seletor |
+| Chave por tentativa | `processInputStep` dá o `model` (`processors/index.ts:249`); `processAPIError`, `{retry}` (`:591`) | ordem, pausa, "recusada" |
+| Aviso de troca | `writer.custom` guarda; `emitEvent({type: 'info'})` leva ao vivo (`types.ts:922`, `:1184`), pois `data-*` cai ao vivo (`session-run-engine.ts:1580`); assim o Mastra Code (`account-rotation-processor.ts:390-406`) | o texto |
+| Troca automática | `Agent({model: [...]})` **não**: abre todas as chaves (`agent.ts:7577-7582`), troca em qualquer erro (`llm-execution-step.ts:1168-1185`) | o processador |
 | Fim das contas | `retry: false` e `writer.custom` (provado) | nunca `abort()`: **defeito provado**, calado |
 | Horário do fornecedor | `getRetryAfterMs`, interno (`utils/retry-after.ts:78`) | `retry-after` do `APICallError` (C75) |
 | Assinatura Claude | `opencodeClaudeMaxProvider` (`claude-max.ts:259`); `CredentialStore` (`auth/types.d.ts:119-139`); `refreshAnthropicToken` (`anthropic.ts:130`) | a loja, com reserva (S34) |
-| Web | `webSearchTool` (`web-search.ts:17`), só quatro fornecedores (`:28`); `webFetchTool` (`web-fetch.ts:263`), recusa IP interno, também após o DNS (`:128-152`) | sem lista, limite nem invólucro |
+| Web | `webSearchTool` (`web-search.ts:17`), quatro fornecedores (`:28`); `webFetchTool` (`web-fetch.ts:263`) recusa IP interno, também após o DNS (`:128-152`) | nada a mais |
 | Memória | `observationalMemory` (`memory/src/index.ts:142`), como o Mastra Code (`agents/memory.ts:393-412`); dono de `createSession({resourceId})` (`agent.ts:8252`) | dono com a empresa; o índice |
-| Memória e título pagos pela fila | `observation.model`, `reflection.model`, `generateTitle.model` aceitam função de `requestContext`, fora dos processadores (`observer-runner.ts:190-208`) | a função dá a conta do turno |
-| Banco | `PostgresStore`; memória sem temporizador (`observational-memory.ts:3916`) | pool do Hub (D27) |
-| Log | `new Mastra({logger, agentControllers})` (`mastra/index.ts:323`, `:350`) | logger só escalar: **defeito provado**, o padrão imprime o erro cru (C50, S41) |
+| Memória e título pela fila | `observation.model`, `reflection.model`, `generateTitle.model`: função de `requestContext`, fora dos processadores (`observer-runner.ts:190-208`) | a conta do turno |
+| Banco | `PostgresStore`; nenhum `setInterval` nas fontes de `memory` e `pg` | pool do Hub (D27) |
+| Log | `new Mastra({logger, agentControllers})` (`mastra/index.ts:323`, `:350`) | logger escalar: **defeito provado**, o padrão imprime o erro cru (C50, S41) |
 
 ## Os critérios de aceite
 
@@ -99,20 +98,20 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | P0 | Arquivo fora de `builder/` importa `@mastra/core`: `npm run deps` recusa | arquivo plantado | must |
+| 1 | P0 | `@mastra/core` fora de `builder/`: `npm run deps` recusa | arquivo plantado | must |
 | 2 | U1 | 0050 "proposed" antes. **Ao vivo**: duas empresas, eventos isolados; o modelo volta após reiniciar; a chave muda entre tentativas | o registro | must |
-| 3 | U1 | **Ao vivo**: turnos por chave, assinatura e Gemini, com busca; busca recusada numa via: sai dela, volta ao fundador | o registro (T14) | must |
+| 3 | U1 | **Ao vivo**: turnos por assinatura e Gemini, com busca; recusada numa via: sai dela, volta ao fundador | o registro (T14) | must |
 | 4 | U3 | O login do Mastra no banco do Hub: recusado (teste 1) | `mastra-database.test.ts` | must |
-| 5 | U2 | Arquivo do Mastra ausente, vazio ou aberto a outros: `CONFIG_INVALID`; após um turno, zero conexões em 15 s | `config.test.ts`, `database.test.ts` | must |
+| 5 | U2 | Arquivo do Mastra ausente, vazio ou aberto a outros: `CONFIG_INVALID`; após um turno e `memory.settled()`, zero conexões em 15 s | `config.test.ts`, `database.test.ts` | must |
 | 6 | U3 | A Empresa B não lê nem grava conversa da A; Diego não lê a de Ana | `isolation-conversations.test.ts`, catálogo | must |
 | 7 | U3 | Apagar Projeto, pessoa ou empresa: threads e memória antes das linhas; Mastra fora: pendente | `conversations-removal.test.ts` | must |
 | 8 | U4 | Toda thread: linha no índice, empresa no `resourceId` (teste 4) | `conversation.test.ts`, nas tabelas do Mastra | must |
 | 9 | U4 | 401 com texto plantado: fora do log, stderr, resposta e stream | idem | must |
-| 10 | U4 | Fora dos quatro: sem busca; `web_fetch` a IP interno, direto, por nome ou redirecionamento: recusado | idem | must |
-| 11 | U4 | Título e observação de conversa longa (dublê): pela conta do turno, nenhuma fora da fila | idem | must |
+| 10 | U4 | Fora dos quatro: sem busca; `web_fetch` a IP interno, por nome ou redirecionamento: recusado | idem | must |
+| 11 | U4 | Título e observação (dublê): pela conta do turno; 429 no observador: o turno segue, sem texto cru | idem | must |
 | 12 | U5 | Própria, dadas, empresa; pausada, recusada, desligada, em limite: pulada (testes 5, 6); sem conta, nenhuma chamada, nem pelo ambiente | `queue.test.ts`, fornecedor dublê | must |
-| 13 | U5 | 429, 402: limite (horário do fornecedor, senão 15 min, 6 h), próxima. 401, 403: `refused` (assinatura: renova antes). 400, desconhecido: `MODEL_CALL_FAILED` | idem | must |
-| 14 | U5 | Todas fora: aviso, `agent_end` com erro; na 10ª tentativa, o aviso (resposta 7) | idem | must |
+| 13 | U5 | 429 (`isRetryable`), 402: limite (horário, senão 15 min, 6 h), próxima, sem repetir. 401, 403: `refused` (assinatura: renova antes). 400, desconhecido: `MODEL_CALL_FAILED` | idem | must |
+| 14 | U5 | Todas fora: aviso, `agent_end` com erro; na 10ª chamada, o aviso (resposta 7) | idem | must |
 | 15 | U5 | Token recusado: "recusada · Ligue de novo", dito no turno (teste 7); duas renovações: uma chamada (teste 8) | `claude-refresh.test.ts` | must |
 | 16 | U6 | Dono e administrador; membro: 404; fora do registro: 422 `MODEL_UNKNOWN`; velha: 412 | `model-fallback.test.ts` | must |
 | 17 | U6 | Ligada, fila acabada: o próximo modelo, com aviso e sem busca; a seguinte tenta o escolhido; desligada: para | idem | must |
@@ -120,23 +119,23 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 | 19 | U7 | Mesma chave: um efeito, também após reiniciar; outro corpo: `IDEMPOTENCY_CONFLICT`; sem conta: 422 `MODEL_NO_ACCOUNT` | idem | must |
 | 20 | U7 | Batimento de 25 s; reconectar relê; **Parar**: `turnEnd.reason`, texto parcial guardado; desligar espera o turno (C62) | idem, `main.test.ts` | must |
 | 21 | U8 | Protótipo `ui/` contra `playground-ui`, com o texto parcial ao reconectar; escolha na 0050 | o registro | must |
-| 22 | U8 | As telas da matriz, textos, teclado, foco, região viva | `conversation.test.tsx` | must |
+| 22 | U8 | Telas da matriz, textos, teclado, foco | `conversation.test.tsx` | must |
 | 23 | U8 | 390 px, 200%, dois temas, sem erro de CSP | navegador (T23) | should |
 | 24 | U9 | O roteiro, Hub real, fornecedor dublê | `tests/e2e/conversation.test.ts` | must |
 | 25 | U9 | **Ao vivo**: ramo "Idle" após dez minutos, os dois logins a zero (0009, D27) | firstmate, console do Neon | must |
 | 26 | U9 | **Ao vivo**: restaurar o ramo põe os dois bancos no mesmo minuto; lista e conversa batem | firstmate | must |
-| 27 | U9 | **Ao vivo, se acontecer**: 429 ou 402 sem `retry-after`, anotado | firstmate | should |
+| 27 | U9 | **Ao vivo, se houver**: 429 ou 402 sem `retry-after`, anotado | firstmate | should |
 | 28 | U9 | Publicado: o roteiro | firstmate, fundador (T14) | must |
-| 29 | U10 | Gemini pelo processo da conta em `127.0.0.1`; binário diferente: não inicia; 10 min parado ou o programa sai: ele sai, login relacrado | `google-calls.test.ts`, CLIProxy dublê | must |
+| 29 | U10 | Gemini pelo processo da conta em `127.0.0.1`; binário diferente: não inicia; 10 min parado ou fim do programa: sai, login relacrado | `google-calls.test.ts`, CLIProxy dublê | must |
 
 ## A matriz de estados
 
 | Tela | Vazio | Carregando | Erro | Não encontrado | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- |
 | Conversas do Projeto | "Nenhuma conversa", **Nova conversa**; título, ou a data | a partilhada | a de `ui/` | a do Projeto | — |
-| Conversa | campo e seletor; sem conta: o aviso da 11 | "Pensando…", **Parar** | "O modelo não respondeu." | a do Projeto; linha sem thread sai | os avisos de troca, recusa, fim |
+| Conversa | campo e seletor; sem conta: o aviso da 11 | "Pensando…", **Parar** | "O modelo não respondeu." | a do Projeto; sem thread: 404, a linha sai | os avisos de troca, recusa, fim |
 | Seletor | modelos com conta | idem | idem | — | — |
-| Troca automática | "Desligada" | idem | 412: "Mudou antes de você salvar" | — | — |
+| Troca automática | "Desligada" | idem | 412 | — | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -151,10 +150,10 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 
 | Gravação ou comando | Duas vezes | Recusada no meio | Dependência fora | Imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `createConversation` | `Idempotency-Key` | linha antes; sem thread: 404 | 503 | `CONVERSATION_CREATED` | 8, 19 |
+| `createConversation` | `Idempotency-Key` | linha antes; sem thread: 404, a linha sai | 503 | `CONVERSATION_CREATED` | 8, 19 |
 | `sendConversationMessage` | `Idempotency-Key` | a memória guarda o que veio | a fila | `CONVERSATION_TURN_STARTED`, `_ENDED` | 14, 19 |
 | Chamada ao modelo | uma por tentativa | `retry: false` | log escalar | `MODEL_CALL_REFUSED` | 9, 13 |
-| Título, observação (Mastra) | o Mastra guarda | não marca; a próxima chamada marca | nativa (`observational-memory.ts:736`) | — | 11 |
+| Título, observação (Mastra) | o Mastra guarda | uma chamada; `continue`, o turno segue | a próxima chamada marca | — | 11 |
 | Marca de limite, `refused` | idempotente | uma instrução | sem marca | `MODEL_ACCOUNT_LIMITED`, `_REFUSED` | 13, 15 |
 | Renovação Claude | reserva com prazo (D25) | falha após a troca: "Ligue de novo" (S34) | `refused` | `MODEL_TOKEN_REFRESHED` | 15 |
 | Processo CLIProxy | um por conta | ao sair, relacra com a revisão | próxima conta | `CLIPROXY_STARTED`, `_STOPPED` | 29 |
@@ -162,7 +161,7 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 | Troca automática | `If-Match` | uma transação | banco | `MODEL_FALLBACK_SET` | 16 |
 | `init` do `PostgresStore` | `IF NOT EXISTS` | não inicia | idem | `MASTRA_STORAGE_READY` | 5 |
 | Apagar na remoção | já apagada conta | repete | pendente | `CONVERSATIONS_RELEASED` | 7 |
-| `stopConversation`, `deleteSession` | o segundo: 204 | guarda o que veio | — | `CONVERSATION_STOPPED` | 20 |
+| `stopConversation`, `deleteSession` | 204 | guarda o que veio | — | `CONVERSATION_STOPPED` | 20 |
 | `migrate` do Mastra | senha após 28P01 (D32) | não publica | idem | `MASTRA_LOGIN_READY` | 4, 26 |
 | `web_fetch`, busca | — | `isError` | o modelo diz | — | 3, 10 |
 
@@ -170,15 +169,14 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 
 | Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |
 | --- | --- | --- | --- | --- |
-| Fila | nova | `model-accounts/queue.ts` | — | credencial aberta na transação do direito (`model-routing.ts:32-39`): o banco recusa a de outra empresa (S32) |
+| Fila | nova | `model-accounts/queue.ts` | — | credencial aberta na transação do direito (`model-routing.ts:32-39`): o banco recusa outra empresa (S32) |
 | Memória e título | nova | `conversation/builder.ts` | — | nenhuma: a base é o Mastra Code (`agents/memory.ts:393-412`) |
 | Renovação Claude | nova | `claude/store.ts` | — | compare-and-swap (`store.ts:85-90`): uma renovação não apaga outra (S34) |
-| Gemini | nova | `google/calls.ts` | — | `127.0.0.1`, morre com o pai (`pool.ts:57-80`): ninguém de fora o alcança (S36, C62) |
+| Gemini | nova | `google/calls.ts` | — | `127.0.0.1`, morre com o pai (`pool.ts:57-80`): fora do alcance (S36, C62) |
 | Índice e rotas | nova | `builder/conversation/` | — | texto do fornecedor fora do navegador (`mastra-session-routes.ts:128`), por C51 |
 
-**A medida do transplante.** Nada é copiado. O antigo (`e0353c36`) é uma referência, não a resposta:
-cada linha vale pela sua regra; as fichas 3.14 e 3.15
-da auditoria, idem.
+**A medida do transplante.** Nada é copiado; o antigo (`e0353c36`) é referência, não resposta: cada
+linha e as fichas 3.14 e 3.15 valem pela sua regra.
 
 **A dívida.** Conversa criada entre a liberação e a remoção: thread órfã; a 16 varre. S36 cita uma
 guarda do Hub para o `web_fetch` que não existe; fica a nativa (C75), para o fechamento.
@@ -193,8 +191,7 @@ guarda do Hub para o `web_fetch` que não existe; fica a nativa (C75), para o fe
 
 ### Os contratos que a unidade cria
 
-0050: conversa no `AgentController`, fila no processador, aviso por `info`. Criterion: crit. 2, 3.
-Só documentos (L13). Regras: L21, T14, S40.
+0050, Criterion: crit. 2, 3. Só documentos (L13). Regras: L21, T14, S40.
 
 ## U2 Loja e pool do Mastra
 
@@ -253,24 +250,27 @@ observacional: quem apaga é o Mastra.
 
 `createBuilder(deps): {controller; mastra}`; `memoryOwner`: `company:<id>:person:<id>`. Agente:
 `model` de `session.modelId` do contexto `controller`, sem chave; `maxRetries: 0`;
-`maxProcessorRetries: 10`, e no fim o aviso de contas acabadas (o erro subiria sem ele,
-`llm-execution-step.ts:2643-2664`); `errorProcessors: [StreamErrorRetryProcessor,
-AccountQueue]`; `tools` por função: `web_fetch` sempre, `web_search` só nos quatro.
-`accountModel({requestContext})`: a conta do turno, reaberta pelo id que a fila pôs no contexto.
-`Memory` com `generateTitle: {model: accountModel, instructions em português,
-emitEvent: true}` e `observationalMemory` como o Mastra Code: `scope: 'thread'`, `retrieval: true`,
+`maxProcessorRetries: 9`, dez chamadas (`llm-execution-step.ts:2594`), e no fim o aviso de contas
+acabadas; `errorProcessors`: os padrões (`stability-defaults.ts:114`), `StreamErrorRetryProcessor` com um
+primeiro `matcher` de `maxRetries: 0` para 429, 402, 401, 403, e por último `AccountQueue`, como o
+Mastra Code (`index.ts:1345-1393`); `tools` por função: `web_fetch` sempre, `web_search` só nos quatro (o
+Google pelo CLIProxy, fora até o crit. 3 passar).
+`accountModel({requestContext})`: a conta do turno, reaberta pelo id no contexto; sem id (o
+observador roda antes da fila, `agent.ts:2392-2404`), a próxima da fila. `Memory` com
+`generateTitle: {model: accountModel, instructions em português}` e `observationalMemory` como o Mastra Code: `scope: 'thread'`, `retrieval: true`,
 `activateOnProviderChange`, `temporalMarkers`, `observation {model: accountModel, messageTokens:
 30_000, bufferTokens: 1/5, bufferActivation: 2000, blockAfter: 2, threadTitle: true}`, `reflection
-{model: accountModel, observationTokens: 40_000, bufferActivation: 1/2, blockAfter: 1.1}`;
+{model: accountModel, observationTokens: 40_000, bufferActivation: 1/2, blockAfter: 1.1}`, os dois
+com `maxRetries: 0, failurePolicy: 'continue'` (o padrão repete e aborta com texto cru);
 sem `semanticRecall` nem observabilidade (S42).
 
 **Ordem.**
 
-1. Logger: `IMastraLogger` com nome, status e código ao `FailureLog`. Regras: C50, S41.
+1. Logger: `IMastraLogger` com nome, status e código. Regras: C50, S41.
 2. Agente, memória, controller. Regras: C75, S36, D27. Funções: `Agent`, `AgentController`,
    `Mastra`, `Memory`, `webSearchTool`, `webFetchTool`.
 
-**Prova.** 8–11, `fetch` dublê.
+**Prova.** 8–11.
 
 ## U5 A fila na chamada
 
@@ -282,12 +282,13 @@ sem `semanticRecall` nem observabilidade (S42).
 
 ### Os contratos que a unidade cria
 
-`AccountQueue implements Processor<'account-queue'>`, de entrada e de erro; loja Claude com
-`allowEnvironmentFallback: false`; ambiente sem chave de fornecedor. `processInputStep` dá `{model: {id, apiKey}}` (assinatura: `opencodeClaudeMaxProvider`; Google: U10);
-na troca de fornecedor, `activeTools` sem `web_search`, resolvida uma vez no início (`agent.ts:5289`).
-`type CallFailure = 'limited' | 'refused' | 'unknown'`, de `APICallError.statusCode` (C52). Aviso:
-parte `data-conexus-notice` `{kind: 'account-switched' | 'accounts-exhausted' | 'model-switched';
-text}` e `info`.
+Dois processadores, como o Mastra Code (`account-rotation-processor.ts:12-20`): `AccountPick`
+(`processInputStep`) dá `{model: {id, apiKey}}` (assinatura:
+`opencodeClaudeMaxProvider`; Google: U10) e, trocado o fornecedor, `activeTools` sem `web_search`,
+resolvida no início (`agent.ts:5300-5301`); `AccountQueue`, só `processAPIError`. Loja Claude com
+`allowEnvironmentFallback: false`.
+`type CallFailure = 'limited' | 'refused' | 'unknown'`, de `APICallError.statusCode` (C52). Aviso: `data-conexus-notice`
+`{kind: 'account-switched' | 'accounts-exhausted' | 'model-switched'; text}` e `info`.
 
 **Ordem.**
 
@@ -296,7 +297,7 @@ text}` e `info`.
 3. A loja Claude (`CredentialStore`): reserva `refresh_until`, chama `refreshAnthropicToken` sem
    transação e grava com a revisão. Regras: S34, D22, D25, C65.
 
-**Prova.** 12–15, fornecedor e Anthropic dublês.
+**Prova.** 12–15, com dublês.
 
 ## U6 A troca automática
 
@@ -371,8 +372,8 @@ fechar o último stream sem turno.
 
 ## U9 Percurso, banco dormindo, restauração
 
-`tests/e2e/conversation.test.ts` no `e2e`; `how-to/hub-database-restore.md`, os dois bancos num ramo.
-24: `npm run e2e`; 25–28: após o Release (T13, T14).
+`tests/e2e/conversation.test.ts`; `how-to/hub-database-restore.md`. 24: `npm run e2e`; 25–28: após
+o Release (T13, T14).
 
 ## U10 Gemini pelo CLIProxy
 
