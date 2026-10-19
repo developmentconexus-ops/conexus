@@ -33,7 +33,7 @@ function isCompanys(name: string, companyId: string): boolean {
 }
 
 /** A project as Neon lists it: its id, and its name, which a person may read as it was or is now. */
-type NeonProject = { id: NeonProjectId; name: string }
+export type NeonProject = { id: NeonProjectId; name: string }
 
 /** What Neon said, which the caller must tell apart: a refusal leaves no effect, silence may leave one. */
 type NeonAnswer<T> = { kind: 'DONE'; value: T } | { kind: 'REFUSED' } | { kind: 'NO_ANSWER' }

@@ -5,7 +5,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { IdentityPorts } from '../identity/public.ts'
-import { readyDatabaseOf, recordDatabaseHost } from './company-database.ts'
+import { nameDatabases, readyDatabaseOf, recordDatabaseHost } from './company-database.ts'
 import {
   deleteCompanyProjects,
   hasCompanyDatabase,
@@ -39,6 +39,8 @@ export function createProjects(deps: {
   const store = createProjectStore(deps)
   return Object.freeze({
     routes: (app: FastifyInstance) => registerProjectRoutes(app, store),
+    /** One pass at start: each company's Neon project takes its `<nickname>-<companyId>` (0048). */
+    nameDatabases: () => nameDatabases(deps),
     // What the Operations Central reaches Projects through when it deletes a company (code C4).
     ports: Object.freeze({
       hasCompanyDatabase,
