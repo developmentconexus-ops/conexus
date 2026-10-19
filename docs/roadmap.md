@@ -26,26 +26,27 @@ Desenho: `architecture.md`.
       Etapa 4.2 usada em 2026-10-17 em https://hub.conexus.fun (v0.4.2): "Legal tudo funcionou"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
    Cartão da etapa 5 aprovado em 2026-10-17 (commit 3fa479344c8bb02a21a75aaf84744b0b01e65a7e): "2A" (2026-10-16); "eu aprovo tudo que você trouxe"
-   Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
+   Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), roteiro pelo firstmate, a pedido do fundador ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
    Cartão da etapa 6 aprovado em 2026-10-17 (commit 69e6e72753f2bbf6624851c2a796c1bbb6d4e1fe): "Aprovo"
-   Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
+   Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), roteiro pelo firstmate, a pedido do fundador ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
    Cartão da etapa 7 aprovado em 2026-10-17 (commit 89798f576c9fd1670748c1580807ea8e513a5d8d): "Sim"; "`D1: A D2: A D3: A`"
-   Etapa 7 usada em 2026-10-17 em https://hub.conexus.fun (v0.7.0), roteiro feito pelo firstmate no Chromium a pedido do fundador ("Pode fazer"), console do Neon conferido por ele: "Tudo certo nenhum projeto"
+   Etapa 7 usada em 2026-10-17 em https://hub.conexus.fun (v0.7.0), roteiro pelo firstmate, a pedido do fundador ("Pode fazer"), console do Neon conferido por ele: "Tudo certo nenhum projeto"
 8. **App de exemplo.** Abre um app escrito à mão.
    Cartão da etapa 8 aprovado em 2026-10-17 (commit ea0421001f792139ad0ee1b1d08e2c865347f52d): "Aprovo Nome A"
    Etapa 8 usada em 2026-10-18 em https://hub.conexus.fun (v0.8.0), roteiro feito pelo fundador: "Cara, eu já testei e tá tudo aprovado, tá bom? Pode já fazer o merge mesmo."
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
    Cartão da etapa 9 aprovado em 2026-10-18 (commit 8e1b461325f3064ba5690dfb28ace027554c0efa): "Aprovo"
-   Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "aceito A"; "Restaurei"; "Sim"
+   Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), roteiro pelo firstmate, a pedido do fundador: "aceito A"; "Restaurei"; "Sim"
    9.1 **Direto ao app.** Entra e vê o app, sem o Hub no meio; o Neon mostra o apelido.
       Cartão da etapa 9.1 aprovado em 2026-10-18 (commit 19d2d2528221ed7aad57fe177a6ac238374d640c): "1. Aprovo 2. Autorizo"
-      Etapa 9.1 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.2), roteiro feito pelo firstmate a pedido do fundador: "2. pODE"; o passo 5, não rodado: "Aceitar."
+      Etapa 9.1 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.2), roteiro pelo firstmate, a pedido do fundador: "2. pODE"; o passo 5, não rodado: "Aceitar."
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
     Cartão da etapa 10 aprovado em 2026-10-18 (commit 458f5d17473aeb947c009de2b472dabdfebb4748): "oPÇÃO A tirar verificador."; "1. Aprovo"; "1. C porém me explica exemplo caso real, quero entender"
-    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "1 sim 2. Sim 3. Sim"; "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
+    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), roteiro pelo firstmate, a pedido do fundador: "1 sim 2. Sim 3. Sim"; "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
 11. **Conta de modelo.** Liga a sua assinatura e a testa.
+    Cartão da etapa 11 aprovado em 2026-10-19 (commit e5d89abfd62b4441073323f1f780fe79054bfceb): "2. a"; "3 SIM"; "4. sIM"; "sM APROVO E CONFIRMO"
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
@@ -95,12 +96,12 @@ Domínio próprio de empresa.
 
 ## 2. As etapas
 
-Etapa fechada sai desta tabela; o uso na seção 1.
+Etapa fechada sai daqui; o uso, na seção 1.
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
-| 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
+| 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8 do Builder. O banco dormindo e a restauração dos dois bancos, de novo |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, do sandbox e do Git. Testes 11 e 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |
 | 15 Mudar o app | A 14 | Nenhuma | Migrações atômicas de app. O lote |
