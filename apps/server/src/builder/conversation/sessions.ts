@@ -212,17 +212,22 @@ export class Sessions {
     }
   }
 
-  /** The conversation's events: the answer in progress first, then each new one, until `signal`. */
-  async *events(owner: Owner, conversationId: string, signal: AbortSignal) {
+  /**
+   * The conversation's events: the answer in progress first, then each new one, until `signal`.
+   * It listens before it returns, so a message sent once the stream is open loses none of its
+   * events.
+   */
+  async events(owner: Owner, conversationId: string, signal: AbortSignal) {
     const entry = this.#hold(owner, conversationId)
-    try {
-      yield* this.#listen(await entry.live, signal)
-    } finally {
-      await this.#release(conversationId, entry)
-    }
+    const release = () => this.#release(conversationId, entry)
+    const live = await entry.live.catch(async (error: unknown) => {
+      await release()
+      throw error
+    })
+    return this.#listen(live, signal, release)
   }
 
-  async *#listen(live: Live, signal: AbortSignal) {
+  #listen(live: Live, signal: AbortSignal, release: () => Promise<void>) {
     const waiting: ConversationEvent[] = []
     let wake: (() => void) | undefined
     function listener(event: ConversationEvent) {
@@ -238,17 +243,21 @@ export class Sessions {
     live.listeners.add(listener)
     const ended = AbortSignal.any([signal, this.#closing.signal])
     ended.addEventListener('abort', stop, { once: true })
-    try {
-      while (!ended.aborted) {
-        const next = waiting.shift()
-        if (next !== undefined) yield next
-        else await new Promise<void>((resolve) => (wake = resolve))
-        wake = undefined
+    async function* drained() {
+      try {
+        while (!ended.aborted) {
+          const next = waiting.shift()
+          if (next !== undefined) yield next
+          else await new Promise<void>((resolve) => (wake = resolve))
+          wake = undefined
+        }
+      } finally {
+        ended.removeEventListener('abort', stop)
+        live.listeners.delete(listener)
+        await release()
       }
-    } finally {
-      ended.removeEventListener('abort', stop)
-      live.listeners.delete(listener)
     }
+    return drained()
   }
 
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */

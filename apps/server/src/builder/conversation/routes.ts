@@ -65,7 +65,7 @@ function registerReads(app: FastifyInstance, deps: Deps) {
   serve(app, streamConversation, async (input) => {
     const { person, params, signal } = input
     await store.owned({ person, ...params })
-    return answer(sessions.events(ownerOf(input), params.conversationId, signal))
+    return answer(await sessions.events(ownerOf(input), params.conversationId, signal))
   })
 }
 

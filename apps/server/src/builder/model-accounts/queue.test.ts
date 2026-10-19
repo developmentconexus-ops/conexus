@@ -5,7 +5,13 @@ import { test } from 'node:test'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { asked, conversing, KEY, noticesOf } from '../conversation/test-conversation.ts'
+import {
+  asked,
+  conversing,
+  KEY,
+  keptNotices,
+  noticesOf,
+} from '../conversation/test-conversation.ts'
 
 const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
@@ -187,12 +193,15 @@ test('401 e 403: a conta fica recusada, a lista a mostra e a próxima assume', a
   })
   await f.add('Dois')
   await f.add('Tres')
-  const { events } = await f.ask()
+  const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), ['Time 1', 'Dois', 'Tres'])
-  assert.deepEqual(noticesOf(events), [
+  const notices = [
     'Time 1 foi recusada. Ligue de novo; continuei pela Dois.',
     'Dois foi recusada. Ligue de novo; continuei pela Tres.',
-  ])
+  ]
+  assert.deepEqual(noticesOf(events), notices)
+  // Kept in the answer read again, once each though each was said in an attempt Mastra retried.
+  assert.deepEqual(await keptNotices(f.hub, f.ana, url), notices)
   assert.deepEqual(await f.listed(), { 'Time 1': 'refused', Dois: 'refused', Tres: 'ready' })
   assert.equal((await f.states())['Time 1']?.limitedUntil, null)
 })
@@ -238,11 +247,12 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   for (const label of labels) plan[label] = { kind: 'refuse', status: 401 }
   const f = await fleet(t, plan)
   for (const label of labels.slice(1)) await f.add(label)
-  const { events } = await f.ask()
+  const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), labels.slice(0, 10))
   const notices = noticesOf(events)
   assert.equal(notices.length, 10)
   assert.equal(notices.at(-1), EXHAUSTED)
+  assert.deepEqual(await keptNotices(f.hub, f.ana, url), notices)
   assert.deepEqual(events.slice(-2), [
     { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
     { type: 'turnEnd', reason: 'error' },

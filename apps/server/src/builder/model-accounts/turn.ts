@@ -14,6 +14,11 @@ export type Picked = {
   systemLine: string | undefined
 }
 
+export type Notice = {
+  kind: 'account-switched' | 'accounts-exhausted' | 'model-switched'
+  text: string
+}
+
 /**
  * One turn of a conversation, as the server built it. The queue keeps in it the model, the accounts
  * it tried, the one each attempt goes through, and how it ended the turn, if it did. Each run copies
@@ -26,6 +31,8 @@ export class Turn {
   readonly refreshed = new Set<string>()
   /** The names of accounts refused as they were opened, for the next notice. */
   readonly unsaid: string[] = []
+  /** The notices said in the turn, in order, for its answer to keep (`keepNotices`). */
+  readonly notices: Notice[] = []
   modelId: string | undefined
   switched = false
   account: Picked | undefined

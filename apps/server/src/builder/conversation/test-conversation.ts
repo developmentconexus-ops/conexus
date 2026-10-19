@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
-import type { ConversationEvent } from '@conexus/hub-api'
+import type { ConversationEvent, Message } from '@conexus/hub-api'
 import { ConversationEvent as Event } from '@conexus/hub-api'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
@@ -170,6 +170,17 @@ export async function asked(
 /** The notices of a turn, in order. */
 export function noticesOf(events: ConversationEvent[]): string[] {
   return events.flatMap((event) => (event.type === 'notice' ? [event.text] : []))
+}
+
+/** The notices the person reads again in the conversation's Builder messages, in order. */
+export async function keptNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
+  const read = await call(hub, person, 'GET', url)
+  assert.equal(read.statusCode, 200, read.body)
+  const messages: Message[] = Object(read.json()).conversation.messages
+  return messages
+    .filter((message) => message.role === 'builder')
+    .flatMap((message) => message.parts)
+    .flatMap((part) => (part.type === 'notice' ? [part.text] : []))
 }
 
 /**

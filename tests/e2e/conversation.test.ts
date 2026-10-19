@@ -106,6 +106,8 @@ async function refusedThenPaused(
   await owner.getByRole('button', { name: 'Subir Time 3' }).waitFor({ state: 'detached' })
   const notice = 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.'
   await answered(chat, hold, 'E o segundo app?', notice)
+  await chat.reload()
+  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(notice).waitFor()
   await owner.reload()
   await owner.getByRole('heading', { name: 'Anthropic', level: 3 }).waitFor()
   const [top] = await rowsText(queueRows(owner, 'Anthropic'))

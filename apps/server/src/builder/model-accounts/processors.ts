@@ -1,3 +1,4 @@
+import type { MessageList } from '@mastra/core/agent'
 import type {
   ErrorProcessor,
   InputProcessor,
@@ -12,7 +13,7 @@ import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
 import type { QueueDeps } from './queue.ts'
 import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
-import type { Picked, Turn } from './turn.ts'
+import type { Notice, Picked, Turn } from './turn.ts'
 import { turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
@@ -20,7 +21,6 @@ export const MAX_PROCESSOR_RETRIES = 9
 const NOTICE_PART = 'data-conexus-notice'
 const WEB_SEARCH = 'web_search'
 
-type NoticeKind = 'account-switched' | 'accounts-exhausted' | 'model-switched'
 type Writer = ProcessAPIErrorArgs['writer']
 
 type InfoEvent = { type: 'info'; message: string }
@@ -37,19 +37,33 @@ export function chosenModel(context: RequestContext | undefined): string {
   return parsed.success ? parsed.data.session.modelId : ''
 }
 
+type Notifier = { requestContext?: RequestContext }
+
 /**
- * The notice the person reads: kept in the answer as a data part, and said live as the controller's
- * `info` event, since a live `data-*` chunk is dropped (`session-run-engine.ts:1580`), as Mastra
- * Code does (`account-rotation-processor.ts:390-406`).
+ * A notice the person reads, said live as the controller's `info` event, since a live `data-*`
+ * chunk is dropped (`session-run-engine.ts:1580`), as Mastra Code does
+ * (`account-rotation-processor.ts:390-406`), and kept on the turn for its answer (`keepNotices`).
  */
-async function notify(
-  args: { writer?: Writer; requestContext?: RequestContext },
-  kind: NoticeKind,
-  text: string,
-) {
-  await args.writer?.custom({ type: NOTICE_PART, data: { kind, text } })
+function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) {
+  turn.notices.push({ kind, text })
   const controller = ControllerContext.safeParse(args.requestContext?.get('controller'))
   if (controller.success) controller.data.emitEvent?.({ type: 'info', message: text })
+}
+
+/**
+ * Writes into the answer the turn's notices it does not hold yet, as data parts Mastra saves with
+ * the answer and leaves out of the prompt (`sanitizeV5UIMessages`). A retried attempt is rolled
+ * back with what was written in it (`rollbackToStepBoundary`), so the attempt that answers, or the
+ * one that ends the turn, writes them again: the answer holds each notice once, in order.
+ */
+async function keepNotices(args: { writer?: Writer; messageList: MessageList }, turn: Turn) {
+  const kept = args.messageList.get.response
+    .db()
+    .flatMap((message) => message.content.parts)
+    .filter((part) => part.type === NOTICE_PART).length
+  for (const data of turn.notices.slice(kept)) {
+    await args.writer?.custom({ type: NOTICE_PART, data })
+  }
 }
 
 const TIME = new Intl.DateTimeFormat('pt-BR', {
@@ -77,13 +91,11 @@ function noAccountModel(modelId: string) {
   })
 }
 
-type Notifier = { writer?: Writer; requestContext?: RequestContext }
-
 /** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
-async function sayRefused(args: Notifier, turn: Turn, next: Picked) {
+function sayRefused(args: Notifier, turn: Turn, next: Picked) {
   for (const label of turn.unsaid.splice(0)) {
     const text = `${label} foi recusada. Ligue de novo; continuei pela ${next.label}.`
-    await notify(args, 'account-switched', text)
+    notify(args, turn, 'account-switched', text)
   }
 }
 
@@ -101,13 +113,14 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
     turn.modelId = next
     turn.switched = true
     const name = next.slice(providerOf(next).length + 1)
-    await notify(args, 'model-switched', `Troquei para ${name} pela troca automática da empresa.`)
+    notify(args, turn, 'model-switched', `Troquei para ${name} pela troca automática da empresa.`)
     return switched
   }
   turn.outcome = 'exhausted'
   const provider = providerName(providerOf(chosen))
-  await notify(
+  notify(
     args,
+    turn,
     'accounts-exhausted',
     `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`,
   )
@@ -147,8 +160,9 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       if (turn === undefined) return {}
       turn.modelId ??= chosenModel(args.requestContext)
       const account = await accountOf(deps, turn, args)
+      if (account !== undefined) sayRefused(args, turn, account)
+      await keepNotices(args, turn)
       if (account === undefined) return { model: await noAccountModel(turn.modelId) }
-      await sayRefused(args, turn, account)
       const result: ProcessInputStepResult = { model: account.model }
       if (turn.switched) {
         result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)
@@ -179,49 +193,64 @@ export function accountQueue(deps: QueueDeps): ErrorProcessor {
     id: 'conexus-account-queue',
     async processAPIError(args: ProcessAPIErrorArgs) {
       const turn = turnIn(args.requestContext)
-      const account = turn?.account
-      if (turn === undefined || account === undefined) return { retry: false }
-      const failure = callFailureOf(args.error)
-      const fields = { companyId: turn.companyId, accountId: account.id, failure: failure.kind }
-      deps.log.info(fields, 'MODEL_CALL_REFUSED')
-      if (failure.kind === 'unknown') {
-        turn.outcome = 'failed'
-        return { retry: false }
-      }
-      const resubscribe = failure.kind === 'refused' && account.kind === 'claude_subscription'
-      // A first refusal of a subscription refreshes it; a refused refresh is said by `sayRefused`.
-      const refreshing = resubscribe && !turn.refreshed.has(account.id)
-      if (refreshing) {
-        turn.refreshed.add(account.id)
-      } else {
-        await markAccount(deps, turn, account.id, failure)
-        turn.tried.add(account.id)
-      }
-      if (args.retryCount >= MAX_PROCESSOR_RETRIES) {
-        turn.account = undefined
-        turn.outcome = 'exhausted'
-        const provider = providerName(providerOf(account.modelId))
-        await notify(
-          args,
-          'accounts-exhausted',
-          `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`,
-        )
-        return { retry: false }
-      }
-      turn.account = undefined
-      const next = await accountOf(deps, turn, args)
-      if (next === undefined) return { retry: false }
-      await sayRefused(args, turn, next)
-      if (!refreshing && next.modelId === account.modelId && next.id !== account.id) {
-        await notify(
-          args,
-          'account-switched',
-          `${failedText(account, failure)}; continuei pela ${next.label}.`,
-        )
-      }
-      return { retry: true }
+      if (turn === undefined) return { retry: false }
+      const result = await afterFailure(deps, args, turn)
+      // A retried attempt is rolled back; the one that ends the turn keeps its notices.
+      if (!result.retry) await keepNotices(args, turn)
+      return result
     },
   }
+}
+
+/** The queue's answer to a failed call: the next account's attempt, or the turn's end. */
+async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Turn) {
+  const account = turn.account
+  if (account === undefined) return { retry: false }
+  const failure = callFailureOf(args.error)
+  const fields = {
+    companyId: turn.companyId,
+    accountId: account.id,
+    failure: failure.kind,
+  }
+  deps.log.info(fields, 'MODEL_CALL_REFUSED')
+  if (failure.kind === 'unknown') {
+    turn.outcome = 'failed'
+    return { retry: false }
+  }
+  const resubscribe = failure.kind === 'refused' && account.kind === 'claude_subscription'
+  // A first refusal of a subscription refreshes it; a refused refresh is said by `sayRefused`.
+  const refreshing = resubscribe && !turn.refreshed.has(account.id)
+  if (refreshing) {
+    turn.refreshed.add(account.id)
+  } else {
+    await markAccount(deps, turn, account.id, failure)
+    turn.tried.add(account.id)
+  }
+  if (args.retryCount >= MAX_PROCESSOR_RETRIES) {
+    turn.account = undefined
+    turn.outcome = 'exhausted'
+    const provider = providerName(providerOf(account.modelId))
+    notify(
+      args,
+      turn,
+      'accounts-exhausted',
+      `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`,
+    )
+    return { retry: false }
+  }
+  turn.account = undefined
+  const next = await accountOf(deps, turn, args)
+  if (next === undefined) return { retry: false }
+  sayRefused(args, turn, next)
+  if (!refreshing && next.modelId === account.modelId && next.id !== account.id) {
+    notify(
+      args,
+      turn,
+      'account-switched',
+      `${failedText(account, failure)}; continuei pela ${next.label}.`,
+    )
+  }
+  return { retry: true }
 }
 
 /**
