@@ -67,7 +67,6 @@ const UPLOAD: WorkerUpload = {
     },
   ],
   tags: ['company-c', 'project-p'],
-  cpuMs: 50,
 }
 
 test('cloudflare: uma resposta sem tamanho declarado que passa de 1 MiB é silêncio, lida só até o teto', async (t) => {
@@ -152,7 +151,6 @@ test('cloudflare: o envio com arquivos estáticos, nas formas da API, do pedido 
     compatibility_date: '2026-10-18',
     bindings: [],
     assets: { jwt: 'pronto', config: { run_worker_first: false, not_found_handling: 'none' } },
-    limits: { cpu_ms: 50 },
     tags: ['company-c', 'project-p'],
   })
   assert.equal(await Object(form?.get('worker.js')).text(), 'export default {}')

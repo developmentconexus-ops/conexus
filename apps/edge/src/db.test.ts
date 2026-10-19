@@ -11,23 +11,26 @@ const PROPS: DbProps = {
   login: `app_${'J'.repeat(32)}_run`,
   host: 'ep-exemplo.neon.tech',
   database: 'neondb',
+  endsAt: Date.now() + 60_000,
 }
 const ROWS = { fields: [{ name: 'id', dataTypeID: 23 }], rows: [['7']] }
 
 type Proxy = () => Response | Promise<Response>
 
-function neonAt(t: test.TestContext, proxy: Proxy) {
+function neonAt(t: test.TestContext, proxy: Proxy, props: DbProps = PROPS) {
   const requests: Request[] = []
+  const signals: (AbortSignal | null | undefined)[] = []
   t.mock.method(globalThis, 'fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
     requests.push(new Request(input, init))
+    signals.push(init?.signal)
     return proxy()
   })
   const logged: unknown[] = []
   for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
     t.mock.method(console, method, (...args: unknown[]) => logged.push(...args))
   }
-  const db = dbOf(KEY, PROPS)
-  return { db, requests, logged }
+  const db = dbOf(KEY, props)
+  return { db, requests, signals, logged }
 }
 
 function refused(code: string, message: string): Response {
@@ -92,4 +95,37 @@ test('db: a recusa do PostgreSQL leva só o código, sem mensagem nem detalhe', 
   assert.deepEqual(await neon.db.batch([{ text: 'DELETE FROM app_outro.recado' }]), {
     error: { code: '42501' },
   })
+})
+
+test('db: chamado depois do prazo da chamada, DB_DEADLINE sem ir ao Neon, e registrado', async (t) => {
+  const neon = neonAt(t, () => Response.json({ results: [ROWS] }), {
+    ...PROPS,
+    endsAt: Date.now() - 1,
+  })
+  const answers = [await neon.db.query('SELECT 1'), await neon.db.batch([{ text: 'SELECT 1' }])]
+  assert.deepEqual(answers, [
+    { error: { code: 'DB_DEADLINE' } },
+    { error: { code: 'DB_DEADLINE' } },
+  ])
+  assert.equal(neon.requests.length, 0)
+  assert.deepEqual(
+    neon.logged.map((line) => JSON.parse(String(line))),
+    [
+      { level: 40, msg: 'DB_DEADLINE' },
+      { level: 40, msg: 'DB_DEADLINE' },
+    ],
+  )
+})
+
+test('db: o pedido ao Neon em curso é cortado no prazo da chamada, com DB_DEADLINE', async (t) => {
+  const neon = neonAt(
+    t,
+    () =>
+      new Promise<Response>((_resolve, reject) => {
+        neon.signals.at(-1)?.addEventListener('abort', () => reject(neon.signals.at(-1)?.reason))
+      }),
+    { ...PROPS, endsAt: Date.now() + 50 },
+  )
+  assert.deepEqual(await neon.db.query('SELECT pg_sleep(6)'), { error: { code: 'DB_DEADLINE' } })
+  assert.equal(neon.requests.length, 1)
 })

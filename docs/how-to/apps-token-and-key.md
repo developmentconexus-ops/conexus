@@ -4,7 +4,8 @@ The Hub sends each version of an app as a Worker in the namespace, and the dispa
 app's logins in the company's database. Decision:
 [0043](../decisions/0043-app-logins-derived-from-one-key.md). The edge itself is set up by
 [apps-edge](apps-edge.md). A Release publishes the key to the dispatcher before its code, and
-carries `recados-1.zip` and `recados-2.zip`, the versions to send from a Projeto's Configurações.
+carries the `recados-*.zip` folders, Recados and its step 10 defects, the versions to send from a
+Projeto's Configurações.
 
 1. The Hub's token: in the dashboard, an account-owned API token with only Workers Scripts: Edit
    (account), apart from the publish token. As root on the server, write it to

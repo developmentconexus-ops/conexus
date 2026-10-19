@@ -28,7 +28,6 @@ export type WorkerUpload = Readonly<{
   compatibilityDate: string
   files: readonly WorkerFile[]
   tags: readonly string[]
-  cpuMs: number
 }>
 
 export type CloudflareApps = {
@@ -212,7 +211,6 @@ function metadataOf(input: WorkerUpload, assetsToken: string | undefined) {
     compatibility_date: input.compatibilityDate,
     bindings: [],
     ...assets,
-    limits: { cpu_ms: input.cpuMs },
     tags: input.tags,
   }
 }

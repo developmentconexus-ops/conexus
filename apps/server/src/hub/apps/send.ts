@@ -24,9 +24,6 @@ import { failVersion, holdsClaim, lockApp, receiveVersion, storeAppVersion } fro
 
 export type SendDeps = AppDatabaseDeps & { identity: IdentityPorts; cloudflare: CloudflareApps }
 
-/** The CPU each call of an app may use until step 10 sets the limits of execution. */
-const APP_CPU_MS = 50
-
 type Ids = { companyId: CompanyId; projectId: ProjectId }
 type Sending = Ids & { scope: Scope; versionId: AppVersionId; received: ReceivedVersion }
 
@@ -64,7 +61,6 @@ export function uploadVersion(
     compatibilityDate: APP_COMPATIBILITY_DATE[input.manifest.contract],
     files: input.files,
     tags: [`company-${input.companyId}`, `project-${input.projectId}`],
-    cpuMs: APP_CPU_MS,
   })
 }
 

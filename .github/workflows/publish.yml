@@ -91,14 +91,14 @@ jobs:
       - run: npm run app:pack
       - working-directory: dist/apps
         run: |
-          zip --quiet --recurse-paths recados-1.zip recados-1
-          zip --quiet --recurse-paths recados-2.zip recados-2
+          for folder in recados-1 recados-2 recados-nao-inicia recados-defeito recados-laco; do
+            zip --quiet --recurse-paths "$folder.zip" "$folder"
+          done
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: recados
           path: |
-            dist/apps/recados-1.zip
-            dist/apps/recados-2.zip
+            dist/apps/recados-*.zip
           if-no-files-found: error
           retention-days: 1
 
@@ -115,7 +115,7 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ github.event.release.tag_name }}
-        run: gh release upload "$VERSION" recados-1.zip recados-2.zip --clobber --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$VERSION" recados-*.zip --clobber --repo "$GITHUB_REPOSITORY"
 
   deploy:
     needs: image

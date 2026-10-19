@@ -52,7 +52,8 @@ export function serveApp(
         output = await operation.handler(input.data, { db, caller })
       } catch (error) {
         // The Worker's log keeps which operation failed and how, never the message's values.
-        console.error('HANDLER_FAILED', name, error instanceof Error ? error.name : typeof error)
+        const kind = error instanceof Error ? error.name : typeof error
+        console.error(JSON.stringify({ level: 50, msg: 'HANDLER_FAILED', operation: name, kind }))
         return answer(500, { code: 'HANDLER_FAILED' })
       }
       const checked = operation.output.safeParse(output)

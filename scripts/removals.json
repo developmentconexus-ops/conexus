@@ -1322,8 +1322,8 @@
   {
     "id": "edge-missing-script",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "  try {\n    const app =\n      call.database === null\n        ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, { outbound: {} })\n        : visit.env.DISPATCHER.get(\n            call.version.worker,\n            {\n              props: { caller, db: visit.exports.Db({ props: call.database }) } satisfies AppProps,\n            },\n            { outbound: {} },\n          )\n",
-    "replace": "  const app =\n    call.database === null\n    ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, { outbound: {} })\n    : visit.env.DISPATCHER.get(\n        call.version.worker,\n        {\n          props: { caller, db: visit.exports.Db({ props: call.database }) } satisfies AppProps,\n        },\n        { outbound: {} },\n      )\n  try {\n",
+    "find": "  try {\n    const app =\n      call.database === null\n        ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, DISPATCH_OPTIONS)\n        : visit.env.DISPATCHER.get(\n            call.version.worker,\n            {\n              props: {\n                caller,\n                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n              } satisfies AppProps,\n            },\n            DISPATCH_OPTIONS,\n          )\n",
+    "replace": "  const app =\n    call.database === null\n      ? visit.env.DISPATCHER.get(EXAMPLE_SCRIPT, { props: { caller } }, DISPATCH_OPTIONS)\n      : visit.env.DISPATCHER.get(\n          call.version.worker,\n          {\n            props: {\n              caller,\n              db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n            } satisfies AppProps,\n          },\n          DISPATCH_OPTIONS,\n        )\n  try {\n",
     "test": {
       "cwd": "apps/edge",
       "file": "src/dispatcher-versions.test.ts",
@@ -1355,8 +1355,8 @@
   {
     "id": "edge-db-own-login",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "db: visit.exports.Db({ props: call.database })",
-    "replace": "db: visit.exports.Db({ props: { ...call.database, login: 'neondb_owner' } })",
+    "find": "visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } })",
+    "replace": "visit.exports.Db({ props: { ...call.database, login: 'neondb_owner', endsAt: deadline.endsAt } })",
     "test": {
       "cwd": "apps/edge",
       "file": "src/dispatcher-versions.test.ts",
@@ -1366,8 +1366,8 @@
   {
     "id": "edge-password-not-in-props",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "props: { caller, db: visit.exports.Db({ props: call.database }) } satisfies AppProps,",
-    "replace": "props: { caller, db: visit.exports.Db({ props: call.database }), key: visit.env.APP_LOGIN_KEY },",
+    "find": "                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n              } satisfies AppProps,",
+    "replace": "                db: visit.exports.Db({ props: { ...call.database, endsAt: deadline.endsAt } }),\n                key: visit.env.APP_LOGIN_KEY,\n              },",
     "test": {
       "cwd": "apps/edge",
       "file": "src/dispatcher-versions.test.ts",
@@ -2252,6 +2252,61 @@
       "cwd": "apps/server",
       "file": "src/platform/cloudflare.test.ts",
       "name": "cloudflare: o envio com arquivos estáticos"
+    }
+  },
+  {
+    "id": "edge-call-deadline",
+    "file": "apps/edge/src/dispatch.ts",
+    "find": "    if (response === 'PASSED') return failurePage('EDGE_APP_DEADLINE')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-limits.test.ts",
+      "name": "prazo: o app que não responde em 10 s"
+    }
+  },
+  {
+    "id": "call-limits-one-owner",
+    "file": "apps/edge/src/dispatch.ts",
+    "find": "cpuMs: APP_CALL_LIMITS.cpuMs",
+    "replace": "cpuMs: 30_000",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-limits.test.ts",
+      "name": "limites: a versão e o exemplo recebem"
+    }
+  },
+  {
+    "id": "run-login-timeouts",
+    "file": "apps/server/src/platform/company-postgres.ts",
+    "find": "    { text: `ALTER ROLE ${run} SET transaction_timeout = ${APP_CALL_LIMITS.transactionTimeoutMs}` },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/company-postgres.test.ts",
+      "name": "banco do app: logins por SQL"
+    }
+  },
+  {
+    "id": "edge-db-calls-limit",
+    "file": "apps/edge/src/dispatch.ts",
+    "find": "subRequests: APP_CALL_LIMITS.dbCallsPerCall, ",
+    "replace": "",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-limits.test.ts",
+      "name": "limites: a versão e o exemplo recebem"
+    }
+  },
+  {
+    "id": "edge-db-deadline",
+    "file": "apps/edge/src/db.ts",
+    "find": "    return left > 0 ? AbortSignal.timeout(left) : undefined\n",
+    "replace": "    return AbortSignal.timeout(Math.max(left, 1))\n",
+    "test": {
+      "cwd": "apps/edge",
+      "file": "src/db.test.ts",
+      "name": "db: chamado depois do prazo da chamada"
     }
   }
 ]

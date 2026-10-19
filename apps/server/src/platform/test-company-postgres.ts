@@ -118,6 +118,26 @@ export async function appLoginsOf(owner: DatabaseUrl, projectId: ProjectId): Pro
   }
 }
 
+/** The timeouts each of the app's logins carries, from its own settings (decision 0047). */
+export async function appLoginTimeoutsOf(owner: DatabaseUrl, projectId: ProjectId) {
+  const { runLogin, migrateLogin } = appLogin(projectId)
+  const client = new pg.Client({ connectionString: owner.reveal() })
+  await client.connect()
+  try {
+    const roles = await client.query(
+      `select rolname, array(select s from unnest(rolconfig) s where s like '%timeout=%' order by s)
+         as timeouts from pg_roles where rolname = any($1)`,
+      [[runLogin, migrateLogin]],
+    )
+    function timeoutsOf(login: string) {
+      return roles.rows.find((row) => row.rolname === login)?.timeouts
+    }
+    return { run: timeoutsOf(runLogin), migrate: timeoutsOf(migrateLogin) }
+  } finally {
+    await client.end()
+  }
+}
+
 /**
  * Takes the app's schema and logins out of the company's database, as a restore to a minute before
  * its first send would: the Hub's repair must bring them back.
