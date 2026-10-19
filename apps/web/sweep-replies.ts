@@ -126,6 +126,7 @@ function modelAccountsPage(id: string, mayManage: boolean): Replies {
       kinds: [],
       defaultModel: null,
       fallback: { enabled: false, chain: [], revision: 0 },
+      usableProviders: [],
       mayManage,
     }),
     'GET /api/model-providers': ok(listModelProviders, {

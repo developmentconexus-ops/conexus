@@ -39,10 +39,12 @@ function Editor(props: {
 }) {
   const [enabled, setEnabled] = useState(props.fallback.enabled)
   const [chain, setChain] = useState<readonly string[]>(props.fallback.chain)
-  const [picked, setPicked] = useState('')
+  const [picked, setPicked] = useState<string | null>(null)
   const send = useMutation(sendFallback)
-  const canAdd =
-    picked !== '' && !chain.includes(picked) && chain.length < MODEL_FALLBACK_MAX_LENGTH
+  const added =
+    picked !== null && !chain.includes(picked) && chain.length < MODEL_FALLBACK_MAX_LENGTH
+      ? picked
+      : null
   return (
     <section aria-label="Troca automática" className="flex w-full max-w-column flex-col gap-sm">
       <SectionTitle>Troca automática</SectionTitle>
@@ -94,10 +96,11 @@ function Editor(props: {
       />
       <div>
         <Button
-          disabled={!canAdd}
+          disabled={added === null}
           onClick={() => {
-            setChain([...chain, picked])
-            setPicked('')
+            if (added === null) return
+            setChain([...chain, added])
+            setPicked(null)
           }}
         >
           Adicionar à fila

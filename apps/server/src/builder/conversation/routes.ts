@@ -1,5 +1,6 @@
 import type { CompanyId, Person } from '@conexus/hub-api'
 import {
+  ConversationId,
   createConversation,
   listConversations,
   readConversation,
@@ -15,12 +16,11 @@ import { pageKey } from '../../platform/pages.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationModel } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
-import { historyOf, titlesOf } from './history.ts'
-import type { Owner, Sessions } from './sessions.ts'
-import type { ConversationStore } from './store.ts'
+import { historyOf, threadModel, titlesOf } from './history.ts'
+import type { Owner } from './live.ts'
+import type { Sessions } from './sessions.ts'
+import type { ConversationStore, InProject } from './store.ts'
 import { bodyHashOf } from './store.ts'
-
-const CONVERSATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 type Deps = { store: ConversationStore; sessions: Sessions; builder: Builder; queue: QueueDeps }
 
@@ -32,15 +32,12 @@ function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): O
 function registerReads(app: FastifyInstance, deps: Deps) {
   const { store, sessions, builder } = deps
 
-  serve(app, listConversations, async ({ person, params, query }) => {
-    const owner = { companyId: params.companyId, personId: person.id }
-    const after = pageKey(query.page, CONVERSATION_ID)
+  serve(app, listConversations, async (input) => {
+    const { person, params, query } = input
+    const after = pageKey(query.page, ConversationId)
     const page = await store.list({ person, ...params, after })
-    const titles = await titlesOf(
-      builder,
-      owner,
-      page.rows.map((row) => row.id),
-    )
+    const ids = page.rows.map((row) => row.id)
+    const titles = await titlesOf(builder, ownerOf(input), ids)
     const conversations = page.rows.map((row) => ({
       id: row.id,
       title: titles.get(row.id) ?? null,
@@ -65,8 +62,32 @@ function registerReads(app: FastifyInstance, deps: Deps) {
   serve(app, streamConversation, async (input) => {
     const { person, params, signal } = input
     await store.owned({ person, ...params })
-    return answer(await sessions.events(ownerOf(input), params.conversationId, signal))
+    const conversationId = params.conversationId
+    return answer(await sessions.events({ owner: ownerOf(input), conversationId, signal }))
   })
+}
+
+/**
+ * A conversation's creation, keyed by its attempt (code C37): a repeat answers the model its thread
+ * is on and runs nothing again; one whose first attempt stopped before the thread had its model
+ * puts it on one now.
+ */
+async function created(
+  deps: Deps,
+  input: InProject & { attemptKey: string; body: { model?: string | undefined } },
+) {
+  const owner = { companyId: input.companyId, personId: input.person.id }
+  const attempt = { ...input, bodyHash: bodyHashOf(input.body) }
+  const earlier = await deps.store.attempted(attempt)
+  if (earlier !== undefined) {
+    const kept = await threadModel(deps.builder, owner, earlier.id)
+    if (kept !== undefined) return { ...earlier, model: kept, created: false }
+  }
+  const model = await conversationModel(deps.queue, owner, input.body.model)
+  const made =
+    earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
+  await deps.sessions.switchModel({ owner, conversationId: made.id, model })
+  return { ...made, model }
 }
 
 /** What the person changes: a new conversation, a message, a stop and the model. */
@@ -74,15 +95,11 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
   const { store, sessions } = deps
 
   serve(app, createConversation, async ({ person, params, body, attemptKey, log }) => {
-    const owner = { companyId: params.companyId, personId: person.id }
-    const model = await conversationModel(deps.queue, owner, body.model)
-    const bodyHash = bodyHashOf(body)
-    const made = await store.create({ person, ...params, attemptKey, bodyHash })
-    await sessions.switchModel(owner, made.id, model)
+    const made = await created(deps, { person, ...params, attemptKey, body })
     if (made.created)
       log.info({ companyId: params.companyId, conversationId: made.id }, 'CONVERSATION_CREATED')
     const createdAt = made.createdAt.toISOString()
-    return answer({ conversation: { id: made.id, title: null, createdAt, model } })
+    return answer({ conversation: { id: made.id, title: null, createdAt, model: made.model } })
   })
 
   serve(app, sendConversationMessage, async (input) => {
@@ -90,9 +107,11 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
     const bodyHash = bodyHashOf(body)
     const turn = { person, ...params, key: attemptKey }
     if (await store.recordTurn({ ...turn, bodyHash })) {
+      const question = { key: attemptKey, content: body.content, at: new Date().toISOString() }
+      const conversationId = params.conversationId
       // The send runs outside the key's transaction (data D22); refused, it frees the key.
       await sessions
-        .send(ownerOf(input), params.conversationId, body.content)
+        .send({ owner: ownerOf(input), conversationId, question })
         .catch(async (error) => {
           await store.forgetTurn(turn)
           throw error
@@ -110,8 +129,9 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
   serve(app, setConversationModel, async (input) => {
     const { person, params, body } = input
     await store.owned({ person, ...params })
-    const model = await conversationModel(deps.queue, ownerOf(input), body.model)
-    await sessions.switchModel(ownerOf(input), params.conversationId, model)
+    const owner = ownerOf(input)
+    const model = await conversationModel(deps.queue, owner, body.model)
+    await sessions.switchModel({ owner, conversationId: params.conversationId, model })
     input.log.info(
       { companyId: params.companyId, conversationId: params.conversationId },
       'CONVERSATION_MODEL_SET',

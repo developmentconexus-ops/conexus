@@ -115,6 +115,39 @@ test('a lista diz até quando a conta está no limite, pelo relógio do banco; p
   assert.equal(until.get('Livre'), null)
 })
 
+test('provedores usáveis: os da fila que a pessoa chamaria; pausada, recusada, em limite e dada a outro não contam', async (t) => {
+  const { hub, ana, bruno, carla, accounts } = await company(t)
+  async function linked(provider: string, label: string, owner = 'company', who = ana) {
+    const answer = await link(hub, who, accounts, { provider, label, owner })
+    assert.equal(answer.statusCode, 201, answer.body)
+    return String(Object(answer.json()).account.id)
+  }
+  async function usable(who = ana) {
+    return Object((await call(hub, who, 'GET', accounts)).json()).usableProviders
+  }
+  assert.deepEqual(await usable(), [])
+  await linked('anthropic', 'Pausada')
+  await linked('groq', 'Recusada')
+  await linked('openai', 'Limitada')
+  const given = await linked('mistral', 'Dada')
+  await linked('deepseek', 'Da Carla', 'me', carla)
+  function sql(set: string, label: string) {
+    return hub.test.asOwner(`update builder.model_account set ${set} where label = $1`, [label])
+  }
+  await sql(`state = 'paused'`, 'Pausada')
+  await sql(`state = 'refused'`, 'Recusada')
+  await sql(`limited_until = now() + interval '1 hour'`, 'Limitada')
+  const gift = await call(hub, ana, 'PUT', `${accounts}/${given}/assignees`, {
+    personIds: [bruno.id],
+  })
+  assert.equal(gift.statusCode, 200)
+  assert.deepEqual(await usable(), [])
+  assert.deepEqual(await usable(bruno), ['mistral'])
+  assert.deepEqual(await usable(carla), ['deepseek'])
+  await sql(`limited_until = now() - interval '1 hour'`, 'Limitada')
+  assert.deepEqual(await usable(), ['openai'])
+})
+
 test('ligar por chave: chave vazia, nome vazio ou fornecedor fora da lista dão 422, cada um do seu campo', async (t) => {
   const { hub, ana, accounts } = await company(t)
   for (const [body, code] of [

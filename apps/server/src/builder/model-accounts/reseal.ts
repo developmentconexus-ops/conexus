@@ -1,14 +1,11 @@
 import { CompanyId } from '@conexus/hub-api'
 import { eq, sql } from 'drizzle-orm'
-import { z } from 'zod'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import { open, seal } from '../../platform/seal.ts'
-import { sealContext } from './accounts.ts'
+import { sealContext, sealedOf } from './accounts.ts'
 import { modelAccount } from './tables.ts'
-
-const Held = z.object({ sealed: z.instanceof(Buffer), key_id: z.string() })
 
 /**
  * Moves every account sealed with a key that only opens to the key that seals (security S32), one
@@ -27,11 +24,10 @@ async function resealRow(
   row: Row,
 ): Promise<'moved' | 'kept' | 'refused'> {
   const context = sealContext({ ...row, companyId })
-  const result = await tx.execute(sql`select sealed, key_id from builder.sealed_of(${row.id})`)
-  const held = Held.parse(result.rows[0])
+  const held = await sealedOf(tx, row.id)
   try {
-    const plain = open(deps.sealKeys, context, { keyId: held.key_id, blob: held.sealed })
-    if (held.key_id === deps.sealKeys.sealingId) return 'kept'
+    const plain = open(deps.sealKeys, context, held)
+    if (held.keyId === deps.sealKeys.sealingId) return 'kept'
     const sealed = seal(deps.sealKeys, context, plain)
     await tx
       .update(modelAccount)

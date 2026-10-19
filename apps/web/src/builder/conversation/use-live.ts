@@ -41,7 +41,7 @@ type Hooks = {
   onGone: () => void
 }
 
-/** The conversation read again, which shows what the stream cannot (the Builder's finished message). */
+/** The conversation read again, which shows what the stream cannot (the Builder's saved message). */
 function reread(hooks: Hooks): Promise<unknown> {
   const { companyId, projectId, conversationId } = hooks.ids
   return hooks.queryClient.fetchQuery({
@@ -61,26 +61,40 @@ async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
       queryKey: allConversationsQueryKey(companyId, projectId),
     })
   }
-  // The answer leaves the stream's state only once the read holds it: never a gap, never both.
-  if (event.type === 'turnEnd') await reread(hooks).catch(() => undefined)
+  // The ended answer stays on screen until the read holds it (`shownAnswer`), so it shows once.
+  if (event.type === 'turnEnd') await reread(hooks)
   hooks.dispatch(event)
 }
 
-async function readOnce(hooks: Hooks, signal: AbortSignal, onEvent: () => void): Promise<void> {
+/**
+ * One line of the stream. A line opened again first reads the conversation, then forgets the
+ * answer it showed: the read holds what finished in the gap, and the stream's `turn`, its first
+ * event, tells the answer still in progress.
+ */
+async function readOnce(
+  hooks: Hooks,
+  options: { signal: AbortSignal; again: boolean; onEvent: () => void },
+): Promise<void> {
   const stalled = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
   function watch() {
     clearTimeout(timer)
     timer = setTimeout(() => stalled.abort(), STALL_MS)
   }
+  async function opened() {
+    if (!options.again) return
+    await reread(hooks)
+    hooks.dispatch({ type: 'reconnected' })
+  }
   watch()
   try {
     const events = hubEvents(streamConversation, hooks.ids, {
-      signal: AbortSignal.any([signal, stalled.signal]),
+      signal: AbortSignal.any([options.signal, stalled.signal]),
       onActivity: watch,
+      opened,
     })
     for await (const event of events) {
-      onEvent()
+      options.onEvent()
       await handle(event, hooks)
     }
   } finally {
@@ -90,31 +104,38 @@ async function readOnce(hooks: Hooks, signal: AbortSignal, onEvent: () => void):
 
 /**
  * Follows the conversation's stream until the screen leaves: a line that ends, breaks or goes quiet
- * is opened again after a pause, and the conversation is read again first, so the answer in
- * progress comes back with the stream's `turn` and what finished meanwhile with the read.
+ * is opened again after a pause. Every Hub failure is retried, except a conversation gone or a
+ * session ended; anything else is a defect of the screen and is thrown.
  */
 async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
   let pause = FIRST_RETRY_MS
   let again = false
   while (!signal.aborted) {
     try {
-      if (again) await reread(hooks)
-      again = true
-      await readOnce(hooks, signal, () => {
-        pause = FIRST_RETRY_MS
+      await readOnce(hooks, {
+        signal,
+        again,
+        onEvent: () => {
+          pause = FIRST_RETRY_MS
+        },
       })
     } catch (error) {
       if (signal.aborted) return
-      if (error instanceof HubFailure && error.code === 'CONVERSATION_NOT_FOUND') {
+      if (!(error instanceof HubFailure)) throw error
+      if (error.code === 'CONVERSATION_NOT_FOUND') {
         hooks.onGone()
         return
       }
       // A 401 shows in the read, whose failure the cache turns into the end of the session.
-      if (error instanceof HubFailure && error.code === 'SESSION_REQUIRED') {
-        await reread(hooks).catch(() => undefined)
+      if (error.code === 'SESSION_REQUIRED') {
+        const { companyId, projectId, conversationId } = hooks.ids
+        await hooks.queryClient.invalidateQueries({
+          queryKey: conversationQuery(companyId, projectId, conversationId).queryKey,
+        })
         return
       }
     }
+    again = true
     await sleep(pause, signal)
     pause = Math.min(pause * 2, LAST_RETRY_MS)
   }

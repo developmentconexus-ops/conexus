@@ -246,7 +246,7 @@ function list(deps: Deps, person: Person, page: string | undefined) {
   return deps.database.read(operatorScope(person, null), async (tx) => {
     const personId = person.id
     const admitted = await deps.identity.admitOperator({ tx, personId, action: 'operateClients' })
-    const key = pageKey(page)
+    const key = pageKey(page, CompanyId)
     const rows = await tx
       .select()
       .from(client)

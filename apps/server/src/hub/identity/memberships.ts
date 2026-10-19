@@ -57,7 +57,7 @@ export function readMembers(
 ) {
   return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
     const admitted = await admitCompany({ tx, ...input, action: 'readMembers' })
-    const key = pageKey(page)
+    const key = pageKey(page, Listed.shape.id)
     const rows = await tx
       .select(columns)
       .from(member)

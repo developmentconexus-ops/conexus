@@ -38,7 +38,7 @@ export function ProviderChoice({ providers }: { providers: readonly Provider[] }
         ) : (
           <Choice
             id={shown.id}
-            value={chosen}
+            value={chosen === '' ? null : chosen}
             placeholder="Escolha um fornecedor"
             options={matches.map((one) => ({ value: one.id, label: one.name }))}
             control={shown.control}

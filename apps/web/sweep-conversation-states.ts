@@ -77,6 +77,7 @@ const WITH_ACCOUNT = {
     kinds: [],
     defaultModel: null,
     fallback: { enabled: false, chain: [], revision: 0 },
+    usableProviders: ['anthropic'],
     mayManage: true,
   }),
 }

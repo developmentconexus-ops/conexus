@@ -3,6 +3,7 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
 import type { Database, MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import { createBuilder } from './builder.ts'
@@ -55,7 +56,11 @@ export function createConversations(deps: {
     release,
     /** Mastra's tables, made once at start by its own login (decision 0010). */
     async prepare() {
-      await builder.mastra.getStorage()?.init()
+      const storage = builder.mastra.getStorage()
+      if (storage === undefined) {
+        throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'MASTRA_STORAGE_MISSING' } })
+      }
+      await storage.init()
       deps.log.info({}, 'MASTRA_STORAGE_READY')
     },
     /** Waits for the turns in progress, then stops Mastra and Google's calls (code C62). */

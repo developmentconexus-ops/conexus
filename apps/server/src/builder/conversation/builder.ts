@@ -1,3 +1,4 @@
+import type { CompanyId, PersonId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { BuiltinToolId, PermissionRules, ToolCategory } from '@mastra/core/agent-controller'
@@ -8,6 +9,7 @@ import { webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
 import type { MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
 import {
   accountErrorProcessors,
@@ -63,7 +65,11 @@ function isRouterId(modelId: string): modelId is `${string}/${string}` {
 /** The conversation's model, as its controller session holds it (`session.model.switch`). */
 function sessionModel(requestContext: RequestContext): `${string}/${string}` {
   const modelId = chosenModel(requestContext)
-  if (!isRouterId(modelId)) throw new Error('CONVERSATION_MODEL_MISSING')
+  if (!isRouterId(modelId)) {
+    throw new Failure('INTERNAL_UNEXPECTED', {
+      details: { reason: 'CONVERSATION_MODEL_NOT_ROUTED' },
+    })
+  }
   return modelId
 }
 
@@ -81,7 +87,7 @@ function toolsOf(modelId: string): ToolsInput {
 const MODEL_TIMEOUT = { firstChunkMs: 60_000, stepMs: 600_000 }
 
 /** The owner Mastra keeps a conversation under: the company with the person (criterion 8). */
-export function memoryOwner(owner: { companyId: string; personId: string }): string {
+export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId }): string {
   return `company:${owner.companyId}:person:${owner.personId}`
 }
 

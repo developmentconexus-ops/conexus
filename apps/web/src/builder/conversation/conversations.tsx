@@ -2,9 +2,9 @@ import type { ConversationSummary } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { keepsAttemptKey, useAttemptKey } from '../../platform/attempt-key.ts'
+import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { dayAndHour } from '../../platform/dates.ts'
-import { sentenceOf } from '../../platform/hub.ts'
+import { writeFailureText } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
 import { List, PageTitle, Row, rowBody } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
@@ -56,7 +56,7 @@ function NewConversation() {
         params: { companyId, projectId, conversationId: conversation.id },
       })
     } catch (failure) {
-      setError(keepsAttemptKey(failure) ? UNCONFIRMED_CREATION : sentenceOf(failure))
+      setError(writeFailureText(failure, UNCONFIRMED_CREATION))
     }
   }
 

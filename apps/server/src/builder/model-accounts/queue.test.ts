@@ -206,8 +206,8 @@ test('401 e 403: a conta fica recusada, a lista a mostra e a próxima assume', a
   assert.equal((await f.states())['Time 1']?.limitedUntil, null)
 })
 
-test('400 e erro desconhecido: o turno falha como MODEL_CALL_FAILED, sem troca e sem o texto do fornecedor', async (t) => {
-  for (const status of [400, 500] as const) {
+test('400, 500 e 529: o turno falha como MODEL_CALL_FAILED, sem troca e sem o texto do fornecedor', async (t) => {
+  for (const status of [400, 500, 529] as const) {
     const f = await fleet(t, { 'Time 1': { kind: 'refuse', status } })
     await f.add('Dois')
     const { events } = await f.ask()
@@ -220,6 +220,9 @@ test('400 e erro desconhecido: o turno falha como MODEL_CALL_FAILED, sem troca e
     assert.ok(!JSON.stringify(events).includes('SECRET-PLANTED-TEXT'))
     assert.deepEqual(await f.listed(), { 'Time 1': 'ready', Dois: 'ready' })
     assert.equal((await f.states())['Time 1']?.limitedUntil, null)
+    const logged = f.lines.map((line) => line.message)
+    assert.ok(logged.includes('MODEL_CALL_FAILED'), `${status}`)
+    assert.ok(!logged.includes('MODEL_CALL_REFUSED'), `${status}`)
   }
 })
 

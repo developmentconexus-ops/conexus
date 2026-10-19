@@ -75,11 +75,13 @@ export {
   MESSAGE_MAX_LENGTH,
   Message,
   MessagePart,
+  providerOfModel,
   readConversation,
   sendConversationMessage,
   setConversationModel,
   stopConversation,
   streamConversation,
+  TurnFailureCode,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
 export { getHealth, Health } from './health.ts'
@@ -99,7 +101,9 @@ export {
 } from './identity.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
+  ACCOUNT_KINDS,
   ACCOUNT_LABEL_MAX_LENGTH,
+  ACCOUNT_STATES,
   AccountKind,
   AccountState,
   assignModelAccount,

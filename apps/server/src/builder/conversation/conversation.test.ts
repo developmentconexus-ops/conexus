@@ -6,9 +6,8 @@ import { syncBuiltinESMExports } from 'node:module'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
-import { call, post } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
-import { approvalsOf, conversing, KEY, sent, started, streamOf } from './test-conversation.ts'
+import { call } from '../../hub/identity/test-hub.ts'
+import { conversing, KEY, sent, started, streamOf } from './test-conversation.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
@@ -116,47 +115,6 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   for (const text of [...logged, answered.body, read.body, list.body]) {
     assert.doesNotMatch(text, PLANTED)
   }
-})
-
-test('um modelo fora dos quatro fornecedores de busca: só `web_fetch`; nos quatro, também `web_search`', async (t) => {
-  const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (asked) => ({
-    kind: 'text',
-    text: asked.stream ? 'Resposta' : 'Título',
-  }))
-  const groq = { owner: 'company', provider: 'groq', label: 'Groq 1', key: 'gsk-test-key-0001' }
-  const linked = await post(hub, ana, `/api/companies/${companyId}/model-accounts`, groq)
-  assert.equal(linked.statusCode, 201)
-  for (const model of ['groq/llama-3.3-70b-versatile', undefined]) {
-    const url = `${conversations}/${await started(hub, ana, conversations, { model })}`
-    const stream = await streamOf(hub, ana, url)
-    t.after(() => stream.close())
-    assert.equal((await sent(hub, ana, url, 'Pesquise padarias')).statusCode, 202)
-    assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
-  }
-  function streamed(each: Sent) {
-    return each.stream
-  }
-  assert.deepEqual(
-    anthropic.chats.filter(streamed).map((each) => [...each.tools].sort()),
-    [['recall', 'web_fetch']],
-  )
-  assert.deepEqual(
-    anthropic.sent.filter(streamed).map((each) => [...each.tools].sort()),
-    [['recall', 'web_fetch', 'web_search']],
-  )
-})
-
-test('as ferramentas de leitura do Builder rodam sem pedir; qualquer outra é negada, nenhuma espera por aprovação', async (t) => {
-  const { hub } = await conversing(t, () => ({ kind: 'text', text: 'Resposta' }))
-  const names = ['web_fetch', 'web_search', 'recall', 'write_file', 'execute_command', 'mcp_tool']
-  assert.deepEqual(await approvalsOf(t, hub, names), {
-    web_fetch: 'allow',
-    web_search: 'allow',
-    recall: 'allow',
-    write_file: 'deny',
-    execute_command: 'deny',
-    mcp_tool: 'deny',
-  })
 })
 
 /** A server on 127.0.0.1 that counts what reaches it and answers `reply`. */

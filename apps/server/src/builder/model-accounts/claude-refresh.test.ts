@@ -113,6 +113,12 @@ test('renovação recusada pela Anthropic: a conta fica recusada, o turno avisa 
   ])
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'ready' })
+  // The queue says in the log why it skipped the account, with the failure's own fields.
+  const skipped = f.lines.find(
+    (line) => line.message === 'MODEL_ACCOUNT_REFUSED' && line.fields.category === 'USER',
+  )
+  assert.equal(typeof skipped?.fields.accountId, 'string')
+  assert.equal(skipped?.fields.companyId, f.companyId)
 })
 
 test('a observação pede a conta antes do passo: uma escolha só, e a assinatura recusada ao abrir é dita no turno', async (t) => {

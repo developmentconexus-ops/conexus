@@ -177,6 +177,23 @@ function dataOf(block: string): string | undefined {
   return lines.length === 0 ? undefined : lines.map((line) => line.replace(/^ /, '')).join('\n')
 }
 
+/** A `data:` payload as JSON, so a line that is not JSON fails the event's parse like a bad shape. */
+const JsonText = z.string().transform((text, context): unknown => {
+  try {
+    return JSON.parse(text)
+  } catch {
+    context.issues.push({ code: 'custom', message: 'The event is not JSON.', input: text })
+    return z.NEVER
+  }
+})
+
+type StreamOptions = {
+  signal: AbortSignal
+  onActivity: () => void
+  /** Awaited once the Hub accepted the stream, before its first event is read. */
+  opened?: () => Promise<void>
+}
+
 /**
  * The events of a stream the Hub keeps open, each parsed with the operation's schema. No deadline
  * ends it: `onActivity` is told of every chunk, heartbeats included, so the caller can tell a quiet
@@ -185,21 +202,23 @@ function dataOf(block: string): string | undefined {
 export function hubEvents<O extends Streaming>(
   operation: O,
   params: PartOf<O, 'params'>,
-  options: { signal: AbortSignal; onActivity: () => void },
+  options: StreamOptions,
 ): AsyncGenerator<z.output<O['success']['events']>>
 export async function* hubEvents(
   operation: Streaming,
   params: unknown,
-  options: { signal: AbortSignal; onActivity: () => void },
+  options: StreamOptions,
 ): AsyncGenerator<unknown> {
   const response = await send(operation, Sent.parse({ params }), {
     signal: options.signal,
     deadlineMs: null,
   })
   if (response.body === null) throw new HubFailure('INTERNAL_UNEXPECTED')
+  const events = JsonText.pipe(operation.success.events)
   const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
   let buffered = ''
   try {
+    await options.opened?.()
     for (;;) {
       const { done, value } = await reader.read().catch((cause: unknown) => {
         throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
@@ -212,12 +231,13 @@ export async function* hubEvents(
       for (const block of blocks) {
         const data = dataOf(block)
         if (data === undefined) continue
-        const event = operation.success.events.safeParse(JSON.parse(data))
+        const event = events.safeParse(data)
         if (!event.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: event.error })
         yield event.data
       }
     }
   } finally {
+    // A line that broke rejects its cancel with the failure already thrown above.
     await reader.cancel().catch(() => undefined)
   }
 }
@@ -240,10 +260,23 @@ export function hubMutation(operation: Operation, options?: { deadlineMs: number
   })
 }
 
+/** What a person reads for a failure code: its phrase and what to do, from the failure table (V43). */
+export function sentenceOfCode(code: FailureCode): string {
+  const row = FAILURES[code]
+  return [row.phrase, row.action].filter(Boolean).join(' ')
+}
+
 /** What a person reads for a failure: its phrase and what to do, from the failure table (V43). */
 export function sentenceOf(error: unknown): string {
-  const row = FAILURES[error instanceof HubFailure ? error.code : 'INTERNAL_UNEXPECTED']
-  return [row.phrase, row.action].filter(Boolean).join(' ')
+  return sentenceOfCode(error instanceof HubFailure ? error.code : 'INTERNAL_UNEXPECTED')
+}
+
+/**
+ * What a person reads for a failed write: the row's words when the Hub's whole answer settled it,
+ * otherwise `unconfirmed`, since the Hub may have acted (code C37).
+ */
+export function writeFailureText(error: unknown, unconfirmed: string): string {
+  return error instanceof HubFailure && !error.outcomeUnknown ? sentenceOf(error) : unconfirmed
 }
 
 const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set(['NOT_FOUND', 'CONVERSATION_NOT_FOUND'])

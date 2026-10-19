@@ -15,7 +15,9 @@ import {
   insertAccount,
   labelOf,
   ownerOf,
+  partOf,
   scopeOf,
+  usableInOrder,
   viewOf,
 } from './accounts.ts'
 import type { Change } from './changes.ts'
@@ -30,15 +32,7 @@ import { companyModel, companyModelFallback, modelAccount } from './tables.ts'
 function ordersOf(viewer: Viewer, rows: AccountRow[], context: Context): ProviderOrder[] {
   const byProvider = new Map<ProviderId, AccountRow[][]>()
   for (const row of rows) {
-    const given = context.assignees.get(row.id)
-    const part =
-      row.personId !== null
-        ? 0
-        : given === undefined
-          ? 2
-          : given.includes(viewer.person.id)
-            ? 1
-            : undefined
+    const part = partOf(row, context, viewer.person.id)
     if (part === undefined) continue
     const parts = byProvider.get(row.provider) ?? [[], [], []]
     parts[part]?.push(row)
@@ -52,6 +46,12 @@ function ordersOf(viewer: Viewer, rows: AccountRow[], context: Context): Provide
         part.sort((a, b) => a.position - b.position).map(({ id }) => id),
       ),
     }))
+}
+
+/** The providers the viewer may converse with now: those with an account the queue would call. */
+function usableProviders(viewer: Viewer, rows: AccountRow[], context: Context): ProviderId[] {
+  const usable = usableInOrder(rows, context, viewer.person.id).map((row) => row.provider)
+  return [...new Set(usable)].sort()
 }
 
 /** What the viewer reads of the company's accounts and their own; no one reads another's (D4). */
@@ -87,6 +87,7 @@ function list(deps: Deps, viewer: Viewer) {
       company: rows.filter((row) => row.personId === null).map((row) => viewOf(row, context)),
       mine: rows.filter((row) => row.personId !== null).map((row) => viewOf(row, context)),
       order: ordersOf(viewer, rows, context),
+      usableProviders: usableProviders(viewer, rows, context),
       kinds: [...context.open].sort(),
       defaultModel: chosen?.model ?? null,
       fallback: switched ?? { enabled: false, chain: [], revision: 0 },

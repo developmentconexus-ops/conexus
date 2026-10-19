@@ -1,6 +1,7 @@
+import type { CompanyId, ModelAccountId, PersonId, ProviderId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { Database, Scope } from '../../../platform/database.ts'
-import { Failure } from '../../../platform/failure.ts'
+import { Failure, logFailure } from '../../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../../platform/seal.ts'
 import { seal } from '../../../platform/seal.ts'
 import { sealContext } from '../accounts.ts'
@@ -11,10 +12,10 @@ import { end, launch, loginFileOf } from './google.ts'
 const IDLE_MS = 10 * 60 * 1000
 
 export type GoogleAccount = {
-  id: string
-  companyId: string
-  personId: string | null
-  provider: string
+  id: ModelAccountId
+  companyId: CompanyId
+  personId: PersonId | null
+  provider: ProviderId
   revision: number
   credential: Credential
 }
@@ -35,8 +36,8 @@ type Deps = ProcessDeps & { database: Database; sealKeys: SealKeys; idleMs?: num
  */
 async function resealed(deps: Deps, running: Running): Promise<void> {
   const { account, scope, process } = running
-  const login = await loginFileOf(process).catch(() => undefined)
-  if (login === undefined || login.reveal() === account.credential.reveal()) return
+  const login = await loginFileOf(process)
+  if (login.reveal() === account.credential.reveal()) return
   const sealed = seal(deps.sealKeys, sealContext({ ...account, kind: 'google_cliproxy' }), login)
   await deps.database.command(scope, (tx) =>
     tx
@@ -63,16 +64,16 @@ export function googleCalls(deps: Deps) {
 
   async function close(id: string, found: Promise<Running>) {
     if (running.get(id) === found) running.delete(id)
+    // A process that never started has nothing to stop: its start's failure reached its caller.
     const each = await found.catch(() => undefined)
     if (each === undefined) return
     clearTimeout(each.timer)
     try {
       await resealed(deps, each)
     } catch (error) {
-      deps.log.error(
-        { port: each.process.port, cause: Object(error).name },
-        'CLIPROXY_RESEAL_FAILED',
-      )
+      const failure =
+        error instanceof Failure ? error : new Failure('INTERNAL_UNEXPECTED', { cause: error })
+      logFailure(deps.log, failure, { port: each.process.port, step: 'CLIPROXY_RESEAL' })
     } finally {
       await end(each.process)
       deps.log.info({ port: each.process.port }, 'CLIPROXY_STOPPED')
@@ -114,6 +115,7 @@ export function googleCalls(deps: Deps) {
       const starting = start(account, scope)
       found = starting
       running.set(account.id, starting)
+      // The caller awaits `starting` below and gets its failure; this only forgets the process.
       starting.catch(() => {
         if (running.get(account.id) === starting) running.delete(account.id)
       })

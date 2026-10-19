@@ -25,6 +25,8 @@ function Part(props: { part: MessagePart; person: boolean; streaming: boolean })
       return <PageRead url={part.url} title={part.title} />
     case 'notice':
       return <p className="border-l-2 border-accent pl-md text-text">{part.text}</p>
+    default:
+      return part satisfies never
   }
 }
 
@@ -62,21 +64,25 @@ function MessageView(props: {
  */
 export function Transcript(props: {
   messages: readonly Message[]
-  answering: readonly MessagePart[] | null
+  answer: { parts: readonly MessagePart[]; streaming: boolean } | null
 }) {
   return (
     <div
       role="log"
       aria-label="Conversa com o Builder"
       aria-live="polite"
-      aria-busy={props.answering !== null}
+      aria-busy={props.answer?.streaming === true}
       className="flex flex-col gap-xl"
     >
       {props.messages.map((message) => (
         <MessageView key={message.id} author={message.role} parts={message.parts} />
       ))}
-      {props.answering !== null && (
-        <MessageView author="builder" parts={props.answering} streaming />
+      {props.answer !== null && (
+        <MessageView
+          author="builder"
+          parts={props.answer.parts}
+          streaming={props.answer.streaming}
+        />
       )}
     </div>
   )

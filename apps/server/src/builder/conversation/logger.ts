@@ -1,9 +1,6 @@
 import { MastraLogger } from '@mastra/core/logger'
-import type { FailureLog } from '../../platform/failure.ts'
-
-type Scalar = string | number | boolean
-
-const CAUSE_DEPTH = 5
+import type { FailureLog, Scalar } from '../../platform/failure.ts'
+import { causeChain } from '../../platform/failure.ts'
 
 /**
  * The scalars of what Mastra logs with a message: the error's name, its provider status, its
@@ -12,8 +9,9 @@ const CAUSE_DEPTH = 5
 function fieldsOf(args: unknown[]): Record<string, Scalar> {
   const fields: Record<string, Scalar> = {}
   for (const arg of args) {
-    let found: unknown = arg instanceof Error ? arg : Object(arg).error
-    for (let depth = 0; found instanceof Error && depth < CAUSE_DEPTH; depth += 1) {
+    const start: unknown = arg instanceof Error ? arg : Object(arg).error
+    for (const found of causeChain(start)) {
+      if (!(found instanceof Error)) break
       fields.name ??= found.name
       const status = Reflect.get(found, 'statusCode') ?? Reflect.get(found, 'status')
       if (typeof status === 'number') fields.status ??= status
@@ -21,7 +19,6 @@ function fieldsOf(args: unknown[]): Record<string, Scalar> {
       if (typeof code === 'string') fields.code ??= code
       const id = Reflect.get(found, 'id')
       if (typeof id === 'string') fields.mastra ??= id
-      found = found.cause
     }
   }
   return fields

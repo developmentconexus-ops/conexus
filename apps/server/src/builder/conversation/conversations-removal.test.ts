@@ -45,7 +45,7 @@ async function mastraOut(hub: Hub) {
   return back
 }
 
-test('apagar o Projeto: as threads e a memória saem antes das linhas; o Mastra fora deixa o Projeto pendente', async (t) => {
+test('apagar o Projeto: as threads e a memória saem antes das linhas; o Mastra fora deixa o Projeto pendente, e a mesma rota termina', async (t) => {
   const { hub, ana, companyId, projectId, conversations } = await conversing(t, () => ({
     kind: 'text',
     text: 'Olá',
@@ -61,6 +61,14 @@ test('apagar o Projeto: as threads e a memória saem antes das linhas; o Mastra 
   await back()
   assert.deepEqual(await held(hub, kept), { threads: 1, messages: 2, rows: 1 })
   assert.equal((await call(hub, ana, 'GET', `${projects}/${projectId}`)).statusCode, 404)
+  const resumed = await call(hub, ana, 'DELETE', `${projects}/${projectId}`, { name: 'Encomendas' })
+  assert.equal(resumed.statusCode, 204)
+  assert.deepEqual(await held(hub, kept), GONE)
+  const rows = await hub.test.asOwner(
+    'select count(*)::int as n from projects.project where id = $1',
+    [projectId],
+  )
+  assert.deepEqual(rows, [{ n: 0 }])
   const deleted = await call(hub, ana, 'DELETE', `${projects}/${otherId}`, { name: 'Estoque' })
   assert.equal(deleted.statusCode, 204)
   assert.deepEqual(await held(hub, gone), GONE)

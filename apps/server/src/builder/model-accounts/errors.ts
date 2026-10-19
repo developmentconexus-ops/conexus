@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { causeChain } from '../../platform/failure.ts'
 
 /** What a provider's refusal of one call means for its account (code C52, study D3). */
 export type CallFailure =
@@ -14,14 +15,11 @@ const ProviderError = z.object({
 
 // Without the provider's time: 15 minutes for a rate limit, 6 hours for credit (founder, D3 A).
 const LIMIT_MS = { 429: 15 * 60_000, 402: 6 * 60 * 60_000 } as const
-const CAUSE_DEPTH = 5
 
 function providerErrorOf(error: unknown) {
-  let cause = error
-  for (let depth = 0; depth < CAUSE_DEPTH && cause !== undefined; depth++) {
+  for (const cause of causeChain(error)) {
     const parsed = ProviderError.safeParse(cause)
     if (parsed.success) return parsed.data
-    cause = cause instanceof Error ? cause.cause : undefined
   }
   return undefined
 }

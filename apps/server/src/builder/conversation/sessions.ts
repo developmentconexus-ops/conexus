@@ -1,30 +1,11 @@
-import type { CompanyId, ConversationEvent, Message, PersonId } from '@conexus/hub-api'
-import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
+import type { ConversationEvent, ConversationId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import { partOf } from './parts.ts'
-
-/** The person's question, kept on the thread before its turn runs, so a crash does not lose it. */
-export const QUESTION_KEY = 'conexus.question'
-
-export type Owner = { companyId: CompanyId; personId: PersonId }
-type Listener = (event: ConversationEvent) => void
-
-/** A conversation open in this process: its controller session and the answer in progress. */
-type Live = {
-  conversationId: string
-  owner: Owner
-  log: FailureLog
-  session: Session
-  listeners: Set<Listener>
-  answer: Message | undefined
-  // The turn of the run in progress, until its end.
-  turn: Turn | undefined
-  unsubscribe: () => void
-}
+import type { Listener, Live, Owner, Question } from './live.ts'
+import { endTurn, keepQuestion, onEvent, snapshotOf } from './live.ts'
 
 /**
  * A conversation's place in this process: its session, opening or open, and how many holders use
@@ -32,68 +13,7 @@ type Live = {
  */
 type Entry = { live: Promise<Live>; holds: number }
 
-function emit(live: Live, event: ConversationEvent): void {
-  for (const listener of live.listeners) listener(event)
-}
-
-function appendText(answer: Message, delta: string): void {
-  const last = answer.parts.at(-1)
-  if (last?.type === 'text') last.text += delta
-  else answer.parts.push({ type: 'text', text: delta })
-}
-
-/** The controller's events as the person's: text, pages read, notices, the title, the turn's end. */
-function onEvent(live: Live, event: AgentControllerEvent): void {
-  if (event.type === 'message_start' && event.message.role === 'assistant') {
-    const notices = live.answer?.parts.filter((part) => part.type === 'notice') ?? []
-    const createdAt = new Date(event.message.createdAt).toISOString()
-    live.answer = { id: event.message.id, role: 'builder', parts: notices, createdAt }
-  } else if (event.type === 'message_update' && live.answer !== undefined) {
-    if (event.event.type === 'text-delta') {
-      appendText(live.answer, event.event.delta)
-      emit(live, { type: 'text', delta: event.event.delta })
-    } else if (event.event.type === 'part') {
-      const part = partOf(event.event.part)
-      if (part !== undefined && part.type !== 'text') {
-        live.answer.parts.push(part)
-        emit(live, { type: 'part', part })
-      }
-    }
-  } else if (event.type === 'info') {
-    const now = new Date().toISOString()
-    live.answer ??= { id: `notice-${now}`, role: 'builder', parts: [], createdAt: now }
-    live.answer.parts.push({ type: 'notice', text: event.message })
-    emit(live, { type: 'notice', text: event.message })
-  } else if (event.type === 'thread_title_updated') {
-    emit(live, { type: 'title', title: event.title })
-  } else if (event.type === 'agent_end') {
-    endTurn(live, event.reason)
-  }
-}
-
-/**
- * The end of a turn, said once: a failed one says why first, by how the queue ended it, never the
- * provider's text (security S41); `suspended` cannot happen, since the Builder has no tool that waits.
- */
-function endTurn(
-  live: Live,
-  reason: 'complete' | 'aborted' | 'error' | 'suspended' | undefined,
-  unexpected?: 'INTERNAL_UNEXPECTED',
-) {
-  const ended = reason === 'error' || reason === 'aborted' ? reason : 'complete'
-  if (ended === 'error') {
-    const exhausted = live.turn?.outcome === 'exhausted'
-    const code = unexpected ?? (exhausted ? 'MODEL_NO_ACCOUNT' : 'MODEL_CALL_FAILED')
-    emit(live, { type: 'failure', code })
-  }
-  live.turn?.end()
-  live.turn = undefined
-  live.answer = undefined
-  const { conversationId, owner } = live
-  const fields = { companyId: owner.companyId, conversationId, reason: ended }
-  live.log.info(fields, 'CONVERSATION_TURN_ENDED')
-  emit(live, { type: 'turnEnd', reason: ended })
-}
+type OfConversation = { owner: Owner; conversationId: ConversationId }
 
 /**
  * The conversations open in this process (decision 0050): one controller session per conversation,
@@ -103,7 +23,7 @@ function endTurn(
 export class Sessions {
   readonly #builder: Builder
   readonly #log: FailureLog
-  readonly #open = new Map<string, Entry>()
+  readonly #open = new Map<ConversationId, Entry>()
   // Every message from its arrival to the end of its run, for the drain to wait on.
   readonly #turns = new Set<Promise<void>>()
   // Ends every stream once the turns are drained, so the server's close does not wait on them.
@@ -115,7 +35,7 @@ export class Sessions {
   }
 
   /** The conversation's entry, opened if needed and held, before any wait (`#release`). */
-  #hold(owner: Owner, conversationId: string): Entry {
+  #hold({ owner, conversationId }: OfConversation): Entry {
     const found = this.#open.get(conversationId)
     if (found !== undefined) {
       found.holds += 1
@@ -125,89 +45,111 @@ export class Sessions {
     const live = this.#builder.controller
       .createSession({ resourceId, scope: conversationId, threadId: conversationId })
       .then((session) => {
-        const listeners = new Set<Listener>()
         const opened: Live = {
-          ...{ conversationId, owner, log: this.#log, session, listeners },
-          ...{ answer: undefined, turn: undefined, unsubscribe: () => undefined },
+          ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
+          ...{ answer: undefined, notices: [], asked: new Set(), runs: new Map() },
+          ...{ endedUnclaimed: undefined, questions: [], kept: Promise.resolve() },
+          unsubscribe: () => undefined,
         }
         opened.unsubscribe = session.subscribe((event) => onEvent(opened, event))
         return opened
       })
     const entry: Entry = { live, holds: 1 }
     this.#open.set(conversationId, entry)
+    // Each holder awaits `live` and meets its failure; here the entry only leaves the map.
     live.catch(() => this.#close(conversationId, entry))
     return entry
   }
 
-  async #release(conversationId: string, entry: Entry): Promise<void> {
+  async #release(conversationId: ConversationId, entry: Entry): Promise<void> {
     entry.holds -= 1
     if (entry.holds === 0) await this.#close(conversationId, entry)
   }
 
   /** Closes this entry's session, if it is still the conversation's: a newer one stays. */
-  async #close(conversationId: string, entry: Entry): Promise<void> {
+  async #close(conversationId: ConversationId, entry: Entry): Promise<void> {
     if (this.#open.get(conversationId) !== entry) return
     this.#open.delete(conversationId)
+    // A session that never opened has nothing to close; its holders met the failure.
     const live = await entry.live.catch(() => undefined)
     if (live === undefined) return
     live.unsubscribe()
+    // A closed session ends no run, so its messages stop waiting here.
+    for (const run of live.runs.values()) run.ended()
+    live.runs.clear()
     const resourceId = memoryOwner(live.owner)
     await this.#builder.controller.deleteSession({ resourceId, scope: conversationId })
   }
 
   /** Puts the conversation on a model, kept on its thread (`switch`), for its next turns. */
-  async switchModel(owner: Owner, conversationId: string, model: string): Promise<void> {
-    const entry = this.#hold(owner, conversationId)
+  async switchModel(input: OfConversation & { model: string }): Promise<void> {
+    const entry = this.#hold(input)
     try {
-      await (await entry.live).session.model.switch(model)
+      await (await entry.live).session.model.switch(input.model)
     } finally {
-      await this.#release(conversationId, entry)
+      await this.#release(input.conversationId, entry)
     }
   }
 
   /**
-   * Keeps the person's question on the thread (Mastra saves a turn only at its end), then sends it
-   * on a turn of its own, whose answer comes on the stream; resolves once the question is kept.
+   * Keeps the person's question on the thread, then sends it on a turn of its own, whose answer
+   * comes on the stream; resolves once the question is kept.
    */
-  async send(owner: Owner, conversationId: string, content: string): Promise<void> {
-    const entry = this.#hold(owner, conversationId)
+  async send(input: OfConversation & { question: Question }): Promise<void> {
+    const entry = this.#hold(input)
+    const turn = new Turn(input.owner)
     const kept = entry.live.then(async (live) => {
-      const value = { content, at: new Date().toISOString() }
-      await live.session.thread.setSetting({ key: QUESTION_KEY, value })
+      const keeping = keepQuestion(live, input.question)
+      live.asked.add(turn)
+      try {
+        await keeping
+      } catch (error) {
+        live.asked.delete(turn)
+        throw error
+      }
       return live
     })
-    const turn: Promise<void> = kept
+    const answered: Promise<void> = kept
       .then(
-        (live) => this.#answer(live, content),
+        (live) => this.#answer(live, input.question.content, turn),
+        // The question was not kept: `send` throws it to the caller, and no turn starts.
         () => undefined,
       )
-      .then(() => this.#release(conversationId, entry))
+      .then(() => this.#release(input.conversationId, entry))
       .catch((cause: unknown) =>
         logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
       )
-      .finally(() => this.#turns.delete(turn))
-    this.#turns.add(turn)
+      .finally(() => this.#turns.delete(answered))
+    this.#turns.add(answered)
     await kept
   }
 
   /**
-   * Mastra injects a message into the run that streams now, which keeps that run's turn; otherwise
-   * the message starts a run on its own turn. Either way the message carries a turn, so the queue
-   * always knows whose it is (criterion 12).
+   * Mastra decides where the message goes (`requireDelivery`): it wakes a run, which carries this
+   * message's turn to the queue until that run's `agent_end`, or it joins the run in progress,
+   * whose turn stays (criterion 12). `sendSignal` is `sendMessage`'s own call, which keeps that
+   * decision to itself; the turn of each run is the one of the message that woke it, by Mastra's
+   * run id, never the latest message's. A message Mastra could not route started no run: its
+   * failure is the turn's end when no other run is in progress.
    */
-  async #answer(live: Live, content: string): Promise<void> {
-    const turn = new Turn(live.owner)
-    if (!live.session.stream.isActive()) live.turn = turn
+  async #answer(live: Live, content: string, turn: Turn): Promise<void> {
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
     try {
-      await live.session.sendMessage({ content, requestContext: turnContext(turn) })
+      const options = { requireDelivery: true }
+      const sent = live.session.sendSignal({ content, requestContext: turnContext(turn) }, options)
+      const accepted = await sent.accepted
+      const runId = accepted.action === 'wake' ? accepted.runId : undefined
+      if (runId !== undefined && live.endedUnclaimed !== runId) {
+        await new Promise<void>((ended) => live.runs.set(runId, { turn, ended }))
+      }
     } catch (cause) {
       logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-      // A run whose `agent_end` came has ended its turn already.
-      if (live.turn === turn) endTurn(live, 'error', 'INTERNAL_UNEXPECTED')
+      if (live.runs.size === 0 && !live.session.stream.isActive()) {
+        endTurn(live, { reason: 'error', turn, unexpected: 'INTERNAL_UNEXPECTED' })
+      }
     } finally {
-      // Mastra's `sendMessage` settles once the run it started is over; `end` lets go only once.
+      live.asked.delete(turn)
       turn.end()
     }
   }
@@ -217,18 +159,18 @@ export class Sessions {
    * It listens before it returns, so a message sent once the stream is open loses none of its
    * events.
    */
-  async events(owner: Owner, conversationId: string, signal: AbortSignal) {
-    const entry = this.#hold(owner, conversationId)
-    const release = () => this.#release(conversationId, entry)
+  async events(input: OfConversation & { signal: AbortSignal }) {
+    const entry = this.#hold(input)
+    const release = () => this.#release(input.conversationId, entry)
     const live = await entry.live.catch(async (error: unknown) => {
       await release()
       throw error
     })
-    return this.#listen(live, signal, release)
+    return this.#listen(live, input.signal, release)
   }
 
   #listen(live: Live, signal: AbortSignal, release: () => Promise<void>) {
-    const waiting: ConversationEvent[] = []
+    const waiting: ConversationEvent[] = snapshotOf(live)
     let wake: (() => void) | undefined
     function listener(event: ConversationEvent) {
       waiting.push(event)
@@ -236,9 +178,6 @@ export class Sessions {
     }
     function stop() {
       wake?.()
-    }
-    if (live.answer !== undefined) {
-      waiting.push({ type: 'turn', message: structuredClone(live.answer) })
     }
     live.listeners.add(listener)
     const ended = AbortSignal.any([signal, this.#closing.signal])
@@ -261,7 +200,8 @@ export class Sessions {
   }
 
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */
-  async stop(conversationId: string): Promise<void> {
+  async stop(conversationId: ConversationId): Promise<void> {
+    // A session that failed to open has no answer to stop; its holders met the failure.
     const live = await this.#open.get(conversationId)?.live.catch(() => undefined)
     if (live === undefined) return
     live.session.abort()
@@ -276,7 +216,7 @@ export class Sessions {
   }
 
   /** Closes a conversation's session before its thread is deleted, aborting its turn. */
-  async forget(conversationId: string): Promise<void> {
+  async forget(conversationId: ConversationId): Promise<void> {
     const entry = this.#open.get(conversationId)
     if (entry !== undefined) await this.#close(conversationId, entry)
   }

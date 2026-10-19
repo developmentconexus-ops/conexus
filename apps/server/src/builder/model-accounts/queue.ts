@@ -1,15 +1,13 @@
-import type { PersonId } from '@conexus/hub-api'
+import type { ModelAccountId } from '@conexus/hub-api'
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm'
 import { PROVIDER_REGISTRY, parseModelString, resolveModelConfig } from '@mastra/core/llm'
-import { and, asc, eq, isNull, lte, or, sql } from 'drizzle-orm'
-import { z } from 'zod'
+import { and, asc, eq } from 'drizzle-orm'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
-import type { Database, Scope } from '../../platform/database.ts'
+import type { Database, ReadTx, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../platform/seal.ts'
-import { open } from '../../platform/seal.ts'
-import { contextOf, sealContext } from './accounts.ts'
+import { AccountRow, columns, contextOf, credentialOf, usableInOrder } from './accounts.ts'
 import { subscriptionAccess } from './claude/store.ts'
 import { SUBSCRIPTION_IDENTITY, subscriptionModel } from './claude/subscription-model.ts'
 import type { CallFailure } from './errors.ts'
@@ -41,23 +39,17 @@ export type QueueDeps = {
  */
 export async function callModel(config: MastraModelConfig): Promise<LanguageModel> {
   const model = await resolveModelConfig(config)
-  if (model.specificationVersion === 'v1') throw new Error('MODEL_SPECIFICATION_UNSUPPORTED')
+  if (model.specificationVersion === 'v1') {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'MODEL_SPECIFICATION_V1' } })
+  }
   return model
 }
 
-const Row = z.object({
-  id: z.string(),
-  personId: z.string().nullable(),
-  kind: z.enum(['api_key', 'claude_subscription', 'google_cliproxy']),
-  provider: z.string(),
-  label: z.string(),
-  position: z.number(),
-  revision: z.number(),
-})
-type Row = z.infer<typeof Row>
-
+/** The provider of a router model, as Mastra reads it; a model that names none is not one. */
 export function providerOf(modelId: string): string {
-  return parseModelString(modelId).provider ?? ''
+  const { provider } = parseModelString(modelId)
+  if (provider === null) throw new Failure('MODEL_UNKNOWN')
+  return provider
 }
 
 /** The provider's name as the registry has it, such as "Anthropic", for the notices. */
@@ -69,65 +61,28 @@ function scopeOf(turn: Turn): Scope {
   return { kind: 'COMPANY', companyId: turn.companyId, personId: turn.personId }
 }
 
-/**
- * The person's order (step 11, P2): their own, then the company's given to them, then the
- * company's for everyone; another person's own never reaches here (the row policy).
- */
-function partOf(row: Row, assignees: PersonId[] | undefined, personId: PersonId) {
-  if (row.personId !== null) return 0
-  if (assignees === undefined) return 2
-  return assignees.includes(personId) ? 1 : undefined
+type Asker = {
+  companyId: Turn['companyId']
+  personId: Turn['personId']
+  tried: ReadonlySet<ModelAccountId>
 }
 
-async function credentialOf(
-  tx: Parameters<Parameters<Database['read']>[1]>[0],
-  deps: QueueDeps,
-  turn: Turn,
-  row: Row,
-) {
-  const result = await tx.execute(sql`select sealed, key_id from builder.sealed_of(${row.id})`)
-  const found = z.object({ sealed: z.instanceof(Buffer), key_id: z.string() }).parse(result.rows[0])
-  const context = sealContext({ ...row, companyId: turn.companyId })
-  return open(deps.sealKeys, context, { keyId: found.key_id, blob: found.sealed })
-}
-
-type ReadTx = Parameters<Parameters<Database['read']>[1]>[0]
-type Asker = { companyId: Turn['companyId']; personId: Turn['personId']; tried: Set<string> }
-
 /**
- * The provider's accounts the person may use now, in their order: paused, refused, a closed kind,
- * one in its limit, and those this turn tried are skipped. The caller admitted the person.
+ * The provider's accounts the person may use now, in their order (`usableInOrder`), less those
+ * this turn tried. The caller admitted the person.
  */
-async function queuedRows(tx: ReadTx, asker: Asker, provider: string): Promise<Row[]> {
+async function queuedRows(tx: ReadTx, asker: Asker, provider: string): Promise<AccountRow[]> {
   const rows = await tx
-    .select({
-      id: modelAccount.id,
-      personId: modelAccount.personId,
-      kind: modelAccount.kind,
-      provider: modelAccount.provider,
-      label: modelAccount.label,
-      position: modelAccount.position,
-      revision: modelAccount.revision,
-    })
+    .select(columns)
     .from(modelAccount)
-    .where(
-      and(
-        eq(modelAccount.companyId, asker.companyId),
-        eq(modelAccount.provider, provider),
-        eq(modelAccount.state, 'ready'),
-        or(isNull(modelAccount.limitedUntil), lte(modelAccount.limitedUntil, sql`now()`)),
-      ),
-    )
+    .where(and(eq(modelAccount.companyId, asker.companyId), eq(modelAccount.provider, provider)))
     .orderBy(asc(modelAccount.position))
   const context = await contextOf(tx, asker.companyId)
-  return rows
-    .map((found) => Row.parse(found))
-    .filter((row) => row.kind === 'api_key' || context.open.has(row.kind))
-    .filter((row) => !asker.tried.has(row.id))
-    .map((row) => ({ row, part: partOf(row, context.assignees.get(row.id), asker.personId) }))
-    .filter((each): each is { row: Row; part: number } => each.part !== undefined)
-    .sort((left, right) => left.part - right.part)
-    .map((each) => each.row)
+  return usableInOrder(
+    rows.map((row) => AccountRow.parse(row)),
+    context,
+    asker.personId,
+  ).filter((row) => !asker.tried.has(row.id))
 }
 
 function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
@@ -148,7 +103,8 @@ async function nextRow(deps: QueueDeps, turn: Turn, provider: string) {
     await admitted(deps, tx, turn)
     const [first] = await queuedRows(tx, turn, provider)
     if (first === undefined) return undefined
-    return { row: first, credential: await credentialOf(tx, deps, turn, first) }
+    const credential = await credentialOf(deps, tx, { ...first, companyId: turn.companyId })
+    return { row: first, credential }
   })
 }
 
@@ -164,7 +120,7 @@ export async function conversationModel(
 ): Promise<string> {
   const scope: Scope = { kind: 'COMPANY', ...asker }
   return deps.database.read(scope, async (tx) => {
-    const who = { ...asker, tried: new Set<string>() }
+    const who = { ...asker, tried: new Set<ModelAccountId>() }
     await admitted(deps, tx, who)
     const [chosen] = await tx
       .select({ model: companyModel.model })
@@ -181,11 +137,11 @@ export async function conversationModel(
 async function pickedOf(
   deps: QueueDeps,
   turn: Turn,
-  found: { row: Row; credential: Credential },
+  found: { row: AccountRow; credential: Credential },
   modelId: string,
 ): Promise<Picked> {
   const { row, credential } = found
-  const name = modelId.slice(row.provider.length + 1)
+  const { modelId: name } = parseModelString(modelId)
   const base = { id: row.id, label: row.label, kind: row.kind, modelId, systemLine: undefined }
   if (row.kind === 'claude_subscription') {
     const force = turn.refreshed.has(row.id)
@@ -222,6 +178,7 @@ export async function pickAccount(
       return await pickedOf(deps, turn, found, modelId)
     } catch (error) {
       if (!(error instanceof Failure)) throw error
+      logFailure(deps.log, error, { companyId: turn.companyId, accountId: found.row.id })
       turn.tried.add(found.row.id)
       if (error.code === 'MODEL_ACCOUNT_REFUSED') {
         await markAccount(deps, turn, found.row.id, { kind: 'refused' })
@@ -239,7 +196,7 @@ export async function pickAccount(
 export async function markAccount(
   deps: QueueDeps,
   turn: Turn,
-  accountId: string,
+  accountId: ModelAccountId,
   failure: Extract<CallFailure, { kind: 'limited' | 'refused' }>,
 ): Promise<void> {
   const set =

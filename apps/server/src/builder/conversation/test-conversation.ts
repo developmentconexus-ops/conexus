@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { ConversationEvent, Message } from '@conexus/hub-api'
 import { ConversationEvent as Event } from '@conexus/hub-api'
+import { z } from 'zod'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
   ANA_OWNER,
@@ -14,7 +15,7 @@ import {
 } from '../../hub/identity/test-hub.ts'
 import { createStatus } from '../../hub/status/public.ts'
 import { createHub, identityOf, subjectsOf } from '../../main.ts'
-import type { Anthropic } from '../../platform/test-anthropic.ts'
+import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { plantAnthropic } from '../../platform/test-anthropic.ts'
 import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
@@ -24,6 +25,32 @@ import { openGoogleCalls } from '../model-accounts/public.ts'
 import { createBuilder } from './builder.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-5'
+export const PARTIAL = 'Começo da resposta'
+
+/**
+ * A provider answer that sends `PARTIAL` and then holds until released; released at the test's
+ * end at the latest, before the Hub drains its turns. Call it before `conversing`.
+ */
+export function holding(t: TestContext) {
+  const hold = Promise.withResolvers<void>()
+  t.after(() => hold.resolve())
+  const reply: Reply = { kind: 'hold', until: hold.promise, text: PARTIAL }
+  return { reply, release: () => hold.resolve() }
+}
+
+/** The title call's answer; every other call is the test's. */
+export function title(asked: Sent): Reply | undefined {
+  return asked.stream ? undefined : { kind: 'text', text: 'Título' }
+}
+
+/** A read conversation's messages, as role and parts. */
+export function rolesAndParts(read: { json(): unknown }) {
+  const { messages } = Object(read.json()).conversation
+  return messages.map((message: { role: string; parts: unknown[] }) => [
+    message.role,
+    message.parts,
+  ])
+}
 export const KEY = 'sk-ant-conversation-key-0001'
 
 /**
@@ -201,4 +228,39 @@ export async function approvalsOf(t: TestContext, hub: Hub, toolNames: string[])
     scope: randomUUID(),
   })
   return Object.fromEntries(toolNames.map((name) => [name, session.resolveToolApproval(name)]))
+}
+
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/'
+const GeminiAsked = z.object({
+  tools: z.array(z.object({ functionDeclarations: z.array(z.object({ name: z.string() })) })),
+})
+
+/**
+ * Stands in for Gemini's API beside the Anthropic double: one text answer, in its stream or its
+ * JSON form, and the tools each call offered. It puts back the `fetch` it found, if still its own.
+ */
+export function plantGemini(t: TestContext): string[][] {
+  const offered: string[][] = []
+  const before = globalThis.fetch
+  async function gemini(input: string | URL | Request, init?: RequestInit) {
+    const url = input instanceof Request ? input.url : String(input)
+    if (!url.startsWith(GEMINI_URL)) return before(input, init)
+    const asked = GeminiAsked.safeParse(JSON.parse(String(init?.body)))
+    const names = asked.success ? asked.data.tools.flatMap((tool) => tool.functionDeclarations) : []
+    offered.push(names.map((tool) => tool.name).sort())
+    const chunk = {
+      candidates: [
+        { content: { role: 'model', parts: [{ text: 'Resposta' }] }, finishReason: 'STOP' },
+      ],
+      usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+    }
+    if (!url.includes(':streamGenerateContent')) return Response.json(chunk)
+    const headers = { 'content-type': 'text/event-stream' }
+    return new Response(`data: ${JSON.stringify(chunk)}\n\n`, { headers })
+  }
+  globalThis.fetch = gemini
+  t.after(() => {
+    if (globalThis.fetch === gemini) globalThis.fetch = before
+  })
+  return offered
 }

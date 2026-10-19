@@ -22,7 +22,7 @@ export const CONVERSATION_FAILURES = {
     category: 'THIRD_PARTY',
     settles: true,
     status: 502,
-    phrase: 'O modelo não conseguiu responder.',
+    phrase: 'O modelo não respondeu.',
     action: 'Envie a mensagem de novo.',
     actionKind: 'RETRY',
   },

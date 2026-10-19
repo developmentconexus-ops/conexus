@@ -13,14 +13,15 @@ export function DefaultModel(props: {
   providers: readonly Provider[]
   current: string | null
 }) {
-  const [picked, setPicked] = useState(props.current ?? '')
+  const [picked, setPicked] = useState(props.current)
   const send = useMutation(sendDefaultModel)
   return (
     <form
       className="flex w-full max-w-column flex-col gap-sm"
       onSubmit={(event) => {
         event.preventDefault()
-        send.mutate({ params: { companyId: props.companyId }, body: { model: picked } })
+        if (picked !== null)
+          send.mutate({ params: { companyId: props.companyId }, body: { model: picked } })
       }}
     >
       <ModelPicker
@@ -29,12 +30,12 @@ export function DefaultModel(props: {
         names={{ provider: 'Fornecedor do modelo padrão', model: 'Modelo padrão' }}
         onChange={setPicked}
       />
-      {picked !== '' && <p className="text-label text-text-2">{`Escolhido: ${picked}`}</p>}
+      {picked !== null && <p className="text-label text-text-2">{`Escolhido: ${picked}`}</p>}
       <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>
       <div>
         <Button
           type="submit"
-          disabled={send.isPending || picked === '' || picked === props.current}
+          disabled={send.isPending || picked === null || picked === props.current}
         >
           {send.isPending ? 'Salvando…' : 'Salvar modelo padrão'}
         </Button>

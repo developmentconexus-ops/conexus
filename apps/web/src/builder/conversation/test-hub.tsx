@@ -1,4 +1,4 @@
-import type { Conversation, ConversationEvent } from '@conexus/hub-api'
+import type { Conversation, ConversationEvent, Message } from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   ConversationId,
@@ -8,9 +8,13 @@ import {
   ModelAccount,
   readConversation,
 } from '@conexus/hub-api'
-import { fireEvent, screen } from '@testing-library/react'
+import { createMemoryHistory } from '@tanstack/react-router'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
+import type { setupServer } from 'msw/node'
+import { expect } from 'vitest'
+import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 
@@ -44,14 +48,17 @@ export type View = {
   conversations: Conversation[]
   /** The providers Ana has an account for: her order lists them. */
   providers: string[]
+  /** The providers the Hub says Ana may use now; all of hers unless a test says otherwise. */
+  usable?: string[]
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
 
 /** A stream the Hub holds open for a test to speak on. */
-export type Line = {
+type Line = {
   emit: (event: ConversationEvent) => void
-  heartbeat: () => void
+  /** Writes `text` as it is, such as a `data:` line that is not JSON. */
+  write: (text: string) => void
   close: () => void
 }
 
@@ -86,6 +93,7 @@ function accountsRead(view: View): HttpHandler[] {
           kinds: [],
           defaultModel: MODEL,
           fallback: { enabled: false, chain: [], revision: 0 },
+          usableProviders: view.usable ?? view.providers,
           mayManage: false,
         }),
       )
@@ -100,8 +108,10 @@ function openLine(): { line: Line; response: Response } {
   const encoder = new TextEncoder()
   let sink: ReadableStreamDefaultController<Uint8Array> | undefined
   const body = new ReadableStream<Uint8Array>({
+    // The Hub writes a comment as it opens the stream (`platform/event-stream.ts`).
     start(controller) {
       sink = controller
+      controller.enqueue(encoder.encode(': \n\n'))
     },
   })
   function write(text: string) {
@@ -113,7 +123,7 @@ function openLine(): { line: Line; response: Response } {
   }
   const line: Line = {
     emit: (event) => write(`data: ${JSON.stringify(event)}\n\n`),
-    heartbeat: () => write(': \n\n'),
+    write,
     close: () => {
       try {
         sink?.close()
@@ -192,7 +202,7 @@ export type Answers = Partial<
  * The Hub as Ana sees Pedidos' conversations. `lines` holds every stream the browser opened, in
  * order, for the test to speak on; `sent` lists the writes the Hub received.
  */
-export function conversationHub(view: View, answers: Answers = {}) {
+function conversationHub(view: View, answers: Answers = {}) {
   const sent: Sent[] = []
   const lines: Line[] = []
   const reads: number[] = []
@@ -242,4 +252,52 @@ export async function choose(trigger: HTMLElement, name: string) {
   fireEvent.pointerUp(option)
   fireEvent.mouseUp(option)
   fireEvent.click(option)
+}
+
+export function view(fields: Partial<View> = {}): View {
+  return { conversations: [], providers: ['anthropic', 'google'], ...fields }
+}
+
+export function builderSaid(text: string): Message {
+  return {
+    id: 'builder-1',
+    role: 'builder',
+    parts: [{ type: 'text', text }],
+    createdAt: '2026-10-19T12:02:00.000Z',
+  }
+}
+
+export function typed(field: HTMLElement): string {
+  return field instanceof HTMLTextAreaElement ? field.value : ''
+}
+
+export function say(field: HTMLElement, text: string) {
+  fireEvent.change(field, { target: { value: text } })
+  fireEvent.keyDown(field, { key: 'Enter' })
+}
+
+/** The Conexus open at `path`, over the Hub `shown` describes, through the test's `server`. */
+export function screens(server: ReturnType<typeof setupServer>) {
+  function open(shown: View, path: string, answers: Answers = {}) {
+    const hub = conversationHub(shown, answers)
+    server.use(...hub.handlers)
+    const conexus = createConexus(createMemoryHistory({ initialEntries: [path] }))
+    render(<Conexus conexus={conexus} />)
+    return { ...hub, conexus }
+  }
+
+  /** The conversation, open, with its stream connected: the field is there and the line is ours. */
+  async function openConversation(
+    conversation: Conversation,
+    shown = view(),
+    answers: Answers = {},
+  ) {
+    shown.conversations = [conversation]
+    const hub = open(shown, `${PROJECT}/conversations/${conversation.id}`, answers)
+    const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+    await waitFor(() => expect(hub.lines.length).toBe(1))
+    return { ...hub, field, shown }
+  }
+
+  return { open, openConversation }
 }

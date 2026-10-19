@@ -120,6 +120,7 @@ function reads(view: View): HttpHandler[] {
       HttpResponse.json(
         listModelAccounts.success.body.parse({
           fallback: { enabled: false, chain: [], revision: 0 },
+          usableProviders: [],
           ...view,
         }),
       ),

@@ -16,12 +16,11 @@ export {
   accountErrorProcessors,
   accountModel,
   accountPick,
-  chosenModel,
   MAX_PROCESSOR_RETRIES,
 } from './processors.ts'
 export type { QueueDeps } from './queue.ts'
 export { conversationModel, providerOf } from './queue.ts'
-export { Turn, turnContext } from './turn.ts'
+export { chosenModel, NOTICE_PART, Notice, Turn, turnContext } from './turn.ts'
 
 export type ModelAccounts = ReturnType<typeof createModelAccounts>
 

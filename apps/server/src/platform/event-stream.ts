@@ -25,9 +25,12 @@ export function sendEvents(
   // A comment at once sends the headers, so the client knows the stream is open.
   out.write(': \n\n')
   const beat = setInterval(() => out.write(': \n\n'), success.heartbeatMs)
+  function unexpected(cause: unknown) {
+    logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+  }
   function close() {
     clearInterval(beat)
-    events.return?.().catch(() => undefined)
+    events.return?.().catch(unexpected)
   }
   reply.raw.once('close', close)
   async function pump() {
@@ -36,13 +39,13 @@ export function sendEvents(
         out.write(`data: ${JSON.stringify(success.events.parse(next.value))}\n\n`)
       }
     } catch (cause) {
-      logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+      unexpected(cause)
     } finally {
       clearInterval(beat)
       out.end()
     }
   }
-  pump().catch(() => undefined)
+  pump().catch(unexpected)
   return reply
     .code(200)
     .header('content-type', 'text/event-stream; charset=utf-8')

@@ -1,8 +1,7 @@
 import type { Message, MessagePart } from '@conexus/hub-api'
 import type { MastraDBMessage, MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
-
-const NOTICE_PART = 'data-conexus-notice'
+import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
 
 const Text = z.object({ type: z.literal('text'), text: z.string() })
 const SourceUrl = z.object({
@@ -24,7 +23,7 @@ const Fetch = z.object({
     result: z.object({ status: z.number() }),
   }),
 })
-const Notice = z.object({ type: z.literal(NOTICE_PART), data: z.object({ text: z.string() }) })
+const Notice = z.object({ type: z.literal(NOTICE_PART), data: NoticeData })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
 
 /**

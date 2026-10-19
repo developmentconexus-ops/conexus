@@ -1,4 +1,5 @@
 import type { MessageList } from '@mastra/core/agent'
+import { parseModelString } from '@mastra/core/llm'
 import type {
   ErrorProcessor,
   InputProcessor,
@@ -6,36 +7,28 @@ import type {
   ProcessInputStepArgs,
   ProcessInputStepResult,
 } from '@mastra/core/processors'
-import { StreamErrorRetryProcessor } from '@mastra/core/processors'
+import { defaultStabilityErrorProcessors, StreamErrorRetryProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
+import { Failure } from '../../platform/failure.ts'
+import type { CallFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
 import type { QueueDeps } from './queue.ts'
 import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
 import type { Notice, Picked, Turn } from './turn.ts'
-import { turnIn } from './turn.ts'
+import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
 export const MAX_PROCESSOR_RETRIES = 9
-const NOTICE_PART = 'data-conexus-notice'
 const WEB_SEARCH = 'web_search'
 
 type Writer = ProcessAPIErrorArgs['writer']
 
 type InfoEvent = { type: 'info'; message: string }
-const ControllerContext = z.object({
-  session: z.object({ modelId: z.string() }),
-  emitEvent: z
-    .custom<(event: InfoEvent) => void>((value) => typeof value === 'function')
-    .optional(),
+const ControllerEvents = z.object({
+  emitEvent: z.custom<(event: InfoEvent) => void>((value) => typeof value === 'function'),
 })
-
-/** The conversation's model, as the controller holds it for this run (`session.model.switch`). */
-export function chosenModel(context: RequestContext | undefined): string {
-  const parsed = ControllerContext.safeParse(context?.get('controller'))
-  return parsed.success ? parsed.data.session.modelId : ''
-}
 
 type Notifier = { requestContext?: RequestContext }
 
@@ -46,8 +39,20 @@ type Notifier = { requestContext?: RequestContext }
  */
 function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) {
   turn.notices.push({ kind, text })
-  const controller = ControllerContext.safeParse(args.requestContext?.get('controller'))
-  if (controller.success) controller.data.emitEvent?.({ type: 'info', message: text })
+  const controller = ControllerEvents.safeParse(args.requestContext?.get('controller'))
+  if (controller.success) controller.data.emitEvent({ type: 'info', message: text })
+}
+
+/** The turn's end when its accounts ran out, with the notice that says so. */
+function exhaust(args: Notifier, turn: Turn, modelId: string) {
+  turn.finish('exhausted')
+  const provider = providerName(providerOf(modelId))
+  notify(
+    args,
+    turn,
+    'accounts-exhausted',
+    `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`,
+  )
 }
 
 /**
@@ -79,7 +84,7 @@ function until(date: Date): string {
 /** A model the queue answers with when no account is left: it fails here and calls no one. */
 function noAccountModel(modelId: string) {
   function fail(): Promise<never> {
-    return Promise.reject(new Error('NO_ACCOUNT_LEFT'))
+    return Promise.reject(new Failure('MODEL_NO_ACCOUNT'))
   }
   return callModel({
     specificationVersion: 'v2',
@@ -101,29 +106,23 @@ function sayRefused(args: Notifier, turn: Turn, next: Picked) {
 
 /**
  * The account for the turn's next attempt: in its model's queue, then in each next model of the
- * company's automatic switch, with its notice; none left, the notice that the accounts ended.
+ * company's automatic switch, with its notice; none left, the turn ends with the notice that the
+ * accounts ended.
  */
 async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
-  const chosen = turn.modelId ?? ''
+  const chosen = turn.modelId(args.requestContext)
   const picked = await pickAccount(deps, turn, chosen)
   if (picked !== undefined) return picked
   for (const next of await nextModels(deps, turn, chosen)) {
     const switched = await pickAccount(deps, turn, next)
     if (switched === undefined) continue
-    turn.modelId = next
-    turn.switched = true
-    const name = next.slice(providerOf(next).length + 1)
+    turn.switchTo(next)
+    const { modelId: name } = parseModelString(next)
     notify(args, turn, 'model-switched', `Troquei para ${name} pela troca automática da empresa.`)
     return switched
   }
-  turn.outcome = 'exhausted'
-  const provider = providerName(providerOf(chosen))
-  notify(
-    args,
-    turn,
-    'accounts-exhausted',
-    `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`,
-  )
+  turn.unsaid.length = 0
+  exhaust(args, turn, chosen)
   return undefined
 }
 
@@ -132,17 +131,7 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
  * title and the observer await the same pick, so none overwrites another's or opens it twice.
  */
 function accountOf(deps: QueueDeps, turn: Turn, args: Notifier): Promise<Picked | undefined> {
-  if (turn.account !== undefined || turn.outcome !== undefined) return Promise.resolve(turn.account)
-  turn.picking ??= chooseAccount(deps, turn, args)
-    .then((picked) => {
-      turn.account = picked
-      if (picked === undefined) turn.unsaid.length = 0
-      return picked
-    })
-    .finally(() => {
-      turn.picking = undefined
-    })
-  return turn.picking
+  return turn.account(() => chooseAccount(deps, turn, args))
 }
 
 /**
@@ -158,11 +147,12 @@ export function accountPick(deps: QueueDeps): InputProcessor {
     async processInputStep(args: ProcessInputStepArgs): Promise<ProcessInputStepResult> {
       const turn = turnIn(args.requestContext)
       if (turn === undefined) return {}
-      turn.modelId ??= chosenModel(args.requestContext)
       const account = await accountOf(deps, turn, args)
       if (account !== undefined) sayRefused(args, turn, account)
       await keepNotices(args, turn)
-      if (account === undefined) return { model: await noAccountModel(turn.modelId) }
+      if (account === undefined) {
+        return { model: await noAccountModel(turn.modelId(args.requestContext)) }
+      }
       const result: ProcessInputStepResult = { model: account.model }
       if (turn.switched) {
         result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)
@@ -176,7 +166,10 @@ export function accountPick(deps: QueueDeps): InputProcessor {
   }
 }
 
-function failedText(account: Picked, failure: ReturnType<typeof callFailureOf>): string {
+function failedText(
+  account: Picked,
+  failure: Extract<CallFailure, { kind: 'limited' | 'refused' }>,
+) {
   return failure.kind === 'limited'
     ? `${account.label} no limite até ${until(failure.until)}`
     : `${account.label} foi recusada. Ligue de novo`
@@ -185,8 +178,8 @@ function failedText(account: Picked, failure: ReturnType<typeof callFailureOf>):
 /**
  * Error lane, last, after Mastra's own processors: 429 and 402 put the account in its limit, 401
  * and 403 refuse it (a subscription refreshes once first), and the next account takes the call,
- * never `abort()`, which ends the stream silently (study, proved). A 400 or anything else ends the
- * turn as the model's failure, with no switch.
+ * never `abort()`, which ends the stream silently (study, proved). A 400 or anything else Mastra
+ * did not retry ends the turn as the model's failure, with no switch.
  */
 function accountQueue(deps: QueueDeps): ErrorProcessor {
   return {
@@ -204,19 +197,16 @@ function accountQueue(deps: QueueDeps): ErrorProcessor {
 
 /** The queue's answer to a failed call: the next account's attempt, or the turn's end. */
 async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Turn) {
-  const account = turn.account
+  const account = turn.calling()
   if (account === undefined) return { retry: false }
   const failure = callFailureOf(args.error)
-  const fields = {
-    companyId: turn.companyId,
-    accountId: account.id,
-    failure: failure.kind,
-  }
-  deps.log.info(fields, 'MODEL_CALL_REFUSED')
+  const fields = { companyId: turn.companyId, accountId: account.id, failure: failure.kind }
   if (failure.kind === 'unknown') {
-    turn.outcome = 'failed'
+    deps.log.info(fields, 'MODEL_CALL_FAILED')
+    turn.finish('failed')
     return { retry: false }
   }
+  deps.log.info(fields, 'MODEL_CALL_REFUSED')
   const resubscribe = failure.kind === 'refused' && account.kind === 'claude_subscription'
   // A first refusal of a subscription refreshes it; a refused refresh is said by `sayRefused`.
   const refreshing = resubscribe && !turn.refreshed.has(account.id)
@@ -227,18 +217,10 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
     turn.tried.add(account.id)
   }
   if (args.retryCount >= MAX_PROCESSOR_RETRIES) {
-    turn.account = undefined
-    turn.outcome = 'exhausted'
-    const provider = providerName(providerOf(account.modelId))
-    notify(
-      args,
-      turn,
-      'accounts-exhausted',
-      `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`,
-    )
+    exhaust(args, turn, account.modelId)
     return { retry: false }
   }
-  turn.account = undefined
+  turn.drop()
   const next = await accountOf(deps, turn, args)
   if (next === undefined) return { retry: false }
   sayRefused(args, turn, next)
@@ -261,22 +243,37 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
 export function accountModel(deps: QueueDeps) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
     const turn = turnIn(requestContext)
-    if (turn === undefined) return noAccountModel('')
-    turn.modelId ??= chosenModel(requestContext)
+    if (turn === undefined) return noAccountModel(chosenModel(requestContext))
     const account = await accountOf(deps, turn, { requestContext })
-    return account?.model ?? noAccountModel(turn.modelId)
+    return account?.model ?? noAccountModel(turn.modelId(requestContext))
   }
 }
 
 /**
- * The agent's error lane: Mastra's retry, told not to repeat a limit or a refusal (`maxRetries: 0`),
- * so those reach the queue, last, as in Mastra Code (`index.ts:1345-1393`); Mastra keeps its other
- * defaults in their places (`stability-defaults.ts:114`).
+ * Mastra's default retry, told not to repeat a limit or a refusal so those reach the queue at
+ * once: the default matchers (a reset connection, Gemini's `MALFORMED_FUNCTION_CALL`, a provider's
+ * `isRetryable`) and its options stay as Mastra builds them (`stability-defaults.ts:114`). Mastra
+ * exports neither its connection-reset matcher nor its options at 1.78.0, so this keeps the default
+ * instance and answers before it only for an account's failure (code C75).
  */
-export function accountErrorProcessors(deps: QueueDeps) {
-  const accountFailure = {
-    match: (error: unknown) => callFailureOf(error).kind !== 'unknown',
-    maxRetries: 0,
+function accountRetry(retry: StreamErrorRetryProcessor): ErrorProcessor {
+  return {
+    id: retry.id,
+    name: retry.name,
+    processAPIError(args: ProcessAPIErrorArgs) {
+      if (callFailureOf(args.error).kind !== 'unknown') return undefined
+      return retry.processAPIError(args)
+    },
   }
-  return [new StreamErrorRetryProcessor({ matchers: [accountFailure] }), accountQueue(deps)]
+}
+
+/**
+ * The agent's error lane: Mastra's stability defaults in their order, its retry not repeating an
+ * account's failure, then the queue, last, as in Mastra Code (`index.ts:1345-1393`).
+ */
+export function accountErrorProcessors(deps: QueueDeps): ErrorProcessor[] {
+  const defaults = defaultStabilityErrorProcessors().map((processor) =>
+    processor instanceof StreamErrorRetryProcessor ? accountRetry(processor) : processor,
+  )
+  return [...defaults, accountQueue(deps)]
 }

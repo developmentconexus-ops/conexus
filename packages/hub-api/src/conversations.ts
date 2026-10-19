@@ -12,6 +12,12 @@ export const MESSAGE_MAX_LENGTH = 20_000
 /** A model of the router's registry, such as `anthropic/claude-sonnet-4-5` (decision 0049). */
 const ModelName = z.string().min(1).max(200)
 
+/** A model's provider, its name before the first slash as the router splits it, or null. */
+export function providerOfModel(model: string): string | null {
+  const slash = model.indexOf('/')
+  return slash > 0 && slash < model.length - 1 ? model.slice(0, slash) : null
+}
+
 /** A piece of a message: its text, a page the Builder read, or a notice of the account queue. */
 export const MessagePart = z.discriminatedUnion('type', [
   z.object({ type: z.literal('text'), text: z.string() }),
@@ -41,6 +47,14 @@ export const Conversation = ConversationSummary.extend({
 })
 export type Conversation = z.infer<typeof Conversation>
 
+/** The failures a turn ends with, rows of the failure table that the screen reads by code. */
+export const TurnFailureCode = z.enum([
+  'MODEL_NO_ACCOUNT',
+  'MODEL_CALL_FAILED',
+  'INTERNAL_UNEXPECTED',
+] as const satisfies readonly FailureCode[])
+export type TurnFailureCode = z.infer<typeof TurnFailureCode>
+
 /**
  * What the stream of a conversation says. `turn` comes first on a reconnect, the answer in
  * progress so far; `turnEnd` ends each answer, and `failure` comes before it when the turn failed.
@@ -52,10 +66,7 @@ export const ConversationEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('title'), title: z.string() }),
   z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
-  z.object({
-    type: z.literal('failure'),
-    code: z.enum(['MODEL_NO_ACCOUNT', 'MODEL_CALL_FAILED', 'INTERNAL_UNEXPECTED']),
-  }),
+  z.object({ type: z.literal('failure'), code: TurnFailureCode }),
 ])
 export type ConversationEvent = z.infer<typeof ConversationEvent>
 

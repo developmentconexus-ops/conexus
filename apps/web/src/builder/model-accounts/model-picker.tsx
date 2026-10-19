@@ -1,4 +1,5 @@
 import type { Provider } from '@conexus/hub-api'
+import { providerOfModel } from '@conexus/hub-api'
 import { useId, useState } from 'react'
 import { Field, FieldLabel } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
@@ -10,18 +11,19 @@ const SHOWN = 50
 
 /**
  * One model of the registry as `provider/model`: the provider first, then a search over that
- * provider's models. `value` is the model picked ('' for none); `names` are the labels of the
+ * provider's models. `value` is the model picked, null for none; `names` are the labels of the
  * provider and model fields.
  */
 export function ModelPicker(props: {
   providers: readonly Provider[]
-  value: string
+  value: string | null
   names: { provider: string; model: string }
-  onChange: (model: string) => void
+  onChange: (model: string | null) => void
 }) {
-  const [provider, setProvider] = useState(
-    props.providers.find((one) => props.value.startsWith(`${one.id}/`))?.id ?? '',
-  )
+  const [provider, setProvider] = useState(() => {
+    const of = props.value === null ? null : providerOfModel(props.value)
+    return props.providers.find((one) => one.id === of)?.id ?? null
+  })
   const [search, setSearch] = useState('')
   const providerId = useId()
   const searchId = useId()
@@ -43,13 +45,13 @@ export function ModelPicker(props: {
           placeholder="Escolha um fornecedor"
           options={props.providers.map((one) => ({ value: one.id, label: one.name }))}
           onChange={(next) => {
-            setProvider(next)
+            setProvider(props.providers.find((one) => one.id === next)?.id ?? null)
             setSearch('')
-            props.onChange('')
+            props.onChange(null)
           }}
         />
       </Field>
-      {provider !== '' && (
+      {provider !== null && (
         <>
           <Field>
             <FieldLabel htmlFor={searchId}>Buscar modelo</FieldLabel>

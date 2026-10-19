@@ -1,5 +1,5 @@
-import type { CompanyId, PersonId } from '@conexus/hub-api'
-import { Company, CompanyDetail, Membership, PAGE_SIZE } from '@conexus/hub-api'
+import type { PersonId } from '@conexus/hub-api'
+import { Company, CompanyDetail, CompanyId, Membership, PAGE_SIZE } from '@conexus/hub-api'
 import { and, asc, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AppsDomain } from '../../platform/config.ts'
@@ -12,7 +12,7 @@ const PersonRole = z.object({ role: z.string().nullable() })
 
 export function readMemberships(database: Database, personId: PersonId, page: string | undefined) {
   return database.read({ kind: 'PERSON', personId }, async (tx) => {
-    const key = pageKey(page)
+    const key = pageKey(page, CompanyId)
     const rows = await tx
       .select({ id: company.id, name: company.name, role: member.role })
       .from(member)

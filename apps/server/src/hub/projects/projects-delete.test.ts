@@ -129,13 +129,20 @@ test('log: PROJECT_CREATED, COMPANY_DATABASE_CREATED e PROJECT_DELETED levam ids
   assert.doesNotMatch(JSON.stringify(lines), /Pedidos Secretos/)
 })
 
-test('apagar: dois pedidos ao mesmo tempo dão 204 e 404', async (t) => {
+test('apagar: dois pedidos ao mesmo tempo dão 204 os dois, e o Projeto sai uma vez', async (t) => {
   const { hub, ana, admin, url } = await withProject(t)
   const both = await Promise.all([
     call(hub, ana, 'DELETE', url, { name: 'Pedidos' }),
     call(hub, admin, 'DELETE', url, { name: 'Pedidos' }),
   ])
-  assert.deepEqual(both.map((response) => response.statusCode).sort(), [204, 404])
+  assert.deepEqual(
+    both.map((response) => response.statusCode),
+    [204, 204],
+  )
+  assert.deepEqual(await hub.test.asOwner('select count(*)::int as n from projects.project'), [
+    { n: 0 },
+  ])
+  assert.equal((await call(hub, ana, 'DELETE', url, { name: 'Pedidos' })).statusCode, 404)
 })
 
 test('empresa marcada: nenhuma rota da empresa admite quem é dela, de Projeto ou de pessoas', async (t) => {
@@ -196,8 +203,11 @@ test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 40
   }
   assert.deepEqual(await hub.projects.ports.admitToApp(ids), { kind: 'NOT_FOUND' })
   assert.deepEqual(hub.cloudflare.workers(), [`v-${version.id}`])
-  const again = await call(hub, ana, 'DELETE', url, { name: 'Pedidos' })
-  assert.equal(again.statusCode, 404)
+  // The same request resumes the marked Projeto; another name finds nothing.
+  assert.equal((await call(hub, ana, 'DELETE', url, { name: 'Outro' })).statusCode, 404)
+  hub.cloudflare.script('remove', 'NO_ANSWER')
+  assert.equal((await call(hub, ana, 'DELETE', url, { name: 'Pedidos' })).statusCode, 204)
+  assert.deepEqual(hub.cloudflare.workers(), [`v-${version.id}`])
   // The repair at start: the Worker goes, then Neon refuses the drop, so the rows stay.
   t.mock.method(hub.postgres.companyPostgres, 'dropApp', async () => ({ kind: 'NO_ANSWER' }), {
     times: 1,
@@ -217,9 +227,9 @@ test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 40
             (select count(*)::int from apps.blob) as blobs`,
   )
   assert.deepEqual(left, [{ projects: 0, versions: 0, blobs: 0 }])
-  // Once refused, then by each repair: a Worker already gone is removed again, at no cost.
+  // Twice refused, then by each repair: a Worker already gone is removed again, at no cost.
   const removed = hub.cloudflare.calls.filter(({ call: kind }) => kind === 'remove')
-  assert.equal(removed.length, 3)
+  assert.equal(removed.length, 4)
 })
 
 test('apagar: o envio vencido vê a marca, falha e tira o próprio Worker', async (t) => {

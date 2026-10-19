@@ -959,8 +959,8 @@
   {
     "id": "project-delete-role",
     "file": "apps/server/src/hub/projects/projects.ts",
-    "find": "      action: 'deleteProject',\n    })\n    const [row] = await tx\n      .select({ name: project.name })",
-    "replace": "      action: 'readProjects',\n    })\n    const [row] = await tx\n      .select({ name: project.name })",
+    "find": "      action: 'deleteProject',\n    })\n    const [row] = await tx\n      .select({ name: project.name, deletingSince: project.deletingSince })",
+    "replace": "      action: 'readProjects',\n    })\n    const [row] = await tx\n      .select({ name: project.name, deletingSince: project.deletingSince })",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/projects/projects-delete.test.ts",

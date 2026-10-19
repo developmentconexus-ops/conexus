@@ -1,6 +1,6 @@
 import type { AccountKind, ModelAccount, PersonId, Provider, ProviderId } from '@conexus/hub-api'
 import { hourOf } from '../../platform/dates.ts'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import { writeFailureText } from '../../platform/hub.ts'
 
 export const KIND_NAMES = {
   api_key: 'Chave de API',
@@ -15,7 +15,7 @@ const UNCONFIRMED = 'Não confirmamos a mudança. Veja a lista.'
 
 /** What a failed write says: a refusal the Hub settled in its words, any other as one that may have saved. */
 export function refusalText(error: unknown): string {
-  return error instanceof HubFailure && !error.outcomeUnknown ? sentenceOf(error) : UNCONFIRMED
+  return writeFailureText(error, UNCONFIRMED)
 }
 
 /** The provider's name, or its id for one the key list does not hold, such as a subscription's. */

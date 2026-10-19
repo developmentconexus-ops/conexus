@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import { CompanyId, PersonId } from '@conexus/hub-api'
+import { CompanyId, ModelAccountId, PersonId, ProviderId } from '@conexus/hub-api'
 import { testCliProxy } from '../../../platform/test-cliproxy-binary.ts'
 import { createTestDatabase, testConfig } from '../../../platform/test-database.ts'
 import { testCredential, testOpened, testSealed } from '../../../platform/test-seal.ts'
@@ -78,8 +78,9 @@ async function setup(
       values ('member-a', '${COMPANY}', 'person-a', 'owner', now());`)
   let positions = 0
   async function plant(): Promise<Account> {
-    const id = randomUUID()
-    const base = { id, companyId: COMPANY, personId: null, provider: 'google', revision: 1 }
+    const id = ModelAccountId.parse(randomUUID())
+    const provider = ProviderId.parse('google')
+    const base = { id, companyId: COMPANY, personId: null, provider, revision: 1 }
     const sealed = testSealed(sealKeys, contextOf(base), LOGIN)
     await asOwner(
       `insert into builder.model_account(id, company_id, person_id, kind, provider, label, position,

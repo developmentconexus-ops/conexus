@@ -19,12 +19,30 @@ export type Sent = {
   texts: string[]
 }
 
-/** How the double answers one call: text, a `web_fetch` call, a provider's refusal, or a hang. */
+/**
+ * How the double answers one call: text, a `web_fetch` call, a provider's refusal, a hang, a
+ * connection the provider resets in the middle of its stream, or (Chat Completions only) a stream
+ * that ends with no content on Gemini's `MALFORMED_FUNCTION_CALL`, as CLIProxy relays it.
+ */
 export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
-  | { kind: 'refuse'; status: 400 | 401 | 402 | 403 | 429 | 500; headers?: Record<string, string> }
+  | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
   | { kind: 'hold'; until: Promise<void>; text: string }
+  | { kind: 'reset' }
+  | { kind: 'malformed' }
+
+/** The Messages API's `error.type` for each status it answers (its documented errors). */
+const ERROR_TYPES = {
+  400: 'invalid_request_error',
+  401: 'authentication_error',
+  402: 'billing_error',
+  403: 'permission_error',
+  429: 'rate_limit_error',
+  500: 'api_error',
+  529: 'overloaded_error',
+} as const
+type Refusal = keyof typeof ERROR_TYPES
 
 export type Anthropic = {
   sent: Sent[]
@@ -102,17 +120,21 @@ function chatReplied(sent: Sent, reply: Reply): Response {
     const choices = [{ index: 0, delta, finish_reason: finish }]
     return { ...base, object: 'chat.completion.chunk', choices }
   }
-  const frames = [
-    chunk({ role: 'assistant', content: '' }, null),
-    chunk({ content: text }, null),
-    { ...chunk({}, 'stop'), usage },
-  ]
+  const frames =
+    reply.kind === 'malformed'
+      ? [chunk({ role: 'assistant', content: '' }, null), chunk({}, 'MALFORMED_FUNCTION_CALL')]
+      : [
+          chunk({ role: 'assistant', content: '' }, null),
+          chunk({ content: text }, null),
+          { ...chunk({}, 'stop'), usage },
+        ]
   const lines = [...frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`), 'data: [DONE]\n\n']
   if (reply.kind === 'hold') {
     return new Response(heldChat(reply.until, lines), {
       headers: { 'content-type': 'text/event-stream' },
     })
   }
+  if (reply.kind === 'reset') return resetStream(lines.slice(0, 1))
   return new Response(lines.join(''), { headers: { 'content-type': 'text/event-stream' } })
 }
 
@@ -204,11 +226,30 @@ function heldStream(until: Promise<void>, text: string): ReadableStream<Uint8Arr
   })
 }
 
+/**
+ * A stream whose connection the provider resets after its first frames, as Node's `fetch` reports
+ * it: `terminated`, caused by the socket's `ECONNRESET`.
+ */
+function resetStream(head: string[]): Response {
+  const encoder = new TextEncoder()
+  const socket = Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' })
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(head.join('')))
+      controller.error(new TypeError('terminated', { cause: socket }))
+    },
+  })
+  return new Response(body, { headers: { 'content-type': 'text/event-stream' } })
+}
+
 function replied(sent: Sent, reply: Reply): Response {
   if (reply.kind === 'refuse') {
     const error = {
       type: 'error',
-      error: { type: 'api_error', message: 'planted refusal SECRET-PLANTED-TEXT' },
+      error: {
+        type: ERROR_TYPES[reply.status],
+        message: 'planted refusal SECRET-PLANTED-TEXT',
+      },
     }
     const headers = { 'content-type': 'application/json', ...reply.headers }
     return new Response(JSON.stringify(error), { status: reply.status, headers })
@@ -217,6 +258,11 @@ function replied(sent: Sent, reply: Reply): Response {
     return new Response(heldStream(reply.until, reply.text), {
       headers: { 'content-type': 'text/event-stream' },
     })
+  }
+  if (reply.kind === 'malformed') throw new Error('The Messages API has no MALFORMED_FUNCTION_CALL')
+  if (reply.kind === 'reset') {
+    const [start = ''] = events([], 'end_turn').split('\n\n')
+    return resetStream([`${start}\n\n`])
   }
   const blocks =
     reply.kind === 'text'

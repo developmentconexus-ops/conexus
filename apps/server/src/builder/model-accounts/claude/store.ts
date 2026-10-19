@@ -1,11 +1,12 @@
 import { setTimeout } from 'node:timers/promises'
+import type { CompanyId, ModelAccountId, PersonId, ProviderId } from '@conexus/hub-api'
 import { and, eq, isNull, lt, or, sql } from 'drizzle-orm'
 import type { Database, Scope } from '../../../platform/database.ts'
 import type { FailureLog } from '../../../platform/failure.ts'
 import { Failure } from '../../../platform/failure.ts'
 import type { SealKeys } from '../../../platform/seal.ts'
-import { Credential, open, seal } from '../../../platform/seal.ts'
-import { sealContext } from '../accounts.ts'
+import { Credential, seal } from '../../../platform/seal.ts'
+import { credentialOf, sealContext } from '../accounts.ts'
 import { modelAccount } from '../tables.ts'
 import type { SubscriptionTokens } from './anthropic-login.ts'
 import {
@@ -19,10 +20,10 @@ const LEASE_MS = 30_000
 const WAIT_STEP_MS = 200
 
 export type SubscriptionAccount = {
-  id: string
-  companyId: string
-  personId: string | null
-  provider: string
+  id: ModelAccountId
+  companyId: CompanyId
+  personId: PersonId | null
+  provider: ProviderId
   revision: number
   credential: Credential
 }
@@ -40,20 +41,9 @@ async function reread(deps: Deps, account: SubscriptionAccount) {
       })
       .from(modelAccount)
       .where(eq(modelAccount.id, account.id))
-    const sealed = await tx.execute(
-      sql`select sealed, key_id from builder.sealed_of(${account.id})`,
-    )
-    const found = sealed.rows[0]
-    if (
-      row === undefined ||
-      !(found?.sealed instanceof Buffer) ||
-      typeof found.key_id !== 'string'
-    ) {
-      throw new Failure('NOT_FOUND')
-    }
-    const context = sealContext({ ...account, kind: 'claude_subscription' })
-    const credential = open(deps.sealKeys, context, { keyId: found.key_id, blob: found.sealed })
-    return { ...row, credential }
+    if (row === undefined) throw new Failure('NOT_FOUND')
+    const sealed = { ...account, kind: 'claude_subscription' }
+    return { ...row, credential: await credentialOf(deps, tx, sealed) }
   })
 }
 

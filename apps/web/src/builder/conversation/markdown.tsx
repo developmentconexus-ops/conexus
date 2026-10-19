@@ -44,14 +44,12 @@ function blocksOf(text: string): Block[] {
   if (code !== undefined) blocks.push({ kind: 'code', text: code.join('\n') })
   return blocks
     .filter((block) => block.kind !== 'p' || block.text !== '')
-    .map((block, id): Block => {
-      const { kind } = block
-      if (kind === 'ul' || kind === 'ol') {
-        const items = 'items' in block ? block.items : []
-        return { kind, id, items: items.map((text, at) => ({ id: at, text })) }
-      }
-      return { kind, id, text: 'text' in block ? block.text : '' }
-    })
+    .map(
+      (block, id): Block =>
+        'items' in block
+          ? { kind: block.kind, id, items: block.items.map((text, at) => ({ id: at, text })) }
+          : { ...block, id },
+    )
 }
 
 /**
@@ -71,12 +69,8 @@ const INLINE = /`([^`\n]+)`|\*\*([^*\n]+)\*\*|\*([^*\s][^*\n]*)\*|\[([^\]\n]+)\]
 
 /** An address a person may open: http or https only; any other scheme is shown as text. */
 function safeAddress(raw: string): string | undefined {
-  try {
-    const url = new URL(raw)
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : undefined
-  } catch {
-    return undefined
-  }
+  const url = URL.parse(raw)
+  return url?.protocol === 'https:' || url?.protocol === 'http:' ? url.href : undefined
 }
 
 export function Anchor(props: { href: string; children: ReactNode }) {
@@ -146,6 +140,8 @@ function BlockView({ block }: { block: Block }) {
     }
     case 'p':
       return <p>{inline(block.text)}</p>
+    default:
+      return block satisfies never
   }
 }
 

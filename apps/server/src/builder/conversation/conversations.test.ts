@@ -107,7 +107,7 @@ test('toda thread tem sua linha no índice, com a empresa e a pessoa no dono do 
   )
 })
 
-test('a mesma chave: uma conversa e um turno, também depois de reiniciar; outro corpo: IDEMPOTENCY_CONFLICT', async (t) => {
+test('a mesma chave: uma conversa, um modelo e um turno, também depois de reiniciar; outro corpo: IDEMPOTENCY_CONFLICT', async (t) => {
   const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => ({
     kind: 'text',
     text: asked.stream ? 'Resposta' : 'Título',
@@ -119,6 +119,12 @@ test('a mesma chave: uma conversa e um turno, também depois de reiniciar; outro
   assert.equal(again.statusCode, 201)
   const id = String(Object(first.json()).conversation.id)
   assert.equal(Object(again.json()).conversation.id, id)
+  // A late repeat runs nothing again: a default with no account now still answers the thread's model.
+  const company = conversations.slice(0, conversations.indexOf('/projects/'))
+  const unusable = { model: 'openai/gpt-4o-mini' }
+  assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, unusable)).statusCode, 200)
+  const late = await post(hub, ana, conversations, {}, key)
+  assert.deepEqual([late.statusCode, Object(late.json()).conversation.model], [201, MODEL])
   const conflict = await post(hub, ana, conversations, { model: MODEL }, key)
   assert.equal(conflict.statusCode, 409)
   assert.equal(codeOf(conflict), 'IDEMPOTENCY_CONFLICT')

@@ -13,14 +13,17 @@ export type SignInId = z.infer<typeof SignInId>
 export const Owner = z.enum(['company', 'me'])
 export type Owner = z.infer<typeof Owner>
 
-export const AccountKind = z.enum(['api_key', 'claude_subscription', 'google_cliproxy'])
+/** The kinds of account, as a tuple the Builder's table columns read too. */
+export const ACCOUNT_KINDS = ['api_key', 'claude_subscription', 'google_cliproxy'] as const
+export const AccountKind = z.enum(ACCOUNT_KINDS)
 export type AccountKind = z.infer<typeof AccountKind>
 
 /** The kinds the operators open per company; the API key is always open (founder, D9). */
 export const SignInKind = AccountKind.exclude(['api_key'])
 export type SignInKind = z.infer<typeof SignInKind>
 
-export const AccountState = z.enum(['ready', 'paused', 'refused'])
+export const ACCOUNT_STATES = ['ready', 'paused', 'refused'] as const
+export const AccountState = z.enum(ACCOUNT_STATES)
 export type AccountState = z.infer<typeof AccountState>
 
 /** A provider id of the router's registry, such as `anthropic` (decision 0049). */
@@ -98,6 +101,11 @@ const Accounts = z.object({
   kinds: z.array(SignInKind),
   defaultModel: z.string().nullable(),
   fallback: ModelFallback,
+  /**
+   * The providers the viewer may converse with now, by id: those with an account the Builder's
+   * queue would call for them (ready, not in its limit, of an open kind, theirs or given to them).
+   */
+  usableProviders: z.array(ProviderId),
   /** Whether the viewer changes the company's accounts and default model: the Hub's answer (C26). */
   mayManage: z.boolean(),
 })

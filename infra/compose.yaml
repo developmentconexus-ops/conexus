@@ -40,6 +40,8 @@ services:
       HUB_SEAL_KEYS_FILE: /run/secrets/hub_seal_keys
       # The router's registry is the one bundled in the image, never refreshed (decision 0049).
       MASTRA_OFFLINE: "1"
+      # Mastra's usage telemetry never leaves: no allowlist covers it (security S42).
+      MASTRA_TELEMETRY_DISABLED: "1"
     # CLIProxyAPI's processes (a Google sign-in's, a Google account's calls) keep their config and
     # login folder under /tmp, in memory, never on disk (S36).
     tmpfs:

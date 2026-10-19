@@ -7,34 +7,18 @@ import type { ConversationEvent } from '@conexus/hub-api'
 import { CONVERSATION_HEARTBEAT_MS, streamConversation } from '@conexus/hub-api'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
-import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { conversing, hubBeside, sent, started, streamOf } from './test-conversation.ts'
-
-const PARTIAL = 'Começo da resposta'
-
-/**
- * A provider answer that sends `PARTIAL` and then holds until released; released at the test's
- * end at the latest, before the Hub drains its turns. Call it before `conversing`.
- */
-function holding(t: TestContext) {
-  const hold = Promise.withResolvers<void>()
-  t.after(() => hold.resolve())
-  const reply: Reply = { kind: 'hold', until: hold.promise, text: PARTIAL }
-  return { reply, release: () => hold.resolve() }
-}
-
-function title(asked: Sent): Reply | undefined {
-  return asked.stream ? undefined : { kind: 'text', text: 'Título' }
-}
-
-function rolesAndParts(read: { json(): unknown }) {
-  const { messages } = Object(read.json()).conversation
-  return messages.map((message: { role: string; parts: unknown[] }) => [
-    message.role,
-    message.parts,
-  ])
-}
+import {
+  conversing,
+  holding,
+  hubBeside,
+  PARTIAL,
+  rolesAndParts,
+  sent,
+  started,
+  streamOf,
+  title,
+} from './test-conversation.ts'
 
 /** The conversation's messages once they are `count`, read again for at most five seconds. */
 async function readOnce(read: () => Promise<{ json(): unknown }>, count: number) {

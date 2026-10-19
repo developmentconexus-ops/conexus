@@ -229,7 +229,7 @@ type OfProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
  * Deletes a Project for an owner or administrator who typed its name; the company's database stays.
  * A first transaction marks it, so every read and its app's host see it gone at once; its app's
  * Workers, schema and logins go with no transaction open (data D22), then its row. What the app's
- * removal could not finish stays marked for the repair at start.
+ * removal could not finish stays marked for the repair at start; the same request resumes it.
  */
 async function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
   const scope = scopeOf(input.person, input.companyId)
@@ -242,19 +242,18 @@ async function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
       action: 'deleteProject',
     })
     const [row] = await tx
-      .select({ name: project.name })
+      .select({ name: project.name, deletingSince: project.deletingSince })
       .from(project)
-      .where(and(ofProject(ids), isNull(project.deletingSince)))
-    if (row === undefined) throw new Failure('NOT_FOUND')
+      .where(ofProject(ids))
+    const marked = row !== undefined && row.deletingSince !== null
+    if (row === undefined || (marked && row.name !== input.name)) throw new Failure('NOT_FOUND')
     if (row.name !== input.name) throw new Failure('PROJECT_NAME_MISMATCH')
+    if (marked) return
     await deps.appRemoval.claimForDeletion(tx, ids)
-    // The mark takes the row's lock: a second deletion waits for the first and finds it marked.
-    const marked = await tx
+    await tx
       .update(project)
       .set({ deletingSince: sql`statement_timestamp()` })
       .where(and(ofProject(ids), isNull(project.deletingSince)))
-      .returning({ id: project.id })
-    if (marked.length === 0) throw new Failure('NOT_FOUND')
   })
   if ((await deps.appRemoval.removeProjectApp({ scope, ...ids })) === 'LEFT') return
   await finishMarkedProject(deps, { scope, ...ids })
@@ -324,7 +323,7 @@ function list(
       companyId,
       action: 'readProjects',
     })
-    const key = pageKey(input.page)
+    const key = pageKey(input.page, ProjectId)
     const rows = await tx
       .select(columns)
       .from(project)
