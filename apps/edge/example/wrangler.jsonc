@@ -4,5 +4,6 @@
   "name": "conexus-example",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-18",
+  "limits": { "cpu_ms": 50 },
   "observability": { "enabled": true, "traces": { "enabled": true } }
 }

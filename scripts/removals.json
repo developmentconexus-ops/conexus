@@ -2244,6 +2244,28 @@
     }
   },
   {
+    "id": "upload-cpu-limit",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "    cpuMs: APP_CALL_LIMITS.cpuMs,\n",
+    "replace": "    cpuMs: 30_000,\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/versions.test.ts",
+      "name": "envio: dono e administrador 201"
+    }
+  },
+  {
+    "id": "upload-cpu-metadata",
+    "file": "apps/server/src/platform/cloudflare.ts",
+    "find": "    limits: { cpu_ms: input.cpuMs },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/cloudflare.test.ts",
+      "name": "cloudflare: o envio com arquivos estáticos"
+    }
+  },
+  {
     "id": "call-limits-one-owner",
     "file": "apps/edge/src/dispatch.ts",
     "find": "cpuMs: APP_CALL_LIMITS.cpuMs",
