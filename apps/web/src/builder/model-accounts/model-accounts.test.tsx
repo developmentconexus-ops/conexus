@@ -92,11 +92,23 @@ test('cada conta diz o estado em palavras: para todos, reservada, pausada, recus
   expect(screen.getByRole('button', { name: 'Retomar Time 3' })).toBeTruthy()
 })
 
+/**
+ * The button once it can be pressed: a write stays pending until its reads come back
+ * (`platform/cache.ts`), so the new word shows a moment before the button is enabled.
+ */
+function enabledButton(name: string) {
+  return waitFor(() => {
+    const button = screen.getByRole('button', { name })
+    expect(button.hasAttribute('disabled')).toBe(false)
+    return button
+  })
+}
+
 test('Pausar e Retomar mandam a revisão lida e a conta muda de palavra', async () => {
   const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })] }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Pausar Time 1' }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Retomar Time 1' }))
-  expect(await screen.findByRole('button', { name: 'Pausar Time 1' })).toBeTruthy()
+  fireEvent.click(await enabledButton('Pausar Time 1'))
+  fireEvent.click(await enabledButton('Retomar Time 1'))
+  expect(await enabledButton('Pausar Time 1')).toBeTruthy()
   expect(sent.map((one) => one.body)).toEqual([
     { revision: 0, state: 'paused' },
     { revision: 1, state: 'ready' },

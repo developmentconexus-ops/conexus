@@ -25,6 +25,7 @@ const SUPERUSER = 'postgres'
 const OWNER_WORD = 'test_owner'
 const SUPERUSER_WORD = 'test_superuser'
 const DATABASE_WORD = 'hub_database'
+const MASTRA_WORD = 'mastra_database'
 
 type Dumped = TestDatabase & { container: string }
 
@@ -68,12 +69,17 @@ async function snapshotOf(test: Dumped): Promise<string> {
   const database = url.pathname.slice(1)
   const owner = decodeURIComponent(url.username)
   const objects = await dump(test, 'pg_dump', ['--create', '--schema-only', database])
+  const mastra = new URL(test.mastraUrl.reveal()).pathname.slice(1)
+  const mastraObjects = await dump(test, 'pg_dump', ['--create', '--schema-only', mastra])
   const roles = await dump(test, 'pg_dumpall', ['--roles-only', '--no-role-passwords'])
   function harness(line: string): boolean {
     return new RegExp(`^(CREATE|ALTER) ROLE (${owner}|${SUPERUSER})\\b`).test(line)
   }
   return [
     ...objects.filter((line) => OBJECT_LINES.test(line)),
+    ...mastraObjects
+      .filter((line) => OBJECT_LINES.test(line))
+      .map((line) => named(line, mastra, MASTRA_WORD)),
     ...roles.filter((line) => ROLE_LINES.test(line) && !harness(line)),
   ]
     .map((line) =>
@@ -116,7 +122,7 @@ const PLANTED: [string, string[], string, string[]?][] = [
   [
     'CREATE no banco',
     ['grant create on database $db to hub_runtime'],
-    `GRANT CREATE ON DATABASE ${DATABASE_WORD} TO hub_runtime;`,
+    `GRANT CREATE,CONNECT ON DATABASE ${DATABASE_WORD} TO hub_runtime;`,
   ],
   [
     'um banco de que hub_runtime é dono',
