@@ -55,13 +55,16 @@ test('prazo: o app que responde antes dos 10 s passa', async (t) => {
   assert.equal(await response.text(), 'pronto')
 })
 
-test('limites: a versão e o exemplo rodam com subRequests = 50, que conta cada chamada ao db', async () => {
+test('limites: a versão e o exemplo recebem, a cada chamada, subRequests = 50 e cpuMs = 50', async () => {
   const version = edge({ hub: () => Response.json(VERSION_CALL) })
   await version.fetch('/', { headers: LIVE })
   const example = edge()
   await example.fetch('/', { headers: LIVE })
   for (const door of [version, example]) {
-    assert.deepEqual(door.appCalls[0]?.options, { outbound: {}, limits: { subRequests: 50 } })
+    assert.deepEqual(door.appCalls[0]?.options, {
+      outbound: {},
+      limits: { subRequests: 50, cpuMs: 50 },
+    })
   }
 })
 
@@ -76,7 +79,7 @@ test('limites: o prazo vai só no db do despachante; o app recebe caller e db, s
   assert.ok(endsAt >= before + 10_000 && endsAt <= Date.now() + 10_000, `endsAt ${endsAt}`)
 })
 
-test('limites: dois db.batch numa chamada passam os dois; nenhum lote é contado', async () => {
+test('limites: dois db.batch numa chamada chegam os dois ao db do despachante; nenhum lote é contado', async () => {
   const answers: unknown[] = []
   const door = edge({
     hub: () => Response.json(VERSION_CALL),

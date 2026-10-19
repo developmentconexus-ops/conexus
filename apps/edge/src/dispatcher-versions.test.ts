@@ -17,7 +17,7 @@ test('sem versão no ar: o exemplo, com props só caller, sem o que mais o Hub d
   const [call] = door.appCalls
   assert.equal(call?.name, 'conexus-example')
   assert.deepEqual(call?.args, { props: { caller: CALLER } })
-  assert.deepEqual(call?.options, { outbound: {}, limits: { subRequests: 50 } })
+  assert.deepEqual(call?.options, { outbound: {}, limits: { subRequests: 50, cpuMs: 50 } })
   assert.deepEqual(door.dbBindings, [])
 })
 

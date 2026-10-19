@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import { ProjectId } from '@conexus/hub-api'
 import { appTablesOf } from '../../platform/test-company-postgres.ts'
 import { queued, WRITE_HEADERS, withOwnerLock } from '../../platform/test-database.ts'
@@ -33,7 +32,6 @@ test('envio: dono e administrador 201, no ar; membro, outra empresa, Projeto mar
   assert.deepEqual(hub.cloudflare.workers(), [`v-${version.id}`])
   const upload = hub.cloudflare.upload(`v-${version.id}`)
   assert.deepEqual(upload?.tags, [`company-${companyId}`, `project-${projectId}`])
-  assert.equal(upload?.cpuMs, APP_CALL_LIMITS.cpuMs)
   const [app] = await hub.test.asOwner(
     'select live_version_id, sending_version_id, database_ready from apps.app',
   )

@@ -19,7 +19,7 @@ import { threads } from './app-threads.ts'
 // Neon's proxy runs it (testing T14, T16).
 
 type Asset = { bytes: Buffer; mediaType: string }
-type Worker = { main: Buffer; assets: Map<string, Asset>; cpuMs: number }
+type Worker = { main: Buffer; assets: Map<string, Asset> }
 type Manifest = Record<string, { hash: string }>
 
 type Memory = {
@@ -111,7 +111,7 @@ async function putScript(memory: Memory, request: Request, worker: string): Prom
     assert.ok(blob, `the asset ${path} was never uploaded`)
     assets.set(path, blob)
   }
-  memory.workers.set(worker, { main: bytes, assets, cpuMs: Number(metadata.limits.cpu_ms) })
+  memory.workers.set(worker, { main: bytes, assets })
   return ok({ id: worker })
 }
 
@@ -223,7 +223,7 @@ type Props = Parameters<typeof example.fetch>[2]['props']
 export function namespace(t: TestContext, cloudflare: Cloudflare) {
   const serve = threads(t)
   return {
-    get(name: string, args: { props: Props }) {
+    get(name: string, args: { props: Props }, options: { limits: { cpuMs: number } }) {
       if (name === 'conexus-example') {
         return { fetch: async (request: Request) => example.fetch(request, {}, args), connect }
       }
@@ -238,7 +238,12 @@ export function namespace(t: TestContext, cloudflare: Cloudflare) {
               headers: { 'content-type': asset.mediaType },
             })
           }
-          return serve(name, worker, request, args.props)
+          return serve(
+            name,
+            { main: worker.main, cpuMs: options.limits.cpuMs },
+            request,
+            args.props,
+          )
         },
         connect,
       }

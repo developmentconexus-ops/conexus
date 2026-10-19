@@ -96,7 +96,7 @@ async function redeem(visit: Visit): Promise<Response> {
  */
 const DISPATCH_OPTIONS = {
   outbound: {},
-  limits: { subRequests: APP_CALL_LIMITS.dbCallsPerCall },
+  limits: { subRequests: APP_CALL_LIMITS.dbCallsPerCall, cpuMs: APP_CALL_LIMITS.cpuMs },
 } as const
 
 /** Settles at the call's deadline: no platform limit cuts an app that only waits (decision 0047). */

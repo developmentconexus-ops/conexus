@@ -2245,13 +2245,13 @@
   },
   {
     "id": "call-limits-one-owner",
-    "file": "apps/server/src/hub/apps/send.ts",
-    "find": "    cpuMs: APP_CALL_LIMITS.cpuMs,\n",
-    "replace": "    cpuMs: 30_000,\n",
+    "file": "apps/edge/src/dispatch.ts",
+    "find": "cpuMs: APP_CALL_LIMITS.cpuMs",
+    "replace": "cpuMs: 30_000",
     "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/versions.test.ts",
-      "name": "envio: dono e administrador 201"
+      "cwd": "apps/edge",
+      "file": "src/dispatcher-limits.test.ts",
+      "name": "limites: a versão e o exemplo recebem"
     }
   },
   {
@@ -2268,12 +2268,12 @@
   {
     "id": "edge-db-calls-limit",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "  limits: { subRequests: APP_CALL_LIMITS.dbCallsPerCall },\n",
+    "find": "subRequests: APP_CALL_LIMITS.dbCallsPerCall, ",
     "replace": "",
     "test": {
       "cwd": "apps/edge",
       "file": "src/dispatcher-limits.test.ts",
-      "name": "limites: a versão e o exemplo rodam com subRequests"
+      "name": "limites: a versão e o exemplo recebem"
     }
   },
   {

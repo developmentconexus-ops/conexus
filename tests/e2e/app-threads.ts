@@ -6,10 +6,15 @@ import { pathToFileURL } from 'node:url'
 import { Worker as Thread } from 'node:worker_threads'
 
 type Props = Readonly<{ caller: unknown; db?: unknown }>
-/** An uploaded Worker as the namespace keeps it: its module, and the CPU it was uploaded with. */
+/** An uploaded Worker's module, and the CPU the dispatcher gives this call. */
 type Uploaded = Readonly<{ main: Buffer; cpuMs: number }>
 type Waiting = { resolve(answer: Response): void; reject(error: Error): void; db: unknown }
-type Running = { thread: Thread; waiting: Map<number, Waiting>; next: number }
+type Running = {
+  thread: Thread
+  waiting: Map<number, Waiting>
+  next: number
+  ready: Promise<Running>
+}
 type FromThread =
   | { kind: 'ready' }
   | { kind: 'db'; id: number; call: number; method: 'query' | 'batch'; args: unknown[] }
@@ -33,14 +38,16 @@ async function heard(running: Running, message: FromThread) {
 
 /**
  * Runs each uploaded Worker in its own thread, its module imported once, and cuts a request whose
- * thread stays busy past the CPU it was uploaded with, as Cloudflare does (record 0047, check 5).
+ * thread stays busy past the call's CPU, as Cloudflare does (record 0047, check 5). A cut or a
+ * thread's error fails every request still waiting on it, and the next request starts a new thread.
  * Time the thread waits on `db`, which runs here, is idle time, as it is outside CPU time there.
  */
 export function threads(t: TestContext) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-workers-'))
   const running = new Map<string, Promise<Running>>()
   t.after(async () => {
-    for (const started of running.values()) await (await started).thread.terminate()
+    const started = await Promise.allSettled(running.values())
+    for (const app of started) if (app.status === 'fulfilled') await app.value.thread.terminate()
     rmSync(folder, { recursive: true, force: true })
   })
   function start(name: string, main: Buffer): Promise<Running> {
@@ -49,20 +56,25 @@ export function threads(t: TestContext) {
     const thread = new Thread(new URL('./app-thread.ts', import.meta.url), {
       workerData: { module: pathToFileURL(file).href },
     })
-    const started: Running = { thread, waiting: new Map(), next: 0 }
+    const ready = Promise.withResolvers<Running>()
+    const started: Running = { thread, waiting: new Map(), next: 0, ready: ready.promise }
     thread.on('message', (message: FromThread) => void heard(started, message))
-    thread.on('error', (error) => {
-      for (const waiting of started.waiting.values()) waiting.reject(error)
+    thread.once('message', () => ready.resolve(started))
+    thread.once('error', (error) => {
+      stop(name, started, error)
+      ready.reject(error)
     })
-    return new Promise((resolve) => thread.once('message', () => resolve(started)))
+    running.set(name, ready.promise)
+    return ready.promise
+  }
+  function stop(name: string, app: Running, error: Error) {
+    if (running.get(name) === app.ready) running.delete(name)
+    void app.thread.terminate()
+    for (const waiting of app.waiting.values()) waiting.reject(error)
+    app.waiting.clear()
   }
   return async function serve(name: string, worker: Uploaded, request: Request, props: Props) {
-    let started = running.get(name)
-    if (started === undefined) {
-      started = start(name, worker.main)
-      running.set(name, started)
-    }
-    const app = await started
+    const app = await (running.get(name) ?? start(name, worker.main))
     app.next += 1
     const id = app.next
     const body = request.method === 'GET' ? null : await request.arrayBuffer()
@@ -81,9 +93,7 @@ export function threads(t: TestContext) {
     })
     const watch = setInterval(() => {
       if (app.thread.performance.eventLoopUtilization(before).active <= worker.cpuMs) return
-      running.delete(name)
-      void app.thread.terminate()
-      app.waiting.get(id)?.reject(new Error('Worker exceeded CPU time limit.'))
+      stop(name, app, new Error('Worker exceeded CPU time limit.'))
     }, 5)
     try {
       return await answer

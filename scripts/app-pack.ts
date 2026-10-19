@@ -1,8 +1,9 @@
 // app-pack: builds a version folder a person sends to a Projeto (step 9): manifest.json, the entry
 // module and assets/. `node scripts/app-pack.ts <source> <out> [<overlay>]`; the overlay's
-// manifest.json and assets/ files replace or add the source's by the same path, and an overlay with
-// its own wrangler.jsonc is bundled in place of the source's Worker (recados-2 changes only the
-// color; the step 10 defects change one piece of Recados each).
+// manifest.json and assets/ files replace the source's by the same path, an asset only its own
+// manifest names is added, and an overlay with its own wrangler.jsonc is bundled in place of the
+// source's Worker (recados-2 changes only the color; the step 10 defects change one piece of
+// Recados each).
 import {
   cpSync,
   existsSync,
@@ -69,8 +70,16 @@ function pack(source: string, out: string, overlay: string | undefined) {
     rmSync(out, { recursive: true, force: true })
     cpSync(join(source, ASSETS_FOLDER), join(out, ASSETS_FOLDER), { recursive: true })
     cpSync(join(source, 'manifest.json'), join(out, 'manifest.json'))
-    for (const { from, path } of versionPartsOf(overlay)) cpSync(from, join(out, path))
+    const parts = versionPartsOf(overlay)
+    for (const { from, path } of parts) cpSync(from, join(out, path))
     manifest = Manifest.parse(JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')))
+    const named = parts.some(({ path }) => path === 'manifest.json') ? manifest.assets : []
+    for (const { path } of parts) {
+      const asset = path.slice(`${ASSETS_FOLDER}/`.length)
+      if (path === 'manifest.json' || existsSync(join(source, path)) || named.includes(asset))
+        continue
+      fail(`${path} replaces no file of ${source}`)
+    }
     cpSync(join(outdir, 'index.js'), join(out, manifest.entry))
   } finally {
     rmSync(outdir, { recursive: true, force: true })

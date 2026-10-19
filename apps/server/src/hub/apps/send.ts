@@ -1,5 +1,5 @@
 import type { Manifest } from '@conexus/app-contract'
-import { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
+import { APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
 import type {
   AppVersion,
   AppVersionId,
@@ -61,7 +61,6 @@ export function uploadVersion(
     compatibilityDate: APP_COMPATIBILITY_DATE[input.manifest.contract],
     files: input.files,
     tags: [`company-${input.companyId}`, `project-${input.projectId}`],
-    cpuMs: APP_CALL_LIMITS.cpuMs,
   })
 }
 
