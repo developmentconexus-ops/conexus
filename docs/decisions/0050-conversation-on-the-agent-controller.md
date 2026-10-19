@@ -17,8 +17,10 @@ in Mastra Code and Mastra Factory.
 **Question.** Does one controller keep companies apart, keep each conversation's model, and send
 each attempt through the queue's account, on the founder's real accounts?
 
-**Fixed.** `@mastra/core` 1.78.0, `memory` 1.38.0, `pg` 1.31.2, `code-sdk` 1.14.0, CLIProxyAPI
-v8.0.33, PostgreSQL 18; the founder's Claude subscription and Google account.
+**Fixed.** `@mastra/core` 1.78.0, `memory` 1.38.0, `pg` 1.31.2, `code-sdk` 1.14.0 (not a dependency:
+its Claude subscription provider is copied into the Hub with its Apache-2.0 notice, without its
+prompt cache or thinking middleware, as step 11 copied its login), CLIProxyAPI v8.0.33, PostgreSQL
+18; the founder's Claude subscription and Google account.
 
 | # | Check | Passes when |
 | --- | --- | --- |
