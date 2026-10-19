@@ -1,13 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { DatabaseUrl } from './database.ts'
-import { createTestDatabase, loginAnswer } from './test-database.ts'
-
-function inDatabase(url: DatabaseUrl, of: DatabaseUrl): DatabaseUrl {
-  const next = new URL(url.reveal())
-  next.pathname = new URL(of.reveal()).pathname
-  return DatabaseUrl.parse(next.toString())
-}
+import { createTestDatabase } from './test-database.ts'
+import { inDatabase, loginAnswer } from './test-mastra-database.ts'
 
 test('teste 1: o login do Mastra tenta entrar no banco do Hub e ler uma tabela, e o banco recusa', async (t) => {
   const { mastraUrl, runtimeUrl } = await createTestDatabase(t)

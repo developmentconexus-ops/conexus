@@ -23,7 +23,7 @@ import {
   SessionSecret,
 } from './config.ts'
 import type { Database } from './database.ts'
-import { DatabaseUrl, MASTRA_LOGIN, openDatabase, RUNTIME_LOGIN } from './database.ts'
+import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
@@ -33,6 +33,7 @@ import {
   TEST_NAMESPACE,
   testAppsConfig,
 } from './test-cloudflare.ts'
+import { mastraUrlOf } from './test-mastra-database.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
 import type { PasswordService } from './test-password-service.ts'
 import { plantPasswordService } from './test-password-service.ts'
@@ -141,35 +142,10 @@ function withDatabase(url: DatabaseUrl, name: string, login?: { user: string; pa
   return DatabaseUrl.parse(next.toString())
 }
 
-/**
- * Mastra's database of a test database: beside it, `<name>_mastra`, entered by Mastra's login with
- * the password the Hub's login has in tests, so suites that run at once agree on it.
- */
-export function mastraUrlOf(hubUrl: DatabaseUrl): DatabaseUrl {
-  const url = new URL(hubUrl.reveal())
-  url.pathname = `${url.pathname}_mastra`
-  url.username = MASTRA_LOGIN
-  return DatabaseUrl.parse(url.toString())
-}
-
 async function connected(url: DatabaseUrl): Promise<pg.Client> {
   const client = new pg.Client({ connectionString: url.reveal() })
   await client.connect()
   return client
-}
-
-/** What the server answers a login to `url`: `ok` once a statement ran, or the refusal's SQLSTATE. */
-export async function loginAnswer(url: DatabaseUrl, statement = 'select 1'): Promise<string> {
-  const client = new pg.Client({ connectionString: url.reveal() })
-  try {
-    await client.connect()
-    await client.query(statement)
-    return 'ok'
-  } catch (error) {
-    return error instanceof pg.DatabaseError ? (error.code ?? 'unknown') : 'unknown'
-  } finally {
-    await client.end().catch(() => undefined)
-  }
 }
 
 export async function withRoleLock<T>(work: () => Promise<T>): Promise<T> {
