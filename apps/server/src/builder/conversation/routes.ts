@@ -63,8 +63,7 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
   serve(app, readConversation, async (input) => {
     const { person, params } = input
     const row = await store.owned({ person, ...params })
-    const live = await sessions.running(params.conversationId)
-    const read = await historyOf(builder, ownerOf(input), params.conversationId, live)
+    const read = await historyOf(builder, ownerOf(input), params.conversationId)
     const conversation = { id: row.id, createdAt: row.createdAt.toISOString(), ...read }
     return answer({ conversation })
   })

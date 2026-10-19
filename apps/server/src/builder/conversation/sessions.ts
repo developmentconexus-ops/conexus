@@ -206,12 +206,6 @@ export class Sessions {
     live?.session.abort()
   }
 
-  /** Whether a turn of this conversation runs in this process now. */
-  async running(conversationId: string): Promise<boolean> {
-    const live = await this.#open.get(conversationId)?.catch(() => undefined)
-    return live?.running !== undefined
-  }
-
   /** Waits for every turn in progress, then ends the streams (code C62); the caller holds the deadline. */
   async drain(): Promise<void> {
     const opened = [...this.#open.values()].map((each) => each.catch(() => undefined))

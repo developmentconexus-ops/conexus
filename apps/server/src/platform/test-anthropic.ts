@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
@@ -202,7 +203,14 @@ function replied(sent: Sent, reply: Reply): Response {
   const blocks =
     reply.kind === 'text'
       ? [{ type: 'text', text: reply.text }]
-      : [{ type: 'tool_use', id: 'toolu_test', name: 'web_fetch', input: { url: reply.url } }]
+      : [
+          {
+            type: 'tool_use',
+            id: `toolu_${randomUUID()}`,
+            name: 'web_fetch',
+            input: { url: reply.url },
+          },
+        ]
   if (!sent.stream) {
     const content = blocks.map((block) => ({ ...block }))
     const body = { id: 'msg_test', type: 'message', role: 'assistant', model: MODEL, content }

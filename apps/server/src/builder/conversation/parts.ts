@@ -14,9 +14,15 @@ const Source = z.object({
   type: z.literal('source'),
   source: z.object({ url: z.url(), title: z.string().optional() }),
 })
+// A page `web_fetch` answered with an HTTP status: not its call, and not one it refused.
 const Fetch = z.object({
   type: z.literal('tool-invocation'),
-  toolInvocation: z.object({ toolName: z.literal('web_fetch'), args: z.object({ url: z.url() }) }),
+  toolInvocation: z.object({
+    toolName: z.literal('web_fetch'),
+    state: z.literal('result'),
+    args: z.object({ url: z.url() }),
+    result: z.object({ status: z.number() }),
+  }),
 })
 const Notice = z.object({ type: z.literal(NOTICE_PART), data: z.object({ text: z.string() }) })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })

@@ -121,6 +121,9 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     agent,
     modes: [{ id: CONVERSATION_MODE }],
     disableBuiltinTools: BUILTIN_TOOLS,
+    // The controller asks the person before every tool by default and parks the turn on the
+    // answer; the Builder's tools are its own and no screen asks, so none waits.
+    initialState: { yolo: true },
   })
   const mastra = new Mastra({
     logger: new BuilderLogger(deps.log),

@@ -26,11 +26,15 @@ export const KEY = 'sk-ant-conversation-key-0001'
 
 /**
  * Empresa Teste, Ana its owner, an Anthropic key and the default model, and a Projeto, on a Hub
- * whose log lines the test reads.
+ * whose log lines the test reads; `change` sets its config apart from the test one.
  */
-export async function conversing(t: TestContext, answer: Anthropic['answer']) {
+export async function conversing(
+  t: TestContext,
+  answer: Anthropic['answer'],
+  change?: Parameters<typeof hubWithLog>[1],
+) {
   const anthropic = plantAnthropic(t, answer)
-  const hub = await hubWithLog(t)
+  const hub = await hubWithLog(t, change)
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
   const company = `/api/companies/${companyId}`
