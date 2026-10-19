@@ -219,6 +219,7 @@ export async function pickAccount(
       turn.tried.add(found.row.id)
       if (error.code === 'MODEL_ACCOUNT_REFUSED') {
         await markAccount(deps, turn, found.row.id, { kind: 'refused' })
+        turn.unsaid.push(found.row.label)
       }
     }
   }

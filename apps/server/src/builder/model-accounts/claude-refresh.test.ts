@@ -91,7 +91,7 @@ test('duas perguntas com o token vencido: uma só chamada ao endpoint de renova�
   assert.deepEqual(bearers, [SECOND.access, SECOND.access])
 })
 
-test('renovação recusada pela Anthropic: a conta fica recusada e a Time 1 responde', async (t) => {
+test('renovação recusada pela Anthropic: a conta fica recusada, o turno avisa e a Time 1 responde', async (t) => {
   const f = await subscribed(t, 1)
   f.anthropic.refresh = () => ({ status: 400 })
   const { events } = await asked(t, f.where)
@@ -99,6 +99,9 @@ test('renovação recusada pela Anthropic: a conta fica recusada e a Time 1 resp
     f.anthropic.sent.filter((each) => each.stream).map((each) => each.bearer ?? each.key),
     [KEY],
   )
+  assert.deepEqual(noticesOf(events), [
+    'Claude foi recusada. Ligue de novo; continuei pela Time 1.',
+  ])
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'ready' })
 })

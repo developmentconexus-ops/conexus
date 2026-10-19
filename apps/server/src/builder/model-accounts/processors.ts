@@ -83,7 +83,22 @@ type Notifier = { writer?: Writer; requestContext?: RequestContext }
  * The account for the turn's next attempt: in its model's queue, then in each next model of the
  * company's automatic switch, with its notice; none left, the notice that the accounts ended.
  */
+/** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
+async function sayRefused(args: Notifier, turn: Turn, next: Picked) {
+  for (const label of turn.unsaid.splice(0)) {
+    const text = `${label} foi recusada. Ligue de novo; continuei pela ${next.label}.`
+    await notify(args, 'account-switched', text)
+  }
+}
+
 async function choose(deps: QueueDeps, turn: Turn, args: Notifier) {
+  const picked = await chooseAccount(deps, turn, args)
+  if (picked === undefined) turn.unsaid.length = 0
+  else await sayRefused(args, turn, picked)
+  return picked
+}
+
+async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
   const chosen = turn.modelId ?? ''
   const picked = await pickAccount(deps, turn, chosen)
   if (picked !== undefined) return picked
@@ -163,7 +178,9 @@ export function accountQueue(deps: QueueDeps): ErrorProcessor {
         return { retry: false }
       }
       const resubscribe = failure.kind === 'refused' && account.kind === 'claude_subscription'
-      if (resubscribe && !turn.refreshed.has(account.id)) {
+      // A first refusal of a subscription refreshes it; a refused refresh is said by `choose`.
+      const refreshing = resubscribe && !turn.refreshed.has(account.id)
+      if (refreshing) {
         turn.refreshed.add(account.id)
       } else {
         await markAccount(deps, turn, account.id, failure)
@@ -183,7 +200,7 @@ export function accountQueue(deps: QueueDeps): ErrorProcessor {
       const next = await choose(deps, turn, args)
       turn.account = next
       if (next === undefined) return { retry: false }
-      if (next.modelId === account.modelId && next.id !== account.id) {
+      if (!refreshing && next.modelId === account.modelId && next.id !== account.id) {
         await notify(
           args,
           'account-switched',

@@ -24,6 +24,8 @@ export class Turn {
   readonly personId: PersonId
   readonly tried = new Set<string>()
   readonly refreshed = new Set<string>()
+  /** The names of accounts refused as they were opened, for the next notice. */
+  readonly unsaid: string[] = []
   modelId: string | undefined
   switched = false
   account: Picked | undefined
