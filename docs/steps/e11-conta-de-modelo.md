@@ -96,14 +96,14 @@ Google nem telas medidas. Base aqui: Projetos (um dono, criar e apagar) tem 782 
 | 18 | U5 | Só o operador muda os tipos; dono de empresa: 404; chave de API fica | idem | must |
 | 19 | U5 | Dar a conta (aberto): só dono e administrador dão, tiram e trocam; a quem não é membro: 404 | `model-accounts-assign.test.ts` | must |
 | 20 | U6 | `start` dá o endereço da Anthropic e guarda o verificador lacrado 10 min; `complete` troca o código, testa e grava; repetido ou tarde: 410 `MODEL_ACCOUNT_SIGN_IN_EXPIRED` | `claude.test.ts`, Anthropic dublê | must |
-| 21 | U6 | Duas renovações juntas chamam a Anthropic uma vez (S34); renovação recusada grava `refused` | idem | must |
+| 21 | U6 | Duas renovações juntas: uma chamada (S34); recusada grava `refused` | idem | must |
 | 22 | U6 | A chamada leva o cabeçalho e a frase do `claudeCodeMiddleware` e o token da conta; duas contas em paralelo não se trocam | idem | must |
 | 23 | U7 | Um processo por conta, em `127.0.0.1`; binário diferente: não inicia; ocioso, para; o arquivo renovado é relacrado e a pasta apagada | `google.test.ts`, CLIProxy dublê | must |
-| 24 | U7 | Entrar pelo endereço de gestão; `state` diferente ou atrasado: 410; o roteador chega ao processo por `url` e chave do processo | idem | must |
+| 24 | U7 | Entrar pelo endereço de gestão; `state` errado ou tarde: 410; o roteador chega por `url` e chave do processo | idem | must |
 | 25 | U8 | As telas da matriz de estados, com textos, teclado para ordenar e foco | `model-accounts.test.tsx` | must |
 | 26 | U8 | 390 px, 200%, dois temas, sem erro de CSP | navegador (T23) | should |
 | 27 | U9 | O roteiro, Hub real, dublês | `tests/e2e/model-accounts.test.ts` | must |
-| 28 | U9 | Publicado: passos 1 a 6, contas reais | firstmate, fundador (T14) | must |
+| 28 | U9 | Publicado: passos 1 a 6 | firstmate, fundador (T14) | must |
 
 ## A matriz de estados
 
