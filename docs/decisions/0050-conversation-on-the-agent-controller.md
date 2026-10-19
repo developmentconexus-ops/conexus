@@ -2,7 +2,7 @@
 
 ## Context
 
-Step 12 makes the first model call. Mastra's `AgentController` holds sessions in the process.
+Step 12 makes the first model call, on Mastra's `AgentController`.
 
 ## Decision
 
@@ -26,7 +26,7 @@ v8.0.33, PostgreSQL 18; the founder's Claude subscription and Google account.
 | 2 | Switch a model, restart on the same store | The new session reads it |
 | 3 | An invented key first, then the subscription | The first is refused, the second answers |
 | 4 | Subscription and Gemini (CLIProxy), each asked to search | Portuguese answers; the stream shows search and pages read |
-| 5 | Prototype: our `ui/` pieces against `playground-ui` | Bundle, partial text on reconnect, live region, tool part, `Select`; one chosen here |
+| 5 | Prototype: our `ui/` pieces against `playground-ui` | Partial text on reconnect, live region, page part, `Select`; one chosen |
 
 If 1 to 3 fail, the controller returns to the founder; a path refused in 4 leaves the step and
 returns to him.
@@ -35,7 +35,7 @@ returns to him.
 
 ## Result
 
-Not run.
+Checks 1 to 4: not run. Check 5: ours. `@mastra/playground-ui` 64.0.0, read: 43 dependencies, 10 peers with `client-js`; its chat takes Mastra's types from routes the Hub lacks (S39), adds a second Zod, has no `role="log"`. Ours takes the stream as is, adds no dependency and no `@mastra/*` to the bundle (W7); `conversation.test.tsx` proves it. Reopens if `playground-ui` drops `client-js`.
 
 ## State
 

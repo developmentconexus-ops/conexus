@@ -46,9 +46,12 @@ async function failureOf(response: Response): Promise<HubFailure> {
 async function hubFetch(
   path: string,
   init: RequestInit = {},
-  deadlineMs = DEADLINE_MS,
+  deadlineMs: number | null = DEADLINE_MS,
 ): Promise<Response> {
-  const signals = [AbortSignal.timeout(deadlineMs), ...(init.signal ? [init.signal] : [])]
+  const signals = [
+    ...(deadlineMs === null ? [] : [AbortSignal.timeout(deadlineMs)]),
+    ...(init.signal ? [init.signal] : []),
+  ]
   return fetch(new URL(path, globalThis.location.origin), {
     ...init,
     credentials: 'same-origin',
@@ -108,7 +111,7 @@ function addressOf(operation: Operation, sent: Sent): string {
 async function send(
   operation: Operation,
   sent: Sent = {},
-  options: { signal?: AbortSignal; deadlineMs?: number } = {},
+  options: { signal?: AbortSignal; deadlineMs?: number | null } = {},
 ) {
   const headers = {
     ...(sent.body === undefined ? {} : { 'content-type': 'application/json' }),
@@ -123,7 +126,7 @@ async function send(
       ...(sent.body === undefined ? {} : { body: JSON.stringify(sent.body) }),
       ...(signal ? { signal } : {}),
     },
-    deadlineMs,
+    deadlineMs === undefined ? DEADLINE_MS : deadlineMs,
   )
   if (!response.ok) throw await failureOf(response)
   return response
@@ -164,6 +167,61 @@ export function hubQuery(operation: Operation, ...args: unknown[]) {
   }
 }
 
+type Streaming = Operation & { success: { events: z.ZodType } }
+
+/** The `data:` payload of one block of a `text/event-stream`, or nothing for a comment (heartbeat). */
+function dataOf(block: string): string | undefined {
+  const lines = block
+    .split('\n')
+    .flatMap((line) => (line.startsWith('data:') ? [line.slice(5)] : []))
+  return lines.length === 0 ? undefined : lines.map((line) => line.replace(/^ /, '')).join('\n')
+}
+
+/**
+ * The events of a stream the Hub keeps open, each parsed with the operation's schema. No deadline
+ * ends it: `onActivity` is told of every chunk, heartbeats included, so the caller can tell a quiet
+ * line from a dead one. A stream that ends or breaks ends the iteration or throws.
+ */
+export function hubEvents<O extends Streaming>(
+  operation: O,
+  params: PartOf<O, 'params'>,
+  options: { signal: AbortSignal; onActivity: () => void },
+): AsyncGenerator<z.output<O['success']['events']>>
+export async function* hubEvents(
+  operation: Streaming,
+  params: unknown,
+  options: { signal: AbortSignal; onActivity: () => void },
+): AsyncGenerator<unknown> {
+  const response = await send(operation, Sent.parse({ params }), {
+    signal: options.signal,
+    deadlineMs: null,
+  })
+  if (response.body === null) throw new HubFailure('INTERNAL_UNEXPECTED')
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buffered = ''
+  try {
+    for (;;) {
+      const { done, value } = await reader.read().catch((cause: unknown) => {
+        throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
+      })
+      if (done) return
+      options.onActivity()
+      buffered = (buffered + value).replaceAll('\r\n', '\n')
+      const blocks = buffered.split('\n\n')
+      buffered = blocks.pop() ?? ''
+      for (const block of blocks) {
+        const data = dataOf(block)
+        if (data === undefined) continue
+        const event = operation.success.events.safeParse(JSON.parse(data))
+        if (!event.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: event.error })
+        yield event.data
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => undefined)
+  }
+}
+
 type WriteOptions<O extends Operation> = {
   mutationKey: readonly string[]
   mutationFn: (variables: WriteVariables<O>) => Promise<Output<O>>
@@ -188,12 +246,14 @@ export function sentenceOf(error: unknown): string {
   return [row.phrase, row.action].filter(Boolean).join(' ')
 }
 
+const NOT_FOUND_CODES: ReadonlySet<FailureCode> = new Set(['NOT_FOUND', 'CONVERSATION_NOT_FOUND'])
+
 /** A read the Hub answers 404 shows the route's not-found, as an id that cannot exist does. */
 export async function readOrNotFound<T>(read: Promise<T>): Promise<T> {
   try {
     return await read
   } catch (error) {
-    if (error instanceof HubFailure && error.code === 'NOT_FOUND') throw notFound()
+    if (error instanceof HubFailure && NOT_FOUND_CODES.has(error.code)) throw notFound()
     throw error
   }
 }
