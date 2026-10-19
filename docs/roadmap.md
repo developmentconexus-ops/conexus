@@ -42,6 +42,7 @@ Desenho: `architecture.md`.
    9.1 **Direto ao app.** Entra e vê o app, sem o Hub no meio; o Neon mostra o apelido.
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
     Cartão da etapa 10 aprovado em 2026-10-18 (commit 458f5d17473aeb947c009de2b472dabdfebb4748): "oPÇÃO A tirar verificador."; "1. Aprovo"; "1. C porém me explica exemplo caso real, quero entender"
+    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), roteiro feito pelo firstmate no Chromium a pedido do fundador: "1 sim 2. Sim 3. Sim"; sobre o passo 4, cortado aos 10 s na v0.10.0 e em 2,5 s na v0.10.1, "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
 11. **Conta de modelo.** Liga a sua assinatura e a testa.
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
@@ -97,7 +98,6 @@ Etapa fechada sai desta tabela; o uso na seção 1.
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
 | 9.1 Direto ao app | A 9 usada | Dadas | O estudo de 2026-10-18 |
-| 10 Recusar um app | A 9 | Dadas | Ficha do verificador. A regra "2A". Limites de laço, prazo e consultas |
 | 11 Conta de modelo | A chave | Nenhuma | Ficha `model-account` |
 | 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8 do Builder. O teste do banco dormindo e a restauração dos dois bancos, de novo |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, do sandbox e do Git. Testes 11 e 12 |
