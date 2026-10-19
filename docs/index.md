@@ -5,7 +5,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 ## Overview
 
 - [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
-- [README.md](../README.md): this repository, for a person, in Portuguese.
+- [README.md](../README.md): this repository, in Portuguese.
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, approvals, use lines.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
 - [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
@@ -80,6 +80,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0047](decisions/0047-one-call-limits-in-the-dispatcher.md) call limits.
 - [0048](decisions/0048-company-neon-project-named-by-nickname-and-id.md) Neon name.
 - [0049](decisions/0049-model-accounts-keys-sign-ins-queues.md) accounts.
+- [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
 
 ## Skills
 
