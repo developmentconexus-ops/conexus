@@ -7,13 +7,14 @@ company's people choosing models.
 
 ## Decision
 
-An account belongs to a company or to a person in it, of one kind: `api_key`, for any provider of
-the installed router registry that needs only a key; `claude_subscription`, by `@mastra/code-sdk`'s
-paste-code sign-in; `google_cliproxy`, by CLIProxyAPI's Antigravity login, on `127.0.0.1`. Each
-owner keeps one queue per provider, in its order; a person's is their own, then the company's
-assigned to them, in the company's position, then the company's. The operators choose a company's
-sign-in kinds, which bind personal accounts too; the key is always on. No test when linking. Sealed
-with the installation key file. Basis: the founder's answers to the step 11 studies and card.
+An account belongs to a company or to a person in it, of one kind: `api_key`, for any key-only
+provider of the installed router registry; `claude_subscription`, by `@mastra/code-sdk`'s
+paste-code sign-in, carried, not a dependency ("1. B e estrutura correto"); `google_cliproxy`, by
+CLIProxyAPI's Antigravity login, on `127.0.0.1`. Each owner keeps one queue per provider, in its
+order; a person's is their own, then the company's assigned to them, in the company's position, then
+the company's. The operators choose a company's sign-in kinds, which bind personal accounts too; the
+key is always on. No test when linking. Sealed with the installation key file. Basis: the founder's
+step 11 answers.
 
 ## Criterion
 
@@ -39,4 +40,4 @@ No live key call: the founder waived it ("Não precisa de prova da chave de API"
 
 ## State
 
-Proposed 2026-10-19. Founder: "sM APROVO E CONFIRMO". Supersedes [0030].
+Accepted 2026-10-19. Founder: "sM APROVO E CONFIRMO". Supersedes [0030].
