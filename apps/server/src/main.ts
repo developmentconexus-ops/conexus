@@ -7,7 +7,11 @@ import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
 import { z } from 'zod'
 import type { ModelAccounts } from './builder/model-accounts/public.ts'
-import { createModelAccounts, resealModelAccounts } from './builder/model-accounts/public.ts'
+import {
+  createModelAccounts,
+  resealModelAccounts,
+  signInFlows,
+} from './builder/model-accounts/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { createAppRemoval, createApps } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
@@ -119,7 +123,8 @@ export function subjectsOf(deps: {
     appRemoval,
   })
   const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain })
-  const modelAccounts = createModelAccounts({ database, identity, sealKeys: config.sealKeys })
+  const sealKeys = config.sealKeys
+  const modelAccounts = createModelAccounts({ database, identity, sealKeys, flows: signInFlows() })
   return { projects, operations, apps, modelAccounts }
 }
 

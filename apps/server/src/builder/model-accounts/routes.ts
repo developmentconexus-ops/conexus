@@ -1,6 +1,7 @@
 import {
   assignModelAccount,
   changeModelAccount,
+  completeModelAccountSignIn,
   connectModelAccount,
   getAccountKinds,
   listModelAccounts,
@@ -9,12 +10,15 @@ import {
   removeModelAccount,
   setAccountKinds,
   setDefaultModel,
+  startModelAccountSignIn,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
 import type { Deps } from './accounts.ts'
 import { readKinds, setKinds } from './kinds.ts'
 import { listKeyProviders } from './providers.ts'
+import type { SignInFlows } from './sign-ins.ts'
+import { completeSignIn, startSignIn } from './sign-ins.ts'
 import type { ModelAccountStore } from './store.ts'
 
 // The registry is in memory and the same for every person: one list, built once.
@@ -22,7 +26,7 @@ const PROVIDERS = { providers: listKeyProviders() }
 
 export function registerModelAccountRoutes(
   app: FastifyInstance,
-  deps: Deps & { store: ModelAccountStore },
+  deps: Deps & { store: ModelAccountStore; flows: SignInFlows },
 ): void {
   const { store } = deps
 
@@ -99,5 +103,33 @@ export function registerModelAccountRoutes(
       'ACCOUNT_KINDS_SET',
     )
     return answer(set)
+  })
+
+  registerSignInRoutes(app, deps)
+}
+
+function registerSignInRoutes(app: FastifyInstance, deps: Deps & { flows: SignInFlows }) {
+  serve(app, startModelAccountSignIn, async ({ person, params, body, log }) => {
+    const started = await startSignIn(deps, { person, ...params, ...body })
+    log.info(
+      {
+        companyId: params.companyId,
+        signInId: started.signInId,
+        kind: body.kind,
+        owner: body.owner,
+      },
+      'MODEL_ACCOUNT_SIGN_IN_STARTED',
+    )
+    return answer(started)
+  })
+
+  serve(app, completeModelAccountSignIn, async ({ person, params, body, log }) => {
+    const linked = await completeSignIn(deps, { person, ...params, code: body.code })
+    const { id, provider, owner, kind } = linked.account
+    log.info(
+      { companyId: params.companyId, accountId: id, provider, owner, kind },
+      'MODEL_ACCOUNT_LINKED',
+    )
+    return answer(linked)
   })
 }

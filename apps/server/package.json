@@ -17,6 +17,7 @@
     "@conexus/hub-api": "*",
     "@fastify/helmet": "13.1.1",
     "@fastify/static": "10.1.5",
+    "@mastra/code-sdk": "1.14.0",
     "@mastra/core": "1.78.0",
     "@neon/sdk": "7.3.0",
     "@neondatabase/serverless": "1.2.0",
