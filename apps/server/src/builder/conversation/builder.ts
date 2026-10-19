@@ -20,8 +20,8 @@ import {
 import { BuilderLogger } from './logger.ts'
 import { createMastraStorage } from './storage.ts'
 
-export const BUILDER_ID = 'builder'
-export const CONVERSATION_MODE = 'conversa'
+const BUILDER_ID = 'builder'
+const CONVERSATION_MODE = 'conversa'
 
 const INSTRUCTIONS = [
   'You are the Builder of Conexus: you help a person in a company think through the business app',

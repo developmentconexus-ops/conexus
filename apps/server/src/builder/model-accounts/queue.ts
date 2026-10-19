@@ -22,7 +22,7 @@ import type { Picked, Turn } from './turn.ts'
  * The process of a Google account that takes its calls on this machine (step 12 U10); `hold`
  * keeps it while a call runs and gives back its release.
  */
-export type GoogleCalls = (
+type GoogleCalls = (
   account: GoogleAccount,
   scope: Scope,
 ) => Promise<{ url: string; apiKey: string; hold: () => () => void }>

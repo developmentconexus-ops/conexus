@@ -11,9 +11,8 @@ import { Sessions } from './sessions.ts'
 import type { ReleaseScope } from './store.ts'
 import { createConversationStore } from './store.ts'
 
-export type { ReleaseScope } from './store.ts'
 /** Deletes the threads, and so the memory, of a Projeto, a person or a company (data D17). */
-export type ReleaseConversations = (scope: ReleaseScope) => Promise<void>
+type ReleaseConversations = (scope: ReleaseScope) => Promise<void>
 export type Conversations = ReturnType<typeof createConversations>
 
 /**

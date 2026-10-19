@@ -188,7 +188,7 @@ function failedText(account: Picked, failure: ReturnType<typeof callFailureOf>):
  * never `abort()`, which ends the stream silently (study, proved). A 400 or anything else ends the
  * turn as the model's failure, with no switch.
  */
-export function accountQueue(deps: QueueDeps): ErrorProcessor {
+function accountQueue(deps: QueueDeps): ErrorProcessor {
   return {
     id: 'conexus-account-queue',
     async processAPIError(args: ProcessAPIErrorArgs) {

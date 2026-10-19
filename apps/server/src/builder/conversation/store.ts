@@ -47,7 +47,7 @@ async function admitted(deps: Deps, tx: ReadTx, input: InProject): Promise<void>
  * The person's own conversation of this Projeto, or `CONVERSATION_NOT_FOUND`: another company's,
  * another person's and one that does not exist answer the same (security S10, T10).
  */
-export async function ownedConversation(deps: Deps, tx: ReadTx, input: OfConversation) {
+async function ownedConversation(deps: Deps, tx: ReadTx, input: OfConversation) {
   await admitted(deps, tx, input)
   const [row] = await tx
     .select({ id: conversation.id, createdAt: conversation.createdAt })

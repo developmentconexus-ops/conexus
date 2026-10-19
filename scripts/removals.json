@@ -221,7 +221,7 @@
   },
   {
     "id": "malformed-id-not-found",
-    "file": "apps/server/src/platform/http.ts",
+    "file": "apps/server/src/platform/request-parts.ts",
     "find": "throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })",
     "replace": "throw new Failure('REQUEST_MALFORMED', { cause: parsedParams.error })",
     "test": {

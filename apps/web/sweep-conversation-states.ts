@@ -8,6 +8,7 @@ import { OWNER, PROJECT_ID } from './sweep-replies.ts'
 const CONVERSATIONS = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations`
 const API = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations`
 const ID = '11111111-1111-4111-8111-111111111111'
+const UNTITLED = '22222222-2222-4222-8222-222222222222'
 const TITLE = 'Comparação de dois apps de encomenda de padaria com um título bem comprido mesmo'
 const LONG_WORD =
   'https://padaria.example.test/pedidos/com/um/endereco/muito/comprido/que/nao/quebra'
@@ -105,12 +106,17 @@ export const CONVERSATION_STATES: State[] = [
         conversations: [
           { id: ID, title: TITLE, createdAt: '2026-10-19T12:00:00.000Z' },
           {
-            id: '22222222-2222-4222-8222-222222222222',
+            id: UNTITLED,
             title: null,
             createdAt: '2026-10-19T13:00:00.000Z',
           },
         ],
         next: { kind: 'END' },
+      }),
+      ...OPEN,
+      // Its link preloads the conversation on focus.
+      [`GET ${API}/${UNTITLED}`]: ok(readConversation, {
+        conversation: { ...CONVERSATION.conversation, id: UNTITLED, title: null },
       }),
     },
     settle: (p) => waitFor(p, 'Comparação de dois apps'),

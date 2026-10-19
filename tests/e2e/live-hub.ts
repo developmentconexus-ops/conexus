@@ -85,6 +85,9 @@ export async function liveHub(
   names: Partial<Pick<Config, 'publicOrigin' | 'appsDomain'>> = {},
 ) {
   assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
+  // Hooks run in the order they were added: the Hub closes before its databases end.
+  const closing = { hub: (): Promise<unknown> => Promise.resolve() }
+  t.after(() => closing.hub())
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
   const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
@@ -113,10 +116,10 @@ export async function liveHub(
     conversations,
     webRoot: WEB_ROOT,
   })
-  t.after(async () => {
+  closing.hub = async function closeHub() {
     await conversations.close()
     await app.close()
-  })
+  }
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
