@@ -71,13 +71,26 @@ function chatSentOf(init: RequestInit | undefined): Sent {
   }
 }
 
+/** A chat stream that sends its first chunks, then the rest only after `until`, to hold a turn open. */
+function heldChat(until: Promise<void>, lines: string[]): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder()
+  return new ReadableStream({
+    async start(controller) {
+      controller.enqueue(encoder.encode(lines.slice(0, 2).join('')))
+      await until
+      controller.enqueue(encoder.encode(lines.slice(2).join('')))
+      controller.close()
+    },
+  })
+}
+
 /** Chat Completions' documented stream: chunks of `choices[].delta`, then `[DONE]`. */
 function chatReplied(sent: Sent, reply: Reply): Response {
   if (reply.kind === 'refuse') {
     const error = { error: { message: 'planted refusal', type: 'invalid_request_error' } }
     return Response.json(error, { status: reply.status, headers: reply.headers })
   }
-  const text = reply.kind === 'text' ? reply.text : ''
+  const text = reply.kind === 'text' || reply.kind === 'hold' ? reply.text : ''
   const base = { id: 'chatcmpl-test', created: 1, model: 'llama-3.3-70b-versatile' }
   const usage = { prompt_tokens: 3, completion_tokens: 3, total_tokens: 6 }
   if (!sent.stream) {
@@ -94,8 +107,13 @@ function chatReplied(sent: Sent, reply: Reply): Response {
     chunk({ content: text }, null),
     { ...chunk({}, 'stop'), usage },
   ]
-  const body = `${frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join('')}data: [DONE]\n\n`
-  return new Response(body, { headers: { 'content-type': 'text/event-stream' } })
+  const lines = [...frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`), 'data: [DONE]\n\n']
+  if (reply.kind === 'hold') {
+    return new Response(heldChat(reply.until, lines), {
+      headers: { 'content-type': 'text/event-stream' },
+    })
+  }
+  return new Response(lines.join(''), { headers: { 'content-type': 'text/event-stream' } })
 }
 
 const Body = z.object({

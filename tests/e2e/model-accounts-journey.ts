@@ -55,12 +55,12 @@ export async function pick(
   await page.getByRole('option', { name: option }).first().click()
 }
 
-/** Opens "Ligar conta" and links an API key of Anthropic. */
-export async function linkKey(page: Page, label: string, key: string) {
+/** Opens "Ligar conta" and links an API key of `provider` (Anthropic unless said). */
+export async function linkKey(page: Page, label: string, key: string, provider = 'Anthropic') {
   await page.getByRole('button', { name: 'Ligar conta', exact: true }).click()
   const panel = page.getByRole('region', { name: 'Ligar conta' })
-  await panel.getByLabel('Buscar fornecedor').fill('Anthropic')
-  await pick(page, panel, 'Fornecedor', 'Anthropic')
+  await panel.getByLabel('Buscar fornecedor').fill(provider)
+  await pick(page, panel, 'Fornecedor', provider)
   await panel.getByLabel('Nome da conta').fill(label)
   await panel.getByLabel('Chave de API', { exact: true }).fill(key)
   await panel.getByRole('button', { name: 'Ligar conta', exact: true }).click()

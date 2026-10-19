@@ -90,8 +90,9 @@ export async function liveHub(
   const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
     database: database.database,
+    mastraPool: database.mastraPool,
     config,
     identity,
     neon: createNeonProjects({ config, log: silent }),
@@ -109,9 +110,13 @@ export async function liveHub(
     projects,
     apps,
     modelAccounts,
+    conversations,
     webRoot: WEB_ROOT,
   })
-  t.after(() => app.close())
+  t.after(async () => {
+    await conversations.close()
+    await app.close()
+  })
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
