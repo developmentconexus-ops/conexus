@@ -221,7 +221,7 @@
   },
   {
     "id": "malformed-id-not-found",
-    "file": "apps/server/src/platform/http.ts",
+    "file": "apps/server/src/platform/request-parts.ts",
     "find": "throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })",
     "replace": "throw new Failure('REQUEST_MALFORMED', { cause: parsedParams.error })",
     "test": {
@@ -959,8 +959,8 @@
   {
     "id": "project-delete-role",
     "file": "apps/server/src/hub/projects/projects.ts",
-    "find": "      action: 'deleteProject',\n    })\n    const [row] = await tx\n      .select({ name: project.name })",
-    "replace": "      action: 'readProjects',\n    })\n    const [row] = await tx\n      .select({ name: project.name })",
+    "find": "      action: 'deleteProject',\n    })\n    const [row] = await tx\n      .select({ name: project.name, deletingSince: project.deletingSince })",
+    "replace": "      action: 'readProjects',\n    })\n    const [row] = await tx\n      .select({ name: project.name, deletingSince: project.deletingSince })",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/projects/projects-delete.test.ts",

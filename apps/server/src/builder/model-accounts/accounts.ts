@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, ModelAccount, Owner, Person, SignInKind } from '@conexus/hub-api'
+import type { CompanyId, ModelAccount, Owner, Person, SignInId, SignInKind } from '@conexus/hub-api'
 import {
   ACCOUNT_LABEL_MAX_LENGTH,
   AccountKind,
@@ -33,6 +33,7 @@ export const AccountRow = z.object({
   label: z.string().min(1),
   position: z.number().int().nonnegative(),
   state: AccountState,
+  limitedUntil: z.date().nullable(),
   hint: z.string().length(HINT_LENGTH).nullable(),
   linkedBy: z.string().nullable(),
   linkedAt: z.date(),
@@ -50,6 +51,10 @@ export const columns = {
   label: modelAccount.label,
   position: modelAccount.position,
   state: modelAccount.state,
+  limitedUntil:
+    sql<Date | null>`case when ${modelAccount.limitedUntil} > now() then ${modelAccount.limitedUntil} end`.mapWith(
+      modelAccount.limitedUntil,
+    ),
   hint: modelAccount.hint,
   linkedBy: personNameColumn(modelAccount.linkedBy),
   linkedAt: modelAccount.linkedAt,
@@ -82,18 +87,60 @@ export function admitFor(deps: Deps, tx: ReadTx, viewer: Viewer, owner: Owner) {
   })
 }
 
-export function ownerOf(row: { personId: string | null }): Owner {
+export function ownerOf(row: { personId: PersonId | null }): Owner {
   return row.personId === null ? 'company' : 'me'
 }
 
 export type Context = { assignees: Map<string, PersonId[]>; open: Set<SignInKind> }
+
+/** Whether the operators keep the account's kind open to the company; the API key always is. */
+function kindOpen(row: Pick<AccountRow, 'kind'>, context: Context): boolean {
+  return row.kind === 'api_key' || context.open.has(row.kind)
+}
+
+/**
+ * Where the account stands in the person's order (step 11, P2): 0 their own, 1 the company's given
+ * to them, 2 the company's for everyone; none for one given only to others. Another person's own
+ * never reaches here (the row policy).
+ */
+export function partOf(
+  row: Pick<AccountRow, 'id' | 'personId'>,
+  context: Context,
+  personId: PersonId,
+): 0 | 1 | 2 | undefined {
+  if (row.personId !== null) return 0
+  const given = context.assignees.get(row.id)
+  if (given === undefined) return 2
+  return given.includes(personId) ? 1 : undefined
+}
+
+/**
+ * The accounts the person may call now, in their order (the queue's rule, step 12): a paused or
+ * refused one, one of a closed kind, one in its limit and one given only to others are left out.
+ * `rows` are read through `columns`, whose `limitedUntil` is null once the limit passed.
+ */
+export function usableInOrder(
+  rows: AccountRow[],
+  context: Context,
+  personId: PersonId,
+): AccountRow[] {
+  return rows
+    .filter((row) => row.state === 'ready' && row.limitedUntil === null && kindOpen(row, context))
+    .flatMap((row) => {
+      const part = partOf(row, context, personId)
+      return part === undefined ? [] : [{ row, part }]
+    })
+    .sort((left, right) => left.part - right.part || left.row.position - right.row.position)
+    .map((each) => each.row)
+}
 
 export function viewOf(row: AccountRow, context: Context): ModelAccount {
   const { attemptKey: _attemptKey, personId: _personId, ...shown } = row
   return {
     ...shown,
     owner: ownerOf(row),
-    kindOff: row.kind !== 'api_key' && !context.open.has(row.kind),
+    kindOff: !kindOpen(row, context),
+    limitedUntil: row.limitedUntil?.toISOString() ?? null,
     linkedAt: row.linkedAt.toISOString(),
     assignees: context.assignees.get(row.id) ?? [],
   }
@@ -140,7 +187,7 @@ export async function lockedRow(
 /** Makes a second write on one queue wait for the first (code C65): its positions are counted here. */
 export async function lockQueue(
   tx: CommandTx,
-  queue: { companyId: CompanyId; personId: string | null; provider: string },
+  queue: { companyId: CompanyId; personId: PersonId | null; provider: string },
 ) {
   await transactionLock(
     tx,
@@ -150,7 +197,7 @@ export async function lockQueue(
 
 export function ofQueue(queue: {
   companyId: CompanyId
-  personId: string | null
+  personId: PersonId | null
   provider: string
 }) {
   return and(
@@ -181,7 +228,7 @@ export async function insertAccount(
   tx: CommandTx,
   viewer: Viewer,
   account: NewAccount,
-): Promise<string> {
+): Promise<ModelAccountId> {
   const personId = account.owner === 'company' ? null : viewer.person.id
   const queue = { companyId: viewer.companyId, personId, provider: account.provider }
   await lockQueue(tx, queue)
@@ -189,7 +236,7 @@ export async function insertAccount(
     .select({ position: max(modelAccount.position) })
     .from(modelAccount)
     .where(ofQueue(queue))
-  const id = randomUUID()
+  const id = ModelAccountId.parse(randomUUID())
   const sealed = seal(
     deps.sealKeys,
     sealContext({ ...queue, id, kind: account.kind }),
@@ -214,9 +261,9 @@ export async function insertAccount(
 }
 
 export function sealContext(row: {
-  id: string
-  companyId: string
-  personId: string | null
+  id: ModelAccountId | SignInId
+  companyId: CompanyId
+  personId: PersonId | null
   kind: string
   provider: string
 }) {
@@ -230,15 +277,26 @@ export function sealContext(row: {
   } as const
 }
 
-/** The credential sealed in an account, through the one function that hands it out (Grant A). */
+const Sealed = z.object({ sealed: z.instanceof(Buffer), key_id: z.string().min(1) })
+
+/**
+ * An account's sealed credential, through the one function that hands it out (Grant A); an
+ * account removed meanwhile is not found.
+ */
+export async function sealedOf(tx: ReadTx, id: string) {
+  const result = await tx.execute(sql`select sealed, key_id from builder.sealed_of(${id})`)
+  if (result.rows[0] === undefined) throw new Failure('NOT_FOUND')
+  const found = Sealed.parse(result.rows[0])
+  return { keyId: found.key_id, blob: found.sealed }
+}
+
+/** The credential sealed in an account, opened under its seal context. */
 export async function credentialOf(
-  deps: Deps,
+  deps: { sealKeys: SealKeys },
   tx: ReadTx,
-  row: AccountRow & { companyId: string },
+  row: Parameters<typeof sealContext>[0],
 ) {
-  const result = await tx.execute(sql`select sealed, key_id from builder.sealed_of(${row.id})`)
-  const found = z.object({ sealed: z.instanceof(Buffer), key_id: z.string() }).parse(result.rows[0])
-  return open(deps.sealKeys, sealContext(row), { keyId: found.key_id, blob: found.sealed })
+  return open(deps.sealKeys, sealContext(row), await sealedOf(tx, row.id))
 }
 
 /**

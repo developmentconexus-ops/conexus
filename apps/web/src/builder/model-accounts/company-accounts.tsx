@@ -6,6 +6,7 @@ import { SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { DefaultModel } from './default-model.tsx'
 import { LinkAccount } from './link-account.tsx'
+import { ModelFallbackSection } from './model-fallback.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
 import { Queue } from './queue.tsx'
 import { providerName, providersOf, queueOf } from './text.ts'
@@ -33,6 +34,11 @@ export function CompanyAccounts() {
     >
       <SectionTitle>Conta de modelo</SectionTitle>
       <DefaultModel companyId={companyId} providers={providers} current={accounts.defaultModel} />
+      <ModelFallbackSection
+        companyId={companyId}
+        providers={providers}
+        fallback={accounts.fallback}
+      />
       {company.length === 0 && <Empty>Nenhuma conta ligada</Empty>}
       {providersOf(company).map((provider) => (
         <Queue

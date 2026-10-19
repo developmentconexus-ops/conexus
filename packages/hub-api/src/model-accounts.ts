@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CompanyId, Revision } from './companies.ts'
+import { ModelId } from './conversations.ts'
 import { PersonId } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -13,14 +14,17 @@ export type SignInId = z.infer<typeof SignInId>
 export const Owner = z.enum(['company', 'me'])
 export type Owner = z.infer<typeof Owner>
 
-export const AccountKind = z.enum(['api_key', 'claude_subscription', 'google_cliproxy'])
+/** The kinds of account, as a tuple the Builder's table columns read too. */
+export const ACCOUNT_KINDS = ['api_key', 'claude_subscription', 'google_cliproxy'] as const
+export const AccountKind = z.enum(ACCOUNT_KINDS)
 export type AccountKind = z.infer<typeof AccountKind>
 
 /** The kinds the operators open per company; the API key is always open (founder, D9). */
 export const SignInKind = AccountKind.exclude(['api_key'])
 export type SignInKind = z.infer<typeof SignInKind>
 
-export const AccountState = z.enum(['ready', 'paused', 'refused'])
+export const ACCOUNT_STATES = ['ready', 'paused', 'refused'] as const
+export const AccountState = z.enum(ACCOUNT_STATES)
 export type AccountState = z.infer<typeof AccountState>
 
 /** A provider id of the router's registry, such as `anthropic` (decision 0049). */
@@ -45,7 +49,9 @@ export type Provider = z.infer<typeof Provider>
 /**
  * An account as its readers see it, never its credential (decision 0049): a key shows only its last
  * four characters. `kindOff` says the operators closed its kind for the company; it stays and comes
- * back when they open it (founder, C2). `assignees` are the people a company account is given to;
+ * back when they open it (founder, C2).
+ * `limitedUntil` is when the provider's limit ends, null once it has passed, as the database's clock
+ * reads it. `assignees` are the people a company account is given to;
  * with none it is "para todos". `linkedBy` is the name of who linked it, null once they left.
  */
 export const ModelAccount = z.object({
@@ -56,6 +62,7 @@ export const ModelAccount = z.object({
   label: z.string().min(1),
   position: z.number().int().nonnegative(),
   state: AccountState,
+  limitedUntil: z.iso.datetime().nullable(),
   kindOff: z.boolean(),
   hint: z.string().length(4).nullable(),
   linkedBy: z.string().nullable(),
@@ -77,12 +84,29 @@ const OfAccount = InCompany.extend({ accountId: ModelAccountId })
 const OfQueue = InCompany.extend({ owner: Owner, provider: ProviderId })
 const OfSignIn = InCompany.extend({ signInId: SignInId })
 
+/** The most models the company's automatic switch tries, in order. */
+export const MODEL_FALLBACK_MAX_LENGTH = 50
+
+/** The company's automatic switch: off with no models and revision 0 until someone sets it. */
+export const ModelFallback = z.object({
+  enabled: z.boolean(),
+  chain: z.array(ModelId).max(MODEL_FALLBACK_MAX_LENGTH),
+  revision: z.number().int().nonnegative(),
+})
+export type ModelFallback = z.infer<typeof ModelFallback>
+
 const Accounts = z.object({
   company: z.array(ModelAccount),
   mine: z.array(ModelAccount),
   order: z.array(ProviderOrder),
   kinds: z.array(SignInKind),
-  defaultModel: z.string().nullable(),
+  defaultModel: ModelId.nullable(),
+  fallback: ModelFallback,
+  /**
+   * The providers the viewer may converse with now, by id: those with an account the Builder's
+   * queue would call for them (ready, not in its limit, of an open kind, theirs or given to them).
+   */
+  usableProviders: z.array(ProviderId),
   /** Whether the viewer changes the company's accounts and default model: the Hub's answer (C26). */
   mayManage: z.boolean(),
 })
@@ -185,8 +209,8 @@ export const setDefaultModel = defineOperation({
   method: 'PUT',
   path: '/api/companies/{companyId}/default-model',
   bodyLimit: 1024,
-  input: { params: InCompany, body: z.object({ model: z.string().max(200) }) },
-  success: { status: 200, body: z.object({ defaultModel: z.string() }) },
+  input: { params: InCompany, body: z.object({ model: ModelId }) },
+  success: { status: 200, body: z.object({ defaultModel: ModelId }) },
   failures: [...READ_FAILURES, 'MODEL_UNKNOWN'],
 })
 
@@ -200,6 +224,19 @@ export const orderModelAccounts = defineOperation({
   input: { params: OfQueue, body: z.object({ ids: z.array(ModelAccountId).max(500) }) },
   success: { status: 200, body: z.object({ accounts: z.array(ModelAccount) }) },
   failures: [...READ_FAILURES, 'MODEL_ACCOUNT_ORDER_STALE'],
+})
+
+export const setModelFallback = defineOperation({
+  id: 'setModelFallback',
+  summary:
+    'Turns the company’s automatic model switch on or off and sets its chain, at the revision the person read.',
+  access: 'session',
+  method: 'PUT',
+  path: '/api/companies/{companyId}/model-fallback',
+  bodyLimit: 16 * 1024,
+  input: { params: InCompany, body: ModelFallback },
+  success: { status: 200, body: ModelFallback },
+  failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_FALLBACK_STALE'],
 })
 
 export const removeModelAccount = defineOperation({

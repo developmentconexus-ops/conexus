@@ -5,8 +5,6 @@ import type { Socket } from 'node:net'
 import { join } from 'node:path'
 import type { DeclaredOperation, FailureCode, Operation, Person } from '@conexus/hub-api'
 import {
-  ATTEMPT_KEY_HEADER,
-  AttemptKey,
   FAILURES,
   failuresOf,
   PROBLEM_MEDIA_TYPE,
@@ -22,9 +20,11 @@ import { z } from 'zod'
 import type { SessionReader } from './access.ts'
 import { enforceAccess, headersOf, optionalSessionOf, sessionOf } from './access.ts'
 import type { Config } from './config.ts'
+import { sendEvents } from './event-stream.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
+import { partsOf } from './request-parts.ts'
 import { installPages, sendPage } from './screens.ts'
 
 const REQUEST_TIMEOUT_MS = 30_000
@@ -214,7 +214,9 @@ type Body<O extends Operation> = O['success'] extends {
   body: infer S extends z.ZodType
 }
   ? z.input<S>
-  : undefined
+  : O['success'] extends { events: infer S extends z.ZodType }
+    ? AsyncIterable<z.input<S>>
+    : undefined
 type Parsed<O extends Operation, K extends 'params' | 'query' | 'body'> = NonNullable<
   O['input']
 >[K] extends infer S extends z.ZodType
@@ -234,34 +236,6 @@ type Input<O extends Operation> = {
       ? { person: Person | undefined }
       : unknown)
 type Handler<O extends Operation> = (input: Input<O>) => Answer<Body<O>> | Promise<Answer<Body<O>>>
-
-/**
- * The path parameters are read first: an id that cannot exist is the same not-found as one that
- * does not, and it costs no query (code C42, security S10).
- */
-function partsOf(operation: Operation, request: FastifyRequest) {
-  const { params, query, body } = operation.input ?? {}
-  const parsedParams = params?.safeParse(request.params)
-  if (parsedParams?.success === false) {
-    throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })
-  }
-  const key = operation.attemptKey
-    ? AttemptKey.safeParse(request.headers[ATTEMPT_KEY_HEADER.toLowerCase()])
-    : undefined
-  if (key?.success === false) throw new Failure('REQUEST_MALFORMED', { cause: key.error })
-  const parsedQuery = query?.safeParse(request.query)
-  if (parsedQuery?.success === false)
-    throw new Failure('REQUEST_MALFORMED', { cause: parsedQuery.error })
-  const parsedBody = body?.safeParse(request.body)
-  if (parsedBody?.success === false)
-    throw new Failure('REQUEST_MALFORMED', { cause: parsedBody.error })
-  return {
-    params: parsedParams?.data,
-    query: parsedQuery?.data,
-    body: parsedBody?.data,
-    attemptKey: key?.data,
-  }
-}
 
 /** The parts are parsed with the operation's schemas, and the reply checked before it is sent. */
 export function serve<O extends DeclaredOperation>(
@@ -305,6 +279,7 @@ export function serve(
         afterReply?.().catch((error: unknown) => logFailure(request.log, failureOf(error)))
       })
       const { success } = operation
+      if ('events' in success) return sendEvents(reply, success, body, request.log)
       if ('body' in success) return reply.code(success.status).send(success.body.parse(body))
       return reply.code(success.status).send()
     },

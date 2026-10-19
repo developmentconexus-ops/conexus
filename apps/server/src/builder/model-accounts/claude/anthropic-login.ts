@@ -1,8 +1,8 @@
 // Copyright (c) 2025 Kepler Software, Inc. Licensed under the Apache License, Version 2.0; a copy is
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.14.0, dist/auth/providers/anthropic.js with dist/auth/pkce.js and
-// dist/auth/authorization-input.js. Changed: TypeScript, node:crypto for PKCE, only the start and
-// the trade, the reply checked, and a refusal that carries the vendor's status.
+// dist/auth/authorization-input.js. Changed: TypeScript, node:crypto for PKCE, only the start, the
+// trade and the refresh, the reply checked, and a refusal that carries the vendor's status.
 import { createHash, randomBytes } from 'node:crypto'
 import { z } from 'zod'
 
@@ -71,6 +71,39 @@ function parseAuthorizationInput(input: string): { code?: string; state?: string
   return { code: value }
 }
 
+/** The subscription's tokens, sealed whole in its account: `expires` is milliseconds since 1970. */
+export const SubscriptionTokens = z.object({
+  refresh: z.string().min(1),
+  access: z.string().min(1),
+  expires: z.number(),
+})
+export type SubscriptionTokens = z.infer<typeof SubscriptionTokens>
+
+async function tokensOf(response: Response): Promise<SubscriptionTokens> {
+  const tokens = TokenReply.parse(await response.json())
+  return {
+    refresh: tokens.refresh_token,
+    access: tokens.access_token,
+    expires: Date.now() + tokens.expires_in * 1000 - EARLY_MS,
+  }
+}
+
+/** Trades the refresh token for new tokens (`refreshAnthropicToken`, `anthropic.ts:130`). */
+export async function refreshAnthropicTokens(refresh: string): Promise<SubscriptionTokens> {
+  const response = await fetch(TOKEN_URL, {
+    method: 'POST',
+    signal: AbortSignal.timeout(EXCHANGE_TIMEOUT_MS),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      grant_type: 'refresh_token',
+      client_id: CLIENT_ID,
+      refresh_token: refresh,
+    }),
+  })
+  if (!response.ok) throw new AnthropicRefusal('REFRESH_REFUSED', response.status)
+  return tokensOf(response)
+}
+
 /** Trades the pasted code for the subscription's tokens with the verifier `start` gave. */
 export async function completeAnthropicLogin(input: string, verifier: string) {
   const { code, state } = parseAuthorizationInput(input)
@@ -90,10 +123,5 @@ export async function completeAnthropicLogin(input: string, verifier: string) {
     }),
   })
   if (!response.ok) throw new AnthropicRefusal('EXCHANGE_REFUSED', response.status)
-  const tokens = TokenReply.parse(await response.json())
-  return {
-    refresh: tokens.refresh_token,
-    access: tokens.access_token,
-    expires: Date.now() + tokens.expires_in * 1000 - EARLY_MS,
-  }
+  return tokensOf(response)
 }

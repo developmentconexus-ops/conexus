@@ -1,3 +1,4 @@
+import { ACCOUNT_KINDS, ACCOUNT_STATES } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import {
@@ -26,9 +27,6 @@ function instant(name: string) {
   return timestamp(name, { withTimezone: true })
 }
 
-export const KINDS = ['api_key', 'claude_subscription', 'google_cliproxy'] as const
-export const STATES = ['ready', 'paused', 'refused'] as const
-
 const OWN_COMPANY = sql`company_id = ${scoped.companyId}`
 // A person's own rows are theirs alone: no one else in the company reads them (founder, D4). A
 // company scope with no person is the Hub's own work on the company, such as `reseal`.
@@ -56,11 +54,11 @@ export const modelAccount = builder.table(
     id: uuid('id').primaryKey(),
     companyId: text('company_id').notNull(),
     personId: text('person_id'),
-    kind: text('kind', { enum: KINDS }).notNull(),
+    kind: text('kind', { enum: ACCOUNT_KINDS }).notNull(),
     provider: text('provider').notNull(),
     label: text('label').notNull(),
     position: integer('position').notNull(),
-    state: text('state', { enum: STATES }).notNull(),
+    state: text('state', { enum: ACCOUNT_STATES }).notNull(),
     sealed: bytea('sealed').notNull(),
     keyId: text('key_id').notNull(),
     // The last four characters of a key, the only part that ever leaves; a sign-in has none.
@@ -138,7 +136,7 @@ export const companyAccountKind = builder.table(
   'company_account_kind',
   {
     companyId: text('company_id').notNull(),
-    kind: text('kind', { enum: KINDS }).notNull(),
+    kind: text('kind', { enum: ACCOUNT_KINDS }).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.companyId, table.kind] }),
@@ -166,7 +164,7 @@ export const modelAccountSignIn = builder.table(
     companyId: text('company_id').notNull(),
     personId: text('person_id').notNull(),
     owner: text('owner', { enum: ['company', 'me'] }).notNull(),
-    kind: text('kind', { enum: KINDS }).notNull(),
+    kind: text('kind', { enum: ACCOUNT_KINDS }).notNull(),
     label: text('label').notNull(),
     sealed: bytea('sealed').notNull(),
     keyId: text('key_id').notNull(),

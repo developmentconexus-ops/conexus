@@ -28,6 +28,8 @@ export type Operation = {
     | { status: 200; body: z.ZodType }
     | { status: 201; body: z.ZodType }
     | { status: 202 | 204 }
+    /** A `text/event-stream` of these events, with a comment line every `heartbeatMs`. */
+    | { status: 200; events: z.ZodType; heartbeatMs: number }
   failures: readonly FailureCode[]
 }
 

@@ -22,8 +22,8 @@ import {
   readTestDatabase,
   SessionSecret,
 } from './config.ts'
-import type { Database } from './database.ts'
-import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
+import type { Database, MastraPool } from './database.ts'
+import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
@@ -128,6 +128,7 @@ export type TestDatabase = {
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
   mastraUrl: DatabaseUrl
+  mastraPool: MastraPool
   container: string | undefined
   asOwner(text: string, values?: unknown[]): Promise<Record<string, unknown>[]>
 }
@@ -185,9 +186,10 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
     locale && `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
   await admin.query(`create database ${name} ${localeClause ?? ''}`)
   const database = openDatabase({ url: runtimeUrl, log: silent })
+  const mastraPool = openMastraPool({ url: mastraUrl, log: silent })
   t.after(async () => {
     try {
-      await database.close()
+      await Promise.all([database.close(), mastraPool.end()])
       // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
       // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
       await admin.query(`drop database ${name}`)
@@ -203,6 +205,7 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
     ownerUrl,
     runtimeUrl,
     mastraUrl,
+    mastraPool,
     container,
     asOwner: async (text, values) => {
       const client = await connected(ownerUrl)

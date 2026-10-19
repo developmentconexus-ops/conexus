@@ -163,6 +163,7 @@
         "apps/web/src/platform/test-hub.tsx",
         "apps/web/src/platform/test-hub-versions.tsx",
         "apps/web/src/builder/model-accounts/test-hub.tsx",
+        "apps/web/src/builder/conversation/test-hub.tsx",
         "apps/web/vitest.*",
         "apps/web/vite.config.ts"
       ],
@@ -186,10 +187,7 @@
         "!**/*.test.ts",
         "!**/*.test.tsx",
         "!**/test-*.ts",
-        "!**/test-*.tsx",
-        "!apps/server/src/builder/conversation/**",
-        "!apps/server/src/builder/model-accounts/**",
-        "!apps/web/src/builder/**"
+        "!**/test-*.tsx"
       ],
       "plugins": ["./scripts/conexus-code.grit"]
     }

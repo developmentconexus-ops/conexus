@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process'
 import { spawn } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -18,8 +18,8 @@ const READY_MS = 20_000
 const LOGIN_MS = 120_000
 const POLL_MS = 500
 
-type Process = { child: ChildProcess; dir: string; port: number; key: string }
-type Deps = { cliProxy: CliProxy; log: FailureLog }
+export type Process = { child: ChildProcess; dir: string; port: number; key: string }
+export type Deps = { cliProxy: CliProxy; log: FailureLog }
 
 const AuthUrl = z.object({ url: z.url(), state: z.string().min(1) })
 const AuthStatus = z.object({ status: z.string().optional() })
@@ -59,7 +59,7 @@ function management(process: Pick<Process, 'port' | 'key'>, path: string, init: 
   })
 }
 
-async function end(process: Process) {
+export async function end(process: Process) {
   if (process.child.exitCode === null && process.child.signalCode === null) {
     const exited = new Promise((resolve) => process.child.once('exit', resolve))
     process.child.kill('SIGKILL')
@@ -68,12 +68,22 @@ async function end(process: Process) {
   await rm(process.dir, { recursive: true, force: true })
 }
 
-/** The program, by its sha256, on a free port of 127.0.0.1, dying with the Hub (S37). */
-async function launch(deps: Deps): Promise<Process> {
-  const binary = await readFile(deps.cliProxy.binary).catch(() => undefined)
-  const sha256 = binary && createHash('sha256').update(binary).digest('hex')
+/**
+ * The program, by its sha256, on a free port of 127.0.0.1, dying with the Hub (S37). A `login`
+ * is put in its folder first, for a process that calls Google as an account (step 12 U10).
+ */
+export async function launch(deps: Deps, login?: Credential): Promise<Process> {
+  const binary = await readFile(deps.cliProxy.binary).catch((cause) => {
+    throw new Failure('CLIPROXY_BINARY_REFUSED', { cause })
+  })
+  const sha256 = createHash('sha256').update(binary).digest('hex')
   if (sha256 !== deps.cliProxy.sha256) throw new Failure('CLIPROXY_BINARY_REFUSED')
   const dir = await mkdtemp(join(tmpdir(), 'conexus-cliproxy-'))
+  if (login !== undefined) {
+    const auths = join(dir, 'auths')
+    await mkdir(auths, { mode: 0o700 })
+    await writeFile(join(auths, 'login.json'), login.reveal(), { mode: 0o600 })
+  }
   const port = await freePort()
   const key = randomBytes(24).toString('base64url')
   const config = join(dir, 'config.yaml')
@@ -90,6 +100,7 @@ async function launch(deps: Deps): Promise<Process> {
   child.once('error', (error) => deps.log.error({ port, cause: error.name }, 'CLIPROXY_STOPPED'))
   const deadline = Date.now() + READY_MS
   while (Date.now() < deadline && child.exitCode === null) {
+    // biome-ignore lint/plugin: until the process listens its port refuses connections, which is the state this poll waits out; the deadline raises CLIPROXY_UNAVAILABLE
     const ready = await management(started, '/get-auth-status').catch(() => undefined)
     if (ready?.ok) return started
     await sleep(POLL_MS)
@@ -110,7 +121,7 @@ async function loggedIn(process: Process, state: string): Promise<boolean> {
   return false
 }
 
-async function loginFileOf(process: Process): Promise<Credential> {
+export async function loginFileOf(process: Process): Promise<Credential> {
   const auths = join(process.dir, 'auths')
   const [file] = (await readdir(auths)).filter((name) => name.endsWith('.json'))
   if (file === undefined)
@@ -154,8 +165,14 @@ export function googleSignIn(deps: Deps): SignInFlow {
     async start() {
       const process = await launch(deps)
       deps.log.info({ port: process.port }, 'CLIPROXY_STARTED')
-      const reply = await management(process, '/antigravity-auth-url').catch(() => undefined)
-      const parsed = AuthUrl.safeParse(await reply?.json().catch(() => undefined))
+      let parsed: ReturnType<typeof AuthUrl.safeParse>
+      try {
+        const reply = await management(process, '/antigravity-auth-url')
+        parsed = AuthUrl.safeParse(await reply.json())
+      } catch (cause) {
+        await end(process)
+        throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NO_URL' }, cause })
+      }
       if (!parsed.success) {
         await end(process)
         throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NO_URL' } })

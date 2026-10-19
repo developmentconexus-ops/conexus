@@ -10,7 +10,7 @@ import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Scope } from '../../platform/database.ts'
 import { databaseFailure } from '../../platform/database.ts'
-import { Failure } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { migrateApp, openAppDatabase } from './app-database.ts'
 import type { RemovalDeps } from './removal.ts'
@@ -45,8 +45,8 @@ async function failExpiredSends(deps: RepairDeps, scope: Scope): Promise<number>
 }
 
 /**
- * The Projetos whose deletion stopped after their mark: their apps go, then their rows. The ones
- * still marked are never brought back.
+ * The Projetos whose deletion stopped after their mark: their apps go, then their conversations
+ * and their rows. The ones still marked are never brought back.
  */
 async function finishDeletions(deps: RepairDeps, scope: Scope, companyId: CompanyId) {
   const marked = await deps.database.read(scope, (tx) =>
@@ -56,7 +56,12 @@ async function finishDeletions(deps: RepairDeps, scope: Scope, companyId: Compan
   for (const projectId of marked) {
     const ids = { companyId, projectId }
     if ((await removeProjectApp(deps, { scope, ...ids })) === 'LEFT') left.add(projectId)
-    else await deps.database.command(scope, (tx) => deps.projects.deleteMarkedProject(tx, ids))
+    else {
+      await deps.projects.finishMarkedProject({ scope, ...ids }).catch((error: unknown) => {
+        logFailure(deps.log, databaseFailure(error))
+        left.add(projectId)
+      })
+    }
   }
   return { deleted: marked.length - left.size, left }
 }

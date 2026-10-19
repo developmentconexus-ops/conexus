@@ -104,6 +104,10 @@ async function hubServing(
   log: FailureLog = silent,
   change?: Change,
 ) {
+  // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
+  // the Builder's turns drain and end their streams, as at shutdown, before the server closes.
+  const closing = { hub: (): Promise<unknown> => Promise.resolve() }
+  t.after(() => closing.hub())
   const test = await createTestDatabase(t)
   const config = (change ?? ((same) => same))(testConfig(test.runtimeUrl, mailApiUrl))
   const status = createStatus({ version: config.version, database: test.database })
@@ -112,24 +116,17 @@ async function hubServing(
   const cloudflare = fakeCloudflare()
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(config, { neon, cloudflare, postgres })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
-    database: test.database,
-    config,
-    identity,
-    ...ports,
-    log,
+  const subjects = subjectsOf({
+    ...{ database: test.database, mastraPool: test.mastraPool, config, identity },
+    ...{ ...ports, log },
   })
+  const { projects, apps, conversations } = subjects
   const webRoot = testWebRoot(t)
-  const app = await createHub(config, {
-    status,
-    identity,
-    operations,
-    projects,
-    apps,
-    modelAccounts,
-    webRoot,
-  })
-  t.after(() => app.close())
+  const app = await createHub(config, { status, identity, ...subjects, webRoot })
+  closing.hub = async function closeHub() {
+    await conversations.close()
+    await app.close()
+  }
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
   return { app, edge, test, config, neon, cloudflare, postgres, projects, repair: apps.repair }

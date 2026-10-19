@@ -64,6 +64,26 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export {
+  CONVERSATION_HEARTBEAT_MS,
+  Conversation,
+  ConversationEvent,
+  ConversationId,
+  ConversationSummary,
+  createConversation,
+  listConversations,
+  MESSAGE_MAX_LENGTH,
+  Message,
+  MessagePart,
+  ModelId,
+  providerOfModel,
+  readConversation,
+  sendConversationMessage,
+  setConversationModel,
+  stopConversation,
+  streamConversation,
+  TurnFailureCode,
+} from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
 export { getHealth, Health } from './health.ts'
 export {
@@ -82,7 +102,9 @@ export {
 } from './identity.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
+  ACCOUNT_KINDS,
   ACCOUNT_LABEL_MAX_LENGTH,
+  ACCOUNT_STATES,
   AccountKind,
   AccountState,
   assignModelAccount,
@@ -92,8 +114,10 @@ export {
   getAccountKinds,
   listModelAccounts,
   listModelProviders,
+  MODEL_FALLBACK_MAX_LENGTH,
   ModelAccount,
   ModelAccountId,
+  ModelFallback,
   Owner,
   orderModelAccounts,
   Provider,
@@ -104,6 +128,7 @@ export {
   SignInKind,
   setAccountKinds,
   setDefaultModel,
+  setModelFallback,
   startModelAccountSignIn,
 } from './model-accounts.ts'
 export { setCompanyNickname } from './nickname.ts'

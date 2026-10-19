@@ -11,6 +11,7 @@ import {
   removeModelAccount,
   setAccountKinds,
   setDefaultModel,
+  setModelFallback,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -27,6 +28,7 @@ export const sendConnection = hubMutation(connectModelAccount)
 export const sendChange = hubMutation(changeModelAccount)
 export const sendAssignees = hubMutation(assignModelAccount)
 export const sendDefaultModel = hubMutation(setDefaultModel)
+export const sendFallback = hubMutation(setModelFallback)
 export const sendOrder = hubMutation(orderModelAccounts)
 export const sendRemoval = hubMutation(removeModelAccount)
 export const sendKinds = hubMutation(setAccountKinds)

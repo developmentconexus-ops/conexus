@@ -8,6 +8,7 @@ import {
   getStatus,
   listClients,
   listCompanies,
+  listConversations,
   listInvitations,
   listMembers,
   listModelAccounts,
@@ -124,6 +125,8 @@ function modelAccountsPage(id: string, mayManage: boolean): Replies {
       order: [],
       kinds: [],
       defaultModel: null,
+      fallback: { enabled: false, chain: [], revision: 0 },
+      usableProviders: [],
       mayManage,
     }),
     'GET /api/model-providers': ok(listModelProviders, {
@@ -139,7 +142,10 @@ const PROJECT = {
   createdAt: '2026-10-17T12:00:00.000Z',
 } as const
 
-/** A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when `empty`. */
+/**
+ * A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when
+ * `empty`. The Project's Conversa tab preloads its conversations on focus.
+ */
 export function projectsPage(
   id: string,
   view: { empty?: boolean; mayDelete?: boolean } = {},
@@ -157,6 +163,10 @@ export function projectsPage(
         mayManageVersions: view.mayDelete ?? true,
         address: ADDRESS,
       },
+    }),
+    [`GET /api/companies/${id}/projects/${PROJECT.id}/conversations`]: ok(listConversations, {
+      conversations: [],
+      next: { kind: 'END' },
     }),
   }
 }

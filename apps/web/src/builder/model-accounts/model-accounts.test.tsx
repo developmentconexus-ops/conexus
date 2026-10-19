@@ -92,6 +92,17 @@ test('cada conta diz o estado em palavras: para todos, reservada, pausada, recus
   expect(screen.getByRole('button', { name: 'Retomar Time 3' })).toBeTruthy()
 })
 
+test('uma conta no limite diz até que horas, na hora de quem lê', async () => {
+  const until = new Date(Date.now() + 3_600_000)
+  const hour = `${String(until.getHours()).padStart(2, '0')}h${String(until.getMinutes()).padStart(2, '0')}`
+  open(
+    view({
+      company: [accountOf({ label: 'Time 1', position: 0, limitedUntil: until.toISOString() })],
+    }),
+  )
+  expect(await screen.findByText(`chave …x7Qa · No limite até ${hour} · para todos`)).toBeTruthy()
+})
+
 /**
  * The button once it can be pressed: a write stays pending until its reads come back
  * (`platform/cache.ts`), so the new word shows a moment before the button is enabled.

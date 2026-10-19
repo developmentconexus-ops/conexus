@@ -4,12 +4,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 export type Option = { value: string; label: string }
 
 /**
- * One choice among `options`, in the UI's select: `value` '' says nothing is chosen yet, and the
+ * One choice among `options`, in the UI's select: `value` null says nothing is chosen yet, and the
  * trigger shows `placeholder`. `control` carries the attributes a field error ties to the trigger.
  */
 export function Choice(props: {
   id: string
-  value: string
+  value: string | null
   options: readonly Option[]
   placeholder: string
   onChange: (value: string) => void
@@ -18,7 +18,7 @@ export function Choice(props: {
   return (
     <Select
       id={props.id}
-      value={props.value === '' ? null : props.value}
+      value={props.value}
       items={props.options}
       onValueChange={(next) => next !== null && props.onChange(next)}
     >

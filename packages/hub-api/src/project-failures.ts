@@ -50,6 +50,14 @@ export const PROJECT_FAILURES = {
     action: 'Tente de novo em alguns minutos.',
     actionKind: 'RETRY',
   },
+  PROJECT_DELETION_PENDING: {
+    category: 'THIRD_PARTY',
+    settles: false,
+    status: 503,
+    phrase: 'O Projeto saiu, mas as conversas dele ainda não foram apagadas.',
+    action: 'O Conexus termina sozinho ao reiniciar; tente excluir de novo.',
+    actionKind: 'RETRY',
+  },
   CLIENT_DELETION_PENDING: {
     category: 'THIRD_PARTY',
     settles: false,

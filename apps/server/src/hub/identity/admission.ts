@@ -52,6 +52,8 @@ const ACTIONS = {
   readModelAccounts: { by: 'MEMBER', statement: undefined, locks: false },
   manageOwnModelAccounts: { by: 'MEMBER', statement: undefined, locks: true },
   manageModelAccounts: { by: 'MEMBER', statement: MANAGE_MODEL_ACCOUNTS, locks: true },
+  // Every member converses in the company's Projetos, each conversation their own (step 12, D1 A).
+  useConversations: { by: 'MEMBER', statement: undefined, locks: false },
   readMembers: { by: 'COMPANY', statement: undefined, locks: false },
   readInvitations: { by: 'COMPANY', statement: INVITE, locks: false },
   invite: { by: 'COMPANY', statement: INVITE, locks: true },

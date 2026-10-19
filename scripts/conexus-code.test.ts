@@ -81,8 +81,6 @@ const GOOD: Record<string, string> = {
     '',
   ].join('\n'),
   'apps/web/src/hub/ok3.ts': 'export function f(companyId: string) {\n  return companyId\n}\n',
-  'apps/server/src/builder/model-accounts/ok4.ts':
-    'export function f(companyId: string) {\n  return JSON.parse(companyId)\n}\n',
   [`${SERVER}/ok5.test.ts`]: 'export const v = JSON.parse("1")\n',
 }
 

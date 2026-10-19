@@ -1,4 +1,11 @@
-import type { ModelAccountId, Owner, PersonId, ProviderId } from '@conexus/hub-api'
+import type {
+  ModelAccountId,
+  ModelFallback,
+  ModelId,
+  Owner,
+  PersonId,
+  ProviderId,
+} from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -19,7 +26,7 @@ import {
   viewOf,
 } from './accounts.ts'
 import { isRegistryModel } from './providers.ts'
-import { companyModel, modelAccount, modelAccountAssignee } from './tables.ts'
+import { companyModel, companyModelFallback, modelAccount, modelAccountAssignee } from './tables.ts'
 
 const ASSIGNEE_MEMBER_KEY = 'model_account_assignee_member_fkey'
 
@@ -84,7 +91,7 @@ export function assign(
 }
 
 /** Sets the company's default model, any of the registry (founder, C4). */
-export function setDefault(deps: Deps, input: Viewer & { model: string }) {
+export function setDefault(deps: Deps, input: Viewer & { model: ModelId }) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'company')
     if (!isRegistryModel(input.model)) throw new Failure('MODEL_UNKNOWN')
@@ -146,5 +153,37 @@ export function remove(deps: Deps, input: Viewer & { accountId: ModelAccountId }
     if (row === undefined) return { removed: undefined }
     await tx.delete(modelAccount).where(ofCompany(input, row.id))
     return { removed: { provider: row.provider } }
+  })
+}
+
+/**
+ * Sets the company's automatic switch at the revision read (code C38): the first write inserts at
+ * revision 1 and loses to a concurrent first write; a later one updates only the revision it read.
+ */
+export function setFallback(deps: Deps, input: Viewer & ModelFallback) {
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitFor(deps, tx, input, 'company')
+    if (!input.chain.every(isRegistryModel)) throw new Failure('MODEL_UNKNOWN')
+    const { enabled, chain, revision } = input
+    const written =
+      revision === 0
+        ? await tx
+            .insert(companyModelFallback)
+            .values({ companyId: input.companyId, enabled, chain, revision: 1 })
+            .onConflictDoNothing()
+            .returning({ revision: companyModelFallback.revision })
+        : await tx
+            .update(companyModelFallback)
+            .set({ enabled, chain, revision: revision + 1 })
+            .where(
+              and(
+                eq(companyModelFallback.companyId, input.companyId),
+                eq(companyModelFallback.revision, revision),
+              ),
+            )
+            .returning({ revision: companyModelFallback.revision })
+    const [row] = written
+    if (row === undefined) throw new Failure('MODEL_FALLBACK_STALE')
+    return { enabled, chain, revision: row.revision }
   })
 }

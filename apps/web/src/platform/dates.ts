@@ -6,6 +6,13 @@ export function dayAndHour(instant: string): string {
   return DAY_AND_HOUR.format(new Date(instant))
 }
 
+const HOUR = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+/** The hour, as "09h30". */
+export function hourOf(instant: string): string {
+  return HOUR.format(new Date(instant)).replace(':', 'h')
+}
+
 const DAY = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short' })
 
 /** The day, as "17/10/2026". */

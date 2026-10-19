@@ -2,9 +2,7 @@
 // missing. Each refusal sees only the shape of the code, so each message names what to do instead.
 // Refusals are proved by planting each one in conexus-code.test.ts.
 // biome.json wires it to production code in apps, packages and scripts: a test reads a reply's shape
-// on purpose, so test files stay out. It also leaves out apps/server/src/builder/conversation,
-// apps/server/src/builder/model-accounts and apps/web/src/builder, which return when step 12's fix
-// round lands (JSON allows no comment there, so this is where the reason lives).
+// on purpose, so test files stay out.
 // Known blind spots: a JSON.parse or .json() result bound to a name and parsed on a later line, a
 // catch whose body maps nothing but is not a lone literal return, an Error code held in a variable,
 // and an id typed through an alias of string.

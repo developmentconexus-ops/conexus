@@ -68,7 +68,7 @@ async function hubOn(t: TestContext, test: TestDatabase) {
   const { database } = test
   const identity = identityOf({ database, config, log: silent })
   const ports = { ...testAppPorts(config), log: silent }
-  const subjects = subjectsOf({ database, config, identity, ...ports })
+  const subjects = subjectsOf({ database, config, identity, ...ports, mastraPool: test.mastraPool })
   const app = await createHub(config, { status, identity, ...subjects })
   t.after(() => app.close())
   return app

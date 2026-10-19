@@ -30,10 +30,20 @@ export type AppRemoval = {
   }): Promise<'DONE' | 'LEFT'>
 }
 
+/**
+ * What deleting a Projeto asks of the Builder (code C4): its conversations' threads and memory go
+ * before its row, which takes their index with it (data D17).
+ */
+export type ProjectConversationRelease = (scope: {
+  companyId: CompanyId
+  projectId: ProjectId
+}) => Promise<void>
+
 type Deps = {
   database: Database
   identity: IdentityPorts
   appRemoval: AppRemoval
+  releaseConversations: ProjectConversationRelease
   neon: NeonProjects
   log: FailureLog
   appsDomain: AppsDomain
@@ -219,7 +229,7 @@ type OfProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
  * Deletes a Project for an owner or administrator who typed its name; the company's database stays.
  * A first transaction marks it, so every read and its app's host see it gone at once; its app's
  * Workers, schema and logins go with no transaction open (data D22), then its row. What the app's
- * removal could not finish stays marked for the repair at start.
+ * removal could not finish stays marked for the repair at start; the same request resumes it.
  */
 async function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
   const scope = scopeOf(input.person, input.companyId)
@@ -232,22 +242,21 @@ async function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
       action: 'deleteProject',
     })
     const [row] = await tx
-      .select({ name: project.name })
+      .select({ name: project.name, deletingSince: project.deletingSince })
       .from(project)
-      .where(and(ofProject(ids), isNull(project.deletingSince)))
-    if (row === undefined) throw new Failure('NOT_FOUND')
+      .where(ofProject(ids))
+    const marked = row !== undefined && row.deletingSince !== null
+    if (row === undefined || (marked && row.name !== input.name)) throw new Failure('NOT_FOUND')
     if (row.name !== input.name) throw new Failure('PROJECT_NAME_MISMATCH')
+    if (marked) return
     await deps.appRemoval.claimForDeletion(tx, ids)
-    // The mark takes the row's lock: a second deletion waits for the first and finds it marked.
-    const marked = await tx
+    await tx
       .update(project)
       .set({ deletingSince: sql`statement_timestamp()` })
       .where(and(ofProject(ids), isNull(project.deletingSince)))
-      .returning({ id: project.id })
-    if (marked.length === 0) throw new Failure('NOT_FOUND')
   })
   if ((await deps.appRemoval.removeProjectApp({ scope, ...ids })) === 'LEFT') return
-  await deps.database.command(scope, (tx) => deleteMarkedProject(tx, ids))
+  await finishMarkedProject(deps, { scope, ...ids })
 }
 
 function ofProject(ids: { companyId: CompanyId; projectId: ProjectId }) {
@@ -263,12 +272,24 @@ export async function markedProjectsOf(tx: ReadTx, companyId: CompanyId): Promis
   return rows.map(({ id }) => ProjectId.parse(id))
 }
 
-/** The row of a Projeto marked for deletion, once its app is gone. */
-export async function deleteMarkedProject(
-  tx: CommandTx,
-  ids: { companyId: CompanyId; projectId: ProjectId },
+/**
+ * The rest of a Projeto marked for deletion, once its app is gone: its conversations, with no
+ * transaction open (data D22), then its row. Conversations the Builder could not release keep the
+ * mark for the repair at start: `PROJECT_DELETION_PENDING`.
+ */
+export async function finishMarkedProject(
+  deps: Pick<Deps, 'database' | 'releaseConversations'>,
+  input: { scope: Scope; companyId: CompanyId; projectId: ProjectId },
 ): Promise<void> {
-  await tx.delete(project).where(and(ofProject(ids), isNotNull(project.deletingSince)))
+  const ids = { companyId: input.companyId, projectId: input.projectId }
+  try {
+    await deps.releaseConversations(ids)
+  } catch (cause) {
+    throw new Failure('PROJECT_DELETION_PENDING', { cause })
+  }
+  await deps.database.command(input.scope, (tx) =>
+    tx.delete(project).where(and(ofProject(ids), isNotNull(project.deletingSince))),
+  )
 }
 
 function get(deps: Deps, input: OfProject) {
@@ -302,7 +323,7 @@ function list(
       companyId,
       action: 'readProjects',
     })
-    const key = pageKey(input.page)
+    const key = pageKey(input.page, ProjectId)
     const rows = await tx
       .select(columns)
       .from(project)

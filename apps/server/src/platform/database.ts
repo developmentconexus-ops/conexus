@@ -273,6 +273,22 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   })
 }
 
+/** The pool Mastra's storage runs on: Mastra's database, under its own login (decision 0010). */
+export type MastraPool = pg.Pool
+
+/**
+ * Mastra's connections hold nothing while nobody converses, as the Hub's do (data D27): the same
+ * limits, and an idle connection the server drops is logged, not fatal. Mastra never closes a pool
+ * it was given; its owner, `main.ts`, does.
+ */
+export function openMastraPool(deps: { url: DatabaseUrl; log: FailureLog }): MastraPool {
+  const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
+  pool.on('error', (error) => {
+    logFailure(deps.log, new Failure('DATABASE_UNAVAILABLE', { cause: error }))
+  })
+  return pool
+}
+
 const AppliedMigration = z.object({ name: z.string().nullable(), hash: z.string() })
 
 export async function assertMigrated(database: Database): Promise<void> {

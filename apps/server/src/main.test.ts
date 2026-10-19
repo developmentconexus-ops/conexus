@@ -41,7 +41,9 @@ async function hub(webRoot?: string) {
     operations,
     apps: door,
     modelAccounts,
+    conversations,
   } = subjectsOf({
+    mastraPool: shared.mastraPool,
     database: shared.database,
     config,
     identity,
@@ -55,6 +57,7 @@ async function hub(webRoot?: string) {
     projects,
     apps: door,
     modelAccounts,
+    conversations,
     webRoot,
   })
   apps.push(app)

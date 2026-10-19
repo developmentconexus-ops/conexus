@@ -1,5 +1,11 @@
-import type { InvitationId, Person, PersonId } from '@conexus/hub-api'
-import { CompanyId, InvitationView, ListedInvitation, PAGE_SIZE } from '@conexus/hub-api'
+import type { Person, PersonId } from '@conexus/hub-api'
+import {
+  CompanyId,
+  InvitationId,
+  InvitationView,
+  ListedInvitation,
+  PAGE_SIZE,
+} from '@conexus/hub-api'
 import { and, asc, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
@@ -31,7 +37,7 @@ export function readInvitations(
 ) {
   return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
     const admitted = await admitCompany({ tx, ...input, action: 'readInvitations' })
-    const key = pageKey(page)
+    const key = pageKey(page, InvitationId)
     const rows = await tx
       .select({ ...pending, live: sql<boolean>`${LIVE}` })
       .from(invitation)

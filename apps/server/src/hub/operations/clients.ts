@@ -19,11 +19,15 @@ export type CompanyAppRemoval = {
   deleteCompanyBlobs(tx: CommandTx, companyId: CompanyId): Promise<void>
 }
 
+/** What deleting a client asks of the Builder (code C4): every conversation's thread and memory. */
+export type CompanyConversationRelease = (scope: { companyId: CompanyId }) => Promise<void>
+
 type Deps = {
   database: Database
   identity: IdentityPorts
   projects: ProjectPorts
   appRemoval: CompanyAppRemoval
+  releaseConversations: CompanyConversationRelease
 }
 type ClientData = { cnpj: Cnpj; legalName: string; name: string }
 
@@ -200,10 +204,10 @@ async function removeRows(deps: Deps, tx: CommandTx, admitted: OperatorProof, in
  * Deletes a client in phases, because its database is outside this one (data D22). Without a
  * database it is one transaction: the record, then through identity the company, members and
  * invitations; its people stay. With one, the first transaction marks the company, which ends every
- * person's admission and every link; its apps' Workers go and Neon frees the database with no
- * transaction open; the last transaction removes Projects, their apps, database row, record and
- * company. A failure after the mark leaves the client `DELETING`, and the same request with the
- * same body resumes it.
+ * person's admission and every link; its apps' Workers and its conversations go and Neon frees
+ * the database with no transaction open; the last transaction removes Projects, their apps,
+ * database row, record and company. A failure after the mark leaves the client `DELETING`, and the
+ * same request with the same body resumes it.
  */
 async function remove(deps: Deps, input: Deletion): Promise<void> {
   const { identity, projects } = deps
@@ -223,6 +227,9 @@ async function remove(deps: Deps, input: Deletion): Promise<void> {
   })
   if (first === undefined) return
   await deps.appRemoval.removeCompanyWorkers({ scope, companyId })
+  await deps.releaseConversations({ companyId }).catch((cause: unknown) => {
+    throw new Failure('CLIENT_DELETION_PENDING', { details: { reason: 'CONVERSATIONS' }, cause })
+  })
   await projects.releaseCompanyDatabase({ admitted: first, companyId })
   await identity.libraryCommand(scope, async (tx) => {
     await identity.lockCompany(tx, companyId)
@@ -239,7 +246,7 @@ function list(deps: Deps, person: Person, page: string | undefined) {
   return deps.database.read(operatorScope(person, null), async (tx) => {
     const personId = person.id
     const admitted = await deps.identity.admitOperator({ tx, personId, action: 'operateClients' })
-    const key = pageKey(page)
+    const key = pageKey(page, CompanyId)
     const rows = await tx
       .select()
       .from(client)

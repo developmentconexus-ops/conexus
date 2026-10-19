@@ -1,14 +1,15 @@
 import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { test } from 'node:test'
+import { CompanyId, ModelAccountId, PersonId } from '@conexus/hub-api'
 import type { SealContext } from './seal.ts'
 import { Credential, open, parseSealKeys, seal } from './seal.ts'
 
 const PLANTED = 'sk-ant-planted-0001'
 const ROW: SealContext = {
   purpose: 'model-account',
-  rowId: '7f9c2a10-0000-4000-8000-000000000001',
-  companyId: 'company-a',
+  rowId: ModelAccountId.parse('7f9c2a10-0000-4000-8000-000000000001'),
+  companyId: CompanyId.parse('a'.repeat(32)),
   personId: null,
   kind: 'api_key',
   provider: 'anthropic',
@@ -39,9 +40,9 @@ test('lacre: outra linha, empresa, dono, tipo, fornecedor ou propósito não abr
   const keys = parseSealKeys(keyLine('k1'))
   const sealed = seal(keys, ROW, Credential.parse(PLANTED))
   const others: SealContext[] = [
-    { ...ROW, rowId: '7f9c2a10-0000-4000-8000-000000000002' },
-    { ...ROW, companyId: 'company-b' },
-    { ...ROW, personId: 'person-a' },
+    { ...ROW, rowId: ModelAccountId.parse('7f9c2a10-0000-4000-8000-000000000002') },
+    { ...ROW, companyId: CompanyId.parse('b'.repeat(32)) },
+    { ...ROW, personId: PersonId.parse('person-a') },
     { ...ROW, kind: 'claude_subscription' },
     { ...ROW, provider: 'openai' },
     { ...ROW, purpose: 'model-account-sign-in' },
