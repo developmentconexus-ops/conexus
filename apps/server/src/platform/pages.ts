@@ -18,11 +18,14 @@ export function pageOf<T>(rows: T[], idOf: (row: T) => string): { rows: T[]; nex
   }
 }
 
-/** The id of the row a page token starts after; a token not in `pageOf`'s form is malformed. */
-export function pageKey(page: string | undefined): string | undefined {
+/**
+ * The id of the row a page token starts after; a token not in `pageOf`'s form, or whose id is not
+ * of the list's `form` (the library's ids by default), is malformed.
+ */
+export function pageKey(page: string | undefined, form: RegExp = LIBRARY_ID): string | undefined {
   if (page === undefined) return undefined
   const id = Buffer.from(page, 'base64url').toString('utf8')
-  if (!LIBRARY_ID.test(id) || Buffer.from(id).toString('base64url') !== page) {
+  if (!form.test(id) || Buffer.from(id).toString('base64url') !== page) {
     throw new Failure('REQUEST_MALFORMED', { details: { reason: 'PAGE' } })
   }
   return id

@@ -13,7 +13,8 @@ import { subscriptionAccess } from './claude/store.ts'
 import { SUBSCRIPTION_IDENTITY, subscriptionModel } from './claude/subscription-model.ts'
 import type { CallFailure } from './errors.ts'
 import type { GoogleAccount } from './google/calls.ts'
-import { modelAccount } from './tables.ts'
+import { isRegistryModel } from './providers.ts'
+import { companyModel, modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
 
 /** The process of a Google account that takes its calls on this machine (step 12 U10). */
@@ -85,50 +86,90 @@ async function credentialOf(
   return open(deps.sealKeys, context, { keyId: found.key_id, blob: found.sealed })
 }
 
+type ReadTx = Parameters<Parameters<Database['read']>[1]>[0]
+type Asker = { companyId: Turn['companyId']; personId: Turn['personId']; tried: Set<string> }
+
+/**
+ * The provider's accounts the person may use now, in their order: paused, refused, a closed kind,
+ * one in its limit, and those this turn tried are skipped. The caller admitted the person.
+ */
+async function queuedRows(tx: ReadTx, asker: Asker, provider: string): Promise<Row[]> {
+  const rows = await tx
+    .select({
+      id: modelAccount.id,
+      personId: modelAccount.personId,
+      kind: modelAccount.kind,
+      provider: modelAccount.provider,
+      label: modelAccount.label,
+      position: modelAccount.position,
+      revision: modelAccount.revision,
+    })
+    .from(modelAccount)
+    .where(
+      and(
+        eq(modelAccount.companyId, asker.companyId),
+        eq(modelAccount.provider, provider),
+        eq(modelAccount.state, 'ready'),
+        or(isNull(modelAccount.limitedUntil), lte(modelAccount.limitedUntil, sql`now()`)),
+      ),
+    )
+    .orderBy(asc(modelAccount.position))
+  const context = await contextOf(tx, asker.companyId)
+  return rows
+    .map((found) => Row.parse(found))
+    .filter((row) => row.kind === 'api_key' || context.open.has(row.kind))
+    .filter((row) => !asker.tried.has(row.id))
+    .map((row) => ({ row, part: partOf(row, context.assignees.get(row.id), asker.personId) }))
+    .filter((each): each is { row: Row; part: number } => each.part !== undefined)
+    .sort((left, right) => left.part - right.part)
+    .map((each) => each.row)
+}
+
+function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
+  return deps.identity.admitMember({
+    tx,
+    personId: asker.personId,
+    companyId: asker.companyId,
+    action: 'useConversations',
+  })
+}
+
 /**
  * The next account of the provider for this turn, its credential opened in the transaction that
- * admits the person (security S32): paused, refused, a closed kind, one in its limit, and those
- * this turn tried are skipped. Nothing is called and no key is read from the environment.
+ * admits the person (security S32). Nothing is called and no key is read from the environment.
  */
 async function nextRow(deps: QueueDeps, turn: Turn, provider: string) {
   return deps.database.read(scopeOf(turn), async (tx) => {
-    await deps.identity.admitMember({
-      tx,
-      personId: turn.personId,
-      companyId: turn.companyId,
-      action: 'useConversations',
-    })
-    const rows = await tx
-      .select({
-        id: modelAccount.id,
-        personId: modelAccount.personId,
-        kind: modelAccount.kind,
-        provider: modelAccount.provider,
-        label: modelAccount.label,
-        position: modelAccount.position,
-        revision: modelAccount.revision,
-      })
-      .from(modelAccount)
-      .where(
-        and(
-          eq(modelAccount.companyId, turn.companyId),
-          eq(modelAccount.provider, provider),
-          eq(modelAccount.state, 'ready'),
-          or(isNull(modelAccount.limitedUntil), lte(modelAccount.limitedUntil, sql`now()`)),
-        ),
-      )
-      .orderBy(asc(modelAccount.position))
-    const context = await contextOf(tx, turn.companyId)
-    const ordered = rows
-      .map((found) => Row.parse(found))
-      .filter((row) => row.kind === 'api_key' || context.open.has(row.kind))
-      .filter((row) => !turn.tried.has(row.id))
-      .map((row) => ({ row, part: partOf(row, context.assignees.get(row.id), turn.personId) }))
-      .filter((each): each is { row: Row; part: number } => each.part !== undefined)
-      .sort((left, right) => left.part - right.part)
-    const first = ordered[0]?.row
+    await admitted(deps, tx, turn)
+    const [first] = await queuedRows(tx, turn, provider)
     if (first === undefined) return undefined
     return { row: first, credential: await credentialOf(tx, deps, turn, first) }
+  })
+}
+
+/**
+ * The model a conversation starts on or changes to: the one asked, or the company's default; one
+ * outside the registry is `MODEL_UNKNOWN`, and one with no account the person may use now is
+ * `MODEL_NO_ACCOUNT`. No credential is opened.
+ */
+export async function conversationModel(
+  deps: QueueDeps,
+  asker: { companyId: Turn['companyId']; personId: Turn['personId'] },
+  asked: string | undefined,
+): Promise<string> {
+  const scope: Scope = { kind: 'COMPANY', ...asker }
+  return deps.database.read(scope, async (tx) => {
+    const who = { ...asker, tried: new Set<string>() }
+    await admitted(deps, tx, who)
+    const [chosen] = await tx
+      .select({ model: companyModel.model })
+      .from(companyModel)
+      .where(eq(companyModel.companyId, asker.companyId))
+    const model = asked ?? chosen?.model
+    if (model === undefined || !isRegistryModel(model)) throw new Failure('MODEL_UNKNOWN')
+    const rows = await queuedRows(tx, who, providerOf(model))
+    if (rows.length === 0) throw new Failure('MODEL_NO_ACCOUNT')
+    return model
   })
 }
 

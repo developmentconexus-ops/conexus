@@ -64,6 +64,23 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export {
+  CONVERSATION_HEARTBEAT_MS,
+  Conversation,
+  ConversationEvent,
+  ConversationId,
+  ConversationSummary,
+  createConversation,
+  listConversations,
+  MESSAGE_MAX_LENGTH,
+  Message,
+  MessagePart,
+  readConversation,
+  sendConversationMessage,
+  setConversationModel,
+  stopConversation,
+  streamConversation,
+} from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
 export { getHealth, Health } from './health.ts'
 export {

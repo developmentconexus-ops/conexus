@@ -15,6 +15,7 @@ import {
   unreachableDatabase,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
+import { testMastraPool } from '../../platform/test-mastra-database.ts'
 import { createStatus } from '../status/public.ts'
 
 type Config = ReturnType<typeof testConfig>
@@ -31,7 +32,8 @@ const UNAVAILABLE = {
 async function hubOn(t: TestContext, database: TestDatabase['database'], config: Config) {
   const status = createStatus({ version: config.version, database })
   const identity = identityOf({ database, config, log: silent })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+    mastraPool: testMastraPool(t, config),
     database,
     config,
     identity,
@@ -46,6 +48,7 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     projects,
     apps,
     modelAccounts,
+    conversations,
     webRoot,
   })
   t.after(() => app.close())

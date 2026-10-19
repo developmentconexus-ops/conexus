@@ -53,16 +53,21 @@ function parameters(where: 'path' | 'query', type: z.ZodType | undefined) {
   }))
 }
 
+// An event stream is `text/event-stream`, each `data:` line one event of its schema.
+function contentOf(success: Operation['success']): Json {
+  if ('body' in success) {
+    return { content: { 'application/json': { schema: schema(success.body, 'output') } } }
+  }
+  if ('events' in success) {
+    return { content: { 'text/event-stream': { schema: schema(success.events, 'output') } } }
+  }
+  return {}
+}
+
 function responses(operation: Operation): Json {
   const { success } = operation
   const out: Json = {
-    [success.status]:
-      'body' in success
-        ? {
-            description: operation.summary,
-            content: { 'application/json': { schema: schema(success.body, 'output') } },
-          }
-        : { description: operation.summary },
+    [success.status]: { description: operation.summary, ...contentOf(success) },
   }
   const byStatus = Object.groupBy(failuresOf(operation), (code) => FAILURES[code].status)
   for (const [status, codes] of Object.entries(byStatus)) {

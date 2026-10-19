@@ -112,7 +112,8 @@ async function hubServing(
   const cloudflare = fakeCloudflare()
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(config, { neon, cloudflare, postgres })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+    mastraPool: test.mastraPool,
     database: test.database,
     config,
     identity,
@@ -127,6 +128,7 @@ async function hubServing(
     projects,
     apps,
     modelAccounts,
+    conversations,
     webRoot,
   })
   t.after(() => app.close())

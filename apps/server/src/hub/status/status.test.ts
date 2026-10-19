@@ -12,6 +12,7 @@ import {
   unreachableDatabaseUrl,
 } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
+import { testMastraPool } from '../../platform/test-mastra-database.ts'
 import { createStatus } from './public.ts'
 
 const VERSION = Version.parse('v0.1.0')
@@ -21,7 +22,8 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+    mastraPool: test.mastraPool,
     database: test.database,
     config,
     identity,
@@ -35,6 +37,7 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
     projects,
     apps,
     modelAccounts,
+    conversations,
   })
   t.after(() => app.close())
   return { app, status, test }
@@ -102,7 +105,8 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+    mastraPool: testMastraPool(t, config),
     database,
     config,
     identity,
@@ -116,6 +120,7 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
     projects,
     apps,
     modelAccounts,
+    conversations,
   })
   t.after(() => app.close())
   const response = await app.inject(STATUS)

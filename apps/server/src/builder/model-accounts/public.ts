@@ -20,7 +20,7 @@ export {
   MAX_PROCESSOR_RETRIES,
 } from './processors.ts'
 export type { GoogleCalls, QueueDeps } from './queue.ts'
-export { providerOf } from './queue.ts'
+export { conversationModel, providerOf } from './queue.ts'
 export { Turn, turnContext } from './turn.ts'
 
 export type ModelAccounts = ReturnType<typeof createModelAccounts>
