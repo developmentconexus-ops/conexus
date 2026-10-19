@@ -35,7 +35,22 @@ returns to him.
 
 ## Result
 
-Checks 1 to 4: not run. Check 5: ours. `@mastra/playground-ui` 64.0.0, read: 43 dependencies, 10 peers with `client-js`; its chat takes Mastra's types from routes the Hub lacks (S39), adds a second Zod, has no `role="log"`. Ours takes the stream as is, adds no dependency and no `@mastra/*` to the bundle (W7); `conversation.test.tsx` proves it. Reopens if `playground-ui` drops `client-js`.
+Run 2026-10-19 on the founder's accounts, by a script outside the repository that builds the
+controller, agent and processors as the Builder does; its store was LibSQL, not `pg` on
+PostgreSQL 18, and it had no observational memory, title or Hub queue. Checks 1 to 3 passed: no
+event or message id crossed companies; the switched model came back after a restart and the other
+stayed; the invented key got 401 `authentication_error`, then the subscription answered with the
+notice. Check 4 failed on both paths: the turn never ended. The recording shows
+`tool_approval_required` at the first `web_fetch`, with no `tool_end` and no `agent_end`. The
+controller asks before each tool unless its state says `yolo` (`resolveToolApproval`), and the
+Builder has no screen that answers; checks 1 to 3 and the controls answered without a tool, and
+the offline rehearsal's double never called `web_fetch`, so nothing showed it before. Mastra Code
+starts its controller with `yolo: true`; the Builder now does too, and a `web_fetch` turn in
+`conversation.test.ts` completes. Claude's search itself ran (a search, five sites, Portuguese
+text). Gemini called only `web_fetch` before it stopped, so whether it searches through CLIProxy
+is still open. Check 4 runs again on both paths; this record changes with it.
+
+Check 5: ours. `@mastra/playground-ui` 64.0.0, read: 43 dependencies, 10 peers with `client-js`; its chat takes Mastra's types from routes the Hub lacks (S39), adds a second Zod, has no `role="log"`. Ours takes the stream as is, adds no dependency and no `@mastra/*` to the bundle (W7); `conversation.test.tsx` proves it. Reopens if `playground-ui` drops `client-js`.
 
 ## State
 
