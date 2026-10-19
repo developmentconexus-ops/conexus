@@ -9,7 +9,7 @@ pela conta certa da fila, e avisa quando troca de conta ou elas acabam.
 própria; a conta Google da empresa.
 
 1. Como **Ana**, "Encomendas" › **Conversa** › **Nova conversa**: o seletor mostra o padrão da
-   empresa, só com fornecedores com conta. "Compare dois apps de encomenda de padaria da
+   empresa e só fornecedores com conta. "Compare dois apps de encomenda de padaria da
    internet": a resposta vem aos poucos, com as páginas lidas, e a conversa ganha um título.
 2. Pause a conta de Ana e suba a Time 3: "Time 3 foi recusada. Ligue de novo; continuei pela Time
    1." Em **Conta de modelo**: "recusada · Ligue de novo".
@@ -23,7 +23,7 @@ própria; a conta Google da empresa.
    depois do ponto some.
 
 **O que você faz, e quando.** Antes de U1: autoriza turnos reais pela sua chave, assinatura e
-conta Google. No começo: aprova esta página. No fim: o roteiro e os textos.
+conta Google. Depois: esta página; no fim, o roteiro e os textos.
 
 **As suas respostas ao estudo.** 1 A: a conversa é de quem a começou. 2: busca e leitura nativas,
 sem lista nem limite; o risco fica **aceito pela sua resposta** (uma página pode desviar o Builder
@@ -36,15 +36,15 @@ nativo: o controller leva o aviso (`info`) e o guarda. 5 A, 6 A, 7 A.
 1. **A.** A troca automática anda a cadeia no nosso processador. A lista de modelos do Mastra não
    serve: abre todas as chaves no começo e troca até num erro do pedido (400).
 2. **B.** O Gemini conversa na 12, pelo CLIProxy da conta, como a prova da 11 mostrou.
-3. **A.** Depois da troca automática, o modelo novo lê páginas, mas não busca de novo.
+3. **A.** Após a troca automática, o modelo novo lê páginas, sem buscar de novo.
 4. O Mastra 1.78.0, o da prova da 11.
-5. O título nativo do Mastra, pago pela conta que a fila escolheu no turno.
+5. O título nativo do Mastra, pela conta que a fila escolheu.
 6. A memória observacional, como no Mastra Code: o Builder resume a conversa longa, pela mesma
    conta.
 7. No máximo 10 tentativas por pergunta.
 8. Sem apagar conversa: ela some com o Projeto, a pessoa ou a empresa.
 
-**Fica de fora.** As issues `next-card` 25, 39, 45: fora destas pastas.
+**Fica de fora.** As issues `next-card` 25, 39, 45: outras pastas.
 
 **A decisão sua: as permissões (regra D11).** **A.** O login do Mastra só entra no banco dele; o
 banco recusa ler as contas do Hub com ele. **B.** O Mastra num schema do banco do Hub.
@@ -79,7 +79,7 @@ da fonte do pacote publicado, pelo mapa de fonte; nomes no Context7 (`/mastra-ai
 
 | Mecanismo | Nativo do Mastra | Nosso, e por quê |
 | --- | --- | --- |
-| Conversa | `AgentController`: `createSession`, `deleteSession` (`agent-controller.ts:526`, `:841`); `sendMessage`, `abort` (`session.ts:5258`, `:4591`) | rotas do Hub (S39) |
+| Conversa | `createSession`, `deleteSession` (`agent-controller.ts:526`, `:841`); `sendMessage`, `abort` (`session.ts:5258`, `:4591`) | rotas do Hub (S39) |
 | Modelo por conversa | `session.model.switch({modelId, scope: 'thread'})` (`session.ts:2597`) | o seletor |
 | Chave por tentativa | `processInputStep` dá o `model` (`processors/index.ts:249`); `processAPIError`, `{retry}` (`:591`) | ordem, pausa até um horário, "recusada" |
 | Aviso de troca | `writer.custom` guarda; `emitEvent({type: 'info'})` leva ao vivo (`types.ts:922`, `:1184`; `agent-controller.ts:2594`), pois `data-*` cai ao vivo (`session-run-engine.ts:1580`); assim o Mastra Code (`account-rotation-processor.ts:390-406`) | o texto em português |
@@ -90,7 +90,7 @@ da fonte do pacote publicado, pelo mapa de fonte; nomes no Context7 (`/mastra-ai
 | Web | `webSearchTool` (`web-search.ts:17`), só quatro fornecedores (`:28`); `webFetchTool` (`web-fetch.ts:263`), recusa IP interno, também após o DNS (`:128-152`) | sem lista, limite nem invólucro |
 | Memória | `observationalMemory` (`memory/src/index.ts:142`), como o Mastra Code (`agents/memory.ts:393-412`); dono de `createSession({resourceId})` (`agent.ts:8252`) | dono com a empresa; o índice |
 | Memória e título pagos pela fila | `observation.model`, `reflection.model`, `generateTitle.model` aceitam função de `requestContext`, fora dos processadores (`observer-runner.ts:190-208`) | a função dá a conta do turno |
-| Banco | `PostgresStore`; a memória sem temporizador (`observational-memory.ts:3916`) | pool do Hub (D27), login, banco |
+| Banco | `PostgresStore`; memória sem temporizador (`observational-memory.ts:3916`) | pool do Hub (D27) |
 | Log | `new Mastra({logger, agentControllers})` (`mastra/index.ts:323`, `:350`) | logger só escalar: **defeito provado**, o padrão imprime o erro cru (C50, S41) |
 
 ## Os critérios de aceite
@@ -126,7 +126,7 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 | 25 | U9 | **Ao vivo**: ramo "Idle" após dez minutos, os dois logins a zero (0009, D27) | firstmate, console do Neon | must |
 | 26 | U9 | **Ao vivo**: restaurar o ramo põe os dois bancos no mesmo minuto; lista e conversa batem | firstmate | must |
 | 27 | U9 | **Ao vivo, se acontecer**: 429 ou 402 sem `retry-after`, anotado | firstmate | should |
-| 28 | U9 | Publicado: passos 1 a 6 | firstmate, fundador (T14) | must |
+| 28 | U9 | Publicado: o roteiro | firstmate, fundador (T14) | must |
 | 29 | U10 | Gemini pelo processo da conta em `127.0.0.1`; binário diferente: não inicia; 10 min parado ou o programa sai: ele sai, login relacrado | `google-calls.test.ts`, CLIProxy dublê | must |
 
 ## A matriz de estados
@@ -135,7 +135,7 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 | --- | --- | --- | --- | --- | --- |
 | Conversas do Projeto | "Nenhuma conversa", **Nova conversa**; título, ou a data | a partilhada | a de `ui/` | a do Projeto | — |
 | Conversa | campo e seletor; sem conta: o aviso da 11 | "Pensando…", **Parar** | "O modelo não respondeu." | a do Projeto; linha sem thread sai | os avisos de troca, recusa, fim |
-| Seletor | modelos com conta | idem | idem | — | conta recusada fora |
+| Seletor | modelos com conta | idem | idem | — | — |
 | Troca automática | "Desligada" | idem | 412: "Mudou antes de você salvar" | — | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -158,26 +158,27 @@ Testes do servidor: `npm run test -w @conexus/server`, pelas rotas.
 | Marca de limite, `refused` | idempotente | uma instrução | sem marca | `MODEL_ACCOUNT_LIMITED`, `_REFUSED` | 13, 15 |
 | Renovação Claude | reserva com prazo (D25) | falha após a troca: "Ligue de novo" (S34) | `refused` | `MODEL_TOKEN_REFRESHED` | 15 |
 | Processo CLIProxy | um por conta | ao sair, relacra com a revisão | próxima conta | `CLIPROXY_STARTED`, `_STOPPED` | 29 |
-| `setConversationModel` | estado final | — | Mastra: 503 | `CONVERSATION_MODEL_SET` | 19 |
+| `setConversationModel` | estado final | — | 503 | `CONVERSATION_MODEL_SET` | 19 |
 | Troca automática | `If-Match` | uma transação | banco | `MODEL_FALLBACK_SET` | 16 |
 | `init` do `PostgresStore` | `IF NOT EXISTS` | não inicia | idem | `MASTRA_STORAGE_READY` | 5 |
-| Apagar na remoção | já apagada conta | pendente, repete | Mastra: pendente | `CONVERSATIONS_RELEASED` | 7 |
+| Apagar na remoção | já apagada conta | repete | pendente | `CONVERSATIONS_RELEASED` | 7 |
 | `stopConversation`, `deleteSession` | o segundo: 204 | guarda o que veio | — | `CONVERSATION_STOPPED` | 20 |
-| `migrate` do Mastra | `IF NOT EXISTS`; senha após 28P01 (D32) | não publica | idem | `MASTRA_LOGIN_READY` | 4, 26 |
-| `web_fetch`, busca | — | `isError` ao modelo | o modelo diz | — | 3, 10 |
+| `migrate` do Mastra | senha após 28P01 (D32) | não publica | idem | `MASTRA_LOGIN_READY` | 4, 26 |
+| `web_fetch`, busca | — | `isError` | o modelo diz | — | 3, 10 |
 
 ## O que nasce novo e o que é trazido
 
 | Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |
 | --- | --- | --- | --- | --- |
-| Fila | nova | `model-accounts/queue.ts` | — | credencial aberta na transação do direito (`model-routing.ts:32-39`) |
-| Memória e título | nova | `conversation/builder.ts` | — | a memória observacional do antigo (`memory.ts:36`) |
-| Renovação Claude | nova | `claude/store.ts` | — | compare-and-swap (`store.ts:85-90`), com reserva |
-| Gemini | nova | `google/calls.ts` | — | `127.0.0.1`, morre com o pai (`pool.ts:57-80`) |
-| Índice e rotas | nova | `builder/conversation/` | — | texto do fornecedor fora do navegador (`mastra-session-routes.ts:128`) |
+| Fila | nova | `model-accounts/queue.ts` | — | credencial aberta na transação do direito (`model-routing.ts:32-39`): o banco recusa a de outra empresa (S32) |
+| Memória e título | nova | `conversation/builder.ts` | — | nenhuma: a base é o Mastra Code (`agents/memory.ts:393-412`) |
+| Renovação Claude | nova | `claude/store.ts` | — | compare-and-swap (`store.ts:85-90`): uma renovação não apaga outra (S34) |
+| Gemini | nova | `google/calls.ts` | — | `127.0.0.1`, morre com o pai (`pool.ts:57-80`): ninguém de fora o alcança (S36, C62) |
+| Índice e rotas | nova | `builder/conversation/` | — | texto do fornecedor fora do navegador (`mastra-session-routes.ts:128`), por C51 |
 
-**A medida do transplante.** Nada é copiado (`e0353c36`); as fichas 3.14 e 3.15 da auditoria viram
-as regras deste cartão.
+**A medida do transplante.** Nada é copiado. O antigo (`e0353c36`) é uma referência, não a resposta:
+cada linha vale pela sua regra; as fichas 3.14 e 3.15
+da auditoria, idem.
 
 **A dívida.** Conversa criada entre a liberação e a remoção: thread órfã; a 16 varre. S36 cita uma
 guarda do Hub para o `web_fetch` que não existe; fica a nativa (C75), para o fechamento.
@@ -238,7 +239,7 @@ personId?}) => Promise<void>`; falha: `PROJECT_DELETION_PENDING`, `PERSON_REMOVA
 `pgTable`; `Memory.deleteThread` (`memory/src/index.ts:1153`), que limpa também a memória
 observacional: quem apaga é o Mastra.
 
-**Prova.** 4, 6, 7; T10 com outra empresa e outra pessoa.
+**Prova.** 4, 6, 7 (T10).
 
 ## U4 O Builder, a memória, o título
 
@@ -328,8 +329,7 @@ text}` e `info`.
 
 ### Os contratos que a unidade cria
 
-Operações `session`, sob `/api/companies/{companyId}/projects/{projectId}`; alheia: 404
-`CONVERSATION_NOT_FOUND`.
+Operações `session`, sob `/api/companies/{companyId}/projects/{projectId}`; alheia: 404 `CONVERSATION_NOT_FOUND`.
 
 | Operação | Método e caminho (`C` = `/conversations`, `I` = `C/{conversationId}`) | Saída e falhas |
 | --- | --- | --- |
@@ -348,7 +348,7 @@ fechar o último stream sem turno.
 **Ordem.**
 
 1. Contrato. Regras: C28–C38, C49, C51.
-2. Sessões e stream. Regras: S10, S39, C57 (prazo próprio do stream), C62, C63.
+2. Sessões e stream. Regras: S10, S39, C57, C62, C63.
 
 **Prova.** 18, 19, 20.
 
