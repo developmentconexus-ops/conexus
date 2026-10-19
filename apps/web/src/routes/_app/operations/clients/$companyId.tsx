@@ -1,9 +1,14 @@
 import { CompanyId, InvitationId, listInvitations, listMembers } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
+import { AccountKinds, kindsQuery } from '../../../../builder/model-accounts/public.ts'
 import { invitationsQuery, membersQuery } from '../../../../hub/identity/public.ts'
 import { Client, clientQuery, operatorOnly } from '../../../../hub/operations/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../../platform/hub.ts'
+
+function ClientWithKinds() {
+  return <Client kinds={<AccountKinds />} />
+}
 
 export const Route = createFileRoute('/_app/operations/clients/$companyId')({
   beforeLoad: operatorOnly,
@@ -27,10 +32,11 @@ export const Route = createFileRoute('/_app/operations/clients/$companyId')({
     if (client.state.kind !== 'ACTIVE') return
     await readOrNotFound(
       Promise.all([
+        queryClient.ensureQueryData(kindsQuery(params.companyId)),
         queryClient.ensureQueryData(membersQuery(params.companyId, deps.members)),
         queryClient.ensureQueryData(invitationsQuery(params.companyId, deps.invitations)),
       ]),
     )
   },
-  component: Client,
+  component: ClientWithKinds,
 })

@@ -6,6 +6,12 @@ import closeWithGrace from 'close-with-grace'
 import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
 import { z } from 'zod'
+import type { ModelAccounts } from './builder/model-accounts/public.ts'
+import {
+  createModelAccounts,
+  resealModelAccounts,
+  signInFlows,
+} from './builder/model-accounts/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { createAppRemoval, createApps } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
@@ -51,6 +57,7 @@ export async function createHub(
     operations: Operations
     projects: Projects
     apps: Apps
+    modelAccounts: ModelAccounts
     webRoot?: string
   },
 ): Promise<FastifyInstance> {
@@ -64,6 +71,7 @@ export async function createHub(
   deps.operations.routes(app)
   deps.projects.routes(app)
   deps.apps.routes(app)
+  deps.modelAccounts.routes(app)
   await app.ready()
   return app
 }
@@ -91,7 +99,8 @@ export function identityOf(deps: {
 /**
  * The subjects past identity, each reaching another only through its ports (code C4), and Neon,
  * the companies' databases and Cloudflare only through the ports it is given (C56). Deleting a
- * Projeto or a client reaches its apps through the apps' removal, made before either subject.
+ * Projeto or a client reaches its apps through the apps' removal, made before either subject. The
+ * Builder's model accounts reach identity the same way, with the installation's seal keys.
  */
 export function subjectsOf(deps: {
   database: Database
@@ -101,7 +110,7 @@ export function subjectsOf(deps: {
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
   log: FailureLog
-}): { projects: Projects; operations: Operations; apps: Apps } {
+}): { projects: Projects; operations: Operations; apps: Apps; modelAccounts: ModelAccounts } {
   const { database, config, log, neon } = deps
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
@@ -114,7 +123,14 @@ export function subjectsOf(deps: {
     appRemoval,
   })
   const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain })
-  return { projects, operations, apps }
+  const flows = signInFlows({ cliProxy: config.cliProxy, log })
+  const modelAccounts = createModelAccounts({
+    database,
+    identity,
+    sealKeys: config.sealKeys,
+    flows,
+  })
+  return { projects, operations, apps, modelAccounts }
 }
 
 /**
@@ -182,11 +198,18 @@ async function runServer(): Promise<void> {
       appLoginKey: config.appLoginKey,
     })
     const cloudflare = createCloudflareApps({ config, log })
-    const { projects, operations, apps } = subjectsOf({
+    const { projects, operations, apps, modelAccounts } = subjectsOf({
       ...{ database, config, identity },
       ...{ neon, companyPostgres, cloudflare, log },
     })
-    const app = await createHub(config, { status, identity, operations, projects, apps })
+    const app = await createHub(config, {
+      status,
+      identity,
+      operations,
+      projects,
+      apps,
+      modelAccounts,
+    })
     const edge = await createEdgeHub(config, { apps })
     const grace = shutDownOnSignal(app, edge, database)
     try {
@@ -257,8 +280,24 @@ async function runFirstPerson(args: string[]): Promise<void> {
   }
 }
 
+/** Each deploy's step after migrate: moves the credentials off keys that only open (security S32). */
+async function runReseal(): Promise<void> {
+  const config = readConfig('serve')
+  const log = bootLog(config.logLevel)
+  const database = openDatabase({ url: config.databaseUrl, log })
+  try {
+    await assertRuntimeLogin(database)
+    await assertMigrated(database)
+    const counts = await resealModelAccounts({ database, sealKeys: config.sealKeys })
+    log.info({ moved: counts.moved, refused: counts.refused }, 'RESEALED')
+  } finally {
+    await database.close()
+  }
+}
+
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   migrate: runMigrate,
+  reseal: runReseal,
   'first-person': runFirstPerson,
 }
 

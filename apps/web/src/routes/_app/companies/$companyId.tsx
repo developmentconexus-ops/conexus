@@ -9,13 +9,14 @@ export const Route = createFileRoute('/_app/companies/$companyId')({
     stringify: (p) => p,
   },
   // A company without a nickname opens its setup before any page, for its owner; to everyone else
-  // it is not found, as the Hub hides what a person may not see.
+  // it is not found, as the Hub hides what a person may not see. Once it has one, its setup is the
+  // page of the company's settings, for an owner or an administrator; a member goes to the Projects.
   beforeLoad: async ({ context, params, location }) => {
     const { company, role } = await readOrNotFound(
       context.queryClient.ensureQueryData(companyQuery(params.companyId)),
     )
     const settingUp = location.pathname === `/companies/${params.companyId}/setup`
-    if (company.nickname !== null && settingUp) {
+    if (company.nickname !== null && settingUp && role === 'member') {
       throw redirect({ to: '/companies/$companyId/projects', params, replace: true })
     }
     if (company.nickname === null && role !== 'owner') throw notFound()

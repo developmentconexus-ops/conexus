@@ -7,15 +7,8 @@ import { CAPACITY, COOKIE_PREFIX, PASSWORD_LENGTH, SESSION_COOKIE } from '@conex
 import { betterAuth } from 'better-auth'
 import { createAuthEndpoint } from 'better-auth/api'
 import { admin, organization } from 'better-auth/plugins'
-import { createAccessControl } from 'better-auth/plugins/access'
 import type { OrganizationOptions } from 'better-auth/plugins/organization'
 import { getOrgAdapter } from 'better-auth/plugins/organization'
-import {
-  adminAc,
-  defaultStatements,
-  memberAc,
-  ownerAc,
-} from 'better-auth/plugins/organization/access'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLIENT_ADDRESS_HEADER } from '../../platform/access.ts'
@@ -25,6 +18,7 @@ import { databaseFailure } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import { statusOf } from '../../platform/http.ts'
+import { ACCESS_CONTROL, COMPANY_ROLES } from './roles.ts'
 import {
   account,
   company,
@@ -254,33 +248,8 @@ const DELETING_FIELD = { type: 'date', required: false, input: false } as const
 // The company's nickname in its apps' addresses: only the owner's choice through the Hub sets it.
 const NICKNAME_FIELD = { type: 'string', required: false, input: false } as const
 
-const accessControl = createAccessControl({
-  ...defaultStatements,
-  project: ['create', 'delete'],
-  company: ['nickname'],
-  appVersion: ['create'],
-})
-
-const MANAGE_PROJECTS = { project: ['create', 'delete'], appVersion: ['create'] } as const
-
-/**
- * The plugin's roles: its defaults and what each does to a Project (founder, step 7, P1 A). Every
- * member creates one; only an owner or an administrator deletes one, and sends, lists and puts back
- * a version of its app (step 9, P3 A). Only the owner chooses the company's nickname (step 8, N1).
- * `allows` in admission reads these, so who may do what lives here alone (code C26).
- */
-export const COMPANY_ROLES = {
-  owner: accessControl.newRole({
-    ...ownerAc.statements,
-    ...MANAGE_PROJECTS,
-    company: ['nickname'],
-  }),
-  admin: accessControl.newRole({ ...adminAc.statements, ...MANAGE_PROJECTS }),
-  member: accessControl.newRole({ ...memberAc.statements, project: ['create'] }),
-}
-
 const ORGANIZATION = {
-  ac: accessControl,
+  ac: ACCESS_CONTROL,
   roles: COMPANY_ROLES,
   schema: {
     organization: {

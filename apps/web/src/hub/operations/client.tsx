@@ -2,6 +2,7 @@ import type { Client as ClientRecord } from '@conexus/hub-api'
 import { FAILURES, OPERATOR_INVITES_AS } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { dayOf } from '../../platform/dates.ts'
 import { Button } from '../../ui/button.tsx'
@@ -44,8 +45,9 @@ function Data({ client }: { client: ClientRecord }) {
 /**
  * A client of the Operations Central: its data, and either its administrator's invitation and the
  * correction while it awaits, or its people once active, whom the Central takes out and invites owners to (step 6); and its deletion (step 5).
+ * Once active it also shows `kinds`, the account kinds the Central opens for the company (step 11).
  */
-export function Client() {
+export function Client({ kinds }: { kinds?: ReactNode }) {
   const { companyId } = route.useParams()
   const { convite, ...pages } = route.useSearch()
   const { data } = useSuspenseQuery(clientQuery(companyId))
@@ -83,6 +85,7 @@ export function Client() {
           mayInviteAs={OPERATOR_INVITES_AS}
         />
       )}
+      {state.kind === 'ACTIVE' && !correcting && kinds}
       {state.kind === 'DELETING' && <FinishDeletion client={client} />}
       {!correcting && state.kind !== 'DELETING' && (
         <div>

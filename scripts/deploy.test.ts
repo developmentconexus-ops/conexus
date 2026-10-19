@@ -16,8 +16,10 @@ echo "$* [HUB_IMAGE=\${HUB_IMAGE:-}]" >> "$CALLS"
 case "$*" in
   *" ps --quiet hub") echo "\${STUB_RUNNING_ID:-}" ;;
   "inspect --format {{.Config.Image}}"*) echo "\${STUB_RUNNING_IMAGE:-}" ;;
+  "image inspect"*conexus.reseal*) echo "\${STUB_RESEAL_LABEL:-}" ;;
   "image inspect"*) echo "\${STUB_LABEL:-}" ;;
   *" run --rm migrate") exit "\${STUB_MIGRATE_STATUS:-0}" ;;
+  *" run --rm --no-deps hub node apps/server/src/main.ts reseal") exit "\${STUB_RESEAL_STATUS:-0}" ;;
   "run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/"*)
     [[ -n "\${STUB_MISSING_SECRET:-}" && "$*" == *"/\${STUB_MISSING_SECRET},"* ]] && exit 1; exit 0 ;;
   *" up "*) exit "\${STUB_UP_STATUS:-0}" ;;
@@ -27,7 +29,9 @@ esac
 type Stub = {
   running?: string
   labeled?: boolean
+  resealLabeled?: boolean
   migrateStatus?: number
+  resealStatus?: number
   upStatus?: number
   missingSecret?: string
   hubEnv?: 'missing' | 'unreadable'
@@ -55,7 +59,9 @@ function deploy(argument: string, stub: Stub = {}) {
       STUB_RUNNING_ID: stub.running === undefined ? '' : 'container-id',
       STUB_RUNNING_IMAGE: stub.running ?? '',
       STUB_LABEL: stub.labeled === false ? '' : '1',
+      STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
       STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
+      STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
       STUB_UP_STATUS: String(stub.upStatus ?? 0),
       STUB_MISSING_SECRET: stub.missingSecret ?? '',
     },
@@ -109,12 +115,43 @@ test('--restart migra a imagem em uso e recria o Hub', () => {
   assert.match(run.stdout, /restarted: hub@sha256:old/)
 })
 
+test('reseal roda depois de migrate e antes de subir o Hub, no deploy e no --restart', () => {
+  for (const argument of ['hub@sha256:new', '--restart']) {
+    const { run, log, count } = deploy(argument, { running: 'hub@sha256:old' })
+    assert.equal(run.status, 0, run.stderr)
+    assert.equal(count('main.ts reseal'), 1)
+    function at(text: string) {
+      return log.findIndex((call) => call.includes(text))
+    }
+    assert.ok(at('run --rm migrate') < at('main.ts reseal'))
+    assert.ok(at('main.ts reseal') < at(' up '))
+  }
+})
+
+test('uma imagem de antes da etapa 11, sem o rótulo, pula reseal: Voltar atrás para ela sobe', () => {
+  for (const argument of ['hub@sha256:old', '--restart']) {
+    const { run, count } = deploy(argument, { running: 'hub@sha256:new', resealLabeled: false })
+    assert.equal(run.status, 0, run.stderr)
+    assert.equal(count('main.ts reseal'), 0)
+    assert.equal(count(' up '), 1)
+    assert.match(run.stdout, /no reseal in: hub@sha256:(old|new)/)
+  }
+})
+
+test('reseal que falha termina vermelho e não sobe o Hub', () => {
+  const { run, count } = deploy('hub@sha256:new', { resealStatus: 1 })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /reseal failed: hub@sha256:new/)
+  assert.equal(count(' up '), 0)
+})
+
 const SECRETS = [
   'hub_session_secret',
   'hub_mail_token',
   'hub_neon_api_key',
   'hub_app_login_key',
   'hub_cloudflare_apps_token',
+  'hub_seal_keys',
 ]
 
 test('--restart sem Hub rodando termina vermelho', () => {

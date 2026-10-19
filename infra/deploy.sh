@@ -28,6 +28,20 @@ migrate_if_labeled() {
   fi
 }
 
+# After migrate: every model account's credential moves to the seal key file's last line (S32).
+# A release before step 11 has no reseal command, so Voltar atrás to it skips this (0035).
+reseal_if_labeled() {
+  local image="$1"
+  if [ "$(docker image inspect --format '{{ index .Config.Labels "conexus.reseal" }}' "$image")" != "1" ]; then
+    echo "no reseal in: $image"
+    return 0
+  fi
+  if ! HUB_IMAGE="$image" timeout 120 "${compose[@]}" run --rm --no-deps hub node apps/server/src/main.ts reseal; then
+    echo "reseal failed: $image" >&2
+    return 1
+  fi
+}
+
 # The secrets folder is root's alone, so Docker reads the file, as the Hub's user, inside the image.
 require_secret() {
   local image="$1" name="$2"
@@ -41,7 +55,7 @@ require_secret() {
 
 require_secrets() {
   local name
-  for name in hub_session_secret hub_mail_token hub_neon_api_key hub_app_login_key hub_cloudflare_apps_token; do
+  for name in hub_session_secret hub_mail_token hub_neon_api_key hub_app_login_key hub_cloudflare_apps_token hub_seal_keys; do
     require_secret "$1" "$name"
   done
 }
@@ -66,6 +80,7 @@ if [ "$mode" = "--restart" ]; then
   fi
   require_secrets "$previous"
   migrate_if_labeled "$previous"
+  reseal_if_labeled "$previous"
   if HUB_IMAGE="$previous" "${compose[@]}" up --detach --wait --wait-timeout 90 --force-recreate --no-deps hub; then
     echo "restarted: $previous"
     exit 0
@@ -83,6 +98,7 @@ fi
 docker pull --quiet "$image" > /dev/null
 require_secrets "$image"
 migrate_if_labeled "$image"
+reseal_if_labeled "$image"
 
 if HUB_IMAGE="$image" "${compose[@]}" up --detach --wait --wait-timeout 90; then
   echo "live: $image"

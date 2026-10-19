@@ -124,9 +124,18 @@ export function databaseFailure(error: unknown): Failure {
 
 /** The constraint a unique violation (23505) names, read by SQLSTATE and name (code C52). */
 export function violatedConstraint(error: unknown): string | undefined {
+  return constraintOf(error, '23505')
+}
+
+/** The foreign key a reference violation (23503) names, read by SQLSTATE and name (code C52). */
+export function violatedReference(error: unknown): string | undefined {
+  return constraintOf(error, '23503')
+}
+
+function constraintOf(error: unknown, sqlstate: string): string | undefined {
   for (let cause = error; cause instanceof Error; cause = cause.cause) {
     if (cause instanceof pg.DatabaseError) {
-      return cause.code === '23505' ? cause.constraint : undefined
+      return cause.code === sqlstate ? cause.constraint : undefined
     }
   }
   return undefined
