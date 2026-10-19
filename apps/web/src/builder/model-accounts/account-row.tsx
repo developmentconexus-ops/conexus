@@ -2,6 +2,7 @@ import type { CompanyId, ModelAccount } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
+import { FieldError } from '../../ui/field.tsx'
 import { Row, rowBody } from '../../ui/list.tsx'
 import { AssignAccount, RemoveAccount } from './account-dialogs.tsx'
 import { sendChange } from './queries.ts'
@@ -37,11 +38,9 @@ function PauseButton({ companyId, account }: { companyId: CompanyId; account: Mo
       >
         {pausing ? 'Pausar' : 'Retomar'}
       </Button>
-      {send.isError && (
-        <p role="alert" className="basis-full text-label text-danger">
-          {refusalText(send.error)}
-        </p>
-      )}
+      <FieldError className="basis-full">
+        {send.isError ? refusalText(send.error) : undefined}
+      </FieldError>
     </>
   )
 }

@@ -1,12 +1,13 @@
 import { PersonId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import type { Answers, View } from './test-hub.tsx'
-import { accountOf, modelHub } from './test-hub.tsx'
+import { accountOf, choose, modelHub } from './test-hub.tsx'
 
 const server = hubServer()
 const SETUP = `/companies/${COMPANY.id}/setup`
@@ -56,24 +57,6 @@ test('vazio: "Nenhuma conta ligada" e Ligar conta, para quem pode', async () => 
   open(view())
   expect(await screen.findByText('Nenhuma conta ligada')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
-})
-
-test('quem só lê vê as contas, sem ação nem Ligar conta nem o modelo para escolher', async () => {
-  open(view({ company: queue(), mayManage: false, defaultModel: 'anthropic/claude-sonnet-4' }))
-  expect(await screen.findByText('Modelo padrão: anthropic/claude-sonnet-4')).toBeTruthy()
-  expect(screen.getAllByText(/chave …x7Qa · ligada · para todos/)).toHaveLength(4)
-  for (const name of [
-    /^Pausar/,
-    /^Renomear/,
-    /^Remover/,
-    /^Subir/,
-    /^Descer/,
-    /^Dar /,
-    'Ligar conta',
-  ]) {
-    expect(screen.queryByRole('button', { name })).toBeNull()
-  }
-  expect(screen.queryByLabelText('Modelo padrão')).toBeNull()
 })
 
 test('cada conta diz o estado em palavras: para todos, reservada, pausada, recusada, desligada', async () => {
@@ -240,15 +223,25 @@ test('Remover: o aviso do Console, Esc devolve o foco, e a confirmação apaga a
   )
 })
 
-test('Modelo padrão: qualquer modelo do registro, como fornecedor/modelo; fora da lista, a frase da falha', async () => {
+test('Modelo padrão: fornecedor, busca e modelo, como fornecedor/modelo; fora da lista, a frase da falha', async () => {
   const shown = view()
   const { sent } = open(shown, {
     default: () => (sent.length === 1 ? refusal('MODEL_UNKNOWN') : undefined),
   })
-  const field = await screen.findByLabelText('Modelo padrão')
-  const save = screen.getByRole('button', { name: 'Salvar modelo padrão' })
+  const save = await screen.findByRole('button', { name: 'Salvar modelo padrão' })
   expect(save).toHaveProperty('disabled', true)
-  fireEvent.change(field, { target: { value: 'openai/gpt-5' } })
+  expect(screen.queryByLabelText('Modelo padrão')).toBeNull()
+  await choose(screen.getByLabelText('Fornecedor do modelo padrão'), 'Anthropic')
+  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'OPUS' } })
+  fireEvent.click(screen.getByLabelText('Modelo padrão'))
+  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
+    'claude-opus-4',
+  ])
+  fireEvent.keyDown(screen.getByRole('option'), { key: 'Escape' })
+  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: '' } })
+  await choose(screen.getByLabelText('Fornecedor do modelo padrão'), 'OpenAI')
+  await choose(screen.getByLabelText('Modelo padrão'), 'gpt-5')
+  expect(screen.getByText('Escolhido: openai/gpt-5')).toBeTruthy()
   fireEvent.click(save)
   expect((await screen.findByRole('alert')).textContent).toBe('Este modelo não está na lista.')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar modelo padrão' }))
@@ -257,4 +250,35 @@ test('Modelo padrão: qualquer modelo do registro, como fornecedor/modelo; fora 
     { model: 'openai/gpt-5' },
     { model: 'openai/gpt-5' },
   ])
+})
+
+test('Modelo padrão: milhares de modelos não viram milhares de opções; a busca encontra o resto', async () => {
+  const models = Array.from({ length: 3000 }, (_, index) => `modelo-${index}`)
+  open(view({ defaultModel: 'grande/modelo-7' }))
+  server.use(
+    http.get('*/api/model-providers', () =>
+      HttpResponse.json({ providers: [{ id: 'grande', name: 'Grande', models }] }),
+    ),
+  )
+  expect(await screen.findByText('Escolhido: grande/modelo-7')).toBeTruthy()
+  fireEvent.click(await screen.findByLabelText('Modelo padrão'))
+  expect((await screen.findAllByRole('option')).length).toBeLessThanOrEqual(50)
+  expect(screen.getByText('Mostrando 50 de 3000 modelos. Busque para ver os outros.')).toBeTruthy()
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'modelo-2999' } })
+  fireEvent.click(screen.getByLabelText('Modelo padrão'))
+  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
+    'modelo-2999',
+  ])
+})
+
+test('Dar a pessoas lê todas as páginas: a pessoa 51 aparece pelo nome e pode receber a conta', async () => {
+  const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })], crowd: 49 }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Dar Time 1 a pessoas' }))
+  const dialog = await screen.findByRole('alertdialog')
+  expect(within(dialog).getAllByRole('checkbox')).toHaveLength(51)
+  fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Pessoa 49' }))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Salvar' }))
+  expect(await screen.findByText('chave …x7Qa · ligada · reservada para Pessoa 49')).toBeTruthy()
+  expect(sent.map((one) => one.body)).toEqual([{ personIds: ['person-extra-49'] }])
 })

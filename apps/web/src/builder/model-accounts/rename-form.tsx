@@ -3,6 +3,7 @@ import { ACCOUNT_LABEL_MAX_LENGTH } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
+import { FieldError } from '../../ui/field.tsx'
 import { Input } from '../../ui/input.tsx'
 import { Label } from '../../ui/label.tsx'
 import { sendChange } from './queries.ts'
@@ -49,11 +50,7 @@ export function RenameForm(props: {
         autoComplete="off"
         onChange={(event) => setLabel(event.target.value)}
       />
-      {send.isError && (
-        <p role="alert" className="text-label text-danger">
-          {refusalText(send.error)}
-        </p>
-      )}
+      <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>
       <div className="flex flex-wrap gap-md">
         <Button
           type="submit"

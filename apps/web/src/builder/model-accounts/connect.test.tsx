@@ -7,9 +7,10 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import type { Answers, View } from './test-hub.tsx'
-import { modelHub } from './test-hub.tsx'
+import { choose, modelHub } from './test-hub.tsx'
 
 const server = hubServer()
+const FIELDS = ['Nome da conta', 'Chave de API', 'Fornecedor']
 const KEY = 'sk-segredo-plantado-9f3A'
 
 function open(kinds: SignInKind[], answers: Answers = {}) {
@@ -35,9 +36,9 @@ async function openPanel() {
   return screen.findByRole('region', { name: 'Ligar conta' })
 }
 
-function fillKey(label: string) {
+async function fillKey(label: string) {
   fireEvent.change(screen.getByLabelText('Buscar fornecedor'), { target: { value: 'mist' } })
-  fireEvent.change(screen.getByLabelText('Fornecedor'), { target: { value: 'mistral' } })
+  await choose(screen.getByLabelText('Fornecedor'), 'Mistral')
   fireEvent.change(screen.getByLabelText('Nome da conta'), { target: { value: label } })
   fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: KEY } })
 }
@@ -49,9 +50,16 @@ test('Ligar conta: busca o fornecedor, "Ligando…", manda o corpo com a chave d
   })
   await openPanel()
   expect(screen.queryByRole('button', { name: 'Entrar com assinatura' })).toBeNull()
-  expect(screen.getByRole('option', { name: 'OpenAI' })).toBeTruthy()
-  fillKey('Time 3')
-  expect(screen.queryByRole('option', { name: 'OpenAI' })).toBeNull()
+  fireEvent.click(screen.getByLabelText('Fornecedor'))
+  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toContain('OpenAI')
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+  await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+  fireEvent.change(screen.getByLabelText('Buscar fornecedor'), { target: { value: 'mist' } })
+  fireEvent.click(screen.getByLabelText('Fornecedor'))
+  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual(['Mistral'])
+  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
+  await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+  await fillKey('Time 3')
   expect(screen.getByText('Escolhido: Mistral')).toBeTruthy()
   expect(screen.getByLabelText('Chave de API').getAttribute('type')).toBe('password')
   held.resolve()
@@ -80,25 +88,48 @@ test('"Ligando…" desliga o botão enquanto o Hub não respondeu', async () => 
     },
   })
   await openPanel()
-  fillKey('Time 3')
+  await fillKey('Time 3')
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
   expect(await screen.findByRole('button', { name: 'Ligando…' })).toHaveProperty('disabled', true)
   held.resolve()
   expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
 })
 
-test('422 MODEL_ACCOUNT_INVALID: a frase no campo da chave, a chave digitada fica para corrigir', async () => {
+for (const [reason, field] of [
+  ['LABEL', 'Nome da conta'],
+  ['KEY', 'Chave de API'],
+  ['PROVIDER', 'Fornecedor'],
+] as const) {
+  test(`422 MODEL_ACCOUNT_INVALID por ${reason}: a frase no campo "${field}" e só nele`, async () => {
+    open([], { connect: () => refusal('MODEL_ACCOUNT_INVALID', { reason }) })
+    await openPanel()
+    await fillKey('Time 3')
+    fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
+    expect(
+      (await screen.findByText('Confira o fornecedor, o nome e a chave.')).getAttribute('role'),
+    ).toBe('alert')
+    await waitFor(() =>
+      expect(screen.getByLabelText(field).getAttribute('aria-invalid')).toBe('true'),
+    )
+    for (const other of FIELDS.filter((one) => one !== field)) {
+      expect(screen.getByLabelText(other).getAttribute('aria-invalid')).toBeNull()
+    }
+    expect(screen.getByLabelText('Chave de API')).toHaveProperty('value', KEY)
+    expect(screen.queryByText(/· ligada$/)).toBeNull()
+  })
+}
+
+test('422 MODEL_ACCOUNT_INVALID sem motivo: a frase fica no formulário, em nenhum campo', async () => {
   open([], { connect: () => refusal('MODEL_ACCOUNT_INVALID') })
   await openPanel()
-  fillKey('Time 3')
+  await fillKey('Time 3')
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  expect(
-    (await screen.findByText('Confira o fornecedor, o nome e a chave.')).getAttribute('role'),
-  ).toBe('alert')
-  await waitFor(() =>
-    expect(screen.getByLabelText('Chave de API').getAttribute('aria-invalid')).toBe('true'),
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    'Confira o fornecedor, o nome e a chave.',
   )
-  expect(screen.queryByText(/· ligada$/)).toBeNull()
+  for (const name of FIELDS) {
+    expect(screen.getByLabelText(name).getAttribute('aria-invalid')).toBeNull()
+  }
 })
 
 test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; depois dela, uma nova', async () => {
@@ -107,7 +138,7 @@ test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; dep
     connect: () => (cut ? new HttpResponse('{"account"', { status: 201 }) : undefined),
   })
   await openPanel()
-  fillKey('Time 3')
+  await fillKey('Time 3')
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
   expect(await screen.findByText('Não confirmamos a ligação. Tente de novo.')).toBeTruthy()
   cut = false
@@ -117,7 +148,7 @@ test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; dep
   expect(sent[1]?.attemptKey).toBe(sent[0]?.attemptKey)
 
   await openPanel()
-  fillKey('Time 4')
+  await fillKey('Time 4')
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
   await waitFor(() => expect(sent).toHaveLength(3))
   expect(sent[2]?.attemptKey).not.toBe(sent[0]?.attemptKey)
@@ -138,6 +169,27 @@ test('Entrar com assinatura só oferece os tipos abertos', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Entrar com assinatura' }))
   const kinds = await screen.findByLabelText('Tipo de assinatura')
   expect(kinds.textContent).toBe('Assinatura Claude')
+  fireEvent.click(kinds)
+  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
+    'Assinatura Claude',
+  ])
+})
+
+test('Entrar com Google: o campo pede o endereço de retorno inteiro e o Hub recebe o que se colou', async () => {
+  const sent = open(['claude_subscription', 'google_cliproxy'])
+  await openPanel()
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar com assinatura' }))
+  await choose(await screen.findByLabelText('Tipo de assinatura'), 'Google')
+  fireEvent.change(screen.getByLabelText('Nome da conta'), { target: { value: 'Time G' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Gerar endereço de entrada' }))
+  const field = await screen.findByLabelText('Endereço de retorno do Google')
+  expect(screen.queryByLabelText(/código do Google/)).toBeNull()
+  expect(screen.getByText(/Cole aqui o endereço inteiro dessa página/)).toBeTruthy()
+  const address = 'http://localhost:51121/oauth-callback?state=abc&code=xyz'
+  fireEvent.change(field, { target: { value: address } })
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+  expect(await screen.findByText('Time G · Google · ligada')).toBeTruthy()
+  expect(sent.at(-1)?.body).toEqual({ code: address })
 })
 
 test('Entrar com assinatura: o endereço e o campo do código, "Entrando…" e a conta ligada', async () => {

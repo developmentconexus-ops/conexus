@@ -4,18 +4,12 @@ import { useFormContext } from 'react-hook-form'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { useFieldError } from '../../ui/form.tsx'
 import { Input } from '../../ui/input.tsx'
-
-/** Matches without caring for case or accents, as a person types a name. */
-function plain(text: string): string {
-  return text
-    .normalize('NFD')
-    .replaceAll(/\p{Diacritic}/gu, '')
-    .toLowerCase()
-}
+import { Choice } from './choice.tsx'
+import { plain } from './text.ts'
 
 /**
- * The provider of a key, chosen from the Hub's list: a search field narrows a native list, which
- * keeps its arrow keys and type-ahead, and the choice stays said in words when the search hides it.
+ * The provider of a key, chosen from the Hub's list: a search field narrows the select's list, and
+ * the choice stays said in words when the search hides it.
  */
 export function ProviderChoice({ providers }: { providers: readonly Provider[] }) {
   const { watch, setValue } = useFormContext()
@@ -42,20 +36,14 @@ export function ProviderChoice({ providers }: { providers: readonly Provider[] }
         {matches.length === 0 ? (
           <p className="text-text-2">Nenhum fornecedor encontrado.</p>
         ) : (
-          <select
+          <Choice
             id={shown.id}
-            size={6}
             value={chosen}
-            className="w-full rounded-control border border-line bg-surface p-sm text-body text-text"
-            {...shown.control}
-            onChange={(event) => setValue('provider', event.target.value)}
-          >
-            {matches.map((one) => (
-              <option key={one.id} value={one.id}>
-                {one.name}
-              </option>
-            ))}
-          </select>
+            placeholder="Escolha um fornecedor"
+            options={matches.map((one) => ({ value: one.id, label: one.name }))}
+            control={shown.control}
+            onChange={(next) => setValue('provider', next)}
+          />
         )}
         {chosen !== '' && (
           <p className="text-label text-text-2">

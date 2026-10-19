@@ -190,8 +190,8 @@ export function hubServer() {
 }
 
 /** The Hub's refusal for a failure code, as the server sends it. */
-export function refusal(code: FailureCode) {
-  return HttpResponse.json(problemOf(code), {
+export function refusal(code: FailureCode, details?: Record<string, string>) {
+  return HttpResponse.json(details ? { ...problemOf(code), details } : problemOf(code), {
     status: FAILURES[code].status,
     headers: { 'content-type': PROBLEM_MEDIA_TYPE },
   })

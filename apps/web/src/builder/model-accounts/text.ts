@@ -52,3 +52,11 @@ export function queueOf(accounts: readonly ModelAccount[], provider: ProviderId)
 export function providersOf(accounts: readonly ModelAccount[]): ProviderId[] {
   return [...new Set(accounts.map((one) => one.provider))]
 }
+
+/** Matches without caring for case or accents, as a person types a name. */
+export function plain(text: string): string {
+  return text
+    .normalize('NFD')
+    .replaceAll(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+}

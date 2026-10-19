@@ -1,6 +1,7 @@
 import { SignInKind } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { FieldError } from '../../ui/field.tsx'
 import { SectionTitle } from '../../ui/list.tsx'
 import { kindsQuery, sendKinds } from './queries.ts'
 import { KIND_NAMES, refusalText } from './text.ts'
@@ -43,11 +44,7 @@ export function AccountKinds() {
           </li>
         ))}
       </ul>
-      {send.isError && (
-        <p role="alert" className="text-danger">
-          {refusalText(send.error)}
-        </p>
-      )}
+      <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>
     </section>
   )
 }
