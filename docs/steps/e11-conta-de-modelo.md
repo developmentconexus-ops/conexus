@@ -57,7 +57,7 @@ chamada, a troca de conta, a pausa por limite, a renovação do token. ChatGPT (
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| U1 | Registro 0048 e prova | `docs/` | testes | mastra | — |
+| U1 | Registro 0049 e prova | `docs/` | testes | mastra | — |
 | U2 | Lacre e chave da instalação | `platform/`, `infra/`, how-to | segurança | node | U1 |
 | U3 | Tabelas e permissões, PR próprio (D11) | `builder/model-accounts/tables.ts`, migrações, grants | dados | neon:neon-postgres | U2 |
 | U4 | Lista de fornecedores | `builder/model-accounts/providers.ts` | código | mastra | U1 |
@@ -79,7 +79,7 @@ contrato. Sem chamada ao modelo, o Google é só o login: 350 contra 663 do anti
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | 0048 "proposed" antes da prova; Result, na versão instalada: os fornecedores só com chave, derivados do registro (sem modelo de URL `${VAR}`, um só `apiKeyEnvVar`), e os de fora; nenhuma credencial | o registro | must |
+| 1 | U1 | 0049 "proposed" antes da prova; Result, na versão instalada: os fornecedores só com chave, derivados do registro (sem modelo de URL `${VAR}`, um só `apiKeyEnvVar`), e os de fora; nenhuma credencial | o registro | must |
 | 2 | U1 | Ao vivo, Claude: entrar pelo `@mastra/code-sdk` fixado, 1 token, o `expires_in` cru, uma renovação, 20 turnos sem 401/403 | o registro | must |
 | 3 | U1 | Ao vivo, Google: CLIProxyAPI v8.0.33 por sha256, Antigravity, 1 token em `127.0.0.1` pelo roteador `google` com `url` e chave do processo; o login renovado volta | o registro | must |
 | 4 | U1 | Cada resposta da prova anotada; uma recusa por termos volta ao fundador | o registro | must |
@@ -154,7 +154,7 @@ contrato. Sem chamada ao modelo, o Google é só o login: 350 contra 663 do anti
 **A medida do transplante.** Nada é copiado: o lacre antigo (`registry/seal.ts`, 95 linhas) muda
 os dados associados e o formato; de `pool.ts` e `login.ts` (505) só o login entra, com outro lacre.
 
-**A dívida.** Nenhuma. No fechamento (L20), S34 cita a 0048. A 12 recebe: a primeira chamada
+**A dívida.** Nenhuma. No fechamento (L20), S34 cita a 0049. A 12 recebe: a primeira chamada
 recusada grava `refused`; a chave só ao host do registro, com o ambiente só no `compose.yaml`; a
 renovação Claude com reserva (S34) e os cabeçalhos; o processo CLIProxy por conta para chamar.
 
@@ -164,12 +164,12 @@ renovação Claude com reserva (S34) e os cabeçalhos; o processo CLIProxy por c
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `docs/decisions/0048-…`, `index.md`; `0030` substituída | cria | U4–U7 |
+| `docs/decisions/0049-…`, `index.md`; `0030` substituída | cria | U4–U7 |
 | `architecture.md` §8, §11; `roadmap.md` (etapas 11 e 21: chave e Google na 11) | muda | `check-docs` |
 
 ### Os contratos que a unidade cria
 
-0048: tipos, filas por fornecedor, ordem P2, tipos por operador, sem teste ao ligar, chave da
+0049: tipos, filas por fornecedor, ordem P2, tipos por operador, sem teste ao ligar, chave da
 instalação. Criterion: crit. 1 a 4, nas versões instaladas e fixadas de `@mastra/core` e
 `@mastra/code-sdk` (as linhas citadas são do fork `ce7e9c30`, core 1.69.0, code-sdk 1.8.1, e se
 conferem na instalada); o login por `anthropic.ts:39,61,130`; CLIProxyAPI v8.0.33 (`2422c6b0`) por
