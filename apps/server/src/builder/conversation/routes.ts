@@ -28,8 +28,8 @@ function ownerOf(input: { person: Person; params: { companyId: CompanyId } }): O
   return { companyId: input.params.companyId, personId: input.person.id }
 }
 
-/** The conversations of a Projeto (step 12): every call checks the index first (security S10). */
-export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
+/** What the person reads of the conversations: the list, one conversation and its stream. */
+function registerReads(app: FastifyInstance, deps: Deps) {
   const { store, sessions, builder } = deps
 
   serve(app, listConversations, async ({ person, params, query }) => {
@@ -49,18 +49,6 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
     return answer({ conversations, next: page.next })
   })
 
-  serve(app, createConversation, async ({ person, params, body, attemptKey, log }) => {
-    const owner = { companyId: params.companyId, personId: person.id }
-    const model = await conversationModel(deps.queue, owner, body.model)
-    const bodyHash = bodyHashOf(body)
-    const made = await store.create({ person, ...params, attemptKey, bodyHash })
-    await sessions.switchModel(owner, made.id, model)
-    if (made.created)
-      log.info({ companyId: params.companyId, conversationId: made.id }, 'CONVERSATION_CREATED')
-    const createdAt = made.createdAt.toISOString()
-    return answer({ conversation: { id: made.id, title: null, createdAt, model } })
-  })
-
   serve(app, readConversation, async (input) => {
     const { person, params } = input
     const row = await store.owned({ person, ...params })
@@ -72,6 +60,29 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
     }
     const conversation = { id: row.id, createdAt: row.createdAt.toISOString(), ...read }
     return answer({ conversation })
+  })
+
+  serve(app, streamConversation, async (input) => {
+    const { person, params, signal } = input
+    await store.owned({ person, ...params })
+    return answer(sessions.events(ownerOf(input), params.conversationId, signal))
+  })
+}
+
+/** What the person changes: a new conversation, a message, a stop and the model. */
+function registerWrites(app: FastifyInstance, deps: Deps) {
+  const { store, sessions } = deps
+
+  serve(app, createConversation, async ({ person, params, body, attemptKey, log }) => {
+    const owner = { companyId: params.companyId, personId: person.id }
+    const model = await conversationModel(deps.queue, owner, body.model)
+    const bodyHash = bodyHashOf(body)
+    const made = await store.create({ person, ...params, attemptKey, bodyHash })
+    await sessions.switchModel(owner, made.id, model)
+    if (made.created)
+      log.info({ companyId: params.companyId, conversationId: made.id }, 'CONVERSATION_CREATED')
+    const createdAt = made.createdAt.toISOString()
+    return answer({ conversation: { id: made.id, title: null, createdAt, model } })
   })
 
   serve(app, sendConversationMessage, async (input) => {
@@ -88,12 +99,6 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
         })
     }
     return answer(undefined)
-  })
-
-  serve(app, streamConversation, async (input) => {
-    const { person, params, signal } = input
-    await store.owned({ person, ...params })
-    return answer(sessions.events(ownerOf(input), params.conversationId, signal))
   })
 
   serve(app, stopConversation, async (input) => {
@@ -113,4 +118,10 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
     )
     return answer({ model })
   })
+}
+
+/** The conversations of a Projeto (step 12): every call checks the index first (security S10). */
+export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
+  registerReads(app, deps)
+  registerWrites(app, deps)
 }
