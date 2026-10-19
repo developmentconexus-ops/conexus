@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url'
 import { Worker as Thread } from 'node:worker_threads'
 
 type Props = Readonly<{ caller: unknown; db?: unknown }>
-/** An uploaded Worker's module, and the CPU the dispatcher gives this call. */
+/** An uploaded Worker as the namespace keeps it: its module, and the CPU it was uploaded with. */
 type Uploaded = Readonly<{ main: Buffer; cpuMs: number }>
 type Waiting = { resolve(answer: Response): void; reject(error: Error): void; db: unknown }
 type Running = {
@@ -38,8 +38,9 @@ async function heard(running: Running, message: FromThread) {
 
 /**
  * Runs each uploaded Worker in its own thread, its module imported once, and cuts a request whose
- * thread stays busy past the call's CPU, as Cloudflare does (record 0047, check 5). A cut or a
- * thread's error fails every request still waiting on it, and the next request starts a new thread.
+ * thread stays busy past the CPU it was uploaded with, as Cloudflare does (record 0047, check 5). A
+ * cut or a thread's error fails every request still waiting on it, and the next request starts a new
+ * thread.
  * Time the thread waits on `db`, which runs here, is idle time, as it is outside CPU time there.
  */
 export function threads(t: TestContext) {

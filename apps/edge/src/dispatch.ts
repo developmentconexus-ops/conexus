@@ -92,7 +92,8 @@ async function redeem(visit: Visit): Promise<Response> {
 
 /**
  * The app's Worker runs under the native limit on its subrequests, which counts each call to its
- * `db` (decision 0047); the outbound Worker refuses any other.
+ * `db` (decision 0047); the outbound Worker refuses any other. `cpuMs` repeats the CPU limit its
+ * upload carries, the one Cloudflare was seen to cut (0047, check 5); of the two, the lower applies.
  */
 const DISPATCH_OPTIONS = {
   outbound: {},
