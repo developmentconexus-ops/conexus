@@ -10,7 +10,7 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../platform/seal.ts'
 import { AccountRow, columns, contextOf, credentialOf, usableInOrder } from './accounts.ts'
 import { subscriptionAccess } from './claude/store.ts'
-import { SUBSCRIPTION_IDENTITY, subscriptionModel } from './claude/subscription-model.ts'
+import { subscriptionModel } from './claude/subscription-model.ts'
 import type { CallFailure } from './errors.ts'
 import type { GoogleAccount } from './google/calls.ts'
 import { isRegistryModel } from './providers.ts'
@@ -143,13 +143,13 @@ async function pickedOf(
 ): Promise<Picked> {
   const { row, credential } = found
   const { modelId: name } = parseModelString(modelId)
-  const base = { id: row.id, label: row.label, kind: row.kind, modelId, systemLine: undefined }
+  const base = { id: row.id, label: row.label, kind: row.kind, modelId }
   if (row.kind === 'claude_subscription') {
     const force = turn.refreshed.has(row.id)
     const account = { ...row, companyId: turn.companyId, credential }
     const access = await subscriptionAccess({ ...deps, scope: scopeOf(turn) }, account, force)
     const model = await callModel(subscriptionModel(name, access))
-    return { ...base, model, systemLine: SUBSCRIPTION_IDENTITY }
+    return { ...base, model }
   }
   const target = { providerId: row.provider, modelId: name }
   if (row.kind === 'google_cliproxy') {

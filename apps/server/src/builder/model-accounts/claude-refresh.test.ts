@@ -178,3 +178,80 @@ test('renovação recusada com outra pergunta à espera: as duas seguem pela Tim
   }
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'ready' })
 })
+
+const IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude."
+const OBSERVER = /You are the memory consciousness/
+
+/** The conversation's title once Mastra has stored it, which it does after the turn's end. */
+async function titleOf(f: Awaited<ReturnType<typeof subscribed>>, url: string) {
+  for (let wait = 0; wait < 30; wait++) {
+    const read = await call(f.hub, f.ana, 'GET', url)
+    const title = Object(read.json()).conversation.title
+    if (title !== null) return title
+    await sleep(100)
+  }
+  return null
+}
+
+test('assinatura: o título vem pela conta do turno, sem erro, e toda chamada abre com a linha de identidade', async (t) => {
+  const f = await subscribed(t, 3600)
+  f.refused.status = undefined
+  f.anthropic.answer = (each) => ({ kind: 'text', text: each.stream ? 'Pronto.' : 'Padarias' })
+  const { url, events } = await asked(t, f.where)
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(await titleOf(f, url), 'Padarias')
+  const bearer = f.anthropic.sent.filter((each) => each.bearer !== null)
+  assert.deepEqual(
+    bearer.map((each) => each.stream),
+    [true, false],
+    'the turn and the title both went through the subscription',
+  )
+  for (const each of bearer) assert.ok(each.system.startsWith(IDENTITY), each.system.slice(0, 40))
+  assert.ok(!f.lines.some((line) => line.message === 'MASTRA_ERROR'))
+})
+
+test('assinatura: o observador também abre com a linha, e a falha dele diz a chamada e a conta no log', async (t) => {
+  const f = await subscribed(t, 3600)
+  f.refused.status = undefined
+  const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
+  f.anthropic.answer = (each) => {
+    if (OBSERVER.test(each.system)) return { kind: 'refuse', status: 500 }
+    return { kind: 'text', text: each.stream ? long : 'Padarias' }
+  }
+  const url = `${f.conversations}/${await started(f.hub, f.ana, f.conversations)}`
+  const stream = await streamOf(f.hub, f.ana, url)
+  t.after(() => stream.close())
+  for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
+    assert.equal((await sent(f.hub, f.ana, url, question)).statusCode, 202)
+    const events = await stream.turn()
+    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  }
+  const observed = f.anthropic.sent.filter((each) => OBSERVER.test(each.system))
+  assert.ok(observed.length > 0, 'the observer was called')
+  for (const each of observed) {
+    assert.ok(each.bearer !== null, 'on the subscription')
+    assert.ok(each.system.startsWith(IDENTITY), each.system.slice(0, 40))
+  }
+  const failed = f.lines.find(
+    (line) => line.message === 'MODEL_SIDE_CALL_FAILED' && line.fields.call === 'observer',
+  )
+  assert.equal(failed?.fields.companyId, f.companyId)
+  assert.equal(typeof failed?.fields.accountId, 'string')
+  assert.equal(failed?.fields.failure, 'unknown')
+})
+
+test('assinatura: o título que falha diz no log a chamada e a conta, sem texto da pessoa', async (t) => {
+  const f = await subscribed(t, 3600)
+  f.refused.status = undefined
+  f.anthropic.answer = (each) =>
+    each.stream ? { kind: 'text', text: 'Pronto.' } : { kind: 'refuse', status: 500 }
+  const { url } = await asked(t, f.where, 'SEGREDO-DA-PESSOA')
+  await sleep(1000)
+  const read = await call(f.hub, f.ana, 'GET', url)
+  assert.equal(Object(read.json()).conversation.title, null)
+  const failed = f.lines.filter((line) => line.message === 'MODEL_SIDE_CALL_FAILED')
+  assert.equal(failed.length, 1)
+  assert.equal(failed[0]?.fields.call, 'title')
+  assert.equal(typeof failed[0]?.fields.accountId, 'string')
+  assert.doesNotMatch(JSON.stringify(f.lines), /SEGREDO-DA-PESSOA|SECRET-PLANTED-TEXT/)
+})

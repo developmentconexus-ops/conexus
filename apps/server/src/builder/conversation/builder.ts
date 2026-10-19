@@ -98,13 +98,12 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
  */
 export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: FailureLog }) {
   const storage = createMastraStorage(deps.pool)
-  const model = accountModel(deps.queue)
   const modelSettings = { timeout: MODEL_TIMEOUT }
-  const failSoft = { model, modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
+  const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
   const memory = new Memory({
     storage,
     options: {
-      generateTitle: { model, instructions: TITLE_INSTRUCTIONS },
+      generateTitle: { model: accountModel(deps.queue, 'title'), instructions: TITLE_INSTRUCTIONS },
       observationalMemory: {
         enabled: true,
         scope: 'thread',
@@ -113,6 +112,7 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
         temporalMarkers: true,
         observation: {
           ...failSoft,
+          model: accountModel(deps.queue, 'observer'),
           messageTokens: 30_000,
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
@@ -121,6 +121,7 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
         },
         reflection: {
           ...failSoft,
+          model: accountModel(deps.queue, 'reflection'),
           observationTokens: 40_000,
           bufferActivation: 1 / 2,
           blockAfter: 1.1,
