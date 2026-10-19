@@ -156,6 +156,9 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     storage,
     agentControllers: { [BUILDER_ID]: controller },
   })
+  // Mastra gives its logger to the store but not to the store's domains, which log their own
+  // failures; each domain takes it by the same `__setLogger` (code C50).
+  for (const domain of Object.values(storage.stores)) domain?.__setLogger(mastra.getLogger())
   return { controller, memory, mastra }
 }
 

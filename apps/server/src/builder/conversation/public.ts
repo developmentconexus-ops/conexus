@@ -63,9 +63,14 @@ export function createConversations(deps: {
       await storage.init()
       deps.log.info({}, 'MASTRA_STORAGE_READY')
     },
-    /** Waits for the turns in progress, then stops Mastra and Google's calls (code C62). */
+    /**
+     * Waits for the turns in progress and for the memory's work after them, such as a buffered
+     * observation, which still reads the pool `main.ts` ends next; then stops Mastra and Google's
+     * calls (code C62).
+     */
     async close() {
       await sessions.drain()
+      await builder.memory.settled()
       await builder.mastra.shutdown()
       await deps.google.stop()
     },
