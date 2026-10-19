@@ -33,6 +33,7 @@ export const AccountRow = z.object({
   label: z.string().min(1),
   position: z.number().int().nonnegative(),
   state: AccountState,
+  limitedUntil: z.date().nullable(),
   hint: z.string().length(HINT_LENGTH).nullable(),
   linkedBy: z.string().nullable(),
   linkedAt: z.date(),
@@ -50,6 +51,10 @@ export const columns = {
   label: modelAccount.label,
   position: modelAccount.position,
   state: modelAccount.state,
+  limitedUntil:
+    sql<Date | null>`case when ${modelAccount.limitedUntil} > now() then ${modelAccount.limitedUntil} end`.mapWith(
+      modelAccount.limitedUntil,
+    ),
   hint: modelAccount.hint,
   linkedBy: personNameColumn(modelAccount.linkedBy),
   linkedAt: modelAccount.linkedAt,
@@ -94,6 +99,7 @@ export function viewOf(row: AccountRow, context: Context): ModelAccount {
     ...shown,
     owner: ownerOf(row),
     kindOff: row.kind !== 'api_key' && !context.open.has(row.kind),
+    limitedUntil: row.limitedUntil?.toISOString() ?? null,
     linkedAt: row.linkedAt.toISOString(),
     assignees: context.assignees.get(row.id) ?? [],
   }

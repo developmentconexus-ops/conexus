@@ -45,7 +45,9 @@ export type Provider = z.infer<typeof Provider>
 /**
  * An account as its readers see it, never its credential (decision 0049): a key shows only its last
  * four characters. `kindOff` says the operators closed its kind for the company; it stays and comes
- * back when they open it (founder, C2). `assignees` are the people a company account is given to;
+ * back when they open it (founder, C2).
+ * `limitedUntil` is when the provider's limit ends, null once it has passed, as the database's clock
+ * reads it. `assignees` are the people a company account is given to;
  * with none it is "para todos". `linkedBy` is the name of who linked it, null once they left.
  */
 export const ModelAccount = z.object({
@@ -56,6 +58,7 @@ export const ModelAccount = z.object({
   label: z.string().min(1),
   position: z.number().int().nonnegative(),
   state: AccountState,
+  limitedUntil: z.iso.datetime().nullable(),
   kindOff: z.boolean(),
   hint: z.string().length(4).nullable(),
   linkedBy: z.string().nullable(),

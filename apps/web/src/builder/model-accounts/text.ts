@@ -1,4 +1,5 @@
 import type { AccountKind, ModelAccount, PersonId, Provider, ProviderId } from '@conexus/hub-api'
+import { hourOf } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
 
 export const KIND_NAMES = {
@@ -26,7 +27,8 @@ export function providerName(providers: readonly Provider[], id: ProviderId): st
 export function stateText(account: ModelAccount): string {
   if (account.kindOff) return 'desligada pela Conexus'
   if (account.state === 'refused') return 'recusada · Ligue de novo'
-  return account.state === 'paused' ? 'pausada' : 'ligada'
+  if (account.state === 'paused') return 'pausada'
+  return account.limitedUntil === null ? 'ligada' : `No limite até ${hourOf(account.limitedUntil)}`
 }
 
 /** How the account was linked: the end of its key, or the kind of sign-in. */

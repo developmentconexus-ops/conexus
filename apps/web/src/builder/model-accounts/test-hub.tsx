@@ -40,6 +40,7 @@ export function accountOf(fields: Partial<ModelAccount> & { label: string }): Mo
     kindOff: false,
     hint: 'x7Qa',
     linkedBy: ANA.name,
+    limitedUntil: null,
     linkedAt: '2026-10-19T12:00:00.000Z',
     assignees: [],
     revision: 0,

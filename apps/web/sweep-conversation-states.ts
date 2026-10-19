@@ -66,6 +66,7 @@ const WITH_ACCOUNT = {
         kindOff: false,
         hint: 'x7Qa',
         linkedBy: 'Ana Lima',
+        limitedUntil: null,
         linkedAt: '2026-10-19T12:00:00.000Z',
         assignees: [],
         revision: 0,

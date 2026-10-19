@@ -64,6 +64,7 @@ test('ligar por chave: lacra e grava no fim da fila do fornecedor, sem chamada, 
     label: 'Time 1',
     position: 0,
     state: 'ready',
+    limitedUntil: null,
     kindOff: false,
     hint: 'x7Qa',
     linkedBy: 'Ana Lima',
@@ -87,6 +88,31 @@ test('ligar por chave: lacra e grava no fim da fila do fornecedor, sem chamada, 
     Object(listed.json()).company.map(({ label }: { label: string }) => label),
     ['Time 1', 'Time 2', 'OpenAI'],
   )
+})
+
+test('a lista diz até quando a conta está no limite, pelo relógio do banco; passado o limite, nulo', async (t) => {
+  const { hub, ana, accounts } = await company(t)
+  await link(hub, ana, accounts, { label: 'Futuro' })
+  await link(hub, ana, accounts, { label: 'Passado' })
+  await link(hub, ana, accounts, { label: 'Livre' })
+  await hub.test.asOwner(
+    `update builder.model_account set limited_until = now() + interval '1 hour' where label = 'Futuro'`,
+  )
+  await hub.test.asOwner(
+    `update builder.model_account set limited_until = now() - interval '1 hour' where label = 'Passado'`,
+  )
+  const listed = Object((await call(hub, ana, 'GET', accounts)).json())
+  const until = new Map<string, unknown>(
+    listed.company.map(({ label, limitedUntil }: Record<string, unknown>) => [
+      String(label),
+      limitedUntil,
+    ]),
+  )
+  const future = until.get('Futuro')
+  assert.equal(typeof future, 'string')
+  assert.ok(Date.parse(String(future)) > Date.now())
+  assert.equal(until.get('Passado'), null)
+  assert.equal(until.get('Livre'), null)
 })
 
 test('ligar por chave: chave vazia, nome vazio ou fornecedor fora da lista dão 422, cada um do seu campo', async (t) => {
