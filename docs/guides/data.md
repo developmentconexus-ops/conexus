@@ -94,11 +94,12 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
 ## 5. Generated apps
 
 - **D28.** A generated app **must** reach its data only through `db.query(text, values)`, which
-  only reads, and `db.batch` for writes, one transaction, all or none [0045]. The rule against two
-  separate writes for one action **must** live in the Builder's server skill, and the verifier
-  **must** refuse it before Preview. [verifier]
+  only reads, and `db.batch` for writes, one transaction, all or none [0045]. PostgreSQL refuses a
+  write through `db.query`, and the dispatcher bounds each call [0047]. The rule against two
+  separate writes for one action **must** live in the Builder's server skill. [PostgreSQL,
+  dispatcher]
 - **D29.** An app's migrations **must** live in its own Git. The Hub **must** apply them with that
-  app's migration login, and the verifier **must** read them as SQL before Preview. [verifier]
+  app's migration login, and read them as SQL before Preview. [from step 15]
 
 ## 6. Change with real data
 
