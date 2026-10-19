@@ -21,7 +21,6 @@ import type { SignInFlows } from './sign-ins.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import type { ModelAccountStore } from './store.ts'
 
-// The registry is in memory and the same for every person: one list, built once.
 const PROVIDERS = { providers: listKeyProviders() }
 
 export function registerModelAccountRoutes(

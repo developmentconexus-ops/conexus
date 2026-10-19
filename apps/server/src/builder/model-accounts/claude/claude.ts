@@ -23,7 +23,7 @@ function failureOf(error: unknown): Failure {
 
 /**
  * The Claude subscription's paste-code sign-in (decision 0049, criterion 2): the PKCE verifier is
- * what waits, sealed; the trade gives `refresh`, `access` and `expires`, sealed whole for step 12.
+ * what waits, sealed; the trade gives `refresh`, `access` and `expires`, sealed whole.
  */
 export function claudeSignIn(): SignInFlow {
   return {

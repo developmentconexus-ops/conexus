@@ -64,12 +64,10 @@ test('lacre: a chave aposentada abre; relacrado, a antiga sai sem perda', () => 
   const old = keyLine('k1')
   const current = keyLine('k2')
   const before = seal(parseSealKeys(old), ROW, Credential.parse(PLANTED))
-  // Phase two: the new key is the last line, the old one only opens.
   const both = parseSealKeys(`${old}\n${current}\n`)
   assert.equal(open(both, ROW, before).reveal(), PLANTED)
   const resealed = seal(both, ROW, open(both, ROW, before))
   assert.equal(resealed.keyId, 'k2')
-  // Phase three: the old line leaves; what was resealed opens, what was not is refused.
   const after = parseSealKeys(current)
   assert.equal(open(after, ROW, resealed).reveal(), PLANTED)
   refused(() => open(after, ROW, before))

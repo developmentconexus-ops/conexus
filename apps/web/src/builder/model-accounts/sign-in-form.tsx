@@ -108,8 +108,6 @@ function CodeForm(props: {
   const send = useMutation(sendSignInCompletion)
   const form = useSchemaForm(completeModelAccountSignIn.input.body, { code: '' })
 
-  // A refused exchange, an expired sign-in and a vendor that did not answer all end this sign-in:
-  // the person starts again, with the sentence the Hub gave.
   async function submit(values: { code: string }) {
     try {
       const { account } = await send.mutateAsync({

@@ -10,7 +10,6 @@ export const MODEL_ACCOUNT_FAILURES = {
     action: 'O erro foi registrado. Avise quem cuida do Conexus.',
     actionKind: 'NONE',
   },
-  // On a field of the form: the screen shows the phrase there, with no action.
   MODEL_ACCOUNT_INVALID: {
     category: 'USER',
     settles: true,

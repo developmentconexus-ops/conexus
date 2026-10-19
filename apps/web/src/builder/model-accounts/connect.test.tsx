@@ -64,7 +64,6 @@ test('Ligar conta: busca o fornecedor, "Ligando…", manda o corpo com a chave d
     key: KEY,
   })
   expect(sent[0]?.attemptKey).toBeTruthy()
-  // The key never comes back to the page: not in its text, not in any field.
   expect(document.body.textContent).not.toContain(KEY)
   expect(screen.queryByDisplayValue(KEY)).toBeNull()
   await waitFor(() =>

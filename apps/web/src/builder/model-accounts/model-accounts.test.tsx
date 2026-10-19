@@ -104,7 +104,6 @@ test('cada conta diz o estado em palavras: para todos, reservada, pausada, recus
   expect(screen.getByText('chave …x7Qa · pausada · para todos')).toBeTruthy()
   expect(screen.getByText('chave …x7Qa · recusada · Ligue de novo · para todos')).toBeTruthy()
   expect(screen.getByText('Assinatura Claude · desligada pela Conexus · para todos')).toBeTruthy()
-  // A refused account is linked again, not resumed.
   expect(screen.queryByRole('button', { name: 'Pausar Time 4' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Retomar Time 4' })).toBeNull()
   expect(screen.getByRole('button', { name: 'Retomar Time 3' })).toBeTruthy()
@@ -179,7 +178,6 @@ test('Subir e Descer só onde a conta se move, com a ordem inteira da fila e o f
     'status',
   )
 
-  // At the top the row has no "Subir": focus goes to its "Descer".
   fireEvent.click(screen.getByRole('button', { name: 'Subir C' }))
   await waitFor(() => expect(labelsInOrder()).toEqual(['C', 'A', 'B', 'D']))
   await waitFor(() =>

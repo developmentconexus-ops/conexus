@@ -17,7 +17,6 @@ function Setup() {
 
 export const Route = createFileRoute('/_app/companies/$companyId/setup')({
   staticData: { place: 'Configurar a empresa' },
-  // The model accounts are read once the company has its nickname; before it, only the nickname form.
   loader: async ({ context, params }) => {
     const { queryClient } = context
     const { company } = await queryClient.ensureQueryData(companyQuery(params.companyId))

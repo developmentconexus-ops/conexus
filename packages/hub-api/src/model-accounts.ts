@@ -20,7 +20,6 @@ export type AccountKind = z.infer<typeof AccountKind>
 export const SignInKind = AccountKind.exclude(['api_key'])
 export type SignInKind = z.infer<typeof SignInKind>
 
-/** `refused` is written by step 12's first refused call; step 11 links, pauses and resumes. */
 export const AccountState = z.enum(['ready', 'paused', 'refused'])
 export type AccountState = z.infer<typeof AccountState>
 
