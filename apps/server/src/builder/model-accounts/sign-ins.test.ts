@@ -68,7 +68,7 @@ test('entrar: só dono e administrador pela empresa (404), o nome é conferido',
   assert.equal((await post(hub, carla, signIns, body)).statusCode, 404)
   assert.equal((await post(hub, bruno, signIns, body)).statusCode, 201)
   const unnamed = await post(hub, ana, signIns, { ...body, label: '  ' })
-  assert.deepEqual([unnamed.statusCode, codeOf(unnamed)], [422, 'MODEL_ACCOUNT_INVALID'])
+  assert.deepEqual([unnamed.statusCode, codeOf(unnamed)], [422, 'MODEL_ACCOUNT_LABEL_INVALID'])
   assert.equal((await post(hub, ana, signIns, { ...body, kind: 'api_key' })).statusCode, 400)
   assert.equal(
     (await call(hub, ana, 'GET', `/api/companies/${companyId}/model-accounts`)).statusCode,

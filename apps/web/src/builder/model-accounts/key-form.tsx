@@ -1,4 +1,4 @@
-import type { CompanyId, ModelAccount, Owner, Provider } from '@conexus/hub-api'
+import type { CompanyId, FailureCode, ModelAccount, Owner, Provider } from '@conexus/hub-api'
 import { ACCOUNT_LABEL_MAX_LENGTH, connectModelAccount } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { keepsAttemptKey, useAttemptKey } from '../../platform/attempt-key.ts'
@@ -16,11 +16,11 @@ import { sendConnection } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos a ligação. Tente de novo.'
 
-/** The field of the form that each `details.reason` of MODEL_ACCOUNT_INVALID refuses. */
-const FIELD_OF: Partial<Record<string, 'provider' | 'label' | 'key'>> = {
-  PROVIDER: 'provider',
-  LABEL: 'label',
-  KEY: 'key',
+/** The refusals that belong on a field of the form (web W23). */
+const FIELD_OF: Partial<Record<FailureCode, 'provider' | 'label' | 'key'>> = {
+  MODEL_PROVIDER_UNKNOWN: 'provider',
+  MODEL_ACCOUNT_LABEL_INVALID: 'label',
+  MODEL_ACCOUNT_INVALID: 'key',
 }
 
 /**
@@ -52,9 +52,8 @@ export function KeyForm(props: {
       props.onLinked(account)
     } catch (error) {
       if (!(error instanceof HubFailure)) setServerError(form, error)
-      else if (error.code === 'MODEL_ACCOUNT_INVALID') {
-        setServerError(form, error, FIELD_OF[error.reason ?? ''])
-      } else if (keepsAttemptKey(error)) {
+      else if (FIELD_OF[error.code] !== undefined) setServerError(form, error, FIELD_OF[error.code])
+      else if (keepsAttemptKey(error)) {
         form.setError('root.server', { type: 'server', message: UNCONFIRMED })
       } else setServerError(form, error)
     }

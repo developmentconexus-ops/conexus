@@ -89,18 +89,17 @@ test('ligar por chave: lacra e grava no fim da fila do fornecedor, sem chamada, 
   )
 })
 
-test('ligar por chave: chave vazia, nome vazio ou fornecedor fora da lista dão 422 MODEL_ACCOUNT_INVALID', async (t) => {
+test('ligar por chave: chave vazia, nome vazio ou fornecedor fora da lista dão 422, cada um do seu campo', async (t) => {
   const { hub, ana, accounts } = await company(t)
-  for (const body of [
-    { key: '' },
-    { key: '   ' },
-    { label: ' ' },
-    { provider: 'cloudflare-workers-ai' },
-    { provider: 'nenhum' },
-  ]) {
+  for (const [body, code] of [
+    [{ key: '' }, 'MODEL_ACCOUNT_INVALID'],
+    [{ key: '   ' }, 'MODEL_ACCOUNT_INVALID'],
+    [{ label: ' ' }, 'MODEL_ACCOUNT_LABEL_INVALID'],
+    [{ provider: 'cloudflare-workers-ai' }, 'MODEL_PROVIDER_UNKNOWN'],
+    [{ provider: 'nenhum' }, 'MODEL_PROVIDER_UNKNOWN'],
+  ] as const) {
     const refused = await link(hub, ana, accounts, body)
-    assert.equal(refused.statusCode, 422, JSON.stringify(body))
-    assert.equal(codeOf(refused), 'MODEL_ACCOUNT_INVALID')
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [422, code], JSON.stringify(body))
   }
   assert.deepEqual(await hub.test.asOwner(`select id from builder.model_account`), [])
 })
@@ -196,6 +195,14 @@ test('pausar e retomar com a revisão lida; velha dá 412; remover só quem pode
     [Object(resumed.json()).account.state, Object(resumed.json()).account.label],
     ['ready', 'Time Um'],
   )
+  // Step 12 writes `refused`; such an account is linked again, never paused or resumed.
+  await hub.test.asOwner(`update builder.model_account set state = 'refused'`)
+  const refused = await patch(hub, ana, url, { revision: 3, state: 'paused' })
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [409, 'MODEL_ACCOUNT_LINK_AGAIN'])
+  const renamed = await patch(hub, ana, url, { revision: 3, label: 'Time 1' })
+  assert.equal(Object(renamed.json()).account.state, 'refused')
+  const unnamed = await patch(hub, ana, url, { revision: 4, label: ' ' })
+  assert.deepEqual([unnamed.statusCode, codeOf(unnamed)], [422, 'MODEL_ACCOUNT_LABEL_INVALID'])
   assert.equal((await call(hub, carla, 'DELETE', url)).statusCode, 404)
   assert.equal((await call(hub, bruno, 'DELETE', url)).statusCode, 204)
   assert.equal((await call(hub, bruno, 'DELETE', url)).statusCode, 204)

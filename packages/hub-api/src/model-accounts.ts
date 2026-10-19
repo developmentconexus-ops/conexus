@@ -87,7 +87,7 @@ const Accounts = z.object({
   mayManage: z.boolean(),
 })
 
-// The key is checked by the Hub, so an empty one is the same 422 as a provider off the list.
+// The Hub checks the key, the name and the provider, each with its own 422 for its field.
 const Connection = z.object({
   owner: Owner,
   provider: z.string().max(64),
@@ -139,7 +139,13 @@ export const connectModelAccount = defineOperation({
   input: { params: InCompany, body: Connection },
   attemptKey: true,
   success: { status: 201, body: z.object({ account: ModelAccount }) },
-  failures: [...READ_FAILURES, 'MODEL_ACCOUNT_INVALID', 'IDEMPOTENCY_CONFLICT'],
+  failures: [
+    ...READ_FAILURES,
+    'MODEL_ACCOUNT_INVALID',
+    'MODEL_ACCOUNT_LABEL_INVALID',
+    'MODEL_PROVIDER_UNKNOWN',
+    'IDEMPOTENCY_CONFLICT',
+  ],
 })
 
 export const changeModelAccount = defineOperation({
@@ -151,7 +157,12 @@ export const changeModelAccount = defineOperation({
   bodyLimit: 1024,
   input: { params: OfAccount, body: Change },
   success: { status: 200, body: z.object({ account: ModelAccount }) },
-  failures: [...READ_FAILURES, 'MODEL_ACCOUNT_INVALID', 'MODEL_ACCOUNT_STALE'],
+  failures: [
+    ...READ_FAILURES,
+    'MODEL_ACCOUNT_LABEL_INVALID',
+    'MODEL_ACCOUNT_STALE',
+    'MODEL_ACCOUNT_LINK_AGAIN',
+  ],
 })
 
 export const assignModelAccount = defineOperation({
@@ -253,7 +264,7 @@ export const startModelAccountSignIn = defineOperation({
   },
   failures: [
     ...READ_FAILURES,
-    'MODEL_ACCOUNT_INVALID',
+    'MODEL_ACCOUNT_LABEL_INVALID',
     'MODEL_ACCOUNT_KIND_OFF',
     'MODEL_ACCOUNT_UNAVAILABLE',
     'CLIPROXY_BINARY_REFUSED',

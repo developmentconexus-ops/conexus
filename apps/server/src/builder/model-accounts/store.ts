@@ -96,11 +96,9 @@ type Connection = Viewer & {
 
 function parsedConnection(input: Connection) {
   const provider = keyProviderOf(input.provider)
-  if (provider === undefined)
-    throw new Failure('MODEL_ACCOUNT_INVALID', { details: { reason: 'PROVIDER' } })
+  if (provider === undefined) throw new Failure('MODEL_PROVIDER_UNKNOWN')
   const key = input.key.trim()
-  if (key.length < HINT_LENGTH)
-    throw new Failure('MODEL_ACCOUNT_INVALID', { details: { reason: 'KEY' } })
+  if (key.length < HINT_LENGTH) throw new Failure('MODEL_ACCOUNT_INVALID')
   return { provider: provider.id, label: labelOf(input.label), key }
 }
 

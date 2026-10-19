@@ -37,7 +37,7 @@ export function change(deps: Deps, input: Change) {
     if (row === undefined) throw new Failure('NOT_FOUND')
     if (row.revision !== input.revision) throw new Failure('MODEL_ACCOUNT_STALE')
     if (input.state !== undefined && row.state === 'refused')
-      throw new Failure('MODEL_ACCOUNT_INVALID', { details: { reason: 'REFUSED' } })
+      throw new Failure('MODEL_ACCOUNT_LINK_AGAIN')
     const label = input.label === undefined ? row.label : labelOf(input.label)
     await tx
       .update(modelAccount)

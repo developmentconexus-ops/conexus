@@ -65,7 +65,7 @@ export function scopeOf(viewer: Viewer): Scope {
 export function labelOf(typed: string): string {
   const label = typed.trim().normalize('NFC')
   if (label.length < 1 || label.length > ACCOUNT_LABEL_MAX_LENGTH)
-    throw new Failure('MODEL_ACCOUNT_INVALID', { details: { reason: 'LABEL' } })
+    throw new Failure('MODEL_ACCOUNT_LABEL_INVALID')
   return label
 }
 

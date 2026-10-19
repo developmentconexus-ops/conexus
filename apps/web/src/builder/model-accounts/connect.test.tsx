@@ -1,4 +1,5 @@
 import type { SignInKind } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse } from 'msw'
@@ -95,19 +96,17 @@ test('"Ligando…" desliga o botão enquanto o Hub não respondeu', async () => 
   expect(await screen.findByText('Time 3 · chave …9f3A · ligada')).toBeTruthy()
 })
 
-for (const [reason, field] of [
-  ['LABEL', 'Nome da conta'],
-  ['KEY', 'Chave de API'],
-  ['PROVIDER', 'Fornecedor'],
+for (const [code, field] of [
+  ['MODEL_ACCOUNT_LABEL_INVALID', 'Nome da conta'],
+  ['MODEL_ACCOUNT_INVALID', 'Chave de API'],
+  ['MODEL_PROVIDER_UNKNOWN', 'Fornecedor'],
 ] as const) {
-  test(`422 MODEL_ACCOUNT_INVALID por ${reason}: a frase no campo "${field}" e só nele`, async () => {
-    open([], { connect: () => refusal('MODEL_ACCOUNT_INVALID', { reason }) })
+  test(`422 ${code}: a frase no campo "${field}" e só nele`, async () => {
+    open([], { connect: () => refusal(code) })
     await openPanel()
     await fillKey('Time 3')
     fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-    expect(
-      (await screen.findByText('Confira o fornecedor, o nome e a chave.')).getAttribute('role'),
-    ).toBe('alert')
+    expect((await screen.findByText(FAILURES[code].phrase)).getAttribute('role')).toBe('alert')
     await waitFor(() =>
       expect(screen.getByLabelText(field).getAttribute('aria-invalid')).toBe('true'),
     )
@@ -118,19 +117,6 @@ for (const [reason, field] of [
     expect(screen.queryByText(/· ligada$/)).toBeNull()
   })
 }
-
-test('422 MODEL_ACCOUNT_INVALID sem motivo: a frase fica no formulário, em nenhum campo', async () => {
-  open([], { connect: () => refusal('MODEL_ACCOUNT_INVALID') })
-  await openPanel()
-  await fillKey('Time 3')
-  fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  expect((await screen.findByRole('alert')).textContent).toBe(
-    'Confira o fornecedor, o nome e a chave.',
-  )
-  for (const name of FIELDS) {
-    expect(screen.getByLabelText(name).getAttribute('aria-invalid')).toBeNull()
-  }
-})
 
 test('resposta cortada: a chave de tentativa fica e a nova tentativa a leva; depois dela, uma nova', async () => {
   let cut = true
