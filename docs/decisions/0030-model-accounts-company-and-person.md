@@ -26,4 +26,4 @@ A vendor blocks accounts, or changes its terms.
 
 ## State
 
-Brought. Founder, 2026-10-12: "tem que entrar B as duas desde o lançamento", "4. Sim e eu autorizo", "7. Sim eu autorizo", "5. Vamos ter assinatura por empresa sim", "6. B vou trazer".
+Brought. Founder, 2026-10-12: "tem que entrar B as duas desde o lançamento", "4. Sim e eu autorizo", "7. Sim eu autorizo", "5. Vamos ter assinatura por empresa sim", "6. B vou trazer". Superseded by [0049].
