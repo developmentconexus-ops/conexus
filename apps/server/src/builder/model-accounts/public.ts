@@ -11,6 +11,10 @@ import { registerModelAccountRoutes } from './routes.ts'
 import type { SignInFlows } from './sign-ins.ts'
 import { createModelAccountStore } from './store.ts'
 
+export { accountModel, accountPick, accountQueue, MAX_PROCESSOR_RETRIES } from './processors.ts'
+export type { GoogleCalls, QueueDeps } from './queue.ts'
+export { Turn, turnContext } from './turn.ts'
+
 export type ModelAccounts = ReturnType<typeof createModelAccounts>
 
 /**
