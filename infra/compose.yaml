@@ -8,6 +8,7 @@ services:
     stop_grace_period: 20s
     secrets:
       - hub_database_url
+      - hub_mastra_database_url
       - hub_session_secret
       - hub_mail_token
       - hub_neon_api_key
@@ -19,6 +20,8 @@ services:
     env_file: /etc/conexus/hub.env
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
+      # Mastra's own database and login, beside the Hub's (decision 0010).
+      HUB_MASTRA_DATABASE_URL_FILE: /run/secrets/hub_mastra_database_url
       HUB_PUBLIC_ORIGIN: https://hub.conexus.fun
       HUB_SESSION_SECRET_FILE: /run/secrets/hub_session_secret
       HUB_MAIL_TOKEN_FILE: /run/secrets/hub_mail_token
@@ -60,9 +63,11 @@ services:
     command: ["node", "apps/server/src/main.ts", "migrate"]
     secrets:
       - hub_database_url
+      - hub_mastra_database_url
       - hub_migration_database_url
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
+      HUB_MASTRA_DATABASE_URL_FILE: /run/secrets/hub_mastra_database_url
       HUB_MIGRATION_DATABASE_URL_FILE: /run/secrets/hub_migration_database_url
 
   cloudflared:
@@ -81,6 +86,8 @@ secrets:
     file: /etc/conexus/secrets/tunnel_token
   hub_database_url:
     file: /etc/conexus/secrets/hub_database_url
+  hub_mastra_database_url:
+    file: /etc/conexus/secrets/hub_mastra_database_url
   hub_migration_database_url:
     file: /etc/conexus/secrets/hub_migration_database_url
   hub_session_secret:

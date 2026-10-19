@@ -296,6 +296,8 @@ export async function assertMigrated(database: Database): Promise<void> {
 }
 
 export const RUNTIME_LOGIN = 'hub_runtime'
+/** Mastra's login, which enters only Mastra's database (decision 0010). */
+export const MASTRA_LOGIN = 'mastra_runtime'
 
 export async function assertRuntimeLogin(database: Database): Promise<void> {
   const login = await database.installation(async (tx) => {

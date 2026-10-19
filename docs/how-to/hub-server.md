@@ -41,10 +41,10 @@ the founder's e-mail. Read its free terms for commercial use at sign-up; they we
 
 ## Database keys
 
-Firstmate writes two files as root in `/etc/conexus/secrets`, then sets owner uid 1000 and mode 0400:
-`hub_database_url`, the Hub login, and `hub_migration_database_url`, the owner login. Both hold a
-direct (not pooled) PostgreSQL address. Only `migrate` mounts the owner key, and the `hub` container
-mounts `hub_database_url` alone.
+Firstmate writes three direct (not pooled) PostgreSQL addresses as root in `/etc/conexus/secrets`,
+owner uid 1000, mode 0400: `hub_database_url`, the Hub login; `hub_mastra_database_url`,
+`mastra_runtime` on Mastra's database beside the Hub's; `hub_migration_database_url`, the owner
+login, which only `migrate` mounts. `migrate` creates Mastra's database.
 
 ## Session secret and first person
 
