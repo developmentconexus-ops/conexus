@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify'
 import Fastify from 'fastify'
 import { z } from 'zod'
 import type { ModelAccounts } from './builder/model-accounts/public.ts'
-import { createModelAccounts } from './builder/model-accounts/public.ts'
+import { createModelAccounts, resealModelAccounts } from './builder/model-accounts/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { createAppRemoval, createApps } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
@@ -270,8 +270,24 @@ async function runFirstPerson(args: string[]): Promise<void> {
   }
 }
 
+/** Each deploy's step after migrate: moves the credentials off keys that only open (security S32). */
+async function runReseal(): Promise<void> {
+  const config = readConfig('serve')
+  const log = bootLog(config.logLevel)
+  const database = openDatabase({ url: config.databaseUrl, log })
+  try {
+    await assertRuntimeLogin(database)
+    await assertMigrated(database)
+    const counts = await resealModelAccounts({ database, sealKeys: config.sealKeys })
+    log.info({ moved: counts.moved, refused: counts.refused }, 'RESEALED')
+  } finally {
+    await database.close()
+  }
+}
+
 const COMMANDS: Record<string, (args: string[]) => Promise<void>> = {
   migrate: runMigrate,
+  reseal: runReseal,
   'first-person': runFirstPerson,
 }
 

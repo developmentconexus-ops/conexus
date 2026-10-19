@@ -213,7 +213,7 @@ export async function insertAccount(
   return id
 }
 
-function sealContext(row: {
+export function sealContext(row: {
   id: string
   companyId: string
   personId: string | null
