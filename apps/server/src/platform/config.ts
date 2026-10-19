@@ -2,6 +2,8 @@ import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
+import type { SealKeys } from './seal.ts'
+import { parseSealKeys } from './seal.ts'
 import { Secret } from './secret.ts'
 import { readSecretFile } from './secret-file.ts'
 
@@ -124,6 +126,7 @@ export type Config = BaseConfig & {
   cloudflareAccountId: CloudflareName
   appsNamespace: CloudflareName
   cloudflareAppsToken: CloudflareAppsToken
+  sealKeys: SealKeys
 }
 type MigrateConfig = BaseConfig & { migrationDatabaseUrl: DatabaseUrl }
 
@@ -151,6 +154,7 @@ const ServeEnvironment = z.object({
   HUB_CLOUDFLARE_ACCOUNT_ID: CloudflareName,
   HUB_APPS_NAMESPACE: CloudflareName,
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: z.string().min(1),
+  HUB_SEAL_KEYS_FILE: z.string().min(1),
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -233,6 +237,7 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
       serve.HUB_CLOUDFLARE_APPS_TOKEN_FILE,
       CloudflareAppsToken.parse,
     ),
+    sealKeys: readSecret('HUB_SEAL_KEYS_FILE', serve.HUB_SEAL_KEYS_FILE, parseSealKeys),
   }
 }
 

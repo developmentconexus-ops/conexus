@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { randomBytes } from 'node:crypto'
 import { chmodSync, writeFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { readConfig } from './config.ts'
@@ -63,4 +64,21 @@ test('configuração: a chave dos logins dos apps só vale com 64 dígitos hexad
   }
   writeFileSync(path, `${'a1'.repeat(32)}\n`)
   assert.equal(String(readConfig('serve', env).appLoginKey), '[AppLoginKey]')
+})
+
+test('configuração: sem o arquivo das chaves do lacre, vazio, legível por outros ou fora de 32 bytes, não inicia', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  refusal({ ...env, HUB_SEAL_KEYS_FILE: undefined }, 'HUB_SEAL_KEYS_FILE')
+  refusal({ ...env, HUB_SEAL_KEYS_FILE: `${env.HUB_SEAL_KEYS_FILE}-absent` }, 'HUB_SEAL_KEYS_FILE')
+  const path = env.HUB_SEAL_KEYS_FILE
+  chmodSync(path, 0o600)
+  writeFileSync(path, '\n')
+  refusal(env, 'HUB_SEAL_KEYS_FILE')
+  writeFileSync(path, `k1:${randomBytes(16).toString('base64')}\n`)
+  refusal(env, 'HUB_SEAL_KEYS_FILE')
+  writeFileSync(path, `k1:${randomBytes(32).toString('base64')}\n`)
+  chmodSync(path, 0o640)
+  refusal(env, 'HUB_SEAL_KEYS_FILE')
+  chmodSync(path, 0o600)
+  assert.equal(readConfig('serve', env).sealKeys.sealingId, 'k1')
 })

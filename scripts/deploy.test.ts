@@ -115,6 +115,7 @@ const SECRETS = [
   'hub_neon_api_key',
   'hub_app_login_key',
   'hub_cloudflare_apps_token',
+  'hub_seal_keys',
 ]
 
 test('--restart sem Hub rodando termina vermelho', () => {

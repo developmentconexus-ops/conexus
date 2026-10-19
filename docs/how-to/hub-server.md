@@ -44,13 +44,13 @@ the founder's e-mail. Read its free terms for commercial use at sign-up; they we
 Firstmate writes two files as root in `/etc/conexus/secrets`, then sets owner uid 1000 and mode 0400:
 `hub_database_url`, the Hub login, and `hub_migration_database_url`, the owner login. Both hold a
 direct (not pooled) PostgreSQL address. Only `migrate` mounts the owner key, and the `hub` container
-mounts `hub_database_url` alone. Port 22 is open only while they are written.
+mounts `hub_database_url` alone.
 
 ## Session secret and first person
 
 Firstmate writes `hub_session_secret` beside those keys, 32 random characters or more
 (`openssl rand -base64 48`). `deploy.sh` refuses to run without it. A new secret, then Reiniciar o
-Hub, ends every session.
+Hub, ends every session. The model accounts' seal keys: [seal-keys](seal-keys.md).
 
 ## Para o fundador
 

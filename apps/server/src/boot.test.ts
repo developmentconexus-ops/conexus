@@ -47,6 +47,7 @@ const WITH_FILE = {
   HUB_CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
   HUB_APPS_NAMESPACE: 'conexus-apps',
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: '/nowhere/hub_cloudflare_apps_token',
+  HUB_SEAL_KEYS_FILE: '/nowhere/hub_seal_keys',
 }
 
 for (const name of Object.keys(WITH_FILE)) {

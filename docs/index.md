@@ -8,7 +8,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [README.md](../README.md): this repository, for a person, in Portuguese.
 - [roadmap.md](roadmap.md): the steps in order, the one in construction, approvals, use lines.
 - [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
-- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub.
+- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
@@ -17,7 +17,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [steps/](steps/): the card in construction; empty between steps.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
-- [reference/checklist.md](reference/checklist.md): questions only a reader answers.
+- [reference/checklist.md](reference/checklist.md): questions for readers.
 
 ## Guides: the rules
 
