@@ -3,6 +3,7 @@ import { z } from 'zod'
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 const MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
+const CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
 const MODEL = 'claude-sonnet-4-5'
 
@@ -21,28 +22,103 @@ export type Sent = {
 export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
-  | { kind: 'refuse'; status: 400 | 401 | 402 | 403 | 429; headers?: Record<string, string> }
+  | { kind: 'refuse'; status: 400 | 401 | 402 | 403 | 429 | 500; headers?: Record<string, string> }
   | { kind: 'hold'; until: Promise<void>; text: string }
 
 export type Anthropic = {
   sent: Sent[]
   /** The token refreshes asked, by refresh token. */
   refreshed: string[]
+  /** Every other address the process fetched, passed on to the real `fetch`. */
+  elsewhere: string[]
   answer: (sent: Sent) => Reply
+  /** The calls made to a second provider, Groq's Chat Completions, and how the double answers them. */
+  chats: Sent[]
+  chat: (sent: Sent) => Reply
   refresh: (refreshToken: string) => {
     status: number
-    tokens?: { access: string; refresh: string }
+    tokens?: { access: string; refresh: string; expiresIn?: number }
   }
+}
+
+const ChatBody = z.object({
+  stream: z.boolean().optional(),
+  tools: z.array(z.object({ function: z.object({ name: z.string() }) })).optional(),
+  messages: z.array(
+    z.object({
+      role: z.string(),
+      content: z.union([z.string(), z.array(z.object({ text: z.string() }).loose()), z.null()]),
+    }),
+  ),
+})
+
+function chatSentOf(init: RequestInit | undefined): Sent {
+  const headers = new Headers(init?.headers)
+  const body = ChatBody.parse(JSON.parse(String(init?.body)))
+  const texts = body.messages.flatMap((message) => {
+    const { content } = message
+    if (content === null) return []
+    return typeof content === 'string' ? [content] : content.map((part) => String(part.text))
+  })
+  return {
+    key: null,
+    bearer: headers.get('authorization')?.replace(/^Bearer /, '') ?? null,
+    stream: body.stream === true,
+    tools: (body.tools ?? []).map((tool) => tool.function.name),
+    system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
+    texts,
+  }
+}
+
+/** Chat Completions' documented stream: chunks of `choices[].delta`, then `[DONE]`. */
+function chatReplied(sent: Sent, reply: Reply): Response {
+  if (reply.kind === 'refuse') {
+    const error = { error: { message: 'planted refusal', type: 'invalid_request_error' } }
+    return Response.json(error, { status: reply.status, headers: reply.headers })
+  }
+  const text = reply.kind === 'text' ? reply.text : ''
+  const base = { id: 'chatcmpl-test', created: 1, model: 'llama-3.3-70b-versatile' }
+  const usage = { prompt_tokens: 3, completion_tokens: 3, total_tokens: 6 }
+  if (!sent.stream) {
+    const message = { role: 'assistant', content: text }
+    const choices = [{ index: 0, message, finish_reason: 'stop' }]
+    return Response.json({ ...base, object: 'chat.completion', choices, usage })
+  }
+  function chunk(delta: object, finish: string | null) {
+    const choices = [{ index: 0, delta, finish_reason: finish }]
+    return { ...base, object: 'chat.completion.chunk', choices }
+  }
+  const frames = [
+    chunk({ role: 'assistant', content: '' }, null),
+    chunk({ content: text }, null),
+    { ...chunk({}, 'stop'), usage },
+  ]
+  const body = `${frames.map((frame) => `data: ${JSON.stringify(frame)}\n\n`).join('')}data: [DONE]\n\n`
+  return new Response(body, { headers: { 'content-type': 'text/event-stream' } })
 }
 
 const Body = z.object({
   stream: z.boolean().optional(),
   tools: z.array(z.object({ name: z.string() })).optional(),
   system: z.union([z.string(), z.array(z.object({ text: z.string() }))]).optional(),
-  messages: z.array(
-    z.object({ content: z.union([z.string(), z.array(z.object({ text: z.string() }).loose())]) }),
-  ),
+  messages: z.array(z.object({ content: z.union([z.string(), z.array(z.unknown())]) })),
 })
+const TextPart = z.object({ text: z.string() })
+const ToolResult = z.object({
+  type: z.literal('tool_result'),
+  content: z.union([z.string(), z.array(TextPart)]),
+})
+
+/** A message part as the model reads it: its text, or a tool's result; none for the rest. */
+function textOf(part: unknown): string[] {
+  const result = ToolResult.safeParse(part)
+  if (result.success) {
+    const { content } = result.data
+    return [typeof content === 'string' ? content : content.map((each) => each.text).join('')]
+  }
+  const text = TextPart.safeParse(part)
+  return text.success ? [text.data.text] : []
+}
 
 function sentOf(init: RequestInit | undefined): Sent {
   const headers = new Headers(init?.headers)
@@ -52,9 +128,7 @@ function sentOf(init: RequestInit | undefined): Sent {
       ? body.system
       : (body.system ?? []).map((part) => part.text).join('\n')
   const texts = body.messages.flatMap((message) =>
-    typeof message.content === 'string'
-      ? [message.content]
-      : message.content.flatMap((part) => (typeof part.text === 'string' ? [part.text] : [])),
+    typeof message.content === 'string' ? [message.content] : message.content.flatMap(textOf),
   )
   const bearer = headers.get('authorization')?.replace(/^Bearer /, '') ?? null
   return {
@@ -94,13 +168,16 @@ function events(blocks: unknown[], stop: 'end_turn' | 'tool_use'): string {
   return all.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join('')
 }
 
-/** A stream that sends its text after `until`, so a test holds a turn open. */
+/** A stream that sends its text, then ends only after `until`, so a test holds a turn open. */
 function heldStream(until: Promise<void>, text: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
-  const [head, ...rest] = events([{ type: 'text', text }], 'end_turn').split('\n\n')
+  const frames = events([{ type: 'text', text }], 'end_turn').split('\n\n')
+  // The message's start, its text block's start and its text; then its end.
+  const head = frames.slice(0, 3)
+  const rest = frames.slice(3)
   return new ReadableStream({
     async start(controller) {
-      controller.enqueue(encoder.encode(`${head}\n\n`))
+      controller.enqueue(encoder.encode(`${head.join('\n\n')}\n\n`))
       await until
       controller.enqueue(encoder.encode(rest.join('\n\n')))
       controller.close()
@@ -146,7 +223,10 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
   const anthropic: Anthropic = {
     sent: [],
     refreshed: [],
+    elsewhere: [],
     answer,
+    chats: [],
+    chat: () => ({ kind: 'text', text: 'ok' }),
     refresh: () => ({ status: 400 }),
   }
   globalThis.fetch = async (input, init) => {
@@ -156,10 +236,22 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
       anthropic.refreshed.push(refreshToken)
       const { status, tokens } = anthropic.refresh(refreshToken)
       if (tokens === undefined) return Response.json({ error: 'invalid_grant' }, { status })
-      const body = { access_token: tokens.access, refresh_token: tokens.refresh, expires_in: 3600 }
+      const body = {
+        access_token: tokens.access,
+        refresh_token: tokens.refresh,
+        expires_in: tokens.expiresIn ?? 3600,
+      }
       return Response.json(body, { status })
     }
-    if (!url.startsWith(MESSAGES_URL)) return await real(input, init)
+    if (url.startsWith(CHAT_URL)) {
+      const chat = chatSentOf(init)
+      anthropic.chats.push(chat)
+      return chatReplied(chat, anthropic.chat(chat))
+    }
+    if (!url.startsWith(MESSAGES_URL)) {
+      anthropic.elsewhere.push(url)
+      return await real(input, init)
+    }
     const sent = sentOf(init)
     anthropic.sent.push(sent)
     return replied(sent, anthropic.answer(sent))

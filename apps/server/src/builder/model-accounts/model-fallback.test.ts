@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { BRUNO, CARLA, call, codeOf, companyOn, memberOn } from '../../hub/identity/test-hub.ts'
+import {
+  BRUNO,
+  CARLA,
+  call,
+  codeOf,
+  companyOn,
+  memberOn,
+  post,
+} from '../../hub/identity/test-hub.ts'
+import { asked, conversing, MODEL, noticesOf } from '../conversation/test-conversation.ts'
 
 const FIRST = 'anthropic/claude-sonnet-4-5'
 const SECOND = 'google/gemini-2.5-flash'
@@ -75,4 +84,62 @@ test('troca automática: revisão velha dá 412; duas gravações juntas, uma ve
   const missed = await call(hub, ana, 'PUT', url, { enabled: false, chain: [], revision: 5 })
   assert.equal(missed.statusCode, 412)
   assert.deepEqual(await read(), { enabled: true, chain: [FIRST], revision: 1 })
+})
+
+const GROQ = 'groq/llama-3.3-70b-versatile'
+const EXHAUSTED =
+  'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
+
+test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem busca; a seguinte tenta o escolhido; desligada, para', async (t) => {
+  const limited: { on: boolean } = { on: true }
+  const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (each) =>
+    limited.on && each.stream ? { kind: 'refuse', status: 429 } : { kind: 'text', text: 'Pronto.' },
+  )
+  const company = `/api/companies/${companyId}`
+  const groq = { owner: 'company', provider: 'groq', label: 'Groq 1', key: 'gsk-fallback-key-0001' }
+  assert.equal((await post(hub, ana, `${company}/model-accounts`, groq)).statusCode, 201)
+  const url = `${company}/model-fallback`
+  const on = await call(hub, ana, 'PUT', url, { enabled: true, chain: [MODEL, GROQ], revision: 0 })
+  assert.equal(on.statusCode, 200)
+  function streamedChats() {
+    return anthropic.chats.filter((each) => each.stream)
+  }
+  const where = { hub, person: ana, conversations }
+  const first = await asked(t, where)
+  const switched = 'Troquei para llama-3.3-70b-versatile pela troca automática da empresa.'
+  assert.deepEqual(noticesOf(first.events), [switched])
+  assert.deepEqual(first.events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.deepEqual(
+    anthropic.sent.filter((each) => each.stream).map((each) => each.tools.includes('web_search')),
+    [true],
+  )
+  assert.equal(streamedChats().length, 1)
+  assert.equal(streamedChats()[0]?.bearer, groq.key)
+  assert.ok(streamedChats()[0]?.tools.includes('web_fetch'))
+  assert.ok(!streamedChats()[0]?.tools.includes('web_search'))
+  limited.on = false
+  await hub.test.asOwner(`update builder.model_account set limited_until = null`)
+  const second = await asked(t, where)
+  assert.deepEqual(noticesOf(second.events), [])
+  assert.equal(streamedChats().length, 1)
+  assert.deepEqual(
+    anthropic.sent.filter((each) => each.stream).map((each) => each.tools.includes('web_search')),
+    [true, true],
+  )
+  limited.on = true
+  await hub.test.asOwner(`update builder.model_account set limited_until = null`)
+  const off = await call(hub, ana, 'PUT', url, {
+    enabled: false,
+    chain: [MODEL, GROQ],
+    revision: 1,
+  })
+  assert.equal(off.statusCode, 200)
+  const third = await asked(t, where)
+  assert.equal(noticesOf(third.events).at(-1), EXHAUSTED)
+  assert.ok(!noticesOf(third.events).some((text) => text.startsWith('Troquei')))
+  assert.deepEqual(third.events.slice(-2), [
+    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
+    { type: 'turnEnd', reason: 'error' },
+  ])
+  assert.equal(streamedChats().length, 1)
 })
