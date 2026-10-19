@@ -6,6 +6,7 @@
 ALTER DATABASE hub_database OWNER TO test_owner;
 ALTER SCHEMA apps OWNER TO test_owner;
 ALTER SCHEMA auth OWNER TO test_owner;
+ALTER SCHEMA builder OWNER TO test_owner;
 ALTER SCHEMA drizzle OWNER TO test_owner;
 ALTER SCHEMA hub OWNER TO test_owner;
 ALTER SCHEMA operations OWNER TO test_owner;
@@ -18,6 +19,11 @@ ALTER SCHEMA projects OWNER TO test_owner;
 -- only hub_runtime executes it.
 ALTER FUNCTION apps.companies_with_apps() OWNER TO hub_app_companies;
 ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_administrators;
+-- Step 11, founder 2026-10-19 ("2. a", Grant A): a model account's sealed credential, and the
+-- companies that hold one, two SECURITY DEFINER functions owned by a role that cannot log in and
+-- reads five columns of the accounts; hub_company executes the first, hub_runtime the second.
+ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
+ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
 -- Step 8, founder 2026-10-17 ("Grant A"): a host's Project and company, one SECURITY DEFINER function
 -- owned by a role that cannot log in and reads three columns of the Projects; only hub_runtime
 -- executes it.
@@ -36,6 +42,11 @@ ALTER TABLE auth.rate_limit OWNER TO test_owner;
 ALTER TABLE auth.session OWNER TO test_owner;
 ALTER TABLE auth."user" OWNER TO test_owner;
 ALTER TABLE auth.verification OWNER TO test_owner;
+ALTER TABLE builder.company_account_kind OWNER TO test_owner;
+ALTER TABLE builder.company_model OWNER TO test_owner;
+ALTER TABLE builder.model_account OWNER TO test_owner;
+ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
+ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -55,6 +66,10 @@ GRANT USAGE ON SCHEMA auth TO hub_person;
 GRANT USAGE ON SCHEMA auth TO hub_invitation;
 GRANT USAGE ON SCHEMA auth TO hub_operator;
 GRANT USAGE ON SCHEMA auth TO hub_administrators;
+GRANT USAGE ON SCHEMA builder TO hub_company;
+GRANT USAGE ON SCHEMA builder TO hub_operator;
+GRANT USAGE ON SCHEMA builder TO hub_model_seals;
+GRANT USAGE ON SCHEMA builder TO hub_runtime;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
@@ -67,6 +82,10 @@ REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;
 GRANT ALL ON FUNCTION apps.companies_with_apps() TO hub_runtime;
 REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
 GRANT ALL ON FUNCTION auth.is_installation_administrator(person text) TO hub_operator;
+REVOKE ALL ON FUNCTION builder.companies_with_seals() FROM PUBLIC;
+GRANT ALL ON FUNCTION builder.companies_with_seals() TO hub_runtime;
+REVOKE ALL ON FUNCTION builder.sealed_of(account uuid) FROM PUBLIC;
+GRANT ALL ON FUNCTION builder.sealed_of(account uuid) TO hub_company;
 REVOKE ALL ON FUNCTION projects.project_of_host(label text) FROM PUBLIC;
 GRANT ALL ON FUNCTION projects.project_of_host(label text) TO hub_runtime;
 -- Step 9, founder 2026-10-18 ("Tudo A"): a company's routes send, list, put back and delete its apps'
@@ -130,6 +149,37 @@ GRANT UPDATE(updated_at) ON TABLE auth."user" TO hub_operator;
 GRANT SELECT(role) ON TABLE auth."user" TO hub_administrators;
 GRANT SELECT,INSERT,DELETE,UPDATE ON TABLE auth.verification TO hub_runtime;
 GRANT SELECT,INSERT,DELETE ON TABLE auth.verification TO hub_invitation;
+-- Step 11, founder 2026-10-19 ("2. a", Grant A): a company's routes link, read, order, change, give
+-- and remove its model accounts and set its default model, and never read `sealed`; the Central
+-- chooses the company's sign-in kinds.
+GRANT SELECT ON TABLE builder.company_account_kind TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.company_account_kind TO hub_operator;
+GRANT SELECT,INSERT ON TABLE builder.company_model TO hub_company;
+GRANT UPDATE(model) ON TABLE builder.company_model TO hub_company;
+GRANT INSERT,DELETE ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(id) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(id) ON TABLE builder.model_account TO hub_model_seals;
+GRANT SELECT(company_id) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(company_id) ON TABLE builder.model_account TO hub_model_seals;
+GRANT SELECT(person_id) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(person_id) ON TABLE builder.model_account TO hub_model_seals;
+GRANT SELECT(kind) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(provider) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(label),UPDATE(label) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT("position"),UPDATE("position") ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(state),UPDATE(state) ON TABLE builder.model_account TO hub_company;
+GRANT UPDATE(sealed) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(sealed) ON TABLE builder.model_account TO hub_model_seals;
+GRANT SELECT(key_id),UPDATE(key_id) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(key_id) ON TABLE builder.model_account TO hub_model_seals;
+GRANT SELECT(hint) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(linked_by) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(linked_at) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(revision),UPDATE(revision) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(attempt_key) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
+GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
@@ -163,6 +213,9 @@ CREATE ROLE hub_hosts;
 ALTER ROLE hub_hosts WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_invitation;
 ALTER ROLE hub_invitation WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
+-- Step 11: the owner of builder.sealed_of and builder.companies_with_seals.
+CREATE ROLE hub_model_seals;
+ALTER ROLE hub_model_seals WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_operator;
 ALTER ROLE hub_operator WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_person;
@@ -179,6 +232,7 @@ GRANT hub_company TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
 GRANT hub_hosts TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_invitation TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_invitation TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
+GRANT hub_model_seals TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_operator TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_operator TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
 GRANT hub_person TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
