@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { AlertDialog, AlertDialogContent, AlertDialogTrigger } from '../../ui/alert-dialog.tsx'
 import { Button } from '../../ui/button.tsx'
+import { FieldError } from '../../ui/field.tsx'
 import { refusalText } from './text.ts'
 
 type Write = { isPending: boolean; isError: boolean; error: unknown; reset: () => void }
@@ -36,11 +37,7 @@ export function AccountDialog(props: {
       </AlertDialogTrigger>
       <AlertDialogContent title={props.title} description={props.description}>
         {props.children}
-        {write.isError && (
-          <p role="alert" className="text-danger">
-            {refusalText(write.error)}
-          </p>
-        )}
+        <FieldError>{write.isError ? refusalText(write.error) : undefined}</FieldError>
         <div className="flex flex-wrap gap-md">
           <Button
             variant={trigger.danger ? 'danger-confirm' : 'primary'}

@@ -1,5 +1,6 @@
 import type { CompanyId, ModelAccount, Owner, ProviderId } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
+import { FieldError } from '../../ui/field.tsx'
 import { List } from '../../ui/list.tsx'
 import type { Powers } from './account-row.tsx'
 import { AccountRow } from './account-row.tsx'
@@ -77,11 +78,7 @@ export function Queue(props: Props) {
       <p role="status" className="sr-only">
         {feedback.said}
       </p>
-      {send.isError && (
-        <p role="alert" className="text-label text-danger">
-          {refusalText(send.error)}
-        </p>
-      )}
+      <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>
     </div>
   )
 }

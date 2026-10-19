@@ -1,13 +1,23 @@
-import type { CompanyId } from '@conexus/hub-api'
+import type { CompanyId, Role } from '@conexus/hub-api'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Outlet, redirect, useMatches } from '@tanstack/react-router'
 import { FolderIcon, HouseIcon, KeyRoundIcon, SettingsIcon, UsersIcon } from 'lucide-react'
-import { AccountMenu, CompanySwitcher, sessionQuery } from '../../hub/identity/public.ts'
+import type { ComponentProps } from 'react'
+import {
+  AccountMenu,
+  CompanySwitcher,
+  companyQuery,
+  sessionQuery,
+} from '../../hub/identity/public.ts'
 import { Frame } from '../../ui/frame.tsx'
 
 const HOME = [{ to: '/', icon: HouseIcon, label: 'Início' }] as const
 
-/** The places of a company, which the rail lists while its address is open (screen map). */
-function placesOf(companyId: CompanyId) {
+/**
+ * The places of a company, which the rail lists while its address is open (screen map). Its
+ * settings are for an owner or an administrator.
+ */
+function placesOf(companyId: CompanyId, role: Role) {
   const params = { companyId }
   return [
     { to: '/companies/$companyId/projects', params, icon: FolderIcon, label: 'Projetos' },
@@ -18,12 +28,16 @@ function placesOf(companyId: CompanyId) {
       icon: KeyRoundIcon,
       label: 'Minha conta de modelo',
     },
-    {
-      to: '/companies/$companyId/setup',
-      params,
-      icon: SettingsIcon,
-      label: 'Configurar a empresa',
-    },
+    ...(role === 'member'
+      ? []
+      : [
+          {
+            to: '/companies/$companyId/setup',
+            params,
+            icon: SettingsIcon,
+            label: 'Configurar a empresa',
+          } as const,
+        ]),
   ] as const
 }
 
@@ -55,12 +69,29 @@ function AppFrame() {
         ? undefined
         : matches.find((match) => match.routeId === '/_app/companies/$companyId')?.params.companyId,
   })
+  if (companyId === undefined) {
+    return (
+      <Frame place={place ?? ''} places={HOME} account={<AccountMenu person={person} />}>
+        <Outlet />
+      </Frame>
+    )
+  }
+  return <CompanyFrame companyId={companyId} place={place ?? ''} person={person} />
+}
+
+/** The frame of a company's page: its rail follows the role the Hub gave the person there. */
+function CompanyFrame(props: {
+  companyId: CompanyId
+  place: string
+  person: ComponentProps<typeof AccountMenu>['person']
+}) {
+  const { role } = useSuspenseQuery(companyQuery(props.companyId)).data
   return (
     <Frame
-      place={place ?? ''}
-      places={companyId === undefined ? HOME : placesOf(companyId)}
-      switcher={companyId === undefined ? undefined : <CompanySwitcher current={companyId} />}
-      account={<AccountMenu person={person} />}
+      place={props.place}
+      places={placesOf(props.companyId, role)}
+      switcher={<CompanySwitcher current={props.companyId} />}
+      account={<AccountMenu person={props.person} />}
     >
       <Outlet />
     </Frame>

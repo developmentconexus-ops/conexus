@@ -14,14 +14,22 @@ export class HubFailure extends Error {
    * have acted, so a retry of a write must carry the same attempt key (code C37, web W24).
    */
   readonly outcomeUnknown: boolean
+  /** The Hub's `details.reason` of the failure, when it names which part of the request it refused. */
+  readonly reason: string | undefined
 
-  constructor(code: FailureCode, options: { cause?: unknown; outcomeUnknown?: boolean } = {}) {
+  constructor(
+    code: FailureCode,
+    options: { cause?: unknown; outcomeUnknown?: boolean; reason?: string } = {},
+  ) {
     super(code, options)
     this.name = 'HubFailure'
     this.code = code
     this.outcomeUnknown = options.outcomeUnknown ?? true
+    this.reason = options.reason
   }
 }
+
+const Details = z.object({ details: z.object({ reason: z.string() }).optional() })
 
 /** The body of a reply, or the failure that says it could not be read whole. */
 async function bodyOf(response: Response): Promise<unknown> {
@@ -35,11 +43,13 @@ async function bodyOf(response: Response): Promise<unknown> {
  * stands, such as an invitation whose e-mail failed; any other leaves the outcome unknown.
  */
 async function failureOf(response: Response): Promise<HubFailure> {
-  const problem = Problem.safeParse(await bodyOf(response))
+  const body = await bodyOf(response)
+  const problem = Problem.safeParse(body)
   if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
   const { code } = problem.data
   const settled = FAILURES[code].settles
-  return new HubFailure(code, { outcomeUnknown: !settled })
+  const reason = Details.safeParse(body).data?.details?.reason
+  return new HubFailure(code, { outcomeUnknown: !settled, reason })
 }
 
 /** The one fetch to the Hub: same origin, with cookies, under a deadline (web W9). */

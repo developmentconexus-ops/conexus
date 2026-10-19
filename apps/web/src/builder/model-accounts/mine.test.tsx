@@ -4,12 +4,19 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { ACTIVE_CLIENT, centralHub, hubServer } from '../../platform/test-hub.tsx'
+import {
+  ACTIVE_CLIENT,
+  centralHub,
+  hubServer,
+  PEDIDOS,
+  projectsRead,
+} from '../../platform/test-hub.tsx'
 import type { View } from './test-hub.tsx'
-import { accountOf, modelHub } from './test-hub.tsx'
+import { accountOf, choose, modelHub } from './test-hub.tsx'
 
 const server = hubServer()
 const SETUP = `/companies/${COMPANY.id}/setup`
+const MINE = `/companies/${COMPANY.id}/model-account`
 
 function view(fields: Partial<View> = {}): View {
   return {
@@ -32,16 +39,18 @@ function open(shown: View, path = SETUP) {
 }
 
 async function openMine(shown: View) {
-  const hub = open(shown)
-  const [link] = await screen.findAllByRole('link', { name: 'Minha conta de modelo' })
-  if (link) fireEvent.click(link)
+  const hub = open(shown, MINE)
   await screen.findByRole('heading', { name: 'Minha conta de modelo' })
   return hub
 }
 
 test('o trilho leva a Minha conta de modelo; sem contas: "Nenhuma conta sua"', async () => {
-  const { router } = await openMine(view())
-  expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/model-account`)
+  const hub = open(view({ mayManage: true }))
+  const [link] = await screen.findAllByRole('link', { name: 'Minha conta de modelo' })
+  if (link) fireEvent.click(link)
+  await screen.findByRole('heading', { name: 'Minha conta de modelo' })
+  const { router } = hub
+  expect(router.state.location.pathname).toBe(MINE)
   expect(screen.getByText('Nenhuma conta sua')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
   expect(screen.queryByText(/Sua ordem para/)).toBeNull()
@@ -90,7 +99,7 @@ test('quem só lê a empresa liga, pausa e remove as próprias contas', async ()
 test('Ligar conta na página da pessoa liga uma conta dela', async () => {
   const { sent } = await openMine(view())
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
-  fireEvent.change(await screen.findByLabelText('Fornecedor'), { target: { value: 'openai' } })
+  await choose(await screen.findByLabelText('Fornecedor'), 'OpenAI')
   fireEvent.change(screen.getByLabelText('Nome da conta'), { target: { value: 'Minha chave' } })
   fireEvent.change(screen.getByLabelText('Chave de API'), { target: { value: 'sk-minha-7777' } })
   fireEvent.click(screen.getByRole('button', { name: 'Ligar conta' }))
@@ -129,4 +138,43 @@ test('Tipos de conta: "Chave de API" sempre ligada, e cada assinatura manda a li
     { kinds: ['claude_subscription', 'google_cliproxy'] },
     { kinds: ['google_cliproxy'] },
   ])
+})
+
+test('Configurar a empresa é de dono e administrador: o membro não vê o item no trilho', async () => {
+  const hub = open(view({ mayManage: false }), MINE)
+  await screen.findByRole('heading', { name: 'Minha conta de modelo' })
+  expect(screen.getAllByRole('link', { name: 'Minha conta de modelo' }).length).toBeGreaterThan(0)
+  expect(screen.queryByRole('link', { name: 'Configurar a empresa' })).toBeNull()
+  expect(hub.sent).toHaveLength(0)
+})
+
+test('o membro que abre Configurar a empresa vai aos Projetos, sem ler as contas da empresa', async () => {
+  const shown = view({ company: [accountOf({ label: 'Time 1' })], mayManage: false })
+  const read: string[] = []
+  function note({ request }: { request: Request }) {
+    read.push(new URL(request.url).pathname)
+  }
+  server.events.on('request:start', note)
+  const hub = modelHub(shown)
+  server.use(
+    ...hub.handlers,
+    ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: false, role: 'member' }),
+  )
+  const conexus = createConexus(createMemoryHistory({ initialEntries: [SETUP] }))
+  render(<Conexus conexus={conexus} />)
+  expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeTruthy()
+  expect(conexus.router.state.location.pathname).toBe(`/companies/${COMPANY.id}/projects`)
+  expect(screen.queryByRole('heading', { name: 'Conta de modelo' })).toBeNull()
+  expect(screen.queryByText('Time 1')).toBeNull()
+  expect(read).not.toContain(`/api/companies/${COMPANY.id}/model-accounts`)
+  server.events.removeListener('request:start', note)
+})
+
+test('o administrador abre Configurar a empresa e a vê no trilho', async () => {
+  const shown = view({ company: [accountOf({ label: 'Time 1' })], mayManage: true, role: 'admin' })
+  const hub = modelHub(shown)
+  server.use(...hub.handlers)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [SETUP] }))} />)
+  expect(await screen.findByRole('heading', { name: 'Conta de modelo' })).toBeTruthy()
+  expect(screen.getAllByRole('link', { name: 'Configurar a empresa' }).length).toBeGreaterThan(0)
 })

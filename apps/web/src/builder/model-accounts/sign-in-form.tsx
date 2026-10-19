@@ -5,10 +5,11 @@ import {
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import { Controller } from 'react-hook-form'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
-import { Field, FieldLabel } from '../../ui/field.tsx'
+import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import {
   Form,
   FormAlert,
@@ -17,15 +18,25 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
+import { Choice } from './choice.tsx'
 import { sendSignInCompletion, sendSignInStart } from './queries.ts'
 import { KIND_NAMES } from './text.ts'
 
 type Started = { signInId: string; url: string; expiresAt: string; kind: SignInKind }
 
-const CODE_LABELS = {
-  claude_subscription: 'Código da Anthropic',
-  google_cliproxy: 'Endereço ou código do Google',
-} as const satisfies Record<SignInKind, string>
+const CODE_FIELDS = {
+  claude_subscription: {
+    label: 'Código da Anthropic',
+    help: 'Depois de entrar, a Anthropic mostra um código. Cole-o aqui.',
+    invalid: 'Cole o código.',
+  },
+  google_cliproxy: {
+    label: 'Endereço de retorno do Google',
+    help: 'Depois de entrar, o navegador para numa página que não abre (http://localhost:51121/oauth-callback?...). Cole aqui o endereço inteiro dessa página, copiado da barra do navegador.',
+    invalid:
+      'Cole o endereço inteiro em que o navegador parou, começando em http://localhost:51121/oauth-callback?',
+  },
+} as const satisfies Record<SignInKind, { label: string; help: string; invalid: string }>
 
 /** The address to open, as a link only when it is a secure web address the vendor's page uses. */
 function OpenAddress({ url }: { url: string }) {
@@ -51,6 +62,7 @@ function StartForm(props: {
   onStarted: (started: Started) => void
 }) {
   const send = useMutation(sendSignInStart)
+  const kindId = useId()
   const form = useSchemaForm(startModelAccountSignIn.input.body, {
     owner: props.owner,
     kind: props.kinds[0],
@@ -72,18 +84,20 @@ function StartForm(props: {
   return (
     <Form form={form} onSubmit={submit}>
       <Field>
-        <FieldLabel htmlFor="sign-in-kind">Tipo de assinatura</FieldLabel>
-        <select
-          id="sign-in-kind"
-          className="h-9 w-full rounded-control border border-line bg-surface px-md text-body text-text"
-          {...form.register('kind')}
-        >
-          {props.kinds.map((kind) => (
-            <option key={kind} value={kind}>
-              {KIND_NAMES[kind]}
-            </option>
-          ))}
-        </select>
+        <FieldLabel htmlFor={kindId}>Tipo de assinatura</FieldLabel>
+        <Controller
+          name="kind"
+          control={form.control}
+          render={({ field }) => (
+            <Choice
+              id={kindId}
+              value={field.value ?? ''}
+              placeholder="Escolha o tipo"
+              options={props.kinds.map((kind) => ({ value: kind, label: KIND_NAMES[kind] }))}
+              onChange={field.onChange}
+            />
+          )}
+        />
       </Field>
       <TextField
         name="label"
@@ -124,12 +138,13 @@ function CodeForm(props: {
     <Form form={form} onSubmit={submit}>
       <OpenAddress url={started.url} />
       <p className="text-label text-text-2">{`O endereço vale até ${dayAndHour(started.expiresAt)}.`}</p>
+      <p className="text-label text-text-2">{CODE_FIELDS[started.kind].help}</p>
       <TextField
         name="code"
-        label={CODE_LABELS[started.kind]}
+        label={CODE_FIELDS[started.kind].label}
         type="text"
         autoComplete="off"
-        invalid="Cole o código."
+        invalid={CODE_FIELDS[started.kind].invalid}
       />
       <FormAlert />
       <SubmitButton idle="Entrar" pending="Entrando…" />
@@ -165,11 +180,9 @@ export function SignInForm(props: {
   }
   return (
     <div className="flex flex-col gap-lg">
-      {failure && (
-        <p role="alert" tabIndex={-1} ref={(node) => node?.focus()} className="text-danger">
-          {failure}
-        </p>
-      )}
+      <FieldError tabIndex={-1} ref={(node) => node?.focus()}>
+        {failure}
+      </FieldError>
       <StartForm
         companyId={props.companyId}
         owner={props.owner}

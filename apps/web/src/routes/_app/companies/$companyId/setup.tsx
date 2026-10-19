@@ -4,7 +4,7 @@ import {
   CompanyAccounts,
   providersQuery,
 } from '../../../../builder/model-accounts/public.ts'
-import { CompanySetup, companyQuery, membersQuery } from '../../../../hub/identity/public.ts'
+import { CompanySetup, companyQuery, everyMemberQuery } from '../../../../hub/identity/public.ts'
 import { readOrNotFound } from '../../../../platform/hub.ts'
 
 function Setup() {
@@ -25,7 +25,7 @@ export const Route = createFileRoute('/_app/companies/$companyId/setup')({
       Promise.all([
         queryClient.ensureQueryData(accountsQuery(params.companyId)),
         queryClient.ensureQueryData(providersQuery),
-        queryClient.ensureQueryData(membersQuery(params.companyId, undefined)),
+        queryClient.ensureQueryData(everyMemberQuery(params.companyId)),
       ]),
     )
   },

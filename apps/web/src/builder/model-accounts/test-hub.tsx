@@ -2,12 +2,15 @@ import type { ProviderOrder, SignInKind } from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   getAccountKinds,
+  listMembers,
   listModelAccounts,
   listModelProviders,
   ModelAccount,
+  PAGE_SIZE,
   ProviderId,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
+import { fireEvent, screen } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
@@ -51,6 +54,10 @@ export type View = {
   kinds: SignInKind[]
   defaultModel: string | null
   mayManage: boolean
+  /** The viewer's role in the company; an owner when they manage, a member when not. */
+  role?: 'owner' | 'admin' | 'member'
+  /** More members of the company besides Ana and Diego, listed in pages as the Hub lists them. */
+  crowd?: number
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
@@ -73,16 +80,38 @@ export type Answers = Partial<
 
 const BASE = `*/api/companies/${COMPANY.id}`
 
+/** The company's members in the Hub's pages: a page token names the offset it starts at. */
+function membersPages(view: View): HttpHandler {
+  const everyone = [
+    memberView({ ...ANA, personId: ANA.id, role: 'owner' }),
+    memberView({ ...DIEGO, role: 'member' }),
+    ...Array.from({ length: view.crowd ?? 0 }, (_, index) =>
+      memberView({
+        personId: `person-extra-${index + 1}`,
+        name: `Pessoa ${index + 1}`,
+        email: `pessoa${index + 1}@example.test`,
+        role: 'member',
+      }),
+    ),
+  ]
+  return http.get(`${BASE}/members`, ({ request }) => {
+    const page = new URL(request.url).searchParams.get('page')
+    const from = page === null ? 0 : Number(page.slice(1))
+    const to = from + PAGE_SIZE
+    return HttpResponse.json(
+      listMembers.success.body.parse({
+        members: everyone.slice(from, to),
+        next: to < everyone.length ? { kind: 'MORE', page: `p${to}` } : { kind: 'END' },
+      }),
+    )
+  })
+}
+
 function reads(view: View): HttpHandler[] {
   return [
     sessionRead(() => ANA),
-    ...companyRead({
-      role: view.mayManage ? 'owner' : 'member',
-      members: [
-        memberView({ ...ANA, personId: ANA.id, role: 'owner' }),
-        memberView({ ...DIEGO, role: 'member' }),
-      ],
-    }),
+    membersPages(view),
+    ...companyRead({ role: view.role ?? (view.mayManage ? 'owner' : 'member') }),
     http.get(`${BASE}/model-accounts`, () =>
       HttpResponse.json(listModelAccounts.success.body.parse(view)),
     ),
@@ -251,4 +280,15 @@ export function modelHub(view: View, answers: Answers = {}) {
       ...signIns(view, sent, answers),
     ],
   }
+}
+
+/** Opens a select of the UI by its trigger and picks the option named `name`. */
+export async function choose(trigger: HTMLElement, name: string) {
+  fireEvent.click(trigger)
+  const option = await screen.findByRole('option', { name })
+  fireEvent.pointerDown(option)
+  fireEvent.mouseDown(option)
+  fireEvent.pointerUp(option)
+  fireEvent.mouseUp(option)
+  fireEvent.click(option)
 }

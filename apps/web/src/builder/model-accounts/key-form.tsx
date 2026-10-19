@@ -16,6 +16,13 @@ import { sendConnection } from './queries.ts'
 
 const UNCONFIRMED = 'Não confirmamos a ligação. Tente de novo.'
 
+/** The field of the form that each `details.reason` of MODEL_ACCOUNT_INVALID refuses. */
+const FIELD_OF: Partial<Record<string, 'provider' | 'label' | 'key'>> = {
+  PROVIDER: 'provider',
+  LABEL: 'label',
+  KEY: 'key',
+}
+
 /**
  * "Ligar conta" by an API key: the Hub seals it and answers with its last four characters, never the
  * key, and the field is cleared once it is linked. The attempt key stays until the Hub settles the
@@ -45,8 +52,9 @@ export function KeyForm(props: {
       props.onLinked(account)
     } catch (error) {
       if (!(error instanceof HubFailure)) setServerError(form, error)
-      else if (error.code === 'MODEL_ACCOUNT_INVALID') setServerError(form, error, 'key')
-      else if (keepsAttemptKey(error)) {
+      else if (error.code === 'MODEL_ACCOUNT_INVALID') {
+        setServerError(form, error, FIELD_OF[error.reason ?? ''])
+      } else if (keepsAttemptKey(error)) {
         form.setError('root.server', { type: 'server', message: UNCONFIRMED })
       } else setServerError(form, error)
     }

@@ -10,6 +10,7 @@ export { CompanyPeople, People } from './people.tsx'
 export {
   companiesQuery,
   companyQuery,
+  everyMemberQuery,
   invitationsQuery,
   membersQuery,
   receivedInvitationQuery,
