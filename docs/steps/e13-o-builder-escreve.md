@@ -59,10 +59,10 @@ retomar um turno cortado por atualização (16); fila de mensagens (`D5` B); lev
 | U7 | Permissões, instruções | `builder/conversation/` | segurança | mastra | U6 |
 | U8 | O stream | `builder/conversation/`, web | código | mastra | U7 |
 | U9 | Remoção | `builder/runs/`, `hub/` | dados | — | U6 |
-| U10 | Aba Arquivos, percurso | `builder/git/`, web | web | fastify-best-practices, shadcn | U2 |
+| U10 | Aba Arquivos, percurso | `builder/git/`, web | web | fastify-best-practices, shadcn | U8 |
 
 P0 antes (L20); U1, documentos, antes do código; U4 em PR próprio (D11). U2, U3, U5 mudam
-`platform/config.ts`: em série. Em paralelo: U10 com U4–U9; U9 com U7–U8.
+`platform/config.ts`: em série. Em paralelo: U9 com U7, U8, U10.
 
 **Orçamento de código alterado** (sem testes nem gerados): P0 15; U2 480; U3 200; U4
 120; U5 470; U6 680; U7 200; U8 330; U9 170; U10 780. Total **3.445**, teto 4.000 (L2); acima, U10
@@ -214,9 +214,9 @@ nova. Os 22 casos antigos entram pela porta pública.
 | --- | --- | --- |
 | `docs/decisions/0051-*.md`, `docs/{index,architecture,roadmap}.md` | cria, muda | `check-docs` |
 
-**Contratos.** 0051, Criterion com os critérios 3–5; a prova roda fora do repositório, com o
-template de U5. Arquitetura §3: "Git copy host" passa a R2, fora do Brasil [0032]; §7, §11.
-Roteiro: as mudanças da página. Regras: L21, T14, S40.
+**Contratos.** 0051, Criterion com os critérios 3–5, provados fora do repositório com o template
+de U5, antes do merge. Arquitetura §3: "Git copy host" passa a R2, contado fora do Brasil [0032];
+§7, §11. Roteiro: a página. Regras: L21, T14, S40.
 
 ## U2 O Git do app
 
