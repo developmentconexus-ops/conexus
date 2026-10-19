@@ -30,16 +30,24 @@ export function createConversations(deps: {
   log: FailureLog
 }) {
   const { database, identity, sealKeys } = deps
-  const queue = { database, identity, sealKeys, googleCalls: deps.google.googleCalls }
+  const queue = {
+    database,
+    identity,
+    sealKeys,
+    googleCalls: deps.google.googleCalls,
+    log: deps.log,
+  }
   const builder = createBuilder({ pool: deps.pool, queue, log: deps.log })
   const store = createConversationStore(deps)
   const sessions = new Sessions({ builder, log: deps.log })
 
   const release: ReleaseConversations = async (scope) => {
-    for (const id of await store.releasedIds(scope)) {
+    const ids = await store.releasedIds(scope)
+    for (const id of ids) {
       await sessions.forget(id)
       await builder.memory.deleteThread(id)
     }
+    deps.log.info({ companyId: scope.companyId, count: ids.length }, 'CONVERSATIONS_RELEASED')
   }
 
   return Object.freeze({
@@ -47,7 +55,10 @@ export function createConversations(deps: {
       registerConversationRoutes(app, { store, sessions, builder, queue }),
     release,
     /** Mastra's tables, made once at start by its own login (decision 0010). */
-    prepare: () => builder.mastra.getStorage()?.init(),
+    async prepare() {
+      await builder.mastra.getStorage()?.init()
+      deps.log.info({}, 'MASTRA_STORAGE_READY')
+    },
     /** Waits for the turns in progress, then stops Mastra and Google's calls (code C62). */
     async close() {
       await sessions.drain()

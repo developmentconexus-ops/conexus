@@ -178,6 +178,35 @@ async function recordTurn(deps: Deps, input: OfConversation & { key: string; bod
   })
 }
 
+/** Frees a message's key when its turn could not start, so the retry starts it (code C37). */
+async function forgetTurn(deps: Deps, input: OfConversation & { key: string }) {
+  await deps.database.command(scopeOf(input), (tx: Tx) =>
+    tx
+      .delete(conversationTurn)
+      .where(
+        and(
+          eq(conversationTurn.conversationId, input.conversationId),
+          eq(conversationTurn.idempotencyKey, input.key),
+        ),
+      ),
+  )
+}
+
+/** Drops the index row of a conversation whose thread Mastra does not hold (data D17). */
+async function remove(deps: Deps, input: OfConversation) {
+  await deps.database.command(scopeOf(input), (tx: Tx) =>
+    tx
+      .delete(conversation)
+      .where(
+        and(
+          eq(conversation.id, input.conversationId),
+          eq(conversation.companyId, input.companyId),
+          eq(conversation.personId, input.person.id),
+        ),
+      ),
+  )
+}
+
 /** What a release names: a company, and maybe one of its Projetos or one of its people. */
 export type ReleaseScope = { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }
 
@@ -206,6 +235,8 @@ export function createConversationStore(deps: Deps) {
     owned: (input: OfConversation) =>
       deps.database.read(scopeOf(input), (tx) => ownedConversation(deps, tx, input)),
     recordTurn: (input: Parameters<typeof recordTurn>[1]) => recordTurn(deps, input),
+    forgetTurn: (input: Parameters<typeof forgetTurn>[1]) => forgetTurn(deps, input),
+    remove: (input: OfConversation) => remove(deps, input),
     releasedIds: (scope: ReleaseScope) => releasedIds(deps, scope),
   })
 }

@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict'
+import { once } from 'node:events'
+import http from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { CONVERSATION_HEARTBEAT_MS, streamConversation } from '@conexus/hub-api'
+import type { Hub } from '../../hub/identity/test-hub.ts'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { conversing, hubBeside, sent, started, streamOf } from './test-conversation.ts'
 
 const PARTIAL = 'Começo da resposta'
@@ -39,6 +43,32 @@ async function readOnce(read: () => Promise<{ json(): unknown }>, count: number)
     if (messages.length >= count || attempt === 50) return messages
     await new Promise((done) => setTimeout(done, 100))
   }
+}
+
+/**
+ * One of Mastra's tables locked, as a database that stalls: every query on it waits until `release`,
+ * at the test's end at the latest. `waited` resolves once some query of the Builder waits on it.
+ */
+async function stalled(t: TestContext, hub: Hub, table: string) {
+  const client = await hub.test.mastraPool.connect()
+  await client.query('begin')
+  await client.query(`lock table mastra.${table} in access exclusive mode`)
+  let released: Promise<void> | undefined
+  function release() {
+    released ??= client.query('rollback').then(() => client.release())
+    return released
+  }
+  t.after(release)
+  async function waited() {
+    for (;;) {
+      const found = await hub.test.mastraPool.query(
+        "select count(*)::int as count from pg_stat_activity where wait_event_type = 'Lock'",
+      )
+      if (found.rows[0]?.count > 0) return
+      await new Promise((done) => setTimeout(done, 20))
+    }
+  }
+  return { release, waited }
 }
 
 async function settles(promise: Promise<unknown>): Promise<boolean> {
@@ -186,3 +216,50 @@ test('uma pessoa com duas conversas ao mesmo tempo: sessões separadas, eventos 
 function textsOf(events: ConversationEvent[]): string[] {
   return events.flatMap((event) => (event.type === 'text' ? [event.delta] : []))
 }
+
+test('o stream fecha enquanto a pergunta é guardada: a sessão fica, e o turno chega ao stream seguinte', async (t) => {
+  const { hub, ana, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'text', text: 'Resposta' },
+  )
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const address = await hub.app.listen({ port: 0, host: '127.0.0.1' })
+  const headers = { origin: TEST_ORIGIN, cookie: ana.cookie }
+  const first = http.get(`${address}${url}/events`, { headers })
+  t.after(() => first.destroy())
+  await once(first, 'response')
+  const threads = await stalled(t, hub, 'mastra_threads')
+  const sending = sent(hub, ana, url, 'Uma pergunta')
+  await threads.waited()
+  first.destroy()
+  await new Promise((done) => setTimeout(done, 200))
+  const opening = streamOf(hub, ana, url)
+  await new Promise((done) => setTimeout(done, 200))
+  await threads.release()
+  const second = await opening
+  t.after(() => second.close())
+  assert.equal((await sending).statusCode, 202)
+  const events = await second.turn()
+  assert.deepEqual(textsOf(events), ['Resposta'])
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+})
+
+test('o Mastra recusa a mensagem antes do turno: INTERNAL_UNEXPECTED, e um só fim de turno', async (t) => {
+  const { hub, ana, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'text', text: 'Resposta' },
+  )
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  await hub.test.mastraPool.query('alter table mastra.mastra_threads rename to mastra_threads_out')
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  assert.deepEqual(await stream.turn(), [
+    { type: 'failure', code: 'INTERNAL_UNEXPECTED' },
+    { type: 'turnEnd', reason: 'error' },
+  ])
+  await hub.test.mastraPool.query('alter table mastra.mastra_threads_out rename to mastra_threads')
+  assert.equal((await sent(hub, ana, url, 'Outra pergunta')).statusCode, 202)
+  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(stream.seen.raw.match(/turnEnd/g)?.length, 2)
+})

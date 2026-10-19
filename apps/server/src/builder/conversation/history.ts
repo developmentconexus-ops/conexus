@@ -20,18 +20,21 @@ export async function titlesOf(builder: Builder, owner: Owner, ids: string[]) {
 
 /**
  * A conversation as the person reads it: its title, model and messages, from Mastra's memory for
- * the person's own resource. A question kept on the thread that Mastra has not saved yet (its turn
- * runs, or the process stopped in it) is shown after them, so it is not lost.
+ * the person's own resource, or `undefined` when Mastra holds no thread for it. A question kept on
+ * the thread that Mastra has not saved yet (its turn runs, or the process stopped in it) is shown
+ * after them, so it is not lost.
  */
 export async function historyOf(builder: Builder, owner: Owner, conversationId: string) {
   const resourceId = memoryOwner(owner)
   const thread = await builder.memory.getThreadById({ threadId: conversationId, resourceId })
-  const recalled =
-    thread === null
-      ? { messages: [] }
-      : await builder.memory.recall({ threadId: conversationId, resourceId, perPage: false })
+  if (thread === null) return undefined
+  const recalled = await builder.memory.recall({
+    threadId: conversationId,
+    resourceId,
+    perPage: false,
+  })
   const messages: Message[] = recalled.messages.flatMap((message) => messageOf(message) ?? [])
-  const metadata = Metadata.parse(thread?.metadata ?? {})
+  const metadata = Metadata.parse(thread.metadata ?? {})
   const kept = Question.safeParse(metadata[QUESTION_KEY])
   const asked = kept.success ? kept.data : undefined
   const saved = messages.some(
@@ -46,5 +49,5 @@ export async function historyOf(builder: Builder, owner: Owner, conversationId: 
       createdAt: at,
     })
   }
-  return { title: thread?.title || null, model: metadata.currentModelId ?? '', messages }
+  return { title: thread.title || null, model: metadata.currentModelId ?? '', messages }
 }

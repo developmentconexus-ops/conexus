@@ -183,7 +183,7 @@ export async function approvalsOf(t: TestContext, hub: Hub, toolNames: string[])
   const google = openGoogleCalls({ cliProxy, log: silent, database, sealKeys })
   t.after(() => google.stop())
   const identity = identityOf({ database, config, log: silent }).ports
-  const queue = { database, identity, sealKeys, googleCalls: google.googleCalls }
+  const queue = { database, identity, sealKeys, googleCalls: google.googleCalls, log: silent }
   const builder = createBuilder({ pool: test.mastraPool, queue, log: silent })
   const session = await builder.controller.createSession({
     resourceId: 'company:approvals:person:approvals',

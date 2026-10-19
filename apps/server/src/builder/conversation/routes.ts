@@ -9,6 +9,7 @@ import {
   streamConversation,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
+import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
@@ -55,7 +56,7 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
     const made = await store.create({ person, ...params, attemptKey, bodyHash })
     await sessions.switchModel(owner, made.id, model)
     if (made.created)
-      log.info({ companyId: params.companyId, conversationId: made.id }, 'CONVERSATION_STARTED')
+      log.info({ companyId: params.companyId, conversationId: made.id }, 'CONVERSATION_CREATED')
     const createdAt = made.createdAt.toISOString()
     return answer({ conversation: { id: made.id, title: null, createdAt, model } })
   })
@@ -64,20 +65,27 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
     const { person, params } = input
     const row = await store.owned({ person, ...params })
     const read = await historyOf(builder, ownerOf(input), params.conversationId)
+    // An index row whose thread Mastra does not hold: the conversation is gone (the step's states).
+    if (read === undefined) {
+      await store.remove({ person, ...params })
+      throw new Failure('CONVERSATION_NOT_FOUND')
+    }
     const conversation = { id: row.id, createdAt: row.createdAt.toISOString(), ...read }
     return answer({ conversation })
   })
 
   serve(app, sendConversationMessage, async (input) => {
-    const { person, params, body, attemptKey, log } = input
+    const { person, params, body, attemptKey } = input
     const bodyHash = bodyHashOf(body)
-    const fresh = await store.recordTurn({ person, ...params, key: attemptKey, bodyHash })
-    if (fresh) {
-      await sessions.send(ownerOf(input), params.conversationId, body.content)
-      log.info(
-        { companyId: params.companyId, conversationId: params.conversationId },
-        'CONVERSATION_TURN_SENT',
-      )
+    const turn = { person, ...params, key: attemptKey }
+    if (await store.recordTurn({ ...turn, bodyHash })) {
+      // The send runs outside the key's transaction (data D22); refused, it frees the key.
+      await sessions
+        .send(ownerOf(input), params.conversationId, body.content)
+        .catch(async (error) => {
+          await store.forgetTurn(turn)
+          throw error
+        })
     }
     return answer(undefined)
   })
@@ -99,6 +107,10 @@ export function registerConversationRoutes(app: FastifyInstance, deps: Deps) {
     await store.owned({ person, ...params })
     const model = await conversationModel(deps.queue, ownerOf(input), body.model)
     await sessions.switchModel(ownerOf(input), params.conversationId, model)
+    input.log.info(
+      { companyId: params.companyId, conversationId: params.conversationId },
+      'CONVERSATION_MODEL_SET',
+    )
     return answer({ model })
   })
 }

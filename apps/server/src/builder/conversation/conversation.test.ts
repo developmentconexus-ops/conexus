@@ -103,7 +103,15 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   const read = await call(hub, ana, 'GET', url)
   const list = await call(hub, ana, 'GET', conversations)
   assert.equal(read.statusCode, 200)
-  assert.match(printed.join(''), /CONVERSATION_TURN_SENT/)
+  assert.match(printed.join(''), /CONVERSATION_CREATED/)
+  const said = lines.flatMap((line) => (line.message.startsWith('CONVERSATION_') ? [line] : []))
+  assert.deepEqual(
+    said.map((line) => [line.message, line.fields.reason]),
+    [
+      ['CONVERSATION_TURN_STARTED', undefined],
+      ['CONVERSATION_TURN_ENDED', 'error'],
+    ],
+  )
   const logged = [JSON.stringify(lines), printed.join(''), stream.seen.raw]
   for (const text of [...logged, answered.body, read.body, list.body]) {
     assert.doesNotMatch(text, PLANTED)

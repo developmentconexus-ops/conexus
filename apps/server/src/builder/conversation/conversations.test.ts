@@ -167,3 +167,37 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
   assert.deepEqual(rows, [{ count: 1 }])
   assert.deepEqual(anthropic.sent, [])
 })
+
+test('o Mastra recusa no meio de uma mensagem: 500, e a mesma chave depois faz o turno, uma vez só', async (t) => {
+  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => ({
+    kind: 'text',
+    text: asked.stream ? 'Resposta' : 'Título',
+  }))
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const key = randomUUID()
+  const mastra = hub.test.mastraPool
+  await mastra.query('alter table mastra.mastra_threads rename to mastra_threads_out')
+  const refused = await sent(hub, ana, url, 'Uma pergunta', key)
+  await mastra.query('alter table mastra.mastra_threads_out rename to mastra_threads')
+  assert.equal(refused.statusCode, 500, refused.body)
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta', key)).statusCode, 202)
+  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta', key)).statusCode, 202)
+  assert.equal(anthropic.sent.filter((each) => each.stream).length, 1, 'one turn in all')
+})
+
+test('a conversa cuja thread o Mastra não tem: 404 CONVERSATION_NOT_FOUND, e a linha sai do índice', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const id = await started(hub, ana, conversations)
+  await hub.test.mastraPool.query('delete from mastra.mastra_threads where id = $1', [id])
+  const read = await call(hub, ana, 'GET', `${conversations}/${id}`)
+  assert.equal(read.statusCode, 404)
+  assert.equal(codeOf(read), 'CONVERSATION_NOT_FOUND')
+  const rows = await hub.test.asOwner(
+    'select count(*)::int as count from builder.conversation where id = $1',
+    [id],
+  )
+  assert.deepEqual(rows, [{ count: 0 }])
+})

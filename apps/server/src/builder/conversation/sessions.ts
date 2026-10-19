@@ -15,14 +15,22 @@ type Listener = (event: ConversationEvent) => void
 
 /** A conversation open in this process: its controller session and the answer in progress. */
 type Live = {
+  conversationId: string
   owner: Owner
+  log: FailureLog
   session: Session
   listeners: Set<Listener>
   answer: Message | undefined
+  // The turn of the run in progress, until its end.
   turn: Turn | undefined
-  running: Promise<void> | undefined
   unsubscribe: () => void
 }
+
+/**
+ * A conversation's place in this process: its session, opening or open, and how many holders use
+ * it, each counted before its first wait, so the session closes only once none is left.
+ */
+type Entry = { live: Promise<Live>; holds: number }
 
 function emit(live: Live, event: ConversationEvent): void {
   for (const listener of live.listeners) listener(event)
@@ -64,19 +72,27 @@ function onEvent(live: Live, event: AgentControllerEvent): void {
 }
 
 /**
- * The end of a turn: a failed one says why first, by how the queue ended it, never the provider's
- * text (security S41); `suspended` cannot happen, since the Builder has no tool that waits.
+ * The end of a turn, said once: a failed one says why first, by how the queue ended it, never the
+ * provider's text (security S41); `suspended` cannot happen, since the Builder has no tool that waits.
  */
-function endTurn(live: Live, reason: 'complete' | 'aborted' | 'error' | 'suspended' | undefined) {
-  if (reason === 'error') {
+function endTurn(
+  live: Live,
+  reason: 'complete' | 'aborted' | 'error' | 'suspended' | undefined,
+  unexpected?: 'INTERNAL_UNEXPECTED',
+) {
+  const ended = reason === 'error' || reason === 'aborted' ? reason : 'complete'
+  if (ended === 'error') {
     const exhausted = live.turn?.outcome === 'exhausted'
-    emit(live, { type: 'failure', code: exhausted ? 'MODEL_NO_ACCOUNT' : 'MODEL_CALL_FAILED' })
+    const code = unexpected ?? (exhausted ? 'MODEL_NO_ACCOUNT' : 'MODEL_CALL_FAILED')
+    emit(live, { type: 'failure', code })
   }
+  live.turn?.end()
+  live.turn = undefined
   live.answer = undefined
-  emit(live, {
-    type: 'turnEnd',
-    reason: reason === 'error' || reason === 'aborted' ? reason : 'complete',
-  })
+  const { conversationId, owner } = live
+  const fields = { companyId: owner.companyId, conversationId, reason: ended }
+  live.log.info(fields, 'CONVERSATION_TURN_ENDED')
+  emit(live, { type: 'turnEnd', reason: ended })
 }
 
 /**
@@ -87,7 +103,9 @@ function endTurn(live: Live, reason: 'complete' | 'aborted' | 'error' | 'suspend
 export class Sessions {
   readonly #builder: Builder
   readonly #log: FailureLog
-  readonly #open = new Map<string, Promise<Live>>()
+  readonly #open = new Map<string, Entry>()
+  // Every message from its arrival to the end of its run, for the drain to wait on.
+  readonly #turns = new Set<Promise<void>>()
   // Ends every stream once the turns are drained, so the server's close does not wait on them.
   readonly #closing = new AbortController()
 
@@ -96,81 +114,115 @@ export class Sessions {
     this.#log = deps.log
   }
 
-  #liveOf(owner: Owner, conversationId: string): Promise<Live> {
+  /** The conversation's entry, opened if needed and held, before any wait (`#release`). */
+  #hold(owner: Owner, conversationId: string): Entry {
     const found = this.#open.get(conversationId)
-    if (found !== undefined) return found
+    if (found !== undefined) {
+      found.holds += 1
+      return found
+    }
     const resourceId = memoryOwner(owner)
-    const opening = this.#builder.controller
+    const live = this.#builder.controller
       .createSession({ resourceId, scope: conversationId, threadId: conversationId })
       .then((session) => {
-        const live: Live = {
-          owner,
-          session,
-          listeners: new Set(),
-          answer: undefined,
-          turn: undefined,
-          running: undefined,
-          unsubscribe: () => undefined,
+        const listeners = new Set<Listener>()
+        const opened: Live = {
+          ...{ conversationId, owner, log: this.#log, session, listeners },
+          ...{ answer: undefined, turn: undefined, unsubscribe: () => undefined },
         }
-        live.unsubscribe = session.subscribe((event) => onEvent(live, event))
-        return live
+        opened.unsubscribe = session.subscribe((event) => onEvent(opened, event))
+        return opened
       })
-    this.#open.set(conversationId, opening)
-    opening.catch(() => this.#open.delete(conversationId))
-    return opening
+    const entry: Entry = { live, holds: 1 }
+    this.#open.set(conversationId, entry)
+    live.catch(() => this.#close(conversationId, entry))
+    return entry
   }
 
-  async #close(conversationId: string, live: Live): Promise<void> {
-    if (this.#open.get(conversationId) === undefined) return
+  async #release(conversationId: string, entry: Entry): Promise<void> {
+    entry.holds -= 1
+    if (entry.holds === 0) await this.#close(conversationId, entry)
+  }
+
+  /** Closes this entry's session, if it is still the conversation's: a newer one stays. */
+  async #close(conversationId: string, entry: Entry): Promise<void> {
+    if (this.#open.get(conversationId) !== entry) return
     this.#open.delete(conversationId)
+    const live = await entry.live.catch(() => undefined)
+    if (live === undefined) return
     live.unsubscribe()
     const resourceId = memoryOwner(live.owner)
     await this.#builder.controller.deleteSession({ resourceId, scope: conversationId })
   }
 
-  async #closeIfIdle(conversationId: string, live: Live): Promise<void> {
-    if (live.listeners.size > 0 || live.running !== undefined) return
-    await this.#close(conversationId, live)
-  }
-
   /** Puts the conversation on a model, kept on its thread (`switch`), for its next turns. */
   async switchModel(owner: Owner, conversationId: string, model: string): Promise<void> {
-    const live = await this.#liveOf(owner, conversationId)
-    await live.session.model.switch(model)
-    await this.#closeIfIdle(conversationId, live)
+    const entry = this.#hold(owner, conversationId)
+    try {
+      await (await entry.live).session.model.switch(model)
+    } finally {
+      await this.#release(conversationId, entry)
+    }
   }
 
   /**
-   * Sends the person's message; the answer comes on the stream. The question is kept on the thread
-   * first (Mastra saves a turn only at its end), and cleared when the turn has saved it.
+   * Keeps the person's question on the thread (Mastra saves a turn only at its end), then sends it
+   * on a turn of its own, whose answer comes on the stream; resolves once the question is kept.
    */
   async send(owner: Owner, conversationId: string, content: string): Promise<void> {
-    const live = await this.#liveOf(owner, conversationId)
-    const { thread } = live.session
-    await thread.setSetting({ key: QUESTION_KEY, value: { content, at: new Date().toISOString() } })
-    if (live.running !== undefined) {
-      await live.session.sendMessage({ content })
-      return
+    const entry = this.#hold(owner, conversationId)
+    const kept = entry.live.then(async (live) => {
+      const value = { content, at: new Date().toISOString() }
+      await live.session.thread.setSetting({ key: QUESTION_KEY, value })
+      return live
+    })
+    const turn: Promise<void> = kept
+      .then(
+        (live) => this.#answer(live, content),
+        () => undefined,
+      )
+      .then(() => this.#release(conversationId, entry))
+      .catch((cause: unknown) =>
+        logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
+      )
+      .finally(() => this.#turns.delete(turn))
+    this.#turns.add(turn)
+    await kept
+  }
+
+  /**
+   * Mastra injects a message into the run that streams now, which keeps that run's turn; otherwise
+   * the message starts a run on its own turn. Either way the message carries a turn, so the queue
+   * always knows whose it is (criterion 12).
+   */
+  async #answer(live: Live, content: string): Promise<void> {
+    const turn = new Turn(live.owner)
+    if (!live.session.stream.isActive()) live.turn = turn
+    const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
+    this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
+    try {
+      await live.session.sendMessage({ content, requestContext: turnContext(turn) })
+    } catch (cause) {
+      logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+      // A run whose `agent_end` came has ended its turn already.
+      if (live.turn === turn) endTurn(live, 'error', 'INTERNAL_UNEXPECTED')
+    } finally {
+      // Mastra's `sendMessage` settles once the run it started is over; `end` lets go only once.
+      turn.end()
     }
-    const turn = new Turn(owner)
-    live.turn = turn
-    live.running = live.session
-      .sendMessage({ content, requestContext: turnContext(turn) })
-      .then(() => thread.deleteSetting({ key: QUESTION_KEY }))
-      .catch((cause: unknown) => {
-        logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-        endTurn(live, 'error')
-      })
-      .finally(() => {
-        live.running = undefined
-        live.turn = undefined
-        void this.#closeIfIdle(conversationId, live)
-      })
   }
 
   /** The conversation's events: the answer in progress first, then each new one, until `signal`. */
   async *events(owner: Owner, conversationId: string, signal: AbortSignal) {
-    const live = await this.#liveOf(owner, conversationId)
+    const entry = this.#hold(owner, conversationId)
+    try {
+      yield* this.#listen(await entry.live, signal)
+    } finally {
+      await this.#release(conversationId, entry)
+    }
+  }
+
+  async *#listen(live: Live, signal: AbortSignal) {
     const waiting: ConversationEvent[] = []
     let wake: (() => void) | undefined
     function listener(event: ConversationEvent) {
@@ -196,27 +248,27 @@ export class Sessions {
     } finally {
       ended.removeEventListener('abort', stop)
       live.listeners.delete(listener)
-      await this.#closeIfIdle(conversationId, live)
     }
   }
 
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */
   async stop(conversationId: string): Promise<void> {
-    const live = await this.#open.get(conversationId)?.catch(() => undefined)
-    live?.session.abort()
+    const live = await this.#open.get(conversationId)?.live.catch(() => undefined)
+    if (live === undefined) return
+    live.session.abort()
+    const fields = { companyId: live.owner.companyId, conversationId }
+    this.#log.info(fields, 'CONVERSATION_STOPPED')
   }
 
-  /** Waits for every turn in progress, then ends the streams (code C62); the caller holds the deadline. */
+  /** Waits for every message and turn in progress, then ends the streams (code C62); the caller holds the deadline. */
   async drain(): Promise<void> {
-    const opened = [...this.#open.values()].map((each) => each.catch(() => undefined))
-    const lives = await Promise.all(opened)
-    await Promise.all(lives.map((live) => live?.running))
+    await Promise.all(this.#turns)
     this.#closing.abort()
   }
 
   /** Closes a conversation's session before its thread is deleted, aborting its turn. */
   async forget(conversationId: string): Promise<void> {
-    const live = await this.#open.get(conversationId)?.catch(() => undefined)
-    if (live !== undefined) await this.#close(conversationId, live)
+    const entry = this.#open.get(conversationId)
+    if (entry !== undefined) await this.#close(conversationId, entry)
   }
 }
