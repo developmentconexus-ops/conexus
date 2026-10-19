@@ -30,10 +30,20 @@ export type AppRemoval = {
   }): Promise<'DONE' | 'LEFT'>
 }
 
+/**
+ * What deleting a Projeto asks of the Builder (code C4): its conversations' threads and memory go
+ * before its row, which takes their index with it (data D17).
+ */
+export type ProjectConversationRelease = (scope: {
+  companyId: CompanyId
+  projectId: ProjectId
+}) => Promise<void>
+
 type Deps = {
   database: Database
   identity: IdentityPorts
   appRemoval: AppRemoval
+  releaseConversations: ProjectConversationRelease
   neon: NeonProjects
   log: FailureLog
   appsDomain: AppsDomain
@@ -247,7 +257,7 @@ async function remove(deps: Deps, input: OfProject & { name: ProjectName }) {
     if (marked.length === 0) throw new Failure('NOT_FOUND')
   })
   if ((await deps.appRemoval.removeProjectApp({ scope, ...ids })) === 'LEFT') return
-  await deps.database.command(scope, (tx) => deleteMarkedProject(tx, ids))
+  await finishMarkedProject(deps, { scope, ...ids })
 }
 
 function ofProject(ids: { companyId: CompanyId; projectId: ProjectId }) {
@@ -263,12 +273,24 @@ export async function markedProjectsOf(tx: ReadTx, companyId: CompanyId): Promis
   return rows.map(({ id }) => ProjectId.parse(id))
 }
 
-/** The row of a Projeto marked for deletion, once its app is gone. */
-export async function deleteMarkedProject(
-  tx: CommandTx,
-  ids: { companyId: CompanyId; projectId: ProjectId },
+/**
+ * The rest of a Projeto marked for deletion, once its app is gone: its conversations, with no
+ * transaction open (data D22), then its row. Conversations the Builder could not release keep the
+ * mark for the repair at start: `PROJECT_DELETION_PENDING`.
+ */
+export async function finishMarkedProject(
+  deps: Pick<Deps, 'database' | 'releaseConversations'>,
+  input: { scope: Scope; companyId: CompanyId; projectId: ProjectId },
 ): Promise<void> {
-  await tx.delete(project).where(and(ofProject(ids), isNotNull(project.deletingSince)))
+  const ids = { companyId: input.companyId, projectId: input.projectId }
+  try {
+    await deps.releaseConversations(ids)
+  } catch (cause) {
+    throw new Failure('PROJECT_DELETION_PENDING', { cause })
+  }
+  await deps.database.command(input.scope, (tx) =>
+    tx.delete(project).where(and(ofProject(ids), isNotNull(project.deletingSince))),
+  )
 }
 
 function get(deps: Deps, input: OfProject) {

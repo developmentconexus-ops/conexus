@@ -27,6 +27,7 @@ import { cancelInvitationCommand, renewInvitationCommand } from './invitation-ma
 import { readInvitations, readReceived } from './invitation-reads.ts'
 import { acceptCommand, declineCommand, passwordCommand } from './invitation-response.ts'
 import { companyScope, createInvitationCommand } from './invitations.ts'
+import type { PersonConversationRelease } from './memberships.ts'
 import { changeMemberRoleCommand, readMembers, removeMemberCommand } from './memberships.ts'
 import { chooseNickname } from './nickname.ts'
 import { checkPassword } from './password-check.ts'
@@ -38,6 +39,7 @@ type Deps = {
   database: Database
   config: Config
   sendMail: SendMail
+  releaseConversations: PersonConversationRelease
 }
 
 function registerReads(app: FastifyInstance, deps: Deps): void {

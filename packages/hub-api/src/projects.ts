@@ -111,6 +111,7 @@ export const deleteProject = defineOperation({
     'NOT_FOUND',
     'PROJECT_NAME_MISMATCH',
     'APP_VERSION_SENDING',
+    'PROJECT_DELETION_PENDING',
     'SESSION_REQUIRED',
     'DATABASE_UNAVAILABLE',
   ],

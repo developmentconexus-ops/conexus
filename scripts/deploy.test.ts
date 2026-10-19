@@ -152,6 +152,7 @@ const SECRETS = [
   'hub_app_login_key',
   'hub_cloudflare_apps_token',
   'hub_seal_keys',
+  'hub_mastra_database_url',
 ]
 
 test('--restart sem Hub rodando termina vermelho', () => {

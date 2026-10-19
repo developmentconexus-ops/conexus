@@ -158,6 +158,8 @@ export const listMembers = defineOperation({
 
 const OfMember = InCompany.extend({ personId: PersonId })
 
+const MEMBER_READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] as const
+
 export const removeMember = defineOperation({
   id: 'removeMember',
   summary: 'Removes a person from a company, or the person from theirs when it is their own.',
@@ -167,7 +169,7 @@ export const removeMember = defineOperation({
   bodyLimit: 1024,
   input: { params: OfMember },
   success: { status: 204 },
-  failures: ['NOT_FOUND', 'LAST_OWNER', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+  failures: [...MEMBER_READ_FAILURES, 'LAST_OWNER', 'PERSON_REMOVAL_PENDING'],
 })
 
 export const changeMemberRole = defineOperation({

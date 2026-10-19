@@ -20,7 +20,7 @@ import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
 import { createOperations } from './hub/operations/public.ts'
 import type { Projects } from './hub/projects/public.ts'
-import { createProjects } from './hub/projects/public.ts'
+import { createProjects, liveProjectOf } from './hub/projects/public.ts'
 import type { Status } from './hub/status/public.ts'
 import { createStatus } from './hub/status/public.ts'
 import type { CloudflareApps } from './platform/cloudflare.ts'
@@ -70,7 +70,7 @@ export async function createHub(
   })
   registerHealth(app)
   serve(app, getStatus, async () => answer(await deps.status.read()))
-  deps.identity.routes(app)
+  deps.identity.routes(app, { releaseConversations: deps.conversations.release })
   deps.operations.routes(app)
   deps.projects.routes(app)
   deps.apps.routes(app)
@@ -127,12 +127,20 @@ export function subjectsOf(deps: {
   const identity = deps.identity.ports
   const appsDomain = config.appsDomain
   const appRemoval = createAppRemoval(deps)
-  const projects = createProjects({ database, identity, neon, log, appsDomain, appRemoval })
+  const sealKeys = config.sealKeys
+  const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
+  const conversations = createConversations({
+    ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log },
+    pool: deps.mastraPool,
+  })
+  const releaseConversations = conversations.release
+  const projects = createProjects({
+    ...{ database, identity, neon, log, appsDomain, appRemoval },
+    releaseConversations,
+  })
   const operations = createOperations({
-    database,
-    identity,
-    projects: projects.ports,
-    appRemoval,
+    ...{ database, identity, projects: projects.ports },
+    ...{ appRemoval, releaseConversations },
   })
   const apps = createApps({ ...deps, identity, projects: projects.ports, appsDomain })
   const flows = signInFlows({ cliProxy: config.cliProxy, log })
@@ -141,12 +149,6 @@ export function subjectsOf(deps: {
     identity,
     sealKeys: config.sealKeys,
     flows,
-  })
-  const sealKeys = config.sealKeys
-  const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
-  const conversations = createConversations({
-    ...{ database, identity, projects: projects.ports, sealKeys, google, log },
-    pool: deps.mastraPool,
   })
   return { projects, operations, apps, modelAccounts, conversations }
 }

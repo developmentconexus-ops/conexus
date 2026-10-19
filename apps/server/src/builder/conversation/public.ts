@@ -23,7 +23,7 @@ export type Conversations = ReturnType<typeof createConversations>
 export function createConversations(deps: {
   database: Database
   identity: IdentityPorts
-  projects: ProjectPorts
+  projects: Pick<ProjectPorts, 'liveProjectOf'>
   sealKeys: SealKeys
   google: ReturnType<typeof openGoogleCalls>
   pool: MastraPool
