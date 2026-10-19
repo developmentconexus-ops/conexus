@@ -54,20 +54,23 @@ function rows(hub: Hub, companyId: string) {
 
 const GONE = [{ companies: 0, members: 0, clients: 0, projects: 0, databases: 0 }]
 
-test('com banco: o Neon apaga o id e todo nome exato; saem tudo da 5, os Projetos e o banco; a outra empresa fica', async (t) => {
+test('com banco: o Neon apaga o id e todo final -<id>, cx-<id> incluído; saem tudo da 5, os Projetos e o banco; a outra empresa fica', async (t) => {
   const { hub, ana, davi } = await world(t)
   const a = await clientWithDatabase(hub, ana, davi, 'Empresa A')
   const bruno = await personOn(hub, BRUNO)
   const b = await clientWithDatabase(hub, ana, bruno, 'Empresa B')
+  const [named] = hub.neon.projects().map((project) => project.name)
+  assert.match(String(named), new RegExp(`^[a-z0-9-]+-${a.companyId}$`))
   hub.neon.plant(`cx-${a.companyId}`)
-  assert.equal(hub.neon.projects().length, 3)
+  hub.neon.plant(`outra-${a.companyId}y`)
+  assert.equal(hub.neon.projects().length, 4)
   const deleted = await call(hub, ana, 'DELETE', a.url, a.body)
   assert.deepEqual([deleted.statusCode, deleted.body], [204, ''])
   assert.deepEqual(await rows(hub, a.companyId), GONE)
-  assert.deepEqual(
-    hub.neon.projects().map((project) => project.name),
-    [`cx-${b.companyId}`],
-  )
+  const left = hub.neon.projects().map((project) => project.name)
+  assert.deepEqual(left.length, 2)
+  assert.ok(left.includes(`outra-${a.companyId}y`))
+  assert.ok(left.some((name) => name.endsWith(`-${b.companyId}`)))
   assert.deepEqual((await rows(hub, b.companyId))[0]?.databases, 1)
 })
 
@@ -144,7 +147,7 @@ test('exclusão em andamento: a recusa do Neon antes da fase 3 e a falha da fase
   assert.deepEqual(await rows(hub, a.companyId), GONE)
 })
 
-test('reserva viva: o apagar não chama o Neon; vencida, apaga pelo nome', async (t) => {
+test('reserva viva: o apagar não chama o Neon; vencida, apaga pelo final -<id>', async (t) => {
   const { hub, ana, davi } = await world(t)
   const companyId = await plantCompany(hub.test, davi.id, 'Empresa A')
   await hub.test.asOwner(

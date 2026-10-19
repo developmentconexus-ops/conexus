@@ -9,7 +9,9 @@ import {
   createTestDatabase,
   silent,
   TEST_ORIGIN,
+  TEST_PAGE,
   testConfig,
+  testWebRoot,
   unreachableDatabase,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
@@ -36,7 +38,8 @@ async function hubOn(t: TestContext, database: TestDatabase['database'], config:
     ...testAppPorts(config),
     log: silent,
   })
-  const app = await createHub(config, { status, identity, operations, projects, apps })
+  const webRoot = testWebRoot(t)
+  const app = await createHub(config, { status, identity, operations, projects, apps, webRoot })
   t.after(() => app.close())
   return app
 }
@@ -90,4 +93,19 @@ test('banco fora: entrar, ler a sessão e sair respondem 503 DATABASE_UNAVAILABL
     assert.equal(response.statusCode, 503, `pedido ${index}`)
     assert.deepEqual(problem(response), UNAVAILABLE, `pedido ${index}`)
   }
+})
+
+test('banco fora: a passagem ao app responde a página das telas com 503, nunca JSON', async (t) => {
+  const config = testConfig((await createTestDatabase(t)).runtimeUrl)
+  const cookie = await liveCookie(t, config)
+  const app = await hubOn(t, await unreachableDatabase(t), config)
+  const binding = 'b'.repeat(43)
+  const open = await app.inject({
+    method: 'GET',
+    url: `/apps/open?host=pedidos--empresa-a&binding=${binding}`,
+    headers: { cookie, 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate' },
+  })
+  assert.equal(open.statusCode, 503)
+  assert.match(String(open.headers['content-type']), /^text\/html/)
+  assert.equal(open.body, TEST_PAGE)
 })

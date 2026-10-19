@@ -57,6 +57,7 @@ test('tipo: recusa o que o tipo não permite', async () => {
     { method: 'GET', url: '/api', config: { access: 'page' } },
     { method: 'GET', url: '/api/entry', config: { access: 'entry' } },
     { method: 'PUT', url: '/outside', config: { access: 'session' } },
+    { method: 'GET', url: '/apps/open', config: { access: 'page' } },
   ]
   for (const route of refused) {
     await assert.rejects(start(route), new RegExp(`route=${route.method} ${route.url} `))
@@ -83,6 +84,59 @@ test('borda: a rota edge responde sem sessão, cookie nem Origin', async () => {
   assert.equal(answer.statusCode, 200)
   assert.equal(handled, 1)
 })
+
+test('tipo: a rota handoff só GET em /apps/open, só na escuta pública; senão o servidor não sobe (S48)', async () => {
+  const refused: Route[] = [
+    { method: 'POST', url: '/apps/open', config: { access: 'handoff' } },
+    { method: 'GET', url: '/apps/other', config: { access: 'handoff' } },
+    { method: 'GET', url: '/api/apps/open', config: { access: 'handoff' } },
+  ]
+  for (const route of refused) {
+    await assert.rejects(start(route), new RegExp(`route=${route.method} ${route.url} `))
+  }
+  const onEdge = { method: 'GET', url: '/apps/open', config: { access: 'handoff' } } as const
+  await assert.rejects(
+    start(onEdge, undefined, { kind: 'EDGE' }),
+    /handoff access does not live on the EDGE listener/,
+  )
+})
+
+const NAVIGATIONS: [string, Record<string, string>, number | string][] = [
+  [
+    'a navegação vinda de outro site',
+    { 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' },
+    200,
+  ],
+  ['um navegador sem Fetch Metadata', {}, 200],
+  [
+    'um fetch de outro site',
+    { 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty' },
+    'REQUEST_ORIGIN_REFUSED',
+  ],
+  [
+    'uma moldura de outro site',
+    { 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'iframe' },
+    'REQUEST_ORIGIN_REFUSED',
+  ],
+  ['um no-cors só com o modo', { 'sec-fetch-mode': 'no-cors' }, 'REQUEST_ORIGIN_REFUSED'],
+]
+for (const [name, headers, expected] of NAVIGATIONS) {
+  test(`passagem: só uma navegação de documento; ${name}: ${expected}`, async () => {
+    let handled = false
+    const route = { method: 'GET', url: '/apps/open', config: { access: 'handoff' } } as const
+    const app = await start(route, () => {
+      handled = true
+    })
+    const response = await app.inject({ method: 'GET', url: '/apps/open', headers })
+    if (typeof expected === 'number') {
+      assert.equal(response.statusCode, expected)
+      assert.equal(handled, true)
+    } else {
+      assert.equal(response.json().code, expected)
+      assert.equal(handled, false)
+    }
+  })
+}
 
 test('aceita uma rota pública em /api/', async () => {
   const app = await start({ method: 'GET', url: '/api/ok', config: { access: 'public' } })

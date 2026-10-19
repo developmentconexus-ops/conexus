@@ -36,6 +36,18 @@ test('o documento tem um operationId por operação declarada, sem repetir', () 
   assert.equal(new Set(emitted).size, emitted.length)
 })
 
+test('a passagem ao app é uma navegação, não uma operação: o documento não a traz', () => {
+  const document = Document.parse(emitOpenApi())
+  const ids = Object.values(document.paths).flatMap((item) =>
+    Object.values(item).map((operation) => operation.operationId),
+  )
+  assert.equal(ids.includes('createAppHandoff'), false)
+  assert.deepEqual(
+    Object.keys(document.paths).filter((path) => /handoff|\/apps\/open/.test(path)),
+    [],
+  )
+})
+
 test('uma operação traz parâmetros, corpo e falhas pelo status HTTP', () => {
   const document = Document.parse(emitOpenApi())
   const operation = document.paths['/api/companies/{companyId}/invitations']?.post

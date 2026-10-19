@@ -40,7 +40,7 @@ test('criar: o membro cria, só o primeiro Projeto chama o Neon e o banco da emp
   assert.equal(second.statusCode, 201)
   assert.deepEqual(hub.neon.calls, ['find', 'create'])
   const [neonProject] = hub.neon.projects()
-  assert.equal(neonProject?.name, `cx-${companyId}`)
+  assert.equal(neonProject?.name, `empresa-${companyId.slice(0, 8)}-${companyId}`)
   assert.deepEqual(
     await hub.test.asOwner(
       `select state, neon_project_id, claimed_until from projects.company_database`,

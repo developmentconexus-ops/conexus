@@ -65,10 +65,10 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0032](decisions/0032-data-leaving-brazil-told.md) data leaving Brazil.
 - [0033](decisions/0033-own-visual-pieces.md) own visual pieces.
 - [0034](decisions/0034-vitest-for-screen-files.md) Vitest for screens.
-- [0035](decisions/0035-publish-through-a-runner-on-the-server.md) publish through a runner.
-- [0036](decisions/0036-runner-token-in-one-call-environment.md) runner token per call.
+- [0035](decisions/0035-publish-through-a-runner-on-the-server.md) publish by runner.
+- [0036](decisions/0036-runner-token-in-one-call-environment.md) runner token.
 - [0037](decisions/0037-postgresql-18-and-drizzle-1-for-the-hub-database.md) PostgreSQL 18, Drizzle 1.0.
-- [0038](decisions/0038-database-logins-by-sql-checked-by-a-catalog-snapshot.md) SQL logins, catalog snapshot.
+- [0038](decisions/0038-database-logins-by-sql-checked-by-a-catalog-snapshot.md) SQL logins, catalog.
 - [0039](decisions/0039-company-scope-and-row-policy-in-the-hub.md) row policy.
 - [0040](decisions/0040-company-database-through-neon.md) Neon.
 - [0041](decisions/0041-app-session-check-through-workers-vpc.md) Workers VPC.
@@ -78,6 +78,7 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0045](decisions/0045-app-reads-by-query-writes-by-one-batch.md) one batch.
 - [0046](decisions/0046-version-worker-first-migrations-in-one-transaction.md) Worker first.
 - [0047](decisions/0047-one-call-limits-in-the-dispatcher.md) call limits.
+- [0048](decisions/0048-company-neon-project-named-by-nickname-and-id.md) Neon name.
 
 ## Skills
 

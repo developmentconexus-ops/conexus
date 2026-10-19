@@ -100,8 +100,8 @@ test('Neon fora: a recusa solta a reserva, e o próximo pedido vai logo', async 
   assert.equal(hub.neon.projects().length, 1)
 })
 
-test('Neon fora: o prazo mantém a reserva até vencer, e o projeto que o Neon fez é adotado', async (t) => {
-  const { hub, bruno, projects } = await twoMembers(t)
+test('Neon fora: o prazo mantém a reserva até vencer, e o projeto <apelido>-<id> que o Neon fez é adotado', async (t) => {
+  const { hub, bruno, projects, companyId } = await twoMembers(t)
   hub.neon.script('create', 'NO_ANSWER', true)
   const silent = await post(hub, bruno, projects, { name: 'Pedidos' })
   assert.equal(silent.statusCode, 503)
@@ -113,14 +113,26 @@ test('Neon fora: o prazo mantém a reserva até vencer, e o projeto que o Neon f
   )
   await hub.test.asOwner(`update projects.company_database set claimed_until = now()`)
   assert.equal((await post(hub, bruno, projects, { name: 'Pedidos' })).statusCode, 201)
-  assert.equal(hub.neon.projects().length, 1)
+  assert.deepEqual(
+    hub.neon.projects().map((made) => made.name),
+    [`empresa-${companyId.slice(0, 8)}-${companyId}`],
+  )
   assert.equal(hub.neon.calls.filter((call) => call === 'create').length, 1)
 })
 
-test('Neon fora: dois projetos com o nome exato dão 500 e nenhum Projeto', async (t) => {
+test('Neon fora: o projeto cx-<id> que uma resposta cortada deixou antes é adotado pelo final, sem criar outro', async (t) => {
+  const { hub, bruno, projects, companyId } = await twoMembers(t)
+  const old = hub.neon.plant(`cx-${companyId}`)
+  hub.neon.plant(`outra-${companyId}x`)
+  assert.equal((await post(hub, bruno, projects, { name: 'Pedidos' })).statusCode, 201)
+  assert.deepEqual(hub.neon.calls, ['find'])
+  assert.deepEqual(await database(hub), [{ state: 'ready', neon_project_id: old, held: null }])
+})
+
+test('Neon fora: dois projetos com o final -<id> dão 500 e nenhum Projeto', async (t) => {
   const { hub, bruno, projects, companyId } = await twoMembers(t)
   hub.neon.plant(`cx-${companyId}`)
-  hub.neon.plant(`cx-${companyId}`)
+  hub.neon.plant(`empresa-${companyId.slice(0, 8)}-${companyId}`)
   const refused = await post(hub, bruno, projects, { name: 'Pedidos' })
   assert.equal(refused.statusCode, 500)
   assert.deepEqual(await hub.test.asOwner(`select count(*)::int as n from projects.project`), [

@@ -2,10 +2,8 @@
 // owner and Carla a member, Pedidos with its company database on the test server, and the steps
 // of sending a folder and opening the app (testing T5, T6, T14).
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
-import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import type { BrowserContext, Page } from 'playwright-core'
 import { chromium } from 'playwright-core'
 import { createCompanyDatabase } from '../../apps/server/src/platform/test-company-postgres.ts'
@@ -23,6 +21,7 @@ import {
   chooseNickname,
   closeBrowser,
   liveHub,
+  openOnHub,
   PASSWORD,
   personWithPassword,
   plantCompany,
@@ -99,23 +98,12 @@ export async function sendFolder(page: Page, settings: string, folder: string) {
 }
 
 /** The Hub's handoff, asked as the browser that holds Ana's Hub session would ask it. */
-async function handoff(s: Scenario, context: BrowserContext, query: URLSearchParams) {
+async function handoff(s: Scenario, context: BrowserContext, open: URL) {
   const cookies = await context.cookies(TEST_ORIGIN)
-  // The web's ban on the global `fetch` (web W9) is about the screens; a test is a client of the Hub.
-  const response = await globalThis.fetch(`http://127.0.0.1:${s.hub.port}/api/apps/handoffs`, {
-    method: 'POST',
-    headers: {
-      origin: TEST_ORIGIN,
-      'cf-connecting-ip': OWNER_IP,
-      [ATTEMPT_KEY_HEADER]: randomUUID(),
-      'content-type': 'application/json',
-      cookie: cookies.map(({ name, value }) => `${name}=${value}`).join('; '),
-    },
-    body: JSON.stringify({ host: query.get('host'), binding: query.get('binding') }),
-  })
-  assert.equal(response.status, 201)
-  const { location } = Object(await response.json())
-  return new URL(location)
+  const cookie = cookies.map(({ name, value }) => `${name}=${value}`).join('; ')
+  const answered = await openOnHub(s.hub.port, `${open.pathname}${open.search}`, cookie)
+  assert.equal(answered.status, 303)
+  return new URL(answered.location)
 }
 
 /** Abrir app: the dispatcher sends to the Hub, the Hub's pass comes back, and the app answers. */
@@ -125,7 +113,7 @@ export async function openApp(s: Scenario, door: Door, color: string) {
   assert.equal(first.status, 303)
   const open = new URL(first.headers.get('location') ?? '')
   assert.equal(`${open.origin}${open.pathname}`, `${EDGE_HUB}/apps/open`)
-  const pass = await handoff(s, s.owner.context, open.searchParams)
+  const pass = await handoff(s, s.owner.context, open)
   assert.equal((await visitApp(door, app, `${pass.pathname}${pass.search}`)).status, 303)
   const page = await visitApp(door, app, '/')
   assert.equal(page.status, 200)

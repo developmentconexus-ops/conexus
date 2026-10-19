@@ -23,6 +23,9 @@ import {
   signOut,
 } from './test-hub.ts'
 
+/** What the pass at start writes when Neon does not answer (architecture §8, decision 0048). */
+const START_PASS_LINES = ['NEON_FAILED', 'COMPANY_DATABASE_RENAME_FAILED']
+
 test('entrar: 200 com a pessoa e um só cookie, __Host-, Secure, HttpOnly, SameSite=Lax, sem Domain', async (t) => {
   const hub = await hubWithAna(t)
   const response = await signIn(hub, { email: ANA_ACCOUNT.email, password: PASSWORD })
@@ -178,11 +181,14 @@ test('registros: entrar, recusa, limite e sair deixam cada um o seu código, sem
   const out = await fetch(url, { method: 'DELETE', headers: { origin: TEST_ORIGIN, cookie } })
   assert.deepEqual([entered.status, out.status], [200, 204])
   await stop()
-  // Served lines sit between the start and the stop; boot lines carry no request.
-  const served = lines.slice(
-    lines.findIndex((line) => line.msg === 'LISTENING') + 1,
-    lines.findIndex((line) => line.msg === 'SHUTTING_DOWN'),
-  )
+  // Served lines sit between the start and the stop; boot lines carry no request, nor do the lines
+  // of the pass at start, which runs beside the requests and here finds no Neon.
+  const served = lines
+    .slice(
+      lines.findIndex((line) => line.msg === 'LISTENING') + 1,
+      lines.findIndex((line) => line.msg === 'SHUTTING_DOWN'),
+    )
+    .filter((line) => !START_PASS_LINES.includes(String(line.msg)))
   assert.ok(
     served.some((line) => String(line.msg).startsWith('AUTH_LIBRARY_')),
     'a library line was written',

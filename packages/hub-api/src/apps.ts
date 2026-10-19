@@ -15,6 +15,8 @@ export const APP_SESSION_HEADER = 'X-Conexus-App-Session'
 export const HANDOFF_PATH = '/__conexus/passagem'
 /** How long a pass is good for, in seconds (security S22). */
 export const HANDOFF_SECONDS = 60
+/** Where the dispatcher sends a browser for a pass: the Hub's one `handoff` route (security S48). */
+export const APP_OPEN_PATH = '/apps/open'
 
 /** Who calls the app, as the app sees it in `props`: never an e-mail, a company or a role. */
 export const AppCaller = z.object({
@@ -27,18 +29,8 @@ export type AppCaller = z.infer<typeof AppCaller>
 
 const OnHost = z.object({ host: HostLabel })
 
-export const createAppHandoff = defineOperation({
-  id: 'createAppHandoff',
-  summary: 'Gives a person of the company a one-use pass to the app of a Projeto on its host.',
-  access: 'session',
-  method: 'POST',
-  path: '/api/apps/handoffs',
-  bodyLimit: 1024,
-  // The binding is the hash of the secret only the browser's cookie on the app's host holds.
-  input: { body: OnHost.extend({ binding: DoorSecret }) },
-  success: { status: 201, body: z.object({ location: z.url({ protocol: /^https$/ }) }) },
-  failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
-})
+/** The search of `APP_OPEN_PATH`: the app's host, and the hash of its binding cookie's secret. */
+export const AppOpenQuery = OnHost.extend({ binding: DoorSecret })
 
 export const createAppSession = defineOperation({
   id: 'createAppSession',

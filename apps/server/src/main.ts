@@ -194,8 +194,11 @@ async function runServer(): Promise<void> {
       await listenQuietly(app, config.port)
       app.log.info('LISTENING')
       await status.recordStart()
-      // The repair runs after the Hub answers: a Cloudflare or Neon out never keeps it down.
+      // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      void projects
+        .nameDatabases()
+        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
     } catch (error) {
       grace.uninstall()
       await Promise.all([app.close(), edge.close()])

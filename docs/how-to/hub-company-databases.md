@@ -29,14 +29,14 @@ request and the wait for Neon to finish.
 ## After the release
 
 Create a test company with a person who can create a Projeto, create the first Projeto, and look for
-a project named `cx-<company id>` in the companies' organization in Neon's console. Then delete the
-company in the Central: the project leaves the console.
+a project named `<nickname>-<company id>` in the companies' organization in Neon's console. Then
+delete the company in the Central: the project leaves the console.
 
 ## When something is off
 
-- **Two projects with the same name.** The Hub refuses to pick one and answers 500 to the person. In
-  the console, delete the extra one by hand. Deleting the company deletes every project with its
-  name, so nothing remains.
+- **Two projects whose names end in the same `-<company id>`.** The Hub refuses to pick one and
+  answers 500 to the person. In the console, delete the extra one by hand. Deleting the company
+  deletes every project whose name ends in its id, so nothing remains.
 - **The company shows "Exclusão em andamento".** Neon did not answer. Open the company in the Central
   and use **Tentar concluir exclusão**; nothing else finishes it.
 - **A refused key.** The Hub answers 500 and logs the failure without the key. Write a new key as above.
