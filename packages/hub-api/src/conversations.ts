@@ -10,7 +10,8 @@ export type ConversationId = z.infer<typeof ConversationId>
 /** The longest message a person sends the Builder, in characters. */
 export const MESSAGE_MAX_LENGTH = 20_000
 /** A model of the router's registry, such as `anthropic/claude-sonnet-4-5` (decision 0049). */
-const ModelName = z.string().min(1).max(200)
+export const ModelId = z.string().min(1).max(200).brand('ModelId')
+export type ModelId = z.infer<typeof ModelId>
 
 /** A model's provider, its name before the first slash as the router splits it, or null. */
 export function providerOfModel(model: string): string | null {
@@ -42,7 +43,7 @@ export const ConversationSummary = z.object({
 export type ConversationSummary = z.infer<typeof ConversationSummary>
 
 export const Conversation = ConversationSummary.extend({
-  model: ModelName,
+  model: ModelId,
   messages: z.array(Message),
 })
 export type Conversation = z.infer<typeof Conversation>
@@ -105,11 +106,11 @@ export const createConversation = defineOperation({
   method: 'POST',
   path: BASE,
   bodyLimit: 1024,
-  input: { params: InProject, body: z.object({ model: ModelName.optional() }) },
+  input: { params: InProject, body: z.object({ model: ModelId.optional() }) },
   attemptKey: true,
   success: {
     status: 201,
-    body: z.object({ conversation: ConversationSummary.extend({ model: ModelName }) }),
+    body: z.object({ conversation: ConversationSummary.extend({ model: ModelId }) }),
   },
   failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT', 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT'],
 })
@@ -173,7 +174,7 @@ export const setConversationModel = defineOperation({
   method: 'PUT',
   path: `${BASE}/{conversationId}/model`,
   bodyLimit: 1024,
-  input: { params: OfConversation, body: z.object({ model: ModelName }) },
-  success: { status: 200, body: z.object({ model: ModelName }) },
+  input: { params: OfConversation, body: z.object({ model: ModelId }) },
+  success: { status: 200, body: z.object({ model: ModelId }) },
   failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT'],
 })

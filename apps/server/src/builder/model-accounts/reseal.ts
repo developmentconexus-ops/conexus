@@ -1,5 +1,6 @@
-import { CompanyId } from '@conexus/hub-api'
+import { CompanyId, ModelAccountId, PersonId } from '@conexus/hub-api'
 import { eq, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import type { CommandTx, Database } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
@@ -14,7 +15,13 @@ import { modelAccount } from './tables.ts'
  * is, counted: it opened under no key before either. When none opens, the key file is wrong, and the
  * command fails rather than hide it.
  */
-type Row = { id: string; personId: string | null; kind: string; provider: string }
+const Row = z.object({
+  id: ModelAccountId,
+  personId: PersonId.nullable(),
+  kind: z.string(),
+  provider: z.string(),
+})
+type Row = z.infer<typeof Row>
 
 /** One account: opened, and sealed again only when its key is not the one that seals. */
 async function resealRow(
@@ -59,7 +66,7 @@ export async function reseal(deps: { database: Database; sealKeys: SealKeys }) {
         .from(modelAccount)
         .where(eq(modelAccount.companyId, companyId))
         .for('update')
-      for (const row of rows) counts[await resealRow(deps, tx, companyId, row)] += 1
+      for (const row of rows) counts[await resealRow(deps, tx, companyId, Row.parse(row))] += 1
     })
   }
   if (counts.refused > 0 && counts.moved + counts.kept === 0)

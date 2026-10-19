@@ -1,4 +1,5 @@
 import type { AccountKind, CompanyId, ModelAccountId, PersonId } from '@conexus/hub-api'
+import { ModelId } from '@conexus/hub-api'
 import type { LanguageModel } from '@mastra/core/llm'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
@@ -19,7 +20,7 @@ export type Picked = {
   id: ModelAccountId
   label: string
   kind: AccountKind
-  modelId: string
+  modelId: ModelId
   model: LanguageModel
   systemLine: string | undefined
 }
@@ -38,14 +39,14 @@ type Stage =
   | { name: 'ended'; outcome: Outcome }
 
 const ControllerContext = z.object({
-  session: z.object({ modelId: z.string().min(1) }),
+  session: z.object({ modelId: ModelId }),
 })
 
 /**
  * The conversation's model, as the controller holds it for this run (`session.model.switch`); a
  * run without one is the Builder's defect, never a model to look accounts up for.
  */
-export function chosenModel(context: RequestContext | undefined): string {
+export function chosenModel(context: RequestContext | undefined): ModelId {
   const parsed = ControllerContext.safeParse(context?.get('controller'))
   if (!parsed.success) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NO_SESSION_MODEL' } })
@@ -71,7 +72,7 @@ export class Turn {
   readonly held: Array<() => void> = []
   #stage: Stage = { name: 'unpicked' }
   /** The model the turn calls now, read from its run on first use; `switched` by the company's switch. */
-  #model: { id: string; switched: boolean } | undefined
+  #model: { id: ModelId; switched: boolean } | undefined
 
   constructor(owner: { companyId: CompanyId; personId: PersonId }) {
     this.companyId = owner.companyId
@@ -89,12 +90,12 @@ export class Turn {
   }
 
   /** The model the turn calls now: the conversation's, until the automatic switch moves it. */
-  modelId(context: RequestContext | undefined): string {
+  modelId(context: RequestContext | undefined): ModelId {
     this.#model ??= { id: chosenModel(context), switched: false }
     return this.#model.id
   }
 
-  switchTo(modelId: string): void {
+  switchTo(modelId: ModelId): void {
     this.#model = { id: modelId, switched: true }
   }
 

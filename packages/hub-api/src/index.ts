@@ -75,6 +75,7 @@ export {
   MESSAGE_MAX_LENGTH,
   Message,
   MessagePart,
+  ModelId,
   providerOfModel,
   readConversation,
   sendConversationMessage,

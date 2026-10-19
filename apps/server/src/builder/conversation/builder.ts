@@ -1,4 +1,4 @@
-import type { CompanyId, PersonId } from '@conexus/hub-api'
+import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
 import type { BuiltinToolId, PermissionRules, ToolCategory } from '@mastra/core/agent-controller'
@@ -58,12 +58,12 @@ function toolCategory(toolName: string): ToolCategory {
   return READ_TOOLS.has(toolName) ? 'read' : 'other'
 }
 
-function isRouterId(modelId: string): modelId is `${string}/${string}` {
+function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}` {
   return modelId.includes('/')
 }
 
 /** The conversation's model, as its controller session holds it (`session.model.switch`). */
-function sessionModel(requestContext: RequestContext): `${string}/${string}` {
+function sessionModel(requestContext: RequestContext): ModelId & `${string}/${string}` {
   const modelId = chosenModel(requestContext)
   if (!isRouterId(modelId)) {
     throw new Failure('INTERNAL_UNEXPECTED', {
@@ -74,7 +74,7 @@ function sessionModel(requestContext: RequestContext): `${string}/${string}` {
 }
 
 /** `web_fetch` always; `web_search` only where Mastra resolves the provider's own search. */
-function toolsOf(modelId: string): ToolsInput {
+function toolsOf(modelId: ModelId): ToolsInput {
   const tools: ToolsInput = { web_fetch: webFetchTool }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools

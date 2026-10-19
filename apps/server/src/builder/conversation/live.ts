@@ -147,6 +147,7 @@ export function keepQuestion(live: Live, question: Question): Promise<void> {
   const others = live.questions.filter((each) => each.key !== question.key)
   live.questions = running ? [...others, question] : [question]
   const value = live.questions
+  // biome-ignore lint/plugin: a write that failed went to its own message's sender; this one only waits for the queue to settle (code C37)
   const kept = live.kept
     // A write that failed went to its own message's sender, which frees its key (code C37).
     .catch(() => undefined)

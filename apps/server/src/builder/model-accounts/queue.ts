@@ -1,4 +1,5 @@
 import type { ModelAccountId } from '@conexus/hub-api'
+import { ModelId } from '@conexus/hub-api'
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm'
 import { PROVIDER_REGISTRY, parseModelString, resolveModelConfig } from '@mastra/core/llm'
 import { and, asc, eq } from 'drizzle-orm'
@@ -46,7 +47,7 @@ export async function callModel(config: MastraModelConfig): Promise<LanguageMode
 }
 
 /** The provider of a router model, as Mastra reads it; a model that names none is not one. */
-export function providerOf(modelId: string): string {
+export function providerOf(modelId: ModelId): string {
   const { provider } = parseModelString(modelId)
   if (provider === null) throw new Failure('MODEL_UNKNOWN')
   return provider
@@ -116,8 +117,8 @@ async function nextRow(deps: QueueDeps, turn: Turn, provider: string) {
 export async function conversationModel(
   deps: QueueDeps,
   asker: { companyId: Turn['companyId']; personId: Turn['personId'] },
-  asked: string | undefined,
-): Promise<string> {
+  asked: ModelId | undefined,
+): Promise<ModelId> {
   const scope: Scope = { kind: 'COMPANY', ...asker }
   return deps.database.read(scope, async (tx) => {
     const who = { ...asker, tried: new Set<ModelAccountId>() }
@@ -126,7 +127,7 @@ export async function conversationModel(
       .select({ model: companyModel.model })
       .from(companyModel)
       .where(eq(companyModel.companyId, asker.companyId))
-    const model = asked ?? chosen?.model
+    const model = asked ?? (chosen === undefined ? undefined : ModelId.parse(chosen.model))
     if (model === undefined || !isRegistryModel(model)) throw new Failure('MODEL_UNKNOWN')
     const rows = await queuedRows(tx, who, providerOf(model))
     if (rows.length === 0) throw new Failure('MODEL_NO_ACCOUNT')
@@ -138,7 +139,7 @@ async function pickedOf(
   deps: QueueDeps,
   turn: Turn,
   found: { row: AccountRow; credential: Credential },
-  modelId: string,
+  modelId: ModelId,
 ): Promise<Picked> {
   const { row, credential } = found
   const { modelId: name } = parseModelString(modelId)
@@ -169,7 +170,7 @@ async function pickedOf(
 export async function pickAccount(
   deps: QueueDeps,
   turn: Turn,
-  modelId: string,
+  modelId: ModelId,
 ): Promise<Picked | undefined> {
   for (;;) {
     const found = await nextRow(deps, turn, providerOf(modelId))

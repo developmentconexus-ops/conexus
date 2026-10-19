@@ -1,4 +1,6 @@
+import { ModelId } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { companyModelFallback } from './tables.ts'
 import type { Turn } from './turn.ts'
@@ -11,8 +13,8 @@ import type { Turn } from './turn.ts'
 export async function nextModels(
   deps: { database: Database },
   turn: Turn,
-  modelId: string,
-): Promise<string[]> {
+  modelId: ModelId,
+): Promise<ModelId[]> {
   const scope = { kind: 'COMPANY' as const, companyId: turn.companyId, personId: turn.personId }
   const [row] = await deps.database.read(scope, (tx) =>
     tx
@@ -21,5 +23,8 @@ export async function nextModels(
       .where(eq(companyModelFallback.companyId, turn.companyId)),
   )
   if (row === undefined || !row.enabled) return []
-  return row.chain.slice(row.chain.indexOf(modelId) + 1)
+  return z
+    .array(ModelId)
+    .parse(row.chain)
+    .slice(row.chain.indexOf(modelId) + 1)
 }

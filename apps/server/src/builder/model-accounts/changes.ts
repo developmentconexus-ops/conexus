@@ -1,4 +1,11 @@
-import type { ModelAccountId, ModelFallback, Owner, PersonId, ProviderId } from '@conexus/hub-api'
+import type {
+  ModelAccountId,
+  ModelFallback,
+  ModelId,
+  Owner,
+  PersonId,
+  ProviderId,
+} from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -84,7 +91,7 @@ export function assign(
 }
 
 /** Sets the company's default model, any of the registry (founder, C4). */
-export function setDefault(deps: Deps, input: Viewer & { model: string }) {
+export function setDefault(deps: Deps, input: Viewer & { model: ModelId }) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'company')
     if (!isRegistryModel(input.model)) throw new Failure('MODEL_UNKNOWN')

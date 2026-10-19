@@ -1,4 +1,4 @@
-import type { ConversationEvent, ConversationId } from '@conexus/hub-api'
+import type { ConversationEvent, ConversationId, ModelId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
@@ -71,6 +71,7 @@ export class Sessions {
     if (this.#open.get(conversationId) !== entry) return
     this.#open.delete(conversationId)
     // A session that never opened has nothing to close; its holders met the failure.
+    // biome-ignore lint/plugin: the failure to open reached every holder of the entry; a session that never opened has nothing to close
     const live = await entry.live.catch(() => undefined)
     if (live === undefined) return
     live.unsubscribe()
@@ -82,7 +83,7 @@ export class Sessions {
   }
 
   /** Puts the conversation on a model, kept on its thread (`switch`), for its next turns. */
-  async switchModel(input: OfConversation & { model: string }): Promise<void> {
+  async switchModel(input: OfConversation & { model: ModelId }): Promise<void> {
     const entry = this.#hold(input)
     try {
       await (await entry.live).session.model.switch(input.model)
@@ -202,6 +203,7 @@ export class Sessions {
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */
   async stop(conversationId: ConversationId): Promise<void> {
     // A session that failed to open has no answer to stop; its holders met the failure.
+    // biome-ignore lint/plugin: the failure to open reached every holder of the entry; a session that never opened has no answer to stop
     const live = await this.#open.get(conversationId)?.live.catch(() => undefined)
     if (live === undefined) return
     live.session.abort()

@@ -6,6 +6,7 @@ import {
   listModelAccounts,
   listModelProviders,
   ModelAccount,
+  ModelId,
   readConversation,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
@@ -22,7 +23,7 @@ export const FIRST = ConversationId.parse('11111111-1111-4111-8111-111111111111'
 export const SECOND = ConversationId.parse('22222222-2222-4222-8222-222222222222')
 export const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const BASE = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations`
-const MODEL = 'anthropic/claude-sonnet-4'
+const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 
 const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
@@ -184,7 +185,9 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       const replaced = answers.model?.()
       if (replaced) return replaced
       const model =
-        typeof body === 'object' && body !== null && 'model' in body ? String(body.model) : ''
+        typeof body === 'object' && body !== null && 'model' in body
+          ? ModelId.parse(body.model)
+          : MODEL
       view.conversations = view.conversations.map((one) =>
         one.id === params.id ? { ...one, model } : one,
       )

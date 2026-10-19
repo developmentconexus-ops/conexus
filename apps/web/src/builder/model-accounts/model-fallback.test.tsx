@@ -1,3 +1,4 @@
+import { ModelId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
@@ -64,7 +65,11 @@ test('Troca automática: começa desligada; monta a fila, liga e salva na revis�
 
 test('Troca automática: tira um modelo; a versão velha mostra a frase do 412 e o que veio fica', async () => {
   const shown = view({
-    fallback: { enabled: true, chain: ['openai/gpt-5', 'anthropic/claude-opus-4'], revision: 3 },
+    fallback: {
+      enabled: true,
+      chain: ['openai/gpt-5', 'anthropic/claude-opus-4'].map((id) => ModelId.parse(id)),
+      revision: 3,
+    },
   })
   const { sent } = open(shown, { fallback: () => refusal('MODEL_FALLBACK_STALE') })
   expect(await screen.findByText('Ligada')).toBeTruthy()

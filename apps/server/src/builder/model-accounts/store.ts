@@ -1,4 +1,5 @@
 import type { Owner, ProviderId, ProviderOrder } from '@conexus/hub-api'
+import { ModelFallback, ModelId } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -89,8 +90,8 @@ function list(deps: Deps, viewer: Viewer) {
       order: ordersOf(viewer, rows, context),
       usableProviders: usableProviders(viewer, rows, context),
       kinds: [...context.open].sort(),
-      defaultModel: chosen?.model ?? null,
-      fallback: switched ?? { enabled: false, chain: [], revision: 0 },
+      defaultModel: chosen === undefined ? null : ModelId.parse(chosen.model),
+      fallback: ModelFallback.parse(switched ?? { enabled: false, chain: [], revision: 0 }),
       mayManage: deps.identity.allows(admitted.role, 'manageModelAccounts'),
     }
   })

@@ -73,8 +73,10 @@ export async function end(process: Process) {
  * is put in its folder first, for a process that calls Google as an account (step 12 U10).
  */
 export async function launch(deps: Deps, login?: Credential): Promise<Process> {
-  const binary = await readFile(deps.cliProxy.binary).catch(() => undefined)
-  const sha256 = binary && createHash('sha256').update(binary).digest('hex')
+  const binary = await readFile(deps.cliProxy.binary).catch((cause) => {
+    throw new Failure('CLIPROXY_BINARY_REFUSED', { cause })
+  })
+  const sha256 = createHash('sha256').update(binary).digest('hex')
   if (sha256 !== deps.cliProxy.sha256) throw new Failure('CLIPROXY_BINARY_REFUSED')
   const dir = await mkdtemp(join(tmpdir(), 'conexus-cliproxy-'))
   if (login !== undefined) {
@@ -98,6 +100,7 @@ export async function launch(deps: Deps, login?: Credential): Promise<Process> {
   child.once('error', (error) => deps.log.error({ port, cause: error.name }, 'CLIPROXY_STOPPED'))
   const deadline = Date.now() + READY_MS
   while (Date.now() < deadline && child.exitCode === null) {
+    // biome-ignore lint/plugin: until the process listens its port refuses connections, which is the state this poll waits out; the deadline raises CLIPROXY_UNAVAILABLE
     const ready = await management(started, '/get-auth-status').catch(() => undefined)
     if (ready?.ok) return started
     await sleep(POLL_MS)
@@ -162,8 +165,14 @@ export function googleSignIn(deps: Deps): SignInFlow {
     async start() {
       const process = await launch(deps)
       deps.log.info({ port: process.port }, 'CLIPROXY_STARTED')
-      const reply = await management(process, '/antigravity-auth-url').catch(() => undefined)
-      const parsed = AuthUrl.safeParse(await reply?.json().catch(() => undefined))
+      let parsed: ReturnType<typeof AuthUrl.safeParse>
+      try {
+        const reply = await management(process, '/antigravity-auth-url')
+        parsed = AuthUrl.safeParse(await reply.json())
+      } catch (cause) {
+        await end(process)
+        throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NO_URL' }, cause })
+      }
       if (!parsed.success) {
         await end(process)
         throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NO_URL' } })

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { CompanyId, Revision } from './companies.ts'
+import { ModelId } from './conversations.ts'
 import { PersonId } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -89,7 +90,7 @@ export const MODEL_FALLBACK_MAX_LENGTH = 50
 /** The company's automatic switch: off with no models and revision 0 until someone sets it. */
 export const ModelFallback = z.object({
   enabled: z.boolean(),
-  chain: z.array(z.string().max(200)).max(MODEL_FALLBACK_MAX_LENGTH),
+  chain: z.array(ModelId).max(MODEL_FALLBACK_MAX_LENGTH),
   revision: z.number().int().nonnegative(),
 })
 export type ModelFallback = z.infer<typeof ModelFallback>
@@ -99,7 +100,7 @@ const Accounts = z.object({
   mine: z.array(ModelAccount),
   order: z.array(ProviderOrder),
   kinds: z.array(SignInKind),
-  defaultModel: z.string().nullable(),
+  defaultModel: ModelId.nullable(),
   fallback: ModelFallback,
   /**
    * The providers the viewer may converse with now, by id: those with an account the Builder's
@@ -208,8 +209,8 @@ export const setDefaultModel = defineOperation({
   method: 'PUT',
   path: '/api/companies/{companyId}/default-model',
   bodyLimit: 1024,
-  input: { params: InCompany, body: z.object({ model: z.string().max(200) }) },
-  success: { status: 200, body: z.object({ defaultModel: z.string() }) },
+  input: { params: InCompany, body: z.object({ model: ModelId }) },
+  success: { status: 200, body: z.object({ defaultModel: ModelId }) },
   failures: [...READ_FAILURES, 'MODEL_UNKNOWN'],
 })
 

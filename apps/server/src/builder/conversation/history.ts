@@ -1,4 +1,5 @@
 import type { ConversationId, Message } from '@conexus/hub-api'
+import { ModelId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
@@ -10,7 +11,7 @@ import { messageOf } from './parts.ts'
 // What the thread keeps beside its messages: Mastra's model, and Conexus's questions.
 const Metadata = z
   .object({
-    currentModelId: z.string().min(1).optional(),
+    currentModelId: ModelId.optional(),
     [QUESTION_KEY]: z.array(Question).default([]),
   })
   .loose()

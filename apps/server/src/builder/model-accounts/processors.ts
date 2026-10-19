@@ -1,3 +1,4 @@
+import type { ModelId } from '@conexus/hub-api'
 import type { MessageList } from '@mastra/core/agent'
 import { parseModelString } from '@mastra/core/llm'
 import type {
@@ -44,7 +45,7 @@ function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) 
 }
 
 /** The turn's end when its accounts ran out, with the notice that says so. */
-function exhaust(args: Notifier, turn: Turn, modelId: string) {
+function exhaust(args: Notifier, turn: Turn, modelId: ModelId) {
   turn.finish('exhausted')
   const provider = providerName(providerOf(modelId))
   notify(
@@ -82,7 +83,7 @@ function until(date: Date): string {
 }
 
 /** A model the queue answers with when no account is left: it fails here and calls no one. */
-function noAccountModel(modelId: string) {
+function noAccountModel(modelId: ModelId) {
   function fail(): Promise<never> {
     return Promise.reject(new Failure('MODEL_NO_ACCOUNT'))
   }

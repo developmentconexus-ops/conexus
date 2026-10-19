@@ -181,6 +181,7 @@ function dataOf(block: string): string | undefined {
 /** A `data:` payload as JSON, so a line that is not JSON fails the event's parse like a bad shape. */
 const JsonText = z.string().transform((text, context): unknown => {
   try {
+    // biome-ignore lint/plugin: this transform is the schema step that parses the text; its caller pipes the result into the event schema
     return JSON.parse(text)
   } catch {
     context.issues.push({ code: 'custom', message: 'The event is not JSON.', input: text })
@@ -239,6 +240,7 @@ export async function* hubEvents(
     }
   } finally {
     // A line that broke rejects its cancel with the failure already thrown above.
+    // biome-ignore lint/plugin: the cancel rejects with the failure already thrown from the loop, which reaches the caller
     await reader.cancel().catch(() => undefined)
   }
 }

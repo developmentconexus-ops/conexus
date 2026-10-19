@@ -4,6 +4,7 @@
 // `buildAnthropicOAuthFetch`, `claudeCodeMiddleware`). Changed: TypeScript; the token is the one the
 // queue opened for this call, not a file store; the identity line goes in through the processor's
 // system messages instead of a middleware; no prompt cache or thinking middleware.
+
 import { createAnthropic } from '@ai-sdk/anthropic'
 
 const OAUTH_REQUIRED_BETAS = [
@@ -17,7 +18,7 @@ const OAUTH_REQUIRED_BETAS = [
 export const SUBSCRIPTION_IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude."
 
 /** The subscription's model for one call: the access token as a bearer, never as an API key. */
-export function subscriptionModel(modelId: string, accessToken: string) {
+export function subscriptionModel(modelName: string, accessToken: string) {
   const provider = createAnthropic({
     apiKey: 'oauth-placeholder',
     fetch: async (url, init) => {
@@ -33,5 +34,5 @@ export function subscriptionModel(modelId: string, accessToken: string) {
       return fetch(url, { ...init, headers })
     },
   })
-  return provider(modelId)
+  return provider(modelName)
 }

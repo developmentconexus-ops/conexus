@@ -187,10 +187,7 @@
         "!**/*.test.ts",
         "!**/*.test.tsx",
         "!**/test-*.ts",
-        "!**/test-*.tsx",
-        "!apps/server/src/builder/conversation/**",
-        "!apps/server/src/builder/model-accounts/**",
-        "!apps/web/src/builder/**"
+        "!**/test-*.tsx"
       ],
       "plugins": ["./scripts/conexus-code.grit"]
     }

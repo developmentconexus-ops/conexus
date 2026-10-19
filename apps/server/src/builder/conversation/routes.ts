@@ -1,4 +1,4 @@
-import type { CompanyId, Person } from '@conexus/hub-api'
+import type { CompanyId, ModelId, Person } from '@conexus/hub-api'
 import {
   ConversationId,
   createConversation,
@@ -74,7 +74,7 @@ function registerReads(app: FastifyInstance, deps: Deps) {
  */
 async function created(
   deps: Deps,
-  input: InProject & { attemptKey: string; body: { model?: string | undefined } },
+  input: InProject & { attemptKey: string; body: { model?: ModelId | undefined } },
 ) {
   const owner = { companyId: input.companyId, personId: input.person.id }
   const attempt = { ...input, bodyHash: bodyHashOf(input.body) }

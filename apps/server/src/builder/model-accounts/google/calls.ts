@@ -65,6 +65,7 @@ export function googleCalls(deps: Deps) {
   async function close(id: string, found: Promise<Running>) {
     if (running.get(id) === found) running.delete(id)
     // A process that never started has nothing to stop: its start's failure reached its caller.
+    // biome-ignore lint/plugin: the start's failure reached the caller that asked for it, and a process that never started has nothing to stop
     const each = await found.catch(() => undefined)
     if (each === undefined) return
     clearTimeout(each.timer)

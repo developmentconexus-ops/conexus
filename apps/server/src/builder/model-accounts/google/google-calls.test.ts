@@ -60,7 +60,7 @@ async function setup(
   const { database, asOwner } = test
   const { sealKeys } = testConfig(test.runtimeUrl)
   // The context the account's row is sealed under (S32): its id, owner, kind and provider.
-  function contextOf(account: { id: string; personId: string | null }) {
+  function contextOf(account: { id: ModelAccountId; personId: PersonId | null }) {
     return {
       purpose: 'model-account',
       rowId: account.id,

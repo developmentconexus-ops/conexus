@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, ModelAccount, Owner, Person, SignInKind } from '@conexus/hub-api'
+import type { CompanyId, ModelAccount, Owner, Person, SignInId, SignInKind } from '@conexus/hub-api'
 import {
   ACCOUNT_LABEL_MAX_LENGTH,
   AccountKind,
@@ -87,7 +87,7 @@ export function admitFor(deps: Deps, tx: ReadTx, viewer: Viewer, owner: Owner) {
   })
 }
 
-export function ownerOf(row: { personId: string | null }): Owner {
+export function ownerOf(row: { personId: PersonId | null }): Owner {
   return row.personId === null ? 'company' : 'me'
 }
 
@@ -187,7 +187,7 @@ export async function lockedRow(
 /** Makes a second write on one queue wait for the first (code C65): its positions are counted here. */
 export async function lockQueue(
   tx: CommandTx,
-  queue: { companyId: CompanyId; personId: string | null; provider: string },
+  queue: { companyId: CompanyId; personId: PersonId | null; provider: string },
 ) {
   await transactionLock(
     tx,
@@ -197,7 +197,7 @@ export async function lockQueue(
 
 export function ofQueue(queue: {
   companyId: CompanyId
-  personId: string | null
+  personId: PersonId | null
   provider: string
 }) {
   return and(
@@ -228,7 +228,7 @@ export async function insertAccount(
   tx: CommandTx,
   viewer: Viewer,
   account: NewAccount,
-): Promise<string> {
+): Promise<ModelAccountId> {
   const personId = account.owner === 'company' ? null : viewer.person.id
   const queue = { companyId: viewer.companyId, personId, provider: account.provider }
   await lockQueue(tx, queue)
@@ -236,7 +236,7 @@ export async function insertAccount(
     .select({ position: max(modelAccount.position) })
     .from(modelAccount)
     .where(ofQueue(queue))
-  const id = randomUUID()
+  const id = ModelAccountId.parse(randomUUID())
   const sealed = seal(
     deps.sealKeys,
     sealContext({ ...queue, id, kind: account.kind }),
@@ -261,9 +261,9 @@ export async function insertAccount(
 }
 
 export function sealContext(row: {
-  id: string
-  companyId: string
-  personId: string | null
+  id: ModelAccountId | SignInId
+  companyId: CompanyId
+  personId: PersonId | null
   kind: string
   provider: string
 }) {

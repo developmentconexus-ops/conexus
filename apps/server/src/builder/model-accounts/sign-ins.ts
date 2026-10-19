@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { Owner, ProviderId, SignInKind } from '@conexus/hub-api'
+import type { CompanyId, Owner, PersonId, ProviderId, SignInKind } from '@conexus/hub-api'
 import { SignInId } from '@conexus/hub-api'
 import { and, eq, lte, sql } from 'drizzle-orm'
 import { Failure } from '../../platform/failure.ts'
@@ -24,7 +24,7 @@ export type SignInFlow = {
 }
 export type SignInFlows = Readonly<Record<SignInKind, SignInFlow>>
 
-type SignIn = { id: string; companyId: string; personId: string; kind: SignInKind }
+type SignIn = { id: SignInId; companyId: CompanyId; personId: PersonId; kind: SignInKind }
 
 function sealContext(signIn: SignIn, flow: SignInFlow) {
   return {
