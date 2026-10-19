@@ -48,8 +48,13 @@ export type SealContext = {
 
 export type Sealed = { keyId: string; blob: Uint8Array }
 
-/** A credential opened inside the program: printed or serialized, it shows only its name (S41). */
+/** A credential inside the program: printed or serialized, it shows only its name (S41). */
 export type Credential = Secret<'Credential'>
+export const Credential = {
+  parse(value: string): Credential {
+    return new Secret('Credential', value)
+  },
+}
 
 function associated(context: SealContext): Buffer {
   const { purpose, rowId, companyId, personId, kind, provider } = context
@@ -76,7 +81,7 @@ export function open(keys: SealKeys, context: SealContext, sealed: Sealed): Cred
     decipher.setAuthTag(blob.subarray(IV_BYTES, IV_BYTES + TAG_BYTES))
     const body = blob.subarray(IV_BYTES + TAG_BYTES)
     const plain = Buffer.concat([decipher.update(body), decipher.final()])
-    return new Secret('Credential', plain.toString('utf8'))
+    return Credential.parse(plain.toString('utf8'))
   } catch (cause) {
     throw new Failure('SEAL_REFUSED', { details: { keyId: sealed.keyId }, cause })
   }

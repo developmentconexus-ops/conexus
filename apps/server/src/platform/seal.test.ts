@@ -2,8 +2,7 @@ import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { test } from 'node:test'
 import type { SealContext } from './seal.ts'
-import { open, parseSealKeys, seal } from './seal.ts'
-import { Secret } from './secret.ts'
+import { Credential, open, parseSealKeys, seal } from './seal.ts'
 
 const PLANTED = 'sk-ant-planted-0001'
 const ROW: SealContext = {
@@ -28,7 +27,7 @@ function refused(work: () => unknown) {
 
 test('lacre: abre na mesma linha e não se imprime', () => {
   const keys = parseSealKeys(keyLine('k1'))
-  const sealed = seal(keys, ROW, new Secret('Credential', PLANTED))
+  const sealed = seal(keys, ROW, Credential.parse(PLANTED))
   assert.equal(sealed.keyId, 'k1')
   assert.ok(!Buffer.from(sealed.blob).toString('latin1').includes(PLANTED))
   const opened = open(keys, ROW, sealed)
@@ -38,7 +37,7 @@ test('lacre: abre na mesma linha e não se imprime', () => {
 
 test('lacre: outra linha, empresa, dono, tipo, fornecedor ou propósito não abre', () => {
   const keys = parseSealKeys(keyLine('k1'))
-  const sealed = seal(keys, ROW, new Secret('Credential', PLANTED))
+  const sealed = seal(keys, ROW, Credential.parse(PLANTED))
   const others: SealContext[] = [
     { ...ROW, rowId: '7f9c2a10-0000-4000-8000-000000000002' },
     { ...ROW, companyId: 'company-b' },
@@ -52,7 +51,7 @@ test('lacre: outra linha, empresa, dono, tipo, fornecedor ou propósito não abr
 
 test('lacre: um bit virado em qualquer parte é recusado', () => {
   const keys = parseSealKeys(keyLine('k1'))
-  const sealed = seal(keys, ROW, new Secret('Credential', PLANTED))
+  const sealed = seal(keys, ROW, Credential.parse(PLANTED))
   for (const at of [0, 12, 28, sealed.blob.length - 1]) {
     const blob = Buffer.from(sealed.blob)
     blob[at] = (blob[at] ?? 0) ^ 1
@@ -64,7 +63,7 @@ test('lacre: um bit virado em qualquer parte é recusado', () => {
 test('lacre: a chave aposentada abre; relacrado, a antiga sai sem perda', () => {
   const old = keyLine('k1')
   const current = keyLine('k2')
-  const before = seal(parseSealKeys(old), ROW, new Secret('Credential', PLANTED))
+  const before = seal(parseSealKeys(old), ROW, Credential.parse(PLANTED))
   // Phase two: the new key is the last line, the old one only opens.
   const both = parseSealKeys(`${old}\n${current}\n`)
   assert.equal(open(both, ROW, before).reveal(), PLANTED)
