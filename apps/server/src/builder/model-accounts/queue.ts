@@ -12,14 +12,15 @@ import { contextOf, sealContext } from './accounts.ts'
 import { subscriptionAccess } from './claude/store.ts'
 import { SUBSCRIPTION_IDENTITY, subscriptionModel } from './claude/subscription-model.ts'
 import type { CallFailure } from './errors.ts'
+import type { GoogleAccount } from './google/calls.ts'
 import { modelAccount } from './tables.ts'
-import type { Turn } from './turn.ts'
+import type { Picked, Turn } from './turn.ts'
 
 /** The process of a Google account that takes its calls on this machine (step 12 U10). */
-export type GoogleCalls = (account: {
-  id: string
-  credential: Credential
-}) => Promise<{ url: string; apiKey: string }>
+export type GoogleCalls = (
+  account: GoogleAccount,
+  scope: Scope,
+) => Promise<{ url: string; apiKey: string }>
 
 export type QueueDeps = {
   database: Database
@@ -36,16 +37,6 @@ export async function callModel(config: MastraModelConfig): Promise<LanguageMode
   const model = await resolveModelConfig(config)
   if (model.specificationVersion === 'v1') throw new Error('MODEL_SPECIFICATION_UNSUPPORTED')
   return model
-}
-
-/** The account an attempt goes through, and the model config that carries its credential. */
-export type Picked = {
-  id: string
-  label: string
-  kind: 'api_key' | 'claude_subscription' | 'google_cliproxy'
-  modelId: string
-  model: LanguageModel
-  systemLine: string | undefined
 }
 
 const Row = z.object({
@@ -159,7 +150,10 @@ async function pickedOf(
   }
   const target = { providerId: row.provider, modelId: name }
   if (row.kind === 'google_cliproxy') {
-    const { url, apiKey } = await deps.googleCalls({ id: row.id, credential })
+    const { url, apiKey } = await deps.googleCalls(
+      { ...row, companyId: turn.companyId, credential },
+      scopeOf(turn),
+    )
     return { ...base, model: await callModel({ ...target, url, apiKey }) }
   }
   return { ...base, model: await callModel({ ...target, apiKey: credential.reveal() }) }

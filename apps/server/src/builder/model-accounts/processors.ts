@@ -1,16 +1,18 @@
 import type {
+  ErrorProcessor,
+  InputProcessor,
   ProcessAPIErrorArgs,
   ProcessInputStepArgs,
   ProcessInputStepResult,
-  Processor,
 } from '@mastra/core/processors'
+import { StreamErrorRetryProcessor } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
-import type { Picked, QueueDeps } from './queue.ts'
+import type { QueueDeps } from './queue.ts'
 import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
-import type { Turn } from './turn.ts'
+import type { Picked, Turn } from './turn.ts'
 import { turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
@@ -30,7 +32,7 @@ const ControllerContext = z.object({
 })
 
 /** The conversation's model, as the controller holds it for this run (`session.model.switch`). */
-function chosenModel(context: RequestContext | undefined): string {
+export function chosenModel(context: RequestContext | undefined): string {
   const parsed = ControllerContext.safeParse(context?.get('controller'))
   return parsed.success ? parsed.data.session.modelId : ''
 }
@@ -111,7 +113,7 @@ async function choose(deps: QueueDeps, turn: Turn, args: Notifier) {
  * but does not search again (founder, card reading 3 A), since the search tool was resolved for
  * the first model (`agent.ts:5300-5301`).
  */
-export function accountPick(deps: QueueDeps): Processor<'conexus-account-pick'> {
+export function accountPick(deps: QueueDeps): InputProcessor {
   return {
     id: 'conexus-account-pick',
     async processInputStep(args: ProcessInputStepArgs): Promise<ProcessInputStepResult> {
@@ -148,7 +150,7 @@ function failedText(account: Picked, failure: ReturnType<typeof callFailureOf>):
  * never `abort()`, which ends the stream silently (study, proved). A 400 or anything else ends the
  * turn as the model's failure, with no switch.
  */
-export function accountQueue(deps: QueueDeps): Processor<'conexus-account-queue'> {
+export function accountQueue(deps: QueueDeps): ErrorProcessor {
   return {
     id: 'conexus-account-queue',
     async processAPIError(args: ProcessAPIErrorArgs) {
@@ -205,4 +207,17 @@ export function accountModel(deps: QueueDeps) {
     turn.account ??= await pickAccount(deps, turn, turn.modelId)
     return turn.account?.model ?? noAccountModel(turn.modelId)
   }
+}
+
+/**
+ * The agent's error lane: Mastra's retry, told not to repeat a limit or a refusal (`maxRetries: 0`),
+ * so those reach the queue, last, as in Mastra Code (`index.ts:1345-1393`); Mastra keeps its other
+ * defaults in their places (`stability-defaults.ts:114`).
+ */
+export function accountErrorProcessors(deps: QueueDeps) {
+  const accountFailure = {
+    match: (error: unknown) => callFailureOf(error).kind !== 'unknown',
+    maxRetries: 0,
+  }
+  return [new StreamErrorRetryProcessor({ matchers: [accountFailure] }), accountQueue(deps)]
 }

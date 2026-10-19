@@ -1,8 +1,18 @@
 import type { CompanyId, PersonId } from '@conexus/hub-api'
+import type { LanguageModel } from '@mastra/core/llm'
 import { RequestContext } from '@mastra/core/request-context'
-import type { Picked } from './queue.ts'
 
 const TURN_KEY = 'conexus.turn'
+
+/** The account an attempt goes through, and the model config that carries its credential. */
+export type Picked = {
+  id: string
+  label: string
+  kind: 'api_key' | 'claude_subscription' | 'google_cliproxy'
+  modelId: string
+  model: LanguageModel
+  systemLine: string | undefined
+}
 
 /**
  * One turn of a conversation, as the server built it. The queue keeps in it the model, the accounts
