@@ -80,6 +80,33 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export {
+  ACCOUNT_KEY_MAX_LENGTH,
+  ACCOUNT_LABEL_MAX_LENGTH,
+  AccountKind,
+  AccountState,
+  assignModelAccount,
+  changeModelAccount,
+  completeModelAccountSignIn,
+  connectModelAccount,
+  getAccountKinds,
+  listModelAccounts,
+  listModelProviders,
+  ModelAccount,
+  ModelAccountId,
+  Owner,
+  orderModelAccounts,
+  Provider,
+  ProviderId,
+  ProviderOrder,
+  removeModelAccount,
+  SIGN_IN_SECONDS,
+  SignInId,
+  SignInKind,
+  setAccountKinds,
+  setDefaultModel,
+  startModelAccountSignIn,
+} from './model-accounts.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
   type AccessKind,

@@ -117,7 +117,7 @@ async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog =
   const cloudflare = fakeCloudflare()
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(config, { neon, cloudflare, postgres })
-  const { projects, operations, apps } = subjectsOf({
+  const { projects, operations, apps, modelAccounts } = subjectsOf({
     database: test.database,
     config,
     identity,
@@ -125,7 +125,15 @@ async function hubServing(t: TestContext, mailApiUrl?: string, log: FailureLog =
     log,
   })
   const webRoot = testWebRoot(t)
-  const app = await createHub(config, { status, identity, operations, projects, apps, webRoot })
+  const app = await createHub(config, {
+    status,
+    identity,
+    operations,
+    projects,
+    apps,
+    modelAccounts,
+    webRoot,
+  })
   t.after(() => app.close())
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())

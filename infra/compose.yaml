@@ -35,6 +35,8 @@ services:
       HUB_APPS_NAMESPACE: conexus-apps
       # The installation's seal keys (security S32, S33): the last line seals, the others only open.
       HUB_SEAL_KEYS_FILE: /run/secrets/hub_seal_keys
+      # The router's registry is the one bundled in the image, never refreshed (decision 0049).
+      MASTRA_OFFLINE: "1"
     healthcheck:
       test:
         - CMD

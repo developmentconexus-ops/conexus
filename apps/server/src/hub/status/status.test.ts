@@ -21,14 +21,21 @@ async function hubOn(t: Parameters<typeof createTestDatabase>[0]) {
   const status = createStatus({ version: VERSION, database: test.database })
   const config = testConfig(test.runtimeUrl)
   const identity = identityOf({ database: test.database, config, log: silent })
-  const { projects, operations, apps } = subjectsOf({
+  const { projects, operations, apps, modelAccounts } = subjectsOf({
     database: test.database,
     config,
     identity,
     ...testAppPorts(config),
     log: silent,
   })
-  const app = await createHub(config, { status, identity, operations, projects, apps })
+  const app = await createHub(config, {
+    status,
+    identity,
+    operations,
+    projects,
+    apps,
+    modelAccounts,
+  })
   t.after(() => app.close())
   return { app, status, test }
 }
@@ -95,14 +102,21 @@ test('com o banco fora, /api/status responde 503 e /api/health continua 200', as
   const status = createStatus({ version: VERSION, database })
   const config = testConfig(await unreachableDatabaseUrl())
   const identity = identityOf({ database, config, log: silent })
-  const { projects, operations, apps } = subjectsOf({
+  const { projects, operations, apps, modelAccounts } = subjectsOf({
     database,
     config,
     identity,
     ...testAppPorts(config),
     log: silent,
   })
-  const app = await createHub(config, { status, identity, operations, projects, apps })
+  const app = await createHub(config, {
+    status,
+    identity,
+    operations,
+    projects,
+    apps,
+    modelAccounts,
+  })
   t.after(() => app.close())
   const response = await app.inject(STATUS)
   assert.equal(response.statusCode, 503)
