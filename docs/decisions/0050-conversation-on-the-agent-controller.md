@@ -7,58 +7,40 @@ Step 12 makes the first model call, on Mastra's `AgentController`.
 ## Decision
 
 One `AgentController`, one shared Builder agent, one session per conversation, owned by
-`company:<id>:person:<id>` as the server builds it. An input processor gives each attempt its
-account (`processInputStep`, `{model: {id, apiKey}}`); an error processor, last, reads the refusal.
-No model array, no Mastra route. Basis: Purpose and the founder's step 12 answers; implemented so
-in Mastra Code and Mastra Factory.
+`company:<id>:person:<id>`. An input processor gives each attempt its account; an error processor,
+last, reads the refusal. No model array, no Mastra route. As in Mastra Code.
 
 ## Criterion
 
 **Question.** Does one controller keep companies apart, keep each conversation's model, and send
-each attempt through the queue's account, on the founder's real accounts?
+each attempt through the queue's account?
 
-**Fixed.** `@mastra/core` 1.78.0, `memory` 1.38.0, `pg` 1.31.2, `code-sdk` 1.14.0 (not a dependency:
-its Claude subscription provider is copied into the Hub with its Apache-2.0 notice, without its
-prompt cache or thinking middleware, as step 11 copied its login), CLIProxyAPI v8.0.33, PostgreSQL
-18; the founder's Claude subscription and Google account.
+**Fixed.** `@mastra/core` 1.78.0, `memory` 1.38.0, `pg` 1.31.2, `code-sdk` 1.14.0 (its subscription
+provider copied with its Apache-2.0 notice, no prompt cache), CLIProxyAPI v8.0.33; the founder's
+accounts.
 
 | # | Check | Passes when |
 | --- | --- | --- |
-| 1 | Two companies' sessions in one controller, a turn each | Each subscriber gets only its session's events |
-| 2 | Switch a model, restart on the same store | The new session reads it |
+| 1 | Two companies, a turn each | Each gets only its own events |
+| 2 | Switch a model, restart | The new session reads it |
 | 3 | An invented key first, then the subscription | The first is refused, the second answers |
-| 4 | Subscription and Gemini (CLIProxy), each asked to search | Portuguese answers; the stream shows search and pages read |
-| 5 | Prototype: our `ui/` pieces against `playground-ui` | Partial text on reconnect, live region, page part, `Select`; one chosen |
+| 4 | Subscription and Gemini, asked to search | Portuguese; search and pages in the stream |
+| 5 | Our `ui/` against `playground-ui` | One chosen |
 
-If 1 to 3 fail, the controller returns to the founder; a path refused in 4 leaves the step and
-returns to him.
-
-**Not covered.** Load; the published Hub.
+If 1 to 3 fail, the controller returns to the founder; a path refused in 4 leaves the step.
 
 ## Result
 
-Run 2026-10-19 on the founder's accounts, by a script outside the repository that builds the
-controller, agent and processors as the Builder does; its store was LibSQL, not `pg` on
-PostgreSQL 18, and it had no observational memory, title or Hub queue. Checks 1 to 3 passed: no
-event or message id crossed companies; the switched model came back after a restart and the other
-stayed; the invented key got 401 `authentication_error`, then the subscription answered with the
-notice. Check 4 failed on both paths: the turn never ended. The recording shows
-`tool_approval_required` at the first `web_fetch`, with no `tool_end` and no `agent_end`. The
-controller asks before each tool unless its state says `yolo` (`resolveToolApproval`), and the
-Builder has no screen that answers; checks 1 to 3 and the controls answered without a tool, and
-the offline rehearsal's double never called `web_fetch`, so nothing showed it before. The Builder
-now gives the controller its native rules instead: a category resolver puts `web_fetch`,
-`web_search` and `recall` in `read`, and the rules allow `read` and deny every other category, so
-a tool added later is refused until a rule names it (not `yolo`, which frees every tool; founder,
-step 13 D7). A `web_fetch` turn in `conversation.test.ts` completes, and the controller answers
-`deny` for a tool outside `read`. Re-run the same day with those rules, on the founder's sign-ins: checks 1 to 3 passed
-again; the subscription's turn completed with a search in the stream, five sites read and a
-Portuguese answer, so Claude passes 4. Gemini through CLIProxy completed in Portuguese and read
-one page, but no search showed in the stream: that path fails 4. As the card says (U4: `web_search`
-only for the four, Google through CLIProxy out until this check passes), the Builder gives Gemini
-`web_fetch` only, and Gemini's search leaves the step and returns to the founder.
+Run 2026-10-19 by a script outside the repository that builds the Builder's controller and
+processors, on LibSQL. Checks 1 to 3 passed. Check 4 first never ended: the controller asks
+before any tool without a rule (`tool_approval_required`), and no screen answers. The Builder now
+gives native rules: `web_fetch`, `web_search` and `recall` are `read`, allowed; every other
+category is denied (not `yolo`; founder, step 13 D7). Re-run: Claude passes 4 (a search, five
+sites, Portuguese). Gemini through CLIProxy reads a page but shows no search, so it keeps
+`web_fetch` only and its search returns to the founder.
 
-Check 5: ours. `@mastra/playground-ui` 64.0.0, read: 43 dependencies, 10 peers with `client-js`; its chat takes Mastra's types from routes the Hub lacks (S39), adds a second Zod, has no `role="log"`. Ours takes the stream as is, adds no dependency and no `@mastra/*` to the bundle (W7); `conversation.test.tsx` proves it. Reopens if `playground-ui` drops `client-js`.
+Check 5: ours. `playground-ui` 64.0.0 brings 43 dependencies and needs routes the Hub lacks (S39);
+ours adds none (W7).
 
 ## State
 

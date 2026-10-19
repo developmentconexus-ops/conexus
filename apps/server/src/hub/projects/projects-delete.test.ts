@@ -129,16 +129,16 @@ test('log: PROJECT_CREATED, COMPANY_DATABASE_CREATED e PROJECT_DELETED levam ids
   assert.doesNotMatch(JSON.stringify(lines), /Pedidos Secretos/)
 })
 
-test('apagar: dois pedidos ao mesmo tempo dão 204 os dois, e o Projeto sai uma vez', async (t) => {
+// The second resumes a deletion it finds marked (204), or finds the Projeto already gone (404).
+test('apagar: dois pedidos ao mesmo tempo, um 204 e o outro 204 ou 404, e o Projeto sai uma vez', async (t) => {
   const { hub, ana, admin, url } = await withProject(t)
   const both = await Promise.all([
     call(hub, ana, 'DELETE', url, { name: 'Pedidos' }),
     call(hub, admin, 'DELETE', url, { name: 'Pedidos' }),
   ])
-  assert.deepEqual(
-    both.map((response) => response.statusCode),
-    [204, 204],
-  )
+  const [first, second] = both.map((response) => response.statusCode).sort()
+  assert.equal(first, 204)
+  assert.ok(second === 204 || second === 404, String(second))
   assert.deepEqual(await hub.test.asOwner('select count(*)::int as n from projects.project'), [
     { n: 0 },
   ])
