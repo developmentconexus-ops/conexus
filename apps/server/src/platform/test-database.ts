@@ -23,7 +23,7 @@ import {
   SessionSecret,
 } from './config.ts'
 import type { Database } from './database.ts'
-import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
+import { DatabaseUrl, MASTRA_LOGIN, openDatabase, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
@@ -101,6 +101,7 @@ export function testConfig(
     appsDomain: TEST_APPS_DOMAIN,
     logLevel: 'error',
     databaseUrl,
+    mastraDatabaseUrl: mastraUrlOf(databaseUrl),
     publicOrigin: TEST_ORIGIN,
     sessionSecret: SessionSecret.parse(randomBytes(32).toString('base64url')),
     mailApiUrl: MailApiUrl.parse(mailApiUrl),
@@ -125,6 +126,7 @@ export type TestDatabase = {
   database: Database
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
+  mastraUrl: DatabaseUrl
   container: string | undefined
   asOwner(text: string, values?: unknown[]): Promise<Record<string, unknown>[]>
 }
@@ -139,10 +141,35 @@ function withDatabase(url: DatabaseUrl, name: string, login?: { user: string; pa
   return DatabaseUrl.parse(next.toString())
 }
 
+/**
+ * Mastra's database of a test database: beside it, `<name>_mastra`, entered by Mastra's login with
+ * the password the Hub's login has in tests, so suites that run at once agree on it.
+ */
+export function mastraUrlOf(hubUrl: DatabaseUrl): DatabaseUrl {
+  const url = new URL(hubUrl.reveal())
+  url.pathname = `${url.pathname}_mastra`
+  url.username = MASTRA_LOGIN
+  return DatabaseUrl.parse(url.toString())
+}
+
 async function connected(url: DatabaseUrl): Promise<pg.Client> {
   const client = new pg.Client({ connectionString: url.reveal() })
   await client.connect()
   return client
+}
+
+/** What the server answers a login to `url`: `ok` once a statement ran, or the refusal's SQLSTATE. */
+export async function loginAnswer(url: DatabaseUrl, statement = 'select 1'): Promise<string> {
+  const client = new pg.Client({ connectionString: url.reveal() })
+  try {
+    await client.connect()
+    await client.query(statement)
+    return 'ok'
+  } catch (error) {
+    return error instanceof pg.DatabaseError ? (error.code ?? 'unknown') : 'unknown'
+  } finally {
+    await client.end().catch(() => undefined)
+  }
 }
 
 export async function withRoleLock<T>(work: () => Promise<T>): Promise<T> {
@@ -176,6 +203,7 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
     user: RUNTIME_LOGIN,
     password: runtimePassword,
   })
+  const mastraUrl = mastraUrlOf(runtimeUrl)
   const admin = await connected(serverUrl)
   const localeClause =
     locale && `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
@@ -187,16 +215,18 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
       // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
       // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
       await admin.query(`drop database ${name}`)
+      await admin.query(`drop database if exists ${name}_mastra`)
     } finally {
       await admin.end()
     }
   })
-  await withRoleLock(() => migrate({ ownerUrl, runtimeUrl }))
+  await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
   return {
     passwords: plantPasswordService(t),
     database,
     ownerUrl,
     runtimeUrl,
+    mastraUrl,
     container,
     asOwner: async (text, values) => {
       const client = await connected(ownerUrl)
@@ -313,6 +343,7 @@ export function serveEnvironment(
       : { HUB_PORT: String(ports.port), HUB_EDGE_PORT: String(ports.edgePort) }),
     LOG_LEVEL: 'info',
     HUB_DATABASE_URL_FILE: urlFile(t, url),
+    HUB_MASTRA_DATABASE_URL_FILE: keyFile(t, 'hub_mastra_database_url', mastraUrlOf(url).reveal()),
     HUB_PUBLIC_ORIGIN: TEST_ORIGIN,
     HUB_APPS_DOMAIN: TEST_APPS_DOMAIN,
     HUB_SESSION_SECRET_FILE: sessionSecretFile(t),

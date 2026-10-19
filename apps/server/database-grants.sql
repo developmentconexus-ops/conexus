@@ -44,6 +44,9 @@ ALTER TABLE auth."user" OWNER TO test_owner;
 ALTER TABLE auth.verification OWNER TO test_owner;
 ALTER TABLE builder.company_account_kind OWNER TO test_owner;
 ALTER TABLE builder.company_model OWNER TO test_owner;
+ALTER TABLE builder.company_model_fallback OWNER TO test_owner;
+ALTER TABLE builder.conversation OWNER TO test_owner;
+ALTER TABLE builder.conversation_turn OWNER TO test_owner;
 ALTER TABLE builder.model_account OWNER TO test_owner;
 ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
@@ -53,6 +56,11 @@ ALTER TABLE hub.starts OWNER TO test_owner;
 ALTER TABLE operations.client OWNER TO test_owner;
 ALTER TABLE projects.company_database OWNER TO test_owner;
 ALTER TABLE projects.project OWNER TO test_owner;
+-- Step 12, founder 2026-10-19 ("1. A", decision 0010): the Hub's database lets in its own logins only,
+-- so Mastra's login is refused at the door.
+REVOKE CONNECT,TEMPORARY ON DATABASE hub_database FROM PUBLIC;
+GRANT TEMPORARY ON DATABASE hub_database TO PUBLIC;
+GRANT CONNECT ON DATABASE hub_database TO hub_runtime;
 GRANT USAGE ON SCHEMA apps TO hub_runtime;
 GRANT USAGE ON SCHEMA apps TO hub_company;
 GRANT USAGE ON SCHEMA apps TO hub_operator;
@@ -156,6 +164,15 @@ GRANT SELECT ON TABLE builder.company_account_kind TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.company_account_kind TO hub_operator;
 GRANT SELECT,INSERT ON TABLE builder.company_model TO hub_company;
 GRANT UPDATE(model) ON TABLE builder.company_model TO hub_company;
+-- Step 12, founder 2026-10-19 ("1. A"): a company's routes index their own conversations and their
+-- messages' keys, and read and write the automatic switch; the queue marks an account limited and
+-- holds a token's refresh. The Hub's login reaches none of them.
+GRANT SELECT,INSERT ON TABLE builder.company_model_fallback TO hub_company;
+GRANT UPDATE(enabled) ON TABLE builder.company_model_fallback TO hub_company;
+GRANT UPDATE(chain) ON TABLE builder.company_model_fallback TO hub_company;
+GRANT UPDATE(revision) ON TABLE builder.company_model_fallback TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.conversation TO hub_company;
+GRANT SELECT,INSERT,DELETE ON TABLE builder.conversation_turn TO hub_company;
 GRANT INSERT,DELETE ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(id) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(id) ON TABLE builder.model_account TO hub_model_seals;
@@ -177,6 +194,8 @@ GRANT SELECT(linked_by) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(linked_at) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(revision),UPDATE(revision) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(attempt_key) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(limited_until),UPDATE(limited_until) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(refresh_until),UPDATE(refresh_until) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
@@ -202,6 +221,12 @@ GRANT SELECT(company_id) ON TABLE projects.project TO hub_hosts;
 GRANT SELECT(host_label) ON TABLE projects.project TO hub_hosts;
 GRANT UPDATE(deleting_since) ON TABLE projects.project TO hub_company;
 GRANT SELECT(deleting_since) ON TABLE projects.project TO hub_hosts;
+-- Step 12, founder 2026-10-19 ("1. A", decision 0010): Mastra's database, the same dump of its
+-- objects, open to Mastra's login alone, which creates its tables there at start.
+ALTER DATABASE mastra_database OWNER TO test_owner;
+REVOKE CONNECT,TEMPORARY ON DATABASE mastra_database FROM PUBLIC;
+GRANT TEMPORARY ON DATABASE mastra_database TO PUBLIC;
+GRANT CREATE,CONNECT ON DATABASE mastra_database TO mastra_runtime;
 CREATE ROLE hub_administrators;
 ALTER ROLE hub_administrators WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_app_companies;
@@ -222,8 +247,13 @@ CREATE ROLE hub_person;
 ALTER ROLE hub_person WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_runtime;
 ALTER ROLE hub_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
+-- Step 12: Mastra's login, which enters only Mastra's database.
+CREATE ROLE mastra_runtime;
+ALTER ROLE mastra_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
 ALTER ROLE hub_runtime SET statement_timeout TO '10s';
 ALTER ROLE hub_runtime SET idle_in_transaction_session_timeout TO '10s';
+ALTER ROLE mastra_runtime SET statement_timeout TO '10s';
+ALTER ROLE mastra_runtime SET idle_in_transaction_session_timeout TO '10s';
 GRANT hub_administrators TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_app_companies TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 -- The Hub's login switches to a scope role for one transaction and inherits nothing from it.
@@ -239,3 +269,4 @@ GRANT hub_person TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANT
 GRANT hub_person TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
 -- PostgreSQL grants the role that creates hub_runtime (the migration owner) the right to administer it. Neon does the same.
 GRANT hub_runtime TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
+GRANT mastra_runtime TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;

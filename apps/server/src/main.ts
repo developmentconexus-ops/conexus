@@ -235,8 +235,14 @@ async function runServer(): Promise<void> {
 
 async function runMigrate(): Promise<void> {
   const config = readConfig('migrate')
-  await migrate({ ownerUrl: config.migrationDatabaseUrl, runtimeUrl: config.databaseUrl })
-  bootLog(config.logLevel).info('MIGRATED')
+  await migrate({
+    ownerUrl: config.migrationDatabaseUrl,
+    runtimeUrl: config.databaseUrl,
+    mastraUrl: config.mastraDatabaseUrl,
+  })
+  const log = bootLog(config.logLevel)
+  log.info('MASTRA_LOGIN_READY')
+  log.info('MIGRATED')
 }
 
 const FirstPersonArguments = z.object({

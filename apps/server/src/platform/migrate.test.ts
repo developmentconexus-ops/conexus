@@ -6,12 +6,14 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { sql } from 'drizzle-orm'
+import { DatabaseUrl } from './database.ts'
 import { migrate } from './migrate.ts'
 import type { TestDatabase } from './test-database.ts'
 import {
   createTestDatabase,
   databaseWithPassword,
   freePort,
+  loginAnswer,
   runtimeUrlWithPassword,
   serveEnvironment,
   unreachableDatabaseUrl,
@@ -89,7 +91,9 @@ test('migrate duas vezes: a segunda não aplica nada, e só a senha do arquivo e
   const test = await createTestDatabase(t)
   const applied = `select count(*)::int as applied from drizzle.__drizzle_migrations`
   const first = await test.asOwner(applied)
-  await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
+  await withRoleLock(() =>
+    migrate({ ownerUrl: test.ownerUrl, mastraUrl: test.mastraUrl, runtimeUrl: test.runtimeUrl }),
+  )
   assert.deepEqual(await test.asOwner(applied), first)
   const right = await test.database.installation((tx) =>
     tx.execute(sql`select current_user as login`),
@@ -111,7 +115,7 @@ test('migrate recusa uma URL do Hub que não é a do login hub_runtime', async (
   const test = await createTestDatabase(t)
   await withRoleLock(async () => {
     await assert.rejects(
-      migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.ownerUrl }),
+      migrate({ ownerUrl: test.ownerUrl, mastraUrl: test.mastraUrl, runtimeUrl: test.ownerUrl }),
       (error: unknown) => error instanceof Error && error.message.startsWith('CONFIG_INVALID'),
     )
   })
@@ -127,6 +131,7 @@ test('migrate não corta uma migração lenta no prazo de 15 s das consultas do 
   await withRoleLock(() =>
     migrate({
       ownerUrl: test.ownerUrl,
+      mastraUrl: test.mastraUrl,
       runtimeUrl: test.runtimeUrl,
       migrationsFolder: folder,
     }),
@@ -144,7 +149,11 @@ test('migrate aplica os limites do login do Hub também quando o papel já exist
     await test.asOwner(
       "delete from drizzle.__drizzle_migrations where name like '%hub_runtime_login'",
     )
-    await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+    await migrate({
+      ownerUrl: test.ownerUrl,
+      mastraUrl: test.mastraUrl,
+      runtimeUrl: test.runtimeUrl,
+    })
     return test.asOwner(`select rolconfig from pg_roles where rolname = 'hub_runtime'`)
   })
   assert.deepEqual(settings, [
@@ -161,8 +170,12 @@ test('migrate com a mesma senha não reescreve o verificador do login do Hub', a
   }
   const before = await storedVerifier(container)
   assert.match(before, /^SCRAM-SHA-256\$/)
-  await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
-  await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
+  await withRoleLock(() =>
+    migrate({ ownerUrl: test.ownerUrl, mastraUrl: test.mastraUrl, runtimeUrl: test.runtimeUrl }),
+  )
+  await withRoleLock(() =>
+    migrate({ ownerUrl: test.ownerUrl, mastraUrl: test.mastraUrl, runtimeUrl: test.runtimeUrl }),
+  )
   assert.equal(await storedVerifier(container), before)
   await loginWorks(test, decodeURIComponent(new URL(test.runtimeUrl.reveal()).password))
 })
@@ -175,12 +188,17 @@ test('migrate com a senha trocada no arquivo: a nova entra e a antiga é recusad
     try {
       await migrate({
         ownerUrl: test.ownerUrl,
+        mastraUrl: test.mastraUrl,
         runtimeUrl: runtimeUrlWithPassword(test, rotated),
       })
       await loginWorks(test, rotated)
       await loginFails(test, original)
     } finally {
-      await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+      await migrate({
+        ownerUrl: test.ownerUrl,
+        mastraUrl: test.mastraUrl,
+        runtimeUrl: test.runtimeUrl,
+      })
     }
   })
   await loginWorks(test, original)
@@ -194,7 +212,11 @@ test('migrate dá senha ao login do Hub que voltou de uma restauração sem ela'
       await test.asOwner('alter role hub_runtime password null')
       await loginFails(test, original)
     } finally {
-      await migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl })
+      await migrate({
+        ownerUrl: test.ownerUrl,
+        mastraUrl: test.mastraUrl,
+        runtimeUrl: test.runtimeUrl,
+      })
     }
   })
   await loginWorks(test, original)
@@ -235,7 +257,9 @@ test('a exceção de P6: a migração apaga cada empresa sem cliente, com membro
       ('i2', 'client', 'bruno@example.test', 'member', 'pending', now(), now(), 'p1', 'i2');
     insert into auth.session (id, expires_at, token, updated_at, user_id, active_organization_id)
       values ('s1', now(), 't1', now(), 'p1', 'test'), ('s2', now(), 't2', now(), 'p1', 'client')`)
-  await withRoleLock(() => migrate({ ownerUrl: test.ownerUrl, runtimeUrl: test.runtimeUrl }))
+  await withRoleLock(() =>
+    migrate({ ownerUrl: test.ownerUrl, mastraUrl: test.mastraUrl, runtimeUrl: test.runtimeUrl }),
+  )
   const kept = await test.asOwner(`select
       (select array_agg(id order by id) from auth.company) as companies,
       (select array_agg(id order by id) from auth.member) as members,
@@ -252,4 +276,24 @@ test('a exceção de P6: a migração apaga cada empresa sem cliente, com membro
       people: 1,
     },
   ])
+})
+
+test('migrate recusa Mastra no banco do Hub (opção B) e dá senha ao login do Mastra sem ela', async (t) => {
+  const test = await createTestDatabase(t)
+  const intoHub = new URL(test.mastraUrl.reveal())
+  intoHub.pathname = new URL(test.runtimeUrl.reveal()).pathname
+  const { ownerUrl, runtimeUrl, mastraUrl } = test
+  await withRoleLock(async () => {
+    await assert.rejects(
+      migrate({ ownerUrl, runtimeUrl, mastraUrl: DatabaseUrl.parse(intoHub.toString()) }),
+      (error: unknown) => error instanceof Error && error.message.startsWith('CONFIG_INVALID'),
+    )
+    try {
+      await test.asOwner('alter role mastra_runtime password null')
+      assert.equal(await loginAnswer(mastraUrl), '28P01')
+    } finally {
+      await migrate({ ownerUrl, runtimeUrl, mastraUrl })
+    }
+  })
+  assert.equal(await loginAnswer(mastraUrl), 'ok')
 })
