@@ -2,10 +2,11 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.14.0, dist/providers/claude-max.js (`opencodeClaudeMaxProvider`,
 // `buildAnthropicOAuthFetch`, `claudeCodeMiddleware`). Changed: TypeScript; the token is the one the
-// queue opened for this call, not a file store; the identity line goes in through the processor's
-// system messages instead of a middleware; no prompt cache or thinking middleware.
+// queue opened for this call, not a file store; no prompt cache or thinking middleware.
 
 import { createAnthropic } from '@ai-sdk/anthropic'
+import type { LanguageModelMiddleware } from 'ai'
+import { wrapLanguageModel } from 'ai'
 
 const OAUTH_REQUIRED_BETAS = [
   'oauth-2025-04-20',
@@ -15,7 +16,19 @@ const OAUTH_REQUIRED_BETAS = [
 ]
 
 /** The endpoint of a subscription answers only a conversation that opens with this line. */
-export const SUBSCRIPTION_IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude."
+const SUBSCRIPTION_IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude."
+
+/**
+ * The identity line first in every prompt of the model, so the title's and the observer's calls
+ * carry it as the conversation's does.
+ */
+const identityMiddleware: LanguageModelMiddleware = {
+  specificationVersion: 'v3',
+  transformParams: async ({ params }) => ({
+    ...params,
+    prompt: [{ role: 'system', content: SUBSCRIPTION_IDENTITY }, ...params.prompt],
+  }),
+}
 
 /** The subscription's model for one call: the access token as a bearer, never as an API key. */
 export function subscriptionModel(modelName: string, accessToken: string) {
@@ -34,5 +47,5 @@ export function subscriptionModel(modelName: string, accessToken: string) {
       return fetch(url, { ...init, headers })
     },
   })
-  return provider(modelName)
+  return wrapLanguageModel({ model: provider(modelName), middleware: identityMiddleware })
 }

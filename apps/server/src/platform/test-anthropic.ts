@@ -7,6 +7,8 @@ const MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
 const CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
 const MODEL = 'claude-sonnet-4-5'
+/** The line the subscription's endpoint requires first in the system of a bearer call. */
+const SUBSCRIPTION_LINE = "You are Claude Code, Anthropic's official CLI for Claude."
 
 /** One call the Hub made to the Messages API, as the double read it. */
 export type Sent = {
@@ -326,7 +328,8 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
     }
     const sent = sentOf(init)
     anthropic.sent.push(sent)
-    return replied(sent, anthropic.answer(sent))
+    const unidentified = sent.bearer !== null && !sent.system.startsWith(SUBSCRIPTION_LINE)
+    return replied(sent, unidentified ? { kind: 'refuse', status: 429 } : anthropic.answer(sent))
   }
   t.after(() => {
     globalThis.fetch = real

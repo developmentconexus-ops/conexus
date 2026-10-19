@@ -1,5 +1,6 @@
 import type { ModelId } from '@conexus/hub-api'
 import type { MessageList } from '@mastra/core/agent'
+import type { LanguageModel } from '@mastra/core/llm'
 import { parseModelString } from '@mastra/core/llm'
 import type {
   ErrorProcessor,
@@ -158,10 +159,6 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       if (turn.switched) {
         result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)
       }
-      const line = account.systemLine
-      if (line !== undefined && !args.systemMessages.some((each) => each.content === line)) {
-        result.systemMessages = [{ role: 'system', content: line }, ...args.systemMessages]
-      }
       return result
     },
   }
@@ -236,17 +233,47 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
   return { retry: true }
 }
 
+/** Mastra's own calls in a turn that are not the agent's: what the log names a failed one by. */
+export type SideCall = 'title' | 'observer' | 'reflection'
+
 /**
- * The model of Mastra's own calls in a turn, the title's and the observer's: the turn's account,
- * the pick in flight, or the queue's next one when the observer runs before the queue
- * (`agent.ts:2392-2404`).
+ * The model with its failures logged by call and account, since Mastra's own log line carries
+ * neither and its message is not ours to keep (security S41). The error is thrown on, to Mastra.
  */
-export function accountModel(deps: QueueDeps) {
+function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): LanguageModel {
+  const { model } = account
+  if (typeof model === 'string' || model.specificationVersion !== 'v3') return model
+  function report(error: unknown): never {
+    const fields = { companyId: turn.companyId, accountId: account.id, call }
+    deps.log.info({ ...fields, failure: callFailureOf(error).kind }, 'MODEL_SIDE_CALL_FAILED')
+    throw error
+  }
+  type Options = Parameters<typeof model.doGenerate>[0]
+  const watching: LanguageModel = {
+    specificationVersion: 'v3',
+    provider: model.provider,
+    modelId: model.modelId,
+    supportedUrls: model.supportedUrls,
+    id: model.id,
+    doGenerate: (options: Options) => Promise.resolve(model.doGenerate(options)).catch(report),
+    doStream: (options: Options) => Promise.resolve(model.doStream(options)).catch(report),
+  }
+  return watching
+}
+
+/**
+ * The model of Mastra's own calls in a turn, the title's, the observer's and the reflector's: the
+ * turn's account, the pick in flight, or the queue's next one when the observer runs before the
+ * queue (`agent.ts:2392-2404`).
+ */
+export function accountModel(deps: QueueDeps, call: SideCall) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
     const turn = turnIn(requestContext)
     if (turn === undefined) return noAccountModel(chosenModel(requestContext))
     const account = await accountOf(deps, turn, { requestContext })
-    return account?.model ?? noAccountModel(turn.modelId(requestContext))
+    return account === undefined
+      ? noAccountModel(turn.modelId(requestContext))
+      : watched(deps, turn, account, call)
   }
 }
 

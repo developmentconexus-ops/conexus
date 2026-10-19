@@ -22,7 +22,6 @@ export type Picked = {
   kind: AccountKind
   modelId: ModelId
   model: LanguageModel
-  systemLine: string | undefined
 }
 
 /** How a turn ended for the queue: its accounts ran out, or the model's call failed. */
