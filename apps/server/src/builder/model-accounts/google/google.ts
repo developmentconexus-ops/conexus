@@ -170,9 +170,9 @@ export function googleSignIn(deps: Deps): SignInFlow {
       const process = running.get(state)
       const typed = code.trim()
       const given = URL.canParse(typed) ? new URL(typed).searchParams.get('state') : null
-      if (process === undefined || given !== state)
-        throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
       try {
+        if (process === undefined || given !== state)
+          throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
         return await finish(process, state, typed)
       } finally {
         await stop(state)

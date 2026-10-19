@@ -80,16 +80,18 @@ test('o login roda num processo em 127.0.0.1, que para depois dele; o arquivo é
   assert.ok(messages.includes('CLIPROXY_STARTED') && messages.includes('CLIPROXY_STOPPED'))
 })
 
-test('state errado: 410 e o processo espera; tarde: 410; login recusado: 422 e o processo para', async (t) => {
+test('state errado: 410 e o processo para; tarde: 410; login recusado: 422 e o processo para', async (t) => {
   const { hub, double, start, complete } = await google(t)
   const first = await start()
   const wrong = await complete(first.url, 'outro-estado')
   assert.deepEqual([wrong.statusCode, codeOf(wrong)], [410, 'MODEL_ACCOUNT_SIGN_IN_EXPIRED'])
-  assert.ok(alive(first.pid))
+  assert.equal(alive(first.pid), false)
+  assert.equal((await complete(first.url, first.state)).statusCode, 410)
+  const late = await start()
   await hub.test.asOwner(
     `update builder.model_account_sign_in set expires_at = now() - interval '1 second'`,
   )
-  assert.equal((await complete(first.url, first.state)).statusCode, 410)
+  assert.equal((await complete(late.url, late.state)).statusCode, 410)
   writeFileSync(join(double.control, 'mode'), 'refuse')
   const second = await start()
   const refused = await complete(second.url, second.state)

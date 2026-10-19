@@ -96,14 +96,10 @@ export async function startSignIn(
 }
 
 /**
- * Completes a sign-in once (security S22): the row is taken by `DELETE … RETURNING`, so a second
- * try, or one after ten minutes, finds nothing and gets 410. A refused trade rolls back and keeps
- * nothing new; the vendor's credential is sealed whole to a new account at the end of its queue.
+ * Takes the sign-in once (security S22): `DELETE … RETURNING`, so a second try, or one after ten
+ * minutes, finds nothing. A closed kind rolls back and keeps it; a late one leaves, and both 410.
  */
-export function completeSignIn(
-  deps: Deps & { flows: SignInFlows },
-  input: Viewer & { signInId: SignInId; code: string },
-) {
+function take(deps: Deps, input: Viewer & { signInId: SignInId }) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await deps.identity.admitMember({
       tx,
@@ -128,27 +124,38 @@ export function completeSignIn(
         keyId: modelAccountSignIn.keyId,
         live: sql<boolean>`${modelAccountSignIn.expiresAt} > statement_timestamp()`,
       })
-    if (taken === undefined || !taken.live || taken.kind === 'api_key')
-      throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
-    const kind = taken.kind
-    await admitOpen(deps, tx, input, taken.owner, kind)
-    const flow = deps.flows[kind]
-    const signIn = {
-      id: input.signInId,
-      companyId: input.companyId,
-      personId: input.person.id,
-      kind,
-    }
-    const pending = open(deps.sealKeys, sealContext(signIn, flow), {
-      keyId: taken.keyId,
-      blob: taken.sealed,
-    })
-    const credential = await flow.complete(pending, input.code)
+    if (taken === undefined || !taken.live || taken.kind === 'api_key') return undefined
+    await admitOpen(deps, tx, input, taken.owner, taken.kind)
+    return { ...taken, kind: taken.kind }
+  })
+}
+
+/**
+ * Completes a sign-in (criteria 19, 20, 22). The vendor's trade runs with no transaction open
+ * (data D22): taking the sign-in commits first, so any attempt ends it, and a refused trade keeps
+ * nothing new. The credential is then sealed whole to a new account at the end of its queue.
+ */
+export async function completeSignIn(
+  deps: Deps & { flows: SignInFlows },
+  input: Viewer & { signInId: SignInId; code: string },
+) {
+  const taken = await take(deps, input)
+  if (taken === undefined) throw new Failure('MODEL_ACCOUNT_SIGN_IN_EXPIRED')
+  const { kind, owner, label } = taken
+  const flow = deps.flows[kind]
+  const signIn = { id: input.signInId, companyId: input.companyId, personId: input.person.id, kind }
+  const pending = open(deps.sealKeys, sealContext(signIn, flow), {
+    keyId: taken.keyId,
+    blob: taken.sealed,
+  })
+  const credential = await flow.complete(pending, input.code)
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitOpen(deps, tx, input, owner, kind)
     const id = await insertAccount(deps, tx, input, {
-      owner: taken.owner,
+      owner,
       kind,
       provider: flow.provider,
-      label: taken.label,
+      label,
       credential,
       hint: null,
       attemptKey: input.signInId,

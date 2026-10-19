@@ -84,31 +84,34 @@ test('start dá o endereço e guarda o verificador lacrado 10 min; complete troc
   )
 })
 
-test('troca recusada: 422 MODEL_ACCOUNT_REFUSED e nada gravado; fornecedor fora: 502; tarde ou de outro: 410', async (t) => {
+test('troca recusada: 422 e nada gravado, e a entrada acaba; fornecedor fora: 502; tarde ou de outro: 410', async (t) => {
   const vendor = anthropic(t)
   const { hub, ana, companyId, start } = await opened(t)
-  const started = await start()
-  const wrongState = await post(hub, ana, started.url, { code: 'codigo#outro-estado' })
-  assert.deepEqual([wrongState.statusCode, codeOf(wrongState)], [422, 'MODEL_ACCOUNT_REFUSED'])
+  async function attempt(code: (verifier: string) => string, status = 200) {
+    vendor.state.status = status
+    const started = await start()
+    const answer = await post(hub, ana, started.url, { code: code(started.verifier) })
+    const again = await post(hub, ana, started.url, { code: code(started.verifier) })
+    assert.equal(codeOf(again), 'MODEL_ACCOUNT_SIGN_IN_EXPIRED')
+    return [answer.statusCode, codeOf(answer)]
+  }
+  assert.deepEqual(await attempt(() => 'codigo#outro-estado'), [422, 'MODEL_ACCOUNT_REFUSED'])
   assert.equal(vendor.trades.length, 0)
-  vendor.state.status = 400
-  const refused = await post(hub, ana, started.url, { code: `codigo#${started.verifier}` })
-  assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'MODEL_ACCOUNT_REFUSED'])
-  vendor.state.status = 503
-  const down = await post(hub, ana, started.url, { code: `codigo#${started.verifier}` })
-  assert.deepEqual([down.statusCode, codeOf(down)], [502, 'MODEL_ACCOUNT_UNAVAILABLE'])
+  const refused = await attempt((verifier) => `codigo#${verifier}`, 400)
+  assert.deepEqual(refused, [422, 'MODEL_ACCOUNT_REFUSED'])
+  const down = await attempt((verifier) => `codigo#${verifier}`, 503)
+  assert.deepEqual(down, [502, 'MODEL_ACCOUNT_UNAVAILABLE'])
   assert.deepEqual(await hub.test.asOwner(`select id from builder.model_account`), [])
+  vendor.state.status = 200
+  const started = await start()
   const carla = await memberOn(hub, companyId, CARLA, 'member')
   const others = await post(hub, carla, started.url, { code: `codigo#${started.verifier}` })
   assert.equal(others.statusCode, 410)
   await hub.test.asOwner(
     `update builder.model_account_sign_in set expires_at = now() - interval '1 second'`,
   )
-  vendor.state.status = 200
   const late = await post(hub, ana, started.url, { code: `codigo#${started.verifier}` })
   assert.deepEqual([late.statusCode, codeOf(late)], [410, 'MODEL_ACCOUNT_SIGN_IN_EXPIRED'])
   assert.equal(vendor.trades.length, 2)
-  // A new sign-in clears the person's runs that ran out.
-  await start()
-  assert.equal((await hub.test.asOwner(`select id from builder.model_account_sign_in`)).length, 1)
+  assert.deepEqual(await hub.test.asOwner(`select id from builder.model_account_sign_in`), [])
 })
