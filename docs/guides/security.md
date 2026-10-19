@@ -76,19 +76,25 @@ choice, including the guarantee that a database copy alone opens no Hub session.
 
 - **S24.** The Hub **should** enforce its same-origin boundary in `onRequest`, before reading the
   body or running a handler: no CORS or credentialed cross-origin API; the browser leaves only for
-  app handoff. Writes carry the exact `Origin` their access kind names, and API requests accept
+  app handoff, whose one door is the `handoff` kind of S48, the single exception to same-origin.
+  Writes carry the exact `Origin` their access kind names, and API requests accept
   `Sec-Fetch-Site` only as `same-origin` or absent, without a CSRF token. Writes refuse form-encoded
   and multipart bodies; routes have body limits. Responses keep CSP `script-src 'self'` without
   `unsafe-inline`, strict `Referrer-Policy` and `frame-ancestors 'none'`. Failure: a cross-site
   authenticated GET discloses the person, or a form post bypasses admission. Existing configuration
   and header tests stay; Fastify does not supply this policy automatically. [review]
-- **S48.** The five access kinds of [code C33](code.md) mean: `page`, a read of any address outside
-  `/api/`, where an unknown one gets the screens' page with 404, shown in Portuguese (founder,
-  2026-10-15: "1 A 2. A"); `public`, an API `GET` with no session; `entry`, a write with no
+- **S48.** The six access kinds of [code C33](code.md) mean: `page`, a read of any address outside
+  `/api/` but `/apps/open`, where an unknown one gets the screens' page with 404, shown in
+  Portuguese (founder, 2026-10-15: "1 A 2. A"); `public`, an API `GET` with no session; `entry`, a write with no
   session that also needs `cf-connecting-ip` (S29); `session`, a request whose session is read
   first; `edge`, a route that exists only on the `HUB_EDGE_PORT` listener, which only the dispatcher
-  reaches, and that reads no session or cookie and does not check `Origin` or `Sec-Fetch-Site`.
-  Writes follow S24. The first four came with step 3's approved card, the fifth with step 8's.
+  reaches, and that reads no session or cookie and does not check `Origin` or `Sec-Fetch-Site`;
+  `handoff`, a top-level `GET` of `/apps/open` on the public listener, the only route that accepts a
+  navigation from another site: `Sec-Fetch-Site` may be any value when `Sec-Fetch-Mode` is
+  `navigate` and `Sec-Fetch-Dest` is `document`, each or absent; its session is read first and may
+  be absent; it answers a 303 or the screens' page with 404, never a body that names the person.
+  Writes follow S24. The first four came with step 3's approved card, the fifth with step 8's, the
+  sixth with step 9.1's.
   [`access.test.ts`, `http.test.ts`]
 
 ## 5. Abuse
