@@ -10,6 +10,7 @@ function chosen(): Theme | undefined {
     const value = globalThis.localStorage.getItem(STORAGE_KEY)
     return value === 'light' || value === 'dark' ? value : undefined
   } catch {
+    // biome-ignore lint/plugin: storage the browser refuses reads as no pick (C53)
     return undefined
   }
 }
@@ -31,6 +32,7 @@ export function useTheme(): { theme: Theme; toggle: () => void } {
     document.documentElement.dataset.theme = next
     try {
       globalThis.localStorage.setItem(STORAGE_KEY, next)
+      // biome-ignore lint/plugin: a browser that refuses storage keeps the pick for this page only (web W19)
     } catch {
       // The pick still holds for this page when the browser refuses storage (web W19).
     }

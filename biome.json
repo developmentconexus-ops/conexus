@@ -42,6 +42,7 @@
       },
       "style": {
         "noDefaultExport": "error",
+        "useThrowOnlyError": "error",
         "noProcessEnv": "error",
         "noNonNullAssertion": "error",
         "useConsistentTypeDefinitions": {
@@ -87,6 +88,7 @@
         "noEmptyBlockStatements": "error"
       },
       "nursery": {
+        "noFloatingPromises": "error",
         "noThisOutsideOfClass": "error",
         "noUnsafeTypeAssertion": "error",
         "useConsistentFunctionStyle": {
@@ -94,7 +96,8 @@
           "options": {
             "style": "declaration"
           }
-        }
+        },
+        "useExhaustiveSwitchCases": "error"
       }
     }
   },
@@ -174,6 +177,21 @@
     {
       "includes": ["apps/web/src/**"],
       "plugins": ["./scripts/w25.grit"]
+    },
+    {
+      "includes": [
+        "apps/**",
+        "packages/**",
+        "scripts/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!**/test-*.ts",
+        "!**/test-*.tsx",
+        "!apps/server/src/builder/conversation/**",
+        "!apps/server/src/builder/model-accounts/**",
+        "!apps/web/src/builder/**"
+      ],
+      "plugins": ["./scripts/conexus-code.grit"]
     }
   ],
   "css": {

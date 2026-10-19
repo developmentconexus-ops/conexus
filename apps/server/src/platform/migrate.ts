@@ -27,13 +27,19 @@ function loginOf(url: DatabaseUrl, name: string, variable: string): Login {
   return { url, name, password, database, host: parsed?.host ?? '' }
 }
 
+/** Closes a connection while another result or failure is on its way; a close error must not replace it. */
+async function closed(client: pg.Client): Promise<void> {
+  // biome-ignore lint/plugin: a failed close must not replace the result or failure being returned (C53)
+  await client.end().catch(() => undefined)
+}
+
 async function connected(url: string): Promise<pg.Client> {
   const client = new pg.Client({
     connectionString: url,
     connectionTimeoutMillis: POOL_LIMITS.connectionTimeoutMillis,
   })
   await client.connect().catch(async (error: unknown) => {
-    await client.end().catch(() => undefined)
+    await closed(client)
     throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
   })
   return client
@@ -52,7 +58,7 @@ async function loginRefused(login: Login): Promise<boolean> {
     if (error instanceof Error && 'code' in error && error.code === INVALID_PASSWORD) return true
     throw new Failure('DATABASE_UNAVAILABLE', { cause: error })
   } finally {
-    await client.end().catch(() => undefined)
+    await closed(client)
   }
 }
 
@@ -84,7 +90,7 @@ async function prepareMastraDatabase(hub: pg.Client, ownerUrl: DatabaseUrl, mast
     await client.query(`revoke connect on database ${name} from public`)
     await client.query(`grant connect, create on database ${name} to ${MASTRA_LOGIN}`)
   } finally {
-    await client.end().catch(() => undefined)
+    await closed(client)
   }
 }
 
@@ -110,6 +116,6 @@ export async function migrate(deps: {
   } catch (error) {
     throw databaseFailure(error)
   } finally {
-    await client.end().catch(() => undefined)
+    await closed(client)
   }
 }

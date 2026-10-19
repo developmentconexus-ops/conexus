@@ -63,6 +63,7 @@ export function createMail(deps: { config: Config; log: FailureLog }): SendMail 
     const text = await cappedText(response.body, REPLY_CAP_BYTES)
     if (text === undefined) return refuse('too-large')
     try {
+      // biome-ignore lint/plugin: the caller parses the unknown reply with SendReply (C27)
       return JSON.parse(text)
     } catch (error) {
       return refuse('shape', error)

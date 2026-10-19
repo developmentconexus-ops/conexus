@@ -1,0 +1,92 @@
+// Defect: four code rules the guides state (C23, C27, C48 and C49, C53) that review alone kept
+// missing. Each refusal sees only the shape of the code, so each message names what to do instead.
+// Refusals are proved by planting each one in conexus-code.test.ts.
+// biome.json wires it to production code in apps, packages and scripts: a test reads a reply's shape
+// on purpose, so test files stay out. It also leaves out apps/server/src/builder/conversation,
+// apps/server/src/builder/model-accounts and apps/web/src/builder, which return when step 12's fix
+// round lands (JSON allows no comment there, so this is where the reason lives).
+// Known blind spots: a JSON.parse or .json() result bound to a name and parsed on a later line, a
+// catch whose body maps nothing but is not a lone literal return, an Error code held in a variable,
+// and an id typed through an alias of string.
+// Revalidate by 2027-04-19, or when Biome changes GritQL, or when the guides rename these rules.
+or {
+  // C27: external data enters through a schema, not through JSON.parse or .json() alone.
+  JsCallExpression() as $call where {
+    $call <: or {
+      `JSON.parse($_)`,
+      `$_.json()`
+    },
+    $call <: not within or {
+      `$_.parse($call)`,
+      `$_.safeParse($call)`,
+      `$_.parse(await $call)`,
+      `$_.safeParse(await $call)`,
+      `$_.parse(await $call.catch($_))`,
+      `$_.safeParse(await $call.catch($_))`
+    } ,
+    register_diagnostic(span=$call, message="C27: pass this parsed text or reply straight to a Zod schema's parse or safeParse, then trust the typed result.")
+  },
+  // C48, C49: a failure code belongs to the failure table; an Error carries a message, not a code.
+  `new Error($message)` as $error where {
+    $message <: or {
+      r"\"[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\"",
+      r"'[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+'"
+    },
+    register_diagnostic(span=$error, message="C48, C49: do not throw an Error whose message is an upper-case code; return a typed result, or throw the failure type that owns the code and convert it at the boundary.")
+  },
+  // C53: a catch rethrows, logs or maps; it does not swallow.
+  JsCatchClause(body=JsBlockStatement(statements=[$only])) as $clause where {
+    $only <: or {
+      `return`,
+      JsReturnStatement(argument=$literal)
+    },
+    or {
+      $only <: `return`,
+      $literal <: or {
+        `null`,
+        `undefined`,
+        `true`,
+        `false`,
+        JsStringLiteralExpression(),
+        JsNumberLiteralExpression()
+      }
+    },
+    register_diagnostic(span=$only, message="C53: a catch that only returns a literal hides the failure; rethrow, log it, or return a typed result that names it.")
+  },
+  JsCatchClause(body=JsBlockStatement(statements=[])) as $clause where {
+    register_diagnostic(span=$clause, message="C53: an empty catch hides the failure even with a comment; rethrow, log it, or return a typed result that names it.")
+  },
+  `$_.catch($handler)` as $call where {
+    $handler <: or {
+      `() => $literal`,
+      `($_) => $literal`,
+      `() => { return $literal }`,
+      `($_) => { return $literal }`,
+      `function () { return $literal }`
+    },
+    $literal <: or {
+      `null`,
+      `undefined`,
+      `true`,
+      `false`,
+      JsStringLiteralExpression(),
+      JsNumberLiteralExpression()
+    },
+    register_diagnostic(span=$call, message="C53: a .catch that only returns a literal hides the failure; log it or return a typed result that names it.")
+  },
+  // C23: server code carries an id as a branded type, never as string. Three names are no entity
+  // id, so they have no brand to carry: traceId is the request's correlation id, and keyId and
+  // sealingId label a key in the operator's key file. A vendor's id (Neon's project and
+  // organization ids) already has its own brand, so it is not excepted: typed string, it is refused.
+  or {
+    TsPropertySignatureTypeMember(),
+    JsFormalParameter(),
+    TsPropertyParameter(),
+    JsPropertyClassMember()
+  } as $member where {
+    $filename <: r".*apps/server/src/.*",
+    $member <: not r"(?s)^(?:\w+\s+)*(?:traceId|keyId|sealingId)\b.*",
+    $member <: r"(?s)^(?:(?:readonly|private|public|protected)\s+)*\w*[a-z]Id\??\s*:\s*(?:(?:null|undefined)\s*\|\s*)?string(?:\s*\|\s*(?:null|undefined))*\s*[;,]?$",
+    register_diagnostic(span=$member, message="C23: type this id with its branded type from packages/hub-api (CompanyId, PersonId, and the others), created only by parsing; a port does not take an id as string.")
+  }
+}

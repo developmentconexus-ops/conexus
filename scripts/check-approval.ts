@@ -23,6 +23,7 @@ function gitSucceeds(...gitArgs: string[]): boolean {
     git(...gitArgs)
     return true
   } catch {
+    // biome-ignore lint/plugin: a git command that exits non-zero answers this question with false (C53)
     return false
   }
 }

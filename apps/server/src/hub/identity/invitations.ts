@@ -1,4 +1,4 @@
-import type { CompanyId, Person } from '@conexus/hub-api'
+import type { CompanyId, Person, PersonId } from '@conexus/hub-api'
 import {
   CAPACITY,
   createInvitation,
@@ -64,7 +64,7 @@ export function pendingOf(row: z.infer<typeof PendingRow>) {
  * Inviting and accepting first lock the company, so the two serialize in one order and never
  * deadlock (C65, D23). The lock leaves foreign keys free: a new member still references the row.
  */
-export async function lockCompany(tx: CommandTx, companyId: string): Promise<void> {
+export async function lockCompany(tx: CommandTx, companyId: CompanyId): Promise<void> {
   await tx
     .select({ id: company.id })
     .from(company)
@@ -122,7 +122,7 @@ async function checkRoom(tx: CommandTx, admitted: CompanyProof, email: string): 
 export async function checkPace(
   database: Database,
   tx: CommandTx,
-  personId: string,
+  personId: PersonId,
 ): Promise<void> {
   const recent = await database.asPerson(tx, (personal) =>
     personal.$count(
@@ -164,7 +164,7 @@ export function inviterOf(admitted: CompanyProof, person: Person): Inviter {
 
 async function createdOf(
   tx: CommandTx,
-  input: { admitted: CompanyProof; person: Person; invitationId: string },
+  input: { admitted: CompanyProof; person: Person; invitationId: InvitationId },
 ) {
   const { admitted, invitationId } = input
   const [row] = await tx.select(pending).from(invitation).where(eq(invitation.id, invitationId))
@@ -177,7 +177,7 @@ async function createdOf(
 }
 
 /** The inviter's row, held until commit: the pace counts their invitations one at a time. */
-export async function lockedInviter(tx: CommandTx, personId: string) {
+export async function lockedInviter(tx: CommandTx, personId: PersonId) {
   const [inviter] = await tx.select().from(user).where(eq(user.id, personId)).for('no key update')
   if (inviter === undefined) throw new Failure('SESSION_REQUIRED')
   return inviter
@@ -223,7 +223,7 @@ async function checkOwnerInvitation(
  */
 export async function cancelThrough(
   auth: Auth,
-  input: { admitted: CompanyProof; headers: Headers; invitationId: string },
+  input: { admitted: CompanyProof; headers: Headers; invitationId: InvitationId },
 ): Promise<void> {
   const { invitationId } = input
   if (input.admitted.kind === 'MEMBER') {
@@ -234,7 +234,12 @@ export async function cancelThrough(
   await adapter.updateInvitation({ invitationId, status: 'canceled' })
 }
 
-type Open = { admitted: CompanyProof; headers: Headers; invitationId: string; superseded: boolean }
+type Open = {
+  admitted: CompanyProof
+  headers: Headers
+  invitationId: InvitationId
+  superseded: boolean
+}
 
 /** Cancels the address's open invitation; a replacement also marks it superseded (4.1 decision B). */
 async function cancelOpen(auth: Auth, tx: CommandTx, input: Open) {
@@ -338,7 +343,7 @@ export function createInvitationCommand(deps: {
           .update(invitation)
           .set({ replaces: input.replaces })
           .where(eq(invitation.id, created.id))
-      const made = { admitted, person: input.person, invitationId: created.id }
+      const made = { admitted, person: input.person, invitationId: InvitationId.parse(created.id) }
       return { ...(await createdOf(tx, made)), created: true }
     })
 }

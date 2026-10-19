@@ -27,6 +27,7 @@ function inFlight(set?: boolean): boolean {
     if (set === false) sessionStorage.removeItem(IN_FLIGHT)
     return sessionStorage.getItem(IN_FLIGHT) !== null
   } catch {
+    // biome-ignore lint/plugin: storage the browser refuses reads as no attempt in flight (C53)
     return false
   }
 }

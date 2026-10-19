@@ -249,7 +249,9 @@ function biomeConfig(): string {
 
 function biomeLint(files: Record<string, string>) {
   const dir = plant({ 'biome.json': biomeConfig(), ...files })
-  cpSync(join(ROOT, 'scripts/w25.grit'), join(dir, 'scripts/w25.grit'))
+  for (const grit of ['w25', 'conexus-code']) {
+    cpSync(join(ROOT, `scripts/${grit}.grit`), join(dir, `scripts/${grit}.grit`))
+  }
   const run = spawnSync(
     join(ROOT, 'node_modules/.bin/biome'),
     ['lint', '--colors=off', '--max-diagnostics=500', '.'],

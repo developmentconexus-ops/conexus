@@ -43,6 +43,7 @@ export function serveApp(
       const name = pathname.startsWith('/api/') ? pathname.slice('/api/'.length) : ''
       const operation = request.method === 'POST' ? operations.get(name) : undefined
       if (operation === undefined) return answer(404, { code: 'OPERATION_NOT_FOUND' })
+      // biome-ignore lint/plugin: an unreadable body fails the operation's input schema next (C27, C53)
       const body: unknown = await request.json().catch(() => undefined)
       const input = operation.input.safeParse(body)
       if (!input.success) return answer(400, { code: 'INPUT_INVALID' })
