@@ -42,7 +42,7 @@ const REPLY_CAP_BYTES = 1024 * 1024
 async function cappedFetch(input: string | URL | Request, init?: RequestInit): Promise<Response> {
   const response = await fetch(input, init)
   const text = await cappedText(response.body, REPLY_CAP_BYTES)
-  if (text === undefined) throw new Error('NEON_REPLY_PAST_CAP')
+  if (text === undefined) throw new Error('a Neon reply passed the size cap')
   const type = response.headers.get('content-type') ?? 'application/json'
   return new Response(text, { status: response.status, headers: { 'content-type': type } })
 }

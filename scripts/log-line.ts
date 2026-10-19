@@ -8,10 +8,13 @@
 // scripts/test-reporter.test.ts and apps/server/src/platform/test-database.test.ts prove both entry
 // points call it. Its row in docs/reference/boundaries.md says when to revalidate it.
 
+import { z } from 'zod'
+
 const CODE = /^[A-Z][A-Z0-9_]*$/
 const PINO_LEVELS = new Set([10, 20, 30, 40, 50, 60])
 
-export type LogLine = Record<string, unknown>
+const LogObject = z.record(z.string(), z.unknown())
+export type LogLine = z.infer<typeof LogObject>
 
 /**
  * The decoded keys of the object's own level, so a repeated key is seen, whether it is written
@@ -31,22 +34,19 @@ function topLevelKeys(json: string): string[] {
       while (json[end] !== '"') end += json[end] === '\\' ? 2 : 1
       let after = end + 1
       while (/\s/.test(json[after] ?? '')) after++
-      const key: unknown = JSON.parse(json.slice(i, end + 1))
-      if (depth === 1 && json[after] === ':' && typeof key === 'string') keys.push(key)
+      const key = z.string().parse(JSON.parse(json.slice(i, end + 1)))
+      if (depth === 1 && json[after] === ':') keys.push(key)
       i = end
     }
   }
   return keys
 }
 
-function isRecord(value: unknown): value is LogLine {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 export function parseLogLine(text: string): LogLine | undefined {
   try {
-    const line: unknown = JSON.parse(text)
-    if (!isRecord(line)) return undefined
+    const parsed = LogObject.safeParse(JSON.parse(text))
+    if (!parsed.success) return undefined
+    const line = parsed.data
     const keys = topLevelKeys(text)
     for (const name of ['level', 'msg']) {
       if (keys.filter((key) => key === name).length !== 1) return undefined
@@ -55,6 +55,7 @@ export function parseLogLine(text: string): LogLine | undefined {
     if (typeof level !== 'number' || !PINO_LEVELS.has(level)) return undefined
     return typeof msg === 'string' && CODE.test(msg) ? line : undefined
   } catch {
+    // biome-ignore lint/plugin: text that is not JSON is not a log line (C53)
     return undefined
   }
 }

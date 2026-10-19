@@ -25,6 +25,7 @@ export class HubFailure extends Error {
 
 /** The body of a reply, or the failure that says it could not be read whole. */
 async function bodyOf(response: Response): Promise<unknown> {
+  // biome-ignore lint/plugin: failureOf parses this unknown body with Problem next (C27)
   return response.json().catch((cause: unknown) => {
     throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
   })

@@ -186,6 +186,7 @@ async function asPersonIn<T>(
   try {
     result = await work(tx)
   } catch (error) {
+    // biome-ignore lint/plugin: the work's own error is rethrown next; a failed restore must not replace it (C53)
     await enter(tx, scope).catch(() => undefined)
     throw error
   }

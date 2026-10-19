@@ -92,6 +92,7 @@ export function OwnerInvitationSection({
       replaces: { id: invitation.id, revision: invitation.revision },
     } as const
     // The mutation owns the visible refusal.
+    // biome-ignore lint/plugin: the mutation already shows the refusal, so nothing is left to log (C53)
     attempt((attemptKey) => reissue.mutateAsync({ params: { companyId }, body, attemptKey })).catch(
       () => undefined,
     )

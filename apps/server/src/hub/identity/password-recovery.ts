@@ -1,4 +1,4 @@
-import type { Email } from '@conexus/hub-api'
+import type { Email, PersonId } from '@conexus/hub-api'
 import { Person } from '@conexus/hub-api'
 import { and, eq, gt } from 'drizzle-orm'
 import type { PublicOrigin } from '../../platform/config.ts'
@@ -29,7 +29,7 @@ export type RecoveryMail = { to: Email; name: string; link: string }
  * The library stamps a link with the application's clock, so the pace reads it with that clock,
  * not the database's.
  */
-async function givenWithinPace(tx: CommandTx, personId: string): Promise<boolean> {
+async function givenWithinPace(tx: CommandTx, personId: PersonId): Promise<boolean> {
   const [recent] = await tx
     .select({ id: verification.id })
     .from(verification)
