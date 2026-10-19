@@ -10,7 +10,11 @@ import { Failure } from '../../platform/failure.ts'
 import { pageOf } from '../../platform/pages.ts'
 import { conversation, conversationTurn } from './tables.ts'
 
-type Deps = { database: Database; identity: IdentityPorts; projects: ProjectPorts }
+type Deps = {
+  database: Database
+  identity: IdentityPorts
+  projects: Pick<ProjectPorts, 'liveProjectOf'>
+}
 export type InProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
 export type OfConversation = InProject & { conversationId: string }
 
