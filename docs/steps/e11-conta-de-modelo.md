@@ -26,10 +26,10 @@ servidor (S33). Antes de U3: a palavra da permissão. No fim: o roteiro e os tex
 **As suas respostas, como o cartão as lê; confirme ou corrija.** 1 B: assinatura e chave; a
 suspensão, na Anthropic e no Google ("suspension or termination"), cai em quem liga. 2: todo
 fornecedor só com chave. 3, 6, 11: sem limite; uma fila por fornecedor em cada dono. 7, P1–P3:
-pessoa, depois as dadas a ela, depois a empresa; a dada sai da fila geral, pode ir a várias pessoas
-e guarda a posição da empresa. 12: a conta não guarda modelo; dono e administrador definem o
-padrão. 14: sem grupos. 8: ChatGPT na 21. 9: os tipos da empresa valem também para as contas
-pessoais nela. 4: dono e administrador não veem contas pessoais.
+pessoa, depois as dadas a ela, depois a empresa; a dada sai da fila geral, vai a várias pessoas,
+na posição da empresa. 12: a conta não guarda modelo; dono e administrador definem o
+padrão. 14: sem grupos. 8: ChatGPT na 21. 10: sem endereço próprio. 9: os tipos da empresa valem também para as contas
+pessoais nela. 4: ninguém vê contas pessoais alheias.
 
 **Sem teste ao ligar (5, agora C).** Nas suas palavras: "Se eu conectar com uma conta errada, já não
 vai dar certo. Isso já é intrínseco." Ligar só lacra e guarda; a assinatura se prova na troca do
@@ -64,10 +64,10 @@ chamada, a troca de conta, a pausa por limite, a renovação do token. ChatGPT (
 | U5 | Fila, tipos e rotas | `builder/model-accounts/`, `hub-api`, `hub/identity/`, `main.ts` | segurança | fastify-best-practices | U2–U4 |
 | U6 | Entrada por assinatura e Claude | `builder/model-accounts/claude/`, `sign-ins.ts` | segurança | mastra | U5 |
 | U7 | Google pelo CLIProxy | `builder/model-accounts/google/`, `infra/` | segurança | node | U6 |
-| U8 | Telas | `apps/web/src/builder/model-accounts/`, rotas | design, web | shadcn | U5 |
+| U8 | Telas | `apps/web/src/builder/model-accounts/`, rotas | design, web | shadcn | U6 |
 | U9 | Percurso | `tests/e2e/`, `package.json` | testes | — | U7, U8 |
 
-U2 e U4 correm em paralelo; U6 e U8 também. Uma revisão, um merge (L9, L13); U3 em PR próprio.
+U2 e U4 correm em paralelo; U7 e U8 também. Uma revisão, um merge (L9, L13); U3 em PR próprio.
 
 **Orçamento de código alterado** (sem testes nem gerados): U2 180; U3 150; U4 80; U5 780; U6 250;
 U7 350; U8 900; U9 30. Total **2.720**, teto 4.000 (L2). Estudos: 1.500 a 1.900 com testes, sem
@@ -87,13 +87,13 @@ contrato. Sem chamada ao modelo, o Google é só o login: 350 contra 663 do anti
 | 6 | U2 | Lacre em outra linha, dono, tipo ou fornecedor, ou bit virado: recusado; chave aposentada abre; após `reseal` a antiga sai sem perda | `seal.test.ts` | must |
 | 7 | U3 | A Empresa B não lê nem grava conta da A; o papel da empresa recebe 42501 em `sealed` (A); o retrato bate | `isolation-model-accounts.test.ts`, `catalog.test.ts` | must |
 | 8 | U3 | Tirar a pessoa apaga as contas dela e as atribuições a ela (a conta volta "para todos"); apagar a empresa apaga tudo | `model-accounts-removal.test.ts` | must |
-| 9 | U4 | `listModelProviders` dá só os do crit. 1; com `fetch` dublê, importar e listar fazem zero chamadas | `providers.test.ts` | must |
+| 9 | U4 | `listKeyProviders`, e por ela `listModelProviders`, dá só os do crit. 1; com `fetch` dublê, importar e listar fazem zero chamadas | `providers.test.ts` | must |
 | 10 | U5 | Ligar por chave lacra e grava no fim da fila do fornecedor, sem chamada; chave vazia ou fornecedor fora da lista: 422 `MODEL_ACCOUNT_INVALID`; a chave nunca volta, só `…` e quatro caracteres | `model-accounts.test.ts` | must |
 | 11 | U5 | Chave plantada fora do log, da resposta e da falha | idem | must |
 | 12 | U5 | Mesmo `Idempotency-Key`: uma conta; outro corpo: `IDEMPOTENCY_CONFLICT` | idem | must |
 | 13 | U5 | Membro lê a fila da empresa; mudá-la: 404 (S10); ninguém vê conta pessoal alheia | idem | must |
 | 14 | U5 | Ordenar uma fila com todos os seus ids: grava; velha, incompleta ou de outro fornecedor: 409 `MODEL_ACCOUNT_ORDER_STALE`; duas juntas: uma vence | `model-accounts-order.test.ts` | must |
-| 15 | U5 | Pausar e retomar; revisão velha: 412 | `model-accounts.test.ts` | must |
+| 15 | U5 | Pausar e retomar; revisão velha: 412. Remover: a da empresa, dono e administrador; a própria, a pessoa; outro: 404; o segundo: 204 | `model-accounts.test.ts` | must |
 | 16 | U5 | Só o operador muda os tipos; dono: 404; chave de API sempre ligada; tipo desligado: as contas dele "desligada pela Conexus", e voltam ao religar | `model-account-kinds.test.ts` | must |
 | 17 | U5 | Dar uma conta da empresa a uma ou várias pessoas: sai da fila geral; a ordem de cada uma é própria, dadas na posição da empresa, empresa; só dono e administrador; não membro: 404; conta pessoal: 422 | `model-accounts-assign.test.ts` | must |
 | 18 | U5 | Modelo padrão: dono e administrador, do registro; membro: 404; fora: 422 `MODEL_UNKNOWN` | `model-accounts.test.ts` | must |
@@ -136,7 +136,7 @@ contrato. Sem chamada ao modelo, o Google é só o login: 350 contra 663 do anti
 | `complete` | `DELETE … RETURNING` (S22) | troca recusada: nada grava | 502 `MODEL_ACCOUNT_UNAVAILABLE` | `MODEL_ACCOUNT_LINKED` | 19, 20, 22 |
 | Mudar, pausar, dar, padrão | 412; dar envia o estado final | uma transação | banco | `MODEL_ACCOUNT_CHANGED` | 15, 17, 18 |
 | Ordenar | linhas travadas; única adiável | uma transação | banco | `MODEL_ACCOUNTS_ORDERED` | 14 |
-| Remover | o segundo: 204 | uma instrução | banco | `MODEL_ACCOUNT_REMOVED` | 10 |
+| Remover | o segundo: 204 | uma instrução | banco | `MODEL_ACCOUNT_REMOVED` | 15 |
 | Tipos | estado final | uma transação | banco | `ACCOUNT_KINDS_SET` | 16 |
 | Processo de login CLIProxy | um por entrada | morre com o programa | Google: 502 | `CLIPROXY_STARTED`, `_STOPPED` | 21 |
 | `reseal` | por `key_id` | linha a linha | banco | linhas | 6 |
