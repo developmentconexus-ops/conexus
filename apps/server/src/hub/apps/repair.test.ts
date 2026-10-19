@@ -67,12 +67,13 @@ test('reparo: os logins da etapa 9 ganham os prazos da chamada só no login de e
   assert.equal((await send(hub, ana, versions)).statusCode, 201)
   const id = ProjectId.parse(projectId)
   const { runLogin, migrateLogin } = appLogin(id)
+  const [run, migrate] = [runLogin, migrateLogin].map((login) => `"${login}"`)
   // As step 9 made them: a statement timeout on both, no transaction timeout.
   const stepNine = await pgTransport(
     owner,
     [
-      { text: `ALTER ROLE "${runLogin}" RESET transaction_timeout` },
-      { text: `ALTER ROLE "${migrateLogin}" SET statement_timeout = '5s'` },
+      { text: `ALTER ROLE ${run} RESET transaction_timeout` },
+      { text: `ALTER ROLE ${migrate} SET statement_timeout = '5s'` },
     ],
     AbortSignal.timeout(5_000),
   )

@@ -83,7 +83,9 @@ test('handler que lança: 500 sem a mensagem, e o registro diz só a operação'
   const response = await call(failing, 'api/escrever', { texto: 'oi' })
   assert.equal(response.status, 500)
   assert.ok(!(await response.text()).includes('segredo-456'))
-  assert.deepEqual(logged.mock.calls[0]?.arguments, ['HANDLER_FAILED', 'escrever', 'Error'])
+  assert.deepEqual(logged.mock.calls[0]?.arguments, [
+    JSON.stringify({ level: 50, msg: 'HANDLER_FAILED', operation: 'escrever', kind: 'Error' }),
+  ])
 })
 
 test('operação desconhecida, outro método ou caminho: 404', async () => {
