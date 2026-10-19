@@ -22,6 +22,8 @@ export function sendEvents(
   if (!isAsyncIterable(body)) throw new Failure('INTERNAL_UNEXPECTED')
   const events = body[Symbol.asyncIterator]()
   const out = new PassThrough()
+  // A comment at once sends the headers, so the client knows the stream is open.
+  out.write(': \n\n')
   const beat = setInterval(() => out.write(': \n\n'), success.heartbeatMs)
   function close() {
     clearInterval(beat)

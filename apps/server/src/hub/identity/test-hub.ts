@@ -131,7 +131,11 @@ async function hubServing(
     conversations,
     webRoot,
   })
-  t.after(() => app.close())
+  // As at shutdown: the Builder's turns drain and end their streams before the server closes.
+  t.after(async () => {
+    await conversations.close()
+    await app.close()
+  })
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
   return { app, edge, test, config, neon, cloudflare, postgres, projects, repair: apps.repair }
