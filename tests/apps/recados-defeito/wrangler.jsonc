@@ -1,0 +1,7 @@
+// recados-defeito: a step 10 defect on top of Recados; `npm run app:pack` bundles it with this file.
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "recados-defeito",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-18"
+}

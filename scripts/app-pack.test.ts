@@ -25,6 +25,9 @@ function pack(name: string, ...extra: string[]) {
 
 const one = pack('recados-1')
 const two = pack('recados-2', 'tests/apps/recados/cor-2')
+const defeito = pack('recados-defeito', 'tests/apps/recados-defeito')
+const naoInicia = pack('recados-nao-inicia', 'tests/apps/recados-nao-inicia')
+const laco = pack('recados-laco', 'tests/apps/recados-laco')
 
 /**
  * A database double that answers Recados's statements from a list in memory, and refuses a write in
@@ -68,7 +71,7 @@ async function run(folder: string) {
 }
 
 test('app:pack monta a pasta que o manifesto diz, e nada mais', () => {
-  for (const folder of [one, two]) {
+  for (const folder of [one, two, defeito, naoInicia, laco]) {
     const manifest = Manifest.parse(JSON.parse(readFileSync(join(folder, 'manifest.json'), 'utf8')))
     for (const path of versionFiles(manifest))
       assert.ok(readFileSync(join(folder, path)).length > 0)
@@ -95,4 +98,22 @@ test('o Worker montado escreve e lista recados com um db falso', async () => {
   const listed = await app.call('listarRecados', {})
   assert.deepEqual(await listed.json(), [{ id: 1, texto: 'Comprar café' }])
   assert.equal((await app.call('escreverRecado', { texto: '' })).status, 400)
+})
+
+test('recados-defeito grava com db.query: 500 HANDLER_FAILED, e nada gravado', async () => {
+  const app = await run(defeito)
+  const written = await app.call('escreverRecado', { texto: 'Comprar café' })
+  assert.equal(written.status, 500)
+  assert.deepEqual(await written.json(), { code: 'HANDLER_FAILED' })
+  assert.deepEqual(await (await app.call('listarRecados', {})).json(), [])
+})
+
+test('recados-nao-inicia lança ao carregar; recados-laco tem Travar e o resto do Recados', async () => {
+  await assert.rejects(import(pathToFileURL(join(naoInicia, 'worker.js')).href), {
+    message: 'Recados não inicia',
+  })
+  const manifest = Manifest.parse(JSON.parse(readFileSync(join(laco, 'manifest.json'), 'utf8')))
+  assert.deepEqual(Object.keys(manifest.operations), ['listarRecados', 'escreverRecado', 'travar'])
+  const app = await run(laco)
+  assert.equal((await app.call('escreverRecado', { texto: 'Comprar café' })).status, 200)
 })
