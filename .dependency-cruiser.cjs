@@ -4,8 +4,8 @@
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff)\\.ts$`
-const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-mastra-database)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff)\\.ts$`
+const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -86,7 +86,7 @@ module.exports = {
     {
       name: 'driver-only-in-the-database-modules',
       comment:
-        'D19: only database.ts, migrate.ts and test-database.ts import the PostgreSQL driver.',
+        'D19: only database.ts, migrate.ts and the test databases import the PostgreSQL driver.',
       severity: 'error',
       from: { pathNot: DRIVER_MODULES },
       to: { path: '(^|node_modules/)(pg|drizzle-orm/node-postgres)(/|$)' },

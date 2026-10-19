@@ -6,14 +6,12 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { sql } from 'drizzle-orm'
-import { DatabaseUrl } from './database.ts'
 import { migrate } from './migrate.ts'
 import type { TestDatabase } from './test-database.ts'
 import {
   createTestDatabase,
   databaseWithPassword,
   freePort,
-  loginAnswer,
   runtimeUrlWithPassword,
   serveEnvironment,
   unreachableDatabaseUrl,
@@ -21,6 +19,7 @@ import {
   withRoleLock,
 } from './test-database.ts'
 import { startHub } from './test-hub-process.ts'
+import { inDatabase, loginAnswer } from './test-mastra-database.ts'
 
 const run = promisify(execFile)
 
@@ -280,12 +279,10 @@ test('a exceção de P6: a migração apaga cada empresa sem cliente, com membro
 
 test('migrate recusa Mastra no banco do Hub (opção B) e dá senha ao login do Mastra sem ela', async (t) => {
   const test = await createTestDatabase(t)
-  const intoHub = new URL(test.mastraUrl.reveal())
-  intoHub.pathname = new URL(test.runtimeUrl.reveal()).pathname
   const { ownerUrl, runtimeUrl, mastraUrl } = test
   await withRoleLock(async () => {
     await assert.rejects(
-      migrate({ ownerUrl, runtimeUrl, mastraUrl: DatabaseUrl.parse(intoHub.toString()) }),
+      migrate({ ownerUrl, runtimeUrl, mastraUrl: inDatabase(mastraUrl, runtimeUrl) }),
       (error: unknown) => error instanceof Error && error.message.startsWith('CONFIG_INVALID'),
     )
     try {

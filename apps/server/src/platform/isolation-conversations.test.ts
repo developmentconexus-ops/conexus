@@ -46,8 +46,9 @@ test('conversas: sem filtro, a Empresa B e Diego não leem nem gravam a conversa
     { kind: 'COMPANY', companyId: B, personId: BRUNO },
     { kind: 'COMPANY', companyId: A, personId: DIEGO },
   ] as const) {
-    const run = (statement: ReturnType<typeof sql>) =>
-      database.command(scope, (tx) => tx.execute(statement))
+    function run(statement: ReturnType<typeof sql>) {
+      return database.command(scope, (tx) => tx.execute(statement))
+    }
     assert.deepEqual((await run(IDS)).rows, [{ ids: [] }])
     assert.deepEqual((await run(TURNS)).rows, [{ turns: 0 }])
     await run(sql`delete from builder.conversation where id = ${ANAS}`)

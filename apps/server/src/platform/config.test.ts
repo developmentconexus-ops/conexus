@@ -82,3 +82,14 @@ test('configuração: sem o arquivo das chaves do lacre, vazio, legível por out
   chmodSync(path, 0o600)
   assert.equal(readConfig('serve', env).sealKeys.sealingId, 'k1')
 })
+
+test('configuração: o arquivo do banco do Mastra ausente, vazio ou aberto a outros é recusado', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  const path = env.HUB_MASTRA_DATABASE_URL_FILE
+  refusal({ ...env, HUB_MASTRA_DATABASE_URL_FILE: undefined }, 'HUB_MASTRA_DATABASE_URL_FILE')
+  chmodSync(path, 0o644)
+  refusal(env, 'HUB_MASTRA_DATABASE_URL_FILE')
+  chmodSync(path, 0o600)
+  writeFileSync(path, '\n')
+  refusal(env, 'HUB_MASTRA_DATABASE_URL_FILE')
+})
