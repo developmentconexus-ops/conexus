@@ -1,11 +1,12 @@
 import type { AccessKind, Person } from '@conexus/hub-api'
+import { APP_OPEN_PATH } from '@conexus/hub-api'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import type { PublicOrigin } from './config.ts'
 import { Failure } from './failure.ts'
 
 const AccessConfig = z.looseObject({
-  access: z.enum(['page', 'public', 'entry', 'session', 'edge']).optional(),
+  access: z.enum(['page', 'public', 'entry', 'session', 'edge', 'handoff']).optional(),
 })
 const READS = ['GET', 'HEAD']
 /** The Tunnel puts the client's address here; the attempt limits key on it (security S28, S29). */
@@ -27,18 +28,20 @@ const signedIn = new WeakMap<FastifyRequest, SignedIn>()
 
 const INVITATION_ACCESS = /^\/api\/invitations\/[^/]+(?:\/(?:password|declination))?$/
 
-export function invitationSessionOf(request: FastifyRequest): SignedIn | undefined {
+/** The session read for a route that may go without one: an invitation's, or the handoff. */
+export function optionalSessionOf(request: FastifyRequest): SignedIn | undefined {
   return signedIn.get(request)
 }
 
 type Shape = { methods: readonly string[]; path: RegExp }
 const ALLOWED: Record<AccessKind, Shape> = {
-  // A page is any address outside /api/, where the screens' router answers (web W1).
-  page: { methods: READS, path: /^\/(?!api(\/|$))/ },
+  // A page is any address outside /api/ but the handoff's, where the screens' router answers (W1).
+  page: { methods: READS, path: new RegExp(`^/(?!api(/|$)|${APP_OPEN_PATH.slice(1)}$)`) },
   public: { methods: ['GET'], path: /^\/api\// },
   entry: { methods: ['POST', 'PUT'], path: /^\/api\// },
   session: { methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], path: /^\/api\// },
   edge: { methods: ['GET', 'POST'], path: /^\/api\// },
+  handoff: { methods: ['GET'], path: new RegExp(`^${APP_OPEN_PATH}$`) },
 }
 
 /**
@@ -78,6 +81,19 @@ export function sessionOf(request: FastifyRequest): SignedIn {
 function checkSite(request: FastifyRequest): void {
   const site = request.headers['sec-fetch-site']
   if (site !== undefined && site !== 'same-origin' && site !== 'none') {
+    throw new Failure('REQUEST_ORIGIN_REFUSED')
+  }
+}
+
+/**
+ * The handoff takes a navigation from any site, the app's host included, and nothing else: a fetch
+ * or a frame of another site's page is refused. A browser that sends no Fetch Metadata passes, as
+ * it does `checkSite`; the binding and the one-use pass still hold (security S22, S48).
+ */
+function checkNavigation(request: FastifyRequest): void {
+  const mode = request.headers['sec-fetch-mode']
+  const dest = request.headers['sec-fetch-dest']
+  if ((mode !== undefined && mode !== 'navigate') || (dest !== undefined && dest !== 'document')) {
     throw new Failure('REQUEST_ORIGIN_REFUSED')
   }
 }
@@ -124,8 +140,9 @@ export function enforceAccess(app: FastifyInstance, listener: Listener): void {
       throw new Failure('NOT_FOUND')
     }
     if (access === 'page') return
-    checkSite(request)
-    const optional = INVITATION_ACCESS.test(request.routeOptions.url ?? '')
+    if (access === 'handoff') checkNavigation(request)
+    else checkSite(request)
+    const optional = access === 'handoff' || INVITATION_ACCESS.test(request.routeOptions.url ?? '')
     if (access === 'public' && !optional) return
     if (!READS.includes(request.method)) checkWrite(request, deps.publicOrigin)
     if (access === 'entry') {

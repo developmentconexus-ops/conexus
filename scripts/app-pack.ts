@@ -73,13 +73,6 @@ function pack(source: string, out: string, overlay: string | undefined) {
     const parts = versionPartsOf(overlay)
     for (const { from, path } of parts) cpSync(from, join(out, path))
     manifest = Manifest.parse(JSON.parse(readFileSync(join(out, 'manifest.json'), 'utf8')))
-    const named = parts.some(({ path }) => path === 'manifest.json') ? manifest.assets : []
-    for (const { path } of parts) {
-      const asset = path.slice(`${ASSETS_FOLDER}/`.length)
-      if (path === 'manifest.json' || existsSync(join(source, path)) || named.includes(asset))
-        continue
-      fail(`${path} replaces no file of ${source}`)
-    }
     cpSync(join(outdir, 'index.js'), join(out, manifest.entry))
   } finally {
     rmSync(outdir, { recursive: true, force: true })

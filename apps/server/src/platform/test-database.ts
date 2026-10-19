@@ -264,6 +264,17 @@ export async function unreachableDatabase(t: Lifetime): Promise<Database> {
   return database
 }
 
+/** What a test reads as the screens' page, which the Hub answers wherever the router shows a screen. */
+export const TEST_PAGE = '<!doctype html><title>Conexus</title>'
+
+/** A folder of built screens holding only `TEST_PAGE`, for a Hub that answers the page. */
+export function testWebRoot(t: Lifetime): string {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  writeFileSync(join(dir, 'index.html'), TEST_PAGE)
+  return dir
+}
+
 function keyFile(t: TestContext, name: string, value: string): string {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-key-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))

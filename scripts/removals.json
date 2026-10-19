@@ -924,14 +924,14 @@
     }
   },
   {
-    "id": "neon-exact-name",
+    "id": "neon-exact-suffix",
     "file": "apps/server/src/platform/neon.ts",
-    "find": "const exact = projects.filter((project) => project.name === name)",
+    "find": "const exact = projects.filter((project) => isCompanys(project.name, companyId))",
     "replace": "const exact = projects",
     "test": {
       "cwd": "apps/server",
       "file": "src/platform/neon.test.ts",
-      "name": "find devolve só o nome exato"
+      "name": "find devolve só o final exato"
     }
   },
   {
@@ -1218,6 +1218,28 @@
       "cwd": "apps/server",
       "file": "src/platform/access.test.ts",
       "name": "borda: uma rota edge na escuta pública"
+    }
+  },
+  {
+    "id": "handoff-navigation-only",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "    if (access === 'handoff') checkNavigation(request)\n    else checkSite(request)\n",
+    "replace": "    if (access !== 'handoff') checkSite(request)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "passagem: só uma navegação de documento; um fetch"
+    }
+  },
+  {
+    "id": "handoff-get-only",
+    "file": "apps/server/src/platform/access.ts",
+    "find": "  handoff: { methods: ['GET'], ",
+    "replace": "  handoff: { methods: ['GET', 'POST'], ",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/access.test.ts",
+      "name": "tipo: a rota handoff só GET"
     }
   },
   {
@@ -2241,6 +2263,28 @@
       "cwd": "apps/edge",
       "file": "src/dispatcher-limits.test.ts",
       "name": "prazo: o app que não responde em 10 s"
+    }
+  },
+  {
+    "id": "upload-cpu-limit",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "    cpuMs: APP_CALL_LIMITS.cpuMs,\n",
+    "replace": "    cpuMs: 30_000,\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/versions.test.ts",
+      "name": "envio: dono e administrador 201"
+    }
+  },
+  {
+    "id": "upload-cpu-metadata",
+    "file": "apps/server/src/platform/cloudflare.ts",
+    "find": "    limits: { cpu_ms: input.cpuMs },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/cloudflare.test.ts",
+      "name": "cloudflare: o envio com arquivos estáticos"
     }
   },
   {

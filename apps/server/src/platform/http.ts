@@ -9,7 +9,6 @@ import {
   AttemptKey,
   FAILURES,
   failuresOf,
-  PAGES,
   PROBLEM_MEDIA_TYPE,
   Problem,
   VERSION_SEND_DEADLINE_MS,
@@ -21,11 +20,12 @@ import Fastify, { LogController } from 'fastify'
 import helmet from 'helmet'
 import { z } from 'zod'
 import type { SessionReader } from './access.ts'
-import { enforceAccess, headersOf, invitationSessionOf, sessionOf } from './access.ts'
+import { enforceAccess, headersOf, optionalSessionOf, sessionOf } from './access.ts'
 import type { Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
+import { installPages, sendPage } from './screens.ts'
 
 const REQUEST_TIMEOUT_MS = 30_000
 // How long a socket may stay silent, the wait for an answer included: above the longest answer a
@@ -33,7 +33,6 @@ const REQUEST_TIMEOUT_MS = 30_000
 export const CONNECTION_TIMEOUT_MS = VERSION_SEND_DEADLINE_MS + 10_000
 // Above the 90 s keep-alive of cloudflared's connection to its origin, so the Hub never closes first.
 const KEEP_ALIVE_TIMEOUT_MS = 95_000
-const ONE_YEAR_MS = 31_536_000_000
 
 const HELMET_OPTIONS = {
   contentSecurityPolicy: {
@@ -63,7 +62,6 @@ export function statusOf(error: unknown): number {
   const status = ErrorStatus.safeParse(error)
   return status.success ? status.data.statusCode : 500
 }
-const WildcardParams = z.object({ '*': z.string() })
 // A missing asset answers the JSON 404: streaming the page after the failed file stream would
 // stack a second file stream on one reply.
 const NOT_A_PAGE = /^\/(api|assets)(\/|\?|$)/
@@ -142,42 +140,13 @@ function logServed(request: FastifyRequest, reply: FastifyReply): void {
 export function installErrorHandling(app: FastifyInstance, page: { built: boolean }): void {
   app.setNotFoundHandler((request, reply) => {
     const read = request.method === 'GET' || request.method === 'HEAD'
-    if (page.built && read && !NOT_A_PAGE.test(request.url)) {
-      return reply.code(404).sendFile('index.html', { maxAge: 0 })
-    }
+    if (page.built && read && !NOT_A_PAGE.test(request.url)) return sendPage(reply, 404)
     throw new Failure('NOT_FOUND')
   })
   app.setErrorHandler((error, request, reply) => {
     replyWithFailure(request, reply, failureOf(error))
   })
   app.addHook('onResponse', async (request, reply) => logServed(request, reply))
-}
-
-function installPages(app: FastifyInstance): void {
-  const config = { access: 'page' } as const
-  for (const page of PAGES) {
-    app.route({
-      method: ['GET', 'HEAD'],
-      url: page.replaceAll(/\$(\w+)/g, ':$1'),
-      config,
-      handler: (_request, reply) => reply.sendFile('index.html', { maxAge: 0 }),
-    })
-  }
-  app.route({
-    method: ['GET', 'HEAD'],
-    url: '/favicon.svg',
-    config,
-    handler: (_request, reply) => reply.sendFile('favicon.svg'),
-  })
-  app.route({
-    method: ['GET', 'HEAD'],
-    url: '/assets/*',
-    config,
-    handler: (request, reply) => {
-      const { '*': file } = WildcardParams.parse(request.params)
-      return reply.sendFile(`assets/${file}`, { maxAge: ONE_YEAR_MS, immutable: true })
-    },
-  })
 }
 
 /** The Fastify instance both listeners share: its limits, its logs and its failure output. */
@@ -328,7 +297,7 @@ export function serve(
         ...partsOf(operation, request),
         ...(operation.access === 'session'
           ? sessionOf(request)
-          : (invitationSessionOf(request) ?? { person: undefined, sessionToken: undefined })),
+          : (optionalSessionOf(request) ?? { person: undefined, sessionToken: undefined })),
       }
       const { body, setCookie, afterReply } = await handler(input)
       if (setCookie.length > 0) reply.header('set-cookie', setCookie)

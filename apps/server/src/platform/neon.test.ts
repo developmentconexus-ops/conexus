@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId } from '@conexus/hub-api'
+import { CompanyId, CompanyNickname } from '@conexus/hub-api'
 import {
   companyProjectName,
   createNeonProjects,
@@ -17,7 +17,8 @@ import { testConfig, unreachableDatabaseUrl } from './test-database.ts'
 type Received = { method: string; path: string; authorization: string | undefined; body: string }
 type Reply = (response: ServerResponse, received: Received) => void
 
-const NAME = companyProjectName(CompanyId.parse('a'.repeat(32)))
+const ID = CompanyId.parse('aB3'.repeat(10).concat('cD'))
+const NAME = companyProjectName({ nickname: CompanyNickname.parse('metal-nobre'), companyId: ID })
 
 function json(status: number, body: unknown): Reply {
   return (response) => {
@@ -30,6 +31,20 @@ const finished = [{ id: 'op-1', project_id: 'p', status: 'finished', action: 'cr
 
 function project(id: string, name: string) {
   return { id, name, region_id: 'aws-sa-east-1', pg_version: 18 }
+}
+
+/**
+ * A list as Neon pages it: the projects with a cursor, then, asked from that cursor, none (the
+ * SDK's `all()` reads until an empty page).
+ */
+function listing(projects: unknown[]): Reply {
+  return (response, received) => {
+    const after = new URL(received.path, 'http://x').searchParams.get('cursor')
+    json(200, {
+      projects: after === null ? projects : [],
+      pagination: { cursor: after ?? 'cursor-1' },
+    })(response, received)
+  }
 }
 
 /** A fake of Neon's API (T14): it records each request and answers with `reply`. */
@@ -69,30 +84,72 @@ async function fakeNeon(t: TestContext, reply: Reply) {
   return { neon: createNeonProjects({ config, log }), received, lines, config }
 }
 
-test('neon: find devolve só o nome exato, na organização, com a chave', async (t) => {
+test('neon: find devolve só o final exato -<id>, o nome velho cx-<id> incluído, na organização', async (t) => {
   const { neon, received, config } = await fakeNeon(
     t,
-    json(200, {
-      projects: [
-        project('exact-1', NAME),
-        project('longer-1', `${NAME}x`),
-        project('other-1', 'cx-b'),
-      ],
-    }),
+    listing([
+      project('named-1', NAME),
+      project('old-1', `cx-${ID}`),
+      project('longer-1', `outra-${ID}y`),
+      project('before-1', `${ID}-x`),
+      project('glued-1', `outra${ID}`),
+      project('other-1', `outra-${'z'.repeat(32)}`),
+    ]),
   )
-  assert.deepEqual(await neon.find(NAME), { kind: 'DONE', value: [NeonProjectId.parse('exact-1')] })
+  assert.deepEqual(await neon.find(ID), {
+    kind: 'DONE',
+    value: [
+      { id: NeonProjectId.parse('named-1'), name: NAME },
+      { id: NeonProjectId.parse('old-1'), name: `cx-${ID}` },
+    ],
+  })
   const [call] = received
   assert.equal(call?.method, 'GET')
   const url = new URL(call?.path ?? '', 'http://x')
   assert.equal(url.pathname, '/api/v2/projects')
-  assert.equal(url.searchParams.get('search'), NAME)
+  assert.equal(url.searchParams.get('search'), ID)
   assert.equal(url.searchParams.get('org_id'), config.neonOrgId)
   assert.equal(call?.authorization, `Bearer ${config.neonApiKey.reveal()}`)
+  assert.equal(received.length, 2, 'the second page, from the cursor, ends the list')
 })
 
-test('neon: find sem nenhum nome exato devolve a lista vazia', async (t) => {
-  const { neon } = await fakeNeon(t, json(200, { projects: [project('longer-1', `${NAME}x`)] }))
-  assert.deepEqual(await neon.find(NAME), { kind: 'DONE', value: [] })
+test('neon: find sem nenhum final exato devolve a lista vazia', async (t) => {
+  const { neon } = await fakeNeon(t, listing([project('longer-1', `${NAME}x`)]))
+  assert.deepEqual(await neon.find(ID), { kind: 'DONE', value: [] })
+})
+
+test('neon: list lê a organização inteira, sem busca', async (t) => {
+  const { neon, received, config } = await fakeNeon(
+    t,
+    listing([project('named-1', NAME), project('other-1', 'qualquer')]),
+  )
+  assert.deepEqual(await neon.list(), {
+    kind: 'DONE',
+    value: [
+      { id: NeonProjectId.parse('named-1'), name: NAME },
+      { id: NeonProjectId.parse('other-1'), name: 'qualquer' },
+    ],
+  })
+  const url = new URL(received[0]?.path ?? '', 'http://x')
+  assert.equal(url.searchParams.get('search'), null)
+  assert.equal(url.searchParams.get('org_id'), config.neonOrgId)
+})
+
+test('neon: rename muda o nome pelo id; o id ausente é gone', async (t) => {
+  const present = await fakeNeon(t, json(200, { project: project('p-1', NAME), operations: [] }))
+  assert.deepEqual(await present.neon.rename(NeonProjectId.parse('p-1'), NAME), {
+    kind: 'DONE',
+    value: 'renamed',
+  })
+  const [call] = present.received
+  assert.equal(call?.method, 'PATCH')
+  assert.equal(new URL(call?.path ?? '', 'http://x').pathname, '/api/v2/projects/p-1')
+  assert.deepEqual(JSON.parse(call?.body ?? ''), { project: { name: NAME } })
+  const absent = await fakeNeon(t, json(404, { code: '', message: 'project not found' }))
+  assert.deepEqual(await absent.neon.rename(NeonProjectId.parse('p-1'), NAME), {
+    kind: 'DONE',
+    value: 'gone',
+  })
 })
 
 test('neon: create pede São Paulo, PostgreSQL 18, a organização e o nome', async (t) => {
@@ -138,20 +195,23 @@ test('neon: delete apaga pelo id; o id ausente conta como apagado', async (t) =>
 
 test('neon: resposta de recusa vira REFUSED, em cada chamada', async (t) => {
   const { neon, lines } = await fakeNeon(t, json(400, { code: 'BAD', message: 'no' }))
-  assert.deepEqual(await neon.find(NAME), { kind: 'REFUSED' })
+  assert.deepEqual(await neon.find(ID), { kind: 'REFUSED' })
+  assert.deepEqual(await neon.list(), { kind: 'REFUSED' })
   assert.deepEqual(await neon.create(NAME), { kind: 'REFUSED' })
+  assert.deepEqual(await neon.rename(NeonProjectId.parse('p-1'), NAME), { kind: 'REFUSED' })
   assert.deepEqual(await neon.delete(NeonProjectId.parse('p-1')), { kind: 'REFUSED' })
-  assert.deepEqual(lines, Array(3).fill({ fields: { reason: 'api' }, message: 'NEON_FAILED' }))
+  assert.deepEqual(lines, Array(5).fill({ fields: { reason: 'api' }, message: 'NEON_FAILED' }))
 })
 
 test('neon: conexão cortada vira NO_ANSWER, em cada chamada', async (t) => {
   const { neon, lines } = await fakeNeon(t, (response) => response.destroy())
-  assert.deepEqual(await neon.find(NAME), { kind: 'NO_ANSWER' })
+  assert.deepEqual(await neon.find(ID), { kind: 'NO_ANSWER' })
   assert.deepEqual(await neon.create(NAME), { kind: 'NO_ANSWER' })
+  assert.deepEqual(await neon.rename(NeonProjectId.parse('p-1'), NAME), { kind: 'NO_ANSWER' })
   assert.deepEqual(await neon.delete(NeonProjectId.parse('p-1')), { kind: 'NO_ANSWER' })
   assert.deepEqual(
     lines.map((line) => line.fields.reason),
-    ['network', 'network', 'network'],
+    Array(4).fill('network'),
   )
 })
 
@@ -160,7 +220,7 @@ test('neon: resposta maior que o teto vira NO_ANSWER, sem ler o resto', async (t
     response.writeHead(200, { 'content-type': 'application/json' })
     response.end(`{"projects":[],"padding":"${'x'.repeat(2 * 1024 * 1024)}"}`)
   })
-  assert.deepEqual(await neon.find(NAME), { kind: 'NO_ANSWER' })
+  assert.deepEqual(await neon.find(ID), { kind: 'NO_ANSWER' })
   assert.equal(lines.length, 1)
 })
 
@@ -169,7 +229,7 @@ test('neon: chave recusada é falha do sistema, e a chave não vai ao registro n
     t,
     json(401, { code: 'UNAUTH', message: 'bad key' }),
   )
-  const failure = await neon.find(NAME).catch((error: unknown) => error)
+  const failure = await neon.find(ID).catch((error: unknown) => error)
   assert.ok(failure instanceof Error)
   assert.equal(Reflect.get(failure, 'code'), 'INTERNAL_UNEXPECTED')
   const key = config.neonApiKey.reveal()
@@ -180,11 +240,25 @@ test('neon: chave recusada é falha do sistema, e a chave não vai ao registro n
   assert.equal(String(config.neonApiKey).includes(key), false)
 })
 
-test('neon: o nome de projeto só aceita cx- e o id da empresa', () => {
-  assert.equal(NAME, `cx-${'a'.repeat(32)}`)
-  for (const bad of ['', 'cx-', 'cx-a/b', 'other-a', 'cx-a b']) {
+test('neon: o nome é <apelido>-<id>; o apelido de 30 dá 63 caracteres; outro formato é recusado', () => {
+  assert.equal(NAME, `metal-nobre-${ID}`)
+  const longest = companyProjectName({
+    nickname: CompanyNickname.parse('a'.repeat(30)),
+    companyId: ID,
+  })
+  assert.equal(longest.length, 63)
+  for (const bad of [
+    '',
+    `-${ID}`,
+    `cx-${ID}x`,
+    `Metal-${ID}`,
+    `metal--a-${ID}`,
+    `a/b-${ID}`,
+    'cx-a',
+  ]) {
     assert.equal(NeonProjectName.safeParse(bad).success, false, bad)
   }
+  assert.equal(NeonProjectName.safeParse(`${'a'.repeat(32)}-${ID}`).success, false, '65 characters')
 })
 
 test('neon: o orçamento de uma chamada soma o pedido e a espera', () => {

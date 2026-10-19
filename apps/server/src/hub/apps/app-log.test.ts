@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { createHash, randomBytes } from 'node:crypto'
+import { get } from 'node:http'
 import { test } from 'node:test'
 import { APP_SESSION_HEADER } from '@conexus/hub-api'
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
@@ -9,7 +10,18 @@ import { ANA_OWNER, hubWithMail, PASSWORD, personOn, plantCompany } from '../ide
 
 const PEDIDOS = 'pedidos--empresa-a'
 
-test('log: a passagem, a sessão e a recusa levam ids, nunca o código, a sessão ou o nome (S41)', async (t) => {
+/** A navigation as the browser sends it, which Node's fetch cannot: it always says `cors`. */
+function navigate(url: string, cookie = ''): Promise<{ status: number; location: string }> {
+  const headers = { 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document', cookie }
+  return new Promise((resolve, reject) => {
+    get(url, { headers }, (response) => {
+      response.resume()
+      resolve({ status: response.statusCode ?? 0, location: response.headers.location ?? '' })
+    }).on('error', reject)
+  })
+}
+
+test('log: a passagem, a sessão e a recusa levam ids, nunca o código, o vínculo, a sessão ou o nome (S41)', async (t) => {
   const hub = await hubWithMail(t)
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id, 'Empresa A', 'empresa-a')
@@ -36,14 +48,11 @@ test('log: a passagem, a sessão e a recusa levam ids, nunca o código, a sessã
     assert.equal(created.status, 201)
     const binding = randomBytes(32).toString('base64url')
     const hash = createHash('sha256').update(binding).digest('base64url')
-    const made = await fetch(`${base}/api/apps/handoffs`, {
-      method: 'POST',
-      headers: { ...json, cookie },
-      body: JSON.stringify({ host: PEDIDOS, binding: hash }),
-    })
-    const code = String(
-      new URL(String(Object(await made.json()).location)).searchParams.get('code'),
-    )
+    const open = `${base}/apps/open?${new URLSearchParams({ host: PEDIDOS, binding: hash })}`
+    assert.equal((await navigate(open)).status, 303)
+    const made = await navigate(open, cookie)
+    assert.equal(made.status, 303)
+    const code = String(new URL(made.location).searchParams.get('code'))
     const redeemed = await fetch(`${edge}/api/app-sessions`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

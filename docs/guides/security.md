@@ -20,7 +20,7 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
 - **S4.** The generated handler **must** receive only `db`, `caller` and `connectors`, with `caller`
   filled by the platform. A fourth object is a change of contract [0019]. [app-contract types]
 - **S5.** Generated code **must not** keep mutable state at module level; a Worker is reused between
-  calls. [verifier]
+  calls. [the Builder's lint, from step 13]
 
 ## 2. Who may act (ASVS `V8`)
 

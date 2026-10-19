@@ -1,4 +1,4 @@
-import { createSession, FAILURES } from '@conexus/hub-api'
+import { APP_OPEN_PATH, createSession, FAILURES } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter } from '@tanstack/react-router'
 import { z } from 'zod'
@@ -74,10 +74,16 @@ export function SignInForm(props: {
     // The guard reads the session with ensureQueryData, which would return the cached "nobody"
     // (web W28).
     queryClient.removeQueries({ queryKey: sessionQuery.queryKey })
+    const back = props.redirect ?? '/'
+    // The Hub answers the handoff itself and sends the browser on to the app, so it is loaded.
+    if (new URL(back, ANY_ORIGIN).pathname === APP_OPEN_PATH) {
+      await router.navigate({ href: back, reloadDocument: true })
+      return
+    }
     await router.invalidate()
     const stop = focusTitleWhenRendered(router)
     try {
-      await router.navigate({ href: props.redirect ?? '/' })
+      await router.navigate({ href: back })
     } catch (error) {
       stop()
       throw error

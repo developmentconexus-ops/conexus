@@ -1,5 +1,5 @@
 import type { Manifest } from '@conexus/app-contract'
-import { APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
+import { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
 import type {
   AppVersion,
   AppVersionId,
@@ -50,7 +50,10 @@ export function admitReader(deps: Admitting, tx: ReadTx, input: Ids & { person: 
   return admitTo(deps, tx, { ...input, action: 'readAppVersions' })
 }
 
-/** A version's Worker in the namespace, tagged with its company and Projeto (decision 0043). */
+/**
+ * A version's Worker in the namespace, tagged with its company and Projeto (decision 0043), with the
+ * CPU limit that Cloudflare enforces on every call (decision 0047, check 5).
+ */
 export function uploadVersion(
   cloudflare: CloudflareApps,
   input: Ids & { versionId: AppVersionId; manifest: Manifest; files: readonly WorkerFile[] },
@@ -61,6 +64,7 @@ export function uploadVersion(
     compatibilityDate: APP_COMPATIBILITY_DATE[input.manifest.contract],
     files: input.files,
     tags: [`company-${input.companyId}`, `project-${input.projectId}`],
+    cpuMs: APP_CALL_LIMITS.cpuMs,
   })
 }
 

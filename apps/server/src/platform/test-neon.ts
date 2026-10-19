@@ -4,7 +4,7 @@ import type { TestContext } from 'node:test'
 import { NeonApiKey, NeonApiUrl, NeonOrgId } from './config.ts'
 import type { DatabaseUrl } from './database.ts'
 import type { NeonProjects } from './neon.ts'
-import { NeonProjectId, NeonProjectName } from './neon.ts'
+import { NeonProjectId } from './neon.ts'
 
 // Nothing listens on the discard port, so a Hub that reaches Neon without a fake server fails loudly.
 export const NO_NEON_SERVER = 'http://127.0.0.1:9/api/v2'
@@ -19,46 +19,69 @@ export function testNeon(apiUrl = NO_NEON_SERVER) {
   }
 }
 
-type Call = 'find' | 'create' | 'delete' | 'ownerConnection'
+type Call = 'find' | 'list' | 'create' | 'rename' | 'delete' | 'ownerConnection'
 type Scripted = { answer: 'REFUSED' | 'NO_ANSWER'; takesEffect: boolean }
 
-function noScripts(): Record<Call, Scripted[]> {
-  return { find: [], create: [], delete: [], ownerConnection: [] }
+/** The projects of a Neon of memory, by id and name. */
+function projectsIn(live: Map<NeonProjectId, string>) {
+  return [...live].map(([id, name]) => ({ id, name }))
+}
+
+/** Each call recorded, and the next answers of each kind as a test scripts them. */
+function scriptBook() {
+  const calls: Call[] = []
+  const scripts: Record<Call, Scripted[]> = {
+    find: [],
+    list: [],
+    create: [],
+    rename: [],
+    delete: [],
+    ownerConnection: [],
+  }
+  return {
+    calls,
+    scripted(call: Call) {
+      calls.push(call)
+      return scripts[call].shift()
+    },
+    /** The next call of this kind answers so; `takesEffect` says the call happened before the answer was lost. */
+    script(call: Call, answer: Scripted['answer'], takesEffect = false) {
+      scripts[call].push({ answer, takesEffect })
+    },
+  }
 }
 
 /**
  * A Neon of memory (T14, T15) that answers like the adapter does: the projects it holds by id and
- * name, each call recorded, and the next answers scripted. A scripted silence may still have taken
+ * name, found by the exact `-<companyId>` ending as decision 0048's proof showed, each call
+ * recorded, and the next answers scripted. A scripted silence may still have taken
  * effect, as a cut reply has. `hold` keeps the next `create` before its effect until released.
  */
 export function fakeNeon() {
-  const live = new Map<NeonProjectId, NeonProjectName>()
-  const calls: Call[] = []
-  const scripts = noScripts()
+  const live = new Map<NeonProjectId, string>()
+  const { calls, scripted, script } = scriptBook()
   const owners = new Map<NeonProjectId, DatabaseUrl>()
   const holds: { arrived: PromiseWithResolvers<void>; released: PromiseWithResolvers<void> }[] = []
   const afterCreate: ((id: NeonProjectId) => Promise<void>)[] = []
   let serial = 0
 
-  function scripted(call: Call) {
-    calls.push(call)
-    return scripts[call].shift()
-  }
-
   function plant(name: string): NeonProjectId {
     serial += 1
     const id = NeonProjectId.parse(`neon-${serial}`)
-    live.set(id, NeonProjectName.parse(name))
+    live.set(id, name)
     return id
   }
 
+  /** A read answers its script, or what Neon holds now. */
+  function read<T>(call: Call, value: () => T) {
+    const next = scripted(call)
+    return next === undefined ? { kind: 'DONE' as const, value: value() } : { kind: next.answer }
+  }
+
   const neon: NeonProjects = {
-    async find(name) {
-      const next = scripted('find')
-      if (next !== undefined) return { kind: next.answer }
-      const ids = [...live].filter(([, existing]) => existing === name).map(([id]) => id)
-      return { kind: 'DONE', value: ids }
-    },
+    find: async (companyId) =>
+      read('find', () => projectsIn(live).filter(({ name }) => name.endsWith(`-${companyId}`))),
+    list: async () => read('list', () => projectsIn(live)),
     async create(name) {
       const next = scripted('create')
       const held = holds.shift()
@@ -70,6 +93,13 @@ export function fakeNeon() {
       const id = plant(name)
       await afterCreate.shift()?.(id)
       return next === undefined ? { kind: 'DONE', value: id } : { kind: next.answer }
+    },
+    async rename(id, name) {
+      const next = scripted('rename')
+      if (next !== undefined && !next.takesEffect) return { kind: next.answer }
+      if (!live.has(id)) return { kind: 'DONE', value: 'gone' }
+      live.set(id, name)
+      return next === undefined ? { kind: 'DONE', value: 'renamed' } : { kind: next.answer }
     },
     async delete(id) {
       const next = scripted('delete')
@@ -89,16 +119,13 @@ export function fakeNeon() {
     neon,
     calls,
     /** The projects Neon holds now, by id and name. */
-    projects: () => [...live].map(([id, name]) => ({ id, name })),
+    projects: () => projectsIn(live),
     plant,
     /** The owner's address the project answers with: a database of the test server (T19). */
     ownedBy(id: NeonProjectId, owner: DatabaseUrl) {
       owners.set(id, owner)
     },
-    /** The next call of this kind answers so; `takesEffect` says the call happened before the answer was lost. */
-    script(call: Call, answer: Scripted['answer'], takesEffect = false) {
-      scripts[call].push({ answer, takesEffect })
-    },
+    script,
     /** Runs after the next `create` has made its project and before it answers. */
     whenCreated(work: (id: NeonProjectId) => Promise<void>) {
       afterCreate.push(work)
@@ -118,8 +145,9 @@ export function fakeNeon() {
 const FINISHED = [{ id: 'op-1', project_id: 'p', status: 'finished', action: 'create_timeline' }]
 
 /**
- * Neon's API of memory behind a port, for a Hub that runs as a program (T14): list by name, create
- * and delete a project, and the owner's address of one, the calls the adapter makes.
+ * Neon's API of memory behind a port, for a Hub that runs as a program (T14): list, whose `search`
+ * matches a piece of a name or an id and whose pages end with an empty one, create, rename and
+ * delete a project, and the owner's address of one, the calls the adapter makes.
  */
 export async function neonServer(t: TestContext) {
   const live = new Map<string, string>()
@@ -141,10 +169,18 @@ export async function neonServer(t: TestContext) {
       }
       if (request.method === 'GET') {
         const search = url.searchParams.get('search') ?? ''
-        const projects = [...live].filter(([, name]) => name.includes(search))
+        const cursor = url.searchParams.get('cursor')
+        const found = [...live].filter(([key, name]) => `${key} ${name}`.includes(search))
         return send(200, {
-          projects: projects.map(([projectId, name]) => ({ id: projectId, name })),
+          projects: cursor === null ? found.map(([key, name]) => ({ id: key, name })) : [],
+          pagination: { cursor: cursor ?? 'cursor-1' },
         })
+      }
+      if (request.method === 'PATCH') {
+        if (!live.has(id)) return send(404, { code: '', message: 'project not found' })
+        const { project } = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+        live.set(id, project.name)
+        return send(200, { project: { id, name: project.name }, operations: [] })
       }
       if (request.method === 'POST') {
         const { project } = JSON.parse(Buffer.concat(chunks).toString('utf8'))

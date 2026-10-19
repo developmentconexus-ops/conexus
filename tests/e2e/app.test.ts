@@ -7,7 +7,7 @@ import example from '../../apps/edge/example/src/index.ts'
 import { serveDispatch } from '../../apps/edge/src/dispatch.ts'
 import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { Jar } from './apps-edge.ts'
-import { liveHub, PASSWORD, personWithPassword, plantCompany } from './live-hub.ts'
+import { liveHub, openOnHub, PASSWORD, personWithPassword, plantCompany } from './live-hub.ts'
 
 // Step 8's journey without Cloudflare: the real Hub on both ports, the real dispatcher in Node,
 // the namespace a fake that runs the example app. Cookies travel by hand, as a browser would
@@ -133,12 +133,20 @@ async function scenario(t: TestContext) {
   )
   assert.equal(made.status, 201)
   assert.equal(JSON.parse(made.text).project.address, `${LABEL}.${TEST_APPS_DOMAIN}`)
-  return { hub, visit, sessions, companyId, carla, project: JSON.parse(made.text).project.id }
+  /** The Hub's handoff, as the dispatcher's 303 sends the browser there. */
+  function open(path: string, who: Jar) {
+    return openOnHub(port, path, who.header())
+  }
+
+  return {
+    ...{ hub, visit, open, sessions, companyId, carla },
+    project: JSON.parse(made.text).project.id,
+  }
 }
 
 type Scenario = Awaited<ReturnType<typeof scenario>>
 
-/** First visit, the Hub's pass for this browser, the dispatcher's redemption: stops before the redeeming visit. */
+/** First visit, then the Hub's 303 with the pass for this browser: stops before the redeeming visit. */
 async function getPass(s: Scenario, browser: Jar): Promise<string> {
   const first = await s.visit(browser, '/')
   assert.equal(first.status, 303)
@@ -147,15 +155,9 @@ async function getPass(s: Scenario, browser: Jar): Promise<string> {
   assert.equal(open.pathname, '/apps/open')
   assert.equal(open.searchParams.get('host'), LABEL)
   assert.match(browser.header(), /^__Host-conexus-binding=[\w-]{43}$/)
-  const handoff = await s.hub(
-    'POST',
-    '/api/apps/handoffs',
-    s.sessions.member,
-    { host: LABEL, binding: open.searchParams.get('binding') },
-    MEMBER_IP,
-  )
-  assert.equal(handoff.status, 201)
-  const { location } = JSON.parse(handoff.text)
+  const handoff = await s.open(`${open.pathname}${open.search}`, s.sessions.member)
+  assert.equal(handoff.status, 303)
+  const { location } = handoff
   const hubSide = `https://${LABEL}.${TEST_APPS_DOMAIN}`
   assert.ok(location.startsWith(`${hubSide}/__conexus/passagem?code=`))
   return location.slice(hubSide.length)

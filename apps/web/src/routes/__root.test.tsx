@@ -1,4 +1,4 @@
-import { PAGES } from '@conexus/hub-api'
+import { APP_OPEN_PATH, PAGES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
@@ -34,7 +34,7 @@ for (const [who, signedIn, label, arrival] of [
   })
 }
 
-test('cada endereço do roteador é uma página que o Hub abre, e só esses', () => {
+test('cada endereço do roteador é uma página que o Hub abre, ou a recusa da passagem, e só esses', () => {
   const { router } = createConexus(createMemoryHistory())
-  expect(Object.keys(router.routesByPath).sort()).toEqual([...PAGES].sort())
+  expect(Object.keys(router.routesByPath).sort()).toEqual([...PAGES, APP_OPEN_PATH].sort())
 })

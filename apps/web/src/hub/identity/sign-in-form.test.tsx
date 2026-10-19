@@ -1,7 +1,7 @@
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { companyRead, homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -95,4 +95,36 @@ test('entrar a caminho de outra página leva o foco ao título dela, não ao cor
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
   const title = await screen.findByRole('heading', { name: COMPANY.name })
   await waitFor(() => expect(document.activeElement).toBe(title))
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+test('entrar a caminho da passagem a um app carrega o documento, que o Hub manda ao app', async () => {
+  const loaded: string[] = []
+  const origin = globalThis.location.origin
+  vi.stubGlobal('location', {
+    origin,
+    get href() {
+      return `${origin}/login`
+    },
+    set href(href: string) {
+      loaded.push(href)
+    },
+  })
+  server.use(...homeHub({ signedIn: false }))
+  const open = `/apps/open?host=pedidos--empresa-teste&binding=${'b'.repeat(43)}`
+  const conexus = createConexus(
+    createMemoryHistory({
+      initialEntries: [`/login?${new URLSearchParams({ redirect: open })}`],
+    }),
+  )
+  render(<Conexus conexus={conexus} />)
+  fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
+  fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+  await waitFor(() => expect(loaded).toEqual([open]))
+  expect(conexus.router.state.location.pathname).toBe('/login')
+  expect(screen.queryByText('Este app não existe ou você não tem acesso a ele.')).toBeNull()
 })

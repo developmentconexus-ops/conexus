@@ -19,7 +19,7 @@ import { threads } from './app-threads.ts'
 // Neon's proxy runs it (testing T14, T16).
 
 type Asset = { bytes: Buffer; mediaType: string }
-type Worker = { main: Buffer; assets: Map<string, Asset> }
+type Worker = { main: Buffer; assets: Map<string, Asset>; cpuMs: number }
 type Manifest = Record<string, { hash: string }>
 
 type Memory = {
@@ -30,6 +30,11 @@ type Memory = {
 }
 type ApiReply = [status: number, body: unknown]
 
+/**
+ * A Worker uploaded without `limits.cpu_ms` runs to Workers' default of 30 s. The CPU limit is the
+ * upload's alone: a call's `cpuMs` did not cut a loop on v0.10.0 (step 10's use script, step 4).
+ */
+const WORKERS_DEFAULT_CPU_MS = 30_000
 const NO_SCRIPT: ApiReply = [
   404,
   { success: false, errors: [{ code: 10_007 }], messages: [], result: null },
@@ -111,7 +116,8 @@ async function putScript(memory: Memory, request: Request, worker: string): Prom
     assert.ok(blob, `the asset ${path} was never uploaded`)
     assets.set(path, blob)
   }
-  memory.workers.set(worker, { main: bytes, assets })
+  const cpuMs = Number(metadata.limits?.cpu_ms ?? WORKERS_DEFAULT_CPU_MS)
+  memory.workers.set(worker, { main: bytes, assets, cpuMs })
   return ok({ id: worker })
 }
 
@@ -223,7 +229,7 @@ type Props = Parameters<typeof example.fetch>[2]['props']
 export function namespace(t: TestContext, cloudflare: Cloudflare) {
   const serve = threads(t)
   return {
-    get(name: string, args: { props: Props }, options: { limits: { cpuMs: number } }) {
+    get(name: string, args: { props: Props }) {
       if (name === 'conexus-example') {
         return { fetch: async (request: Request) => example.fetch(request, {}, args), connect }
       }
@@ -238,12 +244,7 @@ export function namespace(t: TestContext, cloudflare: Cloudflare) {
               headers: { 'content-type': asset.mediaType },
             })
           }
-          return serve(
-            name,
-            { main: worker.main, cpuMs: options.limits.cpuMs },
-            request,
-            args.props,
-          )
+          return serve(name, worker, request, args.props)
         },
         connect,
       }

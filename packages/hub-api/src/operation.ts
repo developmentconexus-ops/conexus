@@ -7,14 +7,16 @@ export const AttemptKey = z.uuid()
 
 /**
  * `entry` is a write made without a session; `session` reads the session first; `edge` exists only
- * on the listener the apps' dispatcher alone reaches (security S48).
+ * on the listener the apps' dispatcher alone reaches; `handoff` is the one route a navigation from
+ * another site reaches (security S48).
  */
-export type AccessKind = 'page' | 'public' | 'entry' | 'session' | 'edge'
+export type AccessKind = 'page' | 'public' | 'entry' | 'session' | 'edge' | 'handoff'
 
 export type Operation = {
   id: string
   summary: string
-  access: AccessKind
+  /** The `handoff` route answers a navigation, never JSON, so no operation declares it. */
+  access: Exclude<AccessKind, 'handoff'>
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   /** A path parameter is written `{name}` and read by `input.params`. */
   path: `/api/${string}`

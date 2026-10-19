@@ -175,9 +175,9 @@ route both e-mail the founder; the route does not touch the database, so a hung 
 and talks to Neon's HTTP driver. `db.query(text, values)` runs one statement in a read-only
 transaction, so PostgreSQL refuses a write; `db.batch` runs every write of a call in one transaction.
 Nothing carries from one call to the next; the rule for apps is [data D28](guides/data.md). A
-call's numbers are `APP_CALL_LIMITS` [0047]: on each call the dispatcher sets `limits`, and the
-platform cuts its CPU at 50 ms (`cpuMs`) and its 51st `db` call (`subRequests`, which counts the
-capability's calls). Pieces still made by hand here:
+call's numbers are `APP_CALL_LIMITS` [0047]: the platform cuts its CPU at 50 ms (`cpu_ms` at the
+version's upload, also set on each call) and its 51st `db` call (the call's `subRequests`, which
+counts the capability's calls). Pieces still made by hand here:
 
 | Piece | Why it remains | Basis |
 | --- | --- | --- |
