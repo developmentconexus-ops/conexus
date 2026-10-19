@@ -32,6 +32,8 @@ ENV CONEXUS_VERSION=${CONEXUS_VERSION} \
     HUB_PORT=8080 \
     HUB_EDGE_PORT=8081 \
     LOG_LEVEL=info
+# CLIProxyAPI is a Go binary and reads the system roots; node:24-slim ships none (Node carries its own bundle).
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/server/package.json apps/server/
