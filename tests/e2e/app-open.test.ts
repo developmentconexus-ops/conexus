@@ -158,7 +158,7 @@ async function passToDispatcher(
   outgoing.end(Buffer.from(await answer.arrayBuffer()))
 }
 
-async function scenario(t: TestContext) {
+async function scenario(t: TestContext, options: { bypassCSP?: boolean } = {}) {
   const hub = await liveHub(t, 'http://127.0.0.1:9/unused', undefined, {
     publicOrigin: PublicOrigin.parse(HUB),
     appsDomain: AppsDomain.parse(APPS_DOMAIN),
@@ -186,7 +186,7 @@ async function scenario(t: TestContext) {
     ],
   })
   t.after(() => closeBrowser(browser))
-  const context = await browser.newContext({ ignoreHTTPSErrors: true })
+  const context = await browser.newContext({ ignoreHTTPSErrors: true, ...options })
   const page = await context.newPage()
   const problems: string[] = []
   watchConsole(page, problems)
@@ -239,7 +239,7 @@ test('passagem: o endereço do app sem sessão do Hub leva a Entrar e, logo depo
 })
 
 test('passagem: Abrir app no Projeto vai direto ao app, numa navegação vinda do app; um fetch do app é recusado', async (t) => {
-  const s = await scenario(t)
+  const s = await scenario(t, { bypassCSP: true })
   const { page } = s
   await page.goto(`${HUB}/login`)
   await signIn(page, CARLA.email, PASSWORD)
@@ -264,11 +264,10 @@ test('passagem: Abrir app no Projeto vai direto ao app, numa navegação vinda d
       },
     ],
   )
-  // The app's own policy keeps its page from calling the Hub at all; with it set aside, the call
-  // still reaches the Hub as a fetch, without the Hub's cookie, and the Hub refuses it.
-  const prober = await (
-    await s.browser.newContext({ ignoreHTTPSErrors: true, bypassCSP: true })
-  ).newPage()
+  // The app's own policy keeps its page from calling the Hub at all; with it set aside in Carla's
+  // signed-in browser, the call still reaches the Hub as a fetch, without the Hub's cookie, which
+  // its SameSite withholds, and the Hub refuses it.
+  const prober = await page.context().newPage()
   await prober.goto(`${APP}/__conexus/nada`)
   const asked = s.seen.length
   const fetched = await prober.evaluate(
