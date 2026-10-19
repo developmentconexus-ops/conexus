@@ -1,0 +1,65 @@
+import { useSuspenseQuery } from '@tanstack/react-query'
+import { getRouteApi } from '@tanstack/react-router'
+import { useRef } from 'react'
+import { membersQuery } from '../../hub/identity/public.ts'
+import { SectionTitle } from '../../ui/list.tsx'
+import { Empty } from '../../ui/states.tsx'
+import { DefaultModel } from './default-model.tsx'
+import { LinkAccount } from './link-account.tsx'
+import { accountsQuery, providersQuery } from './queries.ts'
+import { Queue } from './queue.tsx'
+import { providerName, providersOf, queueOf } from './text.ts'
+
+const route = getRouteApi('/_app/companies/$companyId')
+
+/**
+ * The company's model accounts, a queue per provider, in "Configurar a empresa". Everyone in the
+ * company reads them; the Hub's `mayManage` says who changes them. After a removal focus moves to
+ * the section, as the row it was on is gone.
+ */
+export function CompanyAccounts() {
+  const { companyId } = route.useParams()
+  const accounts = useSuspenseQuery(accountsQuery(companyId)).data
+  const { providers } = useSuspenseQuery(providersQuery).data
+  const { members } = useSuspenseQuery(membersQuery(companyId, undefined)).data
+  const section = useRef<HTMLElement>(null)
+  const { company, mayManage } = accounts
+  return (
+    <section
+      ref={section}
+      tabIndex={-1}
+      aria-label="Conta de modelo"
+      className="flex w-full flex-col gap-lg"
+    >
+      <SectionTitle>Conta de modelo</SectionTitle>
+      {mayManage ? (
+        <DefaultModel companyId={companyId} providers={providers} current={accounts.defaultModel} />
+      ) : (
+        accounts.defaultModel !== null && <p>{`Modelo padrão: ${accounts.defaultModel}`}</p>
+      )}
+      {company.length === 0 && <Empty>Nenhuma conta ligada</Empty>}
+      {providersOf(company).map((provider) => (
+        <Queue
+          key={provider}
+          companyId={companyId}
+          owner="company"
+          provider={provider}
+          providerName={providerName(providers, provider)}
+          accounts={queueOf(company, provider)}
+          people={members}
+          powers={{ act: mayManage, assign: mayManage }}
+          canOrder={mayManage}
+          onRemoved={() => section.current?.focus()}
+        />
+      ))}
+      {mayManage && (
+        <LinkAccount
+          companyId={companyId}
+          owner="company"
+          providers={providers}
+          kinds={accounts.kinds}
+        />
+      )}
+    </section>
+  )
+}

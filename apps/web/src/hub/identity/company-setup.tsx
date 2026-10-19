@@ -9,6 +9,7 @@ import {
 } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useRouter } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { HubFailure } from '../../platform/hub.ts'
 import {
   Form,
@@ -26,9 +27,10 @@ const ON_THE_FIELD = ['COMPANY_NICKNAME_TAKEN', 'COMPANY_NICKNAME_RESERVED']
 
 /**
  * The first page of a company without a nickname, for its owner: the nickname the apps' addresses
- * carry, suggested from the company's name, with the address it gives as it is typed.
+ * carry, suggested from the company's name, with the address it gives as it is typed. Once the
+ * company has its nickname the page keeps the sections other subjects put in `children`.
  */
-export function CompanySetup() {
+export function CompanySetup({ children }: { children?: ReactNode }) {
   const { companyId } = route.useParams()
   const { company } = useSuspenseQuery(companyQuery(companyId)).data
   const router = useRouter()
@@ -64,6 +66,15 @@ export function CompanySetup() {
       // The rest above the button, in its row's words; none of this operation's rows asks to retry.
       else setServerError(form, error)
     }
+  }
+
+  if (company.nickname !== null) {
+    return (
+      <div className="flex flex-col gap-xl">
+        <PageTitle>Configurar a empresa</PageTitle>
+        {children}
+      </div>
+    )
   }
 
   return (

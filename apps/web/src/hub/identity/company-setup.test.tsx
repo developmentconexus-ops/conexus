@@ -90,13 +90,6 @@ for (const role of ['admin', 'member']) {
   })
 }
 
-test('uma empresa com apelido não abre a configuração: vai aos Projetos', async () => {
-  server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }))
-  const router = open()
-  expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeTruthy()
-  expect(router.state.location.pathname).toBe(PROJECTS)
-})
-
 test('salvar: "Salvando…", leva o apelido e abrem os Projetos', async () => {
   const held = Promise.withResolvers<void>()
   const { sent } = hub('owner', async () => {

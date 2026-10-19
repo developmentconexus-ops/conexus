@@ -147,6 +147,8 @@ export function centralHub(clients: Client[]) {
       const client = clients.find((one) => one.companyId === params.companyId)
       return client ? HttpResponse.json({ client }) : refusal('NOT_FOUND')
     }),
+    // The client page reads the account kinds the Central opens; none are open here.
+    http.get('*/api/clients/:companyId/account-kinds', () => HttpResponse.json({ kinds: [] })),
     http.get(`*/api/companies/:companyId/members`, () =>
       HttpResponse.json(
         listMembers.success.body.parse({
