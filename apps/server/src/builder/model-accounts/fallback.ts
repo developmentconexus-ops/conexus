@@ -23,8 +23,6 @@ export async function nextModels(
       .where(eq(companyModelFallback.companyId, turn.companyId)),
   )
   if (row === undefined || !row.enabled) return []
-  return z
-    .array(ModelId)
-    .parse(row.chain)
-    .slice(row.chain.indexOf(modelId) + 1)
+  const chain = z.array(ModelId).parse(row.chain)
+  return chain.slice(chain.indexOf(modelId) + 1)
 }

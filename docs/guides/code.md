@@ -8,7 +8,10 @@ and errors follow [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457). Biome owns
 
 Each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state
 a requirement; **should** and **should not** need a stated reason to break; **may** is a free choice.
-Each rule ends with its enforcing machine, or "review". A should is engineering guidance, not
+Each rule ends with its enforcing machine, or "review". A mark that names Biome or GritQL names the
+exact rule that refuses the case, such as [Biome useExhaustiveSwitchCases]; a rule no tool refuses
+in full also carries "review", and one no tool refuses is only [review]. [TypeScript] is the
+compiler's type check. A should is engineering guidance, not
 permission to change an approved contract, product decision or security boundary. Whether a
 finding holds a merge is [delivery L12](delivery.md)'s call. Maintainers' skills, checked against
 the installed version, own library usage; this guide decides what they leave open. Where a pstack
@@ -33,8 +36,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   gathers the schema for migrations. Hand-written SQL that reads another owner's table is for the
   reader. [dependency-cruiser, review]
 - **C11.** Code **must** use named exports, and **must not** use a default export except where a
-  tool requires one (Google). [Biome]
-- **C12.** Code **must not** export a mutable binding (`export let`). [Biome]
+  tool requires one (Google). [Biome noDefaultExport]
+- **C12.** Code **must not** export a mutable binding (`export let`). [review]
 
 ## 2. Layers inside a module
 
@@ -43,7 +46,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   Failure: a handler with SQL and a transaction teaches the next subject to bypass its owner.
   [review]
 - **C14.** A handler **must** take typed input and the session and return a value or throw a coded
-  failure. It **must not** hold SQL, open a transaction or `catch`. [lint, review]
+  failure. It **must not** hold SQL, open a transaction or `catch`. [review]
 
 ## 3. Classes and functions
 
@@ -51,26 +54,28 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   it. Failure: a structural Reply compiles but fails the library's `instanceof` check and becomes
   a 500. A restriction on static-only classes cannot prove runtime identity. [review]
 - **C18.** A named top-level function **must** be a `function` declaration. An arrow **may** be used
-  inside a function, for a callback, or as an operation in a module's frozen object. [Biome]
+  inside a function, for a callback, or as an operation in a module's frozen object.
+  [Biome useConsistentFunctionStyle]
 - **C19.** A function **should** take an object when positional arguments can be swapped. Failure:
   `grant(projectId, accountId)` accepts two strings in the wrong order without a compiler error.
   [review]
-- **C20.** A function **must not** use `this` outside a class. [Biome]
+- **C20.** A function **must not** use `this` outside a class. [Biome noThisOutsideOfClass]
 
 ## 4. Data modeling and types
 
 - **C21.** A lifecycle **must** be a union discriminated on one literal field, with one owner of its
-  transitions; a `switch` over it **must** end in `satisfies never`. [TypeScript, review]
+  transitions; a `switch` over it **must** end in `satisfies never`. [Biome useExhaustiveSwitchCases, review]
 - **C22.** Distinct states **should** be discriminated unions, including genuine absence or
   unavailability instead of invented zeroes or sentinels. Failure: a structural value represents a
   Reply that the runtime cannot recognize. `null` is not itself wrong when the domain admits it.
   [review]
 - **C23.** An id **must** be a branded type created only by parsing. A port **must not** take an id
-  as `string`. [TypeScript]
+  as `string`. [GritQL conexus-code.grit C23 (server code), review]
 - **C24.** Code **must not** use `any` (use `unknown`), the non-null `!`, or `as` other than
-  `as const`; `strict` stays on. [Biome, TypeScript]
+  `as const`; `strict` stays on. [Biome noExplicitAny, noNonNullAssertion, noUnsafeTypeAssertion;
+  TypeScript]
 - **C25.** Code **must** use `type`; `interface` only to augment a library or global declaration.
-  [Biome]
+  [Biome useConsistentTypeDefinitions]
 - **C26.** Each fact **should** have one owner, including types, tables, state, constants and
   behavior; consumers derive it rather than inferring it from timing, text or a stream ending.
   A run's result comes from server settlement. Failure: two role maps diverge between server and
@@ -83,7 +88,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   output and vendor replies. Route/search parameters belong at that boundary; a return address is
   a same-origin path. Failure: casting `response.json()` accepts an empty id, an invalid row reaches
   business code, or an unchecked return address leaves the origin. Revalidating halfway through
-  hides which boundary should have refused it. [review]
+  hides which boundary should have refused it. [GritQL conexus-code.grit C27, review]
 - **C28.** Each operation **must** be declared once, in Zod, in `packages/hub-api`: id, access,
   method, path, params, query, body, successes and failures. The server, the web and the OpenAPI
   document read it, and no table beside it lists operations. The OpenAPI document **must** be
@@ -145,7 +150,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   creation key, or a retry button promises recovery from a platform defect it cannot fix. [review]
 - **C49.** Errors **should** be converted at boundaries, with typed results for refusals callers
   distinguish and one browser failure reader; vendor error types stay at their edge. Failure:
-  a screen branches on a Portuguese sentence and breaks when the wording changes. [review]
+  a screen branches on a Portuguese sentence and breaks when the wording changes.
+  [GritQL conexus-code.grit C48 and C49 (an upper-case code in a thrown Error), review]
 - **C50.** Failure output **should** reach the central handler and logger, including a library's
   own router. Unknown errors keep their cause internally and become a `SYSTEM` failure, with
   mappings covering the library's statuses rather than just a known-code list. Failure: a router
@@ -158,7 +164,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   name where needed, not message text. Failure: a refused database connection becomes
   `INTERNAL_UNEXPECTED` because the translator misses its class. [review]
 - **C53.** A `catch` **must** rethrow, map at a vendor boundary or log; it **must not** be empty.
-  [Biome]
+  [Biome noEmptyBlockStatements, GritQL conexus-code.grit C53, review]
 - **C54.** The central owner **should** record requests and visible failures by code and correlation
   id, with route, status and duration for requests, and security events such as sign-in, refusal,
   session end and administrator change. No raw object is needed. Failure: duplicate `level` keys
@@ -167,7 +173,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 ## 8. Outside calls and time
 
 - **C56.** Every outside system **must** have a port, which is a type, and one adapter; only the
-  adapter **may** import the vendor library or `fetch`. [Biome, dependency-cruiser]
+  adapter **may** import the vendor library or `fetch`. [Biome noRestrictedGlobals, dependency-cruiser]
 - **C57.** Work crossing a boundary **should** have a real budget covering lookup, connection and
   reply, propagating cancellation when supported; this includes library paths, spawned commands
   killed at deadline, request/connection timeouts and a bounded retry budget. Failure: a deadline
@@ -193,7 +199,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 - **C67.** Configuration **must** be read in one place, parsed by one Zod schema; no other file
   **may** read `process.env`. The program **must** refuse to start on a missing or invalid value and
   name it. Code **must not** read or branch on `NODE_ENV`, which the image does not set; the Fastify
-  and Node maintainers' skills call branching on it a bad practice. [Biome, boot check, CI job
+  and Node maintainers' skills call branching on it a bad practice. [Biome noProcessEnv, boot check, CI job
   `image`]
 
 ## 11. Names and comments
@@ -222,4 +228,4 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 - **C76.** A lint suppression **must** name its cause. The count of suppressions lives in a committed
   file that CI compares, so a pull request that adds one changes that file. [CI]
 - **C77.** Line width and function and file size **must** have maxima in the Biome configuration,
-  applied without suppression. [Biome]
+  applied without suppression. [Biome noExcessiveLinesPerFunction, noExcessiveLinesPerFile]

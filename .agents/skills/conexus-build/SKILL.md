@@ -15,11 +15,10 @@ session that wrote the card does not build it.
 The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the card is the contract.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
-one guide the card names for the unit, and loads the maintainers' skills the card names for it
-before writing code. Where a skill's file and the installed package's own docs differ, such as
-`node_modules/fastify/docs`, the installed docs win. With pstack, it also loads `poteto-mode` and
-`typescript-best-practices`; without pstack, it skips only those two, and everything above stays
-required.
+unit's one named guide, and loads the card's maintainers' skills before writing code. Where a
+skill's file and the installed package's own docs differ, such as `node_modules/fastify/docs`, the
+installed docs win. With pstack, it also loads `poteto-mode` and `typescript-best-practices`;
+without pstack, it skips only those two.
 [bring](references/bring.md) only when the unit brings code; [bug](references/bug.md) only for a
 defect.
 
@@ -28,7 +27,7 @@ defect.
 1. Read the card's criteria for the unit, its table of parts, its blast radius, its contracts and
    its order of work.
 2. Check that every type, contract and value the unit needs exists on the step branch or is
-   created by this unit. If not, stop.
+   created by this unit; if not, stop.
 3. Delete before adding: remove what the card removes and move every caller. No shim, no parallel
    old path, no temporary shape for a later unit to replace.
 4. Bring old code only as the card's table says: into the named file, refactored as listed,
@@ -40,10 +39,12 @@ defect.
    matrix; the founder approves the texts at the use script, so the build does not stop for one.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
    changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
-   repository's verification skill when one exists. Then answer [the
-   checklist](../../../docs/reference/checklist.md) item by item, sweeping each class across the
-   whole diff, and run pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves.
-   Without pstack: reread the diff and remove what a careful engineer would not write.
+   repository's verification skill when one exists (a screen: [screen](references/screen.md)).
+   Then answer [the checklist](../../../docs/reference/checklist.md) item by item, sweeping each
+   class across the whole diff, and fill its sweep table in the integration request, saying which
+   file each pattern was copied from. Run pstack `deslop` and `no-comments`; code C70 and C73
+   decide what leaves. Without pstack: reread the diff and remove what a careful engineer would not
+   write.
 7. One commit for the unit on the step branch. The tests the unit touches are green.
 
 ## What it produces

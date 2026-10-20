@@ -102,7 +102,7 @@ The sections do not claim these capabilities exist in Conexus. The rules and dec
 
 **Questions:** "What changes inside, what stays the same for the person, and what stops existing?"; "Which behaviour do the tests protect, and which failure would make them report the problem?"
 
-**Show:** an example before and after, the affected consumers and the proofs that already exist. Tell planned tests from present tests and observed results; say what is faked. This skill does not run changes to obtain an approval.
+**Show:** an example before and after, the affected consumers, and each acceptance criterion with its test and observed result: proved, proved with a double, or not proved. Tell planned tests from present tests and observed results; say what is faked. This skill does not run changes to obtain an approval.
 
 ## 11. SDK, packages and extensibility
 

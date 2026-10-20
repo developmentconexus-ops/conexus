@@ -60,9 +60,9 @@ async function resealed(deps: Deps, running: Running): Promise<void> {
  */
 export function googleCalls(deps: Deps) {
   const idleMs = deps.idleMs ?? IDLE_MS
-  const running = new Map<string, Promise<Running>>()
+  const running = new Map<ModelAccountId, Promise<Running>>()
 
-  async function close(id: string, found: Promise<Running>) {
+  async function close(id: ModelAccountId, found: Promise<Running>) {
     if (running.get(id) === found) running.delete(id)
     // A process that never started has nothing to stop: its start's failure reached its caller.
     // biome-ignore lint/plugin: the start's failure reached the caller that asked for it, and a process that never started has nothing to stop
@@ -93,7 +93,7 @@ export function googleCalls(deps: Deps) {
   }
 
   /** Counts the idle time again, from now, when no call runs through the process. */
-  function idle(id: string, found: Promise<Running>, each: Running) {
+  function idle(id: ModelAccountId, found: Promise<Running>, each: Running) {
     clearTimeout(each.timer)
     if (each.calls > 0 || running.get(id) !== found) return
     each.timer = setTimeout(() => void close(id, found), idleMs)

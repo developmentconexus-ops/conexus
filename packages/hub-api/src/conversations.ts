@@ -58,10 +58,12 @@ export type TurnFailureCode = z.infer<typeof TurnFailureCode>
 
 /**
  * What the stream of a conversation says. `turn` comes first on a reconnect, the answer in
- * progress so far; `turnEnd` ends each answer, and `failure` comes before it when the turn failed.
+ * progress so far, or `working` when a turn runs and has said nothing yet; `turnEnd` ends each
+ * answer, and `failure` comes before it when the turn failed.
  */
 export const ConversationEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('turn'), message: Message }),
+  z.object({ type: z.literal('working') }),
   z.object({ type: z.literal('text'), delta: z.string() }),
   z.object({ type: z.literal('part'), part: MessagePart }),
   z.object({ type: z.literal('notice'), text: z.string() }),

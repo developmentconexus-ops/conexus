@@ -38,6 +38,17 @@ export function holding(t: TestContext) {
   return { reply, release: () => hold.resolve() }
 }
 
+/**
+ * A provider answer that sends nothing until released, so the turn runs with no word said yet;
+ * released at the test's end at the latest. Call it before `conversing`.
+ */
+export function stalling(t: TestContext) {
+  const stall = Promise.withResolvers<void>()
+  t.after(() => stall.resolve())
+  const reply: Reply = { kind: 'hold', until: stall.promise }
+  return { reply, release: () => stall.resolve() }
+}
+
 /** The title call's answer; every other call is the test's. */
 export function title(asked: Sent): Reply | undefined {
   return asked.stream ? undefined : { kind: 'text', text: 'Título' }

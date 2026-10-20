@@ -1,33 +1,35 @@
 # Documentation map
 
-One line per document and its subject; `check-docs` refuses a document without one.
+One line per document; `check-docs` refuses a document without one.
 
 ## Overview
 
 - [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
-- [README.md](../README.md): this repository, in Portuguese.
-- [roadmap.md](roadmap.md): the steps in order, the one in construction, approvals, use lines.
-- [architecture.md](architecture.md): the system's goals, parts, deployment, risks and debt.
-- [how-to/hub-server.md](how-to/hub-server.md): preparing the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
+- [README.md](../README.md): this repository.
+- [roadmap.md](roadmap.md): steps in order, approvals, use lines.
+- [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
+- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
-- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): the companies' Neon key.
+- [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 for tests.
-- [steps/](steps/): the card in construction; empty between steps.
+- [steps/](steps/): the card in construction.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): questions for readers.
+- [reference/screens.md](reference/screens.md): each screen and its floor.
+- [reference/impeccable.md](reference/impeccable.md): Impeccable's files and commands.
 
 ## Guides: the rules
 
-- [code](guides/code.md): modules, imports, layers, types, errors, the API, outside calls.
+- [code](guides/code.md): modules, imports, layers, types, errors, API, outside calls.
 - [data](guides/data.md): stores, schema, migrations, database access, apps' data.
 - [security](guides/security.md): trust zones, authority, sessions, browser, abuse, secrets, logs.
 - [testing](guides/testing.md): test tools, assertions, doubles.
 - [delivery](guides/delivery.md): how a step goes from card to use; what the repository keeps.
 - [design](guides/design.md): how screens look, move and speak.
-- [web](guides/web.md): how the Hub's screens are organized and call the Hub.
+- [web](guides/web.md): how the Hub's screens are organized.
 
 ## Decisions: one choice expensive to undo per file
 
@@ -81,11 +83,12 @@ One line per document and its subject; `check-docs` refuses a document without o
 - [0048](decisions/0048-company-neon-project-named-by-nickname-and-id.md) Neon name.
 - [0049](decisions/0049-model-accounts-keys-sign-ins-queues.md) accounts.
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
+- [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) one tracing path.
 
 ## Skills
 
-- [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md) and [proof](../.agents/skills/conexus-study/references/proof.md): studying a step; the report; a proof.
-- [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md): the step's card and its template.
-- [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md) and [bug](../.agents/skills/conexus-build/references/bug.md): building a unit; bringing old code; a defect.
-- [conexus-review](../.agents/skills/conexus-review/SKILL.md): the review of a step, its rubric and its delta checks.
-- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [questions](../.agents/skills/conexus-explain/references/questions.md): explaining a design to the founder, in Portuguese.
+- [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [library](../.agents/skills/conexus-study/references/library.md): the study; report; proof; screens; libraries.
+- [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; a screen's card.
+- [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md) and [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
+- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): the review of a step; a screen.
+- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [questions](../.agents/skills/conexus-explain/references/questions.md), [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder, in Portuguese.

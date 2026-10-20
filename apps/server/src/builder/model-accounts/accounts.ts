@@ -91,7 +91,7 @@ export function ownerOf(row: { personId: PersonId | null }): Owner {
   return row.personId === null ? 'company' : 'me'
 }
 
-export type Context = { assignees: Map<string, PersonId[]>; open: Set<SignInKind> }
+export type Context = { assignees: Map<ModelAccountId, PersonId[]>; open: Set<SignInKind> }
 
 /** Whether the operators keep the account's kind open to the company; the API key always is. */
 function kindOpen(row: Pick<AccountRow, 'kind'>, context: Context): boolean {
@@ -152,21 +152,26 @@ export async function contextOf(tx: ReadTx, companyId: CompanyId): Promise<Conte
     .from(modelAccountAssignee)
     .where(eq(modelAccountAssignee.companyId, companyId))
     .orderBy(asc(modelAccountAssignee.personId))
-  const assignees = new Map<string, PersonId[]>()
-  for (const { accountId, personId } of given) {
-    assignees.set(accountId, [...(assignees.get(accountId) ?? []), PersonId.parse(personId)])
+  const assignees = new Map<ModelAccountId, PersonId[]>()
+  for (const row of given) {
+    const accountId = ModelAccountId.parse(row.accountId)
+    assignees.set(accountId, [...(assignees.get(accountId) ?? []), PersonId.parse(row.personId)])
   }
   return { assignees, open: await openKindsOf(tx, companyId) }
 }
 
 /** One account the viewer may see, as they see it now. */
-export async function accountView(tx: ReadTx, viewer: Viewer, id: string): Promise<ModelAccount> {
+export async function accountView(
+  tx: ReadTx,
+  viewer: Viewer,
+  id: ModelAccountId,
+): Promise<ModelAccount> {
   const [row] = await tx.select(columns).from(modelAccount).where(ofCompany(viewer, id))
   if (row === undefined) throw new Failure('NOT_FOUND')
   return viewOf(AccountRow.parse(row), await contextOf(tx, viewer.companyId))
 }
 
-export function ofCompany(viewer: Viewer, id: string) {
+export function ofCompany(viewer: Viewer, id: ModelAccountId) {
   return and(eq(modelAccount.id, id), eq(modelAccount.companyId, viewer.companyId))
 }
 
@@ -174,7 +179,7 @@ export function ofCompany(viewer: Viewer, id: string) {
 export async function lockedRow(
   tx: CommandTx,
   viewer: Viewer,
-  id: string,
+  id: ModelAccountId,
 ): Promise<AccountRow | undefined> {
   const [row] = await tx
     .select(columns)
@@ -283,7 +288,7 @@ const Sealed = z.object({ sealed: z.instanceof(Buffer), key_id: z.string().min(1
  * An account's sealed credential, through the one function that hands it out (Grant A); an
  * account removed meanwhile is not found.
  */
-export async function sealedOf(tx: ReadTx, id: string) {
+export async function sealedOf(tx: ReadTx, id: ModelAccountId | SignInId) {
   const result = await tx.execute(sql`select sealed, key_id from builder.sealed_of(${id})`)
   if (result.rows[0] === undefined) throw new Failure('NOT_FOUND')
   const found = Sealed.parse(result.rows[0])
@@ -303,7 +308,7 @@ export async function credentialOf(
  * The visible account, held, and the admission for its owner: a member asking for the company's, or
  * anyone for an account that is not there or not theirs, gets the same not-found (security S10).
  */
-export async function heldFor(deps: Deps, tx: CommandTx, viewer: Viewer, id: string) {
+export async function heldFor(deps: Deps, tx: CommandTx, viewer: Viewer, id: ModelAccountId) {
   await deps.identity.admitMember({
     tx,
     personId: viewer.person.id,

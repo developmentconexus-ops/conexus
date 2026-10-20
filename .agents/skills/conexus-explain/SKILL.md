@@ -1,6 +1,6 @@
 ---
 name: conexus-explain
-description: "Explains to the founder, in Portuguese, the technical design of a Conexus step card, plan, refactoring or implementation, before he approves it or after it is built, especially when he asks about responsibilities, architecture, code structure, types and contracts. Read only."
+description: "Explains a Conexus step to the founder, in Portuguese, at two fixed moments: before he approves its card, and after build and review with the merge ask; also answers his ad hoc design questions. Read only."
 ---
 
 # Conexus explain
@@ -27,28 +27,10 @@ the depth to his question and to the knowledge he shows.
 
 ## The answer in the chat
 
-### 1. Overview
-
-In a few sentences, explain what changes and the flow between the parts. In a refactoring, show
-the change of structure and the behaviour that must stay.
-
-### 2. The technical questions that matter in this change
-
-Write the questions as subheadings, usually three to five, in proportion to the scope, and answer
-them yourself; do not turn the explanation into a questionnaire for the founder.
-
-In each answer, show how the solution works, why the split makes sense and what the choice costs.
-Use the real names of modules, types, functions and interfaces, with short excerpts or signatures
-when they make the design concrete. Mark proposed examples as proposals.
-
-Point at the sources in the card or as `file:line`. Tie decisions to the rules that apply through
-the concrete mechanism. Tell the intended guarantee from the implemented mechanism and from the
-evidence already seen. An inference about why a choice was made is labelled as an inference.
-
-### 3. What deserves questioning
-
-Show the relevant choices, limits, conflicts or open decisions. Tell a demonstrated problem from a
-risk or a doubt; do not invent findings to fill the section.
+Follow [outline](references/outline.md): moment A before the card's approval, moment B with the
+merge ask, an ad hoc question in proportion to it. Keep within the outline's word budget; evidence
+goes in an appendix outside it. Use the repertoire in [questions](references/questions.md) for
+parts 6 and 9.
 
 ## Limits
 

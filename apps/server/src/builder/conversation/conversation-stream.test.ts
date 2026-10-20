@@ -15,6 +15,7 @@ import {
   PARTIAL,
   rolesAndParts,
   sent,
+  stalling,
   started,
   streamOf,
   title,
@@ -110,6 +111,23 @@ test('reconectar no meio de um turno: primeiro a resposta até ali, depois o res
   )
 })
 
+test('reconectar com o turno em curso e ainda mudo: o stream diz que ele trabalha', async (t) => {
+  const stalled = stalling(t)
+  const { hub, ana, conversations, anthropic } = await conversing(
+    t,
+    (asked) => title(asked) ?? stalled.reply,
+  )
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  while (!anthropic.sent.some((each) => each.stream))
+    await new Promise((done) => setTimeout(done, 20))
+  const again = await streamOf(hub, ana, url)
+  t.after(() => again.close())
+  assert.deepEqual(await again.next(), { type: 'working' })
+  stalled.release()
+  assert.deepEqual((await again.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+})
+
 test('Parar: o turno termina `aborted` e o texto até ali fica na conversa', async (t) => {
   const held = holding(t)
   const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
@@ -148,6 +166,28 @@ test('desligar espera o turno em curso, guarda o texto e só então fecha o stre
     ['person', [{ type: 'text', text: 'Uma pergunta' }]],
     ['builder', [{ type: 'text', text: PARTIAL }]],
   ])
+})
+
+test('apagar o Projeto no meio de um turno: a sessão fecha, e desligar não espera um turno que já acabou', async (t) => {
+  const held = holding(t)
+  const { hub, ana, companyId, projectId, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? held.reply,
+  )
+  const closing = await hubBeside(t, hub)
+  const url = `${conversations}/${await started(closing, ana, conversations)}`
+  const stream = await streamOf(closing, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 202)
+  assert.deepEqual(await stream.next(), { type: 'text', delta: PARTIAL })
+  const project = `/api/companies/${companyId}/projects/${projectId}`
+  assert.equal(
+    (await call(closing, ana, 'DELETE', project, { name: 'Encomendas' })).statusCode,
+    204,
+  )
+  const closed = closing.close()
+  const late = new Promise<string>((done) => setTimeout(() => done('hung'), 10_000).unref())
+  assert.equal(await Promise.race([closed.then(() => 'closed'), late]), 'closed')
 })
 
 test('o processo para no meio de um turno: a pergunta não se perde, e aparece uma vez só depois', async (t) => {

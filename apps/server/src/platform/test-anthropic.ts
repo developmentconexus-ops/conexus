@@ -30,7 +30,7 @@ export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
   | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
-  | { kind: 'hold'; until: Promise<void>; text: string }
+  | { kind: 'hold'; until: Promise<void>; text?: string }
   | { kind: 'reset' }
   | { kind: 'malformed' }
 
@@ -110,7 +110,7 @@ function chatReplied(sent: Sent, reply: Reply): Response {
     const error = { error: { message: 'planted refusal', type: 'invalid_request_error' } }
     return Response.json(error, { status: reply.status, headers: reply.headers })
   }
-  const text = reply.kind === 'text' || reply.kind === 'hold' ? reply.text : ''
+  const text = reply.kind === 'text' || reply.kind === 'hold' ? (reply.text ?? '') : ''
   const base = { id: 'chatcmpl-test', created: 1, model: 'llama-3.3-70b-versatile' }
   const usage = { prompt_tokens: 3, completion_tokens: 3, total_tokens: 6 }
   if (!sent.stream) {
@@ -211,13 +211,17 @@ function events(blocks: unknown[], stop: 'end_turn' | 'tool_use'): string {
   return all.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join('')
 }
 
-/** A stream that sends its text, then ends only after `until`, so a test holds a turn open. */
-function heldStream(until: Promise<void>, text: string): ReadableStream<Uint8Array> {
+/**
+ * A stream that sends its text, then ends only after `until`, so a test holds a turn open; with no
+ * text it sends nothing until then, a model called and silent.
+ */
+function heldStream(until: Promise<void>, text?: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
-  const frames = events([{ type: 'text', text }], 'end_turn').split('\n\n')
+  const frames = events([{ type: 'text', text: text ?? '' }], 'end_turn').split('\n\n')
   // The message's start, its text block's start and its text; then its end.
-  const head = frames.slice(0, 3)
-  const rest = frames.slice(3)
+  const cut = text === undefined ? 0 : 3
+  const head = frames.slice(0, cut)
+  const rest = frames.slice(cut)
   return new ReadableStream({
     async start(controller) {
       controller.enqueue(encoder.encode(`${head.join('\n\n')}\n\n`))
