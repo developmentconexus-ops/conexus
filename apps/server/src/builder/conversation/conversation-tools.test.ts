@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { webFetchTool } from '@mastra/core/tools'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import {
   approvalsOf,
+  BUILDER_FETCH,
   conversing,
   plantGemini,
   sent,
@@ -58,4 +60,14 @@ test('as ferramentas de leitura do Builder rodam sem pedir; qualquer outra é ne
     execute_command: 'deny',
     mcp_tool: 'deny',
   })
+})
+
+test('o `web_fetch` do Builder é o do Mastra inteiro; só a sua aprovação muda, e responde que não', () => {
+  const { requireApproval, ...builder } = BUILDER_FETCH
+  const { requireApproval: native, ...mastra } = webFetchTool
+  assert.deepEqual(builder, mastra)
+  assert.equal(Object.getPrototypeOf(BUILDER_FETCH), Object.getPrototypeOf(webFetchTool))
+  assert.equal(native, false)
+  assert.equal(typeof requireApproval, 'function')
+  assert.equal(Reflect.apply(Object(requireApproval), undefined, []), false)
 })

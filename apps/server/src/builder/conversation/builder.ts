@@ -73,9 +73,21 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
   return modelId
 }
 
+/**
+ * Mastra's `web_fetch` whole, with its own approval answering "no" (Mastra 1.78.0
+ * `resolveToolApprovalVerdict`): a call runs without the controller's approval round trip, whose
+ * resume under load can find the run's snapshot gone and end the turn in error. Any other tool
+ * still asks, and `PERMISSION_RULES` answers it.
+ */
+export const builderFetch: typeof webFetchTool = Object.assign(
+  Object.create(Object.getPrototypeOf(webFetchTool)),
+  webFetchTool,
+  { requireApproval: () => false },
+)
+
 /** `web_fetch` always; `web_search` only where Mastra resolves the provider's own search. */
 function toolsOf(modelId: ModelId): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetchTool }
+  const tools: ToolsInput = { web_fetch: builderFetch }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }

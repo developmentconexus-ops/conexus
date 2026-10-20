@@ -22,7 +22,7 @@ import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 import { openGoogleCalls } from '../model-accounts/public.ts'
-import { createBuilder } from './builder.ts'
+import { builderFetch, createBuilder } from './builder.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-5'
 export const PARTIAL = 'Começo da resposta'
@@ -276,6 +276,9 @@ export async function approvalsOf(t: TestContext, hub: Hub, toolNames: string[])
   })
   return Object.fromEntries(toolNames.map((name) => [name, session.resolveToolApproval(name)]))
 }
+
+/** The `web_fetch` the Builder gives its agent, to compare with Mastra's own. */
+export const BUILDER_FETCH = builderFetch
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/'
 const GeminiAsked = z.object({
