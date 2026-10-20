@@ -99,6 +99,8 @@
   --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-fit-a: fit-a 0.9s var(--ease-arrive) 0.3s both;
   --animate-fit-b: fit-b 0.9s var(--ease-arrive) 0.3s both;
+  --animate-working-a: working-a 1.2s var(--ease-fit) infinite;
+  --animate-working-b: working-b 1.2s var(--ease-fit) infinite;
 
   @keyframes fit-a {
     from {
@@ -115,6 +117,39 @@
     to {
       transform: none;
     }
+  }
+  /* The pieces slide apart two units along the diagonal and fit back, while the agent works. */
+  @keyframes working-a {
+    50% {
+      transform: translate(-2px, -2px);
+    }
+  }
+  @keyframes working-b {
+    50% {
+      transform: translate(2px, 2px);
+    }
+  }
+}
+
+/* A light sweeps across the text of work in progress; reduced motion drops it (`shimmer-none`). */
+@utility shimmer {
+  background:
+    linear-gradient(110deg, var(--color-text-2) 40%, var(--color-text) 50%, var(--color-text-2) 60%)
+    100% 0 / 250% 100% no-repeat;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.8s linear infinite;
+}
+
+@utility shimmer-none {
+  background: none;
+  color: var(--color-text-2);
+  animation: none;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 0 0;
   }
 }
 
