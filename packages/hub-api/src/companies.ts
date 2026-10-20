@@ -116,7 +116,7 @@ const OfInvitation = z.object({ invitationId: InvitationId })
 
 export const listCompanies = defineOperation({
   id: 'listCompanies',
-  summary: 'Lists the companies the person belongs to, with the role in each.',
+  summary: 'Lists the companies the person can open.',
   access: 'session',
   method: 'GET',
   path: '/api/companies',
