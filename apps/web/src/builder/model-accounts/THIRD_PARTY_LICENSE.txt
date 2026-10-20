@@ -1,10 +1,13 @@
-Third-party code in this folder: the marks of provider-mark.tsx, the SVG paths of
-@mastra/playground-ui's AnthropicMessagesIcon, OpenAIIcon and GoogleIcon
-(https://github.com/mastra-ai/mastra), Copyright (c) 2025 Kepler Software, Inc., licensed under the
-Apache License, Version 2.0, whose text follows.
+Third-party marks in this folder, used only to name the provider beside its model:
 
-Apache License, Version 2.0, whose
-text follows. The package ships no NOTICE file.
+- marks/claude-spark.svg: the Claude spark, Anthropic's file, unaltered, from its press kit
+  (https://www.anthropic.com/press-kit, "Claude Spark - Clay.svg", fetched 2026-10-20). The kit
+  states no licence; the mark is Anthropic's trademark.
+- marks/google-g.svg and the OpenAI paths in provider-mark.tsx: the SVG of @mastra/playground-ui's
+  GoogleIcon and OpenAIIcon (https://github.com/mastra-ai/mastra, commit ce7e9c30c1), Copyright (c)
+  2025 Kepler Software, Inc., licensed under the Apache License, Version 2.0, whose text follows. The
+  package ships no NOTICE file. The licence grants no trademark rights (section 6): the marks are
+  OpenAI's and Google's.
 
 Apache License
 
