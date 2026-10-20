@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { parse } from 'yaml'
 
 type Step = {
+  id?: string
   name?: string
   uses?: string
   run?: string
@@ -12,6 +13,7 @@ type Step = {
   env?: Record<string, string>
 }
 type Job = {
+  if?: string
   needs?: string | string[]
   permissions?: Record<string, string>
   'runs-on': unknown
@@ -153,4 +155,43 @@ test('todo trabalho no runner do servidor passa pelo ambiente production do GitH
   for (const name of readdirSync(FOLDER))
     for (const [id, job] of Object.entries(workflow(name).jobs))
       if (onServer(job)) assert.equal(job.environment, 'production', `${name}: ${id}`)
+})
+
+test('o agregador espera todos os trabalhos da CI, e sem linha de remoção a prova é o plano, não um pulo', () => {
+  const others = Object.keys(ci.jobs).filter((name) => name !== 'ci')
+  assert.deepEqual([ci.jobs.ci?.needs].flat().toSorted(), others.toSorted())
+  const results = ci.jobs.ci?.steps[0]?.env?.RESULTS ?? ''
+  for (const name of others.filter((name) => name !== 'removals')) {
+    assert.ok(results.includes(`needs.${name}.result`), name)
+  }
+  assert.match(
+    results,
+    /needs\.removals\.result == 'skipped' && needs\.removals-plan\.result == 'success' && needs\.removals-plan\.outputs\.selected == '0' && 'success' \|\| needs\.removals\.result/,
+  )
+  assert.equal(ci.jobs.removals?.needs, 'removals-plan')
+  assert.equal(ci.jobs.removals?.if, "needs.removals-plan.outputs.selected != '0'")
+})
+
+test('o plano das remoções compara com a base só num pull request sem o rótulo all-removals', () => {
+  const plan = ci.jobs['removals-plan']?.steps.find((step) => step.id === 'plan')
+  assert.match(plan?.env?.BASE ?? '', /^\$\{\{ github\.event_name == 'pull_request' && /)
+  assert.match(
+    plan?.env?.BASE ?? '',
+    /!contains\(github\.event\.pull_request\.labels\.\*\.name, 'all-removals'\)/,
+  )
+  assert.match(plan?.run ?? '', /node scripts\/removals\.ts --plan \$\{BASE:\+--base "\$BASE"\}/)
+  assert.ok(ci.on.pull_request && JSON.stringify(ci.on.pull_request).includes('labeled'))
+})
+
+test('toda instalação do npm guarda o cache de download sob o hash do lockfile', () => {
+  const install = parse(readFileSync(resolve(FOLDER, '../actions/install/action.yml'), 'utf8'))
+  const setups = [
+    ...install.runs.steps,
+    ...Object.values(ci.jobs).flatMap((job) => job.steps),
+  ].filter((step: Step) => step.uses?.startsWith('actions/setup-node@'))
+  assert.ok(setups.length >= 2)
+  for (const step of setups) {
+    assert.equal(step.with?.cache, 'npm')
+    assert.equal(step.with?.['cache-dependency-path'], 'package-lock.json')
+  }
 })

@@ -9,7 +9,9 @@
 // no test of that name ran, `broken-baseline` when its test already fails before the protection is
 // taken out. Any row other than `caught` exits 1. The manifest refuses an unknown key at any level
 // and a repeated id, `--only` takes one id and `--shard 2/3` runs the second of three slices of the
-// rows, so CI can run the slices as parallel jobs.
+// rows, so CI can run the slices as parallel jobs. `--base origin/main` keeps only the rows the
+// changes since that ref affect (removals-select.ts), a run of all rows being the default, and
+// `--plan` prints how many rows that is and how many slices they need, without running one.
 // The refusals are proved by planting each one in removals.test.ts.
 // Revalidate by 2027-04-15, or when Node changes `run` from node:test.
 import {
@@ -31,6 +33,7 @@ import { dirname, join } from 'node:path'
 import { run } from 'node:test'
 import { z } from 'zod'
 import { runCommand } from './command.ts'
+import { affected } from './removals-select.ts'
 
 const text = z.string().min(1)
 const Removals = z
@@ -185,7 +188,37 @@ async function outcomeOf(
   }
 }
 
-const USAGE = 'usage: removals.ts [--only <row id> | --shard <index>/<total>]'
+const USAGE =
+  'usage: removals.ts [--base <ref>] [--only <row id> | --shard <index>/<total> | --plan]'
+const MAX_SHARDS = 4
+
+type Options = { base?: string; only?: string; shard?: string; plan: boolean }
+
+function parseArgs(args: string[]): Options {
+  const options: Options = { plan: false }
+  for (let at = 0; at < args.length; at++) {
+    const flag = args[at]
+    if (flag === '--plan') {
+      options.plan = true
+      continue
+    }
+    const value = args[++at]
+    if (value === undefined || value.startsWith('--')) throw new Error(USAGE)
+    if (flag === '--base' && options.base === undefined) options.base = value
+    else if (flag === '--only' && options.only === undefined) options.only = value
+    else if (flag === '--shard' && options.shard === undefined) options.shard = value
+    else throw new Error(USAGE)
+  }
+  if (
+    Number(options.only !== undefined) +
+      Number(options.shard !== undefined) +
+      Number(options.plan) >
+    1
+  ) {
+    throw new Error(USAGE)
+  }
+  return options
+}
 
 /** `--shard 2/3` is the second of three runs of equal size, each a run of neighbouring rows. */
 function shardOf(value: string): { index: number; total: number } {
@@ -196,27 +229,51 @@ function shardOf(value: string): { index: number; total: number } {
   return { index, total }
 }
 
+/** What changed since the merge base with `base`: committed, staged, unstaged and new files. */
+function changesSince(root: string, base: string): { changed: string[]; before: Removal[] } {
+  function git(...args: string[]): string {
+    return runCommand('git', args, { cwd: root })
+  }
+  const mergeBase = git('merge-base', base, 'HEAD').trim()
+  const changed = [
+    ...git('diff', '--name-only', '-z', '--merge-base', base).split('\0'),
+    ...git('ls-files', '-z', '--others', '--exclude-standard').split('\0'),
+  ].filter(Boolean)
+  const manifest = 'scripts/removals.json'
+  const existed = git('ls-tree', '--name-only', mergeBase, manifest).trim() !== ''
+  const before = existed ? Removals.parse(JSON.parse(git('show', `${mergeBase}:${manifest}`))) : []
+  return { changed, before }
+}
+
 async function main(): Promise<void> {
   const root = process.cwd()
-  const args = process.argv.slice(2)
-  const flag = args[0]
-  const value = args[1]
-  if (
-    args.length > 0 &&
-    (args.length !== 2 || (flag !== '--only' && flag !== '--shard') || value?.startsWith('--'))
-  ) {
-    throw new Error(USAGE)
-  }
+  const options = parseArgs(process.argv.slice(2))
   const all = loadRemovals(root)
   let removals = all
-  if (flag === '--only') {
-    removals = all.filter((removal) => removal.id === value)
-    if (removals.length === 0) throw new Error(`removals.json has no row ${value}`)
+  if (options.base !== undefined) {
+    const { changed, before } = changesSince(root, options.base)
+    removals = affected(all, changed, before)
   }
-  if (flag === '--shard' && value !== undefined) {
-    const { index, total } = shardOf(value)
-    removals = all.filter((_, row) => Math.floor((row * total) / all.length) === index - 1)
-    if (removals.length === 0) throw new Error(`removals.json has no row for shard ${value}`)
+  if (options.plan) {
+    const shards = Math.min(MAX_SHARDS, removals.length)
+    console.log(JSON.stringify({ selected: removals.length, total: all.length, shards }))
+    return
+  }
+  if (removals.length === 0) {
+    console.log('nothing to run: no removal row is affected')
+    return
+  }
+  if (options.only !== undefined) {
+    removals = all.filter((removal) => removal.id === options.only)
+    if (removals.length === 0) throw new Error(`removals.json has no row ${options.only}`)
+  }
+  if (options.shard !== undefined) {
+    const { index, total } = shardOf(options.shard)
+    removals = removals.filter(
+      (_, row) => Math.floor((row * total) / removals.length) === index - 1,
+    )
+    if (removals.length === 0)
+      throw new Error(`removals.json has no row for shard ${options.shard}`)
   }
   const baseline = baselines(root)
   try {

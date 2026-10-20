@@ -9,7 +9,7 @@
     "pretest": "npm run build",
     "generate": "drizzle-kit generate",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts ${TEST_SHARD:+--test-shard=$TEST_SHARD} \"src/**/*.test.ts\""
+    "test": "node --test --test-concurrency=1 --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts $(node ../../scripts/server-shards.ts ${TEST_SHARD:-all})"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.133",

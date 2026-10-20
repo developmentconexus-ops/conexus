@@ -241,13 +241,17 @@ for (const args of [
   ['--shard', '3/2'],
   ['--shard', '1'],
   ['--shard', '1/2', '1/2'],
+  ['--base'],
+  ['--base', 'main', '--base', 'main'],
+  ['--plan', '--only', 'caught'],
+  ['--plan', '--shard', '1/2'],
 ]) {
   test(`argumentos ${JSON.stringify(args)}: o comando recusa e não roda linha`, () => {
     const result = removals(...args)
     assert.equal(result.stdout, '')
     assert.match(
       result.stderr,
-      /usage: removals\.ts \[--only <row id> \| --shard <index>\/<total>\]/,
+      /usage: removals\.ts \[--base <ref>\] \[--only <row id> \| --shard <index>\/<total> \| --plan\]/,
     )
     assert.notEqual(result.status, 0)
   })
