@@ -28,6 +28,7 @@ export function Transcript(props: {
         <MessageScrollerViewport aria-label="Rolagem da conversa" className="px-md pt-md">
           <MessageScrollerContent
             aria-label="Conversa com o Builder"
+            className="pb-xl"
             aria-live="polite"
             aria-busy={answer?.streaming === true}
           >

@@ -36,7 +36,12 @@ const PROVIDERS = [
   ...provider,
   models: provider.models.map((name) => ({
     id: `${provider.id}/${name}`,
-    efforts: name === 'claude-sonnet-4' ? ['off', 'low', 'high'] : ['off'],
+    efforts:
+      name === 'claude-sonnet-4'
+        ? ['off', 'low', 'high']
+        : name === 'gpt-5'
+          ? ['low', 'medium', 'high']
+          : ['off'],
   })),
 }))
 

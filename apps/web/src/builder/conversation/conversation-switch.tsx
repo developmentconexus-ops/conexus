@@ -99,7 +99,11 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
               })
             }
           >
-            <ComboboxInput aria-label="Conversas" placeholder="Conversas" className="flex-1" />
+            <ComboboxInput
+              aria-label="Conversas"
+              placeholder="Conversas"
+              className="flex-1 border-transparent bg-transparent hover:border-line"
+            />
             <ComboboxContent>
               <ComboboxEmpty>Nenhuma conversa</ComboboxEmpty>
               <ComboboxList>

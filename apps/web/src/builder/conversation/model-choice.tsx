@@ -87,6 +87,8 @@ export function ModelChoice(props: {
       providers={shown}
       value={now.model}
       name="Modelo e raciocínio"
+      heading="Modelo desta conversa"
+      className="h-8 rounded-pill px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
       onChange={pickModel}
       effort={{ value: now.effort, onChange: (effort) => choose(now.model, effort) }}
     />

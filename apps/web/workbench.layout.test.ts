@@ -212,3 +212,40 @@ test('quem gira a roda ou aperta uma tecla para baixo já no fim continua seguin
   assert.deepEqual(page.problems, [])
   await page.close()
 })
+
+// The founder, 2026-10-20: the composer read faded and its frame and the title's thick, square.
+// A disabled Enviar dimmed the whole group, and the 2px outline sat on the field inside the frame.
+test('o compositor vazio não esmaece; o foco do compositor e do título é a borda ipê de cada um, sem contorno por fora', async () => {
+  const page = await open(PROJECT, DESKTOP)
+  const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  await field.focus()
+  function drawn(locator: Locator) {
+    return locator.evaluate((element) => {
+      const group = getComputedStyle(element.closest('[data-slot=input-group]') ?? element)
+      const own = getComputedStyle(element)
+      return {
+        opacity: group.opacity,
+        radius: group.borderTopLeftRadius,
+        halo: group.boxShadow !== 'none',
+        outline: own.outlineColor === 'rgba(0, 0, 0, 0)' ? 'transparent' : own.outlineColor,
+      }
+    })
+  }
+  assert.equal(await page.getByRole('button', { name: 'Enviar' }).isDisabled(), true)
+  assert.deepEqual(await drawn(field), {
+    opacity: '1',
+    radius: '16px',
+    halo: true,
+    outline: 'transparent',
+  })
+  const title = page.getByRole('combobox', { name: 'Conversas' })
+  await title.focus()
+  assert.deepEqual(await drawn(title), {
+    opacity: '1',
+    radius: '6px',
+    halo: true,
+    outline: 'transparent',
+  })
+  assert.deepEqual(page.problems, [])
+  await page.close()
+})

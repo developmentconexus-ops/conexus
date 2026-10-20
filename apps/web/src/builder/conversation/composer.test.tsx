@@ -1,3 +1,4 @@
+import { ModelId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -62,6 +63,23 @@ test('um modelo sem níveis não mostra o controle, e a troca para ele volta o n
   await screen.findByRole('listbox')
   expect(screen.queryByRole('slider')).toBeNull()
   expect(screen.queryByText('Raciocínio')).toBeNull()
+})
+
+test('a troca para um modelo que sempre raciocina leva o nível mais baixo dele, não Desligado', async () => {
+  const { sent } = await openConversation(
+    conversationOf({ id: FIRST }),
+    view({ providers: ['anthropic', 'openai'] }),
+  )
+  await choose(screen.getByRole('combobox', PICKER), 'GPT 5')
+  await waitFor(() => expect(sent.at(-1)?.body).toEqual({ model: 'openai/gpt-5', effort: 'low' }))
+})
+
+test('uma conversa guardada em Desligado num modelo que sempre raciocina mostra o nível em que ele roda', async () => {
+  await openConversation(
+    conversationOf({ id: FIRST, model: ModelId.parse('openai/gpt-5'), effort: 'off' }),
+    view({ providers: ['anthropic', 'openai'] }),
+  )
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Baixo')
 })
 
 test('o nível que o modelo não aceita volta a frase do Hub, sem trocar o botão', async () => {

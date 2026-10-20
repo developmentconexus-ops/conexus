@@ -6,14 +6,16 @@ import { cn } from './cn.ts'
 import { Input } from './input.tsx'
 import { Textarea } from './textarea.tsx'
 
-// Copied from shadcn's base-nova `input-group`, painted with brand tokens: the border and the
-// radius are the group's, and its field takes none.
+// Copied from shadcn's base-nova `input-group`, painted with brand tokens: the border, the radius
+// and the focus are the group's, and its field takes none; a busy group (`data-busy`) draws its own
+// edge. Only a disabled field dims the group, not a disabled button beside it.
 export function InputGroup({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       data-slot="input-group"
+      data-focus-frame
       className={cn(
-        'group/input-group relative flex h-9 w-full min-w-0 items-center rounded-control border border-line bg-surface has-disabled:opacity-50 has-[[data-slot][aria-invalid=true]]:border-danger has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>textarea]:h-auto',
+        'group/input-group relative flex h-9 w-full min-w-0 items-center rounded-control border border-line bg-surface has-[[data-slot=input-group-control]:disabled]:opacity-50 not-data-busy:has-[[data-slot=input-group-control]:focus-visible]:focus-field has-[[data-slot][aria-invalid=true]]:border-danger has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>textarea]:h-auto',
         className,
       )}
       {...props}
@@ -64,7 +66,10 @@ export function InputGroupInput({ className, ...props }: ComponentProps<'input'>
   return (
     <Input
       data-slot="input-group-control"
-      className={cn('flex-1 rounded-none border-0 bg-transparent', className)}
+      className={cn(
+        'flex-1 rounded-none border-0 bg-transparent focus-visible:outline-transparent',
+        className,
+      )}
       {...props}
     />
   )
@@ -74,7 +79,10 @@ export function InputGroupTextarea({ className, ...props }: ComponentProps<'text
   return (
     <Textarea
       data-slot="input-group-control"
-      className={cn('flex-1 rounded-none border-0 bg-transparent', className)}
+      className={cn(
+        'flex-1 rounded-none border-0 bg-transparent focus-visible:outline-transparent',
+        className,
+      )}
       {...props}
     />
   )

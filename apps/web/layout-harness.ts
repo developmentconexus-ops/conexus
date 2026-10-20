@@ -165,7 +165,8 @@ export function createHarness(root: string): Harness {
 
 /**
  * Where focus is after the key, once it settles: Base UI moves focus off its guards on the next
- * frame. Each stop reads its name, its drawn outline and whether it sits in the open dialog or menu.
+ * frame. Each stop reads its name, how its focus is drawn and whether it sits in the open dialog or
+ * menu: a 2px outline, or a field's `halo` on its own edge (design V28).
  */
 async function press(page: Page, key: string): Promise<string> {
   await page.keyboard.press(key)
@@ -180,15 +181,18 @@ async function press(page: Page, key: string): Promise<string> {
               focused.getAttribute('aria-label') ||
               focused.textContent?.trim() ||
               focused.getAttribute('name')
-            // A field the card frames draws a transparent outline for forced colors; the frame
-            // that shows where focus is belongs to the card around it.
+            // A field draws a transparent outline for forced colors; its focus is the ipê edge and
+            // halo of the field, or of the group around it.
             const own = getComputedStyle(focused)
-            const { outlineStyle, outlineWidth } =
-              own.outlineColor === 'rgba(0, 0, 0, 0)'
-                ? getComputedStyle(focused.closest('[data-focus-frame]') ?? focused)
-                : own
+            const frame = getComputedStyle(focused.closest('[data-focus-frame]') ?? focused)
+            const drawn =
+              own.outlineColor !== 'rgba(0, 0, 0, 0)'
+                ? `${own.outlineStyle} ${own.outlineWidth}`
+                : frame.boxShadow !== 'none'
+                  ? 'halo'
+                  : `${frame.outlineStyle} ${frame.outlineWidth}`
             const inside = focused.closest('[role=dialog], [role=menu]') ? ' inside' : ''
-            settled(`${name} ${outlineStyle} ${outlineWidth}${inside}`)
+            settled(`${name} ${drawn}${inside}`)
           }),
         ),
       ),
