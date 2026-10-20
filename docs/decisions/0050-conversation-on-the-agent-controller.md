@@ -2,42 +2,50 @@
 
 ## Context
 
-Step 12 makes the first model call, on Mastra's `AgentController`.
+Step 12's first model call runs on Mastra's `AgentController`.
 
 ## Decision
 
-One `AgentController`, one shared Builder agent, one session per conversation, owned by
-`company:<id>:person:<id>`. An input processor gives each attempt its account; an error processor,
-last, reads the refusal. No model array, no Mastra route.
+One `AgentController` and Builder agent; one session per conversation, owned by
+`company:<id>:person:<id>`. An input processor gives each attempt its account; a last error
+processor reads the refusal. No model array, no Mastra route.
 
-Founder's calls: a conversation belongs to who started it and is never deleted; it leaves with its
-Projeto, person or company. Search and page reading are Mastra's, with no list and no limit: a
-page can steer the Builder or carry conversation text in an address, and he accepts that risk; a
-limit may come as its own request. A refused account waits for the vendor's hour, else 15 min
-(429) or 6 h (402). At most 10 attempts per question. The automatic switch walks the chain in our
-processor; the new model reads pages without searching again. Gemini converses through the
-account's CLIProxy. Title and memory run on the turn's account. Mastra's login enters only its database.
+Founder's calls: a conversation belongs to its starter, is never deleted, leaves with its Projeto,
+person or company. Search and page reading are Mastra's, unlimited; a page may steer the Builder
+or leak conversation text in an address, accepted. A refused account waits the vendor's hour,
+else 15 min (429) or 6 h (402); at most 10 attempts per question; our processor walks the chain.
+Gemini uses the account's CLIProxy. Title and memory use the turn's account. Mastra's login enters
+only its database.
 
 ## Criterion
 
-**Question.** Does one controller keep companies apart, keep each conversation's model, and send
-each attempt through the queue's account?
+**Question.** Does one controller keep companies apart, each conversation's model, each
+attempt's queue account?
 
-**Fixed.** `@mastra/core` 1.78.0, `memory` 1.38.0, `pg` 1.31.2, `code-sdk` 1.14.0 (subscription
-provider copied, Apache-2.0, no prompt cache), CLIProxyAPI v8.0.33.
+**Fixed.** `@mastra/core` 1.78.0, `memory` 1.38.0, `pg` 1.31.2, `code-sdk` 1.14.0, CLIProxyAPI
+v8.0.33.
 
-Checks: 1 two companies, a turn each, own events only; 2 switch a model, restart, the session
-reads it; 3 an invented key is refused, then the subscription answers; 4 Claude and Gemini asked to
-search answer in Portuguese with search and pages in the stream; 5 our `ui/` against `playground-ui`.
+Checks: 1 companies apart; 2 model kept over restart; 3 invented key refused, then subscription
+answers; 4 Claude and Gemini search in Portuguese; 5 our `ui/` against `playground-ui`.
 
 ## Result
 
-Run 2026-10-19 on LibSQL: 1 to 3 passed. Check 4 first never ended: the
-controller asks before a tool with no rule. Now the Builder's tools run without
-asking, the controller's `yolo` (0053); fixed rules return at step 13.
-Claude passes. Gemini reads a page but shows no search; that returns to the founder.
-Check 5: ours; `playground-ui` brings 43 dependencies and needs routes the Hub lacks (S39).
+Run 2026-10-19 on LibSQL: 1 to 3 passed. Check 4 hung: the controller asks before an unruled tool;
+tools run unasked (0053) until step 13. Claude passes; Gemini shows no search. Check 5 counted
+dependencies, not built screens: `playground-ui` brings 43, needing routes the Hub lacks (S39).
+
+## Why not Mastra's routes
+
+Read in Mastra's source at `9d2e7398` (`@mastra/server` 1.79.0-alpha.3, not installed). Its routes
+take `resourceId` from the URL, check a coarse permission
+(`packages/server/src/server/handlers/agent-controller.ts:94-108`, `:175`); per-resource checks
+need Enterprise FGA, barred from production without a licence (`ee/LICENSE:7`). Its stream has no
+replay and sends the browser tool arguments, results and reasoning, which our parts keep server-side
+(`apps/server/src/builder/conversation/parts.ts`). Revisit when open-source Mastra checks
+session owners or replays its stream, or steps 13 to 15 need most of its interactive surface;
+step 13's study asks first (approval, `ask_user`).
 
 ## State
 
-Accepted 2026-10-19. Founder: the card's approval, "2. Autorizo".
+Accepted 2026-10-19. Founder: the card's approval, "2. Autorizo". Amended 2026-10-20, founder:
+"3.A".
