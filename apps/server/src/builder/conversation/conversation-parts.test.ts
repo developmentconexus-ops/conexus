@@ -3,10 +3,10 @@ import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
 import {
-  answeredOf,
   asked,
   conversing,
   hubBeside,
+  messagesOf,
   sent,
   started,
   streamOf,
@@ -98,7 +98,7 @@ test('uma ferramenta que falha fica `error`, sem o texto do erro; uma desconheci
 test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só, com o modelo e sem segundos', async (t) => {
   const { hub, ana, conversations } = await conversing(t, await researching(t))
   const { url } = await asked(t, { hub, person: ana, conversations })
-  const messages = await answeredOf(await hubBeside(t, hub), ana, url)
+  const messages = await messagesOf(await hubBeside(t, hub), ana, url)
   assert.deepEqual(
     messages.map((message) => [message.role, message.model]),
     [
