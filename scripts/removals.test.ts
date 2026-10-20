@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { after, before, test } from 'node:test'
@@ -138,6 +138,33 @@ test('ignored mail renderer is carried into the baseline and mutated scratch tre
     writeFileSync(join(dir, file), content)
   }
   spawnSync('git', ['init', '--quiet'], { cwd: dir })
+  const result = removalsAt(dir, '--only', 'caught')
+  assert.equal(result.stdout, 'caught caught\n', result.stderr)
+  assert.equal(result.status, 0)
+})
+
+test('a tracked symlink to a folder is carried into the scratch tree as a symlink', (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-removals-link-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  const files = {
+    'scripts/removals.json': JSON.stringify([{ ...ROWS[0], test: { ...TEST, name: 'link' } }]),
+    'limit.ts': 'export const LIMIT = 10\n',
+    'real/skill.md': 'skill\n',
+    'limit.test.ts': `import { test } from 'node:test'; import assert from 'node:assert/strict';
+      import { lstatSync, readlinkSync } from 'node:fs'; import { LIMIT } from './limit.ts';
+      test('link', () => {
+        assert.ok(lstatSync('link').isSymbolicLink());
+        assert.equal(readlinkSync('link'), 'real');
+        assert.equal(LIMIT, 10);
+      });`,
+  }
+  for (const [file, content] of Object.entries(files)) {
+    mkdirSync(dirname(join(dir, file)), { recursive: true })
+    writeFileSync(join(dir, file), content)
+  }
+  symlinkSync('real', join(dir, 'link'))
+  spawnSync('git', ['init', '--quiet'], { cwd: dir })
+  spawnSync('git', ['add', '-A'], { cwd: dir })
   const result = removalsAt(dir, '--only', 'caught')
   assert.equal(result.stdout, 'caught caught\n', result.stderr)
   assert.equal(result.status, 0)

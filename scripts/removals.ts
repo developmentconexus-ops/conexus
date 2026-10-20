@@ -96,7 +96,14 @@ function scratchCopy(root: string): string {
     { cwd: root },
   )
   const files = listed.split('\0').filter((file) => file !== '' && existsSync(join(root, file)))
-  for (const file of files) cpSync(join(root, file), join(copy, file))
+  // A tracked symlink stays a symlink: cpSync follows a top-level one and refuses a folder.
+  for (const file of files) {
+    const source = join(root, file)
+    if (lstatSync(source).isSymbolicLink()) {
+      mkdirSync(dirname(join(copy, file)), { recursive: true })
+      symlinkSync(readlinkSync(source), join(copy, file))
+    } else cpSync(source, join(copy, file))
+  }
   const renderer = 'apps/server/src/hub/identity/invitation-render.mjs'
   if (existsSync(join(root, renderer))) cpSync(join(root, renderer), join(copy, renderer))
   for (const manifest of files.filter((file) => file.endsWith('package.json'))) {
