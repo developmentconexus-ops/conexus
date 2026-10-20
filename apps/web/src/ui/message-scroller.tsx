@@ -1,4 +1,7 @@
-import { MessageScroller as MessageScrollerPrimitive } from '@shadcn/react/message-scroller'
+import {
+  MessageScroller as MessageScrollerPrimitive,
+  useMessageScroller,
+} from '@shadcn/react/message-scroller'
 import { ArrowDownIcon } from 'lucide-react'
 import { Button } from './button.tsx'
 import { cn } from './cn.ts'
@@ -28,10 +31,27 @@ export function MessageScroller({
   )
 }
 
+/** The keys that scroll toward the end; Shift+Space scrolls back. */
+const TOWARD_END: ReadonlySet<string> = new Set(['ArrowDown', 'End', 'PageDown', ' '])
+
+function atEnd(viewport: HTMLElement): boolean {
+  return viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 1
+}
+
 export function MessageScrollerViewport({
   className,
+  onWheel,
+  onKeyDown,
+  onTouchEnd,
   ...props
 }: React.ComponentProps<typeof MessageScrollerPrimitive.Viewport>) {
+  const { scrollToEnd } = useMessageScroller()
+  // `@shadcn/react` 0.3.1 stops following the end on any wheel, touch or scroll key, and follows
+  // again only after a scroll that ends there. At the end such a gesture scrolls nothing, so the
+  // person who is still at the end is followed again here.
+  function stayAtEnd(viewport: HTMLElement) {
+    if (atEnd(viewport)) scrollToEnd()
+  }
   return (
     <MessageScrollerPrimitive.Viewport
       data-slot="message-scroller-viewport"
@@ -39,6 +59,19 @@ export function MessageScrollerViewport({
         'size-full min-h-0 min-w-0 overflow-y-auto overscroll-contain contain-content data-pending-scroll:invisible',
         className,
       )}
+      onWheel={(event) => {
+        if (event.deltaY >= 0) stayAtEnd(event.currentTarget)
+        onWheel?.(event)
+      }}
+      onKeyDown={(event) => {
+        if (TOWARD_END.has(event.key) && !(event.key === ' ' && event.shiftKey))
+          stayAtEnd(event.currentTarget)
+        onKeyDown?.(event)
+      }}
+      onTouchEnd={(event) => {
+        stayAtEnd(event.currentTarget)
+        onTouchEnd?.(event)
+      }}
       {...props}
     />
   )

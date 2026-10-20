@@ -175,3 +175,40 @@ test('a rolagem da conversa segue o fim enquanto ela cresce; quem subiu não é 
   assert.deepEqual(page.problems, [])
   await page.close()
 })
+
+// A wheel or a key that scrolls nothing at the end leaves the person at the end, so the
+// answer that arrives next is followed (founder, 2026-10-20: "sem auto scroll").
+test('quem gira a roda ou aperta uma tecla para baixo já no fim continua seguindo o fim', async () => {
+  const page = await open(PROJECT, DESKTOP)
+  const scroller = page.getByLabel('Rolagem da conversa')
+  await scroller.waitFor()
+  function atEnd() {
+    return page.waitForFunction(
+      () => {
+        const el = document.querySelector('[data-slot=message-scroller-viewport]')
+        return el !== null && el.scrollHeight - el.scrollTop - el.clientHeight <= 2
+      },
+      undefined,
+      { polling: 50, timeout: 2000 },
+    )
+  }
+  await grow(page, 40)
+  await atEnd()
+  // The scroller's own follow settles before the gesture, as it has when a person reads the end.
+  await page.waitForTimeout(300)
+  const box = await scroller.boundingBox()
+  assert.ok(box, 'the conversation is not laid out')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.wheel(0, 300)
+  await page.waitForTimeout(300)
+  await grow(page, 10)
+  await atEnd()
+  await page.waitForTimeout(300)
+  await scroller.focus()
+  await page.keyboard.press('End')
+  await page.waitForTimeout(300)
+  await grow(page, 10)
+  await atEnd()
+  assert.deepEqual(page.problems, [])
+  await page.close()
+})
