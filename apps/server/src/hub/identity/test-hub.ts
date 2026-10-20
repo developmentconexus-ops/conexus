@@ -123,13 +123,26 @@ async function hubServing(
   const { projects, apps, conversations } = subjects
   const webRoot = testWebRoot(t)
   const app = await createHub(config, { status, identity, ...subjects, webRoot })
-  closing.hub = async function closeHub() {
-    await conversations.close()
-    await app.close()
+  let closed: Promise<void> | undefined
+  closing.hub = function closeHub() {
+    closed ??= conversations.close().then(() => app.close())
+    return closed
   }
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
-  return { app, edge, test, config, neon, cloudflare, postgres, projects, repair: apps.repair }
+  const close = () => closing.hub()
+  return {
+    app,
+    edge,
+    test,
+    config,
+    neon,
+    cloudflare,
+    postgres,
+    projects,
+    repair: apps.repair,
+    close,
+  }
 }
 
 /** A Hub on a fresh test database; its mail goes nowhere. */

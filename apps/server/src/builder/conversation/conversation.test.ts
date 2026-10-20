@@ -206,13 +206,15 @@ test('a observação vai pela conta do turno e não pede título; um 429 nela: o
     assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
     assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
   }
+  const read = await call(hub, ana, 'GET', url)
+  // The observer buffers in the background past `messageTokens`; the Hub's close waits for it.
+  await hub.close()
   const observed = anthropic.sent.filter((each) => OBSERVER.test(each.system))
   assert.ok(observed.length > 0, 'the second turn, past the threshold, was observed')
   for (const each of observed) {
     assert.equal(each.key, 'sk-ant-conversation-key-0002')
     assert.doesNotMatch(each.system, /thread-title/, 'the observer is never asked for a title')
   }
-  const read = await call(hub, ana, 'GET', url)
   for (const text of [JSON.stringify(lines), printed.join(''), stream.seen.raw, read.body]) {
     assert.doesNotMatch(text, PLANTED)
   }

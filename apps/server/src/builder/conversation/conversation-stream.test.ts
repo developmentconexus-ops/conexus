@@ -251,16 +251,19 @@ test('o stream fecha enquanto a pergunta é guardada: a sessão fica, e o turno 
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const address = await hub.app.listen({ port: 0, host: '127.0.0.1' })
   const headers = { origin: TEST_ORIGIN, cookie: ana.cookie }
+  const arrived = once(hub.app.server, 'request')
   const first = http.get(`${address}${url}/events`, { headers })
   t.after(() => first.destroy())
   await once(first, 'response')
+  const [, response] = await arrived
+  assert.ok(response instanceof http.ServerResponse)
   const threads = await stalled(t, hub, 'mastra_threads')
   const sending = sent(hub, ana, url, 'Uma pergunta')
   await threads.waited()
   first.destroy()
-  await new Promise((done) => setTimeout(done, 200))
+  // The server sees the close, which ends the stream's signal, while the question waits on the lock.
+  await once(response, 'close')
   const opening = streamOf(hub, ana, url)
-  await new Promise((done) => setTimeout(done, 200))
   await threads.release()
   const second = await opening
   t.after(() => second.close())

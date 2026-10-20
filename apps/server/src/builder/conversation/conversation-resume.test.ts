@@ -9,6 +9,7 @@ import {
   failuresOf,
   holding,
   hubBeside,
+  messagesOf,
   PARTIAL,
   rolesAndParts,
   sent,
@@ -195,7 +196,7 @@ test('ler no meio de um turno que já usou ferramentas: o turno fica de fora, o 
   for (const told of [...PAGES.map((page) => `"url":"${page}"`), PARTIAL, '"reason":"complete"'])
     assert.ok(stream.seen.raw.includes(told), `the stream told ${told}`)
   assert.deepEqual(
-    (await answeredOf(hub, ana, url)).map((message) => message.role),
+    (await messagesOf(hub, ana, url)).map((message) => message.role),
     ['person', 'builder'],
   )
 })

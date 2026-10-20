@@ -84,7 +84,7 @@ One line per document; `check-docs` refuses a document without one.
 - [0049](decisions/0049-model-accounts-keys-sign-ins-queues.md) accounts.
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
 - [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) one tracing path.
-- [0053](decisions/0053-builder-web-fetch-asks-no-approval.md) fetch without approval.
+- [0053](decisions/0053-builder-tools-run-without-asking.md) tools without asking.
 
 ## Skills
 

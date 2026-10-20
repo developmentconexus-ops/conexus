@@ -1,7 +1,7 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
-import type { BuiltinToolId, PermissionRules, ToolCategory } from '@mastra/core/agent-controller'
+import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
 import { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -45,19 +45,6 @@ const BUILTIN_TOOLS: BuiltinToolId[] = [
   'subagent',
 ]
 
-// The Builder's own tools only read; `recall` is Mastra memory's, added by `retrieval: true`.
-const READ_TOOLS = new Set(['web_fetch', 'web_search', 'recall'])
-// The controller asks before any tool it has no rule for and parks the turn on the answer, and no
-// screen answers: every category has a rule, and what is not `read` is denied.
-const PERMISSION_RULES: PermissionRules = {
-  categories: { read: 'allow', edit: 'deny', execute: 'deny', mcp: 'deny', other: 'deny' },
-  tools: {},
-}
-
-function toolCategory(toolName: string): ToolCategory {
-  return READ_TOOLS.has(toolName) ? 'read' : 'other'
-}
-
 function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}` {
   return modelId.includes('/')
 }
@@ -73,21 +60,9 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
   return modelId
 }
 
-/**
- * Mastra's `web_fetch` whole, with its own approval answering "no" (Mastra 1.78.0
- * `resolveToolApprovalVerdict`): a call runs without the controller's approval round trip, whose
- * resume under load can find the run's snapshot gone and end the turn in error. Any other tool
- * still asks, and `PERMISSION_RULES` answers it.
- */
-export const builderFetch: typeof webFetchTool = Object.assign(
-  Object.create(Object.getPrototypeOf(webFetchTool)),
-  webFetchTool,
-  { requireApproval: () => false },
-)
-
 /** `web_fetch` always; `web_search` only where Mastra resolves the provider's own search. */
 function toolsOf(modelId: ModelId): ToolsInput {
-  const tools: ToolsInput = { web_fetch: builderFetch }
+  const tools: ToolsInput = { web_fetch: webFetchTool }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }
@@ -160,8 +135,9 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     agent,
     modes: [{ id: CONVERSATION_MODE }],
     disableBuiltinTools: BUILTIN_TOOLS,
-    toolCategoryResolver: toolCategory,
-    initialState: { permissionRules: PERMISSION_RULES },
+    // The Builder's tools only read, so they run without asking, as Mastra Code's sessions do: an
+    // approval parks the run and resumes it, which under load can end the turn (decision 0053).
+    initialState: { yolo: true },
   })
   const mastra = new Mastra({
     logger: new BuilderLogger(deps.log),

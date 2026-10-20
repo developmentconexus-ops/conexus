@@ -21,8 +21,6 @@ import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
-import { openGoogleCalls } from '../model-accounts/public.ts'
-import { builderFetch, createBuilder } from './builder.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-5'
 export const PARTIAL = 'Começo da resposta'
@@ -236,6 +234,16 @@ export async function answeredOf(hub: Hub, person: Person, url: string): Promise
   }
 }
 
+/**
+ * The conversation's messages, read once: Mastra saves a completed turn before it passes on its
+ * `finish`, so a read at `turnEnd` has it.
+ */
+export async function messagesOf(hub: Hub, person: Person, url: string): Promise<Message[]> {
+  const read = await call(hub, person, 'GET', url)
+  assert.equal(read.statusCode, 200, read.body)
+  return Object(read.json()).conversation.messages
+}
+
 /** The failures a turn said, in order. */
 export function failuresOf(events: ConversationEvent[]): string[] {
   return events.flatMap((event) =>
@@ -256,29 +264,6 @@ export async function keptNotices(hub: Hub, person: Person, url: string): Promis
     .flatMap((message) => message.parts)
     .flatMap((part) => (part.type === 'notice' ? [part.text] : []))
 }
-
-/**
- * What the Builder's real controller answers when a tool is asked for approval, on a session it
- * opens as the conversations do: `allow`, `deny` or `ask` (which would park the turn).
- */
-export async function approvalsOf(t: TestContext, hub: Hub, toolNames: string[]) {
-  const { config, test } = hub
-  const { database } = test
-  const { cliProxy, sealKeys } = config
-  const google = openGoogleCalls({ cliProxy, log: silent, database, sealKeys })
-  t.after(() => google.stop())
-  const identity = identityOf({ database, config, log: silent }).ports
-  const queue = { database, identity, sealKeys, googleCalls: google.googleCalls, log: silent }
-  const builder = createBuilder({ pool: test.mastraPool, queue, log: silent })
-  const session = await builder.controller.createSession({
-    resourceId: 'company:approvals:person:approvals',
-    scope: randomUUID(),
-  })
-  return Object.fromEntries(toolNames.map((name) => [name, session.resolveToolApproval(name)]))
-}
-
-/** The `web_fetch` the Builder gives its agent, to compare with Mastra's own. */
-export const BUILDER_FETCH = builderFetch
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/'
 const GeminiAsked = z.object({

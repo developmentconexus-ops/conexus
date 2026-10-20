@@ -33,8 +33,8 @@ search answer in Portuguese with search and pages in the stream; 5 our `ui/` aga
 ## Result
 
 Run 2026-10-19 on LibSQL: 1 to 3 passed. Check 4 first never ended: the
-controller asks before a tool with no rule. Native rules now: `web_fetch`,
-`web_search` and `recall` allowed, every other category denied (not `yolo`; step 13 D7; 0053).
+controller asks before a tool with no rule. Now the Builder's tools run without
+asking, the controller's `yolo` (0053); fixed rules return at step 13.
 Claude passes. Gemini reads a page but shows no search; that returns to the founder.
 Check 5: ours; `playground-ui` brings 43 dependencies and needs routes the Hub lacks (S39).
 
