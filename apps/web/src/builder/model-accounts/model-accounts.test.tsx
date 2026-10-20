@@ -263,7 +263,7 @@ test('Modelo padrão: busca, grupos por fornecedor e o modelo, como fornecedor/m
   )
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: '' } })
   fireEvent.click(await screen.findByRole('option', { name: 'gpt-5' }))
-  expect(screen.getByText('Escolhido: openai/gpt-5')).toBeTruthy()
+  expect(screen.getByText('Escolhido: gpt-5')).toBeTruthy()
   fireEvent.click(save)
   expect((await screen.findByRole('alert')).textContent).toBe('Este modelo não está na lista.')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar modelo padrão' }))
@@ -285,7 +285,7 @@ test('Modelo padrão: milhares de modelos não viram milhares de opções; a bus
       HttpResponse.json({ providers: [{ id: 'grande', name: 'Grande', models }] }),
     ),
   )
-  expect(await screen.findByText('Escolhido: grande/modelo-7')).toBeTruthy()
+  expect(await screen.findByText('Escolhido: modelo-7')).toBeTruthy()
   fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo padrão' }))
   expect((await screen.findAllByRole('option')).length).toBeLessThanOrEqual(50)
   expect(screen.getByText('Mostrando 50 de 3000 modelos. Busque para ver os outros.')).toBeTruthy()

@@ -2,6 +2,7 @@ import type {
   AccountKind,
   Effort,
   ModelAccount,
+  ModelId,
   PersonId,
   Provider,
   ProviderId,
@@ -79,3 +80,8 @@ export const EFFORT_LABELS = {
   xhigh: 'Muito alto',
   max: 'Máximo',
 } as const satisfies Record<Effort, string>
+
+/** A model as a person reads it: its name in the registry, after the provider's slash. */
+export function modelLabel(model: ModelId): string {
+  return model.slice(model.indexOf('/') + 1)
+}

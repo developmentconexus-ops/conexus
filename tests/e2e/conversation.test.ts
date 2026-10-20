@@ -4,6 +4,7 @@ import type { Page } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import {
   ANSWER,
+  ANSWER_HEAD,
   ask,
   chooseDefaultModel,
   KEYS,
@@ -211,16 +212,15 @@ async function researched(chat: Page, hold: () => () => void, sent: () => number
   const release = hold()
   await ask(chat, 'Compare dois apps de encomenda de padaria')
   await chat.getByRole('status').filter({ hasText: 'Builder trabalhando' }).waitFor()
-  await transcriptShowed(chat, ANSWER)
+  await transcriptShowed(chat, ANSWER_HEAD)
   await transcriptShowed(chat, FOLDED)
   await transcriptShowed(chat, 'Pensou')
   assert.ok(sent() > 0, 'the provider received the thinking budget of "Alto"')
   return release
 }
 
-/** Step 3: the line cut in the middle of the answer opens again from the last event, and the answer is not repeated. */
-async function reconnected(chat: Page, cut: () => void, problems: string[]) {
-  const log = chat.getByRole('log', { name: 'Conversa com o Builder' })
+/** Step 3: the line cut between two deltas opens again from the last event; each tab then shows the answer once. */
+async function reconnected(chat: Page, cut: () => void, release: () => void, problems: string[]) {
   const resumed = chat.waitForResponse(
     (response) =>
       response.url().endsWith('/events') && 'last-event-id' in response.request().headers(),
@@ -229,9 +229,12 @@ async function reconnected(chat: Page, cut: () => void, problems: string[]) {
   assert.ok((await resumed).ok())
   const again = await anotherPage(chat.context(), problems)
   await openConversation(again, chat.url())
+  release()
   for (const page of [chat, again]) {
-    await page.getByRole('log', { name: 'Conversa com o Builder' }).getByText(ANSWER).waitFor()
-    assert.equal((await log.innerText()).split(ANSWER).length, 2)
+    const log = page.getByRole('log', { name: 'Conversa com o Builder' })
+    await log.getByText(ANSWER).waitFor()
+    const text = await log.innerText()
+    for (const once of [ANSWER, ANSWER_HEAD]) assert.equal(text.split(once).length, 2)
   }
   await again.close()
 }
@@ -255,11 +258,11 @@ async function draftKept(chat: Page) {
 async function onPhone(chat: Page) {
   await chat.setViewportSize({ width: 390, height: 844 })
   const field = chat.getByLabel('Mensagem para o Builder')
-  await chat.getByRole('tab', { name: 'Conversa', exact: true }).click()
+  await chat.getByRole('button', { name: 'Conversa', exact: true }).click()
   await field.fill(DRAFT)
-  await chat.getByRole('tab', { name: 'App', exact: true }).click()
+  await chat.getByRole('button', { name: 'App', exact: true }).click()
   assert.equal(await field.isVisible(), false)
-  await chat.getByRole('tab', { name: 'Conversa', exact: true }).click()
+  await chat.getByRole('button', { name: 'Conversa', exact: true }).click()
   assert.equal(await field.inputValue(), DRAFT)
   function paper() {
     return chat.evaluate(() => getComputedStyle(document.body).backgroundColor)
@@ -294,6 +297,7 @@ async function pausedNoticeStays(
 
 test('o roteiro da 12.1: a conversa no painel, o pensamento, as ferramentas dobradas, a volta da linha, o rascunho, o celular e o aviso que fica', async (t) => {
   const { anthropic, state, hold: holdTurn } = plantJourney(t, await publicPage(t))
+  state.splitting = true
   const held: (() => void)[] = []
   function hold() {
     const release = holdTurn()
@@ -315,8 +319,7 @@ test('o roteiro da 12.1: a conversa no painel, o pensamento, as ferramentas dobr
         .length
     }
     const release = await researched(chat, hold, thinking)
-    await reconnected(chat, owner.cutConnections, problems)
-    release()
+    await reconnected(chat, owner.cutConnections, release, problems)
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
     await chat.reload()
     await chat.getByText('Pensou', { exact: true }).waitFor()

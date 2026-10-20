@@ -5,16 +5,13 @@ import { sentenceOfCode } from '../../platform/hub.ts'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
+import { modelLabel } from '../model-accounts/public.ts'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
 import { Markdown } from './markdown.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
-
-function nameOfModel(model: ModelId): string {
-  return model.slice(model.indexOf('/') + 1)
-}
 
 function PartRow(props: { part: MessagePart; streaming: boolean }) {
   const { part } = props
@@ -77,7 +74,7 @@ export function BuilderTurn(props: {
           <span className="font-semibold text-text">Conexus</span>
           {props.model !== null && (
             <span className="min-w-0 truncate rounded-pill bg-surface-3 px-sm py-xs font-mono">
-              {nameOfModel(props.model)}
+              {modelLabel(props.model)}
             </span>
           )}
         </MessageHeader>

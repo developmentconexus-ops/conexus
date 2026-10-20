@@ -1,4 +1,4 @@
-import type { CompanyId, ModelFallback, Provider } from '@conexus/hub-api'
+import type { CompanyId, ModelFallback, ModelId, Provider } from '@conexus/hub-api'
 import { MODEL_FALLBACK_MAX_LENGTH } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
@@ -9,7 +9,7 @@ import { ModelPicker } from './model-picker.tsx'
 import { sendFallback } from './queries.ts'
 import { refusalText } from './text.ts'
 
-function swapped(chain: readonly string[], index: number, by: -1 | 1): string[] {
+function swapped(chain: readonly ModelId[], index: number, by: -1 | 1): ModelId[] {
   const next = [...chain]
   const other = next[index + by]
   const here = next[index]
@@ -39,8 +39,8 @@ function Editor(props: {
 }) {
   const pickerId = useId()
   const [enabled, setEnabled] = useState(props.fallback.enabled)
-  const [chain, setChain] = useState<readonly string[]>(props.fallback.chain)
-  const [picked, setPicked] = useState<string | null>(null)
+  const [chain, setChain] = useState<readonly ModelId[]>(props.fallback.chain)
+  const [picked, setPicked] = useState<ModelId | null>(null)
   const send = useMutation(sendFallback)
   const added =
     picked !== null && !chain.includes(picked) && chain.length < MODEL_FALLBACK_MAX_LENGTH

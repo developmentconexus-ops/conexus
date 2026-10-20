@@ -169,7 +169,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
   return [
     http.post(BASE, async ({ request }) => {
       await note(request)
-      const replaced = answers.create?.()
+      const replaced = await answers.create?.()
       if (replaced) return replaced
       const conversation = conversationOf({ id: SECOND })
       view.conversations.unshift(conversation)
@@ -177,7 +177,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
     }),
     http.post(`${BASE}/:id/messages`, async ({ request, params }) => {
       const body = await note(request)
-      const replaced = answers.message?.()
+      const replaced = await answers.message?.()
       if (replaced) return replaced
       const conversation = view.conversations.find((one) => one.id === params.id)
       if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
@@ -198,7 +198,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
     }),
     http.put(`${BASE}/:id/model`, async ({ request, params }) => {
       const body = await note(request)
-      const replaced = answers.model?.()
+      const replaced = await answers.model?.()
       if (replaced) return replaced
       const model =
         typeof body === 'object' && body !== null && 'model' in body
@@ -215,7 +215,10 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
 
 /** A reply that replaces the Hub's usual answer to a write. */
 export type Answers = Partial<
-  Record<'create' | 'message' | 'model' | 'events', () => Response | undefined>
+  Record<
+    'create' | 'message' | 'model' | 'events',
+    () => Response | undefined | Promise<Response | undefined>
+  >
 >
 
 /**
@@ -248,8 +251,8 @@ function conversationHub(view: View, answers: Answers = {}) {
           }),
         ),
       ),
-      http.get(`${BASE}/:id/events`, ({ request }) => {
-        const replaced = answers.events?.()
+      http.get(`${BASE}/:id/events`, async ({ request }) => {
+        const replaced = await answers.events?.()
         if (replaced) return replaced
         const { line, response } = openLine(`line-${lines.length}`)
         lines.push(line)

@@ -106,8 +106,9 @@ test('o grupo rodando diz a ferramenta e quantas acabaram, e está aberto', asyn
 
 test('a ferramenta que falhou diz que falhou e não mostra o texto do fornecedor', async () => {
   const { log, parts } = await begin()
-  parts(tool('a', 'read_page', 'error'))
+  parts(Object.assign(tool('a', 'read_page', 'error'), { error: 'SECRET-PLANTED-TEXT' }))
   expect(await within(log).findByText('Não conseguiu ler uma página')).toBeTruthy()
+  expect(log.textContent).not.toContain('SECRET-PLANTED-TEXT')
 })
 
 test('o endereço da página é um link só se for http ou https', async () => {
@@ -235,16 +236,19 @@ function withGeometry() {
   }
 }
 
-test('a conversa abre no fim, e quem subiu volta com "Ir para o fim da conversa"', async () => {
+test('a conversa abre no fim, quem subiu não é puxado quando ela cresce e volta com "Ir para o fim da conversa"', async () => {
   const restore = withGeometry()
   try {
     const { parts } = await begin()
     const viewport = screen.getByLabelText('Rolagem da conversa')
-    parts(tool('a'))
+    parts(tool('a'), tool('b'))
     await waitFor(() => expect(viewport.scrollTop).toBe(800))
     viewport.scrollTop = 100
     fireEvent.wheel(viewport, { deltaY: -50 })
     fireEvent.scroll(viewport)
+    parts(tool('c'))
+    await screen.findByRole('button', { name: /Leu uma página3\/3/ })
+    expect(viewport.scrollTop).toBe(100)
     fireEvent.click(await screen.findByRole('button', { name: 'Ir para o fim da conversa' }))
     await waitFor(() => expect(viewport.scrollTop).toBe(800))
   } finally {

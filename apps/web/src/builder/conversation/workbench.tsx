@@ -4,7 +4,7 @@ import { useDefaultLayout } from 'react-resizable-panels'
 import { pageStorage } from '../../platform/storage.ts'
 import { cn } from '../../ui/cn.ts'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
-import { Tabs, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
+import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
 
 const LAYOUT_ID = 'conexus-workbench'
 const layoutMemory = pageStorage('local')
@@ -25,20 +25,19 @@ export function Workbench(props: { area: ReactNode; panel: ReactNode }) {
   const layout = useDefaultLayout({ id: LAYOUT_ID, storage: layoutMemory })
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <Tabs
-        value={view}
-        onValueChange={(next) => setView(next === 'chat' ? 'chat' : 'app')}
-        className="border-b border-line p-sm md:hidden"
-      >
-        <TabsList className="w-full">
-          <TabsTrigger value="app" className="flex-1">
-            App
-          </TabsTrigger>
-          <TabsTrigger value="chat" className="flex-1">
-            Conversa
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
+      <div className="border-b border-line p-sm md:hidden">
+        <ToggleGroup
+          aria-label="Parte do Projeto"
+          value={[view]}
+          onValueChange={(next) => {
+            const [chosen] = next
+            if (chosen === 'app' || chosen === 'chat') setView(chosen)
+          }}
+        >
+          <ToggleGroupItem value="app">App</ToggleGroupItem>
+          <ToggleGroupItem value="chat">Conversa</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
       <ResizablePanelGroup
         id={LAYOUT_ID}
         defaultLayout={layout.defaultLayout}

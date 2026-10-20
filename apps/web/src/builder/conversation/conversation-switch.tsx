@@ -15,6 +15,7 @@ import {
   ComboboxList,
 } from '../../ui/combobox.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
+import { ReadFailure } from '../../ui/states.tsx'
 import { conversationsQuery, sendCreation } from './queries.ts'
 import { titleOf, UNCONFIRMED_CREATION } from './text.ts'
 
@@ -113,7 +114,9 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
         )}
         <NewConversation onFailure={setFailure} />
       </div>
-      {list.isError && <p role="alert">{sentenceOf(list.error)}</p>}
+      {list.isError && (
+        <ReadFailure text={sentenceOf(list.error)} onRetry={() => void list.refetch()} />
+      )}
       {failure !== undefined && <p role="alert">{failure}</p>}
     </div>
   )

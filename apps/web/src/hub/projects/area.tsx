@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { Versions } from '../apps/public.ts'
 import { About } from './project.tsx'
 import { projectQuery } from './queries.ts'
+import { Lens, Section } from './search.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
 
@@ -21,28 +22,25 @@ function VersionsSection() {
 }
 
 function Sections() {
-  const { section = 'about' } = route.useSearch()
+  const { section = Section.enum.about } = route.useSearch()
   const navigate = route.useNavigate()
   return (
     <Tabs
       value={section}
-      onValueChange={(next) =>
-        void navigate({
-          search: (previous) => ({
-            ...previous,
-            section: next === 'versions' ? 'versions' : 'about',
-          }),
-        })
-      }
+      onValueChange={(next) => {
+        const section = Section.safeParse(next)
+        if (section.success)
+          void navigate({ search: (previous) => ({ ...previous, section: section.data }) })
+      }}
     >
       <TabsList aria-label="Seções do Projeto">
-        <TabsTrigger value="about">Sobre</TabsTrigger>
-        <TabsTrigger value="versions">Versões</TabsTrigger>
+        <TabsTrigger value={Section.enum.about}>Sobre</TabsTrigger>
+        <TabsTrigger value={Section.enum.versions}>Versões</TabsTrigger>
       </TabsList>
-      <TabsContent value="about">
+      <TabsContent value={Section.enum.about}>
         <About />
       </TabsContent>
-      <TabsContent value="versions">
+      <TabsContent value={Section.enum.versions}>
         <VersionsSection />
       </TabsContent>
     </Tabs>
@@ -55,23 +53,23 @@ function Sections() {
  */
 export function ProjectArea(props: { preview: ReactNode }) {
   const { companyId, projectId } = route.useParams()
-  const { lens = 'preview' } = route.useSearch()
+  const { lens = Lens.enum.preview } = route.useSearch()
   const navigate = route.useNavigate()
   const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   return (
     <Tabs
       value={lens}
-      onValueChange={(next) =>
-        void navigate({
-          search: (previous) => ({ ...previous, lens: next === 'project' ? 'project' : 'preview' }),
-        })
-      }
+      onValueChange={(next) => {
+        const chosen = Lens.safeParse(next)
+        if (chosen.success)
+          void navigate({ search: (previous) => ({ ...previous, lens: chosen.data }) })
+      }}
       className="h-full gap-0"
     >
       <div className="flex items-center justify-between gap-md border-b border-line px-md py-xs">
         <TabsList aria-label="Projeto">
-          <TabsTrigger value="preview">Prévia</TabsTrigger>
-          <TabsTrigger value="project">Projeto</TabsTrigger>
+          <TabsTrigger value={Lens.enum.preview}>Prévia</TabsTrigger>
+          <TabsTrigger value={Lens.enum.project}>Projeto</TabsTrigger>
         </TabsList>
         {project.address !== null && (
           <a
@@ -82,10 +80,10 @@ export function ProjectArea(props: { preview: ReactNode }) {
           </a>
         )}
       </div>
-      <TabsContent value="preview" className="min-h-0">
+      <TabsContent value={Lens.enum.preview} className="min-h-0">
         {props.preview}
       </TabsContent>
-      <TabsContent value="project" className="min-h-0 overflow-y-auto p-xl">
+      <TabsContent value={Lens.enum.project} className="min-h-0 overflow-y-auto p-xl">
         <Sections />
       </TabsContent>
     </Tabs>

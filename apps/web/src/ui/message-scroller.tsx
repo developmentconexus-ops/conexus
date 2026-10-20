@@ -72,8 +72,14 @@ export function MessageScrollerItem({
   )
 }
 
+/** The button scrolls smoothly unless the person asked for less motion. */
+function scrollBehavior(): ScrollBehavior {
+  return globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+}
+
 export function MessageScrollerButton({
   direction = 'end',
+  behavior = scrollBehavior(),
   className,
   children,
   render,
@@ -84,6 +90,7 @@ export function MessageScrollerButton({
       data-slot="message-scroller-button"
       data-direction={direction}
       direction={direction}
+      behavior={behavior}
       className={cn(
         'absolute inset-s-1/2 -translate-x-1/2 rounded-pill motion-safe:transition-[translate,scale,opacity] motion-safe:duration-200 data-[active=false]:pointer-events-none data-[active=false]:scale-95 data-[active=false]:opacity-0 data-[direction=end]:bottom-lg data-[direction=start]:top-lg data-[direction=start]:[&_svg]:rotate-180',
         className,

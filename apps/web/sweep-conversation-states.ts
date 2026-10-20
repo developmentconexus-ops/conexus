@@ -128,7 +128,7 @@ export const WITH_CONVERSATIONS = {
 /** On a phone the conversation is the other region of "App | Conversa": open it, then look for its text. */
 async function inChat(page: Page, text: string) {
   if ((page.viewportSize()?.width ?? 0) < 768) {
-    await page.getByRole('tab', { name: 'Conversa' }).click()
+    await page.getByRole('button', { name: 'Conversa', exact: true }).click()
   }
   await waitFor(page, text)
 }

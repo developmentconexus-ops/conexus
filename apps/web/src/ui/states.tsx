@@ -47,6 +47,18 @@ export function Failure({ code, onRetry }: { code: FailureCode; onRetry: () => v
   )
 }
 
+/** A part of a page that could not load: the sentence and "Tentar de novo". */
+export function ReadFailure({ text, onRetry }: { text: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-start gap-md">
+      <p role="alert" className="text-danger">
+        {text}
+      </p>
+      <Button onClick={onRetry}>Tentar de novo</Button>
+    </div>
+  )
+}
+
 function InitialLink() {
   const initial = useInitialAction()
   return (

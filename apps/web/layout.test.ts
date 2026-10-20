@@ -294,3 +294,16 @@ for (const [reducedMotion, moves] of [
     await page.close()
   })
 }
+
+for (const [reducedMotion, name] of [
+  ['no-preference', 'shimmer'],
+  ['reduce', 'none'],
+] as const) {
+  test(`o título de uma linha em curso ${name === 'none' ? 'não brilha com prefers-reduced-motion' : 'brilha'}`, async () => {
+    const page = await open('/pieces', DESKTOP, {})
+    await page.emulateMedia({ reducedMotion })
+    const title = page.locator('[data-status=running] > [data-slot=trace-title]').first()
+    assert.equal(await title.evaluate((el) => getComputedStyle(el).animationName), name)
+    await page.close()
+  })
+}

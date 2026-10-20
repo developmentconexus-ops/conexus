@@ -72,7 +72,7 @@ test('o divisor da conversa: 380px, arrastado vale de 320px a 60%, e a página l
 
 test('no celular, "App | Conversa" troca de região sem perder o rascunho nem a rolagem', async () => {
   const page = await open(PROJECT, PHONE)
-  await page.getByRole('tab', { name: 'Conversa' }).click()
+  await page.getByRole('button', { name: 'Conversa', exact: true }).click()
   const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
   await field.fill('meio da frase')
   const body = page.locator(`${CHAT} .overflow-y-auto`)
@@ -80,9 +80,9 @@ test('no celular, "App | Conversa" troca de região sem perder o rascunho nem a 
     element.scrollTop = 120
   })
   const scrolled = await body.evaluate((element) => element.scrollTop)
-  await page.getByRole('tab', { name: 'App' }).click()
+  await page.getByRole('button', { name: 'App', exact: true }).click()
   const hidden = await field.isVisible()
-  await page.getByRole('tab', { name: 'Conversa' }).click()
+  await page.getByRole('button', { name: 'Conversa', exact: true }).click()
   assert.deepEqual(
     { hidden, draft: await field.inputValue(), scroll: await body.evaluate((e) => e.scrollTop) },
     { hidden: false, draft: 'meio da frase', scroll: scrolled },

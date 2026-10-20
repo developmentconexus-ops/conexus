@@ -80,7 +80,7 @@ async function arrange(owner: Page) {
   assert.match(first ?? '', /^Time 2.*Assinatura Claude · ligada · para todos/)
   assert.match(second ?? '', /^Time 1.*chave …x7Qa · pausada/)
   await pickModel(owner, owner, 'Modelo padrão', 'Anthropic', 'sonnet')
-  const chosen = await owner.getByText(/^Escolhido: anthropic\/.*sonnet/i).innerText()
+  const chosen = await owner.getByText(/^Escolhido: .*sonnet/i).innerText()
   await owner.getByRole('button', { name: 'Salvar modelo padrão' }).click()
   await owner
     .getByRole('button', { name: 'Salvar modelo padrão' })

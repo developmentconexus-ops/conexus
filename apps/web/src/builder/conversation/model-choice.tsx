@@ -1,12 +1,12 @@
 import type { CompanyId, Conversation, Effort, ProjectId, ProviderId } from '@conexus/hub-api'
-import { providerOfModel } from '@conexus/hub-api'
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
+import { ModelId, providerOfModel } from '@conexus/hub-api'
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { ModelPicker, providersQuery } from '../model-accounts/public.ts'
-import { sendModel } from './queries.ts'
+import { conversationQuery, sendModel } from './queries.ts'
 import { UNCONFIRMED_MODEL } from './text.ts'
 
 /** The step 11 notice for a person with no account to answer with, and the way to link one. */
@@ -33,33 +33,41 @@ export function ModelChoice(props: {
   onError: (text: string | undefined) => void
 }) {
   const { providers } = useSuspenseQuery(providersQuery).data
-  const send = useMutation(sendModel)
-  const [chosen, setChosen] = useState<{ model: string; effort: Effort }>()
+  const queryClient = useQueryClient()
+  const send = useMutation({
+    ...sendModel,
+    onSuccess: (kept) =>
+      queryClient.setQueryData<{ conversation: Conversation }>(
+        conversationQuery(props.ids.companyId, props.ids.projectId, props.conversation.id).queryKey,
+        (read) => read && { conversation: { ...read.conversation, ...kept } },
+      ),
+  })
   const shown = useMemo(
     () => providers.filter((provider) => props.usable.has(provider.id)),
     [providers, props.usable],
   )
-  const now = chosen ?? props.conversation
+  const asked = send.isPending ? ModelId.safeParse(send.variables.body.model) : undefined
+  const now =
+    send.isPending && asked?.success
+      ? { model: asked.data, effort: send.variables.body.effort }
+      : props.conversation
 
-  async function choose(model: string, effort: Effort) {
+  function choose(model: ModelId, effort: Effort) {
     props.onError(undefined)
-    setChosen({ model, effort })
-    try {
-      await send.mutateAsync({
+    send.mutate(
+      {
         params: { ...props.ids, conversationId: props.conversation.id },
         body: { model, effort },
-      })
-    } catch (failure) {
-      setChosen(undefined)
-      props.onError(writeFailureText(failure, UNCONFIRMED_MODEL))
-    }
+      },
+      { onError: (failure) => props.onError(writeFailureText(failure, UNCONFIRMED_MODEL)) },
+    )
   }
 
-  function pickModel(model: string) {
+  function pickModel(model: ModelId) {
     if (model === now.model) return
     const provider = providers.find((one) => one.id === providerOfModel(model))
     const efforts = provider?.models.find((one) => `${provider.id}/${one.id}` === model)?.efforts
-    void choose(model, efforts?.includes(now.effort) ? now.effort : 'off')
+    choose(model, efforts?.includes(now.effort) ? now.effort : 'off')
   }
 
   return (
@@ -68,7 +76,7 @@ export function ModelChoice(props: {
       value={now.model}
       name="Modelo e raciocínio"
       onChange={pickModel}
-      effort={{ value: now.effort, onChange: (effort) => void choose(now.model, effort) }}
+      effort={{ value: now.effort, onChange: (effort) => choose(now.model, effort) }}
     />
   )
 }

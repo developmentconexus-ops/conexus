@@ -1,3 +1,4 @@
+import { FAILURES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -87,4 +88,13 @@ test('trocar de conversa e voltar guarda o rascunho de cada uma', async () => {
   expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe(
     'meio da frase',
   )
+})
+
+test('a conversa de outra pessoa abre como "não encontrado", sem rastro dela', async () => {
+  open(
+    view({ conversations: [conversationOf({ id: FIRST, title: 'Primeira' })] }),
+    `${PROJECT}/conversations/${SECOND}`,
+  )
+  expect(await screen.findByText(FAILURES.NOT_FOUND.phrase)).toBeTruthy()
+  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
 })

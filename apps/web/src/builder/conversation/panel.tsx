@@ -123,14 +123,16 @@ function Screen(params: Params) {
   useEffect(() => field.current?.focus(), [])
 
   if (gone) return <NotFound />
+  const empty = conversation.messages.length === 0 && state.kind === 'idle'
+  const notice = !canAnswer || empty
   return (
     <>
-      <div className="flex flex-col gap-md px-md py-md">
-        {!canAnswer && <NoAccount companyId={companyId} />}
-        {conversation.messages.length === 0 && state.kind === 'idle' && (
-          <Empty>{EMPTY_CONVERSATION}</Empty>
-        )}
-      </div>
+      {notice && (
+        <div className="flex flex-col gap-md px-md py-md">
+          {!canAnswer && <NoAccount companyId={companyId} />}
+          {empty && <Empty>{EMPTY_CONVERSATION}</Empty>}
+        </div>
+      )}
       <div className="min-h-0 flex-1">
         <Transcript
           messages={conversation.messages}

@@ -1,8 +1,6 @@
-import { Radio } from '@base-ui/react/radio'
-import { RadioGroup } from '@base-ui/react/radio-group'
 import type { Provider } from '@conexus/hub-api'
-import { Effort, providerOfModel } from '@conexus/hub-api'
-import { useMemo, useState } from 'react'
+import { Effort, ModelId, providerOfModel } from '@conexus/hub-api'
+import { useId, useMemo, useState } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
@@ -17,12 +15,13 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from '../../ui/combobox.tsx'
-import { EFFORT_LABELS, plain } from './text.ts'
+import { RadioGroup, RadioGroupItem } from '../../ui/radio-group.tsx'
+import { EFFORT_LABELS, modelLabel, plain } from './text.ts'
 
 /** Models shown at once: the registry holds thousands, and a search narrows them. */
 const SHOWN = 50
 
-type Option = { value: string; label: string }
+type Option = { value: ModelId; label: string }
 type Group = { value: string; items: Option[] }
 
 /** The level the person reads and sets, for a model that lists more than `off`. */
@@ -35,11 +34,11 @@ export type EffortChoice = { value: Effort; onChange: (effort: Effort) => void }
  */
 export function ModelPicker(props: {
   providers: readonly Provider[]
-  value: string | null
+  value: ModelId | null
   name: string
   id?: string
   className?: string
-  onChange: (model: string) => void
+  onChange: (model: ModelId) => void
   effort?: EffortChoice
 }) {
   const [search, setSearch] = useState('')
@@ -51,9 +50,7 @@ export function ModelPicker(props: {
   const provider = props.providers.find((one) => one.id === picked)
   const levels = provider?.models.find((one) => `${provider.id}/${one.id}` === props.value)?.efforts
   const current: Option | null =
-    props.value === null
-      ? null
-      : { value: props.value, label: props.value.slice(props.value.indexOf('/') + 1) }
+    props.value === null ? null : { value: props.value, label: modelLabel(props.value) }
   const choice =
     props.effort !== undefined && levels !== undefined && levels.length > 1
       ? { effort: props.effort, levels }
@@ -127,10 +124,12 @@ function groupsOf(providers: readonly Provider[], search: string) {
     const items: Option[] = []
     for (const model of provider.models) {
       if (!plain(model.id).includes(wanted)) continue
+      const value = ModelId.safeParse(`${provider.id}/${model.id}`)
+      if (!value.success) continue
       matched += 1
       if (count >= SHOWN) continue
       count += 1
-      items.push({ value: `${provider.id}/${model.id}`, label: model.id })
+      items.push({ value: value.data, label: modelLabel(value.data) })
     }
     if (items.length > 0) groups.push({ value: provider.name, items })
   }
@@ -138,25 +137,24 @@ function groupsOf(providers: readonly Provider[], search: string) {
 }
 
 function EffortLevels(props: { levels: readonly Effort[]; effort: EffortChoice }) {
+  const titleId = useId()
   return (
     <div className="flex flex-col gap-xs border-t border-line p-md">
-      <span id="effort-title" className="text-fact text-text-2">
+      <span id={titleId} className="text-fact text-text-2">
         Raciocínio
       </span>
       <RadioGroup
-        aria-labelledby="effort-title"
+        aria-labelledby={titleId}
         value={props.effort.value}
-        onValueChange={(next) => props.effort.onChange(Effort.parse(next))}
-        className="flex flex-wrap gap-xs"
+        onValueChange={(next) => {
+          const effort = Effort.safeParse(next)
+          if (effort.success) props.effort.onChange(effort.data)
+        }}
       >
         {props.levels.map((level) => (
-          <Radio.Root
-            key={level}
-            value={level}
-            className="rounded-control border border-line px-sm py-xs text-label text-text-2 data-checked:border-accent data-checked:bg-accent-soft data-checked:text-accent-text"
-          >
+          <RadioGroupItem key={level} value={level}>
             {EFFORT_LABELS[level]}
-          </Radio.Root>
+          </RadioGroupItem>
         ))}
       </RadioGroup>
     </div>

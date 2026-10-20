@@ -4,7 +4,7 @@ import { cn } from './cn.ts'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './collapsible.tsx'
 
 // Copied from shadcn's base-nova `trace` (registry item #12307), painted with brand tokens. A
-// running line's title shimmers (`brand/tokens.css`), still under reduced motion.
+// running line's title shimmers (`brand/tokens.css`) unless the person asked for less motion.
 export function Trace({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
@@ -19,13 +19,13 @@ export function TraceLine({
   className,
   status,
   ...props
-}: ComponentProps<'span'> & { status?: 'running' | 'error' | 'pending' }) {
+}: ComponentProps<'span'> & { status?: 'running' | 'error' }) {
   return (
     <span
       data-slot="trace-line"
       data-status={status}
       className={cn(
-        'flex w-fit max-w-full min-w-0 items-center gap-sm text-body text-text-2 data-[status=error]:text-danger data-[status=pending]:opacity-60 data-[status=running]:*:data-[slot=trace-title]:shimmer',
+        'flex w-fit max-w-full min-w-0 items-center gap-sm text-body text-text-2 data-[status=error]:text-danger data-[status=running]:*:data-[slot=trace-title]:shimmer',
         className,
       )}
       {...props}
@@ -48,13 +48,7 @@ export function TraceIcon({ className, ...props }: ComponentProps<'span'>) {
 }
 
 export function TraceTitle({ className, ...props }: ComponentProps<'span'>) {
-  return (
-    <span
-      data-slot="trace-title"
-      className={cn('min-w-0 truncate motion-reduce:shimmer-none', className)}
-      {...props}
-    />
-  )
+  return <span data-slot="trace-title" className={cn('min-w-0 truncate', className)} {...props} />
 }
 
 export function TraceDescription({ className, ...props }: ComponentProps<'span'>) {

@@ -72,3 +72,27 @@ test('a busca do seletor estreita os modelos', async () => {
   expect(await screen.findByText('Nenhum modelo encontrado.')).toBeTruthy()
   expect(typed(screen.getByLabelText('Mensagem para o Builder'))).toBe('')
 })
+
+test('o que se digita enquanto o envio está no ar fica no campo; o texto enviado sai', async () => {
+  const gate = Promise.withResolvers<void>()
+  const { field, sent, reads } = await openConversation(conversationOf({ id: FIRST }), view(), {
+    message: async () => {
+      await gate.promise
+      return undefined
+    },
+  })
+  say(field, 'primeira')
+  await waitFor(() => expect(sent.length).toBe(1))
+  fireEvent.change(field, { target: { value: 'primeira e mais' } })
+  const before = reads.length
+  gate.resolve()
+  await waitFor(() => expect(reads.length).toBeGreaterThan(before))
+  expect(typed(field)).toBe('primeira e mais')
+})
+
+test('o texto enviado limpa o campo quando nada foi digitado depois', async () => {
+  const { field, sent } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'só isto')
+  await waitFor(() => expect(sent.length).toBe(1))
+  await waitFor(() => expect(typed(field)).toBe(''))
+})

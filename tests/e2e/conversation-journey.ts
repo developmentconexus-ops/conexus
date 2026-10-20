@@ -14,7 +14,9 @@ export const KEYS = {
   groq: 'gsk-journey-groq-key-gH3i',
 }
 export const SECOND_MODEL = 'llama-3.3-70b-versatile'
-export const ANSWER = 'Comparei os dois apps pelo cardápio.'
+export const ANSWER_HEAD = 'Comparei os dois apps'
+const ANSWER_TAIL = ' pelo cardápio.'
+export const ANSWER = `${ANSWER_HEAD}${ANSWER_TAIL}`
 export const SECOND_ANSWER = 'Respondi pelo modelo da troca.'
 const MARKER = 'CARDAPIO-DO-APP-UM'
 const TOUR_PAGES = ['app-um', 'app-dois', 'app-tres']
@@ -55,13 +57,15 @@ export async function publicPage(t: TestContext): Promise<string> {
 /**
  * Anthropic and Groq at `fetch`: the first question thinks, searches and reads three pages, then answers; a refused key is
  * refused; a call that does not stream is the title's. While `hold` runs, the answer's text is
- * sent and its end waits, so the turn stays open for the screen to show it; the Hub replays an
+ * sent and its end waits, so the turn stays open for the screen to show it (with `splitting`, the
+ * answer's last words wait too, so the hold falls between two deltas); the Hub replays an
  * answer in progress to a stream that subscribes late, and a finished one to no one.
  */
 export function plantJourney(t: TestContext, pageUrl: string) {
-  const state: { reads: boolean; holding: Promise<void> | undefined } = {
+  const state: { reads: boolean; holding: Promise<void> | undefined; splitting: boolean } = {
     reads: true,
     holding: undefined,
+    splitting: false,
   }
   /** Thinking, the provider's search and three pages read at once, as a comparison asks for. */
   function tour(): Reply {
@@ -76,9 +80,9 @@ export function plantJourney(t: TestContext, pageUrl: string) {
     return { kind: 'blocks', blocks: [thinking, ...fetches, search] }
   }
   function answer(text: string): Reply {
-    return state.holding === undefined
-      ? { kind: 'text', text }
-      : { kind: 'hold', until: state.holding, text }
+    if (state.holding === undefined) return { kind: 'text', text }
+    if (!state.splitting || text !== ANSWER) return { kind: 'hold', until: state.holding, text }
+    return { kind: 'hold', until: state.holding, text: ANSWER_HEAD, rest: ANSWER_TAIL }
   }
   const anthropic = plantAnthropic(t, (sent) => {
     if (sent.key === KEYS.refused) return { kind: 'refuse', status: 401 }

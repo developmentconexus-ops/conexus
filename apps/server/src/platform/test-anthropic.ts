@@ -36,7 +36,7 @@ export type Reply =
   | { kind: 'fetch'; url: string }
   | { kind: 'blocks'; blocks: Block[] }
   | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
-  | { kind: 'hold'; until: Promise<void>; text?: string }
+  | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string }
   | { kind: 'reset' }
   | { kind: 'malformed' }
 
@@ -198,20 +198,31 @@ function sentOf(init: RequestInit | undefined): Sent {
 
 /**
  * A stream that sends its text, then ends only after `until`, so a test holds a turn open; with no
- * text it sends nothing until then, a model called and silent.
+ * text it sends nothing until then, a model called and silent. With `rest`, that text arrives as a
+ * second delta after `until`, so the hold falls between two deltas of one answer.
  */
-function heldStream(until: Promise<void>, text?: string): ReadableStream<Uint8Array> {
+function heldStream(
+  until: Promise<void>,
+  text?: string,
+  rest?: string,
+): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
   const frames = events(MODEL, [{ type: 'text', text: text ?? '' }], 'end_turn').split('\n\n')
   // The message's start, its text block's start and its text; then its end.
   const cut = text === undefined ? 0 : 3
   const head = frames.slice(0, cut)
-  const rest = frames.slice(cut)
+  const tail = frames.slice(cut)
+  const more = { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: rest } }
   return new ReadableStream({
     async start(controller) {
       controller.enqueue(encoder.encode(`${head.join('\n\n')}\n\n`))
       await until
-      controller.enqueue(encoder.encode(rest.join('\n\n')))
+      if (rest !== undefined) {
+        controller.enqueue(
+          encoder.encode(`event: content_block_delta\ndata: ${JSON.stringify(more)}\n\n`),
+        )
+      }
+      controller.enqueue(encoder.encode(tail.join('\n\n')))
       controller.close()
     },
   })
@@ -246,7 +257,7 @@ function replied(sent: Sent, reply: Reply): Response {
     return new Response(JSON.stringify(error), { status: reply.status, headers })
   }
   if (reply.kind === 'hold') {
-    return new Response(heldStream(reply.until, reply.text), {
+    return new Response(heldStream(reply.until, reply.text, reply.rest), {
       headers: { 'content-type': 'text/event-stream' },
     })
   }

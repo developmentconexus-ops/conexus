@@ -1,17 +1,17 @@
-import type { CompanyId, Provider } from '@conexus/hub-api'
+import type { CompanyId, ModelId, Provider } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { ModelPicker } from './model-picker.tsx'
 import { sendDefaultModel } from './queries.ts'
-import { refusalText } from './text.ts'
+import { modelLabel, refusalText } from './text.ts'
 
 /** The company's default model, any model of the registry; the change is saved by its button. */
 export function DefaultModel(props: {
   companyId: CompanyId
   providers: readonly Provider[]
-  current: string | null
+  current: ModelId | null
 }) {
   const [picked, setPicked] = useState(props.current)
   const send = useMutation(sendDefaultModel)
@@ -36,7 +36,9 @@ export function DefaultModel(props: {
           onChange={setPicked}
         />
       </Field>
-      {picked !== null && <p className="text-label text-text-2">{`Escolhido: ${picked}`}</p>}
+      {picked !== null && (
+        <p className="text-label text-text-2">{`Escolhido: ${modelLabel(picked)}`}</p>
+      )}
       <FieldError>{send.isError ? refusalText(send.error) : undefined}</FieldError>
       <div>
         <Button

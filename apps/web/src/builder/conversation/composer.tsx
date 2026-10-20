@@ -21,12 +21,13 @@ export function Composer(props: {
   onStop: () => void
   picker: ReactNode
 }) {
-  const [content, setContent] = useDraft(props.conversationId)
+  const draft = useDraft(props.conversationId)
+  const content = draft.text
   const empty = content.trim() === ''
 
   async function send() {
     if (empty || props.answering || !props.canSend) return
-    if (await props.onSend(content)) setContent('')
+    if (await props.onSend(content)) draft.clear(content)
   }
 
   function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -57,7 +58,7 @@ export function Composer(props: {
             value={content}
             maxLength={MESSAGE_MAX_LENGTH}
             placeholder="Escreva sua mensagem"
-            onChange={(event) => setContent(event.target.value)}
+            onChange={(event) => draft.change(event.target.value)}
             onKeyDown={onKeyDown}
             className="outline-transparent"
           />
