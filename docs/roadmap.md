@@ -54,6 +54,7 @@
        Etapa 12.1 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.4 a v0.12.7); consertos de "Desligado", ferramenta cortada, citação, tabelas (#188, #191, #192): "Deu certo"
     12.2 **A casa.** Barra lateral, Início e primeira entrada.
        Cartão da etapa 12.2 aprovado em 2026-10-20 (commit d4fcae61430a89e03e515c4cd16beba1aaf6300e): "Aprovo o cartão da 12.2"
+       Etapa 12.2 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.8): "Aprovado tudo."
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
