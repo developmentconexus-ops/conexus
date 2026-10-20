@@ -1,7 +1,0 @@
-rules:
-  # actionlint 1.7.12 rejects the `$/` form this rule asks for, so `./` stays until it accepts it.
-  self-repository:
-    ignore:
-      - ci.yml
-      - publish.yml
-      - rollback.yml

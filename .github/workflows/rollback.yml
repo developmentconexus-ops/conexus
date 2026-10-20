@@ -78,7 +78,7 @@ jobs:
           path: tooling
           persist-credentials: false
       - if: ${{ hashFiles('apps/edge/package.json') != '' }}
-        uses: ./tooling/.github/actions/install
+        uses: ./tooling/.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: tooling/infra/publish-edge.sh
 
   rollback:

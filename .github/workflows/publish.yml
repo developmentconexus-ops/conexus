@@ -88,7 +88,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: ./.github/actions/install
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm run app:pack
       - working-directory: dist/apps
         run: |
@@ -160,5 +160,5 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: false
       - if: ${{ hashFiles('apps/edge/package.json') != '' }}
-        uses: ./.github/actions/install
+        uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: infra/publish-edge.sh

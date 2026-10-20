@@ -80,7 +80,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/install
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm run test:scripts
 
   server:
@@ -108,8 +108,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       # One file at a time in a job: files that share CPU starve each other's real-time margins
@@ -125,7 +125,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/install
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm test -w @conexus/web
       - run: npm run build
 
@@ -150,8 +150,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: The founder's use script runs in a browser against a real Hub
@@ -175,7 +175,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: ./.github/actions/install
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - name: The removal rows this run proves
         id: plan
         env:
@@ -220,8 +220,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: Each protection's test fails when the protection is taken out
@@ -253,8 +253,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: The mail bundle the host test imports exists
@@ -282,8 +282,8 @@ jobs:
   # The workflows are code a pull request from inside the organization can change, so they are read
   # by the two checkers that know them: actionlint for syntax and shell, zizmor for injection,
   # permissions and unpinned actions. Each runs from an image fixed by digest (versions in the
-  # comments); a finding is fixed in the workflow, and a false positive carries zizmor's own
-  # `# zizmor: ignore[rule]` on its line with the reason.
+  # comments); a finding is fixed in the workflow, and a false positive carries zizmor's own inline
+  # ignore comment with the reason.
   workflows:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
