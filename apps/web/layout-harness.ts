@@ -186,7 +186,9 @@ export function focusDrawn(page: Page): Promise<string> {
               focused.getAttribute('aria-label') ||
               focused.textContent?.trim() ||
               focused.getAttribute('name') ||
-              (focused as HTMLTextAreaElement).labels?.[0]?.textContent?.trim()
+              (focused instanceof HTMLTextAreaElement || focused instanceof HTMLInputElement
+                ? focused.labels?.[0]?.textContent?.trim()
+                : undefined)
             // A field draws a transparent outline for forced colors; its focus is the ipê edge and a
             // see-through ipê halo, on the field or on the group around it (design V28, decision B).
             function channels(colour: string) {
