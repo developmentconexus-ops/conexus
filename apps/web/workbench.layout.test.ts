@@ -112,3 +112,33 @@ for (const state of CONVERSATION_STATES) {
     }
   }
 }
+
+// A tool row's sentence names what the Builder did; the query beside it is the part that gives way.
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`${viewport.width}px: a linha de uma ferramenta nunca corta a frase, só o que vem ao lado dela`, async () => {
+    const state = CONVERSATION_STATES.find((each) => each.name.includes('ferramentas abertas'))
+    assert.ok(state, 'the sweep lacks the conversation state')
+    const page = await harness.open(state.path, { viewport, replies: state.replies })
+    await state.settle(page)
+    const rows = await page
+      .locator('[data-slot=trace-line]:has([data-slot=trace-description])')
+      .all()
+    assert.ok(rows.length >= 4, 'the conversation shows no tool rows')
+    for (const row of rows) {
+      const [title, detail] = await Promise.all(
+        ['trace-title', 'trace-description'].map((slot) =>
+          row.locator(`[data-slot=${slot}]`).evaluate((el) => ({
+            text: el.textContent,
+            clipped: el.scrollWidth > el.clientWidth,
+            width: Math.round(el.getBoundingClientRect().width),
+          })),
+        ),
+      )
+      assert.ok(title && detail, 'a tool row lacks its sentence or its detail')
+      assert.equal(title.clipped, false, `"${title.text}" is cut at ${viewport.width}px`)
+      assert.ok(detail.width >= 48, `"${detail.text}" has no room beside "${title.text}"`)
+    }
+    assert.deepEqual(page.problems, [])
+    await page.close()
+  })
+}
