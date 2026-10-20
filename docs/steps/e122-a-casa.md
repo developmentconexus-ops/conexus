@@ -119,7 +119,7 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 | 6 | U2 | A troca lista as empresas de U1; com uma, só o nome; escolher abre o Início da outra, a nova última | `company-switcher.test.tsx` | must |
 | 7 | U2 | Conta, no pé: nome, e-mail, tema, **Central** (só operador), **Sair do Conexus** | `account-menu.test.tsx` | must |
 | 8 | U2 | Central: Clientes, Estado do Hub (`/operations/status`, fora de Clientes), **Ir para uma empresa**; quem não opera: "Página não encontrada" | `clients.test.tsx`, `status-page.test.tsx` | must |
-| 9 | U2 | Carregando: a moldura já, o conteúdo em esqueleto (W17); erro na área, **Tentar de novo**; não encontrado: na área, **Ir para o início**, sem rolagem (o `main` dentro do `main` de hoje); empresa desconhecida: sem barra | `states.test.tsx`, `layout.test.ts` | must |
+| 9 | U2 | Carregando: a moldura já, o conteúdo em esqueleto (W17); erro na área, **Tentar de novo**; não encontrado: na área, **Voltar ao início**, sem rolagem (o `main` dentro do `main` de hoje); empresa desconhecida: sem barra | `states.test.tsx`, `layout.test.ts` | must |
 | 10 | U3 | Início: "O que vamos construir?", **Nome do projeto**, **Criar projeto** (decisão A), que abre o Projeto (W24); nome repetido: o erro da 7 no campo | `home.test.tsx` | must |
 | 11 | U3 | Cartões com nome e "Criado em 19/10/2026", que abrem o Projeto; vazio: "Nenhum projeto ainda."; banco indisponível: o aviso da 7; Todos os projetos: página no endereço (W18) | idem, `projects.test.tsx` | must |
 | 12 | U4 | Configurações: **Voltar**, busca, **Você** (Minha conta, Minhas contas de modelo, Aparência) e a empresa (Geral, Pessoas e convites, Contas de modelo); nenhuma reservada | `settings.test.tsx` | must |
