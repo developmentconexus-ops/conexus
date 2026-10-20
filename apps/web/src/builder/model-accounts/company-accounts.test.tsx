@@ -42,13 +42,19 @@ test('o dono abre Contas de modelo em Configurações, com o título e os contro
   expect(screen.queryByText(SENTENCE)).toBeNull()
 })
 
-test('o membro lê as filas, vê a frase e o link a Minhas contas de modelo, sem controles de escrita', async () => {
+test('o membro lê as filas, o modelo padrão e a troca, vê a frase e o link a Minhas contas de modelo, sem controles de escrita', async () => {
   const { sent, router } = open(
-    view({ company: [accountOf({ label: 'Time 1' })], mayManage: false }),
+    view({
+      company: [accountOf({ label: 'Time 1' })],
+      defaultModel: 'anthropic/claude-sonnet-5-5',
+      mayManage: false,
+    }),
   )
   expect(await screen.findByText(/Só o dono ou um administrador muda/)).toBeTruthy()
   expect(screen.getByText(SENTENCE, { exact: false })).toBeTruthy()
   expect(screen.getByText('Time 1')).toBeTruthy()
+  expect(screen.getByText('anthropic/claude-sonnet-5-5')).toBeTruthy()
+  expect(screen.getByText('Desligada')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Ligar conta' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Salvar modelo padrão' })).toBeNull()
   expect(screen.queryByRole('region', { name: 'Troca automática' })).toBeNull()
