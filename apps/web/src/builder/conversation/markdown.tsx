@@ -85,7 +85,7 @@ const ELEMENTS: Components = {
   ),
 }
 
-/** Keyed by position at the call site: a content key would remount the block on every character. */
+/** Keyed by the line it starts at: a content key would remount the block on every character. */
 const Block = memo(function Block({ content }: { content: string }) {
   return (
     <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={ELEMENTS}>
@@ -104,9 +104,8 @@ export function Markdown({ text, streaming = false }: { text: string; streaming?
   const last = blocks.length - 1
   return (
     <div className="flex min-w-0 flex-col gap-md break-words">
-      {blocks.map((block, at) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: a block has no identity but its place
-        <Block key={at} content={streaming && at === last ? remend(block, REMEND) : block} />
+      {blocks.map(({ start, text }, at) => (
+        <Block key={start} content={streaming && at === last ? remend(text, REMEND) : text} />
       ))}
     </div>
   )

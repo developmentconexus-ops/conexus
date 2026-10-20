@@ -14,13 +14,16 @@ function startsBlock(line: string, inList: boolean): boolean {
   return !(inList && LIST_ITEM.test(line))
 }
 
+/** A block's text and the line it starts at, which stays the same as the answer grows. */
+export type Block = { start: number; text: string }
+
 /**
  * Cuts markdown into top-level blocks so a growing answer parses its last block and not all of
  * them. Joined again, the blocks are the input. Every rule only merges: a block too big costs a
  * parse, a construct cut in two changes what it draws. A link definition resolves across blank
  * lines, which no line rule sees, so reaching one outside a fence keeps the whole text as one.
  */
-export function splitBlocks(markdown: string): string[] {
+export function splitBlocks(markdown: string): Block[] {
   const lines = markdown.split('\n')
   const starts = [0]
   let fence: string | undefined
@@ -37,7 +40,7 @@ export function splitBlocks(markdown: string): string[] {
       broken = started
       continue
     }
-    if (DEFINITION.test(line)) return [markdown]
+    if (DEFINITION.test(line)) return [{ start: 0, text: markdown }]
     if (broken && startsBlock(line, inList)) {
       starts.push(index)
       started = false
@@ -51,6 +54,6 @@ export function splitBlocks(markdown: string): string[] {
   return starts.map((start, at) => {
     const end = starts[at + 1]
     const block = lines.slice(start, end ?? lines.length).join('\n')
-    return end === undefined ? block : `${block}\n`
+    return { start, text: end === undefined ? block : `${block}\n` }
   })
 }
