@@ -18,10 +18,8 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Pessoas | `/companies/<c>/people` | Empresa | owner, administrator, member |
 | Minha conta de modelo | `/companies/<c>/model-account` | Empresa | owner, administrator, member |
 | Configurar a empresa | `/companies/<c>/setup` | Empresa | owner, administrator |
-| A Projeto | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, member |
-| A Projeto's Configurações | `/companies/<c>/projects/<p>/settings` | Projeto | owner, administrator, member |
-| Conversas | `/companies/<c>/projects/<p>/conversations` | Projeto | owner, administrator, member |
-| A conversa | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
+| A Projeto, on its latest conversation | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, member |
+| A Projeto's conversation, with the tab Prévia or Projeto (`?lens=`) and its section Sobre or Versões (`?section=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
 | Central de Operação | `/operations/clients` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |
 | Cliente | `/operations/clients/<c>` | Central | whoever operates the installation |

@@ -20,6 +20,7 @@ export {
 } from './processors.ts'
 export type { QueueDeps } from './queue.ts'
 export { conversationModel, providerOf } from './queue.ts'
+export { effortsOf, providerOptionsOf } from './thinking.ts'
 export { chosenModel, NOTICE_PART, Notice, Turn, turnContext } from './turn.ts'
 
 export type ModelAccounts = ReturnType<typeof createModelAccounts>

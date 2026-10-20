@@ -148,7 +148,7 @@ test('sem conta: nenhuma chamada ao fornecedor, nem com chave no ambiente', asyn
   const stream = await f.ask(pause)
   assert.deepEqual(noticesOf(stream.events), [EXHAUSTED])
   assert.deepEqual(stream.events.slice(-2), [
-    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
+    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
     { type: 'turnEnd', reason: 'error' },
   ])
   assert.equal(f.anthropic.sent.length, 0)
@@ -212,7 +212,7 @@ test('400, 500 e 529: o turno falha como MODEL_CALL_FAILED, sem troca e sem o te
     await f.add('Dois')
     const { events } = await f.ask()
     assert.deepEqual(events.slice(-2), [
-      { type: 'failure', code: 'MODEL_CALL_FAILED' },
+      { type: 'part', part: { type: 'failure', code: 'MODEL_CALL_FAILED' } },
       { type: 'turnEnd', reason: 'error' },
     ])
     assert.ok(!f.calls().includes('Dois'), `${status}`)
@@ -239,7 +239,7 @@ test('todas fora: o aviso de que as contas acabaram, MODEL_NO_ACCOUNT e o fim co
   assert.equal(notices[1], EXHAUSTED)
   assert.equal(notices.length, 2)
   assert.deepEqual(events.slice(-2), [
-    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
+    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
     { type: 'turnEnd', reason: 'error' },
   ])
 })
@@ -257,7 +257,7 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   assert.equal(notices.at(-1), EXHAUSTED)
   assert.deepEqual(await keptNotices(f.hub, f.ana, url), notices)
   assert.deepEqual(events.slice(-2), [
-    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
+    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
     { type: 'turnEnd', reason: 'error' },
   ])
   const states = await f.states()

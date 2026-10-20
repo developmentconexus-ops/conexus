@@ -130,7 +130,16 @@ function modelAccountsPage(id: string, mayManage: boolean): Replies {
       mayManage,
     }),
     'GET /api/model-providers': ok(listModelProviders, {
-      providers: [{ id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4'] }],
+      providers: [
+        {
+          id: 'anthropic',
+          name: 'Anthropic',
+          models: [
+            { id: 'anthropic/claude-sonnet-4', efforts: ['off', 'low', 'high'] },
+            { id: 'anthropic/claude-opus-4', efforts: ['off'] },
+          ],
+        },
+      ],
     }),
   }
 }
@@ -144,7 +153,7 @@ const PROJECT = {
 
 /**
  * A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when
- * `empty`. The Project's Conversa tab preloads its conversations on focus.
+ * `empty`. A Project opens on its conversations, so it has the list, empty.
  */
 export function projectsPage(
   id: string,

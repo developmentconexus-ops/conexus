@@ -7,7 +7,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import type { Answers, View } from './test-hub.tsx'
-import { accountOf, choose, modelHub } from './test-hub.tsx'
+import { accountOf, modelHub } from './test-hub.tsx'
 
 const server = hubServer()
 const SETUP = `/companies/${COMPANY.id}/setup`
@@ -246,25 +246,24 @@ test('Remover: o aviso do Console, Esc devolve o foco, e a confirmação apaga a
   )
 })
 
-test('Modelo padrão: fornecedor, busca e modelo, como fornecedor/modelo; fora da lista, a frase da falha', async () => {
+test('Modelo padrão: busca, grupos por fornecedor e o modelo, como fornecedor/modelo, sem a seção Raciocínio; fora da lista, a frase da falha', async () => {
   const shown = view()
   const { sent } = open(shown, {
     default: () => (sent.length === 1 ? refusal('MODEL_UNKNOWN') : undefined),
   })
   const save = await screen.findByRole('button', { name: 'Salvar modelo padrão' })
   expect(save).toHaveProperty('disabled', true)
-  expect(screen.queryByLabelText('Modelo padrão')).toBeNull()
-  await choose(screen.getByLabelText('Fornecedor do modelo padrão'), 'Anthropic')
+  const picker = screen.getByRole('combobox', { name: 'Modelo padrão' })
+  fireEvent.click(picker)
+  expect((await screen.findAllByText('Anthropic')).length).toBeGreaterThan(0)
+  expect(screen.queryByText('Raciocínio')).toBeNull()
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'OPUS' } })
-  fireEvent.click(screen.getByLabelText('Modelo padrão'))
-  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
-    'claude-opus-4',
-  ])
-  fireEvent.keyDown(screen.getByRole('option'), { key: 'Escape' })
+  await waitFor(() =>
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Claude Opus 4']),
+  )
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: '' } })
-  await choose(screen.getByLabelText('Fornecedor do modelo padrão'), 'OpenAI')
-  await choose(screen.getByLabelText('Modelo padrão'), 'gpt-5')
-  expect(screen.getByText('Escolhido: openai/gpt-5')).toBeTruthy()
+  fireEvent.click(await screen.findByRole('option', { name: 'GPT 5' }))
+  expect(screen.getByText('Escolhido: GPT 5')).toBeTruthy()
   fireEvent.click(save)
   expect((await screen.findByRole('alert')).textContent).toBe('Este modelo não está na lista.')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar modelo padrão' }))
@@ -276,23 +275,24 @@ test('Modelo padrão: fornecedor, busca e modelo, como fornecedor/modelo; fora d
 })
 
 test('Modelo padrão: milhares de modelos não viram milhares de opções; a busca encontra o resto', async () => {
-  const models = Array.from({ length: 3000 }, (_, index) => `modelo-${index}`)
+  const models = Array.from({ length: 3000 }, (_, index) => ({
+    id: `grande/modelo-${index}`,
+    efforts: ['off'],
+  }))
   open(view({ defaultModel: 'grande/modelo-7' }))
   server.use(
     http.get('*/api/model-providers', () =>
       HttpResponse.json({ providers: [{ id: 'grande', name: 'Grande', models }] }),
     ),
   )
-  expect(await screen.findByText('Escolhido: grande/modelo-7')).toBeTruthy()
-  fireEvent.click(await screen.findByLabelText('Modelo padrão'))
+  expect(await screen.findByText('Escolhido: Modelo 7')).toBeTruthy()
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo padrão' }))
   expect((await screen.findAllByRole('option')).length).toBeLessThanOrEqual(50)
   expect(screen.getByText('Mostrando 50 de 3000 modelos. Busque para ver os outros.')).toBeTruthy()
-  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'modelo-2999' } })
-  fireEvent.click(screen.getByLabelText('Modelo padrão'))
-  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
-    'modelo-2999',
-  ])
+  await waitFor(() =>
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Modelo 2999']),
+  )
 })
 
 test('Dar a pessoas lê todas as páginas: a pessoa 51 aparece pelo nome e pode receber a conta', async () => {

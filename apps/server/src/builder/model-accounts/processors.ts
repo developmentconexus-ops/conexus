@@ -18,6 +18,8 @@ import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
 import type { QueueDeps } from './queue.ts'
 import { callModel, markAccount, pickAccount, providerName, providerOf } from './queue.ts'
+import type { ProviderOptions } from './thinking.ts'
+import { providerOptionsOf } from './thinking.ts'
 import type { Notice, Picked, Turn } from './turn.ts'
 import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
@@ -118,7 +120,7 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
   for (const next of await nextModels(deps, turn, chosen)) {
     const switched = await pickAccount(deps, turn, next)
     if (switched === undefined) continue
-    turn.switchTo(next)
+    turn.switchTo(next, args.requestContext)
     const { modelId: name } = parseModelString(next)
     notify(args, turn, 'model-switched', `Troquei para ${name} pela troca automática da empresa.`)
     return switched
@@ -134,6 +136,21 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
  */
 function accountOf(deps: QueueDeps, turn: Turn, args: Notifier): Promise<Picked | undefined> {
   return turn.account(() => chooseAccount(deps, turn, args))
+}
+
+/**
+ * The step's provider options with the effort's merged in, per provider: the step takes the
+ * processor's options whole (`composeStepInput`), so what the run set stays only through here.
+ */
+function withOptions(
+  current: ProviderOptions | undefined,
+  added: ProviderOptions,
+): ProviderOptions {
+  const merged: ProviderOptions = { ...current }
+  for (const [provider, options] of Object.entries(added)) {
+    merged[provider] = { ...current?.[provider], ...options }
+  }
+  return merged
 }
 
 /**
@@ -156,6 +173,9 @@ export function accountPick(deps: QueueDeps): InputProcessor {
         return { model: await noAccountModel(turn.modelId(args.requestContext)) }
       }
       const result: ProcessInputStepResult = { model: account.model }
+      const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
+      if (thinking !== undefined)
+        result.providerOptions = withOptions(args.providerOptions, thinking)
       if (turn.switched) {
         result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)
       }

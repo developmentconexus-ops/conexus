@@ -44,3 +44,39 @@ test('os fornecedores por chave são só os do critério 1, por nome, e importar
     401,
   )
 })
+
+type Listed = { id: string; models: { id: string; efforts: string[] }[] }
+
+test('cada modelo com os níveis de raciocínio que aceita; sem dado de raciocínio do Mastra, só "Desligado"', async (t) => {
+  const { ANA_OWNER, call, hubOn, personOn } = await import('../../hub/identity/test-hub.ts')
+  const hub = await hubOn(t)
+  const ana = await personOn(hub, ANA_OWNER)
+  const { providers }: { providers: Listed[] } = Object(
+    (await call(hub, ana, 'GET', '/api/model-providers')).json(),
+  )
+  function effortsOf(provider: string, model: string) {
+    return providers
+      .find(({ id }) => id === provider)
+      ?.models.find(({ id }) => id === `${provider}/${model}`)?.efforts
+  }
+  assert.deepEqual(effortsOf('anthropic', 'claude-sonnet-4-5'), [
+    'off',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+  ])
+  assert.deepEqual(effortsOf('anthropic', 'claude-opus-4-7'), [
+    'off',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+  ])
+  assert.deepEqual(effortsOf('openai', 'gpt-5'), ['off', 'low', 'medium', 'high'])
+  assert.deepEqual(effortsOf('google', 'gemini-2.5-pro'), ['off', 'low', 'medium', 'high'])
+  assert.deepEqual(effortsOf('openai', 'gpt-4o'), ['off'], 'listed without reasoning controls')
+  const openrouter = providers.find(({ id }) => id === 'openrouter')
+  assert.deepEqual(new Set(openrouter?.models.flatMap(({ efforts }) => efforts)), new Set(['off']))
+})

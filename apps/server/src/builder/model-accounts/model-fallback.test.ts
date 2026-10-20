@@ -138,7 +138,7 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   assert.equal(noticesOf(third.events).at(-1), EXHAUSTED)
   assert.ok(!noticesOf(third.events).some((text) => text.startsWith('Troquei')))
   assert.deepEqual(third.events.slice(-2), [
-    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
+    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
     { type: 'turnEnd', reason: 'error' },
   ])
   assert.equal(streamedChats().length, 1)

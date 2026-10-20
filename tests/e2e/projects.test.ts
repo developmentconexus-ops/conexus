@@ -80,10 +80,12 @@ async function firstProjects(carla: Page, neon: Neon) {
 /** The member does not see the deletion; the owner deletes Pedidos by typing its name. */
 async function deletePedidos(w: Windows, neon: Neon) {
   await w.carla.getByRole('link', { name: /Pedidos/ }).click()
+  await w.carla.getByRole('tab', { name: 'Projeto' }).click()
   await w.carla.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   assert.equal(await w.carla.getByRole('button', { name: 'Apagar Projeto' }).count(), 0)
   await w.davi.goto(`${TEST_ORIGIN}/`)
   await w.davi.getByRole('link', { name: /Pedidos/ }).click()
+  await w.davi.getByRole('tab', { name: 'Projeto' }).click()
   await w.davi.getByRole('button', { name: 'Apagar Projeto' }).click()
   const dialog = w.davi.getByRole('alertdialog')
   const confirm = dialog.getByRole('button', { name: 'Apagar Projeto' })

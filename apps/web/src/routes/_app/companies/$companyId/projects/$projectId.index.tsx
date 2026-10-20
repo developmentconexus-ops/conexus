@@ -1,8 +1,25 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Project } from '../../../../../hub/projects/public.ts'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+import { conversationsQuery, EmptyPanel } from '../../../../../builder/conversation/public.ts'
+import { readOrNotFound } from '../../../../../platform/hub.ts'
 
-// The Projeto's page; its read is the parent's loader, shared with Configurações.
+// A Projeto opens on its latest conversation, read afresh; with none, the panel offers a new one.
 export const Route = createFileRoute('/_app/companies/$companyId/projects/$projectId/')({
   staticData: { place: 'Projeto' },
-  component: Project,
+  loader: async ({ context, params }) => {
+    const { conversations } = await readOrNotFound(
+      context.queryClient.fetchQuery(
+        conversationsQuery(params.companyId, params.projectId, undefined),
+      ),
+    )
+    const [latest] = conversations
+    if (latest !== undefined) {
+      throw redirect({
+        to: '/companies/$companyId/projects/$projectId/conversations/$conversationId',
+        params: { ...params, conversationId: latest.id },
+        search: (previous) => previous,
+        replace: true,
+      })
+    }
+  },
+  component: EmptyPanel,
 })

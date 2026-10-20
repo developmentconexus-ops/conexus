@@ -19,13 +19,14 @@ const SUBSCRIBE_MS = 1500
  * client address in Cloudflare's header. The test ends each window through `closers` before its
  * Hub, as `t.after` runs its hooks in the order they were given and the Hub's come first. `reachHub`'s route answers only once a body has ended,
  * so it cannot carry the conversation's event stream, which stays open for the whole screen.
+ * `cutConnections` ends every connection open through the front, as a network that drops does.
  */
 export async function hubWindow(
   closers: (() => Promise<void>)[],
   hubPort: number,
   ip: string,
   problems: string[],
-): Promise<Page> {
+): Promise<Page & { cutConnections(): void }> {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-front-'))
   const [key, cert] = [join(folder, 'key.pem'), join(folder, 'cert.pem')]
   const host = new URL(TEST_ORIGIN).hostname
@@ -72,7 +73,8 @@ export async function hubWindow(
     rmSync(folder, { recursive: true, force: true })
   })
   const context = await browser.newContext({ ignoreHTTPSErrors: true })
-  return await anotherPage(context, problems)
+  const page = await anotherPage(context, problems)
+  return Object.assign(page, { cutConnections: () => front.closeAllConnections() })
 }
 
 /** A page of the same person, in the same browser: it shares the session and the address. */
