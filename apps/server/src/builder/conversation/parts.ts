@@ -106,6 +106,16 @@ export function partOf(part: MastraMessagePart | unknown, place: Place): Message
   return undefined
 }
 
+/**
+ * Text after text is one text, live and read again: Mastra keeps each of the provider's blocks,
+ * and Claude cuts an answer into one block per span it cites.
+ */
+export function appendText(parts: MessagePart[], text: string): void {
+  const last = parts.at(-1)
+  if (last?.type === 'text') last.text += text
+  else parts.push({ type: 'text', text })
+}
+
 /** The model that answered a message, `provider/model` as the router names it, or none. */
 export function modelOf(message: { content: { metadata?: unknown } }): ModelId | null {
   const answered = Answered.safeParse(message.content.metadata)
@@ -125,13 +135,10 @@ export function messageOf(message: MastraDBMessage): Message | undefined {
         : undefined
   if (role === undefined) return undefined
   const id = MessageId.parse(message.id)
-  // Text after text is one text, as the stream tells it: Mastra keeps each of the provider's
-  // blocks, and Claude cuts an answer into one block per span it cites.
   const parts: MessagePart[] = []
   for (const [index, part] of message.content.parts.entries()) {
     const shown = partOf(part, { messageId: id, index })
-    const last = parts.at(-1)
-    if (shown?.type === 'text' && last?.type === 'text') last.text += shown.text
+    if (shown?.type === 'text') appendText(parts, shown.text)
     else if (shown !== undefined) parts.push(shown)
   }
   return {
