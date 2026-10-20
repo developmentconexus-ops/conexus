@@ -10,8 +10,10 @@
 // taken out. Any row other than `caught` exits 1. The manifest refuses an unknown key at any level
 // and a repeated id, `--only` takes one id and `--shard 2/3` runs the second of three slices of the
 // rows, so CI can run the slices as parallel jobs. `--base origin/main` keeps only the rows the
-// changes since that ref affect (removals-select.ts), a run of all rows being the default, and
-// `--plan` prints how many rows that is and how many slices they need, without running one.
+// changes since that ref affect (removals-select.ts), a run of all rows being the default, unless
+// `--pull-request '{"title":…,"headRef":…,"labels":[…]}'` says the pull request is a step's build
+// or carries the all-removals label. `--plan` prints how many rows that is and how many slices
+// they need, and why when it is all of them, without running one.
 // The refusals are proved by planting each one in removals.test.ts.
 // Revalidate by 2027-04-15, or when Node changes `run` from node:test.
 import {
@@ -33,7 +35,8 @@ import { dirname, join } from 'node:path'
 import { run } from 'node:test'
 import { z } from 'zod'
 import { runCommand } from './command.ts'
-import { affected } from './removals-select.ts'
+import { changesSince, importsOf } from './removals-changes.ts'
+import { affected, pullRequestRunsEverything, runsEverything } from './removals-select.ts'
 
 const text = z.string().min(1)
 const Removals = z
@@ -189,10 +192,15 @@ async function outcomeOf(
 }
 
 const USAGE =
-  'usage: removals.ts [--base <ref>] [--only <row id> | --shard <index>/<total> | --plan]'
+  'usage: removals.ts [--base <ref> [--pull-request <json>]] [--only <row id> | --shard <index>/<total> | --plan]'
 const MAX_SHARDS = 4
+const PullRequest = z.strictObject({
+  title: z.string(),
+  headRef: z.string(),
+  labels: z.array(z.string()),
+})
 
-type Options = { base?: string; only?: string; shard?: string; plan: boolean }
+type Options = { base?: string; pullRequest?: string; only?: string; shard?: string; plan: boolean }
 
 function parseArgs(args: string[]): Options {
   const options: Options = { plan: false }
@@ -205,10 +213,13 @@ function parseArgs(args: string[]): Options {
     const value = args[++at]
     if (value === undefined || value.startsWith('--')) throw new Error(USAGE)
     if (flag === '--base' && options.base === undefined) options.base = value
-    else if (flag === '--only' && options.only === undefined) options.only = value
+    else if (flag === '--pull-request' && options.pullRequest === undefined) {
+      options.pullRequest = value
+    } else if (flag === '--only' && options.only === undefined) options.only = value
     else if (flag === '--shard' && options.shard === undefined) options.shard = value
     else throw new Error(USAGE)
   }
+  if (options.pullRequest !== undefined && options.base === undefined) throw new Error(USAGE)
   if (
     Number(options.only !== undefined) +
       Number(options.shard !== undefined) +
@@ -229,34 +240,29 @@ function shardOf(value: string): { index: number; total: number } {
   return { index, total }
 }
 
-/** What changed since the merge base with `base`: committed, staged, unstaged and new files. */
-function changesSince(root: string, base: string): { changed: string[]; before: Removal[] } {
-  function git(...args: string[]): string {
-    return runCommand('git', args, { cwd: root })
-  }
-  const mergeBase = git('merge-base', base, 'HEAD').trim()
-  const changed = [
-    ...git('diff', '--name-only', '-z', '--merge-base', base).split('\0'),
-    ...git('ls-files', '-z', '--others', '--exclude-standard').split('\0'),
-  ].filter(Boolean)
-  const manifest = 'scripts/removals.json'
-  const existed = git('ls-tree', '--name-only', mergeBase, manifest).trim() !== ''
-  const before = existed ? Removals.parse(JSON.parse(git('show', `${mergeBase}:${manifest}`))) : []
-  return { changed, before }
-}
-
 async function main(): Promise<void> {
   const root = process.cwd()
   const options = parseArgs(process.argv.slice(2))
   const all = loadRemovals(root)
   let removals = all
+  let everything: string | undefined
   if (options.base !== undefined) {
-    const { changed, before } = changesSince(root, options.base)
-    removals = affected(all, changed, before)
+    const { changed, manifest } = changesSince(root, options.base)
+    const before = Removals.parse(JSON.parse(manifest))
+    const pullRequest =
+      options.pullRequest === undefined
+        ? undefined
+        : PullRequest.parse(JSON.parse(options.pullRequest))
+    everything =
+      (pullRequest === undefined ? undefined : pullRequestRunsEverything(pullRequest)) ??
+      runsEverything(changed, all, before)
+    if (everything === undefined) removals = affected(all, changed, before, importsOf(root))
   }
   if (options.plan) {
     const shards = Math.min(MAX_SHARDS, removals.length)
-    console.log(JSON.stringify({ selected: removals.length, total: all.length, shards }))
+    console.log(
+      JSON.stringify({ selected: removals.length, total: all.length, shards, everything }),
+    )
     return
   }
   if (removals.length === 0) {
