@@ -50,8 +50,10 @@ if (cards.length === 0) {
 const card = cards[0] ?? ''
 const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
 const step =
-  digits.length > 2 && digits.startsWith('0')
-    ? `${Number(digits[1])}.${Number(digits.slice(2))}`
+  digits.length > 2
+    ? digits.startsWith('0')
+      ? `${Number(digits[1])}.${Number(digits.slice(2))}`
+      : `${digits.slice(0, 2)}.${Number(digits.slice(2))}`
     : String(Number(digits))
 const cardPath = `docs/steps/${card}`
 

@@ -116,6 +116,55 @@ test('reconhece o cartão e041 como etapa 4.1 sem confundir com a etapa 4', () =
   assert.equal(run(dir).status, 0)
 })
 
+function decimalCardRepository(name: string): { dir: string; sha: string } {
+  const { dir } = repository()
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, `docs/steps/${name}`, 'card\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qam', 'card')
+  return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
+}
+
+test('reconhece o cartão e121 como etapa 12.1 sem confundir com a etapa 12', () => {
+  const { dir, sha } = decimalCardRepository('e121-conversa-no-painel.md')
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval of 12')
+  assert.equal(run(dir).status, 1)
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 12.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval of 12.1')
+  assert.equal(run(dir).status, 0)
+})
+
+test('reconhece o cartão e131 como etapa 13.1', () => {
+  const { dir, sha } = decimalCardRepository('e131-x.md')
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 13.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval')
+  assert.equal(run(dir).status, 0)
+})
+
+test('o cartão e12 continua sendo a etapa 12', () => {
+  const { dir, sha } = decimalCardRepository('e12-x.md')
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval')
+  assert.equal(run(dir).status, 0)
+})
+
 test('sem cartão não há o que conferir', () => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-approval-'))
   dirs.push(dir)
