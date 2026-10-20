@@ -11,10 +11,22 @@ const REGISTRY = Object.entries(PROVIDER_REGISTRY)
 const URL_TEMPLATE = /\$\{[A-Z0-9_]+\}/
 // Only the models.dev gateway resolves a provider from its key alone: Netlify's needs a site too.
 const KEY_GATEWAY = 'models.dev'
-// The registry has no capability field for chat, so a model that only draws, speaks, embeds or
-// talks live is left out by its name, as the old Hub did (Conexus OS `model-accounts.ts`, 729bdc5d).
-const NOT_CHAT =
-  /(^|[-_.])(image|embed|embedding|tts|realtime|live|transcribe|whisper|moderation)([-_.]|$)/i
+// Mastra 1.78.0 says nothing of what a model outputs: its capabilities are attachments,
+// temperature, structured output and reasoning. So a model that draws, films, speaks, hears,
+// embeds, ranks, guards, reads scans or talks live is left out by a word of its name, as the old Hub
+// did (Conexus OS `model-accounts.ts`, 729bdc5d); the words come from every key provider's list.
+const NOT_CHAT = new RegExp(
+  `(^|[-_./:@])(${[
+    'image|imagen|imagine|dall-e|flux|sdxl|stable-diffusion|stablediffusionxl|seedream|recraft|ideogram',
+    'video|veo|sora|seedance|kling|wan|wanx|t2v|i2v|r2v|heygen',
+    'audio|music|lyria|tts|speech|voice|voicechat|studiovoice|orpheus|elevenlabs|voxtral|whisper|transcribe|asr|stt',
+    'embed|embedding|embedcode|bge|e5|rerank|reranker',
+    'guard|safeguard|gliguard|qwen3guard|moderation|detector',
+    'ocr|paddleocr|deepseek-ocr|lightonocr',
+    'realtime|live|computer-use|deep-research|gemini-omni',
+  ].join('|')})(?=$|[-_./:@\\d])`,
+  'i',
+)
 
 /** The models of a provider a conversation can talk to: not retired, and able to chat. */
 function chatModelsOf(config: ProviderConfig): string[] {
