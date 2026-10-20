@@ -3,7 +3,7 @@ import { Button } from '../../ui/button.tsx'
 import { useSignOut } from './sign-out.ts'
 
 /** "Sair do Conexus" as a button, for a page with no account menu; a failure says why beside it. */
-export function SignOutButton({ label = 'Sair do Conexus' }: { label?: string }) {
+export function SignOutButton() {
   const signOut = useSignOut()
   return (
     <>
@@ -13,7 +13,7 @@ export function SignOutButton({ label = 'Sair do Conexus' }: { label?: string })
         </p>
       )}
       <Button variant="ghost" disabled={signOut.pending} onClick={signOut.leave}>
-        {signOut.pending ? 'Saindo…' : label}
+        {signOut.pending ? 'Saindo…' : 'Sair do Conexus'}
       </Button>
     </>
   )

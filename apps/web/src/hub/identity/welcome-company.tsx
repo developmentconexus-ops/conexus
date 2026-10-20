@@ -10,7 +10,6 @@ import {
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useRouter } from '@tanstack/react-router'
 import { HubFailure } from '../../platform/hub.ts'
-import { Field, FieldLabel } from '../../ui/field.tsx'
 import {
   Form,
   FormAlert,
@@ -19,7 +18,6 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
-import { Input } from '../../ui/input.tsx'
 import { chooseNickname, companyQuery } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/welcome/company')
@@ -76,10 +74,10 @@ export function WelcomeCompany() {
       <p className="text-text-2">
         O apelido vai no endereço dos apps da empresa. Depois de salvo, não dá para trocar.
       </p>
-      <Field>
-        <FieldLabel htmlFor="company-name">Nome da empresa</FieldLabel>
-        <Input id="company-name" value={company.name} readOnly />
-      </Field>
+      <dl className="flex flex-col gap-xs">
+        <dt className="text-label text-text-2">Nome da empresa</dt>
+        <dd className="text-text">{company.name}</dd>
+      </dl>
       <Form form={form} onSubmit={submit}>
         <TextField
           name="nickname"

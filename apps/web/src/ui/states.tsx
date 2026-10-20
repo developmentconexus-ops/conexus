@@ -45,10 +45,13 @@ export function Loading() {
 /** A page that could not open: the failure's words by code, and "Tentar de novo" only on RETRY. */
 export function Failure({ code, onRetry }: { code: FailureCode; onRetry: () => void }) {
   const row = FAILURES[code]
+  const inFrame = useInFrame()
   return (
     <Centred>
-      {!useInFrame() && <ConexusWordmark />}
-      <PageTitle>Não foi possível abrir o Conexus</PageTitle>
+      {!inFrame && <ConexusWordmark />}
+      <PageTitle>
+        {inFrame ? 'Não foi possível abrir esta página' : 'Não foi possível abrir o Conexus'}
+      </PageTitle>
       <p role="alert">
         {row.phrase} {row.action}
       </p>
@@ -73,7 +76,7 @@ function InitialLink() {
 
 /**
  * A page that does not exist for this person. Inside a frame it stays in the content area with
- * "Ir para o início"; alone, the root's way back. `hint` is one more line a place adds.
+ * "Voltar ao início"; alone, the root's way back. `hint` is one more line a place adds.
  */
 export function NotFound({ hint }: { hint?: string }) {
   const inFrame = useInFrame()
@@ -85,7 +88,7 @@ export function NotFound({ hint }: { hint?: string }) {
       {hint !== undefined && <p className="text-text-2">{hint}</p>}
       {inFrame ? (
         <Link to="/" className={buttonVariants()}>
-          Ir para o início
+          Voltar ao início
         </Link>
       ) : (
         <InitialLink />

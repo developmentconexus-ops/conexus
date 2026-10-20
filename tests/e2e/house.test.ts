@@ -55,7 +55,7 @@ async function ownerArrives(
 /** Step 1 shows the name and the suggested nickname; steps 2 and 3 as the script says. */
 async function welcome(page: Page) {
   await page.getByText('Passo 1 de 4').waitFor()
-  assert.equal(await page.getByLabel('Nome da empresa').inputValue(), COMPANY)
+  assert.equal(await page.getByRole('definition').textContent(), COMPANY)
   assert.match(await page.getByLabel('Apelido').inputValue(), /^[a-z0-9-]{3,}$/)
   await chooseNickname(page)
   await page.getByText('Passo 2 de 4').waitFor()

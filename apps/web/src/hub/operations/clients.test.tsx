@@ -83,7 +83,7 @@ test('sem o papel de operador, /operations/clients e o detalhe dão a página 40
       await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
     ).toBeTruthy()
     expect(view.state.location.pathname).toBe(path)
-    expect(screen.queryByText(/Central de Operação|Cliente|Cadastrar cliente/)).toBeNull()
+    expect(screen.queryByText(/Central|Cliente|Cadastrar cliente/)).toBeNull()
     cleanup()
   }
   expect(asked).toBe(0)
@@ -161,7 +161,7 @@ test('cliente que não existe: a página 404', async () => {
   ).toBeTruthy()
 })
 
-test('a Central tem barra própria: Clientes e Estado do Hub, e a Central de Operação sem empresa para ir (critério 8)', async () => {
+test('a Central tem barra própria: Clientes e Estado do Hub, e o nome da Central sem empresa para ir (critério 8)', async () => {
   server.use(...centralHub([]))
   open('/operations/clients')
   const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
@@ -170,7 +170,7 @@ test('a Central tem barra própria: Clientes e Estado do Hub, e a Central de Ope
   expect(nav.getByRole('link', { name: 'Estado do Hub' }).getAttribute('href')).toBe(
     '/operations/status',
   )
-  expect(nav.getByText('Central de Operação')).toBeTruthy()
+  expect(nav.getByText('Central')).toBeTruthy()
   expect(nav.queryByRole('button', { name: /Ir para uma empresa/ })).toBeNull()
 })
 

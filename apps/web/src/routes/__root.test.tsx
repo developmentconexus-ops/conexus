@@ -35,7 +35,7 @@ for (const [who, signedIn, label, arrival] of [
   })
 }
 
-test('dentro da moldura da empresa, um endereço que não existe mais fica no conteúdo, com "Ir para o início"', async () => {
+test('dentro da moldura da empresa, um endereço que não existe mais fica no conteúdo, com "Voltar ao início"', async () => {
   server.use(
     ...projectsRead({ projects: [], databaseReady: true, mayDelete: false, role: 'member' }),
   )
@@ -47,8 +47,7 @@ test('dentro da moldura da empresa, um endereço que não existe mais fica no co
     await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
   ).toBeTruthy()
   expect(screen.getByRole('navigation', { name: 'Navegação' })).toBeTruthy()
-  expect(screen.queryByRole('link', { name: 'Voltar ao início' })).toBeNull()
-  expect(screen.getByRole('link', { name: 'Ir para o início' }).getAttribute('href')).toBe('/')
+  expect(screen.getByRole('link', { name: 'Voltar ao início' }).getAttribute('href')).toBe('/')
 })
 
 test('cada endereço do roteador é uma página que o Hub abre, ou a recusa da passagem, e só esses', () => {

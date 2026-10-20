@@ -27,7 +27,7 @@ export function CentralHeader() {
       >
         <BuildingIcon />
       </span>
-      <span className="truncate font-display text-title text-text">Central de Operação</span>
+      <span className="truncate font-display text-title text-text">Central</span>
     </>
   )
   if (data === undefined || data.companies.length === 0) {
@@ -43,7 +43,7 @@ export function CentralHeader() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={<SidebarMenuButton size="lg" className="px-0" />}
-            aria-label="Central de Operação. Ir para uma empresa"
+            aria-label="Central. Ir para uma empresa"
           >
             {name}
             <ChevronsUpDownIcon aria-hidden="true" className="ml-auto" />
