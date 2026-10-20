@@ -25,6 +25,13 @@ declare module '@tanstack/react-router' {
   }
   interface StaticDataRouteOption {
     place?: string
+    /** A section of Configurações' index, in its group and order (step 12.2). */
+    section?: {
+      group: 'you' | 'company'
+      label: string
+      order: number
+      keywords?: readonly string[]
+    }
   }
 }
 
@@ -51,7 +58,7 @@ export function createConexus(history?: RouterHistory) {
     ...(history ? { history } : {}),
     defaultPendingComponent: Loading,
     defaultErrorComponent: PageFailure,
-    defaultNotFoundComponent: NotFound,
+    defaultNotFoundComponent: () => <NotFound />,
     defaultPendingMs: 150,
     defaultPendingMinMs: 400,
     defaultPreload: 'intent',

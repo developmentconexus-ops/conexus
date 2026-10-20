@@ -6,16 +6,24 @@ import {
   invitationsQuery,
   membersQuery,
   People,
-} from '../../../../hub/identity/public.ts'
-import { readOrNotFound } from '../../../../platform/hub.ts'
+} from '../../../../../hub/identity/public.ts'
+import { readOrNotFound } from '../../../../../platform/hub.ts'
 
 const Search = z.object({
   members: listMembers.input.query.shape.page.catch(undefined),
   invitations: listInvitations.input.query.shape.page.catch(undefined),
 })
 
-export const Route = createFileRoute('/_app/companies/$companyId/people')({
-  staticData: { place: 'Pessoas' },
+export const Route = createFileRoute('/_app/companies/$companyId_/settings/people')({
+  staticData: {
+    place: 'Pessoas e convites',
+    section: {
+      group: 'company',
+      label: 'Pessoas e convites',
+      order: 20,
+      keywords: ['convite', 'convidar', 'membro', 'administrador', 'equipe'],
+    },
+  },
   validateSearch: Search,
   loaderDeps: ({ search }) => search,
   loader: async ({ context, params, deps }) => {

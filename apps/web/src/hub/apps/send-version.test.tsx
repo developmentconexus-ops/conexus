@@ -1,6 +1,6 @@
 import type { AppVersion } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -48,7 +48,11 @@ async function open(answer: (sent: Sent, count: number) => Response | Promise<Re
 }
 
 async function live() {
-  await waitFor(() => expect(screen.getByRole('list').textContent).toContain('Versão 1 · no ar'))
+  await waitFor(() =>
+    expect(within(screen.getByRole('main')).getByRole('list').textContent).toContain(
+      'Versão 1 · no ar',
+    ),
+  )
 }
 
 function accepted() {

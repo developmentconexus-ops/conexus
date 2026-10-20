@@ -1,6 +1,6 @@
 import { deleteProject } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -136,7 +136,7 @@ test('204: leva o nome, vai à lista e diz "Projeto apagado."', async () => {
   confirm()
   expect(await screen.findByText('Projeto apagado.')).toBeTruthy()
   expect(sent).toEqual([deleteProject.input.body.parse({ name: 'Pedidos' })])
-  expect(screen.getByText('Nenhum Projeto ainda.')).toBeTruthy()
+  expect(screen.getByText('Nenhum projeto ainda.')).toBeTruthy()
   expect(screen.queryByRole('alertdialog')).toBeNull()
   await waitFor(() => expect(router.state.location.search).toEqual({}))
 })
@@ -187,7 +187,7 @@ test('404: fecha e vai à lista, sem "Projeto apagado."', async () => {
   hub(() => refusal('NOT_FOUND'))
   const router = await open()
   confirm()
-  expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Todos os projetos' })).toBeTruthy()
   expect(screen.queryByRole('alertdialog')).toBeNull()
   expect(screen.queryByText('Projeto apagado.')).toBeNull()
   expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/projects`)
@@ -202,7 +202,7 @@ for (const [role, sees] of [
     server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: sees, role }))
     render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
     expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
-    const link = screen.queryByRole('link', { name: 'Configurações' })
+    const link = within(screen.getByRole('main')).queryByRole('link', { name: 'Configurações' })
     if (sees) expect(link?.getAttribute('href')).toBe(`${PROJECT}/settings`)
     else expect(link).toBeNull()
   })

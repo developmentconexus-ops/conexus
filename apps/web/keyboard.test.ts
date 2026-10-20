@@ -15,16 +15,16 @@ after(async () => {
 
 const COMPANIES = '/api/companies'
 
-/** Opens the company page, then reloads it: the account menu reads the company list on each load. */
+/** Opens Início, then reloads it: the company switcher reads the company list on each load. */
 async function menuRead(replies: Replies) {
-  const page = await harness.open(`/companies/${COMPANY.id}/people`, { viewport: DESKTOP, replies })
-  await waitFor(page, 'Convidar pessoa')
+  const page = await harness.open(`/companies/${COMPANY.id}`, { viewport: DESKTOP, replies })
+  await waitFor(page, 'O que vamos construir?')
   const read = page.waitForResponse((response) => new URL(response.url()).pathname === COMPANIES)
   await page.reload()
   return { page, response: await read }
 }
 
-test('o menu da conta lê a lista de empresas a cada carga, e o Hub de teste responde', async () => {
+test('a troca de empresa lê a lista de empresas a cada carga, e o Hub de teste responde', async () => {
   const before = harness.unanswered.length
   const { page, response } = await menuRead(OWNER)
   assert.deepEqual([response.status(), harness.unanswered.length - before], [200, 0])
@@ -43,7 +43,7 @@ test('um pedido que ninguém responde continua recusado: 500 e registrado como s
 })
 
 test('o popup do papel, aberto pelo teclado, mostra o contorno de 2px inteiro dentro da lista', async () => {
-  const page = await harness.open(`/companies/${COMPANY.id}/people`, {
+  const page = await harness.open(`/companies/${COMPANY.id}/settings/people`, {
     viewport: DESKTOP,
     replies: OWNER,
   })

@@ -90,6 +90,9 @@ containers:
   drawer: "20rem"
   column: "24rem"
   message: "28rem"
+  page: "64rem"
+  sidebar: "16rem"
+  sidebar-icon: "3.25rem"
 ---
 
 # Design guide

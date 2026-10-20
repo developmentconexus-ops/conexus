@@ -9,7 +9,7 @@ import { accountsQuery, providersQuery } from './queries.ts'
 import { Queue } from './queue.tsx'
 import { providerName, providersOf, queueOf } from './text.ts'
 
-const route = getRouteApi('/_app/companies/$companyId')
+const route = getRouteApi('/_app/companies/$companyId_/settings/my-model-accounts')
 
 /** "Sua ordem para Anthropic: Time 2, Time 1": the person's own, then those given, then the company's. */
 function OrderLine(props: {
@@ -25,7 +25,7 @@ function OrderLine(props: {
 }
 
 /**
- * "Minha conta de modelo": the person's own accounts in this company, which they link, order,
+ * "Minhas contas de modelo": the person's own accounts in this company, which they link, order,
  * pause, rename and remove, and the order each provider is tried in for them.
  */
 export function MyAccounts() {
@@ -36,7 +36,7 @@ export function MyAccounts() {
   const { mine, company } = accounts
   return (
     <div className="flex flex-col gap-xl">
-      <PageTitle>Minha conta de modelo</PageTitle>
+      <PageTitle>Minhas contas de modelo</PageTitle>
       {accounts.order.length > 0 && (
         <ul className="flex flex-col gap-xs">
           {accounts.order.map((entry) => (

@@ -1,21 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
-import {
-  accountsQuery,
-  MyAccounts,
-  providersQuery,
-} from '../../../../builder/model-accounts/public.ts'
-import { readOrNotFound } from '../../../../platform/hub.ts'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
+// The old address of the person's model accounts, which a conversation still links to.
 export const Route = createFileRoute('/_app/companies/$companyId/model-account')({
-  staticData: { place: 'Minha conta de modelo' },
-  loader: async ({ context, params }) => {
-    const { queryClient } = context
-    await readOrNotFound(
-      Promise.all([
-        queryClient.ensureQueryData(accountsQuery(params.companyId)),
-        queryClient.ensureQueryData(providersQuery),
-      ]),
-    )
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: '/companies/$companyId/settings/my-model-accounts',
+      params,
+      replace: true,
+    })
   },
-  component: MyAccounts,
 })

@@ -10,7 +10,7 @@ import type { Answers, View } from './test-hub.tsx'
 import { accountOf, choose, modelHub } from './test-hub.tsx'
 
 const server = hubServer()
-const SETUP = `/companies/${COMPANY.id}/setup`
+const PAGE = `/companies/${COMPANY.id}/settings/model-accounts`
 const ORDER = `/api/companies/${COMPANY.id}/model-account-orders/company/anthropic`
 
 function view(fields: Partial<View> = {}): View {
@@ -25,7 +25,7 @@ function view(fields: Partial<View> = {}): View {
   }
 }
 
-function open(shown: View, answers: Answers = {}, path = SETUP) {
+function open(shown: View, answers: Answers = {}, path = PAGE) {
   const hub = modelHub(shown, answers)
   server.use(...hub.handlers)
   const conexus = createConexus(createMemoryHistory({ initialEntries: [path] }))
@@ -39,19 +39,11 @@ function queue() {
 }
 
 function labelsInOrder() {
-  return screen
+  return within(screen.getByRole('main'))
     .getAllByRole('listitem')
     .map((row) => row.textContent?.slice(0, 1))
     .filter((first) => first && 'ABCD'.includes(first))
 }
-
-test('Configurar a empresa com apelido abre a Conta de modelo, sem o campo do apelido', async () => {
-  const { router } = open(view())
-  expect(await screen.findByRole('heading', { name: 'Conta de modelo' })).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Configurar a empresa' })).toBeTruthy()
-  expect(router.state.location.pathname).toBe(SETUP)
-  expect(screen.queryByLabelText('Apelido')).toBeNull()
-})
 
 test('vazio: "Nenhuma conta ligada" e Ligar conta, para quem pode', async () => {
   open(view())
@@ -242,7 +234,7 @@ test('Remover: o aviso do Console, Esc devolve o foco, e a confirmação apaga a
   expect(await screen.findByText('Nenhuma conta ligada')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['DELETE'])
   await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Conta de modelo' })),
+    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Contas de modelo' })),
   )
 })
 

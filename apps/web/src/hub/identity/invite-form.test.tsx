@@ -64,7 +64,7 @@ function hub(
 
 async function open() {
   const conexus = createConexus(
-    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/people`] }),
+    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/settings/people`] }),
   )
   render(<Conexus conexus={conexus} />)
   return {

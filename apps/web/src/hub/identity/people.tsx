@@ -22,7 +22,7 @@ import {
 } from './queries.ts'
 import { RoleBadge } from './role-badge.tsx'
 
-const route = getRouteApi('/_app/companies/$companyId/people')
+const route = getRouteApi('/_app/companies/$companyId_/settings/people')
 
 function Lines({ main, under }: { main: string; under: string }) {
   return (
@@ -200,14 +200,17 @@ export function CompanyPeople(props: {
   )
 }
 
-/** The company's name and people. */
+/** "Pessoas e convites": a member reads the people and is told who invites (design V29). */
 export function People() {
   const { companyId } = route.useParams()
   const pages = route.useSearch()
   const { data } = useSuspenseQuery(companyQuery(companyId))
   return (
     <div className="flex flex-col gap-xl">
-      <PageTitle className="truncate">{data.company.name}</PageTitle>
+      <PageTitle>Pessoas e convites</PageTitle>
+      {data.mayInviteAs.length === 0 && (
+        <p className="text-text-2">Só o dono ou um administrador convida pessoas.</p>
+      )}
       <CompanyPeople company={data.company} pages={pages} mayInviteAs={data.mayInviteAs} />
     </div>
   )

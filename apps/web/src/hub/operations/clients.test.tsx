@@ -1,6 +1,6 @@
-import { Client } from '@conexus/hub-api'
+import { Client, listCompanies } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
@@ -8,6 +8,7 @@ import {
   ACTIVE_CLIENT,
   awaitingClient,
   centralHub,
+  companyRead,
   DELETING_CLIENT,
   homeHub,
   hubServer,
@@ -160,11 +161,56 @@ test('cliente que não existe: a página 404', async () => {
   ).toBeTruthy()
 })
 
-test('a lista traz o estado do Hub, que não está mais no início', async () => {
+test('a Central tem barra própria: Clientes e Estado do Hub, e a Central de Operação sem empresa para ir (critério 8)', async () => {
   server.use(...centralHub([]))
   open('/operations/clients')
+  const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
+  expect(await screen.findByText('Nenhum cliente cadastrado.')).toBeTruthy()
+  expect(nav.getByRole('link', { name: 'Clientes' }).getAttribute('aria-current')).toBe('page')
+  expect(nav.getByRole('link', { name: 'Estado do Hub' }).getAttribute('href')).toBe(
+    '/operations/status',
+  )
+  expect(nav.getByText('Central de Operação')).toBeTruthy()
+  expect(nav.queryByRole('button', { name: /Ir para uma empresa/ })).toBeNull()
+})
+
+test('o operador que tem empresas vê "Ir para uma empresa", e escolher abre o Início dela (critério 8)', async () => {
+  const company = { id: 'a'.repeat(32), name: 'Empresa Teste' }
+  server.use(
+    http.get('*/api/companies', () =>
+      HttpResponse.json(
+        listCompanies.success.body.parse({
+          companies: [{ company, role: 'member' }],
+          mayOperate: true,
+          next: { kind: 'END' },
+        }),
+      ),
+    ),
+    ...companyRead({ role: 'member' }),
+    http.get(`*/api/companies/${company.id}/projects`, () =>
+      HttpResponse.json({ projects: [], next: { kind: 'END' }, databaseReady: true }),
+    ),
+    ...centralHub([]),
+  )
+  const router = open('/operations/clients')
+  fireEvent.click(await screen.findByRole('button', { name: /Ir para uma empresa/ }))
+  expect(await screen.findByText('Ir para uma empresa')).toBeTruthy()
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Empresa Teste' }))
+  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`/companies/${company.id}`)
+})
+
+test('Estado do Hub abre em /operations/status, na Central, e deixa Clientes (critério 8)', async () => {
+  server.use(...centralHub([]))
+  const router = open('/operations/clients')
+  const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
+  fireEvent.click(await nav.findByRole('link', { name: 'Estado do Hub' }))
+  expect(await screen.findByRole('heading', { name: 'Estado do Hub' })).toBeTruthy()
   expect(await screen.findByText('Hub do Conexus no ar.')).toBeTruthy()
   expect(await screen.findByText('v0.1.0')).toBeTruthy()
+  expect(router.state.location.pathname).toBe('/operations/status')
+  expect(nav.getByRole('link', { name: 'Estado do Hub' }).getAttribute('aria-current')).toBe('page')
+  expect(nav.getByRole('link', { name: 'Clientes' }).getAttribute('aria-current')).toBeNull()
 })
 
 test('um cliente que está sendo apagado diz "Exclusão em andamento" na lista', async () => {

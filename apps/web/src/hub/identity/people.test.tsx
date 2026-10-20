@@ -5,6 +5,7 @@ import {
   getCompany,
   listInvitations,
   listMembers,
+  listProjects,
   renewInvitation,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
@@ -82,6 +83,15 @@ function hub(view: View) {
         }),
       )
     }),
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      HttpResponse.json(
+        listProjects.success.body.parse({
+          projects: [],
+          next: { kind: 'END' },
+          databaseReady: true,
+        }),
+      ),
+    ),
     http.post(`*/api/companies/${COMPANY.id}/invitations`, async ({ request }) => {
       sent.push({ key: request.headers.get('idempotency-key'), body: await request.json() })
       return view.answer?.() ?? refusal('INTERNAL_UNEXPECTED')
@@ -98,7 +108,7 @@ function sectionOf(heading: HTMLElement): HTMLElement {
 
 function open(search = '') {
   const conexus = createConexus(
-    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/people${search}`] }),
+    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/settings/people${search}`] }),
   )
   render(<Conexus conexus={conexus} />)
   return conexus.router
@@ -107,7 +117,7 @@ function open(search = '') {
 test('dono: os membros com o papel, os convites pendentes e o formulário "Convidar pessoa"', async () => {
   hub({ role: 'owner', mayInviteAs: ['owner', 'admin', 'member'] })
   open()
-  expect(await screen.findByRole('heading', { name: 'Empresa Teste' })).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Pessoas e convites' })).toBeTruthy()
   const people = within(sectionOf(screen.getByRole('heading', { name: 'Pessoas' })))
   expect(people.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
     'Ana Limaana@example.testDono',
@@ -126,6 +136,7 @@ test('membro: só as pessoas; sem convites pendentes, sem formulário e sem pedi
   const { reads } = hub({ role: 'member', mayInviteAs: [] })
   open()
   expect(await screen.findByRole('heading', { name: 'Pessoas' })).toBeTruthy()
+  expect(screen.getByText('Só o dono ou um administrador convida pessoas.')).toBeTruthy()
   expect(screen.queryByRole('heading', { name: 'Convites pendentes' })).toBeNull()
   expect(screen.queryByRole('heading', { name: 'Convidar pessoa' })).toBeNull()
   expect(reads).toEqual(['members'])
@@ -143,6 +154,19 @@ test('a página dos membros fica no endereço: "Ver mais" pede a que segue', asy
   expect(await screen.findByRole('link', { name: 'Primeira página: Pessoas' })).toBeTruthy()
   expect(reads).toContain(`members?page=${'m'.repeat(32)}`)
 })
+
+for (const gone of ['people', 'setup']) {
+  test(`/companies/$id/${gone}, que não existe mais: "não encontrado" na área da empresa (critério 17)`, async () => {
+    hub({ role: 'owner', mayInviteAs: ['owner', 'admin', 'member'] })
+    const conexus = createConexus(
+      createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/${gone}`] }),
+    )
+    render(<Conexus conexus={conexus} />)
+    expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Ir para o início' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Pessoas e convites' })).toBeNull()
+  })
+}
 
 test('um id que não tem 32 letras e dígitos: a frase de "não encontrado"', async () => {
   const conexus = createConexus(createMemoryHistory({ initialEntries: ['/companies/curto'] }))

@@ -1,5 +1,7 @@
+export { Home } from './home.tsx'
 export { Project } from './project.tsx'
 export { Projects } from './projects.tsx'
 export { projectQuery, projectsQuery } from './queries.ts'
+export { RecentProjects, rememberProject } from './recent-projects.tsx'
 export { Settings } from './settings.tsx'
 export { ProjectTabs } from './tabs.tsx'
