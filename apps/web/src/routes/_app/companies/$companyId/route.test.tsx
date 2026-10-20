@@ -75,6 +75,15 @@ test('a barra: empresa, Início, Projetos recentes, Todos os projetos, Configura
   expect(screen.getByRole('main')).toBeTruthy()
 })
 
+test('sem Projeto, a barra não mostra Projetos recentes nem Todos os projetos, só Início', async () => {
+  open(HOME, [])
+  const nav = within(await screen.findByRole('navigation', { name: 'Navegação' }))
+  await screen.findByRole('heading', { name: 'O que vamos construir?' })
+  expect(nav.getByRole('link', { name: 'Início' })).toBeTruthy()
+  expect(nav.queryByText('Projetos recentes')).toBeNull()
+  expect(nav.queryByRole('link', { name: 'Todos os projetos' })).toBeNull()
+})
+
 test('os Projetos recentes: os abertos por último que seguem na lista, completados pelos primeiros, até cinco (critério 3)', async () => {
   remembered(7, 3, 6)
   open(HOME)
