@@ -13,8 +13,9 @@ only with the founder's word.
 ## 1. One step at a time
 
 - **L1.** Product work **should** have one step in construction; study/scope of the next step and
-  a draft method change can run beside it without product code. Failure: two stages approve
-  incompatible forms of one contract before anyone uses it. [review]
+  a draft method change can run beside it without product code. A sibling step (12.1, 12.2) builds
+  only after the previous one merges. Failure: two stages approve incompatible forms of one
+  contract before anyone uses it. [review]
 - **L2.** A step **should** be usable within a few days, with about 4,000 changed code lines excluding
   tests/generated files, calibrated at step 5; split before build when it exceeds that budget.
   Founder, 2026-10-12: "A"; 2026-10-16: "Concordo". Failure: a 161-file step multiplies the possible
@@ -39,11 +40,16 @@ only with the founder's word.
 
 ## 3. Build and review
 
-- **L9.** Review **should** follow the approved protocol: one whole-step reading after units and
-  green CI, by two models that did not build it, at the exact commit, each running refusal criteria;
-  after fixes, one reader checks only the delta for closed Bloqueia and newly introduced defects.
-  No per-unit review or review robot. Documents-only changes get check-docs and one reader once;
-  a card gets one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
+- **L9.** Review **should** follow the approved protocol. At the candidate commit, with CI green, a
+  step with a screen first gets its T25 QA report; then two models of different families that did
+  not build it read the whole step and the QA report. Each reviewer runs the refusal criteria,
+  reads every CI job's log, confirms that the test plan ran everything when a change touches the
+  test selector, its inputs or a dependency, opens the screens it doubts, and compares each part
+  that follows a reference with that reference by commit and file:line. QA and review findings go
+  into one fix round, and each delta check reruns QA on the screens the fix touched. After fixes,
+  one reader checks only the delta for closed Bloqueia and newly introduced defects. No per-unit
+  review or review robot. Documents-only changes get check-docs and one reader once; a card gets
+  one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
   2026-10-16: "Concordo". Failure: rereading everything after each fix samples new rules forever
   instead of converging. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
@@ -54,9 +60,11 @@ only with the founder's word.
   merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without
   that, the finding is **Fechamento**. Fechamento (wording, name, citation, guide amendment) goes
   on the pull request's closing list. **Issue futura** (outside scope, future scale with a written
-  trigger, development tool) goes to a next-card or method issue. With neither broken rule nor
-  shown defect, start with `Nit:`, as Fechamento. Founder, 2026-10-16: "Concordo". Failure: a stale
-  line citation blocks like a password leak. [review]
+  trigger, development tool) goes to a next-card or method issue. A trigger that the step's use
+  script or its first live turn reaches is not future: that finding is Bloqueia unless the step
+  proves it does not happen. With neither broken rule nor shown defect, start with `Nit:`, as
+  Fechamento. Founder, 2026-10-16: "Concordo". Failure: a stale line citation blocks like a
+  password leak. [review]
 
 ## 4. Merge and use
 
@@ -74,9 +82,9 @@ only with the founder's word.
 - **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
   is on the list of expensive choices. [CI, review]
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
-  firstmate, and used by the founder through the card's use script. His words, the date and the
-  address go on the step's line in the roadmap, and only then **may** the next step start. Founder,
-  2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
+  firstmate, item by item through the card's use script, before the founder is told, and used by
+  the founder through the card's use script. His words, the date and the address go on the step's
+  line in the roadmap, and only then **may** the next step start. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
   the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
   releases its proof creates. Failed use leaves the step open for a fix. [CI, from the first step's
