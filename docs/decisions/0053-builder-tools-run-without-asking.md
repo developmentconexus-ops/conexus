@@ -10,8 +10,10 @@ resuming the run. Under load, that resume can find the run's saved snapshot dele
 
 ## Decision
 
-The Builder's controller starts every session with `yolo: true`, as Mastra Code's SDK does and
-Mastra Factory keeps; Conexus OS set it on each turn. No approval, no resume: `web_fetch`,
+The Builder's controller starts every session with `yolo: true`, as Mastra Code's SDK does
+(`mastracode/sdk/src/index.ts:1331`, and `requireToolApproval: yolo !== true` at `:858`) and Mastra
+Factory keeps; Conexus OS set it on each turn (`apps/hub/src/builder/run/turn.ts:52-53`). No
+approval, no resume: `web_fetch`,
 `web_search` and `recall` run at once. The permission rules and the category resolver of 0050
 leave, since only the approval path read them. The Builder has no tool that writes or runs, and
 the controller's own such tools stay disabled.
