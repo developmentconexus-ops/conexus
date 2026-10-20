@@ -1,4 +1,5 @@
 import type { Message, MessagePart } from '@conexus/hub-api'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { cn } from '../../ui/cn.ts'
 import { Anchor, Markdown } from './markdown.tsx'
 
@@ -21,10 +22,16 @@ function Part(props: { part: MessagePart; person: boolean; streaming: boolean })
       ) : (
         <Markdown text={part.text} streaming={props.streaming} />
       )
-    case 'page':
-      return <PageRead url={part.url} title={part.title} />
+    case 'tool':
+      return part.subject !== null && 'url' in part.subject ? (
+        <PageRead url={part.subject.url} title={part.subject.title} />
+      ) : null
+    case 'reasoning':
+      return null
     case 'notice':
       return <p className="border-l-2 border-accent pl-md text-text">{part.text}</p>
+    case 'failure':
+      return <p role="alert">{sentenceOfCode(part.code)}</p>
     default:
       return part satisfies never
   }

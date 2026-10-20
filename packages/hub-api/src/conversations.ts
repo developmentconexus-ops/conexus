@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
-import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
+import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
 import { ProjectId } from './projects.ts'
 
 export const ConversationId = z.uuid().brand('ConversationId')
@@ -19,18 +19,61 @@ export function providerOfModel(model: string): string | null {
   return slash > 0 && slash < model.length - 1 ? model.slice(0, slash) : null
 }
 
-/** A piece of a message: its text, a page the Builder read, or a notice of the account queue. */
+/** The failures a turn ends with, rows of the failure table that the screen reads by code. */
+export const TurnFailureCode = z.enum([
+  'MODEL_NO_ACCOUNT',
+  'MODEL_CALL_FAILED',
+  'INTERNAL_UNEXPECTED',
+] as const satisfies readonly FailureCode[])
+export type TurnFailureCode = z.infer<typeof TurnFailureCode>
+
+export const MessageId = z.string().min(1).brand('MessageId')
+export type MessageId = z.infer<typeof MessageId>
+
+/** The longest title or query a tool's subject keeps, in characters. */
+export const SUBJECT_MAX_LENGTH = 200
+const Subject = z.string().max(SUBJECT_MAX_LENGTH)
+
+/** What a tool call was about: the page it read, the search it made, or nothing to say. */
+const ToolSubject = z.union([
+  z.object({ url: z.url(), title: Subject.nullable() }),
+  z.object({ query: Subject }),
+  z.null(),
+])
+
+/**
+ * A piece of a message. `reasoning` and `tool` carry an `id`: a later part with the same `id`
+ * replaces it. Their states follow the controller's `ActiveToolState.status`; the thinking's text,
+ * a tool's arguments and result and the provider's words never leave the server (security S9,
+ * design V39, code C51).
+ */
 export const MessagePart = z.discriminatedUnion('type', [
   z.object({ type: z.literal('text'), text: z.string() }),
-  z.object({ type: z.literal('page'), url: z.url(), title: z.string().nullable() }),
+  z.object({
+    type: z.literal('reasoning'),
+    id: z.string().min(1),
+    state: z.enum(['running', 'completed']),
+    /** How long it thought, by the server's clock; `null` once read again. */
+    seconds: z.int().nonnegative().nullable(),
+  }),
+  z.object({
+    type: z.literal('tool'),
+    id: z.string().min(1),
+    kind: z.enum(['read_page', 'search_web', 'recall', 'other']),
+    state: z.enum(['running', 'completed', 'error']),
+    subject: ToolSubject,
+  }),
   z.object({ type: z.literal('notice'), text: z.string() }),
+  z.object({ type: z.literal('failure'), code: TurnFailureCode }),
 ])
 export type MessagePart = z.infer<typeof MessagePart>
 
 export const Message = z.object({
-  id: z.string().min(1),
+  id: MessageId,
   role: z.enum(['person', 'builder']),
   parts: z.array(MessagePart),
+  /** The model that answered the Builder's turn, as Mastra recorded it; `null` for the person. */
+  model: ModelId.nullable(),
   createdAt: z.iso.datetime(),
 })
 export type Message = z.infer<typeof Message>
@@ -48,28 +91,18 @@ export const Conversation = ConversationSummary.extend({
 })
 export type Conversation = z.infer<typeof Conversation>
 
-/** The failures a turn ends with, rows of the failure table that the screen reads by code. */
-export const TurnFailureCode = z.enum([
-  'MODEL_NO_ACCOUNT',
-  'MODEL_CALL_FAILED',
-  'INTERNAL_UNEXPECTED',
-] as const satisfies readonly FailureCode[])
-export type TurnFailureCode = z.infer<typeof TurnFailureCode>
-
 /**
- * What the stream of a conversation says. `turn` comes first on a reconnect, the answer in
- * progress so far, or `working` when a turn runs and has said nothing yet; `turnEnd` ends each
- * answer, and `failure` comes before it when the turn failed.
+ * What the stream of a conversation says. `turn` opens each turn, and on a reconnect that cannot
+ * resume it is the turn in progress so far; `part` adds a part, or replaces the one with its `id`;
+ * a failed turn's `failure` part comes before its `turnEnd`.
  */
 export const ConversationEvent = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('turn'), message: Message }),
-  z.object({ type: z.literal('working') }),
+  z.object({ type: z.literal('turn'), message: Message, startedAt: z.iso.datetime() }),
   z.object({ type: z.literal('text'), delta: z.string() }),
   z.object({ type: z.literal('part'), part: MessagePart }),
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('title'), title: z.string() }),
   z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
-  z.object({ type: z.literal('failure'), code: TurnFailureCode }),
 ])
 export type ConversationEvent = z.infer<typeof ConversationEvent>
 
@@ -147,13 +180,18 @@ export const sendConversationMessage = defineOperation({
 
 export const streamConversation = defineOperation({
   id: 'streamConversation',
-  summary: 'Streams a conversation: the answer in progress first, then each new event.',
+  summary: `Streams a conversation: the events after ${LAST_EVENT_ID_HEADER}, or the turn in progress first, then each new event.`,
   access: 'session',
   method: 'GET',
   path: `${BASE}/{conversationId}/events`,
   bodyLimit: 1024,
   input: { params: OfConversation },
-  success: { status: 200, events: ConversationEvent, heartbeatMs: CONVERSATION_HEARTBEAT_MS },
+  success: {
+    status: 200,
+    events: ConversationEvent,
+    heartbeatMs: CONVERSATION_HEARTBEAT_MS,
+    resumable: true,
+  },
   failures: READ_FAILURES,
 })
 

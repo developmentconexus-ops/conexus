@@ -1,5 +1,11 @@
 import type { FailureCode, Operation } from '@conexus/hub-api'
-import { ATTEMPT_KEY_HEADER, FAILURES, Problem } from '@conexus/hub-api'
+import {
+  ATTEMPT_KEY_HEADER,
+  EventId,
+  FAILURES,
+  LAST_EVENT_ID_HEADER,
+  Problem,
+} from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
@@ -112,11 +118,12 @@ function addressOf(operation: Operation, sent: Sent): string {
 async function send(
   operation: Operation,
   sent: Sent = {},
-  options: { signal?: AbortSignal; deadlineMs?: number | null } = {},
+  options: { signal?: AbortSignal; deadlineMs?: number | null; lastEventId?: EventId } = {},
 ) {
   const headers = {
     ...(sent.body === undefined ? {} : { 'content-type': 'application/json' }),
     ...(sent.attemptKey === undefined ? {} : { [ATTEMPT_KEY_HEADER]: sent.attemptKey }),
+    ...(options.lastEventId === undefined ? {} : { [LAST_EVENT_ID_HEADER]: options.lastEventId }),
   }
   const { signal, deadlineMs } = options
   const response = await hubFetch(
@@ -170,12 +177,13 @@ export function hubQuery(operation: Operation, ...args: unknown[]) {
 
 type Streaming = Operation & { success: { events: z.ZodType } }
 
-/** The `data:` payload of one block of a `text/event-stream`, or nothing for a comment (heartbeat). */
-function dataOf(block: string): string | undefined {
-  const lines = block
+/** The values of a block's `field` lines, each without the one space after its colon. */
+function fieldOf(block: string, field: 'data' | 'id'): string[] {
+  return block
     .split('\n')
-    .flatMap((line) => (line.startsWith('data:') ? [line.slice(5)] : []))
-  return lines.length === 0 ? undefined : lines.map((line) => line.replace(/^ /, '')).join('\n')
+    .flatMap((line) =>
+      line.startsWith(`${field}:`) ? [line.slice(field.length + 1).replace(/^ /, '')] : [],
+    )
 }
 
 /** A `data:` payload as JSON, so a line that is not JSON fails the event's parse like a bad shape. */
@@ -194,26 +202,29 @@ type StreamOptions = {
   onActivity: () => void
   /** Awaited once the Hub accepted the stream, before its first event is read. */
   opened?: () => Promise<void>
+  /** The id of the last event the screen read, so the Hub sends only those after it. */
+  lastEventId?: EventId
 }
 
 /**
- * The events of a stream the Hub keeps open, each parsed with the operation's schema. No deadline
- * ends it: `onActivity` is told of every chunk, heartbeats included, so the caller can tell a quiet
- * line from a dead one. A stream that ends or breaks ends the iteration or throws.
+ * The events of a stream the Hub keeps open, each parsed with the operation's schema and with its
+ * id. No deadline ends it: `onActivity` is told of every chunk, heartbeats included, so the caller
+ * can tell a quiet line from a dead one. A stream that ends or breaks ends the iteration or throws.
  */
 export function hubEvents<O extends Streaming>(
   operation: O,
   params: PartOf<O, 'params'>,
   options: StreamOptions,
-): AsyncGenerator<z.output<O['success']['events']>>
+): AsyncGenerator<{ id: EventId; event: z.output<O['success']['events']> }>
 export async function* hubEvents(
   operation: Streaming,
   params: unknown,
   options: StreamOptions,
-): AsyncGenerator<unknown> {
+): AsyncGenerator<{ id: EventId; event: unknown }> {
   const response = await send(operation, Sent.parse({ params }), {
     signal: options.signal,
     deadlineMs: null,
+    ...(options.lastEventId === undefined ? {} : { lastEventId: options.lastEventId }),
   })
   if (response.body === null) throw new HubFailure('INTERNAL_UNEXPECTED')
   const events = JsonText.pipe(operation.success.events)
@@ -231,11 +242,13 @@ export async function* hubEvents(
       const blocks = buffered.split('\n\n')
       buffered = blocks.pop() ?? ''
       for (const block of blocks) {
-        const data = dataOf(block)
-        if (data === undefined) continue
-        const event = events.safeParse(data)
+        const data = fieldOf(block, 'data')
+        if (data.length === 0) continue
+        const id = EventId.safeParse(fieldOf(block, 'id').at(-1))
+        const event = events.safeParse(data.join('\n'))
         if (!event.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: event.error })
-        yield event.data
+        if (!id.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: id.error })
+        yield { id: id.data, event: event.data }
       }
     }
   } finally {

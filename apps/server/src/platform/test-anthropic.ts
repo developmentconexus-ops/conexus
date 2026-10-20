@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
+import type { Block } from './test-anthropic-stream.ts'
+import { events } from './test-anthropic-stream.ts'
 
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
@@ -22,13 +24,15 @@ export type Sent = {
 }
 
 /**
- * How the double answers one call: text, a `web_fetch` call, a provider's refusal, a hang, a
- * connection the provider resets in the middle of its stream, or (Chat Completions only) a stream
- * that ends with no content on Gemini's `MALFORMED_FUNCTION_CALL`, as CLIProxy relays it.
+ * How the double answers one call: text, a `web_fetch` call, the blocks given, a provider's
+ * refusal, a hang, a connection the provider resets in the middle of its stream, or (Chat
+ * Completions only) a stream that ends with no content on Gemini's `MALFORMED_FUNCTION_CALL`, as
+ * CLIProxy relays it.
  */
 export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
+  | { kind: 'blocks'; blocks: Block[] }
   | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
   | { kind: 'hold'; until: Promise<void>; text?: string }
   | { kind: 'reset' }
@@ -184,40 +188,13 @@ function sentOf(init: RequestInit | undefined): Sent {
   }
 }
 
-function events(blocks: unknown[], stop: 'end_turn' | 'tool_use'): string {
-  const usage = { input_tokens: 10, output_tokens: 1 }
-  const message = { id: 'msg_test', type: 'message', role: 'assistant', model: MODEL, content: [] }
-  const all = [
-    ['message_start', { type: 'message_start', message: { ...message, stop_reason: null, usage } }],
-    ...blocks.flatMap((block, index) => {
-      const shown = Object(block)
-      const start = shown.type === 'text' ? { type: 'text', text: '' } : { ...shown, input: {} }
-      const delta =
-        shown.type === 'text'
-          ? { type: 'text_delta', text: shown.text }
-          : { type: 'input_json_delta', partial_json: JSON.stringify(shown.input) }
-      return [
-        ['content_block_start', { type: 'content_block_start', index, content_block: start }],
-        ['content_block_delta', { type: 'content_block_delta', index, delta }],
-        ['content_block_stop', { type: 'content_block_stop', index }],
-      ]
-    }),
-    [
-      'message_delta',
-      { type: 'message_delta', delta: { stop_reason: stop }, usage: { output_tokens: 5 } },
-    ],
-    ['message_stop', { type: 'message_stop' }],
-  ]
-  return all.map(([name, data]) => `event: ${name}\ndata: ${JSON.stringify(data)}\n\n`).join('')
-}
-
 /**
  * A stream that sends its text, then ends only after `until`, so a test holds a turn open; with no
  * text it sends nothing until then, a model called and silent.
  */
 function heldStream(until: Promise<void>, text?: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder()
-  const frames = events([{ type: 'text', text: text ?? '' }], 'end_turn').split('\n\n')
+  const frames = events(MODEL, [{ type: 'text', text: text ?? '' }], 'end_turn').split('\n\n')
   // The message's start, its text block's start and its text; then its end.
   const cut = text === undefined ? 0 : 3
   const head = frames.slice(0, cut)
@@ -267,29 +244,28 @@ function replied(sent: Sent, reply: Reply): Response {
   }
   if (reply.kind === 'malformed') throw new Error('The Messages API has no MALFORMED_FUNCTION_CALL')
   if (reply.kind === 'reset') {
-    const [start = ''] = events([], 'end_turn').split('\n\n')
+    const [start = ''] = events(MODEL, [], 'end_turn').split('\n\n')
     return resetStream([`${start}\n\n`])
   }
-  const blocks =
-    reply.kind === 'text'
-      ? [{ type: 'text', text: reply.text }]
-      : [
-          {
-            type: 'tool_use',
-            id: `toolu_${randomUUID()}`,
-            name: 'web_fetch',
-            input: { url: reply.url },
-          },
-        ]
+  const blocks: Block[] =
+    reply.kind === 'blocks'
+      ? reply.blocks
+      : reply.kind === 'text'
+        ? [{ type: 'text', text: reply.text }]
+        : [{ type: 'tool_use', name: 'web_fetch', input: { url: reply.url } }]
+  const stop = blocks.some((block) => block.type === 'tool_use') ? 'tool_use' : 'end_turn'
   if (!sent.stream) {
-    const content = blocks.map((block) => ({ ...block }))
+    const content = blocks.flatMap((block): object[] => {
+      if (block.type === 'text') return [block]
+      return block.type === 'tool_use' ? [{ ...block, id: `toolu_${randomUUID()}` }] : []
+    })
     const body = { id: 'msg_test', type: 'message', role: 'assistant', model: MODEL, content }
     const usage = { input_tokens: 3, output_tokens: 3 }
-    const stop = reply.kind === 'text' ? 'end_turn' : 'tool_use'
     return Response.json({ ...body, stop_reason: stop, stop_sequence: null, usage })
   }
-  const stop = reply.kind === 'text' ? 'end_turn' : 'tool_use'
-  return new Response(events(blocks, stop), { headers: { 'content-type': 'text/event-stream' } })
+  return new Response(events(MODEL, blocks, stop), {
+    headers: { 'content-type': 'text/event-stream' },
+  })
 }
 
 /**

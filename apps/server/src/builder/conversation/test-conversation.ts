@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import type { ConversationEvent, Message } from '@conexus/hub-api'
-import { ConversationEvent as Event } from '@conexus/hub-api'
+import { ConversationEvent as Event, LAST_EVENT_ID_HEADER } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
@@ -131,19 +131,24 @@ export function sent(hub: Hub, person: Person, url: string, content: string, key
   return post(hub, person, `${url}/messages`, { content }, key)
 }
 
-/** The conversation's stream, read event by event until the test closes it. */
-export async function streamOf(hub: Hub, person: Person, url: string) {
+/**
+ * The conversation's stream, read event by event until the test closes it; `lastEventId` reopens
+ * it as a browser does, and `seen.ids` holds each event's id.
+ */
+export async function streamOf(hub: Hub, person: Person, url: string, lastEventId?: string) {
+  const resumed = lastEventId === undefined ? {} : { [LAST_EVENT_ID_HEADER]: lastEventId }
   const response = await hub.app.inject({
     method: 'GET',
     url: `${url}/events`,
-    headers: { origin: TEST_ORIGIN, cookie: person.cookie },
+    headers: { origin: TEST_ORIGIN, cookie: person.cookie, ...resumed },
     payloadAsStream: true,
   })
   assert.equal(response.statusCode, 200)
   assert.match(String(response.headers['content-type']), /^text\/event-stream/)
   const stream = response.stream()
   const waiting: ConversationEvent[] = []
-  const seen = { raw: '', comments: 0, ended: false }
+  const ids: string[] = []
+  const seen = { raw: '', comments: 0, ended: false, ids }
   let buffered = ''
   let wake: (() => void) | undefined
   stream.on('data', (chunk: Buffer) => {
@@ -152,8 +157,12 @@ export async function streamOf(hub: Hub, person: Person, url: string) {
     const frames = buffered.split('\n\n')
     buffered = frames.pop() ?? ''
     for (const frame of frames) {
-      if (frame.startsWith('data: ')) waiting.push(Event.parse(JSON.parse(frame.slice(6))))
-      else if (frame.startsWith(':')) seen.comments += 1
+      if (frame.startsWith(':')) seen.comments += 1
+      const [id, data] = frame.split('\n')
+      if (id?.startsWith('id: ') && data?.startsWith('data: ')) {
+        seen.ids.push(id.slice(4))
+        waiting.push(Event.parse(JSON.parse(data.slice(6))))
+      }
     }
     wake?.()
   })
@@ -169,6 +178,11 @@ export async function streamOf(hub: Hub, person: Person, url: string) {
     const event = waiting.shift()
     assert.ok(event !== undefined)
     return event
+  }
+  /** The next event that is not the `turn` that opens a turn. */
+  async function said(): Promise<ConversationEvent> {
+    const event = await next()
+    return event.type === 'turn' ? next() : event
   }
   /** Every event until the turn ends, the end included. */
   async function turn(): Promise<ConversationEvent[]> {
@@ -187,10 +201,13 @@ export async function streamOf(hub: Hub, person: Person, url: string) {
     await until(() => seen.ended)
     return waiting.length === 0
   }
-  return { next, turn, close, ended, until, seen }
+  return { next, said, turn, close, ended, until, seen }
 }
 
-/** One question asked on a new conversation of the Project, and the events of its turn; `between` runs once the conversation exists. */
+/**
+ * One question asked on a new conversation of the Project, and the events of its turn with their
+ * ids; `between` runs once the conversation exists.
+ */
 export async function asked(
   t: TestContext,
   where: { hub: Hub; person: Person; conversations: string; between?: () => Promise<void> },
@@ -202,7 +219,28 @@ export async function asked(
   t.after(() => stream.close())
   await where.between?.()
   assert.equal((await sent(hub, person, url, content)).statusCode, 202)
-  return { url, events: await stream.turn() }
+  return { url, events: await stream.turn(), ids: stream.seen.ids }
+}
+
+/**
+ * The conversation's messages once the last is the Builder's, read again for at most five seconds:
+ * Mastra saves a turn just after its end.
+ */
+export async function answeredOf(hub: Hub, person: Person, url: string): Promise<Message[]> {
+  for (let attempt = 0; ; attempt += 1) {
+    const read = await call(hub, person, 'GET', url)
+    assert.equal(read.statusCode, 200, read.body)
+    const messages: Message[] = Object(read.json()).conversation.messages
+    if (messages.at(-1)?.role === 'builder' || attempt === 50) return messages
+    await new Promise((done) => setTimeout(done, 100))
+  }
+}
+
+/** The failures a turn said, in order. */
+export function failuresOf(events: ConversationEvent[]): string[] {
+  return events.flatMap((event) =>
+    event.type === 'part' && event.part.type === 'failure' ? [event.part.code] : [],
+  )
 }
 
 /** The notices of a turn, in order. */
@@ -212,9 +250,7 @@ export function noticesOf(events: ConversationEvent[]): string[] {
 
 /** The notices the person reads again in the conversation's Builder messages, in order. */
 export async function keptNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
-  const read = await call(hub, person, 'GET', url)
-  assert.equal(read.statusCode, 200, read.body)
-  const messages: Message[] = Object(read.json()).conversation.messages
+  const messages = await answeredOf(hub, person, url)
   return messages
     .filter((message) => message.role === 'builder')
     .flatMap((message) => message.parts)

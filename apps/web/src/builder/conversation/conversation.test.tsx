@@ -1,3 +1,4 @@
+import { MessageId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
@@ -22,9 +23,10 @@ test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens
       title: 'Padarias',
       messages: [
         {
-          id: 'p1',
+          id: MessageId.parse('p1'),
           role: 'person',
           parts: [{ type: 'text', text: 'Oi' }],
+          model: null,
           createdAt: '2026-10-19T12:00:00.000Z',
         },
         builderSaid('Olá, **tudo bem**?'),

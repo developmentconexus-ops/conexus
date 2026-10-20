@@ -4,7 +4,7 @@ import { getRouteApi } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
-import { HubFailure, sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
+import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Empty, NotFound } from '../../ui/states.tsx'
 import { accountsQuery } from '../model-accounts/public.ts'
 import { Composer } from './composer.tsx'
@@ -65,15 +65,11 @@ export function EmptyPanel() {
   )
 }
 
-/** "Pensando…" until the answer has text, and the failure of the turn in the table's words. */
+/** "Pensando…" until the answer has text; the turn's failure is a part of its answer. */
 function AnswerStatus({ state }: { state: Live }) {
-  if (state.kind === 'idle') return null
-  return (
-    <>
-      {state.kind === 'answering' && !hasText(state.parts) && <p role="status">{THINKING}</p>}
-      {state.failure !== null && <p role="alert">{sentenceOfCode(state.failure)}</p>}
-    </>
-  )
+  return state.kind === 'answering' && !hasText(state.parts) ? (
+    <p role="status">{THINKING}</p>
+  ) : null
 }
 
 function Screen(props: {

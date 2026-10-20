@@ -74,10 +74,12 @@ export {
   listConversations,
   MESSAGE_MAX_LENGTH,
   Message,
+  MessageId,
   MessagePart,
   ModelId,
   providerOfModel,
   readConversation,
+  SUBJECT_MAX_LENGTH,
   sendConversationMessage,
   setConversationModel,
   stopConversation,
@@ -138,8 +140,10 @@ export {
   AttemptKey,
   type DeclaredOperation,
   defineOperation,
+  EventId,
   failuresOf,
   isDeclaredOperation,
+  LAST_EVENT_ID_HEADER,
   type Operation,
 } from './operation.ts'
 export {

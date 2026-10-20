@@ -1,43 +1,18 @@
 import assert from 'node:assert/strict'
 import dns from 'node:dns'
-import fs from 'node:fs'
-import http from 'node:http'
 import { syncBuiltinESMExports } from 'node:module'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
-import { conversing, KEY, sent, started, streamOf } from './test-conversation.ts'
+import { conversing, failuresOf, KEY, sent, started, streamOf } from './test-conversation.ts'
+import { printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
 
 function textOf(events: ConversationEvent[]): string {
   return events.flatMap((event) => (event.type === 'text' ? [event.delta] : [])).join('')
-}
-
-/**
- * Everything the process prints on stdout and stderr while the test runs, still printed: by the
- * streams, and by `fs` on their descriptors, as the Hub's logger writes.
- */
-function printedOf(t: TestContext): string[] {
-  const printed: string[] = []
-  for (const out of [process.stdout, process.stderr]) {
-    const write = out.write.bind(out)
-    t.mock.method(out, 'write', (chunk: string | Uint8Array) => {
-      printed.push(String(chunk))
-      return write(chunk)
-    })
-  }
-  for (const name of ['write', 'writeSync'] as const) {
-    const real = fs[name]
-    t.mock.method(fs, name, (...args: unknown[]) => {
-      const [fd, chunk] = args
-      if (fd === 1 || fd === 2) printed.push(String(chunk))
-      return Reflect.apply(real, fs, args)
-    })
-  }
-  return printed
 }
 
 test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra guarda a empresa no dono', async (t) => {
@@ -96,7 +71,7 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   assert.equal(answered.statusCode, 202)
   const events = await stream.turn()
   assert.deepEqual(events.slice(-2), [
-    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
+    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
     { type: 'turnEnd', reason: 'error' },
   ])
   const read = await call(hub, ana, 'GET', url)
@@ -117,26 +92,6 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   }
 })
 
-/** A server on 127.0.0.1 that counts what reaches it and answers `reply`. */
-async function served(
-  t: TestContext,
-  reply: (path: string, response: http.ServerResponse) => void,
-) {
-  const reached: string[] = []
-  const server = http.createServer((request, response) => {
-    reached.push(String(request.url))
-    reply(String(request.url), response)
-  })
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
-    server.closeAllConnections()
-    server.close()
-  })
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  return { port: address.port, reached }
-}
-
 /** The name resolves to 127.0.0.1, as an internal name would; every other name as before. */
 function resolvesInternally(t: TestContext, name: string) {
   const real = dns.lookup
@@ -152,22 +107,6 @@ function resolvesInternally(t: TestContext, name: string) {
   t.after(() => {
     Reflect.set(dns, 'lookup', real)
     syncBuiltinESMExports()
-  })
-}
-
-/** The public name reaches `port` on this machine, as a public site would; the rest as before. */
-function routedTo(t: TestContext, name: string, port: number) {
-  const before = http.globalAgent
-  const agent = new http.Agent()
-  const connect = agent.createConnection.bind(agent)
-  agent.createConnection = (options, callback) =>
-    options.hostname === name || options.host === name
-      ? connect({ ...options, host: '127.0.0.1', hostname: '127.0.0.1', port }, callback)
-      : connect(options, callback)
-  Reflect.set(http, 'globalAgent', agent)
-  t.after(() => {
-    Reflect.set(http, 'globalAgent', before)
-    agent.destroy()
   })
 }
 
@@ -201,19 +140,17 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   assert.equal((await sent(hub, ana, url, 'Abra estas páginas')).statusCode, 202)
   const events = await stream.turn()
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.ok(!events.some((event) => event.type === 'failure'))
+  assert.deepEqual(failuresOf(events), [])
   assert.equal(textOf(events), 'Não consegui abrir.')
-  const page = { type: 'page', url: 'http://site.example.test/cardapio', title: null }
-  assert.deepEqual(
-    events.filter((event) => event.type === 'part'),
-    [{ type: 'part', part: page }],
-    'only the page read is shown',
-  )
+  const pages = addresses.map((address, at) => ({
+    ...{ type: 'tool', kind: 'read_page', subject: { url: address, title: null } },
+    state: at === 3 ? 'completed' : 'error',
+  }))
   const read = Object((await call(hub, ana, 'GET', url)).json()).conversation
-  const kept = read.messages.flatMap((message: { parts: { type: string }[] }) =>
-    message.parts.filter((part) => part.type === 'page'),
+  const kept = read.messages.flatMap((message: { parts: { type: string; id?: string }[] }) =>
+    message.parts.flatMap(({ id: _, ...part }) => (part.type === 'tool' ? [part] : [])),
   )
-  assert.deepEqual(kept, [page])
+  assert.deepEqual(kept, pages, 'each refused page is an error, the one read is complete')
   assert.deepEqual(site.reached, ['/pagina', '/cardapio'])
   assert.deepEqual(internal.reached, [])
   const last =

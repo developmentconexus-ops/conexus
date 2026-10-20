@@ -5,14 +5,15 @@ import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import type { Owner } from './live.ts'
-import { QUESTION_KEY, Question } from './live.ts'
+import { QUESTION_KEY, Question, questionId, TURN_FAILURES_KEY, TurnFailure } from './live.ts'
 import { messageOf } from './parts.ts'
 
-// What the thread keeps beside its messages: Mastra's model, and Conexus's questions.
+// What the thread keeps beside its messages: Mastra's model, Conexus's questions and failures.
 const Metadata = z
   .object({
     currentModelId: ModelId.optional(),
     [QUESTION_KEY]: z.array(Question).default([]),
+    [TURN_FAILURES_KEY]: z.array(TurnFailure).default([]),
   })
   .loose()
 
@@ -37,18 +38,53 @@ export async function threadModel(builder: Builder, owner: Owner, conversationId
 }
 
 /** The questions kept on the thread that no saved message of the person's came after. */
-function unsaved(kept: Question[], messages: Message[]): Message[] {
+function unsaved(conversationId: ConversationId, kept: Question[], messages: Message[]): Message[] {
   return kept
     .filter(
       (asked) =>
         !messages.some((message) => message.role === 'person' && message.createdAt >= asked.at),
     )
     .map((asked) => ({
-      id: asked.key,
+      id: questionId(conversationId, asked.key),
       role: 'person',
       parts: [{ type: 'text', text: asked.content }],
+      model: null,
       createdAt: asked.at,
     }))
+}
+
+/**
+ * The Builder's messages of one turn as one, as the stream told it: Mastra saves a message per
+ * step, and a turn that called tools has several. The turn's model is the last one's.
+ */
+function turnsOf(messages: Message[]): Message[] {
+  const turns: Message[] = []
+  for (const message of messages) {
+    const last = turns.at(-1)
+    if (last?.role === 'builder' && message.role === 'builder') {
+      turns[turns.length - 1] = {
+        ...last,
+        parts: [...last.parts, ...message.parts],
+        model: message.model ?? last.model,
+      }
+    } else turns.push(message)
+  }
+  return turns
+}
+
+/**
+ * Each failure at the end of the Builder's turn after its message. Mastra saves a failed turn too,
+ * just after its end, so a read that comes before it shows the failure with it once it does.
+ */
+function withFailures(messages: Message[], failures: TurnFailure[]): Message[] {
+  const shown = [...messages]
+  for (const { after, code } of failures) {
+    const at = shown.findIndex((message) => message.id === after) + 1
+    const turn = shown[at]
+    if (at === 0 || turn?.role !== 'builder') continue
+    shown[at] = { ...turn, parts: [...turn.parts, { type: 'failure', code }] }
+  }
+  return shown
 }
 
 /**
@@ -56,7 +92,8 @@ function unsaved(kept: Question[], messages: Message[]): Message[] {
  * the person's own resource, or `undefined` when Mastra holds no thread for it. The questions kept
  * on the thread that Mastra has not saved yet (their run is in progress, or the process stopped in
  * it) come after them, by the key they were sent with, so none is lost. A thread with no model is
- * a defect of its creation (`createConversation` puts it on one).
+ * a defect of its creation (`createConversation` puts it on one). Each turn's failure is read back
+ * where it happened.
  */
 export async function historyOf(builder: Builder, owner: Owner, conversationId: ConversationId) {
   const resourceId = memoryOwner(owner)
@@ -72,7 +109,8 @@ export async function historyOf(builder: Builder, owner: Owner, conversationId: 
     resourceId,
     perPage: false,
   })
-  const messages = recalled.messages.flatMap((message) => messageOf(message) ?? [])
-  const asked = unsaved(metadata[QUESTION_KEY], messages)
-  return { title: thread.title || null, model, messages: [...messages, ...asked] }
+  const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
+  const asked = unsaved(conversationId, metadata[QUESTION_KEY], messages)
+  const read = withFailures([...messages, ...asked], metadata[TURN_FAILURES_KEY])
+  return { title: thread.title || null, model, messages: read }
 }
