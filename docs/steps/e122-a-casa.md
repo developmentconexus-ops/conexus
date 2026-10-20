@@ -33,16 +33,10 @@ cartão. Buscar com Ctrl K. Trocar o nome da empresa ou o seu: não há escrita 
 Impeccable no repositório (F6) entra no fechamento (L20). Issues `next-card`: da 39, os itens 11 e
 22; o resto, e a 25 e a 45, são de outras pastas.
 
-**A decisão sua pedida nesta etapa: o que fica no lugar do compositor do Início até a 13.**
-**A.** Sob "O que vamos construir?", **Nome do projeto** e **Criar projeto**: cria o Projeto vazio
-e o abre, como hoje. A 13 troca o campo pelo compositor. **B.** O compositor já
-aparece; **Enviar** pede o nome, cria o Projeto e manda o texto como primeira pergunta. O Builder só
-responde, sem escrever o app (isso é da 13), e a etapa cresce cerca de 250 linhas. Exemplo de A:
-Ana digita "Encomendas" e cai no Projeto vazio, com a conversa ao lado. **Recomendação: A**: nada
-promete o que ainda não faz.
-
-**Uma escolha de engenharia que você pode recusar.** A última empresa e os Projetos recentes ficam
-lembrados no navegador, como o tema: no celular, vale a do celular.
+**A decisão sua pedida nesta etapa, respondida em 2026-10-20: "A e sim para 13.1".** Até a 13, sob
+"O que vamos construir?", ficam **Nome do projeto** e **Criar projeto**: cria o Projeto vazio e o
+abre, como hoje; a 13 troca o campo pelo compositor. A última empresa e os Projetos recentes ficam
+lembrados no navegador, como o tema (você não recusou).
 
 ## As unidades
 
