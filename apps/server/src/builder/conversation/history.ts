@@ -1,4 +1,4 @@
-import type { ConversationId, Message } from '@conexus/hub-api'
+import type { ConversationId, Message, MessageId } from '@conexus/hub-api'
 import { Effort, ModelId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
@@ -88,15 +88,27 @@ function withFailures(messages: Message[], failures: TurnFailure[]): Message[] {
   return shown
 }
 
+/** The messages up to the one `id`, or all of them when it is not saved yet. */
+function untilMessage(messages: Message[], id: MessageId): Message[] {
+  const at = messages.findIndex((message) => message.id === id)
+  return at === -1 ? messages : messages.slice(0, at + 1)
+}
+
 /**
  * A conversation as the person reads it: its title, model and messages, from Mastra's memory for
  * the person's own resource, or `undefined` when Mastra holds no thread for it. The questions kept
  * on the thread that Mastra has not saved yet (their run is in progress, or the process stopped in
  * it) come after them, by the key they were sent with, so none is lost. A thread with no model is
  * a defect of its creation (`createConversation` puts it on one). Each turn's failure is read back
- * where it happened.
+ * where it happened. A turn in progress is left out after the message it answers: the stream tells
+ * it whole, with what Mastra has saved of it so far, and a read that held both would show it twice.
  */
-export async function historyOf(builder: Builder, owner: Owner, conversationId: ConversationId) {
+export async function historyOf(
+  builder: Builder,
+  owner: Owner,
+  conversationId: ConversationId,
+  inProgress?: MessageId,
+) {
   const resourceId = memoryOwner(owner)
   const thread = await builder.memory.getThreadById({ threadId: conversationId, resourceId })
   if (thread === null) return undefined
@@ -112,7 +124,8 @@ export async function historyOf(builder: Builder, owner: Owner, conversationId: 
   })
   const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
   const asked = unsaved(conversationId, metadata[QUESTION_KEY], messages)
-  const read = withFailures([...messages, ...asked], metadata[TURN_FAILURES_KEY])
+  const settled = inProgress === undefined ? messages : untilMessage(messages, inProgress)
+  const read = withFailures([...settled, ...asked], metadata[TURN_FAILURES_KEY])
   const effort = metadata.thinkingLevel ?? 'off'
   return { title: thread.title || null, model, effort, messages: read }
 }

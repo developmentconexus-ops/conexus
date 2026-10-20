@@ -4,7 +4,7 @@ import type { TestContext } from 'node:test'
 import type { Page } from 'playwright-core'
 import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
-import { pick } from './model-accounts-journey.ts'
+import { pickModel } from './model-accounts-journey.ts'
 
 // What the first conversation's journey shares: the provider double and the public page it reads,
 // and the owner's and the person's moves on the screens.
@@ -17,6 +17,7 @@ export const SECOND_MODEL = 'llama-3.3-70b-versatile'
 export const ANSWER = 'Comparei os dois apps pelo cardápio.'
 export const SECOND_ANSWER = 'Respondi pelo modelo da troca.'
 const MARKER = 'CARDAPIO-DO-APP-UM'
+const TOUR_PAGES = ['app-um', 'app-dois', 'app-tres']
 const ADDRESS = 'padaria-apps.example.test'
 
 /**
@@ -52,7 +53,7 @@ export async function publicPage(t: TestContext): Promise<string> {
 }
 
 /**
- * Anthropic and Groq at `fetch`: the first question reads the page and answers; a refused key is
+ * Anthropic and Groq at `fetch`: the first question thinks, searches and reads three pages, then answers; a refused key is
  * refused; a call that does not stream is the title's. While `hold` runs, the answer's text is
  * sent and its end waits, so the turn stays open for the screen to show it; the Hub replays an
  * answer in progress to a stream that subscribes late, and a finished one to no one.
@@ -61,6 +62,18 @@ export function plantJourney(t: TestContext, pageUrl: string) {
   const state: { reads: boolean; holding: Promise<void> | undefined } = {
     reads: true,
     holding: undefined,
+  }
+  /** Thinking, the provider's search and three pages read at once, as a comparison asks for. */
+  function tour(): Reply {
+    const fetches = TOUR_PAGES.map((page) => ({
+      type: 'tool_use' as const,
+      name: 'web_fetch',
+      input: { url: new URL(page, pageUrl).href },
+    }))
+    const results = [{ url: pageUrl, title: 'App Um' }]
+    const search = { type: 'search' as const, query: 'apps de encomenda de padaria', results }
+    const thinking = { type: 'thinking' as const, thinking: 'Vou comparar os dois apps.' }
+    return { kind: 'blocks', blocks: [thinking, ...fetches, search] }
   }
   function answer(text: string): Reply {
     return state.holding === undefined
@@ -71,7 +84,7 @@ export function plantJourney(t: TestContext, pageUrl: string) {
     if (sent.key === KEYS.refused) return { kind: 'refuse', status: 401 }
     if (!sent.stream) return { kind: 'text', text: 'Apps de encomenda de padaria' }
     const read = sent.texts.some((text) => text.includes(MARKER))
-    if (state.reads && !read) return { kind: 'fetch', url: pageUrl }
+    if (state.reads && !read) return tour()
     return answer(ANSWER)
   })
   anthropic.chat = () => answer(SECOND_ANSWER)
@@ -89,9 +102,7 @@ export function plantJourney(t: TestContext, pageUrl: string) {
 
 /** The owner's setup page: the model the company starts conversations with. */
 export async function chooseDefaultModel(page: Page) {
-  await pick(page, page, 'Fornecedor do modelo padrão', 'Anthropic')
-  await page.getByLabel('Buscar modelo').fill('sonnet')
-  await pick(page, page, 'Modelo padrão', /sonnet/i)
+  await pickModel(page, page, 'Modelo padrão', 'Anthropic', 'sonnet')
   await page.getByRole('button', { name: 'Salvar modelo padrão' }).click()
   await page
     .getByRole('button', { name: 'Salvar modelo padrão' })
@@ -103,14 +114,12 @@ export async function chooseDefaultModel(page: Page) {
 export async function turnOnSwitch(page: Page) {
   const section = page.getByRole('region', { name: 'Troca automática' })
   await section.getByLabel('Trocar para o próximo modelo quando as contas acabarem').check()
-  const steps: [string, string, string | RegExp][] = [
-    ['Anthropic', 'sonnet', /sonnet/i],
-    ['Groq', SECOND_MODEL, SECOND_MODEL],
+  const models: [string, string][] = [
+    ['Anthropic', 'sonnet'],
+    ['Groq', SECOND_MODEL],
   ]
-  for (const [provider, search, model] of steps) {
-    await pick(page, section, 'Fornecedor do modelo da troca', provider)
-    await section.getByLabel('Buscar modelo').fill(search)
-    await pick(page, section, 'Modelo da troca', model)
+  for (const [provider, search] of models) {
+    await pickModel(page, section, 'Modelo da troca', provider, search)
     await section.getByRole('button', { name: 'Adicionar à fila' }).click()
   }
   await section.getByRole('button', { name: 'Salvar troca automática' }).click()
@@ -143,7 +152,7 @@ export async function recordTranscript(page: Page) {
     new MutationObserver(() => {
       const log = document.querySelector('[role=log]')
       if (log instanceof HTMLElement) shown.add(log.innerText)
-    }).observe(document, { subtree: true, childList: true, characterData: true })
+    }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true })
   })
 }
 

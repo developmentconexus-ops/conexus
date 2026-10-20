@@ -30,6 +30,8 @@ const SECURITY_HEADERS = { 'Content-Security-Policy': POLICY }
 export const DESKTOP = { width: 1366, height: 900 }
 export const PHONE = { width: 390, height: 844 }
 export const SMALL_PHONE = { width: 320, height: 640 }
+// A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).
+export const ZOOMED_PHONE = { width: 195, height: 422 }
 export type Viewport = { width: number; height: number }
 
 /** What the fake Hub answers a request with; `hold` keeps the reply back until it settles. */

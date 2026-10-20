@@ -1,4 +1,4 @@
-import type { ConversationId, Effort, EventId, ModelId } from '@conexus/hub-api'
+import type { ConversationId, Effort, EventId, MessageId, ModelId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
@@ -232,6 +232,13 @@ export class Sessions {
       }
     }
     return drained()
+  }
+
+  /** The person's message that the turn in progress answers, or none: the stream tells that turn whole. */
+  async inProgressAfter(conversationId: ConversationId): Promise<MessageId | undefined> {
+    // biome-ignore lint/plugin: a session that failed to open has no turn in progress; its holders met the failure
+    const live = await this.#open.get(conversationId)?.live.catch(() => undefined)
+    return live?.turn?.ended === false ? live.turn.after : undefined
   }
 
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */

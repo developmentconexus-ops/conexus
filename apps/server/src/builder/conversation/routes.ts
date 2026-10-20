@@ -49,7 +49,8 @@ function registerReads(app: FastifyInstance, deps: Deps) {
   serve(app, readConversation, async (input) => {
     const { person, params } = input
     const row = await store.owned({ person, ...params })
-    const read = await historyOf(builder, ownerOf(input), params.conversationId)
+    const inProgress = await sessions.inProgressAfter(params.conversationId)
+    const read = await historyOf(builder, ownerOf(input), params.conversationId, inProgress)
     // An index row whose thread Mastra does not hold: the conversation is gone (the step's states).
     if (read === undefined) {
       await store.remove({ person, ...params })

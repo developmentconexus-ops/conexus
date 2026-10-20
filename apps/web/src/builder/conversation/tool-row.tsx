@@ -25,13 +25,13 @@ function Subject({ subject }: Pick<ToolPart, 'subject'>) {
   if (subject === null) return null
   if ('query' in subject)
     return (
-      <TraceDescription className="min-w-0 truncate font-mono text-fact">
+      <TraceDescription className="min-w-0 shrink truncate font-mono text-fact">
         {subject.query}
       </TraceDescription>
     )
   const label = subject.title ?? URL.parse(subject.url)?.hostname ?? subject.url
   return (
-    <TraceDescription className="min-w-0 truncate font-mono text-fact">
+    <TraceDescription className="min-w-0 shrink truncate font-mono text-fact">
       <Anchor href={subject.url}>{label}</Anchor>
     </TraceDescription>
   )

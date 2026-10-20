@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { call } from '../../hub/identity/test-hub.ts'
 import {
   answeredOf,
   asked,
@@ -9,11 +10,13 @@ import {
   holding,
   hubBeside,
   PARTIAL,
+  rolesAndParts,
   sent,
   started,
   streamOf,
   title,
 } from './test-conversation.ts'
+import { researching } from './test-research.ts'
 
 const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
@@ -124,4 +127,31 @@ test('sem conta que atenda, a falha do turno é MODEL_NO_ACCOUNT, e ela e o avis
     { type: 'notice', text: EXHAUSTED },
     { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
   ])
+})
+
+test('ler no meio de um turno que já usou ferramentas: o turno fica de fora, o fluxo o conta inteiro; ao fim, a leitura o tem', async (t) => {
+  const held = holding(t)
+  const research = await researching(t)
+  let calls = 0
+  const { hub, ana, conversations } = await conversing(t, (asked) => {
+    if (title(asked) !== undefined) return research(asked)
+    calls += 1
+    return calls === 1 ? research(asked) : held.reply
+  })
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Compare dois apps')).statusCode, 202)
+  while ((await stream.next()).type !== 'text');
+  const midway = rolesAndParts(await call(hub, ana, 'GET', url))
+  assert.deepEqual(
+    midway.map(([role]: [string]) => role),
+    ['person'],
+  )
+  held.release()
+  await stream.turn()
+  assert.deepEqual(
+    (await answeredOf(hub, ana, url)).map((message) => message.role),
+    ['person', 'builder'],
+  )
 })

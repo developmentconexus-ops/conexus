@@ -20,7 +20,7 @@ import {
   linkKey,
   linkSignIn,
   OWN_KEY,
-  pick,
+  pickModel,
   queueRows,
   rowsText,
 } from './model-accounts-journey.ts'
@@ -79,9 +79,7 @@ async function arrange(owner: Page) {
   const [first, second] = await rowsText(queueRows(owner, 'Anthropic'))
   assert.match(first ?? '', /^Time 2.*Assinatura Claude · ligada · para todos/)
   assert.match(second ?? '', /^Time 1.*chave …x7Qa · pausada/)
-  await pick(owner, owner, 'Fornecedor do modelo padrão', 'Anthropic')
-  await owner.getByLabel('Buscar modelo').fill('sonnet')
-  await pick(owner, owner, 'Modelo padrão', /sonnet/i)
+  await pickModel(owner, owner, 'Modelo padrão', 'Anthropic', 'sonnet')
   const chosen = await owner.getByText(/^Escolhido: anthropic\/.*sonnet/i).innerText()
   await owner.getByRole('button', { name: 'Salvar modelo padrão' }).click()
   await owner

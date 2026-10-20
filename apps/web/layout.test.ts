@@ -11,12 +11,11 @@ import {
   PHONE,
   presses,
   SMALL_PHONE,
+  ZOOMED_PHONE,
 } from './layout-harness.ts'
 import { ANA } from './src/platform/fixtures.ts'
 import { central } from './sweep-replies.ts'
 
-// A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).
-const ZOOMED_PHONE = { width: 195, height: 422 }
 const WIDE_PHONE = { width: 600, height: 900 }
 const SIGNED_OUT: Replies = {
   'GET /api/sessions/current': ok(getSession, { state: 'SIGNED_OUT' }),

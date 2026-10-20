@@ -79,19 +79,22 @@ async function answered(chat: Page, hold: () => () => void, question: string, ex
 /** Step 1: the selector offers the default and the providers with an account; the answer and its title. */
 async function firstQuestion(chat: Page, hold: () => () => void) {
   await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
-  const choice = chat.getByRole('region', { name: 'Modelo da conversa' })
-  await choice.getByLabel('Fornecedor do modelo', { exact: true }).click()
-  const offered = await chat.getByRole('option').allInnerTexts()
-  assert.deepEqual(offered.map((name) => name.trim()).sort(), ['Anthropic', 'Groq'])
+  const choice = chat.getByRole('combobox', { name: 'Modelo e raciocínio' })
+  await choice.click()
+  await chat.getByText('Anthropic', { exact: true }).waitFor()
+  await chat.getByText('Groq', { exact: true }).waitFor()
   await chat.keyboard.press('Escape')
-  assert.match(await choice.getByLabel('Modelo', { exact: true }).innerText(), /sonnet/i)
+  assert.match(await choice.innerText(), /sonnet/i)
   await answered(chat, hold, 'Compare dois apps de encomenda de padaria', ANSWER)
   await chat.reload()
   await chat
     .getByRole('combobox', { name: 'Conversas' })
     .and(chat.locator(`[value="${TITLE}"]`))
     .waitFor()
-  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText('Li a página').waitFor()
+  await chat
+    .getByRole('log', { name: 'Conversa com o Builder' })
+    .getByText('Leu 3 páginas, pesquisou 1 vez')
+    .waitFor()
 }
 
 /** Steps 2 and 3: Time 3 goes up and is refused; Time 1 pauses and the queue is empty. */
@@ -175,6 +178,156 @@ test('o roteiro da primeira conversa: resposta com páginas e título, recusa, p
     await listed(chat)
     await otherPerson(diego, ids, conversation)
   } finally {
+    for (const close of closers) await close()
+  }
+  assert.deepEqual(problems, [])
+})
+
+const FOLDED = 'Leu 3 páginas, pesquisou 1 vez'
+const DRAFT = 'rascunho da Ana'
+
+/** The Projeto in two regions: the Prévia and the Projeto tabs, the conversation on the right, the rail in icons. */
+async function twoRegions(chat: Page) {
+  await chat
+    .getByText('Ainda não há uma prévia disponível. Descreva o aplicativo para começar.')
+    .waitFor()
+  await chat.getByRole('button', { name: 'Nova conversa' }).waitFor()
+  const rail = chat.getByRole('navigation', { name: 'Navegação' }).locator('..')
+  assert.equal(Math.round((await rail.boundingBox())?.width ?? 0), 56)
+  await chat.getByRole('tab', { name: 'Projeto', exact: true }).click()
+  await chat.getByRole('tab', { name: 'Sobre' }).waitFor()
+  await chat.getByRole('tab', { name: 'Versões' }).waitFor()
+  await chat.getByRole('tab', { name: 'Prévia' }).click()
+}
+
+/** Step 2: "Alto" reaches the provider; the answer thinks, reads three pages and searches, folded in one line. */
+async function researched(chat: Page, hold: () => () => void, sent: () => number) {
+  await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
+  const choice = chat.getByRole('combobox', { name: 'Modelo e raciocínio' })
+  await choice.click()
+  await saving(chat, () => chat.getByRole('radio', { name: 'Alto', exact: true }).click())
+  await chat.keyboard.press('Escape')
+  await choice.filter({ hasText: 'Alto' }).waitFor()
+  const release = hold()
+  await ask(chat, 'Compare dois apps de encomenda de padaria')
+  await chat.getByRole('status').filter({ hasText: 'Builder trabalhando' }).waitFor()
+  await transcriptShowed(chat, ANSWER)
+  await transcriptShowed(chat, FOLDED)
+  await transcriptShowed(chat, 'Pensou')
+  assert.ok(sent() > 0, 'the provider received the thinking budget of "Alto"')
+  return release
+}
+
+/** Step 3: the line cut in the middle of the answer opens again from the last event, and the answer is not repeated. */
+async function reconnected(chat: Page, cut: () => void, problems: string[]) {
+  const log = chat.getByRole('log', { name: 'Conversa com o Builder' })
+  const resumed = chat.waitForResponse(
+    (response) =>
+      response.url().endsWith('/events') && 'last-event-id' in response.request().headers(),
+  )
+  cut()
+  assert.ok((await resumed).ok())
+  const again = await anotherPage(chat.context(), problems)
+  await openConversation(again, chat.url())
+  for (const page of [chat, again]) {
+    await page.getByRole('log', { name: 'Conversa com o Builder' }).getByText(ANSWER).waitFor()
+    assert.equal((await log.innerText()).split(ANSWER).length, 2)
+  }
+  await again.close()
+}
+
+/** Step 4: another conversation by the box, and back: the draft is where it was left. */
+async function draftKept(chat: Page) {
+  const field = chat.getByLabel('Mensagem para o Builder')
+  const first = chat.url()
+  await field.fill(DRAFT)
+  await chat.getByRole('button', { name: 'Nova conversa' }).click()
+  await chat.waitForURL((url) => url.href !== first)
+  await chat.waitForFunction(() => document.querySelector('textarea')?.value === '')
+  await chat.getByRole('combobox', { name: 'Conversas' }).press('ArrowDown')
+  await chat.getByRole('option', { name: TITLE }).click()
+  await chat.waitForURL(first)
+  await chat.waitForFunction((draft) => document.querySelector('textarea')?.value === draft, DRAFT)
+  await field.fill('')
+}
+
+/** Step 5: on a phone "App | Conversa" swaps the regions keeping the draft; the dark theme fits too. */
+async function onPhone(chat: Page) {
+  await chat.setViewportSize({ width: 390, height: 844 })
+  const field = chat.getByLabel('Mensagem para o Builder')
+  await chat.getByRole('tab', { name: 'Conversa', exact: true }).click()
+  await field.fill(DRAFT)
+  await chat.getByRole('tab', { name: 'App', exact: true }).click()
+  assert.equal(await field.isVisible(), false)
+  await chat.getByRole('tab', { name: 'Conversa', exact: true }).click()
+  assert.equal(await field.inputValue(), DRAFT)
+  function paper() {
+    return chat.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  }
+  const light = await paper()
+  await chat.getByRole('button', { name: 'Usar tema escuro' }).click()
+  await chat.getByRole('button', { name: 'Usar tema claro' }).waitFor()
+  assert.notEqual(await paper(), light)
+  const { scroll, inner } = await chat.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    inner: window.innerWidth,
+  }))
+  assert.ok(scroll <= inner, `the page scrolls sideways: ${scroll}px in ${inner}px`)
+  await field.fill('')
+  await chat.setViewportSize({ width: 1280, height: 800 })
+}
+
+/** Step 6: Time 1 paused, the question refused for lack of an account: the notice stays in the turn after a reload. */
+async function pausedNoticeStays(
+  owner: Page,
+  chat: Page,
+  hold: () => () => void,
+  companyA: string,
+) {
+  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/setup`)
+  await saving(owner, () => owner.getByRole('button', { name: 'Pausar Time 1' }).click())
+  await owner.getByRole('button', { name: 'Retomar Time 1' }).waitFor()
+  await answered(chat, hold, 'E o segundo app?', EXHAUSTED)
+  await chat.reload()
+  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(EXHAUSTED).waitFor()
+}
+
+test('o roteiro da 12.1: a conversa no painel, o pensamento, as ferramentas dobradas, a volta da linha, o rascunho, o celular e o aviso que fica', async (t) => {
+  const { anthropic, state, hold: holdTurn } = plantJourney(t, await publicPage(t))
+  const held: (() => void)[] = []
+  function hold() {
+    const release = holdTurn()
+    held.push(release)
+    return release
+  }
+  const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused')
+  const ids = await plant(database)
+  const problems: string[] = []
+  const closers: (() => Promise<void>)[] = []
+  try {
+    const owner = await hubWindow(closers, port, '198.51.100.10', problems)
+    await setUp(owner, ids.companyA)
+    const chat = await anotherPage(owner.context(), problems)
+    await openConversations(chat, ids.companyA)
+    await twoRegions(chat)
+    function thinking() {
+      return anthropic.sent.filter((each) => each.stream && each.thinking?.type === 'enabled')
+        .length
+    }
+    const release = await researched(chat, hold, thinking)
+    await reconnected(chat, owner.cutConnections, problems)
+    release()
+    await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
+    await chat.reload()
+    await chat.getByText('Pensou', { exact: true }).waitFor()
+    await chat.getByRole('button', { name: FOLDED }).click()
+    await chat.getByText('Pesquisou na internet').waitFor()
+    await draftKept(chat)
+    await onPhone(chat)
+    state.reads = false
+    await pausedNoticeStays(owner, chat, hold, ids.companyA)
+  } finally {
+    for (const release of held) release()
     for (const close of closers) await close()
   }
   assert.deepEqual(problems, [])
