@@ -237,13 +237,11 @@ with it.
 **Debt.** Small fixes left on a brought part are listed here, one line each, with the step that
 removes them.
 
-- Until the first scheduled job, expired rows of `auth.session` and `auth.verification` leave only
+- Until the first scheduled job, expired `auth.session` and `auth.verification` rows leave only
   when presented; expired app handoffs, and a deleted Projeto's, only with their Hub session.
-- `projects.project.host_label` stays nullable: a Projeto made under a rolled-back 7.x has none.
-- `createUser`, `listUsers` and `findCredentialAccount` are the library's internal calls, with no
+- `projects.project.host_label` stays nullable: a rolled-back 7.x Projeto has none.
+- `createUser`, `listUsers` and `findCredentialAccount` are internal library calls, with no
   public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
-- Trace ids are Fastify's request ids until 21.1 [0052]. Gemini lacks search [0050]; the
-  founder decides.
-- A conversation created between a Projeto's release and its removal leaves an orphan thread; step 16
-  sweeps.
-- The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end the wait.
+- Trace ids are Fastify's request ids until 21.1 [0052].
+- A conversation created between a release and its removal leaves an orphan thread (16).
+- The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end waits.
