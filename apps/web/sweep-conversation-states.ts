@@ -20,6 +20,8 @@ const ANSWER = [
   '',
   '- o primeiro cobra por pedido, com um nome comprido que precisa quebrar a linha no telefone',
   '- o segundo tem `plano mensal`',
+  // Claude's cited spans, each its own block, as the Hub reads them back joined.
+  '- **Meslo:** uma plataforma para confeitarias. A limitação é que é especializada em encomendas.',
   '',
   '```',
   `linha de código bem comprida que rola dentro do bloco e não pela página ${LONG_WORD}`,

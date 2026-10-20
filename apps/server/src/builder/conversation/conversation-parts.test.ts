@@ -11,7 +11,7 @@ import {
   started,
   streamOf,
 } from './test-conversation.ts'
-import { FETCH_ERROR, PAGES, printedOf, researching, UNREACHABLE } from './test-research.ts'
+import { citing, FETCH_ERROR, PAGES, printedOf, researching, UNREACHABLE } from './test-research.ts'
 
 type Part = Extract<ConversationEvent, { type: 'part' }>['part']
 
@@ -116,4 +116,20 @@ test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só,
     { ...tool, kind: 'other', state: 'error', subject: null },
     { type: 'text', text: 'Comparei as padarias.' },
   ])
+})
+
+test('uma resposta que cita a pesquisa é um texto só, ao vivo e relida, sem quebra nos trechos citados', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, citing())
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const answer =
+    'Encontrei estes apps.\n\n- **Meslo:** uma plataforma para confeitarias. A limitação é que é especializada em encomendas.'
+  const said = events.flatMap((event) =>
+    event.type === 'text' ? [event.delta] : event.type === 'part' ? [event.part.type] : [],
+  )
+  assert.equal(said.slice(said.lastIndexOf('tool') + 1).join(''), answer)
+  const messages = await messagesOf(await hubBeside(t, hub), ana, url)
+  assert.deepEqual(
+    messages[1]?.parts.map((part) => (part.type === 'text' ? part.text : part.type)),
+    ['Vou buscar os apps.', 'tool', answer],
+  )
 })
