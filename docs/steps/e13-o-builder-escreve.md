@@ -40,12 +40,10 @@ do erro, sem texto. Os passos vão ao Grafana em "Ver o que acontece".
 **Fica de fora.** Preview, diferenças linha a linha, skills completas (14); fila de mensagens;
 GitHub; a aprovação na tela, pois nenhuma regra pergunta. Issues `next-card` 25, 39, 45: outras pastas.
 
-**A decisão sua pedida nesta etapa: dividir a 13.** A estrutura aprovada põe na 13 as abas Código e
-Alterações, o passo 4 da primeira entrada e o compositor do Início criando Projeto; com o turno
-durável, passa do teto de 4.000 linhas (L2). Proponho a **13.1 "O primeiro pedido"**, logo depois:
-Alterações (por versão: quem, quando, arquivos mudados), o passo 4 e o compositor. Exemplo: na 13
-Ana pede pela Conversa do Projeto; na 13.1 (cerca de 380 linhas), pelo Início. "13.1 sim", ou
-"tudo na 13".
+**A decisão sua pedida nesta etapa.** Nenhuma. "A e sim para 13.1": a **13.1 "O primeiro
+pedido"** vem logo depois, com Alterações, o passo 4 da primeira entrada e o compositor do Início
+criando Projeto; a 13 fica em 4.040 a 4.240 linhas. Se a medida de Z2 na U1 passar disso, a
+construção para e pergunta.
 
 ## As unidades
 
@@ -67,7 +65,7 @@ Após a 12.1 e a 12.2. P0 antes (L20); U1 antes do código; U3 em PR próprio (D
 
 **Orçamento de código alterado:** P0 30; U2 680; U3 160; U4 470; U5 850;
 U6 240; U7 400; U8 330; U9 780; U10 100. Total **4.040**; **4.240** com o filesystem nosso (Z2): 1 a
-6% acima de L2, já sem a 13.1.
+6% acima de L2, aceitos; acima, para e pergunta.
 
 ## O que é nativo e o que é nosso
 
@@ -220,7 +218,7 @@ PR próprio (L20).
 **Raio.** `docs/decisions/0051-*.md`, `docs/{index,architecture,roadmap}.md`: cria, muda; chama: `check-docs`.
 
 **Contratos.** 0051: critérios 2–5, provados antes do merge. Arquitetura §3: "Git copy host" passa a R2 [0032]; §7, §10, §11. Roteiro: "Um bucket privado
-no R2"; a 13.1, se aprovada. Regras: L21, T14, S40.
+no R2"; a linha da 13.1, logo após a 13. Regras: L21, T14, S40.
 
 ## U2 O Git do app e a cópia
 
