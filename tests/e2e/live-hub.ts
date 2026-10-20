@@ -194,11 +194,17 @@ export async function chooseNickname(page: Page) {
   await page.getByRole('heading', { name: 'Ligue uma conta de modelo', exact: true }).waitFor()
 }
 
-/** Welcome steps 2 to 4 with nothing done: "Fazer depois" twice, then "Ir para o início". */
+/** A welcome step's way on: "Continuar" once the step is done, else "Fazer depois". */
+async function moveOn(page: Page) {
+  const done = page.getByRole('link', { name: 'Continuar', exact: true })
+  await done.or(page.getByRole('link', { name: 'Fazer depois', exact: true })).click()
+}
+
+/** Welcome steps 2 to 4 as the company stands: each step's way on, then "Ir para o início". */
 async function finishWelcome(page: Page) {
-  await page.getByRole('link', { name: 'Fazer depois', exact: true }).click()
+  await moveOn(page)
   await page.getByRole('heading', { name: 'Convide sua equipe', exact: true }).waitFor()
-  await page.getByRole('link', { name: 'Fazer depois', exact: true }).click()
+  await moveOn(page)
   await leaveWelcome(page)
 }
 
