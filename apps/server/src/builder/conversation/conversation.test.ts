@@ -264,3 +264,44 @@ test('título e observação vão pela conta do turno; um 429 no observador: o t
     assert.doesNotMatch(text, PLANTED)
   }
 })
+
+test('o título que o observador dá a uma conversa longa vem em português', async (t) => {
+  const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
+  const observation = [
+    '<observations>',
+    '* 🔴 (09:00) A pessoa recebe encomendas da padaria pelo telefone e pelo balcão',
+    '</observations>',
+    '<thread-title>Bakery order tracking</thread-title>',
+  ].join('\n')
+  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
+    if (OBSERVER.test(asked.system)) {
+      const title = /thread-title[\s\S]*?portugu/i.test(asked.system)
+        ? 'Controle de encomendas'
+        : 'Bakery order tracking'
+      return { kind: 'text', text: observation.replace('Bakery order tracking', title) }
+    }
+    if (!asked.stream) return { kind: 'text', text: 'Encomendas da padaria' }
+    return { kind: 'text', text: asked.texts.length > 2 ? 'Certo.' : long }
+  })
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
+    assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
+    for (;;) {
+      const event = await stream.next()
+      if (event.type === 'turnEnd') break
+    }
+  }
+  assert.ok(
+    anthropic.sent.some((each) => OBSERVER.test(each.system)),
+    'the observer was called',
+  )
+  let title = ''
+  for (const _ of Array(30)) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    title = Object(Object((await call(hub, ana, 'GET', url)).json()).conversation).title
+    if (title !== 'Encomendas da padaria') break
+  }
+  assert.equal(title, 'Controle de encomendas')
+})
