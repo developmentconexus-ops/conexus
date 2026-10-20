@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import type { Locator, Page } from 'playwright-core'
+import type { Locator } from 'playwright-core'
 import { createHarness, DESKTOP, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { CONVERSATION_STATES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
@@ -112,66 +112,3 @@ for (const state of CONVERSATION_STATES) {
     }
   }
 }
-
-/** Grows the last turn by `lines` paragraphs, as an answer arriving would. */
-function grow(page: Page, lines: number) {
-  return page.evaluate((count) => {
-    const items = document.querySelectorAll(
-      '[data-slot=message-scroller-content] > [data-slot=message-scroller-item]',
-    )
-    for (let line = 0; line < count; line++) {
-      const paragraph = document.createElement('p')
-      paragraph.textContent = `linha ${line} do que o Builder vai dizendo aos poucos`
-      items[items.length - 1]?.append(paragraph)
-    }
-  }, lines)
-}
-
-test('a rolagem da conversa segue o fim enquanto ela cresce; quem subiu não é puxado e volta por "Ir para o fim da conversa"', async () => {
-  const page = await open(PROJECT, DESKTOP)
-  const scroller = page.getByLabel('Rolagem da conversa')
-  await scroller.waitFor()
-  const button = page.locator('[data-slot=message-scroller-button]')
-  function distance() {
-    return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight))
-  }
-  await grow(page, 40)
-  await page.waitForFunction(
-    () => {
-      const el = document.querySelector('[data-slot=message-scroller-viewport]')
-      return el !== null && el.scrollHeight - el.scrollTop - el.clientHeight <= 2
-    },
-    undefined,
-    { polling: 50 },
-  )
-  await grow(page, 10)
-  await page.waitForTimeout(300)
-  assert.ok((await distance()) <= 2, 'the end did not stay in view while the answer grew')
-  const box = await scroller.boundingBox()
-  assert.ok(box, 'the conversation is not laid out')
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-  await page.mouse.wheel(0, -400)
-  await page.waitForTimeout(300)
-  const top = await scroller.evaluate((el) => el.scrollTop)
-  await grow(page, 10)
-  await page.waitForTimeout(300)
-  assert.deepEqual(
-    {
-      pulled: Math.abs((await scroller.evaluate((el) => el.scrollTop)) - top) > 1,
-      button: await button.getAttribute('data-active'),
-    },
-    { pulled: false, button: 'true' },
-  )
-  await button.click()
-  await page.waitForFunction(
-    () => {
-      const el = document.querySelector('[data-slot=message-scroller-viewport]')
-      return el !== null && el.scrollHeight - el.scrollTop - el.clientHeight <= 2
-    },
-    undefined,
-    { polling: 50 },
-  )
-  assert.equal(await button.getAttribute('data-active'), 'false')
-  assert.deepEqual(page.problems, [])
-  await page.close()
-})

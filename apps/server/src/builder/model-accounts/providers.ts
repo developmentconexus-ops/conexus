@@ -1,5 +1,6 @@
 import type { Provider } from '@conexus/hub-api'
 import { ModelId, ProviderId } from '@conexus/hub-api'
+import type { ProviderConfig } from '@mastra/core/llm'
 import { PROVIDER_REGISTRY, parseModelString } from '@mastra/core/llm'
 import { effortsOf } from './thinking.ts'
 
@@ -10,6 +11,28 @@ const REGISTRY = Object.entries(PROVIDER_REGISTRY)
 const URL_TEMPLATE = /\$\{[A-Z0-9_]+\}/
 // Only the models.dev gateway resolves a provider from its key alone: Netlify's needs a site too.
 const KEY_GATEWAY = 'models.dev'
+// Mastra 1.78.0 says nothing of what a model outputs: its capabilities are attachments,
+// temperature, structured output and reasoning. So a model that draws, films, speaks, hears,
+// embeds, ranks, guards, reads scans or talks live is left out by a word of its name, as the old Hub
+// did (Conexus OS `model-accounts.ts`, 729bdc5d); the words come from every key provider's list.
+const NOT_CHAT = new RegExp(
+  `(^|[-_./:@])(${[
+    'image|imagen|imagine|dall-e|flux|sdxl|stable-diffusion|stablediffusionxl|seedream|recraft|ideogram',
+    'video|veo|sora|seedance|kling|wan|wanx|t2v|i2v|r2v|heygen',
+    'audio|music|lyria|tts|speech|voice|voicechat|studiovoice|orpheus|elevenlabs|voxtral|whisper|transcribe|asr|stt',
+    'embed|embedding|embedcode|bge|e5|rerank|reranker',
+    'guard|safeguard|gliguard|qwen3guard|moderation|detector',
+    'ocr|paddleocr|deepseek-ocr|lightonocr',
+    'realtime|live|computer-use|deep-research|gemini-omni',
+  ].join('|')})(?=$|[-_./:@\\d])`,
+  'i',
+)
+
+/** The models of a provider a conversation can talk to: not retired, and able to chat. */
+function chatModelsOf(config: ProviderConfig): string[] {
+  const retired = new Set(config.deprecatedModels ?? [])
+  return config.models.filter((model) => !retired.has(model) && !NOT_CHAT.test(model))
+}
 
 /** The key-only providers of the registry, by id, as decision 0049's criterion 1 derives them. */
 const KEY_PROVIDERS: ReadonlyMap<ProviderId, Provider> = new Map(
@@ -20,7 +43,7 @@ const KEY_PROVIDERS: ReadonlyMap<ProviderId, Provider> = new Map(
       ([id, config]): Provider => ({
         id: ProviderId.parse(id),
         name: config.name,
-        models: config.models.map((model) => {
+        models: chatModelsOf(config).map((model) => {
           const modelId = ModelId.parse(`${id}/${model}`)
           return { id: modelId, efforts: effortsOf(modelId) }
         }),

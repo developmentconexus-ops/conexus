@@ -1,3 +1,4 @@
+import { ModelId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -64,6 +65,30 @@ test('um modelo sem níveis não mostra o controle, e a troca para ele volta o n
   expect(screen.queryByText('Raciocínio')).toBeNull()
 })
 
+test('a troca para um modelo que sempre raciocina leva o nível mais baixo dele, não Desligado', async () => {
+  const { sent } = await openConversation(
+    conversationOf({ id: FIRST }),
+    view({ providers: ['anthropic', 'openai'] }),
+  )
+  await choose(screen.getByRole('combobox', PICKER), 'GPT 5')
+  await waitFor(() => expect(sent.at(-1)?.body).toEqual({ model: 'openai/gpt-5', effort: 'low' }))
+})
+
+test('uma conversa guardada em Desligado num modelo que sempre raciocina mostra o nível em que ele roda', async () => {
+  await openConversation(
+    conversationOf({ id: FIRST, model: ModelId.parse('openai/gpt-5'), effort: 'off' }),
+    view({ providers: ['anthropic', 'openai'] }),
+  )
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Baixo')
+})
+
+test('um nível guardado abaixo do mais baixo de um modelo mostra o nível em que o Hub o roda, não Desligado', async () => {
+  await openConversation(
+    conversationOf({ id: FIRST, model: ModelId.parse('google/gemini-2.5-flash'), effort: 'low' }),
+  )
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Médio')
+})
+
 test('o nível que o modelo não aceita volta a frase do Hub, sem trocar o botão', async () => {
   await openConversation(conversationOf({ id: FIRST }), view(), {
     model: () => refusal('EFFORT_UNSUPPORTED'),
@@ -81,7 +106,10 @@ test('a busca do seletor estreita os modelos', async () => {
   fireEvent.click(screen.getByRole('combobox', PICKER))
   fireEvent.change(await screen.findByLabelText('Buscar modelo'), { target: { value: 'GEMINI' } })
   await waitFor(() =>
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual([
+      'Gemini 2.5 Pro',
+      'Gemini 2.5 Flash',
+    ]),
   )
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'zzz' } })
   expect(await screen.findByText('Nenhum modelo encontrado.')).toBeTruthy()
@@ -119,7 +147,9 @@ test('a busca do seletor acha pelo nome e pelo id do modelo', async () => {
   await waitFor(() =>
     expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Claude Opus 4']),
   )
-  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'google/gem' } })
+  fireEvent.change(screen.getByLabelText('Buscar modelo'), {
+    target: { value: 'google/gemini-2.5-p' },
+  })
   await waitFor(() =>
     expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
   )

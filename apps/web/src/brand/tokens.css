@@ -143,7 +143,27 @@
   }
 }
 
-/* The ring of the field while the Builder answers: an ipê arc turns round the edge (old `composer.css:19-68`); still under reduced motion. */
+/* A field shows focus on its own edge, as shadcn's fields do: the edge turns ipê inside a soft ipê
+   halo (design V28). The field keeps a transparent outline, which forced colours paint instead. */
+@utility focus-field {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* A busy field's edge is the turning ring: focused, the whole ring turns ipê in the same halo. */
+@utility focus-ring {
+  --ring-base: color-mix(in srgb, var(--color-accent) 60%, var(--color-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* The thumb of a slider lifts off its track. */
+@utility lift {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+/* The edge of the field while the Builder answers: an ipê arc turns round it (old
+   `composer.css:19-68`); still under reduced motion. The arc is the background under the 1px
+   transparent border. */
 @property --ring-angle {
   syntax: "<angle>";
   inherits: false;
@@ -151,15 +171,19 @@
 }
 
 @utility working-ring {
-  background-image: conic-gradient(
-    from var(--ring-angle),
-    var(--color-line) 0deg,
-    var(--color-accent) 120deg,
-    var(--color-line) 180deg,
-    var(--color-line) 200deg,
-    var(--color-accent) 300deg,
-    var(--color-line) 360deg
-  );
+  border-color: transparent;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    conic-gradient(
+      from var(--ring-angle),
+      var(--ring-base, var(--color-line)) 0deg,
+      var(--color-accent) 120deg,
+      var(--ring-base, var(--color-line)) 180deg,
+      var(--ring-base, var(--color-line)) 200deg,
+      var(--color-accent) 300deg,
+      var(--ring-base, var(--color-line)) 360deg
+    )
+    border-box;
   @media (prefers-reduced-motion: no-preference) {
     animation: ring-turn 2.8s linear infinite;
   }

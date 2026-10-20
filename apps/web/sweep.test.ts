@@ -38,7 +38,7 @@ describe('varredura', { concurrency: 4 }, () => {
   for (const state of STATES) {
     for (const viewport of VIEWPORTS) {
       for (const scheme of ['light', 'dark'] as const) {
-        test(`${state.name}, ${viewport.width}px, tema ${scheme}: sem rolagem lateral e contorno de 2px em cada parada do Tab`, async () => {
+        test(`${state.name}, ${viewport.width}px, tema ${scheme}: sem rolagem lateral e foco visível em cada parada do Tab`, async () => {
           const page = await harness.open(state.path, { viewport, replies: state.replies, scheme })
           await state.settle(page)
           const { scroll, inner } = await page.evaluate(() => ({
@@ -47,7 +47,7 @@ describe('varredura', { concurrency: 4 }, () => {
           }))
           assert.ok(scroll <= inner, `the page scrolls sideways: ${scroll}px in ${inner}px`)
           const stops = await tabStops(page)
-          const flawed = stops.filter((stop) => !/ solid 2px( inside)?$/.test(stop))
+          const flawed = stops.filter((stop) => !/ (solid 2px|halo)( inside)?$/.test(stop))
           assert.deepEqual(flawed, [])
           await page.close()
         })

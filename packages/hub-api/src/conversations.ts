@@ -23,6 +23,20 @@ export function providerOfModel(model: string): string | null {
 export const Effort = z.enum(['off', 'low', 'medium', 'high', 'xhigh', 'max'])
 export type Effort = z.infer<typeof Effort>
 
+/**
+ * The effort a model runs at for `effort`, given the efforts it accepts, lowest first: the same; or
+ * for a level it lacks the nearest level below it, else its lowest level; `off` only where listed.
+ * The Hub asks the provider by it and the screen names it, so the two never differ.
+ */
+export function runningEffort(efforts: readonly [Effort, ...Effort[]], effort: Effort): Effort {
+  if (efforts.includes(effort)) return effort
+  const levels = efforts.filter((each) => each !== 'off')
+  const rank = Effort.options.indexOf(effort)
+  return (
+    levels.findLast((level) => Effort.options.indexOf(level) <= rank) ?? levels[0] ?? efforts[0]
+  )
+}
+
 /** The failures a turn ends with, rows of the failure table that the screen reads by code. */
 export const TurnFailureCode = z.enum([
   'MODEL_NO_ACCOUNT',
