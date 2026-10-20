@@ -163,7 +163,7 @@ for (const gone of ['people', 'setup']) {
     )
     render(<Conexus conexus={conexus} />)
     expect(await screen.findByRole('heading', { name: FAILURES.NOT_FOUND.phrase })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Voltar ao início' })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Ir para o início' })).toBeTruthy()
     expect(screen.queryByRole('heading', { name: 'Pessoas e convites' })).toBeNull()
   })
 }

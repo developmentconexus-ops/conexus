@@ -160,7 +160,7 @@ test('Esc fecha a gaveta e devolve o foco a "Abrir navegação"', async () => {
 for (const viewport of [DESKTOP, PHONE]) {
   test(`não encontrado na moldura fica na área, sem rolagem, numa tela de ${viewport.width}px`, async () => {
     const page = await open(`/companies/${COMPANY_ID}/nada`, viewport, HOUSE)
-    await page.getByRole('link', { name: 'Voltar ao início' }).waitFor()
+    await page.getByRole('link', { name: 'Ir para o início' }).waitFor()
     const { scroll, inner } = await page.evaluate(() => ({
       scroll: document.documentElement.scrollHeight,
       inner: window.innerHeight,

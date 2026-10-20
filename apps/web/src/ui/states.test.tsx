@@ -100,7 +100,7 @@ test('erro: na área, com a barra, o título da página e "Tentar de novo" lê o
   expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
 })
 
-test('não encontrado dentro da moldura: na área, com "Voltar ao início", sem um main dentro do outro (critério 9)', async () => {
+test('não encontrado dentro da moldura: na área, com "Ir para o início", sem um main dentro do outro (critério 9)', async () => {
   const router = createConexus(createMemoryHistory({ initialEntries: [`${HOME}/people`] }))
   server.use(
     ...projectsRead({ projects: [], databaseReady: true, mayDelete: false, role: 'member' }),
@@ -111,7 +111,7 @@ test('não encontrado dentro da moldura: na área, com "Voltar ao início", sem 
   ).toBeTruthy()
   expect(screen.getAllByRole('main')).toHaveLength(1)
   expect(screen.getByRole('navigation', { name: 'Navegação' })).toBeTruthy()
-  fireEvent.click(within(screen.getByRole('main')).getByRole('link', { name: 'Voltar ao início' }))
+  fireEvent.click(within(screen.getByRole('main')).getByRole('link', { name: 'Ir para o início' }))
   await screen.findByText('Você ainda não está em nenhuma empresa.')
   expect(router.router.state.location.pathname).toBe('/')
 })

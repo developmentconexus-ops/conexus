@@ -76,7 +76,7 @@ function InitialLink() {
 
 /**
  * A page that does not exist for this person. Inside a frame it stays in the content area with
- * "Voltar ao início"; alone, the root's way back. `hint` is one more line a place adds.
+ * "Ir para o início"; alone, the root's way back. `hint` is one more line a place adds.
  */
 export function NotFound({ hint }: { hint?: string }) {
   const inFrame = useInFrame()
@@ -88,7 +88,7 @@ export function NotFound({ hint }: { hint?: string }) {
       {hint !== undefined && <p className="text-text-2">{hint}</p>}
       {inFrame ? (
         <Link to="/" className={buttonVariants()}>
-          Voltar ao início
+          Ir para o início
         </Link>
       ) : (
         <InitialLink />

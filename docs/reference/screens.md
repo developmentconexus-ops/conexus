@@ -16,6 +16,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | The way in: the last company opened, else the first, else the Central or "Nenhuma empresa" | `/` | Empresa | every signed-in person |
 | Início of a company | `/companies/<c>` | Empresa | owner, administrator, member |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
+| Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, member |
 | Configurações: Minha conta, Minhas contas de modelo, Aparência | `/companies/<c>/settings/account`, `my-model-accounts`, `appearance` | Empresa | owner, administrator, member |
 | Configurações: Geral, Pessoas e convites, Contas de modelo | `/companies/<c>/settings/general`, `people`, `model-accounts` | Empresa | owner, administrator, member (reads) |
 | The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
@@ -23,7 +24,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | A Projeto's Configurações | `/companies/<c>/projects/<p>/settings` | Projeto | owner, administrator, member |
 | Conversas | `/companies/<c>/projects/<p>/conversations` | Projeto | owner, administrator, member |
 | A conversa | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
-| Central de Operação, Clientes | `/operations/clients` | Central | whoever operates the installation |
+| Central, Clientes | `/operations/clients` | Central | whoever operates the installation |
 | Estado do Hub | `/operations/status` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |
 | Cliente | `/operations/clients/<c>` | Central | whoever operates the installation |
