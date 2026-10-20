@@ -232,9 +232,11 @@ test('lista: só as empresas de quem pede, com o papel, 50 por página; mayOpera
 
 test('lista: empresa sem apelido só para o dono; membro e administrador não a recebem, nem pelo cursor, e a leem como desconhecida, 404', async (t) => {
   const hub = await hubOn(t)
-  const [ana, bruno, carla] = await Promise.all(
-    [ANA_OWNER, BRUNO, CARLA].map((person) => personOn(hub, person)),
-  )
+  const [ana, bruno, carla] = await Promise.all([
+    personOn(hub, ANA_OWNER),
+    personOn(hub, BRUNO),
+    personOn(hub, CARLA),
+  ])
   const unnamed = await plantCompany(hub.test, ana.id, 'Aaa Sem Apelido', null)
   const named = await plantCompany(hub.test, ana.id, 'Bbb Com Apelido', 'bbb-com-apelido')
   await join(hub, unnamed, bruno.id, 'member')
