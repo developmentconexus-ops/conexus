@@ -50,6 +50,7 @@ Desenho: `architecture.md`.
     Etapa 11 usada em 2026-10-19 em https://hub.conexus.fun (v0.11.0, v0.11.1), roteiro pelo firstmate e fundador: "okay, aguardo"; "Loguei google pela empresa, quer validar?"
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
     Cartão da etapa 12 aprovado em 2026-10-19 (commit be086108e6e98df037b74344f180aaa670ef76b0): "1. A"; "2. Autorizo"; "3. Sim"
+    12.2 **A casa.** Entra direto na empresa e a prepara.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
