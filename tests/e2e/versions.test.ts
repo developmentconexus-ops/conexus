@@ -15,7 +15,7 @@ import {
   scenario,
   sendFolder,
 } from './apps-journey.ts'
-import { PASSWORD, signIn } from './live-hub.ts'
+import { openProject, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 
 // Step 9's journey: the owner sends Recados from the Projeto's Versões in Chromium, writes a
 // recado through the real dispatcher, sends a second version, puts the first back and deletes the
@@ -31,7 +31,8 @@ async function firstVersion(s: Scenario, pedidos: string) {
   await page.getByText('Versão 1 · no ar').waitFor()
   await s.member.page.goto(`${TEST_ORIGIN}/`)
   await signIn(s.member.page, CARLA.email, PASSWORD)
-  await s.member.page.getByRole('link', { name: /Pedidos/ }).click()
+  await waitForHome(s.member.page)
+  await openProject(s.member.page, 'Pedidos')
   await s.member.page.getByRole('link', { name: 'Abrir app' }).waitFor()
   await s.member.page.goto(`${pedidos}?lens=project&section=versions`)
   await s.member.page

@@ -13,7 +13,7 @@ function open() {
 }
 
 for (const [who, signedIn, arrival] of [
-  ['com sessão', true, 'Você entrou como Ana Lima.'],
+  ['com sessão', true, 'Você ainda não está em nenhuma empresa.'],
   ['sem sessão', false, 'Entrar no Conexus'],
 ] as const) {
   test(`${who}: a frase da recusa sem a moldura do Hub, e "Ir para o Início" leva ao Início`, async () => {

@@ -22,8 +22,9 @@ const ON_THE_NAME = ['PROJECT_NAME_TAKEN', 'PROJECT_ADDRESS_TAKEN', 'PROJECT_NAM
 const RETRYING = ['COMPANY_DATABASE_PREPARING', 'COMPANY_DATABASE_UNAVAILABLE']
 
 /**
- * "Criar Projeto": the first Project of a company waits for the company's database, so the button
- * says so while it does. The attempt key stays until the Hub settles the outcome (web W24).
+ * "Criar projeto": the first Project of a company waits for the company's database, so the button
+ * says so while it does. The attempt key stays until the Hub settles the outcome (web W24); the
+ * Projeto created opens.
  */
 export function CreateProjectForm(props: { company: CompanyDetail; databaseReady: boolean }) {
   const router = useRouter()
@@ -39,10 +40,13 @@ export function CreateProjectForm(props: { company: CompanyDetail; databaseReady
 
   async function submit(values: { name: string }) {
     try {
-      await attempt((attemptKey) =>
+      const { project } = await attempt((attemptKey) =>
         send.mutateAsync({ params: { companyId: company.id }, body: values, attemptKey }),
       )
-      form.reset({ name: '' })
+      await router.navigate({
+        to: '/companies/$companyId/projects/$projectId',
+        params: { companyId: company.id, projectId: project.id },
+      })
     } catch (error) {
       if (!(error instanceof HubFailure)) setServerError(form, error)
       else if (error.code === 'NOT_FOUND') {
@@ -63,7 +67,7 @@ export function CreateProjectForm(props: { company: CompanyDetail; databaseReady
       <Form form={form} onSubmit={submit}>
         <TextField
           name="name"
-          label="Nome do Projeto"
+          label="Nome do projeto"
           type="text"
           autoComplete="off"
           invalid={`Escreva o nome do Projeto, com até ${PROJECT_NAME_MAX_LENGTH} caracteres.`}
@@ -83,7 +87,7 @@ export function CreateProjectForm(props: { company: CompanyDetail; databaseReady
           </Button>
         )}
         <SubmitButton
-          idle="Criar Projeto"
+          idle="Criar projeto"
           pending={props.databaseReady ? 'Criando…' : 'Preparando o banco da empresa…'}
         />
       </Form>

@@ -65,9 +65,12 @@ test('um endereço que não é http nem https aparece como texto, sem link', asy
 })
 
 test('o título chega pelo stream e a conversa o mostra na hora', async () => {
-  const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
+  const { field, lines, shown } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
   await screen.findByText('Pensando…')
+  // The Hub saves the title before it says it, so a read the send started may bring it too.
+  const conversation = shown.conversations[0]
+  if (conversation) conversation.title = 'Apps de padaria'
   lines[0]?.emit({ type: 'title', title: 'Apps de padaria' })
   await waitFor(() =>
     expect(screen.getByRole('combobox', { name: 'Conversas' })).toHaveProperty(

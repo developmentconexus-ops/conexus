@@ -4,7 +4,7 @@ type Kind = 'local' | 'session'
  * The browser's storage, which refuses in a private window or with site data blocked: a value that
  * cannot be kept is lost and the page works without it (web W19).
  */
-export function pageStorage(kind: Kind): Pick<Storage, 'getItem' | 'setItem'> {
+export function pageStorage(kind: Kind): Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> {
   function open() {
     return kind === 'local' ? globalThis.localStorage : globalThis.sessionStorage
   }
@@ -20,6 +20,14 @@ export function pageStorage(kind: Kind): Pick<Storage, 'getItem' | 'setItem'> {
     setItem(key, value) {
       try {
         open().setItem(key, value)
+        // biome-ignore lint/plugin: a browser that refuses storage keeps the value for this page only (web W19)
+      } catch {
+        // The value holds for this page when the browser refuses storage (web W19).
+      }
+    },
+    removeItem(key) {
+      try {
+        open().removeItem(key)
         // biome-ignore lint/plugin: a browser that refuses storage keeps the value for this page only (web W19)
       } catch {
         // The value holds for this page when the browser refuses storage (web W19).

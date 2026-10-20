@@ -26,7 +26,7 @@ function open(kinds: SignInKind[], answers: Answers = {}) {
   const hub = modelHub(shown, answers)
   server.use(...hub.handlers)
   const conexus = createConexus(
-    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/setup`] }),
+    createMemoryHistory({ initialEntries: [`/companies/${COMPANY.id}/settings/model-accounts`] }),
   )
   render(<Conexus conexus={conexus} />)
   return hub.sent

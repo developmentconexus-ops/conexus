@@ -9,7 +9,6 @@ import {
 } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useRouter } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
 import { HubFailure } from '../../platform/hub.ts'
 import {
   Form,
@@ -19,18 +18,17 @@ import {
   TextField,
   useSchemaForm,
 } from '../../ui/form.tsx'
-import { PageTitle } from '../../ui/list.tsx'
 import { chooseNickname, companyQuery } from './queries.ts'
 
-const route = getRouteApi('/_app/companies/$companyId/setup')
+const route = getRouteApi('/_app/companies/$companyId_/welcome/company')
 const ON_THE_FIELD = ['COMPANY_NICKNAME_TAKEN', 'COMPANY_NICKNAME_RESERVED']
 
 /**
- * The first page of a company without a nickname, for its owner: the nickname the apps' addresses
- * carry, suggested from the company's name, with the address it gives as it is typed. Once the
- * company has its nickname the page keeps the sections other subjects put in `children`.
+ * Step 1, "Sua empresa": the name the Central registered, read only, and the nickname the apps'
+ * addresses carry, suggested from the name, with the address it gives as it is typed. Saved, or
+ * found saved already, the next step opens.
  */
-export function CompanySetup({ children }: { children?: ReactNode }) {
+export function WelcomeCompany() {
   const { companyId } = route.useParams()
   const { company } = useSuspenseQuery(companyQuery(companyId)).data
   const router = useRouter()
@@ -42,22 +40,25 @@ export function CompanySetup({ children }: { children?: ReactNode }) {
   const typed = CompanyNickname.safeParse(form.watch('nickname'))
   const example = typed.success ? hostLabelOf({ name: 'pedidos', nickname: typed.data }) : undefined
 
-  // The guard of the company's pages reads the company again before it lets the Projects open.
-  async function openProjects() {
+  // The company's guards read it again, with its nickname, before the next step opens.
+  async function next() {
     await queryClient.invalidateQueries({
       queryKey: companyQuery(companyId).queryKey,
       refetchType: 'all',
     })
-    await router.navigate({ to: '/companies/$companyId/projects', params: { companyId } })
+    await router.navigate({
+      to: '/companies/$companyId/welcome/model-account',
+      params: { companyId },
+    })
   }
 
   async function submit(values: { nickname: CompanyNickname }) {
     try {
       await send.mutateAsync({ params: { companyId }, body: values })
-      await openProjects()
+      await next()
     } catch (error) {
       if (!(error instanceof HubFailure)) setServerError(form, error)
-      else if (error.code === 'COMPANY_NICKNAME_SET') await openProjects()
+      else if (error.code === 'COMPANY_NICKNAME_SET') await next()
       else if (error.code === 'NOT_FOUND') {
         // The company is gone for this person: the guard reads it again and shows what the Hub says.
         queryClient.removeQueries({ queryKey: companyQuery(companyId).queryKey })
@@ -68,23 +69,15 @@ export function CompanySetup({ children }: { children?: ReactNode }) {
     }
   }
 
-  if (company.nickname !== null) {
-    return (
-      <div className="flex flex-col gap-xl">
-        <PageTitle>Configurar a empresa</PageTitle>
-        {children}
-      </div>
-    )
-  }
-
   return (
-    <section className="flex w-full max-w-column flex-col gap-lg">
-      <header className="flex flex-col gap-xs">
-        <PageTitle>Configurar a empresa</PageTitle>
-        <p className="text-text-2">
-          O apelido vai no endereço dos apps da empresa. Depois de salvo, não dá para trocar.
-        </p>
-      </header>
+    <div className="flex flex-col gap-lg">
+      <p className="text-text-2">
+        O apelido vai no endereço dos apps da empresa. Depois de salvo, não dá para trocar.
+      </p>
+      <dl className="flex flex-col gap-xs">
+        <dt className="text-label text-text-2">Nome da empresa</dt>
+        <dd className="text-text">{company.name}</dd>
+      </dl>
       <Form form={form} onSubmit={submit}>
         <TextField
           name="nickname"
@@ -102,8 +95,8 @@ export function CompanySetup({ children }: { children?: ReactNode }) {
           </p>
         )}
         <FormAlert />
-        <SubmitButton idle="Salvar" pending="Salvando…" />
+        <SubmitButton idle="Salvar e continuar" pending="Salvando…" />
       </Form>
-    </section>
+    </div>
   )
 }

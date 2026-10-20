@@ -14,7 +14,8 @@ import {
   projectsPage,
 } from './sweep-replies.ts'
 
-const PROJECTS = `/companies/${COMPANY.id}/projects`
+const HOME = `/companies/${COMPANY.id}`
+const PROJECTS = `${HOME}/projects`
 const ABOUT = `${PROJECTS}/${PROJECT_ID}?lens=project`
 const VERSIONS = `${ABOUT}&section=versions`
 const OF_OWNER = { ...OWNER, ...projectsPage(COMPANY.id) }
@@ -22,8 +23,8 @@ const NOBODY = { ...OWNER, ...projectsPage(COMPANY.id, { empty: true }) }
 const OF_MEMBER = { ...OWNER, ...projectsPage(COMPANY.id, { mayDelete: false }) }
 
 async function createRefused(page: Page, sentence: string) {
-  await page.getByLabel('Nome do Projeto').fill('Pedidos')
-  await page.getByRole('button', { name: 'Criar Projeto', exact: true }).click()
+  await page.getByLabel('Nome do projeto').fill('Pedidos')
+  await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
   await waitFor(page, sentence)
 }
 
@@ -34,20 +35,20 @@ async function openDeletion(page: Page) {
 
 export const PROJECT_STATES: State[] = [
   {
-    name: 'Projetos, vazio',
+    name: 'Todos os projetos, vazio',
     path: PROJECTS,
     replies: NOBODY,
-    settle: (p) => waitFor(p, 'Nenhum Projeto ainda.'),
+    settle: (p) => waitFor(p, 'Nenhum projeto ainda.'),
   },
   {
-    name: 'Projetos, com um Projeto',
+    name: 'Todos os projetos, com um Projeto',
     path: PROJECTS,
     replies: OF_OWNER,
     settle: (p) => waitFor(p, 'Criado em'),
   },
   {
     name: 'criar Projeto, nome repetido',
-    path: PROJECTS,
+    path: HOME,
     replies: {
       ...NOBODY,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_TAKEN'),
@@ -56,7 +57,7 @@ export const PROJECT_STATES: State[] = [
   },
   {
     name: 'criar Projeto, banco em preparo',
-    path: PROJECTS,
+    path: HOME,
     replies: {
       ...NOBODY,
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('COMPANY_DATABASE_PREPARING'),

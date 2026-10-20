@@ -21,8 +21,12 @@ export function NoAccount({ companyId }: { companyId: CompanyId }) {
   return (
     <div className="flex flex-col items-start gap-sm">
       <Notice>{sentenceOfCode('MODEL_NO_ACCOUNT')}</Notice>
-      <Link to="/companies/$companyId/model-account" params={{ companyId }} className="underline">
-        Minha conta de modelo
+      <Link
+        to="/companies/$companyId/settings/my-model-accounts"
+        params={{ companyId }}
+        className="underline"
+      >
+        Minhas contas de modelo
       </Link>
     </div>
   )

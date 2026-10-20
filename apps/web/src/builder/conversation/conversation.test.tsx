@@ -1,6 +1,7 @@
 import { MessageId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import {
   builderSaid,
@@ -79,9 +80,10 @@ test('sem conta, a conversa mostra o aviso da etapa 11 e não deixa enviar', asy
     ),
   ).toBeTruthy()
   const notice = screen.getByText(/Nenhuma conta que você pode usar/).parentElement
-  expect(
-    within(notice ?? document.body).getByRole('link', { name: 'Minha conta de modelo' }),
-  ).toBeTruthy()
+  const link = within(notice ?? document.body).getByRole('link', {
+    name: 'Minhas contas de modelo',
+  })
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/my-model-accounts`)
   fireEvent.change(field, { target: { value: 'Oi' } })
   expect(screen.getByRole('button', { name: 'Enviar' }).hasAttribute('disabled')).toBe(true)
 })
@@ -127,10 +129,12 @@ test('um envio sem resposta lida mantém o texto e repete a mesma chave na nova 
 })
 
 test('uma conversa que não existe mostra a página de "não encontrado"', async () => {
-  open(view(), `${PROJECT}/conversations/${FIRST}`)
+  const { conexus } = open(view(), `${PROJECT}/conversations/${FIRST}`)
   expect(
     await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
   ).toBeTruthy()
+  // The company's frame around the page still reads its companies; the test ends once it has.
+  await waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
 })
 
 test('sem thread no meio da conversa: não encontrado, e a linha sai da lista', async () => {

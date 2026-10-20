@@ -4,6 +4,7 @@ import type { TestContext } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
 import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
+import { personWithPassword, plantCompany } from './live-hub.ts'
 import { pickModel } from './model-accounts-journey.ts'
 
 // What the first conversation's journey shares: the provider double and the public page it reads,
@@ -13,6 +14,8 @@ export const KEYS = {
   refused: 'sk-ant-api03-journey-refused-key-dE2f',
   groq: 'gsk-journey-groq-key-gH3i',
 }
+export const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
+export const DIEGO = { name: 'Diego Reis', email: 'diego@example.test' }
 export const SECOND_MODEL = 'llama-3.3-70b-versatile'
 export const ANSWER_HEAD = 'Comparei os dois apps'
 const ANSWER_TAIL = ' pelo cardápio.'
@@ -21,6 +24,20 @@ export const SECOND_ANSWER = 'Respondi pelo modelo da troca.'
 const MARKER = 'CARDAPIO-DO-APP-UM'
 const TOUR_PAGES = ['app-um', 'app-dois', 'app-tres']
 const ADDRESS = 'padaria-apps.example.test'
+
+/** Ana owns Empresa A and Diego is a member there; Diego owns Empresa B and Ana is a member. */
+export async function plantTwoCompanies(database: Parameters<typeof personWithPassword>[0]) {
+  const ana = await personWithPassword(database, ANA)
+  const diego = await personWithPassword(database, DIEGO)
+  const companyA = await plantCompany(database, ana, diego)
+  const companyB = await plantCompany(database, diego, ana)
+  await database.asOwner(`update auth.company set nickname = 'acme' where id = $1`, [companyA])
+  await database.asOwner(
+    `update auth.company set name = 'Empresa B', slug = 'b', nickname = 'beta' where id = $1`,
+    [companyB],
+  )
+  return { companyA, companyB }
+}
 
 /**
  * A page on a public name that reaches this machine, as a public site would: the Hub's fetch

@@ -10,6 +10,7 @@ import { createCache } from './platform/cache.ts'
 import { HubFailure } from './platform/hub.ts'
 import { applyChosenTheme } from './platform/theme.ts'
 import { routeTree } from './routeTree.gen.ts'
+import type { SectionMeta } from './ui/settings-index.tsx'
 import { Failure, Loading, NotFound } from './ui/states.tsx'
 
 // The router learns its routes and its static data, and the cache the `meta` a write may carry
@@ -25,6 +26,10 @@ declare module '@tanstack/react-router' {
   }
   interface StaticDataRouteOption {
     place?: string
+    /** A section of Configurações' index, in its group and order (web W32). */
+    section?: SectionMeta
+    /** A step of the owner's first entry, which its frame shows as "Passo n de 4" (web W33). */
+    step?: 1 | 2 | 3 | 4
   }
 }
 
@@ -51,7 +56,7 @@ export function createConexus(history?: RouterHistory) {
     ...(history ? { history } : {}),
     defaultPendingComponent: Loading,
     defaultErrorComponent: PageFailure,
-    defaultNotFoundComponent: NotFound,
+    defaultNotFoundComponent: () => <NotFound />,
     defaultPendingMs: 150,
     defaultPendingMinMs: 400,
     defaultPreload: 'intent',

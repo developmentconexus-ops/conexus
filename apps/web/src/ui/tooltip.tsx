@@ -1,8 +1,8 @@
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip'
 import { cn } from './cn.ts'
 
-// Copied from shadcn's base-nova `tooltip`, painted with brand tokens; the arrow and the
-// enter/exit animation are left out.
+// Copied from shadcn's base-nova `tooltip`, painted ink on on-ink. shadcn's enter and exit
+// animations are left out: the brand has none for it and they would need reduced motion (V26).
 export function TooltipProvider({ delay = 0, ...props }: TooltipPrimitive.Provider.Props) {
   return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />
 }
@@ -20,6 +20,7 @@ export function TooltipContent({
   side = 'top',
   sideOffset = 4,
   align = 'center',
+  children,
   ...props
 }: TooltipPrimitive.Popup.Props &
   Pick<TooltipPrimitive.Positioner.Props, 'align' | 'side' | 'sideOffset'>) {
@@ -34,11 +35,13 @@ export function TooltipContent({
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={cn(
-            'inline-flex w-fit max-w-column origin-(--transform-origin) items-center rounded-control bg-ink px-md py-xs text-fact text-on-ink',
+            'z-50 w-fit max-w-column rounded-control bg-ink px-sm py-xs font-body text-label text-on-ink',
             className,
           )}
           {...props}
-        />
+        >
+          {children}
+        </TooltipPrimitive.Popup>
       </TooltipPrimitive.Positioner>
     </TooltipPrimitive.Portal>
   )

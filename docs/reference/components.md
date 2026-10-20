@@ -82,20 +82,44 @@ invitation-email:
   padding: "{spacing.xl}"
   fonts: "system fallbacks, no remote resources"
   rendering: "React Email at send time; inline values and dark media query"
-frame-top-bar:
+frame-phone-top:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text-2}"
   height: "56px"
   padding: "0 {spacing.lg}"
   border: "bottom hairline, {colors.line}"
-frame-rail:
+  shown: "below 768px only"
+frame-sidebar:
   backgroundColor: "{colors.surface}"
-  width: "14rem"
-  padding: "{spacing.md}"
+  width: "16rem, the token --container-sidebar in apps/web/src/brand/tokens.css"
+  padding: "{spacing.sm}"
   border: "right hairline, {colors.line}"
+frame-sidebar-collapsed:
+  width: "3.25rem, the token --container-sidebar-icon"
+frame-sidebar-group-label:
+  textColor: "{colors.text-2}"
+  typography: "{typography.eyebrow}"
+  height: "32px, at least; a long company name wraps"
 frame-page:
   backgroundColor: "{colors.canvas}"
   padding: "{spacing.xl}"
+  width: "64rem at most, the token --container-page"
+tooltip:
+  backgroundColor: "{colors.ink}"
+  textColor: "{colors.on-ink}"
+  rounded: "{rounded.control}"
+  padding: "{spacing.xs} {spacing.sm}"
+welcome-progress:
+  backgroundColor: "{colors.line}"
+  doneColor: "{colors.ink}"
+  rounded: "{rounded.pill}"
+  height: "4px"
+project-card:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text}"
+  rounded: "{rounded.card}"
+  padding: "{spacing.lg}"
+  border: "hairline, {colors.line}"
 frame-public-column:
   backgroundColor: "{colors.canvas}"
   width: "{containers.column}, at most"
@@ -116,10 +140,11 @@ avatar:
   border: "hairline, {colors.line}"
 account-trigger:
   backgroundColor: "transparent"
-  rounded: "{rounded.pill}"
-  size: "32px"
+  rounded: "{rounded.control}"
+  height: "48px"
+  holds: "avatar, name and e-mail, in the sidebar's foot"
 account-trigger-hover:
-  backgroundColor: "{colors.surface-3}"
+  backgroundColor: "{colors.accent-soft}"
 menu:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text}"
@@ -218,10 +243,6 @@ panel:
   textColor: "{colors.text}"
   rounded: "{rounded.object}"
   padding: "1.5rem"
-project-card:
-  backgroundColor: "{colors.surface}"
-  textColor: "{colors.text}"
-  rounded: "{rounded.card}"
 composer:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text}"

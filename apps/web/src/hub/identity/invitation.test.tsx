@@ -9,7 +9,7 @@ import {
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { afterEach, expect, test } from 'vitest'
 import type { z } from 'zod'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
@@ -36,6 +36,15 @@ function hub(initial: z.input<typeof InvitationView>) {
       HttpResponse.json(getInvitation.success.body.parse(state)),
     ),
     ...companyRead({ role: 'admin', members: [] }),
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      HttpResponse.json(
+        listProjects.success.body.parse({
+          projects: [],
+          next: { kind: 'END' },
+          databaseReady: true,
+        }),
+      ),
+    ),
   )
   return state
 }
@@ -189,10 +198,28 @@ test('acceptance is explicit and sends its revision before opening the company',
   )
   const router = open()
   fireEvent.click(await screen.findByRole('button', { name: 'Aceitar convite' }))
-  await waitFor(() =>
-    expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/projects`),
-  )
+  await waitFor(() => expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}`))
   expect(sent).toEqual([{ revision: 0 }])
+})
+
+afterEach(() => localStorage.clear())
+
+test('o membro convidado aceita e cai no Início, sem passos nem cartão; a empresa vira a última (critério 23)', async () => {
+  hub({ kind: 'INVITED', ...DETAILS, role: 'member' })
+  server.use(
+    sessionRead(() => DAVI),
+    ...companyRead({ role: 'member', members: [] }),
+    http.put(`*/api/invitations/${ID}/acceptance`, () =>
+      HttpResponse.json(acceptInvitation.success.body.parse({ company: COMPANY })),
+    ),
+  )
+  const router = open()
+  fireEvent.click(await screen.findByRole('button', { name: 'Aceitar convite' }))
+  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}`)
+  expect(screen.queryByText(/Passo \d de 4/)).toBeNull()
+  expect(screen.queryByText('Termine de preparar a empresa')).toBeNull()
+  expect(localStorage.getItem(`conexus-remembered:${DAVI.id}:companies`)).toBe(COMPANY.id)
 })
 
 test('acceptance refusal preserves its actions and shows the company-capacity failure', async () => {
@@ -258,7 +285,7 @@ test('acceptance does not flash the joined invitation while the company is still
     await waitFor(() => expect(accepted).toBe(true))
     expect(screen.getByRole('button', { name: 'Aceitando…' })).toBeTruthy()
     release()
-    expect(await screen.findByRole('heading', { name: 'Projetos' })).toBeTruthy()
+    expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
     expect(flashed).toBe(false)
   } finally {
     release()

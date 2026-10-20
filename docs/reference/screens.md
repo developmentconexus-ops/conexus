@@ -13,13 +13,16 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Set a password | `/set-password` | Entrada | the person holding the link |
 | Accept an invitation | `/invitations/<id>` | Entrada | the person invited |
 | An app refuses a pass | `/apps/open` | Entrada | the person the app refused |
-| Início, the list of the person's companies | `/` | Empresa | every signed-in person |
-| A company's Projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
-| Pessoas | `/companies/<c>/people` | Empresa | owner, administrator, member |
-| Minha conta de modelo | `/companies/<c>/model-account` | Empresa | owner, administrator, member |
-| Configurar a empresa | `/companies/<c>/setup` | Empresa | owner, administrator |
+| The way in: the last company opened, else the first, else the Central or "Nenhuma empresa" | `/` | Empresa | every signed-in person |
+| Início of a company | `/companies/<c>` | Empresa | owner, administrator, member |
+| Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
+| Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, member |
+| Configurações: Minha conta, Minhas contas de modelo, Aparência | `/companies/<c>/settings/account`, `my-model-accounts`, `appearance` | Empresa | owner, administrator, member |
+| Configurações: Geral, Pessoas e convites, Contas de modelo | `/companies/<c>/settings/general`, `people`, `model-accounts` | Empresa | owner, administrator, member (reads) |
+| The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
 | A Projeto, on its latest conversation | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, member |
 | A Projeto's conversation, with the tab Prévia or Projeto (`?lens=`) and its section Sobre or Versões (`?section=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
-| Central de Operação | `/operations/clients` | Central | whoever operates the installation |
+| Central, Clientes | `/operations/clients` | Central | whoever operates the installation |
+| Estado do Hub | `/operations/status` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |
 | Cliente | `/operations/clients/<c>` | Central | whoever operates the installation |

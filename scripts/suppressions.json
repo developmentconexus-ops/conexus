@@ -21,7 +21,8 @@
   "apps/web/src/hub/operations/owner-invitation.tsx": 1,
   "apps/web/src/hub/operations/register-client-form.tsx": 1,
   "apps/web/src/platform/hub.ts": 3,
-  "apps/web/src/platform/storage.ts": 2,
+  "apps/web/src/platform/storage.ts": 3,
+  "apps/web/src/ui/theme-choice.tsx": 1,
   "packages/app-contract/src/runtime.ts": 1,
   "scripts/check-approval.ts": 1,
   "scripts/log-line.ts": 1
