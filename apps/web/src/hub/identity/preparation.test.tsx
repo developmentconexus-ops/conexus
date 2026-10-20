@@ -1,13 +1,12 @@
-import { CompanyNickname } from '@conexus/hub-api'
 import { fireEvent, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { hubServer } from '../../platform/test-hub.tsx'
+import { ANA } from '../../platform/fixtures.ts'
+import { hubServer, memberView } from '../../platform/test-hub.tsx'
 import { preparationOf } from './preparation.ts'
 import { COMPANY_PATH, companyHub, companyView, openAt } from './test-hub.tsx'
 
 const server = hubServer()
 const CARD = 'Termine de preparar a empresa'
-const NICKNAME = CompanyNickname.parse('empresa-teste')
 const PENDING = { id: 'i'.repeat(32), email: 'bia@example.test', role: 'member', state: 'PENDING' }
 
 function inicio(fields: Parameters<typeof companyView>[0]) {
@@ -80,14 +79,12 @@ test('o membro nunca vê o cartão', async () => {
 })
 
 test('preparationOf: cada passo vem de um fato, e a equipe é outra pessoa ou convite pendente', () => {
-  const none = { nickname: null, others: 0, pending: 0, companyAccounts: 0 }
-  expect(preparationOf(none)).toEqual({ company: false, modelAccount: false, team: false })
-  expect(preparationOf({ ...none, nickname: NICKNAME })).toEqual({
-    company: true,
-    modelAccount: false,
-    team: false,
-  })
+  const ana = memberView({ ...ANA, personId: ANA.id, role: 'owner' })
+  const bia = memberView({ ...ana, personId: 'p-bia', role: 'member' })
+  const none = { companyAccounts: 0, members: [ana], invitations: [] }
+  expect(preparationOf(none)).toEqual({ modelAccount: false, team: false })
   expect(preparationOf({ ...none, companyAccounts: 2 }).modelAccount).toBe(true)
-  expect(preparationOf({ ...none, others: 1 }).team).toBe(true)
-  expect(preparationOf({ ...none, pending: 1 }).team).toBe(true)
+  expect(preparationOf({ ...none, members: [ana, bia] }).team).toBe(true)
+  expect(preparationOf({ ...none, invitations: [{ state: 'PENDING' }] }).team).toBe(true)
+  expect(preparationOf({ ...none, invitations: [{ state: 'EXPIRED' }] }).team).toBe(false)
 })

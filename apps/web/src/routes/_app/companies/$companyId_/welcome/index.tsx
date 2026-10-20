@@ -7,13 +7,11 @@ import {
 } from '../../../../../hub/identity/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 
-// The first entry opens on the step still missing; with every step done, the last.
+// The first entry opens on the step still missing; with every step done, the last. The steps'
+// frame already sent a company without its nickname to step 1.
 export const Route = createFileRoute('/_app/companies/$companyId_/welcome/')({
   beforeLoad: async ({ context, params }) => {
-    const { queryClient, company } = context
-    if (company.nickname === null) {
-      throw redirect({ to: '/companies/$companyId/welcome/company', params, replace: true })
-    }
+    const { queryClient } = context
     const [accounts, members, invitations] = await readOrNotFound(
       Promise.all([
         queryClient.ensureQueryData(accountsQuery(params.companyId)),
@@ -22,10 +20,9 @@ export const Route = createFileRoute('/_app/companies/$companyId_/welcome/')({
       ]),
     )
     const done = preparationOf({
-      nickname: company.nickname,
       companyAccounts: accounts.company.length,
-      others: members.length - 1,
-      pending: invitations.invitations.filter((row) => row.state === 'PENDING').length,
+      members,
+      invitations: invitations.invitations,
     })
     if (!done.modelAccount) {
       throw redirect({ to: '/companies/$companyId/welcome/model-account', params, replace: true })
