@@ -75,6 +75,9 @@ export async function pedidosOf(s: Scenario) {
   await page.getByRole('button', { name: 'Criar Projeto', exact: true }).click()
   await page.getByRole('link', { name: /Pedidos/ }).click()
   await page.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
+  await page.getByRole('tab', { name: 'Prévia' }).waitFor()
+  const url = page.url()
+  await page.getByRole('tab', { name: 'Projeto' }).click()
   const address = await page.getByText(`.${TEST_APPS_DOMAIN}`).textContent()
   const label = (address ?? '').replace(`.${TEST_APPS_DOMAIN}`, '')
   const [neonProject] = s.hub.neon.projects()
@@ -87,7 +90,7 @@ export async function pedidosOf(s: Scenario) {
     exports: dbExport(companyDatabase, key),
     label,
   }
-  return { url: page.url(), door, companyDatabase }
+  return { url, door, companyDatabase }
 }
 
 export async function sendFolder(page: Page, settings: string, folder: string) {

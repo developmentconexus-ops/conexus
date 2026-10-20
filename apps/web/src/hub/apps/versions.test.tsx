@@ -2,10 +2,16 @@ import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
+import {
+  conversationsNone,
+  hubServer,
+  PEDIDOS,
+  projectsRead,
+  refusal,
+} from '../../platform/test-hub.tsx'
 import {
   LIVE_PATH,
   livedVersion,
@@ -14,7 +20,8 @@ import {
 } from '../../platform/test-hub-versions.tsx'
 
 const server = hubServer()
-const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/settings`
+beforeEach(() => server.use(conversationsNone))
+const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}?lens=project&section=versions`
 
 async function open(view: { versions: ReturnType<typeof versionView>[] }, mayDelete = true) {
   server.use(

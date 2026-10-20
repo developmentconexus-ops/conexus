@@ -11,12 +11,11 @@ import {
   PHONE,
   presses,
   SMALL_PHONE,
+  ZOOMED_PHONE,
 } from './layout-harness.ts'
 import { ANA } from './src/platform/fixtures.ts'
 import { central } from './sweep-replies.ts'
 
-// A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).
-const ZOOMED_PHONE = { width: 195, height: 422 }
 const WIDE_PHONE = { width: 600, height: 900 }
 const SIGNED_OUT: Replies = {
   'GET /api/sessions/current': ok(getSession, { state: 'SIGNED_OUT' }),
@@ -244,6 +243,79 @@ for (const viewport of [DESKTOP, PHONE]) {
       return new Set([...text.getClientRects()].map((line) => line.top)).size
     })
     assert.equal(lines, 1)
+    await page.close()
+  })
+}
+
+test('as peças de chat sob a política do Hub: nenhum erro nem violação, arrastar o divisor incluído', async () => {
+  const page = await open('/pieces', DESKTOP, {})
+  const handle = page.getByRole('separator', { name: 'Redimensionar' })
+  const chat = page.locator('[data-slot=resizable-panel]').last()
+  const before = await widthOf(chat)
+  const box = await handle.boundingBox()
+  assert.ok(box, 'the handle is not laid out')
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x - 200, box.y + box.height / 2, { steps: 5 })
+  await page.mouse.up()
+  assert.ok((await widthOf(chat)) > before + 150, 'dragging the handle did not widen the chat')
+  await page.getByRole('tab', { name: 'Projeto' }).click()
+  await page.getByRole('button', { name: 'Detalhes' }).click()
+  await page.getByRole('button', { name: 'Raciocínio' }).click()
+  const level = page.getByRole('slider', { name: 'Raciocínio' })
+  assert.equal(await level.getAttribute('aria-valuenow'), '3')
+  const track = await page.locator('[data-slot=slider-track]').boundingBox()
+  assert.ok(track, 'the slider is not laid out')
+  await page.mouse.move(track.x + track.width * 0.75, track.y + track.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(track.x + track.width * 0.25, track.y + track.height / 2, { steps: 5 })
+  await page.mouse.up()
+  assert.equal(await level.getAttribute('aria-valuenow'), '1', 'dragging the thumb moved the level')
+  await page.keyboard.press('End')
+  assert.equal(await level.getAttribute('aria-valuenow'), '4')
+  await page.keyboard.press('Escape')
+  await page.getByRole('combobox', { name: 'Modelo' }).click()
+  await page.getByRole('option', { name: 'Claude Opus 4.5' }).waitFor()
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: /Leu 3 páginas/ }).click()
+  await page.getByRole('button', { name: 'Enviar' }).hover()
+  await page.locator('[data-slot=tooltip-content]').waitFor()
+  assert.deepEqual(page.problems, [])
+  await page.close()
+})
+
+for (const [reducedMotion, moves] of [
+  ['no-preference', true],
+  ['reduce', false],
+] as const) {
+  test(`a marca trabalhando ${moves ? 'se mexe' : 'fica parada com prefers-reduced-motion'}`, async () => {
+    const page = await open('/pieces', DESKTOP, {})
+    await page.emulateMedia({ reducedMotion })
+    const mark = page.locator('svg[width="48"]')
+    const offsets = new Set<string>()
+    for (let frame = 0; frame < 6; frame++) {
+      offsets.add(
+        await mark
+          .locator('path')
+          .first()
+          .evaluate((piece) => getComputedStyle(piece).transform),
+      )
+      await page.waitForTimeout(150)
+    }
+    assert.equal(offsets.size > 1, moves)
+    await page.close()
+  })
+}
+
+for (const [reducedMotion, name] of [
+  ['no-preference', 'shimmer'],
+  ['reduce', 'none'],
+] as const) {
+  test(`o título de uma linha em curso ${name === 'none' ? 'não brilha com prefers-reduced-motion' : 'brilha'}`, async () => {
+    const page = await open('/pieces', DESKTOP, {})
+    await page.emulateMedia({ reducedMotion })
+    const title = page.locator('[data-status=running] > [data-slot=trace-title]').first()
+    assert.equal(await title.evaluate((el) => getComputedStyle(el).animationName), name)
     await page.close()
   })
 }

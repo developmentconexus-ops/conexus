@@ -1,6 +1,7 @@
 import { PassThrough } from 'node:stream'
+import { EventId } from '@conexus/hub-api'
 import type { FastifyReply } from 'fastify'
-import type { z } from 'zod'
+import { z } from 'zod'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 
@@ -8,10 +9,12 @@ function isAsyncIterable(value: unknown): value is AsyncIterable<unknown> {
   return typeof value === 'object' && value !== null && Symbol.asyncIterator in value
 }
 
+const Sent = z.object({ id: EventId, event: z.unknown() })
+
 /**
  * An operation's events as `text/event-stream`: each one checked against the contract and written
- * as one `data:` line, a comment every `heartbeatMs` so a proxy keeps the stream open, and the
- * events' source closed when the client leaves.
+ * as its `id:` line and one `data:` line, a comment every `heartbeatMs` so a proxy keeps the stream
+ * open, and the events' source closed when the client leaves.
  */
 export function sendEvents(
   reply: FastifyReply,
@@ -36,7 +39,8 @@ export function sendEvents(
   async function pump() {
     try {
       for (let next = await events.next(); next.done !== true; next = await events.next()) {
-        out.write(`data: ${JSON.stringify(success.events.parse(next.value))}\n\n`)
+        const { id, event } = Sent.parse(next.value)
+        out.write(`id: ${id}\ndata: ${JSON.stringify(success.events.parse(event))}\n\n`)
       }
     } catch (cause) {
       unexpected(cause)

@@ -2,12 +2,15 @@ import type { Conversation, ConversationEvent, Message } from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   ConversationId,
+  LAST_EVENT_ID_HEADER,
   listConversations,
   listModelAccounts,
   listModelProviders,
+  MessageId,
   ModelAccount,
   ModelId,
   readConversation,
+  setConversationModel,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -29,7 +32,13 @@ const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
   { id: 'google', name: 'Google', models: ['gemini-2.5-pro'] },
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
-]
+].map((provider) => ({
+  ...provider,
+  models: provider.models.map((name) => ({
+    id: `${provider.id}/${name}`,
+    efforts: name === 'claude-sonnet-4' ? ['off', 'low', 'high'] : ['off'],
+  })),
+}))
 
 /** A conversation as the Hub reads it, empty and untitled unless `fields` say otherwise. */
 export function conversationOf(fields: Partial<Conversation> & { id: ConversationId }) {
@@ -38,6 +47,7 @@ export function conversationOf(fields: Partial<Conversation> & { id: Conversatio
       title: null,
       createdAt: '2026-10-19T12:00:00.000Z',
       model: MODEL,
+      effort: 'off',
       messages: [],
       ...fields,
     },
@@ -57,7 +67,8 @@ type Sent = { method: string; path: string; body: unknown; attemptKey: string | 
 
 /** A stream the Hub holds open for a test to speak on. */
 type Line = {
-  emit: (event: ConversationEvent) => void
+  /** Says `event` with `id`, or with the next of the line's own ids. */
+  emit: (event: ConversationEvent, id?: string) => void
   /** Writes `text` as it is, such as a `data:` line that is not JSON. */
   write: (text: string) => void
   close: () => void
@@ -105,8 +116,9 @@ function accountsRead(view: View): HttpHandler[] {
   ]
 }
 
-function openLine(): { line: Line; response: Response } {
+function openLine(name: string): { line: Line; response: Response } {
   const encoder = new TextEncoder()
+  let said = 0
   let sink: ReadableStreamDefaultController<Uint8Array> | undefined
   const body = new ReadableStream<Uint8Array>({
     // The Hub writes a comment as it opens the stream (`platform/event-stream.ts`).
@@ -123,7 +135,10 @@ function openLine(): { line: Line; response: Response } {
     }
   }
   const line: Line = {
-    emit: (event) => write(`data: ${JSON.stringify(event)}\n\n`),
+    emit: (event, id) => {
+      said += 1
+      write(`id: ${id ?? `${name}.${said}`}\ndata: ${JSON.stringify(event)}\n\n`)
+    },
     write,
     close: () => {
       try {
@@ -154,7 +169,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
   return [
     http.post(BASE, async ({ request }) => {
       await note(request)
-      const replaced = answers.create?.()
+      const replaced = await answers.create?.()
       if (replaced) return replaced
       const conversation = conversationOf({ id: SECOND })
       view.conversations.unshift(conversation)
@@ -162,16 +177,17 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
     }),
     http.post(`${BASE}/:id/messages`, async ({ request, params }) => {
       const body = await note(request)
-      const replaced = answers.message?.()
+      const replaced = await answers.message?.()
       if (replaced) return replaced
       const conversation = view.conversations.find((one) => one.id === params.id)
       if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
       const text =
         typeof body === 'object' && body !== null && 'content' in body ? String(body.content) : ''
       conversation.messages.push({
-        id: `person-${conversation.messages.length}`,
+        id: MessageId.parse(`person-${conversation.messages.length}`),
         role: 'person',
         parts: [{ type: 'text', text }],
+        model: null,
         createdAt: '2026-10-19T12:01:00.000Z',
       })
       return new HttpResponse(null, { status: 202 })
@@ -182,36 +198,43 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
     }),
     http.put(`${BASE}/:id/model`, async ({ request, params }) => {
       const body = await note(request)
-      const replaced = answers.model?.()
+      const replaced = await answers.model?.()
       if (replaced) return replaced
       const model =
         typeof body === 'object' && body !== null && 'model' in body
           ? ModelId.parse(body.model)
           : MODEL
+      const { effort } = setConversationModel.input.body.parse(body)
       view.conversations = view.conversations.map((one) =>
-        one.id === params.id ? { ...one, model } : one,
+        one.id === params.id ? { ...one, model, effort } : one,
       )
-      return HttpResponse.json({ model })
+      return HttpResponse.json({ model, effort })
     }),
   ]
 }
 
 /** A reply that replaces the Hub's usual answer to a write. */
 export type Answers = Partial<
-  Record<'create' | 'message' | 'model' | 'events', () => Response | undefined>
+  Record<
+    'create' | 'message' | 'model' | 'events',
+    () => Response | undefined | Promise<Response | undefined>
+  >
 >
 
 /**
  * The Hub as Ana sees Pedidos' conversations. `lines` holds every stream the browser opened, in
- * order, for the test to speak on; `sent` lists the writes the Hub received.
+ * order, for the test to speak on, and `resumedFrom` the `Last-Event-ID` each was opened with;
+ * `sent` lists the writes the Hub received.
  */
 function conversationHub(view: View, answers: Answers = {}) {
   const sent: Sent[] = []
   const lines: Line[] = []
+  const resumedFrom: Array<string | null> = []
   const reads: number[] = []
   return {
     sent,
     lines,
+    resumedFrom,
     reads,
     handlers: [
       ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }),
@@ -228,11 +251,12 @@ function conversationHub(view: View, answers: Answers = {}) {
           }),
         ),
       ),
-      http.get(`${BASE}/:id/events`, () => {
-        const replaced = answers.events?.()
+      http.get(`${BASE}/:id/events`, async ({ request }) => {
+        const replaced = await answers.events?.()
         if (replaced) return replaced
-        const { line, response } = openLine()
+        const { line, response } = openLine(`line-${lines.length}`)
         lines.push(line)
+        resumedFrom.push(request.headers.get(LAST_EVENT_ID_HEADER))
         return response
       }),
       http.get(`${BASE}/:id`, ({ params }) => {
@@ -263,9 +287,10 @@ export function view(fields: Partial<View> = {}): View {
 
 export function builderSaid(text: string): Message {
   return {
-    id: 'builder-1',
+    id: MessageId.parse('builder-1'),
     role: 'builder',
     parts: [{ type: 'text', text }],
+    model: MODEL,
     createdAt: '2026-10-19T12:02:00.000Z',
   }
 }

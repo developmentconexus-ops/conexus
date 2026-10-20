@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { call } from '../../hub/identity/test-hub.ts'
 import {
   conversing,
+  failuresOf,
   holding,
   PARTIAL,
   rolesAndParts,
@@ -26,8 +27,7 @@ test('duas mensagens ao mesmo tempo: uma acorda o turno, a outra entra nele, e o
     [202, 202],
   )
   const events = await stream.turn()
-  const failures = events.filter((event) => event.type === 'failure')
-  assert.deepEqual(failures, [{ type: 'failure', code: 'MODEL_NO_ACCOUNT' }])
+  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
 })
 
 test('uma segunda pergunta durante a resposta: as duas ficam na conversa, antes e depois de salvas', async (t) => {
@@ -40,7 +40,7 @@ test('uma segunda pergunta durante a resposta: as duas ficam na conversa, antes 
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
-  assert.deepEqual(await stream.next(), { type: 'text', delta: PARTIAL })
+  assert.deepEqual(await stream.said(), { type: 'text', delta: PARTIAL })
   assert.equal((await sent(hub, ana, url, 'Segunda')).statusCode, 202)
   const asked = [
     ['person', [{ type: 'text', text: 'Primeira' }]],

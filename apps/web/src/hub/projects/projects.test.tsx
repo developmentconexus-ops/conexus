@@ -7,6 +7,7 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
 import {
+  conversationsNone,
   hubServer,
   PEDIDOS,
   PEDIDOS_ADDRESS,
@@ -83,11 +84,12 @@ test('vazio: "Nenhum Projeto ainda." e Criar Projeto', async () => {
 
 test('cada linha: o nome, "Criado em" e o link para o Projeto', async () => {
   hub({ projects: [PEDIDOS] })
+  server.use(conversationsNone)
   const router = open()
   const link = await screen.findByRole('link', { name: /Pedidos/ })
   expect(link.textContent).toContain('Criado em 17/10/2026')
   fireEvent.click(link)
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findByText(/Ainda não há uma prévia disponível/)).toBeTruthy()
   expect(router.state.location.pathname).toBe(`${PROJECTS}/${PEDIDOS.id}`)
 })
 
