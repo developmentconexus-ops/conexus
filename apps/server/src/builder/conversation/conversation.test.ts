@@ -5,15 +5,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
-import {
-  conversing,
-  eventually,
-  failuresOf,
-  KEY,
-  sent,
-  started,
-  streamOf,
-} from './test-conversation.ts'
+import { conversing, failuresOf, KEY, sent, started, streamOf } from './test-conversation.ts'
 import { printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
@@ -174,7 +166,30 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   assert.match(last, /Cardápio da padaria/)
 })
 
-test('título e observação vão pela conta do turno; um 429 no observador: o turno termina, sem texto cru', async (t) => {
+test('o título nasce na primeira mensagem, pela conta do turno, e chega no stream já guardado', async (t) => {
+  const { hub, ana, conversations, anthropic, link } = await conversing(t, (asked) => {
+    if (asked.key === KEY && asked.stream) return { kind: 'refuse', status: 429 }
+    if (!asked.stream) return { kind: 'text', text: 'Encomendas da padaria' }
+    return { kind: 'text', text: 'Certo.' }
+  })
+  await link('Time 2', 'sk-ant-conversation-key-0002')
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Como organizo as encomendas?')).statusCode, 202)
+  let event = await stream.next()
+  while (event.type !== 'title') event = await stream.next()
+  assert.deepEqual(event, { type: 'title', title: 'Encomendas da padaria' })
+  const titled = anthropic.sent.filter((each) => !each.stream)
+  assert.deepEqual(
+    titled.map((each) => each.key),
+    ['sk-ant-conversation-key-0002'],
+  )
+  const read = await call(hub, ana, 'GET', url)
+  assert.equal(Object(read.json()).conversation.title, 'Encomendas da padaria')
+})
+
+test('a observação vai pela conta do turno e não pede título; um 429 nela: o turno termina, sem texto cru', async (t) => {
   const printed = printedOf(t)
   const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
   const { hub, ana, conversations, anthropic, link, lines } = await conversing(t, (asked) => {
@@ -189,71 +204,16 @@ test('título e observação vão pela conta do turno; um 429 no observador: o t
   t.after(() => stream.close())
   for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
     assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
-    for (;;) {
-      const event = await stream.next()
-      if (event.type === 'turnEnd') {
-        assert.equal(event.reason, 'complete')
-        break
-      }
-    }
+    assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
   }
-  function observed() {
-    return anthropic.sent.filter((each) => OBSERVER.test(each.system))
-  }
-  function titled() {
-    return anthropic.sent.filter((each) => !each.stream && !OBSERVER.test(each.system))
-  }
-  await eventually(() => observed().length > 0, 'the observer was called')
-  await eventually(() => titled().length > 0, 'the title was asked')
-  for (const each of [...observed(), ...titled()])
+  const observed = anthropic.sent.filter((each) => OBSERVER.test(each.system))
+  assert.ok(observed.length > 0, 'the second turn, past the threshold, was observed')
+  for (const each of observed) {
     assert.equal(each.key, 'sk-ant-conversation-key-0002')
+    assert.doesNotMatch(each.system, /thread-title/, 'the observer is never asked for a title')
+  }
   const read = await call(hub, ana, 'GET', url)
-  assert.equal(Object(read.json()).conversation.title, 'Encomendas da padaria')
   for (const text of [JSON.stringify(lines), printed.join(''), stream.seen.raw, read.body]) {
     assert.doesNotMatch(text, PLANTED)
   }
-})
-
-test('o título nasce na primeira mensagem e o observador não o troca', async (t) => {
-  const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
-  const observation = [
-    '<observations>',
-    '* 🔴 (09:00) A pessoa recebe encomendas da padaria pelo telefone e pelo balcão',
-    '</observations>',
-  ]
-  const titled = [...observation, '<thread-title>Controle de encomendas</thread-title>']
-  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
-    if (OBSERVER.test(asked.system)) {
-      const asksTitle = asked.system.includes('thread-title')
-      return { kind: 'text', text: (asksTitle ? titled : observation).join('\n') }
-    }
-    if (!asked.stream) return { kind: 'text', text: 'Encomendas da padaria' }
-    return { kind: 'text', text: asked.texts.length > 2 ? 'Certo.' : long }
-  })
-  const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
-    assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
-    for (;;) {
-      const event = await stream.next()
-      if (event.type === 'turnEnd') break
-    }
-  }
-  await eventually(
-    () => anthropic.sent.some((each) => OBSERVER.test(each.system)),
-    'the observer was called',
-  )
-  async function titleOf() {
-    return Object(Object((await call(hub, ana, 'GET', url)).json()).conversation).title
-  }
-  let title = null
-  for (const _ of Array(30)) {
-    title = await titleOf()
-    if (title !== null) break
-    await new Promise((resolve) => setTimeout(resolve, 100))
-  }
-  assert.equal(title, 'Encomendas da padaria')
-  await new Promise((resolve) => setTimeout(resolve, 1500))
-  assert.equal(await titleOf(), 'Encomendas da padaria')
 })
