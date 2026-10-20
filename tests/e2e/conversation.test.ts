@@ -16,7 +16,14 @@ import {
   turnOnSwitch,
 } from './conversation-journey.ts'
 import { anotherPage, hubWindow, openConversation } from './hub-window.ts'
-import { liveHub, personWithPassword, plantCompany } from './live-hub.ts'
+import {
+  createProject,
+  liveHub,
+  openProject,
+  personWithPassword,
+  plantCompany,
+  waitForHome,
+} from './live-hub.ts'
 import { enter, linkKey, queueRows, rowsText } from './model-accounts-journey.ts'
 
 // Step 12's journey in Chromium, on a real Hub and the providers' doubles. Ana has two windows,
@@ -46,7 +53,7 @@ async function plant(database: Parameters<typeof personWithPassword>[0]) {
 
 /** The owner's setup page: three keys, the default model, and the Projeto "Encomendas". */
 async function setUp(owner: Page, companyA: string) {
-  await enter(owner, ANA.email, `/companies/${companyA}/setup`)
+  await enter(owner, ANA.email, `/companies/${companyA}/settings/model-accounts`)
   await owner.getByText('Nenhuma conta ligada').waitFor()
   await linkKey(owner, 'Time 1', KEYS.first)
   await owner.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
@@ -55,15 +62,15 @@ async function setUp(owner: Page, companyA: string) {
   await linkKey(owner, 'Groq 1', KEYS.groq, 'Groq')
   await owner.getByText('Groq 1 · chave …gH3i · ligada').first().waitFor()
   await chooseDefaultModel(owner)
-  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/projects`)
-  await owner.getByLabel('Nome do Projeto').fill('Encomendas')
-  await owner.getByRole('button', { name: 'Criar Projeto', exact: true }).click()
-  await owner.getByRole('link', { name: /Encomendas/ }).waitFor()
+  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}`)
+  await waitForHome(owner)
+  await createProject(owner, 'Encomendas')
+  await owner.getByRole('heading', { name: 'Encomendas', exact: true }).waitFor()
 }
 
 async function openConversations(page: Page, companyA: string) {
-  await page.goto(`${TEST_ORIGIN}/companies/${companyA}/projects`)
-  await page.getByRole('link', { name: /Encomendas/ }).click()
+  await page.goto(`${TEST_ORIGIN}/companies/${companyA}`)
+  await openProject(page, 'Encomendas')
   await page
     .getByRole('navigation', { name: 'Projeto' })
     .getByRole('link', { name: 'Conversa' })
@@ -101,7 +108,7 @@ async function refusedThenPaused(
   hold: () => () => void,
   companyA: string,
 ) {
-  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/setup`)
+  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/model-accounts`)
   await saving(owner, () => owner.getByRole('button', { name: 'Subir Time 3' }).click())
   await owner.getByRole('button', { name: 'Subir Time 3' }).waitFor({ state: 'detached' })
   const notice = 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.'
@@ -143,13 +150,13 @@ async function listed(chat: Page) {
 
 /** Step 5: Diego does not see Ana's conversation, in her company or in another. */
 async function otherPerson(diego: Page, ids: { companyA: string; companyB: string }, link: string) {
-  await enter(diego, DIEGO.email, `/companies/${ids.companyA}/projects`)
+  await enter(diego, DIEGO.email, `/companies/${ids.companyA}`)
   await openConversations(diego, ids.companyA)
   await diego.getByText('Nenhuma conversa').waitFor()
   await diego.goto(link)
   await diego.getByText(NOT_FOUND).waitFor()
   await diego.goto(`${TEST_ORIGIN}/companies/${ids.companyB}/projects`)
-  await diego.getByText('Nenhum Projeto ainda.').waitFor()
+  await diego.getByText('Nenhum projeto ainda.').waitFor()
 }
 
 test('o roteiro da primeira conversa: resposta com páginas e título, recusa, pausa, troca automática e outra pessoa', async (t) => {

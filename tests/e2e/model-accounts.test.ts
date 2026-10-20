@@ -6,11 +6,13 @@ import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import {
   closeBrowser,
   liveHub,
+  openSettings,
   PASSWORD,
   personWithPassword,
   plantCompany,
   reachHub,
   signIn,
+  waitForHome,
   watchConsole,
 } from './live-hub.ts'
 import {
@@ -55,7 +57,7 @@ async function openKinds(ana: Page, companyA: string, companyB: string) {
 
 /** Steps 2 and 3: a key, the Claude subscription's code and Google's sign-in, all in Empresa A. */
 async function linkAccounts(owner: Page, companyA: string) {
-  await enter(owner, DAVI.email, `/companies/${companyA}/setup`)
+  await enter(owner, DAVI.email, `/companies/${companyA}/settings/model-accounts`)
   await owner.getByText('Nenhuma conta ligada').waitFor()
   await linkKey(owner, 'Time 1', KEY)
   await owner.getByText('Time 1 · chave …x7Qa · ligada').first().waitFor()
@@ -99,9 +101,9 @@ async function giveAndRead(owner: Page, member: Page, companyA: string) {
   await dialog.getByLabel(CARLA.name).check()
   await dialog.getByRole('button', { name: 'Salvar', exact: true }).click()
   await owner.getByText(`reservada para ${CARLA.name}`).waitFor()
-  await enter(member, CARLA.email, `/companies/${companyA}/projects`)
-  await member.getByRole('link', { name: 'Minha conta de modelo' }).first().click()
-  await member.getByRole('heading', { name: 'Minha conta de modelo' }).waitFor()
+  await enter(member, CARLA.email, `/companies/${companyA}`)
+  await waitForHome(member)
+  await openSettings(member, 'Minhas contas de modelo')
   await member.getByText('Sua ordem para Anthropic: Time 2, Time 1').waitFor()
   await linkKey(member, 'Carla 1', OWN_KEY)
   await member.getByText('Carla 1 · chave …y9Zb · ligada').first().waitFor()

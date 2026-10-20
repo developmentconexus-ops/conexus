@@ -5,15 +5,18 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
-  chooseNickname,
   closeBrowser,
+  firstEntry,
   linkIn,
   liveHub,
   mailProvider,
+  openSettings,
   PASSWORD,
   personWithPassword,
   reachHub,
+  sidebarOf,
   signIn,
+  waitForHome,
   watchConsole,
 } from './live-hub.ts'
 
@@ -47,9 +50,8 @@ async function join(page: Page, next: () => Promise<Mail>, owner: typeof OWNERS.
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  await chooseNickname(page)
-  await page.getByRole('link', { name: 'Pessoas' }).first().click()
-  await page.getByRole('heading', { name: owner.company, exact: true }).waitFor()
+  await firstEntry(page)
+  await sidebarOf(page).getByText(owner.company, { exact: true }).waitFor()
   return link
 }
 
@@ -73,16 +75,16 @@ test('o roteiro de duas empresas: a recusa cruzada, apagar B, o dono de B ainda 
 
   await ana.goto(`${TEST_ORIGIN}/`)
   await signIn(ana, ANA.email, PASSWORD)
-  await ana.getByRole('heading', { name: 'Suas empresas' }).waitFor()
+  await ana.getByRole('heading', { name: 'Clientes', exact: true }).waitFor()
   await register(ana, CNPJ.A, OWNERS.A.company, OWNERS.A.email)
   await join(davi, mail.next, OWNERS.A)
   await register(ana, CNPJ.B, OWNERS.B.company, OWNERS.B.email)
   const linkB = await join(edu, mail.next, OWNERS.B)
   const addressB = edu.url()
 
-  // Davi owns one company, so the entry opens its Projects; B's address is not found for him.
+  // Davi owns one company, so the entry opens its Início; B's address is not found for him.
   await davi.goto(`${TEST_ORIGIN}/`)
-  await davi.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await waitForHome(davi)
   await davi.goto(addressB)
   await davi.getByRole('heading', { name: NOT_FOUND }).waitFor()
 
@@ -102,17 +104,15 @@ test('o roteiro de duas empresas: a recusa cruzada, apagar B, o dono de B ainda 
   await edu.reload()
   await edu.getByRole('heading', { name: NOT_FOUND }).waitFor()
   await edu.goto(`${TEST_ORIGIN}/`)
-  await edu.getByText('Você ainda não participa de nenhuma empresa.').waitFor()
-  await edu.getByRole('button', { name: `Conta de ${OWNERS.B.name}` }).click()
-  await edu.getByRole('menuitem', { name: 'Sair do Conexus' }).click()
+  await edu.getByRole('heading', { name: 'Você ainda não está em nenhuma empresa.' }).waitFor()
+  await edu.getByRole('button', { name: 'Sair do Conexus' }).click()
   await signIn(edu, OWNERS.B.email, NEW_PASSWORD)
-  await edu.getByRole('heading', { name: 'Suas empresas' }).waitFor()
+  await edu.getByRole('heading', { name: 'Você ainda não está em nenhuma empresa.' }).waitFor()
   await edu.goto(linkB)
   await edu.getByRole('heading', { name: NOT_FOUND }).waitFor()
 
   await davi.goto(`${TEST_ORIGIN}/`)
-  await davi.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
-  await davi.getByRole('link', { name: 'Pessoas' }).first().click()
-  await davi.getByRole('heading', { name: OWNERS.A.company, exact: true }).waitFor()
+  await waitForHome(davi)
+  await openSettings(davi, 'Pessoas e convites')
   assert.deepEqual(problems, [])
 })

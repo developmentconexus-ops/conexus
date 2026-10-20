@@ -18,8 +18,9 @@ import {
   visitApp,
 } from './apps-edge.ts'
 import {
-  chooseNickname,
   closeBrowser,
+  createProject,
+  firstEntry,
   liveHub,
   openOnHub,
   PASSWORD,
@@ -70,10 +71,8 @@ export async function pedidosOf(s: Scenario) {
   const { page } = s.owner
   await page.goto(`${TEST_ORIGIN}/`)
   await signIn(page, ANA.email, PASSWORD)
-  await chooseNickname(page)
-  await page.getByLabel('Nome do Projeto').fill('Pedidos')
-  await page.getByRole('button', { name: 'Criar Projeto', exact: true }).click()
-  await page.getByRole('link', { name: /Pedidos/ }).click()
+  await firstEntry(page)
+  await createProject(page, 'Pedidos')
   await page.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   const address = await page.getByText(`.${TEST_APPS_DOMAIN}`).textContent()
   const label = (address ?? '').replace(`.${TEST_APPS_DOMAIN}`, '')

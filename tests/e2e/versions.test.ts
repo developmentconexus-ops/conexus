@@ -15,7 +15,7 @@ import {
   scenario,
   sendFolder,
 } from './apps-journey.ts'
-import { PASSWORD, signIn } from './live-hub.ts'
+import { openProject, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 
 // Step 9's journey: the owner sends Recados from the Projeto's Configurações in Chromium, writes a
 // recado through the real dispatcher, sends a second version, puts the first back and deletes the
@@ -31,9 +31,11 @@ async function firstVersion(s: Scenario, pedidos: string) {
   await page.getByText('Versão 1 · no ar').waitFor()
   await s.member.page.goto(`${TEST_ORIGIN}/`)
   await signIn(s.member.page, CARLA.email, PASSWORD)
-  await s.member.page.getByRole('link', { name: /Pedidos/ }).click()
+  await waitForHome(s.member.page)
+  await openProject(s.member.page, 'Pedidos')
   await s.member.page.getByRole('link', { name: 'Abrir app' }).waitFor()
-  assert.equal(await s.member.page.getByRole('link', { name: 'Configurações' }).count(), 0)
+  const content = s.member.page.getByRole('main')
+  assert.equal(await content.getByRole('link', { name: 'Configurações' }).count(), 0)
 }
 
 /** 4. Voltar para esta, on Versão 1: the warning says the data stay as they are. */

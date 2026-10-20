@@ -5,15 +5,20 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
-  chooseNickname,
   closeBrowser,
+  createProject,
+  firstEntry,
   linkIn,
   liveHub,
   mailProvider,
+  openHome,
+  openProject,
+  openSettings,
   PASSWORD,
   personWithPassword,
   reachHub,
   signIn,
+  waitForHome,
   watchConsole,
 } from './live-hub.ts'
 
@@ -35,8 +40,8 @@ async function join(page: Page, mail: Mail, person: { name: string }, firstOwner
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  if (firstOwner) await chooseNickname(page)
-  else await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  if (firstOwner) await firstEntry(page)
+  else await waitForHome(page)
 }
 
 type Windows = Record<'ana' | 'davi' | 'carla', Page>
@@ -54,7 +59,7 @@ async function setUp(w: Windows, mail: Mailbox) {
   await w.ana.getByRole('button', { name: 'Cadastrar cliente' }).click()
   await w.ana.getByRole('heading', { name: COMPANY, exact: true }).waitFor()
   await join(w.davi, await mail.next(), DAVI, true)
-  await w.davi.getByRole('link', { name: 'Pessoas' }).first().click()
+  await openSettings(w.davi, 'Pessoas e convites')
   await w.davi.getByLabel('E-mail').fill(CARLA.email)
   await w.davi.getByRole('combobox', { name: 'Papel' }).click()
   await w.davi.getByRole('option', { name: 'Membro', exact: true }).click()
@@ -66,24 +71,25 @@ async function setUp(w: Windows, mail: Mailbox) {
 /** The member, who has one company, lands on its Projects; the first Project prepares the database. */
 async function firstProjects(carla: Page, neon: Neon) {
   await carla.goto(`${TEST_ORIGIN}/`)
-  await carla.getByText('Nenhum Projeto ainda.').waitFor()
+  await carla.getByText('Nenhum projeto ainda.').waitFor()
   await createProject(carla, 'Pedidos')
-  await carla.getByRole('link', { name: /Pedidos/ }).waitFor()
+  await carla.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   assert.equal(neon.projects().length, 1)
+  await openHome(carla)
   await createProject(carla, 'pedidos')
   await carla.getByText('Já existe um Projeto com esse nome nesta empresa.').waitFor()
   await createProject(carla, 'Estoque')
-  await carla.getByRole('link', { name: /Estoque/ }).waitFor()
+  await carla.getByRole('heading', { name: 'Estoque', exact: true }).waitFor()
   assert.equal(neon.projects().length, 1, 'a second Project does not touch Neon')
 }
 
 /** The member does not see the deletion; the owner deletes Pedidos by typing its name. */
 async function deletePedidos(w: Windows, neon: Neon) {
-  await w.carla.getByRole('link', { name: /Pedidos/ }).click()
-  await w.carla.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
+  await openHome(w.carla)
+  await openProject(w.carla, 'Pedidos')
   assert.equal(await w.carla.getByRole('button', { name: 'Apagar Projeto' }).count(), 0)
   await w.davi.goto(`${TEST_ORIGIN}/`)
-  await w.davi.getByRole('link', { name: /Pedidos/ }).click()
+  await openProject(w.davi, 'Pedidos')
   await w.davi.getByRole('button', { name: 'Apagar Projeto' }).click()
   const dialog = w.davi.getByRole('alertdialog')
   const confirm = dialog.getByRole('button', { name: 'Apagar Projeto' })
@@ -92,7 +98,10 @@ async function deletePedidos(w: Windows, neon: Neon) {
   await confirm.click()
   await w.davi.getByText('Projeto apagado.').waitFor()
   assert.equal(await w.davi.getByRole('link', { name: /Pedidos/ }).count(), 0)
-  await w.davi.getByRole('link', { name: /Estoque/ }).waitFor()
+  await w.davi
+    .getByRole('main')
+    .getByRole('link', { name: /Estoque/ })
+    .waitFor()
   assert.equal(neon.projects().length, 1, 'deleting a Project leaves the database')
 }
 
@@ -109,11 +118,6 @@ async function deleteCompany(w: Windows, neon: Neon) {
   assert.deepEqual(neon.projects(), [], 'the database left with the company')
   await w.carla.reload()
   await w.carla.getByRole('heading', { name: NOT_FOUND }).waitFor()
-}
-
-async function createProject(page: Page, name: string) {
-  await page.getByLabel('Nome do Projeto').fill(name)
-  await page.getByRole('button', { name: 'Criar Projeto', exact: true }).click()
 }
 
 test('o roteiro de Projetos: criar, nome repetido, apagar por quem pode e a empresa apagada leva o banco', async (t) => {
