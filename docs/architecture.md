@@ -244,4 +244,6 @@ removes them.
   public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
 - Trace ids are Fastify's request ids until 21.1 [0052]. Gemini lacks search [0050]; the
   founder decides.
+- A conversation created between a Projeto's release and its removal leaves an orphan thread; step 16
+  sweeps.
 - The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end the wait.

@@ -48,6 +48,7 @@
     Etapa 11 usada em 2026-10-19 em https://hub.conexus.fun (v0.11.0, v0.11.1), roteiro pelo firstmate e fundador: "okay, aguardo"; "Loguei google pela empresa, quer validar?"
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
     Cartão da etapa 12 aprovado em 2026-10-19 (commit be086108e6e98df037b74344f180aaa670ef76b0): "1. A"; "2. Autorizo"; "3. Sim"
+    Etapa 12 usada em 2026-10-19 em https://hub.conexus.fun (v0.12.0, v0.12.1, v0.12.2), roteiro pelo firstmate e fundador, critérios 25 e 26 numa cópia do Neon: "Sem titulo" (título: v0.12.1; português: v0.12.2); a tela funciona, longe da do Conexus OS: etapas 12.1 e 12.2
     12.1 **A conversa no painel.** Conversa no painel e vê o Builder pensar.
     12.2 **A casa.** Barra lateral, Início e primeira entrada.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
@@ -74,27 +75,24 @@
 | 7 | Neon das empresas | US$ 0 |
 | 8 | O domínio dos apps | Workers for Platforms: US$ 25 por mês |
 | 9, 11 | Token dos apps. Cópia das chaves | Nenhum |
-| 11, 19, 21 | As assinaturas de modelo. Um usuário só de leitura no sistema de uma empresa | Nenhum |
-| 13 | Uma chave do E2B só desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
+| 11, 19, 21 | As assinaturas de modelo. Usuário só de leitura no sistema da empresa | Nenhum |
+| 13 | Uma chave do E2B desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O Neon no plano Launch. O aviso do que sai do Brasil | Cerca de US$ 19,35 por mês por banco sempre acordado |
 
 ### O que fica fora do lançamento
 
-Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma.
-Domínio próprio de empresa.
+Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. Domínio de empresa.
 
 ### As suas respostas de 2026-10-13
 
-1. **Uma parte do código antigo só entra com os consertos médios e grandes feitos.** Os pequenos
-   viram dívida listada. "2. A", e com ela: "ele não manter decisões antigas só porque elas já foram
+1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
    feitas." Vive no `conexus-study`, passo 5.
 
 ## 2. As etapas
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8. Banco dormindo e restauração dos dois bancos |
 | 12.1 A conversa no painel | A 12 | Nenhuma | Stream com pensamento e ferramentas. Peças do shadcn |
 | 12.2 A casa | A 12.1 | Nenhuma | Estrutura das telas |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox e Git. Testes 11 e 12 |
