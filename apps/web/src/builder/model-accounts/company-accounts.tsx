@@ -17,7 +17,7 @@ const route = getRouteApi('/_app/companies/$companyId_/settings/model-accounts')
 function ModelSettingsRead(props: { defaultModel: string | null; fallback: ModelFallback }) {
   const { chain, enabled } = props.fallback
   return (
-    <dl className="grid w-full max-w-column grid-cols-[auto_1fr] gap-x-lg gap-y-sm">
+    <dl className="grid w-full max-w-column grid-cols-[auto_1fr] items-baseline gap-x-lg gap-y-sm">
       <dt className="text-label text-text-2">Modelo padrão</dt>
       <dd>{props.defaultModel ?? 'Nenhum escolhido'}</dd>
       <dt className="text-label text-text-2">Troca automática</dt>
