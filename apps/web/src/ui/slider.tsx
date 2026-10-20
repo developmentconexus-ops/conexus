@@ -30,12 +30,19 @@ export function Slider({
           data-slot="slider-track"
           className="relative h-7 w-full grow overflow-hidden rounded-pill bg-surface-4 select-none"
         >
-          {/* The fill reaches past the thumb's centre to its far edge, as the old pill's did. */}
+          {/* The fill runs under the thumb, as the old pill's did; at the first stop there is
+              none, so no sliver shows beside the thumb. The stops sit under the thumb's centre. */}
           <SliderPrimitive.Indicator
             data-slot="slider-range"
-            className="box-content rounded-pill bg-accent pr-3.5 select-none"
+            className={cn(
+              'box-content rounded-pill bg-accent pr-[11px] select-none',
+              at === min && 'invisible',
+            )}
           />
-          <span aria-hidden="true" className="absolute inset-x-3.5 inset-y-0 flex justify-between">
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-[11px] inset-y-0 flex justify-between"
+          >
             {stops.map((stop) => (
               <span key={stop} className="relative w-0">
                 <span

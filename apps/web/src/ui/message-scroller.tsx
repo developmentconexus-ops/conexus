@@ -7,7 +7,9 @@ import { Button } from './button.tsx'
 import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `message-scroller` over `@shadcn/react`, painted with brand
-// tokens; the scroll fade, the thin scrollbar and the hooks are left out.
+// tokens; the scroll fade, the thin scrollbar and the hooks but `useMessageScroller` are left out.
+
+export { useMessageScroller }
 
 export function MessageScrollerProvider(
   props: React.ComponentProps<typeof MessageScrollerPrimitive.Provider>,
@@ -34,8 +36,11 @@ export function MessageScroller({
 /** The keys that scroll toward the end; Shift+Space scrolls back. */
 const TOWARD_END: ReadonlySet<string> = new Set(['ArrowDown', 'End', 'PageDown', ' '])
 
+/** How near the end counts as the end: `@shadcn/react`'s own `scrollEdgeThreshold` default. */
+const END_THRESHOLD = 8
+
 function atEnd(viewport: HTMLElement): boolean {
-  return viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= 1
+  return viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= END_THRESHOLD
 }
 
 export function MessageScrollerViewport({

@@ -150,6 +150,12 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
 }
 
+/* A busy field's edge is the turning ring: focused, the whole ring turns ipê in the same halo. */
+@utility focus-ring {
+  --ring-base: color-mix(in srgb, var(--color-accent) 60%, var(--color-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
 /* The thumb of a slider lifts off its track. */
 @utility lift {
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
@@ -170,12 +176,12 @@
     linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
     conic-gradient(
       from var(--ring-angle),
-      var(--color-line) 0deg,
+      var(--ring-base, var(--color-line)) 0deg,
       var(--color-accent) 120deg,
-      var(--color-line) 180deg,
-      var(--color-line) 200deg,
+      var(--ring-base, var(--color-line)) 180deg,
+      var(--ring-base, var(--color-line)) 200deg,
       var(--color-accent) 300deg,
-      var(--color-line) 360deg
+      var(--ring-base, var(--color-line)) 360deg
     )
     border-box;
   @media (prefers-reduced-motion: no-preference) {
