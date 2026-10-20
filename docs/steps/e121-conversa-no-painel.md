@@ -2,11 +2,11 @@
 
 ## A página do fundador
 
-**No fim desta etapa** você abre um Projeto e conversa com o Builder num painel à direita, como no
-Conexus OS: vê ele pensar, vê cada coisa que ele faz numa frase, escolhe o modelo e o raciocínio no
-compositor, e a conversa continua do ponto certo quando a aba cai.
+**No fim desta etapa** você conversa com o Builder num painel à direita do Projeto, como no Conexus
+OS: vê ele pensar e cada coisa que faz numa frase, escolhe modelo e raciocínio, e a aba que cai
+continua do ponto certo.
 
-**O roteiro de uso.** Empresa A, a assinatura Claude e a conta Google da 12.
+**O roteiro de uso.** Empresa A, com as contas da 12.
 
 1. Como **Ana**, abra "Encomendas": à esquerda a área grande, aba **Prévia**, com "Ainda não há uma
    prévia disponível. Descreva o aplicativo para começar."; à direita a conversa, com a caixa
@@ -30,9 +30,8 @@ aprova esta página. No fim: faz o roteiro, diz o que viu e aprova os textos das
 ferramentas, estado do turno e sequência. R2 b: o turno durável é da 13. R3 a: as peças de chat do
 shadcn; o `playground-ui` só como modelo. P1 a P6: A.
 
-**Fica de fora.** A Prévia de verdade e "Alterações" (14); "Código" (13); microfone (P4); anexar e
-comandos `/` (sem etapa); cartões de pergunta e aprovação (13, quando houver ferramenta que espera);
-o turno durável (R2 b). O teto de passos por turno (A6) e o caminho do rastro (Z1) seguem abertos
+**Fica de fora.** Prévia de verdade e "Alterações" (14); "Código", aprovações e turno durável (13);
+microfone (P4); anexar e comandos `/`. O teto de passos por turno (A6) e o caminho do rastro (Z1) seguem abertos
 com você, para o cartão da 13. Issues `next-card` 25, 39 e 45: outras pastas.
 
 **A decisão sua pedida nesta etapa: onde fica o que hoje é a aba "Projeto"** (nome, data, endereço,
@@ -56,8 +55,7 @@ cada unidade de tela nomeia a sua.
 | U6 | O compositor, o modelo e o raciocínio | `builder/conversation/`, `builder/model-accounts/` (tela) | design | shadcn | U2, U5 |
 | U7 | Percurso, capturas, prova ao vivo, registro | `tests/e2e/`, `apps/web/*.test.ts`, `docs/decisions/` | testes | — | U6 |
 
-U1 e U3 em paralelo, depois U2 e U4 (não dividem pasta). Nenhuma checagem nova. Uma revisão, um
-merge (L9, L13).
+U1 e U3 em paralelo, depois U2 e U4 (não dividem pasta). Sem checagem nova.
 
 **Orçamento de código alterado** (sem testes nem gerados; as peças copiadas contam): U1 750; U2 400;
 U3 850 (cerca de 650 copiados); U4 450; U5 600; U6 400; U7 80. Total **3.530**, teto 4.000 (L2). Base: a tela da conversa (909 linhas) sai quase inteira; `live.ts`, `parts.ts`, `history.ts` (299)
@@ -103,10 +101,10 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
-| 1 | U1 | Turno com `web_search` e três `web_fetch` (dublê): `reasoning` running › completed com `seconds`, um `tool` por chamada, running › completed | `conversation-stream.test.ts`, pela rota de eventos | must |
+| 1 | U1 | Turno com `web_search` e três `web_fetch` (dublê): `reasoning` running › completed com `seconds`; um `tool` por chamada, running › completed | `conversation-stream.test.ts`, pela rota de eventos | must |
 | 2 | U1 | `args`, `result`, pensamento e erro da ferramenta plantados: fora do stream, do `readConversation` e do log (C51, S41) | idem | must |
 | 3 | U1 | Ferramenta com `isError`: `state: error`, sem o texto; ferramenta desconhecida: `other` | idem | must |
-| 4 | U1 | Reconectar com `Last-Event-ID` do turno em curso: só o que faltou, sem repetir `text`; id de outro turno, estragado ou de outra conversa: o retrato, nunca evento alheio (S10) | idem | must |
+| 4 | U1 | Reconectar com `Last-Event-ID` do turno em curso: só o que faltou, sem repetir `text`; id de outro turno, estragado ou de outra conversa: o retrato, nunca evento alheio (S10); turno acabado: nada | idem | must |
 | 5 | U1 | Recarregar: `reasoning` e `tool` relidos na ordem, `model` do turno; sem `seconds` depois de relido | `conversation.test.ts`, `readConversation` | must |
 | 6 | U1 | Falha do turno (contas acabadas; 400): parte `failure` antes do `turnEnd`, e relida depois de recarregar | idem | must |
 | 7 | U2 | `listModelProviders`: cada modelo com os níveis que aceita; sem dado do Mastra: só "Desligado" | `providers.test.ts` | must |
@@ -117,14 +115,14 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 | 12 | U3 | A marca trabalhando se mexe; com `prefers-reduced-motion`, parada e inteira (V26) | `layout.test.ts` | must |
 | 13 | U4 | Projeto: área grande à esquerda (abas Prévia, Sobre), conversa à direita, divisor de 320 px a 60 %, largura lembrada no navegador; aba no endereço (W18) | `workbench.test.tsx`, `layout.test.ts` | must |
 | 14 | U4 | 390 px: "App \| Conversa", as duas montadas; trocar não perde rascunho nem rolagem | idem | must |
-| 15 | U4 | A caixa do topo lista as conversas da pessoa e cria **Nova conversa** com a chave de tentativa (W24); conversa de outra pessoa ou Projeto: a página "não encontrado" do Projeto (S10) | `panel.test.tsx` | must |
+| 15 | U4 | A caixa do topo lista as conversas da pessoa e cria **Nova conversa** com a chave de tentativa (W24); trocar de conversa e voltar guarda o rascunho (na aba); conversa de outra pessoa ou Projeto: "não encontrado" (S10) | `panel.test.tsx` | must |
 | 16 | U5 | Uma ou duas ferramentas são linhas; três ou mais seguidas dobram numa linha "Leu 3 páginas, pesquisou 1 vez" que abre; texto ou pensamento quebra a sequência | `fold.test.ts` (função pura), `transcript.test.tsx` | must |
 | 17 | U5 | Grupo rodando: "Lendo uma página · 2/4", aberto; "Pensando…" só até o primeiro conteúdo | `transcript.test.tsx` | must |
 | 18 | U5 | Turno do Builder: marca, "Conexus", o modelo do turno; da pessoa: bolha à direita com a hora | idem | must |
 | 19 | U5 | "Builder trabalhando · há 1 min 05 s" desde o `startedAt` do servidor, também após reconectar | idem | must |
 | 20 | U5 | Rolagem: segue o fim enquanto chega texto; quem sobe não é puxado (V54); "Ir ao fim" | idem | must |
 | 21 | U6 | Enter envia, Shift+Enter quebra; Enviar vira Parar; envio recusado devolve o texto (W24); anel ipê só enquanto trabalha (V5) | `composer.test.tsx` | must |
-| 22 | U6 | Um botão com o modelo abre busca, grupos por fornecedor e "Raciocínio" com os níveis do modelo; modelo sem nível: sem a seção; o mesmo seletor serve o modelo padrão da 11 | `composer.test.tsx`, `default-model` | must |
+| 22 | U6 | Um botão com o modelo abre busca, grupos por fornecedor e "Raciocínio" com os níveis do modelo; modelo sem nível: sem a seção; o mesmo seletor serve o modelo padrão da 11 | `composer.test.tsx`, `model-accounts.test.tsx` | must |
 | 23 | U6 | Teclado inteiro: Tab, setas, Esc devolve o foco ao botão (V30); nomes em português (V31) | `keyboard.test.ts` | must |
 | 24 | U7 | O roteiro, Hub real, fornecedor dublê | `tests/e2e/conversation.test.ts` | must |
 | 25 | U7 | Critério 23 da 12: 390 px, 200 %, dois temas, sem rolagem lateral nem erro de CSP | `layout.test.ts`, `sweep.test.ts` | must |
@@ -156,7 +154,7 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 
 | Gravação ou comando | Duas vezes | Recusada no meio | Dependência fora | Imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `setConversationModel` com o nível | estado final | o nível não muda o turno em curso | 503 | `CONVERSATION_MODEL_SET` | 8, 10 |
+| `setConversationModel` com o nível | estado final | um `switch` leva os dois; o turno em curso não muda | 503 | `CONVERSATION_MODEL_SET` | 8, 10 |
 | Falha do turno no fio (`conexus.turnFailures`, ao lado de `QUESTION_KEY`) | idempotente pelo id da mensagem | o turno acaba igual; relido sem ela | log escalar; a tela mostra ao vivo | `CONVERSATION_TURN_ENDED` com o código | 6 |
 | Opções do fornecedor por passo (`accountPick`) | uma por tentativa | — | a fila da 12 | — | 8 |
 | Reabrir o stream com `Last-Event-ID` | sem escrita | — | — | — | 4 |
@@ -172,18 +170,16 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 | Nível ao fornecedor | trazido do Mastra Code (`code-sdk` 1.14.0, `thinking.ts`, `providers/{anthropic,google}-thinking.ts`, Apache-2.0) | `model-accounts/thinking.ts` | só Anthropic, Google e OpenAI; o resto sai | orçamentos 4.096 a 24.576 tokens: o Mastra Code (o Mastra só guarda o nível) |
 | Dobra a partir de 3 | trazido como regra: `TOOL_GROUP_MIN = 3` (`playground-ui` `group-consecutive.ts`, Apache-2.0) e o antigo | `conversation/fold.ts` | função pura nossa | 3; o que espera resposta quebra a sequência |
 | Frases por ferramenta, rótulos do nível | trazido o texto: `tool-sentences.ts`, `reasoning-labels.ts` | `conversation/tool-text.ts` | por `kind`, sem expressão sobre o nome (o antigo casava "ask" em "task") | as frases e os rótulos aprovados |
-| Marca trabalhando | trazido o movimento: `packages/brand/src/tokens.css:120-131` | `brand/mark.tsx` | classes `motion-safe`, como a chegada | o Encaixe (design, Motion) |
+| Marca trabalhando | trazido o movimento (`packages/brand/src/tokens.css:120-131`) | `brand/mark.tsx` | `motion-safe` | o Encaixe (design, Motion) |
 | Painel à direita, troca no celular, anel | trazido o desenho: `construir.tsx:399-417`, `construir.css:86,150-166`, `composer.css:19-68` | `conversation/workbench.tsx`, `composer.tsx` | tokens, sem px soltos nem `style` (V3, V17, V22) | 380 px, 320 px a 60 %; "App \| Conversa" |
 | Linha "trabalhando" | trazido o texto e o desenho: `working-state.tsx` | `conversation/working-line.tsx` | o tempo vem do servidor | — |
-| Projetor e sequência | nosso | `conversation/live.ts`, `parts.ts` | — | o `displayState` leva `args` e `result` crus, é zerado por turno e não guarda avisos nem falha; o Mastra não repete eventos ao vivo |
+| Projetor e sequência | nosso | `conversation/live.ts`, `parts.ts` | — | o `displayState` leva `args` e `result` crus e não guarda avisos nem falha; o Mastra não repete eventos |
 
-**A medida do transplante.** Nada é copiado do antigo: só desenho, textos e duas regras. O código
-antigo (4.738 linhas sobre `playground-ui` 55) mudaria mais de um terço: é novo (`conexus-study`,
-passo 5). Copiados de fontes nativas: as peças do shadcn (MIT) e os arquivos do Mastra Code (Apache-2.0),
-com o aviso.
+**A medida do transplante.** Do antigo, só desenho, textos e duas regras: o código (4.738 linhas sobre
+`playground-ui` 55) mudaria mais de um terço, é novo (`conexus-study`, passo 5).
 
-**A dívida.** "Pensou por N s" não sobrevive a recarregar: o Mastra não guarda o tempo (fica "Pensou"). A razão escrita da 0050 é a mais fraca (dono na
-URL); as fortes, C51 e C37: para o fechamento.
+**A dívida.** O tempo do pensamento some ao recarregar. A 0050 cita a razão mais fraca (dono na URL),
+não C51 e C37: para o fechamento.
 
 ## U1 O contrato do stream e o projetor
 
@@ -194,13 +190,15 @@ URL); as fortes, C51 e C37: para o fechamento.
 | `packages/hub-api/src/conversations.ts`, `operation.ts` | partes, eventos, ids; `resumable` | servidor, web, OpenAPI |
 | `server/src/platform/event-stream.ts`, `http.ts` | a linha `id:`; o `Last-Event-ID` ao handler | toda operação de eventos (só a conversa hoje) |
 | `server/src/builder/conversation/live.ts`, `parts.ts`, `history.ts`, `sessions.ts`, `routes.ts` | o projetor, o registro do turno, a releitura | `main.ts`, testes da conversa |
-| `web/src/builder/conversation/live.ts`, `use-live.ts` | o redutor por `id`; o `Last-Event-ID` | a tela (U5) |
+| `web/src/builder/conversation/live.ts`, `use-live.ts`, `test-hub.tsx`; `web/src/platform/hub.ts` (`hubEvents` lê `id:` e manda o cabeçalho) | o redutor por `id`; o `Last-Event-ID` | a tela (U5), `hub.test.ts` |
+| `server/src/platform/test-anthropic.ts`, `conversation/test-conversation.ts` | o dublê emite pensamento e grava o corpo | testes |
 
 ### Os contratos que a unidade cria
 
-As partes e eventos acima. `Operation.success` de eventos ganha `resumable?: true`: o iterável dá
-`{id: string; event}`, `sendEvents` escreve `id:`, e o handler recebe `lastEventId: string | null`.
-`TURN_FAILURES_KEY = 'conexus.turnFailures'`: `{after: string; code: TurnFailureCode}[]` no fio, como
+As partes e eventos acima. `Operation.success` de eventos ganha `resumable?: true`, que declara o cabeçalho `Last-Event-ID` como
+`ATTEMPT_KEY_HEADER` declara o seu (C28): o iterável dá `{id: string; event}`, `sendEvents` escreve
+`id:`, e o handler recebe `lastEventId: string | null`.
+`TURN_FAILURES_KEY = 'conexus.turnFailures'`: `{after: MessageId; code: TurnFailureCode}[]` no fio, como
 `QUESTION_KEY`.
 
 ### A ordem do trabalho
@@ -224,7 +222,8 @@ Critérios 1 a 6, pela rota de eventos e por `readConversation`, com o dublê (T
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `hub-api/src/conversations.ts`, `model-accounts.ts`, `conversation-failures.ts` | `Effort`; `effort` em `Conversation` e em `setConversationModel`; `Provider.models: {id, efforts}[]`; `EFFORT_UNSUPPORTED` | servidor, web (telas da 11 também) |
-| `server/src/builder/model-accounts/thinking.ts` (novo), `providers.ts`, `processors.ts`, `turn.ts` | níveis por modelo; opções do fornecedor | `accountPick`, `listModelProviders` |
+| `server/src/builder/model-accounts/thinking.ts` (novo), `providers.ts`, `processors.ts`, `turn.ts`, `routes.ts`, `public.ts`, `claude/subscription-model.ts` | níveis por modelo; opções do fornecedor | `accountPick`, `listModelProviders`, rotas da conversa |
+| `web/src/builder/model-accounts/` (quem lê `Provider.models`), `routes/…/setup.tsx`, `model-account.tsx`, `apps/web/sweep-replies.ts` | o modelo vira `{id, efforts}` | telas da 11 |
 | `server/src/builder/conversation/sessions.ts` | `session.model.switch(model, {thinkingLevel})` | `routes.ts` |
 
 ### Os contratos que a unidade cria
@@ -241,10 +240,11 @@ ProviderOptions | undefined`. `Turn` leva o nível lido no envio (V54).
    Mastra Code (`requestableReasoningOptions`, níveis de mesmo orçamento juntos). Regra: C75.
 2. Tradução no `accountPick` (`processors.ts`): `processInputStep` devolve `providerOptions`, mesclado
    com `args.providerOptions` (a soma do Mastra é rasa, `composeStepInput`). Anthropic, assinatura
-   incluída: `thinking {type: 'enabled', budgetTokens}`; Google: `thinkingConfig`; OpenAI:
+   incluída: `thinking {type: 'enabled', budgetTokens}`, ou `effort` nos modelos que o Mastra lista com
+   `effort`, como o Mastra Code; Google: `thinkingConfig`; OpenAI:
    `reasoningEffort`. Regras: C26, S41.
-3. Sessão: o nível por `session.model.switch`; lido de `session.state.get().thinkingLevel`, analisado
-   por `Effort` (sem getter público; C27).
+3. Sessão: o nível por `session.model.switch`, guardado pelo Mastra com o modelo; lido de
+   `session.state.get().thinkingLevel` por `Effort` (C27).
 
 ### Como se prova
 
@@ -262,11 +262,11 @@ ProviderOptions | undefined`. `Turn` leva o nível lido no envio (V54).
 
 ### A ordem do trabalho
 
-1. Copiar uma vez, estilo `base`, pelo `npx shadcn add` (chamada externa do construtor, autorizada pelo
-   cartão); `code-block` e `shiki` ficam de fora. Regras: W21, W22, V22, V23, 0033.
+1. Copiar uma vez, estilo `base`, por `npx shadcn add`; sem `code-block` nem `shiki`. Regras: W21, W22, V22, V23, 0033.
 2. `shimmer` e a marca. Regras: V3, V5, V26.
-3. Olhar sob a CSP: o `react-resizable-panels` usa `adoptedStyleSheets` e `style` pelo CSSOM (não
-   provado). Regras: W22, T23.
+3. Olhar sob a CSP (`apps/edge/src/headers.ts`, só lida): o `react-resizable-panels` usa
+   `adoptedStyleSheets` (não provado); recusado, a peça volta ao cartão (L7), a CSP não muda. Regras:
+   W22, T23.
 
 ### Como se prova
 
@@ -281,7 +281,7 @@ ProviderOptions | undefined`. `Turn` leva o nível lido no envio (V54).
 | `routes/…/projects/$projectId.tsx`, `.index.tsx`, `.conversations.$conversationId.tsx` (de `conversations_`), `$projectId_.settings.tsx` | muda, cria; `$projectId.conversations.tsx` sai | `routeTree.gen.ts` |
 | `web/src/builder/conversation/workbench.tsx`, `stage.tsx`, `panel.tsx`, `conversation-switch.tsx`, `public.ts` | cria | as rotas |
 | `web/src/hub/projects/tabs.tsx`, `project.tsx` | `tabs.tsx` sai; `project.tsx` vira a aba Sobre | as rotas |
-| `tests/e2e/conversation-journey.ts`, `hub-window.ts` | o caminho novo | `npm run e2e` |
+| `tests/e2e/conversation-journey.ts`, `hub-window.ts`, `live-hub.ts`; `apps/web/sweep-*.ts` | o caminho novo; os estados | `npm run e2e`, `sweep.test.ts` |
 
 ### A ordem do trabalho
 
@@ -309,8 +309,7 @@ ToolPart[]}`; `sentenceOf(tool: ToolPart): string`; `summaryOf(tools: ToolPart[]
 ### A ordem do trabalho
 
 Regras: C26, C77, V35, V39, V54. Captura: `old-03-ferramentas-abertas-claro.png`,
-`old-08-ferramentas-rodando-claro.png`, `old-09-pensando.png`, `old-12-erro-execucao.png`; o
-"Pensou" de `old-03b` **não** abre (P2 A).
+`old-08-ferramentas-rodando-claro.png`, `old-09-pensando.png`, `old-12-erro-execucao.png`.
 
 ### Como se prova
 
@@ -323,7 +322,7 @@ Regras: C26, C77, V35, V39, V54. Captura: `old-03-ferramentas-abertas-claro.png`
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `web/src/builder/conversation/composer.tsx`, `model-choice.tsx`, `queries.ts` | muda | `panel.tsx` |
-| `web/src/builder/model-accounts/choice.tsx`, `default-model.tsx`, `public.ts` | um seletor para os dois (C26) | telas da 11 |
+| `web/src/builder/model-accounts/choice.tsx`, `model-picker.tsx`, `default-model.tsx`, `public.ts` | um seletor para os dois (C26) | telas da 11 |
 
 ### A ordem do trabalho
 
