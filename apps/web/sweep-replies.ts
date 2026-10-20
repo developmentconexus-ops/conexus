@@ -144,7 +144,7 @@ const PROJECT = {
 
 /**
  * A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when
- * `empty`. The Project's Conversa tab preloads its conversations on focus.
+ * `empty`. A Project opens on its conversations, so it has the list, empty.
  */
 export function projectsPage(
   id: string,

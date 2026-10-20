@@ -69,6 +69,10 @@ function AppFrame() {
         ? undefined
         : matches.find((match) => match.routeId === '/_app/companies/$companyId')?.params.companyId,
   })
+  const inProject = useMatches({
+    select: (matches) =>
+      matches.some((match) => match.routeId === '/_app/companies/$companyId/projects/$projectId'),
+  })
   if (companyId === undefined) {
     return (
       <Frame place={place ?? ''} places={HOME} account={<AccountMenu person={person} />}>
@@ -76,7 +80,9 @@ function AppFrame() {
       </Frame>
     )
   }
-  return <CompanyFrame companyId={companyId} place={place ?? ''} person={person} />
+  return (
+    <CompanyFrame companyId={companyId} place={place ?? ''} person={person} workspace={inProject} />
+  )
 }
 
 /** The frame of a company's page: its rail follows the role the Hub gave the person there. */
@@ -84,6 +90,7 @@ function CompanyFrame(props: {
   companyId: CompanyId
   place: string
   person: ComponentProps<typeof AccountMenu>['person']
+  workspace: boolean
 }) {
   const { role } = useSuspenseQuery(companyQuery(props.companyId)).data
   return (
@@ -92,6 +99,7 @@ function CompanyFrame(props: {
       places={placesOf(props.companyId, role)}
       switcher={<CompanySwitcher current={props.companyId} />}
       account={<AccountMenu person={props.person} />}
+      workspace={props.workspace}
     >
       <Outlet />
     </Frame>

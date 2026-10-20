@@ -2,10 +2,11 @@ import { deleteProject } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import {
+  conversationsNone,
   hubServer,
   PEDIDOS,
   PEDIDOS_ADDRESS,
@@ -15,7 +16,10 @@ import {
 
 const server = hubServer()
 const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
+const ABOUT = `${PROJECT}?lens=project`
 const UNCONFIRMED = 'Não confirmamos a exclusão. Veja a lista.'
+
+beforeEach(() => server.use(conversationsNone))
 
 /** The Hub with Pedidos; the delete is answered by `answer`, and a 204 takes Pedidos out. */
 function hub(answer: () => Response | Promise<Response>, mayDelete = true) {
@@ -34,7 +38,7 @@ function hub(answer: () => Response | Promise<Response>, mayDelete = true) {
 }
 
 async function open() {
-  const conexus = createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))
+  const conexus = createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))
   render(<Conexus conexus={conexus} />)
   fireEvent.click(await screen.findByRole('button', { name: 'Apagar Projeto' }))
   await screen.findByRole('alertdialog')
@@ -52,17 +56,20 @@ function done() {
 
 test('o Projeto mostra o nome e a data, e o dono vê "Apagar Projeto"', async () => {
   hub(done)
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
   expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
   expect(screen.getByText('Criado em 17/10/2026')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Apagar Projeto' })).toBeTruthy()
 })
 
-test('o membro não vê "Apagar Projeto"', async () => {
+test('o membro vê o Sobre sem "Apagar Projeto", e quem pode apagar', async () => {
   hub(done, false)
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
   expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Apagar Projeto' })).toBeNull()
+  expect(
+    screen.getByText('Só o dono ou quem administra a empresa pode apagar o Projeto.'),
+  ).toBeTruthy()
 })
 
 for (const role of ['owner', 'admin', 'member'] as const) {
@@ -70,7 +77,7 @@ for (const role of ['owner', 'admin', 'member'] as const) {
     server.use(
       ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: false, role }),
     )
-    render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+    render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
     expect(await screen.findByText(PEDIDOS_ADDRESS)).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(
       `https://${PEDIDOS_ADDRESS}/`,
@@ -82,7 +89,7 @@ test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', 
   server.use(
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, address: null }),
   )
-  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
   expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
   expect(screen.queryByText(/Endereço do app:/)).toBeNull()
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
@@ -192,21 +199,6 @@ test('404: fecha e vai à lista, sem "Projeto apagado."', async () => {
   expect(screen.queryByText('Projeto apagado.')).toBeNull()
   expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/projects`)
 })
-
-for (const [role, sees] of [
-  ['owner', true],
-  ['admin', true],
-  ['member', false],
-] as const) {
-  test(`${role}: ${sees ? 'vê' : 'não vê'} "Configurações" no Projeto`, async () => {
-    server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: sees, role }))
-    render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
-    expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
-    const link = screen.queryByRole('link', { name: 'Configurações' })
-    if (sees) expect(link?.getAttribute('href')).toBe(`${PROJECT}/settings`)
-    else expect(link).toBeNull()
-  })
-}
 
 test('o aviso de apagar diz que o app, o banco e as versões vão junto', async () => {
   hub(done)

@@ -64,10 +64,7 @@ async function setUp(owner: Page, companyA: string) {
 async function openConversations(page: Page, companyA: string) {
   await page.goto(`${TEST_ORIGIN}/companies/${companyA}/projects`)
   await page.getByRole('link', { name: /Encomendas/ }).click()
-  await page
-    .getByRole('navigation', { name: 'Projeto' })
-    .getByRole('link', { name: 'Conversa' })
-    .click()
+  await page.getByRole('combobox', { name: 'Conversas' }).waitFor()
 }
 
 /** Sends `question`, waits for the screen to show `expected` while the turn is held, then lets it end. */
@@ -90,7 +87,10 @@ async function firstQuestion(chat: Page, hold: () => () => void) {
   assert.match(await choice.getByLabel('Modelo', { exact: true }).innerText(), /sonnet/i)
   await answered(chat, hold, 'Compare dois apps de encomenda de padaria', ANSWER)
   await chat.reload()
-  await chat.getByRole('heading', { name: TITLE }).waitFor()
+  await chat
+    .getByRole('combobox', { name: 'Conversas' })
+    .and(chat.locator(`[value="${TITLE}"]`))
+    .waitFor()
   await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText('Li a página').waitFor()
 }
 
@@ -135,10 +135,10 @@ async function switched(
   assert.ok(claudeCalls() > before, 'the next question asked Claude')
 }
 
-/** Ana's list of conversations holds the one, by its title. */
+/** Ana's box of conversations holds the one, by its title. */
 async function listed(chat: Page) {
-  await chat.getByRole('link', { name: 'Voltar às conversas' }).click()
-  await chat.getByRole('link', { name: new RegExp(TITLE) }).waitFor()
+  await chat.getByRole('combobox', { name: 'Conversas' }).press('ArrowDown')
+  await chat.getByRole('option', { name: TITLE }).waitFor()
 }
 
 /** Step 5: Diego does not see Ana's conversation, in her company or in another. */

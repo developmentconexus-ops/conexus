@@ -2,10 +2,16 @@ import type { AppVersion } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
+import {
+  conversationsNone,
+  hubServer,
+  PEDIDOS,
+  projectsRead,
+  refusal,
+} from '../../platform/test-hub.tsx'
 import {
   sentVersion,
   VERSIONS_PATH,
@@ -15,7 +21,8 @@ import {
 import { packed, picked } from './test-folder.ts'
 
 const server = hubServer()
-const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/settings`
+beforeEach(() => server.use(conversationsNone))
+const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}?lens=project&section=versions`
 const GONE = 'Não confirmamos o envio. Tente de novo.'
 const EMPTY = 'Nenhuma versão enviada. O endereço mostra o app de exemplo.'
 

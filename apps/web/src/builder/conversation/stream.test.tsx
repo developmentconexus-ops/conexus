@@ -57,7 +57,12 @@ test('o título chega pelo stream e a conversa o mostra na hora', async () => {
   say(field, 'Compare')
   await screen.findByText('Pensando…')
   lines[0]?.emit({ type: 'title', title: 'Apps de padaria' })
-  expect(await screen.findByRole('heading', { level: 1, name: 'Apps de padaria' })).toBeTruthy()
+  await waitFor(() =>
+    expect(screen.getByRole('combobox', { name: 'Conversas' })).toHaveProperty(
+      'value',
+      'Apps de padaria',
+    ),
+  )
 })
 
 test('"Parar" pede a parada e devolve o foco ao campo', async () => {

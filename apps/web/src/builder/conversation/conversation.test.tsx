@@ -1,13 +1,12 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { hubServer } from '../../platform/test-hub.tsx'
 import {
   builderSaid,
   choose,
   conversationOf,
   FIRST,
   PROJECT,
-  SECOND,
   say,
   screens,
   typed,
@@ -15,49 +14,6 @@ import {
 } from './test-hub.tsx'
 
 const { open, openConversation } = screens(hubServer())
-
-test('a lista vazia diz "Nenhuma conversa" e oferece "Nova conversa"; a aba "Conversa" está ativa', async () => {
-  open(view(), `${PROJECT}/conversations`)
-  expect(await screen.findByText('Nenhuma conversa')).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Nova conversa' })).toBeTruthy()
-  const tab = within(screen.getByRole('navigation', { name: 'Projeto' })).getByRole('link', {
-    name: 'Conversa',
-  })
-  expect(tab.getAttribute('aria-current')).toBe('page')
-})
-
-test('a lista mostra o título, ou a data quando a conversa ainda não tem título', async () => {
-  open(
-    view({
-      conversations: [
-        conversationOf({ id: FIRST, title: 'Apps de encomenda de padaria' }),
-        conversationOf({ id: SECOND }),
-      ],
-    }),
-    `${PROJECT}/conversations`,
-  )
-  expect(await screen.findByRole('link', { name: /Apps de encomenda de padaria/ })).toBeTruthy()
-  expect(screen.getByRole('link', { name: '19/10/2026, 09:00' })).toBeTruthy()
-})
-
-test('"Nova conversa" cria com a chave da tentativa e abre a conversa com o foco no campo', async () => {
-  const { sent } = open(view(), `${PROJECT}/conversations`)
-  fireEvent.click(await screen.findByRole('button', { name: 'Nova conversa' }))
-  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
-  await waitFor(() => expect(document.activeElement).toBe(field))
-  expect(sent).toHaveLength(1)
-  expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
-  expect(sent[0]?.body).toEqual({})
-  expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/^Conversa de /)
-})
-
-test('sem conta, "Nova conversa" mostra a frase do Hub e nada é criado', async () => {
-  open(view(), `${PROJECT}/conversations`, { create: () => refusal('MODEL_NO_ACCOUNT') })
-  fireEvent.click(await screen.findByRole('button', { name: 'Nova conversa' }))
-  expect((await screen.findByRole('alert')).textContent).toBe(
-    'Nenhuma conta que você pode usar atende a este modelo. Escolha outro modelo ou fale com quem administra a empresa.',
-  )
-})
 
 test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens', async () => {
   const { shown } = await openConversation(
@@ -76,7 +32,7 @@ test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens
     }),
   )
   expect(shown.conversations).toHaveLength(1)
-  expect(screen.getByRole('heading', { level: 1, name: 'Padarias' })).toBeTruthy()
+  expect(screen.getByRole('combobox', { name: 'Conversas' })).toHaveProperty('value', 'Padarias')
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   expect(within(log).getByText('Oi')).toBeTruthy()
   expect(within(log).getByText('tudo bem').tagName).toBe('STRONG')
@@ -182,6 +138,6 @@ test('sem thread no meio da conversa: não encontrado, e a linha sai da lista', 
   expect(
     await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
   ).toBeTruthy()
-  await conexus.router.navigate({ to: `${PROJECT}/conversations` })
+  await conexus.router.navigate({ to: PROJECT })
   expect(await screen.findByText('Nenhuma conversa')).toBeTruthy()
 })

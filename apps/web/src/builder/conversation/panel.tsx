@@ -1,32 +1,68 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi, Link } from '@tanstack/react-router'
+import { getRouteApi } from '@tanstack/react-router'
+import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
-import { PageTitle } from '../../ui/list.tsx'
-import { NotFound } from '../../ui/states.tsx'
+import { Empty, NotFound } from '../../ui/states.tsx'
 import { accountsQuery } from '../model-accounts/public.ts'
 import { Composer } from './composer.tsx'
+import type { Item } from './conversation-switch.tsx'
+import { ConversationSwitch } from './conversation-switch.tsx'
 import type { Live } from './live.ts'
 import { hasText, shownAnswer } from './live.ts'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
 import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } from './queries.ts'
-import { THINKING, titleOf, UNCONFIRMED_SEND } from './text.ts'
+import { EMPTY_CONVERSATION, THINKING, titleOf, UNCONFIRMED_SEND } from './text.ts'
 import { Transcript } from './transcript.tsx'
 import { useLive } from './use-live.ts'
 
 const route = getRouteApi(
-  '/_app/companies/$companyId/projects/$projectId/conversations_/$conversationId',
+  '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
 )
 
+/** The right region of a Projeto: the box of conversations on top, and what it shows below. */
+function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-canvas">
+      <ConversationSwitch current={props.current} />
+      {props.children}
+    </div>
+  )
+}
+
 /**
- * One conversation: the model, the transcript with the answer arriving, and the field. The stream
- * is ours (security S39: the Hub has no Mastra route), read by `use-live.ts`.
+ * One conversation of the panel: the model, the transcript with the answer arriving, and the field.
+ * The stream is ours (security S39: the Hub has no Mastra route), read by `use-live.ts`. A switch
+ * of conversation starts the screen over, and what was typed comes back from its draft.
  */
-export function Conversation() {
+export function Panel() {
   const { companyId, projectId, conversationId } = route.useParams()
-  return <Screen companyId={companyId} projectId={projectId} conversationId={conversationId} />
+  const { conversation } = useSuspenseQuery(
+    conversationQuery(companyId, projectId, conversationId),
+  ).data
+  return (
+    <PanelFrame current={{ value: conversationId, label: titleOf(conversation) }}>
+      <Screen
+        key={conversationId}
+        companyId={companyId}
+        projectId={projectId}
+        conversationId={conversationId}
+      />
+    </PanelFrame>
+  )
+}
+
+/** The panel of a Projeto that has no conversation yet: the box says so and offers a new one. */
+export function EmptyPanel() {
+  return (
+    <PanelFrame current={undefined}>
+      <div className="p-md">
+        <Empty>Nenhuma conversa</Empty>
+      </div>
+    </PanelFrame>
+  )
 }
 
 /** "Pensando…" until the answer has text, and the failure of the turn in the table's words. */
@@ -90,35 +126,33 @@ function Screen(props: {
 
   if (gone) return <NotFound />
   return (
-    <div className="flex w-full max-w-prose flex-col gap-xl">
-      <div className="flex flex-col gap-sm">
-        <PageTitle className="break-words">{titleOf(conversation)}</PageTitle>
-        <Link
-          to="/companies/$companyId/projects/$projectId/conversations"
-          params={{ companyId, projectId }}
-          className="text-label underline"
-        >
-          Voltar às conversas
-        </Link>
+    <>
+      <div className="flex min-h-0 flex-1 flex-col gap-xl overflow-y-auto p-md">
+        {usable.size === 0 ? (
+          <NoAccount companyId={companyId} />
+        ) : (
+          <ModelChoice ids={params} conversation={conversation} usable={usable} />
+        )}
+        {conversation.messages.length === 0 && state.kind === 'idle' && (
+          <Empty>{EMPTY_CONVERSATION}</Empty>
+        )}
+        <Transcript
+          messages={conversation.messages}
+          answer={shownAnswer(state, conversation.messages)}
+        />
+        <AnswerStatus state={state} />
+        {error !== undefined && <p role="alert">{error}</p>}
       </div>
-      {usable.size === 0 ? (
-        <NoAccount companyId={companyId} />
-      ) : (
-        <ModelChoice ids={params} conversation={conversation} usable={usable} />
-      )}
-      <Transcript
-        messages={conversation.messages}
-        answer={shownAnswer(state, conversation.messages)}
-      />
-      <AnswerStatus state={state} />
-      {error !== undefined && <p role="alert">{error}</p>}
-      <Composer
-        answering={state.kind === 'answering'}
-        canSend={usable.size > 0}
-        field={field}
-        onSend={send}
-        onStop={halt}
-      />
-    </div>
+      <div className="px-md">
+        <Composer
+          answering={state.kind === 'answering'}
+          canSend={usable.size > 0}
+          conversationId={conversationId}
+          field={field}
+          onSend={send}
+          onStop={halt}
+        />
+      </div>
+    </>
   )
 }

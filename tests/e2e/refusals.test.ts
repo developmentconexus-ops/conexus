@@ -16,7 +16,7 @@ import {
   sendFolder,
 } from './apps-journey.ts'
 
-// Step 10's journey: in Pedidos's Configurações, Ana sends a version that does not start, one that
+// Step 10's journey: in Pedidos's Versões, Ana sends a version that does not start, one that
 // writes in `db.query` and one whose Travar never ends, and the version on the air, its data and the
 // Hub stay as they were. Cloudflare's API and its namespace are doubles: the API runs a script's top
 // level on upload and the namespace cuts a Worker past its CPU, as record 0047 saw; the app's `db`
@@ -66,7 +66,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   const s = await scenario(t)
   const { page } = s.owner
   const pedidos = await pedidosOf(s)
-  const settings = `${pedidos.url}/settings`
+  const settings = `${pedidos.url}?lens=project&section=versions`
   // 1. Recados 1 and 2; a recado written on Versão 2.
   await sent(page, settings, 'recados-1', 'Versão 1 · no ar')
   await sent(page, settings, 'recados-2', 'Versão 2 · no ar')
@@ -94,7 +94,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   assert.match(cut.text, FAILED_PAGE)
   assert.ok(Date.now() - started < 10_000, `cut after ${Date.now() - started} ms`)
   assert.deepEqual(await recados(pedidos.door, laco), [RECADO])
-  await page.goto(pedidos.url)
+  await page.goto(`${pedidos.url}?lens=project`)
   await page.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   // 5. Back to Versão 2: Recados works, with its recado.
   await putVersionTwoBack(page, settings)

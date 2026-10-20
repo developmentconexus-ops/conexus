@@ -1,24 +1,26 @@
+import type { ConversationId } from '@conexus/hub-api'
 import { MESSAGE_MAX_LENGTH } from '@conexus/hub-api'
 import { SquareIcon } from 'lucide-react'
 import type { KeyboardEvent, Ref, SubmitEvent } from 'react'
-import { useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Label } from '../../ui/label.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
+import { useDraft } from './draft.ts'
 
 /**
  * The field and its buttons. Enter sends and Shift+Enter breaks the line, except while an input
  * method is composing a character (design V30). While the Builder answers, **Parar** takes the
- * place of sending, and focus goes back to the field.
+ * place of sending, and focus goes back to the field. What is typed is kept per conversation.
  */
 export function Composer(props: {
   answering: boolean
   canSend: boolean
+  conversationId: ConversationId
   field: Ref<HTMLTextAreaElement>
   onSend: (content: string) => Promise<boolean>
   onStop: () => void
 }) {
-  const [content, setContent] = useState('')
+  const [content, setContent] = useDraft(props.conversationId)
   const empty = content.trim() === ''
 
   async function send() {
