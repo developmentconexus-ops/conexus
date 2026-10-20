@@ -135,8 +135,8 @@ function modelAccountsPage(id: string, mayManage: boolean): Replies {
           id: 'anthropic',
           name: 'Anthropic',
           models: [
-            { id: 'claude-sonnet-4', efforts: ['off', 'low', 'high'] },
-            { id: 'claude-opus-4', efforts: ['off'] },
+            { id: 'anthropic/claude-sonnet-4', efforts: ['off', 'low', 'high'] },
+            { id: 'anthropic/claude-opus-4', efforts: ['off'] },
           ],
         },
       ],
