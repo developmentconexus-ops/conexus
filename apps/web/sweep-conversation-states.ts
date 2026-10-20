@@ -173,6 +173,16 @@ export const CONVERSATION_STATES: State[] = [
     },
   },
   {
+    name: 'Conversa, o seletor de modelo e raciocínio aberto',
+    path: `${CONVERSATIONS}/${ID}`,
+    replies: { ...WITH_ACCOUNT, ...OPEN },
+    settle: async (page) => {
+      await inChat(page, 'Encontrei')
+      await page.getByRole('combobox', { name: 'Modelo e raciocínio' }).click()
+      await waitFor(page, 'Raciocínio')
+    },
+  },
+  {
     name: 'Conversa, sem conta de modelo',
     path: `${CONVERSATIONS}/${ID}`,
     replies: { ...OWNER, ...OPEN },

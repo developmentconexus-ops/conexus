@@ -147,6 +147,34 @@
   animation: none;
 }
 
+/* The ring of the field while the Builder answers: an ipê arc turns round the edge (old `composer.css:19-68`); still under reduced motion. */
+@property --ring-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@utility working-ring {
+  background-image: conic-gradient(
+    from var(--ring-angle),
+    var(--color-line) 0deg,
+    var(--color-accent) 120deg,
+    var(--color-line) 180deg,
+    var(--color-line) 200deg,
+    var(--color-accent) 300deg,
+    var(--color-line) 360deg
+  );
+  @media (prefers-reduced-motion: no-preference) {
+    animation: ring-turn 2.8s linear infinite;
+  }
+}
+
+@keyframes ring-turn {
+  to {
+    --ring-angle: 360deg;
+  }
+}
+
 @keyframes shimmer {
   to {
     background-position: 0 0;

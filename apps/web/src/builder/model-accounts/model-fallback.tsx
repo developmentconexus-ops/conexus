@@ -1,9 +1,9 @@
 import type { CompanyId, ModelFallback, Provider } from '@conexus/hub-api'
 import { MODEL_FALLBACK_MAX_LENGTH } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
-import { FieldError } from '../../ui/field.tsx'
+import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { List, Row, SectionTitle } from '../../ui/list.tsx'
 import { ModelPicker } from './model-picker.tsx'
 import { sendFallback } from './queries.ts'
@@ -37,6 +37,7 @@ function Editor(props: {
   providers: readonly Provider[]
   fallback: ModelFallback
 }) {
+  const pickerId = useId()
   const [enabled, setEnabled] = useState(props.fallback.enabled)
   const [chain, setChain] = useState<readonly string[]>(props.fallback.chain)
   const [picked, setPicked] = useState<string | null>(null)
@@ -88,12 +89,17 @@ function Editor(props: {
           ))}
         </List>
       )}
-      <ModelPicker
-        providers={props.providers}
-        value={picked}
-        names={{ provider: 'Fornecedor do modelo da troca', model: 'Modelo da troca' }}
-        onChange={setPicked}
-      />
+      <Field>
+        <FieldLabel htmlFor={pickerId}>Modelo da troca</FieldLabel>
+        <ModelPicker
+          id={pickerId}
+          providers={props.providers}
+          value={picked}
+          name="Modelo da troca"
+          className="justify-between border-line bg-surface"
+          onChange={setPicked}
+        />
+      </Field>
       <div>
         <Button
           disabled={added === null}

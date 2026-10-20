@@ -10,6 +10,7 @@ import {
   ModelAccount,
   ModelId,
   readConversation,
+  setConversationModel,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -33,7 +34,10 @@ const PROVIDERS = [
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
 ].map((provider) => ({
   ...provider,
-  models: provider.models.map((id) => ({ id, efforts: ['off'] })),
+  models: provider.models.map((id) => ({
+    id,
+    efforts: id === 'claude-sonnet-4' ? ['off', 'low', 'high'] : ['off'],
+  })),
 }))
 
 /** A conversation as the Hub reads it, empty and untitled unless `fields` say otherwise. */
@@ -200,10 +204,11 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
         typeof body === 'object' && body !== null && 'model' in body
           ? ModelId.parse(body.model)
           : MODEL
+      const { effort } = setConversationModel.input.body.parse(body)
       view.conversations = view.conversations.map((one) =>
-        one.id === params.id ? { ...one, model } : one,
+        one.id === params.id ? { ...one, model, effort } : one,
       )
-      return HttpResponse.json({ model, effort: 'off' })
+      return HttpResponse.json({ model, effort })
     }),
   ]
 }

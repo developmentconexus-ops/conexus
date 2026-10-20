@@ -2,7 +2,7 @@ import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Empty, NotFound } from '../../ui/states.tsx'
@@ -76,7 +76,7 @@ function Screen(props: {
     conversationQuery(companyId, projectId, conversationId),
   ).data
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
-  const usable = new Set(accounts.usableProviders)
+  const usable = useMemo(() => new Set(accounts.usableProviders), [accounts.usableProviders])
   const [gone, setGone] = useState(false)
   const [error, setError] = useState<string>()
   const field = useRef<HTMLTextAreaElement>(null)
@@ -117,11 +117,7 @@ function Screen(props: {
   return (
     <>
       <div className="flex flex-col gap-md px-md py-md">
-        {usable.size === 0 ? (
-          <NoAccount companyId={companyId} />
-        ) : (
-          <ModelChoice ids={params} conversation={conversation} usable={usable} />
-        )}
+        {usable.size === 0 && <NoAccount companyId={companyId} />}
         {conversation.messages.length === 0 && state.kind === 'idle' && (
           <Empty>{EMPTY_CONVERSATION}</Empty>
         )}
@@ -149,6 +145,16 @@ function Screen(props: {
           field={field}
           onSend={send}
           onStop={halt}
+          picker={
+            usable.size > 0 && (
+              <ModelChoice
+                ids={params}
+                conversation={conversation}
+                usable={usable}
+                onError={setError}
+              />
+            )
+          }
         />
       </div>
     </>

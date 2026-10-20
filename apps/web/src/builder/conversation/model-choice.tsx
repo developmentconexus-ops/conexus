@@ -1,8 +1,8 @@
-import type { CompanyId, Conversation, ProjectId, ProviderId } from '@conexus/hub-api'
+import type { CompanyId, Conversation, Effort, ProjectId, ProviderId } from '@conexus/hub-api'
 import { providerOfModel } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { ModelPicker, providersQuery } from '../model-accounts/public.ts'
@@ -22,27 +22,28 @@ export function NoAccount({ companyId }: { companyId: CompanyId }) {
 }
 
 /**
- * The model of the conversation, among the providers the person has an account for. A change
- * holds for the next answers, not the one in progress (design V54).
+ * The model and the reasoning of the conversation, among the providers the person has an account
+ * for, in one button of the composer. A change holds for the next answers, not the one in progress
+ * (design V54); a refusal is said below the button.
  */
 export function ModelChoice(props: {
   ids: { companyId: CompanyId; projectId: ProjectId }
   conversation: Conversation
   usable: ReadonlySet<ProviderId>
+  onError: (text: string | undefined) => void
 }) {
   const { providers } = useSuspenseQuery(providersQuery).data
   const send = useMutation(sendModel)
-  const [error, setError] = useState<string>()
-  const [chosen, setChosen] = useState<string>()
-  const shown = providers.filter((provider) => props.usable.has(provider.id))
+  const [chosen, setChosen] = useState<{ model: string; effort: Effort }>()
+  const shown = useMemo(
+    () => providers.filter((provider) => props.usable.has(provider.id)),
+    [providers, props.usable],
+  )
+  const now = chosen ?? props.conversation
 
-  async function choose(model: string | null) {
-    if (model === null || model === props.conversation.model) return
-    setError(undefined)
-    setChosen(model)
-    const provider = providers.find((one) => one.id === providerOfModel(model))
-    const efforts = provider?.models.find((one) => `${provider.id}/${one.id}` === model)?.efforts
-    const effort = efforts?.includes(props.conversation.effort) ? props.conversation.effort : 'off'
+  async function choose(model: string, effort: Effort) {
+    props.onError(undefined)
+    setChosen({ model, effort })
     try {
       await send.mutateAsync({
         params: { ...props.ids, conversationId: props.conversation.id },
@@ -50,20 +51,24 @@ export function ModelChoice(props: {
       })
     } catch (failure) {
       setChosen(undefined)
-      setError(writeFailureText(failure, UNCONFIRMED_MODEL))
+      props.onError(writeFailureText(failure, UNCONFIRMED_MODEL))
     }
   }
 
+  function pickModel(model: string) {
+    if (model === now.model) return
+    const provider = providers.find((one) => one.id === providerOfModel(model))
+    const efforts = provider?.models.find((one) => `${provider.id}/${one.id}` === model)?.efforts
+    void choose(model, efforts?.includes(now.effort) ? now.effort : 'off')
+  }
+
   return (
-    <section aria-label="Modelo da conversa" className="flex max-w-column flex-col gap-md">
-      <ModelPicker
-        providers={shown}
-        value={chosen ?? props.conversation.model}
-        names={{ provider: 'Fornecedor do modelo', model: 'Modelo' }}
-        onChange={(model) => void choose(model)}
-      />
-      <p className="text-label text-text-2">A troca vale para as próximas respostas.</p>
-      {error !== undefined && <p role="alert">{error}</p>}
-    </section>
+    <ModelPicker
+      providers={shown}
+      value={now.model}
+      name="Modelo e raciocínio"
+      onChange={pickModel}
+      effort={{ value: now.effort, onChange: (effort) => void choose(now.model, effort) }}
+    />
   )
 }
