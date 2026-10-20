@@ -125,9 +125,15 @@ export function messageOf(message: MastraDBMessage): Message | undefined {
         : undefined
   if (role === undefined) return undefined
   const id = MessageId.parse(message.id)
-  const parts = message.content.parts.flatMap(
-    (part, index) => partOf(part, { messageId: id, index }) ?? [],
-  )
+  // Text after text is one text, as the stream tells it: Mastra keeps each of the provider's
+  // blocks, and Claude cuts an answer into one block per span it cites.
+  const parts: MessagePart[] = []
+  for (const [index, part] of message.content.parts.entries()) {
+    const shown = partOf(part, { messageId: id, index })
+    const last = parts.at(-1)
+    if (shown?.type === 'text' && last?.type === 'text') last.text += shown.text
+    else if (shown !== undefined) parts.push(shown)
+  }
   return {
     id,
     role,
