@@ -47,36 +47,42 @@ if (cards.length === 0) {
   console.log('check-approval: no card in docs/steps, nothing to check')
   process.exit(0)
 }
-const card = cards[0] ?? ''
-const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
-const step =
-  digits.length > 2
-    ? digits.startsWith('0')
-      ? `${Number(digits[1])}.${Number(digits.slice(2))}`
-      : `${digits.slice(0, 2)}.${Number(digits.slice(2))}`
-    : String(Number(digits))
-const cardPath = `docs/steps/${card}`
-
 const roadmap = readFileSync(join(root, 'docs/roadmap.md'), 'utf8')
-const line = new RegExp(
-  `^\\s*Cartão da etapa ${step.replace('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
-  'm',
-)
-const approved = roadmap.match(line)?.[1]
 
-if (approved === undefined) {
-  if (onlyDocuments()) {
-    console.log(
-      `check-approval: step ${step} is not approved yet, and this change holds only documents`,
+function checkCard(card: string): void {
+  const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
+  const step =
+    digits.length > 2
+      ? digits.startsWith('0')
+        ? `${Number(digits[1])}.${Number(digits.slice(2))}`
+        : `${digits.slice(0, 2)}.${Number(digits.slice(2))}`
+      : String(Number(digits))
+  const cardPath = `docs/steps/${card}`
+  const line = new RegExp(
+    `^\\s*Cartão da etapa ${step.replace('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
+    'm',
+  )
+  const approved = roadmap.match(line)?.[1]
+
+  if (approved === undefined) {
+    if (onlyDocuments()) {
+      console.log(
+        `check-approval: step ${step} is not approved yet, and this change holds only documents`,
+      )
+      return
+    }
+    refuse(
+      'approval-missing',
+      `docs/roadmap.md has no approval line for step ${step} (${cardPath})`,
     )
-    process.exit(0)
   }
-  refuse('approval-missing', `docs/roadmap.md has no approval line for step ${step}`)
+  if (!gitSucceeds('merge-base', '--is-ancestor', approved, 'HEAD')) {
+    refuse('approval-commit-not-in-tip', `${approved} is not an ancestor of HEAD (${cardPath})`)
+  }
+  if (!gitSucceeds('diff', '--quiet', approved, 'HEAD', '--', cardPath)) {
+    refuse('card-changed-after-approval', `${cardPath} differs from ${approved}`)
+  }
+  console.log(`check-approval: step ${step} approved at ${approved}, card unchanged`)
 }
-if (!gitSucceeds('merge-base', '--is-ancestor', approved, 'HEAD')) {
-  refuse('approval-commit-not-in-tip', `${approved} is not an ancestor of HEAD`)
-}
-if (!gitSucceeds('diff', '--quiet', approved, 'HEAD', '--', cardPath)) {
-  refuse('card-changed-after-approval', `${cardPath} differs from ${approved}`)
-}
-console.log(`check-approval: step ${step} approved at ${approved}, card unchanged`)
+
+for (const card of cards.sort()) checkCard(card)
