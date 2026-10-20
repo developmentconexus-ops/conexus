@@ -107,7 +107,7 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 | 5 | U1 | Recarregar: `reasoning` e `tool` relidos na ordem, `model` do turno; sem `seconds` depois de relido | `conversation.test.ts`, `readConversation` | must |
 | 6 | U1 | Falha do turno (contas acabadas; 400): parte `failure` antes do `turnEnd`, e relida depois de recarregar | idem | must |
 | 7 | U2 | `listModelProviders`: cada modelo com os níveis que aceita; sem dado do Mastra: só "Desligado" | `providers.test.ts` | must |
-| 8 | U2 | "Alto": o dublê da Anthropic recebe `thinking` com o orçamento; "Desligado": recebe `disabled`; nível que o modelo não aceita: 422 `EFFORT_UNSUPPORTED`; troca durante um turno vale para o próximo (V54) | `conversations.test.ts`, `test-anthropic.ts` | must |
+| 8 | U2 | "Alto": o dublê da Anthropic recebe `thinking` com o orçamento; "Desligado": não recebe; nível que o modelo não aceita: 422 `EFFORT_UNSUPPORTED`; troca durante um turno vale para o próximo (V54) | `conversations.test.ts`, `test-anthropic.ts` | must |
 | 9 | U2 | **Ao vivo**, assinatura Claude: "Alto" traz `reasoning` no stream; "Desligado" não traz | firstmate, autorizado (T14) | must |
 | 10 | U2 | Nível relido após reiniciar o Hub | `conversations.test.ts` | must |
 | 11 | U3 | As peças sob a CSP: nenhum erro nem violação no console, arrastar o divisor incluído | `layout.test.ts` (T23) | must |
