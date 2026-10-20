@@ -152,7 +152,9 @@ The matching `biome.json` override sets `linter.rules.nursery.noInlineStyles` to
 inline/good class cases on upgrade before accepting changed diagnostics. The risk is diagnostic
 churn, not runtime style enforcement; do not extend this check to vendor-generated styles.
 - **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll; [testing
-  T23](testing.md) lists the widths looked at. [`layout.test.ts`, review]
+  T23](testing.md) lists the widths looked at. Under `md` a text field's text is 16px, so a phone
+  does not zoom the page into it, and the page stays zoomable. Founder, 2026-10-20: "é coisa
+  básica". [`layout.test.ts`, `fields.layout.test.ts`, review]
 - **V56.** Narrow navigation **should** retain every destination and the account, with the approved
   top-bar drawer ("Abrir navegação"), mark and current place. Failure: a frame overflows at 320px
   and puts "Sair" outside the screen. A future layout need not copy the drawer's DOM to retain

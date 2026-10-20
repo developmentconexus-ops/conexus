@@ -96,7 +96,6 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 12.2 A casa | A 12.1 | Nenhuma | Estrutura das telas |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox, Git. Testes 11, 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |
 | 15 Mudar o app | A 14 | Nenhuma | Migrações atômicas de app. O lote |
