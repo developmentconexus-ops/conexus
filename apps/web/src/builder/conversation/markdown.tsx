@@ -1,71 +1,11 @@
 import type { ReactNode } from 'react'
+import { memo } from 'react'
+import type { Components } from 'react-markdown'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remend from 'remend'
 import { cn } from '../../ui/cn.ts'
-
-type Item = { id: number; text: string }
-type Block = { id: number } & (
-  | { kind: 'p' | 'heading' | 'code'; text: string }
-  | { kind: 'ul' | 'ol'; items: Item[] }
-)
-type Draft =
-  | { kind: 'p' | 'heading' | 'code'; text: string }
-  | { kind: 'ul' | 'ol'; items: string[] }
-
-const BULLET = /^\s*[-*] +(.*)$/
-const NUMBER = /^\s*\d+[.)] +(.*)$/
-const HEADING = /^#{1,6} +(.*)$/
-
-/** The blocks of a text: paragraphs, headings, lists and fenced code, which stays open to the end. */
-function blocksOf(text: string): Block[] {
-  const blocks: Draft[] = []
-  let code: string[] | undefined
-  function add(kind: 'ul' | 'ol', item: string) {
-    const last = blocks.at(-1)
-    if (last?.kind === kind) last.items.push(item)
-    else blocks.push({ kind, items: [item] })
-  }
-  for (const line of text.split('\n')) {
-    if (line.startsWith('```')) {
-      if (code === undefined) code = []
-      else {
-        blocks.push({ kind: 'code', text: code.join('\n') })
-        code = undefined
-      }
-    } else if (code !== undefined) code.push(line)
-    else if (line.trim() === '') blocks.push({ kind: 'p', text: '' })
-    else if (HEADING.test(line)) blocks.push({ kind: 'heading', text: line.replace(/^#+ +/, '') })
-    else if (BULLET.test(line)) add('ul', line.replace(BULLET, '$1'))
-    else if (NUMBER.test(line)) add('ol', line.replace(NUMBER, '$1'))
-    else {
-      const last = blocks.at(-1)
-      if (last?.kind === 'p' && last.text !== '') last.text += ` ${line.trim()}`
-      else blocks.push({ kind: 'p', text: line.trim() })
-    }
-  }
-  if (code !== undefined) blocks.push({ kind: 'code', text: code.join('\n') })
-  return blocks
-    .filter((block) => block.kind !== 'p' || block.text !== '')
-    .map(
-      (block, id): Block =>
-        'items' in block
-          ? { kind: block.kind, id, items: block.items.map((text, at) => ({ id: at, text })) }
-          : { ...block, id },
-    )
-}
-
-/**
- * The text of an answer still arriving, its last line closed where a mark is open, so "**Pad"
- * shows bold at once and not as two asterisks until the rest comes. Inside an open fence it stays.
- */
-function closed(text: string): string {
-  if ((text.match(/^```/gm)?.length ?? 0) % 2 === 1) return text
-  const cut = text.lastIndexOf('\n') + 1
-  const tail = text.slice(cut)
-  const bold = (tail.match(/\*\*/g)?.length ?? 0) % 2 === 1 ? '**' : ''
-  const ticks = (tail.replaceAll('**', '').match(/`/g)?.length ?? 0) % 2 === 1 ? '`' : ''
-  return text + ticks + bold
-}
-
-const INLINE = /`([^`\n]+)`|\*\*([^*\n]+)\*\*|\*([^*\s][^*\n]*)\*|\[([^\]\n]+)\]\(([^)\s]+)\)/g
+import { splitBlocks } from './markdown-blocks.ts'
 
 /** An address a person may open: http or https only; any other scheme is shown as text. */
 function safeAddress(raw: string): string | undefined {
@@ -84,73 +24,89 @@ export function Anchor(props: { href: string; children: ReactNode }) {
   )
 }
 
-function inline(text: string): ReactNode[] {
-  const out: ReactNode[] = []
-  let from = 0
-  for (const match of text.matchAll(INLINE)) {
-    const [whole, code, bold, italic, label, address] = match
-    out.push(text.slice(from, match.index))
-    const key = `${match.index}`
-    if (code !== undefined) {
-      out.push(
-        <code key={key} className="font-mono text-fact">
-          {code}
-        </code>,
-      )
-    } else if (bold !== undefined) out.push(<strong key={key}>{bold}</strong>)
-    else if (italic !== undefined) out.push(<em key={key}>{italic}</em>)
-    else if (label !== undefined && address !== undefined) {
-      out.push(
-        <Anchor key={key} href={address}>
-          {label}
-        </Anchor>,
-      )
-    }
-    from = (match.index ?? 0) + whole.length
-  }
-  out.push(text.slice(from))
-  return out
+// Links stay text until their address lands: remend's placeholder address would be a live link to
+// nowhere. No math is drawn, so pairing `$$` would only turn one literal into another.
+const REMEND = { katex: false, linkMode: 'text-only' } as const
+
+const REMARK_PLUGINS = [remarkGfm]
+
+// react-markdown draws no HTML of its own and drops unsafe addresses; each element is listed so
+// its `node` prop never reaches the DOM.
+const ELEMENTS: Components = {
+  a: ({ href, children }) => <Anchor href={href ?? ''}>{children}</Anchor>,
+  h1: ({ children }) => <p className="font-display font-semibold">{children}</p>,
+  h2: ({ children }) => <p className="font-display font-semibold">{children}</p>,
+  h3: ({ children }) => <p className="font-display font-semibold">{children}</p>,
+  h4: ({ children }) => <p className="font-display font-semibold">{children}</p>,
+  h5: ({ children }) => <p className="font-display font-semibold">{children}</p>,
+  h6: ({ children }) => <p className="font-display font-semibold">{children}</p>,
+  ul: ({ children, className }) => (
+    <ul
+      className={cn(
+        'flex flex-col gap-xs',
+        className?.includes('contains-task-list') ? 'list-none' : 'list-disc pl-xl',
+      )}
+    >
+      {children}
+    </ul>
+  ),
+  ol: ({ children }) => <ol className="flex list-decimal flex-col gap-xs pl-xl">{children}</ol>,
+  li: ({ children }) => <li className="[&>ol]:mt-xs [&>ul]:mt-xs">{children}</li>,
+  input: ({ checked }) => (
+    <input type="checkbox" checked={checked} disabled readOnly className="mr-sm accent-accent" />
+  ),
+  blockquote: ({ children }) => (
+    <blockquote className="flex flex-col gap-sm border-line-strong border-l-2 pl-md text-text-2">
+      {children}
+    </blockquote>
+  ),
+  hr: () => <hr className="border-line" />,
+  del: ({ children }) => <del className="text-text-2">{children}</del>,
+  code: ({ children }) => (
+    <code className="rounded-control bg-surface-3 px-xs font-mono text-fact">{children}</code>
+  ),
+  pre: ({ children }) => (
+    <pre className="overflow-x-auto rounded-control border border-line bg-surface-3 p-md font-mono text-fact [&>code]:bg-transparent [&>code]:p-0">
+      {children}
+    </pre>
+  ),
+  table: ({ children }) => (
+    <div className="max-w-full overflow-x-auto">
+      <table className="border-collapse text-label">{children}</table>
+    </div>
+  ),
+  th: ({ children }) => (
+    <th className="min-w-24 border border-line bg-surface-3 px-md py-sm text-left font-semibold">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="min-w-24 border border-line px-md py-sm text-left">{children}</td>
+  ),
 }
 
-function BlockView({ block }: { block: Block }) {
-  switch (block.kind) {
-    case 'heading':
-      return <p className="font-display font-semibold">{inline(block.text)}</p>
-    case 'code':
-      return (
-        <pre className="overflow-x-auto rounded-control border border-line bg-surface-3 p-md font-mono text-fact">
-          {block.text}
-        </pre>
-      )
-    case 'ul':
-    case 'ol': {
-      const List = block.kind
-      return (
-        <List
-          className={cn(
-            'flex flex-col gap-xs pl-xl',
-            block.kind === 'ul' ? 'list-disc' : 'list-decimal',
-          )}
-        >
-          {block.items.map((item) => (
-            <li key={item.id}>{inline(item.text)}</li>
-          ))}
-        </List>
-      )
-    }
-    case 'p':
-      return <p>{inline(block.text)}</p>
-    default:
-      return block satisfies never
-  }
-}
+/** Keyed by position at the call site: a content key would remount the block on every character. */
+const Block = memo(function Block({ content }: { content: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={ELEMENTS}>
+      {content}
+    </ReactMarkdown>
+  )
+})
 
-/** An answer's text as the page: the marks a model writes, drawn without any HTML of its own. */
+/**
+ * An answer's text as the page, drawn as GitHub-flavoured Markdown with no HTML of its own.
+ * Rendered block by block, so a streaming answer parses only its last block, and that one with
+ * its open marks closed ("**Pad" shows bold at once); a block that settled is not drawn again.
+ */
 export function Markdown({ text, streaming = false }: { text: string; streaming?: boolean }) {
+  const blocks = splitBlocks(text)
+  const last = blocks.length - 1
   return (
     <div className="flex min-w-0 flex-col gap-md break-words">
-      {blocksOf(streaming ? closed(text) : text).map((block) => (
-        <BlockView key={block.id} block={block} />
+      {blocks.map((block, at) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: a block has no identity but its place
+        <Block key={at} content={streaming && at === last ? remend(block, REMEND) : block} />
       ))}
     </div>
   )
