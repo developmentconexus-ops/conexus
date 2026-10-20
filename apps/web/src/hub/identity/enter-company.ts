@@ -13,36 +13,47 @@ const companyParams = {
   stringify: (params: { companyId: CompanyId }) => params,
 }
 
+async function readCompany(context: { queryClient: QueryClient }, companyId: CompanyId) {
+  return readOrNotFound(context.queryClient.ensureQueryData(companyQuery(companyId)))
+}
+
 /**
- * The guard of a company's three frames. The Hub answers 404 for a company the person cannot open,
- * which is not found here too. A company without its nickname opens its first entry, which only its
- * owner sees (web W33); there step 1 is the only step until the nickname is saved, and once saved
- * step 1 does not open again. Anyone but the owner goes from the first entry to Início.
+ * The guard of a company's house and Configurações. The Hub answers 404 for a company the person
+ * cannot open, which is not found here too. A company without its nickname opens its first entry,
+ * which only its owner sees (web W33).
  */
-async function enterCompany(input: {
+export async function enterHouse(input: {
   context: { queryClient: QueryClient }
   companyId: CompanyId
-  pathname: string
-  frame: 'house' | 'welcome'
 }): Promise<{ company: CompanyDetail; role: Role }> {
-  const params = { companyId: input.companyId }
-  const { company, role } = await readOrNotFound(
-    input.context.queryClient.ensureQueryData(companyQuery(input.companyId)),
-  )
-  const named = company.nickname !== null
-  if (input.frame === 'house') {
-    if (!named) throw redirect({ to: '/companies/$companyId/welcome', params, replace: true })
-    return { company, role }
-  }
-  if (role !== 'owner') throw redirect({ to: '/companies/$companyId', params, replace: true })
-  const atStepOne = input.pathname === `/companies/${input.companyId}/welcome/company`
-  if (!named && !atStepOne) {
-    throw redirect({ to: '/companies/$companyId/welcome/company', params, replace: true })
-  }
-  if (named && atStepOne) {
-    throw redirect({ to: '/companies/$companyId/welcome/model-account', params, replace: true })
+  const { company, role } = await readCompany(input.context, input.companyId)
+  if (company.nickname === null) {
+    const params = { companyId: input.companyId }
+    throw redirect({ to: '/companies/$companyId/welcome', params, replace: true })
   }
   return { company, role }
+}
+
+/**
+ * The guard of the first entry (web W33): anyone but the owner goes to Início; step 1 is the only
+ * step until the nickname is saved, and once saved step 1 does not open again. `atStepOne` is
+ * whether the navigation ends at step 1's route.
+ */
+export async function enterWelcome(input: {
+  context: { queryClient: QueryClient }
+  companyId: CompanyId
+  atStepOne: boolean
+}): Promise<void> {
+  const params = { companyId: input.companyId }
+  const { company, role } = await readCompany(input.context, input.companyId)
+  if (role !== 'owner') throw redirect({ to: '/companies/$companyId', params, replace: true })
+  const named = company.nickname !== null
+  if (!named && !input.atStepOne) {
+    throw redirect({ to: '/companies/$companyId/welcome/company', params, replace: true })
+  }
+  if (named && input.atStepOne) {
+    throw redirect({ to: '/companies/$companyId/welcome/model-account', params, replace: true })
+  }
 }
 
 const COMPANIES: RememberedList<typeof CompanyId> = { name: 'companies', id: CompanyId, keep: 1 }
@@ -60,25 +71,12 @@ function rememberCompany(input: {
 }
 
 /**
- * The options a company's frame route spreads: its parsed parameter, the guard of `frame`, and the
- * company remembered as the last one opened (web W30). A switch only changes the company in the
- * address, which the router calls staying, so staying remembers too.
+ * The options a company's frame route spreads: its parsed parameter and the company remembered as
+ * the last one opened (web W30). A switch only changes the company in the address, which the router
+ * calls staying, so staying remembers too. Each route adds its guard, `enterHouse` or `enterWelcome`.
  */
-export function companyEntry(frame: 'house' | 'welcome') {
-  return {
-    params: companyParams,
-    beforeLoad: (input: {
-      context: { queryClient: QueryClient }
-      params: { companyId: CompanyId }
-      location: { pathname: string }
-    }) =>
-      enterCompany({
-        context: input.context,
-        companyId: input.params.companyId,
-        pathname: input.location.pathname,
-        frame,
-      }),
-    onEnter: rememberCompany,
-    onStay: rememberCompany,
-  }
+export const companyEntry = {
+  params: companyParams,
+  onEnter: rememberCompany,
+  onStay: rememberCompany,
 }

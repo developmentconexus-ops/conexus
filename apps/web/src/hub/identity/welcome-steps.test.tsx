@@ -102,6 +102,28 @@ test('Passo 3, recusa do Hub: MEMBER_EXISTS fica no campo do e-mail', async () =
   expect(screen.getByRole('link', { name: 'Fazer depois' })).toBeTruthy()
 })
 
+test('Passo 3 com a leitura das pessoas falhando: só a página de falha, sem a moldura do passo', async () => {
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/members`, () => refusal('DATABASE_UNAVAILABLE')),
+    ...companyHub(ready({ accounts: 1 })).handlers,
+  )
+  openAt(`${WELCOME}/team`)
+  expect(
+    await screen.findByText(FAILURES.DATABASE_UNAVAILABLE.phrase, { exact: false }),
+  ).toBeTruthy()
+  expect(screen.getAllByRole('main')).toHaveLength(1)
+  expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  expect(screen.queryByText('Passo 3 de 4')).toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Convide sua equipe' })).toBeNull()
+})
+
+test('Passo 1 com a barra no fim do endereço: a empresa sem apelido fica no Passo 1', async () => {
+  server.use(...companyHub(companyView()).handlers)
+  const router = openAt(`${WELCOME}/company/`)
+  expect(await screen.findByRole('heading', { name: 'Sua empresa' })).toBeTruthy()
+  expect(router.state.location.pathname).toMatch(/\/welcome\/company\/?$/)
+})
+
 test('Passo 4: só "Ir para o início", que abre o Início da empresa', async () => {
   server.use(...companyHub(ready()).handlers)
   openAt(`${WELCOME}/build`)

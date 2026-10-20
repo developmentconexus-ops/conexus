@@ -10,7 +10,7 @@ import { Route as SettingsRoute } from './route.tsx'
 const server = hubServer()
 const APPEARANCE = `/companies/${COMPANY.id}/settings/appearance`
 // The router reads the tree when it is made, so a test adds a child for its own router and puts the
-// real children back (`addChildren` replaces the list in place, in router-core 1.170).
+// real children back (`addChildren` replaces the list in place, in router-core 1.171).
 const children = Object.values(SettingsRoute.children ?? {})
 
 afterEach(() => {
@@ -150,4 +150,15 @@ test('numa tela larga, Configurações abre Minha conta', async () => {
   const router = open(`/companies/${COMPANY.id}/settings`)
   expect(await screen.findByRole('heading', { name: 'Minha conta', level: 1 })).toBeTruthy()
   expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/settings/account`)
+})
+
+test('um endereço de Configurações que não existe: só o não encontrado na área, sem o índice repetido nem outro título', async () => {
+  open(`/companies/${COMPANY.id}/settings/nao-existe`)
+  const main = within(await screen.findByRole('main'))
+  expect(
+    await main.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+  ).toBeTruthy()
+  expect(main.getAllByRole('heading', { level: 1 })).toHaveLength(1)
+  expect(main.queryByRole('searchbox', { name: 'Buscar nas configurações' })).toBeNull()
+  expect(main.queryByRole('link', { name: 'Aparência' })).toBeNull()
 })

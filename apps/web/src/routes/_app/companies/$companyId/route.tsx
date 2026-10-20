@@ -1,7 +1,12 @@
 import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router'
 import { HouseIcon, SettingsIcon } from 'lucide-react'
 import { useEffect } from 'react'
-import { AccountMenu, CompanySwitcher, companyEntry } from '../../../../hub/identity/public.ts'
+import {
+  AccountMenu,
+  CompanySwitcher,
+  companyEntry,
+  enterHouse,
+} from '../../../../hub/identity/public.ts'
 import { projectsQuery, RecentProjects, rememberProject } from '../../../../hub/projects/public.ts'
 import { Frame, FrameLink } from '../../../../ui/frame.tsx'
 import { SidebarGroup, SidebarMenu } from '../../../../ui/sidebar.tsx'
@@ -9,7 +14,8 @@ import { SidebarGroup, SidebarMenu } from '../../../../ui/sidebar.tsx'
 const PROJECT = '/_app/companies/$companyId/projects/$projectId'
 
 export const Route = createFileRoute('/_app/companies/$companyId')({
-  ...companyEntry('house'),
+  ...companyEntry,
+  beforeLoad: ({ context, params }) => enterHouse({ context, companyId: params.companyId }),
   // The sidebar's recent Projects read the first page before the frame mounts, so a page's loader
   // reading it too never has its fetch cancelled by the sidebar's observer coming and going. A
   // failure here is the sidebar's to show: its group goes away.
