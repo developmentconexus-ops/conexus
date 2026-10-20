@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import {
   builderSaid,
@@ -120,9 +121,10 @@ test('sem conta, a conversa mostra o aviso da etapa 11 e não deixa enviar', asy
     ),
   ).toBeTruthy()
   const notice = screen.getByText(/Nenhuma conta que você pode usar/).parentElement
-  expect(
-    within(notice ?? document.body).getByRole('link', { name: 'Minha conta de modelo' }),
-  ).toBeTruthy()
+  const link = within(notice ?? document.body).getByRole('link', {
+    name: 'Minhas contas de modelo',
+  })
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/my-model-accounts`)
   fireEvent.change(field, { target: { value: 'Oi' } })
   expect(screen.getByRole('button', { name: 'Enviar' }).hasAttribute('disabled')).toBe(true)
 })
