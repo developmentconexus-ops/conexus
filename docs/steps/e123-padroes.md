@@ -62,7 +62,7 @@ do merge, este cartão volta (L7).
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| U1 | Os padrões no servidor e a ordem de início | `hub-api`, `builder/model-accounts/` e `builder/conversation/routes.ts` (servidor), `migrations/`, `database-grants.sql` | dados | mastra | 12.1 e 12.2 fechadas |
+| U1 | Os padrões no servidor e a ordem de início | `hub-api`, `builder/model-accounts/` e `builder/conversation/routes.ts` (servidor), `migrations/`, `database-grants.sql`; os dublês da tela que montam `Accounts` | dados | mastra | 12.1 e 12.2 fechadas |
 | U2 | As duas seções | `routes/…/$companyId_/settings/`, `builder/model-accounts/` (tela) | design | shadcn | U1 |
 | U3 | Percurso, capturas, roteiro | `tests/e2e/`, `apps/web/*.test.ts`, `sweep-*.ts` | testes | — | U2 |
 
@@ -81,18 +81,19 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 | --- | --- | --- | --- | --- |
 | 1 | U1 | `createConversation` sem `model`: com padrão pessoal usável, `{model, effort}` dele; sem ele, o da empresa; sem os dois usáveis, o modelo inicial (P3); o `readConversation` lê o par | `model-defaults.test.ts`, pela rota | must |
 | 2 | U1 | Padrão cujo fornecedor não tem conta usável para a pessoa (pausada, no limite, de tipo fechado, de outra pessoa): pulado; nenhum degrau usável: 422 `MODEL_NO_ACCOUNT`, nenhuma conversa criada | idem | must |
-| 3 | U1 | `createConversation` com `model`: esse modelo, nível do primeiro padrão do mesmo modelo, senão `off`; modelo sem conta: 422 `MODEL_NO_ACCOUNT` (12.1) | idem | must |
+| 3 | U1 | `createConversation` com `model`: esse modelo, nível do padrão pessoal do mesmo modelo, depois o da empresa, senão `off`; modelo sem conta: 422 `MODEL_NO_ACCOUNT` (12.1) | idem | must |
 | 4 | U1 | Nível guardado que o modelo não aceita: a conversa nasce no mais alto aceito abaixo dele, senão no mais baixo aceito | idem, com um modelo de níveis só `off` | must |
 | 5 | U1 | Mudar um padrão depois não muda o par de conversa existente | idem | must |
 | 6 | U1 | `setMyModelDefault`: todo membro grava o seu (`manageOwnModelAccounts`, da 11); relido em `listModelAccounts.defaults.mine`; modelo fora do registro 422 `MODEL_UNKNOWN`; nível não aceito 422 `EFFORT_UNSUPPORTED`; outra empresa ou desconhecida: 404 (S10) | idem | must |
 | 7 | U1 | `clearMyModelDefault`: 204; de novo, 204; `mine` volta a `null` | idem | must |
 | 8 | U1 | `setDefaultModel` com `{model, effort}`: dono e administrador gravam; membro 404 como hoje na 11; as recusas de 6; linha antiga sem nível lida como `off` | `model-accounts.test.ts` | must |
+| 9a | U1 | Empresa só com chave OpenAI e nenhum padrão: a conversa nasce em GPT-5 `off`; só com Claude e OpenAI: Claude Sonnet 4.5 (a ordem de P3) | `model-defaults.test.ts` | must |
 | 9 | U1 | `defaults.start` diz `{model, effort, from: 'mine' \| 'company' \| 'starter'}`, o mesmo que a criação usaria, ou `null` sem conta usável | `model-defaults.test.ts` | must |
 | 10 | U1 | Pessoa sai da empresa: o padrão dela some com ela (a chave do membro) | `platform/model-accounts-removal.test.ts` | must |
-| 11 | U1 | A política: com o escopo de Ana, o padrão de outra pessoa não se lê nem se escreve | `platform/isolation.test.ts` | must |
+| 11 | U1 | A política: com o escopo de Ana, o padrão de outra pessoa não se lê nem se escreve | `platform/isolation-model-accounts.test.ts` | must |
 | 12 | U2 | Índice: **Meus padrões** em Você (ordem 25) e **Padrões da empresa** na empresa (ordem 35); "raciocínio" e "modelo padrão" acham as duas; Contas de modelo sem o formulário de modelo padrão | `settings.test.tsx` | must |
 | 13 | U2 | Meus padrões: o botão de modelo e o deslizante de raciocínio (o seletor da 12.1), **Salvar padrão**, **Usar o da empresa** (só com padrão próprio), o padrão da empresa escrito abaixo | `my-defaults.test.tsx` | must |
-| 14 | U2 | A linha "Uma conversa nova começa em: … — seu padrão \| padrão da empresa \| modelo inicial" lê `defaults.start`; sem conta: "Você ainda não tem conta de modelo disponível." e **Minhas contas de modelo** | idem | must |
+| 14 | U2 | A linha "Uma conversa nova começa em: … — seu padrão \| padrão da empresa \| modelo inicial" lê `defaults.start`; `null`: "Nenhum padrão nem modelo inicial tem conta sua disponível." e **Minhas contas de modelo** | idem | must |
 | 15 | U2 | Padrão sem conta usável: "Você não tem conta disponível para {fornecedor} agora: as conversas novas começam no {próximo}." | idem | must |
 | 16 | U2 | "Conta usada primeiro ({fornecedor}): {nome}", de `order`, com **Mudar a ordem** a Minhas contas de modelo | idem | must |
 | 17 | U2 | Padrões da empresa: dono e administrador mudam; membro lê a frase de V29 e o valor | `defaults.test.tsx` | must |
@@ -125,8 +126,8 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 
 | Tela | Desenho | O que se vê primeiro | Entra por | Sai para |
 | --- | --- | --- | --- | --- |
-| Meus padrões | `wf-A1280` | a linha de início | índice, busca | Minhas contas de modelo |
-| Padrões da empresa | `wf-A390` | a linha de início da empresa | índice, busca | Contas de modelo |
+| Meus padrões | `wf-A1280`; a 390 como `wf-A390` | a linha de início | índice, busca | Minhas contas de modelo |
+| Padrões da empresa | `wf-A390`; a 1280 como `wf-A1280` | a linha de início da empresa | índice, busca | Contas de modelo |
 
 ## A matriz de estados
 
@@ -139,7 +140,8 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 | --- | --- | --- |
 | `person_model_default.{model, effort}` | `setMyModelDefault`, `clearMyModelDefault` | `startOf`; Meus padrões |
 | `company_model.effort` | `setDefaultModel` | `startOf`; Padrões da empresa, Meus padrões |
-| `Accounts.defaults.{company, mine}` | `listModels` (`store.ts`) | as duas seções |
+| `Accounts.defaults.{company, mine}` | `list` (`store.ts`), por `listModelAccounts` | as duas seções |
+| `Accounts.mayManage` (11) | o Hub | `mayChange` de Padrões da empresa |
 | `Accounts.defaults.start` | `startOf`, a mesma da criação | a linha de início |
 | `Accounts.order` (11) | o Hub | "Conta usada primeiro" |
 
@@ -147,10 +149,10 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 
 | Gravação ou comando | Duas vezes | Recusada no meio | Dependência fora | Imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `setMyModelDefault` (upsert) | estado final, a última vale | uma instrução: nada gravado | banco: 503 | `MODEL_DEFAULT_CHANGED {companyId, scope: 'mine'}` | 6, 18 |
+| `setMyModelDefault` (upsert) | estado final, a última vale | uma instrução: nada gravado | banco: 503 | `MODEL_ACCOUNT_CHANGED {companyId, scope: 'mine'}`, o nome da 11 | 6, 18 |
 | `clearMyModelDefault` (delete) | 204 nas duas | idem | idem | idem | 7 |
-| `setDefaultModel` com nível (upsert) | estado final | idem | idem | `MODEL_ACCOUNT_CHANGED` da 11 | 8 |
-| Criação lê os padrões e troca o fio (`switchModel`) | a chave de tentativa da 12 (C37) devolve o par já posto | o da 12: sem o par, a repetição resolve de novo | banco: 503; nenhum fornecedor chamado | o da 12 | 1, 5 |
+| `setDefaultModel` com nível (upsert) | estado final | idem | idem | `MODEL_ACCOUNT_CHANGED {companyId, scope: 'company'}` | 8 |
+| Criação lê os padrões e troca o fio (`switchModel`) | a chave de tentativa da 12 (C37) devolve o modelo já posto (`threadModel`); o par se lê por `readConversation` | o da 12: sem o par, a repetição resolve de novo | banco: 503; nenhum fornecedor chamado | o da 12 | 1, 5 |
 
 ## O que nasce novo e o que é trazido
 
@@ -159,7 +161,7 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 | Padrão pessoal | nova | `model-accounts/tables.ts` | — | — |
 | Nível no padrão da empresa | nova | idem | — | sai o `medium` constante do antigo (`models.ts:11`): você pediu escolher |
 | Ordem de início e origem | nova; regra de `{level, source}` do Mastra Code (`thinking.ts:57-63`, fork `ce7e9c30`) | `model-accounts/defaults.ts` | — | — |
-| Nível que desce | nova; regra de `getEffectiveThinkingLevel` (`openai-codex.ts:56-68`) | idem | — | — |
+| Nível que desce | trazida da 12.1: `runLevel` de `thinking.ts`, a mesma regra de `getEffectiveThinkingLevel` (`openai-codex.ts:56-68`) | `thinking.ts` exporta `effortFor` | `runLevel` sobre `Effort` | o dono segue `thinking.ts` (C26) |
 | Seções | nova | `settings/my-defaults.tsx`, `defaults.tsx`, `model-accounts/default-choice.tsx` | `default-model.tsx` vira `default-choice.tsx` | — |
 
 **A medida do transplante.** Nada trazido: o antigo tinha um padrão por papel na instalação
@@ -173,6 +175,8 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
+| todo arquivo que monta um `Accounts`: `web/src/builder/model-accounts/test-hub.tsx` e os `*.test.tsx` dela, `builder/conversation/test-hub.tsx`, `hub/identity/test-hub.tsx`, `welcome-step.test.tsx`, `apps/web/sweep-replies.ts`, `sweep-conversation-states.ts` | `defaultModel` vira `defaults` | testes, varredura |
+| `apps/server/src/builder/model-accounts/thinking.ts` (12.1) | exporta `effortFor` | `defaults.ts` |
 | `packages/hub-api/src/model-accounts.ts` | `ModelDefault`, `StartSource`, `Accounts.defaults` (sai `defaultModel`), `setDefaultModel`, `setMyModelDefault`, `clearMyModelDefault` | servidor, web, `scripts/emit-openapi.ts` |
 | `apps/server/src/builder/model-accounts/tables.ts`, `defaults.ts` (novo), `queue.ts`, `changes.ts`, `store.ts`, `routes.ts`, `providers.ts`, `public.ts` | tabela, coluna, `startOf`, `effortFor`, `STARTER_MODELS` | `builder/conversation/routes.ts`, testes |
 | `apps/server/src/builder/conversation/routes.ts` | `created` usa `conversationStart` | `main.ts` |
@@ -187,8 +191,8 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 - `setDefaultModel` `PUT /api/companies/{companyId}/default-model`, corpo `ModelDefault`: 200
   `{defaultModel: ModelDefault}`; falhas `NOT_FOUND`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE`,
   `MODEL_UNKNOWN`, `EFFORT_UNSUPPORTED`.
-- `setMyModelDefault` `PUT /api/companies/{companyId}/my-model-default`, corpo `ModelDefault`, 1 KiB: 200
-  `{mine: ModelDefault}`; as mesmas falhas. `clearMyModelDefault` `DELETE` no mesmo caminho: 204.
+- `setMyModelDefault` `PUT /api/companies/{companyId}/my-model-default`, corpo `ModelDefault`, 1 KiB como o `setDefaultModel`: 200
+  `{mine: ModelDefault}` (a chave diz o escopo, como `defaultModel` diz o da empresa); as mesmas falhas. `clearMyModelDefault` `DELETE` no mesmo caminho: 204.
 - Tabela `builder.person_model_default`: `company_id text`, `person_id text`, `model text not null`,
   `effort text not null` com `check` nos valores de `Effort`; chave `(company_id, person_id)`; chave
   estrangeira a `member (organization_id, user_id)` `on delete cascade`, como
@@ -198,7 +202,7 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 - `startOf(tx, asker): Promise<Start | null>` em `defaults.ts`, dono único da ordem (C26);
   `conversationStart(deps, asker, asked: ModelId | undefined): Promise<Start>` a chama e recusa
   `MODEL_UNKNOWN` ou `MODEL_NO_ACCOUNT`; `conversationModel(deps, asker, asked: ModelId)` fica só para
-  a troca da 12.1. `effortFor(model: ModelId, wanted: Effort): Effort` sobre `effortsOf`.
+  a troca da 12.1. `effortFor(model: ModelId, wanted: Effort): Effort` exportada de `thinking.ts` (12.1), sobre `runLevel`: um dono da regra (C26).
 - `STARTER_MODELS: readonly ModelId[]` em `providers.ts`, a lista de P3, conferida contra o registro
   num teste.
 - Estado: `Start = ModelDefault & {from: StartSource}`, a variante pelo `from` (C21). Ids: `CompanyId`,
@@ -228,7 +232,7 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 ### Os contratos que a unidade cria
 
 `DefaultChoice(props: {companyId; scope: 'mine' | 'company'; defaults: Accounts['defaults'];
-providers; mayChange: boolean})`. Textos em `text.ts` (C26). Modelo: `my-model-accounts.tsx` da 12.2.
+providers; mayChange: boolean})`. Textos em `text.ts` (C26). `mayChange` vem de `Accounts.mayManage` na empresa e é `true` no pessoal. Modelo: `my-accounts.tsx` (12.1), que cumpre C23 e C26 (textos em `text.ts`); C21 não se aplica, sem estado em união.
 
 ### A ordem do trabalho
 
