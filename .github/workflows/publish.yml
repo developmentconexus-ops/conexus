@@ -35,6 +35,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
       - name: The release is a version name on a commit of main
         env:
           VERSION: ${{ github.event.release.tag_name }}
@@ -87,7 +88,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-      - uses: ./.github/actions/install
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm run app:pack
       - working-directory: dist/apps
         run: |
@@ -128,6 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
@@ -156,6 +158,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.sha }}
+          persist-credentials: false
       - if: ${{ hashFiles('apps/edge/package.json') != '' }}
-        uses: ./.github/actions/install
+        uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: infra/publish-edge.sh

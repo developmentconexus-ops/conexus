@@ -170,12 +170,12 @@ for (const viewport of [DESKTOP, PHONE]) {
   })
 }
 
-test('o Tab passa pela entrada com contorno de 2px em cada parada', async () => {
+test('o Tab passa pela entrada com o foco visível em cada parada: halo nos campos, contorno de 2px no resto', async () => {
   const page = await open('/login', DESKTOP, SIGNED_OUT)
   await page.getByRole('textbox', { name: 'E-mail' }).waitFor()
   assert.deepEqual(await presses(page, 'Tab', 5), [
-    'email solid 2px',
-    'password solid 2px',
+    'email halo',
+    'password halo',
     'Entrar solid 2px',
     'Esqueci minha senha solid 2px',
     'body',

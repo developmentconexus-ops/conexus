@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import type { Locator, Page } from 'playwright-core'
+import type { Locator } from 'playwright-core'
 import { createHarness, DESKTOP, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { CONVERSATION_STATES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
@@ -115,65 +115,32 @@ for (const state of CONVERSATION_STATES) {
   }
 }
 
-/** Grows the last turn by `lines` paragraphs, as an answer arriving would. */
-function grow(page: Page, lines: number) {
-  return page.evaluate((count) => {
-    const items = document.querySelectorAll(
-      '[data-slot=message-scroller-content] > [data-slot=message-scroller-item]',
-    )
-    for (let line = 0; line < count; line++) {
-      const paragraph = document.createElement('p')
-      paragraph.textContent = `linha ${line} do que o Builder vai dizendo aos poucos`
-      items[items.length - 1]?.append(paragraph)
+// A tool row's sentence names what the Builder did; the query beside it is the part that gives way.
+for (const viewport of [DESKTOP, PHONE]) {
+  test(`${viewport.width}px: a linha de uma ferramenta nunca corta a frase, só o que vem ao lado dela`, async () => {
+    const state = CONVERSATION_STATES.find((each) => each.name.includes('ferramentas abertas'))
+    assert.ok(state, 'the sweep lacks the conversation state')
+    const page = await harness.open(state.path, { viewport, replies: state.replies })
+    await state.settle(page)
+    const rows = await page
+      .locator('[data-slot=trace-line]:has([data-slot=trace-description])')
+      .all()
+    assert.ok(rows.length >= 4, 'the conversation shows no tool rows')
+    for (const row of rows) {
+      const [title, detail] = await Promise.all(
+        ['trace-title', 'trace-description'].map((slot) =>
+          row.locator(`[data-slot=${slot}]`).evaluate((el) => ({
+            text: el.textContent,
+            clipped: el.scrollWidth > el.clientWidth,
+            width: Math.round(el.getBoundingClientRect().width),
+          })),
+        ),
+      )
+      assert.ok(title && detail, 'a tool row lacks its sentence or its detail')
+      assert.equal(title.clipped, false, `"${title.text}" is cut at ${viewport.width}px`)
+      assert.ok(detail.width >= 48, `"${detail.text}" has no room beside "${title.text}"`)
     }
-  }, lines)
+    assert.deepEqual(page.problems, [])
+    await page.close()
+  })
 }
-
-test('a rolagem da conversa segue o fim enquanto ela cresce; quem subiu não é puxado e volta por "Ir para o fim da conversa"', async () => {
-  const page = await open(PROJECT, DESKTOP)
-  const scroller = page.getByLabel('Rolagem da conversa')
-  await scroller.waitFor()
-  const button = page.locator('[data-slot=message-scroller-button]')
-  function distance() {
-    return scroller.evaluate((el) => Math.round(el.scrollHeight - el.scrollTop - el.clientHeight))
-  }
-  await grow(page, 40)
-  await page.waitForFunction(
-    () => {
-      const el = document.querySelector('[data-slot=message-scroller-viewport]')
-      return el !== null && el.scrollHeight - el.scrollTop - el.clientHeight <= 2
-    },
-    undefined,
-    { polling: 50 },
-  )
-  await grow(page, 10)
-  await page.waitForTimeout(300)
-  assert.ok((await distance()) <= 2, 'the end did not stay in view while the answer grew')
-  const box = await scroller.boundingBox()
-  assert.ok(box, 'the conversation is not laid out')
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
-  await page.mouse.wheel(0, -400)
-  await page.waitForTimeout(300)
-  const top = await scroller.evaluate((el) => el.scrollTop)
-  await grow(page, 10)
-  await page.waitForTimeout(300)
-  assert.deepEqual(
-    {
-      pulled: Math.abs((await scroller.evaluate((el) => el.scrollTop)) - top) > 1,
-      button: await button.getAttribute('data-active'),
-    },
-    { pulled: false, button: 'true' },
-  )
-  await button.click()
-  await page.waitForFunction(
-    () => {
-      const el = document.querySelector('[data-slot=message-scroller-viewport]')
-      return el !== null && el.scrollHeight - el.scrollTop - el.clientHeight <= 2
-    },
-    undefined,
-    { polling: 50 },
-  )
-  assert.equal(await button.getAttribute('data-active'), 'false')
-  assert.deepEqual(page.problems, [])
-  await page.close()
-})

@@ -11,6 +11,11 @@ const SKIPPED = new Set(['node_modules', '.git', 'dist', 'coverage'])
 const SOURCE = /\.(?:[cm]?[jt]sx?|css)$/
 const SUPPRESSION =
   /^\s*\{?\s*(?:\/\/|\/\*+)\s*(biome-ignore(?:-all|-start|-end)?|@ts-ignore|@ts-expect-error|@ts-nocheck)\b(.*)$/
+// Workflow files carry zizmor and ShellCheck suppressions as comments, and the checkers' configs
+// carry them as `ignore:` blocks, which need a comment line above for the cause.
+const WORKFLOW = /^\.github\/.*\.ya?ml$/
+const WORKFLOW_SUPPRESSION =
+  /(?:#\s*(zizmor:\s*ignore\[[^\]]*\]|shellcheck\s+disable=\S+)(.*)|^(\s*ignore:)\s*$)/
 const CAUSE_AFTER_COLON = /^[^:]*:\s*\S/
 
 function walk(dir: string): string[] {
@@ -29,17 +34,22 @@ function hasCause(kind: string, rest: string): boolean {
 
 const counts: Record<string, number> = {}
 const problems: string[] = []
-for (const path of walk(root).filter((file) => SOURCE.test(file))) {
+for (const path of walk(root)) {
   const file = relative(root, path)
+  const workflow = WORKFLOW.test(file)
+  if (!workflow && !SOURCE.test(file)) continue
   readFileSync(path, 'utf8')
     .split('\n')
-    .forEach((line, index) => {
-      const match = line.match(SUPPRESSION)
+    .forEach((line, index, lines) => {
+      const match = line.match(workflow ? WORKFLOW_SUPPRESSION : SUPPRESSION)
       if (match === null) return
       counts[file] = (counts[file] ?? 0) + 1
-      if (!hasCause(match[1] ?? '', match[2] ?? '')) {
-        problems.push(`suppression-without-cause: ${file}:${index + 1}`)
-      }
+      const cause = !workflow
+        ? hasCause(match[1] ?? '', match[2] ?? '')
+        : match[3] !== undefined
+          ? /^\s*#\s*\S/.test(lines[index - 1] ?? '')
+          : (match[2] ?? '').replace(/^[\s#]+/, '').length > 0
+      if (!cause) problems.push(`suppression-without-cause: ${file}:${index + 1}`)
     })
 }
 

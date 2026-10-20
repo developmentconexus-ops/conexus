@@ -92,6 +92,7 @@ export async function spawnHub(t: Lifetime, env: Record<string, string>) {
     port,
     edgePort,
     lines: hub.lines,
+    until: hub.until,
     stop: async () => {
       hub.kill('SIGTERM')
       assert.equal(await hub.exited, 0)

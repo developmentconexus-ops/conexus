@@ -88,7 +88,9 @@ async function created(
   const model = await conversationModel(deps.queue, owner, input.body.model)
   const made =
     earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
-  await deps.sessions.switchModel({ owner, conversationId: made.id, model, effort: 'off' })
+  // It starts at the model's lowest effort: `off` when the model can stop reasoning.
+  const [effort] = effortsOf(model)
+  await deps.sessions.switchModel({ owner, conversationId: made.id, model, effort })
   return { ...made, model }
 }
 

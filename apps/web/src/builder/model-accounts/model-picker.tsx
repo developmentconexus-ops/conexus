@@ -1,4 +1,6 @@
 import type { Effort, ModelId, Provider } from '@conexus/hub-api'
+import { runningEffort } from '@conexus/hub-api'
+import { SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
@@ -14,28 +16,32 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from '../../ui/combobox.tsx'
+import { InputGroupAddon } from '../../ui/input-group.tsx'
 import { Slider } from '../../ui/slider.tsx'
 import { modelLabel } from './model-label.ts'
+import { ProviderMark } from './provider-mark.tsx'
 import { EFFORT_LABELS, plain } from './text.ts'
 
 /** Models shown at once: the registry holds thousands, and a search narrows them. */
 const SHOWN = 50
 
-type Option = { value: ModelId; label: string }
+type Option = { value: ModelId; label: string; provider: string }
 type Group = { value: string; items: Option[] }
 
 /** The level the person reads and sets, for a model that lists more than `off`. */
 export type EffortChoice = { value: Effort; onChange: (effort: Effort) => void }
 
 /**
- * One model of the registry as `provider/model`, picked from a search over groups by provider.
- * With `effort`, the popup also holds the levels the model accepts, and none when it accepts only
- * `off`. `name` is the button's accessible name. Esc closes the popup and returns focus to the button.
+ * One model of the registry as `provider/model`, picked from a search over groups by provider,
+ * each model beside its provider's mark. With `effort`, the popup also holds the levels the model
+ * accepts, and none when it accepts only one. `name` is the button's accessible name and `heading`
+ * the popup's title. Esc closes the popup and returns focus to the button.
  */
 export function ModelPicker(props: {
   providers: readonly Provider[]
   value: ModelId | null
   name: string
+  heading?: string
   id?: string
   className?: string
   onChange: (model: ModelId) => void
@@ -50,11 +56,14 @@ export function ModelPicker(props: {
     .flatMap((provider) => provider.models)
     .find((one) => one.id === props.value)?.efforts
   const current: Option | null =
-    props.value === null ? null : { value: props.value, label: modelLabel(props.value) }
+    props.value === null
+      ? null
+      : { value: props.value, label: modelLabel(props.value), provider: providerOf(props.value) }
   const choice =
     props.effort !== undefined && levels !== undefined && levels.length > 1
       ? { effort: props.effort, levels }
       : null
+  const running = choice === null ? undefined : runningEffort(choice.levels, choice.effort.value)
 
   return (
     <Combobox
@@ -75,18 +84,22 @@ export function ModelPicker(props: {
           props.className,
         )}
       >
+        {current !== null && <ProviderMark provider={current.provider} />}
         <span className="truncate text-text">{current?.label ?? 'Escolha um modelo'}</span>
-        {choice !== null && (
-          <span className="shrink-0 text-text-2">{EFFORT_LABELS[choice.effort.value]}</span>
+        {running !== undefined && (
+          <span className="shrink-0 text-text-2">{`· ${EFFORT_LABELS[running]}`}</span>
         )}
       </ComboboxTrigger>
-      <ComboboxContent className="w-72 min-w-0" align="start" side="top">
-        <div className="p-xs">
-          <ComboboxInput
-            showTrigger={false}
-            placeholder="Buscar modelo"
-            aria-label="Buscar modelo"
-          />
+      <ComboboxContent className="w-80 min-w-0" align="end" side="top">
+        {props.heading !== undefined && (
+          <p className="px-md pt-md text-label text-text-2">{props.heading}</p>
+        )}
+        <div className="p-sm">
+          <ComboboxInput showTrigger={false} placeholder="Buscar modelo" aria-label="Buscar modelo">
+            <InputGroupAddon>
+              <SearchIcon aria-hidden="true" />
+            </InputGroupAddon>
+          </ComboboxInput>
         </div>
         <ComboboxEmpty>Nenhum modelo encontrado.</ComboboxEmpty>
         <ComboboxList>
@@ -96,7 +109,8 @@ export function ModelPicker(props: {
               <ComboboxCollection>
                 {(option: Option) => (
                   <ComboboxItem key={option.value} value={option}>
-                    {option.label}
+                    <ProviderMark provider={option.provider} className="text-text-2" />
+                    <span className="truncate">{option.label}</span>
                   </ComboboxItem>
                 )}
               </ComboboxCollection>
@@ -114,6 +128,11 @@ export function ModelPicker(props: {
   )
 }
 
+/** The provider of `provider/model`, the part before the slash. */
+function providerOf(model: ModelId): string {
+  return model.slice(0, model.indexOf('/'))
+}
+
 /** The models that match the search, up to what shows at once, grouped by provider. */
 function groupsOf(providers: readonly Provider[], search: string) {
   const wanted = plain(search.trim())
@@ -128,25 +147,24 @@ function groupsOf(providers: readonly Provider[], search: string) {
       matched += 1
       if (count >= SHOWN) continue
       count += 1
-      items.push({ value: model.id, label })
+      items.push({ value: model.id, label, provider: provider.id })
     }
     if (items.length > 0) groups.push({ value: provider.name, items })
   }
   return { groups, matched }
 }
 
-function EffortLevels(props: { levels: readonly Effort[]; effort: EffortChoice }) {
+/** "Raciocínio": the level named above a pill with a stop per level, as the old picker drew it. */
+function EffortLevels(props: { levels: readonly [Effort, ...Effort[]]; effort: EffortChoice }) {
   const [dragged, setDragged] = useState<number | null>(null)
-  const saved = props.levels.indexOf(props.effort.value)
+  const saved = props.levels.indexOf(runningEffort(props.levels, props.effort.value))
   const shown = props.levels[dragged ?? saved]
   return (
     <div className="flex flex-col gap-sm border-t border-line p-md">
-      <div className="flex items-baseline justify-between gap-md">
-        <span className="text-fact text-text-2">Raciocínio</span>
-        <span className="text-label text-text">
-          {shown === undefined ? '' : EFFORT_LABELS[shown]}
-        </span>
-      </div>
+      <span className="text-label text-text">Raciocínio</span>
+      <span aria-hidden="true" className="self-center text-label text-accent-text">
+        {shown === undefined ? '' : EFFORT_LABELS[shown]}
+      </span>
       <Slider
         label="Raciocínio"
         min={0}

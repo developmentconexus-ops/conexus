@@ -113,3 +113,28 @@ export async function researching(t: TestContext): Promise<Anthropic['answer']> 
     }
   }
 }
+
+/** A page an answer after a search cites. */
+const CITED = { url: 'https://meslo.example.test/', title: 'Meslo' }
+
+/**
+ * A provider answer that searches the web and answers as Claude does after a search: one text
+ * block per span, the cited spans each their own block between the plain ones.
+ */
+export function citing(): Anthropic['answer'] {
+  return (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    return {
+      kind: 'blocks',
+      blocks: [
+        { type: 'text', text: 'Vou buscar os apps.' },
+        { type: 'search', query: 'apps de encomenda de padaria', results: [CITED] },
+        { type: 'text', text: 'Encontrei estes apps.\n\n- **Meslo:** ' },
+        { type: 'text', text: 'uma plataforma para confeitarias', cites: [CITED] },
+        { type: 'text', text: '. A limitação é que ' },
+        { type: 'text', text: 'é especializada em encomendas', cites: [CITED] },
+        { type: 'text', text: '.' },
+      ],
+    }
+  }
+}

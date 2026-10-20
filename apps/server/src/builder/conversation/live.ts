@@ -14,7 +14,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Turn } from '../model-accounts/public.ts'
 import type { Place } from './parts.ts'
-import { modelOf, partOf } from './parts.ts'
+import { appendText, modelOf, partOf } from './parts.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
 /** An event as the stream sends it, with the id a reconnect names it by. */
@@ -188,12 +188,6 @@ function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
   if (shown.type !== 'text') put(live, turn, shown)
 }
 
-function appendText(answer: Message, delta: string): void {
-  const last = answer.parts.at(-1)
-  if (last?.type === 'text') last.text += delta
-  else answer.parts.push({ type: 'text', text: delta })
-}
-
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
   if (event.type === 'message_start' && event.message.role === 'assistant') {
     const turn = openTurn(live)
@@ -206,7 +200,7 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
     const turn = live.turn
     if (event.event.type === 'text-delta') {
       settleThinking(live, turn)
-      appendText(turn.answer, event.event.delta)
+      appendText(turn.answer.parts, event.event.delta)
       say(live, turn, { type: 'text', delta: event.event.delta })
     } else if (event.event.type === 'part') {
       const messageId = MessageId.parse(event.id)

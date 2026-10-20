@@ -218,7 +218,7 @@ test('a conversa cuja thread o Mastra não tem: 404 CONVERSATION_NOT_FOUND, e a 
   assert.deepEqual(rows, [{ count: 0 }])
 })
 
-test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" não, nível recusado é 422, a troca durante o turno vale para o próximo e o nível fica ao reiniciar', async (t) => {
+test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `disabled`, nível recusado é 422, a troca durante o turno vale para o próximo e o nível fica ao reiniciar', async (t) => {
   const held = holding(t)
   const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
     if (!asked.stream) return { kind: 'text', text: 'Título' }
@@ -235,6 +235,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" não, ní
     return call(hub, ana, 'PUT', `${url}/model`, { model: MODEL, effort })
   }
   const HIGH = { type: 'enabled', budget_tokens: 16384 }
+  const OFF = { type: 'disabled' }
   assert.equal(await effortOn(hub), 'off')
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
@@ -258,7 +259,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" não, ní
   await stream.turn()
   assert.equal((await sent(hub, ana, url, 'Depois')).statusCode, 202)
   await stream.turn()
-  assert.deepEqual(thinkings(), [HIGH, HIGH, null], 'the switch held for the next turn only')
+  assert.deepEqual(thinkings(), [HIGH, HIGH, OFF], 'the switch held for the next turn only')
 
   assert.equal((await model('high')).statusCode, 200)
   const restarted = await hubBeside(t, hub)

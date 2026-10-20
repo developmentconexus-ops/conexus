@@ -2,14 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import {
-  approvalsOf,
-  conversing,
-  plantGemini,
-  sent,
-  started,
-  streamOf,
-} from './test-conversation.ts'
+import { asked, conversing, plantGemini, sent, started, streamOf } from './test-conversation.ts'
+import { routedTo, served } from './test-research.ts'
 
 test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fetch`; nos três, também `web_search`', async (t) => {
   const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (asked) => ({
@@ -47,15 +41,51 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   )
 })
 
-test('as ferramentas de leitura do Builder rodam sem pedir; qualquer outra é negada, nenhuma espera por aprovação', async (t) => {
-  const { hub } = await conversing(t, () => ({ kind: 'text', text: 'Resposta' }))
-  const names = ['web_fetch', 'web_search', 'recall', 'write_file', 'execute_command', 'mcp_tool']
-  assert.deepEqual(await approvalsOf(t, hub, names), {
-    web_fetch: 'allow',
-    web_search: 'allow',
-    recall: 'allow',
-    write_file: 'deny',
-    execute_command: 'deny',
-    mcp_tool: 'deny',
+test('um turno com `web_fetch` e `recall` nunca para à espera de aprovação: cada um roda e termina', async (t) => {
+  const site = await served(t, (_path, response) => response.end('Cardápio da padaria'))
+  routedTo(t, { 'padaria.example.test': site.port })
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step > 1) return { kind: 'text', text: 'Li a página.' }
+    return {
+      kind: 'blocks',
+      blocks: [
+        { type: 'tool_use', name: 'web_fetch', input: { url: 'http://padaria.example.test/' } },
+        { type: 'tool_use', name: 'recall', input: { mode: 'messages' } },
+      ],
+    }
   })
+  /** Every run Mastra saves waiting, as an approval leaves it, from the moment its tables exist. */
+  async function recordSuspensions() {
+    await hub.test.mastraPool.query(`
+      create table mastra.suspended_runs (run_id text);
+      create function mastra.record_suspension() returns trigger language plpgsql as $$
+      begin insert into mastra.suspended_runs values (new.run_id); return new; end $$;
+      create trigger record_suspension after insert or update on mastra.mastra_workflow_snapshot
+        for each row when (new.snapshot->>'status' = 'suspended')
+        execute function mastra.record_suspension();
+    `)
+  }
+  const { events } = await asked(t, {
+    hub,
+    person: ana,
+    conversations,
+    between: recordSuspensions,
+  })
+  const tools = events.flatMap((event) =>
+    event.type === 'part' && event.part.type === 'tool'
+      ? [[event.part.kind, event.part.state]]
+      : [],
+  )
+  assert.deepEqual(tools, [
+    ['read_page', 'running'],
+    ['recall', 'running'],
+    ['read_page', 'completed'],
+    ['recall', 'completed'],
+  ])
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  const suspended = await hub.test.mastraPool.query('select run_id from mastra.suspended_runs')
+  assert.deepEqual(suspended.rows, [], 'no run was saved waiting for an approval')
 })

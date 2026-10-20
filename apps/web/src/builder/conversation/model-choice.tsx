@@ -82,7 +82,8 @@ export function ModelChoice(props: {
     const efforts = shown
       .flatMap((provider) => provider.models)
       .find((one) => one.id === model)?.efforts
-    choose(model, efforts?.includes(now.effort) ? now.effort : 'off')
+    // A level the new model lacks falls to its lowest, which is `off` where it can stop reasoning.
+    choose(model, efforts?.includes(now.effort) ? now.effort : (efforts?.[0] ?? 'off'))
   }
 
   return (
@@ -90,6 +91,8 @@ export function ModelChoice(props: {
       providers={shown}
       value={now.model}
       name="Modelo e raciocínio"
+      heading="Modelo desta conversa"
+      className="h-8 rounded-pill px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
       onChange={pickModel}
       effort={{ value: now.effort, onChange: (effort) => choose(now.model, effort) }}
     />

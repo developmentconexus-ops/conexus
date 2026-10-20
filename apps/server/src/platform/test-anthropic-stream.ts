@@ -1,12 +1,16 @@
 import { randomUUID } from 'node:crypto'
 
+/** A search result a text block cites, as the answer after a search cites its pages. */
+type Cited = { url: string; title: string }
+
 /**
- * A content block of a streamed answer: thinking, text, a call of one of the Hub's tools, or the
- * provider's own search with its results (`server_tool_use` and `web_search_tool_result`).
+ * A content block of a streamed answer: thinking, text, which may cite search results, a call of
+ * one of the Hub's tools, or the provider's own search with its results (`server_tool_use` and
+ * `web_search_tool_result`).
  */
 export type Block =
   | { type: 'thinking'; thinking: string }
-  | { type: 'text'; text: string }
+  | { type: 'text'; text: string; cites?: Cited[] }
   | { type: 'tool_use'; name: string; input: object }
   | { type: 'search'; query: string; results: { url: string; title: string }[] }
 
@@ -28,12 +32,25 @@ function framesOf(block: Block, index: number): [string, object][] {
         delta({ type: 'signature_delta', signature: 'signature-test' }),
         stop,
       ]
-    case 'text':
+    case 'text': {
+      const cites = (block.cites ?? []).map((cited) =>
+        delta({
+          type: 'citations_delta',
+          citation: {
+            type: 'web_search_result_location',
+            ...cited,
+            cited_text: block.text,
+            encrypted_index: 'encrypted-test',
+          },
+        }),
+      )
       return [
-        start({ type: 'text', text: '' }),
+        start({ type: 'text', text: '', ...(block.cites && { citations: [] }) }),
+        ...cites,
         delta({ type: 'text_delta', text: block.text }),
         stop,
       ]
+    }
     case 'tool_use': {
       const call = { type: 'tool_use', id: `toolu_${randomUUID()}`, name: block.name, input: {} }
       const input = JSON.stringify(block.input)

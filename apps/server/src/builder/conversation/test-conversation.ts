@@ -21,8 +21,6 @@ import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
-import { openGoogleCalls } from '../model-accounts/public.ts'
-import { createBuilder } from './builder.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-5'
 export const PARTIAL = 'Começo da resposta'
@@ -223,17 +221,6 @@ export async function asked(
 }
 
 /**
- * Waits up to three seconds for work the Hub does in the background after a turn ends (the
- * observer, the title) and fails with `what` when `done` stays false.
- */
-export async function eventually(done: () => boolean, what: string): Promise<void> {
-  for (let attempt = 0; attempt < 30 && !done(); attempt += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 100))
-  }
-  assert.ok(done(), what)
-}
-
-/**
  * The conversation's messages once the last is the Builder's, read again for at most five seconds:
  * Mastra saves a turn just after its end.
  */
@@ -245,6 +232,16 @@ export async function answeredOf(hub: Hub, person: Person, url: string): Promise
     if (messages.at(-1)?.role === 'builder' || attempt === 50) return messages
     await new Promise((done) => setTimeout(done, 100))
   }
+}
+
+/**
+ * The conversation's messages, read once: Mastra saves a completed turn before it passes on its
+ * `finish`, so a read at `turnEnd` has it.
+ */
+export async function messagesOf(hub: Hub, person: Person, url: string): Promise<Message[]> {
+  const read = await call(hub, person, 'GET', url)
+  assert.equal(read.statusCode, 200, read.body)
+  return Object(read.json()).conversation.messages
 }
 
 /** The failures a turn said, in order. */
@@ -266,26 +263,6 @@ export async function keptNotices(hub: Hub, person: Person, url: string): Promis
     .filter((message) => message.role === 'builder')
     .flatMap((message) => message.parts)
     .flatMap((part) => (part.type === 'notice' ? [part.text] : []))
-}
-
-/**
- * What the Builder's real controller answers when a tool is asked for approval, on a session it
- * opens as the conversations do: `allow`, `deny` or `ask` (which would park the turn).
- */
-export async function approvalsOf(t: TestContext, hub: Hub, toolNames: string[]) {
-  const { config, test } = hub
-  const { database } = test
-  const { cliProxy, sealKeys } = config
-  const google = openGoogleCalls({ cliProxy, log: silent, database, sealKeys })
-  t.after(() => google.stop())
-  const identity = identityOf({ database, config, log: silent }).ports
-  const queue = { database, identity, sealKeys, googleCalls: google.googleCalls, log: silent }
-  const builder = createBuilder({ pool: test.mastraPool, queue, log: silent })
-  const session = await builder.controller.createSession({
-    resourceId: 'company:approvals:person:approvals',
-    scope: randomUUID(),
-  })
-  return Object.fromEntries(toolNames.map((name) => [name, session.resolveToolApproval(name)]))
 }
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/'

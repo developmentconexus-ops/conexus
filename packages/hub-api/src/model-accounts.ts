@@ -39,8 +39,8 @@ export const ACCOUNT_LABEL_MAX_LENGTH = 60
 /** The longest key the Hub takes, in characters. */
 export const ACCOUNT_KEY_MAX_LENGTH = 4096
 
-/** A model of a provider, as `provider/model`, with the efforts it accepts, `off` always. */
-const ProviderModel = z.object({ id: ModelId, efforts: z.array(Effort).min(1) })
+/** A model of a provider, as `provider/model`, with the efforts it accepts, lowest first. */
+const ProviderModel = z.object({ id: ModelId, efforts: z.tuple([Effort], Effort) })
 
 export const Provider = z.object({
   id: ProviderId,

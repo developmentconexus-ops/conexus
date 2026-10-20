@@ -9,13 +9,13 @@ import { test } from 'node:test'
 import { promisify } from 'node:util'
 import { hashPassword } from 'better-auth/crypto'
 import { request } from 'playwright-core'
-import { mailServer } from '../../apps/server/src/hub/identity/test-hub.ts'
 import {
   createTestDatabase,
   freePort,
   serveEnvironment,
   TEST_ORIGIN,
 } from '../../apps/server/src/platform/test-database.ts'
+import { mailServer } from '../../apps/server/src/platform/test-mail.ts'
 
 const IMAGE = 'conexus-hub:ci'
 const PASSWORD = 'senha-certa-1'
