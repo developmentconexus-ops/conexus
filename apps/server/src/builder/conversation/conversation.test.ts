@@ -214,20 +214,18 @@ test('título e observação vão pela conta do turno; um 429 no observador: o t
   }
 })
 
-test('o título que o observador dá a uma conversa longa vem em português', async (t) => {
+test('o título nasce na primeira mensagem e o observador não o troca', async (t) => {
   const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
   const observation = [
     '<observations>',
     '* 🔴 (09:00) A pessoa recebe encomendas da padaria pelo telefone e pelo balcão',
     '</observations>',
-    '<thread-title>Bakery order tracking</thread-title>',
-  ].join('\n')
+  ]
+  const titled = [...observation, '<thread-title>Controle de encomendas</thread-title>']
   const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
     if (OBSERVER.test(asked.system)) {
-      const title = /thread-title[\s\S]*?portugu/i.test(asked.system)
-        ? 'Controle de encomendas'
-        : 'Bakery order tracking'
-      return { kind: 'text', text: observation.replace('Bakery order tracking', title) }
+      const asksTitle = asked.system.includes('thread-title')
+      return { kind: 'text', text: (asksTitle ? titled : observation).join('\n') }
     }
     if (!asked.stream) return { kind: 'text', text: 'Encomendas da padaria' }
     return { kind: 'text', text: asked.texts.length > 2 ? 'Certo.' : long }
@@ -246,11 +244,16 @@ test('o título que o observador dá a uma conversa longa vem em português', as
     () => anthropic.sent.some((each) => OBSERVER.test(each.system)),
     'the observer was called',
   )
-  let title = ''
-  for (const _ of Array(30)) {
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    title = Object(Object((await call(hub, ana, 'GET', url)).json()).conversation).title
-    if (title !== 'Encomendas da padaria') break
+  async function titleOf() {
+    return Object(Object((await call(hub, ana, 'GET', url)).json()).conversation).title
   }
-  assert.equal(title, 'Controle de encomendas')
+  let title = null
+  for (const _ of Array(30)) {
+    title = await titleOf()
+    if (title !== null) break
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  assert.equal(title, 'Encomendas da padaria')
+  await new Promise((resolve) => setTimeout(resolve, 1500))
+  assert.equal(await titleOf(), 'Encomendas da padaria')
 })

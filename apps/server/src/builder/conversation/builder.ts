@@ -32,8 +32,6 @@ const INSTRUCTIONS = [
 ].join(' ')
 const TITLE_INSTRUCTIONS =
   'Dê à conversa um título curto em português, de até seis palavras, sem aspas nem ponto final.'
-const OBSERVER_INSTRUCTIONS =
-  'Escreva o thread-title em português do Brasil, em até seis palavras, sem aspas nem ponto final.'
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
 // stays out until the live proof of criterion 3 passes.
 const SEARCH_PROVIDERS = new Set(['anthropic', 'openai', 'xai'])
@@ -119,8 +117,6 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
           blockAfter: 2,
-          threadTitle: true,
-          instruction: OBSERVER_INSTRUCTIONS,
         },
         reflection: {
           ...failSoft,
