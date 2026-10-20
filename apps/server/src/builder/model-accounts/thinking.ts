@@ -5,7 +5,7 @@
 // model takes, and how it is asked, comes only from Mastra's reasoning data.
 
 import type { ModelId } from '@conexus/hub-api'
-import { Effort } from '@conexus/hub-api'
+import { Effort, runningEffort } from '@conexus/hub-api'
 import type { ModelReasoningOption } from '@mastra/core/llm'
 import { getModelReasoningOptions, parseModelString } from '@mastra/core/llm'
 import type { ProcessInputStepResult } from '@mastra/core/processors'
@@ -95,32 +95,29 @@ function offOf(
   }
 }
 
-/** The level the model runs at for `level`: the same, or the nearest below it, or its lowest. */
-function runLevel(reasoning: Reasoning, level: Active): Active {
-  const rank = ACTIVE.indexOf(level)
-  const below = reasoning.levels.filter((each) => ACTIVE.indexOf(each) <= rank)
-  return below.at(-1) ?? reasoning.levels[0]
-}
-
 /**
  * The efforts a model accepts, from Mastra's reasoning data, lowest first: `off` only when the
  * model can stop reasoning, and alone for a model with no reasoning control.
  */
 export function effortsOf(model: ModelId): [Effort, ...Effort[]] {
   const reasoning = reasoningOf(model)
-  if (reasoning === undefined) return ['off']
+  return reasoning === undefined ? ['off'] : effortsIn(reasoning)
+}
+
+function effortsIn(reasoning: Reasoning): [Effort, ...Effort[]] {
   return reasoning.off === null ? [...reasoning.levels] : ['off', ...reasoning.levels]
 }
 
 /**
- * What one step asks the provider so the model reasons at `effort`, or at the nearest level it
- * takes (another model after the automatic switch may take fewer, or always reason).
+ * What one step asks the provider so the model reasons at `effort`, or at the level it runs at
+ * instead (`runningEffort`: another model after the automatic switch may take fewer, or always
+ * reason).
  */
 export function providerOptionsOf(model: ModelId, effort: Effort): ProviderOptions | undefined {
   const reasoning = reasoningOf(model)
   if (reasoning === undefined) return undefined
-  if (effort === 'off' && reasoning.off !== null) return reasoning.off.asked
-  const level = effort === 'off' ? reasoning.levels[0] : runLevel(reasoning, effort)
+  const level = runningEffort(effortsIn(reasoning), effort)
+  if (level === 'off') return reasoning.off?.asked
   const { tokens, byEffort } = reasoning
   switch (reasoning.provider) {
     case 'anthropic':

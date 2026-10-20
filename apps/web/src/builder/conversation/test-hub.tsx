@@ -30,7 +30,7 @@ const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 
 const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
-  { id: 'google', name: 'Google', models: ['gemini-2.5-pro'] },
+  { id: 'google', name: 'Google', models: ['gemini-2.5-pro', 'gemini-2.5-flash'] },
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
 ].map((provider) => ({
   ...provider,
@@ -41,7 +41,9 @@ const PROVIDERS = [
         ? ['off', 'low', 'high']
         : name === 'gpt-5'
           ? ['low', 'medium', 'high']
-          : ['off'],
+          : name === 'gemini-2.5-flash'
+            ? ['off', 'medium', 'high']
+            : ['off'],
   })),
 }))
 

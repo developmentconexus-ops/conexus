@@ -80,6 +80,7 @@ export {
   ModelId,
   providerOfModel,
   readConversation,
+  runningEffort,
   SUBJECT_MAX_LENGTH,
   sendConversationMessage,
   setConversationModel,

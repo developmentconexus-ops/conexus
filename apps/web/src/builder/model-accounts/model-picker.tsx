@@ -1,5 +1,5 @@
-import type { ModelId, Provider } from '@conexus/hub-api'
-import { Effort } from '@conexus/hub-api'
+import type { Effort, ModelId, Provider } from '@conexus/hub-api'
+import { runningEffort } from '@conexus/hub-api'
 import { SearchIcon } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
@@ -63,7 +63,7 @@ export function ModelPicker(props: {
     props.effort !== undefined && levels !== undefined && levels.length > 1
       ? { effort: props.effort, levels }
       : null
-  const running = choice === null ? undefined : runningLevel(choice.levels, choice.effort.value)
+  const running = choice === null ? undefined : runningEffort(choice.levels, choice.effort.value)
 
   return (
     <Combobox
@@ -128,15 +128,6 @@ export function ModelPicker(props: {
   )
 }
 
-/**
- * The level a model runs at for `effort`: the same, or a level it lacks, kept from before, at the
- * nearest below it, or its lowest, as the Hub runs it (`thinking.ts`, `runLevel`).
- */
-function runningLevel(levels: readonly Effort[], effort: Effort): Effort | undefined {
-  const rank = Effort.options.indexOf(effort)
-  return levels.findLast((level) => Effort.options.indexOf(level) <= rank) ?? levels[0]
-}
-
 /** The provider of `provider/model`, the part before the slash. */
 function providerOf(model: ModelId): string {
   return model.slice(0, model.indexOf('/'))
@@ -164,10 +155,9 @@ function groupsOf(providers: readonly Provider[], search: string) {
 }
 
 /** "Raciocínio": the level named above a pill with a stop per level, as the old picker drew it. */
-function EffortLevels(props: { levels: readonly Effort[]; effort: EffortChoice }) {
+function EffortLevels(props: { levels: readonly [Effort, ...Effort[]]; effort: EffortChoice }) {
   const [dragged, setDragged] = useState<number | null>(null)
-  const level = runningLevel(props.levels, props.effort.value)
-  const saved = level === undefined ? 0 : props.levels.indexOf(level)
+  const saved = props.levels.indexOf(runningEffort(props.levels, props.effort.value))
   const shown = props.levels[dragged ?? saved]
   return (
     <div className="flex flex-col gap-sm border-t border-line p-md">

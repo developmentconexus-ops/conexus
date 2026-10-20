@@ -82,6 +82,13 @@ test('uma conversa guardada em Desligado num modelo que sempre raciocina mostra 
   expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Baixo')
 })
 
+test('um nível guardado abaixo do mais baixo de um modelo mostra o nível em que o Hub o roda, não Desligado', async () => {
+  await openConversation(
+    conversationOf({ id: FIRST, model: ModelId.parse('google/gemini-2.5-flash'), effort: 'low' }),
+  )
+  expect(screen.getByRole('combobox', PICKER).textContent).toContain('· Médio')
+})
+
 test('o nível que o modelo não aceita volta a frase do Hub, sem trocar o botão', async () => {
   await openConversation(conversationOf({ id: FIRST }), view(), {
     model: () => refusal('EFFORT_UNSUPPORTED'),
@@ -99,7 +106,10 @@ test('a busca do seletor estreita os modelos', async () => {
   fireEvent.click(screen.getByRole('combobox', PICKER))
   fireEvent.change(await screen.findByLabelText('Buscar modelo'), { target: { value: 'GEMINI' } })
   await waitFor(() =>
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual([
+      'Gemini 2.5 Pro',
+      'Gemini 2.5 Flash',
+    ]),
   )
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'zzz' } })
   expect(await screen.findByText('Nenhum modelo encontrado.')).toBeTruthy()
@@ -137,7 +147,9 @@ test('a busca do seletor acha pelo nome e pelo id do modelo', async () => {
   await waitFor(() =>
     expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Claude Opus 4']),
   )
-  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'google/gem' } })
+  fireEvent.change(screen.getByLabelText('Buscar modelo'), {
+    target: { value: 'google/gemini-2.5-p' },
+  })
   await waitFor(() =>
     expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
   )
