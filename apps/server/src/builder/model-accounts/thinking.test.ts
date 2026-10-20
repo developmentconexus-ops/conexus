@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { Effort } from '@conexus/hub-api'
-import { ModelId } from '@conexus/hub-api'
+import { Effort, ModelId } from '@conexus/hub-api'
+import { getModelReasoningOptions, PROVIDER_REGISTRY } from '@mastra/core/llm'
 import { effortsOf, providerOptionsOf } from './public.ts'
 
 function asked(model: string, effort: Effort) {
@@ -63,10 +63,73 @@ test('o nível pedido chega a cada fornecedor na forma que o dado de raciocínio
     assert.deepEqual(asked(model, effort), wire, `${model} at ${effort}`)
 })
 
-test('os níveis de um modelo são os que o Mastra lista, ou um por orçamento, e "Desligado" sempre', () => {
+test('"Desligado" chega ao fornecedor como o dado do Mastra diz que o modelo para de raciocinar, e quem sempre raciocina vai no nível mais baixo', () => {
+  const cases: [string, unknown][] = [
+    ['anthropic/claude-opus-4-7', undefined],
+    ['openai/gpt-5.1', { openai: { reasoningEffort: 'none' } }],
+    ['google/gemini-2.5-flash', { google: { thinkingConfig: { thinkingBudget: 0 } } }],
+    ['openai/gpt-5', { openai: { reasoningEffort: 'low' } }],
+    ['openai/gpt-5-pro', { openai: { reasoningEffort: 'high' } }],
+    ['google/gemini-2.5-pro', { google: { thinkingConfig: { thinkingBudget: 1024 } } }],
+    ['google/gemini-3.1-pro-preview', { google: { thinkingConfig: { thinkingLevel: 'low' } } }],
+    ['openai/gpt-4o', undefined],
+  ]
+  for (const [model, wire] of cases) assert.deepEqual(asked(model, 'off'), wire, model)
+})
+
+// Each provider's models take three, four or five levels, as Mastra lists them per model; "Desligado"
+// leads only where the model can stop reasoning.
+test('Anthropic: os níveis de cada modelo são os que o Mastra lista para ele', () => {
   assert.deepEqual(levels('anthropic/claude-opus-4-5'), ['off', 'low', 'medium', 'high'])
-  assert.deepEqual(levels('anthropic/claude-sonnet-4-5'), ['off', 'low', 'medium', 'high', 'xhigh'])
-  assert.deepEqual(levels('google/gemini-3.1-flash-image'), ['off', 'high'])
-  assert.deepEqual(levels('openai/gpt-5-pro'), ['off', 'high'])
+  assert.deepEqual(levels('anthropic/claude-sonnet-4-6'), ['off', 'low', 'medium', 'high', 'max'])
+  assert.deepEqual(levels('anthropic/claude-opus-4-7'), [
+    'off',
+    'low',
+    'medium',
+    'high',
+    'xhigh',
+    'max',
+  ])
+  assert.deepEqual(
+    levels('anthropic/claude-sonnet-4-5'),
+    ['off', 'low', 'medium', 'high', 'xhigh'],
+    'a budget only: one level per budget of Mastra Code',
+  )
+})
+
+test('OpenAI: os níveis de cada modelo são os que o Mastra lista para ele', () => {
+  assert.deepEqual(levels('openai/gpt-5'), ['low', 'medium', 'high'], 'no `none`: always reasons')
+  assert.deepEqual(levels('openai/gpt-5.1'), ['off', 'low', 'medium', 'high'])
+  assert.deepEqual(levels('openai/gpt-5.2-pro'), ['medium', 'high', 'xhigh'])
+  assert.deepEqual(levels('openai/gpt-5.6'), ['off', 'low', 'medium', 'high', 'xhigh', 'max'])
+  assert.deepEqual(levels('openai/o3'), ['low', 'medium', 'high'])
+  assert.deepEqual(levels('openai/gpt-5-pro'), ['high'])
+  assert.deepEqual(levels('openai/gpt-4o'), ['off'], 'no reasoning control')
+})
+
+test('Google: os níveis de cada modelo são os que o Mastra lista para ele', () => {
+  assert.deepEqual(levels('google/gemini-2.5-flash'), ['off', 'low', 'medium', 'high'])
+  assert.deepEqual(levels('google/gemini-2.5-pro'), ['low', 'medium', 'high'], 'budget from 128')
+  assert.deepEqual(levels('google/gemini-3.1-pro-preview'), ['low', 'medium', 'high'])
+  assert.deepEqual(levels('google/gemini-3.1-flash-image'), ['high'])
   assert.deepEqual(levels('google/gemma-4-31b-it'), ['off'], 'a toggle only names no level')
+})
+
+test('em todo modelo da Anthropic, OpenAI e Google que lista níveis, os níveis oferecidos são exatamente os listados na escala da conversa', () => {
+  const scale: readonly string[] = Effort.options
+  for (const provider of ['anthropic', 'openai', 'google'] as const) {
+    for (const name of PROVIDER_REGISTRY[provider].models) {
+      const model = `${provider}/${name}`
+      const listed = (getModelReasoningOptions(model) ?? []).flatMap((option) =>
+        option.type === 'effort' ? option.values : [],
+      )
+      if (!listed.some((value) => scale.includes(value) && value !== 'off')) continue
+      const offered = levels(model).filter((level) => level !== 'off')
+      assert.deepEqual(
+        offered,
+        scale.filter((level) => level !== 'off' && listed.includes(level)),
+        model,
+      )
+    }
+  }
 })

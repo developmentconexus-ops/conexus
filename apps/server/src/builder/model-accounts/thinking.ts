@@ -6,6 +6,7 @@
 
 import type { ModelId } from '@conexus/hub-api'
 import { Effort } from '@conexus/hub-api'
+import type { ModelReasoningOption } from '@mastra/core/llm'
 import { getModelReasoningOptions, parseModelString } from '@mastra/core/llm'
 import type { ProcessInputStepResult } from '@mastra/core/processors'
 import type { z } from 'zod'
@@ -32,6 +33,8 @@ type Reasoning = {
   byEffort: boolean
   /** The tokens a level thinks with, when the model lists a token budget. */
   tokens: ((level: Active) => number) | undefined
+  /** What turns its reasoning off, and `null` for a model that always reasons. */
+  off: { asked: ProviderOptions | undefined } | null
 }
 
 function isThinking(provider: string | null): provider is ThinkingProvider {
@@ -57,7 +60,39 @@ function reasoningOf(model: ModelId): Reasoning | undefined {
       : ACTIVE.filter((level) => ACTIVE.find((each) => tokens(each) === tokens(level)) === level)
   const [first, ...rest] = efforts.length > 0 ? efforts : budgets
   if (first === undefined) return undefined
-  return { provider, levels: [first, ...rest], byEffort: efforts.length > 0, tokens }
+  return {
+    provider,
+    levels: [first, ...rest],
+    byEffort: efforts.length > 0,
+    tokens,
+    off: offOf(provider, options, listed),
+  }
+}
+
+/**
+ * How Mastra's data says the model stops reasoning: Claude thinks only when asked; OpenAI lists a
+ * `none` effort; Gemini takes a zero budget when it has a toggle or its budget starts at zero.
+ */
+function offOf(
+  provider: ThinkingProvider,
+  options: readonly ModelReasoningOption[],
+  listed: readonly string[],
+): Reasoning['off'] {
+  switch (provider) {
+    case 'anthropic':
+      return { asked: undefined }
+    case 'openai':
+      return listed.includes('none') ? { asked: { openai: { reasoningEffort: 'none' } } } : null
+    case 'google': {
+      const zero = options.some(
+        (option) =>
+          option.type === 'toggle' || (option.type === 'budget_tokens' && option.min === 0),
+      )
+      return zero ? { asked: { google: { thinkingConfig: { thinkingBudget: 0 } } } } : null
+    }
+    default:
+      return provider satisfies never
+  }
 }
 
 /** The level the model runs at for `level`: the same, or the nearest below it, or its lowest. */
@@ -67,19 +102,25 @@ function runLevel(reasoning: Reasoning, level: Active): Active {
   return below.at(-1) ?? reasoning.levels[0]
 }
 
-/** The efforts a model accepts, from Mastra's reasoning data; `off` always. */
-export function effortsOf(model: ModelId): Effort[] {
-  return ['off', ...(reasoningOf(model)?.levels ?? [])]
+/**
+ * The efforts a model accepts, from Mastra's reasoning data, lowest first: `off` only when the
+ * model can stop reasoning, and alone for a model with no reasoning control.
+ */
+export function effortsOf(model: ModelId): [Effort, ...Effort[]] {
+  const reasoning = reasoningOf(model)
+  if (reasoning === undefined) return ['off']
+  return reasoning.off === null ? [...reasoning.levels] : ['off', ...reasoning.levels]
 }
 
 /**
  * What one step asks the provider so the model reasons at `effort`, or at the nearest level it
- * takes (another model after the automatic switch may take fewer); nothing for `off`.
+ * takes (another model after the automatic switch may take fewer, or always reason).
  */
 export function providerOptionsOf(model: ModelId, effort: Effort): ProviderOptions | undefined {
   const reasoning = reasoningOf(model)
-  if (effort === 'off' || reasoning === undefined) return undefined
-  const level = runLevel(reasoning, effort)
+  if (reasoning === undefined) return undefined
+  if (effort === 'off' && reasoning.off !== null) return reasoning.off.asked
+  const level = effort === 'off' ? reasoning.levels[0] : runLevel(reasoning, effort)
   const { tokens, byEffort } = reasoning
   switch (reasoning.provider) {
     case 'anthropic':

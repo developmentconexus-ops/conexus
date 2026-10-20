@@ -74,9 +74,40 @@ test('cada modelo com os níveis de raciocínio que aceita; sem dado de raciocí
     'xhigh',
     'max',
   ])
-  assert.deepEqual(effortsOf('openai', 'gpt-5'), ['off', 'low', 'medium', 'high'])
-  assert.deepEqual(effortsOf('google', 'gemini-2.5-pro'), ['off', 'low', 'medium', 'high'])
+  assert.deepEqual(effortsOf('openai', 'gpt-5'), ['low', 'medium', 'high'])
+  assert.deepEqual(effortsOf('google', 'gemini-2.5-pro'), ['low', 'medium', 'high'])
   assert.deepEqual(effortsOf('openai', 'gpt-4o'), ['off'], 'listed without reasoning controls')
   const openrouter = providers.find(({ id }) => id === 'openrouter')
   assert.deepEqual(new Set(openrouter?.models.flatMap(({ efforts }) => efforts)), new Set(['off']))
+})
+
+test('o seletor lista só os modelos que conversam: sem os aposentados pelo Mastra nem os de imagem, voz, embedding ou tempo real', async (t) => {
+  const { ANA_OWNER, call, hubOn, personOn } = await import('../../hub/identity/test-hub.ts')
+  const hub = await hubOn(t)
+  const ana = await personOn(hub, ANA_OWNER)
+  const { providers }: { providers: Listed[] } = Object(
+    (await call(hub, ana, 'GET', '/api/model-providers')).json(),
+  )
+  const ids = new Set(providers.flatMap(({ models }) => models.map(({ id }) => id)))
+  for (const present of [
+    'anthropic/claude-opus-4-5',
+    'anthropic/claude-opus-4-5-20251101',
+    'openai/gpt-5',
+    'openai/o3',
+    'google/gemini-2.5-pro',
+  ])
+    assert.ok(ids.has(present), `${present} chats`)
+  for (const absent of [
+    'openai/gpt-4',
+    'openai/o1',
+    'openai/gpt-image-1',
+    'openai/chatgpt-image-latest',
+    'openai/text-embedding-3-large',
+    'openai/gpt-realtime-2.1',
+    'google/gemini-2.5-flash-image',
+    'google/gemini-2.5-pro-preview-tts',
+    'google/gemini-embedding-001',
+    'google/gemini-3.1-flash-live-preview',
+  ])
+    assert.ok(!ids.has(absent), `${absent} is retired or cannot chat`)
 })

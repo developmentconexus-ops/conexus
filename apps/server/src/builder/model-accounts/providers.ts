@@ -1,5 +1,6 @@
 import type { Provider } from '@conexus/hub-api'
 import { ModelId, ProviderId } from '@conexus/hub-api'
+import type { ProviderConfig } from '@mastra/core/llm'
 import { PROVIDER_REGISTRY, parseModelString } from '@mastra/core/llm'
 import { effortsOf } from './thinking.ts'
 
@@ -10,6 +11,16 @@ const REGISTRY = Object.entries(PROVIDER_REGISTRY)
 const URL_TEMPLATE = /\$\{[A-Z0-9_]+\}/
 // Only the models.dev gateway resolves a provider from its key alone: Netlify's needs a site too.
 const KEY_GATEWAY = 'models.dev'
+// The registry has no capability field for chat, so a model that only draws, speaks, embeds or
+// talks live is left out by its name, as the old Hub did (Conexus OS `model-accounts.ts`, 729bdc5d).
+const NOT_CHAT =
+  /(^|[-_.])(image|embed|embedding|tts|realtime|live|transcribe|whisper|moderation)([-_.]|$)/i
+
+/** The models of a provider a conversation can talk to: not retired, and able to chat. */
+function chatModelsOf(config: ProviderConfig): string[] {
+  const retired = new Set(config.deprecatedModels ?? [])
+  return config.models.filter((model) => !retired.has(model) && !NOT_CHAT.test(model))
+}
 
 /** The key-only providers of the registry, by id, as decision 0049's criterion 1 derives them. */
 const KEY_PROVIDERS: ReadonlyMap<ProviderId, Provider> = new Map(
@@ -20,7 +31,7 @@ const KEY_PROVIDERS: ReadonlyMap<ProviderId, Provider> = new Map(
       ([id, config]): Provider => ({
         id: ProviderId.parse(id),
         name: config.name,
-        models: config.models.map((model) => {
+        models: chatModelsOf(config).map((model) => {
           const modelId = ModelId.parse(`${id}/${model}`)
           return { id: modelId, efforts: effortsOf(modelId) }
         }),
