@@ -91,11 +91,11 @@ frame-phone-top:
   shown: "below 768px only"
 frame-sidebar:
   backgroundColor: "{colors.surface}"
-  width: "{containers.sidebar}"
+  width: "16rem, the token --container-sidebar in apps/web/src/brand/tokens.css"
   padding: "{spacing.sm}"
   border: "right hairline, {colors.line}"
 frame-sidebar-collapsed:
-  width: "{containers.sidebar-icon}"
+  width: "3.25rem, the token --container-sidebar-icon"
 frame-sidebar-group-label:
   textColor: "{colors.text-2}"
   typography: "{typography.eyebrow}"
@@ -103,7 +103,7 @@ frame-sidebar-group-label:
 frame-page:
   backgroundColor: "{colors.canvas}"
   padding: "{spacing.xl}"
-  width: "{containers.page}, at most"
+  width: "64rem at most, the token --container-page"
 tooltip:
   backgroundColor: "{colors.ink}"
   textColor: "{colors.on-ink}"
