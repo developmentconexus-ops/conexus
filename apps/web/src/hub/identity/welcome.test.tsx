@@ -1,5 +1,7 @@
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { http } from 'msw'
 import { expect, test } from 'vitest'
+import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { COMPANY_PATH, companyHub, companyView, openAt, saved } from './test-hub.tsx'
 
@@ -23,9 +25,9 @@ test('dono, empresa sem apelido: todo endereço dela leva ao Passo 1 de 4, Sua e
 test('o nome da empresa é só leitura, o apelido vem sugerido e o endereço acompanha o que se digita', async () => {
   server.use(...companyHub(companyView()).handlers)
   openAt(COMPANY_PATH)
-  const name = await screen.findByLabelText('Nome da empresa')
-  expect(name).toHaveProperty('readOnly', true)
-  expect(name).toHaveProperty('value', 'Empresa Teste')
+  const name = await screen.findByRole('definition')
+  expect(name.textContent).toBe('Empresa Teste')
+  expect(screen.queryByRole('textbox', { name: 'Nome da empresa' })).toBeNull()
   const nickname = screen.getByLabelText('Apelido')
   expect(nickname).toHaveProperty('value', 'empresa-teste')
   expect(screen.getByText('pedidos--empresa-teste.apps.example.test')).toBeTruthy()
@@ -86,6 +88,40 @@ test('Passo 1: salvar manda o apelido e abre o Passo 2 de 4', async () => {
   expect(screen.getByText('Passo 2 de 4')).toBeTruthy()
   expect(hub.nicknames).toEqual([{ nickname: 'empresa-a' }])
   expect(router.state.location.pathname).toBe(`${WELCOME}/model-account`)
+})
+
+test('Passo 1, 503: a frase da linha, sem "Tentar de novo"; salvar de novo manda o pedido outra vez', async () => {
+  let refuse = true
+  const view = companyView()
+  const hub = companyHub(view, (nickname) =>
+    refuse ? refusal('DATABASE_UNAVAILABLE') : saved(view, nickname),
+  )
+  server.use(...hub.handlers)
+  openAt(COMPANY_PATH)
+  await screen.findByLabelText('Apelido')
+  save('empresa-a')
+  expect(
+    await screen.findByText(
+      'O banco do Conexus não respondeu. O erro foi registrado. Avise quem cuida do Conexus.',
+    ),
+  ).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
+  refuse = false
+  save('empresa-a')
+  expect(await screen.findByRole('heading', { name: 'Ligue uma conta de modelo' })).toBeTruthy()
+  expect(hub.nicknames).toEqual([{ nickname: 'empresa-a' }, { nickname: 'empresa-a' }])
+})
+
+test('Passo 1, 404 ao salvar: a empresa deixa de ser achada e a página diz não encontrado', async () => {
+  const view = companyView()
+  server.use(...companyHub(view, () => refusal('NOT_FOUND')).handlers)
+  openAt(COMPANY_PATH)
+  await screen.findByLabelText('Apelido')
+  server.use(http.get(`*/api/companies/${COMPANY.id}`, () => refusal('NOT_FOUND')))
+  save('empresa-a')
+  expect(
+    await screen.findByRole('heading', { name: 'Não encontramos o que você procurou.' }),
+  ).toBeTruthy()
 })
 
 test('Passo 1, COMPANY_NICKNAME_SET: outra aba salvou antes; relê a empresa e segue ao Passo 2', async () => {

@@ -120,7 +120,7 @@ test('sem empresa, / diz que a pessoa não está em nenhuma e oferece "Sair do C
 test('o operador sem empresa vai à Central (critério 2)', async () => {
   server.use(...centralHub([]))
   const router = open()
-  expect(await screen.findByText('Central de Operação')).toBeTruthy()
+  expect(await screen.findByText('Central')).toBeTruthy()
   expect(router.state.location.pathname).toBe('/operations/clients')
 })
 
@@ -155,6 +155,32 @@ test('com o carregamento da página preso, o título que aparece depois recebe o
   held.resolve()
   const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
   await waitFor(() => expect(document.activeElement).toBe(title))
+})
+
+async function signInFromLogin() {
+  fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
+  fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+}
+
+test('depois de entrar, abre a página pedida, não a primeira empresa', async () => {
+  hub(listed(FIRST, SECOND), { signedIn: false })
+  const router = open(`/companies/${SECOND.id}`)
+  await signInFromLogin()
+  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`/companies/${SECOND.id}`)
+})
+
+test('depois do foco no título, uma nova renderização não o puxa de volta', async () => {
+  hub(listed(FIRST), { signedIn: false })
+  const router = open()
+  await signInFromLogin()
+  const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
+  await waitFor(() => expect(document.activeElement).toBe(title))
+  const account = screen.getByRole('button', { name: /Ana/ })
+  account.focus()
+  await router.invalidate()
+  expect(document.activeElement).toBe(account)
 })
 
 test('o Hub sem banco ao ler a sessão: "Não foi possível abrir o Conexus" com a frase, sem "Tentar de novo"', async () => {
