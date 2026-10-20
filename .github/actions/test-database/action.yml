@@ -11,7 +11,8 @@ runs:
       shell: bash
       env:
         PORT: ${{ inputs.port }}
-      run: |
+      # The container id comes from docker and the port from the job's own service, never from the event.
+      run: | # zizmor: ignore[github-env]
         container="$(docker ps --filter "publish=$PORT" --format '{{.ID}}')"
         if [ -z "$container" ]; then
           echo "no container publishes port $PORT"
