@@ -10,6 +10,11 @@ function subscribe(changed: () => void): () => void {
   return () => query.removeEventListener('change', changed)
 }
 
+/** Whether the screen is a phone's now, for a decision taken once, such as a route's redirect. */
+export function isMobile(): boolean {
+  return globalThis.matchMedia(MOBILE).matches
+}
+
 export function useIsMobile(): boolean {
-  return useSyncExternalStore(subscribe, () => globalThis.matchMedia(MOBILE).matches)
+  return useSyncExternalStore(subscribe, isMobile)
 }
