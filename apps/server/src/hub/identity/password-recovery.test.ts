@@ -149,15 +149,15 @@ test('correio: o e-mail sai depois da resposta', async (t) => {
 test('correio: fora do ar, o pedido é 202, o link fica e a falha é registrada pelo código', async (t) => {
   const hub = await hubWithMail(t)
   const ana = await personOn(hub, ANA_OWNER)
-  const { port, lines, stop } = await spawnHub(t, serveEnvironment(t, hub.test.runtimeUrl))
+  const { port, lines, until, stop } = await spawnHub(t, serveEnvironment(t, hub.test.runtimeUrl))
   const reply = await fetch(`http://127.0.0.1:${port}${RECOVERIES}`, {
     method: 'POST',
     headers: WRITE_HEADERS,
     body: JSON.stringify({ email: ANA_OWNER.email }),
   })
   assert.equal(reply.status, 202)
-  for (let tries = 0; tries < 100 && !lines.some((l) => l.msg === 'MAIL_UNAVAILABLE'); tries++)
-    await sleep(50)
+  // The mail goes after the answer and shutdown does not wait for it, so the test waits on its line.
+  await until('MAIL_UNAVAILABLE')
   await stop()
   assert.ok(lines.some((line) => line.msg === 'MAIL_UNAVAILABLE'))
   assert.deepEqual(
