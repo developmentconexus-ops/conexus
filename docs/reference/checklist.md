@@ -3,8 +3,9 @@
 Questions only a reader can answer, one list for two readers. The builder answers every item on the
 unit before its commit; the reviewer answers them on the whole step. Answer an item by sweeping its
 class across the whole diff, not by fixing the instance first seen, and fix every occurrence. A
-machine already refuses the rules marked with a tool in the guides; do not spend time on them. Each
-question cites the rule it checks.
+machine refuses a rule only as far as its mark names a tool rule: spend no time on a rule whose mark
+names one, and sweep a rule marked review, or marked review beside a tool rule, for what that rule
+does not refuse. Each question cites the rule it checks.
 
 ## The old code
 
@@ -40,3 +41,31 @@ question cites the rule it checks.
     ([card template](../../.agents/skills/conexus-scope/references/card.md))?
 16. Did the step add something that runs alone? Then the sleeping-database test ran again (D27).
 17. Does the diff touch `.agents/skills/` or `docs/guides/` while the step is in construction (L20)?
+
+## Code shape
+
+18. Is each lifecycle a union on one literal field with one owner of its transitions, every
+    `switch` ending in `satisfies never` (C21)? Are there loose yes/no fields, or `''`, `0` or
+    `null` standing for "not there" where the domain has a genuine absence (C22)?
+19. Does each id in a signature, port and prop carry its brand and arrive by parsing, including
+    those a rule does not reach: web, packages, aliases of `string` (C23)?
+20. For each list, code, phrase, constant and state name: who owns it, and does any second file
+    repeat it instead of deriving it (C26)?
+21. Does each outside input pass one Zod schema at its boundary, with no hand check beside it
+    (C27)?
+22. Is each failure code in the failure table, not in an `Error` message, a variable or a compared
+    sentence; does a screen read words by code (C48, C49)?
+23. Does each `catch` and `.catch` rethrow, log or map to a typed result, even when its body is
+    more than a lone literal (C53)?
+
+## The sweep table
+
+The builder's integration request and each reviewer's verdict end with one table, a row for every
+rule of [code](../guides/code.md) marked review (also review beside a tool rule), plus every rule
+of another guide the card cites:
+
+| Rule | Search made (command or files read) | Result (nothing, or findings with file and line) |
+| --- | --- | --- |
+
+A rule with no row means it was not swept. The builder also names the file it copied each new
+pattern from, and whether that file meets C21, C23 and C26.

@@ -8,8 +8,8 @@ decision record. A careful report is 3,000 to 8,000 words; past 8,000, split the
 
 1. What the repository already decided: the architecture, the decision records, the guides.
 2. The library's own code and embedded docs, at the installed version. For Mastra, the `mastra`
-   skill, then the package's `dist/docs` and source; then how Mastra's own products (Factory,
-   Mastra Code) do it.
+   skill, then the package's `dist/docs` and source ([library](library.md)); then how Mastra's own
+   products (Factory, Mastra Code) do it.
 3. Reference products' code, read at a pinned commit, the same questions asked of each.
 4. Vendor pages, with the date read.
 5. A small proof on the real service, only for an expensive choice ([proof](proof.md)).
@@ -59,13 +59,26 @@ The same questions, answered for each reference with `file:line`:
 
 Where they agree: <...>. Where they differ, and why: <...>.
 
+The fixed questions of code shape, answered for each reference with `file:line` at a pinned commit:
+
+| Question | Reference A | Reference B | Conexus `main` |
+| --- | --- | --- | --- |
+| How does it model a state? | | | |
+| How does it record error codes? | | | |
+| Where does it validate outside data? | | | |
+| Who owns a shared list? | | | |
+
+The conclusion goes down into the card's contracts ([card](../../conexus-scope/references/card.md)),
+because the builder does not read the study. A reference may not cover a question (none brands
+entity ids; the guide is the authority there).
+
 ## 6. The native way
 
 <How the library or platform does it at the installed version, with file and line. What it leaves
 undone, with the line where it does less.>
 
-| Library and constructor | Option a guarantee rests on | Default at the installed version | Set to, or kept, and why |
-| --- | --- | --- | --- |
+| Library and constructor | Option a guarantee rests on | Default at the installed version | Set to, or kept, and why | Documentation warning, or none |
+| --- | --- | --- | --- | --- |
 
 **Errors the library handles itself**: <where it catches, prints or answers an error on its own,
 with the line, and the option that sends the error to the central handler (code C50)>.
@@ -98,8 +111,8 @@ accepted or dropped.
 
 ## 9. Parts: new or brought
 
-| Part | New or brought | File of the new tree | Refactored as it enters | Old decisions it carries, with basis in words |
-| --- | --- | --- | --- | --- |
+| Part (a visual piece has its own row) | New or brought | Design brought: yes or no | File of the new tree | Refactored as it enters | Old decisions it carries, with basis in words |
+| --- | --- | --- | --- | --- | --- |
 
 For each brought part: lines today, the lines its refactor will change, the fixes done in it
 (medium and large), the small ones left as debt, and whether it would be written this way from
@@ -138,6 +151,15 @@ Command that lists the importers: `<one command>`.
 ## 14. Not confirmed
 
 <What was not read, not run, or read only by summary.>
+
+## 15. Documentation read
+
+<A library's pages read whole, read by headings only, and not read ([library](library.md)).>
+
+## 16. What a person saw
+
+<Only for a step with a screen: old and new side by side, per state, with the captures folder
+([screens](screens.md)).>
 ```
 
 ## What makes a section good

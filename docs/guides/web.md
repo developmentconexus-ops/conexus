@@ -122,3 +122,42 @@ person on sign-in after the correct password; the flow tests retain that concret
 [Design V23](design.md) owns style reuse and the width-token collision; its existing GritQL plugin
 stays enabled. [Code C37](code.md) owns attempt identity end to end, while the mixed rule above
 retains the form/socket proof already required. No new checker is claimed for semantic judgment.
+
+## 6. Information architecture
+
+Where each screen lives. Founder, 2026-10-19, on the review page of the screen structure: "Aprovado
+tudo". The lines of [screens](../reference/screens.md) say which screen is on which floor.
+
+- **W29.** Every screen **must** live on one floor, and `docs/reference/screens.md` **must** carry
+  its line: Entrada (`/login`, `/set-password`, `/invitations/…`, one centred column); Primeira
+  entrada (`/companies/<e>/welcome/<step>`, the owner, once); Empresa (`/companies/<e>`: Início and
+  its Projetos); Projeto (`/companies/<e>/projects/<p>/<tab>`); Configurações
+  (`/companies/<e>/settings/<section>`); Central (`/operations/…`). A person who only uses an app
+  never enters them. [review]
+- **W30.** The frame **should** be one sidebar on the left and no top bar: the company with its
+  switcher, Início, up to five recent Projetos with "Todos os projetos", Configurações, and the
+  account (name, theme, Central for whoever operates it, Sair). It collapses to icons inside a
+  Projeto and returns on leaving; on a phone it is a drawer opened from the top button (design
+  V56). A person with two companies opens the last one used; "Suas empresas" is the switcher's
+  menu. [review]
+- **W31.** A Projeto **should** open on its Prévia with the latest conversation on the right; a new
+  one focuses the composer. The top line holds Company / Name ▾ on the left, the tabs Prévia,
+  Código, Alterações and Projeto in the middle, and Versão ▾, Abrir app and Publicar on the right.
+  A control appears only when its step exists, never as "em breve". The tab Projeto lists
+  sections, each added by its step: Sobre, Versões, Quem usa o app, Dados da empresa,
+  Publicação. [review]
+- **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
+  two groups: Você (Minha conta, Minhas contas de modelo, Aparência) and A empresa (Geral, Pessoas
+  e convites, Contas de modelo, Sistemas da empresa, Conectores). Owner and administrator change
+  the company's group; a member reads Pessoas. Memória, Atividade and Uso have their place
+  reserved there and appear only when a card asks for them. [review]
+- **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
+  Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps
+  two and three are skippable; what was skipped becomes the card "Termine de preparar a empresa" on
+  Início, for owner and administrator, until done. An invited member sets a password and lands on
+  Início with no steps. [review]
+- **W34.** Every card's state matrix **must** carry the columns 'primeira vez' and 'sem
+  permissão' beside its other states. Loading shows the frame at once and a skeleton only in the
+  content; an error stays in the content area with "Tentar de novo"; not found offers "Ir para o
+  início"; a missing permission shows the page and says who can (design V29), and never hides it.
+  Failure: a screen that hides what a person may not do leaves them guessing. [review]

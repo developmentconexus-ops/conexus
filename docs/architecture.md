@@ -242,6 +242,6 @@ removes them.
 - `projects.project.host_label` stays nullable: a Projeto made under a rolled-back 7.x has none.
 - `createUser`, `listUsers` and `findCredentialAccount` are the library's internal calls, with no
   public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
-- Trace ids are Fastify's request ids: the Hub audit's `telemetry` part has no step in the roadmap
-  yet.
+- Trace ids are Fastify's request ids until 21.1 [0052]. Gemini lacks search [0050]; the
+  founder decides.
 - The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end the wait.
