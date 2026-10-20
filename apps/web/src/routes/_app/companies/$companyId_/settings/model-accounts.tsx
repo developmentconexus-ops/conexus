@@ -9,7 +9,6 @@ import { readOrNotFound } from '../../../../../platform/hub.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/model-accounts')({
   staticData: {
-    place: 'Contas de modelo',
     section: {
       group: 'company',
       label: 'Contas de modelo',

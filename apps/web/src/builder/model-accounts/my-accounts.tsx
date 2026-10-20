@@ -2,7 +2,7 @@ import type { ModelAccount, ProviderOrder } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { useRef } from 'react'
-import { PageTitle, SectionTitle } from '../../ui/list.tsx'
+import { SectionTitle } from '../../ui/list.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { LinkAccount } from './link-account.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
@@ -36,7 +36,6 @@ export function MyAccounts() {
   const { mine, company } = accounts
   return (
     <div className="flex flex-col gap-xl">
-      <PageTitle>Minhas contas de modelo</PageTitle>
       {accounts.order.length > 0 && (
         <ul className="flex flex-col gap-xs">
           {accounts.order.map((entry) => (

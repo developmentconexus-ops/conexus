@@ -3,7 +3,6 @@ import { CompanyGeneral } from '../../../../../hub/identity/public.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/general')({
   staticData: {
-    place: 'Geral',
     section: {
       group: 'company',
       label: 'Geral',

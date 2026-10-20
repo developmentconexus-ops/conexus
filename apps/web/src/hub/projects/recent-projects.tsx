@@ -1,6 +1,8 @@
-import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, PersonId } from '@conexus/hub-api'
+import { ProjectId } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { FolderIcon, LayoutGridIcon } from 'lucide-react'
+import type { RememberedList } from '../../platform/remembered.ts'
 import { recall, remember } from '../../platform/remembered.ts'
 import { FrameLink } from '../../ui/frame.tsx'
 import {
@@ -13,8 +15,8 @@ import { projectsQuery } from './queries.ts'
 
 const SHOWN = 5
 
-function listOf(companyId: CompanyId): string {
-  return `projects.${companyId}`
+function listOf(companyId: CompanyId): RememberedList<typeof ProjectId> {
+  return { name: `projects.${companyId}`, id: ProjectId, keep: SHOWN }
 }
 
 export function rememberProject(input: {
@@ -22,20 +24,20 @@ export function rememberProject(input: {
   companyId: CompanyId
   projectId: ProjectId
 }): void {
-  remember(listOf(input.companyId), input.personId, input.projectId, SHOWN)
+  remember({ list: listOf(input.companyId), personId: input.personId, id: input.projectId })
 }
 
 /**
  * "Projetos recentes": the Projects opened last in this browser that the Hub still lists, then the
  * first of the list, up to five, and "Todos os projetos" (web W30). Only the list's first page
- * counts (step 12.2's debt). While it loads, a skeleton; if it fails, the group is not shown.
+ * counts. While it loads, a skeleton; with no Projeto or a failed read, the group is not shown.
  */
 export function RecentProjects(props: { companyId: CompanyId; personId: PersonId }) {
   const { companyId } = props
   const read = useQuery(projectsQuery(companyId, undefined))
-  if (read.isError) return null
+  if (read.isError || read.data?.projects.length === 0) return null
   const listed = read.data?.projects ?? []
-  const opened = recall(listOf(companyId), props.personId)
+  const opened = recall({ list: listOf(companyId), personId: props.personId })
   const recent = [
     ...opened.flatMap((id) => listed.filter((project) => project.id === id)),
     ...listed.filter((project) => !opened.includes(project.id)),

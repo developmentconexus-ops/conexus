@@ -16,7 +16,6 @@ const Search = z.object({
 
 export const Route = createFileRoute('/_app/companies/$companyId_/settings/people')({
   staticData: {
-    place: 'Pessoas e convites',
     section: {
       group: 'company',
       label: 'Pessoas e convites',

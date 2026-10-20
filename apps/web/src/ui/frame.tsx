@@ -1,5 +1,5 @@
 import type { LinkProps } from '@tanstack/react-router'
-import { Link, useRouterState } from '@tanstack/react-router'
+import { Link, useMatches, useRouter } from '@tanstack/react-router'
 import type { LucideIcon } from 'lucide-react'
 import { MenuIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
@@ -56,39 +56,48 @@ export function FrameLink(
   )
 }
 
-/** The phone's top line: the button that opens the drawer, the mark and the current place (V56). */
-function PhoneTop({ place }: { place: string }) {
+/**
+ * The phone's top line: the button that opens the drawer, the mark and the current place (V56), its
+ * route's `staticData.place`, or the section's label for a section of Configurações.
+ */
+function PhoneTop() {
+  const place = useMatches({
+    select: (matches) => {
+      const shown = matches.at(-1)?.staticData
+      return shown?.place ?? shown?.section?.label
+    },
+  })
   return (
     <header className="flex h-14 items-center gap-sm border-b border-line bg-surface px-lg md:hidden">
       <SidebarTrigger label="Abrir navegação">
         <MenuIcon aria-hidden="true" />
       </SidebarTrigger>
       <ConexusWordmark word="md" />
-      <p className="truncate text-text-2">{place}</p>
+      {place !== undefined && <p className="truncate text-text-2">{place}</p>}
     </header>
   )
 }
 
-/** Following a link in the drawer closes it (V56): the drawer closes whenever the address changes. */
+/** Following a link in the drawer closes it (V56): the drawer closes once a navigation resolves. */
 function CloseOnNavigation() {
   const { setOpenMobile } = useSidebar()
-  const href = useRouterState({ select: (state) => state.location.href })
-  useEffect(() => {
-    if (href) setOpenMobile(false)
-  }, [href, setOpenMobile])
+  const router = useRouter()
+  useEffect(
+    () => router.subscribe('onResolved', () => setOpenMobile(false)),
+    [router, setOpenMobile],
+  )
   return null
 }
 
 /**
  * The frame of every page with a session (web W30): one sidebar on the left and no top bar. The
  * sidebar holds `header`, `nav` and `footer`; `compact` closes it to icons, and it opens again when
- * `compact` ends. On a phone it is a drawer under a top line naming the `place` (design V56).
+ * `compact` ends. On a phone it is a drawer under a top line naming the place (design V56).
  */
 export function Frame(props: {
   header: ReactNode
   nav: ReactNode
   footer: ReactNode
-  place: string
   compact: boolean
   children: ReactNode
 }) {
@@ -109,7 +118,7 @@ export function Frame(props: {
       </Sidebar>
       <CloseOnNavigation />
       <SidebarInset>
-        <PhoneTop place={props.place} />
+        <PhoneTop />
         <InFrame.Provider value={true}>
           <div className="flex min-w-0 flex-1 flex-col p-xl">{props.children}</div>
         </InFrame.Provider>

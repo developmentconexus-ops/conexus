@@ -1,7 +1,7 @@
 import { createMemoryHistory, createRoute } from '@tanstack/react-router'
 import type { BoundFunctions, queries } from '@testing-library/react'
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../../../../main.tsx'
 import { ANA, COMPANY } from '../../../../../platform/fixtures.ts'
 import { companyRead, hubServer, sessionRead } from '../../../../../platform/test-hub.tsx'
@@ -9,10 +9,12 @@ import { Route as SettingsRoute } from './route.tsx'
 
 const server = hubServer()
 const APPEARANCE = `/companies/${COMPANY.id}/settings/appearance`
-const children: unknown = SettingsRoute.children
+// The router reads the tree when it is made, so a test adds a child for its own router and puts the
+// real children back (`addChildren` replaces the list in place, in router-core 1.170).
+const children = Object.values(SettingsRoute.children ?? {})
 
 afterEach(() => {
-  SettingsRoute.children = children
+  SettingsRoute.addChildren(children)
 })
 
 function open(path = APPEARANCE) {
@@ -100,12 +102,11 @@ test('uma filha de settings com staticData.section aparece na sua ordem, sem mud
     getParentRoute: () => SettingsRoute,
     path: 'extra',
     staticData: {
-      place: 'Cobrança',
       section: { group: 'company', label: 'Cobrança', order: 15, keywords: ['fatura'] },
     },
-    component: () => <h1>Página de cobrança</h1>,
+    component: () => <p>Página de cobrança</p>,
   })
-  Object.assign(SettingsRoute, { children: [...(Array.isArray(children) ? children : []), extra] })
+  SettingsRoute.addChildren([...children, extra])
   open()
   const nav = await index()
   expect(linksOf(groupOf(nav, COMPANY.name))).toEqual([
@@ -118,5 +119,35 @@ test('uma filha de settings com staticData.section aparece na sua ordem, sem mud
     target: { value: 'fatura' },
   })
   fireEvent.click(nav.getByRole('link', { name: 'Cobrança' }))
-  expect(await screen.findByRole('heading', { name: 'Página de cobrança' })).toBeTruthy()
+  expect(await screen.findByText('Página de cobrança')).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Cobrança', level: 1 })).toBeTruthy()
+})
+
+test('no celular, Configurações abre no índice como lista, e uma seção abre com o seu título', async () => {
+  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: true,
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  try {
+    const router = open(`/companies/${COMPANY.id}/settings`)
+    const main = within(await screen.findByRole('main'))
+    expect(await main.findByRole('heading', { name: 'Configurações', level: 1 })).toBeTruthy()
+    expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/settings`)
+    fireEvent.click(main.getByRole('link', { name: 'Aparência' }))
+    expect(await main.findByRole('heading', { name: 'Aparência', level: 1 })).toBeTruthy()
+  } finally {
+    phone.mockRestore()
+  }
+})
+
+test('numa tela larga, Configurações abre Minha conta', async () => {
+  const router = open(`/companies/${COMPANY.id}/settings`)
+  expect(await screen.findByRole('heading', { name: 'Minha conta', level: 1 })).toBeTruthy()
+  expect(router.state.location.pathname).toBe(`/companies/${COMPANY.id}/settings/account`)
 })

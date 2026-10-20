@@ -5,11 +5,15 @@ import { FrameLink } from './frame.tsx'
 import { SidebarGroup, SidebarGroupLabel, SidebarInput, SidebarMenu } from './sidebar.tsx'
 import { Empty } from './states.tsx'
 
-export type SettingsSection = Pick<LinkProps, 'to' | 'params'> & {
-  label: string
+/** What a section's route declares in `staticData.section` (web W32). */
+export type SectionMeta = {
   group: 'you' | 'company'
-  keywords: readonly string[]
+  label: string
+  order: number
+  keywords?: readonly string[]
 }
+
+export type SettingsSection = Pick<LinkProps, 'to' | 'params'> & SectionMeta
 
 /** Lower case without accents, so "convite" finds "Convites" and "aparencia" finds "Aparência". */
 function folded(text: string): string {
@@ -28,7 +32,7 @@ export function SettingsIndex(props: { sections: readonly SettingsSection[]; gro
   const [query, setQuery] = useState('')
   const wanted = folded(query.trim())
   const found = props.sections.filter((section) =>
-    [section.label, ...section.keywords].some((word) => folded(word).includes(wanted)),
+    [section.label, ...(section.keywords ?? [])].some((word) => folded(word).includes(wanted)),
   )
   const groups = [
     { group: 'you', name: 'Você' },

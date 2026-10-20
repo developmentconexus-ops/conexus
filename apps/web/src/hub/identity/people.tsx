@@ -6,7 +6,7 @@ import { keepsAttemptKey } from '../../platform/attempt-key.ts'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { List, PageTitle, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
+import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Pager } from '../../ui/pager.tsx'
 import { Empty } from '../../ui/states.tsx'
 import { CancelInvitationForm } from './cancel-invitation-form.tsx'
@@ -207,7 +207,6 @@ export function People() {
   const { data } = useSuspenseQuery(companyQuery(companyId))
   return (
     <div className="flex flex-col gap-xl">
-      <PageTitle>Pessoas e convites</PageTitle>
       {data.mayInviteAs.length === 0 && (
         <p className="text-text-2">Só o dono ou um administrador convida pessoas.</p>
       )}

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useMatches } from '@tanstack/react-router'
+import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { ActivityIcon, UsersIcon } from 'lucide-react'
 import { AccountMenu } from '../../../hub/identity/public.ts'
 import { CentralHeader, operatorOnly } from '../../../hub/operations/public.ts'
@@ -13,7 +13,6 @@ export const Route = createFileRoute('/_app/operations')({
 
 function CentralFrame() {
   const { person } = Route.useRouteContext()
-  const place = useMatches({ select: (matches) => matches.at(-1)?.staticData.place ?? '' })
   return (
     <Frame
       header={<CentralHeader />}
@@ -26,7 +25,6 @@ function CentralFrame() {
         </SidebarGroup>
       }
       footer={<AccountMenu person={person} />}
-      place={place}
       compact={false}
     >
       <Outlet />

@@ -1,7 +1,6 @@
 import { appHostOf, hostLabelOf } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import { PageTitle } from '../../ui/list.tsx'
 import { companyQuery } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/general')
@@ -14,7 +13,6 @@ export function CompanyGeneral() {
   const example = nickname === null ? undefined : hostLabelOf({ name: 'pedidos', nickname })
   return (
     <div className="flex flex-col gap-xl">
-      <PageTitle>Geral</PageTitle>
       <dl className="flex flex-col gap-md">
         <div className="flex flex-col gap-xs">
           <dt className="text-label text-text-2">Nome da empresa</dt>
