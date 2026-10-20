@@ -22,6 +22,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
@@ -37,26 +38,37 @@ jobs:
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
       - name: Approval of the step card
-        run: npm run approval -- ${{ github.event_name == 'pull_request' && format('--base origin/{0}', github.base_ref) || '' }}
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+        run: npm run approval -- ${BASE:+--base "$BASE"}
       - name: The method stays frozen while a step is in construction
         if: github.event_name == 'pull_request'
         env:
+          BASE_REF: ${{ github.base_ref }}
           LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-        run: npm run method-freeze -- --base "origin/${{ github.base_ref }}" --labels "$LABELS"
+        run: npm run method-freeze -- --base "origin/$BASE_REF" --labels "$LABELS"
       - name: Migrations carry no unmarked DROP or RENAME, no changed history or conflicting branches, no session state
         if: github.event_name == 'pull_request'
-        run: npm run migrations -- --base "origin/${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm run migrations -- --base "origin/$BASE_REF"
       - name: List the new dependencies
         if: github.event_name == 'pull_request'
-        run: npm run new-dependencies -- --base "origin/${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm run new-dependencies -- --base "origin/$BASE_REF"
       - name: Report changed code size against the step budget
         if: github.event_name == 'pull_request'
-        run: npm run change-budget -- --base "origin/${{ github.base_ref }}"
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: npm run change-budget -- --base "origin/$BASE_REF"
       - name: Report files outside the step's declared folders and contract owners
         if: github.event_name == 'pull_request'
+        env:
+          SHA: ${{ github.sha }}
         run: |
-          for unit in $(grep -oE '^## U[0-9]+' docs/steps/*.md | grep -oE 'U[0-9]+'); do
-            npm run radius -- "$unit" "${{ github.sha }}"
+          grep -ohE '^## U[0-9]+' docs/steps/*.md | grep -oE 'U[0-9]+' | while read -r unit; do
+            npm run radius -- "$unit" "$SHA" < /dev/null
           done
 
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
@@ -66,7 +78,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/install
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm run test:scripts
 
   server:
@@ -92,8 +106,10 @@ jobs:
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       # One file at a time in a job: files that share CPU starve each other's real-time margins
@@ -107,7 +123,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/install
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - run: npm test -w @conexus/web
       - run: npm run build
 
@@ -130,8 +148,10 @@ jobs:
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: The founder's use script runs in a browser against a real Hub
@@ -154,7 +174,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/install
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
       - name: The removal rows this run proves
         id: plan
         env:
@@ -198,14 +219,17 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: Each protection's test fails when the protection is taken out
         env:
           BASE: ${{ needs.removals-plan.outputs.base }}
-        run: npm run removals -- ${BASE:+--base "$BASE"} --shard ${{ matrix.shard }}/${{ needs.removals-plan.outputs.total }}
+          SHARD: ${{ matrix.shard }}
+          TOTAL: ${{ needs.removals-plan.outputs.total }}
+        run: npm run removals -- ${BASE:+--base "$BASE"} --shard "$SHARD/$TOTAL"
 
   image:
     if: github.event_name == 'pull_request'
@@ -227,8 +251,10 @@ jobs:
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: ./.github/actions/install
-      - uses: ./.github/actions/test-database
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      - uses: ./.github/actions/test-database # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: The mail bundle the host test imports exists
@@ -253,9 +279,43 @@ jobs:
       - name: The final image sends rendered HTML and text through the real Hub
         run: npm run test:image
 
+  # The workflows are code a pull request from inside the organization can change, so they are read
+  # by the two checkers that know them: actionlint for syntax and shell, zizmor for injection,
+  # permissions and unpinned actions. Each runs from an image fixed by digest (versions in the
+  # comments); a finding is fixed in the workflow, and a false positive carries zizmor's own inline
+  # ignore comment with the reason.
+  workflows:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: actionlint
+        run: docker run --rm --volume "$PWD:/repo" --workdir /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color # v1.7.12
+      - name: zizmor
+        env:
+          ZIZMOR_GITHUB_TOKEN: ${{ github.token }}
+        run: docker run --rm --volume "$PWD:/repo" --workdir /repo --env ZIZMOR_GITHUB_TOKEN ghcr.io/zizmorcore/zizmor@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9 --no-progress --color always .github # v1.31.1
+
+  # Only a critical advisory fails the run: the lower ones are read in the step's output.
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm audit --audit-level=critical
+
   ci:
     if: always()
-    needs: [check, scripts, server, web, e2e, removals-plan, removals, image]
+    needs: [check, scripts, server, web, e2e, removals-plan, removals, image, workflows, audit]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -265,7 +325,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }} ${{ needs.workflows.result }} ${{ needs.audit.result }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
@@ -282,6 +342,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
             --jq '.jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, seconds: (($job.completed_at | fromdate) - ($job.started_at | fromdate)), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}' \
             | jq -s -r '

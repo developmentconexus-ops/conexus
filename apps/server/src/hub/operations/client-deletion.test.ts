@@ -234,13 +234,14 @@ test('log: CLIENT_DELETED leva o trace e os ids, nunca o nome, o CNPJ ou o e-mai
       body: JSON.stringify({ name: 'Empresa A', revision: 0 }),
     })
     assert.equal(deleted.status, 204)
-    const line = lines.find((logged) => logged.msg === 'CLIENT_DELETED')
-    assert.equal(line?.companyId, awaiting.companyId)
-    assert.equal(line?.personId, ana.id)
-    assert.match(String(line?.traceId), /^[0-9a-f-]{36}$/)
   } finally {
     await stop()
   }
+  // The Hub's output is complete only once it has exited, not when the response arrives.
+  const line = lines.find((logged) => logged.msg === 'CLIENT_DELETED')
+  assert.equal(line?.companyId, awaiting.companyId)
+  assert.equal(line?.personId, ana.id)
+  assert.match(String(line?.traceId), /^[0-9a-f-]{36}$/)
   const output = JSON.stringify(lines)
   for (const kept of ['12ABC34501DE35', 'Empresa A', DAVI.email, ANA.email]) {
     assert.doesNotMatch(output, new RegExp(kept))

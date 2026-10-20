@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { createAnthropic } from '@ai-sdk/anthropic'
 import { Effort, ModelId } from '@conexus/hub-api'
 import { getModelReasoningOptions, PROVIDER_REGISTRY } from '@mastra/core/llm'
 import { effortsOf, providerOptionsOf } from './public.ts'
@@ -54,7 +55,7 @@ test('o nível pedido chega a cada fornecedor na forma que o dado de raciocínio
     ['openai/gpt-5', 'high', { openai: { reasoningEffort: 'high' } }],
     ['openai/gpt-5', 'max', { openai: { reasoningEffort: 'high' } }],
     ['openai/gpt-5-pro', 'low', { openai: { reasoningEffort: 'high' } }],
-    ['anthropic/claude-opus-4-7', 'off', undefined],
+    ['anthropic/claude-opus-4-7', 'off', { anthropic: { thinking: { type: 'disabled' } } }],
     ['openai/gpt-4o', 'high', undefined],
     ['google/gemma-4-31b-it', 'high', undefined],
     ['openrouter/anthropic/claude-sonnet-4-5', 'high', undefined],
@@ -65,7 +66,12 @@ test('o nível pedido chega a cada fornecedor na forma que o dado de raciocínio
 
 test('"Desligado" chega ao fornecedor como o dado do Mastra diz que o modelo para de raciocinar, e quem sempre raciocina vai no nível mais baixo', () => {
   const cases: [string, unknown][] = [
-    ['anthropic/claude-opus-4-7', undefined],
+    ['anthropic/claude-opus-4-7', { anthropic: { thinking: { type: 'disabled' } } }],
+    ['anthropic/claude-haiku-5-5', { anthropic: { thinking: { type: 'disabled' } } }],
+    [
+      'anthropic/claude-sonnet-5-5',
+      { anthropic: { thinking: { type: 'adaptive', display: 'summarized' }, effort: 'low' } },
+    ],
     ['openai/gpt-5.1', { openai: { reasoningEffort: 'none' } }],
     ['google/gemini-2.5-flash', { google: { thinkingConfig: { thinkingBudget: 0 } } }],
     ['openai/gpt-5', { openai: { reasoningEffort: 'low' } }],
@@ -132,4 +138,47 @@ test('em todo modelo da Anthropic, OpenAI e Google que lista níveis, os níveis
       )
     }
   }
+})
+
+/** The `thinking` and `output_config` the Anthropic provider puts on the request for one step. */
+async function sentToAnthropic(model: string, effort: Effort) {
+  let body: { thinking?: { type: string }; output_config?: { effort?: string } } = {}
+  const provider = createAnthropic({
+    apiKey: 'test',
+    fetch: async (_url, init) => {
+      body = JSON.parse(String(init?.body))
+      return Response.json({
+        id: 'msg',
+        type: 'message',
+        role: 'assistant',
+        model,
+        content: [{ type: 'text', text: 'ok' }],
+        stop_reason: 'end_turn',
+        usage: { input_tokens: 1, output_tokens: 1 },
+      })
+    },
+  })
+  const parsed = ModelId.parse(`anthropic/${model}`)
+  await provider.languageModel(model).doGenerate({
+    prompt: [{ role: 'user', content: [{ type: 'text', text: 'oi' }] }],
+    providerOptions: JSON.parse(JSON.stringify(providerOptionsOf(parsed, effort) ?? {})),
+  })
+  return body
+}
+
+// Absent `thinking` is the API's default, not "off": Claude Haiku 5.5 thinks adaptively unless it is
+// told `disabled` (AI SDK docs, 05-anthropic.mdx "Effort"), which streamed "Pensando…" at Desligado.
+test('"Desligado" na Anthropic manda `thinking: disabled` ao modelo que aceita, e os que sempre raciocinam não oferecem "Desligado"', async () => {
+  for (const name of PROVIDER_REGISTRY.anthropic.models) {
+    const model = `anthropic/${name}`
+    const offered = levels(model).includes('off')
+    const sent = await sentToAnthropic(name, 'off')
+    if (offered) assert.equal(sent.thinking?.type, 'disabled', `${model} offers Desligado`)
+    else assert.notEqual(sent.thinking?.type, 'disabled', model)
+    assert.notEqual(sent.thinking, undefined, `${model} at Desligado must say what it does`)
+  }
+  for (const name of ['claude-sonnet-5-5', 'claude-opus-5-5', 'claude-fable-5', 'claude-fable-5-1'])
+    assert.equal(levels(`anthropic/${name}`).includes('off'), false, `${name} always reasons`)
+  for (const name of ['claude-haiku-5-5', 'claude-opus-5', 'claude-opus-4-7', 'claude-sonnet-4-5'])
+    assert.equal(levels(`anthropic/${name}`)[0], 'off', `${name} can stop`)
 })

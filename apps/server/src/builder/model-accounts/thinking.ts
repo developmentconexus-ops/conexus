@@ -2,8 +2,10 @@
 // in claude/THIRD_PARTY_LICENSE.txt.
 // The token budgets are from @mastra/code-sdk 1.14.0, src/providers/anthropic-thinking.ts
 // (`ANTHROPIC_THINKING_BUDGET_TOKENS`) and google-thinking.ts (`GEMINI_25_BUDGETS`). Which levels a
-// model takes, and how it is asked, comes only from Mastra's reasoning data.
+// model takes, and how it is asked, comes from Mastra's reasoning data; whether a Claude model can
+// stop reasoning comes from the Anthropic provider's own model capabilities.
 
+import { getModelCapabilities } from '@ai-sdk/anthropic/internal'
 import type { ModelId } from '@conexus/hub-api'
 import { Effort, runningEffort } from '@conexus/hub-api'
 import type { ModelReasoningOption } from '@mastra/core/llm'
@@ -65,22 +67,27 @@ function reasoningOf(model: ModelId): Reasoning | undefined {
     levels: [first, ...rest],
     byEffort: efforts.length > 0,
     tokens,
-    off: offOf(provider, options, listed),
+    off: offOf(model, provider, options, listed),
   }
 }
 
 /**
- * How Mastra's data says the model stops reasoning: Claude thinks only when asked; OpenAI lists a
- * `none` effort; Gemini takes a zero budget when it has a toggle or its budget starts at zero.
+ * How the model stops reasoning. Claude has no default to lean on: a model that thinks unless told
+ * otherwise (Haiku 5.5) keeps thinking when `thinking` is absent, so it is told `disabled`, and a
+ * model the provider says rejects `disabled` always reasons. OpenAI lists a `none` effort; Gemini
+ * takes a zero budget when Mastra's data gives it a toggle or its budget starts at zero.
  */
 function offOf(
+  model: ModelId,
   provider: ThinkingProvider,
   options: readonly ModelReasoningOption[],
   listed: readonly string[],
 ): Reasoning['off'] {
   switch (provider) {
     case 'anthropic':
-      return { asked: undefined }
+      return getModelCapabilities(parseModelString(model).modelId).rejectsThinkingDisabled
+        ? null
+        : { asked: { anthropic: { thinking: { type: 'disabled' } } } }
     case 'openai':
       return listed.includes('none') ? { asked: { openai: { reasoningEffort: 'none' } } } : null
     case 'google': {

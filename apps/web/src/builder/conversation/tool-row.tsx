@@ -27,7 +27,7 @@ function Subject({ subject }: Pick<ToolPart, 'subject'>) {
       ? subject.query
       : (subject.title ?? URL.parse(subject.url)?.hostname ?? subject.url)
   return (
-    <TraceDescription className="min-w-0 shrink truncate font-mono text-fact">
+    <TraceDescription className="min-w-24 flex-1 basis-24 truncate font-mono text-fact">
       {'query' in subject ? label : <Anchor href={subject.url}>{label}</Anchor>}
     </TraceDescription>
   )
@@ -36,9 +36,9 @@ function Subject({ subject }: Pick<ToolPart, 'subject'>) {
 /** One tool, as a sentence of what it does or did. */
 export function ToolRow({ tool }: { tool: ToolPart }) {
   return (
-    <TraceLine status={tool.state === 'completed' ? undefined : tool.state}>
+    <TraceLine className="flex-wrap" status={tool.state === 'completed' ? undefined : tool.state}>
       <ToolIcon tool={tool} />
-      <TraceTitle>{sentenceOf(tool)}</TraceTitle>
+      <TraceTitle className="max-w-full shrink-0 whitespace-normal">{sentenceOf(tool)}</TraceTitle>
       <Subject subject={tool.subject} />
     </TraceLine>
   )
