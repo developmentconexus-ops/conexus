@@ -27,7 +27,7 @@ type ThinkingProvider = (typeof THINKING_PROVIDERS)[number]
 type Reasoning = {
   provider: ThinkingProvider
   /** The levels the model takes, in order: the efforts it lists, or else one per budget. */
-  levels: readonly Active[]
+  levels: readonly [Active, ...Active[]]
   /** The model lists `effort` values, so the provider takes the level itself. */
   byEffort: boolean
   /** The tokens a level thinks with, when the model lists a token budget. */
@@ -55,16 +55,16 @@ function reasoningOf(model: ModelId): Reasoning | undefined {
     tokens === undefined
       ? []
       : ACTIVE.filter((level) => ACTIVE.find((each) => tokens(each) === tokens(level)) === level)
-  const levels = efforts.length > 0 ? efforts : budgets
-  if (levels.length === 0) return undefined
-  return { provider, levels, byEffort: efforts.length > 0, tokens }
+  const [first, ...rest] = efforts.length > 0 ? efforts : budgets
+  if (first === undefined) return undefined
+  return { provider, levels: [first, ...rest], byEffort: efforts.length > 0, tokens }
 }
 
 /** The level the model runs at for `level`: the same, or the nearest below it, or its lowest. */
 function runLevel(reasoning: Reasoning, level: Active): Active {
   const rank = ACTIVE.indexOf(level)
   const below = reasoning.levels.filter((each) => ACTIVE.indexOf(each) <= rank)
-  return below.at(-1) ?? reasoning.levels[0] ?? level
+  return below.at(-1) ?? reasoning.levels[0]
 }
 
 /** The efforts a model accepts, from Mastra's reasoning data; `off` always. */

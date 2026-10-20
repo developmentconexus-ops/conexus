@@ -5,7 +5,15 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
-import { conversing, failuresOf, KEY, sent, started, streamOf } from './test-conversation.ts'
+import {
+  conversing,
+  eventually,
+  failuresOf,
+  KEY,
+  sent,
+  started,
+  streamOf,
+} from './test-conversation.ts'
 import { printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
@@ -189,11 +197,15 @@ test('título e observação vão pela conta do turno; um 429 no observador: o t
       }
     }
   }
-  const observed = anthropic.sent.filter((each) => OBSERVER.test(each.system))
-  const titled = anthropic.sent.filter((each) => !each.stream && !OBSERVER.test(each.system))
-  assert.ok(observed.length > 0, 'the observer was called')
-  assert.ok(titled.length > 0, 'the title was asked')
-  for (const each of [...observed, ...titled])
+  function observed() {
+    return anthropic.sent.filter((each) => OBSERVER.test(each.system))
+  }
+  function titled() {
+    return anthropic.sent.filter((each) => !each.stream && !OBSERVER.test(each.system))
+  }
+  await eventually(() => observed().length > 0, 'the observer was called')
+  await eventually(() => titled().length > 0, 'the title was asked')
+  for (const each of [...observed(), ...titled()])
     assert.equal(each.key, 'sk-ant-conversation-key-0002')
   const read = await call(hub, ana, 'GET', url)
   assert.equal(Object(read.json()).conversation.title, 'Encomendas da padaria')
@@ -230,8 +242,8 @@ test('o título que o observador dá a uma conversa longa vem em português', as
       if (event.type === 'turnEnd') break
     }
   }
-  assert.ok(
-    anthropic.sent.some((each) => OBSERVER.test(each.system)),
+  await eventually(
+    () => anthropic.sent.some((each) => OBSERVER.test(each.system)),
     'the observer was called',
   )
   let title = ''

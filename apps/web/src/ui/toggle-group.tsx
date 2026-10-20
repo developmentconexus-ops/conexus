@@ -2,7 +2,7 @@ import { Toggle as TogglePrimitive } from '@base-ui/react/toggle'
 import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui/react/toggle-group'
 import { cn } from './cn.ts'
 
-// Copied from shadcn's base-nova `toggle-group`, painted with brand tokens: one pressed item at a
+// Shaped after shadcn's base-nova `toggle-group`, painted with brand tokens: one pressed item at a
 // time, laid out as a segmented control.
 export function ToggleGroup({ className, ...props }: ToggleGroupPrimitive.Props) {
   return (

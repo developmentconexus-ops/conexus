@@ -223,6 +223,17 @@ export async function asked(
 }
 
 /**
+ * Waits up to three seconds for work the Hub does in the background after a turn ends (the
+ * observer, the title) and fails with `what` when `done` stays false.
+ */
+export async function eventually(done: () => boolean, what: string): Promise<void> {
+  for (let attempt = 0; attempt < 30 && !done(); attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  assert.ok(done(), what)
+}
+
+/**
  * The conversation's messages once the last is the Builder's, read again for at most five seconds:
  * Mastra saves a turn just after its end.
  */

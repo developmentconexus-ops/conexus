@@ -1,5 +1,5 @@
-import type { Provider } from '@conexus/hub-api'
-import { Effort, ModelId, providerOfModel } from '@conexus/hub-api'
+import type { ModelId, Provider } from '@conexus/hub-api'
+import { Effort } from '@conexus/hub-api'
 import { useId, useMemo, useState } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
@@ -46,9 +46,9 @@ export function ModelPicker(props: {
     () => groupsOf(props.providers, search),
     [props.providers, search],
   )
-  const picked = props.value === null ? null : providerOfModel(props.value)
-  const provider = props.providers.find((one) => one.id === picked)
-  const levels = provider?.models.find((one) => `${provider.id}/${one.id}` === props.value)?.efforts
+  const levels = props.providers
+    .flatMap((provider) => provider.models)
+    .find((one) => one.id === props.value)?.efforts
   const current: Option | null =
     props.value === null ? null : { value: props.value, label: modelLabel(props.value) }
   const choice =
@@ -123,13 +123,12 @@ function groupsOf(providers: readonly Provider[], search: string) {
   for (const provider of providers) {
     const items: Option[] = []
     for (const model of provider.models) {
-      if (!plain(model.id).includes(wanted)) continue
-      const value = ModelId.safeParse(`${provider.id}/${model.id}`)
-      if (!value.success) continue
+      const label = modelLabel(model.id)
+      if (!plain(label).includes(wanted)) continue
       matched += 1
       if (count >= SHOWN) continue
       count += 1
-      items.push({ value: value.data, label: modelLabel(value.data) })
+      items.push({ value: model.id, label })
     }
     if (items.length > 0) groups.push({ value: provider.name, items })
   }

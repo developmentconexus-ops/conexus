@@ -2,7 +2,7 @@ import { FAILURES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import { conversationOf, FIRST, PROJECT, SECOND, screens, typed, view } from './test-hub.tsx'
+import { conversationOf, FIRST, PROJECT, SECOND, say, screens, typed, view } from './test-hub.tsx'
 
 const { open } = screens(hubServer())
 
@@ -88,6 +88,35 @@ test('trocar de conversa e voltar guarda o rascunho de cada uma', async () => {
   expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe(
     'meio da frase',
   )
+})
+
+test('uma mensagem enviada cujo envio termina depois da troca de conversa não volta ao campo', async () => {
+  const gate = Promise.withResolvers<void>()
+  const { sent } = open(
+    view({
+      conversations: [
+        conversationOf({ id: FIRST, title: 'Primeira' }),
+        conversationOf({ id: SECOND, title: 'Segunda' }),
+      ],
+    }),
+    `${PROJECT}/conversations/${FIRST}`,
+    {
+      message: async () => {
+        await gate.promise
+        return undefined
+      },
+    },
+  )
+  say(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }), 'já enviada')
+  await waitFor(() => expect(sent.length).toBe(1))
+  await pick('Segunda')
+  await waitFor(() => expect(box()).toHaveProperty('value', 'Segunda'))
+  gate.resolve()
+  await waitFor(() => expect(sessionStorage.getItem(`conexus-draft:${FIRST}`)).toBe(''))
+  await pick('Primeira')
+  await waitFor(() => expect(box()).toHaveProperty('value', 'Primeira'))
+  expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe('')
+  expect(sessionStorage.getItem(`conexus-draft:${FIRST}`)).toBe('')
 })
 
 test('a conversa de outra pessoa abre como "não encontrado", sem rastro dela', async () => {

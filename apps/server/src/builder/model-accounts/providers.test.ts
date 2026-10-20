@@ -55,8 +55,9 @@ test('cada modelo com os níveis de raciocínio que aceita; sem dado de raciocí
     (await call(hub, ana, 'GET', '/api/model-providers')).json(),
   )
   function effortsOf(provider: string, model: string) {
-    return providers.find(({ id }) => id === provider)?.models.find(({ id }) => id === model)
-      ?.efforts
+    return providers
+      .find(({ id }) => id === provider)
+      ?.models.find(({ id }) => id === `${provider}/${model}`)?.efforts
   }
   assert.deepEqual(effortsOf('anthropic', 'claude-sonnet-4-5'), [
     'off',

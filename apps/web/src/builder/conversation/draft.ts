@@ -20,7 +20,11 @@ export function useDraft(conversationId: ConversationId) {
   return {
     text,
     change: (next: string) => setHeld({ key, text: next }),
-    clear: (sent: string) =>
-      setHeld((now) => (now.key === key && now.text === sent ? { key, text: '' } : now)),
+    clear: (sent: string) => {
+      // Storage is written here too: a send can end after the composer unmounted, and the effect
+      // above no longer runs then.
+      if (drafts.getItem(key) === sent) drafts.setItem(key, '')
+      setHeld((now) => (now.key === key && now.text === sent ? { key, text: '' } : now))
+    },
   }
 }

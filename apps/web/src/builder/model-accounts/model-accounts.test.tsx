@@ -276,7 +276,7 @@ test('Modelo padrão: busca, grupos por fornecedor e o modelo, como fornecedor/m
 
 test('Modelo padrão: milhares de modelos não viram milhares de opções; a busca encontra o resto', async () => {
   const models = Array.from({ length: 3000 }, (_, index) => ({
-    id: `modelo-${index}`,
+    id: `grande/modelo-${index}`,
     efforts: ['off'],
   }))
   open(view({ defaultModel: 'grande/modelo-7' }))

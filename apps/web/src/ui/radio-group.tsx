@@ -2,7 +2,7 @@ import { Radio as RadioPrimitive } from '@base-ui/react/radio'
 import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group'
 import { cn } from './cn.ts'
 
-// Copied from shadcn's base-nova `radio-group`, painted with brand tokens: each choice is a pill
+// Shaped after shadcn's base-nova `radio-group`, painted with brand tokens: each choice is a pill
 // that reads its checked state from the border and the accent.
 export function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
   return (

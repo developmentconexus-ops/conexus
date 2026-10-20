@@ -20,10 +20,10 @@ const KEY_PROVIDERS: ReadonlyMap<ProviderId, Provider> = new Map(
       ([id, config]): Provider => ({
         id: ProviderId.parse(id),
         name: config.name,
-        models: config.models.map((model) => ({
-          id: model,
-          efforts: effortsOf(ModelId.parse(`${id}/${model}`)),
-        })),
+        models: config.models.map((model) => {
+          const modelId = ModelId.parse(`${id}/${model}`)
+          return { id: modelId, efforts: effortsOf(modelId) }
+        }),
       }),
     )
     .sort((left, right) => left.name.localeCompare(right.name, 'pt-BR'))

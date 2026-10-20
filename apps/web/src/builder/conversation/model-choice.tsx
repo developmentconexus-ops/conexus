@@ -1,5 +1,12 @@
-import type { CompanyId, Conversation, Effort, ProjectId, ProviderId } from '@conexus/hub-api'
-import { ModelId, providerOfModel } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  Conversation,
+  ConversationId,
+  Effort,
+  ModelId,
+  ProjectId,
+  ProviderId,
+} from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useMemo } from 'react'
@@ -21,6 +28,13 @@ export function NoAccount({ companyId }: { companyId: CompanyId }) {
   )
 }
 
+type Choice = Pick<Conversation, 'model' | 'effort'>
+/** What the screen asks: typed with the brand the wire's input parse leaves out. */
+type Asked = {
+  params: { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
+  body: Choice
+}
+
 /**
  * The model and the reasoning of the conversation, among the providers the person has an account
  * for, in one button of the composer. A change holds for the next answers, not the one in progress
@@ -34,7 +48,7 @@ export function ModelChoice(props: {
 }) {
   const { providers } = useSuspenseQuery(providersQuery).data
   const queryClient = useQueryClient()
-  const send = useMutation({
+  const send = useMutation<Choice, Error, Asked>({
     ...sendModel,
     onSuccess: (kept) =>
       queryClient.setQueryData<{ conversation: Conversation }>(
@@ -46,11 +60,7 @@ export function ModelChoice(props: {
     () => providers.filter((provider) => props.usable.has(provider.id)),
     [providers, props.usable],
   )
-  const asked = send.isPending ? ModelId.safeParse(send.variables.body.model) : undefined
-  const now =
-    send.isPending && asked?.success
-      ? { model: asked.data, effort: send.variables.body.effort }
-      : props.conversation
+  const now = send.isPending ? send.variables.body : props.conversation
 
   function choose(model: ModelId, effort: Effort) {
     props.onError(undefined)
@@ -65,8 +75,9 @@ export function ModelChoice(props: {
 
   function pickModel(model: ModelId) {
     if (model === now.model) return
-    const provider = providers.find((one) => one.id === providerOfModel(model))
-    const efforts = provider?.models.find((one) => `${provider.id}/${one.id}` === model)?.efforts
+    const efforts = shown
+      .flatMap((provider) => provider.models)
+      .find((one) => one.id === model)?.efforts
     choose(model, efforts?.includes(now.effort) ? now.effort : 'off')
   }
 

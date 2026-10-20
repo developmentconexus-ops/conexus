@@ -34,9 +34,9 @@ const PROVIDERS = [
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
 ].map((provider) => ({
   ...provider,
-  models: provider.models.map((id) => ({
-    id,
-    efforts: id === 'claude-sonnet-4' ? ['off', 'low', 'high'] : ['off'],
+  models: provider.models.map((name) => ({
+    id: `${provider.id}/${name}`,
+    efforts: name === 'claude-sonnet-4' ? ['off', 'low', 'high'] : ['off'],
   })),
 }))
 
