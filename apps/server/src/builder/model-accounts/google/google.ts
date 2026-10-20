@@ -99,14 +99,21 @@ export async function launch(deps: Deps, login?: Credential): Promise<Process> {
   const started = { child, dir, port, key }
   child.once('error', (error) => deps.log.error({ port, cause: error.name }, 'CLIPROXY_STOPPED'))
   const deadline = Date.now() + READY_MS
+  // Until the process listens its port refuses connections: each poll's failure is the state this
+  // waits out, and the last one is the cause if the deadline comes first.
+  let cause: unknown
   while (Date.now() < deadline && child.exitCode === null) {
-    // biome-ignore lint/plugin: until the process listens its port refuses connections, which is the state this poll waits out; the deadline raises CLIPROXY_UNAVAILABLE
-    const ready = await management(started, '/get-auth-status').catch(() => undefined)
-    if (ready?.ok) return started
+    try {
+      const ready = await management(started, '/get-auth-status')
+      if (ready.ok) return started
+      cause = undefined
+    } catch (error) {
+      cause = error
+    }
     await sleep(POLL_MS)
   }
   await end(started)
-  throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NOT_READY' } })
+  throw new Failure('CLIPROXY_UNAVAILABLE', { details: { reason: 'NOT_READY' }, cause })
 }
 
 async function loggedIn(process: Process, state: string): Promise<boolean> {

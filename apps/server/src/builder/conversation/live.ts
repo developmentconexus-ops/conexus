@@ -44,9 +44,10 @@ export type Live = {
   runs: Map<string, Run>
   /**
    * The last run that ended before its message learned its id, as Mastra's own wait allows
-   * (`waitForAcceptedRunCompletion`): its message does not wait for an end already past.
+   * (`waitForAcceptedRunCompletion`): its message does not wait for an end already past, and ends
+   * the turn itself, since only it knows which turn the run was.
    */
-  endedUnclaimed: string | undefined
+  unclaimed: { run: string; reason: Ending['reason'] } | undefined
   /** The questions on the thread, and the write of them in flight, one after the other. */
   questions: Question[]
   kept: Promise<void>
@@ -63,10 +64,16 @@ function appendText(answer: Message, delta: string): void {
   else answer.parts.push({ type: 'text', text: delta })
 }
 
-/** What a stream that opens now reads first: the answer so far, or the notices said before it. */
+/**
+ * What a stream that opens now reads first: the answer so far, the notices said before it, or
+ * that a turn runs and has said nothing yet.
+ */
 export function snapshotOf(live: Live): ConversationEvent[] {
   if (live.answer !== undefined) return [{ type: 'turn', message: structuredClone(live.answer) }]
-  return live.notices.map((notice) => ({ type: 'notice', text: notice.text }))
+  if (live.notices.length > 0) {
+    return live.notices.map((notice) => ({ type: 'notice', text: notice.text }))
+  }
+  return live.asked.size > 0 || live.runs.size > 0 ? [{ type: 'working' }] : []
 }
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
@@ -103,10 +110,19 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
     const runId = live.session.run.getRunId()
     const run = runId === null ? undefined : live.runs.get(runId)
     if (runId !== null) live.runs.delete(runId)
-    if (runId !== null && run === undefined) live.endedUnclaimed = runId
+    if (runId !== null && run === undefined && live.asked.size > 0) {
+      live.unclaimed = { run: runId, reason: event.reason }
+      return
+    }
     endTurn(live, { reason: event.reason, turn: run?.turn })
     run?.ended()
   } else onMessageEvent(live, event)
+}
+
+type Ending = {
+  reason: 'complete' | 'aborted' | 'error' | 'suspended' | undefined
+  turn: Turn | undefined
+  unexpected?: TurnFailureCode
 }
 
 /**
@@ -114,14 +130,7 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
  * turn, never the provider's text (security S41); `suspended` cannot happen, since the Builder has
  * no tool that waits.
  */
-export function endTurn(
-  live: Live,
-  ending: {
-    reason: 'complete' | 'aborted' | 'error' | 'suspended' | undefined
-    turn: Turn | undefined
-    unexpected?: TurnFailureCode
-  },
-) {
+export function endTurn(live: Live, ending: Ending) {
   const ended =
     ending.reason === 'error' || ending.reason === 'aborted' ? ending.reason : 'complete'
   if (ended === 'error') {

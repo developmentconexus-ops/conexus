@@ -109,6 +109,18 @@ test('ao reconectar, a conversa é lida de novo e o texto parcial volta pelo "tu
   expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
 })
 
+test('ao reconectar com o turno em curso e ainda mudo, o "working" mostra "Pensando…" e "Parar"', async () => {
+  const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'Compare')
+  await screen.findByText('Pensando…')
+  lines[0]?.close()
+  await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
+  await waitFor(() => expect(screen.queryByText('Pensando…')).toBeNull())
+  lines[1]?.emit({ type: 'working' })
+  expect(await screen.findByText('Pensando…')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
+})
+
 test('a resposta que terminou com a linha caída aparece uma vez ao reconectar, e o campo volta', async () => {
   const { field, lines, shown } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')

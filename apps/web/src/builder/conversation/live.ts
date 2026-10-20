@@ -46,6 +46,8 @@ export function live(state: Live, step: Step): Live {
       return IDLE
     case 'turn':
       return { kind: 'answering', parts: step.message.parts, failure: null }
+    case 'working':
+      return inProgress(state)
     case 'text': {
       const answer = inProgress(state)
       return { ...answer, parts: appended(answer.parts, step.delta) }

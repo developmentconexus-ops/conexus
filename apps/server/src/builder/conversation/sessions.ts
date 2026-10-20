@@ -48,7 +48,7 @@ export class Sessions {
         const opened: Live = {
           ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
           ...{ answer: undefined, notices: [], asked: new Set(), runs: new Map() },
-          ...{ endedUnclaimed: undefined, questions: [], kept: Promise.resolve() },
+          ...{ unclaimed: undefined, questions: [], kept: Promise.resolve() },
           unsubscribe: () => undefined,
         }
         opened.unsubscribe = session.subscribe((event) => onEvent(opened, event))
@@ -141,7 +141,10 @@ export class Sessions {
       const sent = live.session.sendSignal({ content, requestContext: turnContext(turn) }, options)
       const accepted = await sent.accepted
       const runId = accepted.action === 'wake' ? accepted.runId : undefined
-      if (runId !== undefined && live.endedUnclaimed !== runId) {
+      if (runId !== undefined && live.unclaimed?.run === runId) {
+        endTurn(live, { reason: live.unclaimed.reason, turn })
+        live.unclaimed = undefined
+      } else if (runId !== undefined) {
         await new Promise<void>((ended) => live.runs.set(runId, { turn, ended }))
       }
     } catch (cause) {
@@ -152,6 +155,10 @@ export class Sessions {
     } finally {
       live.asked.delete(turn)
       turn.end()
+      if (live.unclaimed !== undefined && live.asked.size === 0) {
+        endTurn(live, { reason: live.unclaimed.reason, turn: undefined })
+        live.unclaimed = undefined
+      }
     }
   }
 
