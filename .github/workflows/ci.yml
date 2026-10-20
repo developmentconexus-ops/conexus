@@ -137,9 +137,11 @@ jobs:
       - name: The founder's use script runs in a browser against a real Hub
         run: npm run e2e
 
-  # A pull request proves the removals its diff touches (scripts/removals-select.ts), so a pull
-  # request that touches no protection waits for none. Every push to main, and every pull request
-  # with the `all-removals` label, which the step's review adds, proves all of them.
+  # A pull request proves the removals its diff reaches: the files its rows name and everything
+  # they import, and every row when a row is deleted or a file no import shows changes
+  # (scripts/removals-select.ts). Every push to main, and every pull request that is a step's build
+  # (a branch ending in -build, or a title starting with "step N" or "feat: step N") or carries the
+  # `all-removals` label, proves all of them: the step's review reads a run that did.
   removals-plan:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -156,17 +158,18 @@ jobs:
       - name: The removal rows this run proves
         id: plan
         env:
-          BASE: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'all-removals') && format('origin/{0}', github.base_ref) || '' }}
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          PULL_REQUEST: ${{ github.event_name == 'pull_request' && format('{{"title":{0},"headRef":{1},"labels":{2}}}', toJSON(github.event.pull_request.title), toJSON(github.head_ref), toJSON(github.event.pull_request.labels.*.name)) || '{}' }}
         run: |
-          plan="$(node scripts/removals.ts --plan ${BASE:+--base "$BASE"})"
+          plan="$(node scripts/removals.ts --plan ${BASE:+--base "$BASE" --pull-request "$PULL_REQUEST"})"
           echo "$plan"
           {
-            echo "base=$BASE"
+            echo "base=$(jq -r 'if .everything then "" else env.BASE end' <<<"$plan")"
             echo "selected=$(jq .selected <<<"$plan")"
             echo "total=$(jq .shards <<<"$plan")"
             echo "shards=$(jq -c '[range(1; .shards + 1)]' <<<"$plan")"
           } >> "$GITHUB_OUTPUT"
-          jq -r '"Removals: \(.selected) of \(.total) rows" + (if .selected == 0 then ", nothing to run" else "" end)' <<<"$plan" >> "$GITHUB_STEP_SUMMARY"
+          jq -r '"Removals: \(.selected) of \(.total) rows" + (if .selected == 0 then ", nothing to run" elif .everything then ", all because \(.everything)" else "" end)' <<<"$plan" >> "$GITHUB_STEP_SUMMARY"
 
   removals:
     needs: removals-plan

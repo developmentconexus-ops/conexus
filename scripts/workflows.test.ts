@@ -172,14 +172,23 @@ test('o agregador espera todos os trabalhos da CI, e sem linha de remoção a pr
   assert.equal(ci.jobs.removals?.if, "needs.removals-plan.outputs.selected != '0'")
 })
 
-test('o plano das remoções compara com a base só num pull request sem o rótulo all-removals', () => {
+test('o plano das remoções lê o pull request pelo ambiente e roda todas as linhas quando o plano diz', () => {
   const plan = ci.jobs['removals-plan']?.steps.find((step) => step.id === 'plan')
   assert.match(plan?.env?.BASE ?? '', /^\$\{\{ github\.event_name == 'pull_request' && /)
+  const pullRequest = plan?.env?.PULL_REQUEST ?? ''
+  for (const field of [
+    'github.event.pull_request.title',
+    'github.head_ref',
+    'github.event.pull_request.labels.*.name',
+  ]) {
+    assert.ok(pullRequest.includes(`toJSON(${field})`), field)
+  }
+  assert.doesNotMatch(plan?.run ?? '', /\$\{\{/)
   assert.match(
-    plan?.env?.BASE ?? '',
-    /!contains\(github\.event\.pull_request\.labels\.\*\.name, 'all-removals'\)/,
+    plan?.run ?? '',
+    /node scripts\/removals\.ts --plan \$\{BASE:\+--base "\$BASE" --pull-request "\$PULL_REQUEST"\}/,
   )
-  assert.match(plan?.run ?? '', /node scripts\/removals\.ts --plan \$\{BASE:\+--base "\$BASE"\}/)
+  assert.match(plan?.run ?? '', /if \.everything then "" else env\.BASE end/)
   assert.ok(ci.on.pull_request && JSON.stringify(ci.on.pull_request).includes('labeled'))
 })
 
