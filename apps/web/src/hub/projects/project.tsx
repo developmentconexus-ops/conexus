@@ -1,19 +1,20 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { dayOf } from '../../platform/dates.ts'
-import { PageTitle } from '../../ui/list.tsx'
 import { DeleteProjectDialog } from './delete-project-dialog.tsx'
 import { projectQuery } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
 
-/** The Sobre of a Projeto: its name, date and address, and for those the Hub lets delete it, its deletion. */
+/**
+ * The Sobre of a Projeto: its date and address, and for those the Hub lets delete it, its deletion.
+ * The name is on the area's top line, so it is not repeated here.
+ */
 export function About() {
   const { companyId, projectId } = route.useParams()
   const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   return (
     <div className="flex flex-col gap-xl">
-      <PageTitle className="break-words">{project.name}</PageTitle>
       <p className="text-label text-text-2">Criado em {dayOf(project.createdAt)}</p>
       {project.address !== null && (
         <p className="text-label text-text-2">

@@ -1,6 +1,5 @@
-import type { ModelId, Provider } from '@conexus/hub-api'
-import { Effort } from '@conexus/hub-api'
-import { useId, useMemo, useState } from 'react'
+import type { Effort, ModelId, Provider } from '@conexus/hub-api'
+import { useMemo, useState } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
 import {
@@ -15,8 +14,9 @@ import {
   ComboboxList,
   ComboboxTrigger,
 } from '../../ui/combobox.tsx'
-import { RadioGroup, RadioGroupItem } from '../../ui/radio-group.tsx'
-import { EFFORT_LABELS, modelLabel, plain } from './text.ts'
+import { Slider } from '../../ui/slider.tsx'
+import { modelLabel } from './model-label.ts'
+import { EFFORT_LABELS, plain } from './text.ts'
 
 /** Models shown at once: the registry holds thousands, and a search narrows them. */
 const SHOWN = 50
@@ -124,7 +124,7 @@ function groupsOf(providers: readonly Provider[], search: string) {
     const items: Option[] = []
     for (const model of provider.models) {
       const label = modelLabel(model.id)
-      if (!plain(label).includes(wanted)) continue
+      if (!plain(label).includes(wanted) && !plain(model.id).includes(wanted)) continue
       matched += 1
       if (count >= SHOWN) continue
       count += 1
@@ -136,26 +136,34 @@ function groupsOf(providers: readonly Provider[], search: string) {
 }
 
 function EffortLevels(props: { levels: readonly Effort[]; effort: EffortChoice }) {
-  const titleId = useId()
+  const [dragged, setDragged] = useState<number | null>(null)
+  const saved = props.levels.indexOf(props.effort.value)
+  const shown = props.levels[dragged ?? saved]
   return (
-    <div className="flex flex-col gap-xs border-t border-line p-md">
-      <span id={titleId} className="text-fact text-text-2">
-        Raciocínio
-      </span>
-      <RadioGroup
-        aria-labelledby={titleId}
-        value={props.effort.value}
-        onValueChange={(next) => {
-          const effort = Effort.safeParse(next)
-          if (effort.success) props.effort.onChange(effort.data)
+    <div className="flex flex-col gap-sm border-t border-line p-md">
+      <div className="flex items-baseline justify-between gap-md">
+        <span className="text-fact text-text-2">Raciocínio</span>
+        <span className="text-label text-text">
+          {shown === undefined ? '' : EFFORT_LABELS[shown]}
+        </span>
+      </div>
+      <Slider
+        label="Raciocínio"
+        min={0}
+        max={props.levels.length - 1}
+        step={1}
+        value={dragged ?? saved}
+        getAriaValueText={(_text, index) => {
+          const level = props.levels[index]
+          return level === undefined ? '' : EFFORT_LABELS[level]
         }}
-      >
-        {props.levels.map((level) => (
-          <RadioGroupItem key={level} value={level}>
-            {EFFORT_LABELS[level]}
-          </RadioGroupItem>
-        ))}
-      </RadioGroup>
+        onValueChange={(next) => setDragged(next)}
+        onValueCommitted={(next) => {
+          setDragged(null)
+          const level = props.levels[next]
+          if (level !== undefined && level !== props.effort.value) props.effort.onChange(level)
+        }}
+      />
     </div>
   )
 }

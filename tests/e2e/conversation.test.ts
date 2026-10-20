@@ -8,6 +8,7 @@ import {
   ask,
   chooseDefaultModel,
   KEYS,
+  pickLevel,
   plantJourney,
   publicPage,
   SECOND_ANSWER,
@@ -205,10 +206,7 @@ async function twoRegions(chat: Page) {
 async function researched(chat: Page, hold: () => () => void, sent: () => number) {
   await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
   const choice = chat.getByRole('combobox', { name: 'Modelo e raciocínio' })
-  await choice.click()
-  await saving(chat, () => chat.getByRole('radio', { name: 'Alto', exact: true }).click())
-  await chat.keyboard.press('Escape')
-  await choice.filter({ hasText: 'Alto' }).waitFor()
+  await pickLevel(chat, choice, 'Alto')
   const release = hold()
   await ask(chat, 'Compare dois apps de encomenda de padaria')
   await chat.getByRole('status').filter({ hasText: 'Builder trabalhando' }).waitFor()

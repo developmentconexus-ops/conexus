@@ -1,10 +1,13 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { choose, conversationOf, FIRST, say, screens, typed, view } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
 const PICKER = { name: 'Modelo e raciocínio' }
+// Base UI keeps the thumb hidden until it measures the track, which jsdom cannot; the browser
+// suites name it (keyboard.test.ts).
+const SLIDER = { hidden: true } as const
 
 test('o anel do compositor só gira enquanto o Builder trabalha; Enviar vira Parar e o foco volta ao campo', async () => {
   const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
@@ -22,30 +25,42 @@ test('o anel do compositor só gira enquanto o Builder trabalha; Enviar vira Par
   lines[0]?.emit({ type: 'text', delta: 'Olá' })
 })
 
-test('o seletor mostra os níveis do modelo e a troca de nível leva o modelo e o nível', async () => {
+test('o seletor mostra o controle deslizante dos níveis do modelo, o nome do nível, e a troca leva o modelo e o nível', async () => {
   const { sent } = await openConversation(conversationOf({ id: FIRST }))
   fireEvent.click(screen.getByRole('combobox', PICKER))
-  const levels = await screen.findByRole('radiogroup', { name: 'Raciocínio' })
-  expect(
-    within(levels)
-      .getAllByRole('radio')
-      .map((one) => one.textContent),
-  ).toEqual(['Desligado', 'Baixo', 'Alto'])
-  fireEvent.click(within(levels).getByRole('radio', { name: 'Alto' }))
+  await screen.findByText('Raciocínio')
+  await screen.findByText('Raciocínio')
+  const slider = await screen.findByRole('slider', SLIDER)
+  expect(slider.getAttribute('aria-label')).toBe('Raciocínio')
+  expect(slider.getAttribute('min')).toBe('0')
+  expect(slider.getAttribute('max')).toBe('2')
+  expect(slider.getAttribute('aria-valuetext')).toBe('Desligado')
+  expect(screen.queryByRole('radiogroup')).toBeNull()
+  fireEvent.keyDown(slider, { key: 'End' })
   await waitFor(() =>
     expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-sonnet-4', effort: 'high' }),
   )
   expect(screen.getByRole('combobox', PICKER).textContent).toContain('Alto')
+  expect(slider.getAttribute('aria-valuetext')).toBe('Alto')
+  fireEvent.keyDown(slider, { key: 'ArrowLeft' })
+  await waitFor(() =>
+    expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-sonnet-4', effort: 'low' }),
+  )
+  fireEvent.keyDown(slider, { key: 'Home' })
+  await waitFor(() =>
+    expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-sonnet-4', effort: 'off' }),
+  )
 })
 
-test('um modelo sem níveis não mostra a seção, e a troca para ele volta o nível a Desligado', async () => {
+test('um modelo sem níveis não mostra o controle, e a troca para ele volta o nível a Desligado', async () => {
   const { sent } = await openConversation(conversationOf({ id: FIRST, effort: 'high' }))
-  await choose(screen.getByRole('combobox', PICKER), 'claude-opus-4')
+  await choose(screen.getByRole('combobox', PICKER), 'Claude Opus 4')
   await waitFor(() =>
     expect(sent.at(-1)?.body).toEqual({ model: 'anthropic/claude-opus-4', effort: 'off' }),
   )
   fireEvent.click(screen.getByRole('combobox', PICKER))
   await screen.findByRole('listbox')
+  expect(screen.queryByRole('slider')).toBeNull()
   expect(screen.queryByText('Raciocínio')).toBeNull()
 })
 
@@ -54,7 +69,7 @@ test('o nível que o modelo não aceita volta a frase do Hub, sem trocar o botã
     model: () => refusal('EFFORT_UNSUPPORTED'),
   })
   fireEvent.click(screen.getByRole('combobox', PICKER))
-  fireEvent.click(await screen.findByRole('radio', { name: 'Alto' }))
+  fireEvent.keyDown(await screen.findByRole('slider', SLIDER), { key: 'End' })
   expect((await screen.findByRole('alert')).textContent).toBe(
     'Este modelo não aceita esse nível de raciocínio. Escolha outro nível de raciocínio.',
   )
@@ -66,7 +81,7 @@ test('a busca do seletor estreita os modelos', async () => {
   fireEvent.click(screen.getByRole('combobox', PICKER))
   fireEvent.change(await screen.findByLabelText('Buscar modelo'), { target: { value: 'GEMINI' } })
   await waitFor(() =>
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['gemini-2.5-pro']),
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
   )
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'zzz' } })
   expect(await screen.findByText('Nenhum modelo encontrado.')).toBeTruthy()
@@ -95,4 +110,17 @@ test('o texto enviado limpa o campo quando nada foi digitado depois', async () =
   say(field, 'só isto')
   await waitFor(() => expect(sent.length).toBe(1))
   await waitFor(() => expect(typed(field)).toBe(''))
+})
+
+test('a busca do seletor acha pelo nome e pelo id do modelo', async () => {
+  await openConversation(conversationOf({ id: FIRST }))
+  fireEvent.click(screen.getByRole('combobox', PICKER))
+  fireEvent.change(await screen.findByLabelText('Buscar modelo'), { target: { value: 'opus-4' } })
+  await waitFor(() =>
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Claude Opus 4']),
+  )
+  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'google/gem' } })
+  await waitFor(() =>
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
+  )
 })

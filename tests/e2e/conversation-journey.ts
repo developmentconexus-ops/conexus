@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import http from 'node:http'
 import type { TestContext } from 'node:test'
-import type { Page } from 'playwright-core'
+import type { Locator, Page } from 'playwright-core'
 import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
 import { pickModel } from './model-accounts-journey.ts'
@@ -143,6 +143,30 @@ export async function saving(page: Page, move: () => Promise<void>) {
   )
   await move()
   assert.ok((await written).ok())
+}
+
+/**
+ * Opens the selector and moves its reasoning slider, one saved step at a time, until it reads
+ * `level`; each step is a write the Hub answers, and the next waits for the slider to show the
+ * saved one. It closes the selector with the button reading the level.
+ */
+export async function pickLevel(page: Page, choice: Locator, level: string) {
+  await choice.click()
+  const slider = page.getByRole('slider', { name: 'Raciocínio' })
+  for (let step = 0; step < 8; step++) {
+    const now = await slider.getAttribute('aria-valuetext')
+    if (now === level) break
+    await saving(page, () => slider.press('ArrowRight'))
+    await page.waitForFunction(
+      ([name, was]) =>
+        document.querySelector(`input[aria-label="${name}"]`)?.getAttribute('aria-valuetext') !==
+        was,
+      ['Raciocínio', now],
+    )
+  }
+  assert.equal(await slider.getAttribute('aria-valuetext'), level)
+  await page.keyboard.press('Escape')
+  await choice.filter({ hasText: level }).waitFor()
 }
 
 /**

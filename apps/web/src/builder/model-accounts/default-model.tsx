@@ -3,9 +3,10 @@ import { useMutation } from '@tanstack/react-query'
 import { useId, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
+import { modelLabel } from './model-label.ts'
 import { ModelPicker } from './model-picker.tsx'
 import { sendDefaultModel } from './queries.ts'
-import { modelLabel, refusalText } from './text.ts'
+import { refusalText } from './text.ts'
 
 /** The company's default model, any model of the registry; the change is saved by its button. */
 export function DefaultModel(props: {

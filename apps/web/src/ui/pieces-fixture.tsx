@@ -34,6 +34,7 @@ import {
 } from './message-scroller.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from './popover.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './resizable.tsx'
+import { Slider } from './slider.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs.tsx'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip.tsx'
 import {
@@ -145,7 +146,9 @@ function Pieces() {
               </Combobox>
               <Popover>
                 <PopoverTrigger render={<InputGroupButton aria-label="Raciocínio" />} />
-                <PopoverContent>Raciocínio: Alto</PopoverContent>
+                <PopoverContent>
+                  <Slider label="Raciocínio" min={0} max={4} step={1} defaultValue={3} />
+                </PopoverContent>
               </Popover>
               <Tooltip>
                 <TooltipTrigger render={<InputGroupButton aria-label="Enviar" />} />

@@ -62,6 +62,17 @@ test('o Projeto mostra o nome e a data, e o dono vê "Apagar Projeto"', async ()
   expect(screen.getByRole('button', { name: 'Apagar Projeto' })).toBeTruthy()
 })
 
+test('o nome do Projeto está uma vez só, na linha de cima, com o nome inteiro no title, em cada aba', async () => {
+  hub(done)
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [PROJECT] }))} />)
+  const title = await screen.findByRole('heading', { name: 'Pedidos' })
+  expect(title.getAttribute('title')).toBe('Pedidos')
+  expect(title.nextElementSibling?.getAttribute('aria-label')).toBe('Projeto')
+  fireEvent.click(screen.getByRole('tab', { name: 'Projeto' }))
+  expect(await screen.findByText('Criado em 17/10/2026')).toBeTruthy()
+  expect(screen.getAllByRole('heading', { name: 'Pedidos' })).toHaveLength(1)
+})
+
 test('o membro vê o Sobre sem "Apagar Projeto", e quem pode apagar', async () => {
   hub(done, false)
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)

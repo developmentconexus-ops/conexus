@@ -39,10 +39,10 @@ test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens
   expect(within(log).getByText('Oi')).toBeTruthy()
   expect(within(log).getByText('tudo bem').tagName).toBe('STRONG')
   const picker = screen.getByRole('combobox', { name: 'Modelo e raciocínio' })
-  expect(picker.textContent).toContain('claude-sonnet-4')
+  expect(picker.textContent).toContain('Claude Sonnet 4')
   fireEvent.click(picker)
   const models = (await screen.findAllByRole('option')).map((one) => one.textContent)
-  expect(models).toEqual(['claude-sonnet-4', 'claude-opus-4', 'gemini-2.5-pro'])
+  expect(models).toEqual(['Claude Sonnet 4', 'Claude Opus 4', 'Gemini 2.5 Pro'])
 })
 
 test('o Enter envia com a chave da tentativa; "Pensando…" e "Parar" até chegar o texto', async () => {
@@ -94,7 +94,7 @@ test('com contas que o Hub diz indisponíveis, a conversa mostra o aviso da etap
 
 test('trocar de modelo envia o novo modelo, para as próximas respostas', async () => {
   const { sent } = await openConversation(conversationOf({ id: FIRST }))
-  await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'gemini-2.5-pro')
+  await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'Gemini 2.5 Pro')
   await waitFor(() =>
     expect(sent.at(-1)?.body).toEqual({ model: 'google/gemini-2.5-pro', effort: 'off' }),
   )
@@ -103,7 +103,7 @@ test('trocar de modelo envia o novo modelo, para as próximas respostas', async 
 
 test('uma troca de modelo sem resposta lida diz que não foi confirmada', async () => {
   await openConversation(conversationOf({ id: FIRST }), view(), { model: () => Response.error() })
-  await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'gemini-2.5-pro')
+  await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'Gemini 2.5 Pro')
   expect((await screen.findByRole('alert')).textContent).toBe(
     'Não confirmamos a troca do modelo. Confira o modelo e tente de novo.',
   )

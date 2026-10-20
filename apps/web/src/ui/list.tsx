@@ -2,8 +2,20 @@ import { cva } from 'class-variance-authority'
 import type { ReactNode } from 'react'
 import { cn } from './cn.ts'
 
-export function PageTitle({ children, className }: { children: ReactNode; className?: string }) {
-  return <h1 className={cn('font-display text-title', className)}>{children}</h1>
+export function PageTitle({
+  children,
+  className,
+  title,
+}: {
+  children: ReactNode
+  className?: string
+  title?: string
+}) {
+  return (
+    <h1 title={title} className={cn('font-display text-title', className)}>
+      {children}
+    </h1>
+  )
 }
 
 export function SectionTitle({ children }: { children: ReactNode }) {

@@ -5,6 +5,7 @@ import { useId, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { List, Row, SectionTitle } from '../../ui/list.tsx'
+import { modelLabel } from './model-label.ts'
 import { ModelPicker } from './model-picker.tsx'
 import { sendFallback } from './queries.ts'
 import { refusalText } from './text.ts'
@@ -60,11 +61,11 @@ function Editor(props: {
         <List>
           {chain.map((model, index) => (
             <Row key={model}>
-              <span>{model}</span>
+              <span>{modelLabel(model)}</span>
               <span className="flex gap-sm">
                 {index > 0 && (
                   <Button
-                    aria-label={`Subir ${model}`}
+                    aria-label={`Subir ${modelLabel(model)}`}
                     onClick={() => setChain(swapped(chain, index, -1))}
                   >
                     Subir
@@ -72,14 +73,14 @@ function Editor(props: {
                 )}
                 {index < chain.length - 1 && (
                   <Button
-                    aria-label={`Descer ${model}`}
+                    aria-label={`Descer ${modelLabel(model)}`}
                     onClick={() => setChain(swapped(chain, index, 1))}
                   >
                     Descer
                   </Button>
                 )}
                 <Button
-                  aria-label={`Tirar ${model}`}
+                  aria-label={`Tirar ${modelLabel(model)}`}
                   onClick={() => setChain(chain.filter((one) => one !== model))}
                 >
                   Tirar

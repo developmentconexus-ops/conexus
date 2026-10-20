@@ -56,7 +56,7 @@ test('o turno do Builder leva a marca, "Conexus" e o modelo; o da pessoa, a bolh
   expect(within(person ?? log).getByText(hourOf(createdAt))).toBeTruthy()
   expect(builder?.getAttribute('data-align')).toBe('start')
   expect(within(builder ?? log).getByText('Conexus')).toBeTruthy()
-  expect(within(builder ?? log).getByText('claude-sonnet-4')).toBeTruthy()
+  expect(within(builder ?? log).getByText('Claude Sonnet 4')).toBeTruthy()
   expect(builder?.querySelector('svg path')).toBeTruthy()
 })
 

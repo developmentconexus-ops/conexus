@@ -2,6 +2,8 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
+import { cn } from '../../ui/cn.ts'
+import { PageTitle } from '../../ui/list.tsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../ui/tabs.tsx'
 import { Versions } from '../apps/public.ts'
 import { About } from './project.tsx'
@@ -48,7 +50,7 @@ function Sections() {
 }
 
 /**
- * The big region of a Projeto: the top line with its tabs and **Abrir app**, and below the Prévia
+ * The big region of a Projeto: the top line with its name, its tabs and **Abrir app**, and below the Prévia
  * (the route hands it in) or the Projeto's sections. The tab and the section live in the address.
  */
 export function ProjectArea(props: { preview: ReactNode }) {
@@ -66,7 +68,10 @@ export function ProjectArea(props: { preview: ReactNode }) {
       }}
       className="h-full gap-0"
     >
-      <div className="flex items-center justify-between gap-md border-b border-line px-md py-xs">
+      <div className="flex flex-wrap items-center gap-x-md gap-y-xs border-b border-line px-md py-xs">
+        <PageTitle className="min-w-0 flex-[1_1_16rem] truncate" title={project.name}>
+          {project.name}
+        </PageTitle>
         <TabsList aria-label="Projeto">
           <TabsTrigger value={Lens.enum.preview}>Prévia</TabsTrigger>
           <TabsTrigger value={Lens.enum.project}>Projeto</TabsTrigger>
@@ -74,7 +79,7 @@ export function ProjectArea(props: { preview: ReactNode }) {
         {project.address !== null && (
           <a
             href={`https://${project.address}/`}
-            className={buttonVariants({ variant: 'primary' })}
+            className={cn(buttonVariants({ variant: 'primary' }), 'ml-auto')}
           >
             Abrir app
           </a>
