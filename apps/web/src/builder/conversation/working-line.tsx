@@ -2,7 +2,6 @@ import { useEffect, useReducer } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { durationOf, WORKING } from './text.ts'
 
-/** Draws the line again every second, so the count it reads off the clock moves. */
 function useEverySecond(): void {
   const [, tick] = useReducer((count: number) => count + 1, 0)
   useEffect(() => {

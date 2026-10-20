@@ -180,7 +180,13 @@ async function press(page: Page, key: string): Promise<string> {
               focused.getAttribute('aria-label') ||
               focused.textContent?.trim() ||
               focused.getAttribute('name')
-            const { outlineStyle, outlineWidth } = getComputedStyle(focused)
+            // A field the card frames draws a transparent outline for forced colors; the frame
+            // that shows where focus is belongs to the card around it.
+            const own = getComputedStyle(focused)
+            const { outlineStyle, outlineWidth } =
+              own.outlineColor === 'rgba(0, 0, 0, 0)'
+                ? getComputedStyle(focused.closest('[data-focus-frame]') ?? focused)
+                : own
             const inside = focused.closest('[role=dialog], [role=menu]') ? ' inside' : ''
             settled(`${name} ${outlineStyle} ${outlineWidth}${inside}`)
           }),

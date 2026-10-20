@@ -1,7 +1,7 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
-import type { ReactNode } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
@@ -22,7 +22,6 @@ const route = getRouteApi(
   '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
 )
 
-/** The right region of a Projeto: the box of conversations on top, and what it shows below. */
 function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
   return (
     <div className="flex h-full min-h-0 flex-col bg-canvas">
@@ -54,7 +53,6 @@ export function Panel() {
   )
 }
 
-/** The panel of a Projeto that has no conversation yet: the box says so and offers a new one. */
 export function EmptyPanel() {
   return (
     <PanelFrame current={undefined}>
@@ -65,31 +63,19 @@ export function EmptyPanel() {
   )
 }
 
-function Screen(props: {
-  companyId: CompanyId
-  projectId: ProjectId
-  conversationId: ConversationId
-}) {
-  const { companyId, projectId, conversationId } = props
+type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
+
+function useSending(
+  params: Params,
+  field: RefObject<HTMLTextAreaElement | null>,
+  dispatch: (action: { type: 'sent' | 'unsent' }) => void,
+  onGone: () => void,
+) {
   const queryClient = useQueryClient()
-  const { conversation } = useSuspenseQuery(
-    conversationQuery(companyId, projectId, conversationId),
-  ).data
-  const accounts = useSuspenseQuery(accountsQuery(companyId)).data
-  const usable = useMemo(() => new Set(accounts.usableProviders), [accounts.usableProviders])
-  const [gone, setGone] = useState(false)
   const [error, setError] = useState<string>()
-  const field = useRef<HTMLTextAreaElement>(null)
   const attempt = useAttemptKey()
   const post = useMutation({ ...sendMessage, meta: { keepCache: true } })
   const stop = useMutation({ ...sendStop, meta: { keepCache: true } })
-  const params = { companyId, projectId, conversationId }
-  const { state, dispatch } = useLive(params, () => {
-    void queryClient.invalidateQueries({ queryKey: allConversationsQueryKey(companyId, projectId) })
-    setGone(true)
-  })
-
-  useEffect(() => field.current?.focus(), [])
 
   async function send(content: string): Promise<boolean> {
     setError(undefined)
@@ -98,12 +84,13 @@ function Screen(props: {
       await attempt((attemptKey) => post.mutateAsync({ params, body: { content }, attemptKey }))
     } catch (failure) {
       dispatch({ type: 'unsent' })
-      if (failure instanceof HubFailure && failure.code === 'CONVERSATION_NOT_FOUND') setGone(true)
+      if (failure instanceof HubFailure && failure.code === 'CONVERSATION_NOT_FOUND') onGone()
       else setError(writeFailureText(failure, UNCONFIRMED_SEND))
       return false
     }
     void queryClient.invalidateQueries({
-      queryKey: conversationQuery(companyId, projectId, conversationId).queryKey,
+      queryKey: conversationQuery(params.companyId, params.projectId, params.conversationId)
+        .queryKey,
     })
     return true
   }
@@ -113,11 +100,33 @@ function Screen(props: {
     stop.mutate({ params })
   }
 
+  return { error, setError, send, halt }
+}
+
+function Screen(params: Params) {
+  const { companyId, projectId, conversationId } = params
+  const queryClient = useQueryClient()
+  const { conversation } = useSuspenseQuery(
+    conversationQuery(companyId, projectId, conversationId),
+  ).data
+  const accounts = useSuspenseQuery(accountsQuery(companyId)).data
+  const usable = useMemo(() => new Set(accounts.usableProviders), [accounts.usableProviders])
+  const canAnswer = usable.size > 0
+  const [gone, setGone] = useState(false)
+  const field = useRef<HTMLTextAreaElement>(null)
+  const { state, dispatch } = useLive(params, () => {
+    void queryClient.invalidateQueries({ queryKey: allConversationsQueryKey(companyId, projectId) })
+    setGone(true)
+  })
+  const { error, setError, send, halt } = useSending(params, field, dispatch, () => setGone(true))
+
+  useEffect(() => field.current?.focus(), [])
+
   if (gone) return <NotFound />
   return (
     <>
       <div className="flex flex-col gap-md px-md py-md">
-        {usable.size === 0 && <NoAccount companyId={companyId} />}
+        {!canAnswer && <NoAccount companyId={companyId} />}
         {conversation.messages.length === 0 && state.kind === 'idle' && (
           <Empty>{EMPTY_CONVERSATION}</Empty>
         )}
@@ -140,13 +149,13 @@ function Screen(props: {
       <div className="px-md">
         <Composer
           answering={state.kind === 'answering'}
-          canSend={usable.size > 0}
+          canSend={canAnswer}
           conversationId={conversationId}
           field={field}
           onSend={send}
           onStop={halt}
           picker={
-            usable.size > 0 && (
+            canAnswer && (
               <ModelChoice
                 ids={params}
                 conversation={conversation}

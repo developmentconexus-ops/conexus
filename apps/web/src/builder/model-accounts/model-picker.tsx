@@ -54,8 +54,10 @@ export function ModelPicker(props: {
     props.value === null
       ? null
       : { value: props.value, label: props.value.slice(props.value.indexOf('/') + 1) }
-  const level =
-    props.effort !== undefined && levels !== undefined && levels.length > 1 ? levels : null
+  const choice =
+    props.effort !== undefined && levels !== undefined && levels.length > 1
+      ? { effort: props.effort, levels }
+      : null
 
   return (
     <Combobox
@@ -70,11 +72,15 @@ export function ModelPicker(props: {
       <ComboboxTrigger
         id={props.id}
         aria-label={props.name}
-        className={cn(buttonVariants({ variant: 'ghost' }), 'max-w-full min-w-0 shrink', props.className)}
+        className={cn(
+          buttonVariants({ variant: 'ghost' }),
+          'max-w-full min-w-0 shrink',
+          props.className,
+        )}
       >
         <span className="truncate text-text">{current?.label ?? 'Escolha um modelo'}</span>
-        {level !== null && props.effort !== undefined && (
-          <span className="shrink-0 text-text-2">{EFFORT_LABELS[props.effort.value]}</span>
+        {choice !== null && (
+          <span className="shrink-0 text-text-2">{EFFORT_LABELS[choice.effort.value]}</span>
         )}
       </ComboboxTrigger>
       <ComboboxContent className="w-72 min-w-0" align="start" side="top">
@@ -105,9 +111,7 @@ export function ModelPicker(props: {
             {`Mostrando ${SHOWN} de ${matched} modelos. Busque para ver os outros.`}
           </p>
         )}
-        {level !== null && props.effort !== undefined && (
-          <EffortLevels levels={level} effort={props.effort} />
-        )}
+        {choice !== null && <EffortLevels levels={choice.levels} effort={choice.effort} />}
       </ComboboxContent>
     </Combobox>
   )

@@ -43,8 +43,9 @@ export function Composer(props: {
   return (
     <form onSubmit={submit} className="sticky bottom-0 bg-canvas pt-md pb-md">
       <div
+        data-focus-frame
         data-busy={props.answering || undefined}
-        className="rounded-composer bg-line p-0.5 data-busy:working-ring"
+        className="rounded-composer bg-line p-0.5 outline-0 outline-offset-2 outline-solid outline-accent has-[textarea:focus-visible]:outline-2 data-busy:working-ring"
       >
         <InputGroup className="rounded-[calc(var(--radius-composer)-1px)] border-0">
           <Label htmlFor="message" className="sr-only">
@@ -58,6 +59,7 @@ export function Composer(props: {
             placeholder="Escreva sua mensagem"
             onChange={(event) => setContent(event.target.value)}
             onKeyDown={onKeyDown}
+            className="outline-transparent"
           />
           <InputGroupAddon align="block-end" className="flex-nowrap gap-sm">
             {props.picker}

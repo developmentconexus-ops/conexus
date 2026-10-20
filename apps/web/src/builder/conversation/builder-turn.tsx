@@ -12,7 +12,6 @@ import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
 
-/** The model without its provider, as it is written after the slash of its id. */
 function nameOfModel(model: ModelId): string {
   return model.slice(model.indexOf('/') + 1)
 }

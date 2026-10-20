@@ -45,7 +45,7 @@ export type TurnFailure = z.infer<typeof TurnFailure>
  * The most events a turn keeps for a reconnect to resume from; past it, a reconnect reads the turn
  * so far instead.
  */
-export const TURN_EVENTS_KEPT = 10_000
+const TURN_EVENTS_KEPT = 10_000
 
 /** A run Mastra woke for one of this conversation's messages, until its end. */
 type Run = { turn: Turn; ended: () => void }

@@ -70,7 +70,7 @@ export function plain(text: string): string {
     .toLowerCase()
 }
 
-/** What a person reads for each reasoning level a model accepts (old `reasoning-labels.ts`, e0353c36). */
+/** What a person reads for each reasoning level a model accepts. */
 export const EFFORT_LABELS = {
   off: 'Desligado',
   low: 'Baixo',

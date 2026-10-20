@@ -20,24 +20,20 @@ export function ToolIcon({ tool }: { tool: ToolPart }) {
   )
 }
 
-/** What the tool was about: the page, as a link only when its address is http(s), or the search. */
 function Subject({ subject }: Pick<ToolPart, 'subject'>) {
   if (subject === null) return null
-  if ('query' in subject)
-    return (
-      <TraceDescription className="min-w-0 shrink truncate font-mono text-fact">
-        {subject.query}
-      </TraceDescription>
-    )
-  const label = subject.title ?? URL.parse(subject.url)?.hostname ?? subject.url
+  const label =
+    'query' in subject
+      ? subject.query
+      : (subject.title ?? URL.parse(subject.url)?.hostname ?? subject.url)
   return (
     <TraceDescription className="min-w-0 shrink truncate font-mono text-fact">
-      <Anchor href={subject.url}>{label}</Anchor>
+      {'query' in subject ? label : <Anchor href={subject.url}>{label}</Anchor>}
     </TraceDescription>
   )
 }
 
-/** One tool, as a sentence of what it does or did; the arguments and the result never reach the screen. */
+/** One tool, as a sentence of what it does or did. */
 export function ToolRow({ tool }: { tool: ToolPart }) {
   return (
     <TraceLine status={tool.state === 'completed' ? undefined : tool.state}>

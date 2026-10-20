@@ -7,7 +7,6 @@ function textOf(message: Message): string {
   return message.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
 }
 
-/** The person's words in a bubble at the right, and the hour they were said. */
 export function PersonTurn({ message }: { message: Message }) {
   return (
     <Turn align="end">

@@ -31,23 +31,18 @@ function appended(parts: MessagePart[], delta: string): MessagePart[] {
     : [...parts, { type: 'text', text: delta }]
 }
 
-/** A part with an `id` takes the place of the one with the same `id`; any other comes last. */
 function placed(parts: MessagePart[], part: MessagePart): MessagePart[] {
   const at = 'id' in part ? parts.findIndex((one) => 'id' in one && one.id === part.id) : -1
   return at === -1 ? [...parts, part] : parts.with(at, part)
 }
 
-/**
- * The answer in progress, or a new one: an event outside a turn starts one, as another tab's send.
- * An answer the line is resuming goes on with the events it missed.
- */
+/** An event outside a turn starts one, as another tab's send. */
 function inProgress(state: Live): Extract<Live, { kind: 'answering' }> {
   return state.kind === 'answering' || state.kind === 'resuming'
     ? { kind: 'answering', parts: state.parts, startedAt: state.startedAt }
     : { kind: 'answering', parts: [], startedAt: null }
 }
 
-/** The answer after one more step; the stream's `turn` replaces what the screen had. */
 export function live(state: Live, step: Step): Live {
   switch (step.type) {
     // Sent before the Hub answers: the stream may already be telling the answer by then.

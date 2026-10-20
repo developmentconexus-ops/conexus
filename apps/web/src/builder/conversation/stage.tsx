@@ -1,6 +1,6 @@
 import { ConexusMark } from '../../brand/mark.tsx'
 
-/** The Prévia of a Projeto before its first app: step 14 puts the running app here. */
+/** The Prévia of a Projeto before its first app. */
 export function Stage() {
   return (
     <div className="grid h-full place-items-center p-lg text-center">
