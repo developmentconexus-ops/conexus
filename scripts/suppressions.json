@@ -18,7 +18,7 @@
   "apps/web/src/hub/operations/register-client-form.tsx": 1,
   "apps/web/src/platform/hub.ts": 3,
   "apps/web/src/platform/remembered.ts": 1,
-  "apps/web/src/platform/theme.ts": 2,
+  "apps/web/src/platform/theme.ts": 1,
   "apps/web/src/ui/theme-choice.tsx": 1,
   "packages/app-contract/src/runtime.ts": 1,
   "scripts/check-approval.ts": 1,

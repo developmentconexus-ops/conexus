@@ -1,5 +1,5 @@
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../main.tsx'
 import { ANA, COMPANY } from './fixtures.ts'
@@ -42,7 +42,9 @@ test('a escolha vale na hora e fica ao recarregar: um roteador novo sobre o mesm
   const view = open()
   fireEvent.click(await screen.findByRole('radio', { name: 'Escuro' }))
   expect(document.documentElement.dataset.theme).toBe('dark')
-  expect(screen.getByRole('radio', { name: 'Escuro' }).getAttribute('aria-checked')).toBe('true')
+  await waitFor(() =>
+    expect(screen.getByRole('radio', { name: 'Escuro' }).getAttribute('aria-checked')).toBe('true'),
+  )
 
   view.unmount()
   delete document.documentElement.dataset.theme
@@ -55,6 +57,7 @@ test('a escolha vale na hora e fica ao recarregar: um roteador novo sobre o mesm
 
 test('voltar a Como o sistema esquece a escolha', async () => {
   localStorage.setItem('conexus-theme', 'light')
+  applyChosenTheme()
   open()
   expect((await screen.findByRole('radio', { name: 'Claro' })).getAttribute('aria-checked')).toBe(
     'true',

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { BuildingIcon, ChevronsUpDownIcon, LogOutIcon } from 'lucide-react'
 import { sentenceOf } from '../../platform/hub.ts'
-import { useTheme } from '../../platform/theme.ts'
+import { THEME_LABELS, ThemeChoice, useTheme } from '../../platform/theme.ts'
 import { Avatar, AvatarFallback } from '../../ui/avatar.tsx'
 import {
   DropdownMenu,
@@ -18,7 +18,6 @@ import {
   DropdownMenuTrigger,
 } from '../../ui/dropdown-menu.tsx'
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '../../ui/sidebar.tsx'
-import { isThemeChoice, THEMES } from '../../ui/theme-choice.tsx'
 import { companiesQuery } from './queries.ts'
 import { useSignOut } from './sign-out.ts'
 
@@ -69,13 +68,11 @@ export function AccountMenu({ person }: { person: Person }) {
               </DropdownMenuLabel>
               <DropdownMenuRadioGroup
                 value={choice}
-                onValueChange={(value: unknown) => {
-                  if (isThemeChoice(value)) choose(value)
-                }}
+                onValueChange={(value: unknown) => choose(ThemeChoice.parse(value))}
               >
-                {THEMES.map((theme) => (
-                  <DropdownMenuRadioItem key={theme.value} value={theme.value} closeOnClick={false}>
-                    {theme.label}
+                {ThemeChoice.options.map((value) => (
+                  <DropdownMenuRadioItem key={value} value={value} closeOnClick={false}>
+                    {THEME_LABELS[value]}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
@@ -85,7 +82,7 @@ export function AccountMenu({ person }: { person: Person }) {
               <DropdownMenuGroup>
                 <DropdownMenuLinkItem render={<Link to="/operations" />}>
                   <BuildingIcon aria-hidden="true" />
-                  Central de Operação
+                  Central
                 </DropdownMenuLinkItem>
               </DropdownMenuGroup>
             )}

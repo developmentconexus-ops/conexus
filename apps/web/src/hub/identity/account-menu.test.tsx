@@ -84,10 +84,10 @@ test('enquanto sai, "Saindo…"; uma falha fica no menu com a frase e a pessoa s
   expect(screen.getByRole('button', { name: 'Conta de Ana Lima' })).toBeTruthy()
 })
 
-test('"Central de Operação" só aparece para o operador, abre a Central e fecha o menu', async () => {
+test('"Central" só aparece para o operador, abre a Central e fecha o menu', async () => {
   const conexus = signedIn({ mayOperate: true })
   await openMenu()
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Central de Operação' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Central' }))
   expect(await screen.findByText('Nenhum cliente cadastrado.')).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe('/operations/clients')
   await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
@@ -96,7 +96,7 @@ test('"Central de Operação" só aparece para o operador, abre a Central e fech
 test('sem o papel de operador, o menu não oferece a Central', async () => {
   signedIn({})
   await openMenu()
-  expect(screen.queryByRole('menuitem', { name: 'Central de Operação' })).toBeNull()
+  expect(screen.queryByRole('menuitem', { name: 'Central' })).toBeNull()
 })
 
 test('Tema: Claro, Escuro e Como o sistema; a escolha vale na página e fica lembrada', async () => {
