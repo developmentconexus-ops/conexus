@@ -59,7 +59,9 @@ const CONVERSATION = readConversation.success.body.parse({
             id: 'd',
             kind: 'search_web',
             state: 'completed',
-            subject: { query: 'apps de encomenda de padaria' },
+            subject: {
+              query: 'apps de encomenda de padaria com pedido pelo celular e plano mensal',
+            },
           },
           { type: 'text', text: ANSWER },
           { type: 'failure', code: 'MODEL_CALL_FAILED' },
