@@ -15,6 +15,7 @@ Every roadmap step passes through these stages. Load the skill before any work.
 | Study a step | [`conexus-study`](.agents/skills/conexus-study/SKILL.md) |
 | Write the step's card | [`conexus-scope`](.agents/skills/conexus-scope/SKILL.md) |
 | Build a unit of the card, or fix a defect | [`conexus-build`](.agents/skills/conexus-build/SKILL.md) |
+| Test a step's screens as a person would | [`conexus-qa`](.agents/skills/conexus-qa/SKILL.md) |
 | Review the whole step | [`conexus-review`](.agents/skills/conexus-review/SKILL.md) |
 | Explain a design to the founder, read only | [`conexus-explain`](.agents/skills/conexus-explain/SKILL.md) |
 
