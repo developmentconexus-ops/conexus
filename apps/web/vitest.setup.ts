@@ -15,3 +15,12 @@ globalThis.matchMedia ??= (query: string) =>
     addListener: () => undefined,
     removeListener: () => undefined,
   })
+
+// jsdom lays nothing out and has no ResizeObserver, which the Projeto's divider needs to mount; the
+// widths are proved in the real browser (layout.test.ts).
+class NoLayoutObserver {
+  observe = () => undefined
+  unobserve = () => undefined
+  disconnect = () => undefined
+}
+globalThis.ResizeObserver ??= NoLayoutObserver

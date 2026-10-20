@@ -32,11 +32,10 @@ function view(fields: Partial<View> = {}): View {
   }
 }
 
-async function addModel(provider: string, model: string, label: string) {
-  await choose(screen.getByLabelText('Fornecedor do modelo da troca'), provider)
+async function addModel(label: string) {
   await choose(screen.getByLabelText('Modelo da troca'), label)
   fireEvent.click(screen.getByRole('button', { name: 'Adicionar à fila' }))
-  expect(await screen.findByLabelText(`Tirar ${model}`)).toBeTruthy()
+  expect(await screen.findByLabelText(`Tirar ${label}`)).toBeTruthy()
 }
 
 test('Troca automática: começa desligada; monta a fila, liga e salva na revisão lida', async () => {
@@ -45,9 +44,9 @@ test('Troca automática: começa desligada; monta a fila, liga e salva na revis�
   const section = await screen.findByRole('region', { name: 'Troca automática' })
   expect(within(section).getByText('Desligada')).toBeTruthy()
   expect(within(section).getByText('Nenhum modelo na fila')).toBeTruthy()
-  await addModel('Anthropic', 'anthropic/claude-sonnet-4', 'claude-sonnet-4')
-  await addModel('OpenAI', 'openai/gpt-5', 'gpt-5')
-  fireEvent.click(screen.getByLabelText('Subir openai/gpt-5'))
+  await addModel('Claude Sonnet 4')
+  await addModel('GPT 5')
+  fireEvent.click(screen.getByLabelText('Subir GPT 5'))
   fireEvent.click(screen.getByRole('checkbox', { name: /Trocar para o próximo modelo/ }))
   fireEvent.click(screen.getByRole('button', { name: 'Salvar troca automática' }))
   await waitFor(() =>
@@ -73,8 +72,8 @@ test('Troca automática: tira um modelo; a versão velha mostra a frase do 412 e
   })
   const { sent } = open(shown, { fallback: () => refusal('MODEL_FALLBACK_STALE') })
   expect(await screen.findByText('Ligada')).toBeTruthy()
-  fireEvent.click(screen.getByLabelText('Tirar openai/gpt-5'))
-  expect(screen.queryByLabelText('Tirar openai/gpt-5')).toBeNull()
+  fireEvent.click(screen.getByLabelText('Tirar GPT 5'))
+  expect(screen.queryByLabelText('Tirar GPT 5')).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Salvar troca automática' }))
   expect((await screen.findByRole('alert')).textContent).toBe(
     'A troca automática mudou. Recarregue a página.',

@@ -1,43 +1,26 @@
 import assert from 'node:assert/strict'
 import dns from 'node:dns'
-import fs from 'node:fs'
-import http from 'node:http'
 import { syncBuiltinESMExports } from 'node:module'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
-import { conversing, KEY, sent, started, streamOf } from './test-conversation.ts'
+import {
+  conversing,
+  eventually,
+  failuresOf,
+  KEY,
+  sent,
+  started,
+  streamOf,
+} from './test-conversation.ts'
+import { printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
 
 function textOf(events: ConversationEvent[]): string {
   return events.flatMap((event) => (event.type === 'text' ? [event.delta] : [])).join('')
-}
-
-/**
- * Everything the process prints on stdout and stderr while the test runs, still printed: by the
- * streams, and by `fs` on their descriptors, as the Hub's logger writes.
- */
-function printedOf(t: TestContext): string[] {
-  const printed: string[] = []
-  for (const out of [process.stdout, process.stderr]) {
-    const write = out.write.bind(out)
-    t.mock.method(out, 'write', (chunk: string | Uint8Array) => {
-      printed.push(String(chunk))
-      return write(chunk)
-    })
-  }
-  for (const name of ['write', 'writeSync'] as const) {
-    const real = fs[name]
-    t.mock.method(fs, name, (...args: unknown[]) => {
-      const [fd, chunk] = args
-      if (fd === 1 || fd === 2) printed.push(String(chunk))
-      return Reflect.apply(real, fs, args)
-    })
-  }
-  return printed
 }
 
 test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra guarda a empresa no dono', async (t) => {
@@ -96,7 +79,7 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   assert.equal(answered.statusCode, 202)
   const events = await stream.turn()
   assert.deepEqual(events.slice(-2), [
-    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
+    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
     { type: 'turnEnd', reason: 'error' },
   ])
   const read = await call(hub, ana, 'GET', url)
@@ -117,26 +100,6 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   }
 })
 
-/** A server on 127.0.0.1 that counts what reaches it and answers `reply`. */
-async function served(
-  t: TestContext,
-  reply: (path: string, response: http.ServerResponse) => void,
-) {
-  const reached: string[] = []
-  const server = http.createServer((request, response) => {
-    reached.push(String(request.url))
-    reply(String(request.url), response)
-  })
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
-    server.closeAllConnections()
-    server.close()
-  })
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  return { port: address.port, reached }
-}
-
 /** The name resolves to 127.0.0.1, as an internal name would; every other name as before. */
 function resolvesInternally(t: TestContext, name: string) {
   const real = dns.lookup
@@ -155,22 +118,6 @@ function resolvesInternally(t: TestContext, name: string) {
   })
 }
 
-/** The public name reaches `port` on this machine, as a public site would; the rest as before. */
-function routedTo(t: TestContext, name: string, port: number) {
-  const before = http.globalAgent
-  const agent = new http.Agent()
-  const connect = agent.createConnection.bind(agent)
-  agent.createConnection = (options, callback) =>
-    options.hostname === name || options.host === name
-      ? connect({ ...options, host: '127.0.0.1', hostname: '127.0.0.1', port }, callback)
-      : connect(options, callback)
-  Reflect.set(http, 'globalAgent', agent)
-  t.after(() => {
-    Reflect.set(http, 'globalAgent', before)
-    agent.destroy()
-  })
-}
-
 test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento para um: recusado, e o turno segue', async (t) => {
   const internal = await served(t, (_path, response) => response.end('segredo interno'))
   const site = await served(t, (path, response) =>
@@ -179,7 +126,7 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
       : response.writeHead(302, { location: `http://127.0.0.1:${internal.port}/admin` }).end(),
   )
   resolvesInternally(t, 'intranet.example.test')
-  routedTo(t, 'site.example.test', site.port)
+  routedTo(t, { 'site.example.test': site.port })
   const addresses = [
     `http://127.0.0.1:${internal.port}/admin`,
     `http://intranet.example.test:${internal.port}/admin`,
@@ -201,19 +148,17 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   assert.equal((await sent(hub, ana, url, 'Abra estas páginas')).statusCode, 202)
   const events = await stream.turn()
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.ok(!events.some((event) => event.type === 'failure'))
+  assert.deepEqual(failuresOf(events), [])
   assert.equal(textOf(events), 'Não consegui abrir.')
-  const page = { type: 'page', url: 'http://site.example.test/cardapio', title: null }
-  assert.deepEqual(
-    events.filter((event) => event.type === 'part'),
-    [{ type: 'part', part: page }],
-    'only the page read is shown',
-  )
+  const pages = addresses.map((address, at) => ({
+    ...{ type: 'tool', kind: 'read_page', subject: { url: address, title: null } },
+    state: at === 3 ? 'completed' : 'error',
+  }))
   const read = Object((await call(hub, ana, 'GET', url)).json()).conversation
-  const kept = read.messages.flatMap((message: { parts: { type: string }[] }) =>
-    message.parts.filter((part) => part.type === 'page'),
+  const kept = read.messages.flatMap((message: { parts: { type: string; id?: string }[] }) =>
+    message.parts.flatMap(({ id: _, ...part }) => (part.type === 'tool' ? [part] : [])),
   )
-  assert.deepEqual(kept, [page])
+  assert.deepEqual(kept, pages, 'each refused page is an error, the one read is complete')
   assert.deepEqual(site.reached, ['/pagina', '/cardapio'])
   assert.deepEqual(internal.reached, [])
   const last =
@@ -252,11 +197,15 @@ test('título e observação vão pela conta do turno; um 429 no observador: o t
       }
     }
   }
-  const observed = anthropic.sent.filter((each) => OBSERVER.test(each.system))
-  const titled = anthropic.sent.filter((each) => !each.stream && !OBSERVER.test(each.system))
-  assert.ok(observed.length > 0, 'the observer was called')
-  assert.ok(titled.length > 0, 'the title was asked')
-  for (const each of [...observed, ...titled])
+  function observed() {
+    return anthropic.sent.filter((each) => OBSERVER.test(each.system))
+  }
+  function titled() {
+    return anthropic.sent.filter((each) => !each.stream && !OBSERVER.test(each.system))
+  }
+  await eventually(() => observed().length > 0, 'the observer was called')
+  await eventually(() => titled().length > 0, 'the title was asked')
+  for (const each of [...observed(), ...titled()])
     assert.equal(each.key, 'sk-ant-conversation-key-0002')
   const read = await call(hub, ana, 'GET', url)
   assert.equal(Object(read.json()).conversation.title, 'Encomendas da padaria')
@@ -265,20 +214,18 @@ test('título e observação vão pela conta do turno; um 429 no observador: o t
   }
 })
 
-test('o título que o observador dá a uma conversa longa vem em português', async (t) => {
+test('o título nasce na primeira mensagem e o observador não o troca', async (t) => {
   const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
   const observation = [
     '<observations>',
     '* 🔴 (09:00) A pessoa recebe encomendas da padaria pelo telefone e pelo balcão',
     '</observations>',
-    '<thread-title>Bakery order tracking</thread-title>',
-  ].join('\n')
+  ]
+  const titled = [...observation, '<thread-title>Controle de encomendas</thread-title>']
   const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
     if (OBSERVER.test(asked.system)) {
-      const title = /thread-title[\s\S]*?portugu/i.test(asked.system)
-        ? 'Controle de encomendas'
-        : 'Bakery order tracking'
-      return { kind: 'text', text: observation.replace('Bakery order tracking', title) }
+      const asksTitle = asked.system.includes('thread-title')
+      return { kind: 'text', text: (asksTitle ? titled : observation).join('\n') }
     }
     if (!asked.stream) return { kind: 'text', text: 'Encomendas da padaria' }
     return { kind: 'text', text: asked.texts.length > 2 ? 'Certo.' : long }
@@ -293,15 +240,20 @@ test('o título que o observador dá a uma conversa longa vem em português', as
       if (event.type === 'turnEnd') break
     }
   }
-  assert.ok(
-    anthropic.sent.some((each) => OBSERVER.test(each.system)),
+  await eventually(
+    () => anthropic.sent.some((each) => OBSERVER.test(each.system)),
     'the observer was called',
   )
-  let title = ''
-  for (const _ of Array(30)) {
-    await new Promise((resolve) => setTimeout(resolve, 100))
-    title = Object(Object((await call(hub, ana, 'GET', url)).json()).conversation).title
-    if (title !== 'Encomendas da padaria') break
+  async function titleOf() {
+    return Object(Object((await call(hub, ana, 'GET', url)).json()).conversation).title
   }
-  assert.equal(title, 'Controle de encomendas')
+  let title = null
+  for (const _ of Array(30)) {
+    title = await titleOf()
+    if (title !== null) break
+    await new Promise((resolve) => setTimeout(resolve, 100))
+  }
+  assert.equal(title, 'Encomendas da padaria')
+  await new Promise((resolve) => setTimeout(resolve, 1500))
+  assert.equal(await titleOf(), 'Encomendas da padaria')
 })

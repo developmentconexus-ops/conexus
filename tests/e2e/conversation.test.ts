@@ -3,11 +3,16 @@ import { test } from 'node:test'
 import type { Page } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import {
+  ANA,
   ANSWER,
+  ANSWER_HEAD,
   ask,
   chooseDefaultModel,
+  DIEGO,
   KEYS,
+  pickLevel,
   plantJourney,
+  plantTwoCompanies,
   publicPage,
   SECOND_ANSWER,
   SECOND_MODEL,
@@ -16,14 +21,7 @@ import {
   turnOnSwitch,
 } from './conversation-journey.ts'
 import { anotherPage, hubWindow, openConversation } from './hub-window.ts'
-import {
-  createProject,
-  liveHub,
-  openProject,
-  personWithPassword,
-  plantCompany,
-  waitForHome,
-} from './live-hub.ts'
+import { createProject, liveHub, openProject, waitForHome } from './live-hub.ts'
 import { enter, linkKey, queueRows, rowsText } from './model-accounts-journey.ts'
 
 // Step 12's journey in Chromium, on a real Hub and the providers' doubles. Ana has two windows,
@@ -31,25 +29,10 @@ import { enter, linkKey, queueRows, rowsText } from './model-accounts-journey.ts
 // answer comes with the page read and a title; a refused key, a paused account and the end of the
 // queue are said in the conversation; the automatic switch goes on with the second model and the
 // next question tries Claude again; Diego, in the same company or in another, finds nothing of hers.
-const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
-const DIEGO = { name: 'Diego Reis', email: 'diego@example.test' }
 const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
 const NOT_FOUND = 'Não encontramos o que você procurou.'
 const TITLE = 'Apps de encomenda de padaria'
-
-async function plant(database: Parameters<typeof personWithPassword>[0]) {
-  const ana = await personWithPassword(database, ANA)
-  const diego = await personWithPassword(database, DIEGO)
-  const companyA = await plantCompany(database, ana, diego)
-  const companyB = await plantCompany(database, diego, ana)
-  await database.asOwner(`update auth.company set nickname = 'acme' where id = $1`, [companyA])
-  await database.asOwner(
-    `update auth.company set name = 'Empresa B', slug = 'b', nickname = 'beta' where id = $1`,
-    [companyB],
-  )
-  return { companyA, companyB }
-}
 
 /** The owner's setup page: three keys, the default model, and the Projeto "Encomendas". */
 async function setUp(owner: Page, companyA: string) {
@@ -71,10 +54,7 @@ async function setUp(owner: Page, companyA: string) {
 async function openConversations(page: Page, companyA: string) {
   await page.goto(`${TEST_ORIGIN}/companies/${companyA}`)
   await openProject(page, 'Encomendas')
-  await page
-    .getByRole('navigation', { name: 'Projeto' })
-    .getByRole('link', { name: 'Conversa' })
-    .click()
+  await page.getByRole('combobox', { name: 'Conversas' }).waitFor()
 }
 
 /** Sends `question`, waits for the screen to show `expected` while the turn is held, then lets it end. */
@@ -89,16 +69,22 @@ async function answered(chat: Page, hold: () => () => void, question: string, ex
 /** Step 1: the selector offers the default and the providers with an account; the answer and its title. */
 async function firstQuestion(chat: Page, hold: () => () => void) {
   await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
-  const choice = chat.getByRole('region', { name: 'Modelo da conversa' })
-  await choice.getByLabel('Fornecedor do modelo', { exact: true }).click()
-  const offered = await chat.getByRole('option').allInnerTexts()
-  assert.deepEqual(offered.map((name) => name.trim()).sort(), ['Anthropic', 'Groq'])
+  const choice = chat.getByRole('combobox', { name: 'Modelo e raciocínio' })
+  await choice.click()
+  await chat.getByText('Anthropic', { exact: true }).waitFor()
+  await chat.getByText('Groq', { exact: true }).waitFor()
   await chat.keyboard.press('Escape')
-  assert.match(await choice.getByLabel('Modelo', { exact: true }).innerText(), /sonnet/i)
+  assert.match(await choice.innerText(), /sonnet/i)
   await answered(chat, hold, 'Compare dois apps de encomenda de padaria', ANSWER)
   await chat.reload()
-  await chat.getByRole('heading', { name: TITLE }).waitFor()
-  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText('Li a página').waitFor()
+  await chat
+    .getByRole('combobox', { name: 'Conversas' })
+    .and(chat.locator(`[value="${TITLE}"]`))
+    .waitFor()
+  await chat
+    .getByRole('log', { name: 'Conversa com o Builder' })
+    .getByText('Leu 3 páginas, pesquisou 1 vez')
+    .waitFor()
 }
 
 /** Steps 2 and 3: Time 3 goes up and is refused; Time 1 pauses and the queue is empty. */
@@ -142,10 +128,10 @@ async function switched(
   assert.ok(claudeCalls() > before, 'the next question asked Claude')
 }
 
-/** Ana's list of conversations holds the one, by its title. */
+/** Ana's box of conversations holds the one, by its title. */
 async function listed(chat: Page) {
-  await chat.getByRole('link', { name: 'Voltar às conversas' }).click()
-  await chat.getByRole('link', { name: new RegExp(TITLE) }).waitFor()
+  await chat.getByRole('combobox', { name: 'Conversas' }).press('ArrowDown')
+  await chat.getByRole('option', { name: TITLE }).waitFor()
 }
 
 /** Step 5: Diego does not see Ana's conversation, in her company or in another. */
@@ -162,7 +148,7 @@ async function otherPerson(diego: Page, ids: { companyA: string; companyB: strin
 test('o roteiro da primeira conversa: resposta com páginas e título, recusa, pausa, troca automática e outra pessoa', async (t) => {
   const { anthropic, state, hold } = plantJourney(t, await publicPage(t))
   const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused')
-  const ids = await plant(database)
+  const ids = await plantTwoCompanies(database)
   const problems: string[] = []
   const closers: (() => Promise<void>)[] = []
   function claudeCalls() {
@@ -182,6 +168,163 @@ test('o roteiro da primeira conversa: resposta com páginas e título, recusa, p
     await listed(chat)
     await otherPerson(diego, ids, conversation)
   } finally {
+    for (const close of closers) await close()
+  }
+  assert.deepEqual(problems, [])
+})
+
+const FOLDED = 'Leu 3 páginas, pesquisou 1 vez'
+const DRAFT = 'rascunho da Ana'
+
+/** The Projeto in two regions: the Prévia and the Projeto tabs, the conversation on the right, the rail in icons. */
+async function twoRegions(chat: Page) {
+  await chat
+    .getByText('Ainda não há uma prévia disponível. Descreva o aplicativo para começar.')
+    .waitFor()
+  await chat.getByRole('button', { name: 'Nova conversa' }).waitFor()
+  const nav = await chat.getByRole('navigation', { name: 'Navegação' }).elementHandle()
+  await chat.waitForFunction(
+    (bar) => Math.round(bar?.getBoundingClientRect().width ?? 0) === 52,
+    nav,
+  )
+  await chat.getByRole('tab', { name: 'Projeto', exact: true }).click()
+  await chat.getByRole('tab', { name: 'Sobre' }).waitFor()
+  await chat.getByRole('tab', { name: 'Versões' }).waitFor()
+  await chat.getByRole('tab', { name: 'Prévia' }).click()
+}
+
+/** Step 2: "Alto" reaches the provider; the answer thinks, reads three pages and searches, folded in one line. */
+async function researched(chat: Page, hold: () => () => void, sent: () => number) {
+  await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
+  const choice = chat.getByRole('combobox', { name: 'Modelo e raciocínio' })
+  await pickLevel(chat, choice, 'Alto')
+  const release = hold()
+  await ask(chat, 'Compare dois apps de encomenda de padaria')
+  await chat.getByRole('status').filter({ hasText: 'Builder trabalhando' }).waitFor()
+  await transcriptShowed(chat, ANSWER_HEAD)
+  await transcriptShowed(chat, FOLDED)
+  await transcriptShowed(chat, 'Pensou')
+  assert.ok(sent() > 0, 'the provider received the thinking budget of "Alto"')
+  return release
+}
+
+/** Step 3: the line cut between two deltas opens again from the last event; each tab then shows the answer once. */
+async function reconnected(chat: Page, cut: () => void, release: () => void, problems: string[]) {
+  const resumed = chat.waitForResponse(
+    (response) =>
+      response.url().endsWith('/events') && 'last-event-id' in response.request().headers(),
+  )
+  cut()
+  assert.ok((await resumed).ok())
+  const again = await anotherPage(chat.context(), problems)
+  await openConversation(again, chat.url())
+  release()
+  for (const page of [chat, again]) {
+    const log = page.getByRole('log', { name: 'Conversa com o Builder' })
+    await log.getByText(ANSWER).waitFor()
+    const text = await log.innerText()
+    for (const once of [ANSWER, ANSWER_HEAD]) assert.equal(text.split(once).length, 2)
+  }
+  await again.close()
+}
+
+/** Step 4: another conversation by the box, and back: the draft is where it was left. */
+async function draftKept(chat: Page) {
+  const field = chat.getByLabel('Mensagem para o Builder')
+  const first = chat.url()
+  await field.fill(DRAFT)
+  await chat.getByRole('button', { name: 'Nova conversa' }).click()
+  await chat.waitForURL((url) => url.href !== first)
+  await chat.waitForFunction(() => document.querySelector('textarea')?.value === '')
+  await chat.getByRole('combobox', { name: 'Conversas' }).press('ArrowDown')
+  await chat.getByRole('option', { name: TITLE }).click()
+  await chat.waitForURL(first)
+  await chat.waitForFunction((draft) => document.querySelector('textarea')?.value === draft, DRAFT)
+  await field.fill('')
+}
+
+/** Step 5: on a phone "App | Conversa" swaps the regions keeping the draft; the dark theme fits too. */
+async function onPhone(chat: Page) {
+  await chat.setViewportSize({ width: 390, height: 844 })
+  const field = chat.getByLabel('Mensagem para o Builder')
+  await chat.getByRole('button', { name: 'Conversa', exact: true }).click()
+  await field.fill(DRAFT)
+  await chat.getByRole('button', { name: 'App', exact: true }).click()
+  assert.equal(await field.isVisible(), false)
+  await chat.getByRole('button', { name: 'Conversa', exact: true }).click()
+  assert.equal(await field.inputValue(), DRAFT)
+  function paper() {
+    return chat.evaluate(() => getComputedStyle(document.body).backgroundColor)
+  }
+  const light = await paper()
+  await chat.getByRole('button', { name: 'Abrir navegação' }).click()
+  const drawer = chat.getByRole('dialog', { name: 'Navegação' })
+  await drawer.getByRole('button', { name: `Conta de ${ANA.name}` }).click()
+  await chat.getByRole('menuitemradio', { name: 'Escuro' }).click()
+  await chat.keyboard.press('Escape')
+  await drawer.getByRole('button', { name: 'Fechar navegação' }).click()
+  await drawer.waitFor({ state: 'hidden' })
+  assert.notEqual(await paper(), light)
+  const { scroll, inner } = await chat.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    inner: window.innerWidth,
+  }))
+  assert.ok(scroll <= inner, `the page scrolls sideways: ${scroll}px in ${inner}px`)
+  await field.fill('')
+  await chat.setViewportSize({ width: 1280, height: 800 })
+}
+
+/** Step 6: Time 1 paused, the question refused for lack of an account: the notice stays in the turn after a reload. */
+async function pausedNoticeStays(
+  owner: Page,
+  chat: Page,
+  hold: () => () => void,
+  companyA: string,
+) {
+  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/model-accounts`)
+  await saving(owner, () => owner.getByRole('button', { name: 'Pausar Time 1' }).click())
+  await owner.getByRole('button', { name: 'Retomar Time 1' }).waitFor()
+  await answered(chat, hold, 'E o segundo app?', EXHAUSTED)
+  await chat.reload()
+  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(EXHAUSTED).waitFor()
+}
+
+test('o roteiro da 12.1: a conversa no painel, o pensamento, as ferramentas dobradas, a volta da linha, o rascunho, o celular e o aviso que fica', async (t) => {
+  const { anthropic, state, hold: holdTurn } = plantJourney(t, await publicPage(t))
+  state.splitting = true
+  const held: (() => void)[] = []
+  function hold() {
+    const release = holdTurn()
+    held.push(release)
+    return release
+  }
+  const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused')
+  const ids = await plantTwoCompanies(database)
+  const problems: string[] = []
+  const closers: (() => Promise<void>)[] = []
+  try {
+    const owner = await hubWindow(closers, port, '198.51.100.10', problems)
+    await setUp(owner, ids.companyA)
+    const chat = await anotherPage(owner.context(), problems)
+    await openConversations(chat, ids.companyA)
+    await twoRegions(chat)
+    function thinking() {
+      return anthropic.sent.filter((each) => each.stream && each.thinking?.type === 'enabled')
+        .length
+    }
+    const release = await researched(chat, hold, thinking)
+    await reconnected(chat, owner.cutConnections, release, problems)
+    await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
+    await chat.reload()
+    await chat.getByText('Pensou', { exact: true }).waitFor()
+    await chat.getByRole('button', { name: FOLDED }).click()
+    await chat.getByText('Pesquisou na internet').waitFor()
+    await draftKept(chat)
+    await onPhone(chat)
+    state.reads = false
+    await pausedNoticeStays(owner, chat, hold, ids.companyA)
+  } finally {
+    for (const release of held) release()
     for (const close of closers) await close()
   }
   assert.deepEqual(problems, [])

@@ -24,6 +24,7 @@ import {
   FAILURES,
   failuresOf,
   isDeclaredOperation,
+  LAST_EVENT_ID_HEADER,
   PROBLEM_MEDIA_TYPE,
   Problem,
   SESSION_COOKIE,
@@ -101,6 +102,16 @@ function operationItem(operation: Operation): Json {
               in: 'header',
               required: true,
               schema: schema(AttemptKey, 'input'),
+            },
+          ]
+        : []),
+      ...('events' in operation.success && operation.success.resumable
+        ? [
+            {
+              name: LAST_EVENT_ID_HEADER,
+              in: 'header',
+              required: false,
+              schema: { type: 'string' },
             },
           ]
         : []),

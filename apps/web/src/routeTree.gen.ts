@@ -37,9 +37,7 @@ import { Route as AppCompaniesCompanyIdWelcomeCompanyRouteImport } from './route
 import { Route as AppCompaniesCompanyIdWelcomeModelAccountRouteImport } from './routes/_app/companies/$companyId_/welcome/model-account.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeTeamRouteImport } from './routes/_app/companies/$companyId_/welcome/team.tsx'
 import { Route as AppCompaniesCompanyIdProjectsProjectIdIndexRouteImport } from './routes/_app/companies/$companyId/projects/$projectId.index.tsx'
-import { Route as AppCompaniesCompanyIdProjectsProjectIdConversationsRouteImport } from './routes/_app/companies/$companyId/projects/$projectId.conversations.tsx'
-import { Route as AppCompaniesCompanyIdProjectsProjectIdSettingsRouteImport } from './routes/_app/companies/$companyId/projects/$projectId.settings.tsx'
-import { Route as AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRouteImport } from './routes/_app/companies/$companyId/projects/$projectId.conversations_.$conversationId.tsx'
+import { Route as AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRouteImport } from './routes/_app/companies/$companyId/projects/$projectId.conversations.$conversationId.tsx'
 
 const AppRouteRoute = AppRouteRouteImport.update({
   id: '/_app',
@@ -232,22 +230,10 @@ const AppCompaniesCompanyIdProjectsProjectIdIndexRoute =
     path: '/',
     getParentRoute: () => AppCompaniesCompanyIdProjectsProjectIdRoute,
   } as any)
-const AppCompaniesCompanyIdProjectsProjectIdConversationsRoute =
-  AppCompaniesCompanyIdProjectsProjectIdConversationsRouteImport.update({
-    id: '/conversations',
-    path: '/conversations',
-    getParentRoute: () => AppCompaniesCompanyIdProjectsProjectIdRoute,
-  } as any)
-const AppCompaniesCompanyIdProjectsProjectIdSettingsRoute =
-  AppCompaniesCompanyIdProjectsProjectIdSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AppCompaniesCompanyIdProjectsProjectIdRoute,
-  } as any)
 const AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute =
   AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRouteImport.update(
     {
-      id: '/conversations_/$conversationId',
+      id: '/conversations/$conversationId',
       path: '/conversations/$conversationId',
       getParentRoute: () => AppCompaniesCompanyIdProjectsProjectIdRoute,
     } as any,
@@ -285,8 +271,6 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/companies/$companyId/welcome/': typeof AppCompaniesCompanyIdWelcomeIndexRoute
-  '/companies/$companyId/projects/$projectId/conversations': typeof AppCompaniesCompanyIdProjectsProjectIdConversationsRoute
-  '/companies/$companyId/projects/$projectId/settings': typeof AppCompaniesCompanyIdProjectsProjectIdSettingsRoute
   '/companies/$companyId/projects/$projectId/': typeof AppCompaniesCompanyIdProjectsProjectIdIndexRoute
   '/companies/$companyId/projects/$projectId/conversations/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute
 }
@@ -317,8 +301,6 @@ export interface FileRoutesByTo {
   '/companies/$companyId/projects': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/companies/$companyId/settings': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/companies/$companyId/welcome': typeof AppCompaniesCompanyIdWelcomeIndexRoute
-  '/companies/$companyId/projects/$projectId/conversations': typeof AppCompaniesCompanyIdProjectsProjectIdConversationsRoute
-  '/companies/$companyId/projects/$projectId/settings': typeof AppCompaniesCompanyIdProjectsProjectIdSettingsRoute
   '/companies/$companyId/projects/$projectId': typeof AppCompaniesCompanyIdProjectsProjectIdIndexRoute
   '/companies/$companyId/projects/$projectId/conversations/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute
 }
@@ -357,10 +339,8 @@ export interface FileRoutesById {
   '/_app/companies/$companyId/projects/': typeof AppCompaniesCompanyIdProjectsIndexRoute
   '/_app/companies/$companyId_/settings/': typeof AppCompaniesCompanyIdSettingsIndexRoute
   '/_app/companies/$companyId_/welcome/': typeof AppCompaniesCompanyIdWelcomeIndexRoute
-  '/_app/companies/$companyId/projects/$projectId/conversations': typeof AppCompaniesCompanyIdProjectsProjectIdConversationsRoute
-  '/_app/companies/$companyId/projects/$projectId/settings': typeof AppCompaniesCompanyIdProjectsProjectIdSettingsRoute
   '/_app/companies/$companyId/projects/$projectId/': typeof AppCompaniesCompanyIdProjectsProjectIdIndexRoute
-  '/_app/companies/$companyId/projects/$projectId/conversations_/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute
+  '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId': typeof AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -396,8 +376,6 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects/'
     | '/companies/$companyId/settings/'
     | '/companies/$companyId/welcome/'
-    | '/companies/$companyId/projects/$projectId/conversations'
-    | '/companies/$companyId/projects/$projectId/settings'
     | '/companies/$companyId/projects/$projectId/'
     | '/companies/$companyId/projects/$projectId/conversations/$conversationId'
   fileRoutesByTo: FileRoutesByTo
@@ -428,8 +406,6 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects'
     | '/companies/$companyId/settings'
     | '/companies/$companyId/welcome'
-    | '/companies/$companyId/projects/$projectId/conversations'
-    | '/companies/$companyId/projects/$projectId/settings'
     | '/companies/$companyId/projects/$projectId'
     | '/companies/$companyId/projects/$projectId/conversations/$conversationId'
   id:
@@ -467,10 +443,8 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId/projects/'
     | '/_app/companies/$companyId_/settings/'
     | '/_app/companies/$companyId_/welcome/'
-    | '/_app/companies/$companyId/projects/$projectId/conversations'
-    | '/_app/companies/$companyId/projects/$projectId/settings'
     | '/_app/companies/$companyId/projects/$projectId/'
-    | '/_app/companies/$companyId/projects/$projectId/conversations_/$conversationId'
+    | '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -718,22 +692,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdProjectsProjectIdIndexRouteImport
       parentRoute: typeof AppCompaniesCompanyIdProjectsProjectIdRoute
     }
-    '/_app/companies/$companyId/projects/$projectId/conversations': {
-      id: '/_app/companies/$companyId/projects/$projectId/conversations'
-      path: '/conversations'
-      fullPath: '/companies/$companyId/projects/$projectId/conversations'
-      preLoaderRoute: typeof AppCompaniesCompanyIdProjectsProjectIdConversationsRouteImport
-      parentRoute: typeof AppCompaniesCompanyIdProjectsProjectIdRoute
-    }
-    '/_app/companies/$companyId/projects/$projectId/settings': {
-      id: '/_app/companies/$companyId/projects/$projectId/settings'
-      path: '/settings'
-      fullPath: '/companies/$companyId/projects/$projectId/settings'
-      preLoaderRoute: typeof AppCompaniesCompanyIdProjectsProjectIdSettingsRouteImport
-      parentRoute: typeof AppCompaniesCompanyIdProjectsProjectIdRoute
-    }
-    '/_app/companies/$companyId/projects/$projectId/conversations_/$conversationId': {
-      id: '/_app/companies/$companyId/projects/$projectId/conversations_/$conversationId'
+    '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId': {
+      id: '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId'
       path: '/conversations/$conversationId'
       fullPath: '/companies/$companyId/projects/$projectId/conversations/$conversationId'
       preLoaderRoute: typeof AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRouteImport
@@ -762,18 +722,12 @@ const AppOperationsRouteRouteWithChildren =
   AppOperationsRouteRoute._addFileChildren(AppOperationsRouteRouteChildren)
 
 interface AppCompaniesCompanyIdProjectsProjectIdRouteChildren {
-  AppCompaniesCompanyIdProjectsProjectIdConversationsRoute: typeof AppCompaniesCompanyIdProjectsProjectIdConversationsRoute
-  AppCompaniesCompanyIdProjectsProjectIdSettingsRoute: typeof AppCompaniesCompanyIdProjectsProjectIdSettingsRoute
   AppCompaniesCompanyIdProjectsProjectIdIndexRoute: typeof AppCompaniesCompanyIdProjectsProjectIdIndexRoute
   AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute: typeof AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute
 }
 
 const AppCompaniesCompanyIdProjectsProjectIdRouteChildren: AppCompaniesCompanyIdProjectsProjectIdRouteChildren =
   {
-    AppCompaniesCompanyIdProjectsProjectIdConversationsRoute:
-      AppCompaniesCompanyIdProjectsProjectIdConversationsRoute,
-    AppCompaniesCompanyIdProjectsProjectIdSettingsRoute:
-      AppCompaniesCompanyIdProjectsProjectIdSettingsRoute,
     AppCompaniesCompanyIdProjectsProjectIdIndexRoute:
       AppCompaniesCompanyIdProjectsProjectIdIndexRoute,
     AppCompaniesCompanyIdProjectsProjectIdConversationsConversationIdRoute:

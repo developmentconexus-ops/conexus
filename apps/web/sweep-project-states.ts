@@ -1,5 +1,6 @@
+import { listAppVersions } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
-import { failure } from './layout-harness.ts'
+import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
@@ -15,6 +16,8 @@ import {
 
 const HOME = `/companies/${COMPANY.id}`
 const PROJECTS = `${HOME}/projects`
+const ABOUT = `${PROJECTS}/${PROJECT_ID}?lens=project`
+const VERSIONS = `${ABOUT}&section=versions`
 const OF_OWNER = { ...OWNER, ...projectsPage(COMPANY.id) }
 const NOBODY = { ...OWNER, ...projectsPage(COMPANY.id, { empty: true }) }
 const OF_MEMBER = { ...OWNER, ...projectsPage(COMPANY.id, { mayDelete: false }) }
@@ -65,26 +68,43 @@ export const PROJECT_STATES: State[] = [
     },
   },
   {
-    name: 'Projeto do dono',
-    path: `${PROJECTS}/${PROJECT_ID}`,
+    name: 'Projeto, Sobre do dono',
+    path: ABOUT,
     replies: OF_OWNER,
     settle: (p) => waitFor(p, 'Apagar Projeto'),
   },
   {
-    name: 'Projeto do membro',
-    path: `${PROJECTS}/${PROJECT_ID}`,
+    name: 'Projeto, Sobre do membro',
+    path: ABOUT,
     replies: OF_MEMBER,
-    settle: (p) => p.getByRole('heading', { level: 1, name: PROJECT_NAME }).waitFor(),
+    settle: (p) => waitFor(p, 'Só o dono ou quem administra a empresa pode apagar o Projeto.'),
+  },
+  {
+    name: 'Projeto, Versões do dono',
+    path: VERSIONS,
+    replies: {
+      ...OF_OWNER,
+      [`GET /api/companies/${COMPANY.id}/projects/${PROJECT_ID}/versions`]: ok(listAppVersions, {
+        versions: [],
+      }),
+    },
+    settle: (p) => waitFor(p, 'Nenhuma versão enviada.'),
+  },
+  {
+    name: 'Projeto, Versões do membro',
+    path: VERSIONS,
+    replies: OF_MEMBER,
+    settle: (p) => waitFor(p, 'Só o dono ou quem administra a empresa vê e envia as versões.'),
   },
   {
     name: 'apagar Projeto, a confirmação',
-    path: `${PROJECTS}/${PROJECT_ID}`,
+    path: ABOUT,
     replies: OF_OWNER,
     settle: openDeletion,
   },
   {
     name: 'apagar Projeto, o nome não confere',
-    path: `${PROJECTS}/${PROJECT_ID}`,
+    path: ABOUT,
     replies: {
       ...OF_OWNER,
       [`DELETE /api/companies/${COMPANY.id}/projects/${PROJECT_ID}`]:

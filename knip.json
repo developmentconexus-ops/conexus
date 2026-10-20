@@ -9,6 +9,9 @@
       "entry": ["src/**/*.check.ts"],
       "ignoreBinaries": ["setpriv"]
     },
+    "apps/web": {
+      "entry": ["src/ui/pieces-fixture.tsx"]
+    },
     "apps/edge": {
       "ignoreDependencies": ["cloudflare"]
     }

@@ -3,6 +3,10 @@ import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `tooltip`, painted ink on on-ink. shadcn's enter and exit
 // animations are left out: the brand has none for it and they would need reduced motion (V26).
+export function TooltipProvider({ delay = 0, ...props }: TooltipPrimitive.Provider.Props) {
+  return <TooltipPrimitive.Provider data-slot="tooltip-provider" delay={delay} {...props} />
+}
+
 export function Tooltip(props: TooltipPrimitive.Root.Props) {
   return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
 }

@@ -18,9 +18,20 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
 }
 
+// The edge's own policy, read from its source so it cannot drift: a piece that needs a style
+// element or a data: URI fails here, in the browser, and not after the Release (web W22, testing T23).
+const POLICY = /APP_CONTENT_SECURITY_POLICY =\s*"([^"]+)"/.exec(
+  readFileSync(join(import.meta.dirname, '../edge/src/headers.ts'), 'utf8'),
+)?.[1]
+if (!POLICY)
+  throw new Error('the edge no longer declares its policy as APP_CONTENT_SECURITY_POLICY')
+const SECURITY_HEADERS = { 'Content-Security-Policy': POLICY }
+
 export const DESKTOP = { width: 1366, height: 900 }
 export const PHONE = { width: 390, height: 844 }
 export const SMALL_PHONE = { width: 320, height: 640 }
+// A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).
+export const ZOOMED_PHONE = { width: 195, height: 422 }
 export type Viewport = { width: number; height: number }
 
 /** What the fake Hub answers a request with; `hold` keeps the reply back until it settles. */
@@ -55,9 +66,25 @@ export type Harness = {
       replies: Replies
       scheme?: 'light' | 'dark'
     },
-  ): Promise<Page & { seen: Seen[] }>
+  ): Promise<Page & { seen: Seen[]; problems: string[] }>
   /** The requests no reply was given for, over the whole run. */
   unanswered: string[]
+}
+
+/** `/pieces` is the page of chat pieces, built only here, never by `npm run build`. */
+function fileOf(pathname: string): string {
+  if (pathname.startsWith('/assets/')) return pathname
+  return pathname === '/pieces' ? '/pieces.html' : '/index.html'
+}
+
+/** A script error, or any console error, which is also where the browser reports a CSP refusal. */
+function watchProblems(page: Page): string[] {
+  const problems: string[] = []
+  page.on('pageerror', (error) => problems.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') problems.push(message.text())
+  })
+  return problems
 }
 
 export function createHarness(root: string): Harness {
@@ -75,6 +102,7 @@ export function createHarness(root: string): Harness {
       colorScheme: options.scheme ?? 'light',
     })
     const seen: Seen[] = []
+    const problems = watchProblems(page)
     await page.route(`${ORIGIN}/**`, async (route) => {
       const request = route.request()
       const url = new URL(request.url())
@@ -98,15 +126,16 @@ export function createHarness(root: string): Harness {
             : { status: reply.status, json: reply.json },
         )
       }
-      const file = url.pathname.startsWith('/assets/') ? url.pathname : '/index.html'
+      const file = fileOf(url.pathname)
       return route.fulfill({
         body: readFileSync(join(outDir, file)),
         contentType: TYPES[extname(file)] ?? 'text/html',
+        headers: SECURITY_HEADERS,
       })
     })
     await page.goto(`${ORIGIN}${path}`)
     await page.evaluate(() => document.fonts.ready)
-    return Object.assign(page, { seen })
+    return Object.assign(page, { seen, problems })
   }
 
   return {
@@ -114,7 +143,16 @@ export function createHarness(root: string): Harness {
     open,
     async start() {
       outDir = mkdtempSync(join(tmpdir(), 'conexus-web-layout-'))
-      await build({ root, logLevel: 'silent', build: { outDir } })
+      await build({
+        root,
+        logLevel: 'silent',
+        build: {
+          outDir,
+          rolldownOptions: {
+            input: { index: join(root, 'index.html'), pieces: join(root, 'pieces.html') },
+          },
+        },
+      })
       // The headless shell pinned by playwright-core, which the `pretest` script installs.
       browser = await chromium.launch()
     },
@@ -142,7 +180,13 @@ async function press(page: Page, key: string): Promise<string> {
               focused.getAttribute('aria-label') ||
               focused.textContent?.trim() ||
               focused.getAttribute('name')
-            const { outlineStyle, outlineWidth } = getComputedStyle(focused)
+            // A field the card frames draws a transparent outline for forced colors; the frame
+            // that shows where focus is belongs to the card around it.
+            const own = getComputedStyle(focused)
+            const { outlineStyle, outlineWidth } =
+              own.outlineColor === 'rgba(0, 0, 0, 0)'
+                ? getComputedStyle(focused.closest('[data-focus-frame]') ?? focused)
+                : own
             const inside = focused.closest('[role=dialog], [role=menu]') ? ' inside' : ''
             settled(`${name} ${outlineStyle} ${outlineWidth}${inside}`)
           }),

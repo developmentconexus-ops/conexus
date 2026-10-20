@@ -14,7 +14,10 @@ None written before. Brought from earlier work.
 
 ## Result
 
-Not run.
+Run at step 12.1: the Builder conversation uses the shadcn chat pieces (AI Elements) on Base UI,
+copied into `ui/` and painted with the brand; Mastra's own pieces stay out. They run under the
+Hub's policy with no console error, at 390 px and 200% zoom in both themes, and the founder's use
+script runs on them in a real browser (`tests/e2e/conversation.test.ts`).
 
 ## Consequences
 

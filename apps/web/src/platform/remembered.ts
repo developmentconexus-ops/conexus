@@ -1,5 +1,6 @@
 import type { PersonId } from '@conexus/hub-api'
 import type { z } from 'zod'
+import { pageStorage } from './storage.ts'
 
 /**
  * A list this browser remembers for each person: the name its key carries, the schema each id
@@ -10,6 +11,8 @@ export type RememberedList<Id extends z.ZodType<string>> = {
   id: Id
   keep: number
 }
+
+const lists = pageStorage('local')
 
 // Ids carry no space, so a list is stored as one line of ids separated by spaces.
 const SEPARATOR = ' '
@@ -26,13 +29,7 @@ export function recall<Id extends z.ZodType<string>>(input: {
   list: RememberedList<Id>
   personId: PersonId
 }): z.output<Id>[] {
-  let stored: string
-  try {
-    stored = globalThis.localStorage.getItem(keyOf(input.list.name, input.personId)) ?? ''
-  } catch {
-    // Storage the browser refuses remembers nothing (C53).
-    return []
-  }
+  const stored = lists.getItem(keyOf(input.list.name, input.personId)) ?? ''
   return stored.split(SEPARATOR).flatMap((raw) => {
     const id = input.list.id.safeParse(raw)
     return id.success ? [id.data] : []
@@ -50,10 +47,5 @@ export function remember<Id extends z.ZodType<string>>(input: {
 }): void {
   const { list, personId, id } = input
   const ids = [id, ...recall({ list, personId }).filter((one) => one !== id)].slice(0, list.keep)
-  try {
-    globalThis.localStorage.setItem(keyOf(list.name, personId), ids.join(SEPARATOR))
-    // biome-ignore lint/plugin: a browser that refuses storage remembers nothing, as a new one (C53)
-  } catch {
-    // Nothing is remembered; the next entry opens the first company, as a new browser does.
-  }
+  lists.setItem(keyOf(list.name, personId), ids.join(SEPARATOR))
 }

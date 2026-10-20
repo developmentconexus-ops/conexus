@@ -4,7 +4,13 @@ import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
+import {
+  conversationsNone,
+  hubServer,
+  PEDIDOS,
+  projectsRead,
+  refusal,
+} from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const PROJECTS = `/companies/${COMPANY.id}/projects`
@@ -32,12 +38,13 @@ test('vazio: "Nenhum projeto ainda." na página Todos os projetos', async () => 
 
 test('cada cartão: o nome, "Criado em" e o link para o Projeto', async () => {
   hub([PEDIDOS])
+  server.use(conversationsNone)
   const router = open()
   await screen.findByRole('heading', { name: 'Todos os projetos' })
   const link = await main().findByRole('link', { name: /Pedidos/ })
   expect(link.textContent).toContain('Criado em 17/10/2026')
   fireEvent.click(link)
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findByText(/Ainda não há uma prévia disponível/)).toBeTruthy()
   expect(router.state.location.pathname).toBe(`${PROJECTS}/${PEDIDOS.id}`)
 })
 

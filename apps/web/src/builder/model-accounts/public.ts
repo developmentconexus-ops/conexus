@@ -1,6 +1,7 @@
 export { AccountKinds } from './account-kinds.tsx'
 export { CompanyAccounts } from './company-accounts.tsx'
 export { LinkAccount } from './link-account.tsx'
+export { modelLabel } from './model-label.ts'
 export { ModelPicker } from './model-picker.tsx'
 export { MyAccounts } from './my-accounts.tsx'
 export { accountsQuery, kindsQuery, providersQuery } from './queries.ts'

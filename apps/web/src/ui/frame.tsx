@@ -5,6 +5,7 @@ import { MenuIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { createContext, useContext, useEffect, useState } from 'react'
 import { ConexusWordmark } from '../brand/mark.tsx'
+import { cn } from './cn.ts'
 import {
   Sidebar,
   SidebarContent,
@@ -92,7 +93,8 @@ function CloseOnNavigation() {
 /**
  * The frame of every page with a session (web W30): one sidebar on the left and no top bar. The
  * sidebar holds `header`, `nav` and `footer`; `compact` closes it to icons, and it opens again when
- * `compact` ends. On a phone it is a drawer under a top line naming the place (design V56).
+ * `compact` ends, and the page fills the rest of the screen edge to edge, for a Projeto's two
+ * regions. On a phone it is a drawer under a top line naming the place (design V56).
  */
 export function Frame(props: {
   header: ReactNode
@@ -109,7 +111,7 @@ export function Frame(props: {
     setOpen(!props.compact)
   }
   return (
-    <SidebarProvider open={open} onOpenChange={setOpen}>
+    <SidebarProvider open={open} onOpenChange={setOpen} className={cn(compact && 'h-dvh')}>
       <Sidebar label="Navegação">
         <SidebarHeader>{props.header}</SidebarHeader>
         <SidebarContent>{props.nav}</SidebarContent>
@@ -120,7 +122,9 @@ export function Frame(props: {
       <SidebarInset>
         <PhoneTop />
         <InFrame.Provider value={true}>
-          <div className="flex min-w-0 flex-1 flex-col p-xl">{props.children}</div>
+          <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-xl')}>
+            {props.children}
+          </div>
         </InFrame.Provider>
       </SidebarInset>
     </SidebarProvider>

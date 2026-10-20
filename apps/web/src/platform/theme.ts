@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { z } from 'zod'
+import { pageStorage } from './storage.ts'
 
 /** What the person picked: a theme, or to follow the system (design V9). */
 export const ThemeChoice = z.enum(['light', 'dark', 'system'])
@@ -13,6 +14,8 @@ export const THEME_LABELS: Record<ThemeChoice, string> = {
 }
 
 const STORAGE_KEY = 'conexus-theme'
+const picks = pageStorage('local')
+
 function root(): HTMLElement {
   return document.documentElement
 }
@@ -29,12 +32,7 @@ function apply(choice: ThemeChoice): void {
 
 /** Puts the pick this browser keeps on <html> as the page opens. */
 export function applyChosenTheme(): void {
-  try {
-    apply(ThemeChoice.catch('system').parse(globalThis.localStorage.getItem(STORAGE_KEY)))
-  } catch {
-    // Storage the browser refuses reads as no pick (C53).
-    apply('system')
-  }
+  apply(ThemeChoice.catch('system').parse(picks.getItem(STORAGE_KEY)))
 }
 
 function subscribe(changed: () => void): () => void {
@@ -51,13 +49,8 @@ export function useTheme(): { choice: ThemeChoice; choose: (next: ThemeChoice) =
   const choice = useSyncExternalStore(subscribe, shown)
   function choose(next: ThemeChoice) {
     apply(next)
-    try {
-      if (next === 'system') globalThis.localStorage.removeItem(STORAGE_KEY)
-      else globalThis.localStorage.setItem(STORAGE_KEY, next)
-      // biome-ignore lint/plugin: a browser that refuses storage keeps the pick for this page only (C53)
-    } catch {
-      // The pick still holds for this page.
-    }
+    if (next === 'system') picks.removeItem(STORAGE_KEY)
+    else picks.setItem(STORAGE_KEY, next)
   }
   return { choice, choose }
 }

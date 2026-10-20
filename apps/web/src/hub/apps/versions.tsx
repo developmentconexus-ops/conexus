@@ -4,10 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { HubFailure, sentenceOf } from '../../platform/hub.ts'
-import { Button } from '../../ui/button.tsx'
 import { List, Row, rowBody, SectionTitle } from '../../ui/list.tsx'
 import { Skeleton } from '../../ui/skeleton.tsx'
-import { Empty, NotFound } from '../../ui/states.tsx'
+import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
 import { PutBack } from './put-back.tsx'
 import { versionsQuery } from './queries.ts'
 import { SendVersion } from './send-version.tsx'
@@ -78,12 +77,7 @@ export function Versions(scope: Scope) {
       )}
       {read.isPending && <Loading />}
       {read.isError && (
-        <div className="flex flex-col items-start gap-md">
-          <p role="alert" className="text-danger">
-            {sentenceOf(read.error)}
-          </p>
-          <Button onClick={() => void read.refetch()}>Tentar de novo</Button>
-        </div>
+        <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
       )}
       {read.data?.versions.length === 0 && !picking && (
         <Empty>Nenhuma versão enviada. O endereço mostra o app de exemplo.</Empty>
