@@ -1,14 +1,15 @@
 import type { ConversationEvent, Message, MessagePart } from '@conexus/hub-api'
 
 /**
- * The Builder's answer as the stream tells it. `answering` holds the parts so far; `resuming` keeps
- * them once the line was opened again, for the events the stream says it missed; `ended` keeps them
- * until the conversation's read holds the saved answer, which Mastra writes after the turn ends.
+ * The Builder's answer as the stream tells it. `answering` holds the parts so far and when the
+ * server began the turn, which is `null` until the stream says; `resuming` keeps them once the line
+ * was opened again, for the events the stream says it missed; `ended` keeps the parts until the
+ * conversation's read holds the saved answer, which Mastra writes after the turn ends.
  */
 export type Live =
   | { kind: 'idle' }
-  | { kind: 'answering'; parts: MessagePart[] }
-  | { kind: 'resuming'; parts: MessagePart[] }
+  | { kind: 'answering'; parts: MessagePart[]; startedAt: string | null }
+  | { kind: 'resuming'; parts: MessagePart[]; startedAt: string | null }
   | { kind: 'ended'; parts: MessagePart[] }
 
 export const IDLE: Live = { kind: 'idle' }
@@ -42,8 +43,8 @@ function placed(parts: MessagePart[], part: MessagePart): MessagePart[] {
  */
 function inProgress(state: Live): Extract<Live, { kind: 'answering' }> {
   return state.kind === 'answering' || state.kind === 'resuming'
-    ? { kind: 'answering', parts: state.parts }
-    : { kind: 'answering', parts: [] }
+    ? { kind: 'answering', parts: state.parts, startedAt: state.startedAt }
+    : { kind: 'answering', parts: [], startedAt: null }
 }
 
 /** The answer after one more step; the stream's `turn` replaces what the screen had. */
@@ -51,13 +52,15 @@ export function live(state: Live, step: Step): Live {
   switch (step.type) {
     // Sent before the Hub answers: the stream may already be telling the answer by then.
     case 'sent':
-      return state.kind === 'answering' ? state : { kind: 'answering', parts: [] }
+      return state.kind === 'answering' ? state : { kind: 'answering', parts: [], startedAt: null }
     case 'unsent':
       return state.kind === 'answering' && state.parts.length === 0 ? IDLE : state
     case 'reconnected':
-      return state.kind === 'answering' ? { kind: 'resuming', parts: state.parts } : state
+      return state.kind === 'answering'
+        ? { kind: 'resuming', parts: state.parts, startedAt: state.startedAt }
+        : state
     case 'turn':
-      return { kind: 'answering', parts: step.message.parts }
+      return { kind: 'answering', parts: step.message.parts, startedAt: step.startedAt }
     case 'text': {
       const answer = inProgress(state)
       return { ...answer, parts: appended(answer.parts, step.delta) }
@@ -103,9 +106,4 @@ export function shownAnswer(
     default:
       return state satisfies never
   }
-}
-
-/** Whether the answer in progress has any text to show yet. */
-export function hasText(parts: readonly MessagePart[]): boolean {
-  return parts.some((part) => part.type === 'text' && part.text !== '')
 }

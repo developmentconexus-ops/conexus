@@ -10,13 +10,13 @@ import { accountsQuery } from '../model-accounts/public.ts'
 import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
-import type { Live } from './live.ts'
-import { hasText, shownAnswer } from './live.ts'
+import { shownAnswer } from './live.ts'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
 import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } from './queries.ts'
-import { EMPTY_CONVERSATION, THINKING, titleOf, UNCONFIRMED_SEND } from './text.ts'
+import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
 import { Transcript } from './transcript.tsx'
 import { useLive } from './use-live.ts'
+import { WorkingLine } from './working-line.tsx'
 
 const route = getRouteApi(
   '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
@@ -63,13 +63,6 @@ export function EmptyPanel() {
       </div>
     </PanelFrame>
   )
-}
-
-/** "Pensando…" until the answer has text; the turn's failure is a part of its answer. */
-function AnswerStatus({ state }: { state: Live }) {
-  return state.kind === 'answering' && !hasText(state.parts) ? (
-    <p role="status">{THINKING}</p>
-  ) : null
 }
 
 function Screen(props: {
@@ -123,7 +116,7 @@ function Screen(props: {
   if (gone) return <NotFound />
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-xl overflow-y-auto p-md">
+      <div className="flex flex-col gap-md px-md py-md">
         {usable.size === 0 ? (
           <NoAccount companyId={companyId} />
         ) : (
@@ -132,13 +125,22 @@ function Screen(props: {
         {conversation.messages.length === 0 && state.kind === 'idle' && (
           <Empty>{EMPTY_CONVERSATION}</Empty>
         )}
+      </div>
+      <div className="min-h-0 flex-1">
         <Transcript
           messages={conversation.messages}
           answer={shownAnswer(state, conversation.messages)}
+          model={conversation.model}
         />
-        <AnswerStatus state={state} />
-        {error !== undefined && <p role="alert">{error}</p>}
       </div>
+      {error !== undefined && (
+        <p role="alert" className="px-md">
+          {error}
+        </p>
+      )}
+      {(state.kind === 'answering' || state.kind === 'resuming') && (
+        <WorkingLine startedAt={state.startedAt} />
+      )}
       <div className="px-md">
         <Composer
           answering={state.kind === 'answering'}

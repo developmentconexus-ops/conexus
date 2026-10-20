@@ -43,7 +43,7 @@ test('o texto parcial fecha a marca aberta, a região viva espera o fim e o avis
   const page = within(log).getByRole('link', { name: /Pedidos da padaria/ })
   expect(page.getAttribute('href')).toBe('https://padaria.example.test/pedidos')
   expect(page.getAttribute('rel')).toBe('noopener noreferrer')
-  expect(within(log).getAllByText(/Li a página/)).toHaveLength(1)
+  expect(within(log).getAllByText('Leu uma página')).toHaveLength(1)
   const conversation = shown.conversations[0]
   conversation?.messages.push(builderSaid('O **primeiro** é bom.'))
   lines[0]?.emit({ type: 'turnEnd', reason: 'complete' })
@@ -60,7 +60,7 @@ test('um endereço que não é http nem https aparece como texto, sem link', asy
     type: 'part',
     part: readPage('javascript:alert(1)', 'Armadilha'),
   })
-  expect(await screen.findByText('Li a página Armadilha')).toBeTruthy()
+  expect(await screen.findByText('Armadilha')).toBeTruthy()
   expect(screen.queryByRole('link', { name: /Armadilha/ })).toBeNull()
 })
 

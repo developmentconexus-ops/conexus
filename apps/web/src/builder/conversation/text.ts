@@ -1,7 +1,7 @@
 import type { ConversationSummary } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 
-export const THINKING = 'Pensando…'
+export const WORKING = 'Builder trabalhando'
 export const EMPTY_CONVERSATION = 'Descreva o aplicativo que você quer criar.'
 export const UNCONFIRMED_SEND = 'Não confirmamos o envio. Envie de novo.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
@@ -11,4 +11,13 @@ export const UNCONFIRMED_MODEL =
 /** What a conversation is called until the Builder titles it: the moment it began. */
 export function titleOf(conversation: Pick<ConversationSummary, 'title' | 'createdAt'>): string {
   return conversation.title ?? `Conversa de ${dayAndHour(conversation.createdAt)}`
+}
+
+/** A span of time said short: "12 s", "1 min 05 s", "1 h 02 min". */
+export function durationOf(seconds: number): string {
+  const minutes = Math.floor(seconds / 60)
+  const rest = String(seconds % 60).padStart(2, '0')
+  if (minutes === 0) return `${seconds} s`
+  if (minutes < 60) return `${minutes} min ${rest} s`
+  return `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')} min`
 }

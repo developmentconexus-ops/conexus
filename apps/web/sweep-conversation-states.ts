@@ -45,7 +45,23 @@ const CONVERSATION = readConversation.success.body.parse({
         role: 'builder',
         parts: [
           { type: 'notice', text: 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.' },
+          { type: 'reasoning', id: 'r1', state: 'completed', seconds: null },
+          ...['a', 'b', 'c'].map((id) => ({
+            type: 'tool' as const,
+            id,
+            kind: 'read_page' as const,
+            state: 'completed' as const,
+            subject: { url: LONG_WORD, title: null },
+          })),
+          {
+            type: 'tool',
+            id: 'd',
+            kind: 'search_web',
+            state: 'completed',
+            subject: { query: 'apps de encomenda de padaria' },
+          },
           { type: 'text', text: ANSWER },
+          { type: 'failure', code: 'MODEL_CALL_FAILED' },
         ],
         model: 'anthropic/claude-sonnet-4',
         createdAt: '2026-10-19T12:01:00.000Z',
@@ -144,6 +160,16 @@ export const CONVERSATION_STATES: State[] = [
     path: `${CONVERSATIONS}/${ID}`,
     replies: { ...WITH_ACCOUNT, ...OPEN },
     settle: (p) => inChat(p, 'Encontrei'),
+  },
+  {
+    name: 'Conversa, com as ferramentas abertas',
+    path: `${CONVERSATIONS}/${ID}`,
+    replies: { ...WITH_ACCOUNT, ...OPEN },
+    settle: async (page) => {
+      await inChat(page, 'Encontrei')
+      await page.getByRole('button', { name: 'Leu 3 páginas, pesquisou 1 vez' }).click()
+      await waitFor(page, 'Pesquisou na internet')
+    },
   },
   {
     name: 'Conversa, sem conta de modelo',
