@@ -24,7 +24,8 @@ routeTree.gen.ts  written by the router plugin; never edited; ignored by Biome a
 routes/           one file per address: who enters, what loads, which screen opens
   __root.tsx      the router's context, holding the query client; nothing visible
   _public/        route.tsx (the centred column); sign in, accept an invitation, recover a password
-  _app/           route.tsx: beforeLoad checks the session, its component is the frame; index.tsx
+  _app/           route.tsx: beforeLoad checks the session; index.tsx opens the last company; the
+                  company, Configurações, first entry and Central layouts each draw their frame
 hub/              public.ts and one folder per subject
 builder/          public.ts and one folder per subject
 ui/               pieces with no subject: cn.ts, button, input, label, field, form, alert-dialog,
@@ -147,10 +148,11 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   sections, each added by its step: Sobre, Versões, Quem usa o app, Dados da empresa,
   Publicação. [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
-  two groups: Você (Minha conta, Minhas contas de modelo, Aparência) and A empresa (Geral, Pessoas
-  e convites, Contas de modelo, Sistemas da empresa, Conectores). Owner and administrator change
-  the company's group; a member reads Pessoas. Memória, Atividade and Uso have their place
-  reserved there and appear only when a card asks for them. [review]
+  two groups: Você (Minha conta, Minhas contas de modelo, Aparência) and the company's, headed by
+  its name (Geral, Pessoas e convites, Contas de modelo, Sistemas da empresa, Conectores); founder,
+  2026-10-20: "1. A". Owner and administrator change the company's group; a member reads Pessoas.
+  Memória, Atividade and Uso have their place reserved there and appear only when a card asks for
+  them. [review]
 - **W33.** An owner's first entry **should** be four steps with progress, "Voltar" and "Sair":
   Sua empresa, Ligue uma conta de modelo, Convide sua equipe, O que vamos construir primeiro? Steps
   two and three are skippable; what was skipped becomes the card "Termine de preparar a empresa" on
@@ -158,6 +160,7 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   Início with no steps. [review]
 - **W34.** Every card's state matrix **must** carry the columns 'primeira vez' and 'sem
   permissão' beside its other states. Loading shows the frame at once and a skeleton only in the
-  content; an error stays in the content area with "Tentar de novo"; not found offers "Ir para o
-  início"; a missing permission shows the page and says who can (design V29), and never hides it.
-  Failure: a screen that hides what a person may not do leaves them guessing. [review]
+  content; an error stays in the content area with "Tentar de novo"; not found offers "Voltar ao
+  início" ([code C48](code.md); founder, 2026-10-20: "2. A"); a missing permission shows the page
+  and says who can (design V29), and never hides it. Failure: a screen that hides what a person may
+  not do leaves them guessing. [review]

@@ -54,6 +54,7 @@ nav-item-active:
 input:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text}"
+  typography: "16px under md, {typography.body} from it (design V18)"
   rounded: "{rounded.control}"
   padding: "0 0.75rem"
   height: "36px"
