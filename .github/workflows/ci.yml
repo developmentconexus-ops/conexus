@@ -1,7 +1,9 @@
 name: CI
 
+# A label re-runs the pull request, so the `all-removals` label runs every removal proof on it.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
 
@@ -23,6 +25,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
@@ -133,13 +137,49 @@ jobs:
       - name: The founder's use script runs in a browser against a real Hub
         run: npm run e2e
 
+  # A pull request proves the removals its diff reaches: the files its rows name and everything
+  # they import, and every row when a row is deleted or a file no import shows changes
+  # (scripts/removals-select.ts). Every push to main, and every pull request that is a step's build
+  # (a branch ending in -build, or a title starting with "step N" or "feat: step N") or carries the
+  # `all-removals` label, proves all of them: the step's review reads a run that did.
+  removals-plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      base: ${{ steps.plan.outputs.base }}
+      selected: ${{ steps.plan.outputs.selected }}
+      total: ${{ steps.plan.outputs.total }}
+      shards: ${{ steps.plan.outputs.shards }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/install
+      - name: The removal rows this run proves
+        id: plan
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          PULL_REQUEST: ${{ github.event_name == 'pull_request' && format('{{"title":{0},"headRef":{1},"labels":{2}}}', toJSON(github.event.pull_request.title), toJSON(github.head_ref), toJSON(github.event.pull_request.labels.*.name)) || '{}' }}
+        run: |
+          plan="$(node scripts/removals.ts --plan ${BASE:+--base "$BASE" --pull-request "$PULL_REQUEST"})"
+          echo "$plan"
+          {
+            echo "base=$(jq -r 'if .everything then "" else env.BASE end' <<<"$plan")"
+            echo "selected=$(jq .selected <<<"$plan")"
+            echo "total=$(jq .shards <<<"$plan")"
+            echo "shards=$(jq -c '[range(1; .shards + 1)]' <<<"$plan")"
+          } >> "$GITHUB_OUTPUT"
+          jq -r '"Removals: \(.selected) of \(.total) rows" + (if .selected == 0 then ", nothing to run" elif .everything then ", all because \(.everything)" else "" end)' <<<"$plan" >> "$GITHUB_STEP_SUMMARY"
+
   removals:
+    needs: removals-plan
+    if: needs.removals-plan.outputs.selected != '0'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: ${{ fromJSON(needs.removals-plan.outputs.shards) }}
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -156,12 +196,16 @@ jobs:
       CONEXUS_TEST_RUNTIME_PASSWORD: ci-runtime
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - uses: ./.github/actions/install
       - uses: ./.github/actions/test-database
         with:
           port: ${{ job.services.postgres.ports['5432'] }}
       - name: Each protection's test fails when the protection is taken out
-        run: npm run removals -- --shard ${{ matrix.shard }}/4
+        env:
+          BASE: ${{ needs.removals-plan.outputs.base }}
+        run: npm run removals -- ${BASE:+--base "$BASE"} --shard ${{ matrix.shard }}/${{ needs.removals-plan.outputs.total }}
 
   image:
     if: github.event_name == 'pull_request'
@@ -211,7 +255,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, scripts, server, web, e2e, removals, image]
+    needs: [check, scripts, server, web, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -220,7 +264,8 @@ jobs:
     steps:
       - name: Every job must have succeeded
         env:
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.e2e.result }} ${{ needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
+          # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do

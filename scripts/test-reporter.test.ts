@@ -50,6 +50,23 @@ test('a lista dos mais lentos: o resumo do passo traz o teste mais lento primeir
   assert.deepEqual(tests, ['lento', 'rápido \\| com barra'])
 })
 
+test('o tempo de cada arquivo: o resumo e o log trazem a soma dos testes de cada arquivo', () => {
+  const summary = join(directory(), 'summary.md')
+  const source = [
+    "import { describe, test } from 'node:test'",
+    'const wait = () => new Promise((resolve) => setTimeout(resolve, 300))',
+    "describe('grupo', () => { test('a', wait); test('b', wait) })",
+    "test('c', () => {})",
+  ].join('\n')
+  const result = run(source, { GITHUB_STEP_SUMMARY: summary, npm_package_name: '@conexus/x' })
+  assert.equal(result.status, 0, result.stderr)
+  const row = /^\| (\d+\.\d) \| \S*x\.test\.ts \|$/m
+  for (const text of [readFileSync(summary, 'utf8'), result.stdout]) {
+    assert.match(text, /^### Test files of @conexus\/x$/m)
+    assert.ok(Number(row.exec(text)?.[1]) >= 0.6, text)
+  }
+})
+
 test('recusa zero testes', () => {
   const result = run('export {}\n')
   assert.equal(result.status, 1)
