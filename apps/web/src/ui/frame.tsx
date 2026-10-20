@@ -79,12 +79,18 @@ function PhoneTop() {
   )
 }
 
-/** Following a link in the drawer closes it (V56): the drawer closes once a navigation resolves. */
+/**
+ * Following a link in the drawer closes it (V56): the drawer closes once a navigation resolves. The
+ * page's first load has no location to come from, and a drawer opened while it resolves stays open.
+ */
 function CloseOnNavigation() {
   const { setOpenMobile } = useSidebar()
   const router = useRouter()
   useEffect(
-    () => router.subscribe('onResolved', () => setOpenMobile(false)),
+    () =>
+      router.subscribe('onResolved', ({ fromLocation }) => {
+        if (fromLocation !== undefined) setOpenMobile(false)
+      }),
     [router, setOpenMobile],
   )
   return null
