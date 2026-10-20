@@ -11,7 +11,7 @@ import {
   started,
   streamOf,
 } from './test-conversation.ts'
-import { PAGES, printedOf, researching } from './test-research.ts'
+import { FETCH_ERROR, PAGES, printedOf, researching, UNREACHABLE } from './test-research.ts'
 
 type Part = Extract<ConversationEvent, { type: 'part' }>['part']
 
@@ -59,7 +59,7 @@ test('um turno pensa, pesquisa e lê três páginas: o pensamento roda e termina
 
 test('o pensamento, os argumentos, os resultados e o erro de uma ferramenta não saem no stream, na leitura nem no log', async (t) => {
   const printed = printedOf(t)
-  const { hub, ana, conversations, lines } = await conversing(
+  const { hub, ana, conversations, lines, anthropic } = await conversing(
     t,
     await researching(t),
     (config) => ({
@@ -72,23 +72,27 @@ test('o pensamento, os argumentos, os resultados e o erro de uma ferramenta não
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Compare as padarias')).statusCode, 202)
   await stream.turn()
+  const given = anthropic.sent.flatMap((each) => each.texts).join('\n')
+  assert.ok(given.includes(FETCH_ERROR), 'the failed fetch told the model its error')
   const read = await call(hub, ana, 'GET', url)
   assert.equal(read.statusCode, 200)
   for (const text of [stream.seen.raw, read.body, JSON.stringify(lines), printed.join('')]) {
-    assert.doesNotMatch(text, /SECRET-PLANTED-TEXT|secret-planted-text|Vou pesquisar|Conteúdo/)
+    assert.doesNotMatch(
+      text,
+      /SECRET-PLANTED-TEXT|secret-planted-text|Vou pesquisar|Conteúdo|ENOTFOUND/,
+    )
   }
 })
 
 test('uma ferramenta que falha fica `error`, sem o texto do erro; uma desconhecida é `other`', async (t) => {
   const { hub, ana, conversations } = await conversing(t, await researching(t))
   const { events } = await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(toolStates(events).at(-1), {
-    kind: 'other',
-    subject: null,
-    states: ['running', 'error'],
-  })
+  assert.deepEqual(toolStates(events).slice(-2), [
+    { kind: 'read_page', subject: { url: UNREACHABLE, title: null }, states: ['running', 'error'] },
+    { kind: 'other', subject: null, states: ['running', 'error'] },
+  ])
   const raw = JSON.stringify(events)
-  assert.doesNotMatch(raw, /not found|Available tools|planted_tool/)
+  assert.doesNotMatch(raw, /not found|Available tools|planted_tool|ENOTFOUND|SECRET-PLANTED-TEXT/)
 })
 
 test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só, com o modelo e sem segundos', async (t) => {
@@ -108,6 +112,7 @@ test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só,
     { type: 'reasoning', id: '', state: 'completed', seconds: null },
     { ...tool, kind: 'search_web', subject: { query: 'apps de encomenda de padaria' } },
     ...PAGES.map((url) => ({ ...tool, kind: 'read_page', subject: { url, title: null } })),
+    { ...tool, kind: 'read_page', state: 'error', subject: { url: UNREACHABLE, title: null } },
     { ...tool, kind: 'other', state: 'error', subject: null },
     { type: 'text', text: 'Comparei as padarias.' },
   ])

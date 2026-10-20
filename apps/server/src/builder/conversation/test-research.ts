@@ -48,15 +48,22 @@ export async function served(
   return { port: address.port, reached }
 }
 
-/** The public name reaches `port` on this machine, as a public site would; the rest as before. */
-export function routedTo(t: TestContext, name: string, port: number) {
+/**
+ * Each public name reaches its port on this machine, as a public site would, or its lookup fails
+ * with its error, as an unknown name's does; the rest as before.
+ */
+export function routedTo(t: TestContext, routes: Record<string, number | Error>) {
   const before = http.globalAgent
   const agent = new http.Agent()
   const connect = agent.createConnection.bind(agent)
-  agent.createConnection = (options, callback) =>
-    options.hostname === name || options.host === name
-      ? connect({ ...options, host: '127.0.0.1', hostname: '127.0.0.1', port }, callback)
-      : connect(options, callback)
+  const routed = new Map(Object.entries(routes))
+  agent.createConnection = (options, callback) => {
+    const to = routed.get(String(options.hostname ?? options.host))
+    if (to === undefined) return connect(options, callback)
+    return typeof to === 'number'
+      ? connect({ ...options, host: '127.0.0.1', hostname: '127.0.0.1', port: to }, callback)
+      : connect({ ...options, lookup: (_name, _options, done) => done(to, '', 0) }, callback)
+  }
   Reflect.set(http, 'globalAgent', agent)
   t.after(() => {
     Reflect.set(http, 'globalAgent', before)
@@ -68,17 +75,21 @@ export function routedTo(t: TestContext, name: string, port: number) {
 export const PAGES = ['/forno', '/encomendas', '/entrega'].map(
   (path) => `http://padaria.example.test${path}`,
 )
+/** A page whose site cannot be reached, and the error its fetch fails with. */
+export const UNREACHABLE = 'http://fora.example.test/'
+export const FETCH_ERROR = 'getaddrinfo ENOTFOUND fora.example.test SECRET-PLANTED-TEXT-ERROR'
 
 /**
  * A provider answer that thinks, searches the web, reads `PAGES` with `web_fetch` and then answers;
  * the title call's answer is the title. Planted text goes in what must stay inside: the thinking,
- * the pages' contents, the search results' addresses and the arguments of an unknown tool.
+ * the pages' contents, the search results' addresses, the error of a page that cannot be reached
+ * and the arguments of an unknown tool.
  */
 export async function researching(t: TestContext): Promise<Anthropic['answer']> {
   const site = await served(t, (path, response) =>
     response.end(`Conteúdo ${path} SECRET-PLANTED-TEXT`),
   )
-  routedTo(t, 'padaria.example.test', site.port)
+  routedTo(t, { 'padaria.example.test': site.port, 'fora.example.test': new Error(FETCH_ERROR) })
   let step = 0
   return (asked) => {
     if (!asked.stream) return { kind: 'text', text: 'Título' }
@@ -92,7 +103,11 @@ export async function researching(t: TestContext): Promise<Anthropic['answer']> 
       blocks: [
         { type: 'thinking', thinking: 'Vou pesquisar. SECRET-PLANTED-TEXT' },
         { type: 'search', query: 'apps de encomenda de padaria', results },
-        ...PAGES.map((url) => ({ type: 'tool_use' as const, name: 'web_fetch', input: { url } })),
+        ...[...PAGES, UNREACHABLE].map((url) => ({
+          type: 'tool_use' as const,
+          name: 'web_fetch',
+          input: { url },
+        })),
         { type: 'tool_use', name: 'planted_tool', input: { note: 'SECRET-PLANTED-TEXT' } },
       ],
     }

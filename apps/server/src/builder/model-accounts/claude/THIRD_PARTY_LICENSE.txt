@@ -1,5 +1,5 @@
-Third-party code in this folder: anthropic-login.ts and subscription-model.ts, from @mastra/code-sdk 1.14.0
-(https://github.com/mastra-ai/mastra), and ../thinking.ts, from @mastra/code-sdk 1.15.0-alpha.3,
+Third-party code in this folder: anthropic-login.ts and subscription-model.ts, and the token budgets
+of ../thinking.ts, from @mastra/code-sdk 1.14.0 (https://github.com/mastra-ai/mastra),
 Copyright (c) 2025 Kepler Software, Inc., licensed under the Apache License, Version 2.0, whose
 text follows. The package ships no NOTICE file.
 

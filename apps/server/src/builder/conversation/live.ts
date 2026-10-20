@@ -97,6 +97,18 @@ function eventId(turn: TurnLog, n: number): EventId {
   return EventId.parse(`${turn.id}.${n}`)
 }
 
+/** An event's place in its turn, from 1, as `eventId` writes it. */
+const EventPlace = z
+  .string()
+  .regex(/^[1-9]\d*$/)
+  .transform(Number)
+  .pipe(z.int())
+/** What an `eventId` names, read back strictly: its turn, and its place in it. */
+const SeenEvent = z
+  .string()
+  .transform((id) => id.split('.'))
+  .pipe(z.tuple([z.uuid(), EventPlace]))
+
 function say(live: Live, turn: TurnLog, event: ConversationEvent): void {
   turn.said += 1
   if (turn.said <= TURN_EVENTS_KEPT) turn.events.push(event)
@@ -212,10 +224,10 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
 export function resumeOf(live: Live, lastEventId: EventId | null): Said[] {
   const turn = live.turn
   if (turn === undefined) return []
-  const [id, number, ...rest] = lastEventId?.split('.') ?? []
-  const seen = id === turn.id && rest.length === 0 ? Number(number) : Number.NaN
+  const read = SeenEvent.safeParse(lastEventId)
+  const seen = read.success && read.data[0] === turn.id ? read.data[1] : undefined
   const keptEvery = turn.said === turn.events.length
-  if (keptEvery && Number.isSafeInteger(seen) && seen >= 1 && seen <= turn.said) {
+  if (keptEvery && seen !== undefined && seen <= turn.said) {
     return turn.events.slice(seen).map((event, at) => ({ id: eventId(turn, seen + at + 1), event }))
   }
   if (turn.ended) return []

@@ -118,7 +118,7 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
       : response.writeHead(302, { location: `http://127.0.0.1:${internal.port}/admin` }).end(),
   )
   resolvesInternally(t, 'intranet.example.test')
-  routedTo(t, 'site.example.test', site.port)
+  routedTo(t, { 'site.example.test': site.port })
   const addresses = [
     `http://127.0.0.1:${internal.port}/admin`,
     `http://intranet.example.test:${internal.port}/admin`,
