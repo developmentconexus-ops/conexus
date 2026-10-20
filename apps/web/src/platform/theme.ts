@@ -1,18 +1,15 @@
 import { useState } from 'react'
+import { pageStorage } from './storage.ts'
 
 type Theme = 'light' | 'dark'
 
 const STORAGE_KEY = 'conexus-theme'
 const DARK_SYSTEM = '(prefers-color-scheme: dark)'
+const picks = pageStorage('local')
 
 function chosen(): Theme | undefined {
-  try {
-    const value = globalThis.localStorage.getItem(STORAGE_KEY)
-    return value === 'light' || value === 'dark' ? value : undefined
-  } catch {
-    // biome-ignore lint/plugin: storage the browser refuses reads as no pick (C53)
-    return undefined
-  }
+  const value = picks.getItem(STORAGE_KEY)
+  return value === 'light' || value === 'dark' ? value : undefined
 }
 
 function shown(): Theme {
@@ -30,12 +27,7 @@ export function useTheme(): { theme: Theme; toggle: () => void } {
   function toggle() {
     const next = theme === 'dark' ? 'light' : 'dark'
     document.documentElement.dataset.theme = next
-    try {
-      globalThis.localStorage.setItem(STORAGE_KEY, next)
-      // biome-ignore lint/plugin: a browser that refuses storage keeps the pick for this page only (web W19)
-    } catch {
-      // The pick still holds for this page when the browser refuses storage (web W19).
-    }
+    picks.setItem(STORAGE_KEY, next)
     setTheme(next)
   }
   return { theme, toggle }
