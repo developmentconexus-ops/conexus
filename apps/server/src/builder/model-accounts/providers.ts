@@ -1,6 +1,7 @@
 import type { Provider } from '@conexus/hub-api'
-import { ProviderId } from '@conexus/hub-api'
+import { ModelId, ProviderId } from '@conexus/hub-api'
 import { PROVIDER_REGISTRY, parseModelString } from '@mastra/core/llm'
+import { effortsOf } from './thinking.ts'
 
 // The router's registry, bundled in the installed @mastra/core (decision 0027): read in memory,
 // never fetched; compose.yaml sets MASTRA_OFFLINE so no refresh ever runs (provider-registry.ts:40-43).
@@ -19,14 +20,17 @@ const KEY_PROVIDERS: ReadonlyMap<ProviderId, Provider> = new Map(
       ([id, config]): Provider => ({
         id: ProviderId.parse(id),
         name: config.name,
-        models: config.models,
+        models: config.models.map((model) => ({
+          id: model,
+          efforts: effortsOf(ModelId.parse(`${id}/${model}`)),
+        })),
       }),
     )
     .sort((left, right) => left.name.localeCompare(right.name, 'pt-BR'))
     .map((provider) => [provider.id, provider]),
 )
 
-/** The providers an account links to by its API key alone, with their models, by name. */
+/** The providers an account links to by its API key alone, with their models and efforts, by name. */
 export function listKeyProviders(): Provider[] {
   return [...KEY_PROVIDERS.values()]
 }

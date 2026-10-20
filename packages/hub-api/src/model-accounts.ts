@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { CompanyId, Revision } from './companies.ts'
-import { ModelId } from './conversations.ts'
+import { Effort, ModelId } from './conversations.ts'
 import { PersonId } from './identity.ts'
 import { defineOperation } from './operation.ts'
 
@@ -39,10 +39,13 @@ export const ACCOUNT_LABEL_MAX_LENGTH = 60
 /** The longest key the Hub takes, in characters. */
 export const ACCOUNT_KEY_MAX_LENGTH = 4096
 
+/** A model of a provider, by its name in the registry, with the efforts it accepts, `off` always. */
+const ProviderModel = z.object({ id: z.string().min(1), efforts: z.array(Effort).min(1) })
+
 export const Provider = z.object({
   id: ProviderId,
   name: z.string().min(1),
-  models: z.array(z.string()),
+  models: z.array(ProviderModel),
 })
 export type Provider = z.infer<typeof Provider>
 

@@ -96,7 +96,9 @@ test('trocar de modelo envia o novo modelo, para as próximas respostas', async 
   expect(screen.getByText('A troca vale para as próximas respostas.')).toBeTruthy()
   await choose(screen.getByLabelText('Fornecedor do modelo'), 'Google')
   await choose(await screen.findByLabelText('Modelo'), 'gemini-2.5-pro')
-  await waitFor(() => expect(sent.at(-1)?.body).toEqual({ model: 'google/gemini-2.5-pro' }))
+  await waitFor(() =>
+    expect(sent.at(-1)?.body).toEqual({ model: 'google/gemini-2.5-pro', effort: 'off' }),
+  )
   expect(sent.at(-1)?.method).toBe('PUT')
 })
 

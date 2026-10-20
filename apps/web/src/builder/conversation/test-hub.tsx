@@ -31,7 +31,10 @@ const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
   { id: 'google', name: 'Google', models: ['gemini-2.5-pro'] },
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
-]
+].map((provider) => ({
+  ...provider,
+  models: provider.models.map((id) => ({ id, efforts: ['off'] })),
+}))
 
 /** A conversation as the Hub reads it, empty and untitled unless `fields` say otherwise. */
 export function conversationOf(fields: Partial<Conversation> & { id: ConversationId }) {
@@ -40,6 +43,7 @@ export function conversationOf(fields: Partial<Conversation> & { id: Conversatio
       title: null,
       createdAt: '2026-10-19T12:00:00.000Z',
       model: MODEL,
+      effort: 'off',
       messages: [],
       ...fields,
     },
@@ -199,7 +203,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       view.conversations = view.conversations.map((one) =>
         one.id === params.id ? { ...one, model } : one,
       )
-      return HttpResponse.json({ model })
+      return HttpResponse.json({ model, effort: 'off' })
     }),
   ]
 }

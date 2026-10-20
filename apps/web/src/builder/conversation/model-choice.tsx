@@ -1,4 +1,5 @@
 import type { CompanyId, Conversation, ProjectId, ProviderId } from '@conexus/hub-api'
+import { providerOfModel } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -39,10 +40,13 @@ export function ModelChoice(props: {
     if (model === null || model === props.conversation.model) return
     setError(undefined)
     setChosen(model)
+    const provider = providers.find((one) => one.id === providerOfModel(model))
+    const efforts = provider?.models.find((one) => `${provider.id}/${one.id}` === model)?.efforts
+    const effort = efforts?.includes(props.conversation.effort) ? props.conversation.effort : 'off'
     try {
       await send.mutateAsync({
         params: { ...props.ids, conversationId: props.conversation.id },
-        body: { model },
+        body: { model, effort },
       })
     } catch (failure) {
       setChosen(undefined)

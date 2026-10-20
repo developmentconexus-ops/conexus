@@ -32,6 +32,7 @@ const CONVERSATION = readConversation.success.body.parse({
     title: TITLE,
     createdAt: '2026-10-19T12:00:00.000Z',
     model: 'anthropic/claude-sonnet-4',
+    effort: 'off',
     messages: [
       {
         id: 'm1',

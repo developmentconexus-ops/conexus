@@ -130,7 +130,13 @@ function modelAccountsPage(id: string, mayManage: boolean): Replies {
       mayManage,
     }),
     'GET /api/model-providers': ok(listModelProviders, {
-      providers: [{ id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4'] }],
+      providers: [
+        {
+          id: 'anthropic',
+          name: 'Anthropic',
+          models: [{ id: 'claude-sonnet-4', efforts: ['off'] }],
+        },
+      ],
     }),
   }
 }

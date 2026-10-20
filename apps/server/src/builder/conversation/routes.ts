@@ -14,7 +14,7 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel } from '../model-accounts/public.ts'
+import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { historyOf, threadModel, titlesOf } from './history.ts'
 import type { Owner } from './live.ts'
@@ -87,7 +87,7 @@ async function created(
   const model = await conversationModel(deps.queue, owner, input.body.model)
   const made =
     earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
-  await deps.sessions.switchModel({ owner, conversationId: made.id, model })
+  await deps.sessions.switchModel({ owner, conversationId: made.id, model, effort: 'off' })
   return { ...made, model }
 }
 
@@ -132,12 +132,14 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
     await store.owned({ person, ...params })
     const owner = ownerOf(input)
     const model = await conversationModel(deps.queue, owner, body.model)
-    await sessions.switchModel({ owner, conversationId: params.conversationId, model })
+    const { effort } = body
+    if (!effortsOf(model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
+    await sessions.switchModel({ owner, conversationId: params.conversationId, model, effort })
     input.log.info(
       { companyId: params.companyId, conversationId: params.conversationId },
       'CONVERSATION_MODEL_SET',
     )
-    return answer({ model })
+    return answer({ model, effort })
   })
 }
 

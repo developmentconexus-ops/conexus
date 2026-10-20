@@ -13,7 +13,16 @@ import {
   problem,
 } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { conversing, hubBeside, MODEL, sent, started, streamOf } from './test-conversation.ts'
+import {
+  conversing,
+  holding,
+  hubBeside,
+  MODEL,
+  PARTIAL,
+  sent,
+  started,
+  streamOf,
+} from './test-conversation.ts'
 
 const DIEGO = { name: 'Diego Melo', email: 'diego@example.test' }
 
@@ -25,7 +34,7 @@ function routesOf(hub: Hub, person: Person, url: string) {
     sent(hub, person, url, 'Olá'),
     hub.app.inject({ method: 'GET', url: `${url}/events`, headers }),
     post(hub, person, `${url}/stop`, {}),
-    call(hub, person, 'PUT', `${url}/model`, { model: MODEL }),
+    call(hub, person, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
   ]
 }
 
@@ -165,7 +174,8 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
   assert.equal(created.statusCode, 422)
   assert.equal(codeOf(created), 'MODEL_NO_ACCOUNT')
   const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const switched = await call(hub, ana, 'PUT', `${url}/model`, { model: 'openai/gpt-4' })
+  const gpt = { model: 'openai/gpt-4', effort: 'off' }
+  const switched = await call(hub, ana, 'PUT', `${url}/model`, gpt)
   assert.equal(switched.statusCode, 422)
   assert.equal(codeOf(switched), 'MODEL_NO_ACCOUNT')
   assert.equal(Object((await call(hub, ana, 'GET', url)).json()).conversation.model, MODEL)
@@ -206,4 +216,56 @@ test('a conversa cuja thread o Mastra não tem: 404 CONVERSATION_NOT_FOUND, e a 
     [id],
   )
   assert.deepEqual(rows, [{ count: 0 }])
+})
+
+test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" não, nível recusado é 422, a troca durante o turno vale para o próximo e o nível fica ao reiniciar', async (t) => {
+  const held = holding(t)
+  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    return asked.texts.at(-1) === 'Segura' ? held.reply : { kind: 'text', text: 'Resposta' }
+  })
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  async function effortOn(on: Hub) {
+    return Object((await call(on, ana, 'GET', url)).json()).conversation.effort
+  }
+  function thinkings() {
+    return anthropic.sent.filter((each) => each.stream).map((each) => each.thinking)
+  }
+  function model(effort: string) {
+    return call(hub, ana, 'PUT', `${url}/model`, { model: MODEL, effort })
+  }
+  const HIGH = { type: 'enabled', budget_tokens: 16384 }
+  assert.equal(await effortOn(hub), 'off')
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+
+  const high = await model('high')
+  assert.deepEqual([high.statusCode, high.json()], [200, { model: MODEL, effort: 'high' }])
+  assert.equal((await sent(hub, ana, url, 'Pergunta')).statusCode, 202)
+  await stream.turn()
+  assert.deepEqual(thinkings(), [HIGH])
+
+  const refused = await model('max')
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'EFFORT_UNSUPPORTED'])
+  assert.equal(await effortOn(hub), 'high')
+
+  assert.equal((await sent(hub, ana, url, 'Segura')).statusCode, 202)
+  let said = await stream.said()
+  while (said.type === 'title') said = await stream.said()
+  assert.deepEqual(said, { type: 'text', delta: PARTIAL })
+  assert.equal((await model('off')).statusCode, 200)
+  held.release()
+  await stream.turn()
+  assert.equal((await sent(hub, ana, url, 'Depois')).statusCode, 202)
+  await stream.turn()
+  assert.deepEqual(thinkings(), [HIGH, HIGH, null], 'the switch held for the next turn only')
+
+  assert.equal((await model('high')).statusCode, 200)
+  const restarted = await hubBeside(t, hub)
+  assert.equal(await effortOn(restarted), 'high')
+  const again = await streamOf(restarted, ana, url)
+  t.after(() => again.close())
+  assert.equal((await sent(restarted, ana, url, 'Reiniciado')).statusCode, 202)
+  await again.turn()
+  assert.deepEqual(thinkings().at(-1), HIGH)
 })

@@ -1,4 +1,4 @@
-import type { ConversationId, EventId, ModelId } from '@conexus/hub-api'
+import type { ConversationId, Effort, EventId, ModelId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
@@ -95,11 +95,15 @@ export class Sessions {
     await this.#builder.controller.deleteSession({ resourceId, scope: conversationId })
   }
 
-  /** Puts the conversation on a model, kept on its thread (`switch`), for its next turns. */
-  async switchModel(input: OfConversation & { model: ModelId }): Promise<void> {
+  /**
+   * Puts the conversation on a model and an effort, kept together on its thread (`switch`), for
+   * its next turns.
+   */
+  async switchModel(input: OfConversation & { model: ModelId; effort: Effort }): Promise<void> {
     const entry = this.#hold(input)
     try {
-      await (await entry.live).session.model.switch(input.model)
+      const { session } = await entry.live
+      await session.model.switch(input.model, { thinkingLevel: input.effort })
     } finally {
       await this.#release(input.conversationId, entry)
     }

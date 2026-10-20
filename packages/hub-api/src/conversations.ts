@@ -19,6 +19,10 @@ export function providerOfModel(model: string): string | null {
   return slash > 0 && slash < model.length - 1 ? model.slice(0, slash) : null
 }
 
+/** How hard the model reasons before it answers, the controller's `AgentControllerThinkingLevel`. */
+export const Effort = z.enum(['off', 'low', 'medium', 'high', 'xhigh', 'max'])
+export type Effort = z.infer<typeof Effort>
+
 /** The failures a turn ends with, rows of the failure table that the screen reads by code. */
 export const TurnFailureCode = z.enum([
   'MODEL_NO_ACCOUNT',
@@ -87,6 +91,7 @@ export type ConversationSummary = z.infer<typeof ConversationSummary>
 
 export const Conversation = ConversationSummary.extend({
   model: ModelId,
+  effort: Effort,
   messages: z.array(Message),
 })
 export type Conversation = z.infer<typeof Conversation>
@@ -209,12 +214,12 @@ export const stopConversation = defineOperation({
 
 export const setConversationModel = defineOperation({
   id: 'setConversationModel',
-  summary: 'Changes the model of a conversation, for its next answers.',
+  summary: 'Changes the model of a conversation and its reasoning effort, for its next answers.',
   access: 'session',
   method: 'PUT',
   path: `${BASE}/{conversationId}/model`,
   bodyLimit: 1024,
-  input: { params: OfConversation, body: z.object({ model: ModelId }) },
-  success: { status: 200, body: z.object({ model: ModelId }) },
-  failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT'],
+  input: { params: OfConversation, body: z.object({ model: ModelId, effort: Effort }) },
+  success: { status: 200, body: z.object({ model: ModelId, effort: Effort }) },
+  failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT', 'EFFORT_UNSUPPORTED'],
 })

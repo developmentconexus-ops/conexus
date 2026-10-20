@@ -21,6 +21,8 @@ export type Sent = {
   system: string
   /** The text of the conversation's messages, in order, so a test sees what the model was given. */
   texts: string[]
+  /** The extended thinking the call asked for, as the Messages API body names it, or none. */
+  thinking: Thinking | null
 }
 
 /**
@@ -92,6 +94,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     tools: (body.tools ?? []).map((tool) => tool.function.name),
     system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
     texts,
+    thinking: null,
   }
 }
 
@@ -144,8 +147,12 @@ function chatReplied(sent: Sent, reply: Reply): Response {
   return new Response(lines.join(''), { headers: { 'content-type': 'text/event-stream' } })
 }
 
+const Thinking = z.object({ type: z.string(), budget_tokens: z.number().optional() })
+type Thinking = z.infer<typeof Thinking>
+
 const Body = z.object({
   stream: z.boolean().optional(),
+  thinking: Thinking.optional(),
   tools: z.array(z.object({ name: z.string() })).optional(),
   system: z.union([z.string(), z.array(z.object({ text: z.string() }))]).optional(),
   messages: z.array(z.object({ content: z.union([z.string(), z.array(z.unknown())]) })),
@@ -185,6 +192,7 @@ function sentOf(init: RequestInit | undefined): Sent {
     tools: (body.tools ?? []).map((tool) => tool.name),
     system,
     texts,
+    thinking: body.thinking ?? null,
   }
 }
 

@@ -276,7 +276,10 @@ test('Modelo padrão: fornecedor, busca e modelo, como fornecedor/modelo; fora d
 })
 
 test('Modelo padrão: milhares de modelos não viram milhares de opções; a busca encontra o resto', async () => {
-  const models = Array.from({ length: 3000 }, (_, index) => `modelo-${index}`)
+  const models = Array.from({ length: 3000 }, (_, index) => ({
+    id: `modelo-${index}`,
+    efforts: ['off'],
+  }))
   open(view({ defaultModel: 'grande/modelo-7' }))
   server.use(
     http.get('*/api/model-providers', () =>

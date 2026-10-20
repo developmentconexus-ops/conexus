@@ -71,6 +71,7 @@ export {
   ConversationId,
   ConversationSummary,
   createConversation,
+  Effort,
   listConversations,
   MESSAGE_MAX_LENGTH,
   Message,

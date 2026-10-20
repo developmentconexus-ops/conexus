@@ -30,10 +30,10 @@ export function ModelPicker(props: {
   const modelId = useId()
   const models = props.providers.find((one) => one.id === provider)?.models ?? []
   const wanted = plain(search.trim())
-  const matches = models.filter((model) => plain(model).includes(wanted))
+  const matches = models.filter((model) => plain(model.id).includes(wanted))
   const options = matches.slice(0, SHOWN).map((model) => ({
-    value: `${provider}/${model}`,
-    label: model,
+    value: `${provider}/${model.id}`,
+    label: model.id,
   }))
   return (
     <>

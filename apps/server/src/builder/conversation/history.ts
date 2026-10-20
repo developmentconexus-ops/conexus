@@ -1,5 +1,5 @@
 import type { ConversationId, Message } from '@conexus/hub-api'
-import { ModelId } from '@conexus/hub-api'
+import { Effort, ModelId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
@@ -8,10 +8,11 @@ import type { Owner } from './live.ts'
 import { QUESTION_KEY, Question, questionId, TURN_FAILURES_KEY, TurnFailure } from './live.ts'
 import { messageOf } from './parts.ts'
 
-// What the thread keeps beside its messages: Mastra's model, Conexus's questions and failures.
+// What the thread keeps beside its messages: Mastra's model and effort, Conexus's questions and failures.
 const Metadata = z
   .object({
     currentModelId: ModelId.optional(),
+    thinkingLevel: Effort.optional(),
     [QUESTION_KEY]: z.array(Question).default([]),
     [TURN_FAILURES_KEY]: z.array(TurnFailure).default([]),
   })
@@ -112,5 +113,6 @@ export async function historyOf(builder: Builder, owner: Owner, conversationId: 
   const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
   const asked = unsaved(conversationId, metadata[QUESTION_KEY], messages)
   const read = withFailures([...messages, ...asked], metadata[TURN_FAILURES_KEY])
-  return { title: thread.title || null, model, messages: read }
+  const effort = metadata.thinkingLevel ?? 'off'
+  return { title: thread.title || null, model, effort, messages: read }
 }
