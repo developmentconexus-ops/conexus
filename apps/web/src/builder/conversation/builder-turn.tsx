@@ -73,7 +73,7 @@ export function BuilderTurn(props: {
           <ConexusMark size={16} />
           <span className="font-semibold text-text">Conexus</span>
           {props.model !== null && (
-            <span className="min-w-0 truncate rounded-pill bg-surface-3 px-sm py-xs font-mono">
+            <span className="min-w-0 truncate rounded-pill bg-surface-3 px-sm py-xs">
               {modelLabel(props.model)}
             </span>
           )}
