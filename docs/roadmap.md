@@ -51,6 +51,7 @@
     Etapa 12 usada em 2026-10-19 em https://hub.conexus.fun (v0.12.0 a v0.12.2), com o firstmate; 25 e 26 numa cópia do Neon: "Sem titulo"; tela longe do Conexus OS
     12.1 **A conversa no painel.** Conversa no painel e vê o Builder pensar.
        Cartão da etapa 12.1 aprovado em 2026-10-19 (commit bae3907092629491aef6edf2d704623506fc1c71): "Eu aprovo o cartão do 12.1"; "Eu autorizo os dois turnos reais pela assinatura Claude"
+       Etapa 12.1 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.4 a v0.12.7); consertos de "Desligado", ferramenta cortada, citação, tabelas (#188, #191, #192): "Deu certo"
     12.2 **A casa.** Barra lateral, Início e primeira entrada.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
@@ -94,7 +95,6 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 12.1 A conversa no painel | A 12 | Nenhuma | Stream com pensamento e ferramentas. Peças do shadcn |
 | 12.2 A casa | A 12.1 | Nenhuma | Estrutura das telas |
 | 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox, Git. Testes 11, 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |

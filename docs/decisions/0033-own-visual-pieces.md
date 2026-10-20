@@ -19,6 +19,15 @@ copied into `ui/` and painted with the brand; Mastra's own pieces stay out. They
 Hub's policy with no console error, at 390 px and 200% zoom in both themes, and the founder's use
 script runs on them in a real browser (`tests/e2e/conversation.test.ts`).
 
+Founder's calls at 12.1, 2026-10-20: a model's name comes from its id by one rule, falling back to
+the id ("1 C"); the trigger names the model and its level ("2 A"); the Projeto's name heads its
+area ("3 A"); reasoning is a draggable slider ("4") over the levels Mastra lists for the model,
+"Desligado" only where the model can stop, with no "Mínimo"; models keep Mastra's order. On the
+redrawn screen: "2. Okay", "5. Okay". At "Desligado" a Claude model that can stop gets `thinking:
+{type: 'disabled'}`; one that always reasons, by `@ai-sdk/anthropic`'s capabilities, offers no
+"Desligado" (the founder's use, #188). The Builder's text is full GFM, drawn by `react-markdown`,
+`remark-gfm` and `remend` as Mastra's `MarkdownRenderer` does ("A", #192).
+
 ## Consequences
 
 Most administration screens are written new.
