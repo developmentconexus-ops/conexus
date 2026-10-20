@@ -50,6 +50,7 @@
     Cartão da etapa 12 aprovado em 2026-10-19 (commit be086108e6e98df037b74344f180aaa670ef76b0): "1. A"; "2. Autorizo"; "3. Sim"
     Etapa 12 usada em 2026-10-19 em https://hub.conexus.fun (v0.12.0, v0.12.1, v0.12.2), roteiro pelo firstmate e fundador, critérios 25 e 26 numa cópia do Neon: "Sem titulo" (título: v0.12.1; português: v0.12.2); a tela funciona, longe da do Conexus OS: etapas 12.1 e 12.2
     12.1 **A conversa no painel.** Conversa no painel e vê o Builder pensar.
+       Cartão da etapa 12.1 aprovado em 2026-10-19 (commit bae3907092629491aef6edf2d704623506fc1c71): "Eu aprovo o cartão do 12.1"; "Eu autorizo os dois turnos reais pela assinatura Claude"
     12.2 **A casa.** Barra lateral, Início e primeira entrada.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
