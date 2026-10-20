@@ -211,6 +211,7 @@ test('log: CLIENT_REGISTERED e CLIENT_CORRECTED levam o trace e os ids, nunca o 
   const { port, lines, stop } = await spawnHub(t, environment)
   const base = `http://127.0.0.1:${port}`
   const json = { origin: TEST_ORIGIN, 'content-type': 'application/json' }
+  let companyId = ''
   try {
     const signedIn = await fetch(`${base}/api/sessions/current`, {
       method: 'PUT',
@@ -233,14 +234,16 @@ test('log: CLIENT_REGISTERED e CLIENT_CORRECTED levam o trace e os ids, nunca o 
       body: JSON.stringify({ ...BODY, legalName: 'Razão Corrigida', revision: 0 }),
     })
     assert.equal(corrected.status, 200)
-    for (const code of ['CLIENT_REGISTERED', 'CLIENT_CORRECTED']) {
-      const line = lines.find((logged) => logged.msg === code)
-      assert.equal(line?.companyId, client.companyId, code)
-      assert.equal(line?.personId, ana.id, code)
-      assert.match(String(line?.traceId), /^[0-9a-f-]{36}$/, code)
-    }
+    companyId = client.companyId
   } finally {
     await stop()
+  }
+  // The Hub's output is complete only once it has exited, not when the response arrives.
+  for (const code of ['CLIENT_REGISTERED', 'CLIENT_CORRECTED']) {
+    const line = lines.find((logged) => logged.msg === code)
+    assert.equal(line?.companyId, companyId, code)
+    assert.equal(line?.personId, ana.id, code)
+    assert.match(String(line?.traceId), /^[0-9a-f-]{36}$/, code)
   }
   const output = JSON.stringify(lines)
   for (const kept of ['12ABC34501DE35', '12.ABC', 'Empresa Teste', 'Razão', OWNER, ANA.email]) {
