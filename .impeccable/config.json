@@ -2,8 +2,6 @@
   "buildPath": "code",
   "stalenessCheck": false,
   "detector": {
-    "ignoreRules": [
-      "kicker-above-heading"
-    ]
+    "ignoreRules": ["kicker-above-heading"]
   }
 }
