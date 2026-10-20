@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database.ts'
 import type { MailHub, Person } from './test-hub.ts'
 import {
   ANA_OWNER,
@@ -280,15 +280,28 @@ test('ritmo entre empresas: o 11º convite em 60 s conta os enviados nas duas em
   assert.deepEqual(await rows(hub), [])
 })
 
+// The company is held, so with the lock both invitations queue on it in the order they are sent and
+// the first takes the last place; without it both count 99 and queue on the new row's foreign key
+// to the company, and both are created.
 test('limite: com 99 vivos, dois convidantes juntos, um 201 e um 409 INVITATIONS_FULL', async (t) => {
   const { hub, ana, bruno, companyId, invite } = await companyOn(t)
   await seed(hub, companyId, ana.id, 99, true)
-  const both = await Promise.all([invite(ana, INVITEE), invite(bruno, 'edu@example.test')])
-  const answers = both.map((response) => [response.statusCode, codeOf(response)]).sort()
-  assert.deepEqual(answers, [
-    [201, undefined],
-    [409, 'INVITATIONS_FULL'],
-  ])
+  const hold = 'select id from auth.company where id = $1 for update'
+  const answers = await withOwnerLock(hub.test, hold, [companyId], async (release) => {
+    const first = invite(ana, INVITEE)
+    await queued(hub.test, 1, first)
+    const second = invite(bruno, 'edu@example.test')
+    await queued(hub.test, 2, second)
+    await release()
+    return Promise.all([first, second])
+  })
+  assert.deepEqual(
+    answers.map((response) => [response.statusCode, codeOf(response)]),
+    [
+      [201, undefined],
+      [409, 'INVITATIONS_FULL'],
+    ],
+  )
 })
 
 test('limite: com 100 vivos atrás de 100 vencidos, 409 INVITATIONS_FULL; com 99, o centésimo passa', async (t) => {
