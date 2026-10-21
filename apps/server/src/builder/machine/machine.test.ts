@@ -3,8 +3,14 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { Failure } from '../../platform/failure.ts'
-import { COMPANY, INSTALLATION, OTHER_INSTALLATION, PROJECT, world } from './test-machine.ts'
+import {
+  COMPANY,
+  INSTALLATION,
+  OTHER_INSTALLATION,
+  PROJECT,
+  restoreRefused,
+  world,
+} from './test-machine.ts'
 
 test('máquina: o primeiro uso liga, copia o main, grava o id; religar volta ao main; sumida é refeita com o aviso, sem criar outra', async (t) => {
   const { open, phases, control, asOwner, machines, base } = await world(t)
@@ -203,8 +209,7 @@ test('máquina: sem id gravado, só a máquina de nome igual ao deste Projeto é
 })
 
 test('máquina: o Git a restaurar passa pelo início da máquina sem virar MACHINE_UNAVAILABLE', async (t) => {
-  const refused = new Failure('GIT_RESTORE_NEEDED')
-  const { open } = await world(t, 5_000, INSTALLATION, () => Promise.reject(refused))
+  const { open } = await world(t, 5_000, INSTALLATION, restoreRefused)
   await assert.rejects((await open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
     code: 'GIT_RESTORE_NEEDED',
   })

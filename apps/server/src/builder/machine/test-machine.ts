@@ -5,12 +5,18 @@ import type { TestContext } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { LocalSandbox } from '@mastra/core/workspace'
 import { InstallationId } from '../../platform/config-machine.ts'
+import { Failure } from '../../platform/failure.ts'
 import { createTestDatabase } from '../../platform/test-database.ts'
 import { openRepository } from '../git/public.ts'
 import type { Kit, KitFactory } from './kit.ts'
 import { SandboxId } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
+
+/** A seed the Git refuses to make, because its copy holds a version the disk lost. */
+export function restoreRefused(): Promise<Buffer> {
+  return Promise.reject(new Failure('GIT_RESTORE_NEEDED'))
+}
 
 export const INSTALLATION = InstallationId.parse('testinstallation0')
 export const OTHER_INSTALLATION = InstallationId.parse('otherinstallation0')
