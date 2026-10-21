@@ -144,7 +144,7 @@ export class Sessions {
       conversationId,
       projectId: input.projectId,
     })
-    if (!admitted.ok) throw new Failure('RUN_BUSY')
+    if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })
     const runId = admitted.value
     const entry = this.#hold(input)
     const turn = new Turn(input.owner)

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
-import { call, codeOf } from '../../hub/identity/test-hub.ts'
+import { ANA_OWNER, call, codeOf } from '../../hub/identity/test-hub.ts'
 import {
   conversing,
   failuresOf,
@@ -43,7 +43,10 @@ test('uma segunda pergunta durante a resposta: RUN_BUSY e fica fora da conversa;
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
   assert.deepEqual(await stream.said(), { type: 'text', delta: PARTIAL })
   const key = randomUUID()
-  assert.equal(codeOf(await sent(hub, ana, url, 'Segunda', key)), 'RUN_BUSY')
+  const busy = await sent(hub, ana, url, 'Segunda', key)
+  assert.equal(codeOf(busy), 'RUN_BUSY')
+  assert.equal(Object(busy.json()).person, ANA_OWNER.name)
+  assert.equal(Object(busy.json()).title, `O Builder está mudando este app para ${ANA_OWNER.name}.`)
   const first = [['person', [{ type: 'text', text: 'Primeira' }]]]
   assert.deepEqual(rolesAndParts(await call(hub, ana, 'GET', url)), first)
   held.release()
