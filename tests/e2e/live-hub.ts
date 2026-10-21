@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { hashPassword } from 'better-auth/crypto'
 import type { Browser, BrowserContext, Page } from 'playwright-core'
+import { testBuilderPorts } from '../../apps/server/src/builder/runs/test-runs.ts'
 import { createStatus } from '../../apps/server/src/hub/status/public.ts'
 import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../apps/server/src/main.ts'
 import { createCloudflareApps } from '../../apps/server/src/platform/cloudflare.ts'
@@ -93,7 +94,9 @@ export async function liveHub(
   const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
+  const { machinesOf, repository, copy } = testBuilderPorts(config)
   const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
+    ...{ machinesOf, repository, copy },
     database: database.database,
     mastraPool: database.mastraPool,
     config,

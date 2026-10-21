@@ -22,7 +22,7 @@ export function ToolGroup(props: { tools: ToolPart[]; working: boolean }) {
   const { tools, working } = props
   const [chosen, setChosen] = useState<boolean>()
   const active = tools.findLast((tool) => tool.state === 'running') ?? tools.at(-1)
-  const failed = tools.some((tool) => tool.state === 'error')
+  const failed = tools.some((tool) => tool.state === 'error' || tool.state === 'denied')
   return (
     <TraceCollapsible open={chosen ?? working} onOpenChange={setChosen}>
       <TraceCollapsibleTrigger>

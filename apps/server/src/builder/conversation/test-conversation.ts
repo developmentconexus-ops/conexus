@@ -23,7 +23,8 @@ import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.t
 import { fakeNeon } from '../../platform/test-neon.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-6'
-export const PARTIAL = 'Começo da resposta'
+/** One full piece of text (200 characters): the journal says text in pieces of that size. */
+export const PARTIAL = 'Começo da resposta. '.repeat(10)
 
 /**
  * A provider answer that sends `PARTIAL` and then holds until released; released at the test's
@@ -107,7 +108,11 @@ export async function hubBeside(t: TestContext, hub: Hub) {
   const { test, config } = hub
   const identity = identityOf({ database: test.database, config, log: silent })
   const postgres = heldCompanyPostgres(config)
-  const ports = testAppPorts(config, { neon: fakeNeon(), cloudflare: fakeCloudflare(), postgres })
+  const ports = testAppPorts(
+    config,
+    { neon: fakeNeon(), cloudflare: fakeCloudflare(), postgres },
+    hub.builder.folder,
+  )
   const subjects = subjectsOf({
     ...{ mastraPool: test.mastraPool, database: test.database, config, identity },
     ...{ ...ports, log: silent },
@@ -121,7 +126,17 @@ export async function hubBeside(t: TestContext, hub: Hub) {
     return closed
   }
   t.after(close)
-  return { ...hub, app, close }
+  const builder = {
+    ...hub.builder,
+    bucket: ports.bucket,
+    control: ports.control,
+    knobs: ports.knobs,
+  }
+  // What `runServer` does once it listens: the turns left open are taken first, the rest settled.
+  function restart() {
+    return subjects.conversations.resumeRuns().then(() => subjects.runs.settleRuns())
+  }
+  return { ...hub, app, runs: subjects.runs, builder, close, restart }
 }
 
 export async function started(hub: Hub, person: Person, conversations: string, body: object = {}) {
@@ -211,6 +226,20 @@ export async function streamOf(hub: Hub, person: Person, url: string, lastEventI
  * One question asked on a new conversation of the Project, and the events of its turn with their
  * ids; `between` runs once the conversation exists.
  */
+/** The conversations of a second Projeto of the same company: its turn runs beside the first's. */
+export async function beside(
+  where: { hub: Hub; person: Person; conversations: string },
+  name: string,
+) {
+  const projects = where.conversations.replace(/\/[^/]+\/conversations$/, '')
+  const made = await post(where.hub, where.person, projects, { name })
+  assert.equal(made.statusCode, 201, made.body)
+  return {
+    ...where,
+    conversations: `${projects}/${String(Object(made.json()).project.id)}/conversations`,
+  }
+}
+
 export async function asked(
   t: TestContext,
   where: { hub: Hub; person: Person; conversations: string; between?: () => Promise<void> },

@@ -35,3 +35,6 @@ waiting for an approval?
 Accepted 2026-10-20. Founder: "Pode deixar como liberar tudo, no futuro pensamos, vamos
 simplificar pelo menos por agora", then "B Eu autorizo". Fixed allow and deny rules return to the
 founder when tools that write or run arrive (step 13).
+2026-10-21, step 13: the rules did not return to the founder; asked whether to keep "nunca yolo" with
+per-tool answers or keep `yolo: true` with the set closed by the mode, he answered "A": `yolo`. The
+workspace's write and command tools run too, and the mode's `availableTools` is enforced at the call.

@@ -110,7 +110,8 @@ test('final image executes the mail bundle through HTTP without a runtime mail t
       `
     import { statSync } from 'node:fs'; import { createRequire } from 'node:module';
     const require = createRequire(import.meta.url);
-    const packages = ['react-email', '@react-email/render', 'vitest', 'vite', 'msw', 'esbuild', 'drizzle-kit'];
+    // esbuild is not listed: @mastra/e2b (the Builder's machine) depends on it at run time.
+    const packages = ['react-email', '@react-email/render', 'vitest', 'vite', 'msw', 'drizzle-kit'];
     const installed = packages.filter(name => { try { require.resolve(name); return true } catch { return false } });
     console.log(JSON.stringify({ installed, bytes: statSync('apps/server/src/hub/identity/invitation-render.mjs').size }));`,
     ]),

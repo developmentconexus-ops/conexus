@@ -8,7 +8,9 @@ import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
+import { MachineLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
+import { ShellOutput } from './shell-output.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
@@ -28,6 +30,14 @@ function PartRow(props: { part: MessagePart; streaming: boolean }) {
       return <ThinkingLine part={part} />
     case 'tool':
       return <ToolRow tool={part} />
+    case 'shell':
+      return <ShellOutput part={part} />
+    case 'machine':
+      return <MachineLine key={part.phase} part={part} />
+    case 'version':
+      return <VersionLine part={part} />
+    case 'file':
+      return null
     case 'notice':
       return (
         <Marker className="text-text">
@@ -53,7 +63,8 @@ function PartRow(props: { part: MessagePart; streaming: boolean }) {
 
 function keyOf(row: Row, at: number): string {
   if (row.kind === 'group') return `group:${row.tools[0]?.id}`
-  return 'id' in row.part ? row.part.id : `${row.part.type}:${at}`
+  if ('id' in row.part) return row.part.id
+  return 'toolId' in row.part ? `${row.part.type}:${row.part.toolId}` : `${row.part.type}:${at}`
 }
 
 /**

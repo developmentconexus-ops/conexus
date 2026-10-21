@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import type { Owner } from './live.ts'
 import {
   QUESTION_KEY,
   Question,
@@ -12,12 +11,15 @@ import {
   THINKING_KEY,
   ThoughtTime,
   TURN_FAILURES_KEY,
+  TURN_PARTS_KEY,
   TurnFailure,
-} from './live.ts'
+  TurnPart,
+} from './kept.ts'
+import type { Owner } from './live.ts'
 import { eventOf, messageOf } from './parts.ts'
 
 // What the thread keeps beside its messages: Mastra's model and effort, Conexus's questions,
-// failures and thinking times.
+// failures, thinking times and the turns' lasting parts.
 const Metadata = z
   .object({
     currentModelId: ModelId.optional(),
@@ -25,6 +27,7 @@ const Metadata = z
     [QUESTION_KEY]: z.array(Question).default([]),
     [TURN_FAILURES_KEY]: z.array(TurnFailure).default([]),
     [THINKING_KEY]: z.array(ThoughtTime).default([]),
+    [TURN_PARTS_KEY]: z.array(TurnPart).default([]),
   })
   .loose()
 
@@ -49,19 +52,48 @@ export async function threadModel(builder: Builder, owner: Owner, conversationId
 }
 
 /** The questions kept on the thread that no saved message of the person's came after. */
+function unsavedQuestions(kept: Question[], messages: Message[]): Question[] {
+  return kept.filter(
+    (asked) =>
+      !messages.some((message) => message.role === 'person' && message.createdAt >= asked.at),
+  )
+}
+
 function unsaved(conversationId: ConversationId, kept: Question[], messages: Message[]): Message[] {
-  return kept
-    .filter(
-      (asked) =>
-        !messages.some((message) => message.role === 'person' && message.createdAt >= asked.at),
-    )
-    .map((asked) => ({
-      id: questionId(conversationId, asked.key),
-      role: 'person',
-      parts: [{ type: 'text', text: asked.content }],
-      model: null,
-      createdAt: asked.at,
-    }))
+  return unsavedQuestions(kept, messages).map((asked) => ({
+    id: questionId(conversationId, asked.key),
+    role: 'person',
+    parts: [{ type: 'text', text: asked.content }],
+    model: null,
+    createdAt: asked.at,
+  }))
+}
+
+/**
+ * The turn an interrupted run was answering: the last question kept on the thread that Mastra has
+ * not saved, to be sent again, or else the last message of the person's that it saved, which the
+ * turn's lasting parts follow. `after` is none for a thread with neither.
+ */
+export async function interruptedTurn(
+  builder: Builder,
+  owner: Owner,
+  conversationId: ConversationId,
+): Promise<{ question: Question | undefined; after: MessageId | undefined }> {
+  const resourceId = memoryOwner(owner)
+  const thread = await builder.memory.getThreadById({ threadId: conversationId, resourceId })
+  if (thread === null) return { question: undefined, after: undefined }
+  const recalled = await builder.memory.recall({
+    threadId: conversationId,
+    resourceId,
+    perPage: false,
+  })
+  const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
+  const question = unsavedQuestions(metadataOf(thread)[QUESTION_KEY], messages).at(-1)
+  const asked = messages.filter((message) => message.role === 'person').at(-1)
+  return {
+    question,
+    after: question === undefined ? asked?.id : questionId(conversationId, question.key),
+  }
 }
 
 /**
@@ -98,6 +130,23 @@ function withFailures(messages: Message[], failures: TurnFailure[]): Message[] {
   return shown
 }
 
+/**
+ * Each turn's lasting parts in the Builder's turn after its message, where the stream said them: a
+ * replaced machine after the tool that started it, the restart and the version at the end.
+ */
+function withKept(messages: Message[], kept: TurnPart[]): Message[] {
+  const shown = [...messages]
+  for (const { after, part } of kept) {
+    const at = shown.findIndex((message) => message.id === after) + 1
+    const turn = shown[at]
+    if (at === 0 || turn?.role !== 'builder') continue
+    const tool = turn.parts.findIndex((each) => each.type === 'tool') + 1
+    const place = part.type === 'machine' && part.phase !== 'resumed' ? tool : turn.parts.length
+    shown[at] = { ...turn, parts: turn.parts.toSpliced(place, 0, part) }
+  }
+  return shown
+}
+
 /** Each thinking with the seconds the stream said it took, or `null` where none was kept. */
 function withSeconds(messages: Message[], times: ThoughtTime[]): Message[] {
   const seconds = new Map(times.map((time) => [time.id, time.seconds]))
@@ -121,7 +170,8 @@ function untilMessage(messages: Message[], id: MessageId): Message[] {
  * a defect of its creation (`createConversation` puts it on one). Each turn's failure is read back
  * where it happened. A turn in progress is left out after the message it answers: the stream tells
  * it whole, with what Mastra has saved of it so far, and a read that held both would show it twice.
- * Each thinking shows the seconds the stream said, as kept on the thread.
+ * Each thinking shows the seconds the stream said, and each turn its lasting parts, as kept on the
+ * thread.
  */
 export async function historyOf(
   builder: Builder,
@@ -146,7 +196,8 @@ export async function historyOf(
   const asked = unsaved(conversationId, metadata[QUESTION_KEY], messages)
   const settled = inProgress === undefined ? messages : untilMessage(messages, inProgress)
   const timed = withSeconds(settled, metadata[THINKING_KEY])
-  const read = withFailures([...timed, ...asked], metadata[TURN_FAILURES_KEY])
+  const lasting = withKept(timed, metadata[TURN_PARTS_KEY])
+  const read = withFailures([...lasting, ...asked], metadata[TURN_FAILURES_KEY])
   const effort = metadata.thinkingLevel ?? 'off'
   return { title: thread.title || null, model, effort, messages: read }
 }

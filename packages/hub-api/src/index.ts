@@ -84,6 +84,8 @@ export {
   providerOfModel,
   readConversation,
   runningEffort,
+  SHELL_MAX_BYTES,
+  SHELL_MAX_LINES,
   SUBJECT_MAX_LENGTH,
   sendConversationMessage,
   setConversationModel,
@@ -91,7 +93,7 @@ export {
   streamConversation,
   TurnFailureCode,
 } from './conversations.ts'
-export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
+export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export { getHealth, Health } from './health.ts'
 export {
   COOKIE_PREFIX,
@@ -183,4 +185,13 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
+export { RunId } from './runs.ts'
+export {
+  ProjectSource,
+  readProjectFile,
+  readProjectSource,
+  SOURCE_FILE_MAX_BYTES,
+  SOURCE_MAX_FILES,
+  SourceFile,
+} from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'

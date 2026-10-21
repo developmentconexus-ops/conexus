@@ -213,14 +213,18 @@ test('o processo para no meio de um turno: a pergunta não se perde, e aparece u
 
 test('uma pessoa com duas conversas ao mesmo tempo: sessões separadas, eventos sem mistura', async (t) => {
   const held = holding(t)
-  const { hub, ana, conversations } = await conversing(
+  const { hub, ana, companyId, conversations } = await conversing(
     t,
     (asked) =>
       title(asked) ??
       (asked.texts.includes('Pergunta X') ? held.reply : { kind: 'text', text: 'Resposta Y' }),
   )
+  // Two Projetos: one Projeto runs one turn at a time (decision D5).
+  const other = await post(hub, ana, `/api/companies/${companyId}/projects`, { name: 'Pedidos' })
+  const otherId = String(Object(other.json()).project.id)
   const x = `${conversations}/${await started(hub, ana, conversations)}`
-  const y = `${conversations}/${await started(hub, ana, conversations)}`
+  const inOther = `/api/companies/${companyId}/projects/${otherId}/conversations`
+  const y = `${inOther}/${await started(hub, ana, inOther)}`
   const onX = await streamOf(hub, ana, x)
   t.after(() => onX.close())
   const onY = await streamOf(hub, ana, y)

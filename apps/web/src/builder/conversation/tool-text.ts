@@ -10,21 +10,49 @@ const SENTENCES: Record<Kind, Record<ToolPart['state'], string>> = {
     running: 'Lendo uma página',
     completed: 'Leu uma página',
     error: 'Não conseguiu ler uma página',
+    denied: 'Não pôde ler uma página',
   },
   search_web: {
     running: 'Pesquisando na internet',
     completed: 'Pesquisou na internet',
     error: 'Não conseguiu pesquisar na internet',
+    denied: 'Não pôde pesquisar na internet',
   },
   recall: {
     running: 'Relendo conversas anteriores',
     completed: 'Releu conversas anteriores',
     error: 'Não conseguiu reler conversas anteriores',
+    denied: 'Não pôde reler conversas anteriores',
+  },
+  write_file: {
+    running: 'Escrevendo um arquivo',
+    completed: 'Escreveu um arquivo',
+    error: 'Não conseguiu escrever um arquivo',
+    denied: 'Não pôde escrever um arquivo',
+  },
+  edit_file: {
+    running: 'Editando um arquivo',
+    completed: 'Editou um arquivo',
+    error: 'Não conseguiu editar um arquivo',
+    denied: 'Não pôde editar um arquivo',
+  },
+  read_file: {
+    running: 'Lendo um arquivo',
+    completed: 'Leu um arquivo',
+    error: 'Não conseguiu ler um arquivo',
+    denied: 'Não pôde ler um arquivo',
+  },
+  run_command: {
+    running: 'Rodando um comando',
+    completed: 'Rodou um comando',
+    error: 'Um comando falhou',
+    denied: 'Não pôde rodar um comando',
   },
   other: {
     running: 'Usando uma ferramenta',
     completed: 'Usou uma ferramenta',
     error: 'Uma ferramenta falhou',
+    denied: 'Não pôde usar uma ferramenta',
   },
 }
 
@@ -37,6 +65,10 @@ const DONE: Record<Kind, (count: number) => string> = {
   read_page: (count) => `leu ${counted(count, 'página', 'páginas')}`,
   search_web: (count) => `pesquisou ${counted(count, 'vez', 'vezes')}`,
   recall: (count) => `releu conversas anteriores ${counted(count, 'vez', 'vezes')}`,
+  write_file: (count) => `escreveu ${counted(count, 'arquivo', 'arquivos')}`,
+  edit_file: (count) => `editou ${counted(count, 'arquivo', 'arquivos')}`,
+  read_file: (count) => `leu ${counted(count, 'arquivo', 'arquivos')}`,
+  run_command: (count) => `rodou ${counted(count, 'comando', 'comandos')}`,
   other: (count) => `usou ${counted(count, 'ferramenta', 'ferramentas')}`,
 }
 
@@ -50,7 +82,7 @@ export function summaryOf(tools: ToolPart[]): string {
   for (const tool of tools) counts.set(tool.kind, (counts.get(tool.kind) ?? 0) + 1)
   const said = [...counts].map(([kind, count]) => DONE[kind](count)).join(', ')
   const summary = said.charAt(0).toUpperCase() + said.slice(1)
-  const failed = tools.filter((tool) => tool.state === 'error').length
+  const failed = tools.filter((tool) => tool.state === 'error' || tool.state === 'denied').length
   return failed === 0 ? summary : `${summary} · ${failed} ${failed === 1 ? 'falhou' : 'falharam'}`
 }
 

@@ -46,7 +46,7 @@ flowchart LR
   CX --> CF[Cloudflare]
   CX --> EM[E-mail service]
   CX --> CS[Company system, read only]
-  CX --> GC[Git copy host]
+  CX --> GC[R2 bucket, Git copy]
 ```
 
 | Outside system | What crosses | Leaves Brazil |
@@ -57,7 +57,7 @@ flowchart LR
 | Cloudflare | Each request to the Hub and to an app; the apps' code | Request path only |
 | E-mail service | Invitation e-mails [0017] | Yes |
 | Company system | Read-only queries through a connector [0031] | Depends on the company |
-| Git copy host | A copy of each app's repository | To be chosen, step 13 |
+| R2 bucket | Each app's Git bundle [0051] | Request path only |
 
 Each company is told in writing, before it enters, what leaves Brazil [0032].
 
@@ -141,7 +141,7 @@ and tests, and a `public.ts` with what others may use. The import law is
 | A rented server in São Paulo | The server program, from an image built by GitHub Actions and run with Compose, behind the Cloudflare Tunnel. The server opens no port | [0007] |
 | Cloudflare | Tunnel, dispatcher, outbound wall, and a Workers for Platforms namespace for the apps, on a second domain, one host per app and environment | [0018] [0023] [0024] |
 | Neon | Two organizations of Conexus's own: the Hub's, one project with two databases; the companies', one project each, under a key that cannot reach the Hub's | [0008] [0009] [0021] [0040] |
-| E2B | Build machines, under a key used by this installation only | [0028] |
+| E2B | Build machines behind a list of domains, under the founder's free-account key | [0028] [0051] |
 
 **Publish.** A GitHub Release of a commit on `main` builds the image and puts it live, with no
 command on the server; a merge alone publishes nothing [0035] [0044]. Migrations run before the
@@ -226,7 +226,7 @@ with it.
 | Six hours of history on the free plan | A mistake seen the next day cannot be undone | Paid plan with the first company [0009] |
 | The server stops | Hub and published apps stop [0025] | Revisited in step 18 |
 | Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Versions pinned; fallback named in each record |
-| One E2B key | A cleanup in another installation deletes a machine | A key of this installation only [0028] |
+| One E2B key for the founder's account | A sweep deletes another's machine | It kills only marked machines [0051] |
 | The publish runner runs as root on the server | Any writer of the repository can command the server [0035] | Accepted by the founder; forks never reach the runner |
 | The runner registration token passes through one call's environment, not a file (S31) | A token readable by root for one call on the server | Accepted by the founder [0036] |
 | The owner login's key, the app key and the Workers token rest on the server | Root there reads them and changes the edge | Accepted with the runner row [0035] |

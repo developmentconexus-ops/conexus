@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useEffectEvent, useReducer } from 'react'
 import type { z } from 'zod'
 import { HubFailure, hubEvents } from '../../platform/hub.ts'
+import { sourceChanged } from '../source/public.ts'
 import type { Step } from './live.ts'
 import { IDLE, live } from './live.ts'
 import { allConversationsQueryKey, conversationQuery } from './queries.ts'
@@ -61,6 +62,9 @@ async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
     await hooks.queryClient.invalidateQueries({
       queryKey: allConversationsQueryKey(companyId, projectId),
     })
+  }
+  if (event.type === 'part' && event.part.type === 'version') {
+    await sourceChanged(hooks.queryClient, { companyId, projectId })
   }
   // The ended answer stays on screen until the read holds it (`shownAnswer`), so it shows once.
   if (event.type === 'turnEnd') await reread(hooks)

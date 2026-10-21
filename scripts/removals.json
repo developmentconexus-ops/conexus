@@ -2330,5 +2330,247 @@
       "file": "src/db.test.ts",
       "name": "db: chamado depois do prazo da chamada"
     }
+  },
+  {
+    "id": "machine-fs-real-path",
+    "file": "apps/server/src/builder/machine/filesystem.ts",
+    "find": "    if (result.exitCode === OUTSIDE) throw new PermissionError(path, operation)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "fora.ts"
+    }
+  },
+  {
+    "id": "machine-network-closed",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "denyOut: [ALL_TRAFFIC] },\n      metadata",
+    "replace": "denyOut: [] },\n      metadata",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "lista de domínios"
+    }
+  },
+  {
+    "id": "machine-sweep-mark",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "query: { metadata: mark }",
+    "replace": "query: {}",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "varredura"
+    }
+  },
+  {
+    "id": "run-busy-refused",
+    "file": "apps/server/src/builder/conversation/sessions.ts",
+    "find": "    if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-turns.test.ts",
+      "name": "segunda pergunta durante"
+    }
+  },
+  {
+    "id": "release-stops-runs",
+    "file": "apps/server/src/builder/runs/removal.ts",
+    "find": "    await store.move({ companyId, id: stopped.id, from: stopped.state, to: 'stopped' })\n    await context.stopped(stopped.id)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-removal.test.ts",
+      "name": "no meio de um turno"
+    }
+  },
+  {
+    "id": "sweep-skips-open-runs",
+    "file": "apps/server/src/builder/runs/daily.ts",
+    "find": "    if (open.length > 0) continue\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs.test.ts",
+      "name": "varredura"
+    }
+  },
+  {
+    "id": "sweep-waits-seven-days",
+    "file": "apps/server/src/builder/runs/daily.ts",
+    "find": "    if (Date.now() - row.usedAt.getTime() < IDLE_MS) continue\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs.test.ts",
+      "name": "varredura"
+    }
+  },
+  {
+    "id": "write-needs-read",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "        [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/workspace.test.ts",
+      "name": "fora da pasta do app"
+    }
+  },
+  {
+    "id": "journal-checks-owner",
+    "file": "apps/server/src/builder/runs/store.ts",
+    "find": " and r.owner = ${this.#owner}::uuid",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "dois processos"
+    }
+  },
+  {
+    "id": "command-masked",
+    "file": "apps/server/src/builder/conversation/parts.ts",
+    "find": "cut(masked(command.data.command))",
+    "replace": "cut(command.data.command)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-writing.test.ts",
+      "name": "um turno que escreve"
+    }
+  },
+  {
+    "id": "shell-masked",
+    "file": "apps/server/src/builder/conversation/shell.ts",
+    "find": "masked(this.#tail)",
+    "replace": "this.#tail",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-writing.test.ts",
+      "name": "um turno que escreve"
+    }
+  },
+  {
+    "id": "source-path-guard",
+    "file": "apps/server/src/builder/git/tree.ts",
+    "find": "unsafe || !(await inMain",
+    "replace": "!(await inMain",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/git/source.test.ts",
+      "name": "a aba Código lê o main"
+    }
+  },
+  {
+    "id": "switch-keeps-closed-set",
+    "file": "apps/server/src/builder/model-accounts/processors.ts",
+    "find": "      if (turn.switched && args.activeTools !== undefined) {\n        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)",
+    "replace": "      if (turn.switched) {\n        result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/permissions.test.ts",
+      "name": "a troca automática de modelo estreita o conjunto fechado"
+    }
+  },
+  {
+    "id": "gate-needs-instructions",
+    "file": "apps/server/src/builder/conversation/instructions.ts",
+    "find": "read, write and edit files there",
+    "replace": "read and look at files there",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder"
+    }
+  },
+  {
+    "id": "gate-needs-write-tool",
+    "file": "apps/server/src/builder/conversation/permissions.ts",
+    "find": "  availableTools: [...READ, ...EDIT, ...EXECUTE],",
+    "replace": "  availableTools: [...READ, ...EXECUTE],",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder"
+    }
+  },
+  {
+    "id": "gate-needs-account-pick",
+    "file": "apps/server/src/builder/conversation/builder.ts",
+    "find": "    inputProcessors: [accountPick(deps.queue)],\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder"
+    }
+  },
+  {
+    "id": "reattach-required",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": ", reattach: 'required' as const",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausando ao vencer, com a marca"
+    }
+  },
+  {
+    "id": "lease-renewed-while-saving",
+    "file": "apps/server/src/builder/runs/store.ts",
+    "find": "eq(run.owner, this.#owner), inArray(run.state, LIVE)))",
+    "replace": "eq(run.owner, this.#owner), eq(run.state, 'open')))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-restart.test.ts",
+      "name": "guardar leva mais que a posse: a posse segue renovada, outra mensagem não ganha o Projeto e a versão sai uma vez"
+    }
+  },
+  {
+    "id": "restart-continuation",
+    "file": "apps/server/src/builder/conversation/deliver.ts",
+    "find": "contents: CONTINUATION",
+    "replace": "contents: 'continue'",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-restart.test.ts",
+      "name": "reinício no meio do turno: o turno retomado é avisado do reinício, e termina sem chamar ferramenta guardando o que a máquina já tinha"
+    }
+  },
+  {
+    "id": "lease-yielded-after-wait",
+    "file": "apps/server/src/builder/runs/runs.ts",
+    "find": "    await this.stop()\n  }\n\n  /** The request context of the turn",
+    "replace": "  }\n\n  /** The request context of the turn",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-restart.test.ts",
+      "name": "parar o processo com um turno que não acaba: passada a espera, a posse é entregue e o turno fica livre para outro"
+    }
+  },
+  {
+    "id": "first-tool-boots-machine",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "        hooks: { beforeToolCall: () => this.ensure(session) },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs.test.ts",
+      "name": "recusa ao guardar .2.000 arquivos.: o texto da recusa, o main como era"
+    }
+  },
+  {
+    "id": "sessions-start-in-yolo",
+    "file": "apps/server/src/builder/conversation/permissions.ts",
+    "find": "initialState: { yolo: true }",
+    "replace": "initialState: { yolo: false }",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/permissions.test.ts",
+      "name": "a sessão começa em yolo: nenhuma ferramenta da lista pede aprovação"
+    }
   }
 ]

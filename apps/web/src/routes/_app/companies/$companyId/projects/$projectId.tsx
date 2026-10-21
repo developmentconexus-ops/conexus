@@ -2,6 +2,7 @@ import { ProjectId } from '@conexus/hub-api'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Stage, Workbench } from '../../../../../builder/conversation/public.ts'
+import { Source } from '../../../../../builder/source/public.ts'
 import { Lens, ProjectArea, projectQuery, Section } from '../../../../../hub/projects/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../../../platform/hub.ts'
 
@@ -21,5 +22,7 @@ export const Route = createFileRoute('/_app/companies/$companyId/projects/$proje
     readOrNotFound(
       context.queryClient.ensureQueryData(projectQuery(params.companyId, params.projectId)),
     ),
-  component: () => <Workbench area={<ProjectArea preview={<Stage />} />} panel={<Outlet />} />,
+  component: () => (
+    <Workbench area={<ProjectArea preview={<Stage />} code={<Source />} />} panel={<Outlet />} />
+  ),
 })

@@ -57,7 +57,7 @@ async function hubServing(
     ...{ database: test.database, mastraPool: test.mastraPool, config, identity },
     ...{ ...ports, log },
   })
-  const { projects, apps, conversations } = subjects
+  const { projects, apps, conversations, runs } = subjects
   const webRoot = testWebRoot(t)
   const app = await createHub(config, { status, identity, ...subjects, webRoot })
   // Once, whichever comes first: a test that waits for the Hub's background work, or the test's end.
@@ -78,6 +78,16 @@ async function hubServing(
     cloudflare,
     postgres,
     projects,
+    runs,
+    builder: {
+      repository: ports.repository,
+      bucket: ports.bucket,
+      control: ports.control,
+      knobs: ports.knobs,
+      killed: ports.killed,
+      listed: ports.listed,
+      folder: ports.folder,
+    },
     repair: apps.repair,
     readUnserved: subjects.modelAccounts.readUnserved,
     close,

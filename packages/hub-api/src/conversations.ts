@@ -42,6 +42,9 @@ export function runningEffort(efforts: readonly [Effort, ...Effort[]], effort: E
 export const TurnFailureCode = z.enum([
   'MODEL_NO_ACCOUNT',
   'MODEL_CALL_FAILED',
+  'SAVE_REFUSED',
+  'MACHINE_LOST',
+  'MACHINE_UNAVAILABLE',
   'INTERNAL_UNEXPECTED',
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>
@@ -53,12 +56,18 @@ export type MessageId = z.infer<typeof MessageId>
 export const SUBJECT_MAX_LENGTH = 200
 const Subject = z.string().max(SUBJECT_MAX_LENGTH)
 
-/** What a tool call was about: the page it read, the search it made, or nothing to say. */
+/** What a tool call was about: a page, a search, a file, a command, or nothing to say. */
 const ToolSubject = z.union([
   z.object({ url: z.url(), title: Subject.nullable() }),
   z.object({ query: Subject }),
+  z.object({ path: Subject }),
+  z.object({ command: Subject }),
   z.null(),
 ])
+
+/** The most lines of a command's output a `shell` part keeps, and the most bytes of them. */
+export const SHELL_MAX_LINES = 20
+export const SHELL_MAX_BYTES = 4096
 
 /**
  * A piece of a message. `reasoning` and `tool` carry an `id`: a later part with the same `id`
@@ -78,9 +87,50 @@ export const MessagePart = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('tool'),
     id: z.string().min(1),
-    kind: z.enum(['read_page', 'search_web', 'recall', 'other']),
-    state: z.enum(['running', 'completed', 'error']),
+    kind: z.enum([
+      'read_page',
+      'search_web',
+      'recall',
+      'write_file',
+      'edit_file',
+      'read_file',
+      'run_command',
+      'other',
+    ]),
+    state: z.enum(['running', 'completed', 'error', 'denied']),
     subject: ToolSubject,
+  }),
+  /** A command's last lines, secrets masked, and how it exited; no exit code while it runs. */
+  z.object({
+    type: z.literal('shell'),
+    toolId: z.string().min(1),
+    lines: z.array(z.string()).max(SHELL_MAX_LINES),
+    exitCode: z.int().nullable(),
+  }),
+  z.object({
+    type: z.literal('file'),
+    toolId: z.string().min(1),
+    path: Subject,
+    operation: z.enum(['write', 'edit']),
+  }),
+  /**
+   * What the machine is doing before a tool can run; the latest replaces the one before, except a
+   * replaced machine, which stays said.
+   */
+  z.object({
+    type: z.literal('machine'),
+    phase: z.enum(['starting', 'waking', 'copying', 'replaced', 'resumed', 'saving']),
+  }),
+  /**
+   * The version the turn saved: its number, whether it changed the app, how many files it holds
+   * and how many of them changed.
+   */
+  z.object({
+    type: z.literal('version'),
+    number: z.int().positive(),
+    changed: z.boolean(),
+    files: z.int().nonnegative(),
+    changedFiles: z.int().nonnegative(),
   }),
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('failure'), code: TurnFailureCode }),
@@ -129,10 +179,26 @@ export type ConversationEvent = z.infer<typeof ConversationEvent>
 /** The events that change a message's parts. */
 export type PartEvent = Extract<ConversationEvent, { type: 'text' | 'part' | 'notice' }>
 
+/** What names a part among the message's, so a later one replaces it; none for the rest. */
+function partKey(part: MessagePart): string | undefined {
+  switch (part.type) {
+    case 'reasoning':
+    case 'tool':
+      return `${part.type}:${part.id}`
+    case 'shell':
+    case 'file':
+      return `${part.type}:${part.toolId}`
+    case 'machine':
+      return part.phase === 'replaced' ? undefined : 'machine'
+    default:
+      return undefined
+  }
+}
+
 /**
  * A message's parts after one event, the only fold of events into parts, on the server and the
  * screen alike: text after text is one text, since Claude cuts an answer into one block per span it
- * cites; a part with an `id` replaces the one with the same `id`; any other comes at the end.
+ * cites; a tool, thinking, shell, file or machine part replaces the one it names; any other comes at the end.
  */
 export function applyEvent(parts: readonly MessagePart[], event: PartEvent): MessagePart[] {
   switch (event.type) {
@@ -144,7 +210,8 @@ export function applyEvent(parts: readonly MessagePart[], event: PartEvent): Mes
     }
     case 'part': {
       const { part } = event
-      const at = 'id' in part ? parts.findIndex((each) => 'id' in each && each.id === part.id) : -1
+      const key = partKey(part)
+      const at = key === undefined ? -1 : parts.findIndex((each) => partKey(each) === key)
       return at === -1 ? [...parts, part] : parts.with(at, part)
     }
     case 'notice':
@@ -223,7 +290,7 @@ export const sendConversationMessage = defineOperation({
   },
   attemptKey: true,
   success: { status: 202 },
-  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT'],
+  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT', 'RUN_BUSY'],
 })
 
 export const streamConversation = defineOperation({

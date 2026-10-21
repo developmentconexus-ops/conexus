@@ -33,7 +33,10 @@ ENV CONEXUS_VERSION=${CONEXUS_VERSION} \
     HUB_EDGE_PORT=8081 \
     LOG_LEVEL=info
 # CLIProxyAPI is a Go binary and reads the system roots; node:24-slim ships none (Node carries its own bundle).
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# git keeps each app's repository (decision 0051); its folder is the named volume of compose.yaml,
+# owned by the Hub's user so a new volume starts writable.
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git && rm -rf /var/lib/apt/lists/* \
+  && mkdir -p /var/lib/conexus/git && chown node:node /var/lib/conexus/git
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/server/package.json apps/server/

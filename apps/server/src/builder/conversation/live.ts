@@ -1,78 +1,41 @@
 import { randomUUID } from 'node:crypto'
 import type {
   CompanyId,
-  ConversationEvent,
   ConversationId,
   Message,
+  MessagePart,
   PartEvent,
   PersonId,
+  RunId,
+  TurnFailureCode,
 } from '@conexus/hub-api'
-import { applyEvent, EventId, MessageId, TurnFailureCode } from '@conexus/hub-api'
+import { applyEvent, MessageId } from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { Phase as MachinePhase } from '../machine/public.ts'
 import type { Turn } from '../model-accounts/public.ts'
+import type { Outcome } from '../runs/public.ts'
+import type { Question } from './kept.ts'
+import { keepFailure, keepPart, keptInList, queued, THINKING_KEY, ThoughtTime } from './kept.ts'
 import type { Place } from './parts.ts'
-import { modelOf, partOf } from './parts.ts'
+import { fileOf, modelOf, partOf } from './parts.ts'
+import { ShellTail } from './shell.ts'
+import { TurnTally, turnLine } from './turn-line.ts'
+import type { Journal, Listener, TurnLog } from './turn-log.ts'
+import { flushText, say } from './turn-log.ts'
+
+export type { Question } from './kept.ts'
+export { keepQuestion, questionId } from './kept.ts'
+export type { Listener, Said } from './turn-log.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
-/** An event as the stream sends it, with the id a reconnect names it by. */
-export type Said = { id: EventId; event: ConversationEvent }
-export type Listener = (said: Said) => void
-
-/** The person's questions not yet saved by Mastra, kept on the thread so a crash loses none. */
-export const QUESTION_KEY = 'conexus.questions'
-/** One kept question, named by its message's Idempotency-Key. */
-export const Question = z.object({ key: z.uuid(), content: z.string(), at: z.iso.datetime() })
-export type Question = z.infer<typeof Question>
-
-/**
- * The id of the person's message sent with `key`, made by the server: Mastra saves the message
- * under it, and a read shows the question kept before that save under it too.
- */
-export function questionId(conversationId: ConversationId, key: string): MessageId {
-  return MessageId.parse(`${conversationId}:${key}`)
-}
-
-/** The failures of the turns, kept on the thread so a reload reads each where it happened. */
-export const TURN_FAILURES_KEY = 'conexus.turnFailures'
-/** A turn's failure, after the person's message of that turn. */
-export const TurnFailure = z.object({ after: MessageId, code: TurnFailureCode })
-export type TurnFailure = z.infer<typeof TurnFailure>
-
-/** How long each thinking took, kept on the thread so a read shows it as the stream did (#176). */
-export const THINKING_KEY = 'conexus.thinking'
-/** One thinking's time, named by its part's `id`. */
-export const ThoughtTime = z.object({ id: z.string(), seconds: z.number().int().nonnegative() })
-export type ThoughtTime = z.infer<typeof ThoughtTime>
-
-/**
- * The most events a turn keeps for a reconnect to resume from; past it, a reconnect reads the turn
- * so far instead.
- */
-const TURN_EVENTS_KEPT = 10_000
+/** The version a saved turn reached, with its file counts. */
+type SavedVersion = Extract<Outcome, { kind: 'saved' }>['version']
 
 /** A run Mastra woke for one of this conversation's messages, until its end. */
 type Run = { turn: Turn; ended: () => void }
-
-/**
- * A turn of the Builder's, from the message that opened it to its end, and the last one once over:
- * its answer so far, the events it said, and the thinking whose clock runs.
- */
-type TurnLog = {
-  id: string
-  startedAt: string
-  answer: Message
-  /** The person's message the turn answers, as a read shows it, once known. */
-  after: MessageId | undefined
-  /** Every event said, each named `<id>.<its number>`, up to `TURN_EVENTS_KEPT` of them. */
-  said: number
-  events: ConversationEvent[]
-  thinking: { id: string; since: number } | undefined
-  failureKept: boolean
-  ended: boolean
-}
 
 /** A conversation open in this process: its controller session and its turn. */
 export type Live = {
@@ -81,6 +44,10 @@ export type Live = {
   log: FailureLog
   session: Session
   listeners: Set<Listener>
+  /** Keeps an event in the run's journal (data D25). */
+  journal: Journal
+  /** Stops the turn once its run is not this copy's: Mastra's run aborts and no more is said. */
+  lose: () => void
   turn: TurnLog | undefined
   /** The turns of the messages sent and not yet over: their run, or the one they joined, runs. */
   asked: Set<Turn>
@@ -95,38 +62,21 @@ export type Live = {
   /** The questions on the thread, and the thread's writes in flight, one after the other. */
   questions: Question[]
   kept: Promise<void>
+  /** The run of the message in progress: ends and saves it when Mastra's run is about to end. */
+  run:
+    | { id: RunId; traceId: string; finish: (reason: string) => Promise<Outcome | 'gone'> }
+    | undefined
+  /** Why saving failed, for the turn's end to say (card, the failures table). */
+  saveFailure: TurnFailureCode | undefined
+  /** The version the turn saved, for its end to say. */
+  saved: SavedVersion | undefined
   unsubscribe: () => void
 }
 
-/** The id of the turn's `n`th event: the turn, and the event's place in it. */
-function eventId(turn: TurnLog, n: number): EventId {
-  return EventId.parse(`${turn.id}.${n}`)
-}
-
-/** An event's place in its turn, from 1, as `eventId` writes it. */
-const EventPlace = z
-  .string()
-  .regex(/^[1-9]\d*$/)
-  .transform(Number)
-  .pipe(z.int())
-/** What an `eventId` names, read back strictly: its turn, and its place in it. */
-const SeenEvent = z
-  .string()
-  .transform((id) => id.split('.'))
-  .pipe(z.tuple([z.uuid(), EventPlace]))
-
-function say(live: Live, turn: TurnLog, event: ConversationEvent): void {
-  turn.said += 1
-  if (turn.said <= TURN_EVENTS_KEPT) turn.events.push(event)
-  const said = { id: eventId(turn, turn.said), event }
-  for (const listener of live.listeners) listener(said)
-}
-
-function newTurn(): TurnLog {
-  const id = randomUUID()
+function newTurn(id: RunId | undefined, traceId?: string): TurnLog {
   const startedAt = new Date().toISOString()
   const answer: Message = {
-    id: MessageId.parse(id),
+    id: MessageId.parse(id ?? randomUUID()),
     role: 'builder',
     parts: [],
     model: null,
@@ -137,9 +87,13 @@ function newTurn(): TurnLog {
     startedAt,
     answer,
     after: undefined,
-    said: 0,
-    events: [],
+    buffer: '',
+    flusher: undefined,
+    queue: Promise.resolve(),
     thinking: undefined,
+    shells: new Map(),
+    tally: new TurnTally(),
+    traceId,
     failureKept: false,
     ended: false,
   }
@@ -148,7 +102,7 @@ function newTurn(): TurnLog {
 /** The turn in progress, or a new one, which the stream opens with its `turn`. */
 export function openTurn(live: Live): TurnLog {
   if (live.turn !== undefined && !live.turn.ended) return live.turn
-  const turn = newTurn()
+  const turn = newTurn(live.run?.id, live.run?.traceId)
   live.turn = turn
   const { answer, startedAt } = turn
   say(live, turn, { type: 'turn', message: structuredClone(answer), startedAt })
@@ -157,7 +111,7 @@ export function openTurn(live: Live): TurnLog {
 
 /** The turn an event outside every turn belongs to, such as a title after a restart. */
 function lastTurn(live: Live): TurnLog {
-  live.turn ??= { ...newTurn(), ended: true }
+  live.turn ??= { ...newTurn(undefined), ended: true }
   return live.turn
 }
 
@@ -165,6 +119,14 @@ function lastTurn(live: Live): TurnLog {
 function tell(live: Live, turn: TurnLog, event: PartEvent): void {
   turn.answer.parts = applyEvent(turn.answer.parts, event)
   say(live, turn, event)
+}
+
+/** The machine's step, told as the part that says what the turn waits for; a replaced machine and a restart last. */
+export function tellMachine(live: Live, phase: MachinePhase): void {
+  const turn = openTurn(live)
+  const part: MessagePart = { type: 'machine', phase }
+  tell(live, turn, { type: 'part', part })
+  if (phase === 'replaced' || phase === 'resumed') void keepPart(live, turn, part)
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
@@ -197,7 +159,11 @@ function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
   }
   settleThinking(live, turn)
   // The text arrives by its deltas.
-  if (shown.type !== 'text') tell(live, turn, { type: 'part', part: shown })
+  if (shown.type === 'text') return
+  tell(live, turn, { type: 'part', part: shown })
+  if (shown.type === 'tool' && shown.state === 'error') turn.tally.failed(shown.kind)
+  const file = shown.type === 'tool' ? fileOf(shown) : undefined
+  if (file !== undefined) tell(live, turn, { type: 'part', part: file })
 }
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
@@ -220,31 +186,6 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
   }
 }
 
-/**
- * What a stream that opens reads first: the events after the last one it read, when that one is
- * of the turn in progress or of the last one and every later event is kept; otherwise the turn in
- * progress so far, or nothing when none runs. An id from elsewhere, of another conversation too,
- * names nothing here (security S10).
- */
-export function resumeOf(live: Live, lastEventId: EventId | null): Said[] {
-  const turn = live.turn
-  if (turn === undefined) return []
-  const read = SeenEvent.safeParse(lastEventId)
-  const seen = read.success && read.data[0] === turn.id ? read.data[1] : undefined
-  const keptEvery = turn.said === turn.events.length
-  if (keptEvery && seen !== undefined && seen <= turn.said) {
-    return turn.events.slice(seen).map((event, at) => ({ id: eventId(turn, seen + at + 1), event }))
-  }
-  if (turn.ended) return []
-  const { answer, startedAt } = turn
-  return [
-    {
-      id: eventId(turn, turn.said),
-      event: { type: 'turn', message: structuredClone(answer), startedAt },
-    },
-  ]
-}
-
 /** The controller's events as the person's: text, thinking, tools, notices, the title, the end. */
 export function onEvent(live: Live, event: AgentControllerEvent): void {
   if (event.type === 'info') {
@@ -264,7 +205,33 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
     }
     endTurn(live, { reason: event.reason, turn: run?.turn })
     run?.ended()
+  } else if (event.type === 'usage_update') {
+    live.turn?.tally.step(event.usage.totalTokens)
+  } else if (event.type === 'shell_output' || event.type === 'command_exit') {
+    onShellEvent(live, event)
+  } else if (event.type === 'tool_input_start' || event.type === 'message_end') {
+    // A text part ends where a tool call or the message begins to end: what waits of it is said.
+    if (live.turn !== undefined && !live.turn.ended) flushText(live, live.turn)
   } else onMessageEvent(live, event)
+}
+
+/** A command's output, kept to its last lines: said while it runs, and once more when it exits. */
+function onShellEvent(
+  live: Live,
+  event: Extract<AgentControllerEvent, { type: 'shell_output' | 'command_exit' }>,
+): void {
+  const turn = live.turn
+  if (turn === undefined || turn.ended) return
+  const tail = turn.shells.get(event.toolCallId) ?? new ShellTail()
+  turn.shells.set(event.toolCallId, tail)
+  if (event.type === 'command_exit') {
+    turn.shells.delete(event.toolCallId)
+    tell(live, turn, { type: 'part', part: tail.part(event.toolCallId, event.exitCode) })
+    return
+  }
+  tail.add(event.output)
+  const running = tail.running(event.toolCallId)
+  if (running !== undefined) tell(live, turn, { type: 'part', part: running })
 }
 
 type Ending = {
@@ -281,35 +248,6 @@ function failureOf(ending: Ending): TurnFailureCode | undefined {
 }
 
 /**
- * Keeps `item` in the thread's list under `key`, in place of the one it is the `same` as, after the
- * writes before it. A write that fails is logged and the turn goes on without it.
- */
-function keptInList<T>(
-  live: Live,
-  kept: { key: string; list: z.ZodType<T[]>; item: T; same: (each: T) => boolean },
-): Promise<void> {
-  const { key, list, item, same } = kept
-  return queued(live, async () => {
-    const read = list.safeParse(await live.session.thread.getSetting({ key }))
-    const others = (read.success ? read.data : []).filter((each) => !same(each))
-    await live.session.thread.setSetting({ key, value: [...others, item] })
-  }).catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
-}
-
-/** Keeps the turn's failure on the thread, once per message (`after`). */
-function keepFailure(live: Live, turn: TurnLog, code: TurnFailureCode): Promise<void> {
-  const { after } = turn
-  if (after === undefined || turn.failureKept) return Promise.resolve()
-  turn.failureKept = true
-  return keptInList(live, {
-    key: TURN_FAILURES_KEY,
-    list: z.array(TurnFailure),
-    item: { after, code },
-    same: (each) => each.after === after,
-  })
-}
-
-/**
  * Keeps a failed turn's failure, and waits for the thinking times kept before it, before Mastra
  * says its run ended, so the read a screen makes at the end finds them with the turn's messages,
  * which Mastra saves after the end.
@@ -317,12 +255,33 @@ function keepFailure(live: Live, turn: TurnLog, code: TurnFailureCode): Promise<
 export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Promise<void> {
   const runId = live.session.run.getRunId()
   const run = runId === null ? undefined : live.runs.get(runId)
-  const code = failureOf({ reason, turn: run?.turn })
-  if (run !== undefined && code !== undefined && live.turn !== undefined) {
+  // A save that throws is this turn's failure, said and logged here: Mastra would print the listener's
+  // error raw, and the turn would end without saying why.
+  const outcome = await live.run?.finish(reason ?? 'unknown').then(
+    (finished) => finished,
+    (cause: unknown) => {
+      logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+      live.saveFailure = 'INTERNAL_UNEXPECTED'
+      return undefined
+    },
+  )
+  if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'failed') {
+    live.saveFailure = outcome.code
+  }
+  if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'saved') {
+    live.saved = outcome.version
+    if (live.turn !== undefined) await keepPart(live, live.turn, versionPart(outcome.version))
+  }
+  const code = live.saveFailure ?? failureOf({ reason, turn: run?.turn })
+  if (code !== undefined && live.turn !== undefined && (run !== undefined || live.saveFailure)) {
     await keepFailure(live, live.turn, code)
   }
   // A write of nothing, queued last, settles once every write before it has.
   await queued(live, () => Promise.resolve())
+}
+
+function versionPart(saved: SavedVersion): MessagePart {
+  return { type: 'version', ...saved }
 }
 
 /**
@@ -337,39 +296,22 @@ export function endTurn(live: Live, ending: Ending): void {
   settleThinking(live, turn)
   const ended =
     ending.reason === 'error' || ending.reason === 'aborted' ? ending.reason : 'complete'
-  const code = failureOf(ending)
+  const code = live.saveFailure ?? failureOf(ending)
+  live.saveFailure = undefined
+  if (live.saved !== undefined) {
+    tell(live, turn, { type: 'part', part: versionPart(live.saved) })
+    live.saved = undefined
+  }
   if (code !== undefined) {
     tell(live, turn, { type: 'part', part: { type: 'failure', code } })
     void keepFailure(live, turn, code)
   }
   const { conversationId, owner } = live
-  const fields = {
-    companyId: owner.companyId,
-    conversationId,
-    reason: ended,
-    ...(code && { code }),
-  }
+  const line = turnLine({
+    ...{ runId: turn.id, traceId: turn.traceId, startedAt: turn.startedAt, tally: turn.tally },
+    ...{ end: ended, errorCode: code },
+  })
+  const fields = { companyId: owner.companyId, conversationId, reason: ended, ...line }
   live.log.info(fields, 'CONVERSATION_TURN_ENDED')
   say(live, turn, { type: 'turnEnd', reason: ended })
-}
-
-/**
- * Keeps the person's question on the thread (Mastra saves a run's messages only at its end): with
- * the others of the run in progress, or alone when no other message is in flight, since the
- * earlier ones are saved. The writes go one after the other, so the last one holds every question.
- */
-export function keepQuestion(live: Live, question: Question): Promise<void> {
-  const running = live.asked.size > 0 || live.session.stream.isActive()
-  const others = live.questions.filter((each) => each.key !== question.key)
-  live.questions = running ? [...others, question] : [question]
-  const value = live.questions
-  return queued(live, () => live.session.thread.setSetting({ key: QUESTION_KEY, value }))
-}
-
-/** A write to the thread after the ones before it, which the next write waits for in turn. */
-function queued(live: Live, write: () => Promise<void>): Promise<void> {
-  // biome-ignore lint/plugin: a write that failed went to its own caller; this one only waits for the queue to settle (code C37)
-  const kept = live.kept.catch(() => undefined).then(write)
-  live.kept = kept
-  return kept
 }
