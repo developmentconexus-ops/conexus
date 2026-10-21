@@ -1,12 +1,8 @@
 # Security guide
 
 Who may act, how a person proves identity, where secrets live and what may leave. This guide follows
-[OWASP ASVS 5.0](https://github.com/OWASP/ASVS), targeting level 2. Each rule uses
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a requirement;
-**should** and **should not** need a stated reason to break; **may** is a free choice. Each rule ends
-with its enforcing machine, or "review". A should is not permission to violate an approved security
-boundary, contract or decision; [delivery L12](delivery.md) decides whether a finding blocks.
-[Code C70](code.md) holds for promises here. Better Auth usage belongs to its maintainers' skill.
+[OWASP ASVS 5.0](https://github.com/OWASP/ASVS), targeting level 2. Rules read as the opening of
+the [delivery guide](delivery.md) says. [Code C70](code.md) holds for promises here.
 
 Owners next door: [architecture](../architecture.md) for execution zones, hosts and session owners,
 [data](data.md) for grants/transactions, and [code](code.md) for routes and errors.
@@ -18,9 +14,8 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
   overwriting newer work. A reachable Git object is not disclosure authority. Failure: a candidate
   symlink opens a file outside the tree. Prove this boundary when it is built. [review]
 - **S4.** The generated handler **must** receive only `db`, `caller` and `connectors`, with `caller`
-  filled by the platform. A fourth object is a change of contract [0019]. [app-contract types]
-- **S5.** Generated code **must not** keep mutable state at module level; a Worker is reused between
-  calls. [the Builder's lint, from step 13]
+  filled by the platform [0019]. [app-contract types]
+- **S5.** Generated code **must not** keep mutable state at module level. [the Builder's lint]
 
 ## 2. Who may act (ASVS `V8`)
 
@@ -28,8 +23,8 @@ Owners next door: [architecture](../architecture.md) for execution zones, hosts 
   the resource, including who can revoke another person's sessions. The operator acts on a client's
   company as a fact of the person, the installation role, never as a member of it. Failure: an
   administrator role in one company is used to alter another. [review]
-- **S7.** Every read and write **must** go through admission, which returns a proof value. A write
-  **must** require the proof, so a query before the check does not compile. [TypeScript]
+- **S7.** Every read and write **must** go through admission, and a write **must** require the proof
+  value it returns. [TypeScript]
 - **S8.** Authority consumption **should** recheck the exact resource and current state and
   serialize with concurrent revocation through commit. Failure: permission is revoked after the
   check but the write still commits. A proof type alone cannot guarantee freshness. [review]
@@ -93,8 +88,7 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   navigation from another site: `Sec-Fetch-Site` may be any value when `Sec-Fetch-Mode` is
   `navigate` and `Sec-Fetch-Dest` is `document`, each or absent; its session is read first and may
   be absent; it answers a 303 or the screens' page with 404, never a body that names the person.
-  Writes follow S24. The first four came with step 3's approved card, the fifth with step 8's, the
-  sixth with step 9.1's.
+  Writes follow S24.
   [`access.test.ts`, `http.test.ts`]
 
 ## 5. Abuse
@@ -118,9 +112,8 @@ choice, including the guarantee that a database copy alone opens no Hub session.
   to another row changes the connection's identity. [review]
 - **S33.** The program **must** refuse to start without the installation key, and the founder keeps
   a copy outside the server. [boot check]
-- **S34.** A shared model token refresh **must** be reserved in the database, so two refreshes call
-  the vendor once, and a refused token **must** be stored and shown as "connect again" [0049].
-  [test]
+- **S34.** A shared model token refresh **must** be reserved in the database, and a refused token
+  **must** be stored and shown as "connect again" [0049]. [test]
 - **S36.** A privileged adapter **should** have one owner, its own credential and a configured
   authorized destination, never a generic `fetch(url, secret)`; the Builder's credential-free web
   fetch is Mastra's own guard [0050]. Durable privileged credentials stay out of sandboxes, generated apps,

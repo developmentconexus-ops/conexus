@@ -2,26 +2,20 @@
 
 What counts as proof. This guide adapts the automated testing section of the
 [Microsoft Code With Engineering Playbook](https://github.com/microsoft/code-with-engineering-playbook/tree/main/docs/automated-testing)
-(CC BY 4.0). Each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and
-**must not** state a requirement; **should** and **should not** need a stated reason to break;
-**may** is a free choice. Each rule ends with its enforcing machine, or "review". A should does
-not authorize violating an approved contract or claiming proof that did not run;
-[delivery L12](delivery.md) decides whether a finding blocks. Maintainers' skills own runner usage;
-[0034] owns the choice of test tools.
+(CC BY 4.0). Rules read as the opening of the [delivery guide](delivery.md) says. [0034] owns the
+choice of test tools.
 
 ## 1. The tools and where tests live
 
-- **T3.** Every run **must** have a global timeout: `node:test` has only a per-test one, so the CI
-  job's `timeout-minutes` is the global one. [CI]
+- **T3.** Every run **must** have a global timeout. [CI]
 - **T4.** A skipped test **must** state why, starting with `opt-in:`; a suite that ran zero tests
   **must** fail; and a test **must not** pass silently when the service it needs is missing. [CI]
 
 ## 2. What a test asserts
 
-- **T5.** A test **must** enter through the server's public door: an HTTP request to a route, or the
-  module's `public.ts`. It **must not** import the inside of the server; the exceptions are the test
-  database, the test Neon (`platform/test-neon.ts`, which stands in for Neon's door) and identity's
-  test Hub (`hub/identity/test-hub.ts`), which another module's tests use to sign a person in. [lint]
+- **T5.** A test **must** enter through the server's public door and **must not** import the inside
+  of the server, except the test database, `platform/test-neon.ts` and `hub/identity/test-hub.ts`.
+  [lint]
 - **T6.** Tests **should** exercise observable consumer behavior beside its owner, comparing a
   result that distinguishes the failure rather than only existence. For a route, assert literal
   HTTP status and body; fake replies follow the contract. Generated artifacts are parsed or run,
@@ -33,7 +27,7 @@ not authorize violating an approved contract or claiming proof that did not run;
   implementation classes or production-source spelling. Failure: searching for `timeout` passes
   even when the command ignores it. A lint tool may plant source because source is its real input.
   [review]
-- **T9.** A type rule **must** have a file that fails to compile, such as forging a proof value.
+- **T9.** A type rule **must** have a file that fails to compile.
   [TypeScript]
 
 ## 3. Refusals
@@ -43,10 +37,7 @@ not authorize violating an approved contract or claiming proof that did not run;
   each negative case linked to its protection when replacing tests; remove it only with that
   protection or equivalent proof. Failure: a return-address guard has no case attempting a foreign
   origin, so its removal goes unnoticed. [review]
-- **T12.** Registered mandatory protections **must** be proved by removal with `npm run removals`,
-  through `scripts/removals.json`. Its harness reports `caught`, `survived`, `stale`, `unreachable`
-  or `broken-baseline`; coverage is only the manifest's entries, not every security property.
-  A check is useful only if its bad case is refused, not merely its good case accepted.
+- **T12.** Registered mandatory protections **must** be proved by removal with `npm run removals`.
   [`scripts/removals.ts`]
 - **T13.** Isolation boundaries **should** be proved by a direct attack on the real Worker, build
   machine or data path with other layers disabled, when authorized. Failure: an outer layer
@@ -70,8 +61,7 @@ not authorize violating an approved contract or claiming proof that did not run;
   names the provider, the API, the SDK version and the date beside it, and carries invented
   content only (security S40). A part typed in the shape a screen wants is not a provider
   double. Any turn the screen draws from a stream is also read back after it ends, and the
-  test asserts the two are equal. Failure: every fixture held one whole text part, so a cited
-  answer drew one paragraph per citation once reopened (PR 191). [review]
+  test asserts the two are equal. [review]
 - **T17.** Tests **should not** change authority to pass. Failure: a test-only header still accepted
   in production bypasses the session. [code C67](code.md) restricts `NODE_ENV`, not every possible
   bypass spelling. [review]
@@ -98,9 +88,7 @@ not authorize violating an approved contract or claiming proof that did not run;
   the screen is not an uncaught error. [review]
 - **T25.** A step that changes a screen **must** have a QA report at its candidate commit by an
   agent that did not build the step, following
-  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). Failure: the 12.2 pilot said
-  "Findings: None"; it checked clipping and scrolling, not each screen against its design, and
-  missed links drawn as buttons without their border (ca48451). [review]
+  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). [review]
 
 ## 6. From change to proof
 

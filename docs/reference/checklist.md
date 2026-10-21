@@ -3,9 +3,8 @@
 Questions only a reader can answer, one list for two readers. The builder answers every item on the
 unit before its commit; the reviewer answers them on the whole step. Answer an item by sweeping its
 class across the whole diff, not by fixing the instance first seen, and fix every occurrence. A
-machine refuses a rule only as far as its mark names a tool rule: spend no time on a rule whose mark
-names one, and sweep a rule marked review, or marked review beside a tool rule, for what that rule
-does not refuse. Each question cites the rule it checks.
+tool refuses only what its marked rule names: sweep each item for what the tool does not reach.
+Each question cites the rule it checks.
 
 ## The old code
 

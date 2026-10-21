@@ -3,12 +3,16 @@
 How a roadmap step moves from its card to the founder's use. This guide adapts
 [Google's engineering practices](https://google.github.io/eng-practices/) (CC BY 3.0) and
 [DORA's small-batch capability](https://dora.dev/capabilities/), within the founder's decisions.
-Each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state
-a requirement; **should** and **should not** need a stated reason to break; **may** is free choice.
-Brackets name the enforcing machine, or "review". Guidance does not authorize violating an approved
-contract, product decision or operational prohibition. L12 decides whether a finding holds merge.
 [AGENTS.md](../../AGENTS.md) and its skills own the stages and their procedures. This guide changes
 only with the founder's word.
+
+In every guide, each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and
+**must not** state a requirement; **should** and **should not** need a stated reason to break;
+**may** is free choice. Brackets name the enforcing machine, "rule to write" for a promised check,
+or "review": a Biome or GritQL mark names the exact rule that refuses the case, and a rule no tool
+refuses in full also carries "review". Guidance does not authorize violating an approved contract,
+product decision, security boundary or operational prohibition. L12 decides whether a finding holds
+merge.
 
 ## 1. One step at a time
 
@@ -28,9 +32,8 @@ only with the founder's word.
 
 - **L5.** `docs/steps/` **must** hold one file: the card of the step in construction. The next card
   waits in a draft pull request and enters when the current step closes. [check-docs]
-- **L6.** The founder **must** approve the card's page in Portuguese. The approvals ledger records the
-  approval with his words, the date and the commit of the card; CI checks that commit is an ancestor
-  of the tip and that the card has not changed since. [CI]
+- **L6.** The founder **must** approve the card's page in Portuguese, recorded in the approvals
+  ledger with his words, the date and the card's commit. [CI]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
   consequences of an approved contract/guard in the build report rather than stopping for a missing
   path. A change to visible behavior or scope returns to the card and founder. Founder,
@@ -52,21 +55,22 @@ only with the founder's word.
   review or review robot. Documents-only changes get check-docs and one reader once; a card gets
   one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
   2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". Failure: rereading everything
-  after each fix samples new rules forever; in step 12.3, QA and five reviews ran in a queue and
-  one front carried fifteen fixes and a new list in series. [review]
+  after each fix samples new rules forever. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
   and sweep its class through the whole diff. A third delta check blocking on the same premise
   returns to the card and founder. Failure: fixing one logger key per round leads to six reviews
   of one mechanism. [review]
 - **L12.** Findings **should** be classified by reachable cost, not preference. **Bloqueia** holds
-  merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without
-  that, the finding is **Fechamento**. Fechamento (wording, name, citation, guide amendment) goes
-  on the pull request's closing list. **Issue futura** (outside scope, future scale with a written
-  trigger, development tool) goes to a next-card or method issue. A trigger that the step's use
-  script or its first live turn reaches is not future: that finding is Bloqueia unless the step
-  proves it does not happen. With neither broken rule nor shown defect, start with `Nit:`, as
-  Fechamento. Founder, 2026-10-16: "Concordo". Failure: a stale line citation blocks like a
-  password leak. [review]
+  merge and says "Se for assim para produção, <quem> perde <o quê> quando <situação>"; without that,
+  the finding is **Fechamento**. Bloqueia includes a security failure; lost data; a limit hit at the
+  card's scale; a break of the card's contract; a hand-made piece on an undocumented API; a "must"
+  test that cannot fail (T12); two owners of one rule; red CI. Fechamento (wording, name, citation,
+  guide amendment) goes on the pull request's closing list. **Issue futura** (outside scope, future
+  scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
+  that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
+  unless the step proves it does not happen. With neither broken rule nor shown defect, start with
+  `Nit:`, as Fechamento. Founder, 2026-10-16: "Concordo". Failure: a stale line citation blocks like
+  a password leak. [review]
 
 ## 4. Merge and use
 
@@ -79,8 +83,8 @@ only with the founder's word.
   exact commit. After the opening commit nobody **may** push to `main` directly. Risk: nothing on
   GitHub refuses a direct push. Founder, 2026-10-13, declining GitHub Pro: "3. Nao vou".
   [firstmate's merge script, review]
-- **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled;
-  firstmate's merge script reads that check. [CI]
+- **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled.
+  [CI]
 - **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
   is on the list of expensive choices. [CI, review]
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
@@ -89,8 +93,7 @@ only with the founder's word.
   approvals ledger, and only then **may** the next step start. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
   the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
-  releases its proof creates. Failed use leaves the step open for a fix. [CI, from the first step's
-  closing]
+  releases its proof creates. Failed use leaves the step open for a fix. [CI]
 
 ## 5. Closing a step
 

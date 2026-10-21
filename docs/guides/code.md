@@ -6,16 +6,8 @@ it is silent, the Google guide applies. Its API rules adapt the
 [Zalando RESTful API Guidelines](https://opensource.zalando.com/restful-api-guidelines/) (CC BY 4.0),
 and errors follow [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457). Biome owns formatting.
 
-Each rule uses [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state
-a requirement; **should** and **should not** need a stated reason to break; **may** is a free choice.
-Each rule ends with its enforcing machine, or "review". A mark that names Biome or GritQL names the
-exact rule that refuses the case, such as [Biome useExhaustiveSwitchCases]; a rule no tool refuses
-in full also carries "review", and one no tool refuses is only [review]. [TypeScript] is the
-compiler's type check. A should is engineering guidance, not
-permission to change an approved contract, product decision or security boundary. Whether a
-finding holds a merge is [delivery L12](delivery.md)'s call. Maintainers' skills, checked against
-the installed version, own library usage; this guide decides what they leave open. Where a pstack
-skill conflicts with a guide, the guide wins.
+Rules read as the opening of the [delivery guide](delivery.md) says. Where a pstack skill
+conflicts with a guide, the guide wins.
 
 Owners next door: [architecture](../architecture.md) for concepts and composition,
 [data](data.md), [security](security.md), [testing](testing.md), and [web](web.md).
@@ -23,9 +15,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 ## 1. Modules and owners
 
 - **C3.** Inside a subject, imports **must** be relative and end in `.ts`. [dependency-cruiser]
-- **C4.** Another subject or module **must** be reached only through its `public.ts`. The Builder
-  **may** import the Hub; the Hub **must not** import the Builder: it declares the type it needs and
-  `main.ts` hands it over. [dependency-cruiser]
+- **C4.** Another subject or module **must** be reached only through its `public.ts`, and the Hub
+  **must not** import the Builder. [dependency-cruiser]
 - **C5.** Between programs, code **must** import by package name, such as `@conexus/hub-api`, never
   by path. [dependency-cruiser]
 - **C6.** There **must not** be an import cycle, or a file loose in `hub/` or `builder/` outside a
@@ -36,7 +27,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   gathers the schema for migrations. Hand-written SQL that reads another owner's table is for the
   reader. [dependency-cruiser, review]
 - **C11.** Code **must** use named exports, and **must not** use a default export except where a
-  tool requires one (Google). [Biome noDefaultExport]
+  tool requires one. [Biome noDefaultExport]
 - **C12.** Code **must not** export a mutable binding (`export let`). [review]
 
 ## 2. Layers inside a module
@@ -71,9 +62,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   [review]
 - **C23.** An id **must** be a branded type created only by parsing. A port **must not** take an id
   as `string`. [GritQL conexus-code.grit C23 (server code), review]
-- **C24.** Code **must not** use `any` (use `unknown`), the non-null `!`, or `as` other than
-  `as const`; `strict` stays on. [Biome noExplicitAny, noNonNullAssertion, noUnsafeTypeAssertion;
-  TypeScript]
+- **C24.** Code **must not** use `any`, the non-null `!`, or `as` other than `as const`.
+  [Biome noExplicitAny, noNonNullAssertion, noUnsafeTypeAssertion; TypeScript]
 - **C25.** Code **must** use `type`; `interface` only to augment a library or global declaration.
   [Biome useConsistentTypeDefinitions]
 - **C26.** Each fact **should** have one owner, including types, tables, state, constants and
@@ -89,13 +79,10 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   a same-origin path. Failure: casting `response.json()` accepts an empty id, an invalid row reaches
   business code, or an unchecked return address leaves the origin. Revalidating halfway through
   hides which boundary should have refused it. [GritQL conexus-code.grit C27, review]
-- **C28.** Each operation **must** be declared once, in Zod, in `packages/hub-api`: id, access,
-  method, path, params, query, body, successes and failures. The server, the web and the OpenAPI
-  document read it, and no table beside it lists operations. The OpenAPI document **must** be
-  emitted, never written by hand. [CI]
-- **C29.** An operation **must** be named by verb and noun in camelCase (`deleteProject`); that one
-  string is its export, id, OpenAPI `operationId`, log field and query key. It **must** carry a
-  one-sentence summary. [TypeScript]
+- **C28.** Each operation **must** be declared once, in Zod, in `packages/hub-api`, and the OpenAPI
+  document **must** be emitted, never written by hand. [CI]
+- **C29.** An operation **must** be named by verb and noun in camelCase and carry a one-sentence
+  summary. [TypeScript]
 - **C30.** An operation **should** expose a concrete capability with a consumer in this step, not
   generic `execute(slug, input)`, a caller-chosen URL/connection or arbitrary stored-object fetch.
   Failure: a generic executor bypasses the operation's admission; an unused deletion port creates
@@ -111,9 +98,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   a route that has none, two, or one that does not exist. Only the access module **may**
   read credential cookies and the `Origin`, `Cookie` and `Sec-Fetch-*` headers. [boot check, review]
 - **C35.** Paths **must** live under `/api/`, name resources with plural nouns and ids, and **must
-  not** select an operation (an `{operationSlug}` variable or an `execute` segment). A path
-  namespace grants nothing. The rule covers an operation's path; the `handoff` route of security
-  S48 is not an operation. [CI]
+  not** select an operation. [CI]
 - **C36.** `GET` and `HEAD` **should** have no business side effects. Failure: a browser's link
   prefetch confirms an action the person never requested. The `handoff` kind of security S48
   writes a one-use pass on `GET`, as an OAuth authorization endpoint does; a prefetch makes at most
@@ -135,9 +120,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   the token is not authority, source identity or a snapshot. Founder, 2026-10-16: "1. a".
   Failure: loading every row exhausts memory, or a token from another company opens its list.
   [review]
-- **C45.** The API **must not** carry a version. A removed field or operation **must** leave the
-  contract, the server and the web together, with no deprecation period, and so **must** a changed
-  payload. [TypeScript]
+- **C45.** The API **must not** carry a version, and a removed or changed field or operation
+  **must** leave the contract, the server and the web together. [TypeScript]
 
 ## 7. Errors
 
@@ -172,8 +156,9 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 
 ## 8. Outside calls and time
 
-- **C56.** Every outside system **must** have a port, which is a type, and one adapter; only the
-  adapter **may** import the vendor library or `fetch`. [Biome noRestrictedGlobals, dependency-cruiser]
+- **C56.** Every outside system **must** have a port, which is a type, and one adapter, and only the
+  adapter **may** import the vendor library or `fetch`. [Biome noRestrictedGlobals,
+  dependency-cruiser]
 - **C57.** Work crossing a boundary **should** have a real budget covering lookup, connection and
   reply, propagating cancellation when supported; this includes library paths, spawned commands
   killed at deadline, request/connection timeouts and a bounded retry budget. Failure: a deadline
@@ -196,10 +181,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 
 ## 10. Configuration
 
-- **C67.** Configuration **must** be read in one place, parsed by one Zod schema; no other file
-  **may** read `process.env`. The program **must** refuse to start on a missing or invalid value and
-  name it. Code **must not** read or branch on `NODE_ENV`, which the image does not set; the Fastify
-  and Node maintainers' skills call branching on it a bad practice. [Biome noProcessEnv, boot check, CI job
+- **C67.** Configuration **must** be read in one place, parsed by one Zod schema, and no other file
+  **may** read `process.env` or branch on `NODE_ENV`. [Biome noProcessEnv, boot check, CI job
   `image`]
 
 ## 11. Names and comments
@@ -225,7 +208,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   stays when a guide conflicts: record the conflict for closing; ask the founder when behavior or
   scope changes ([delivery L7](delivery.md)). Failure: using `internalAdapter` when `auth.api`
   already serves creates an unnecessary private dependency. [review]
-- **C76.** A lint suppression **must** name its cause. The count of suppressions lives in a committed
-  file that CI compares, so a pull request that adds one changes that file. [CI]
+- **C76.** A lint suppression **must** name its cause, and the count of suppressions **must** live
+  in a committed file that CI compares. [CI]
 - **C77.** Line width and function and file size **must** have maxima in the Biome configuration,
   applied without suppression. [Biome noExcessiveLinesPerFunction, noExcessiveLinesPerFile]

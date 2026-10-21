@@ -38,12 +38,11 @@ only when the unit brings code; [bug](references/bug.md) only for a defect.
    changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
    repository's verification skill when one exists (a screen: [screen](references/screen.md)). A fix
    that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
-   states, and a new guard gets its removal row (T12).
-   Then answer [the checklist](../../../docs/reference/checklist.md) item by item, sweeping each
-   class across the whole diff, and fill its sweep table in the integration request, saying which
-   file each pattern was copied from. Run pstack `deslop` and `no-comments`; code C70 and C73
-   decide what leaves. Without pstack: reread the diff and remove what a careful engineer would not
-   write.
+   states, and a new guard gets its removal row (T12). Then answer [the
+   checklist](../../../docs/reference/checklist.md) item by item and fill its sweep table; a "nosso"
+   mechanism adds or updates its entry in [boundaries](../../../docs/reference/boundaries.md). Run
+   pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves. Without pstack: reread
+   the diff and remove what a careful engineer would not write.
 7. One commit for the unit on the step branch. The tests the unit touches are green.
 
 ## What it produces

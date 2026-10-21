@@ -34,9 +34,8 @@ The root `package.json` lists every command. Run the tests a change touches befo
 - Only the step in [docs/steps/](docs/steps/) is in construction. Work outside it needs a card.
 - A missing decision stops the work: report it with evidence. Never invent a product rule, a
   boundary or a value to make a test pass.
-- Never merge or push into `main`, and never rewrite shared history (delivery L13, L14, L26).
-- No company data, secret or machine path in code, tests, docs, commits or pull requests (security
-  S40).
+- Delivery L13, L14 and L26 (merge, `main`, shared history); security S40 (no company data,
+  secret or machine path).
 - The old repository is read only, at its frozen commit `e0353c36`
   (`e0353c3608651ad3573dc921fd8230cb318eb543`); code enters only as its card says.
-- What the founder reads is in Portuguese; everything else is in English (delivery L23).
+- Delivery L23 (language).
