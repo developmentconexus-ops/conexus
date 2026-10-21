@@ -42,7 +42,8 @@ test('reconectar com o Last-Event-ID do turno em curso: só o que faltou, sem re
   const again = await streamOf(hub, ana, url, read)
   t.after(() => again.close())
   held.release()
-  const rest = await again.turn()
+  // The title is said on its own clock, and may come before the end.
+  const rest = (await again.turn()).filter((event) => event.type !== 'title')
   assert.deepEqual(rest, [{ type: 'turnEnd', reason: 'complete' }])
   assert.doesNotMatch(again.seen.raw, new RegExp(PARTIAL))
 })

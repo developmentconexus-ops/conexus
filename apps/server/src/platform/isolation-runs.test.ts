@@ -23,9 +23,9 @@ const SEED = `
     ('member-a', '${A}', 'person-a', 'member', now()), ('member-b', '${B}', 'person-b', 'owner', now());
   insert into projects.project(id, company_id, name, attempt_key, created_at) values
     ('project-a', '${A}', 'Encomendas', 'a', now()), ('project-b', '${B}', 'Encomendas', 'b', now());
-  insert into builder.run(id, company_id, project_id, person_id, state, deadline_at, lease_until, owner) values
-    ('${RUN_A}', '${A}', 'project-a', 'person-a', 'open', now() + interval '1 hour', now(), '${OWNER}'),
-    ('${RUN_B}', '${B}', 'project-b', 'person-b', 'saved', now() + interval '1 hour', now(), '${OWNER}');
+  insert into builder.run(id, company_id, project_id, person_id, conversation_id, state, deadline_at, lease_until, owner) values
+    ('${RUN_A}', '${A}', 'project-a', 'person-a', 'conversation-a', 'open', now() + interval '1 hour', now(), '${OWNER}'),
+    ('${RUN_B}', '${B}', 'project-b', 'person-b', 'conversation-b', 'saved', now() + interval '1 hour', now(), '${OWNER}');
   update builder.run set candidate_sha = 'abc' where id = '${RUN_B}';`
 
 function refusedWith(sqlstate: string) {
@@ -73,8 +73,8 @@ test('execuções: um Projeto tem uma execução aberta; terminada, outra se abr
     )
   }
   function open(id: string) {
-    return sql`insert into builder.run(id, company_id, project_id, person_id, state, deadline_at,
-      lease_until, owner) values (${id}, ${A}, 'project-a', 'person-a', 'open', now(), now(), ${OWNER})`
+    return sql`insert into builder.run(id, company_id, project_id, person_id, conversation_id, state, deadline_at,
+      lease_until, owner) values (${id}, ${A}, 'project-a', 'person-a', 'conversation-a', 'open', now(), now(), ${OWNER})`
   }
   await assert.rejects(inA(open('00000000-0000-4000-8000-0000000000a2')), refusedWith('23505'))
   await inA(sql`update builder.run set state = 'saving' where id = ${RUN_A}`)
