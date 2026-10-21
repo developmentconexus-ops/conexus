@@ -4,17 +4,17 @@ import type {
   ConversationEvent,
   ConversationId,
   Message,
-  MessagePart,
+  PartEvent,
   PersonId,
 } from '@conexus/hub-api'
-import { EventId, MessageId, TurnFailureCode } from '@conexus/hub-api'
+import { applyEvent, EventId, MessageId, TurnFailureCode } from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Turn } from '../model-accounts/public.ts'
 import type { Place } from './parts.ts'
-import { appendText, modelOf, partOf } from './parts.ts'
+import { modelOf, partOf } from './parts.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
 /** An event as the stream sends it, with the id a reconnect names it by. */
@@ -155,13 +155,10 @@ function lastTurn(live: Live): TurnLog {
   return live.turn
 }
 
-/** A part with an `id` replaces the one with the same; any other comes at the end. */
-function put(live: Live, turn: TurnLog, part: MessagePart): void {
-  const { parts } = turn.answer
-  const at = 'id' in part ? parts.findIndex((each) => 'id' in each && each.id === part.id) : -1
-  if (at === -1) parts.push(part)
-  else parts[at] = part
-  say(live, turn, { type: 'part', part })
+/** An event that changes the answer: folded into it as the screen folds it, then said. */
+function tell(live: Live, turn: TurnLog, event: PartEvent): void {
+  turn.answer.parts = applyEvent(turn.answer.parts, event)
+  say(live, turn, event)
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
@@ -170,7 +167,10 @@ function settleThinking(live: Live, turn: TurnLog): void {
   if (thinking === undefined) return
   turn.thinking = undefined
   const seconds = Math.ceil((Date.now() - thinking.since) / 1000)
-  put(live, turn, { type: 'reasoning', id: thinking.id, state: 'completed', seconds })
+  tell(live, turn, {
+    type: 'part',
+    part: { type: 'reasoning', id: thinking.id, state: 'completed', seconds },
+  })
 }
 
 function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
@@ -180,12 +180,12 @@ function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
     if (turn.answer.parts.some((each) => each.type === 'reasoning' && each.id === shown.id)) return
     settleThinking(live, turn)
     turn.thinking = { id: shown.id, since: Date.now() }
-    put(live, turn, { ...shown, state: 'running' })
+    tell(live, turn, { type: 'part', part: { ...shown, state: 'running' } })
     return
   }
   settleThinking(live, turn)
   // The text arrives by its deltas.
-  if (shown.type !== 'text') put(live, turn, shown)
+  if (shown.type !== 'text') tell(live, turn, { type: 'part', part: shown })
 }
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
@@ -200,8 +200,7 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
     const turn = live.turn
     if (event.event.type === 'text-delta') {
       settleThinking(live, turn)
-      appendText(turn.answer.parts, event.event.delta)
-      say(live, turn, { type: 'text', delta: event.event.delta })
+      tell(live, turn, { type: 'text', delta: event.event.delta })
     } else if (event.event.type === 'part') {
       const messageId = MessageId.parse(event.id)
       onPart(live, turn, event.event.part, { messageId, index: event.event.index })
@@ -237,9 +236,7 @@ export function resumeOf(live: Live, lastEventId: EventId | null): Said[] {
 /** The controller's events as the person's: text, thinking, tools, notices, the title, the end. */
 export function onEvent(live: Live, event: AgentControllerEvent): void {
   if (event.type === 'info') {
-    const turn = openTurn(live)
-    turn.answer.parts.push({ type: 'notice', text: event.message })
-    say(live, turn, { type: 'notice', text: event.message })
+    tell(live, openTurn(live), { type: 'notice', text: event.message })
   } else if (event.type === 'thread_title_updated') {
     say(live, lastTurn(live), { type: 'title', title: event.title })
   } else if (event.type === 'agent_start') {
@@ -314,7 +311,7 @@ export function endTurn(live: Live, ending: Ending): void {
     ending.reason === 'error' || ending.reason === 'aborted' ? ending.reason : 'complete'
   const code = failureOf(ending)
   if (code !== undefined) {
-    put(live, turn, { type: 'failure', code })
+    tell(live, turn, { type: 'part', part: { type: 'failure', code } })
     void keepFailure(live, turn, code)
   }
   const { conversationId, owner } = live

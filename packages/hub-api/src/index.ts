@@ -65,6 +65,7 @@ export {
   renewInvitation,
 } from './companies.ts'
 export {
+  applyEvent,
   CONVERSATION_HEARTBEAT_MS,
   Conversation,
   ConversationEvent,
@@ -78,6 +79,7 @@ export {
   MessageId,
   MessagePart,
   ModelId,
+  type PartEvent,
   providerOfModel,
   readConversation,
   runningEffort,

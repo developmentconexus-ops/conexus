@@ -1,12 +1,12 @@
 import type { ConversationId, Message, MessageId } from '@conexus/hub-api'
-import { Effort, ModelId } from '@conexus/hub-api'
+import { applyEvent, Effort, ModelId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import type { Owner } from './live.ts'
 import { QUESTION_KEY, Question, questionId, TURN_FAILURES_KEY, TurnFailure } from './live.ts'
-import { messageOf } from './parts.ts'
+import { eventOf, messageOf } from './parts.ts'
 
 // What the thread keeps beside its messages: Mastra's model and effort, Conexus's questions and failures.
 const Metadata = z
@@ -55,8 +55,8 @@ function unsaved(conversationId: ConversationId, kept: Question[], messages: Mes
 }
 
 /**
- * The Builder's messages of one turn as one, as the stream told it: Mastra saves a message per
- * step, and a turn that called tools has several. The turn's model is the last one's.
+ * The Builder's messages of one turn as one, folded as the stream told it: Mastra saves a message
+ * per step, and a turn that called tools has several. The turn's model is the last one's.
  */
 function turnsOf(messages: Message[]): Message[] {
   const turns: Message[] = []
@@ -65,7 +65,7 @@ function turnsOf(messages: Message[]): Message[] {
     if (last?.role === 'builder' && message.role === 'builder') {
       turns[turns.length - 1] = {
         ...last,
-        parts: [...last.parts, ...message.parts],
+        parts: message.parts.map(eventOf).reduce(applyEvent, last.parts),
         model: message.model ?? last.model,
       }
     } else turns.push(message)

@@ -1,5 +1,5 @@
-import type { Message, MessagePart } from '@conexus/hub-api'
-import { MessageId, ModelId, SUBJECT_MAX_LENGTH } from '@conexus/hub-api'
+import type { Message, MessagePart, PartEvent } from '@conexus/hub-api'
+import { applyEvent, MessageId, ModelId, SUBJECT_MAX_LENGTH } from '@conexus/hub-api'
 import type { MastraDBMessage, MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
@@ -106,14 +106,10 @@ export function partOf(part: MastraMessagePart | unknown, place: Place): Message
   return undefined
 }
 
-/**
- * Text after text is one text, live and read again: Mastra keeps each of the provider's blocks,
- * and Claude cuts an answer into one block per span it cites.
- */
-export function appendText(parts: MessagePart[], text: string): void {
-  const last = parts.at(-1)
-  if (last?.type === 'text') last.text += text
-  else parts.push({ type: 'text', text })
+/** A read part as the event the stream would have said it by, for `applyEvent` to fold. */
+export function eventOf(part: MessagePart): PartEvent {
+  if (part.type === 'text') return { type: 'text', delta: part.text }
+  return part.type === 'notice' ? { type: 'notice', text: part.text } : { type: 'part', part }
 }
 
 /** The model that answered a message, `provider/model` as the router names it, or none. */
@@ -135,11 +131,10 @@ export function messageOf(message: MastraDBMessage): Message | undefined {
         : undefined
   if (role === undefined) return undefined
   const id = MessageId.parse(message.id)
-  const parts: MessagePart[] = []
+  let parts: MessagePart[] = []
   for (const [index, part] of message.content.parts.entries()) {
     const shown = partOf(part, { messageId: id, index })
-    if (shown?.type === 'text') appendText(parts, shown.text)
-    else if (shown !== undefined) parts.push(shown)
+    if (shown !== undefined) parts = applyEvent(parts, eventOf(shown))
   }
   return {
     id,
