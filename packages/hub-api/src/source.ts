@@ -47,10 +47,5 @@ export const readProjectFile = defineOperation({
     query: z.object({ commit: Commit, path: z.string().min(1).max(512) }),
   },
   success: { status: 200, body: z.object({ text: z.string() }) },
-  failures: [
-    ...READ_FAILURES,
-    'SOURCE_FILE_NOT_FOUND',
-    'SOURCE_FILE_NOT_TEXT',
-    'SOURCE_FILE_TOO_LARGE',
-  ],
+  failures: [...READ_FAILURES, 'SOURCE_FILE_NOT_FOUND', 'SOURCE_FILE_NOT_TEXT'],
 })
