@@ -1,15 +1,15 @@
-# Etapa 14: App do Builder
+# Etapa 14.1: A Prévia
 
 ## A página do fundador
 
-**No fim desta etapa** você pede um app ao Builder e, no fim do turno, usa esse app de verdade na
-aba **Prévia**, com o banco da empresa num lugar só da prévia; a aba **Alterações** mostra o que
+**No fim desta etapa** você pede um app ao Builder e, quando a versão guardada monta (etapa 14), usa esse
+app de verdade na aba **Prévia**, com o banco da empresa num lugar só da prévia; a aba **Alterações** mostra o que
 cada versão mudou, linha a linha.
 
 **O roteiro de uso.** Padaria Sol, com Ana (dona) e Diego (membro); Empresa B.
 
 1. Como **Ana**, "Encomendas" › **Conversa**: "Crie um app de encomendas com cliente, telefone,
-   produto e data de entrega."    "**Versão 1 guardada**: 7 arquivos", "Preparando a prévia…" e, em uns 14 s, o app na **Prévia**.
+   produto e data de entrega."    Depois do plano (14), "**Versão 1 guardada**, montou", "Preparando a prévia…" e, em até 20 s, o app na **Prévia**.
    Ana cadastra "Maria, (11) 99999-0000, bolo de cenoura, sexta".
 2. Na barra: **Computador | Celular**, **Recarregar**, o endereço, "Versão 1", **Abrir em nova
    aba**. **Celular**: moldura de 390 px.
@@ -24,7 +24,7 @@ cada versão mudou, linha a linha.
 
 **Respondidas.** P1 A: a versão de verdade, montada na máquina e enviada pelo caminho da etapa 9 a
 um endereço de prévia (o D, 6 s, fica para depois). P2 A: um esquema "prévia" no banco
-da empresa. P3 A: o Builder confere e tenta de novo até 3 vezes (4 conferências); se falhar, a Prévia
+da empresa. P3 A: o Builder confere e tenta de novo até 3 vezes (4 conferências, feitas na 14); se falhar, a Prévia
 segue na última boa e aparece **Pedir ao Builder para corrigir**.
 P4 A: o desenho do Conexus OS (barra, abas, "+N", cartão da versão). P3 e P4: "3. A 03 e 04 A
 okay da 14", 2026-10-21.
@@ -33,13 +33,17 @@ mantém as linhas. B: autorizadas as provas reais da U1 (Cloudflare e E2B das et
 Neon de prova, conta Claude, Safari do iPhone). Fundador, 2026-10-21: "2. SIM" e "Autorizo provas
 reais".
 
-**Os limites.** A Prévia aparece uns 14 s depois de "Versão guardada" (laboratório, fora do Hub:
-13,4 a 14,2 s); a meta é 20 s, medida na publicação (32). Guardamos a do ar, a da
+**Os limites.** A meta é a Prévia 20 s depois de "Versão guardada" (no laboratório, com esbuild e fora do
+Hub, 13,4 a 14,2 s), medida na publicação (32). Guardamos a do ar, a da
 prévia e mais 3. Alterações: até 1.000 arquivos e 1 MiB por arquivo.
 
-**Fica de fora.** O D; a tela mudando enquanto o Builder escreve; erros de clique voltando ao
+**Fica de fora.** O plano, as perguntas, o SDK, a casca e a conferência (14); o D; a tela mudando enquanto o Builder escreve; erros de clique voltando ao
 Builder; publicar (17); mudar tabelas com dados (15); **Versões** do Builder (17). Nenhuma
 issue `next-card` toca estas pastas.
+
+**O que mudou da versão do PR 213.** A antiga U3 (montar e voltar ao Builder) e a antiga U8 (a skill)
+foram para a etapa 14, com os critérios 6, 18, 28 e 29; o registro passa a 0056, porque o 0054 já
+existe no `main` e o 0055 é da 14. Os números das unidades e dos critérios ficam os do PR 213.
 
 **Abertas.** Nenhuma.
 
@@ -47,37 +51,33 @@ issue `next-card` toca estas pastas.
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Skills, do mapa | Depende de |
 | --- | --- | --- | --- | --- | --- |
-| U1 | Registro 0054, prova | `docs/` | testes | mastra, cloudflare:wrangler, cloudflare:workers-best-practices | 13 e 12.3 fechadas |
+| U1 | Registro 0056, prova | `docs/` | testes | mastra, cloudflare:wrangler, cloudflare:workers-best-practices | 14 fechada |
 | U2 | O ambiente prévia | `hub/apps/`, `hub/projects/`, `hub-api/`, `platform/company-postgres.ts`, migrações, `edge/src/hub.ts` | dados | drizzle, neon:neon-postgres | U1 |
-| U3 | Montar e voltar ao Builder | `infra/e2b/`, `scripts/app-pack.ts`, `builder/machine/`, `builder/conversation/` | segurança | mastra | U1 |
-| U4 | O envio da prévia no fim do turno | `hub/apps/`, `builder/runs/`, `builder/conversation/parts.ts`, `hub-api/` | dados | mastra, fastify-best-practices | U2, U3 |
+| U4 | O envio da prévia no fim do turno | `hub/apps/`, `builder/runs/`, `builder/conversation/parts.ts`, `hub-api/` | dados | mastra, fastify-best-practices | U2 |
 | U5 | A prévia dentro do Hub | `apps/edge/src/`, `platform/http.ts`, `hub/apps/{handoff,routes}.ts`, `hub-api/src/apps.ts` | segurança | cloudflare:workers-best-practices, cloudflare:wrangler | U2 |
 | U6 | A tela Prévia | `apps/web/src/builder/preview/`, `hub/projects/area.tsx`, `builder/conversation/` (web) | web | router-core, shadcn, playwright-cli | U4, U5 |
 | U7 | Alterações | `builder/git/`, `hub-api/src/source.ts`, `apps/web/src/builder/source/` | web | fastify-best-practices, router-core, shadcn | U1 |
-| U8 | A skill completa do contrato do app | `packages/app-contract/`, `builder/conversation/builder.eval.test.ts` | dados | mastra | U3 |
 | U9 | Percurso e prova | `tests/e2e/`, `docs/how-to/` | testes | playwright-cli | todas |
 
 Em toda unidade, `typescript-magician` e `node`. Nenhum pacote novo.
 
-**Frentes** ("Tudo A", 12.3): frente 1, servidor da prévia, U2, U5 e, após a U3, U4
+**Frentes** ("Tudo A", 12.3): frente 1, servidor da prévia, U2, U5 e U4
 (`hub/apps/`, `apps/edge/`);
-frente 2, máquina e Builder, U3 e U8 (`infra/e2b/`, `builder/machine/`, `packages/app-contract/`);
-frente 3, Alterações, U7 (`builder/git/`, `apps/web/src/builder/source/`). Dividem só
+frente 2, Alterações, U7 (`builder/git/`, `apps/web/src/builder/source/`). Dividem só
 `hub-api/src/{failures,index}.ts`, de quem criar o contrato primeiro; a segunda faz o merge. U6 depois de U4 e U5; U9 por último; U2 em PR próprio (D11). QA (T25) antes das revisões (L9).
 
-**Código alterado** (sem testes nem gerados): U2 310; U3 340; U4 400; U5 200; U6 560; U7 730; U8 330;
-U9 60. Total **2.930**, teto 4.000 (L2).
+**Código alterado** (sem testes nem gerados): U2 310; U4 400; U5 200; U6 560; U7 730;
+U9 60. Total **2.260**, teto 4.000 (L2).
 
 ## O que é nativo e o que é nosso
 
 `@mastra/core` 1.78.0 (`dist/`); `@mastra/e2b` 0.14.1 e `e2b` 2.56.0 (13); fork `ce7e9c30c1`; Conexus
 OS `e0353c36`; vibesdk `9da158d8`, só comparação (prévia por Dynamic Workers, `docs/setup.md:7`). Sem
-Context7: APIs lidas no `dist/` instalado; a U3 relê `@mastra/e2b` na versão da 13.
+Context7: APIs lidas no `dist/` instalado.
 
 | Mecanismo | Nativo | Nosso, e por quê |
 | --- | --- | --- |
-| Conferir e voltar | `processOutputStep`, `abort(motivo, {retry: true})`, `retryCount` (`processors/index.d.ts:543,739`); `maxProcessorRetries` (`agent/agent.types.d.ts:603-606`) | o comando, o erro curto |
-| Rodar e montar | `sandbox.executeCommand` (13 U4); `wrangler deploy --dry-run --minify --outdir` (`scripts/app-pack.ts:31-52`) | um dono, `infra/e2b/pack.ts` (C26) |
+| Rodar e montar | `sandbox.executeCommand` (13 U4); `Machines.pack` (14 U4) | o servidor a refaz na árvore guardada |
 | Subir e servir | `cloudflare.upload`, `DISPATCHER.get` (`send.ts:57-71`, `dispatch.ts:117-150`) | o ambiente |
 | Entrada no iframe | CHIPS, `Partitioned` (Chromium 131); `postMessage` com `targetOrigin` | o salto por `/apps/open` não serve: `access.ts:95-96` recusa `iframe` (S48) e o cookie `Lax` não vai a outro site |
 | Diferenças | Factory `git diff --name-status -z --find-renames`, `--numstat` (fork `mastracode/factory/src/routes/fs.ts:143-152,695-735`) | no servidor (0029) |
@@ -85,7 +85,7 @@ Context7: APIs lidas no `dist/` instalado; a U3 relê `@mastra/e2b` na versão d
 
 ## O fluxo do fim do turno
 
-O processador confere (`pack`) no último passo; falha volta ao Builder (18). A 13 guarda; `previewing`;
+A 14 confere e guarda com `check`; só uma versão `passed` segue (18). A 13 guarda; `previewing`;
 o servidor monta de novo na árvore guardada (19); `sendVersion` com `environment: 'preview'` e chave
 `<runId>.<tentativa>` sobe o Worker e migra o esquema (20); o ponteiro só sobe (21); `saved` só
 depois de apontar. Hub reiniciado: `resumeRuns` refaz a partir de montar (22).
@@ -94,17 +94,16 @@ depois de apontar. Hub reiniciado: `resumeRuns` refaz a partir de montar (22).
 
 Pelas rotas e `main.ts`, com `Machines` dublê (`LocalSandbox`), Cloudflare dublê e modelo roteirizado.
 **Ao vivo**: o não verificado dos estudos, anotado no registro; nenhum teste da suíte chama serviço
-de fora (T14). Valem 2 a 7, autorizados pelo fundador (B). Must, salvo "should".
+de fora (T14). Valem 2 a 5 e 7, autorizados pelo fundador (B). Must, salvo "should".
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova |
 | --- | --- | --- | --- |
-| 1 | U1 | 0054 "proposed" antes do código, com os critérios de B; o já provado, citado, não refeito | o registro |
-| 2 | U1 | **Ao vivo**: Worker `cx-prova-e14-` no despachante em `…--previa`, num iframe do Hub: a entrada da U5 (mensagem, passagem, cookie particionado) vale e o app grava, em Chrome, Firefox e Safari do iPhone; fora do iframe, sem passagem: a página de sessão | 0054 |
-| 3 | U1 | **Ao vivo**: o host `<nome>--<apelido>--previa` responde em HTTPS com o certificado de hoje do domínio dos apps (0041, critério 5) | 0054 |
-| 4 | U1 | **Ao vivo**: 50 scripts no namespace, podados: a contagem volta, cada GET dá 404 após a propagação, anotada | 0054 |
-| 5 | U1 | Sem chamada nova, registra o estudo: `pack` na máquina monta (Node 22, 4 de 4; a 13 traz o 24); do fim do turno à Prévia, 13,4 a 14,2 s fora do Hub; a meta de 20 s no Hub (should) vai ao 32 | 0054 |
-| 6 | U1 | **Ao vivo**: o `abort` com `retry` reabre o laço no `AgentController` (13) com o Claude real | 0054 |
-| 7 | U1 | **Ao vivo**: primeira consulta com o Neon dormindo, anotada | 0054 |
+| 1 | U1 | 0056 "proposed" antes do código, com os critérios de B; o já provado, citado, não refeito | o registro |
+| 2 | U1 | **Ao vivo**: Worker `cx-prova-e14-` no despachante em `…--previa`, num iframe do Hub: a entrada da U5 (mensagem, passagem, cookie particionado) vale e o app grava, em Chrome, Firefox e Safari do iPhone; fora do iframe, sem passagem: a página de sessão | 0056 |
+| 3 | U1 | **Ao vivo**: o host `<nome>--<apelido>--previa` responde em HTTPS com o certificado de hoje do domínio dos apps (0041, critério 5) | 0056 |
+| 4 | U1 | **Ao vivo**: 50 scripts no namespace, podados: a contagem volta, cada GET dá 404 após a propagação, anotada | 0056 |
+| 5 | U1 | Sem chamada nova, registra o estudo: `pack` na máquina monta (Node 22, 4 de 4; a 13 traz o 24); do fim do turno à Prévia, 13,4 a 14,2 s fora do Hub; a meta de 20 s no Hub (should) vai ao 32 | 0056 |
+| 7 | U1 | **Ao vivo**: primeira consulta com o Neon dormindo, anotada | 0056 |
 | 8 | U2 | `previewHostOf` dá `<rótulo>--previa`; rótulo antigo de 56 a 63: `PREVIEW_NO_ADDRESS`; `HostLabel` recusa 3 partes, `PreviewHostLabel` só o sufixo | `address.test.ts` |
 | 9 | U2 | Esquema e logins `app_<id>_previa*`; o login de rodar da prévia lê o esquema do ar: 42501 | `company-postgres.test.ts` |
 | 10 | U2 | Apagar o Projeto: os dois esquemas, os logins, os scripts; falha isolada (12) | `removal.test.ts` |
@@ -115,8 +114,8 @@ de fora (T14). Valem 2 a 7, autorizados pelo fundador (B). Must, salvo "should".
 | 15 | U5 | Host da prévia: cookies `Partitioned`; `frame-ancestors <origem do Hub>`; sem sessão, num iframe: a entrada (só o hash), falha na segunda seguida; em nova aba: o salto de hoje; host do ar igual | `dispatcher-preview.test.ts` |
 | 16 | U5 | `createPreviewHandoff`: membro recebe a passagem; outra empresa: 404 (S10); `Origin` alheio: `REQUEST_ORIGIN_REFUSED`; passagem repetida ou de outro navegador: `APP_HANDOFF_INVALID`; sessão de um ambiente não abre o outro | idem, `handoff-route.test.ts` |
 | 17 | U5 | Hub: `frame-src https://*.<domínio dos apps>`, o resto igual | `http.test.ts` |
-| 18 | U3 | O modelo escreve um app que não monta: o erro volta, ele conserta, a versão monta; 4 conferências falham (a primeira e 3 retentativas): sem `abort`, o turno guarda o código e termina `saved` com `PREVIEW_PACK_FAILED`; `readPreview`: `failed`, com a última boa | `pack.test.ts`, `preview.test.ts` |
-| 19 | U3 | Pasta acima de `APP_LIMITS`, com link, não regular ou fora do `Manifest`: `PREVIEW_PACK_FAILED`, sem ler o resto (C59, S2) | idem |
+| 18 | U4 | Versão guardada com `check: 'failed'` (14): não monta nem sobe; o turno termina `saved` com `preview_failure` `APP_CHECK_FAILED`; `readPreview`: `failed`, com a última boa | `preview.test.ts` |
+| 19 | U4 | Na remontagem do servidor, pasta acima de `APP_LIMITS`, com link, não regular ou fora do `Manifest`: `PREVIEW_PACK_FAILED`, sem ler o resto (C59, S2) | idem |
 | 20 | U4 | Cloudflare recusa (10021): `failed`, `APP_VERSION_NOT_STARTING`, a última boa fica | `preview-send.test.ts` |
 | 21 | U4 | A 3 termina antes da 2: o ponteiro fica na 3 | idem |
 | 22 | U4 | Hub morre em `previewing`: o outro processo refaz, uma versão | `runs-preview.test.ts` |
@@ -125,12 +124,11 @@ de fora (T14). Valem 2 a 7, autorizados pelo fundador (B). Must, salvo "should".
 | 25 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo; trocar de aba não recarrega | navegador (T23) |
 | 26 | U7 | `readChanges`: novo, removido, renomeado, binário, `+N`; acima de 1.000: `SOURCE_CHANGES_TOO_MANY`; de 1 MiB: `SOURCE_DIFF_TOO_LARGE`, sem ler (C44, C59); commit fora do `main`: `SOURCE_VERSION_NOT_FOUND`; alheio: 404 | `changes.test.ts` |
 | 27 | U7 | Unificado, Lado a lado; linhas sem alteração recolhidas | `changes.test.tsx` |
-| 28 | U8 | `validateSkillContent` passa; cobre upsert, pai com filhos, `timestamptz`, erro do banco, limites, CSP, `pack`, migração aplicada | `instructions.test.ts` |
-| 29 | U8 | Portão de montagem no CI, ferramentas falsas: o app gerado monta e o `Manifest` passa; o T14 inteiro é o 32 | `builder.eval.test.ts` |
 | 30 | U9 | Roteiro, dublês | `tests/e2e/builder-preview.test.ts` |
 | 31 | U9 | O relatório de QA no commit candidato (T25) | `conexus-qa` |
 | 32 | U9 | **Ao vivo**, publicado: o roteiro; Prévia aberta com a máquina apagada; tempo até a Prévia no Hub, 20 s (should) | firstmate, fundador (L17) |
 | 33 | U2 | Os dados da prévia sobrevivem: o registro gravado na versão N é lido na N+1, e a Maria continua lá; uma mudança de tabela migra o esquema da prévia (razão 0046, tudo ou nada) e mantém as linhas; migração já aplicada não muda (`APP_MIGRATION_CHANGED`); o esquema do ar não muda | `company-postgres.test.ts`, `preview-send.test.ts` |
+| 34 | U4 | O prompt do Builder volta às frases da Prévia nas linhas 3, 6, 22, 53 e 54 da tabela da 14 (U7), e `prompt.test.ts` passa com elas | `prompt.test.ts` |
 
 ## A matriz de estados
 
@@ -171,7 +169,6 @@ de fora (T14). Valem 2 a 7, autorizados pelo fundador (B). Must, salvo "should".
 
 | Gravação ou comando | Duas vezes | Recusada no meio | Dependência fora | Imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `pack` no processador | um por passo | o Builder lê o erro | a da 13 | — | 18 |
 | `npm ci`, `pack` e leitura após guardar | um por tentativa | `PREVIEW_PACK_FAILED` | idem | `PREVIEW_PACKED` | 19, 22 |
 | `app_version` de prévia | chave única, `REPLAY` | reivindicação, C65 | 503 | `APP_VERSION_RECEIVED` | 12, 13 |
 | Upload do script | mesmo nome por versão | `abandon` apaga | Cloudflare: `failed` | `APP_VERSION_UPLOADED` | 20 |
@@ -186,14 +183,12 @@ de fora (T14). Valem 2 a 7, autorizados pelo fundador (B). Must, salvo "should".
 
 ## O que nasce novo e o que é trazido
 
-| Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Nativo / referência |
+| Mecanismo | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
 | --- | --- | --- | --- | --- | --- |
 | Hospedagem e sessão | nova | `apps/edge/src/`, `hub/apps/` | — | host por ambiente (0024); passagem curta (OS `preview-session.ts:50-69`) | WfP, S22 |
-| Conferir e voltar | nova | `builder/conversation/processors.ts` | — | até 3 tentativas (OS `builder.md:54`) | `processOutputStep` |
-| Montagem | nova, de `scripts/app-pack.ts` do `main` | `infra/e2b/pack.ts` | um dono para os dois | — | `wrangler` |
+| Remontagem no servidor | nova, chama `Machines.pack` (14 U4) | `hub/apps/preview.ts` | — | — | `wrangler` |
 | Barra, estados, cartão | nova, desenho trazido | `apps/web/src/builder/preview/` | textos | `lens-preview.tsx:62,68-117`, `os-34` | Mastra não tem |
 | Alterações | nova, desenho trazido | `apps/web/src/builder/source/`, `builder/git/` | — | `lens-diff.tsx:12-33` | Factory `WorkspaceDiffLines.tsx`, `fs.ts` |
-| Skill | nova, de `builder-skills/conexus-server` (OS) | `packages/app-contract/` | contrato 1 | censo §5, §8, §10 | `createSkill` |
 
 Nenhum código trazido.
 
@@ -201,9 +196,9 @@ Nenhum código trazido.
 
 ## U1 Registro e prova
 
-**Raio.** `docs/decisions/0054-preview-environment.md`, `docs/{index,architecture,roadmap}.md`, `docs/decisions/0020-*.md`: cria, muda; chama: `check-docs`.
+**Raio.** `docs/decisions/0056-preview-environment.md`, `docs/{index,architecture,roadmap}.md`, `docs/decisions/0020-*.md`: cria, muda; chama: `check-docs`.
 
-**Contratos.** 0054: critérios 2 a 7 (conforme B), provados antes do merge; o que o estudo provou, citado com o resultado e o lugar, sem refazer; o D, futuro. Arquitetura §3: "store an app
+**Contratos.** 0056: critérios 2 a 5 e 7 (conforme B), provados antes do merge; o que o estudo provou, citado com o resultado e o lugar, sem refazer; o D, futuro. Arquitetura §3: "store an app
 version" ganha o ambiente; a sessão de Prévia (`:188-190`), a do host da prévia. 0020: "o
 verificador checa antes da Prévia" vira "a Cloudflare recusa o que não inicia (0046)". Roteiro: P1 a P4. Regras: L21, T14, S40.
 
@@ -227,28 +222,10 @@ Record<AppEnvironment, …>`, o dono do nome das colunas. Modelo: `send.ts`. Reg
 
 **Prova.** 8 a 11, 33 e o catálogo.
 
-## U3 Montar na máquina e voltar ao Builder
-
-**Raio.** `infra/e2b/{pack.ts,template.ts}`, `scripts/app-pack.ts`: cria, muda; chama: firstmate
-(template), `npm run app-pack`. `apps/server/src/builder/machine/`: muda; chama: U4, processador.
-`apps/server/src/builder/conversation/{processors,builder}.ts`: cria, muda; chama: `main.ts`.
-
-**Contratos.** `packVersion({source, out}): Packed | PackRefused`, de `pack.ts`, gravado no
-template em `/opt/conexus/pack.mjs`, fora da árvore do app; `npm ci` só sem `node_modules`.
-`PackRefused = {code: 'BUNDLE_FAILED' | 'MANIFEST_INVALID' | 'TOO_MANY_FILES' | 'TOO_LARGE' | 'NOT_REGULAR', tail:
-string}` (`tail`: 20 linhas, 4 KiB, com o filtro de segredos da 13). `Machines.pack({projectId}):
-Result<VersionFolder, PackRefused>`; a saída passa por um esquema Zod `PackOutput` (C27)
-e a pasta por `receiveVersion`; só arquivos regulares (S2). `buildCheck: Processor`, `processOutputStep`: só sem
-`toolCalls` e com arquivos mudados; falha → `abort(<código e tail>, {retry: true})`; no
-`retryCount` 3, deixa terminar: 4 conferências no máximo. `Agent({maxProcessorRetries: 3})`. Modelo: `model-accounts/processors.ts` da 12.
-
-**Ordem.** Regras: C50, C56, C57, C59, C75, S14. Ler inteira `dist/docs/references/docs-agents-processors.md`; S2.
-**Prova.** 18, 19.
-
 ## U4 O envio da prévia
 
 **Raio.** `apps/server/src/hub/apps/{send,public,versions,preview,routes}.ts`, `apps/server/src/builder/runs/`,
-`apps/server/src/builder/conversation/parts.ts`, `packages/hub-api/src/{apps,conversations,failures,index}.ts`:
+`apps/server/src/builder/conversation/{parts.ts,prompt/builder.md}`, `packages/hub-api/src/{apps,conversations,failures,index}.ts`:
 cria, muda; chama: `main.ts`, web, OpenAPI. Modelo: `send.ts`.
 
 **Contratos.** `sendVersion(deps, {…, environment, origin})`: o ar exige `manageAppVersions`; a
@@ -258,11 +235,11 @@ personId, runId, attempt, sourceSha, sourceNumber, folder}): Result<AppVersion, 
 menor ou nulo. `builder.run.state` ganha `previewing` e termina em `saved` (o código guardado), com `preview_failure`
 quando a montagem ou o envio falha: uma versão que não montou nunca é a da prévia nem do ar;
 `preview_attempt integer`, `preview_failure`
-com check pela lista de `VersionFailure` mais `PREVIEW_PACK_FAILED` (C21). `readPreview` `GET …/projects/{projectId}/preview`, `MEMBER`: `{state: 'none'} | {state:
+com check pela lista de `VersionFailure` mais `PREVIEW_PACK_FAILED` e `APP_CHECK_FAILED` (C21). `readPreview` `GET …/projects/{projectId}/preview`, `MEMBER`: `{state: 'none'} | {state:
 'pending', sourceNumber, last?} | {state: 'ready', host, sourceNumber, savedAt} | {state: 'failed',
 sourceNumber, code, last?}`, `last` = o `ready`. `PREVIEW_PACK_FAILED`, `PREVIEW_VERSION_READY` (C48).
 
-**Ordem.** Regras: C21, C48, C62, C65, D22, D27, S8, S10. **Prova.** 12 a 14, 20 a 22, 33.
+**Ordem.** Regras: C21, C48, C62, C65, D22, D27, S8, S10. **Prova.** 12 a 14, 18 a 22, 33, 34.
 
 ## U5 A prévia dentro do Hub
 
@@ -306,14 +283,6 @@ muda; chama: web, OpenAPI. `apps/web/src/builder/source/`: muda; chama: `routeTr
 `SOURCE_VERSION_NOT_FOUND`, 422 `SOURCE_CHANGES_TOO_MANY`, `SOURCE_DIFF_TOO_LARGE` (C48). `Sha` marcado (13 U2). Regras: C27, C44, C57, C59, S10.
 
 **Prova.** 26, 27.
-
-## U8 A skill completa
-
-**Raio.** `packages/app-contract/src/skill/`: cria; chama: Builder (13 U6). `builder.eval.test.ts`: muda; chama: CI.
-
-**Contratos.** O texto ensina o que o 28 lista: upsert numa instrução (`INSERT … ON CONFLICT … DO
-UPDATE … RETURNING`) e pai com filhos por ids do handler, num `db.batch`; `timestamptz` como texto
-ISO, provado por um teste do `db`; CSP do app (`headers.ts:11`). Regras: D28. **Prova.** 28, 29.
 
 ## U9 Percurso e prova publicada
 
