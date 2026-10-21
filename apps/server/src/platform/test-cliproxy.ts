@@ -2,12 +2,13 @@
 // it reads the config it is given, refuses to listen off 127.0.0.1, and writes one login file once
 // the callback brings its state. In the folder after `--control`, the file `mode` says `refuse` to
 // fail the login, and `runs` gets its pid and folder, a line per run. Its model list, `/v1/models`,
-// answers the ids the file `models` holds, comma apart, or the five the founder's proxy listed. Its model route, `/v1`'s Chat
+// answers the ids the file `models` holds, comma apart, or the ids recorded from the founder's proxy. Its model route, `/v1`'s Chat
 // Completions, answers with the recording the file `recording` names (testing T24).
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
-import { endedOf, recordedBody } from './test-recordings.ts'
+import { z } from 'zod'
+import { endedOf, RECORDINGS, recordedBody } from './test-recordings.ts'
 
 const configPath = process.argv[process.argv.indexOf('--config') + 1] ?? ''
 const config = readFileSync(configPath, 'utf8')
@@ -25,13 +26,10 @@ const control = process.argv[process.argv.indexOf('--control') + 1] ?? ''
 appendFileSync(join(control, 'runs'), `${process.pid} ${process.cwd()}\n`)
 const modeFile = join(control, 'mode')
 const mode = existsSync(modeFile) ? readFileSync(modeFile, 'utf8').trim() : 'ok'
-const LISTED = [
-  'gemini-3.1-flash-image',
-  'gemini-3.5-flash-lite',
-  'gemini-3.8-flash-high',
-  'gemini-3-flash',
-  'gemini-3.1-flash-lite',
-]
+const LISTED = z
+  .object({ data: z.array(z.object({ id: z.string() })) })
+  .parse(JSON.parse(readFileSync(join(RECORDINGS, 'google-cliproxy-models.list.json'), 'utf8')))
+  .data.map((one) => one.id)
 const state = `estado-${process.pid}`
 let status = 'wait'
 

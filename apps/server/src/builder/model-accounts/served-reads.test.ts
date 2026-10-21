@@ -65,10 +65,15 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: só os ids do regi
   })
   assert.equal(linked.statusCode, 201, linked.body)
   const listed = [
+    'claude-sonnet-4-6',
+    'claude-opus-5-5-high',
     'gemini-3.1-flash-image',
+    'gpt-oss-120b-medium',
     'gemini-3.5-flash-lite',
+    'claude-opus-4-6-thinking',
     'gemini-3.8-flash-high',
     'gemini-3-flash',
+    'claude-sonnet-5-5-high',
     'gemini-3.1-flash-lite',
   ]
   const [row] = await hub.test.asOwner(`select served_models from builder.model_account`)
