@@ -18,7 +18,7 @@ hosts, its filesystem and where a version is kept.
   815-line `SandboxFilesystem` is brought.
 - `running` precedes `onStart`, yet live on E2B two first-step
   tools both saw the seed with no gate (`seed-nohook`, 2026-10-21). `beforeToolCall` stays to boot
-  the machine through `ensure`: phase, machine id, and the turn marked as used.
+  the machine: phase, id, turn marked used.
 - The E2B key is the founder's free-account key, in a file (S31); the sweep kills only machines
   marked with this installation's origin.
 
