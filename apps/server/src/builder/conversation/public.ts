@@ -5,12 +5,17 @@ import type { Database, MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
+import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
+import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
+import { TOOL_CLOSURE } from './permissions.ts'
 import { registerConversationRoutes } from './routes.ts'
 import { Sessions } from './sessions.ts'
 import type { ReleaseScope } from './store.ts'
 import { createConversationStore } from './store.ts'
+
+export { TOOL_CLOSURE }
 
 /** Deletes the threads, and so the memory, of a Projeto, a person or a company (data D17). */
 type ReleaseConversations = (scope: ReleaseScope) => Promise<void>
@@ -27,6 +32,7 @@ export function createConversations(deps: {
   sealKeys: SealKeys
   google: ReturnType<typeof openGoogleCalls>
   pool: MastraPool
+  runs: Runs
   log: FailureLog
 }) {
   const { database, identity, sealKeys } = deps
@@ -37,11 +43,14 @@ export function createConversations(deps: {
     googleCalls: deps.google.googleCalls,
     log: deps.log,
   }
-  const builder = createBuilder({ pool: deps.pool, queue, log: deps.log })
+  const builder = createBuilder({ pool: deps.pool, queue, runs: deps.runs, log: deps.log })
   const store = createConversationStore(deps)
-  const sessions = new Sessions({ builder, log: deps.log })
+  const sessions = new Sessions({ builder, runs: deps.runs, log: deps.log })
+  deps.runs.onRestart((restart) => sessions.restarted(restart))
 
   const release: ReleaseConversations = async (scope) => {
+    // The runs first: a turn the removal aborts then finds its run settled and writes nothing.
+    await deps.runs.release(scope)
     const ids = await store.releasedIds(scope)
     for (const id of ids) {
       await sessions.forget(id)
@@ -51,8 +60,13 @@ export function createConversations(deps: {
   }
 
   return Object.freeze({
-    routes: (app: FastifyInstance) =>
-      registerConversationRoutes(app, { store, sessions, builder, queue }),
+    routes: (app: FastifyInstance) => {
+      registerConversationRoutes(app, { store, sessions, builder, queue })
+      registerSourceRoutes(app, {
+        ...{ database, identity, projects: deps.projects },
+        repository: (ids) => deps.runs.repositoryOf(ids),
+      })
+    },
     release,
     /** Mastra's tables, made once at start by its own login (decision 0010). */
     async prepare() {
@@ -69,7 +83,9 @@ export function createConversations(deps: {
      * calls (code C62).
      */
     async close() {
-      await sessions.drain()
+      const drained = sessions.drain()
+      await deps.runs.yieldAfter(drained)
+      await drained
       await builder.memory.settled()
       await builder.mastra.shutdown()
       await deps.google.stop()

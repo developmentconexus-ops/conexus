@@ -44,7 +44,7 @@ test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra g
       ['builder', [{ type: 'text', text: 'Olá, Ana. Vamos comparar os apps.' }]],
     ],
   )
-  assert.equal(read.model, 'anthropic/claude-sonnet-4-5')
+  assert.equal(read.model, 'anthropic/claude-sonnet-4-6')
   const threads = await hub.test.mastraPool.query(
     'select "resourceId" from mastra.mastra_threads where id = $1',
     [id],

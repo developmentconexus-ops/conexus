@@ -504,7 +504,7 @@ or its origin.
 - **Native reference.** Documenso `cd0cc5febcbb76ec7e5ecb75c0b8c65ab8432198`,
   `packages/email/render.tsx:6,65,92` renders React Email at send time. Installing that runtime
   directly is the measured alternative of 117 packages/68,136,787 bytes, including CLI tools.
-- **Packaging.** Native esbuild 0.28.2 bundles only `invitation-email.tsx` (which also exports the
+- **Packaging.** Native esbuild 0.28.2 bundles, for us, only `invitation-email.tsx` (which also exports the
   recovery template of `password-recovery-email.tsx`; both sit in the page of `mail-frame.tsx`) as an ignored ESM
   artifact, with React/DOM 19.2.4 pinned independently from the web. Native aliases resolve those
   versions; the build replaces the dependencies' development-mode constant. No runtime environment
@@ -882,3 +882,22 @@ or its origin.
 - **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_PREPARE_BUDGET_MS` (the `find`,
   then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
   `projects.create` gains an idempotency key.
+
+## The Builder's clocks and its eval gate (step 13)
+
+- **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
+  owners `runs/{deadline,lease,copy-retry}.ts`, and `node:timers` and `node:timers/promises` are
+  refused except in `conversation/turn-log.ts`, which waits 250 ms for short text (decision 0051;
+  `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
+  were written before it: `model-accounts/google/{calls,google}.ts` and `claude/store.ts`. A change
+  that touches their timers moves each to a named owner.
+- **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
+  a scripted model and the test machine, then scores what Mastra saved with `checks.calledTool` and
+  `checks.noToolErrors` from `@mastra/evals/checks`, and requires the only tool called to be the
+  write tool. It does not use `runEvals`: the Builder's `Agent` is private to its controller, and
+  `runEvals` takes no tool mocks nor `unmockedToolPolicy` at 1.78.0 (`evals/run/index.d.ts`;
+  `ItemToolMock` and `unmockedToolPolicy` live on dataset items, `datasets/experiment/types.d.ts:60-62`).
+  The scripted model keys on facts the setup must give it (the app folder, the skill, the tools),
+  not on the instructions' sentences. A second case has a person paste a password: it proves the
+  secrets rule reaches the model and that the gate fails without it, not that a real model obeys.
+  Revisit when `runEvals` takes tool mocks, or the Builder's agent can be a target.

@@ -36,10 +36,8 @@ The step's line in [the roadmap](../../../docs/roadmap.md), the study's answers 
 5. Fill the state matrix: each screen's states, and for each contract field who writes and who
    reads it; for a screen, follow [screens](references/screens.md) and [Impeccable's
    rules](../../../docs/reference/impeccable.md). Copy the study's table of parts into the card.
-   Every part is new or brought, by the study rule ([`conexus-study`](../conexus-study/SKILL.md)
-   step 5). A brought part has its file in the new tree, what is refactored as it enters, the
-   study's count of changed lines (past a third, it is new), and each old decision it carries, with
-   its basis.
+   Every part is new or brought by the study rule ([`conexus-study`](../conexus-study/SKILL.md)
+   step 5), and fills every column.
 6. Name, per unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads; its
    skills and reading list come from the rows of `docs/reference/stack.md` for its folders, never
    from memory.

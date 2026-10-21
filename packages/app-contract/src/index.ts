@@ -5,3 +5,4 @@ export { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE, APP_LIMITS } from './limits.ts
 export { ASSETS_FOLDER, FilePath, Manifest, Shape, versionFiles } from './manifest.ts'
 export type { AppProps, Caller } from './props.ts'
 export { type Handler, serveApp } from './runtime.ts'
+export { APP_SKILL } from './skill.ts'

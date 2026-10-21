@@ -1,4 +1,5 @@
 import type { MessagePart } from '@conexus/hub-api'
+import { machinePhaseLasts } from '@conexus/hub-api'
 
 export type ToolPart = Extract<MessagePart, { type: 'tool' }>
 
@@ -15,7 +16,11 @@ export function fold(parts: readonly MessagePart[]): Row[] {
     else for (const tool of run) rows.push({ kind: 'part', part: tool })
     run = []
   }
-  for (const part of parts) {
+  for (const [at, part] of parts.entries()) {
+    // A file the turn wrote is for the Código tab: the tool row already says it in words.
+    if (part.type === 'file') continue
+    // A step of the machine is over once anything comes after it; a phase that lasts stays said.
+    if (part.type === 'machine' && !machinePhaseLasts(part.phase) && at < parts.length - 1) continue
     if (part.type === 'tool') run.push(part)
     else {
       close()

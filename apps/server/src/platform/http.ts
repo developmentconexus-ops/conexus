@@ -9,6 +9,7 @@ import {
   failuresOf,
   PROBLEM_MEDIA_TYPE,
   Problem,
+  phraseOf,
   VERSION_SEND_DEADLINE_MS,
 } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
@@ -66,14 +67,15 @@ export function statusOf(error: unknown): number {
 // stack a second file stream on one reply.
 const NOT_A_PAGE = /^\/(api|assets)(\/|\?|$)/
 
-function problemOf(code: FailureCode, traceId: string): Problem {
+function problemOf(code: FailureCode, traceId: string, person?: string): Problem {
   const row = FAILURES[code]
   return Problem.parse({
     type: `urn:conexus:problem:${code}`,
-    title: row.phrase,
+    title: phraseOf(code, person),
     status: row.status,
     code,
     traceId,
+    ...(person === undefined ? {} : { person }),
   })
 }
 
@@ -119,7 +121,7 @@ function replyWithFailure(request: FastifyRequest, reply: FastifyReply, failure:
   return reply
     .code(FAILURES[failure.code].status)
     .type(PROBLEM_MEDIA_TYPE)
-    .send(problemOf(failure.code, request.id))
+    .send(problemOf(failure.code, request.id, failure.person))
 }
 
 function logServed(request: FastifyRequest, reply: FastifyReply): void {
@@ -225,6 +227,8 @@ type Parsed<O extends Operation, K extends 'params' | 'query' | 'body'> = NonNul
 type Input<O extends Operation> = {
   headers: Headers
   log: FailureLog
+  /** The request's id, the one every log line of it carries as `traceId`. */
+  traceId: string
   signal: AbortSignal
 } & Parsed<O, 'params'> &
   Parsed<O, 'query'> &
@@ -250,6 +254,7 @@ export function serve(
   handler: (input: {
     headers: Headers
     log: FailureLog
+    traceId: string
     signal: AbortSignal
     params: unknown
     query: unknown
@@ -269,6 +274,7 @@ export function serve(
       const input = {
         headers: headersOf(request),
         log: request.log,
+        traceId: request.id,
         signal: untilClientLeaves(reply),
         ...partsOf(operation, request),
         ...(operation.access === 'session'

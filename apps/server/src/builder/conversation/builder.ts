@@ -19,17 +19,15 @@ import {
   MAX_PROCESSOR_RETRIES,
   providerOf,
 } from '../model-accounts/public.ts'
+import type { Runs } from '../runs/public.ts'
+import { APP_SKILLS, INSTRUCTIONS } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
+import { TOOL_CLOSURE } from './permissions.ts'
 import { createMastraStorage } from './storage.ts'
 
 const BUILDER_ID = 'builder'
 const CONVERSATION_MODE = 'conversa'
 
-const INSTRUCTIONS = [
-  'You are the Builder of Conexus: you help a person in a company think through the business app',
-  'they want. Answer in Brazilian Portuguese. Search and read the web when it helps, and say which',
-  'pages you read.',
-].join(' ')
 const TITLE_INSTRUCTIONS =
   'Dê à conversa um título curto em português, de até seis palavras, sem aspas nem ponto final.'
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
@@ -83,7 +81,12 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
  * from the session and given its account by the queue's processors, its memory, its title and its
  * observation through the same account, in Mastra's own database.
  */
-export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: FailureLog }) {
+export function createBuilder(deps: {
+  pool: MastraPool
+  queue: QueueDeps
+  runs: Runs
+  log: FailureLog
+}) {
   const storage = createMastraStorage(deps.pool)
   const modelSettings = { timeout: MODEL_TIMEOUT }
   const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
@@ -119,6 +122,7 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     id: BUILDER_ID,
     name: 'Builder',
     instructions: INSTRUCTIONS,
+    skills: APP_SKILLS,
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext)),
     inputProcessors: [accountPick(deps.queue)],
@@ -133,11 +137,11 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     storage,
     memory,
     agent,
-    modes: [{ id: CONVERSATION_MODE }],
+    modes: [{ id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools }],
+    // The turn's run owns its workspace; a session made outside a turn has none.
+    workspace: ({ requestContext, mastra }) => deps.runs.workspaceOf(requestContext, mastra),
     disableBuiltinTools: BUILTIN_TOOLS,
-    // The Builder's tools only read, so they run without asking, as Mastra Code's sessions do: an
-    // approval parks the run and resumes it, which under load can end the turn (decision 0053).
-    initialState: { yolo: true },
+    initialState: TOOL_CLOSURE.initialState,
   })
   const mastra = new Mastra({
     logger: new BuilderLogger(deps.log),

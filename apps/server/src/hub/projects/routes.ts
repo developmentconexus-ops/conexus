@@ -14,9 +14,10 @@ export function registerProjectRoutes(app: FastifyInstance, projects: ProjectSto
 
   serve(app, createProject, async ({ person, params, body, attemptKey, log }) => {
     const made = await projects.create({ person, ...params, name: body.name, attemptKey })
-    if (made.databaseCreated) log.info({ companyId: params.companyId }, 'COMPANY_DATABASE_CREATED')
+    if (made.databaseCreated)
+      log.info({ by: person.id, companyId: params.companyId }, 'COMPANY_DATABASE_CREATED')
     if (made.created) {
-      const fields = { companyId: params.companyId, projectId: made.project.id }
+      const fields = { by: person.id, companyId: params.companyId, projectId: made.project.id }
       log.info(fields, 'PROJECT_CREATED')
     }
     return answer({ project: made.project })
@@ -24,7 +25,10 @@ export function registerProjectRoutes(app: FastifyInstance, projects: ProjectSto
 
   serve(app, deleteProject, async ({ person, params, body, log }) => {
     await projects.remove({ person, ...params, name: body.name })
-    log.info({ companyId: params.companyId, projectId: params.projectId }, 'PROJECT_DELETED')
+    log.info(
+      { by: person.id, companyId: params.companyId, projectId: params.projectId },
+      'PROJECT_DELETED',
+    )
     return answer(undefined)
   })
 }

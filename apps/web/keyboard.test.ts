@@ -5,6 +5,7 @@ import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, ok, presses } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
+import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { waitFor } from './sweep-kit.ts'
 import { OWNER, PROJECT_ID } from './sweep-replies.ts'
 
@@ -133,5 +134,31 @@ test('o seletor de modelo, pelo teclado: abre, as setas andam, Tab vai aos níve
     await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
     'Modelo e raciocínio',
   )
+  await page.close()
+})
+
+test('Meus padrões, pelo teclado: o botão abre a lista, Tab vai ao deslizante, as setas mudam o nível e Esc devolve o foco, com nomes em português', async () => {
+  const state = DEFAULT_STATES.find((one) => one.name.endsWith('com padrão próprio'))
+  assert.ok(state)
+  const page = await harness.open(state.path, { viewport: DESKTOP, replies: state.replies })
+  await state.settle(page)
+  const button = page.getByRole('combobox', { name: 'Modelo e raciocínio' })
+  await button.focus()
+  await page.keyboard.press('Enter')
+  await page.getByRole('combobox', { name: 'Buscar modelo' }).waitFor()
+  await page.getByRole('option').first().waitFor()
+  await page.keyboard.press('Tab')
+  const level = page.getByRole('slider', { name: 'Raciocínio' })
+  assert.equal(await level.evaluate((one) => one === document.activeElement), true)
+  assert.equal(await level.getAttribute('aria-valuetext'), 'Alto')
+  await page.keyboard.press('ArrowLeft')
+  assert.equal(await level.getAttribute('aria-valuetext'), 'Baixo')
+  await page.keyboard.press('Escape')
+  await page.getByRole('listbox').waitFor({ state: 'detached' })
+  assert.equal(
+    await page.evaluate(() => document.activeElement?.getAttribute('aria-label')),
+    'Modelo e raciocínio',
+  )
+  assert.equal(await page.getByRole('button', { name: 'Salvar padrão' }).isEnabled(), true)
   await page.close()
 })

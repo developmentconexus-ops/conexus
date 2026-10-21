@@ -11,7 +11,7 @@ import {
 } from '../../hub/identity/test-hub.ts'
 import { asked, conversing, MODEL, noticesOf } from '../conversation/test-conversation.ts'
 
-const FIRST = 'anthropic/claude-sonnet-4-5'
+const FIRST = 'anthropic/claude-sonnet-4-6'
 const SECOND = 'google/gemini-2.5-flash'
 
 /** Ana owns the company, Bruno administers it, Carla is a member. */
@@ -62,7 +62,7 @@ test('troca automática: começa desligada; dono e administrador gravam na revis
 
 test('troca automática: modelo fora do registro dá 422 MODEL_UNKNOWN e nada muda', async (t) => {
   const { hub, ana, read, url } = await company(t)
-  for (const chain of [['nenhum/x'], [FIRST, 'anthropic/claude-nenhum'], ['claude-sonnet-4-5']]) {
+  for (const chain of [['nenhum/x'], [FIRST, 'anthropic/claude-nenhum'], ['claude-sonnet-4-6']]) {
     const refused = await call(hub, ana, 'PUT', url, { enabled: true, chain, revision: 0 })
     assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'MODEL_UNKNOWN'], `${chain}`)
   }

@@ -42,7 +42,8 @@ test('reconectar com o Last-Event-ID do turno em curso: só o que faltou, sem re
   const again = await streamOf(hub, ana, url, read)
   t.after(() => again.close())
   held.release()
-  const rest = await again.turn()
+  // The title is said on its own clock, and may come before the end.
+  const rest = (await again.turn()).filter((event) => event.type !== 'title')
   assert.deepEqual(rest, [{ type: 'turnEnd', reason: 'complete' }])
   assert.doesNotMatch(again.seen.raw, new RegExp(PARTIAL))
 })
@@ -110,20 +111,16 @@ test('reconectar depois do fim do turno, com o id do fim, de outra conversa ou e
   }
 })
 
-test('reconectar num turno de mais eventos do que o servidor guarda: nada se repete, até o próximo turno', async (t) => {
-  const many = Array.from({ length: 10_001 }, (_, at) => ({
-    type: 'text' as const,
-    text: `t${at} `,
-  }))
-  let streamed = 0
-  const { hub, ana, conversations } = await conversing(t, (asked) => {
-    const named = title(asked)
-    if (named !== undefined) return named
-    streamed += 1
-    return streamed === 1 ? { kind: 'blocks', blocks: many } : { kind: 'text', text: 'Curta' }
-  })
+test('reconectar num turno de mais eventos do que a leitura aceita: nada se repete, até o próximo turno', async (t) => {
+  const { hub, ana, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'text', text: 'Curta' },
+  )
   const { url, ids } = await asked(t, { hub, person: ana, conversations })
-  assert.ok(ids.length > 10_001, `${ids.length} events said`)
+  await hub.test.asOwner(`
+    insert into builder.run_event (run_id, company_id, n, event)
+    select r.id, r.company_id, (select max(n) from builder.run_event) + g, '{"type":"text","delta":"x"}'::jsonb
+    from builder.run r, generate_series(1, 10001) g`)
   const again = await streamOf(hub, ana, url, ids[0])
   t.after(() => again.close())
   assert.equal((await sent(hub, ana, url, 'Outra pergunta')).statusCode, 202)
@@ -133,70 +130,35 @@ test('reconectar num turno de mais eventos do que o servidor guarda: nada se rep
   assert.deepEqual(next.message.parts, [])
 })
 
-test('o turno que falha diz a falha antes do fim, e ela fica: relida ao recarregar e ao reconectar', async (t) => {
-  const { hub, ana, conversations, lines } = await conversing(
-    t,
-    (asked) => title(asked) ?? { kind: 'refuse', status: 400 },
-  )
-  const { url, events, ids } = await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(events.slice(1), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_CALL_FAILED' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
-  const ended = lines.find((line) => line.message === 'CONVERSATION_TURN_ENDED')
-  assert.equal(ended?.fields.code, 'MODEL_CALL_FAILED')
-  const reconnected = await streamOf(hub, ana, url, ids[0])
-  t.after(() => reconnected.close())
-  assert.deepEqual(await reconnected.next(), events[1], 'a reconnect resumes with the failure')
-  const read = await answeredOf(await hubBeside(t, hub), ana, url)
-  assert.deepEqual(
-    read.map((message) => [message.role, message.parts]),
-    [
-      ['person', [{ type: 'text', text: 'Compare dois apps de encomenda de padaria' }]],
-      ['builder', [{ type: 'failure', code: 'MODEL_CALL_FAILED' }]],
-    ],
-  )
-})
-
-test('sem conta que atenda, a falha do turno é MODEL_NO_ACCOUNT, e ela e o aviso das contas ficam ao reler', async (t) => {
-  const { hub, ana, conversations } = await conversing(
-    t,
-    (asked) => title(asked) ?? { kind: 'refuse', status: 401 },
-  )
-  const { url, events } = await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
-  const read = await answeredOf(hub, ana, url)
-  assert.deepEqual(read.at(-1)?.parts, [
-    { type: 'notice', text: EXHAUSTED },
-    { type: 'failure', code: 'MODEL_NO_ACCOUNT' },
-  ])
-})
-
-test('ler no meio de um turno que já usou ferramentas: o turno fica de fora, o fluxo o conta inteiro; ao fim, a leitura o tem', async (t) => {
+test('um evento já guardado e ainda não dito, quando o stream abre, chega uma vez só', async (t) => {
   const held = holding(t)
-  const research = await researching(t)
-  let calls = 0
-  const { hub, ana, conversations } = await conversing(t, (asked) => {
-    if (title(asked) !== undefined) return research(asked)
-    calls += 1
-    return calls === 1 ? research(asked) : held.reply
-  })
+  const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
   const url = `${conversations}/${await started(hub, ana, conversations)}`
+  // The journal keeps the text and holds its answer until the stream opened has read it back.
+  const kept = Promise.withResolvers<void>()
+  const answer = Promise.withResolvers<void>()
+  t.after(() => answer.resolve())
+  const append = hub.runs.append.bind(hub.runs)
+  hub.runs.append = async (input) => {
+    const n = await append(input)
+    if (input.event.type === 'text') {
+      kept.resolve()
+      await answer.promise
+    }
+    return n
+  }
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  await kept.promise
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Compare dois apps')).statusCode, 202)
-  while ((await stream.next()).type !== 'text');
-  const midway = rolesAndParts(await call(hub, ana, 'GET', url))
-  assert.deepEqual(
-    midway.map(([role]: [string]) => role),
-    ['person'],
-  )
+  const snapshot = await stream.next()
+  assert.deepEqual(snapshot.type === 'turn' && snapshot.message.parts, [
+    { type: 'text', text: PARTIAL },
+  ])
+  answer.resolve()
   held.release()
-  await stream.turn()
-  for (const told of [...PAGES.map((page) => `"url":"${page}"`), PARTIAL, '"reason":"complete"'])
-    assert.ok(stream.seen.raw.includes(told), `the stream told ${told}`)
-  assert.deepEqual(
-    (await messagesOf(hub, ana, url)).map((message) => message.role),
-    ['person', 'builder'],
-  )
+  const rest = await stream.turn()
+  assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(rest.filter((event) => event.type === 'text' && event.delta === PARTIAL).length, 0)
+  assert.equal(new Set(stream.seen.ids).size, stream.seen.ids.length, stream.seen.ids.join(' '))
 })

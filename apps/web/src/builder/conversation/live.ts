@@ -1,4 +1,5 @@
 import type { ConversationEvent, Message, MessagePart } from '@conexus/hub-api'
+import { applyEvent } from '@conexus/hub-api'
 
 /**
  * The Builder's answer as the stream tells it. `answering` holds the parts so far and when the
@@ -24,18 +25,6 @@ export type Step =
   | { type: 'unsent' }
   | { type: 'reconnected' }
 
-function appended(parts: MessagePart[], delta: string): MessagePart[] {
-  const last = parts.at(-1)
-  return last?.type === 'text'
-    ? [...parts.slice(0, -1), { type: 'text', text: last.text + delta }]
-    : [...parts, { type: 'text', text: delta }]
-}
-
-function placed(parts: MessagePart[], part: MessagePart): MessagePart[] {
-  const at = 'id' in part ? parts.findIndex((one) => 'id' in one && one.id === part.id) : -1
-  return at === -1 ? [...parts, part] : parts.with(at, part)
-}
-
 /** An event outside a turn starts one, as another tab's send. */
 function inProgress(state: Live): Extract<Live, { kind: 'answering' }> {
   return state.kind === 'answering' || state.kind === 'resuming'
@@ -56,17 +45,11 @@ export function live(state: Live, step: Step): Live {
         : state
     case 'turn':
       return { kind: 'answering', parts: step.message.parts, startedAt: step.startedAt }
-    case 'text': {
-      const answer = inProgress(state)
-      return { ...answer, parts: appended(answer.parts, step.delta) }
-    }
-    case 'part': {
-      const answer = inProgress(state)
-      return { ...answer, parts: placed(answer.parts, step.part) }
-    }
+    case 'text':
+    case 'part':
     case 'notice': {
       const answer = inProgress(state)
-      return { ...answer, parts: [...answer.parts, { type: 'notice', text: step.text }] }
+      return { ...answer, parts: applyEvent(answer.parts, step) }
     }
     case 'turnEnd':
       return state.kind === 'answering' || state.kind === 'resuming'

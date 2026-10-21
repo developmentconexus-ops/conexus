@@ -26,6 +26,7 @@ import type { Database, MastraPool } from './database.ts'
 import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
+import { testBuilderConfig } from './test-builder-config.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
   NO_CLOUDFLARE_SERVER,
@@ -34,6 +35,8 @@ import {
   testAppsConfig,
 } from './test-cloudflare.ts'
 import { mastraUrlOf } from './test-mastra-database.ts'
+import type { ModelLists } from './test-model-lists.ts'
+import { plantModelLists } from './test-model-lists.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
 import type { PasswordService } from './test-password-service.ts'
 import { plantPasswordService } from './test-password-service.ts'
@@ -112,6 +115,7 @@ export function testConfig(
     ...testAppsConfig(cloudflareApiUrl),
     sealKeys: parseSealKeys(testSealKeyLine()),
     cliProxy: testCliProxy(),
+    ...testBuilderConfig(),
   }
 }
 
@@ -124,6 +128,7 @@ export type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 export type TestDatabase = {
   passwords: PasswordService
+  lists: ModelLists
   database: Database
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
@@ -201,6 +206,7 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
   await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
   return {
     passwords: plantPasswordService(t),
+    lists: plantModelLists(t),
     database,
     ownerUrl,
     runtimeUrl,
@@ -338,5 +344,10 @@ export function serveEnvironment(
     HUB_APPS_NAMESPACE: TEST_NAMESPACE,
     HUB_CLOUDFLARE_APPS_TOKEN_FILE: keyFile(t, 'hub_apps_token', randomBytes(16).toString('hex')),
     HUB_SEAL_KEYS_FILE: keyFile(t, 'hub_seal_keys', testSealKeyLine()),
+    HUB_GIT_ROOT: tmpdir(),
+    HUB_GIT_COPY_BUCKET: 'conexus-test-git',
+    HUB_GIT_COPY_KEY_FILE: keyFile(t, 'hub_git_copy_key', 'TESTKEYID testsecret'),
+    HUB_E2B_API_KEY_FILE: keyFile(t, 'hub_e2b_api_key', randomBytes(16).toString('hex')),
+    HUB_E2B_TEMPLATE: 'conexus-builder-test',
   }
 }

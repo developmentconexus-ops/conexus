@@ -7,6 +7,7 @@ import { IDENTITY_FAILURES } from './identity-failures.ts'
 import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
 import { PEOPLE_FAILURES } from './people-failures.ts'
 import { PROJECT_FAILURES } from './project-failures.ts'
+import { SOURCE_FAILURES } from './source-failures.ts'
 
 export const FAILURES = {
   INTERNAL_UNEXPECTED: {
@@ -51,6 +52,7 @@ export const FAILURES = {
   },
   ...IDENTITY_FAILURES,
   ...CONVERSATION_FAILURES,
+  ...SOURCE_FAILURES,
   REQUEST_MALFORMED: {
     category: 'USER',
     settles: true,
@@ -98,6 +100,14 @@ export const FAILURES = {
     phrase: 'O e-mail não pôde ser enviado agora.',
     action: 'Tente de novo daqui a pouco.',
     actionKind: 'NONE',
+  },
+  MACHINE_UNAVAILABLE: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 503,
+    phrase: 'Não consegui ligar a máquina agora. Sua conversa está guardada.',
+    action: 'Tente de novo em alguns minutos.',
+    actionKind: 'RETRY',
   },
   MAIL_BOUNCED: {
     category: 'USER',
@@ -231,5 +241,12 @@ export const Problem = z.object({
   status: z.number().int(),
   code: z.string().refine((code): code is FailureCode => Object.hasOwn(FAILURES, code)),
   traceId: z.string(),
+  /** The person a failure names in its phrase, where the row has `{person}` (`RUN_BUSY`). */
+  person: z.string().optional(),
 })
 export type Problem = z.infer<typeof Problem>
+
+/** The phrase of a failure row, with the person it names put in place of `{person}`. */
+export function phraseOf(code: FailureCode, person?: string): string {
+  return FAILURES[code].phrase.replace('{person}', person ?? 'outra pessoa')
+}

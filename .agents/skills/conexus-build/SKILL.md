@@ -15,11 +15,9 @@ session that wrote the card does not build it.
 The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the card is the contract.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
-unit's one named guide, and loads the card's maintainers' skills before writing code. Where a
-skill's file and the installed package's own docs differ, such as `node_modules/fastify/docs`, the
-installed docs win. With pstack, it also loads `poteto-mode` and `typescript-best-practices`.
-[bring](references/bring.md) only when the unit brings code; [bug](references/bug.md) only for a
-defect.
+unit's one named guide, and loads the card's maintainers' skills before writing code. With
+pstack, it also loads `poteto-mode` and `typescript-best-practices`. [bring](references/bring.md)
+only when the unit brings code; [bug](references/bug.md) only for a defect.
 
 ## Steps
 
@@ -40,21 +38,20 @@ defect.
    changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
    repository's verification skill when one exists (a screen: [screen](references/screen.md)). A fix
    that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
-   states, and a new guard gets its removal row (T12).
-   Then answer [the checklist](../../../docs/reference/checklist.md) item by item, sweeping each
-   class across the whole diff, and fill its sweep table in the integration request, saying which
-   file each pattern was copied from. Run pstack `deslop` and `no-comments`; code C70 and C73
-   decide what leaves. Without pstack: reread the diff and remove what a careful engineer would not
-   write.
+   states, and a new guard gets its removal row (T12). Then answer [the
+   checklist](../../../docs/reference/checklist.md) item by item and fill its sweep table; a "nosso"
+   mechanism adds or updates its entry in [boundaries](../../../docs/reference/boundaries.md). Run
+   pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves. Without pstack: reread
+   the diff and remove what a careful engineer would not write.
 7. One commit for the unit on the step branch. The tests the unit touches are green.
 
 ## What it produces
 
 The commit and a report: what I ran, saw and did not prove; the line counts of each brought part;
-every criterion with its test; each declared file outside the card's folders ([delivery
+every criterion with its test, none red; each declared file outside the card's folders ([delivery
 L7](../../../docs/guides/delivery.md)); the screenshots looked at, by state, width and theme, or "no
-screen touched". No pull request or review per unit ([delivery L9,
-L13](../../../docs/guides/delivery.md)).
+screen touched". A criterion known to fail is never a finding handed to the review: fix it, or
+stop.
 
 ## Stop and ask
 
@@ -68,6 +65,6 @@ Stop means no more code: report the evidence and the question.
 
 ## When it closes
 
-The unit's commit is on the step branch, its tests are green, and the report says what ran. A
-review finding comes back as a message: find its cause, sweep its class across the diff, fix every
-occurrence, and push to the same branch.
+The unit's commit is on the step branch, its tests are green, and the report says what ran. In
+the fix round you build one front ([delivery L9](../../../docs/guides/delivery.md)): fix each
+finding's cause and its class (L11), and push one commit to the same branch.

@@ -1,7 +1,6 @@
 import { PersonId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
@@ -19,7 +18,6 @@ function view(fields: Partial<View> = {}): View {
     mine: [],
     order: [],
     kinds: [],
-    defaultModel: null,
     mayManage: true,
     ...fields,
   }
@@ -235,55 +233,6 @@ test('Remover: o aviso do Console, Esc devolve o foco, e a confirmação apaga a
   expect(sent.map((one) => one.method)).toEqual(['DELETE'])
   await waitFor(() =>
     expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Contas de modelo' })),
-  )
-})
-
-test('Modelo padrão: busca, grupos por fornecedor e o modelo, como fornecedor/modelo, sem a seção Raciocínio; fora da lista, a frase da falha', async () => {
-  const shown = view()
-  const { sent } = open(shown, {
-    default: () => (sent.length === 1 ? refusal('MODEL_UNKNOWN') : undefined),
-  })
-  const save = await screen.findByRole('button', { name: 'Salvar modelo padrão' })
-  expect(save).toHaveProperty('disabled', true)
-  const picker = screen.getByRole('combobox', { name: 'Modelo padrão' })
-  fireEvent.click(picker)
-  expect((await screen.findAllByText('Anthropic')).length).toBeGreaterThan(0)
-  expect(screen.queryByText('Raciocínio')).toBeNull()
-  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'OPUS' } })
-  await waitFor(() =>
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Claude Opus 4']),
-  )
-  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: '' } })
-  fireEvent.click(await screen.findByRole('option', { name: 'GPT 5' }))
-  expect(screen.getByText('Escolhido: GPT 5')).toBeTruthy()
-  fireEvent.click(save)
-  expect((await screen.findByRole('alert')).textContent).toBe('Este modelo não está na lista.')
-  fireEvent.click(screen.getByRole('button', { name: 'Salvar modelo padrão' }))
-  await waitFor(() => expect(shown.defaultModel).toBe('openai/gpt-5'))
-  expect(sent.map((one) => one.body)).toEqual([
-    { model: 'openai/gpt-5' },
-    { model: 'openai/gpt-5' },
-  ])
-})
-
-test('Modelo padrão: milhares de modelos não viram milhares de opções; a busca encontra o resto', async () => {
-  const models = Array.from({ length: 3000 }, (_, index) => ({
-    id: `grande/modelo-${index}`,
-    efforts: ['off'],
-  }))
-  open(view({ defaultModel: 'grande/modelo-7' }))
-  server.use(
-    http.get('*/api/model-providers', () =>
-      HttpResponse.json({ providers: [{ id: 'grande', name: 'Grande', models }] }),
-    ),
-  )
-  expect(await screen.findByText('Escolhido: Modelo 7')).toBeTruthy()
-  fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo padrão' }))
-  expect((await screen.findAllByRole('option')).length).toBeLessThanOrEqual(50)
-  expect(screen.getByText('Mostrando 50 de 3000 modelos. Busque para ver os outros.')).toBeTruthy()
-  fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'modelo-2999' } })
-  await waitFor(() =>
-    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Modelo 2999']),
   )
 })
 

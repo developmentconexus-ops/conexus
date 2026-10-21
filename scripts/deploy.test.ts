@@ -4,6 +4,7 @@ import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync 
 import { tmpdir } from 'node:os'
 import { delimiter, join, resolve } from 'node:path'
 import { after, test } from 'node:test'
+import { parse } from 'yaml'
 
 const DEPLOY = resolve(import.meta.dirname, '../infra/deploy.sh')
 const dirs: string[] = []
@@ -153,6 +154,8 @@ const SECRETS = [
   'hub_cloudflare_apps_token',
   'hub_seal_keys',
   'hub_mastra_database_url',
+  'hub_git_copy_key',
+  'hub_e2b_api_key',
 ]
 
 test('--restart sem Hub rodando termina vermelho', () => {
@@ -218,3 +221,40 @@ for (const hubEnv of ['missing', 'unreadable'] as const) {
     })
   }
 }
+
+const INFRA = resolve(import.meta.dirname, '../infra')
+
+test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usuário do Hub (0051)', () => {
+  const dockerfile = readFileSync(join(INFRA, 'hub.Dockerfile'), 'utf8')
+  const last = dockerfile.slice(dockerfile.lastIndexOf('\nFROM '))
+  assert.match(last, /apt-get install[^\n]*\bgit\b/)
+  assert.match(
+    last,
+    /mkdir -p \/var\/lib\/conexus\/git && chown node:node \/var\/lib\/conexus\/git/,
+  )
+  const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
+  assert.deepEqual(compose.services.hub.volumes, ['hub_git:/var/lib/conexus/git'])
+  assert.ok('hub_git' in compose.volumes)
+  assert.equal(compose.services.hub.environment.HUB_GIT_ROOT, '/var/lib/conexus/git')
+  assert.equal(
+    compose.services.hub.environment.HUB_GIT_COPY_KEY_FILE,
+    '/run/secrets/hub_git_copy_key',
+  )
+  assert.ok(compose.services.hub.secrets.includes('hub_git_copy_key'))
+  assert.equal(
+    compose.services.hub.environment.HUB_E2B_API_KEY_FILE,
+    '/run/secrets/hub_e2b_api_key',
+  )
+  assert.ok(compose.services.hub.secrets.includes('hub_e2b_api_key'))
+})
+
+test('o log de cada serviço gira: json-file, dez megabytes, cinco arquivos (S42)', () => {
+  const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
+  for (const [name, service] of Object.entries<{ logging?: unknown }>(compose.services)) {
+    assert.deepEqual(
+      service.logging,
+      { driver: 'json-file', options: { 'max-size': '10m', 'max-file': '5' } },
+      name,
+    )
+  }
+})

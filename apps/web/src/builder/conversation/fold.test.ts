@@ -73,3 +73,15 @@ test('the summary counts by kind in the order the kinds first appear, with the f
   assert.equal(summaryOf(tools), 'Leu 3 páginas, pesquisou 1 vez, usou 1 ferramenta · 1 falhou')
   assert.equal(summaryOf([tool('a'), tool('b'), tool('c')]), 'Leu 3 páginas')
 })
+
+test('a machine step is over once anything follows it; a replaced machine stays said', () => {
+  const parts: MessagePart[] = [
+    { type: 'machine', phase: 'replaced' },
+    { type: 'machine', phase: 'waking' },
+    text,
+  ]
+  assert.deepEqual(
+    fold(parts).map((row) => (row.kind === 'part' ? row.part : row.kind)),
+    [parts[0], text],
+  )
+})

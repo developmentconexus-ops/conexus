@@ -1,8 +1,12 @@
-import type { Message, MessagePart } from '@conexus/hub-api'
-import { MessageId, ModelId, SUBJECT_MAX_LENGTH } from '@conexus/hub-api'
+import type { Message, MessagePart, PartEvent } from '@conexus/hub-api'
+import { applyEvent, MessageId, ModelId, SUBJECT_MAX_LENGTH } from '@conexus/hub-api'
 import type { MastraDBMessage, MastraMessagePart } from '@mastra/core/agent-controller'
+import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
 import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
+import { masked } from './mask.ts'
+import { TOOL_CLOSURE } from './permissions.ts'
+import { ShellTail } from './shell.ts'
 
 type ToolPart = Extract<MessagePart, { type: 'tool' }>
 
@@ -11,6 +15,10 @@ const KINDS: Readonly<Record<string, ToolPart['kind']>> = {
   web_fetch: 'read_page',
   web_search: 'search_web',
   recall: 'recall',
+  [WORKSPACE_TOOLS.FILESYSTEM.READ_FILE]: 'read_file',
+  [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: 'write_file',
+  [WORKSPACE_TOOLS.FILESYSTEM.EDIT_FILE]: 'edit_file',
+  [WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: 'run_command',
 }
 
 const Text = z.object({ type: z.literal('text'), text: z.string() })
@@ -38,9 +46,16 @@ type Invocation = z.infer<typeof Invocation>['toolInvocation']
 // A tool that answers its own failure, as `web_fetch` does, rather than throwing.
 const FailedResult = z.object({ isError: z.literal(true) })
 const PageArgs = z.object({ url: z.url() })
+const PathArgs = z.object({ path: z.string().min(1) })
+const CommandArgs = z.object({ command: z.string().min(1) })
 const SearchArgs = z.object({ query: z.string() })
 const Notice = z.object({ type: z.literal(NOTICE_PART), data: NoticeData })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
+// How a command ended, which Mastra's `execute_command` keeps in the message beside its result.
+const CommandExit = z.object({
+  type: z.literal('data-sandbox-exit'),
+  data: z.object({ toolCallId: z.string().min(1), exitCode: z.int() }),
+})
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 
 function cut(text: string): string {
@@ -55,8 +70,9 @@ function stateOf(invocation: Invocation): ToolPart['state'] {
     case 'approval-responded':
       return 'running'
     case 'output-error':
-    case 'output-denied':
       return 'error'
+    case 'output-denied':
+      return 'denied'
     case 'result':
       return invocation.isError === true || FailedResult.safeParse(invocation.result).success
         ? 'error'
@@ -71,14 +87,60 @@ function subjectOf(kind: ToolPart['kind'], args: unknown): ToolPart['subject'] {
   if (page?.success) return { url: page.data.url, title: null }
   const search = kind === 'search_web' ? SearchArgs.safeParse(args) : undefined
   if (search?.success) return { query: cut(search.data.query) }
+  const file =
+    kind === 'read_file' || kind === 'write_file' || kind === 'edit_file'
+      ? PathArgs.safeParse(args)
+      : undefined
+  if (file?.success) return { path: cut(masked(file.data.path)) }
+  const command = kind === 'run_command' ? CommandArgs.safeParse(args) : undefined
+  if (command?.success) return { command: cut(masked(command.data.command)) }
   return null
 }
 
-/** A tool call as the person sees it: its kind, its state and what it was about, never its data. */
+const OFFERED = new Set(TOOL_CLOSURE.availableTools)
+
+/**
+ * A tool call as the person sees it: its kind, its state and what it was about, never its data. A
+ * call to a tool outside the closed set fails because the controller refuses it, not because the
+ * tool ran: it is `denied`, as Mastra's own `tool_end.denied` fires only for an approval (none here).
+ */
 function toolOf(invocation: Invocation): ToolPart {
   const kind = KINDS[invocation.toolName] ?? 'other'
   const subject = subjectOf(kind, invocation.args)
-  return { type: 'tool', id: invocation.toolCallId, kind, state: stateOf(invocation), subject }
+  const state = stateOf(invocation)
+  const refused = state === 'error' && !OFFERED.has(invocation.toolName)
+  return {
+    type: 'tool',
+    id: invocation.toolCallId,
+    kind,
+    state: refused ? 'denied' : state,
+    subject,
+  }
+}
+
+/** The file part a finished write or edit leaves, or none for any other tool state. */
+export function fileOf(tool: ToolPart): MessagePart | undefined {
+  const operation =
+    tool.kind === 'write_file' ? 'write' : tool.kind === 'edit_file' ? 'edit' : undefined
+  if (operation === undefined || tool.state !== 'completed' || tool.subject === null)
+    return undefined
+  return 'path' in tool.subject
+    ? { type: 'file', toolId: tool.id, path: tool.subject.path, operation }
+    : undefined
+}
+
+/** A command's last lines as its result keeps them, once it has ended (`exits`), or none. */
+function shellOf(part: unknown, exits: Map<string, number>): MessagePart | undefined {
+  const invocation = Invocation.safeParse(part)
+  if (!invocation.success) return undefined
+  const { toolCallId, toolName, result } = invocation.data.toolInvocation
+  const exitCode = exits.get(toolCallId)
+  if (KINDS[toolName] !== 'run_command' || typeof result !== 'string' || exitCode === undefined) {
+    return undefined
+  }
+  const tail = new ShellTail()
+  tail.add(result)
+  return tail.part(toolCallId, exitCode)
 }
 
 /** Where a part of Mastra's sits: its message and place in it, which name a thinking part. */
@@ -91,7 +153,8 @@ function reasoningId(place: Place): string {
 
 /**
  * What the person sees of one of Mastra's parts: its text, that it thought (never what), a tool
- * call, and a queue notice; the rest stays inside. Thinking read here is over and has no time.
+ * call, and a queue notice; the rest stays inside. Thinking read here is over; its time is the
+ * thread's (`history.ts`).
  */
 export function partOf(part: MastraMessagePart | unknown, place: Place): MessagePart | undefined {
   const text = Text.safeParse(part)
@@ -106,14 +169,10 @@ export function partOf(part: MastraMessagePart | unknown, place: Place): Message
   return undefined
 }
 
-/**
- * Text after text is one text, live and read again: Mastra keeps each of the provider's blocks,
- * and Claude cuts an answer into one block per span it cites.
- */
-export function appendText(parts: MessagePart[], text: string): void {
-  const last = parts.at(-1)
-  if (last?.type === 'text') last.text += text
-  else parts.push({ type: 'text', text })
+/** A read part as the event the stream would have said it by, for `applyEvent` to fold. */
+export function eventOf(part: MessagePart): PartEvent {
+  if (part.type === 'text') return { type: 'text', delta: part.text }
+  return part.type === 'notice' ? { type: 'notice', text: part.text } : { type: 'part', part }
 }
 
 /** The model that answered a message, `provider/model` as the router names it, or none. */
@@ -135,11 +194,18 @@ export function messageOf(message: MastraDBMessage): Message | undefined {
         : undefined
   if (role === undefined) return undefined
   const id = MessageId.parse(message.id)
-  const parts: MessagePart[] = []
+  const exits = new Map<string, number>()
+  for (const part of message.content.parts) {
+    const exit = CommandExit.safeParse(part)
+    if (exit.success) exits.set(exit.data.data.toolCallId, exit.data.data.exitCode)
+  }
+  let parts: MessagePart[] = []
   for (const [index, part] of message.content.parts.entries()) {
     const shown = partOf(part, { messageId: id, index })
-    if (shown?.type === 'text') appendText(parts, shown.text)
-    else if (shown !== undefined) parts.push(shown)
+    if (shown === undefined) continue
+    parts = applyEvent(parts, eventOf(shown))
+    const after = shown.type === 'tool' ? (fileOf(shown) ?? shellOf(part, exits)) : undefined
+    if (after !== undefined) parts = applyEvent(parts, eventOf(after))
   }
   return {
     id,

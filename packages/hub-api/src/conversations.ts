@@ -20,7 +20,8 @@ export function providerOfModel(model: string): string | null {
 }
 
 /** How hard the model reasons before it answers, the controller's `AgentControllerThinkingLevel`. */
-export const Effort = z.enum(['off', 'low', 'medium', 'high', 'xhigh', 'max'])
+export const EFFORTS = ['off', 'low', 'medium', 'high', 'xhigh', 'max'] as const
+export const Effort = z.enum(EFFORTS)
 export type Effort = z.infer<typeof Effort>
 
 /**
@@ -41,6 +42,9 @@ export function runningEffort(efforts: readonly [Effort, ...Effort[]], effort: E
 export const TurnFailureCode = z.enum([
   'MODEL_NO_ACCOUNT',
   'MODEL_CALL_FAILED',
+  'SAVE_REFUSED',
+  'MACHINE_LOST',
+  'MACHINE_UNAVAILABLE',
   'INTERNAL_UNEXPECTED',
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>
@@ -52,12 +56,18 @@ export type MessageId = z.infer<typeof MessageId>
 export const SUBJECT_MAX_LENGTH = 200
 const Subject = z.string().max(SUBJECT_MAX_LENGTH)
 
-/** What a tool call was about: the page it read, the search it made, or nothing to say. */
+/** What a tool call was about: a page, a search, a file, a command, or nothing to say. */
 const ToolSubject = z.union([
   z.object({ url: z.url(), title: Subject.nullable() }),
   z.object({ query: Subject }),
+  z.object({ path: Subject }),
+  z.object({ command: Subject }),
   z.null(),
 ])
+
+/** The most lines of a command's output a `shell` part keeps, and the most bytes of them. */
+export const SHELL_MAX_LINES = 20
+export const SHELL_MAX_BYTES = 4096
 
 /**
  * A piece of a message. `reasoning` and `tool` carry an `id`: a later part with the same `id`
@@ -71,15 +81,65 @@ export const MessagePart = z.discriminatedUnion('type', [
     type: z.literal('reasoning'),
     id: z.string().min(1),
     state: z.enum(['running', 'completed']),
-    /** How long it thought, by the server's clock; `null` once read again. */
+    /** How long it thought, by the server's clock; `null` while it thinks or when none was kept. */
     seconds: z.int().nonnegative().nullable(),
   }),
   z.object({
     type: z.literal('tool'),
     id: z.string().min(1),
-    kind: z.enum(['read_page', 'search_web', 'recall', 'other']),
-    state: z.enum(['running', 'completed', 'error']),
+    kind: z.enum([
+      'read_page',
+      'search_web',
+      'recall',
+      'write_file',
+      'edit_file',
+      'read_file',
+      'run_command',
+      'other',
+    ]),
+    state: z.enum(['running', 'completed', 'error', 'denied']),
     subject: ToolSubject,
+  }),
+  /** A command's last lines, secrets masked, and how it exited; no exit code while it runs. */
+  z.object({
+    type: z.literal('shell'),
+    toolId: z.string().min(1),
+    lines: z.array(z.string()).max(SHELL_MAX_LINES),
+    exitCode: z.int().nullable(),
+  }),
+  z.object({
+    type: z.literal('file'),
+    toolId: z.string().min(1),
+    path: Subject,
+    operation: z.enum(['write', 'edit']),
+  }),
+  /**
+   * What the machine is doing before a tool can run; the latest replaces the one before, except the
+   * phases that last (`machinePhaseLasts`).
+   */
+  z.object({
+    type: z.literal('machine'),
+    phase: z.enum(['starting', 'waking', 'copying', 'replaced', 'saving']),
+  }),
+  /**
+   * The server restarted in the middle of the turn, which ended there. `kept` is the version that
+   * saved what the Builder had written, `nothing` when it had written nothing, or `lost` when the
+   * restart cut its save and its files were not saved.
+   */
+  z.object({
+    type: z.literal('restarted'),
+    kept: z.union([z.int().positive(), z.enum(['nothing', 'lost'])]),
+  }),
+  /**
+   * The version the turn saved: its number, whether it changed the app, how many files it holds
+   * and how many of them changed.
+   */
+  z.object({
+    type: z.literal('version'),
+    number: z.int().positive(),
+    changed: z.boolean(),
+    files: z.int().nonnegative(),
+    changedFiles: z.int().nonnegative(),
   }),
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('failure'), code: TurnFailureCode }),
@@ -124,6 +184,61 @@ export const ConversationEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
 ])
 export type ConversationEvent = z.infer<typeof ConversationEvent>
+
+/**
+ * Whether a machine phase is a fact that stays said on the thread, without a clock: a replaced
+ * machine. Every other phase is a step in progress, over once anything follows it.
+ */
+export function machinePhaseLasts(
+  phase: Extract<MessagePart, { type: 'machine' }>['phase'],
+): boolean {
+  return phase === 'replaced'
+}
+
+/** The events that change a message's parts. */
+export type PartEvent = Extract<ConversationEvent, { type: 'text' | 'part' | 'notice' }>
+
+/** What names a part among the message's, so a later one replaces it; none for the rest. */
+function partKey(part: MessagePart): string | undefined {
+  switch (part.type) {
+    case 'reasoning':
+    case 'tool':
+      return `${part.type}:${part.id}`
+    case 'shell':
+    case 'file':
+      return `${part.type}:${part.toolId}`
+    case 'machine':
+      return machinePhaseLasts(part.phase) ? undefined : 'machine'
+    default:
+      return undefined
+  }
+}
+
+/**
+ * A message's parts after one event, the only fold of events into parts, on the server and the
+ * screen alike: text after text is one text, since Claude cuts an answer into one block per span it
+ * cites; a tool, thinking, shell, file or machine part replaces the one it names; any other comes at the end.
+ */
+export function applyEvent(parts: readonly MessagePart[], event: PartEvent): MessagePart[] {
+  switch (event.type) {
+    case 'text': {
+      const last = parts.at(-1)
+      return last?.type === 'text'
+        ? [...parts.slice(0, -1), { type: 'text', text: last.text + event.delta }]
+        : [...parts, { type: 'text', text: event.delta }]
+    }
+    case 'part': {
+      const { part } = event
+      const key = partKey(part)
+      const at = key === undefined ? -1 : parts.findIndex((each) => partKey(each) === key)
+      return at === -1 ? [...parts, part] : parts.with(at, part)
+    }
+    case 'notice':
+      return [...parts, { type: 'notice', text: event.text }]
+    default:
+      return event satisfies never
+  }
+}
 
 /** How often the stream says it is alive, so a proxy keeps it open. */
 export const CONVERSATION_HEARTBEAT_MS = 25_000
@@ -194,7 +309,7 @@ export const sendConversationMessage = defineOperation({
   },
   attemptKey: true,
   success: { status: 202 },
-  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT'],
+  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT', 'RUN_BUSY'],
 })
 
 export const streamConversation = defineOperation({

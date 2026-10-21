@@ -1,0 +1,1 @@
+ALTER TABLE "builder"."run" ADD COLUMN "conversation_id" text NOT NULL;

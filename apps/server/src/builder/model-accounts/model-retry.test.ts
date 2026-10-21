@@ -41,7 +41,10 @@ test('MALFORMED_FUNCTION_CALL do Gemini (pelo CLIProxy, em Chat Completions): re
     const body = { owner: 'company', provider: 'groq', label: `Groq ${index + 1}`, key }
     assert.equal((await post(hub, ana, `${company}/model-accounts`, body)).statusCode, 201)
   }
-  const chosen = await call(hub, ana, 'PUT', `${company}/default-model`, { model: groq })
+  const chosen = await call(hub, ana, 'PUT', `${company}/default-model`, {
+    model: groq,
+    effort: 'off',
+  })
   assert.equal(chosen.statusCode, 200)
   const reply = failingFirst({ kind: 'malformed' }, 1)
   anthropic.chat = (sent) => reply(sent.stream)

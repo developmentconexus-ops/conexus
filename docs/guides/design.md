@@ -100,11 +100,8 @@ current visual reference; the web's brand tokens and shared pieces own implement
 an obligatory second hand-maintained table here. The format's `components` live in
 [the components list](../reference/components.md).
 
-Rules use [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** is a requirement, **should**
-needs a stated reason to break, and **may** is free choice. The bracket names the enforcing machine,
-"rule to write" for a promised check, or "review". Guidance does not reopen an approved product
-choice; [delivery L12](delivery.md) decides whether a finding blocks. [Web](web.md) owns organization
-and styles; maintainers' skills own library usage. [Delivery L23](delivery.md) owns visible language.
+Rules read as the opening of the [delivery guide](delivery.md) says. [Web](web.md) owns
+organization and styles. [Delivery L23](delivery.md) owns visible language.
 
 The design was accepted from the old product before a new study; the founder can reopen a screen's
 choices. This method change does not redesign the product.
@@ -142,10 +139,8 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
 ## Layout
 
 - **V16.** Spacing comes from the `spacing` scale. [rule to write]
-- **V17.** Conexus's own web pieces **must not** use an inline `style` attribute; use tokens.
-  Outbound e-mail HTML is an exception: e-mail clients require inline styles and table layout.
-  This check covers source in ui/hub/builder, not DOM styles emitted by vendors.
-  [Biome `nursery.noInlineStyles`]
+- **V17.** Conexus's own web pieces **must not** use an inline `style` attribute, except in
+  outbound e-mail HTML. [Biome `nursery.noInlineStyles`]
 
 The matching `biome.json` override sets `linter.rules.nursery.noInlineStyles` to `"error"` for
 `apps/web/src/{ui,hub,builder}/**`. Biome 2.5.14's nursery rules are not stable: revalidate the bad

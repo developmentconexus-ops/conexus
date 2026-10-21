@@ -13,7 +13,7 @@ import { defaultStabilityErrorProcessors, StreamErrorRetryProcessor } from '@mas
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
-import type { CallFailure } from './errors.ts'
+import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
 import type { QueueDeps } from './queue.ts'
@@ -26,6 +26,19 @@ import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
 export const MAX_PROCESSOR_RETRIES = 9
 const WEB_SEARCH = 'web_search'
+/** The steps one turn may take (card, limits); Mastra's own ceiling is a thousand. */
+const TURN_STEPS = 100
+const LAST_STEP =
+  'This is the last step of this turn: use no tool. Say in Brazilian Portuguese what you did and what is left, and that the person can answer "continue" for more.'
+
+/** On the last step the model is given no tool and one sentence on why, so the turn ends in text, never in `abort()`. */
+function lastStep(args: ProcessInputStepArgs): ProcessInputStepResult {
+  if (args.stepNumber !== TURN_STEPS - 1) return {}
+  return {
+    toolChoice: 'none',
+    systemMessages: [...args.systemMessages, { role: 'system', content: LAST_STEP }],
+  }
+}
 
 type Writer = ProcessAPIErrorArgs['writer']
 
@@ -158,7 +171,8 @@ function withOptions(
  * the queue must come after Mastra's retries (Mastra Code, `account-rotation-processor.ts:12-20`).
  * Each attempt gets its account's model; after the automatic switch, the new model reads pages
  * but does not search again (founder, card reading 3 A), since the search tool was resolved for
- * the first model (`agent.ts:5300-5301`).
+ * the first model (`agent.ts:5300-5301`). The set it narrows is the mode's own (`availableTools`,
+ * `permissions.ts`), never the agent's whole toolset.
  */
 export function accountPick(deps: QueueDeps): InputProcessor {
   return {
@@ -172,30 +186,28 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       if (account === undefined) {
         return { model: await noAccountModel(turn.modelId(args.requestContext)) }
       }
-      const result: ProcessInputStepResult = { model: account.model }
+      const result: ProcessInputStepResult = { ...lastStep(args), model: account.model }
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
         result.providerOptions = withOptions(args.providerOptions, thinking)
-      if (turn.switched) {
-        result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)
+      if (turn.switched && args.activeTools !== undefined) {
+        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)
       }
       return result
     },
   }
 }
 
-function failedText(
-  account: Picked,
-  failure: Extract<CallFailure, { kind: 'limited' | 'refused' }>,
-) {
-  return failure.kind === 'limited'
-    ? `${account.label} no limite até ${until(failure.until)}`
-    : `${account.label} foi recusada. Ligue de novo`
+function failedText(account: Picked, failure: AccountFailure) {
+  if (failure.kind === 'limited') return `${account.label} no limite até ${until(failure.until)}`
+  if (failure.kind === 'missing') return `${account.label} não atende a este modelo`
+  return `${account.label} foi recusada. Ligue de novo`
 }
 
 /**
  * Error lane, last, after Mastra's own processors: 429 and 402 put the account in its limit, 401
- * and 403 refuse it (a subscription refreshes once first), and the next account takes the call,
+ * and 403 refuse it (a subscription refreshes once first), a 404 reads the models it serves again,
+ * and the next account takes the call,
  * never `abort()`, which ends the stream silently (study, proved). A 400 or anything else Mastra
  * did not retry ends the turn as the model's failure, with no switch.
  */

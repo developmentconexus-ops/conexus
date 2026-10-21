@@ -10,8 +10,10 @@ import { accountsQuery } from '../model-accounts/public.ts'
 import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
+import { useDraft } from './draft.ts'
 import { shownAnswer } from './live.ts'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
+import { textOf } from './person-turn.tsx'
 import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } from './queries.ts'
 import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
 import { Transcript } from './transcript.tsx'
@@ -114,10 +116,21 @@ function Screen(params: Params) {
   const canAnswer = usable.size > 0
   const [gone, setGone] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
-  const { state, dispatch } = useLive(params, () => {
-    void queryClient.invalidateQueries({ queryKey: allConversationsQueryKey(companyId, projectId) })
-    setGone(true)
-  })
+  const draft = useDraft(conversationId)
+  const { state, dispatch } = useLive(
+    params,
+    () => {
+      void queryClient.invalidateQueries({
+        queryKey: allConversationsQueryKey(companyId, projectId),
+      })
+      setGone(true)
+    },
+    // The restart ended the turn: the last message goes back in the field, to be sent again.
+    () => {
+      const last = conversation.messages.findLast((message) => message.role === 'person')
+      if (last && draft.text.trim() === '') draft.change(textOf(last))
+    },
+  )
   const { error, setError, send, halt } = useSending(params, field, dispatch, () => setGone(true))
 
   useEffect(() => field.current?.focus(), [])
@@ -146,13 +159,13 @@ function Screen(params: Params) {
         </p>
       )}
       {(state.kind === 'answering' || state.kind === 'resuming') && (
-        <WorkingLine startedAt={state.startedAt} />
+        <WorkingLine startedAt={state.startedAt} heard={state.parts} />
       )}
       <div className="px-md">
         <Composer
           answering={state.kind === 'answering'}
           canSend={canAnswer}
-          conversationId={conversationId}
+          draft={draft}
           field={field}
           onSend={send}
           onStop={halt}
@@ -161,7 +174,7 @@ function Screen(params: Params) {
               <ModelChoice
                 ids={params}
                 conversation={conversation}
-                usable={usable}
+                providers={accounts.choices.mine}
                 onError={setError}
               />
             )

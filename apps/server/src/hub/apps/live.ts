@@ -38,7 +38,7 @@ export function setLiveVersion(
       )
     if (row === undefined) throw new Failure('APP_VERSION_NOT_FOUND', { details: { versionId } })
     await tx.update(app).set({ liveVersionId: versionId }).where(eq(app.projectId, projectId))
-    deps.log.info({ companyId, projectId, versionId }, 'APP_VERSION_LIVE')
+    deps.log.info({ by: input.person.id, companyId, projectId, versionId }, 'APP_VERSION_LIVE')
     return versionView(row, versionId)
   })
 }

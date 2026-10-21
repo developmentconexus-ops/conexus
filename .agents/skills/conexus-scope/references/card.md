@@ -60,7 +60,7 @@ das capturas do produto antigo que o protótipo seguiu ([screens](screens.md)).
 
 ## O que nasce novo e o que é trazido
 
-| Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Nativo / referência |
+| Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
 | --- | --- | --- | --- | --- | --- |
 
 **A medida do transplante.** <a medida da regra do estudo, por parte trazida (`conexus-study`, passo 5)>
@@ -116,8 +116,9 @@ constrói não lê o estudo):
   in a pull request of its own ([delivery L20](../../../../docs/guides/delivery.md)).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - A criterion about a provider's behaviour cites the installed provider's code.
-- The column "Nativo / referência" of the table of parts says what Mastra, Mastra Code and Conexus
-  OS use for the part, with `file:line`; a divergence is a question on the founder's page.
+- The table of parts has one row per mechanism, never "o resto". The reference cell says "nenhuma
+  faz" when none does, and a "nosso" row links its
+  [boundaries](../../../../docs/reference/boundaries.md) entry.
 - The order of the work names guide rules by identifier and never restates them.
 - Every write or command the step adds, its own or a library's, has its row in the failure table,
   and each cell names its criterion; a step with no write writes "nenhuma". Founder, 2026-10-15:

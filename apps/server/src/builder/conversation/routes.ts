@@ -14,7 +14,7 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel, effortsOf } from '../model-accounts/public.ts'
+import { conversationModel, conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { historyOf, threadModel, titlesOf } from './history.ts'
 import type { Owner } from './live.ts'
@@ -85,11 +85,9 @@ async function created(
     const kept = await threadModel(deps.builder, owner, earlier.id)
     if (kept !== undefined) return { ...earlier, model: kept, created: false }
   }
-  const model = await conversationModel(deps.queue, owner, input.body.model)
+  const { model, effort } = await conversationStart(deps.queue, owner, input.body.model)
   const made =
     earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
-  // It starts at the model's lowest effort: `off` when the model can stop reasoning.
-  const [effort] = effortsOf(model)
   await deps.sessions.switchModel({ owner, conversationId: made.id, model, effort })
   return { ...made, model }
 }
@@ -107,7 +105,7 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
   })
 
   serve(app, sendConversationMessage, async (input) => {
-    const { person, params, body, attemptKey } = input
+    const { person, params, body, attemptKey, traceId } = input
     const bodyHash = bodyHashOf(body)
     const turn = { person, ...params, key: attemptKey }
     if (await store.recordTurn({ ...turn, bodyHash })) {
@@ -115,7 +113,13 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
       const conversationId = params.conversationId
       // The send runs outside the key's transaction (data D22); refused, it frees the key.
       await sessions
-        .send({ owner: ownerOf(input), conversationId, question })
+        .send({
+          owner: ownerOf(input),
+          conversationId,
+          projectId: params.projectId,
+          question,
+          traceId,
+        })
         .catch(async (error) => {
           await store.forgetTurn(turn)
           throw error

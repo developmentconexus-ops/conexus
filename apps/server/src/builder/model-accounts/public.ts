@@ -9,9 +9,13 @@ import { googleCalls } from './google/calls.ts'
 import { googleSignIn } from './google/google.ts'
 import { reseal } from './reseal.ts'
 import { registerModelAccountRoutes } from './routes.ts'
+import type { ReadingDeps } from './served-reads.ts'
+import { readUnserved } from './served-reads.ts'
 import type { SignInFlows } from './sign-ins.ts'
 import { createModelAccountStore } from './store.ts'
 
+export { subscriptionModel } from './claude/subscription-model.ts'
+export { conversationStart } from './defaults.ts'
 export {
   accountErrorProcessors,
   accountModel,
@@ -19,8 +23,9 @@ export {
   MAX_PROCESSOR_RETRIES,
 } from './processors.ts'
 export type { QueueDeps } from './queue.ts'
-export { conversationModel, providerOf } from './queue.ts'
-export { effortsOf, providerOptionsOf } from './thinking.ts'
+export { callModel, conversationModel, providerOf } from './queue.ts'
+export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'
+export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
 export { chosenModel, NOTICE_PART, Notice, Turn, turnContext } from './turn.ts'
 
 export type ModelAccounts = ReturnType<typeof createModelAccounts>
@@ -34,10 +39,14 @@ export function createModelAccounts(deps: {
   identity: IdentityPorts
   sealKeys: SealKeys
   flows: SignInFlows
+  googleCalls: ReadingDeps['googleCalls']
+  log: FailureLog
 }) {
   const store = createModelAccountStore(deps)
   return Object.freeze({
     routes: (app: FastifyInstance) => registerModelAccountRoutes(app, { ...deps, store }),
+    /** The pass at start: every account whose list was never read gets it read (card 12.3). */
+    readUnserved: () => readUnserved(deps),
   })
 }
 

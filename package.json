@@ -23,6 +23,7 @@
     "migrations": "node scripts/check-migrations.ts",
     "preremovals": "npm run build -w @conexus/server",
     "removals": "node scripts/removals.ts",
+    "record-provider": "node scripts/record-provider.ts",
     "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
     "change-budget": "node scripts/change-budget.ts",
@@ -30,7 +31,7 @@
     "build": "npm run build --workspaces --if-present",
     "app:pack": "node scripts/app-pack.ts tests/apps/recados dist/apps/recados-1 && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-2 tests/apps/recados/cor-2 && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-nao-inicia tests/apps/recados-nao-inicia && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-defeito tests/apps/recados-defeito && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-laco tests/apps/recados-laco",
     "pree2e": "npm run build -w @conexus/server && npm run build -w @conexus/web && npm run app:pack && npm exec -w @conexus/web -- playwright-core install chromium-headless-shell",
-    "e2e": "node --test --test-concurrency=1 --test-timeout=300000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation.test.ts tests/e2e/client.test.ts tests/e2e/projects.test.ts tests/e2e/two-companies.test.ts tests/e2e/remove-person.test.ts tests/e2e/app.test.ts tests/e2e/app-open.test.ts tests/e2e/versions.test.ts tests/e2e/refusals.test.ts tests/e2e/model-accounts.test.ts tests/e2e/conversation.test.ts tests/e2e/house.test.ts",
+    "e2e": "node --test --test-concurrency=1 --test-timeout=300000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation.test.ts tests/e2e/client.test.ts tests/e2e/projects.test.ts tests/e2e/two-companies.test.ts tests/e2e/remove-person.test.ts tests/e2e/app.test.ts tests/e2e/app-open.test.ts tests/e2e/versions.test.ts tests/e2e/refusals.test.ts tests/e2e/model-accounts.test.ts tests/e2e/conversation.test.ts tests/e2e/defaults.test.ts tests/e2e/house.test.ts tests/e2e/builder-writes.test.ts",
     "test:image": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts tests/e2e/invitation-image.test.ts",
     "test:scripts": "node --test --test-timeout=120000 --test-reporter=./scripts/test-reporter.ts scripts/*.test.ts"
   },

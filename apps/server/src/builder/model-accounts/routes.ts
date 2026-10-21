@@ -1,6 +1,7 @@
 import {
   assignModelAccount,
   changeModelAccount,
+  clearMyModelDefault,
   completeModelAccountSignIn,
   connectModelAccount,
   getAccountKinds,
@@ -11,6 +12,7 @@ import {
   setAccountKinds,
   setDefaultModel,
   setModelFallback,
+  setMyModelDefault,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -18,7 +20,7 @@ import { answer, serve } from '../../platform/http.ts'
 import type { Deps } from './accounts.ts'
 import { readKinds, setKinds } from './kinds.ts'
 import { listKeyProviders } from './providers.ts'
-import type { SignInFlows } from './sign-ins.ts'
+import type { SignInDeps } from './sign-ins.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import type { ModelAccountStore } from './store.ts'
 
@@ -26,7 +28,7 @@ const PROVIDERS = { providers: listKeyProviders() }
 
 export function registerModelAccountRoutes(
   app: FastifyInstance,
-  deps: Deps & { store: ModelAccountStore; flows: SignInFlows },
+  deps: Deps & SignInDeps & { store: ModelAccountStore },
 ): void {
   const { store } = deps
 
@@ -41,7 +43,7 @@ export function registerModelAccountRoutes(
     if (made.created) {
       const { id, provider, owner } = made.account
       log.info(
-        { companyId: params.companyId, accountId: id, provider, owner },
+        { by: person.id, companyId: params.companyId, accountId: id, provider, owner },
         'MODEL_ACCOUNT_LINKED',
       )
     }
@@ -51,7 +53,12 @@ export function registerModelAccountRoutes(
   serve(app, changeModelAccount, async ({ person, params, body, log }) => {
     const changed = await store.change({ person, ...params, ...body })
     log.info(
-      { companyId: params.companyId, accountId: params.accountId, state: changed.account.state },
+      {
+        by: person.id,
+        companyId: params.companyId,
+        accountId: params.accountId,
+        state: changed.account.state,
+      },
       'MODEL_ACCOUNT_CHANGED',
     )
     return answer(changed)
@@ -60,6 +67,7 @@ export function registerModelAccountRoutes(
   serve(app, assignModelAccount, async ({ person, params, body, log }) => {
     const given = await store.assign({ person, ...params, personIds: body.personIds })
     const fields = {
+      by: person.id,
       companyId: params.companyId,
       accountId: params.accountId,
       assignees: given.account.assignees.length,
@@ -68,25 +76,39 @@ export function registerModelAccountRoutes(
     return answer(given)
   })
 
-  serve(app, setDefaultModel, async ({ person, params, body, log }) => {
-    const set = await store.setDefault({ person, ...params, model: body.model })
-    log.info({ companyId: params.companyId, model: set.defaultModel }, 'MODEL_ACCOUNT_CHANGED')
-    return answer(set)
-  })
-
   serve(app, setModelFallback, async ({ person, params, body, log }) => {
     const set = await store.setFallback({ person, ...params, ...body })
     log.info(
-      { companyId: params.companyId, enabled: set.enabled, models: set.chain.length },
+      {
+        by: person.id,
+        companyId: params.companyId,
+        enabled: set.enabled,
+        models: set.chain.length,
+      },
       'MODEL_FALLBACK_SET',
     )
     return answer(set)
   })
 
+  registerQueueRoutes(app, deps)
+  registerDefaultRoutes(app, deps)
+  registerSignInRoutes(app, deps)
+}
+
+/** The order of a provider's queue, the removal of an account and the kinds the operator turns on. */
+function registerQueueRoutes(
+  app: FastifyInstance,
+  deps: Deps & { store: ModelAccountStore },
+): void {
+  const { store } = deps
+
   serve(app, orderModelAccounts, async ({ person, params, body, log }) => {
     const ordered = await store.order({ person, ...params, ids: body.ids })
     const { companyId, owner, provider } = params
-    log.info({ companyId, owner, provider, accounts: body.ids.length }, 'MODEL_ACCOUNTS_ORDERED')
+    log.info(
+      { by: person.id, companyId, owner, provider, accounts: body.ids.length },
+      'MODEL_ACCOUNTS_ORDERED',
+    )
     return answer(ordered)
   })
 
@@ -94,7 +116,12 @@ export function registerModelAccountRoutes(
     const { removed } = await store.remove({ person, ...params })
     if (removed !== undefined) {
       log.info(
-        { companyId: params.companyId, accountId: params.accountId, provider: removed.provider },
+        {
+          by: person.id,
+          companyId: params.companyId,
+          accountId: params.accountId,
+          provider: removed.provider,
+        },
         'MODEL_ACCOUNT_REMOVED',
       )
     }
@@ -108,20 +135,50 @@ export function registerModelAccountRoutes(
   serve(app, setAccountKinds, async ({ person, params, body, log }) => {
     const set = await setKinds(deps, { person, ...params, kinds: body.kinds })
     log.info(
-      { companyId: params.companyId, personId: person.id, kinds: set.kinds.join(',') },
+      {
+        by: person.id,
+        companyId: params.companyId,
+        personId: person.id,
+        kinds: set.kinds.join(','),
+      },
       'ACCOUNT_KINDS_SET',
     )
     return answer(set)
   })
-
-  registerSignInRoutes(app, deps)
 }
 
-function registerSignInRoutes(app: FastifyInstance, deps: Deps & { flows: SignInFlows }) {
+/** The company's default model and the person's own, each at a level (card 12.3). */
+function registerDefaultRoutes(app: FastifyInstance, deps: Deps & { store: ModelAccountStore }) {
+  const { store } = deps
+
+  serve(app, setDefaultModel, async ({ person, params, body, log }) => {
+    const set = await store.setDefault({ person, ...params, ...body })
+    log.info(
+      { by: person.id, companyId: params.companyId, scope: 'company' },
+      'MODEL_ACCOUNT_CHANGED',
+    )
+    return answer(set)
+  })
+
+  serve(app, setMyModelDefault, async ({ person, params, body, log }) => {
+    const set = await store.setMine({ person, ...params, ...body })
+    log.info({ by: person.id, companyId: params.companyId, scope: 'mine' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(set)
+  })
+
+  serve(app, clearMyModelDefault, async ({ person, params, log }) => {
+    await store.clearMine({ person, ...params })
+    log.info({ by: person.id, companyId: params.companyId, scope: 'mine' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(undefined)
+  })
+}
+
+function registerSignInRoutes(app: FastifyInstance, deps: Deps & SignInDeps) {
   serve(app, startModelAccountSignIn, async ({ person, params, body, log }) => {
     const started = await startSignIn(deps, { person, ...params, ...body })
     log.info(
       {
+        by: person.id,
         companyId: params.companyId,
         signInId: started.signInId,
         kind: body.kind,
@@ -136,7 +193,7 @@ function registerSignInRoutes(app: FastifyInstance, deps: Deps & { flows: SignIn
     const linked = await completeSignIn(deps, { person, ...params, code: body.code })
     const { id, provider, owner, kind } = linked.account
     log.info(
-      { companyId: params.companyId, accountId: id, provider, owner, kind },
+      { by: person.id, companyId: params.companyId, accountId: id, provider, owner, kind },
       'MODEL_ACCOUNT_LINKED',
     )
     return answer(linked)

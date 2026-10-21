@@ -4,7 +4,7 @@
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-anthropic)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff|builder/conversation/test-conversation|builder/conversation/test-research)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-anthropic|test-recordings)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff|builder/conversation/test-conversation|builder/conversation/test-defaults|builder/conversation/test-research|builder/machine/test-machine|builder/runs/test-runs)\\.ts$`
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
@@ -50,7 +50,8 @@ module.exports = {
       comment: 'C7: platform/ holds no subject and imports none.',
       severity: 'error',
       from: { path: `${SERVER}/platform/` },
-      to: { path: `${SERVER}/(hub|builder)/` },
+      // The test ports hand every test Hub the Builder's doubles (T14), as they hand it Neon's.
+      to: { path: `${SERVER}/(hub|builder)/`, pathNot: `${SERVER}/builder/runs/test-runs\\.ts$` },
     },
     {
       name: 'program-imports-program-by-name',
@@ -107,6 +108,21 @@ module.exports = {
         pathNot: `(${SERVER}/platform/company-postgres\\.ts|^apps/edge/src/db\\.ts)$`,
       },
       to: { path: '(^|node_modules/)@neondatabase/serverless(/|$)' },
+    },
+    {
+      name: 'e2b-only-in-the-machine',
+      comment:
+        'C56, decision 0051: only builder/machine/ and the template in infra/e2b/ import the E2B SDK and its Mastra sandbox.',
+      severity: 'error',
+      from: { pathNot: [`${SERVER}/builder/machine/`, '^infra/e2b/'] },
+      to: { path: '(^|node_modules/)(e2b|@mastra/e2b)(/|$)' },
+    },
+    {
+      name: 's3-only-in-the-git-copy',
+      comment: 'C56, decision 0051: only builder/git/copy/ imports the S3 client of the R2 bucket.',
+      severity: 'error',
+      from: { pathNot: `${SERVER}/builder/git/copy/` },
+      to: { path: '(^|node_modules/)@aws-sdk/client-s3(/|$)' },
     },
     {
       name: 'mastra-only-in-builder',

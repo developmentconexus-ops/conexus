@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 import type { Conversations } from './builder/conversation/public.ts'
 import { createConversations } from './builder/conversation/public.ts'
+import type { GitCopy } from './builder/git/public.ts'
 import type { ModelAccounts } from './builder/model-accounts/public.ts'
 import {
   createModelAccounts,
@@ -13,6 +14,8 @@ import {
   resealModelAccounts,
   signInFlows,
 } from './builder/model-accounts/public.ts'
+import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
+import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
 import { createAppRemoval, createApps } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
@@ -115,8 +118,15 @@ export function subjectsOf(deps: {
   companyPostgres: CompanyPostgres
   cloudflare: CloudflareApps
   mastraPool: MastraPool
+  machinesOf: MachinesOf
+  repository: RepositoryOf
+  copy: GitCopy
+  turnMs?: () => number
+  renewMs?: () => number
+  yieldMs?: () => number
   log: FailureLog
 }): {
+  runs: Runs
   projects: Projects
   operations: Operations
   apps: Apps
@@ -129,8 +139,14 @@ export function subjectsOf(deps: {
   const appRemoval = createAppRemoval(deps)
   const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
+  const { repository, copy } = deps
+  const machines = deps.machinesOf(database)
+  const runs = createRuns({
+    ...{ database, log, machines, repository, copy },
+    ...{ turnMs: deps.turnMs, renewMs: deps.renewMs, yieldMs: deps.yieldMs },
+  })
   const conversations = createConversations({
-    ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log },
+    ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },
     pool: deps.mastraPool,
   })
   const releaseConversations = conversations.release
@@ -149,8 +165,10 @@ export function subjectsOf(deps: {
     identity,
     sealKeys: config.sealKeys,
     flows,
+    googleCalls: google.googleCalls,
+    log,
   })
-  return { projects, operations, apps, modelAccounts, conversations }
+  return { runs, projects, operations, apps, modelAccounts, conversations }
 }
 
 async function runServer(): Promise<void> {
@@ -172,8 +190,9 @@ async function runServer(): Promise<void> {
     const subjects = subjectsOf({
       ...{ database, config, identity },
       ...{ neon, companyPostgres, cloudflare, mastraPool, log },
+      ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations } = subjects
+    const { projects, apps, conversations, modelAccounts, runs } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     const edge = await createEdgeHub(config, { apps })
@@ -188,8 +207,13 @@ async function runServer(): Promise<void> {
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      // The turns another copy left are ended and saved as they stand (card, the restart).
+      void runs.settleRuns().catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()
+        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      void modelAccounts
+        .readUnserved()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))
     } catch (error) {
       grace.uninstall()

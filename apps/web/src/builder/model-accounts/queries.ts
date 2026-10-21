@@ -2,6 +2,7 @@ import type { CompanyId } from '@conexus/hub-api'
 import {
   assignModelAccount,
   changeModelAccount,
+  clearMyModelDefault,
   completeModelAccountSignIn,
   connectModelAccount,
   getAccountKinds,
@@ -12,6 +13,7 @@ import {
   setAccountKinds,
   setDefaultModel,
   setModelFallback,
+  setMyModelDefault,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import { hubMutation, hubQuery } from '../../platform/hub.ts'
@@ -28,6 +30,8 @@ export const sendConnection = hubMutation(connectModelAccount)
 export const sendChange = hubMutation(changeModelAccount)
 export const sendAssignees = hubMutation(assignModelAccount)
 export const sendDefaultModel = hubMutation(setDefaultModel)
+export const sendMyDefault = hubMutation(setMyModelDefault)
+export const sendMyDefaultCleared = hubMutation(clearMyModelDefault)
 export const sendFallback = hubMutation(setModelFallback)
 export const sendOrder = hubMutation(orderModelAccounts)
 export const sendRemoval = hubMutation(removeModelAccount)

@@ -1,12 +1,7 @@
 # Web guide
 
-How the Hub's screens are organized and written. Each rule uses
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a requirement;
-**should** and **should not** need a stated reason to break; **may** is a free choice. Brackets name
-the enforcing machine, "rule to write" for a promised check, or "review". Guidance does not reopen
-approved behavior; [delivery L12](delivery.md) decides whether a finding blocks. Library usage
-belongs to maintainers' skills, checked against the installed version. Where none exists, read
-the installed library's documentation.
+How the Hub's screens are organized and written. Rules read as the opening of the
+[delivery guide](delivery.md) says.
 
 Owners next door: [design](design.md) for appearance, [code](code.md) for imports, boundaries and
 errors, [security](security.md) for authority and CSP, [testing](testing.md) for proof.
@@ -31,7 +26,7 @@ builder/          public.ts and one folder per subject
 ui/               pieces with no subject: cn.ts, button, input, label, field, form, alert-dialog,
                   dropdown-menu, avatar, sheet, toast, skeleton, states, frame
 platform/         jitless.ts, hub.ts (the only fetch), cache, attempt key, failure reader,
-                  auth.ts (the Better Auth client, if step 3 keeps it), theme, dates
+                  auth.ts (the Better Auth client), theme, dates
 brand/            tokens, fonts, mark
 ```
 
@@ -46,8 +41,7 @@ behavior and [testing T6](testing.md) tests beside the owner; no second file tre
   import `platform/`. [dependency-cruiser]
 - **W6.** `routes/` **must** reach a subject only through its `public.ts`. [dependency-cruiser]
 - **W7.** `@mastra/*` **must** be imported only inside `builder/`; only the conversation **may**
-  import Mastra's client, with the `fetch` of `platform/hub.ts`. The conversation's pieces are chosen
-  in step 12 with a prototype [0033]. [dependency-cruiser]
+  import Mastra's client, with the `fetch` of `platform/hub.ts`. [dependency-cruiser]
 - **W8.** A screen **must** read route parameters and data through `getRouteApi`, never by importing
   the route. [dependency-cruiser]
 
@@ -89,8 +83,8 @@ second owner, so its `useSession` is not a substitute for the shared cache.
   before `router.invalidate()`; after sign-out the cache **must** be cleared. [review, and a test per
   flow]
 
-`ensureQueryData` can return a cached session even when stale. Invalidation alone once left the
-person on sign-in after the correct password; the flow tests retain that concrete distinction.
+`ensureQueryData` can return a cached session even when stale. The flow tests retain that
+distinction.
 
 ## 5. Pieces and forms
 
@@ -114,11 +108,8 @@ person on sign-in after the correct password; the flow tests retain that concret
   outcome: the success body, or a failure whose row says it settles (C48). No reply, a cut or
   unreadable body, a reply that is not the Hub's, or a failure that does not settle **must** keep it
   for the next attempt. [review, a test per form, and one on a real socket]
-- **W27.** `platform/jitless.ts` **must** set Zod's `jitless` before any schema exists: Zod 4 builds
-  its first schema with `new Function`, which the CSP of [security S24](security.md) refuses. The
-  build puts it in the chunk that holds Zod, because that chunk runs before the entry's body; an
-  import at the top of `main.tsx` is not enough once the build splits code.
-  [`platform/cache.test.tsx`, `vite.config.test.ts`]
+- **W27.** `platform/jitless.ts` **must** set Zod's `jitless` before any schema exists, in the
+  chunk that holds Zod. [`platform/cache.test.tsx`, `vite.config.test.ts`]
 
 [Design V23](design.md) owns style reuse and the width-token collision; its existing GritQL plugin
 stays enabled. [Code C37](code.md) owns attempt identity end to end, while the mixed rule above
@@ -148,8 +139,9 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   sections, each added by its step: Sobre, Versões, Quem usa o app, Dados da empresa,
   Publicação. [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
-  two groups: Você (Minha conta, Minhas contas de modelo, Aparência) and the company's, headed by
-  its name (Geral, Pessoas e convites, Contas de modelo, Sistemas da empresa, Conectores); founder,
+  two groups: Você (Minha conta, Minhas contas de modelo, Meus padrões, Aparência) and the company's,
+  headed by its name (Geral, Pessoas e convites, Contas de modelo, Padrões da empresa, Sistemas da
+  empresa, Conectores); founder,
   2026-10-20: "1. A". Owner and administrator change the company's group; a member reads Pessoas.
   Memória, Atividade and Uso have their place reserved there and appear only when a card asks for
   them. [review]

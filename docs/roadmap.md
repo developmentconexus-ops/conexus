@@ -25,6 +25,7 @@ Aprovações e usos: [aprovações](approvals.md).
     12.2 **A casa.** Barra lateral, Início e primeira entrada.
     12.3 **Padrões.** Escolhe com que modelo as conversas começam.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
+    13.1 **O primeiro pedido.** Alterações, o passo 4 da primeira entrada e o compositor do Início criando Projeto.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
 16. **Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
@@ -49,7 +50,7 @@ Aprovações e usos: [aprovações](approvals.md).
 | 8 | O domínio dos apps | Workers for Platforms: US$ 25 por mês |
 | 9, 11 | Token dos apps. Cópia das chaves | Nenhum |
 | 11, 19, 21 | As assinaturas de modelo. Usuário só de leitura no sistema da empresa | Nenhum |
-| 13 | Uma chave do E2B desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
+| 13 | Uma chave do E2B (a da conta grátis). Um bucket privado no R2 | E2B pago: US$ 150 por mês, se o uso pedir |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O Neon no plano Launch. O aviso do que sai do Brasil | Cerca de US$ 19,35 por mês por banco sempre acordado |
 
@@ -66,7 +67,8 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox, Git. Testes 11, 12 |
+| 13 O Builder escreve | A chave do E2B. O bucket do R2 | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox, Git. Testes 11, 12 |
+| 13.1 O primeiro pedido | A 13 e a 12.2 | Nenhuma | — |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |
 | 15 Mudar o app | A 14 | Nenhuma | Migrações atômicas de app. O lote |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |

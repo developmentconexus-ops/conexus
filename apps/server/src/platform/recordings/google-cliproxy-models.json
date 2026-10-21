@@ -1,0 +1,6 @@
+{
+  "provider": "google",
+  "api": "google through CLIProxy model list, first page",
+  "sdk": "none: the Hub reads it with fetch",
+  "recordedAt": "2026-10-21"
+}

@@ -14,10 +14,12 @@ const FRAME_COUNT = 3
 export class Failure extends Error {
   readonly code: FailureCode
   readonly details: Readonly<Record<string, Scalar>>
+  /** A name the phrase says to the person; never logged. */
+  readonly person: string | undefined
 
   constructor(
     code: FailureCode,
-    options: { details?: Record<string, Scalar>; cause?: unknown } = {},
+    options: { details?: Record<string, Scalar>; person?: string; cause?: unknown } = {},
   ) {
     const details = options.details ?? {}
     const named = Object.entries(details).map(([key, value]) => `${key}=${value}`)
@@ -25,6 +27,7 @@ export class Failure extends Error {
     this.name = 'Failure'
     this.code = code
     this.details = details
+    this.person = options.person
   }
 }
 

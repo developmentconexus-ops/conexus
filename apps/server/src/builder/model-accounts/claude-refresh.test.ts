@@ -5,6 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import {
   asked,
+  beside,
   conversing,
   KEY,
   noticesOf,
@@ -92,7 +93,10 @@ test('duas perguntas com o token vencido: uma só chamada ao endpoint de renova�
   const f = await subscribed(t, 1)
   f.refused.status = undefined
   f.anthropic.answer = () => ({ kind: 'text', text: 'Pronto.' })
-  const [one, two] = await Promise.all([asked(t, f.where), asked(t, f.where)])
+  const [one, two] = await Promise.all([
+    asked(t, f.where),
+    asked(t, await beside(f.where, 'Estoque')),
+  ])
   for (const { events } of [one, two])
     assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.equal(f.anthropic.refreshed.filter((token) => token === FIRST.refresh).length, 1)
@@ -167,7 +171,7 @@ test('renovação recusada com outra pergunta à espera: as duas seguem pela Tim
     if (globalThis.fetch === slowed) globalThis.fetch = planted
   })
   const begun = Date.now()
-  const turns = await Promise.all([asked(t, f.where), asked(t, f.where)])
+  const turns = await Promise.all([asked(t, f.where), asked(t, await beside(f.where, 'Estoque'))])
   assert.ok(Date.now() - begun < 15_000, 'the waiting question stops with the refusal')
   assert.equal(f.anthropic.refreshed.filter((token) => token === FIRST.refresh).length, 1)
   for (const { events } of turns) {

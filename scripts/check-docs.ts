@@ -1,8 +1,9 @@
 // Defect: a document grows past its ceiling, hides from docs/index.md, holds a link that goes
 // nowhere, repeats or cites a rule that does not exist, names a retired process, or a second step
-// card waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24). A package a
-// workspace depends on has no row in the stack map, a row repeats or names nothing the repository
-// uses, or a workspace pattern is one the check cannot read.
+// card waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24); the method's
+// own refusals are in check-docs-method.ts. A package a workspace depends on has no row in the
+// stack map, a row repeats or names nothing the repository uses, or a workspace pattern is one the
+// check cannot read.
 // A link is inline or a reference definition, and a fragment must name a heading of the Markdown
 // file it points to, an ATX or a Setext heading, read by its rendered text. Refusals are proved by planting each one in check-docs.test.ts.
 // Revalidate by 2027-04-13, or when the list in delivery L24 changes.
@@ -10,6 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { parse } from 'yaml'
 import { z } from 'zod'
+import { methodProblems, RULE_DEFINITION, withoutFences, words } from './check-docs-method.ts'
 
 const root = resolve(process.argv[2] ?? '.')
 
@@ -44,7 +46,6 @@ const RETIRED = [
 ]
 const RETIRED_HOME = 'docs/guides/delivery.md'
 const RULE_ID = /\b([CDLSTVW]\d{1,3})\b/g
-const RULE_DEFINITION = /^- \*\*([CDLSTVW]\d{1,3})\.\*\*/
 
 function walk(dir: string): string[] {
   if (!existsSync(dir)) return []
@@ -67,10 +68,6 @@ const files = [
 const problems: string[] = []
 function fail(name: string, file: string, detail: string) {
   problems.push(`${name}: ${file}: ${detail}`)
-}
-
-function words(text: string): number {
-  return text.split(/\s+/).filter(Boolean).length
 }
 
 function withoutCode(text: string): string {
@@ -112,10 +109,6 @@ function checkSkillHeader(file: string, text: string) {
 
 const INLINE_LINK = /\]\(\s*<?([^)\s>]+)>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*\)/g
 const REFERENCE_DEFINITION = /^ {0,3}\[[^\]^][^\]]*\]:[ \t]*<?([^\s>]+)>?/gm
-
-function withoutFences(text: string): string {
-  return text.replace(/^(```|~~~)[\s\S]*?^\1/gm, '')
-}
 
 const ATX_HEADING = /^ {0,3}#{1,6}[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/
 const SETEXT_UNDERLINE = /^ {0,3}(?:=+|-+)[ \t]*$/
@@ -330,6 +323,7 @@ for (const [file, text] of texts) {
 }
 checkIndex()
 checkRules(texts)
+problems.push(...methodProblems(texts))
 checkSteps()
 checkStack()
 

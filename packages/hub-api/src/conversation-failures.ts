@@ -34,4 +34,28 @@ export const CONVERSATION_FAILURES = {
     action: 'Envie a mensagem de novo.',
     actionKind: 'RETRY',
   },
+  RUN_BUSY: {
+    category: 'USER',
+    settles: true,
+    status: 409,
+    phrase: 'O Builder está mudando este app para {person}.',
+    action: 'Tente de novo quando ele terminar.',
+    actionKind: 'RETRY',
+  },
+  SAVE_REFUSED: {
+    category: 'SYSTEM',
+    settles: true,
+    status: 500,
+    phrase: 'Não consegui guardar esta versão.',
+    action: 'A versão anterior continua. Peça de novo ao Builder.',
+    actionKind: 'NONE',
+  },
+  MACHINE_LOST: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 502,
+    phrase: 'A máquina caiu no meio do turno.',
+    action: 'O que não foi guardado se perdeu. Peça de novo ao Builder.',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>

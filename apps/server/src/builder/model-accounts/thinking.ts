@@ -9,7 +9,7 @@ import { getModelCapabilities } from '@ai-sdk/anthropic/internal'
 import type { ModelId } from '@conexus/hub-api'
 import { Effort, runningEffort } from '@conexus/hub-api'
 import type { ModelReasoningOption } from '@mastra/core/llm'
-import { getModelReasoningOptions, parseModelString } from '@mastra/core/llm'
+import { getModelReasoningOptions, PROVIDER_REGISTRY, parseModelString } from '@mastra/core/llm'
 import type { ProcessInputStepResult } from '@mastra/core/processors'
 import type { z } from 'zod'
 
@@ -102,17 +102,44 @@ function offOf(
   }
 }
 
+// CLIProxy names the level a model runs at in its id (`gemini-3.8-flash-high`): the name asks it.
+const NAMED_LEVEL = new RegExp(`-(${ACTIVE.join('|')})$`)
+const LISTED: ReadonlySet<string> = new Set(
+  Object.entries(PROVIDER_REGISTRY).flatMap(([id, config]) =>
+    config.models.map((model) => `${id}/${model}`),
+  ),
+)
+
+/** The level a name the registry lacks carries, which is then the only one it takes. */
+function namedLevel(model: ModelId): Active | undefined {
+  if (LISTED.has(model)) return undefined
+  const named = ActiveEffort.safeParse(NAMED_LEVEL.exec(model)?.[1])
+  return named.success ? named.data : undefined
+}
+
 /**
  * The efforts a model accepts, from Mastra's reasoning data, lowest first: `off` only when the
- * model can stop reasoning, and alone for a model with no reasoning control.
+ * model can stop reasoning. One with no reasoning control takes the level its name carries
+ * (`namedLevel`), else `off` alone.
  */
 export function effortsOf(model: ModelId): [Effort, ...Effort[]] {
   const reasoning = reasoningOf(model)
-  return reasoning === undefined ? ['off'] : effortsIn(reasoning)
+  if (reasoning !== undefined) return effortsIn(reasoning)
+  const named = namedLevel(model)
+  return named === undefined ? ['off'] : [named]
 }
 
 function effortsIn(reasoning: Reasoning): [Effort, ...Effort[]] {
   return reasoning.off === null ? [...reasoning.levels] : ['off', ...reasoning.levels]
+}
+
+/**
+ * The level a conversation on `model` starts at when `wanted` is kept: the same if the model takes
+ * it, else the nearest below it, else the model's lowest (`runningEffort`, one rule for the start
+ * and for the step).
+ */
+export function effortFor(model: ModelId, wanted: Effort): Effort {
+  return runningEffort(effortsOf(model), wanted)
 }
 
 /**
