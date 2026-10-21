@@ -1,4 +1,5 @@
 import type { Owner, ProviderId, ProviderOrder } from '@conexus/hub-api'
+import { ModelFallback, ModelId } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -15,13 +16,15 @@ import {
   insertAccount,
   labelOf,
   ownerOf,
+  partOf,
   scopeOf,
+  usableInOrder,
   viewOf,
 } from './accounts.ts'
 import type { Change } from './changes.ts'
-import { assign, change, order, remove, setDefault } from './changes.ts'
+import { assign, change, order, remove, setDefault, setFallback } from './changes.ts'
 import { keyProviderOf } from './providers.ts'
-import { companyModel, modelAccount } from './tables.ts'
+import { companyModel, companyModelFallback, modelAccount } from './tables.ts'
 
 /**
  * The person's order for each provider (P2): their own, then the company's given to them, then the
@@ -30,15 +33,7 @@ import { companyModel, modelAccount } from './tables.ts'
 function ordersOf(viewer: Viewer, rows: AccountRow[], context: Context): ProviderOrder[] {
   const byProvider = new Map<ProviderId, AccountRow[][]>()
   for (const row of rows) {
-    const given = context.assignees.get(row.id)
-    const part =
-      row.personId !== null
-        ? 0
-        : given === undefined
-          ? 2
-          : given.includes(viewer.person.id)
-            ? 1
-            : undefined
+    const part = partOf(row, context, viewer.person.id)
     if (part === undefined) continue
     const parts = byProvider.get(row.provider) ?? [[], [], []]
     parts[part]?.push(row)
@@ -52,6 +47,12 @@ function ordersOf(viewer: Viewer, rows: AccountRow[], context: Context): Provide
         part.sort((a, b) => a.position - b.position).map(({ id }) => id),
       ),
     }))
+}
+
+/** The providers the viewer may converse with now: those with an account the queue would call. */
+function usableProviders(viewer: Viewer, rows: AccountRow[], context: Context): ProviderId[] {
+  const usable = usableInOrder(rows, context, viewer.person.id).map((row) => row.provider)
+  return [...new Set(usable)].sort()
 }
 
 /** What the viewer reads of the company's accounts and their own; no one reads another's (D4). */
@@ -75,12 +76,22 @@ function list(deps: Deps, viewer: Viewer) {
       .select({ model: companyModel.model })
       .from(companyModel)
       .where(eq(companyModel.companyId, viewer.companyId))
+    const [switched] = await tx
+      .select({
+        enabled: companyModelFallback.enabled,
+        chain: companyModelFallback.chain,
+        revision: companyModelFallback.revision,
+      })
+      .from(companyModelFallback)
+      .where(eq(companyModelFallback.companyId, viewer.companyId))
     return {
       company: rows.filter((row) => row.personId === null).map((row) => viewOf(row, context)),
       mine: rows.filter((row) => row.personId !== null).map((row) => viewOf(row, context)),
       order: ordersOf(viewer, rows, context),
+      usableProviders: usableProviders(viewer, rows, context),
       kinds: [...context.open].sort(),
-      defaultModel: chosen?.model ?? null,
+      defaultModel: chosen === undefined ? null : ModelId.parse(chosen.model),
+      fallback: ModelFallback.parse(switched ?? { enabled: false, chain: [], revision: 0 }),
       mayManage: deps.identity.allows(admitted.role, 'manageModelAccounts'),
     }
   })
@@ -152,6 +163,7 @@ export function createModelAccountStore(deps: Deps) {
     change: (input: Change) => change(deps, input),
     assign: (input: Parameters<typeof assign>[1]) => assign(deps, input),
     setDefault: (input: Parameters<typeof setDefault>[1]) => setDefault(deps, input),
+    setFallback: (input: Parameters<typeof setFallback>[1]) => setFallback(deps, input),
     order: (input: Parameters<typeof order>[1]) => order(deps, input),
     remove: (input: Parameters<typeof remove>[1]) => remove(deps, input),
   })

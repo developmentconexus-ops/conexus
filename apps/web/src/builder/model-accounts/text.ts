@@ -1,5 +1,13 @@
-import type { AccountKind, ModelAccount, PersonId, Provider, ProviderId } from '@conexus/hub-api'
-import { HubFailure, sentenceOf } from '../../platform/hub.ts'
+import type {
+  AccountKind,
+  Effort,
+  ModelAccount,
+  PersonId,
+  Provider,
+  ProviderId,
+} from '@conexus/hub-api'
+import { hourOf } from '../../platform/dates.ts'
+import { writeFailureText } from '../../platform/hub.ts'
 
 export const KIND_NAMES = {
   api_key: 'Chave de API',
@@ -14,7 +22,7 @@ const UNCONFIRMED = 'Não confirmamos a mudança. Veja a lista.'
 
 /** What a failed write says: a refusal the Hub settled in its words, any other as one that may have saved. */
 export function refusalText(error: unknown): string {
-  return error instanceof HubFailure && !error.outcomeUnknown ? sentenceOf(error) : UNCONFIRMED
+  return writeFailureText(error, UNCONFIRMED)
 }
 
 /** The provider's name, or its id for one the key list does not hold, such as a subscription's. */
@@ -26,7 +34,8 @@ export function providerName(providers: readonly Provider[], id: ProviderId): st
 export function stateText(account: ModelAccount): string {
   if (account.kindOff) return 'desligada pela Conexus'
   if (account.state === 'refused') return 'recusada · Ligue de novo'
-  return account.state === 'paused' ? 'pausada' : 'ligada'
+  if (account.state === 'paused') return 'pausada'
+  return account.limitedUntil === null ? 'ligada' : `No limite até ${hourOf(account.limitedUntil)}`
 }
 
 /** How the account was linked: the end of its key, or the kind of sign-in. */
@@ -60,3 +69,13 @@ export function plain(text: string): string {
     .replaceAll(/\p{Diacritic}/gu, '')
     .toLowerCase()
 }
+
+/** What a person reads for each reasoning level a model accepts. */
+export const EFFORT_LABELS = {
+  off: 'Desligado',
+  low: 'Baixo',
+  medium: 'Médio',
+  high: 'Alto',
+  xhigh: 'Muito alto',
+  max: 'Máximo',
+} as const satisfies Record<Effort, string>

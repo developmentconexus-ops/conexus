@@ -66,6 +66,14 @@ export const MODEL_ACCOUNT_FAILURES = {
     action: 'Recarregue a página.',
     actionKind: 'NONE',
   },
+  MODEL_FALLBACK_STALE: {
+    category: 'USER',
+    settles: true,
+    status: 412,
+    phrase: 'A troca automática mudou.',
+    action: 'Recarregue a página.',
+    actionKind: 'NONE',
+  },
   MODEL_ACCOUNT_ORDER_STALE: {
     category: 'USER',
     settles: true,

@@ -7,10 +7,10 @@ import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import type { Answers, View } from './test-hub.tsx'
-import { accountOf, choose, modelHub } from './test-hub.tsx'
+import { accountOf, modelHub } from './test-hub.tsx'
 
 const server = hubServer()
-const SETUP = `/companies/${COMPANY.id}/setup`
+const PAGE = `/companies/${COMPANY.id}/settings/model-accounts`
 const ORDER = `/api/companies/${COMPANY.id}/model-account-orders/company/anthropic`
 
 function view(fields: Partial<View> = {}): View {
@@ -25,7 +25,7 @@ function view(fields: Partial<View> = {}): View {
   }
 }
 
-function open(shown: View, answers: Answers = {}, path = SETUP) {
+function open(shown: View, answers: Answers = {}, path = PAGE) {
   const hub = modelHub(shown, answers)
   server.use(...hub.handlers)
   const conexus = createConexus(createMemoryHistory({ initialEntries: [path] }))
@@ -39,19 +39,11 @@ function queue() {
 }
 
 function labelsInOrder() {
-  return screen
+  return within(screen.getByRole('main'))
     .getAllByRole('listitem')
     .map((row) => row.textContent?.slice(0, 1))
     .filter((first) => first && 'ABCD'.includes(first))
 }
-
-test('Configurar a empresa com apelido abre a Conta de modelo, sem o campo do apelido', async () => {
-  const { router } = open(view())
-  expect(await screen.findByRole('heading', { name: 'Conta de modelo' })).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Configurar a empresa' })).toBeTruthy()
-  expect(router.state.location.pathname).toBe(SETUP)
-  expect(screen.queryByLabelText('Apelido')).toBeNull()
-})
 
 test('vazio: "Nenhuma conta ligada" e Ligar conta, para quem pode', async () => {
   open(view())
@@ -92,11 +84,34 @@ test('cada conta diz o estado em palavras: para todos, reservada, pausada, recus
   expect(screen.getByRole('button', { name: 'Retomar Time 3' })).toBeTruthy()
 })
 
+test('uma conta no limite diz até que horas, na hora de quem lê', async () => {
+  const until = new Date(Date.now() + 3_600_000)
+  const hour = `${String(until.getHours()).padStart(2, '0')}h${String(until.getMinutes()).padStart(2, '0')}`
+  open(
+    view({
+      company: [accountOf({ label: 'Time 1', position: 0, limitedUntil: until.toISOString() })],
+    }),
+  )
+  expect(await screen.findByText(`chave …x7Qa · No limite até ${hour} · para todos`)).toBeTruthy()
+})
+
+/**
+ * The button once it can be pressed: a write stays pending until its reads come back
+ * (`platform/cache.ts`), so the new word shows a moment before the button is enabled.
+ */
+function enabledButton(name: string) {
+  return waitFor(() => {
+    const button = screen.getByRole('button', { name })
+    expect(button.hasAttribute('disabled')).toBe(false)
+    return button
+  })
+}
+
 test('Pausar e Retomar mandam a revisão lida e a conta muda de palavra', async () => {
   const { sent } = open(view({ company: [accountOf({ label: 'Time 1' })] }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Pausar Time 1' }))
-  fireEvent.click(await screen.findByRole('button', { name: 'Retomar Time 1' }))
-  expect(await screen.findByRole('button', { name: 'Pausar Time 1' })).toBeTruthy()
+  fireEvent.click(await enabledButton('Pausar Time 1'))
+  fireEvent.click(await enabledButton('Retomar Time 1'))
+  expect(await enabledButton('Pausar Time 1')).toBeTruthy()
   expect(sent.map((one) => one.body)).toEqual([
     { revision: 0, state: 'paused' },
     { revision: 1, state: 'ready' },
@@ -219,29 +234,28 @@ test('Remover: o aviso do Console, Esc devolve o foco, e a confirmação apaga a
   expect(await screen.findByText('Nenhuma conta ligada')).toBeTruthy()
   expect(sent.map((one) => one.method)).toEqual(['DELETE'])
   await waitFor(() =>
-    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Conta de modelo' })),
+    expect(document.activeElement).toBe(screen.getByRole('region', { name: 'Contas de modelo' })),
   )
 })
 
-test('Modelo padrão: fornecedor, busca e modelo, como fornecedor/modelo; fora da lista, a frase da falha', async () => {
+test('Modelo padrão: busca, grupos por fornecedor e o modelo, como fornecedor/modelo, sem a seção Raciocínio; fora da lista, a frase da falha', async () => {
   const shown = view()
   const { sent } = open(shown, {
     default: () => (sent.length === 1 ? refusal('MODEL_UNKNOWN') : undefined),
   })
   const save = await screen.findByRole('button', { name: 'Salvar modelo padrão' })
   expect(save).toHaveProperty('disabled', true)
-  expect(screen.queryByLabelText('Modelo padrão')).toBeNull()
-  await choose(screen.getByLabelText('Fornecedor do modelo padrão'), 'Anthropic')
+  const picker = screen.getByRole('combobox', { name: 'Modelo padrão' })
+  fireEvent.click(picker)
+  expect((await screen.findAllByText('Anthropic')).length).toBeGreaterThan(0)
+  expect(screen.queryByText('Raciocínio')).toBeNull()
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'OPUS' } })
-  fireEvent.click(screen.getByLabelText('Modelo padrão'))
-  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
-    'claude-opus-4',
-  ])
-  fireEvent.keyDown(screen.getByRole('option'), { key: 'Escape' })
+  await waitFor(() =>
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Claude Opus 4']),
+  )
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: '' } })
-  await choose(screen.getByLabelText('Fornecedor do modelo padrão'), 'OpenAI')
-  await choose(screen.getByLabelText('Modelo padrão'), 'gpt-5')
-  expect(screen.getByText('Escolhido: openai/gpt-5')).toBeTruthy()
+  fireEvent.click(await screen.findByRole('option', { name: 'GPT 5' }))
+  expect(screen.getByText('Escolhido: GPT 5')).toBeTruthy()
   fireEvent.click(save)
   expect((await screen.findByRole('alert')).textContent).toBe('Este modelo não está na lista.')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar modelo padrão' }))
@@ -253,23 +267,24 @@ test('Modelo padrão: fornecedor, busca e modelo, como fornecedor/modelo; fora d
 })
 
 test('Modelo padrão: milhares de modelos não viram milhares de opções; a busca encontra o resto', async () => {
-  const models = Array.from({ length: 3000 }, (_, index) => `modelo-${index}`)
+  const models = Array.from({ length: 3000 }, (_, index) => ({
+    id: `grande/modelo-${index}`,
+    efforts: ['off'],
+  }))
   open(view({ defaultModel: 'grande/modelo-7' }))
   server.use(
     http.get('*/api/model-providers', () =>
       HttpResponse.json({ providers: [{ id: 'grande', name: 'Grande', models }] }),
     ),
   )
-  expect(await screen.findByText('Escolhido: grande/modelo-7')).toBeTruthy()
-  fireEvent.click(await screen.findByLabelText('Modelo padrão'))
+  expect(await screen.findByText('Escolhido: Modelo 7')).toBeTruthy()
+  fireEvent.click(await screen.findByRole('combobox', { name: 'Modelo padrão' }))
   expect((await screen.findAllByRole('option')).length).toBeLessThanOrEqual(50)
   expect(screen.getByText('Mostrando 50 de 3000 modelos. Busque para ver os outros.')).toBeTruthy()
-  fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' })
   fireEvent.change(screen.getByLabelText('Buscar modelo'), { target: { value: 'modelo-2999' } })
-  fireEvent.click(screen.getByLabelText('Modelo padrão'))
-  expect((await screen.findAllByRole('option')).map((one) => one.textContent)).toEqual([
-    'modelo-2999',
-  ])
+  await waitFor(() =>
+    expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Modelo 2999']),
+  )
 })
 
 test('Dar a pessoas lê todas as páginas: a pessoa 51 aparece pelo nome e pode receber a conta', async () => {

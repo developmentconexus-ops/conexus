@@ -45,22 +45,30 @@ export async function rowsText(rows: Locator): Promise<string[]> {
 }
 
 /** Picks `option` in the UI's select labelled `label`; its list opens at the page's end. */
-export async function pick(
-  page: Page,
-  scope: Locator | Page,
-  label: string,
-  option: string | RegExp,
-) {
+async function pick(page: Page, scope: Locator | Page, label: string, option: string | RegExp) {
   await scope.getByLabel(label, { exact: true }).click()
   await page.getByRole('option', { name: option }).first().click()
 }
 
-/** Opens "Ligar conta" and links an API key of Anthropic. */
-export async function linkKey(page: Page, label: string, key: string) {
+/** Picks the first model `search` finds under `provider` in the picker named `name`; its popup holds the search. */
+export async function pickModel(
+  page: Page,
+  scope: Locator | Page,
+  name: string,
+  provider: string,
+  search: string,
+) {
+  await scope.getByRole('combobox', { name, exact: true }).click()
+  await page.getByLabel('Buscar modelo').fill(search)
+  await page.getByRole('group', { name: provider }).getByRole('option').first().click()
+}
+
+/** Opens "Ligar conta" and links an API key of `provider` (Anthropic unless said). */
+export async function linkKey(page: Page, label: string, key: string, provider = 'Anthropic') {
   await page.getByRole('button', { name: 'Ligar conta', exact: true }).click()
   const panel = page.getByRole('region', { name: 'Ligar conta' })
-  await panel.getByLabel('Buscar fornecedor').fill('Anthropic')
-  await pick(page, panel, 'Fornecedor', 'Anthropic')
+  await panel.getByLabel('Buscar fornecedor').fill(provider)
+  await pick(page, panel, 'Fornecedor', provider)
   await panel.getByLabel('Nome da conta').fill(label)
   await panel.getByLabel('Chave de API', { exact: true }).fill(key)
   await panel.getByRole('button', { name: 'Ligar conta', exact: true }).click()

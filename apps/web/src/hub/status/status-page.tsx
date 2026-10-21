@@ -2,6 +2,7 @@ import type { Start } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import { useQuery } from '@tanstack/react-query'
 import { HubFailure } from '../../platform/hub.ts'
+import { PageTitle } from '../../ui/list.tsx'
 import { statusQuery } from './queries.ts'
 
 const PHRASE = 'Hub do Conexus no ar.'
@@ -31,11 +32,13 @@ function StartRow(props: { label: string; start: Start }) {
   )
 }
 
+/** "Estado do Hub" in the Central: whether it answers, its version and its last two starts. */
 export function StatusPage() {
   const status = useQuery(statusQuery)
   const failure = status.error instanceof HubFailure ? status.error.code : 'INTERNAL_UNEXPECTED'
   return (
     <section className="flex flex-col gap-lg">
+      <PageTitle>Estado do Hub</PageTitle>
       {status.isError ? (
         <p role="alert" className="text-title">
           {FAILURES[failure].phrase}

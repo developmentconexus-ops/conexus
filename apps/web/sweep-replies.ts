@@ -8,6 +8,7 @@ import {
   getStatus,
   listClients,
   listCompanies,
+  listConversations,
   listInvitations,
   listMembers,
   listModelAccounts,
@@ -124,10 +125,21 @@ function modelAccountsPage(id: string, mayManage: boolean): Replies {
       order: [],
       kinds: [],
       defaultModel: null,
+      fallback: { enabled: false, chain: [], revision: 0 },
+      usableProviders: [],
       mayManage,
     }),
     'GET /api/model-providers': ok(listModelProviders, {
-      providers: [{ id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4'] }],
+      providers: [
+        {
+          id: 'anthropic',
+          name: 'Anthropic',
+          models: [
+            { id: 'anthropic/claude-sonnet-4', efforts: ['off', 'low', 'high'] },
+            { id: 'anthropic/claude-opus-4', efforts: ['off'] },
+          ],
+        },
+      ],
     }),
   }
 }
@@ -139,7 +151,10 @@ const PROJECT = {
   createdAt: '2026-10-17T12:00:00.000Z',
 } as const
 
-/** A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when `empty`. */
+/**
+ * A company's Projects, as a person of `mayDelete` sees them; no Project, no database yet, when
+ * `empty`. A Project opens on its conversations, so it has the list, empty.
+ */
 export function projectsPage(
   id: string,
   view: { empty?: boolean; mayDelete?: boolean } = {},
@@ -157,6 +172,10 @@ export function projectsPage(
         mayManageVersions: view.mayDelete ?? true,
         address: ADDRESS,
       },
+    }),
+    [`GET /api/companies/${id}/projects/${PROJECT.id}/conversations`]: ok(listConversations, {
+      conversations: [],
+      next: { kind: 'END' },
     }),
   }
 }

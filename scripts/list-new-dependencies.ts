@@ -4,10 +4,16 @@
 // Revalidate by 2027-04-13, or when a dependency can enter outside a package.json.
 import { appendFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { z } from 'zod'
 import { option } from './cli.ts'
 import { runCommand } from './command.ts'
 
 const SECTIONS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
+const Manifest = z.looseObject(
+  Object.fromEntries(
+    SECTIONS.map((section) => [section, z.record(z.string(), z.string()).optional()]),
+  ),
+)
 
 const base = option('--base')
 if (base === undefined) {
@@ -27,9 +33,9 @@ function manifests(ref: string): string[] {
 }
 
 function dependencies(ref: string, file: string): Map<string, string> {
-  let manifest: Record<string, Record<string, string> | undefined>
+  let manifest: z.infer<typeof Manifest>
   try {
-    manifest = JSON.parse(git('show', `${ref}:${file}`))
+    manifest = Manifest.parse(JSON.parse(git('show', `${ref}:${file}`)))
   } catch {
     return new Map()
   }

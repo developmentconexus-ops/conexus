@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
-import { createServer } from 'node:http'
 import type { TestContext } from 'node:test'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
@@ -18,71 +17,9 @@ import {
   testWebRoot,
   WRITE_HEADERS,
 } from '../../platform/test-database.ts'
+import { mailServer } from '../../platform/test-mail.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 import { createStatus } from '../status/public.ts'
-
-export type Mail = {
-  to: string
-  subject: string
-  text: string
-  html: string
-  from: { address: string; name: string }
-}
-type MailMode = 'DELIVER' | 'BOUNCE' | 'FAIL' | 'HOLD'
-
-/**
- * A fake of the mail provider (T15): it keeps each message and answers as `mode` says. HOLD keeps
- * nothing and never answers, and `held` resolves when such a request has arrived.
- */
-export async function mailServer(t: TestContext) {
-  const sent: Mail[] = []
-  const state: { mode: MailMode } = { mode: 'DELIVER' }
-  const held = Promise.withResolvers<void>()
-  const heldReplies: (() => void)[] = []
-  function keep({ to, subject, text, html, from }: Mail) {
-    sent.push({ to, subject, text, html, from })
-  }
-  const server = createServer((request, response) => {
-    const chunks: Buffer[] = []
-    request.on('data', (chunk: Buffer) => chunks.push(chunk))
-    request.on('end', () => {
-      const body = JSON.parse(Buffer.concat(chunks).toString('utf8'))
-      if (state.mode === 'HOLD') {
-        heldReplies.push(() => {
-          keep(body)
-          const result = { delivered: [body.to], permanent_bounces: [], queued: [] }
-          response.writeHead(200, { 'content-type': 'application/json' })
-          response.end(JSON.stringify({ success: true, result }))
-        })
-        return held.resolve()
-      }
-      if (state.mode === 'FAIL') return response.writeHead(500).end()
-      keep(body)
-      const bounced = state.mode === 'BOUNCE' ? [body.to] : []
-      const delivered = state.mode === 'DELIVER' ? [body.to] : []
-      const result = { delivered, permanent_bounces: bounced, queued: [] }
-      response.writeHead(200, { 'content-type': 'application/json' })
-      response.end(JSON.stringify({ success: true, result }))
-    })
-  })
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
-  t.after(() => {
-    server.closeAllConnections()
-    server.close()
-  })
-  const address = server.address()
-  assert.ok(address !== null && typeof address === 'object')
-  const url = `http://127.0.0.1:${address.port}/email/sending/send`
-  return {
-    url,
-    sent,
-    state,
-    held: held.promise,
-    releaseHeld: () => {
-      for (const reply of heldReplies.splice(0)) reply()
-    },
-  }
-}
 
 export const PASSWORD = 'senha-certa-1'
 export const SESSIONS = '/api/sessions/current'
@@ -104,6 +41,10 @@ async function hubServing(
   log: FailureLog = silent,
   change?: Change,
 ) {
+  // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
+  // the Builder's turns drain and end their streams, as at shutdown, before the server closes.
+  const closing = { hub: (): Promise<unknown> => Promise.resolve() }
+  t.after(() => closing.hub())
   const test = await createTestDatabase(t)
   const config = (change ?? ((same) => same))(testConfig(test.runtimeUrl, mailApiUrl))
   const status = createStatus({ version: config.version, database: test.database })
@@ -112,27 +53,34 @@ async function hubServing(
   const cloudflare = fakeCloudflare()
   const postgres = heldCompanyPostgres(config)
   const ports = testAppPorts(config, { neon, cloudflare, postgres })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
-    database: test.database,
-    config,
-    identity,
-    ...ports,
-    log,
+  const subjects = subjectsOf({
+    ...{ database: test.database, mastraPool: test.mastraPool, config, identity },
+    ...{ ...ports, log },
   })
+  const { projects, apps, conversations } = subjects
   const webRoot = testWebRoot(t)
-  const app = await createHub(config, {
-    status,
-    identity,
-    operations,
-    projects,
-    apps,
-    modelAccounts,
-    webRoot,
-  })
-  t.after(() => app.close())
+  const app = await createHub(config, { status, identity, ...subjects, webRoot })
+  // Once, whichever comes first: a test that waits for the Hub's background work, or the test's end.
+  let closed: Promise<void> | undefined
+  function close() {
+    closed ??= conversations.close().then(() => app.close())
+    return closed
+  }
+  closing.hub = close
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
-  return { app, edge, test, config, neon, cloudflare, postgres, projects, repair: apps.repair }
+  return {
+    app,
+    edge,
+    test,
+    config,
+    neon,
+    cloudflare,
+    postgres,
+    projects,
+    repair: apps.repair,
+    close,
+  }
 }
 
 /** A Hub on a fresh test database; its mail goes nowhere. */

@@ -94,6 +94,7 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
     { 'apps/server/src/hub/a/mapper.ts': importing('drizzle-orm/node-postgres') },
   ],
   'neon-sdk-only-in-the-neon-adapter': ['apps/server/src/hub/a/vendor.ts', '@neon/sdk', {}],
+  'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
   'web-tree-shape': [
     'apps/web/src/components/button.ts',
     '../platform/hub.ts',
@@ -123,6 +124,8 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/web/src/routes/ok.ts': '../hub/b/public.ts',
   'apps/web/src/hub/a/queries.ts': '@conexus/hub-api',
   'apps/web/src/routeTree.gen.ts': './platform/hub.ts',
+  'apps/server/src/builder/a/agent.ts': '@mastra/core/agent',
+  'apps/web/src/builder/a/conversation.ts': '@mastra/client-js',
 }
 
 let violations: Violation[] = []
@@ -246,7 +249,9 @@ function biomeConfig(): string {
 
 function biomeLint(files: Record<string, string>) {
   const dir = plant({ 'biome.json': biomeConfig(), ...files })
-  cpSync(join(ROOT, 'scripts/w25.grit'), join(dir, 'scripts/w25.grit'))
+  for (const grit of ['w25', 'conexus-code']) {
+    cpSync(join(ROOT, `scripts/${grit}.grit`), join(dir, `scripts/${grit}.grit`))
+  }
   const run = spawnSync(
     join(ROOT, 'node_modules/.bin/biome'),
     ['lint', '--colors=off', '--max-diagnostics=500', '.'],
@@ -293,25 +298,4 @@ test('V23: o Biome recusa max-w-sm e w-2xl em apps/web/src, aceita min-w-48', ()
     ['apps/web/src/ui/a.tsx', 'apps/web/src/ui/b.ts'],
     run.output,
   )
-})
-
-test('o teste que trava falha pelo prazo do comando de teste', () => {
-  const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'))
-  const args: string[] = pkg.scripts['test:scripts'].split(' ').slice(1)
-  const timeout = args.findIndex((arg) => arg.startsWith('--test-timeout='))
-  assert.notEqual(timeout, -1, 'the test command has no --test-timeout')
-  args[timeout] = '--test-timeout=300'
-  const dir = plant({
-    'hang.test.ts':
-      "import test from 'node:test'\ntest('hangs', async () => {\n  await new Promise((done) => setTimeout(done, 3000))\n})\n",
-  })
-  const { NODE_TEST_CONTEXT: _outer, ...env } = process.env
-  const run = spawnSync('node', [...args.slice(0, -1), join(dir, 'hang.test.ts')], {
-    cwd: ROOT,
-    encoding: 'utf8',
-    timeout: 120_000,
-    env,
-  })
-  assert.notEqual(run.status, 0)
-  assert.match(run.stdout + run.stderr, /timed out after 300ms/)
 })

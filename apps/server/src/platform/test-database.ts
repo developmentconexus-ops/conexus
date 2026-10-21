@@ -22,8 +22,8 @@ import {
   readTestDatabase,
   SessionSecret,
 } from './config.ts'
-import type { Database } from './database.ts'
-import { DatabaseUrl, openDatabase, RUNTIME_LOGIN } from './database.ts'
+import type { Database, MastraPool } from './database.ts'
+import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
@@ -33,6 +33,7 @@ import {
   TEST_NAMESPACE,
   testAppsConfig,
 } from './test-cloudflare.ts'
+import { mastraUrlOf } from './test-mastra-database.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
 import type { PasswordService } from './test-password-service.ts'
 import { plantPasswordService } from './test-password-service.ts'
@@ -101,6 +102,7 @@ export function testConfig(
     appsDomain: TEST_APPS_DOMAIN,
     logLevel: 'error',
     databaseUrl,
+    mastraDatabaseUrl: mastraUrlOf(databaseUrl),
     publicOrigin: TEST_ORIGIN,
     sessionSecret: SessionSecret.parse(randomBytes(32).toString('base64url')),
     mailApiUrl: MailApiUrl.parse(mailApiUrl),
@@ -125,6 +127,8 @@ export type TestDatabase = {
   database: Database
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
+  mastraUrl: DatabaseUrl
+  mastraPool: MastraPool
   container: string | undefined
   asOwner(text: string, values?: unknown[]): Promise<Record<string, unknown>[]>
 }
@@ -176,27 +180,32 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
     user: RUNTIME_LOGIN,
     password: runtimePassword,
   })
+  const mastraUrl = mastraUrlOf(runtimeUrl)
   const admin = await connected(serverUrl)
   const localeClause =
     locale && `template template0 encoding 'UTF8' lc_collate '${locale}' lc_ctype '${locale}'`
   await admin.query(`create database ${name} ${localeClause ?? ''}`)
   const database = openDatabase({ url: runtimeUrl, log: silent })
+  const mastraPool = openMastraPool({ url: mastraUrl, log: silent })
   t.after(async () => {
     try {
-      await database.close()
+      await Promise.all([database.close(), mastraPool.end()])
       // Without FORCE: DROP DATABASE ends an autovacuum worker in the database by itself, while
       // FORCE refuses with 42501 because the owner holds no privileges of that worker (#32-15).
       await admin.query(`drop database ${name}`)
+      await admin.query(`drop database if exists ${name}_mastra`)
     } finally {
       await admin.end()
     }
   })
-  await withRoleLock(() => migrate({ ownerUrl, runtimeUrl }))
+  await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
   return {
     passwords: plantPasswordService(t),
     database,
     ownerUrl,
     runtimeUrl,
+    mastraUrl,
+    mastraPool,
     container,
     asOwner: async (text, values) => {
       const client = await connected(ownerUrl)
@@ -313,6 +322,7 @@ export function serveEnvironment(
       : { HUB_PORT: String(ports.port), HUB_EDGE_PORT: String(ports.edgePort) }),
     LOG_LEVEL: 'info',
     HUB_DATABASE_URL_FILE: urlFile(t, url),
+    HUB_MASTRA_DATABASE_URL_FILE: keyFile(t, 'hub_mastra_database_url', mastraUrlOf(url).reveal()),
     HUB_PUBLIC_ORIGIN: TEST_ORIGIN,
     HUB_APPS_DOMAIN: TEST_APPS_DOMAIN,
     HUB_SESSION_SECRET_FILE: sessionSecretFile(t),

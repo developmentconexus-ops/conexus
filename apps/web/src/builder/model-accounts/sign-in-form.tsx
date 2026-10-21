@@ -91,7 +91,7 @@ function StartForm(props: {
           render={({ field }) => (
             <Choice
               id={kindId}
-              value={field.value ?? ''}
+              value={field.value ?? null}
               placeholder="Escolha o tipo"
               options={props.kinds.map((kind) => ({ value: kind, label: KIND_NAMES[kind] }))}
               onChange={field.onChange}

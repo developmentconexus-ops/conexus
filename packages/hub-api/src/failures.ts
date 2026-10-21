@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { APP_FAILURES, APP_VERSION_FAILURES } from './app-failures.ts'
 import { CAPACITY } from './capacity.ts'
+import { CONVERSATION_FAILURES } from './conversation-failures.ts'
 import type { FailureRow } from './failure-row.ts'
 import { IDENTITY_FAILURES } from './identity-failures.ts'
 import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
@@ -49,6 +50,7 @@ export const FAILURES = {
     actionKind: 'NONE',
   },
   ...IDENTITY_FAILURES,
+  ...CONVERSATION_FAILURES,
   REQUEST_MALFORMED: {
     category: 'USER',
     settles: true,

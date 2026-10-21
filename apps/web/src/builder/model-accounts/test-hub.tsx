@@ -1,4 +1,4 @@
-import type { ProviderOrder, SignInKind } from '@conexus/hub-api'
+import type { ModelFallback as Fallback, ProviderOrder, SignInKind } from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   getAccountKinds,
@@ -6,6 +6,7 @@ import {
   listModelAccounts,
   listModelProviders,
   ModelAccount,
+  ModelFallback,
   PAGE_SIZE,
   ProviderId,
   startModelAccountSignIn,
@@ -22,7 +23,10 @@ const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
   { id: 'mistral', name: 'Mistral', models: ['mistral-large'] },
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
-]
+].map((provider) => ({
+  ...provider,
+  models: provider.models.map((name) => ({ id: `${provider.id}/${name}`, efforts: ['off'] })),
+}))
 
 let made = 0
 
@@ -39,6 +43,7 @@ export function accountOf(fields: Partial<ModelAccount> & { label: string }): Mo
     kindOff: false,
     hint: 'x7Qa',
     linkedBy: ANA.name,
+    limitedUntil: null,
     linkedAt: '2026-10-19T12:00:00.000Z',
     assignees: [],
     revision: 0,
@@ -53,6 +58,7 @@ export type View = {
   order: ProviderOrder[]
   kinds: SignInKind[]
   defaultModel: string | null
+  fallback?: Fallback
   mayManage: boolean
   /** The viewer's role in the company; an owner when they manage, a member when not. */
   role?: 'owner' | 'admin' | 'member'
@@ -69,6 +75,7 @@ export type Answers = Partial<
     | 'change'
     | 'assign'
     | 'default'
+    | 'fallback'
     | 'order'
     | 'remove'
     | 'start'
@@ -113,7 +120,13 @@ function reads(view: View): HttpHandler[] {
     membersPages(view),
     ...companyRead({ role: view.role ?? (view.mayManage ? 'owner' : 'member') }),
     http.get(`${BASE}/model-accounts`, () =>
-      HttpResponse.json(listModelAccounts.success.body.parse(view)),
+      HttpResponse.json(
+        listModelAccounts.success.body.parse({
+          fallback: { enabled: false, chain: [], revision: 0 },
+          usableProviders: [],
+          ...view,
+        }),
+      ),
     ),
     http.get('*/api/model-providers', () =>
       HttpResponse.json(listModelProviders.success.body.parse({ providers: PROVIDERS })),
@@ -205,6 +218,13 @@ function settingsWrites(view: View, sent: Sent[], answers: Answers): HttpHandler
       if (replaced) return replaced
       view.defaultModel = String(body.model)
       return HttpResponse.json({ defaultModel: view.defaultModel })
+    }),
+    http.put(`${BASE}/model-fallback`, async ({ request }) => {
+      const body = ModelFallback.parse(await note(request))
+      const replaced = answers.fallback?.()
+      if (replaced) return replaced
+      view.fallback = { ...body, revision: body.revision + 1 }
+      return HttpResponse.json(view.fallback)
     }),
     http.put(`${BASE}/model-account-orders/:owner/:provider`, async ({ request, params }) => {
       const body = await note(request)

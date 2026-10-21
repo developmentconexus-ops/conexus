@@ -186,6 +186,7 @@ async function asPersonIn<T>(
   try {
     result = await work(tx)
   } catch (error) {
+    // biome-ignore lint/plugin: the work's own error is rethrown next; a failed restore must not replace it (C53)
     await enter(tx, scope).catch(() => undefined)
     throw error
   }
@@ -272,6 +273,22 @@ export function openDatabase(deps: { url: DatabaseUrl; log: FailureLog }): Datab
   })
 }
 
+/** The pool Mastra's storage runs on: Mastra's database, under its own login (decision 0010). */
+export type MastraPool = pg.Pool
+
+/**
+ * Mastra's connections hold nothing while nobody converses, as the Hub's do (data D27): the same
+ * limits, and an idle connection the server drops is logged, not fatal. Mastra never closes a pool
+ * it was given; its owner, `main.ts`, does.
+ */
+export function openMastraPool(deps: { url: DatabaseUrl; log: FailureLog }): MastraPool {
+  const pool = new pg.Pool({ connectionString: deps.url.reveal(), ...POOL_LIMITS })
+  pool.on('error', (error) => {
+    logFailure(deps.log, new Failure('DATABASE_UNAVAILABLE', { cause: error }))
+  })
+  return pool
+}
+
 const AppliedMigration = z.object({ name: z.string().nullable(), hash: z.string() })
 
 export async function assertMigrated(database: Database): Promise<void> {
@@ -296,6 +313,8 @@ export async function assertMigrated(database: Database): Promise<void> {
 }
 
 export const RUNTIME_LOGIN = 'hub_runtime'
+/** Mastra's login, which enters only Mastra's database (decision 0010). */
+export const MASTRA_LOGIN = 'mastra_runtime'
 
 export async function assertRuntimeLogin(database: Database): Promise<void> {
   const login = await database.installation(async (tx) => {

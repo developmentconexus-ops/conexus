@@ -5,8 +5,6 @@ has a record in [`decisions/`](decisions/), cited here as [0020]; the record hol
 founder's words and what reopens it. The rules that follow from this design live in the
 [guides](guides/). The sections follow arc42, with C4 context and container levels.
 
-Step numbers follow the [roadmap](roadmap.md).
-
 ## 1. Introduction and goals
 
 A person in a company asks Conexus, in Portuguese, for a business app. An agent, the Builder,
@@ -108,8 +106,7 @@ flowchart TB
 | E2B machine | Compiles and tests the app the agent writes [0028] | Nothing after the run |
 
 **The Hub and the Builder.** One program, two modules, with written boundaries [0006]. The Builder
-owns the agent, conversations, runs, the build machine, the Git and model accounts; the Hub owns the
-rest. The Builder calls the Hub through named ports: admit, read a connector, store an app version,
+calls the Hub through named ports: admit, read a connector, store an app version,
 delete what belongs to a Project, a company or a person. A port may run inside the caller's
 transaction, so creating a run and delivering the app stay one step. The Hub never imports the
 Builder; `main.ts` wires both.
@@ -199,9 +196,9 @@ One project per company and one login per app, so PostgreSQL refuses a cross rea
 without secret or network [0018]. The rows Mastra writes carry the company, built by the server,
 never by the browser.
 
-**Model accounts** [0049]. One queue per provider for the company and for each person; the
-credential is sealed with the installation key in the Builder's space and opened only inside the
-program.
+**Model accounts and calls** [0049] [0050]. One queue per provider for the company and
+each person; the credential is sealed with the installation key and opened only inside the
+program, for one attempt, by Mastra's processors.
 
 **Work that runs alone.** Scheduled jobs run on timers in the program, with a lease row naming the
 copy of the program that owns them. Basis: implemented so; accepted because queues and Redis serve
@@ -234,16 +231,17 @@ with it.
 | The runner registration token passes through one call's environment, not a file (S31) | A token readable by root for one call on the server | Accepted by the founder [0036] |
 | The owner login's key, the app key and the Workers token rest on the server | Root there reads them and changes the edge | Accepted with the runner row [0035] |
 | Transplanted code carries old decisions | A rule kept only because it existed | `conexus-study` [0001] |
+| A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
 
 **Debt.** Small fixes left on a brought part are listed here, one line each, with the step that
 removes them.
 
-- Until the first scheduled job, expired rows of `auth.session` and `auth.verification` leave only
+- Until the first scheduled job, expired `auth.session` and `auth.verification` rows leave only
   when presented; expired app handoffs, and a deleted Projeto's, only with their Hub session.
-- `projects.project.host_label` stays nullable: a Projeto made under a rolled-back 7.x has none.
-- `createUser`, `listUsers` and `findCredentialAccount` are the library's internal calls, with no
+- `projects.project.host_label` stays nullable: a rolled-back 7.x Projeto has none.
+- `createUser`, `listUsers` and `findCredentialAccount` are internal library calls, with no
   public one while sign-up is closed: the version stays pinned (step 3, criteria 21 and 22).
-- Trace ids are Fastify's request ids: the Hub audit's `telemetry` part has no step in the roadmap
-  yet.
-- The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end the wait.
+- Trace ids are Fastify's request ids until 21.1 [0052].
+- A conversation created between a release and its removal leaves an orphan thread (16).
+- The database calls carry no cancel signal (C57): `pg@8.23.1` accepts none, so deadlines end waits.

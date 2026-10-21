@@ -1,7 +1,5 @@
 # Roteiro do Conexus no repositório novo
 
-Desenho: `architecture.md`.
-
 ## 1. A página do fundador
 
 ### As etapas, e o que você faz quando cada uma fecha
@@ -26,30 +24,37 @@ Desenho: `architecture.md`.
       Etapa 4.2 usada em 2026-10-17 em https://hub.conexus.fun (v0.4.2): "Legal tudo funcionou"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
    Cartão da etapa 5 aprovado em 2026-10-17 (commit 3fa479344c8bb02a21a75aaf84744b0b01e65a7e): "2A" (2026-10-16); "eu aprovo tudo que você trouxe"
-   Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), roteiro pelo firstmate, a pedido do fundador ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
+   Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), pelo firstmate, a pedido ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
    Cartão da etapa 6 aprovado em 2026-10-17 (commit 69e6e72753f2bbf6624851c2a796c1bbb6d4e1fe): "Aprovo"
-   Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), roteiro pelo firstmate, a pedido do fundador ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
+   Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), pelo firstmate, a pedido ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
    Cartão da etapa 7 aprovado em 2026-10-17 (commit 89798f576c9fd1670748c1580807ea8e513a5d8d): "Sim"; "`D1: A D2: A D3: A`"
-   Etapa 7 usada em 2026-10-17 em https://hub.conexus.fun (v0.7.0), roteiro pelo firstmate, a pedido do fundador ("Pode fazer"), console do Neon conferido por ele: "Tudo certo nenhum projeto"
+   Etapa 7 usada em 2026-10-17 em https://hub.conexus.fun (v0.7.0), pelo firstmate, a pedido ("Pode fazer"), console do Neon conferido por ele: "Tudo certo nenhum projeto"
 8. **App de exemplo.** Abre um app escrito à mão.
    Cartão da etapa 8 aprovado em 2026-10-17 (commit ea0421001f792139ad0ee1b1d08e2c865347f52d): "Aprovo Nome A"
    Etapa 8 usada em 2026-10-18 em https://hub.conexus.fun (v0.8.0), roteiro feito pelo fundador: "Cara, eu já testei e tá tudo aprovado, tá bom? Pode já fazer o merge mesmo."
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
    Cartão da etapa 9 aprovado em 2026-10-18 (commit 8e1b461325f3064ba5690dfb28ace027554c0efa): "Aprovo"
-   Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), roteiro pelo firstmate, a pedido do fundador: "aceito A"; "Restaurei"; "Sim"
+   Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), pelo firstmate, a pedido: "aceito A"; "Restaurei"; "Sim"; saída 19 aceita em 2026-10-19, "16 A": envio cortado aos 100 s e repetido espera o primeiro acabar
    9.1 **Direto ao app.** Entra e vê o app, sem o Hub no meio; o Neon mostra o apelido.
       Cartão da etapa 9.1 aprovado em 2026-10-18 (commit 19d2d2528221ed7aad57fe177a6ac238374d640c): "1. Aprovo 2. Autorizo"
-      Etapa 9.1 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.2), roteiro pelo firstmate, a pedido do fundador: "2. pODE"; o passo 5, não rodado: "Aceitar."
+      Etapa 9.1 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.2), pelo firstmate, a pedido: "2. pODE"; o passo 5, não rodado: "Aceitar."
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
     Cartão da etapa 10 aprovado em 2026-10-18 (commit 458f5d17473aeb947c009de2b472dabdfebb4748): "oPÇÃO A tirar verificador."; "1. Aprovo"; "1. C porém me explica exemplo caso real, quero entender"
-    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), roteiro pelo firstmate, a pedido do fundador: "1 sim 2. Sim 3. Sim"; "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
+    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), pelo firstmate, a pedido: "1 sim 2. Sim 3. Sim"; "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
 11. **Conta de modelo.** Liga chaves de API, assinatura Claude e Google, em filas por fornecedor.
     Cartão da etapa 11 aprovado em 2026-10-19 (commit e5d89abfd62b4441073323f1f780fe79054bfceb): "2. a"; "3 SIM"; "4. sIM"; "sM APROVO E CONFIRMO"
-    Etapa 11 usada em 2026-10-19 em https://hub.conexus.fun (v0.11.0, v0.11.1), roteiro pelo firstmate e fundador: "okay, aguardo"; "Loguei google pela empresa, quer validar?"
+    Etapa 11 usada em 2026-10-19 em https://hub.conexus.fun (v0.11.0, v0.11.1), pelo firstmate e fundador: "okay, aguardo"; "Loguei google pela empresa, quer validar?"
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
     Cartão da etapa 12 aprovado em 2026-10-19 (commit be086108e6e98df037b74344f180aaa670ef76b0): "1. A"; "2. Autorizo"; "3. Sim"
+    Etapa 12 usada em 2026-10-19 em https://hub.conexus.fun (v0.12.0 a v0.12.2), com o firstmate; 25 e 26 numa cópia do Neon: "Sem titulo"; tela longe do Conexus OS
+    12.1 **A conversa no painel.** Conversa no painel e vê o Builder pensar.
+       Cartão da etapa 12.1 aprovado em 2026-10-19 (commit bae3907092629491aef6edf2d704623506fc1c71): "Eu aprovo o cartão do 12.1"; "Eu autorizo os dois turnos reais pela assinatura Claude"
+       Etapa 12.1 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.4 a v0.12.7); consertos de "Desligado", ferramenta cortada, citação, tabelas (#188, #191, #192): "Deu certo"
+    12.2 **A casa.** Barra lateral, Início e primeira entrada.
+       Cartão da etapa 12.2 aprovado em 2026-10-20 (commit d4fcae61430a89e03e515c4cd16beba1aaf6300e): "Aprovo o cartão da 12.2"
+       Etapa 12.2 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.8): "Aprovado tudo."
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
@@ -59,6 +64,7 @@ Desenho: `architecture.md`.
 19. **Ligar o sistema da empresa.** Cadastra a ligação e a testa.
 20. **App com dados da empresa.** Abre um app com dados desse sistema.
 21. **Outras contas.** Liga a da OpenAI, se os termos confirmarem.
+    21.1 **Ver o que acontece.** Vê a Atividade da empresa e o painel.
 22. **Ensaio geral.** Restaura tudo junto, pelo procedimento.
 23. **Primeira empresa.** Uma empresa de verdade usa um app.
 24. **Conectores de serviços.** Liga contas de serviços aos agentes e apps (resposta B, 2026-10-18).
@@ -73,47 +79,34 @@ Desenho: `architecture.md`.
 | 7 | Neon das empresas | US$ 0 |
 | 8 | O domínio dos apps | Workers for Platforms: US$ 25 por mês |
 | 9, 11 | Token dos apps. Cópia das chaves | Nenhum |
-| 11, 19, 21 | As assinaturas de modelo. Um usuário só de leitura no sistema de uma empresa | Nenhum |
-| 13 | Uma chave do E2B só desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
+| 11, 19, 21 | As assinaturas de modelo. Usuário só de leitura no sistema da empresa | Nenhum |
+| 13 | Uma chave do E2B desta instalação. Um Git privado | E2B pago: US$ 150 por mês, se o uso pedir |
 | 22 | Um lugar de cópia fora do Neon | Não lido |
 | 23 | O Neon no plano Launch. O aviso do que sai do Brasil | Cerca de US$ 19,35 por mês por banco sempre acordado |
 
 ### O que fica fora do lançamento
 
-Login social. Arquivos enviados por pessoas. Trilha de auditoria, medição de uso, segundo idioma.
-Domínio próprio de empresa.
+Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. Domínio de empresa.
 
 ### As suas respostas de 2026-10-13
 
-1. **O repositório se chama `conexus`.** "1. A".
-2. **Uma parte do código antigo só entra com os consertos médios e grandes feitos.** Os pequenos
-   viram dívida listada. "2. A", e com ela: "Tem que ser muito bem estudado como vai ser feito,
-   né, o código do zero, o que vai ser reaproveitado, para ele ser também já refatorado como
-   código, ele ser no arquivo correto, ele não manter decisões antigas só porque elas já foram
-   feitas." Vive no [`conexus-study`](../.agents/skills/conexus-study/SKILL.md), passo 5.
-3. **Toda linha lida do banco tem o formato conferido antes de ser usada.** "3. A".
-4. **A primeira etapa virou duas.** "4. B".
-5. **A ordem fica.** "5. A".
+1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
+   feitas." Vive no `conexus-study`, passo 5.
 
 ## 2. As etapas
 
-Etapa fechada sai daqui (uso: seção 1).
-
 | Etapa | O que precisa antes | Decisão sua nela | Conhecimento trazido |
 | --- | --- | --- | --- |
-| 12 Primeira conversa | A 11 | `web_fetch` (9) | Fichas do agente e da memória. Testes 1 a 8. Banco dormindo e restauração dos dois bancos |
-| 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox e Git. Testes 11 e 12 |
+| 13 O Builder escreve | A chave do E2B. O Git de cópia | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox, Git. Testes 11, 12 |
 | 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |
 | 15 Mudar o app | A 14 | Nenhuma | Migrações atômicas de app. O lote |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 17 Publicar | A 15 | Nenhuma | Pré-requisitos de Release e Publish. O estudo 04 |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
-| 19 Ligar o sistema | A 11 | Usuário só de leitura (8) | Ficha `connectors` |
+| 19 Ligar o sistema | A 11 | Usuário só de leitura (8, 17 sim) | Ficha `connectors` |
 | 20 App com dados | A 18 e a 19 | Nenhuma | A porta do conector, refeita. Como um Worker alcança o Hub |
 | 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
-| 22 Ensaio geral | A 20 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
+| 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052) |
+| 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
-| 24 Conectores de serviços | A 23 | Quem faz o OAuth | O estudo do Mastra Platform e Connect (2026-10-18), só referência, nunca dependência |
-
-O teste do banco dormindo (etapa 2) roda em toda etapa com algo autônomo; falhando com o Mastra
-parado, a 12 volta a você.
+| 24 Conectores de serviços | A 23 | Quem faz o OAuth | O estudo do Mastra Platform e Connect (referência) |

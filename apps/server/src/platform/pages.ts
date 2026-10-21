@@ -1,7 +1,8 @@
 import type { Next } from '@conexus/hub-api'
-import { LIBRARY_ID, PAGE_SIZE } from '@conexus/hub-api'
+import { PAGE_SIZE } from '@conexus/hub-api'
 import type { SQL, SQLWrapper } from 'drizzle-orm'
 import { gt } from 'drizzle-orm'
+import type { z } from 'zod'
 import { Failure } from './failure.ts'
 
 /**
@@ -18,14 +19,21 @@ export function pageOf<T>(rows: T[], idOf: (row: T) => string): { rows: T[]; nex
   }
 }
 
-/** The id of the row a page token starts after; a token not in `pageOf`'s form is malformed. */
-export function pageKey(page: string | undefined): string | undefined {
+/**
+ * The id of the row a page token starts after, parsed by the contract's schema of the list's ids;
+ * a token not in `pageOf`'s form, or whose id that schema refuses, is malformed.
+ */
+export function pageKey<Id extends z.ZodType<string, string>>(
+  page: string | undefined,
+  id: Id,
+): z.output<Id> | undefined {
   if (page === undefined) return undefined
-  const id = Buffer.from(page, 'base64url').toString('utf8')
-  if (!LIBRARY_ID.test(id) || Buffer.from(id).toString('base64url') !== page) {
-    throw new Failure('REQUEST_MALFORMED', { details: { reason: 'PAGE' } })
+  const read = Buffer.from(page, 'base64url').toString('utf8')
+  const parsed = id.safeParse(read)
+  if (!parsed.success || Buffer.from(read).toString('base64url') !== page) {
+    throw new Failure('REQUEST_MALFORMED', { details: { reason: 'PAGE' }, cause: parsed.error })
   }
-  return id
+  return parsed.data
 }
 
 /**

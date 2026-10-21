@@ -81,6 +81,7 @@ async function readReply(response: Response): Promise<Read> {
   if (text === undefined) return { kind: 'UNREADABLE', why: 'past cap' }
   let json: unknown
   try {
+    // biome-ignore lint/plugin: Reply.safeParse reads this value on the next lines (C27)
     json = JSON.parse(text)
   } catch {
     return { kind: 'UNREADABLE', why: 'not json' }

@@ -152,7 +152,9 @@ The matching `biome.json` override sets `linter.rules.nursery.noInlineStyles` to
 inline/good class cases on upgrade before accepting changed diagnostics. The risk is diagnostic
 churn, not runtime style enforcement; do not extend this check to vendor-generated styles.
 - **V18.** A screen reflows at 390px wide and at 200% zoom with no sideways scroll; [testing
-  T23](testing.md) lists the widths looked at. [`layout.test.ts`, review]
+  T23](testing.md) lists the widths looked at. Under `md` a text field's text is 16px, so a phone
+  does not zoom the page into it, and the page stays zoomable. Founder, 2026-10-20: "é coisa
+  básica". [`layout.test.ts`, `fields.layout.test.ts`, review]
 - **V56.** Narrow navigation **should** retain every destination and the account, with the approved
   top-bar drawer ("Abrir navegação"), mark and current place. Failure: a frame overflows at 320px
   and puts "Sair" outside the screen. A future layout need not copy the drawer's DOM to retain
@@ -196,12 +198,18 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
 
 ## Interaction and accessibility
 
-- **V28.** `:focus-visible` draws a 2px `accent` outline. [`layout.test.ts`, review]
+- **V28.** `:focus-visible` draws a 2px `accent` outline on buttons, tabs and links. A text field,
+  or the group that holds one, shows focus on its own edge instead: an `accent` edge with a soft
+  `accent` halo, shadcn's field focus; a busy composer turns its working ring `accent` inside the
+  same halo. Founder, 2026-10-20: "1. B". Failure: an outline drawn around a rounded field inside
+  its group makes a square box. [`layout.test.ts`, review]
 - **V29.** A disabled action **should** explain a nonobvious impediment and how to resolve it.
   Failure: a permanently disabled button leaves the person with no next step. [review]
 - **V30.** Every action **should** have a keyboard path and coherent focus return, including Tab
   order, Esc, drag alternatives and safe text composition. Failure: Tab reaches a control without
-  showing where focus is. The conversation's exact shortcuts belong in its card. [review]
+  showing where focus is. In the conversation, Enter sends and Shift+Enter breaks the line, and the
+  hint below the field says so; a send takes the person to the end, even from higher up. Founder,
+  2026-10-20: "3. Okay", "4. Sim". [review]
 - **V31.** Controls **should** have meaningful localized accessible names: labels for inputs and
   pt-BR labels for icon-only buttons. Failure: a screen reader announces only "button" with no
   purpose. Syntactic a11y lint does not prove name quality or language. [review]

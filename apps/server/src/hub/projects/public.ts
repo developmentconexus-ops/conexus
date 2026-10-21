@@ -12,13 +12,15 @@ import {
   releaseCompanyDatabase,
 } from './company-deletion.ts'
 import { admitToApp, liveProjectOf, projectOfHost } from './hosts.ts'
-import type { AppRemoval } from './projects.ts'
-import { createProjectStore, deleteMarkedProject, markedProjectsOf } from './projects.ts'
+import type { AppRemoval, ProjectConversationRelease } from './projects.ts'
+import { createProjectStore, finishMarkedProject, markedProjectsOf } from './projects.ts'
 import { registerProjectRoutes } from './routes.ts'
 
 /** For the apps' removal, which Projects and the Central call before Projects exist to hand it. */
 export { readyDatabaseOf } from './company-database.ts'
-export type { AppRemoval } from './projects.ts'
+/** For the Builder's conversations, made before Projects to hand Projects their release. */
+export { liveProjectOf } from './hosts.ts'
+export type { AppRemoval, ProjectConversationRelease } from './projects.ts'
 /** For the apps' foreign key alone (code C8). */
 export { project } from './tables.ts'
 export type Projects = ReturnType<typeof createProjects>
@@ -35,6 +37,7 @@ export function createProjects(deps: {
   log: FailureLog
   appsDomain: AppsDomain
   appRemoval: AppRemoval
+  releaseConversations: ProjectConversationRelease
 }) {
   const store = createProjectStore(deps)
   return Object.freeze({
@@ -56,7 +59,8 @@ export function createProjects(deps: {
       recordDatabaseHost,
       // What the apps' repair at start reaches Projects through: the Projetos marked for deletion.
       markedProjectsOf,
-      deleteMarkedProject,
+      finishMarkedProject: (input: Parameters<typeof finishMarkedProject>[1]) =>
+        finishMarkedProject(deps, input),
     }),
   })
 }

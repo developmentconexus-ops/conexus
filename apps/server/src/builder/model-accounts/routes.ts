@@ -10,6 +10,7 @@ import {
   removeModelAccount,
   setAccountKinds,
   setDefaultModel,
+  setModelFallback,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -70,6 +71,15 @@ export function registerModelAccountRoutes(
   serve(app, setDefaultModel, async ({ person, params, body, log }) => {
     const set = await store.setDefault({ person, ...params, model: body.model })
     log.info({ companyId: params.companyId, model: set.defaultModel }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(set)
+  })
+
+  serve(app, setModelFallback, async ({ person, params, body, log }) => {
+    const set = await store.setFallback({ person, ...params, ...body })
+    log.info(
+      { companyId: params.companyId, enabled: set.enabled, models: set.chain.length },
+      'MODEL_FALLBACK_SET',
+    )
     return answer(set)
   })
 

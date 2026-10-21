@@ -44,11 +44,14 @@ roteiro, diz o que viu e aprova os textos das telas.
 
 ## A matriz de estados
 
-| Tela | Vazio | Carregando | Erro | Não encontrado | Vencido ou recusado |
-| --- | --- | --- | --- | --- | --- |
+| Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
+| --- | --- | --- | --- | --- | --- | --- | --- |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
+
+Uma etapa com tela leva também o desenho de caixas de cada tela, a 1280 e a 390 px, e as imagens
+das capturas do produto antigo que o protótipo seguiu ([screens](screens.md)).
 
 ## A tabela de falhas
 
@@ -76,6 +79,16 @@ roteiro, diz o que viu e aprova os textos das telas.
 
 Só assinaturas: rotas (método, caminho, acesso, entrada, saídas e falhas), colunas de tabela com
 tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhum corpo de função.
+
+Além delas, a forma de cada coisa (a conclusão da seção 5 do estudo desce para cá, porque quem
+constrói não lê o estudo):
+
+- **Cada estado** como união, com o campo que separa as variantes (C21, C22).
+- **Cada id** com a sua marca e o lugar onde é conferido (C23).
+- **O dono de cada fato compartilhado**: lista, código, frase, constante (C26).
+- **O esquema Zod de cada entrada externa** (C27).
+- **O arquivo tomado como modelo**, dizendo se ele cumpre C21, C23 e C26; se não cumpre, não é
+  modelo.
 
 ### A ordem do trabalho
 
@@ -121,3 +134,6 @@ The reader of step <n> answers each one with the card's line.
    page?
 6. Does the state matrix give every screen its states, and every contract field a writer and a
    reader? A field nobody reads leaves the contract.
+7. Does each unit's section of contracts give every state its union, every id its brand, every
+   shared fact its owner, every outside input its schema, and the model file its verdict on C21,
+   C23 and C26?

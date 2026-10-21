@@ -1,4 +1,5 @@
 import { Menu as MenuPrimitive } from '@base-ui/react/menu'
+import { CheckIcon } from 'lucide-react'
 import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `dropdown-menu`, keeping the parts the account menu uses. The
@@ -13,15 +14,18 @@ export function DropdownMenuTrigger(props: MenuPrimitive.Trigger.Props) {
 
 export function DropdownMenuContent({
   align = 'end',
+  side = 'bottom',
   sideOffset = 4,
   className,
   ...props
-}: MenuPrimitive.Popup.Props & Pick<MenuPrimitive.Positioner.Props, 'align' | 'sideOffset'>) {
+}: MenuPrimitive.Popup.Props &
+  Pick<MenuPrimitive.Positioner.Props, 'align' | 'side' | 'sideOffset'>) {
   return (
     <MenuPrimitive.Portal>
       <MenuPrimitive.Positioner
         className="isolate z-50 outline-none"
         align={align}
+        side={side}
         sideOffset={sideOffset}
       >
         <MenuPrimitive.Popup
@@ -76,6 +80,32 @@ export function DropdownMenuLinkItem({
       closeOnClick={closeOnClick}
       {...props}
     />
+  )
+}
+
+export function DropdownMenuRadioGroup(props: MenuPrimitive.RadioGroup.Props) {
+  return <MenuPrimitive.RadioGroup data-slot="dropdown-menu-radio-group" {...props} />
+}
+
+/** One choice of a radio group, its check mark on the right, as shadcn's. */
+export function DropdownMenuRadioItem({
+  className,
+  children,
+  ...props
+}: MenuPrimitive.RadioItem.Props) {
+  return (
+    <MenuPrimitive.RadioItem
+      data-slot="dropdown-menu-radio-item"
+      className={cn(ITEM, 'relative pr-8', className)}
+      {...props}
+    >
+      <span className="pointer-events-none absolute right-sm flex items-center justify-center">
+        <MenuPrimitive.RadioItemIndicator>
+          <CheckIcon aria-hidden="true" />
+        </MenuPrimitive.RadioItemIndicator>
+      </span>
+      {children}
+    </MenuPrimitive.RadioItem>
   )
 }
 

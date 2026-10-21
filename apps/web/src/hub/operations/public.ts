@@ -1,3 +1,4 @@
+export { CentralHeader } from './central-header.tsx'
 export { Client } from './client.tsx'
 export { Clients } from './clients.tsx'
 export { operatorOnly } from './guard.ts'

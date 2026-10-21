@@ -26,6 +26,14 @@ export const PEOPLE_FAILURES = {
     action: 'Escolha outra senha.',
     actionKind: 'NONE',
   },
+  PERSON_REMOVAL_PENDING: {
+    category: 'THIRD_PARTY',
+    settles: false,
+    status: 503,
+    phrase: 'As conversas da pessoa ainda não foram apagadas, e ela continua na empresa.',
+    action: 'Tente de novo em alguns minutos.',
+    actionKind: 'RETRY',
+  },
   PASSWORD_CHECK_UNAVAILABLE: {
     category: 'THIRD_PARTY',
     settles: false,

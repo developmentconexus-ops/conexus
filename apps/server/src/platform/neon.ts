@@ -28,7 +28,7 @@ export function companyProjectName(input: {
 }
 
 /** Whether a project's name ends in the company's key, the old `cx-<companyId>` included (0048). */
-function isCompanys(name: string, companyId: string): boolean {
+function isCompanys(name: string, companyId: CompanyId): boolean {
   return name.endsWith(`-${companyId}`)
 }
 

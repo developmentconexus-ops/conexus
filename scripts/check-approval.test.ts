@@ -116,9 +116,98 @@ test('reconhece o cartão e041 como etapa 4.1 sem confundir com a etapa 4', () =
   assert.equal(run(dir).status, 0)
 })
 
+function decimalCardRepository(name: string): { dir: string; sha: string } {
+  const { dir } = repository()
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, `docs/steps/${name}`, 'card\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qam', 'card')
+  return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
+}
+
+test('reconhece o cartão e121 como etapa 12.1 sem confundir com a etapa 12', () => {
+  const { dir, sha } = decimalCardRepository('e121-conversa-no-painel.md')
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval of 12')
+  assert.equal(run(dir).status, 1)
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 12.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval of 12.1')
+  assert.equal(run(dir).status, 0)
+})
+
+test('reconhece o cartão e131 como etapa 13.1', () => {
+  const { dir, sha } = decimalCardRepository('e131-x.md')
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 13.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval')
+  assert.equal(run(dir).status, 0)
+})
+
+test('o cartão e12 continua sendo a etapa 12', () => {
+  const { dir, sha } = decimalCardRepository('e12-x.md')
+  write(
+    dir,
+    'docs/roadmap.md',
+    `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
+  )
+  git(dir, 'commit', '-qam', 'approval')
+  assert.equal(run(dir).status, 0)
+})
+
 test('sem cartão não há o que conferir', () => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-approval-'))
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   assert.equal(run(dir).status, 0)
+})
+
+function twoCardRepository(): { dir: string; sha: string } {
+  const { dir } = repository()
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, 'docs/steps/e121-a.md', 'card 12.1\n')
+  write(dir, 'docs/steps/e122-b.md', 'card 12.2\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qam', 'two cards')
+  return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
+}
+
+function approvalOf(step: string, sha: string): string {
+  return `Cartão da etapa ${step} aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`
+}
+
+test('aceita dois cartões aprovados e inalterados', () => {
+  const { dir, sha } = twoCardRepository()
+  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
+  git(dir, 'commit', '-qam', 'approvals')
+  assert.equal(run(dir).status, 0)
+})
+
+test('recusa o segundo cartão sem aprovação, nomeando-o', () => {
+  const { dir, sha } = twoCardRepository()
+  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha))
+  git(dir, 'commit', '-qam', 'approval of the first')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^approval-missing: .*e122-b\.md/)
+})
+
+test('recusa o segundo cartão mudado depois da aprovação, nomeando-o', () => {
+  const { dir, sha } = twoCardRepository()
+  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
+  write(dir, 'docs/steps/e122-b.md', 'card 12.2 changed\n')
+  git(dir, 'commit', '-qam', 'approvals and change')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^card-changed-after-approval: .*e122-b\.md/)
 })

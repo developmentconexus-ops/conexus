@@ -57,7 +57,7 @@ export function readMembers(
 ) {
   return database.read({ kind: 'COMPANY', ...input }, async (tx) => {
     const admitted = await admitCompany({ tx, ...input, action: 'readMembers' })
-    const key = pageKey(page)
+    const key = pageKey(page, Listed.shape.id)
     const rows = await tx
       .select(columns)
       .from(member)
@@ -127,23 +127,47 @@ function refused(): Failure {
   return new Failure('NOT_FOUND', { details: { reason: 'FORBIDDEN' } })
 }
 
+/** What taking a person out asks of the Builder (code C4): their conversations' threads and memory. */
+export type PersonConversationRelease = (scope: {
+  companyId: CompanyId
+  personId: PersonId
+}) => Promise<void>
+
+/** The member the removal takes out, after its checks, or nothing if they are already out. */
+async function removable(tx: CommandTx, input: OfMember) {
+  const leaving = input.person.id === input.personId
+  const action = leaving ? 'leaveCompany' : 'removeMember'
+  const { admitted, target } = await admittedTarget(tx, { ...input, action })
+  if (target === undefined) return undefined
+  if (!leaving && !rankAllows(actorOf(admitted), target.role)) throw refused()
+  await keepOwner(tx, { companyId: input.companyId, leaving: target.role })
+  return target
+}
+
 /**
  * Takes a person out of the company, or the person out of theirs; a person already out stays out.
- * Their pending invitations go with them. It writes through the plugin's adapter: the endpoints
+ * Their pending invitations go with them. Their conversations go first, with no transaction open
+ * (data D22), after a first pass of the same checks: if the Builder cannot release them, the
+ * person stays, `PERSON_REMOVAL_PENDING`. It writes through the plugin's adapter: the endpoints
  * require the caller to be a member, which the operator is not, and their last-owner count is not
  * locked (docs/reference/boundaries.md). Returns the role the person held, or nothing if absent.
  */
-export function removeMemberCommand(deps: { auth: Auth; libraryCommand: LibraryCommand }) {
-  return (input: OfMember) =>
-    deps.libraryCommand(companyScope(input), async (tx) => {
-      const leaving = input.person.id === input.personId
-      const action = leaving ? 'leaveCompany' : 'removeMember'
-      const { admitted, target } = await admittedTarget(tx, { ...input, action })
+export function removeMemberCommand(deps: {
+  auth: Auth
+  libraryCommand: LibraryCommand
+  releaseConversations: PersonConversationRelease
+}) {
+  return async (input: OfMember) => {
+    const { companyId, personId } = input
+    const found = await deps.libraryCommand(companyScope(input), (tx) => removable(tx, input))
+    if (found === undefined) return undefined
+    await deps.releaseConversations({ companyId, personId }).catch((cause: unknown) => {
+      throw new Failure('PERSON_REMOVAL_PENDING', { cause })
+    })
+    return deps.libraryCommand(companyScope(input), async (tx) => {
+      const target = await removable(tx, input)
       if (target === undefined) return undefined
-      if (!leaving && !rankAllows(actorOf(admitted), target.role)) throw refused()
-      await keepOwner(tx, { companyId: input.companyId, leaving: target.role })
       const adapter = await organizationAdapter(deps.auth)
-      const { companyId, personId } = input
       await adapter.deleteMember({
         memberId: target.id,
         organizationId: companyId,
@@ -152,6 +176,7 @@ export function removeMemberCommand(deps: { auth: Auth; libraryCommand: LibraryC
       await cancelSentBy(tx, { companyId, personId })
       return target.role
     })
+  }
 }
 
 /** Changes a member's role at the role the caller read, through the adapter, under the same lock. */

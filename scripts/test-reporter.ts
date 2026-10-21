@@ -6,7 +6,9 @@
 // through `parseLogLine` in scripts/log-line.ts.
 // The refusals are proved by planting each one in test-reporter.test.ts.
 // When GITHUB_STEP_SUMMARY names a file, the run also appends its slowest tests there, so a slow
-// run shows where its time went; the test "a lista dos mais lentos" holds that.
+// run shows where its time went; the test "a lista dos mais lentos" holds that. It appends and
+// prints the time of each test file too: scripts/server-shards.ts reads those lines from a job's
+// log to balance the shards (test "o tempo de cada arquivo").
 // Revalidate by 2027-04-13, or when Node changes the test event stream.
 import { appendFileSync } from 'node:fs'
 import { relative } from 'node:path'
@@ -38,6 +40,19 @@ function slowestTable(timed: Timed[], total: number): string {
   ].join('\n')
 }
 
+function filesTable(files: Map<string, number>): string {
+  const rows = [...files].toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  return [
+    `### Test files of ${process.env.npm_package_name ?? 'the run'}`,
+    '',
+    '| Seconds | File |',
+    '| ---: | --- |',
+    ...rows.map(([file, ms]) => `| ${(ms / 1000).toFixed(1)} | ${file} |`),
+    '',
+    '',
+  ].join('\n')
+}
+
 function isLogLine(line: string): boolean {
   return parseLogLine(line) !== undefined
 }
@@ -45,6 +60,7 @@ function isLogLine(line: string): boolean {
 async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEvent, void> {
   const pending = new Map<string, string>()
   const timed: Timed[] = []
+  const files = new Map<string, number>()
   for await (const event of source) {
     if (event.type === 'test:stdout' || event.type === 'test:stderr') {
       const key = `${event.type} ${event.data.file ?? ''}`
@@ -61,6 +77,10 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
       const { name, file, details } = event.data
       if (details.type !== 'suite' && name !== file) {
         timed.push({ name, file: relative(process.cwd(), file ?? ''), ms: details.duration_ms })
+      }
+      if (event.data.nesting === 0 && name !== file) {
+        const key = relative(process.cwd(), file ?? '')
+        files.set(key, (files.get(key) ?? 0) + details.duration_ms)
       }
     }
     if (event.type === 'test:pass' && event.data.skip !== undefined && event.data.skip !== false) {
@@ -86,6 +106,9 @@ async function* watched(source: AsyncIterable<TestEvent>): AsyncGenerator<TestEv
       const summary = process.env.GITHUB_STEP_SUMMARY
       if (summary !== undefined && timed.length > 0) {
         appendFileSync(summary, slowestTable(timed, event.data.duration_ms))
+        const table = filesTable(files)
+        appendFileSync(summary, table)
+        process.stdout.write(table)
       }
     }
     yield event

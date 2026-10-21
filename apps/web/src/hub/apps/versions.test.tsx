@@ -1,11 +1,17 @@
 import { FAILURES } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
+import {
+  conversationsNone,
+  hubServer,
+  PEDIDOS,
+  projectsRead,
+  refusal,
+} from '../../platform/test-hub.tsx'
 import {
   LIVE_PATH,
   livedVersion,
@@ -14,7 +20,8 @@ import {
 } from '../../platform/test-hub-versions.tsx'
 
 const server = hubServer()
-const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}/settings`
+beforeEach(() => server.use(conversationsNone))
+const SETTINGS = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}?lens=project&section=versions`
 
 async function open(view: { versions: ReturnType<typeof versionView>[] }, mayDelete = true) {
   server.use(
@@ -57,7 +64,7 @@ test('cada versão: número, data, quem e estado em palavras; só a guardada tem
       versionView(2, { sentByName: null }),
     ],
   })
-  const rows = await screen.findAllByRole('listitem')
+  const rows = await within(screen.getByRole('main')).findAllByRole('listitem')
   expect(rows).toHaveLength(4)
   expect(rows[0]?.textContent).toContain('Versão 5')
   expect(rows[0]?.textContent).toContain('Enviando…')
@@ -142,7 +149,11 @@ test('Voltar para esta: "Voltando…" na espera; 200 fecha e a lista mostra a ve
   held.resolve()
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull())
   expect(sent).toEqual([{ versionId: versionView(1).id }])
-  await waitFor(() => expect(screen.getByRole('list').textContent).toContain('Versão 1 · no ar'))
+  await waitFor(() =>
+    expect(within(screen.getByRole('main')).getByRole('list').textContent).toContain(
+      'Versão 1 · no ar',
+    ),
+  )
 })
 
 for (const [name, code, phrase] of [

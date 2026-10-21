@@ -109,6 +109,7 @@ type BaseConfig = {
   port: number
   logLevel: LogLevel
   databaseUrl: DatabaseUrl
+  mastraDatabaseUrl: DatabaseUrl
 }
 export type Config = BaseConfig & {
   edgePort: number
@@ -152,6 +153,7 @@ const Environment = z.object({
   HUB_PORT: Port,
   LOG_LEVEL: z.enum(LOG_LEVELS),
   HUB_DATABASE_URL_FILE: z.string().min(1),
+  HUB_MASTRA_DATABASE_URL_FILE: z.string().min(1),
 })
 const MigrationKey = z.object({ HUB_MIGRATION_DATABASE_URL_FILE: z.string().min(1) })
 const ServeEnvironment = z.object({
@@ -208,6 +210,7 @@ function baseConfig(data: z.output<typeof Environment>): BaseConfig {
     port: data.HUB_PORT,
     logLevel: data.LOG_LEVEL,
     databaseUrl: readUrl('HUB_DATABASE_URL_FILE', data.HUB_DATABASE_URL_FILE),
+    mastraDatabaseUrl: readUrl('HUB_MASTRA_DATABASE_URL_FILE', data.HUB_MASTRA_DATABASE_URL_FILE),
   }
 }
 

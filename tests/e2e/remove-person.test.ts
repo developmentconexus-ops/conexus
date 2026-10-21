@@ -5,15 +5,17 @@ import { chromium } from 'playwright-core'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import type { Mail } from './live-hub.ts'
 import {
-  chooseNickname,
   closeBrowser,
+  firstEntry,
   linkIn,
   liveHub,
   mailProvider,
+  openSettings,
   PASSWORD,
   personWithPassword,
   reachHub,
   signIn,
+  waitForHome,
   watchConsole,
 } from './live-hub.ts'
 
@@ -29,6 +31,7 @@ const NEW_PASSWORD = 'senha-nova-1'
 const LEAKED = '123456789'
 const CHOSEN = 'outra-senha-forte-9'
 const NOT_FOUND = 'Não encontramos o que você procurou.'
+const NO_COMPANY = 'Você ainda não está em nenhuma empresa.'
 
 /** Opens an invitation's mail as a new person, creates the password and accepts; a first owner sets the company up. */
 async function join(page: Page, mail: Mail, person: { name: string }, firstOwner = false) {
@@ -38,10 +41,9 @@ async function join(page: Page, mail: Mail, person: { name: string }, firstOwner
   await page.getByLabel('Confirmar senha', { exact: true }).fill(NEW_PASSWORD)
   await page.getByRole('button', { name: 'Criar senha', exact: true }).click()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  if (firstOwner) await chooseNickname(page)
-  else await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
-  await page.getByRole('link', { name: 'Pessoas' }).first().click()
-  await page.getByRole('heading', { name: COMPANY, exact: true }).waitFor()
+  if (firstOwner) await firstEntry(page)
+  else await waitForHome(page)
+  await openSettings(page, 'Pessoas e convites')
 }
 
 async function invite(page: Page, email: string, role: string) {
@@ -73,7 +75,6 @@ async function setUp(w: Windows, mail: Mailbox) {
   await w.ana.getByRole('button', { name: 'Cadastrar cliente' }).click()
   await w.ana.getByRole('heading', { name: COMPANY, exact: true }).waitFor()
   await join(w.davi, await mail.next(), DAVI, true)
-  await w.davi.getByRole('heading', { name: 'Pessoas' }).waitFor()
   await invite(w.davi, CARLA.email, 'Administrador')
   await join(w.carla, await mail.next(), CARLA)
   await invite(w.carla, ERIN, 'Membro')
@@ -95,7 +96,7 @@ async function takeOut(w: Windows) {
   await w.carla.reload()
   await w.carla.getByRole('heading', { name: NOT_FOUND }).waitFor()
   await w.carla.goto(`${TEST_ORIGIN}/`)
-  await w.carla.getByText('Você ainda não participa de nenhuma empresa.').waitFor()
+  await w.carla.getByRole('heading', { name: NO_COMPANY }).waitFor()
 }
 
 /** The Central invites Carla as owner, she accepts, and the Central makes Davi an administrator. */
@@ -107,7 +108,7 @@ async function centralChanges(w: Windows, mail: Mailbox) {
   await invite(w.ana, CARLA.email, 'Dono')
   await w.carla.goto(linkIn(await mail.next()))
   await w.carla.getByRole('button', { name: 'Aceitar convite' }).click()
-  await w.carla.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await waitForHome(w.carla)
   await w.ana.reload()
   await w.ana.getByRole('button', { name: `Mudar papel: ${DAVI.name}` }).click()
   await w.ana.getByRole('combobox', { name: 'Papel' }).click()
@@ -121,7 +122,7 @@ async function centralChanges(w: Windows, mail: Mailbox) {
     .waitFor()
   await w.davi.reload()
   await confirm(w.davi, 'Sair da empresa', 'Sair da empresa')
-  await w.davi.getByText('Você ainda não participa de nenhuma empresa.').waitFor()
+  await w.davi.getByRole('heading', { name: NO_COMPANY }).waitFor()
 }
 
 /** Carla forgets the password; the leaked one is refused, the link stays, another one passes. */
@@ -144,7 +145,7 @@ async function recover(w: Windows, mail: Mailbox) {
     await page.getByText(outcome).waitFor()
   }
   await signIn(page, CARLA.email, CHOSEN)
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await waitForHome(page)
   await w.carla.reload()
   await w.carla.getByRole('button', { name: 'Entrar' }).waitFor()
 }

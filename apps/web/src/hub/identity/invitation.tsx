@@ -18,7 +18,7 @@ import {
 } from '../../ui/form.tsx'
 import { PageTitle } from '../../ui/list.tsx'
 import { Notice } from '../../ui/notice.tsx'
-import { NotFoundWithHint } from '../../ui/states.tsx'
+import { NotFound } from '../../ui/states.tsx'
 import {
   acceptReceivedInvitation,
   createReceivedPassword,
@@ -244,5 +244,5 @@ export function InvitationEntry() {
 }
 
 export function InvitationNotFound() {
-  return <NotFoundWithHint hint="Confira o endereço do convite." />
+  return <NotFound hint="Confira o endereço do convite." />
 }

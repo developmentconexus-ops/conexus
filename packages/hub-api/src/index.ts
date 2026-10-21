@@ -64,6 +64,30 @@ export {
   removeMember,
   renewInvitation,
 } from './companies.ts'
+export {
+  CONVERSATION_HEARTBEAT_MS,
+  Conversation,
+  ConversationEvent,
+  ConversationId,
+  ConversationSummary,
+  createConversation,
+  Effort,
+  listConversations,
+  MESSAGE_MAX_LENGTH,
+  Message,
+  MessageId,
+  MessagePart,
+  ModelId,
+  providerOfModel,
+  readConversation,
+  runningEffort,
+  SUBJECT_MAX_LENGTH,
+  sendConversationMessage,
+  setConversationModel,
+  stopConversation,
+  streamConversation,
+  TurnFailureCode,
+} from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
 export { getHealth, Health } from './health.ts'
 export {
@@ -82,7 +106,9 @@ export {
 } from './identity.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
+  ACCOUNT_KINDS,
   ACCOUNT_LABEL_MAX_LENGTH,
+  ACCOUNT_STATES,
   AccountKind,
   AccountState,
   assignModelAccount,
@@ -92,8 +118,10 @@ export {
   getAccountKinds,
   listModelAccounts,
   listModelProviders,
+  MODEL_FALLBACK_MAX_LENGTH,
   ModelAccount,
   ModelAccountId,
+  ModelFallback,
   Owner,
   orderModelAccounts,
   Provider,
@@ -104,6 +132,7 @@ export {
   SignInKind,
   setAccountKinds,
   setDefaultModel,
+  setModelFallback,
   startModelAccountSignIn,
 } from './model-accounts.ts'
 export { setCompanyNickname } from './nickname.ts'
@@ -113,8 +142,10 @@ export {
   AttemptKey,
   type DeclaredOperation,
   defineOperation,
+  EventId,
   failuresOf,
   isDeclaredOperation,
+  LAST_EVENT_ID_HEADER,
   type Operation,
 } from './operation.ts'
 export {

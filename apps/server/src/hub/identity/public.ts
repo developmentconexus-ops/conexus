@@ -19,6 +19,7 @@ import { registerCompanyRoutes } from './company-routes.ts'
 import { createFirstPerson } from './first-person.ts'
 import { mailInvitation } from './invitation-mail.ts'
 import { lockCompany } from './invitations.ts'
+import type { PersonConversationRelease } from './memberships.ts'
 import { companyNicknameOf } from './nickname.ts'
 import { createPasswordRecovery } from './password-recovery.ts'
 import { registerIdentityRoutes } from './routes.ts'
@@ -27,6 +28,7 @@ import { createSessionReader, liveHubSession, personNameOf } from './session.ts'
 // The library's own configuration, for its tests: nothing routes to its sign-up, so only a direct
 // call can prove the sign-up stays closed (criterion 18).
 export { createAuth } from './auth.ts'
+export type { PersonConversationRelease } from './memberships.ts'
 export { passwordLinkText } from './messages.ts'
 // The row policies' pieces, for the Central's own table, the Hub session's table, for the apps'
 // and the model accounts' foreign keys (code C8), and a person's name, for the version that
@@ -95,9 +97,13 @@ export function createIdentity(deps: {
           signal: input.signal,
         }),
     }),
-    routes: (app: Parameters<typeof registerIdentityRoutes>[0]) => {
+    // The Builder's release comes with the routes: identity exists before the Builder (code C4).
+    routes: (
+      app: Parameters<typeof registerIdentityRoutes>[0],
+      builder: { releaseConversations: PersonConversationRelease },
+    ) => {
       registerIdentityRoutes(app, { auth, config: deps.config, readSession, recovery })
-      registerCompanyRoutes(app, { ...deps, auth, libraryCommand })
+      registerCompanyRoutes(app, { ...deps, ...builder, auth, libraryCommand })
     },
   })
 }

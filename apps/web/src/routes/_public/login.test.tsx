@@ -27,7 +27,7 @@ for (const hostile of HOSTILE) {
     expect(conexus.router.state.location.search).toEqual({})
     fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-    expect(await screen.findByText('Você entrou como Ana Lima.')).toBeTruthy()
+    expect(await screen.findByText('Você ainda não está em nenhuma empresa.')).toBeTruthy()
     expect(conexus.router.state.location.href).toBe('/')
   })
 }

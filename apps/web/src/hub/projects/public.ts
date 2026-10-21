@@ -1,4 +1,6 @@
-export { Project } from './project.tsx'
+export { ProjectArea } from './area.tsx'
+export { Home } from './home.tsx'
 export { Projects } from './projects.tsx'
 export { projectQuery, projectsQuery } from './queries.ts'
-export { Settings } from './settings.tsx'
+export { RecentProjects, rememberProject } from './recent-projects.tsx'
+export { Lens, Section } from './search.ts'

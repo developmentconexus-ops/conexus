@@ -6,7 +6,13 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!package-lock.json", "!**/*.woff2", "!apps/web/src/routeTree.gen.ts"]
+    "includes": [
+      "**",
+      "!package-lock.json",
+      "!**/*.woff2",
+      "!apps/web/src/routeTree.gen.ts",
+      "!apps/web/src/builder/model-accounts/marks"
+    ]
   },
   "formatter": {
     "indentStyle": "space",
@@ -42,6 +48,7 @@
       },
       "style": {
         "noDefaultExport": "error",
+        "useThrowOnlyError": "error",
         "noProcessEnv": "error",
         "noNonNullAssertion": "error",
         "useConsistentTypeDefinitions": {
@@ -87,6 +94,7 @@
         "noEmptyBlockStatements": "error"
       },
       "nursery": {
+        "noFloatingPromises": "error",
         "noThisOutsideOfClass": "error",
         "noUnsafeTypeAssertion": "error",
         "useConsistentFunctionStyle": {
@@ -94,7 +102,8 @@
           "options": {
             "style": "declaration"
           }
-        }
+        },
+        "useExhaustiveSwitchCases": "error"
       }
     }
   },
@@ -160,6 +169,8 @@
         "apps/web/src/platform/test-hub.tsx",
         "apps/web/src/platform/test-hub-versions.tsx",
         "apps/web/src/builder/model-accounts/test-hub.tsx",
+        "apps/web/src/builder/conversation/test-hub.tsx",
+        "apps/web/src/hub/identity/test-hub.tsx",
         "apps/web/vitest.*",
         "apps/web/vite.config.ts"
       ],
@@ -174,6 +185,18 @@
     {
       "includes": ["apps/web/src/**"],
       "plugins": ["./scripts/w25.grit"]
+    },
+    {
+      "includes": [
+        "apps/**",
+        "packages/**",
+        "scripts/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!**/test-*.ts",
+        "!**/test-*.tsx"
+      ],
+      "plugins": ["./scripts/conexus-code.grit"]
     }
   ],
   "css": {

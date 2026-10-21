@@ -1,7 +1,7 @@
 import type { FailureCode } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 
-type Scalar = string | number | boolean
+export type Scalar = string | number | boolean
 
 export type FailureLog = {
   info(fields: Record<string, Scalar>, message: string): void
@@ -28,9 +28,10 @@ export class Failure extends Error {
   }
 }
 
-function causeChain(failure: Failure): unknown[] {
+/** `error` and the causes it carries, outermost first, at most `CAUSE_DEPTH` of them. */
+export function causeChain(error: unknown): unknown[] {
   const chain: unknown[] = []
-  for (let cause = failure.cause; cause !== undefined && chain.length < CAUSE_DEPTH; ) {
+  for (let cause = error; cause !== undefined && chain.length < CAUSE_DEPTH; ) {
     chain.push(cause)
     cause = cause instanceof Error ? cause.cause : undefined
   }
@@ -56,11 +57,19 @@ function systemCode(chain: unknown[]): string | undefined {
   return undefined
 }
 
-/** Logs only scalar fields: the types and frames of the cause, never its text (S41). */
-export function logFailure(log: FailureLog, failure: Failure): void {
+/**
+ * Logs only scalar fields: the types and frames of the cause, never its text (S41). `about` names
+ * what the failure happened to, such as the account a queue skipped.
+ */
+export function logFailure(
+  log: FailureLog,
+  failure: Failure,
+  about: Record<string, Scalar> = {},
+): void {
   const row = FAILURES[failure.code]
-  const chain = causeChain(failure)
+  const chain = causeChain(failure.cause)
   const fields: Record<string, Scalar> = {
+    ...about,
     category: row.category,
     status: row.status,
     ...failure.details,

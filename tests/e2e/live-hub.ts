@@ -85,13 +85,17 @@ export async function liveHub(
   names: Partial<Pick<Config, 'publicOrigin' | 'appsDomain'>> = {},
 ) {
   assert.ok(existsSync(join(WEB_ROOT, 'index.html')), 'the screens are not built: run npm run e2e')
+  // Hooks run in the order they were added: the Hub closes before its databases end.
+  const closing = { hub: (): Promise<unknown> => Promise.resolve() }
+  t.after(() => closing.hub())
   const database = await createTestDatabase(t)
   const neon = await neonServer(t)
   const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const { projects, operations, apps, modelAccounts } = subjectsOf({
+  const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
     database: database.database,
+    mastraPool: database.mastraPool,
     config,
     identity,
     neon: createNeonProjects({ config, log: silent }),
@@ -109,9 +113,13 @@ export async function liveHub(
     projects,
     apps,
     modelAccounts,
+    conversations,
     webRoot: WEB_ROOT,
   })
-  t.after(() => app.close())
+  closing.hub = async function closeHub() {
+    await conversations.close()
+    await app.close()
+  }
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
@@ -174,11 +182,77 @@ export async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Entrar' }).click()
 }
 
-/** The first owner of a company the Central made keeps the suggested nickname, and Projetos opens. */
+/** Início, once the company's page has opened (its title; the sidebar and the cards come with it). */
+export async function waitForHome(page: Page) {
+  await page.getByRole('heading', { name: 'O que vamos construir?', exact: true }).waitFor()
+}
+
+/** Welcome step 1: the first owner of a company the Central made keeps the suggested nickname. */
 export async function chooseNickname(page: Page) {
-  await page.getByRole('heading', { name: 'Configurar a empresa' }).waitFor()
-  await page.getByRole('button', { name: 'Salvar', exact: true }).click()
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await page.getByRole('heading', { name: 'Sua empresa', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Salvar e continuar', exact: true }).click()
+  await page.getByRole('heading', { name: 'Ligue uma conta de modelo', exact: true }).waitFor()
+}
+
+/** A welcome step's way on: "Continuar" once the step is done, else "Fazer depois". */
+async function moveOn(page: Page) {
+  const done = page.getByRole('link', { name: 'Continuar', exact: true })
+  await done.or(page.getByRole('link', { name: 'Fazer depois', exact: true })).click()
+}
+
+/** Welcome steps 2 to 4 as the company stands: each step's way on, then "Ir para o início". */
+async function finishWelcome(page: Page) {
+  await moveOn(page)
+  await page.getByRole('heading', { name: 'Convide sua equipe', exact: true }).waitFor()
+  await moveOn(page)
+  await leaveWelcome(page)
+}
+
+/** Welcome step 4: "Ir para o início". */
+export async function leaveWelcome(page: Page) {
+  const title = page.getByRole('heading', { name: 'O que vamos construir primeiro?', exact: true })
+  await title.waitFor()
+  await page.getByRole('link', { name: 'Ir para o início', exact: true }).click()
+  await waitForHome(page)
+}
+
+/** The first entry of a company the Central made, as its first owner leaves it: Início opens. */
+export async function firstEntry(page: Page) {
+  await chooseNickname(page)
+  await finishWelcome(page)
+}
+
+/** Início again, from any page of the company's frame, by the sidebar's first link. */
+export async function openHome(page: Page) {
+  await sidebarOf(page).getByRole('link', { name: 'Início', exact: true }).click()
+  await waitForHome(page)
+}
+
+/** The company's sidebar, whose links the page's own content never repeats under another name. */
+export function sidebarOf(page: Page) {
+  return page.getByRole('navigation', { name: 'Navegação' })
+}
+
+/** From any page of a company's frame: Configurações in the sidebar, then the section in its index. */
+export async function openSettings(page: Page, section: string) {
+  await sidebarOf(page).getByRole('link', { name: 'Configurações', exact: true }).click()
+  await sidebarOf(page).getByRole('link', { name: section, exact: true }).click()
+  await page.getByRole('heading', { name: section, exact: true }).waitFor()
+}
+
+/** Início's form: the name of a new Projeto, which opens once it is created. */
+export async function createProject(page: Page, name: string) {
+  await page.getByLabel('Nome do projeto').fill(name)
+  await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
+}
+
+/** A Projeto's card in the page's content, which opens it; the sidebar lists it too. */
+export async function openProject(page: Page, name: string) {
+  await page
+    .getByRole('main')
+    .getByRole('link', { name: new RegExp(name) })
+    .click()
+  await page.getByRole('heading', { name, exact: true }).waitFor()
 }
 
 export function linkIn(mail: Mail): string {

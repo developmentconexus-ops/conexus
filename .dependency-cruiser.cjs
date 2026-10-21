@@ -1,11 +1,11 @@
-// The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W6, W13. Every rule below names
+// The import law of code C3 to C8, data D19, testing T5 and web W1, W4 to W7, W13. Every rule below names
 // the guide rule it enforces; scripts/rules.test.ts plants one bad file per rule.
 // A subject is one folder of hub/ or builder/ (server and web). Revalidate by 2027-04-13.
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff)\\.ts$`
-const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-anthropic)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff|builder/conversation/test-conversation|builder/conversation/test-research)\\.ts$`
+const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
 module.exports = {
@@ -86,7 +86,7 @@ module.exports = {
     {
       name: 'driver-only-in-the-database-modules',
       comment:
-        'D19: only database.ts, migrate.ts and test-database.ts import the PostgreSQL driver.',
+        'D19: only database.ts, migrate.ts and the test databases import the PostgreSQL driver.',
       severity: 'error',
       from: { pathNot: DRIVER_MODULES },
       to: { path: '(^|node_modules/)(pg|drizzle-orm/node-postgres)(/|$)' },
@@ -107,6 +107,14 @@ module.exports = {
         pathNot: `(${SERVER}/platform/company-postgres\\.ts|^apps/edge/src/db\\.ts)$`,
       },
       to: { path: '(^|node_modules/)@neondatabase/serverless(/|$)' },
+    },
+    {
+      name: 'mastra-only-in-builder',
+      comment:
+        'W7, decision 0033: @mastra/* is imported only inside builder/, on the server and the web.',
+      severity: 'error',
+      from: { pathNot: '^apps/(server|web)/src/builder/' },
+      to: { path: '(^|node_modules/)@mastra/' },
     },
     {
       name: 'web-tree-shape',

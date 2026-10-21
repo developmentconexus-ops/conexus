@@ -10,7 +10,8 @@ import {
 } from '../../platform/test-database.ts'
 import type { HubProcess } from '../../platform/test-hub-process.ts'
 import { startHub } from '../../platform/test-hub-process.ts'
-import { ANA_OWNER, INVITEE, id, mailServer, PASSWORD, plantCompany } from './test-hub.ts'
+import { mailServer } from '../../platform/test-mail.ts'
+import { ANA_OWNER, INVITEE, id, PASSWORD, plantCompany } from './test-hub.ts'
 
 const WRITE = { origin: TEST_ORIGIN, 'content-type': 'application/json' }
 

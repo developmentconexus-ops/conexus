@@ -1,6 +1,8 @@
+import { ACCOUNT_KINDS, ACCOUNT_STATES } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import {
+  boolean,
   bytea,
   check,
   foreignKey,
@@ -24,9 +26,6 @@ export const builder = pgSchema('builder')
 function instant(name: string) {
   return timestamp(name, { withTimezone: true })
 }
-
-export const KINDS = ['api_key', 'claude_subscription', 'google_cliproxy'] as const
-export const STATES = ['ready', 'paused', 'refused'] as const
 
 const OWN_COMPANY = sql`company_id = ${scoped.companyId}`
 // A person's own rows are theirs alone: no one else in the company reads them (founder, D4). A
@@ -55,11 +54,11 @@ export const modelAccount = builder.table(
     id: uuid('id').primaryKey(),
     companyId: text('company_id').notNull(),
     personId: text('person_id'),
-    kind: text('kind', { enum: KINDS }).notNull(),
+    kind: text('kind', { enum: ACCOUNT_KINDS }).notNull(),
     provider: text('provider').notNull(),
     label: text('label').notNull(),
     position: integer('position').notNull(),
-    state: text('state', { enum: STATES }).notNull(),
+    state: text('state', { enum: ACCOUNT_STATES }).notNull(),
     sealed: bytea('sealed').notNull(),
     keyId: text('key_id').notNull(),
     // The last four characters of a key, the only part that ever leaves; a sign-in has none.
@@ -69,6 +68,10 @@ export const modelAccount = builder.table(
     revision: integer('revision').notNull(),
     // The creation's Idempotency-Key, or the sign-in's id it was completed from (code C37).
     attemptKey: text('attempt_key').notNull(),
+    // Set by the queue when the provider answered 429 or 402: skipped until then (study D3).
+    limitedUntil: instant('limited_until'),
+    // The lease of a subscription's token refresh: one refresh at a time (security S34, data D25).
+    refreshUntil: instant('refresh_until'),
   },
   (table) => [
     companyKey('model_account_company_id_fkey', table),
@@ -133,7 +136,7 @@ export const companyAccountKind = builder.table(
   'company_account_kind',
   {
     companyId: text('company_id').notNull(),
-    kind: text('kind', { enum: KINDS }).notNull(),
+    kind: text('kind', { enum: ACCOUNT_KINDS }).notNull(),
   },
   (table) => [
     primaryKey({ columns: [table.companyId, table.kind] }),
@@ -161,7 +164,7 @@ export const modelAccountSignIn = builder.table(
     companyId: text('company_id').notNull(),
     personId: text('person_id').notNull(),
     owner: text('owner', { enum: ['company', 'me'] }).notNull(),
-    kind: text('kind', { enum: KINDS }).notNull(),
+    kind: text('kind', { enum: ACCOUNT_KINDS }).notNull(),
     label: text('label').notNull(),
     sealed: bytea('sealed').notNull(),
     keyId: text('key_id').notNull(),
@@ -186,5 +189,24 @@ export const modelAccountSignIn = builder.table(
       and (person_id = ${scoped.personId} or ${scoped.personId} is null)`,
     ),
     pgPolicy('model_seals_select', { for: 'select', to: SEALS, using: sql`true` }),
+  ],
+)
+
+/**
+ * The company's automatic switch: when every account of the chosen model's provider is out, a turn
+ * goes on with the next model of `chain` (founder, card reading 1 A). Owners and administrators
+ * write it at its `revision` (code C38).
+ */
+export const companyModelFallback = builder.table(
+  'company_model_fallback',
+  {
+    companyId: text('company_id').primaryKey(),
+    enabled: boolean('enabled').notNull(),
+    chain: text('chain').array().notNull(),
+    revision: integer('revision').notNull(),
+  },
+  (table) => [
+    companyKey('company_model_fallback_company_id_fkey', table),
+    policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
   ],
 )

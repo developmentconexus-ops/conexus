@@ -32,6 +32,7 @@ const GOOD_ENV = { CONEXUS_VERSION: 'v0.1.0', HUB_PORT: '8080', LOG_LEVEL: 'info
 const WITH_FILE = {
   ...GOOD_ENV,
   HUB_DATABASE_URL_FILE: '/nowhere/hub_database_url',
+  HUB_MASTRA_DATABASE_URL_FILE: '/nowhere/hub_mastra_database_url',
   HUB_EDGE_PORT: '8081',
   HUB_APPS_DOMAIN: 'apps.example.test',
   HUB_PUBLIC_ORIGIN: 'https://hub.example.test',
