@@ -1,20 +1,30 @@
-import type { ConversationId, Message, MessageId } from '@conexus/hub-api'
-import { Effort, ModelId } from '@conexus/hub-api'
+import type { ConversationId, Message, MessageId, MessagePart } from '@conexus/hub-api'
+import { applyEvent, Effort, ModelId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import type { Owner } from './live.ts'
-import { QUESTION_KEY, Question, questionId, TURN_FAILURES_KEY, TurnFailure } from './live.ts'
-import { messageOf } from './parts.ts'
+import {
+  QUESTION_KEY,
+  Question,
+  questionId,
+  THINKING_KEY,
+  ThoughtTime,
+  TURN_FAILURES_KEY,
+  TurnFailure,
+} from './live.ts'
+import { eventOf, messageOf } from './parts.ts'
 
-// What the thread keeps beside its messages: Mastra's model and effort, Conexus's questions and failures.
+// What the thread keeps beside its messages: Mastra's model and effort, Conexus's questions,
+// failures and thinking times.
 const Metadata = z
   .object({
     currentModelId: ModelId.optional(),
     thinkingLevel: Effort.optional(),
     [QUESTION_KEY]: z.array(Question).default([]),
     [TURN_FAILURES_KEY]: z.array(TurnFailure).default([]),
+    [THINKING_KEY]: z.array(ThoughtTime).default([]),
   })
   .loose()
 
@@ -55,8 +65,8 @@ function unsaved(conversationId: ConversationId, kept: Question[], messages: Mes
 }
 
 /**
- * The Builder's messages of one turn as one, as the stream told it: Mastra saves a message per
- * step, and a turn that called tools has several. The turn's model is the last one's.
+ * The Builder's messages of one turn as one, folded as the stream told it: Mastra saves a message
+ * per step, and a turn that called tools has several. The turn's model is the last one's.
  */
 function turnsOf(messages: Message[]): Message[] {
   const turns: Message[] = []
@@ -65,7 +75,7 @@ function turnsOf(messages: Message[]): Message[] {
     if (last?.role === 'builder' && message.role === 'builder') {
       turns[turns.length - 1] = {
         ...last,
-        parts: [...last.parts, ...message.parts],
+        parts: message.parts.map(eventOf).reduce(applyEvent, last.parts),
         model: message.model ?? last.model,
       }
     } else turns.push(message)
@@ -88,6 +98,15 @@ function withFailures(messages: Message[], failures: TurnFailure[]): Message[] {
   return shown
 }
 
+/** Each thinking with the seconds the stream said it took, or `null` where none was kept. */
+function withSeconds(messages: Message[], times: ThoughtTime[]): Message[] {
+  const seconds = new Map(times.map((time) => [time.id, time.seconds]))
+  function timed(part: MessagePart): MessagePart {
+    return part.type === 'reasoning' ? { ...part, seconds: seconds.get(part.id) ?? null } : part
+  }
+  return messages.map((message) => ({ ...message, parts: message.parts.map(timed) }))
+}
+
 /** The messages up to the one `id`, or all of them when it is not saved yet. */
 function untilMessage(messages: Message[], id: MessageId): Message[] {
   const at = messages.findIndex((message) => message.id === id)
@@ -102,6 +121,7 @@ function untilMessage(messages: Message[], id: MessageId): Message[] {
  * a defect of its creation (`createConversation` puts it on one). Each turn's failure is read back
  * where it happened. A turn in progress is left out after the message it answers: the stream tells
  * it whole, with what Mastra has saved of it so far, and a read that held both would show it twice.
+ * Each thinking shows the seconds the stream said, as kept on the thread.
  */
 export async function historyOf(
   builder: Builder,
@@ -125,7 +145,8 @@ export async function historyOf(
   const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
   const asked = unsaved(conversationId, metadata[QUESTION_KEY], messages)
   const settled = inProgress === undefined ? messages : untilMessage(messages, inProgress)
-  const read = withFailures([...settled, ...asked], metadata[TURN_FAILURES_KEY])
+  const timed = withSeconds(settled, metadata[THINKING_KEY])
+  const read = withFailures([...timed, ...asked], metadata[TURN_FAILURES_KEY])
   const effort = metadata.thinkingLevel ?? 'off'
   return { title: thread.title || null, model, effort, messages: read }
 }

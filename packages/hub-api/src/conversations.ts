@@ -72,7 +72,7 @@ export const MessagePart = z.discriminatedUnion('type', [
     type: z.literal('reasoning'),
     id: z.string().min(1),
     state: z.enum(['running', 'completed']),
-    /** How long it thought, by the server's clock; `null` once read again. */
+    /** How long it thought, by the server's clock; `null` while it thinks or when none was kept. */
     seconds: z.int().nonnegative().nullable(),
   }),
   z.object({
@@ -125,6 +125,34 @@ export const ConversationEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
 ])
 export type ConversationEvent = z.infer<typeof ConversationEvent>
+
+/** The events that change a message's parts. */
+export type PartEvent = Extract<ConversationEvent, { type: 'text' | 'part' | 'notice' }>
+
+/**
+ * A message's parts after one event, the only fold of events into parts, on the server and the
+ * screen alike: text after text is one text, since Claude cuts an answer into one block per span it
+ * cites; a part with an `id` replaces the one with the same `id`; any other comes at the end.
+ */
+export function applyEvent(parts: readonly MessagePart[], event: PartEvent): MessagePart[] {
+  switch (event.type) {
+    case 'text': {
+      const last = parts.at(-1)
+      return last?.type === 'text'
+        ? [...parts.slice(0, -1), { type: 'text', text: last.text + event.delta }]
+        : [...parts, { type: 'text', text: event.delta }]
+    }
+    case 'part': {
+      const { part } = event
+      const at = 'id' in part ? parts.findIndex((each) => 'id' in each && each.id === part.id) : -1
+      return at === -1 ? [...parts, part] : parts.with(at, part)
+    }
+    case 'notice':
+      return [...parts, { type: 'notice', text: event.text }]
+    default:
+      return event satisfies never
+  }
+}
 
 /** How often the stream says it is alive, so a proxy keeps it open. */
 export const CONVERSATION_HEARTBEAT_MS = 25_000

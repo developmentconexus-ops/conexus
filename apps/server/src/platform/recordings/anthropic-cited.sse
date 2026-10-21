@@ -1,0 +1,426 @@
+event: message_start
+data: {"type":"message_start","message":{"model":"claude-sonnet-4-6","id":"msg_011CgEVe2s3nCx9yK56Fasda","type":"message","role":"assistant","content":[],"container":null,"stop_reason":null,"stop_sequence":null,"stop_details":null,"usage":{"input_tokens":2362,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"cache_creation":{"ephemeral_5m_input_tokens":0,"ephemeral_1h_input_tokens":0},"output_tokens":25,"service_tier":"standard","inference_geo":"global","speed":"standard"},"diagnostics":null}          }
+
+event: content_block_start
+data: {"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use","id":"srvtoolu_012CBW5YVwQV57iwHnhivdBj","name":"web_search","input":{}}   }
+
+event: ping
+data: {"type": "ping"}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":""}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"query\": \"rece"}               }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"ita"}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":" p"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"ão de"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":" queijo"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"\"}"}       }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":0 }
+
+event: content_block_start
+data: {"type":"content_block_start","index":1,"content_block":{"type":"web_search_tool_result","tool_use_id":"srvtoolu_012CBW5YVwQV57iwHnhivdBj","content":[{"type":"web_search_result","title":"Receita de Pão de queijo fácil e delicioso, enviada por erika prado aquino de oliveira - TudoGostoso","url":"https://www.tudogostoso.com.br/receita/69468-pao-de-queijo-facil-e-delicioso.html","encrypted_content":"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","page_age":"6307 days ago"},{"type":"web_search_result","title":"Pão de queijo fácil - Receiteria","url":"https://www.receiteria.com.br/receita/pao-de-queijo/","encrypted_content":"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","page_age":"116 days ago"},{"type":"web_search_result","title":"Pão de queijo - TudoGostoso","url":"https://www.tudogostoso.com.br/receita/1443-pao-de-queijo.html","encrypted_content":"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","page_age":"880 days ago"},{"type":"web_search_result","title":"Pão de Queijo de Liquidificador: receita rápida e fácil","url":"https://www.receitasnestle.com.br/receitas/pao-de-queijo-de-liquidificador","encrypted_content":"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","page_age":"1474 days ago"},{"type":"web_search_result","title":"PÃO DE QUEIJO","url":"https://gabrielaosinski.com.br/2019/06/05/pao-de-queijo/","encrypted_content":"EsYICioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDDMA6/85SLaowVGjUhoMXCzgOuhsmEyIXMf5IjCCcmQuqX7nISaFlM2hG6jzv9QchWeUOCZW/Gu4EYLOgtZykVHLJeD0tJ+57ha4rIwqyQfQjxlJtMmED/A9fE91eHp0nL9FAVp0zCq1aNuCMElTqt/ZAvT9fc7gkgyRpJZXP3ecybMrTmbeUm8quEZXDaP6+0usSHy44KBcDKaAFfsXN4aFGMcIanMqbZ5pXvW4BXh31O5ccR3lsb5+tMGfs2ZFmFuVSSojr5BPSGFa+JlVwRKLupliiawM4q8+orRtRhjWWvW0xdpCog5zv+Uf+5SJ1gTYaHx5khMT/TDT/02X0R/l1+zIX8bItwiJk5SUXCr2jBuWBrqCoILQePCsQE7D8PiDaCuthAHdHjgqyPDiATvZZgvhs/jlfkAJzpqp1TY0o2SJ78xwXd4Oua4YSb/gLe+cLrdaFost3QMphCejtomFc9zbVyHYKGwgKtFT2RBQs2O6f8a5VTX/DuyyTfZnXRcH8zEtKKeMnTQDHxn2mVhA+GVldgN73n1hQK2rQ3m3UiZq1By/oLR6uVrPCn6mLdduBrUCMkZoj88Pxb5N8mstjqvowhWSWkEdoeD1WaWon+6Vh1C1s0RHhTCb4XNPy1RQDGOjVuawLmEMxSzaqlGJl9t99vzF8q/HbLUd4TFl0QY5Kon1Gu98sHARoGjX794Go2DhzPHULtxFd25dzLyKKe0cAc831IFDwnCu9IEFVw+k48Oi1gsbb955qJQaLotZLgaNbGrWPYtcpC5wJcxJHogUwzdNnuc5kDEj/bAmjUqKJSh4T0vqbY568s9rMayI/0CV/pq0wa9gDrtcI0wgyxzxubmb6Vq0tIBZxWU5WnXX4b3NGn1gbE7ysFu3JkwjlZ3ITOi5mpKVEjjT56/3F1fdWqijAJz+cYyFkcdO2BRm8SQ6nu95oPcMFS6oCX4R18ZR2wrI5z9ScgUvZ6nPy4r0GohRVVMHtzLBDyRrBsR1xVTvzPh6OvkOEnYXxGl6KFijezVYBv8S3BdWhxNTqDoCu0wpegE2eH7mdtnilin/CKpWpgj0tYsIJLCGBDDyTc1WM6e1uPWZBc/+F6Xp/+jnZLLov1/JFCQOtOSlwofpbgTTtxVF/zIEe3OooVzyPBDAVXqu/YDyjgXZ/WZYqyRbkErKG6d7z/XogGfguFP3z5fcT9NqE1/B70e1pEGZmVKJsJBbtsfn1PePljyxc93baxNQnhUcKQZeOEKUu+OXDR3mn4HCz06Yp6N4EGcP2ERwhBNBcQdBqBYBlIswYb60Tymmbnz47+umdhM/NUfOGgmfOI1Yk5KaE7s4YnXkz1PbXaim26fttUp1JqW5/sWxU8B3WpG8X8GD7Lk5zfnbJd92gKQYAw==","page_age":"2690 days ago"},{"type":"web_search_result","title":"Pão de queijo fácil e rápido - Flavia Machioni","url":"https://flaviamachioni.com/pao-de-queijo-facil-rapido/","encrypted_content":"EsQICioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDLPTlRN413cMAp89eRoMv/JbOjhyhUmCbvvbIjAbkJZwVTWlQqz7dhL8qPA1X4JVcaz4YYqApUcmK29ftaXvxTixkLCBqBtvw5FnFgEqxweUjEhZ2j24t0l1pPBkCCCV6YFNeCxJL/XPDlhZS8jx8c97vEbkvCogIY+NQY7VgtVMm9tz4nODrY/Jil1Y3UL1FoWBEgcou7Y6bRIbmTiGqzjlqo/ATIRNQXDejVE810YWR/4QNoDQJL17XV8wa9W6ZWBfmOcPn1RFtjzkwB5w5G0jXARnG1UyaQ14SXVKHUopkdr9dvWcOwJ2hIat4p9g7YPqbk+VKuyNMuOJUVYSJl2g2J6FhvzBJhJTia1UrRE/DnAlccruZ++9os41CAIgGH8B7bztvrpE8/spglHVBUPYviM8YZlpZZgrNoBKmGLocJqio1oYpCw17PnAJpl68Qq6hljTL5Ev5JmjrIeB86ZtDZAr4bgJbl8XKqVgWU0j8F7cJU0UnjrQ/OIuidkWy1MR3XAYvj87ACsv9QHnJ9rhvf484NBO2JP+H7f9V5ymc3Ezd9Os4yxP9FX+iqAAMTxy6ydG4fx4gP7+mOLRSs3IsUkiLPefkpeqrcAUuKI0Kv/bZhcXlzS4uEvogWPjIddZA+a7ABnnOFdpByFWqMXEmQQHGbdc+BcWTM75QIXCM29cIsAeiQsWcEmSmHHs/8dhcMVVtPtbVeabN93cK1yMx8X8HEDaZmzMbWvo5wUnsogJsTOi3YbYnuQKIUM4sj1hXxO6lwGzNuPvWhyt8YKrLqG81JrrixWJaOv1yUPbgXPzVFf0GTF09k37X9d/dQPvW9ebTCRKsxWIr5LG+2Y0gaVBtEKDkYWx68LQjycBxjFBmTNZCjDCF0ikQJnHQygCGwGOERu7Ghb14NWbTJBjjmCFHK36iUh/kSltbHxEU66WYqkgfo1hBCwpYrJeMeO0NXPa2bPnWaZL+Yc2CMajuJjyMEdrC3ZcH6X4IlhyOLSbNr/tzzSMkAplrLNenS0+V/BHd0zIan3iAM06j0ztT6lgeRf5bcUgBUyewzFbK1iJiSoxVw8k6cJq3OwBgwSr+bBSvdklgIayRiivFJnF6eZsBYmK+z5TfTGnnEo34aNpKvkpVL2EBhFwXTDpoHhHMnwQahvC7E0p68ecVY5CzdNa7KLrvJjeZAnWnf57Kh46HGPv01aTZ/2FjVE2omefnYHNqwkKPN2gZ05cNFFGLtgBx+x2vecqlXzaSegZAb6oSK/T8PTB21wNhlaeUBiBbgMS0gaB2ku5xTX9NSKdq4LFSKWu07ttfUICuGmG6BeOXBe/AqYw39+YxIo57uHxWn9JuXqa8cLy/Q1ns2sKwek7WdA5UtbAUSOZphh2vTs1h8YBGAM=","page_age":"382 days ago"},{"type":"web_search_result","title":"Pão de queijo receita","url":"https://teleculinaria.pt/tags/pao-de-queijo-receita","encrypted_content":"Et4CCioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDKPNAt8+Yterfg+nTxoMP/UemPf4yKIHxsdvIjA8WFMXWieLT/kSNZrbkgBfKPrj9nE4D3NavsblC3HFBnZjq6Z+DsDYpRckGmu0KjAq4QH8U23mYkDqjYdqeqtP8H2mcR2UY3c+IN3QYsTmezr2NPbSrVLSxIiF81oFpos9y4/T2Mxsb7o2aXlMNZNx/qbeMODn178ek95uZHsvYT5red8oT9IS3q5XY55ciHZwrZpBPC559zhGgECR99ohdgcCcERqnYRUuOGsnqy7DKUN8ZajMMlICclM1hZ1SEk5/7e4IMiFnqtcLuB77G0z5oteoCqGWNjqEUA0JL1WgjNnT2aegvqxG5Lb1W7PfgqBKahecsM5XWYmbLLmhbACPoZ+5+DujxCyHbrbUAKjBrIh0nAYAw==","page_age":null},{"type":"web_search_result","title":"Queijo assado no pão Receita de Queijo assado no pão. Descubra como cozinhar este Queijo...1 hora horaFácilVer Receita","url":"https://teleculinaria.pt/tags/pao-de-queijo","encrypted_content":"EqQFCioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDCeVOhl88tS7xeJYlBoMMVSV8gDG/V111Y0cIjD+oEN22MUsJTj5JrkbB3fkbvGQ8e06aOqxWrZZ6Z2qH4syMERJAuy+KdVsEAP+2UwqpwTmZd+1oV0u09jgfBYyrOl337thsyYPNgl6PUdG8xl9HhcAQyoaVAtqt1u17hhMTUPBvNSz6dqp3aoE2ouM5RShrzBdTRKaI+mN0kcJ9lvcqAIN5d9jkFbC5ETWxjDIHLkafoHzD6PSSjnOeRQf9PRniFgJgwOm3VO0DpsAse7hsH5kVz4XJWVGV2NBogSDIcpWHVCGXqHdpWpjQ8a0TTmlCnfux5RadVYDYpfl3rG6NHpP+49z7H+PJkP+mp8L9JWc1fDijmlw7GDPBrB0not2noP2yR5ZQYhdtlTWptx62OiY6iNSj50ZavWZHyC/iu4SrUhGjy/8S61VTTkREcIqo3D9X3O+B744bfGTfzabv78qsyXnKpvRS7nWtAPWmEJaE7pc21DjiVtWOJ/2k85E1BHh7MSQlWj766coLSUfnIjmXq2haalIFNjlc8llqL9Wg5mlT6BShYBfowdr5LrIHqiIX3+63gb8MMZKkEAEb0exKkiP9yiF1+Kxg1GU5148/aErlERSyYLvhSv+klfDhRYhbyLK8fjpSZk+v7XcsGwHdXIOWXOxPHu5t1hTCdxruRLbjLzeDvsa/13QW5YdR7WiWrJitK6+PQRSgJFIiBw11LFXXHBmcU8WOLLAkZ4CDJOL3M5T1Y9cPQfNMEdUOWJP/KdLl4Sbg9YN+qWMjFkA3F+dl0uTCIvPM8j/9ojGIfHTm/QLaR4lsN42KFToxqj6kne4fhgD","page_age":null},{"type":"web_search_result","title":"pao de queijo","url":"https://teleculinaria.pt/receitas/pao-de-queijo/","encrypted_content":"EscKCioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDNeYgjp0UAYmeaSuJhoMncNfi1NyEoqefK3RIjA23iRZpzNGDOUc3FJhwRQENn2FcusqaByAvWWahHHC00UB/IaSEn49JxBPmMqUowYqyglnGnpUP6I3BCCTB1vRSvbPDLs7IGiU5k9zOqmLIZzySeXkSeULBTaNMkUhwPK8wfb68ySjzs3r4WFVOkP1G/KirWcbCrOMUwtgwxTEgXH/FEp3XMW+ohsPGUVvySkMm7/wNFg1lB33DUkQAWUUfmd9GLSNxeHUFg5wqPSlxn9kwvAgSMuz75SUekrveykY8HRW0ZRTcxvzAluZiWp5mTUuzN2AUd+rB9UiMxDw+A2W21/pAQfRlbMg7oZyIltY0HrntYU5KMa9hzmGm3c4p+6NZL7ZpJNq6GeAZdKfET795+hwGwZBL2dOSa+p4G5s0M2hg0o0JP8zBiHM0WDMW6mfDpzVWF0VAwlfI9tPDwyaITeadW1rDrR9kvXEVRv5idBs+St9xCrtFmKxEHstiFNWVw9lPkKXpBY8fZXBxkaFePSddpCu9xlZegEzxlc5vjG3ZodreE81SFG5+4KBIAGAccpibrHry4A7pqdXJlNwIs5gkswHYx1Ns6Jm/9BpzDmrbZFzH+PyNjSEXakBqxJGj7CD6Pz11LA+IAMyfZoXbiHbN6YcrIl9RTmeNlXWoH9y4hcccO92ozMnhQBROBe6X/mZ6OrOtlAde6vYyDWHWbjs7uPkmZalRrpD0oZEpudwvTAMKBtm0G2GDmCIuvxGVQ2g5LaEN5PHa2CWsd/47r1ytDK3YiXdMRieMuSK1sdWSV9FAoyvHbC0KpzyueZKRj8FyPbgtTPqqUhf7rGXNk+f0mSsWM0bv6X5ZI0mXB+h7zscCw1wLKxbVM7S+B6A4B2IsH4fTgpyk2VeMpRMV79F2OLDEZXFcT/tvt0SKVm2AUjC4uXGrJFO3IIwvnFrX81DsigLRrM6JAy17nPU7eIsRZfR0oNyLLIOcXppcUxn38W1Iujtt5bYI1Z6RwvlYruY6o+tQzzuNOUGjsY9vv2W0VR1GtPuOksb5C+W7LSNinEksq0RhMKtxG5GaA3hiEEAvnvq1RVs7TmhGy/8hehIY48c079DusWsNh7Gm/PeH6BE85bjEMItG/2Az2gobwfIDN75wjOlq2jEbkT1mvHM8p3ZzCTQRHF0K94/BhYhtiHwP7B67mGoQrFTXzgyap06QFxsa9HjnJw1BbmZaFu/78NyFAdBWEePNiAb03JBAuR3DS00iY4VVUcVPTBp9mDHqAnkTMYQUKtaQAqO1Pmjkpt5mEQR4Dk2jsYt6ud6QBQbBJ9rKqFcXF0AIIT0e1zu1ahBgxxK6QzNXHU9cJT0nxCea2KvneukYEX4j8rif23zbTUlP75wes5DsDxs+7QBx1amEl8YPKV7cG0GAe4qLd0Cu+g2SmD+howHcLPpptGvCQbFY2QUAd4ESO3/b2PmfjhfacDU/mfdFFH8ru9uXmAhhUrq5dMvOuqEZqyEsaeewIG+wHOUgDWe3j1BSnkxALWRmagEugWZYs8YxHBjHhGo7c+G4cK89thoJ6d/3zqhdd40yPZV3bTjRQXPofPC77iPj8B8TnNz4BFgP+EEtIxMjcmsiaUTWS0iWp9x7WiByt0z4mglBsONie0ivpIQ6RKnwCpuJaKboFM4E9Q5fheD8BWYj/sgRouARQx8655F7+DGiqrzU8lbT9QhkMxvLk0+KNqZuBgD","page_age":null}],"caller":{"type":"direct"}}           }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":1            }
+
+event: content_block_start
+data: {"type":"content_block_start","index":2,"content_block":{"type":"text","text":""}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"Aqu"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"i est"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"ão duas"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":" receitas de pão de queijo"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":" encont"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"radas na"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":" web"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":":\n\n---"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"\n\n**"}    }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"1"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":". T"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"ud"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"oG"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"ost"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"oso"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"**"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":2,"delta":{"type":"text_delta","text":"\n"}   }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":2          }
+
+event: content_block_start
+data: {"type":"content_block_start","index":3,"content_block":{"citations":[],"type":"text","text":""}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"citations_delta","citation":{"type":"web_search_result_location","cited_text":"Em uma tigela grande, coloque o polvilho e o sal, e misture bem, logo em seguida, despeje o conteúdo da p\n\n## Ingredientes (40 porções)\n- polvilho doc...","url":"https://www.tudogostoso.com.br/receita/69468-pao-de-queijo-facil-e-delicioso.html","title":"Receita de Pão de queijo fácil e delicioso, enviada por erika prado aquino de oliveira - TudoGostoso","encrypted_index":"Eo8BCioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDMHBB5DJWez/yYCVERoMsPwMxxYZKSi5MHuPIjB+2i3kfDiqshUTev4hq1oQlMPEGurM7Z6zAfLmxm+hQgGKyHDNjDtfL2DHBV3IkLoqE9bYgbT3bqvqu0wzIYp9UNB7wpAYBA=="}}               }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"A"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" receita do"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" T"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"udoGostoso usa"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" **"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"pol"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"vilho doce**,"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" **"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"ov"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"os**, **le"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"ite integral"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"**,"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" **ó"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"leo**,"}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" **sal**,"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" **"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"queijo p"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"armesão ral"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"ado**, e **queijo m"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"eia"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" c"}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"ura"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":" e"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"/"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"ou muss"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":3,"delta":{"type":"text_delta","text":"arela**."} }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":3              }
+
+event: content_block_start
+data: {"type":"content_block_start","index":4,"content_block":{"type":"text","text":""}               }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":4,"delta":{"type":"text_delta","text":" "}        }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":4        }
+
+event: content_block_start
+data: {"type":"content_block_start","index":5,"content_block":{"citations":[],"type":"text","text":""}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"citations_delta","citation":{"type":"web_search_result_location","cited_text":"Original de Minas Gerais e amado pelos brasileiros, esse pão de queijo fácil e delicioso leva polvilho doce no seu preparo, fazendo com que ...\n\nDescu...","url":"https://www.tudogostoso.com.br/receita/69468-pao-de-queijo-facil-e-delicioso.html","title":"Receita de Pão de queijo fácil e delicioso, enviada por erika prado aquino de oliveira - TudoGostoso","encrypted_index":"Eo8BCioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDJI7EGg4qhyZeG0bcBoMGUaECSSB/6q9gZRVIjCOC/DetyN3/of9ingxR9jsnChJlflfwQmYln3trjNe2Likfg/es/5exYOERgzVt54qE4xEmg2DPGu1PSPKGlsL1yMHWS4YBA=="}} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":"O"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":" difer"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":"encial é o"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":" uso do"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":" pol"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":"vilho doce, que é a"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":" base"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":" da massa"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":5,"delta":{"type":"text_delta","text":"."}        }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":5}
+
+event: content_block_start
+data: {"type":"content_block_start","index":6,"content_block":{"type":"text","text":""}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":6,"delta":{"type":"text_delta","text":"\n\n---"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":6,"delta":{"type":"text_delta","text":"\n\n**2. Rec"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":6,"delta":{"type":"text_delta","text":"eiteria"}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":6,"delta":{"type":"text_delta","text":"**"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":6,"delta":{"type":"text_delta","text":"\n"}   }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":6          }
+
+event: content_block_start
+data: {"type":"content_block_start","index":7,"content_block":{"citations":[],"type":"text","text":""} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"citations_delta","citation":{"type":"web_search_result_location","cited_text":"Preparamos a receita tradicional, com polvilho azedo, que fica com um puxa-puxa muito gostoso. ","url":"https://www.receiteria.com.br/receita/pao-de-queijo/","title":"Pão de queijo fácil - Receiteria","encrypted_index":"Eo8BCioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDAzKhAIVLFc1eXrdrRoMUq73R+TvXWl63mByIjBnP79SwCMVPsh7CILC3F8QfT5O0OfL67647vnmPQlHkPwbrTeIAUA0JbI1MyfLx5gqE3v6+SXhQWdJfIexEpGUmnozFAoYBA=="}} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"citations_delta","citation":{"type":"web_search_result_location","cited_text":"## Ingredientes\n#### Conversor de Medidas\n- 400 gramas de mussarela ralada (ou queijo minas padrão)\n- 500 gramas de polvilho azedo\n- 100 ml de leite\n-...","url":"https://www.receiteria.com.br/receita/pao-de-queijo/","title":"Pão de queijo fácil - Receiteria","encrypted_index":"Eo8BCioIFRgCIiQ2YjQ5Y2ViMy1hYjI5LTRlYjktODgzZi04MGM2YjZhZTEwYWUSDCFdVxcK4GD7xM1HPxoMA9YyvaXsapRLK6KkIjBdXRJXFLUTUuoAMevX91SPKqPkbmxPSHaY3iRUdWbG0046ibplXbr8a0DQ5BtkdNUqE8mBHSst4HfFxflNJpNOmDg3Vy8YBA=="}}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"A receita da Receit"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"eria seg"}    }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ue a"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" vers"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ão tradic"}  }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ional,"}    }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" usando"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" **polvilho az"}       }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"edo**, que"}    }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" gar"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ante um"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" pu"}    }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"xa"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"-puxa característ"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ico,"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" além"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" de **m"} }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ussarela ral"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ada** ("}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ou"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" que"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ijo minas"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" padrão),"}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" **le"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"ite**,"}    }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" **água"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"**, **"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"óleo**,"}         }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" **sal**"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":" e **ov"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":7,"delta":{"type":"text_delta","text":"os**."}          }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":7         }
+
+event: content_block_start
+data: {"type":"content_block_start","index":8,"content_block":{"type":"text","text":""}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"\n\n---"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"\n\nEm"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" resumo, a"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" principal"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" diferença entre as"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" duas é"}   }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" o tipo"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" de polvilho:"}        }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" o TudoGostoso usa"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" **"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"polvilho doce**,"}      }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" enquanto a Receiteria o"}           }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"pta pelo"}            }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" **polvilho azedo**,"}     }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" que resul"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"ta em uma tex"}}
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"tura mais el"}          }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"ástica"}              }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":" e tradic"}             }
+
+event: content_block_delta
+data: {"type":"content_block_delta","index":8,"delta":{"type":"text_delta","text":"ional."}              }
+
+event: content_block_stop
+data: {"type":"content_block_stop","index":8      }
+
+event: message_delta
+data: {"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null,"stop_details":null,"container":null},"usage":{"input_tokens":11510,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":386,"server_tool_use":{"web_search_requests":1,"web_fetch_requests":0}}         }
+
+event: message_stop
+data: {"type":"message_stop"   }
+

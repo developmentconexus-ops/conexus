@@ -12,6 +12,7 @@ import { registerModelAccountRoutes } from './routes.ts'
 import type { SignInFlows } from './sign-ins.ts'
 import { createModelAccountStore } from './store.ts'
 
+export { subscriptionModel } from './claude/subscription-model.ts'
 export { conversationStart } from './defaults.ts'
 export {
   accountErrorProcessors,
@@ -20,7 +21,7 @@ export {
   MAX_PROCESSOR_RETRIES,
 } from './processors.ts'
 export type { QueueDeps } from './queue.ts'
-export { conversationModel, providerOf } from './queue.ts'
+export { callModel, conversationModel, providerOf } from './queue.ts'
 export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
 export { chosenModel, NOTICE_PART, Notice, Turn, turnContext } from './turn.ts'
 

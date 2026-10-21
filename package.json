@@ -23,6 +23,7 @@
     "migrations": "node scripts/check-migrations.ts",
     "preremovals": "npm run build -w @conexus/server",
     "removals": "node scripts/removals.ts",
+    "record-provider": "node scripts/record-provider.ts",
     "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
     "change-budget": "node scripts/change-budget.ts",
