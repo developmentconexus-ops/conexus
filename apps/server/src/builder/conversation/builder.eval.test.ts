@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { Agent } from '@mastra/core/agent'
 import { runExperiment } from '@mastra/core/datasets'
 import { Mastra } from '@mastra/core/mastra'
+import { InMemoryStore } from '@mastra/core/storage'
 import { createTool } from '@mastra/core/tools'
 import { checks } from '@mastra/evals/checks'
 import { MockLanguageModelV3 } from 'ai/test'
@@ -60,7 +61,7 @@ async function gate(steps: ('write' | 'stray' | 'answer')[]) {
       [RUN]: fakeTool(RUN, z.object({ command: z.string() })),
     },
   })
-  const mastra = new Mastra({ agents: { builder: agent } })
+  const mastra = new Mastra({ agents: { builder: agent }, storage: new InMemoryStore() })
   return runExperiment(mastra, {
     targetType: 'agent',
     targetId: 'builder',
