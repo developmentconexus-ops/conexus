@@ -1,33 +1,11 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import {
-  cpSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs'
-import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
+import { cpSync, mkdirSync, symlinkSync } from 'node:fs'
+import { join } from 'node:path'
 import { after, before, test } from 'node:test'
+import { biomeLint, plant, ROOT, removePlanted } from './test-rules.ts'
 
-const ROOT = resolve(import.meta.dirname, '..')
-const dirs: string[] = []
-after(() => {
-  for (const dir of dirs) rmSync(dir, { recursive: true, force: true })
-})
-
-function plant(files: Record<string, string>): string {
-  const dir = mkdtempSync(join(tmpdir(), 'conexus-rules-'))
-  dirs.push(dir)
-  for (const [path, content] of Object.entries(files)) {
-    mkdirSync(dirname(join(dir, path)), { recursive: true })
-    writeFileSync(join(dir, path), content)
-  }
-  return dir
-}
+after(removePlanted)
 
 type Violation = { from: string; to: string; rule: { name: string } }
 
@@ -95,6 +73,8 @@ const BAD_IMPORTS: Record<string, [string, string, Record<string, string>]> = {
   ],
   'neon-sdk-only-in-the-neon-adapter': ['apps/server/src/hub/a/vendor.ts', '@neon/sdk', {}],
   'mastra-only-in-builder': ['apps/web/src/hub/a/agent.ts', '@mastra/core/agent', {}],
+  'e2b-only-in-the-machine': ['apps/server/src/builder/runs/sandbox.ts', 'e2b', {}],
+  's3-only-in-the-git-copy': ['apps/server/src/builder/git/bucket.ts', '@aws-sdk/client-s3', {}],
   'web-tree-shape': [
     'apps/web/src/components/button.ts',
     '../platform/hub.ts',
@@ -125,6 +105,10 @@ const GOOD_IMPORTS: Record<string, string> = {
   'apps/web/src/hub/a/queries.ts': '@conexus/hub-api',
   'apps/web/src/routeTree.gen.ts': './platform/hub.ts',
   'apps/server/src/builder/a/agent.ts': '@mastra/core/agent',
+  'apps/server/src/builder/machine/sandbox.ts': 'e2b',
+  'apps/server/src/builder/machine/mastra-sandbox.ts': '@mastra/e2b',
+  'infra/e2b/template.ts': 'e2b',
+  'apps/server/src/builder/git/copy/bucket.ts': '@aws-sdk/client-s3',
   'apps/web/src/builder/a/conversation.ts': '@mastra/client-js',
 }
 
@@ -239,25 +223,6 @@ const BIOME_BAD: Record<string, [string, string, string]> = {
     'export const a = 1\n'.repeat(301),
     'style',
   ],
-}
-
-function biomeConfig(): string {
-  const config = JSON.parse(readFileSync(join(ROOT, 'biome.json'), 'utf8'))
-  delete config.vcs
-  return JSON.stringify(config)
-}
-
-function biomeLint(files: Record<string, string>) {
-  const dir = plant({ 'biome.json': biomeConfig(), ...files })
-  for (const grit of ['w25', 'conexus-code']) {
-    cpSync(join(ROOT, `scripts/${grit}.grit`), join(dir, `scripts/${grit}.grit`))
-  }
-  const run = spawnSync(
-    join(ROOT, 'node_modules/.bin/biome'),
-    ['lint', '--colors=off', '--max-diagnostics=500', '.'],
-    { cwd: dir, encoding: 'utf8', timeout: 120_000 },
-  )
-  return { status: run.status, output: run.stdout + run.stderr }
 }
 
 let lint = ''
