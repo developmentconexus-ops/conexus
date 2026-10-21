@@ -111,6 +111,7 @@ function newTurn(id: RunId | undefined, traceId?: string): TurnLog {
     answer,
     after: undefined,
     buffer: '',
+    flusher: undefined,
     queue: Promise.resolve(),
     thinking: undefined,
     shells: new Map(),

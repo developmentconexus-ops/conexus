@@ -1,3 +1,4 @@
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { ConversationEvent, Message, MessageId, RunId } from '@conexus/hub-api'
 import { applyEvent, EventId } from '@conexus/hub-api'
 import { z } from 'zod'
@@ -12,6 +13,8 @@ export type Listener = (said: Said) => void
 
 /** The longest text one event carries: the journal keeps the answer in pieces of this size. */
 const TEXT_CHUNK = 200
+/** Text that does not fill a piece is still said this long after it began to wait. */
+const TEXT_MAX_WAIT_MS = 250
 
 /** Keeps an event in the run's journal and answers its number, or `undefined` once the run is not ours. */
 export type Journal = (runId: RunId, event: ConversationEvent) => Promise<number | undefined>
@@ -29,6 +32,8 @@ export type TurnLog = {
   after: MessageId | undefined
   /** Text said by the model and not yet an event: it is one when it fills a piece or its part ends. */
   buffer: string
+  /** The timer that says a short text in time; none while nothing waits. */
+  flusher: AbortController | undefined
   /** The journal's writes and the stream's sends, one after the other. */
   queue: Promise<void>
   thinking: { id: string; since: number } | undefined
@@ -86,6 +91,8 @@ function send(speaker: Speaker, turn: TurnLog, event: ConversationEvent): void {
 
 /** Says the text held back as one event. */
 export function flushText(speaker: Speaker, turn: TurnLog): void {
+  turn.flusher?.abort()
+  turn.flusher = undefined
   if (turn.buffer === '') return
   const delta = turn.buffer
   turn.buffer = ''
@@ -93,7 +100,7 @@ export function flushText(speaker: Speaker, turn: TurnLog): void {
 }
 
 /**
- * Says an event of the turn. Text waits until it fills a piece of `TEXT_CHUNK` characters; any
+ * Says an event of the turn. Text waits until it fills a piece of `TEXT_CHUNK` characters or `TEXT_MAX_WAIT_MS` passes; any
  * other event, and the turn's end, say what waits before them, so the order holds.
  */
 export function say(speaker: Speaker, turn: TurnLog, event: ConversationEvent): void {
@@ -108,6 +115,16 @@ export function say(speaker: Speaker, turn: TurnLog, event: ConversationEvent): 
     turn.buffer = turn.buffer.slice(TEXT_CHUNK)
     send(speaker, turn, { type: 'text', delta })
   }
+  if (turn.buffer !== '' && turn.flusher === undefined) waitToFlush(speaker, turn)
+}
+
+function waitToFlush(speaker: Speaker, turn: TurnLog): void {
+  const waiting = new AbortController()
+  turn.flusher = waiting
+  sleep(TEXT_MAX_WAIT_MS, undefined, { signal: waiting.signal }).then(
+    () => flushText(speaker, turn),
+    () => undefined,
+  )
 }
 
 /** The turn a run's kept events add up to, as the screen folds them: its snapshot. */
