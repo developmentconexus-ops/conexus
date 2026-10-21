@@ -89,6 +89,7 @@ async function hubServing(
       folder: ports.folder,
     },
     repair: apps.repair,
+    readUnserved: subjects.modelAccounts.readUnserved,
     close,
   }
 }

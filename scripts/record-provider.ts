@@ -9,7 +9,8 @@
 // CONEXUS_RECORD_CLIPROXY_URL and CONEXUS_RECORD_CLIPROXY_KEY for Gemini. Every prompt is invented.
 // `--provider anthropic|openai|google --case models` saves the first page of the model list the
 // provider gives the credential (CONEXUS_RECORD_CLAUDE_TOKEN, CONEXUS_RECORD_OPENAI_KEY or
-// CONEXUS_RECORD_GOOGLE_KEY): one GET, authorized by the founder's "A" of 2026-10-21 (step 12.3).
+// CONEXUS_RECORD_GOOGLE_KEY); with `--via cliproxy` (google only) the list of the local CLIProxy
+// (CONEXUS_RECORD_CLIPROXY_URL, CONEXUS_RECORD_CLIPROXY_KEY): one GET, authorized by the founder's "A" of 2026-10-21 (step 12.3).
 // Gemini records only `abort`: its thinking waits for #172, its search for #150. Authorized once,
 // by the founder's "2A" of 2026-10-20.
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -58,6 +59,7 @@ type ModelsArgs = z.infer<typeof ModelsArgs>
 const ModelsArgs = z.object({
   provider: z.enum(['anthropic', 'openai', 'google']),
   case: z.literal('models'),
+  via: z.literal('cliproxy').optional(),
 })
 // The Hub's own schemas, loose: the body is checked as the Hub reads it and kept whole, indented as
 // the other recordings are.
@@ -247,22 +249,28 @@ async function record(args: Args) {
 }
 
 /** The credential the case reads from the environment, and the kind that carries it. */
-function listCredential(provider: ModelsArgs['provider']) {
+function listCredential(args: ModelsArgs) {
+  const { provider } = args
+  if (args.via === 'cliproxy') {
+    const env = Gemini.parse(process.env)
+    const target = { kind: 'google_cliproxy' as const, provider }
+    return { secret: env.CONEXUS_RECORD_CLIPROXY_KEY, target, via: env.CONEXUS_RECORD_CLIPROXY_URL }
+  }
   if (provider === 'anthropic') {
     const secret = ListKeys.shape.anthropic.parse(process.env).CONEXUS_RECORD_CLAUDE_TOKEN
-    return { secret, target: { kind: 'claude_subscription' as const, provider } }
+    return { secret, target: { kind: 'claude_subscription' as const, provider }, via: undefined }
   }
   const secret =
     provider === 'openai'
       ? ListKeys.shape.openai.parse(process.env).CONEXUS_RECORD_OPENAI_KEY
       : ListKeys.shape.google.parse(process.env).CONEXUS_RECORD_GOOGLE_KEY
-  return { secret, target: { kind: 'api_key' as const, provider } }
+  return { secret, target: { kind: 'api_key' as const, provider }, via: undefined }
 }
 
 /** One GET of the provider's list, saved as the provider sent it, and nothing else of the exchange. */
 async function recordModels(args: ModelsArgs) {
-  const { secret, target } = listCredential(args.provider)
-  const request = listRequest(target, secret)
+  const { secret, target, via } = listCredential(args)
+  const request = listRequest(target, secret, via)
   if (request === undefined) throw new Error('This provider has no list reader.')
   const response = await fetch(request.url, {
     headers: request.headers,
@@ -273,21 +281,22 @@ async function recordModels(args: ModelsArgs) {
   if (text.includes(secret) || LEAK.test(text)) {
     throw new Error('The list carries a credential, an address or a bearer; nothing is saved.')
   }
-  const name = `${args.provider}-models`
+  const name = args.via === 'cliproxy' ? 'google-cliproxy-models' : `${args.provider}-models`
   const meta: Recording = {
     provider: ProviderId.parse(args.provider),
-    api: `${args.provider} model list, first page`,
+    api: `${args.provider}${args.via === 'cliproxy' ? ' through CLIProxy' : ''} model list, first page`,
     sdk: 'none: the Hub reads it with fetch',
     recordedAt: new Date().toISOString().slice(0, 10),
   }
-  const kept = JSON.stringify(LIST_SCHEMAS[args.provider].parse(JSON.parse(text)), null, 2)
+  const schema = args.via === 'cliproxy' ? LIST_SCHEMAS.openai : LIST_SCHEMAS[args.provider]
+  const kept = JSON.stringify(schema.parse(JSON.parse(text)), null, 2)
   writeFileSync(join(RECORDINGS, `${name}.list.json`), `${kept}\n`)
   writeFileSync(join(RECORDINGS, `${name}.json`), `${JSON.stringify(meta, null, 2)}\n`)
   console.log(`Saved ${name}.list.json (${text.length} bytes) and ${name}.json.`)
 }
 
 const { values } = parseArgs({
-  options: { provider: { type: 'string' }, case: { type: 'string' } },
+  options: { provider: { type: 'string' }, case: { type: 'string' }, via: { type: 'string' } },
 })
 if (values.case === 'models') await recordModels(ModelsArgs.parse(values))
 else await record(Args.parse(values))

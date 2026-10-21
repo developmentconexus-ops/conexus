@@ -160,6 +160,7 @@ export function subjectsOf(deps: {
     identity,
     sealKeys: config.sealKeys,
     flows,
+    googleCalls: google.googleCalls,
     log,
   })
   return { runs, projects, operations, apps, modelAccounts, conversations }
@@ -186,7 +187,7 @@ async function runServer(): Promise<void> {
       ...{ neon, companyPostgres, cloudflare, mastraPool, log },
       ...builderPortsOf({ config, log }),
     })
-    const { projects, apps, conversations, runs } = subjects
+    const { projects, apps, conversations, modelAccounts, runs } = subjects
     await conversations.prepare()
     const app = await createHub(config, { status, identity, ...subjects })
     const edge = await createEdgeHub(config, { apps })
@@ -204,6 +205,9 @@ async function runServer(): Promise<void> {
       void runs.settleRuns().catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()
+        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      void modelAccounts
+        .readUnserved()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))
     } catch (error) {
       grace.uninstall()

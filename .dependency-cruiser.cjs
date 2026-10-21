@@ -110,6 +110,21 @@ module.exports = {
       to: { path: '(^|node_modules/)@neondatabase/serverless(/|$)' },
     },
     {
+      name: 'e2b-only-in-the-machine',
+      comment:
+        'C56, decision 0051: only builder/machine/ and the template in infra/e2b/ import the E2B SDK and its Mastra sandbox.',
+      severity: 'error',
+      from: { pathNot: [`${SERVER}/builder/machine/`, '^infra/e2b/'] },
+      to: { path: '(^|node_modules/)(e2b|@mastra/e2b)(/|$)' },
+    },
+    {
+      name: 's3-only-in-the-git-copy',
+      comment: 'C56, decision 0051: only builder/git/copy/ imports the S3 client of the R2 bucket.',
+      severity: 'error',
+      from: { pathNot: `${SERVER}/builder/git/copy/` },
+      to: { path: '(^|node_modules/)@aws-sdk/client-s3(/|$)' },
+    },
+    {
       name: 'mastra-only-in-builder',
       comment:
         'W7, decision 0033: @mastra/* is imported only inside builder/, on the server and the web.',

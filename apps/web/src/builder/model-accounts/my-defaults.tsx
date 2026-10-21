@@ -74,6 +74,7 @@ export function MyDefaults() {
         scope="mine"
         defaults={defaults}
         providers={choices.mine}
+        allProviders={providers}
         mayChange
       />
       {defaults.start !== null && (
