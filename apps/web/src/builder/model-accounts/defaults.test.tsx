@@ -1,5 +1,5 @@
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
@@ -17,7 +17,17 @@ function view(fields: Partial<View> = {}): View {
     order: [],
     kinds: [],
     connected: { mine: [], company: ['anthropic', 'openai'] },
-    defaults: { company: null, mine: null, start: null },
+    defaults: {
+      company: null,
+      mine: null,
+      start: null,
+      companyStart: {
+        model: 'anthropic/claude-sonnet-5-5',
+        effort: 'low',
+        from: 'starter',
+        account: 'Claude da empresa',
+      },
+    },
     mayManage: true,
     ...fields,
   }
@@ -35,11 +45,7 @@ async function open(shown: View, answers: Answers = {}) {
 test('o dono sem padrão: a frase da empresa, escolhe o modelo e salva; a linha do topo passa ao novo padrão', async () => {
   const shown = view()
   const { sent } = await open(shown)
-  expect(
-    await screen.findByText(
-      'A empresa ainda não tem padrão: as conversas novas começam no modelo inicial.',
-    ),
-  ).toBeTruthy()
+  expect(await screen.findByText('A empresa ainda não tem padrão.')).toBeTruthy()
   expect(screen.getByText('Toda a empresa')).toBeTruthy()
   await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'GPT 5')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar padrão' }))
@@ -50,11 +56,50 @@ test('o dono sem padrão: a frase da empresa, escolhe o modelo e salva; a linha 
   expect(screen.getByRole('button', { name: 'Salvar padrão' })).toHaveProperty('disabled', true)
 })
 
+const GPT_HIGH = { model: 'openai/gpt-5', effort: 'high' }
+
+test('o padrão da empresa sem conta que responda: a frase diz onde começa e por quê', async () => {
+  await open(
+    view({
+      defaults: {
+        company: GPT_HIGH,
+        mine: null,
+        start: null,
+        companyStart: {
+          model: 'anthropic/claude-sonnet-5-5',
+          effort: 'low',
+          from: 'starter',
+          account: 'Claude da empresa',
+        },
+      },
+    }),
+  )
+  expect(
+    await screen.findByText(
+      'A empresa não tem conta disponível para OpenAI agora: as conversas novas começam no modelo inicial.',
+    ),
+  ).toBeTruthy()
+})
+
+test('sem conta da empresa em nenhum degrau: a frase e o caminho a Contas de modelo', async () => {
+  await open(view({ defaults: { company: null, mine: null, start: null, companyStart: null } }))
+  expect(
+    await screen.findByText(/Nenhum padrão nem modelo inicial tem conta da empresa disponível\./),
+  ).toBeTruthy()
+  const link = within(screen.getByRole('main')).getByRole('link', { name: 'Contas de modelo' })
+  expect(link.getAttribute('href')).toBe(`/companies/${COMPANY.id}/settings/model-accounts`)
+})
+
 test('o membro lê o valor e a frase de quem muda, sem o botão de salvar', async () => {
   await open(
     view({
       mayManage: false,
-      defaults: { company: { model: 'openai/gpt-5', effort: 'high' }, mine: null, start: null },
+      defaults: {
+        company: GPT_HIGH,
+        mine: null,
+        start: null,
+        companyStart: { ...GPT_HIGH, from: 'company', account: 'OpenAI da empresa' },
+      },
     }),
   )
   expect(
@@ -73,9 +118,5 @@ test('uma recusa fica no campo com a frase do código, e o valor escolhido conti
   expect(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }).textContent).toContain(
     'GPT 5',
   )
-  expect(
-    screen.getByText(
-      'A empresa ainda não tem padrão: as conversas novas começam no modelo inicial.',
-    ),
-  ).toBeTruthy()
+  expect(screen.getByText('A empresa ainda não tem padrão.')).toBeTruthy()
 })

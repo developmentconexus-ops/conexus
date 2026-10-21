@@ -27,6 +27,13 @@ export const SECOND = ConversationId.parse('22222222-2222-4222-8222-222222222222
 export const PROJECT = `/companies/${COMPANY.id}/projects/${PEDIDOS.id}`
 const BASE = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations`
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
+const COMPANY_DEFAULT = { model: MODEL, effort: 'off' }
+
+const EFFORTS: Record<string, string[]> = {
+  'claude-sonnet-4': ['off', 'low', 'high'],
+  'gpt-5': ['low', 'medium', 'high'],
+  'gemini-2.5-flash': ['off', 'medium', 'high'],
+}
 
 const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
@@ -36,14 +43,7 @@ const PROVIDERS = [
   ...provider,
   models: provider.models.map((name) => ({
     id: `${provider.id}/${name}`,
-    efforts:
-      name === 'claude-sonnet-4'
-        ? ['off', 'low', 'high']
-        : name === 'gpt-5'
-          ? ['low', 'medium', 'high']
-          : name === 'gemini-2.5-flash'
-            ? ['off', 'medium', 'high']
-            : ['off'],
+    efforts: EFFORTS[name] ?? ['off'],
   })),
 }))
 
@@ -110,7 +110,7 @@ function accountsRead(view: View): HttpHandler[] {
           mine,
           order: mine.map((one) => ({ provider: one.provider, accounts: [one.id] })),
           kinds: [],
-          defaults: { company: { model: MODEL, effort: 'off' }, mine: null, start: null },
+          defaults: { company: COMPANY_DEFAULT, mine: null, start: null, companyStart: null },
           connected: { mine: view.providers, company: [] },
           fallback: { enabled: false, chain: [], revision: 0 },
           usableProviders: view.usable ?? view.providers,

@@ -66,7 +66,7 @@ function reads(view: View): HttpHandler[] {
     http.get(`${BASE}/model-accounts`, () =>
       HttpResponse.json(
         listModelAccounts.success.body.parse({
-          defaults: { company: null, mine: null, start: null },
+          defaults: { company: null, mine: null, start: null, companyStart: null },
           connected: { mine: [], company: [] },
           fallback: { enabled: false, chain: [], revision: 0 },
           usableProviders: [],

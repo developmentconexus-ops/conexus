@@ -12,7 +12,7 @@ import { subscriptionAccess } from './claude/store.ts'
 import { subscriptionModel } from './claude/subscription-model.ts'
 import type { CallFailure } from './errors.ts'
 import type { GoogleAccount } from './google/calls.ts'
-import { isRegistryModel } from './providers.ts'
+import { isChoosable } from './providers.ts'
 import { modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
 
@@ -71,7 +71,7 @@ export type Asker = {
  * The provider's accounts the person may use now, in their order (`usableInOrder`), less those
  * this turn tried. The caller admitted the person.
  */
-export async function queuedRows(
+async function queuedRows(
   tx: ReadTx,
   asker: Asker,
   provider: string,
@@ -112,9 +112,14 @@ async function nextRow(deps: QueueDeps, turn: Turn, provider: string) {
   })
 }
 
+/** Whether the person may call an account of the model's provider now. */
+export async function hasAccount(tx: ReadTx, who: Asker, model: ModelId): Promise<boolean> {
+  return (await queuedRows(tx, who, providerOf(model))).length > 0
+}
+
 /**
- * The model a conversation changes to: one outside the registry is `MODEL_UNKNOWN`, and one with
- * no account the person may use now is `MODEL_NO_ACCOUNT`. No credential is opened.
+ * The model a conversation changes to: one the picker does not offer is `MODEL_UNKNOWN`, and one
+ * with no account the person may use now is `MODEL_NO_ACCOUNT`. No credential is opened.
  */
 export async function conversationModel(
   deps: QueueDeps,
@@ -125,9 +130,8 @@ export async function conversationModel(
   return deps.database.read(scope, async (tx) => {
     const who = { ...asker, tried: new Set<ModelAccountId>() }
     await admitted(deps, tx, who)
-    if (!isRegistryModel(asked)) throw new Failure('MODEL_UNKNOWN')
-    const rows = await queuedRows(tx, who, providerOf(asked))
-    if (rows.length === 0) throw new Failure('MODEL_NO_ACCOUNT')
+    if (!isChoosable(asked)) throw new Failure('MODEL_UNKNOWN')
+    if (!(await hasAccount(tx, who, asked))) throw new Failure('MODEL_NO_ACCOUNT')
     return asked
   })
 }

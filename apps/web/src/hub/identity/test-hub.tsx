@@ -120,7 +120,7 @@ function modelAccountsOf(view: CompanyView): HttpHandler[] {
           mine: [],
           order: [],
           kinds: [],
-          defaults: { company: null, mine: null, start: null },
+          defaults: { company: null, mine: null, start: null, companyStart: null },
           connected: { mine: [], company: [] },
           mayManage: true,
           fallback: { enabled: false, chain: [], revision: 0 },

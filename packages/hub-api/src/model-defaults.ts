@@ -13,14 +13,26 @@ export const StartSource = z.enum(['mine', 'company', 'starter'])
 export type StartSource = z.infer<typeof StartSource>
 
 /**
- * The defaults: the company's and the viewer's own, and `start`, what a conversation created now
- * with no model would begin on (null with no usable account), the same the creation computes.
+ * Where a conversation created now begins: the model and level, which step of the order it came
+ * from, and the name of the first account that will answer for it (the same read that decided the
+ * step was usable, code C26).
+ */
+export const ConversationStart = ModelDefault.extend({ from: StartSource, account: z.string() })
+export type ConversationStart = z.infer<typeof ConversationStart>
+
+/**
+ * The defaults: the company's and the viewer's own, and what a conversation created now would
+ * begin on with no model asked: `start` for the viewer (`mine`, then the company's, then the
+ * starter list) and `companyStart` for the company's people alike (without the viewer's own step,
+ * over the accounts given to all); each is null with no usable account.
  */
 export const Defaults = z.object({
   company: ModelDefault.nullable(),
   mine: ModelDefault.nullable(),
-  start: ModelDefault.extend({ from: StartSource }).nullable(),
+  start: ConversationStart.nullable(),
+  companyStart: ConversationStart.nullable(),
 })
+export type Defaults = z.infer<typeof Defaults>
 
 const InCompany = z.object({ companyId: CompanyId })
 const READ_FAILURES = [

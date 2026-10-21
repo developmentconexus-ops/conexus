@@ -99,7 +99,7 @@ const WITH_ACCOUNT = {
     ],
     order: [{ provider: 'anthropic', accounts: ['00000000-0000-4000-8000-000000000001'] }],
     kinds: [],
-    defaults: { company: null, mine: null, start: null },
+    defaults: { company: null, mine: null, start: null, companyStart: null },
     connected: { mine: ['anthropic'], company: [] },
     fallback: { enabled: false, chain: [], revision: 0 },
     usableProviders: ['anthropic'],

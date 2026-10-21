@@ -138,7 +138,9 @@ export {
   startModelAccountSignIn,
 } from './model-accounts.ts'
 export {
+  ConversationStart,
   clearMyModelDefault,
+  Defaults,
   ModelDefault,
   StartSource,
   setDefaultModel,

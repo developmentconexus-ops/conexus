@@ -29,6 +29,11 @@ export function refusalText(error: unknown): string {
   return writeFailureText(error, UNCONFIRMED)
 }
 
+/** What a failed write of a default says: the screen has no list to look at, so it says try again. */
+export function defaultRefusalText(error: unknown): string {
+  return writeFailureText(error, 'Não confirmamos a mudança. Tente de novo.')
+}
+
 /** The provider's name, or its id for one the key list does not hold, such as a subscription's. */
 export function providerName(providers: readonly Provider[], id: ProviderId): string {
   return providers.find((one) => one.id === id)?.name ?? id

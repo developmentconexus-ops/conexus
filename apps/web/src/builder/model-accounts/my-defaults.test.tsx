@@ -26,7 +26,8 @@ function view(fields: Partial<View> = {}): View {
     defaults: {
       company: COMPANY_DEFAULT,
       mine: null,
-      start: { ...COMPANY_DEFAULT, from: 'company' },
+      start: { ...COMPANY_DEFAULT, from: 'company', account: 'Claude da empresa' },
+      companyStart: { ...COMPANY_DEFAULT, from: 'company', account: 'Claude da empresa' },
     },
     mayManage: false,
     ...fields,
@@ -81,7 +82,7 @@ test('salvar o seu: o modelo e o nível seguem ao Hub, o topo passa a "seu padr�
 })
 
 test('sem conta usável em nenhum degrau: a frase e o caminho a Minhas contas de modelo', async () => {
-  await open(view({ defaults: { company: null, mine: null, start: null } }))
+  await open(view({ defaults: { company: null, mine: null, start: null, companyStart: null } }))
   expect(
     await screen.findByText(/Nenhum padrão nem modelo inicial tem conta sua disponível\./),
   ).toBeTruthy()
@@ -97,7 +98,8 @@ test('o padrão próprio sem conta usável agora: a frase com o fornecedor e o d
       defaults: {
         company: COMPANY_DEFAULT,
         mine: { model: SONNET, effort: 'low' },
-        start: { ...COMPANY_DEFAULT, from: 'company' },
+        start: { ...COMPANY_DEFAULT, from: 'company', account: 'Claude da empresa' },
+        companyStart: { ...COMPANY_DEFAULT, from: 'company', account: 'Claude da empresa' },
       },
     }),
   )
@@ -109,7 +111,7 @@ test('o padrão próprio sem conta usável agora: a frase com o fornecedor e o d
   expect(screen.getByRole('button', { name: 'Usar o da empresa' })).toBeTruthy()
 })
 
-test('a conta usada primeiro vem da ordem, só entre as que respondem, com Mudar a ordem', async () => {
+test('a conta usada primeiro é a que o Hub dá, com Mudar a ordem', async () => {
   const paused = accountOf({ label: 'Pausada', owner: 'me', position: 0, state: 'paused' })
   const ready = accountOf({ label: 'Claude da empresa', position: 1 })
   await open(
@@ -120,7 +122,8 @@ test('a conta usada primeiro vem da ordem, só entre as que respondem, com Mudar
       defaults: {
         company: null,
         mine: { model: SONNET, effort: 'off' },
-        start: { model: SONNET, effort: 'off', from: 'mine' },
+        start: { model: SONNET, effort: 'off', from: 'mine', account: 'Claude da empresa' },
+        companyStart: null,
       },
     }),
   )

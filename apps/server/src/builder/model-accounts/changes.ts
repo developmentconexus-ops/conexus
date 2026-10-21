@@ -1,5 +1,11 @@
-import type { ModelAccountId, ModelDefault, ModelFallback, Owner, PersonId } from '@conexus/hub-api'
-import { ProviderId } from '@conexus/hub-api'
+import type {
+  ModelAccountId,
+  ModelDefault,
+  ModelFallback,
+  Owner,
+  PersonId,
+  ProviderId,
+} from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { ReadTx } from '../../platform/database.ts'
 import { violatedReference } from '../../platform/database.ts'
@@ -21,7 +27,7 @@ import {
   scopeOf,
   viewOf,
 } from './accounts.ts'
-import { isRegistryModel } from './providers.ts'
+import { isChoosable } from './providers.ts'
 import { providerOf } from './queue.ts'
 import {
   companyModel,
@@ -95,14 +101,19 @@ export function assign(
 }
 
 /**
- * A default's refusals, in the order a form fixes them: a model off the registry, a level the model
+ * Throws a default's refusal, in the order a form fixes them: a model the picker does not offer, a level the model
  * does not take, a provider with no account connected in this scope (P5).
  */
-async function refusedDefault(tx: ReadTx, viewer: Viewer, owner: Owner, chosen: ModelDefault) {
-  if (!isRegistryModel(chosen.model)) throw new Failure('MODEL_UNKNOWN')
+async function assertDefaultAllowed(
+  tx: ReadTx,
+  viewer: Viewer,
+  owner: Owner,
+  chosen: ModelDefault,
+) {
+  if (!isChoosable(chosen.model)) throw new Failure('MODEL_UNKNOWN')
   if (!effortsOf(chosen.model).includes(chosen.effort)) throw new Failure('EFFORT_UNSUPPORTED')
   const connected = await connectedIn(tx, viewer, owner)
-  if (!connected.includes(ProviderId.parse(providerOf(chosen.model))))
+  if (!connected.some((one) => one === providerOf(chosen.model)))
     throw new Failure('MODEL_NO_ACCOUNT')
 }
 
@@ -111,7 +122,7 @@ export function setDefault(deps: Deps, input: Viewer & ModelDefault) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'company')
     const { model, effort } = input
-    await refusedDefault(tx, input, 'company', { model, effort })
+    await assertDefaultAllowed(tx, input, 'company', { model, effort })
     await tx
       .insert(companyModel)
       .values({ companyId: input.companyId, model, effort })
@@ -125,7 +136,7 @@ export function setMine(deps: Deps, input: Viewer & ModelDefault) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'me')
     const { model, effort } = input
-    await refusedDefault(tx, input, 'me', { model, effort })
+    await assertDefaultAllowed(tx, input, 'me', { model, effort })
     await tx
       .insert(personModelDefault)
       .values({ companyId: input.companyId, personId: input.person.id, model, effort })
@@ -212,7 +223,7 @@ export function remove(deps: Deps, input: Viewer & { accountId: ModelAccountId }
 export function setFallback(deps: Deps, input: Viewer & ModelFallback) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'company')
-    if (!input.chain.every(isRegistryModel)) throw new Failure('MODEL_UNKNOWN')
+    if (!input.chain.every(isChoosable)) throw new Failure('MODEL_UNKNOWN')
     const { enabled, chain, revision } = input
     const written =
       revision === 0

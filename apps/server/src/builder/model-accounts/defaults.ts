@@ -1,19 +1,19 @@
-import type { ModelAccountId, ModelId, StartSource } from '@conexus/hub-api'
+import type { ConversationStart, ModelAccountId, ModelId } from '@conexus/hub-api'
 import { ModelDefault } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { ReadTx, Scope } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
-import { isRegistryModel, STARTER_MODELS } from './providers.ts'
-import type { Asker, QueueDeps } from './queue.ts'
-import { admitted, providerOf, queuedRows } from './queue.ts'
+import type { AccountRow } from './accounts.ts'
+import { accountsOf, usableForAll, usableInOrder } from './accounts.ts'
+import { isChoosable, STARTER_MODELS } from './providers.ts'
+import type { QueueDeps } from './queue.ts'
+import { admitted, hasAccount, providerOf } from './queue.ts'
 import { companyModel, personModelDefault } from './tables.ts'
 import { effortFor } from './thinking.ts'
 import type { Turn } from './turn.ts'
 
-/** What a new conversation begins on, and which step of the order it came from (card 12.3, P3). */
-export type Start = ModelDefault & { from: StartSource }
-
 type Who = { companyId: Turn['companyId']; personId: Turn['personId'] }
+type Step = ModelDefault & { from: ConversationStart['from'] }
 
 /** The company's default and the person's own, as saved; either may be none. */
 export async function savedDefaults(tx: ReadTx, who: Who) {
@@ -36,36 +36,56 @@ export async function savedDefaults(tx: ReadTx, who: Who) {
   }
 }
 
-async function usable(tx: ReadTx, who: Asker, model: ModelId): Promise<boolean> {
-  return isRegistryModel(model) && (await queuedRows(tx, who, providerOf(model))).length > 0
-}
-
 /**
- * Where a conversation begins when nothing was asked, the one owner of the order (code C26): the
- * person's default, the company's, then the first starter model; a step whose provider has no
- * account the person may call now is skipped, and the level descends to one the model takes. None
- * left is `null`.
+ * The first step whose provider has an account to call, with that account's name, the level
+ * descended to one the model takes. A model the picker does not offer is skipped like a provider
+ * with no account.
  */
-export async function startOf(tx: ReadTx, who: Who): Promise<Start | null> {
-  const asker = { ...who, tried: new Set<ModelAccountId>() }
-  const saved = await savedDefaults(tx, who)
-  const steps: Start[] = [
-    ...(saved.mine === null ? [] : [{ ...saved.mine, from: 'mine' as const }]),
-    ...(saved.company === null ? [] : [{ ...saved.company, from: 'company' as const }]),
-    ...STARTER_MODELS.map((model) => ({ model, effort: 'off' as const, from: 'starter' as const })),
-  ]
+function firstStep(
+  steps: readonly Step[],
+  rows: AccountRow[],
+  usableOf: (queue: AccountRow[]) => AccountRow[],
+): ConversationStart | null {
   for (const step of steps) {
-    if (await usable(tx, asker, step.model))
-      return { ...step, effort: effortFor(step.model, step.effort) }
+    if (!isChoosable(step.model)) continue
+    const provider = providerOf(step.model)
+    const [first] = usableOf(rows.filter((row) => row.provider === provider))
+    if (first !== undefined)
+      return { ...step, effort: effortFor(step.model, step.effort), account: first.label }
   }
   return null
 }
 
+function starters(): Step[] {
+  return STARTER_MODELS.map((model) => ({ model, effort: 'off', from: 'starter' }))
+}
+
 /**
- * The model and level a conversation is created on. With no model asked, `startOf`, or
- * `MODEL_NO_ACCOUNT` when no step has an account. With one: it must be in the registry
- * (`MODEL_UNKNOWN`) and have an account the person may use now (`MODEL_NO_ACCOUNT`), and it keeps
- * the level the person saved for that model, else the company's, else the lowest it takes.
+ * Where a new conversation begins when nothing was asked, the one owner of the order (code C26):
+ * for the person, their default, the company's, then the first starter model; for the company's
+ * people alike, the company's, then the starters, over the accounts given to all. A step whose
+ * provider has no account to call is skipped, and the level descends to one the model takes.
+ */
+export async function startsOf(tx: ReadTx, who: Who) {
+  const saved = await savedDefaults(tx, who)
+  const { rows, context } = await accountsOf(tx, who.companyId)
+  const company: Step[] = saved.company === null ? [] : [{ ...saved.company, from: 'company' }]
+  const mine: Step[] = saved.mine === null ? [] : [{ ...saved.mine, from: 'mine' }]
+  return {
+    start: firstStep([...mine, ...company, ...starters()], rows, (queue) =>
+      usableInOrder(queue, context, who.personId),
+    ),
+    companyStart: firstStep([...company, ...starters()], rows, (queue) =>
+      usableForAll(queue, context),
+    ),
+  }
+}
+
+/**
+ * The model and level a conversation is created on. With no model asked, the person's start, or
+ * `MODEL_NO_ACCOUNT` when no step has an account. With one: it must be a model the picker offers
+ * (`MODEL_UNKNOWN`) with an account the person may use now (`MODEL_NO_ACCOUNT`), and it keeps the
+ * level the person saved for that model, else the company's, else the lowest it takes.
  */
 export async function conversationStart(
   deps: QueueDeps,
@@ -77,12 +97,12 @@ export async function conversationStart(
     const asker = { ...who, tried: new Set<ModelAccountId>() }
     await admitted(deps, tx, asker)
     if (asked === undefined) {
-      const start = await startOf(tx, who)
+      const { start } = await startsOf(tx, who)
       if (start === null) throw new Failure('MODEL_NO_ACCOUNT')
       return { model: start.model, effort: start.effort }
     }
-    if (!isRegistryModel(asked)) throw new Failure('MODEL_UNKNOWN')
-    if (!(await usable(tx, asker, asked))) throw new Failure('MODEL_NO_ACCOUNT')
+    if (!isChoosable(asked)) throw new Failure('MODEL_UNKNOWN')
+    if (!(await hasAccount(tx, asker, asked))) throw new Failure('MODEL_NO_ACCOUNT')
     const saved = await savedDefaults(tx, who)
     const kept = [saved.mine, saved.company].find((each) => each?.model === asked)
     return { model: asked, effort: effortFor(asked, kept?.effort ?? 'off') }

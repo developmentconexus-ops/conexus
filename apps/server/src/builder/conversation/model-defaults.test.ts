@@ -5,62 +5,11 @@ import { test } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, codeOf, memberOn, plantCompany, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { conversing, MODEL } from './test-conversation.ts'
+import { MODEL } from './test-conversation.ts'
+import { company, connect, created, pairOf, patch, startOf } from './test-defaults.ts'
 
 const GPT = 'openai/gpt-5'
 const GROQ = 'groq/llama-3.3-70b-versatile'
-
-/** Empresa Teste with Ana's Anthropic key and its default `MODEL`; Carla is a member. */
-async function company(t: TestContext) {
-  const made = await conversing(t, () => ({ kind: 'text', text: 'Resposta' }))
-  const carla = await memberOn(made.hub, made.companyId, CARLA, 'member')
-  const base = `/api/companies/${made.companyId}`
-  return {
-    ...made,
-    carla,
-    base,
-    accounts: `${base}/model-accounts`,
-    mine: `${base}/my-model-default`,
-  }
-}
-
-async function connect(
-  hub: Hub,
-  person: Person,
-  accounts: string,
-  provider: string,
-  owner = 'company',
-) {
-  const body = { owner, provider, label: provider, key: `sk-${provider}-${randomUUID()}` }
-  const linked = await post(hub, person, accounts, body)
-  assert.equal(linked.statusCode, 201, linked.body)
-  return String(Object(linked.json()).account.id)
-}
-
-function patch(hub: Hub, person: Person, url: string, body: object) {
-  return hub.app.inject({
-    method: 'PATCH',
-    url,
-    headers: { origin: TEST_ORIGIN, cookie: person.cookie, 'content-type': 'application/json' },
-    payload: JSON.stringify(body),
-  })
-}
-
-async function created(hub: Hub, person: Person, conversations: string, body: object = {}) {
-  const made = await post(hub, person, conversations, body, randomUUID())
-  const id = made.statusCode === 201 ? String(Object(made.json()).conversation.id) : undefined
-  return { made, id }
-}
-
-async function pairOf(hub: Hub, person: Person, conversations: string, id: string | undefined) {
-  const read = await call(hub, person, 'GET', `${conversations}/${id}`)
-  const { model, effort } = Object(read.json()).conversation
-  return { model, effort }
-}
-
-async function startOf(hub: Hub, person: Person, accounts: string) {
-  return Object((await call(hub, person, 'GET', accounts)).json()).defaults.start
-}
 
 test('uma conversa nova começa no padrão da pessoa, senão no da empresa, e copia o par ao nascer', async (t) => {
   const { hub, ana, carla, conversations, mine } = await company(t)
@@ -200,14 +149,22 @@ test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5
   await hub.test.asOwner(`delete from builder.company_model`)
   // Sonnet 5.5 always reasons, so the starter's `off` becomes the lowest level it takes.
   const sonnet = { model: 'anthropic/claude-sonnet-5-5', effort: 'low' }
-  assert.deepEqual(await startOf(hub, carla, accounts), { ...sonnet, from: 'starter' })
+  assert.deepEqual(await startOf(hub, carla, accounts), {
+    ...sonnet,
+    from: 'starter',
+    account: 'Time 1',
+  })
   await connect(hub, ana, accounts, 'openai')
   const both = await created(hub, carla, conversations)
   assert.deepEqual(await pairOf(hub, carla, conversations, both.id), sonnet)
   await hub.test.asOwner(`delete from builder.model_account where provider = 'anthropic'`)
   // GPT-5 cannot be off, so the starter's `off` becomes the lowest level it takes.
   const expected = { model: GPT, effort: 'low' }
-  assert.deepEqual(await startOf(hub, carla, accounts), { ...expected, from: 'starter' })
+  assert.deepEqual(await startOf(hub, carla, accounts), {
+    ...expected,
+    from: 'starter',
+    account: 'openai',
+  })
   const alone = await created(hub, carla, conversations)
   assert.deepEqual(await pairOf(hub, carla, conversations, alone.id), expected)
   // Gemini is the last starter, and a model of the registry like the others.
@@ -217,6 +174,7 @@ test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5
     model: 'google/gemini-2.5-pro',
     effort: 'low',
     from: 'starter',
+    account: 'google',
   })
 })
 
@@ -231,7 +189,7 @@ test('padrão pessoal: todo membro grava o seu, relê, limpa duas vezes; as recu
     [read.defaults.mine, read.defaults.company],
     [saved, { model: MODEL, effort: 'off' }],
   )
-  assert.deepEqual(read.defaults.start, { ...saved, from: 'mine' })
+  assert.deepEqual(read.defaults.start, { ...saved, from: 'mine', account: 'Time 1' })
   const others = Object((await call(hub, ana, 'GET', accounts)).json())
   assert.equal(others.defaults.mine, null)
   const refusals: [object, string][] = [

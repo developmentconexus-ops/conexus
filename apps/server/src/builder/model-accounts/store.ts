@@ -33,7 +33,7 @@ import {
   setFallback,
   setMine,
 } from './changes.ts'
-import { savedDefaults, startOf } from './defaults.ts'
+import { savedDefaults, startsOf } from './defaults.ts'
 import { keyProviderOf } from './providers.ts'
 import { companyModelFallback, modelAccount } from './tables.ts'
 
@@ -99,7 +99,7 @@ function list(deps: Deps, viewer: Viewer) {
       order: ordersOf(viewer, rows, context),
       usableProviders: usableProviders(viewer, rows, context),
       kinds: [...context.open].sort(),
-      defaults: { company, mine, start: await startOf(tx, who) },
+      defaults: { company, mine, ...(await startsOf(tx, who)) },
       connected: {
         mine: connectedProviders(rows, context, 'me', viewer.person.id),
         company: connectedProviders(rows, context, 'company', viewer.person.id),

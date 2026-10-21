@@ -114,6 +114,11 @@ export function partOf(
   return given.includes(personId) ? 1 : undefined
 }
 
+/** The queue's own test of an account: ready, out of its limit and of a kind left open. */
+function isUsable(row: AccountRow, context: Context): boolean {
+  return row.state === 'ready' && row.limitedUntil === null && kindOpen(row, context)
+}
+
 /**
  * The accounts the person may call now, in their order (the queue's rule, step 12): a paused or
  * refused one, one of a closed kind, one in its limit and one given only to others are left out.
@@ -125,13 +130,21 @@ export function usableInOrder(
   personId: PersonId,
 ): AccountRow[] {
   return rows
-    .filter((row) => row.state === 'ready' && row.limitedUntil === null && kindOpen(row, context))
+    .filter((row) => isUsable(row, context))
     .flatMap((row) => {
       const part = partOf(row, context, personId)
       return part === undefined ? [] : [{ row, part }]
     })
     .sort((left, right) => left.part - right.part || left.row.position - right.row.position)
     .map((each) => each.row)
+}
+
+/** The company's own accounts that anyone may call now, in the company's order. */
+export function usableForAll(rows: AccountRow[], context: Context): AccountRow[] {
+  return rows
+    .filter((row) => row.personId === null && !context.assignees.has(row.id))
+    .filter((row) => isUsable(row, context))
+    .sort((left, right) => left.position - right.position)
 }
 
 /**
@@ -150,18 +163,19 @@ export function connectedProviders(
   return [...new Set(own.map((row) => row.provider))].sort()
 }
 
-/** The same, read in the transaction; the caller admitted the person. */
-export async function connectedIn(tx: ReadTx, viewer: Viewer, owner: Owner): Promise<ProviderId[]> {
+/** Every account the transaction's scope may read, with the company's context; the caller admitted the person. */
+export async function accountsOf(tx: ReadTx, companyId: CompanyId) {
   const rows = await tx
     .select(columns)
     .from(modelAccount)
-    .where(eq(modelAccount.companyId, viewer.companyId))
-  return connectedProviders(
-    rows.map((row) => AccountRow.parse(row)),
-    await contextOf(tx, viewer.companyId),
-    owner,
-    viewer.person.id,
-  )
+    .where(eq(modelAccount.companyId, companyId))
+  return { rows: rows.map((row) => AccountRow.parse(row)), context: await contextOf(tx, companyId) }
+}
+
+/** The same, read in the transaction. */
+export async function connectedIn(tx: ReadTx, viewer: Viewer, owner: Owner): Promise<ProviderId[]> {
+  const { rows, context } = await accountsOf(tx, viewer.companyId)
+  return connectedProviders(rows, context, owner, viewer.person.id)
 }
 
 export function viewOf(row: AccountRow, context: Context): ModelAccount {

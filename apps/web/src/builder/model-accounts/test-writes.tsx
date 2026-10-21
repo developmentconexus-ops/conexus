@@ -133,6 +133,11 @@ function signIns(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
   ]
 }
 
+/** The account a start would name: the first of the company, else of the person. */
+function firstLabel(view: View): string {
+  return view.company[0]?.label ?? view.mine[0]?.label ?? 'Conta'
+}
+
 /** The Hub's writes on the defaults: the company's, the person's own and clearing it. */
 function defaultWrites(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
   const note = noter(sent)
@@ -146,6 +151,7 @@ function defaultWrites(view: View, sent: Sent[], answers: Answers): HttpHandler[
         company,
         mine: view.defaults?.mine ?? null,
         start: view.defaults?.start ?? null,
+        companyStart: { ...company, from: 'company', account: firstLabel(view) },
       }
       return HttpResponse.json({ defaultModel: company })
     }),
@@ -157,7 +163,8 @@ function defaultWrites(view: View, sent: Sent[], answers: Answers): HttpHandler[
       view.defaults = {
         company: view.defaults?.company ?? null,
         mine,
-        start: { ...mine, from: 'mine' },
+        start: { ...mine, from: 'mine', account: firstLabel(view) },
+        companyStart: view.defaults?.companyStart ?? null,
       }
       return HttpResponse.json({ mine })
     }),
@@ -169,7 +176,8 @@ function defaultWrites(view: View, sent: Sent[], answers: Answers): HttpHandler[
       view.defaults = {
         company,
         mine: null,
-        start: company === null ? null : { ...company, from: 'company' },
+        start: company === null ? null : { ...company, from: 'company', account: firstLabel(view) },
+        companyStart: view.defaults?.companyStart ?? null,
       }
       return new HttpResponse(null, { status: 204 })
     }),

@@ -39,7 +39,10 @@ function withDefaults(base: typeof OWNER, mayManage: boolean, mine: boolean) {
       defaults: {
         company,
         mine: mine ? own : null,
-        start: mine ? { ...own, from: 'mine' } : { ...company, from: 'company' },
+        start: mine
+          ? { ...own, from: 'mine', account: CLAUDE_DA_EMPRESA.label }
+          : { ...company, from: 'company', account: CLAUDE_DA_EMPRESA.label },
+        companyStart: { ...company, from: 'company', account: CLAUDE_DA_EMPRESA.label },
       },
       connected: { mine: ['anthropic', 'openai'], company: ['anthropic', 'openai'] },
       fallback: { enabled: false, chain: [], revision: 0 },

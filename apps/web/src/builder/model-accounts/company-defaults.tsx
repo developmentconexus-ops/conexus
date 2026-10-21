@@ -1,10 +1,46 @@
+import type { CompanyId, Defaults, Provider } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { DefaultChoice } from './default-choice.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
-import { choiceText } from './text.ts'
+import { choiceText, modelProviderName, START_SOURCE_TEXT } from './text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/defaults')
+
+type Line = {
+  companyId: CompanyId
+  start: Defaults['companyStart']
+  defaults: Defaults
+  providers: readonly Provider[]
+}
+
+/** Where the company's conversations begin, and why when the company's default is not it. */
+function StartLine({ companyId, start, defaults, providers }: Line) {
+  if (start === null) {
+    return (
+      <p>
+        Nenhum padrão nem modelo inicial tem conta da empresa disponível.{' '}
+        <Link
+          to="/companies/$companyId/settings/model-accounts"
+          params={{ companyId }}
+          className="underline"
+        >
+          Contas de modelo
+        </Link>
+      </p>
+    )
+  }
+  const skipped = defaults.company !== null && start.from !== 'company'
+  return (
+    <>
+      {defaults.company === null && <p>A empresa ainda não tem padrão.</p>}
+      <p>{`Uma conversa nova começa em: ${choiceText(start)} — ${START_SOURCE_TEXT[start.from]}`}</p>
+      {skipped && defaults.company !== null && (
+        <p className="text-text-2">{`A empresa não tem conta disponível para ${modelProviderName(providers, defaults.company.model)} agora: as conversas novas começam no ${START_SOURCE_TEXT[start.from]}.`}</p>
+      )}
+    </>
+  )
+}
 
 /**
  * "Padrões da empresa": the model and reasoning that begin the new conversations of whoever chose
@@ -20,11 +56,12 @@ export function CompanyDefaults() {
   return (
     <div className="flex flex-col gap-lg">
       <p className="text-label text-text-2">Toda a empresa</p>
-      <p>
-        {defaults.company === null
-          ? 'A empresa ainda não tem padrão: as conversas novas começam no modelo inicial.'
-          : `Uma conversa nova começa em: ${choiceText(defaults.company)} — padrão da empresa`}
-      </p>
+      <StartLine
+        companyId={companyId}
+        start={defaults.companyStart}
+        defaults={defaults}
+        providers={providers}
+      />
       <DefaultChoice
         companyId={companyId}
         scope="company"

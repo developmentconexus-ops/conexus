@@ -3,6 +3,7 @@ import { ATTEMPT_KEY_HEADER, ModelAccount } from '@conexus/hub-api'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 
 type Chosen = { model: string; effort: string }
+type Started = Chosen & { from: 'mine' | 'company' | 'starter'; account: string }
 
 /** What the Hub holds of the company's model accounts; a write changes it, a read shows it. */
 export type View = {
@@ -13,7 +14,8 @@ export type View = {
   defaults?: {
     company: Chosen | null
     mine: Chosen | null
-    start: (Chosen & { from: 'mine' | 'company' | 'starter' }) | null
+    start: Started | null
+    companyStart: Started | null
   }
   connected?: { mine: string[]; company: string[] }
   fallback?: Fallback

@@ -174,11 +174,11 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
     kind: 'text',
     text: 'ok',
   }))
-  const created = await post(hub, ana, conversations, { model: 'openai/gpt-4' })
+  const created = await post(hub, ana, conversations, { model: 'openai/gpt-5' })
   assert.equal(created.statusCode, 422)
   assert.equal(codeOf(created), 'MODEL_NO_ACCOUNT')
   const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const gpt = { model: 'openai/gpt-4', effort: 'off' }
+  const gpt = { model: 'openai/gpt-5', effort: 'off' }
   const switched = await call(hub, ana, 'PUT', `${url}/model`, gpt)
   assert.equal(switched.statusCode, 422)
   assert.equal(codeOf(switched), 'MODEL_NO_ACCOUNT')
