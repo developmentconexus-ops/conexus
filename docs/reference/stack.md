@@ -42,7 +42,7 @@ can be another commit (one was at `729bdc5d`).
 | `wrangler` | `apps/edge` | skill; `developers.cloudflare.com/workers/llms.txt` | `cloudflare:wrangler`, `cloudflare:workers-best-practices` | vibesdk `worker/index.ts:205` (dispatch), `worker/services/deployer/api/cloudflare-api.ts:131` (deploy), `space/src/space/durable-object.ts:752` (preview, Worker Loader) | 0018, 0042, 0047 | — |
 | `react-email` | `apps/server/src/hub` | docs site | none | — | 0017 | — |
 | `@react-email/render` | `apps/server/src/hub` | docs site | none | — | 0017 | — |
-| `esbuild` | `apps/server` (the invitation e-mail bundle) | README | none | — | 0017 | — |
+| `esbuild` | `apps/server` (the invitation e-mail bundle; `@mastra/e2b` imports it at runtime) | README | none | — | 0017 | — |
 | `react` | `apps/web/src`, `apps/server/src/hub` | `react.dev/llms.txt` | none | — | web | — |
 | `react-dom` | `apps/web/src`, `apps/server` | `react.dev/llms.txt` | none | — | web | — |
 | `@types/react` | `apps/web` | follows `react` | none | — | — | — |
