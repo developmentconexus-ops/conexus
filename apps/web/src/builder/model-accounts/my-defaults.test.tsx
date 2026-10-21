@@ -160,3 +160,22 @@ test('uma recusa fica no campo com a frase do código e o valor escolhido; salva
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Salvando…' })).toBeNull())
   expect(sent).toHaveLength(1)
 })
+
+test('sem padrão próprio e com o da empresa pulado: a frase do critério 15 diz por quê', async () => {
+  await open(
+    view({
+      defaults: {
+        company: COMPANY_DEFAULT,
+        mine: null,
+        start: { model: SONNET, effort: 'low', from: 'starter', account: 'Claude da empresa' },
+        companyStart: null,
+      },
+    }),
+  )
+  expect(
+    await screen.findByText(
+      'Você não tem conta disponível para OpenAI agora: as conversas novas começam no modelo inicial.',
+    ),
+  ).toBeTruthy()
+  expect(screen.queryByText('Você segue o padrão da empresa.')).toBeNull()
+})

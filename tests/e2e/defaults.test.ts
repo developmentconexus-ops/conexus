@@ -55,7 +55,11 @@ async function companyDefault(owner: Page, companyId: string) {
   assert.equal(await slider.getAttribute('aria-valuetext'), 'Médio')
   await owner.keyboard.press('Escape')
   await owner.getByRole('button', { name: 'Salvar padrão' }).click()
-  await owner.getByText(START('GPT 5 · Médio — padrão da empresa')).waitFor()
+  await owner
+    .getByText(
+      'Com as contas da empresa, uma conversa nova começa em: GPT 5 · Médio — padrão da empresa',
+    )
+    .waitFor()
 }
 
 /** Steps 3 to 5, Ana's side: her own default, the order line, the lost account, and the way back. */

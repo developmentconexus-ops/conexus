@@ -50,7 +50,9 @@ test('o dono sem padrão: a frase da empresa, escolhe o modelo e salva; a linha 
   await choose(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }), 'GPT 5')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar padrão' }))
   expect(
-    await screen.findByText('Uma conversa nova começa em: GPT 5 · Desligado — padrão da empresa'),
+    await screen.findByText(
+      'Com as contas da empresa, uma conversa nova começa em: GPT 5 · Desligado — padrão da empresa',
+    ),
   ).toBeTruthy()
   expect(sent.map((one) => one.body)).toEqual([{ model: 'openai/gpt-5', effort: 'off' }])
   expect(screen.getByRole('button', { name: 'Salvar padrão' })).toHaveProperty('disabled', true)
@@ -103,7 +105,9 @@ test('o membro lê o valor e a frase de quem muda, sem o botão de salvar', asyn
     }),
   )
   expect(
-    await screen.findByText('Uma conversa nova começa em: GPT 5 · Alto — padrão da empresa'),
+    await screen.findByText(
+      'Com as contas da empresa, uma conversa nova começa em: GPT 5 · Alto — padrão da empresa',
+    ),
   ).toBeTruthy()
   expect(screen.getByText('Só o dono ou um administrador muda os padrões da empresa.')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Salvar padrão' })).toBeNull()

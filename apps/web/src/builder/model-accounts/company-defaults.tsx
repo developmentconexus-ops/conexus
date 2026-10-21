@@ -34,7 +34,7 @@ function StartLine({ companyId, start, defaults, providers }: Line) {
   return (
     <>
       {defaults.company === null && <p>A empresa ainda não tem padrão.</p>}
-      <p>{`Uma conversa nova começa em: ${choiceText(start)} — ${START_SOURCE_TEXT[start.from]}`}</p>
+      <p>{`Com as contas da empresa, uma conversa nova começa em: ${choiceText(start)} — ${START_SOURCE_TEXT[start.from]}`}</p>
       {skipped && defaults.company !== null && (
         <p className="text-text-2">{`A empresa não tem conta disponível para ${modelProviderName(providers, defaults.company.model)} agora: as conversas novas começam no ${START_SOURCE_TEXT[start.from]}.`}</p>
       )}

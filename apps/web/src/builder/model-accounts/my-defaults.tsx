@@ -32,12 +32,16 @@ function StartLine(props: { start: Start; companyId: CompanyId }) {
 
 function SkippedLine(props: {
   mine: ModelDefault | null
+  company: ModelDefault | null
   start: Start
   providers: readonly Provider[]
 }) {
-  const { mine, start } = props
-  if (mine === null || start === null || start.from === 'mine') return null
-  const provider = modelProviderName(props.providers, mine.model)
+  const { mine, company, start } = props
+  const wanted = mine ?? company
+  if (wanted === null || start === null || start.from === (mine === null ? 'company' : 'mine')) {
+    return null
+  }
+  const provider = modelProviderName(props.providers, wanted.model)
   return (
     <p className="text-text-2">{`Você não tem conta disponível para ${provider} agora: as conversas novas começam no ${START_SOURCE_TEXT[start.from]}.`}</p>
   )
@@ -59,7 +63,12 @@ export function MyDefaults() {
       {defaults.start?.from === 'company' && (
         <p className="text-text-2">Você segue o padrão da empresa.</p>
       )}
-      <SkippedLine mine={defaults.mine} start={defaults.start} providers={providers} />
+      <SkippedLine
+        mine={defaults.mine}
+        company={defaults.company}
+        start={defaults.start}
+        providers={providers}
+      />
       <DefaultChoice
         companyId={companyId}
         scope="mine"

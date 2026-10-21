@@ -125,7 +125,7 @@ function Editor(props: Props & { refocus: RefObject<boolean> }) {
         </Button>
         {props.scope === 'mine' && saved !== null && (
           <Button
-            disabled={clear.isPending}
+            disabled={clear.isPending || send.isPending}
             onClick={() => write((callbacks) => clear.mutate({ params }, callbacks))}
           >
             {clear.isPending ? 'Salvando…' : 'Usar o da empresa'}
