@@ -72,3 +72,13 @@ export function isRegistryModel(model: string): boolean {
   const { provider, modelId } = parseModelString(model)
   return provider !== null && (MODELS.get(provider)?.has(modelId) ?? false)
 }
+
+/**
+ * The models a conversation starts on when neither the person nor the company chose one (P3): the
+ * first with a usable account. Each is a model of the registry, which a test checks.
+ */
+export const STARTER_MODELS: readonly ModelId[] = [
+  ModelId.parse('anthropic/claude-sonnet-4-5'),
+  ModelId.parse('openai/gpt-5'),
+  ModelId.parse('google/gemini-2.5-pro'),
+]

@@ -71,6 +71,7 @@ export {
   ConversationId,
   ConversationSummary,
   createConversation,
+  EFFORTS,
   Effort,
   listConversations,
   MESSAGE_MAX_LENGTH,
@@ -131,10 +132,16 @@ export {
   SignInId,
   SignInKind,
   setAccountKinds,
-  setDefaultModel,
   setModelFallback,
   startModelAccountSignIn,
 } from './model-accounts.ts'
+export {
+  clearMyModelDefault,
+  ModelDefault,
+  StartSource,
+  setDefaultModel,
+  setMyModelDefault,
+} from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
   type AccessKind,

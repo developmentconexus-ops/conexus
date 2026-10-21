@@ -20,7 +20,6 @@ function open(kinds: SignInKind[], answers: Answers = {}) {
     mine: [],
     order: [],
     kinds,
-    defaultModel: null,
     mayManage: true,
   }
   const hub = modelHub(shown, answers)

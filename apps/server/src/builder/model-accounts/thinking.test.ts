@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { Effort, ModelId } from '@conexus/hub-api'
 import { getModelReasoningOptions, PROVIDER_REGISTRY } from '@mastra/core/llm'
-import { effortsOf, providerOptionsOf } from './public.ts'
+import { effortFor, effortsOf, providerOptionsOf } from './public.ts'
 
 function asked(model: string, effort: Effort) {
   return providerOptionsOf(ModelId.parse(model), effort)
@@ -181,4 +181,14 @@ test('"Desligado" na Anthropic manda `thinking: disabled` ao modelo que aceita, 
     assert.equal(levels(`anthropic/${name}`).includes('off'), false, `${name} always reasons`)
   for (const name of ['claude-haiku-5-5', 'claude-opus-5', 'claude-opus-4-7', 'claude-sonnet-4-5'])
     assert.equal(levels(`anthropic/${name}`)[0], 'off', `${name} can stop`)
+})
+
+test('o nível com que a conversa começa é o guardado, o mais alto aceito abaixo dele, ou o mais baixo do modelo', () => {
+  function model(name: string) {
+    return ModelId.parse(name)
+  }
+  assert.equal(effortFor(model('anthropic/claude-sonnet-4-5'), 'high'), 'high')
+  assert.equal(effortFor(model('openai/gpt-5'), 'max'), 'high')
+  assert.equal(effortFor(model('openai/gpt-5'), 'off'), 'low')
+  assert.equal(effortFor(model('groq/llama-3.3-70b-versatile'), 'high'), 'off')
 })

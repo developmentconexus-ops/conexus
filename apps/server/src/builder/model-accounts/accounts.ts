@@ -134,6 +134,36 @@ export function usableInOrder(
     .map((each) => each.row)
 }
 
+/**
+ * The providers with an account in any state, paused or limited too (P5): for `me`, the person's
+ * own and the company's given to them or to all; for `company`, the company's own.
+ */
+export function connectedProviders(
+  rows: AccountRow[],
+  context: Context,
+  owner: Owner,
+  personId: PersonId,
+): ProviderId[] {
+  const own = rows.filter((row) =>
+    owner === 'company' ? row.personId === null : partOf(row, context, personId) !== undefined,
+  )
+  return [...new Set(own.map((row) => row.provider))].sort()
+}
+
+/** The same, read in the transaction; the caller admitted the person. */
+export async function connectedIn(tx: ReadTx, viewer: Viewer, owner: Owner): Promise<ProviderId[]> {
+  const rows = await tx
+    .select(columns)
+    .from(modelAccount)
+    .where(eq(modelAccount.companyId, viewer.companyId))
+  return connectedProviders(
+    rows.map((row) => AccountRow.parse(row)),
+    await contextOf(tx, viewer.companyId),
+    owner,
+    viewer.person.id,
+  )
+}
+
 export function viewOf(row: AccountRow, context: Context): ModelAccount {
   const { attemptKey: _attemptKey, personId: _personId, ...shown } = row
   return {

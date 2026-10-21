@@ -20,7 +20,8 @@ export function providerOfModel(model: string): string | null {
 }
 
 /** How hard the model reasons before it answers, the controller's `AgentControllerThinkingLevel`. */
-export const Effort = z.enum(['off', 'low', 'medium', 'high', 'xhigh', 'max'])
+export const EFFORTS = ['off', 'low', 'medium', 'high', 'xhigh', 'max'] as const
+export const Effort = z.enum(EFFORTS)
 export type Effort = z.infer<typeof Effort>
 
 /**

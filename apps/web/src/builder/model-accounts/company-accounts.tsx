@@ -54,7 +54,7 @@ export function CompanyAccounts() {
           <DefaultModel
             companyId={companyId}
             providers={providers}
-            current={accounts.defaultModel}
+            current={accounts.defaults.company}
           />
           <ModelFallbackSection
             companyId={companyId}
@@ -64,7 +64,10 @@ export function CompanyAccounts() {
         </>
       ) : (
         <>
-          <ModelSettingsRead defaultModel={accounts.defaultModel} fallback={accounts.fallback} />
+          <ModelSettingsRead
+            defaultModel={accounts.defaults.company?.model ?? null}
+            fallback={accounts.fallback}
+          />
           <p className="text-text-2">
             Só o dono ou um administrador muda as contas de modelo da empresa.{' '}
             <Link

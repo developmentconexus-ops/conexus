@@ -18,7 +18,6 @@ function view(fields: Partial<View> = {}): View {
     mine: [],
     order: [],
     kinds: [],
-    defaultModel: null,
     mayManage: false,
     ...fields,
   }
@@ -46,7 +45,11 @@ test('o membro lê as filas, o modelo padrão e a troca, vê a frase e o link a 
   const { sent, router } = open(
     view({
       company: [accountOf({ label: 'Time 1' })],
-      defaultModel: 'anthropic/claude-sonnet-5-5',
+      defaults: {
+        company: { model: 'anthropic/claude-sonnet-5-5', effort: 'off' },
+        mine: null,
+        start: null,
+      },
       mayManage: false,
     }),
   )

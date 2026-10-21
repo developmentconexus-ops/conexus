@@ -50,6 +50,7 @@ ALTER TABLE builder.conversation_turn OWNER TO test_owner;
 ALTER TABLE builder.model_account OWNER TO test_owner;
 ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
+ALTER TABLE builder.person_model_default OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -164,6 +165,7 @@ GRANT SELECT ON TABLE builder.company_account_kind TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.company_account_kind TO hub_operator;
 GRANT SELECT,INSERT ON TABLE builder.company_model TO hub_company;
 GRANT UPDATE(model) ON TABLE builder.company_model TO hub_company;
+GRANT UPDATE(effort) ON TABLE builder.company_model TO hub_company;
 -- Step 12, founder 2026-10-19 ("1. A"): a company's routes index their own conversations and their
 -- messages' keys, and read and write the automatic switch; the queue marks an account limited and
 -- holds a token's refresh. The Hub's login reaches none of them.
@@ -199,6 +201,11 @@ GRANT SELECT(refresh_until),UPDATE(refresh_until) ON TABLE builder.model_account
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
+-- Step 12.3, founder 2026-10-20 ("Tudo A", P1, P4): a person reads, writes and clears their own
+-- default model and level; the company's default carries a level an owner or an administrator sets.
+GRANT SELECT,INSERT,DELETE ON TABLE builder.person_model_default TO hub_company;
+GRANT UPDATE(model) ON TABLE builder.person_model_default TO hub_company;
+GRANT UPDATE(effort) ON TABLE builder.person_model_default TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.

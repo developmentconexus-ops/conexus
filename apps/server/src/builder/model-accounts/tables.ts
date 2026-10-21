@@ -1,4 +1,4 @@
-import { ACCOUNT_KINDS, ACCOUNT_STATES } from '@conexus/hub-api'
+import { ACCOUNT_KINDS, ACCOUNT_STATES, EFFORTS } from '@conexus/hub-api'
 import { sql } from 'drizzle-orm'
 import type { AnyPgColumn } from 'drizzle-orm/pg-core'
 import {
@@ -118,16 +118,45 @@ export const modelAccountAssignee = builder.table(
   ],
 )
 
-/** The company's default model, any model of the registry (founder, C4). */
+const EFFORT_LIST = sql.raw(EFFORTS.map((effort) => `'${effort}'`).join(', '))
+
+/** The company's default model, any model of the registry (founder, C4), and its reasoning level. */
 export const companyModel = builder.table(
   'company_model',
   {
     companyId: text('company_id').primaryKey(),
     model: text('model').notNull(),
+    effort: text('effort', { enum: EFFORTS }).notNull().default('off'),
   },
   (table) => [
     companyKey('company_model_company_id_fkey', table),
+    check('company_model_effort', sql`${table.effort} IN (${EFFORT_LIST})`),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
+  ],
+)
+
+/** A person's own default model and level in a company; it leaves with their membership (card 12.3). */
+export const personModelDefault = builder.table(
+  'person_model_default',
+  {
+    companyId: text('company_id').notNull(),
+    personId: text('person_id').notNull(),
+    model: text('model').notNull(),
+    effort: text('effort', { enum: EFFORTS }).notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.companyId, table.personId] }),
+    foreignKey({
+      name: 'person_model_default_member_fkey',
+      columns: [table.companyId, table.personId],
+      foreignColumns: [member.organizationId, member.userId],
+    }).onDelete('cascade'),
+    check('person_model_default_effort', sql`${table.effort} IN (${EFFORT_LIST})`),
+    policy(
+      SCOPE_ROLES.COMPANY,
+      'all',
+      sql`company_id = ${scoped.companyId} and person_id = ${scoped.personId}`,
+    ),
   ],
 )
 

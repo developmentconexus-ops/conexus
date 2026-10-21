@@ -1,5 +1,5 @@
 import type { Owner, ProviderId, ProviderOrder } from '@conexus/hub-api'
-import { ModelFallback, ModelId } from '@conexus/hub-api'
+import { ModelFallback } from '@conexus/hub-api'
 import { and, asc, eq } from 'drizzle-orm'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -10,6 +10,7 @@ import {
   accountView,
   admitFor,
   columns,
+  connectedProviders,
   contextOf,
   credentialOf,
   HINT_LENGTH,
@@ -22,9 +23,19 @@ import {
   viewOf,
 } from './accounts.ts'
 import type { Change } from './changes.ts'
-import { assign, change, order, remove, setDefault, setFallback } from './changes.ts'
+import {
+  assign,
+  change,
+  clearMine,
+  order,
+  remove,
+  setDefault,
+  setFallback,
+  setMine,
+} from './changes.ts'
+import { savedDefaults, startOf } from './defaults.ts'
 import { keyProviderOf } from './providers.ts'
-import { companyModel, companyModelFallback, modelAccount } from './tables.ts'
+import { companyModelFallback, modelAccount } from './tables.ts'
 
 /**
  * The person's order for each provider (P2): their own, then the company's given to them, then the
@@ -72,10 +83,8 @@ function list(deps: Deps, viewer: Viewer) {
         .orderBy(asc(modelAccount.provider), asc(modelAccount.position))
     ).map((row) => AccountRow.parse(row))
     const context = await contextOf(tx, viewer.companyId)
-    const [chosen] = await tx
-      .select({ model: companyModel.model })
-      .from(companyModel)
-      .where(eq(companyModel.companyId, viewer.companyId))
+    const who = { companyId: viewer.companyId, personId: viewer.person.id }
+    const { mine, company } = await savedDefaults(tx, who)
     const [switched] = await tx
       .select({
         enabled: companyModelFallback.enabled,
@@ -90,7 +99,11 @@ function list(deps: Deps, viewer: Viewer) {
       order: ordersOf(viewer, rows, context),
       usableProviders: usableProviders(viewer, rows, context),
       kinds: [...context.open].sort(),
-      defaultModel: chosen === undefined ? null : ModelId.parse(chosen.model),
+      defaults: { company, mine, start: await startOf(tx, who) },
+      connected: {
+        mine: connectedProviders(rows, context, 'me', viewer.person.id),
+        company: connectedProviders(rows, context, 'company', viewer.person.id),
+      },
       fallback: ModelFallback.parse(switched ?? { enabled: false, chain: [], revision: 0 }),
       mayManage: deps.identity.allows(admitted.role, 'manageModelAccounts'),
     }
@@ -163,6 +176,8 @@ export function createModelAccountStore(deps: Deps) {
     change: (input: Change) => change(deps, input),
     assign: (input: Parameters<typeof assign>[1]) => assign(deps, input),
     setDefault: (input: Parameters<typeof setDefault>[1]) => setDefault(deps, input),
+    setMine: (input: Parameters<typeof setMine>[1]) => setMine(deps, input),
+    clearMine: (input: Parameters<typeof clearMine>[1]) => clearMine(deps, input),
     setFallback: (input: Parameters<typeof setFallback>[1]) => setFallback(deps, input),
     order: (input: Parameters<typeof order>[1]) => order(deps, input),
     remove: (input: Parameters<typeof remove>[1]) => remove(deps, input),

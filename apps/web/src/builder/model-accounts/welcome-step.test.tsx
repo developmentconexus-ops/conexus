@@ -13,10 +13,7 @@ const server = hubServer()
 const KEY = 'sk-segredo-plantado-9f3A'
 
 function open(kinds: View['kinds'], answers: Answers = {}) {
-  const hub = modelHub(
-    { company: [], mine: [], order: [], kinds, defaultModel: null, mayManage: true },
-    answers,
-  )
+  const hub = modelHub({ company: [], mine: [], order: [], kinds, mayManage: true }, answers)
   server.use(
     ...hub.handlers,
     http.get(`*/api/companies/${COMPANY.id}/invitations`, () =>

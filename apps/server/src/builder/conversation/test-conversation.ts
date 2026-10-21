@@ -84,7 +84,12 @@ export async function conversing(
   }
   await link('Time 1', KEY)
   assert.equal(
-    (await call(hub, ana, 'PUT', `${company}/default-model`, { model: MODEL })).statusCode,
+    (
+      await call(hub, ana, 'PUT', `${company}/default-model`, {
+        model: MODEL,
+        effort: 'off',
+      })
+    ).statusCode,
     200,
   )
   const made = await post(hub, ana, `${company}/projects`, { name: 'Encomendas' })

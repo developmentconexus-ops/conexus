@@ -1,12 +1,7 @@
-import type {
-  ModelAccountId,
-  ModelFallback,
-  ModelId,
-  Owner,
-  PersonId,
-  ProviderId,
-} from '@conexus/hub-api'
+import type { ModelAccountId, ModelDefault, ModelFallback, Owner, PersonId } from '@conexus/hub-api'
+import { ProviderId } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
+import type { ReadTx } from '../../platform/database.ts'
 import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Deps, Viewer } from './accounts.ts'
@@ -15,6 +10,7 @@ import {
   accountView,
   admitFor,
   columns,
+  connectedIn,
   contextOf,
   heldFor,
   labelOf,
@@ -26,7 +22,15 @@ import {
   viewOf,
 } from './accounts.ts'
 import { isRegistryModel } from './providers.ts'
-import { companyModel, companyModelFallback, modelAccount, modelAccountAssignee } from './tables.ts'
+import { providerOf } from './queue.ts'
+import {
+  companyModel,
+  companyModelFallback,
+  modelAccount,
+  modelAccountAssignee,
+  personModelDefault,
+} from './tables.ts'
+import { effortsOf } from './thinking.ts'
 
 const ASSIGNEE_MEMBER_KEY = 'model_account_assignee_member_fkey'
 
@@ -90,16 +94,61 @@ export function assign(
   })
 }
 
-/** Sets the company's default model, any of the registry (founder, C4). */
-export function setDefault(deps: Deps, input: Viewer & { model: ModelId }) {
+/**
+ * A default's refusals, in the order a form fixes them: a model off the registry, a level the model
+ * does not take, a provider with no account connected in this scope (P5).
+ */
+async function refusedDefault(tx: ReadTx, viewer: Viewer, owner: Owner, chosen: ModelDefault) {
+  if (!isRegistryModel(chosen.model)) throw new Failure('MODEL_UNKNOWN')
+  if (!effortsOf(chosen.model).includes(chosen.effort)) throw new Failure('EFFORT_UNSUPPORTED')
+  const connected = await connectedIn(tx, viewer, owner)
+  if (!connected.includes(ProviderId.parse(providerOf(chosen.model))))
+    throw new Failure('MODEL_NO_ACCOUNT')
+}
+
+/** Sets the company's default model and level: the final state, the last write wins. */
+export function setDefault(deps: Deps, input: Viewer & ModelDefault) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'company')
-    if (!isRegistryModel(input.model)) throw new Failure('MODEL_UNKNOWN')
+    const { model, effort } = input
+    await refusedDefault(tx, input, 'company', { model, effort })
     await tx
       .insert(companyModel)
-      .values({ companyId: input.companyId, model: input.model })
-      .onConflictDoUpdate({ target: companyModel.companyId, set: { model: input.model } })
-    return { defaultModel: input.model }
+      .values({ companyId: input.companyId, model, effort })
+      .onConflictDoUpdate({ target: companyModel.companyId, set: { model, effort } })
+    return { defaultModel: { model, effort } }
+  })
+}
+
+/** Sets the person's own default model and level: the final state, the last write wins. */
+export function setMine(deps: Deps, input: Viewer & ModelDefault) {
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitFor(deps, tx, input, 'me')
+    const { model, effort } = input
+    await refusedDefault(tx, input, 'me', { model, effort })
+    await tx
+      .insert(personModelDefault)
+      .values({ companyId: input.companyId, personId: input.person.id, model, effort })
+      .onConflictDoUpdate({
+        target: [personModelDefault.companyId, personModelDefault.personId],
+        set: { model, effort },
+      })
+    return { mine: { model, effort } }
+  })
+}
+
+/** Clears the person's own default; with none it changes nothing and answers the same. */
+export function clearMine(deps: Deps, input: Viewer) {
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitFor(deps, tx, input, 'me')
+    await tx
+      .delete(personModelDefault)
+      .where(
+        and(
+          eq(personModelDefault.companyId, input.companyId),
+          eq(personModelDefault.personId, input.person.id),
+        ),
+      )
   })
 }
 

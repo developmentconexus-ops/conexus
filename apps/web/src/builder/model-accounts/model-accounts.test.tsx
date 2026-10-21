@@ -19,7 +19,6 @@ function view(fields: Partial<View> = {}): View {
     mine: [],
     order: [],
     kinds: [],
-    defaultModel: null,
     mayManage: true,
     ...fields,
   }
@@ -259,10 +258,10 @@ test('Modelo padrão: busca, grupos por fornecedor e o modelo, como fornecedor/m
   fireEvent.click(save)
   expect((await screen.findByRole('alert')).textContent).toBe('Este modelo não está na lista.')
   fireEvent.click(screen.getByRole('button', { name: 'Salvar modelo padrão' }))
-  await waitFor(() => expect(shown.defaultModel).toBe('openai/gpt-5'))
+  await waitFor(() => expect(shown.defaults?.company?.model).toBe('openai/gpt-5'))
   expect(sent.map((one) => one.body)).toEqual([
-    { model: 'openai/gpt-5' },
-    { model: 'openai/gpt-5' },
+    { model: 'openai/gpt-5', effort: 'off' },
+    { model: 'openai/gpt-5', effort: 'off' },
   ])
 })
 
@@ -271,7 +270,11 @@ test('Modelo padrão: milhares de modelos não viram milhares de opções; a bus
     id: `grande/modelo-${index}`,
     efforts: ['off'],
   }))
-  open(view({ defaultModel: 'grande/modelo-7' }))
+  open(
+    view({
+      defaults: { company: { model: 'grande/modelo-7', effort: 'off' }, mine: null, start: null },
+    }),
+  )
   server.use(
     http.get('*/api/model-providers', () =>
       HttpResponse.json({ providers: [{ id: 'grande', name: 'Grande', models }] }),

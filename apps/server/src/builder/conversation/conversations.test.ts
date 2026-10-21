@@ -130,8 +130,12 @@ test('a mesma chave: uma conversa, um modelo e um turno, também depois de reini
   assert.equal(Object(again.json()).conversation.id, id)
   // A late repeat runs nothing again: a default with no account now still answers the thread's model.
   const company = conversations.slice(0, conversations.indexOf('/projects/'))
-  const unusable = { model: 'openai/gpt-4o-mini' }
+  const openai = { owner: 'company', provider: 'openai', label: 'OpenAI', key: 'sk-openai-0001' }
+  const linked = await post(hub, ana, `${company}/model-accounts`, openai)
+  const unusable = { model: 'openai/gpt-4o-mini', effort: 'off' }
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, unusable)).statusCode, 200)
+  const gone = `${company}/model-accounts/${Object(linked.json()).account.id}`
+  assert.equal((await call(hub, ana, 'DELETE', gone)).statusCode, 204)
   const late = await post(hub, ana, conversations, {}, key)
   assert.deepEqual([late.statusCode, Object(late.json()).conversation.model], [201, MODEL])
   const conflict = await post(hub, ana, conversations, { model: MODEL }, key)

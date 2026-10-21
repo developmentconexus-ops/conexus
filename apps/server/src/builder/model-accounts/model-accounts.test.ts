@@ -202,7 +202,10 @@ test('o membro lê a fila da empresa e não a muda (404); ninguém vê conta pes
     call(hub, carla, 'PUT', `${base}/model-account-orders/company/anthropic`, {
       ids: [companyAccount.id],
     }),
-    call(hub, carla, 'PUT', `${base}/default-model`, { model: 'anthropic/claude-haiku-4-5' }),
+    call(hub, carla, 'PUT', `${base}/default-model`, {
+      model: 'anthropic/claude-haiku-4-5',
+      effort: 'off',
+    }),
     call(hub, carla, 'DELETE', url),
   ])
   assert.deepEqual(
@@ -270,31 +273,44 @@ test('pausar e retomar com a revisão lida; velha dá 412; remover só quem pode
   assert.deepEqual(await hub.test.asOwner(`select id from builder.model_account`), [])
 })
 
-test('modelo padrão: dono e administrador, qualquer do registro; membro 404; fora 422 MODEL_UNKNOWN', async (t) => {
+test('modelo padrão da empresa: dono e administrador gravam modelo e nível; membro 404; as recusas dos fornecedores e dos níveis', async (t) => {
   const { hub, ana, bruno, carla, base, accounts } = await company(t)
+  await link(hub, ana, accounts, {})
+  await link(hub, ana, accounts, { provider: 'google', label: 'Gemini' })
   const url = `${base}/default-model`
-  const set = await call(hub, ana, 'PUT', url, { model: 'anthropic/claude-sonnet-4-5' })
-  assert.deepEqual(
-    [set.statusCode, set.json()],
-    [200, { defaultModel: 'anthropic/claude-sonnet-4-5' }],
-  )
-  // A model of a provider that links by more than a key is still the registry's (founder, C4).
+  const sonnet = { model: 'anthropic/claude-sonnet-4-5', effort: 'high' }
+  const set = await call(hub, ana, 'PUT', url, sonnet)
+  assert.deepEqual([set.statusCode, set.json()], [200, { defaultModel: sonnet }])
+  const flash = { model: 'google/gemini-2.5-flash', effort: 'low' }
+  assert.equal((await call(hub, bruno, 'PUT', url, flash)).statusCode, 200)
+  assert.equal((await call(hub, bruno, 'PUT', url, flash)).statusCode, 200)
+  const gpt = { model: 'openai/gpt-4o-mini', effort: 'off' }
+  assert.equal((await call(hub, carla, 'PUT', url, gpt)).statusCode, 404)
+  // The admission comes before the model's check: a member learns nothing from a wrong model.
   assert.equal(
-    (await call(hub, bruno, 'PUT', url, { model: 'google/gemini-2.5-flash' })).statusCode,
-    200,
-  )
-  assert.equal(
-    (await call(hub, carla, 'PUT', url, { model: 'openai/gpt-4o-mini' })).statusCode,
+    (await call(hub, carla, 'PUT', url, { model: 'nenhum/x', effort: 'off' })).statusCode,
     404,
   )
-  // The admission comes before the model's check: a member learns nothing from a wrong model.
-  assert.equal((await call(hub, carla, 'PUT', url, { model: 'nenhum/x' })).statusCode, 404)
-  for (const model of ['anthropic/claude-nenhum', 'claude-sonnet-4-5', 'nenhum/x']) {
-    const refused = await call(hub, ana, 'PUT', url, { model })
-    assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'MODEL_UNKNOWN'])
+  const refusals: [object, string][] = [
+    [{ model: 'anthropic/claude-nenhum', effort: 'off' }, 'MODEL_UNKNOWN'],
+    [{ model: 'claude-sonnet-4-5', effort: 'off' }, 'MODEL_UNKNOWN'],
+    [{ model: 'nenhum/x', effort: 'off' }, 'MODEL_UNKNOWN'],
+    [{ model: 'google/gemini-2.5-flash', effort: 'max' }, 'EFFORT_UNSUPPORTED'],
+    [gpt, 'MODEL_NO_ACCOUNT'],
+  ]
+  for (const [body, code] of refusals) {
+    const refused = await call(hub, ana, 'PUT', url, body)
+    assert.deepEqual([refused.statusCode, codeOf(refused)], [422, code])
   }
-  assert.equal(
-    Object((await call(hub, carla, 'GET', accounts)).json()).defaultModel,
-    'google/gemini-2.5-flash',
+  const read = Object((await call(hub, carla, 'GET', accounts)).json())
+  assert.deepEqual(read.defaults.company, flash)
+})
+
+test('um padrão da empresa gravado antes do nível se lê como Desligado', async (t) => {
+  const { hub, carla, companyId, accounts } = await company(t)
+  await hub.test.asOwner(
+    `insert into builder.company_model (company_id, model) values ('${companyId}', 'anthropic/claude-sonnet-4-5')`,
   )
+  const read = Object((await call(hub, carla, 'GET', accounts)).json())
+  assert.deepEqual(read.defaults.company, { model: 'anthropic/claude-sonnet-4-5', effort: 'off' })
 })

@@ -116,6 +116,15 @@ function effortsIn(reasoning: Reasoning): [Effort, ...Effort[]] {
 }
 
 /**
+ * The level a conversation on `model` starts at when `wanted` is kept: the same if the model takes
+ * it, else the nearest below it, else the model's lowest (`runningEffort`, one rule for the start
+ * and for the step).
+ */
+export function effortFor(model: ModelId, wanted: Effort): Effort {
+  return runningEffort(effortsOf(model), wanted)
+}
+
+/**
  * What one step asks the provider so the model reasons at `effort`, or at the level it runs at
  * instead (`runningEffort`: another model after the automatic switch may take fewer, or always
  * reason).

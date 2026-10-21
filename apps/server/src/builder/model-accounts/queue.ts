@@ -1,5 +1,4 @@
-import type { ModelAccountId } from '@conexus/hub-api'
-import { ModelId } from '@conexus/hub-api'
+import type { ModelAccountId, ModelId } from '@conexus/hub-api'
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm'
 import { PROVIDER_REGISTRY, parseModelString, resolveModelConfig } from '@mastra/core/llm'
 import { and, asc, eq } from 'drizzle-orm'
@@ -14,7 +13,7 @@ import { subscriptionModel } from './claude/subscription-model.ts'
 import type { CallFailure } from './errors.ts'
 import type { GoogleAccount } from './google/calls.ts'
 import { isRegistryModel } from './providers.ts'
-import { companyModel, modelAccount } from './tables.ts'
+import { modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
 
 /**
@@ -62,7 +61,7 @@ function scopeOf(turn: Turn): Scope {
   return { kind: 'COMPANY', companyId: turn.companyId, personId: turn.personId }
 }
 
-type Asker = {
+export type Asker = {
   companyId: Turn['companyId']
   personId: Turn['personId']
   tried: ReadonlySet<ModelAccountId>
@@ -72,7 +71,11 @@ type Asker = {
  * The provider's accounts the person may use now, in their order (`usableInOrder`), less those
  * this turn tried. The caller admitted the person.
  */
-async function queuedRows(tx: ReadTx, asker: Asker, provider: string): Promise<AccountRow[]> {
+export async function queuedRows(
+  tx: ReadTx,
+  asker: Asker,
+  provider: string,
+): Promise<AccountRow[]> {
   const rows = await tx
     .select(columns)
     .from(modelAccount)
@@ -86,7 +89,7 @@ async function queuedRows(tx: ReadTx, asker: Asker, provider: string): Promise<A
   ).filter((row) => !asker.tried.has(row.id))
 }
 
-function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
+export function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
   return deps.identity.admitMember({
     tx,
     personId: asker.personId,
@@ -110,28 +113,22 @@ async function nextRow(deps: QueueDeps, turn: Turn, provider: string) {
 }
 
 /**
- * The model a conversation starts on or changes to: the one asked, or the company's default; one
- * outside the registry is `MODEL_UNKNOWN`, and one with no account the person may use now is
- * `MODEL_NO_ACCOUNT`. No credential is opened.
+ * The model a conversation changes to: one outside the registry is `MODEL_UNKNOWN`, and one with
+ * no account the person may use now is `MODEL_NO_ACCOUNT`. No credential is opened.
  */
 export async function conversationModel(
   deps: QueueDeps,
   asker: { companyId: Turn['companyId']; personId: Turn['personId'] },
-  asked: ModelId | undefined,
+  asked: ModelId,
 ): Promise<ModelId> {
   const scope: Scope = { kind: 'COMPANY', ...asker }
   return deps.database.read(scope, async (tx) => {
     const who = { ...asker, tried: new Set<ModelAccountId>() }
     await admitted(deps, tx, who)
-    const [chosen] = await tx
-      .select({ model: companyModel.model })
-      .from(companyModel)
-      .where(eq(companyModel.companyId, asker.companyId))
-    const model = asked ?? (chosen === undefined ? undefined : ModelId.parse(chosen.model))
-    if (model === undefined || !isRegistryModel(model)) throw new Failure('MODEL_UNKNOWN')
-    const rows = await queuedRows(tx, who, providerOf(model))
+    if (!isRegistryModel(asked)) throw new Failure('MODEL_UNKNOWN')
+    const rows = await queuedRows(tx, who, providerOf(asked))
     if (rows.length === 0) throw new Failure('MODEL_NO_ACCOUNT')
-    return model
+    return asked
   })
 }
 
