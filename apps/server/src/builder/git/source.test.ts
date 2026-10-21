@@ -62,7 +62,7 @@ test('a aba Código lê o main: vazio antes da primeira versão; depois, arquivo
   const binary = await file('b.bin')
   assert.deepEqual([binary.statusCode, codeOf(binary)], [422, 'SOURCE_FILE_NOT_TEXT'])
   const large = await file('big.txt')
-  assert.deepEqual([large.statusCode, codeOf(large)], [422, 'SOURCE_FILE_NOT_TEXT'])
+  assert.deepEqual([large.statusCode, codeOf(large)], [422, 'SOURCE_FILE_TOO_LARGE'])
   const absent = await file('nada.ts')
   assert.deepEqual([absent.statusCode, codeOf(absent)], [404, 'SOURCE_FILE_NOT_FOUND'])
   const outside = await file('a.ts', 'a'.repeat(40))

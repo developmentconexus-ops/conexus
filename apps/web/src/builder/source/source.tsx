@@ -51,8 +51,8 @@ function Files(props: { source: ProjectSource; commit: string }) {
               aria-current={file.path === path ? 'true' : undefined}
               onClick={() => setChosen(file.path)}
               className={cn(
-                'w-full truncate rounded-control px-sm py-xs text-left font-mono text-fact hover:bg-surface-3',
-                file.path === path && 'bg-surface-3 text-text',
+                'w-full break-all rounded-control px-sm py-xs text-left font-mono text-fact',
+                file.path === path ? 'bg-accent-soft text-text' : 'hover:bg-surface-3',
               )}
             >
               {file.path}

@@ -61,6 +61,7 @@ export function registerSourceRoutes(app: FastifyInstance, deps: Deps): void {
       maxBytes: SOURCE_FILE_MAX_BYTES,
     })
     if (read.kind === 'not-found') throw new Failure('SOURCE_FILE_NOT_FOUND')
+    if (read.kind === 'too-large') throw new Failure('SOURCE_FILE_TOO_LARGE')
     if (read.kind === 'not-text') throw new Failure('SOURCE_FILE_NOT_TEXT')
     return answer({ text: read.text })
   })

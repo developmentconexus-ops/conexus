@@ -113,7 +113,7 @@ test('git: o turno que mudou arquivos vira uma versão, e a aba lê só o que o 
     kind: 'not-text',
   })
   assert.deepEqual(await repository.file({ sha: candidate, path: 'src/b.ts', maxBytes: 100 }), {
-    kind: 'not-text',
+    kind: 'too-large',
   })
   assert.deepEqual(await repository.file({ sha: candidate, path: 'nada.ts', maxBytes: 100 }), {
     kind: 'not-found',
