@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import { test } from 'node:test'
 import { call, codeOf, personOn } from '../../hub/identity/test-hub.ts'
 import { asked, conversing, title } from '../conversation/test-conversation.ts'
@@ -38,6 +40,8 @@ test('a aba Código lê o main: vazio antes da primeira versão; depois, arquivo
   assert.equal(before.statusCode, 200)
   assert.equal(Object(before.json()).version, 0)
   assert.deepEqual(Object(before.json()).files, [])
+  // A read makes no repository: only the first turn's seed does.
+  assert.equal(existsSync(join(hub.config.gitRoot, companyId, `${projectId}.git`)), false)
 
   await asked(t, { hub, person: ana, conversations })
   const read = await call(hub, ana, 'GET', source)

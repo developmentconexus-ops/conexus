@@ -1,5 +1,5 @@
 import type { Context, Sha } from './context.ts'
-import { git, inMain, MAX_BYTES, MAX_FILES } from './context.ts'
+import { git, inMain, MAX_BYTES, MAX_FILES, present } from './context.ts'
 
 /** Why a bundle from a machine is not taken: it is the agent's output, treated as hostile (S2). */
 export type SaveRefusal =
@@ -44,7 +44,7 @@ export async function inspectTree(context: Context, ref: string): Promise<SaveRe
 }
 
 export async function treeOf(context: Context, sha: Sha): Promise<TreeFile[] | null> {
-  if (!(await inMain(context, sha))) return null
+  if (!(await present(context)) || !(await inMain(context, sha))) return null
   const files = await entries(context, ['-r', sha])
   return files.map(({ path, bytes }) => ({ path, bytes }))
 }
@@ -55,7 +55,9 @@ export async function fileOf(
   { sha, path, maxBytes }: { sha: Sha; path: string; maxBytes: number },
 ): Promise<FileRead> {
   const unsafe = path.includes('\0') || path.split('/').some((part) => UNSAFE_SEGMENTS.has(part))
-  if (unsafe || !(await inMain(context, sha))) return { kind: 'not-found' }
+  if (unsafe || !(await present(context)) || !(await inMain(context, sha))) {
+    return { kind: 'not-found' }
+  }
   const found = (await entries(context, [sha, '--', path])).find((entry) => entry.path === path)
   if (found === undefined || found.type !== 'blob') return { kind: 'not-found' }
   if (found.bytes > maxBytes) return { kind: 'not-text' }
