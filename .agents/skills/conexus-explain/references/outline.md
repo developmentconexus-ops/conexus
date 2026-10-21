@@ -26,7 +26,8 @@ skill). Evidence (commands, `file:line` lists, CI links) goes in an appendix out
    and what the references do, with commit and line. In B, only what changed since A.
 7. **How it was proved and what was not.** A table of acceptance criterion, test and observed
    result (CI on the commit, or live proof), separating proved, proved with a double and not
-   proved. Only in B; A lists the proofs still to run.
+   proved. A "not proved" row ends as a question to the founder ("ship with this unproven?") or as
+   a block. Only in B; A lists the proofs still to run.
 8. **Where it differs from the card.** Each divergence the build report declared (L7) and those the
    review found; for each, does it change what the person sees? Only in B.
 9. **What deserves questioning.** A demonstrated defect apart from a risk or a doubt; invent

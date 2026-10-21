@@ -17,13 +17,16 @@ it needs.
    founder says otherwise.
 4. Fill the report's section "What a person saw": old and new side by side, per state.
 5. A screen whose old design the step does not bring goes to the founder with the shot.
+6. A piece of today's `main` that the step keeps is compared with the reference's piece too, with
+   `file:line`; "it already exists" is not a reason.
 
 ## Other apps
 
 - Study other apps only in a step that creates or changes a screen. Always with screenshots at 1280
   and 390 px, with today's screen beside, because text alone did not change a decision and a shot did.
 - The shelf is fixed: the old product run locally, Lovable, Base44 and Replit by their
-  documentation, Mastra Factory and Studio by their code, and Linear. A new entry joins only when
+  documentation, Mastra Factory and Studio, Mastra Code (`mastracode/factory-ui`) and
+  `playground-ui` by their code, and Linear. A new entry joins only when
   none covers the subject.
 - The order: screenshots, then Impeccable `critique`, then two or three box layouts of different
   organisation (vary the organisation, never the visual), then the card. Visual and animation have a
