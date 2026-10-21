@@ -37,13 +37,15 @@ reais".
 Hub, 13,4 a 14,2 s), medida na publicação (32). Guardamos a do ar, a da
 prévia e mais 3. Alterações: até 1.000 arquivos e 1 MiB por arquivo.
 
-**Fica de fora.** O plano, as perguntas, o SDK, a casca e a conferência (14); o D; a tela mudando enquanto o Builder escreve; erros de clique voltando ao
+**Fica de fora.** O plano, as perguntas, as bibliotecas, o starter e a conferência (14); o D; a tela mudando enquanto o Builder escreve; erros de clique voltando ao
 Builder; publicar (17); mudar tabelas com dados (15); **Versões** do Builder (17). Nenhuma
 issue `next-card` toca estas pastas.
 
 **O que mudou da versão do PR 213.** A antiga U3 (montar e voltar ao Builder) e a antiga U8 (a skill)
 foram para a etapa 14, com os critérios 6, 18, 28 e 29; o registro passa a 0056, porque o 0054 já
-existe no `main` e o 0055 é da 14. Os números das unidades e dos critérios ficam os do PR 213.
+existe no `main` e o 0055 é da 14. Os números das unidades e dos critérios ficam os do PR 213. A 14 tirou a casca guardada:
+um app pode não ter operações (contrato 1 de 0 a 32) e o upload leva a navegação de página única;
+a prévia herda os dois pelo envio da etapa 9.
 
 **Abertas.** Nenhuma.
 
@@ -169,7 +171,7 @@ de fora (T14). Valem 2 a 5 e 7, autorizados pelo fundador (B). Must, salvo "shou
 
 | Gravação ou comando | Duas vezes | Recusada no meio | Dependência fora | Imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `npm ci`, `pack` e leitura após guardar | um por tentativa | `PREVIEW_PACK_FAILED` | idem | `PREVIEW_PACKED` | 19, 22 |
+| `npm ci --ignore-scripts` com as bibliotecas do Projeto (14), `pack` e leitura após guardar | um por tentativa | `PREVIEW_PACK_FAILED` | idem | `PREVIEW_PACKED` | 19, 22 |
 | `app_version` de prévia | chave única, `REPLAY` | reivindicação, C65 | 503 | `APP_VERSION_RECEIVED` | 12, 13 |
 | Upload do script | mesmo nome por versão | `abandon` apaga | Cloudflare: `failed` | `APP_VERSION_UPLOADED` | 20 |
 | Esquema e logins da prévia | `IF NOT EXISTS`; nunca recriado nem esvaziado por versão nova | uma transação | Neon: `failed` | `APP_DATABASE_READY` | 9, 33 |
