@@ -278,7 +278,7 @@ test('modelo padrão da empresa: dono e administrador gravam modelo e nível; me
   await link(hub, ana, accounts, {})
   await link(hub, ana, accounts, { provider: 'google', label: 'Gemini' })
   const url = `${base}/default-model`
-  const sonnet = { model: 'anthropic/claude-sonnet-4-5', effort: 'high' }
+  const sonnet = { model: 'anthropic/claude-sonnet-4-6', effort: 'high' }
   const set = await call(hub, ana, 'PUT', url, sonnet)
   assert.deepEqual([set.statusCode, set.json()], [200, { defaultModel: sonnet }])
   const flash = { model: 'google/gemini-2.5-flash', effort: 'low' }
@@ -293,7 +293,7 @@ test('modelo padrão da empresa: dono e administrador gravam modelo e nível; me
   )
   const refusals: [object, string][] = [
     [{ model: 'anthropic/claude-nenhum', effort: 'off' }, 'MODEL_UNKNOWN'],
-    [{ model: 'claude-sonnet-4-5', effort: 'off' }, 'MODEL_UNKNOWN'],
+    [{ model: 'claude-sonnet-4-6', effort: 'off' }, 'MODEL_UNKNOWN'],
     [{ model: 'nenhum/x', effort: 'off' }, 'MODEL_UNKNOWN'],
     [{ model: 'google/gemini-2.5-flash', effort: 'max' }, 'EFFORT_UNSUPPORTED'],
     [gpt, 'MODEL_NO_ACCOUNT'],
@@ -309,8 +309,8 @@ test('modelo padrão da empresa: dono e administrador gravam modelo e nível; me
 test('um padrão da empresa gravado antes do nível se lê como Desligado', async (t) => {
   const { hub, carla, companyId, accounts } = await company(t)
   await hub.test.asOwner(
-    `insert into builder.company_model (company_id, model) values ('${companyId}', 'anthropic/claude-sonnet-4-5')`,
+    `insert into builder.company_model (company_id, model) values ('${companyId}', 'anthropic/claude-sonnet-4-6')`,
   )
   const read = Object((await call(hub, carla, 'GET', accounts)).json())
-  assert.deepEqual(read.defaults.company, { model: 'anthropic/claude-sonnet-4-5', effort: 'off' })
+  assert.deepEqual(read.defaults.company, { model: 'anthropic/claude-sonnet-4-6', effort: 'off' })
 })

@@ -250,7 +250,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
   await stream.turn()
   assert.deepEqual(thinkings(), [HIGH])
 
-  const refused = await model('max')
+  const refused = await model('xhigh')
   assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'EFFORT_UNSUPPORTED'])
   assert.equal(await effortOn(hub), 'high')
 

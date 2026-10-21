@@ -8,7 +8,7 @@ type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 const MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
 const CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
-const MODEL = 'claude-sonnet-4-5'
+const MODEL = 'claude-sonnet-4-6'
 /** The line the subscription's endpoint requires first in the system of a bearer call. */
 const SUBSCRIPTION_LINE = "You are Claude Code, Anthropic's official CLI for Claude."
 

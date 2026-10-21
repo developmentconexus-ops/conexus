@@ -22,7 +22,7 @@ import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
 
-export const MODEL = 'anthropic/claude-sonnet-4-5'
+export const MODEL = 'anthropic/claude-sonnet-4-6'
 export const PARTIAL = 'Começo da resposta'
 
 /**

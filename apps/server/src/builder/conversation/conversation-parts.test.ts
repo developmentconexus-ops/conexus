@@ -103,7 +103,7 @@ test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só,
     messages.map((message) => [message.role, message.model]),
     [
       ['person', null],
-      ['builder', 'anthropic/claude-sonnet-4-5'],
+      ['builder', 'anthropic/claude-sonnet-4-6'],
     ],
   )
   const parts = messages[1]?.parts.map((part) => ('id' in part ? { ...part, id: '' } : part))

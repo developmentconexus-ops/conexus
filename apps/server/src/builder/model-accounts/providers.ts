@@ -78,7 +78,7 @@ export function isRegistryModel(model: string): boolean {
  * first with a usable account. Each is a model of the registry, which a test checks.
  */
 export const STARTER_MODELS: readonly ModelId[] = [
-  ModelId.parse('anthropic/claude-sonnet-4-5'),
+  ModelId.parse('anthropic/claude-sonnet-5-5'),
   ModelId.parse('openai/gpt-5'),
   ModelId.parse('google/gemini-2.5-pro'),
 ]

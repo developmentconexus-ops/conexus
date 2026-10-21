@@ -198,17 +198,12 @@ test('o nível guardado que o modelo não aceita desce ao mais alto aceito abaix
 test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5; com Claude e OpenAI, no Claude; só com Gemini, no Gemini', async (t) => {
   const { hub, ana, carla, conversations, accounts } = await company(t)
   await hub.test.asOwner(`delete from builder.company_model`)
-  assert.deepEqual(await startOf(hub, carla, accounts), {
-    model: MODEL,
-    effort: 'off',
-    from: 'starter',
-  })
+  // Sonnet 5.5 always reasons, so the starter's `off` becomes the lowest level it takes.
+  const sonnet = { model: 'anthropic/claude-sonnet-5-5', effort: 'low' }
+  assert.deepEqual(await startOf(hub, carla, accounts), { ...sonnet, from: 'starter' })
   await connect(hub, ana, accounts, 'openai')
   const both = await created(hub, carla, conversations)
-  assert.deepEqual(await pairOf(hub, carla, conversations, both.id), {
-    model: MODEL,
-    effort: 'off',
-  })
+  assert.deepEqual(await pairOf(hub, carla, conversations, both.id), sonnet)
   await hub.test.asOwner(`delete from builder.model_account where provider = 'anthropic'`)
   // GPT-5 cannot be off, so the starter's `off` becomes the lowest level it takes.
   const expected = { model: GPT, effort: 'low' }
@@ -241,7 +236,7 @@ test('padrão pessoal: todo membro grava o seu, relê, limpa duas vezes; as recu
   assert.equal(others.defaults.mine, null)
   const refusals: [object, string][] = [
     [{ model: 'nenhum/x', effort: 'off' }, 'MODEL_UNKNOWN'],
-    [{ model: MODEL, effort: 'max' }, 'EFFORT_UNSUPPORTED'],
+    [{ model: MODEL, effort: 'xhigh' }, 'EFFORT_UNSUPPORTED'],
     [{ model: GPT, effort: 'low' }, 'MODEL_NO_ACCOUNT'],
   ]
   for (const [body, code] of refusals) {
