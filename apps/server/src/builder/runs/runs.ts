@@ -129,8 +129,8 @@ export class Runs {
     return this.#context.store.appendEvent(input)
   }
 
-  /** The events a run kept after `after`. */
-  events(input: { companyId: CompanyId; runId: RunId; after: number }) {
+  /** At most `limit` of the events a run kept after `after`. */
+  events(input: { companyId: CompanyId; runId: RunId; after: number; limit: number }) {
     return this.#context.store.readEvents(input)
   }
 

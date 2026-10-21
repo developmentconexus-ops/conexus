@@ -109,3 +109,22 @@ test('reconectar depois do fim do turno, com o id do fim, de outra conversa ou e
     assert.doesNotMatch(stream.seen.raw, /Resposta/)
   }
 })
+
+test('reconectar num turno de mais eventos do que a leitura aceita: nada se repete, até o próximo turno', async (t) => {
+  const { hub, ana, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'text', text: 'Curta' },
+  )
+  const { url, ids } = await asked(t, { hub, person: ana, conversations })
+  await hub.test.asOwner(`
+    insert into builder.run_event (run_id, company_id, n, event)
+    select r.id, r.company_id, (select max(n) from builder.run_event) + g, '{"type":"text","delta":"x"}'::jsonb
+    from builder.run r, generate_series(1, 10001) g`)
+  const again = await streamOf(hub, ana, url, ids[0])
+  t.after(() => again.close())
+  assert.equal((await sent(hub, ana, url, 'Outra pergunta')).statusCode, 202)
+  let next = await again.next()
+  while (next.type === 'title') next = await again.next()
+  assert.ok(next.type === 'turn', 'the next turn opens, with nothing of the long one replayed')
+  assert.deepEqual(next.message.parts, [])
+})

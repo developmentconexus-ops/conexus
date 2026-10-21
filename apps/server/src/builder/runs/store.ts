@@ -270,14 +270,15 @@ export class RunStore {
     return row === undefined ? undefined : Number(Object(row).n)
   }
 
-  /** The events of a run after `after`, in order. */
-  async readEvents(input: { companyId: CompanyId; runId: RunId; after: number }) {
+  /** At most `limit` events of a run after `after`, in order. */
+  async readEvents(input: { companyId: CompanyId; runId: RunId; after: number; limit: number }) {
     const rows = await this.#database.read(inCompany(input.companyId), (tx) =>
       tx
         .select({ n: runEvent.n, event: runEvent.event })
         .from(runEvent)
         .where(and(eq(runEvent.runId, input.runId), gt(runEvent.n, input.after)))
-        .orderBy(asc(runEvent.n)),
+        .orderBy(asc(runEvent.n))
+        .limit(input.limit),
     )
     return rows.map((row) => ({ n: row.n, event: ConversationEvent.parse(row.event) }))
   }
