@@ -72,9 +72,10 @@ test('execuções: um Projeto tem uma execução aberta; terminada, outra se abr
       tx.execute(statement),
     )
   }
-  const open = (id: string) =>
-    sql`insert into builder.run(id, company_id, project_id, person_id, state, deadline_at,
+  function open(id: string) {
+    return sql`insert into builder.run(id, company_id, project_id, person_id, state, deadline_at,
       lease_until, owner) values (${id}, ${A}, 'project-a', 'person-a', 'open', now(), now(), ${OWNER})`
+  }
   await assert.rejects(inA(open('00000000-0000-4000-8000-0000000000a2')), refusedWith('23505'))
   await inA(sql`update builder.run set state = 'saving' where id = ${RUN_A}`)
   await assert.rejects(inA(open('00000000-0000-4000-8000-0000000000a2')), refusedWith('23505'))
