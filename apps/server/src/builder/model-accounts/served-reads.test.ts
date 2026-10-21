@@ -41,7 +41,7 @@ test('as contas ligadas antes de a lista ser lida têm a lista lida na partida; 
   assert.ok(offered(Object((await call(hub, ana, 'GET', accounts)).json())).includes(SONNET_OLD))
 })
 
-test('o Google lê a lista do CLIProxy ao ligar e na partida: só os ids do registro valem, e o início não cai num modelo que a conta não atende', async (t) => {
+test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemini que ela atende pelo nome do CLIProxy, nenhum Claude, e o início não cai num modelo que a conta não atende', async (t) => {
   const hub = await hubWithLog(t)
   const ana = await personOn(hub, ANA_OWNER)
   const companyId = await plantCompany(hub.test, ana.id)
@@ -82,9 +82,20 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: só os ids do regi
   async function read() {
     return Object((await call(hub, ana, 'GET', accounts)).json())
   }
-  const models = offered(await read())
-  assert.deepEqual(models.sort(), ['google/gemini-3.1-flash-lite', 'google/gemini-3.5-flash-lite'])
-  assert.equal((await read()).defaults.start.model, 'google/gemini-3.5-flash-lite')
+  // Removal row: matching the registry's ids exactly kept only the two Flash Lites.
+  const [google] = (await read()).choices.company
+  assert.deepEqual(google.models, [
+    { id: 'google/gemini-3.1-flash-lite', efforts: ['low', 'medium', 'high'] },
+    { id: 'google/gemini-3.5-flash-lite', efforts: ['low', 'medium', 'high'] },
+    { id: 'google/gemini-3.8-flash-high', efforts: ['high'] },
+    { id: 'google/gemini-3-flash', efforts: ['off'] },
+  ])
+  assert.deepEqual((await read()).defaults.start, {
+    model: 'google/gemini-3.8-flash-high',
+    effort: 'high',
+    from: 'starter',
+    account: 'Google',
+  })
   const refused = await call(hub, ana, 'PUT', `/api/companies/${companyId}/default-model`, {
     model: 'google/gemini-2.5-pro',
     effort: 'low',

@@ -1,7 +1,7 @@
 import type { Provider } from '@conexus/hub-api'
 import { ModelId, ProviderId } from '@conexus/hub-api'
 import type { ProviderConfig } from '@mastra/core/llm'
-import { PROVIDER_REGISTRY } from '@mastra/core/llm'
+import { PROVIDER_REGISTRY, parseModelString } from '@mastra/core/llm'
 import { effortsOf } from './thinking.ts'
 
 // The router's registry, bundled in the installed @mastra/core (decision 0027): read in memory,
@@ -64,24 +64,51 @@ export function keyProviderOf(id: string): Provider | undefined {
   return parsed.success ? KEY_PROVIDERS.get(parsed.data) : undefined
 }
 
-// Every model a person may choose, the very list the picker reads (`chatModelsOf` of each key
-// provider): one owner of "a model one may choose" (code C26), so a default or a start never names
-// a retired or non-chat model the picker does not offer.
-const CHOOSABLE: ReadonlySet<string> = new Set(
+// Every model of the registry a person may choose, the very list the picker reads (`chatModelsOf`
+// of each key provider): one owner of "a model one may choose" (code C26), so a default or a start
+// never names a retired or non-chat model the picker does not offer.
+const LISTED: ReadonlySet<string> = new Set(
   [...KEY_PROVIDERS.values()].flatMap((provider) => provider.models.map((model) => model.id)),
 )
 
-/** Whether `provider/model` is a model the picker offers. */
+// The families of Google's chat models, the first word of their ids (`gemini`, `gemma`): Google's
+// sign-in goes through CLIProxy, which names them its own way, and a name of one of them is
+// Google's own model, not one of the Claude or GPT models the same proxy also serves.
+const PROXIED = 'google'
+const FAMILIES: ReadonlySet<string> = new Set(
+  [...LISTED].filter((model) => model.startsWith(`${PROXIED}/`)).map(familyOf),
+)
+
+function familyOf(model: string): string {
+  const { provider, modelId } = parseModelString(model)
+  return `${provider}/${modelId.split(/[-.]/)[0]}`
+}
+
+/** Whether `provider/model` is one of the registry's chat models the picker offers. */
+export function isListed(model: string): boolean {
+  return LISTED.has(model)
+}
+
+/**
+ * Whether `provider/model` is a model a person may choose: one of the registry's, or a Google chat
+ * model under the name CLIProxy serves it by, such as `gemini-3.8-flash-high` for the registry's
+ * `gemini-3.8-flash`. Which account serves it decides the rest (`servesModel`).
+ */
 export function isChoosable(model: string): boolean {
-  return CHOOSABLE.has(model)
+  return (
+    LISTED.has(model) ||
+    (FAMILIES.has(familyOf(model)) && !NOT_CHAT.test(parseModelString(model).modelId))
+  )
 }
 
 /**
  * The models a conversation starts on when neither the person nor the company chose one (P3): the
- * first with a usable account. Each is a model of the registry, which a test checks.
+ * first with a usable account. Google's sign-in serves Gemini 3.8 Flash under CLIProxy's name;
+ * a Google key, which serves the registry's names, starts on Gemini 3.5 Flash Lite.
  */
 export const STARTER_MODELS: readonly ModelId[] = [
   ModelId.parse('anthropic/claude-sonnet-5-5'),
   ModelId.parse('openai/gpt-5'),
+  ModelId.parse('google/gemini-3.8-flash-high'),
   ModelId.parse('google/gemini-3.5-flash-lite'),
 ]

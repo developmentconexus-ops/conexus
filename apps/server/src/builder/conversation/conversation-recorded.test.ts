@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict'
-import { rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
 import { applyEvent } from '@conexus/hub-api'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { post } from '../../hub/identity/test-hub.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
 import {
@@ -197,4 +197,36 @@ test('Gemini pelo CLIProxy interrompido, tocado da gravação: o turno termina `
   const linked = await post(hub, ana, `${signIns}/${signInId}`, { code })
   assert.equal(linked.statusCode, 201, linked.body)
   await stoppedOf(t, { hub, person: ana, conversations, model: 'google/gemini-3.5-flash-lite' })
+})
+
+test('um padrão em Gemini 3.8 Flash, como o CLIProxy o nomeia: a conversa começa nele e a chamada vai pelo CLIProxy com esse nome', async (t) => {
+  const { hub, ana, companyId, conversations } = await conversing(
+    t,
+    (each) => title(each) ?? { kind: 'refuse', status: 500 },
+  )
+  await hub.test.asOwner(
+    `insert into builder.company_account_kind (company_id, kind) values ($1, 'google_cliproxy')`,
+    [companyId],
+  )
+  const double = testCliProxy()
+  rmSync(join(double.control, 'mode'), { force: true })
+  rmSync(join(double.control, 'models'), { force: true })
+  rmSync(join(double.control, 'asked'), { force: true })
+  writeFileSync(join(double.control, 'recording'), 'google-abort')
+  t.after(() => rmSync(join(double.control, 'recording'), { force: true }))
+  const signIns = `/api/companies/${companyId}/model-account-sign-ins`
+  const body = { owner: 'company', kind: 'google_cliproxy', label: 'Google' }
+  const opened = await post(hub, ana, signIns, body)
+  assert.equal(opened.statusCode, 201, opened.body)
+  const { url: address, signInId } = Object(opened.json())
+  const state = String(new URL(address).searchParams.get('state'))
+  const code = `http://localhost:51121/oauth-callback?state=${state}&code=c-1`
+  const linked = await post(hub, ana, `${signIns}/${signInId}`, { code })
+  assert.equal(linked.statusCode, 201, linked.body)
+  const chosen = { model: 'google/gemini-3.8-flash-high', effort: 'high' }
+  const saved = await call(hub, ana, 'PUT', `/api/companies/${companyId}/default-model`, chosen)
+  assert.equal(saved.statusCode, 200, saved.body)
+  await stoppedOf(t, { hub, person: ana, conversations })
+  const asked = readFileSync(join(double.control, 'asked'), 'utf8').trim().split('\n')
+  assert.deepEqual(asked, ['gemini-3.8-flash-high'])
 })
