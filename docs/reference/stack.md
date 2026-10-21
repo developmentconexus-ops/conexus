@@ -9,7 +9,8 @@ guides own what we decided about it; [boundaries](boundaries.md) owns what we wr
 nothing the repository uses. The version is the one `package.json` and the lockfile pin; "the
 reference pins X" marks a reference on another major. "Read first" names, in order, docs or skills
 inside `node_modules`, the maintainers' skill, `llms.txt` or `.md` pages, the README. Mastra fork
-is read at `ce7e9c30`; Conexus OS only with `git show e0353c36:<path>`, because a checkout's HEAD
+is read at `ce7e9c30`; Cloudflare's vibesdk (`github.com/cloudflare/vibesdk`), the main reference
+for Cloudflare and the AI build flow, at `9da158d8` from its own checkout; Conexus OS only with `git show e0353c36:<path>`, because a checkout's HEAD
 can be another commit (one was at `729bdc5d`).
 
 | Piece | Used in | Read first | Skill | Reference | Decides | Trap |
@@ -17,7 +18,7 @@ can be another commit (one was at `729bdc5d`).
 | `@mastra/core` | `apps/server/src/builder` | `node_modules/@mastra/core/dist/docs/`; skill; `mastra.ai/llms.txt` | `mastra` | Mastra fork `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:206`; OS `apps/hub/src/builder/conversation.ts` | 0027, 0050, C75, W7 | The fork is at core 1.69.0 (`packages/core/package.json:3`); we pin 1.78.0 |
 | `@mastra/memory` | `apps/server/src/builder` | `node_modules/@mastra/memory/dist/docs/`; skill | `mastra` | OS `apps/hub/src/builder/conversation.ts` | 0010, 0011 | — |
 | `@mastra/pg` | `apps/server/src/builder` | `node_modules/@mastra/pg/dist/docs/`; skill | `mastra` | — | 0010 | — |
-| `ai` | `apps/server/src/builder` | `node_modules/ai/docs/`; `ai-sdk.dev/docs/*.md` | none | — | 0027, T24 | — |
+| `ai` | `apps/server/src/builder` | `node_modules/ai/docs/`; `ai-sdk.dev/docs/*.md` | none | vibesdk `worker/agents/think/ask-questions-tool.ts:31` | 0027, T24 | — |
 | `@ai-sdk/anthropic` | `apps/server/src/builder` | `node_modules/@ai-sdk/anthropic/docs/05-anthropic.mdx` | none | — | 0049, 0053, T24 | Models think adaptively unless sent `thinking: {type:'disabled'}` (PR 188). The stream sends one text block per cited span (PR 191); Mastra fork draws each as its own paragraph, `mastracode/factory-ui/src/ui/domains/chat/components/MessageBubble.tsx:123-134` |
 | `zod` | every workspace, `scripts` | `zod.dev/llms.txt` | none | — | C27, C28, W27 | — |
 | `fastify` | `apps/server/src` | `node_modules/fastify/docs/`; skill; `fastify.dev/llms.txt` | `fastify-best-practices` | OS `apps/hub/src` | 0004 | — |
@@ -34,7 +35,7 @@ can be another commit (one was at `729bdc5d`).
 | `@better-auth/drizzle-adapter` | `apps/server/src/hub` | as `better-auth` | as `better-auth` | — | 0014 | — |
 | `@neon/sdk` | `apps/server/src/platform` | skill; `neon.com/llms.txt` | `neon:neon`, `neon-postgres-agent-platforms` | — | 0021, 0040, 0048 | — |
 | `@neondatabase/serverless` | `apps/server/src/platform`, `apps/edge/src` | skill; `neon.com/llms.txt` | `neon:neon-postgres` | — | 0008, 0009, 0041 | — |
-| `wrangler` | `apps/edge` | skill; `developers.cloudflare.com/workers/llms.txt` | `cloudflare:wrangler`, `cloudflare:workers-best-practices` | — | 0018, 0042, 0047 | — |
+| `wrangler` | `apps/edge` | skill; `developers.cloudflare.com/workers/llms.txt` | `cloudflare:wrangler`, `cloudflare:workers-best-practices` | vibesdk `worker/index.ts:205` (dispatch), `worker/services/deployer/api/cloudflare-api.ts:131` (deploy), `space/src/space/durable-object.ts:752` (preview, Worker Loader) | 0018, 0042, 0047 | — |
 | `react-email` | `apps/server/src/hub` | docs site | none | — | 0017 | — |
 | `@react-email/render` | `apps/server/src/hub` | docs site | none | — | 0017 | — |
 | `esbuild` | `apps/server` (the invitation e-mail bundle) | README | none | — | 0017 | — |

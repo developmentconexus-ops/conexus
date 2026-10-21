@@ -28,7 +28,7 @@ only with the founder's word.
 
 - **L5.** `docs/steps/` **must** hold one file: the card of the step in construction. The next card
   waits in a draft pull request and enters when the current step closes. [check-docs]
-- **L6.** The founder **must** approve the card's page in Portuguese. The roadmap records the
+- **L6.** The founder **must** approve the card's page in Portuguese. The approvals ledger records the
   approval with his words, the date and the commit of the card; CI checks that commit is an ancestor
   of the tip and that the card has not changed since. [CI]
 - **L7.** A unit **should** follow its card's folders and contract owners, declaring direct
@@ -40,18 +40,20 @@ only with the founder's word.
 
 ## 3. Build and review
 
-- **L9.** Review **should** follow the approved protocol. At the candidate commit, with CI green, a
-  step with a screen first gets its T25 QA report; then two models of different families that did
-  not build it read the whole step and the QA report. Each reviewer runs the refusal criteria,
-  reads every CI job's log, confirms that the test plan ran everything when a change touches the
-  test selector, its inputs or a dependency, opens the screens it doubts, and compares each part
-  that follows a reference with that reference by commit and file:line. QA and review findings go
-  into one fix round, and each delta check reruns QA on the screens the fix touched. After fixes,
-  one reader checks only the delta for closed Bloqueia and newly introduced defects. No per-unit
+- **L9.** Review **should** follow the approved protocol. When CI turns green at the candidate
+  commit, QA ([testing T25](testing.md)) and two reviewers start together: Claude on Opus and
+  Codex at high reasoning, neither a builder of the step, each following
+  [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md); the Claude reviewer alone runs
+  the refusal criteria and reads the CI logs. Nobody waits for QA; a review left incomplete is
+  finished by its reviewer, not repeated by a third. QA and review findings form one fix round,
+  split into fronts that share no file, built at once, one commit each; a Bloqueia that needs a
+  contract the card lacks follows L7, then is one more front with its own delta. One reader checks each front's
+  delta for closed Bloqueia and new defects, while QA reruns the screens it touched. No per-unit
   review or review robot. Documents-only changes get check-docs and one reader once; a card gets
   one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
-  2026-10-16: "Concordo". Failure: rereading everything after each fix samples new rules forever
-  instead of converging. [review]
+  2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". Failure: rereading everything
+  after each fix samples new rules forever; in step 12.3, QA and five reviews ran in a queue and
+  one front carried fifteen fixes and a new list in series. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
   and sweep its class through the whole diff. A third delta check blocking on the same premise
   returns to the card and founder. Failure: fixing one logger key per round leads to six reviews
@@ -83,8 +85,8 @@ only with the founder's word.
   is on the list of expensive choices. [CI, review]
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
   firstmate, item by item through the card's use script, before the founder is told, and used by
-  the founder through the card's use script. His words, the date and the address go on the step's
-  line in the roadmap, and only then **may** the next step start. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
+  the founder through the card's use script. His words, the date and the address go in the
+  approvals ledger, and only then **may** the next step start. Founder, 2026-10-12. Publishing is a GitHub Release firstmate creates after the merge, with CI green and a
   note of what the step delivers: `v0.N.0` for step N, `v0.N.P` for a fix of it, `v1.0.0` with
   the first company [0035]. A proof **must not** spend a name of this scheme; the card names the
   releases its proof creates. Failed use leaves the step open for a fix. [CI, from the first step's
@@ -106,7 +108,7 @@ only with the founder's word.
 ## 6. What the repository keeps
 
 - **L21.** The repository **must** keep only what changes what the next agent does: the use line in
-  the roadmap, a proof's criterion and result in its decision record, a learned rule in its guide.
+  the approvals ledger, a proof's criterion and result in its decision record, a learned rule in its guide.
   Studies and proofs stay outside it; what only proves a stage was done stays in the pull request.
   Founder, 2026-10-12. [check-docs]
 - **L23.** What a person uses or decides **should** be in Portuguese: README, roadmap, cards,
@@ -125,6 +127,7 @@ only with the founder's word.
 | `AGENTS.md` | 400 |
 | `docs/index.md` | 500 |
 | `docs/roadmap.md` | 1,600 |
+| `docs/approvals.md` | 1,500 |
 | `docs/architecture.md` | 2,500 |
 | `docs/guides/code.md` | 3,500 |
 | `docs/guides/security.md` | 3,000 |

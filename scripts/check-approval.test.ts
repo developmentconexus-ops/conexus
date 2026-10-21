@@ -33,7 +33,7 @@ function repository(): { dir: string; card: string } {
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
   write(dir, 'docs/steps/e01-x.md', 'card\n')
-  write(dir, 'docs/roadmap.md', 'roadmap\n')
+  write(dir, 'docs/approvals.md', 'ledger\n')
   git(dir, 'add', '.')
   git(dir, 'commit', '-q', '-m', 'card')
   return { dir, card: git(dir, 'rev-parse', 'HEAD') }
@@ -45,7 +45,7 @@ function run(dir: string, ...args: string[]) {
 
 test('aceita o cartão aprovado e inalterado', () => {
   const { dir, card } = repository()
-  write(dir, 'docs/roadmap.md', approval(card))
+  write(dir, 'docs/approvals.md', approval(card))
   git(dir, 'commit', '-qam', 'approval')
   assert.equal(run(dir).status, 0)
 })
@@ -58,7 +58,7 @@ test('recusa commit fora da ponta', () => {
   git(dir, 'commit', '-q', '-m', 'other')
   const stray = git(dir, 'rev-parse', 'HEAD')
   git(dir, 'checkout', '-q', 'main')
-  write(dir, 'docs/roadmap.md', approval(stray))
+  write(dir, 'docs/approvals.md', approval(stray))
   git(dir, 'commit', '-qam', 'approval')
   const result = run(dir)
   assert.equal(result.status, 1)
@@ -67,7 +67,7 @@ test('recusa commit fora da ponta', () => {
 
 test('recusa cartão mudado depois da aprovação', () => {
   const { dir, card } = repository()
-  write(dir, 'docs/roadmap.md', approval(card))
+  write(dir, 'docs/approvals.md', approval(card))
   write(dir, 'docs/steps/e01-x.md', 'card changed\n')
   git(dir, 'commit', '-qam', 'approval and change')
   const result = run(dir)
@@ -109,7 +109,7 @@ test('reconhece o cartão e041 como etapa 4.1 sem confundir com a etapa 4', () =
   const decimalCard = git(dir, 'rev-parse', 'HEAD')
   write(
     dir,
-    'docs/roadmap.md',
+    'docs/approvals.md',
     `Cartão da etapa 4.1 aprovado em 2026-10-16 (commit ${decimalCard}): "Aprovo"\n`,
   )
   git(dir, 'commit', '-qam', 'decimal card approval')
@@ -129,14 +129,14 @@ test('reconhece o cartão e121 como etapa 12.1 sem confundir com a etapa 12', ()
   const { dir, sha } = decimalCardRepository('e121-conversa-no-painel.md')
   write(
     dir,
-    'docs/roadmap.md',
+    'docs/approvals.md',
     `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
   )
   git(dir, 'commit', '-qam', 'approval of 12')
   assert.equal(run(dir).status, 1)
   write(
     dir,
-    'docs/roadmap.md',
+    'docs/approvals.md',
     `Cartão da etapa 12.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
   )
   git(dir, 'commit', '-qam', 'approval of 12.1')
@@ -147,7 +147,7 @@ test('reconhece o cartão e131 como etapa 13.1', () => {
   const { dir, sha } = decimalCardRepository('e131-x.md')
   write(
     dir,
-    'docs/roadmap.md',
+    'docs/approvals.md',
     `Cartão da etapa 13.1 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
   )
   git(dir, 'commit', '-qam', 'approval')
@@ -158,7 +158,7 @@ test('o cartão e12 continua sendo a etapa 12', () => {
   const { dir, sha } = decimalCardRepository('e12-x.md')
   write(
     dir,
-    'docs/roadmap.md',
+    'docs/approvals.md',
     `Cartão da etapa 12 aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`,
   )
   git(dir, 'commit', '-qam', 'approval')
@@ -188,14 +188,14 @@ function approvalOf(step: string, sha: string): string {
 
 test('aceita dois cartões aprovados e inalterados', () => {
   const { dir, sha } = twoCardRepository()
-  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
+  write(dir, 'docs/approvals.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
   git(dir, 'commit', '-qam', 'approvals')
   assert.equal(run(dir).status, 0)
 })
 
 test('recusa o segundo cartão sem aprovação, nomeando-o', () => {
   const { dir, sha } = twoCardRepository()
-  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha))
+  write(dir, 'docs/approvals.md', approvalOf('12.1', sha))
   git(dir, 'commit', '-qam', 'approval of the first')
   const result = run(dir)
   assert.equal(result.status, 1)
@@ -204,7 +204,7 @@ test('recusa o segundo cartão sem aprovação, nomeando-o', () => {
 
 test('recusa o segundo cartão mudado depois da aprovação, nomeando-o', () => {
   const { dir, sha } = twoCardRepository()
-  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
+  write(dir, 'docs/approvals.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
   write(dir, 'docs/steps/e122-b.md', 'card 12.2 changed\n')
   git(dir, 'commit', '-qam', 'approvals and change')
   const result = run(dir)

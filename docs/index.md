@@ -6,7 +6,8 @@ One line per document (`check-docs`).
 
 - [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
 - [README.md](../README.md): this repository.
-- [roadmap.md](roadmap.md): steps in order, approvals, use lines.
+- [roadmap.md](roadmap.md): steps.
+- [approvals.md](approvals.md): approvals and uses.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
 - [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
@@ -93,5 +94,5 @@ One line per document (`check-docs`).
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; a screen's card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md) and [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): QA of a step's screens.
-- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): the review of a step; a screen.
+- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md), [labels](../.agents/skills/conexus-review/references/labels.md): a step's review; a screen; labels.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [questions](../.agents/skills/conexus-explain/references/questions.md), [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.

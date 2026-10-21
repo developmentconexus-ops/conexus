@@ -15,12 +15,9 @@ session that wrote the card does not build it.
 The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the card is the contract.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
-unit's one named guide, and loads the card's maintainers' skills before writing code. Where a
-skill's file and the installed package's own docs differ, such as `node_modules/fastify/docs`, the
-installed docs win. With pstack, it also loads `poteto-mode` and `typescript-best-practices`;
-without pstack, it skips only those two.
-[bring](references/bring.md) only when the unit brings code; [bug](references/bug.md) only for a
-defect.
+unit's one named guide, and loads the card's maintainers' skills before writing code. With
+pstack, it also loads `poteto-mode` and `typescript-best-practices`. [bring](references/bring.md)
+only when the unit brings code; [bug](references/bug.md) only for a defect.
 
 ## Steps
 
@@ -34,12 +31,14 @@ defect.
    carrying only the old decisions listed with their basis. A line the table does not justify is
    not brought. Keep the measure of the study rule ([`conexus-study`](../conexus-study/SKILL.md)
    step 5) as you go; when a part passes its limit, stop and report.
-5. Write the tests through the server's public door, with the negative cases
-   ([testing](../../../docs/guides/testing.md)). Write each screen text from the card's state
-   matrix; the founder approves the texts at the use script, so the build does not stop for one.
+5. Write the tests through the server's public door, with the negative cases, and provider doubles
+   per [testing T24](../../../docs/guides/testing.md). Write each screen text from the card's state
+   matrix.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
    changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
-   repository's verification skill when one exists (a screen: [screen](references/screen.md)).
+   repository's verification skill when one exists (a screen: [screen](references/screen.md)). A fix
+   that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
+   states, and a new guard gets its removal row (T12).
    Then answer [the checklist](../../../docs/reference/checklist.md) item by item, sweeping each
    class across the whole diff, and fill its sweep table in the integration request, saying which
    file each pattern was copied from. Run pstack `deslop` and `no-comments`; code C70 and C73
@@ -50,10 +49,10 @@ defect.
 ## What it produces
 
 The commit and a report: what I ran, saw and did not prove; the line counts of each brought part;
-every criterion with its test; each declared file outside the card's folders ([delivery
+every criterion with its test, none red; each declared file outside the card's folders ([delivery
 L7](../../../docs/guides/delivery.md)); the screenshots looked at, by state, width and theme, or "no
-screen touched". No pull request or review per unit ([delivery L9,
-L13](../../../docs/guides/delivery.md)).
+screen touched". A criterion known to fail is never a finding handed to the review: fix it, or
+stop.
 
 ## Stop and ask
 
@@ -67,6 +66,6 @@ Stop means no more code: report the evidence and the question.
 
 ## When it closes
 
-The unit's commit is on the step branch, its tests are green, and the report says what ran. A
-review finding comes back as a message: find its cause, sweep its class across the diff, fix every
-occurrence, and push to the same branch.
+The unit's commit is on the step branch, its tests are green, and the report says what ran. In
+the fix round you build one front ([delivery L9](../../../docs/guides/delivery.md)): fix each
+finding's cause and its class (L11), and push one commit to the same branch.

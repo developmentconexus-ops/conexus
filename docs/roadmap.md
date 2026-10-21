@@ -4,57 +4,26 @@
 
 ### As etapas, e o que você faz quando cada uma fecha
 
+Aprovações e usos: [aprovações](approvals.md).
+
 1. **Hub no ar.** Publica e volta atrás.
-   Cartão da etapa 1 aprovado em 2026-10-13 (commit 26b9bdee5dbd01546e59be68292e6354f2b48f91): "Sim"
-   Etapa 1 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 2. **Banco do Hub.** Restaura o banco, e o vê dormir e acordar.
-   Cartão da etapa 2 aprovado em 2026-10-14 (commit 9d94e1a1402951b4aceae42b58e0349bf347717d): "Aprovo"
-   Etapa 2 usada em 2026-10-14 em https://hub.conexus.fun: "Deu certo"
 3. **Entrar.** Entra e sai.
-   Cartão da etapa 3 aprovado em 2026-10-14 (commit 5a65e5348fd47f541a9c0447a3a11996a28d3b25): "Aprovo"
-   Etapa 3 usada em 2026-10-15 em https://hub.conexus.fun: "Todos passos deram certo"
 4. **Empresa e convite.** Convida alguém, que aceita e entra.
-   Cartão da etapa 4 aprovado em 2026-10-15 (commit 9e9bff0e21742a2e04fbe6afb2f685d8ca5f6940): "1. A, sim poré mtem que configurar senha não? 2. A 3. A 4. A 5. A 6. Okay 7. A 8. Aprovo 9. A"
-   Etapa 4 usada em 2026-10-16 em https://hub.conexus.fun: "Deu certo"; sobre o fluxo, "O fluxo não está bem pensando pesnando como um todo"
    4.1 **Convite completo.** Cria a senha no convite, cancela ou recusa um.
-      Cartão da etapa 4.1 aprovado em 2026-10-16 (commit 473338311584743520a5f5b1ddb4271252f8fc76): "A aprovo"
-      Etapa 4.1 usada em 2026-10-16 em https://hub.conexus.fun (v0.4.1): "Foi sim para lixo eletronico, mas nem ligo, podemos passar e tudo deu certo. cancelei e testei tudo e tudo foi validado"
    4.2 **Cadastro de cliente.** Cadastra um cliente na Central, e o administrador dele entra como dono.
-      Cartão da etapa 4.2 aprovado em 2026-10-16 (commit 819b1157ca1edc62fb83a5f31d07faa391e32716): "Aprovo"
-      Etapa 4.2 usada em 2026-10-17 em https://hub.conexus.fun (v0.4.2): "Legal tudo funcionou"
 5. **Duas empresas.** Vê que uma não enxerga a outra, e a Central apaga uma.
-   Cartão da etapa 5 aprovado em 2026-10-17 (commit 3fa479344c8bb02a21a75aaf84744b0b01e65a7e): "2A" (2026-10-16); "eu aprovo tudo que você trouxe"
-   Etapa 5 usada em 2026-10-17 em https://hub.conexus.fun (v0.5.0 e v0.5.1), pelo firstmate, a pedido ("Cara não quer fazer o teste para mim no chromium"): "Aprovo textos, apaga as sobras e todas empresas e continue"
 6. **Tirar uma pessoa.** Desativa alguém. Outra recupera a senha.
-   Cartão da etapa 6 aprovado em 2026-10-17 (commit 69e6e72753f2bbf6624851c2a796c1bbb6d4e1fe): "Aprovo"
-   Etapa 6 usada em 2026-10-17 em https://hub.conexus.fun (v0.6.0), pelo firstmate, a pedido ("Pode fazer"), link de recuperação enviado por ele: "1 A 2 A"
 7. **Projeto.** Cria e apaga um Projeto, com o banco da empresa.
-   Cartão da etapa 7 aprovado em 2026-10-17 (commit 89798f576c9fd1670748c1580807ea8e513a5d8d): "Sim"; "`D1: A D2: A D3: A`"
-   Etapa 7 usada em 2026-10-17 em https://hub.conexus.fun (v0.7.0), pelo firstmate, a pedido ("Pode fazer"), console do Neon conferido por ele: "Tudo certo nenhum projeto"
 8. **App de exemplo.** Abre um app escrito à mão.
-   Cartão da etapa 8 aprovado em 2026-10-17 (commit ea0421001f792139ad0ee1b1d08e2c865347f52d): "Aprovo Nome A"
-   Etapa 8 usada em 2026-10-18 em https://hub.conexus.fun (v0.8.0), roteiro feito pelo fundador: "Cara, eu já testei e tá tudo aprovado, tá bom? Pode já fazer o merge mesmo."
 9. **Enviar um app.** Manda uma versão nova pelo Hub, e o app grava.
-   Cartão da etapa 9 aprovado em 2026-10-18 (commit 8e1b461325f3064ba5690dfb28ace027554c0efa): "Aprovo"
-   Etapa 9 usada em 2026-10-18 em https://hub.conexus.fun (v0.9.1), pelo firstmate, a pedido: "aceito A"; "Restaurei"; "Sim"; saída 19 aceita em 2026-10-19, "16 A": envio cortado aos 100 s e repetido espera o primeiro acabar
    9.1 **Direto ao app.** Entra e vê o app, sem o Hub no meio; o Neon mostra o apelido.
-      Cartão da etapa 9.1 aprovado em 2026-10-18 (commit 19d2d2528221ed7aad57fe177a6ac238374d640c): "1. Aprovo 2. Autorizo"
-      Etapa 9.1 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.2), pelo firstmate, a pedido: "2. pODE"; o passo 5, não rodado: "Aceitar."
 10. **Recusar um app.** Vê o Hub recusar um app com defeito.
-    Cartão da etapa 10 aprovado em 2026-10-18 (commit 458f5d17473aeb947c009de2b472dabdfebb4748): "oPÇÃO A tirar verificador."; "1. Aprovo"; "1. C porém me explica exemplo caso real, quero entender"
-    Etapa 10 usada em 2026-10-19 em https://hub.conexus.fun (v0.10.0 e v0.10.1), pelo firstmate, a pedido: "1 sim 2. Sim 3. Sim"; "a SE REALMETNE FOR NATIVO, MELHOR SOLUÇÃO, E INSPIRADO em repositórios referencia, código, ja implementado e etc"; "im"
 11. **Conta de modelo.** Liga chaves de API, assinatura Claude e Google, em filas por fornecedor.
-    Cartão da etapa 11 aprovado em 2026-10-19 (commit e5d89abfd62b4441073323f1f780fe79054bfceb): "2. a"; "3 SIM"; "4. sIM"; "sM APROVO E CONFIRMO"
-    Etapa 11 usada em 2026-10-19 em https://hub.conexus.fun (v0.11.0, v0.11.1), pelo firstmate e fundador: "okay, aguardo"; "Loguei google pela empresa, quer validar?"
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
-    Cartão da etapa 12 aprovado em 2026-10-19 (commit be086108e6e98df037b74344f180aaa670ef76b0): "1. A"; "2. Autorizo"; "3. Sim"
-    Etapa 12 usada em 2026-10-19 em https://hub.conexus.fun (v0.12.0 a v0.12.2), com o firstmate; 25 e 26 numa cópia do Neon: "Sem titulo"; tela longe do Conexus OS
     12.1 **A conversa no painel.** Conversa no painel e vê o Builder pensar.
-       Cartão da etapa 12.1 aprovado em 2026-10-19 (commit bae3907092629491aef6edf2d704623506fc1c71): "Eu aprovo o cartão do 12.1"; "Eu autorizo os dois turnos reais pela assinatura Claude"
-       Etapa 12.1 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.4 a v0.12.7); consertos de "Desligado", ferramenta cortada, citação, tabelas (#188, #191, #192): "Deu certo"
     12.2 **A casa.** Barra lateral, Início e primeira entrada.
-       Cartão da etapa 12.2 aprovado em 2026-10-20 (commit d4fcae61430a89e03e515c4cd16beba1aaf6300e): "Aprovo o cartão da 12.2"
-       Etapa 12.2 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.8): "Aprovado tudo."
+    12.3 **Padrões.** Escolhe com que modelo as conversas começam.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
