@@ -2477,12 +2477,23 @@
   {
     "id": "gate-needs-instructions",
     "file": "apps/server/src/builder/conversation/instructions.ts",
-    "find": "read, write and edit files there",
-    "replace": "read and look at files there",
+    "find": "whose folder ${APP_FOLDER} is the Projeto's app",
+    "replace": "whose folder is the Projeto's app",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
-      "name": "o portão do Builder"
+      "name": "o portão do Builder: o Builder de verdade"
+    }
+  },
+  {
+    "id": "gate-needs-secrets-rule",
+    "file": "apps/server/src/builder/conversation/instructions.ts",
+    "find": "through the connectors, and that secrets do not belong in the chat.",
+    "replace": "through the links, and that secrets do not belong in the chat.",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder: uma senha colada"
     }
   },
   {

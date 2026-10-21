@@ -94,6 +94,9 @@ export function Composer(props: {
         </InputGroupAddon>
       </InputGroup>
       <p className="text-center text-fact text-text-2">Enter envia · Shift+Enter quebra a linha</p>
+      <p className="text-center text-fact text-text-2">
+        Não cole senhas, chaves ou tokens na conversa.
+      </p>
     </form>
   )
 }
