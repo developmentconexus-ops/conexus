@@ -31,7 +31,7 @@ okay da 14", 2026-10-21.
 A: os dados da prévia sobrevivem a uma versão nova; uma mudança de tabela migra o esquema da prévia e
 mantém as linhas. B: autorizadas as provas reais da U1 (Cloudflare e E2B das etapas 8, 9 e 13,
 Neon de prova, conta Claude, Safari do iPhone). Fundador, 2026-10-21: "2. SIM" e "Autorizo provas
-reais".
+reais". iPhone no iOS 18: a Prévia em nova aba; o teste do iPhone antes da U1: "Sim as duas".
 
 **Os limites.** A meta é a Prévia 20 s depois de "Versão guardada" (no laboratório, com esbuild e fora do
 Hub, 13,4 a 14,2 s), medida na publicação (32). Guardamos a do ar, a da
@@ -41,11 +41,9 @@ prévia e mais 3. Alterações: até 1.000 arquivos e 1 MiB por arquivo.
 Builder; publicar (17); mudar tabelas com dados (15); **Versões** do Builder (17). Nenhuma
 issue `next-card` toca estas pastas.
 
-**O que mudou da versão do PR 213.** A antiga U3 (montar e voltar ao Builder) e a antiga U8 (a skill)
-foram para a etapa 14, com os critérios 6, 18, 28 e 29; o registro passa a 0056, porque o 0054 já
-existe no `main` e o 0055 é da 14. Os números das unidades e dos critérios ficam os do PR 213. A 14 tirou a casca guardada:
-um app pode não ter operações (contrato 1 de 0 a 32) e o upload leva a navegação de página única;
-a prévia herda os dois pelo envio da etapa 9.
+**O que mudou da versão do PR 213.** As antigas U3 e U8 foram para a 14, com os critérios 6, 18, 28
+e 29; o registro passa a 0056 (o 0054 já existe, o 0055 é da 14); os números ficam os do PR 213. A
+prévia herda da 14, pelo envio da etapa 9, o app sem operações e a navegação de página única.
 
 **Abertas.** Nenhuma.
 
@@ -68,8 +66,8 @@ Em toda unidade, `typescript-magician` e `node`. Nenhum pacote novo.
 frente 2, Alterações, U7 (`builder/git/`, `apps/web/src/builder/source/`). Dividem só
 `hub-api/src/{failures,index}.ts`, de quem criar o contrato primeiro; a segunda faz o merge. U6 depois de U4 e U5; U9 por último; U2 em PR próprio (D11). QA (T25) antes das revisões (L9).
 
-**Código alterado** (sem testes nem gerados): U2 310; U4 400; U5 200; U6 560; U7 730;
-U9 60. Total **2.260**, teto 4.000 (L2).
+**Código alterado** (sem testes nem gerados): U2 310; U4 400; U5 230; U6 590; U7 730;
+U9 60. Total **2.320**, teto 4.000 (L2).
 
 ## O que é nativo e o que é nosso
 
@@ -81,7 +79,7 @@ Context7: APIs lidas no `dist/` instalado.
 | --- | --- | --- |
 | Rodar e montar | `sandbox.executeCommand` (13 U4); `Machines.pack` (14 U4) | o servidor a refaz na árvore guardada |
 | Subir e servir | `cloudflare.upload`, `DISPATCHER.get` (`send.ts:57-71`, `dispatch.ts:117-150`) | o ambiente |
-| Entrada no iframe | CHIPS, `Partitioned` (Chromium 131); `postMessage` com `targetOrigin` | o salto por `/apps/open` não serve: `access.ts:95-96` recusa `iframe` (S48) e o cookie `Lax` não vai a outro site |
+| Entrada no iframe | CHIPS, `Partitioned` (Chrome 114, Firefox 141, Safari 26.2), o mesmo cookie da vibesdk (`worker/utils/spacePreviewToken.ts:58-87`) e o estudo da prova da Prévia; `postMessage` com `targetOrigin` | o salto por `/apps/open` não serve: `access.ts:95-96` recusa `iframe` (S48) e o cookie `Lax` não vai a outro site |
 | Diferenças | Factory `git diff --name-status -z --find-renames`, `--numstat` (fork `mastracode/factory/src/routes/fs.ts:143-152,695-735`) | no servidor (0029) |
 | Barra e abas | Conexus OS `lens-preview.tsx:68-117`, `lens-diff.tsx:12-33,167-181` | só o desenho |
 
@@ -101,7 +99,7 @@ de fora (T14). Valem 2 a 5 e 7, autorizados pelo fundador (B). Must, salvo "shou
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova |
 | --- | --- | --- | --- |
 | 1 | U1 | 0056 "proposed" antes do código, com os critérios de B; o já provado, citado, não refeito | o registro |
-| 2 | U1 | **Ao vivo**: Worker `cx-prova-e14-` no despachante em `…--previa`, num iframe do Hub: a entrada da U5 (mensagem, passagem, cookie particionado) vale e o app grava, em Chrome, Firefox e Safari do iPhone; fora do iframe, sem passagem: a página de sessão | 0056 |
+| 2 | U1 | **Ao vivo**: Worker `cx-prova-e14-` no despachante em `…--previa`, num iframe do Hub: a entrada da U5 (mensagem, passagem, cookie particionado) vale e o app grava, em Chrome 114 ou mais, Firefox 141 ou mais e Safari 26.2 ou mais (Mac e iPhone), com a versão anotada; num Safari mais antigo, a Prévia oferece a nova aba; fora do iframe, sem passagem: a página de sessão | 0056 |
 | 3 | U1 | **Ao vivo**: o host `<nome>--<apelido>--previa` responde em HTTPS com o certificado de hoje do domínio dos apps (0041, critério 5) | 0056 |
 | 4 | U1 | **Ao vivo**: 50 scripts no namespace, podados: a contagem volta, cada GET dá 404 após a propagação, anotada | 0056 |
 | 5 | U1 | Sem chamada nova, registra o estudo: `pack` na máquina monta (Node 22, 4 de 4; a 13 traz o 24); do fim do turno à Prévia, 13,4 a 14,2 s fora do Hub; a meta de 20 s no Hub (should) vai ao 32 | 0056 |
@@ -113,7 +111,7 @@ de fora (T14). Valem 2 a 5 e 7, autorizados pelo fundador (B). Must, salvo "shou
 | 12 | U4 | Mesma chave duas vezes: uma versão (`REPLAY`); o ponteiro só sobe; o do ar não muda | `preview-send.test.ts` |
 | 13 | U4 | Prévia e envio manual juntos: cada um no seu ponteiro | idem |
 | 14 | U4 | `readPreview` (`MEMBER`): `none`, `pending`, `ready`, `failed` e a última boa; alheio 404 (S10) | `preview.test.ts` |
-| 15 | U5 | Host da prévia: cookies `Partitioned`; `frame-ancestors <origem do Hub>`; sem sessão, num iframe: a entrada (só o hash), falha na segunda seguida; em nova aba: o salto de hoje; host do ar igual | `dispatcher-preview.test.ts` |
+| 15 | U5 | Host da prévia: cookies `Partitioned`; `frame-ancestors <origem do Hub>`; sem sessão, num iframe: a entrada (só o hash), falha na segunda seguida, com `{type: 'entry-failed'}` ao Hub; em nova aba: o salto de hoje; host do ar igual | `dispatcher-preview.test.ts` |
 | 16 | U5 | `createPreviewHandoff`: membro recebe a passagem; outra empresa: 404 (S10); `Origin` alheio: `REQUEST_ORIGIN_REFUSED`; passagem repetida ou de outro navegador: `APP_HANDOFF_INVALID`; sessão de um ambiente não abre o outro | idem, `handoff-route.test.ts` |
 | 17 | U5 | Hub: `frame-src https://*.<domínio dos apps>`, o resto igual | `http.test.ts` |
 | 18 | U4 | Versão guardada com `check: 'failed'` (14): não monta nem sobe; o turno termina `saved` com `preview_failure` `APP_CHECK_FAILED`; `readPreview`: `failed`, com a última boa | `preview.test.ts` |
@@ -122,7 +120,7 @@ de fora (T14). Valem 2 a 5 e 7, autorizados pelo fundador (B). Must, salvo "shou
 | 21 | U4 | A 3 termina antes da 2: o ponteiro fica na 3 | idem |
 | 22 | U4 | Hub morre em `previewing`: o outro processo refaz, uma versão | `runs-preview.test.ts` |
 | 23 | U6 | Estados da matriz; a Prévia segue na última boa no turno; recarrega na parte `preview` | `preview.test.tsx` |
-| 24 | U6 | Barra: nomes e teclado (V30, V31); Celular, 390 px; **Abrir em nova aba** com a sessão; **Pedir ao Builder para corrigir** põe código e versão no campo | idem |
+| 24 | U6 | Barra: nomes e teclado (V30, V31); Celular, 390 px; **Abrir em nova aba** com a sessão; entrada recusada duas vezes: o aviso e **Abrir em nova aba**; **Pedir ao Builder para corrigir** põe código e versão no campo | idem |
 | 25 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo; trocar de aba não recarrega | navegador (T23) |
 | 26 | U7 | `readChanges`: novo, removido, renomeado, binário, `+N`; acima de 1.000: `SOURCE_CHANGES_TOO_MANY`; de 1 MiB: `SOURCE_DIFF_TOO_LARGE`, sem ler (C44, C59); commit fora do `main`: `SOURCE_VERSION_NOT_FOUND`; alheio: 404 | `changes.test.ts` |
 | 27 | U7 | Unificado, Lado a lado; linhas sem alteração recolhidas | `changes.test.tsx` |
@@ -136,7 +134,7 @@ de fora (T14). Valem 2 a 5 e 7, autorizados pelo fundador (B). Must, salvo "shou
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Prévia | "Ainda não há uma prévia. Descreva o aplicativo para começar." | idem | "Preparando a prévia…", sobre a última boa | "A versão N não montou." e, com `last`, "A prévia continua na versão M."; **Pedir ao Builder para corrigir** | a do Projeto | a do Projeto | sessão vencida: a entrada da U5, sem aviso |
+| Prévia | "Ainda não há uma prévia. Descreva o aplicativo para começar." | idem | "Preparando a prévia…", sobre a última boa | "A versão N não montou." e, com `last`, "A prévia continua na versão M."; **Pedir ao Builder para corrigir** | a do Projeto | a do Projeto | sessão vencida: a entrada da U5, sem aviso; entrada recusada duas vezes: "Este navegador não abre a prévia aqui dentro." e **Abrir em nova aba** |
 | Alterações | "Nenhuma versão guardada ainda." | "Esta versão não mudou arquivos." | a partilhada | a de `ui/` | "Esta versão não está mais guardada." | a do Projeto | "Esta diferença é grande demais para mostrar aqui." |
 | Cartão da versão | — | — | — | o da 13 | — | — | — |
 | App \| Conversa (390) | Conversa | — | ponto "trabalhando" | — | — | — | — |
@@ -200,7 +198,7 @@ Nenhum código trazido.
 
 **Raio.** `docs/decisions/0056-preview-environment.md`, `docs/{index,architecture,roadmap}.md`, `docs/decisions/0020-*.md`: cria, muda; chama: `check-docs`.
 
-**Contratos.** 0056: critérios 2 a 5 e 7 (conforme B), provados antes do merge; o que o estudo provou, citado com o resultado e o lugar, sem refazer; o D, futuro. Arquitetura §3: "store an app
+**Contratos.** 0056: critérios 2 a 5 e 7 (conforme B), provados antes do merge; o que o estudo provou, citado com o resultado e o lugar, sem refazer, e o do estudo da prova da Prévia: entra, grava e segue no Chromium 153 e no Firefox 155, com e sem bloqueio de cookies de terceiros; o WebKit no Linux não vale pelo Safari; o D, futuro. Arquitetura §3: "store an app
 version" ganha o ambiente; a sessão de Prévia (`:188-190`), a do host da prévia. 0020: "o
 verificador checa antes da Prévia" vira "a Cloudflare recusa o que não inicia (0046)". Roteiro: P1 a P4. Regras: L21, T14, S40.
 
@@ -254,10 +252,13 @@ environment)` dá `SameSite=None; Secure; Partitioned; HttpOnly`; `withSecurityH
 `frame-ancestors` pela origem do Hub. Num iframe (`Sec-Fetch-Dest: iframe`) sem sessão ou com
 `APP_SESSION_INVALID`, nunca o salto: a página de entrada `/__conexus/preview` põe o cookie de
 vínculo e leva o hash dele num `data-`; `/__conexus/preview.js` o manda por `postMessage`, alvo a
-origem do Hub. Uma segunda entrada seguida (marca no `redeem`) dá a página de falha. A tela confere
+origem do Hub. Uma segunda entrada seguida (marca no `redeem`) dá a página de falha, que manda ao Hub
+`{type: 'entry-failed'}` por `postMessage`; a Prévia mostra "Este navegador não abre a prévia aqui
+dentro." e **Abrir em nova aba** (o salto de hoje). A tela confere
 `event.origin` e `event.source` e chama `createPreviewHandoff` `POST
 …/projects/{projectId}/preview/handoff` `{binding}`, `session`, `MEMBER`: o `createHandoff` de hoje,
-com o host tirado do `projectId` (S9) → `{location}`, posto no iframe; o `redeem` é o de hoje. Em nova aba, o salto de hoje. `OnHost`, `AppOpenQuery` levam `AppHostLabel = HostLabel | PreviewHostLabel`. `callTo` lê o
+com o host tirado do `projectId` (S9) → `{location}`, posto no iframe; o `redeem` é o de hoje; should, decidido pelo teste do iPhone: no host da
+prévia, a troca responde a página do app no lugar, sem o 303, como a vibesdk (`space-preview.ts:152-167`). Em nova aba, o salto de hoje. `OnHost`, `AppOpenQuery` levam `AppHostLabel = HostLabel | PreviewHostLabel`. `callTo` lê o
 ponteiro e o login do ambiente; prévia sem versão: `APP_NOT_FOUND`. Helmet: `frameSrc`. Modelo: `handoff.ts`.
 
 **Ordem.** Regras: S10, S17 (não muda: é o cookie do Hub), S22, S24, S48, W15. **Prova.** 15 a 17.
