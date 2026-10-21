@@ -11,7 +11,11 @@ export type SaveRefusal =
   | 'corrupt'
 
 export type TreeFile = { path: string; bytes: number }
-export type FileRead = { kind: 'text'; text: string } | { kind: 'not-found' } | { kind: 'not-text' }
+export type FileRead =
+  | { kind: 'text'; text: string }
+  | { kind: 'not-found' }
+  | { kind: 'not-text' }
+  | { kind: 'too-large' }
 
 const REGULAR = new Set(['100644', '100755'])
 const UNSAFE_SEGMENTS = new Set(['', '.', '..', '.git'])
@@ -58,7 +62,7 @@ export async function fileOf(
   if (unsafe || !(await inMain(context, sha))) return { kind: 'not-found' }
   const found = (await entries(context, [sha, '--', path])).find((entry) => entry.path === path)
   if (found === undefined || found.type !== 'blob') return { kind: 'not-found' }
-  if (found.bytes > maxBytes) return { kind: 'not-text' }
+  if (found.bytes > maxBytes) return { kind: 'too-large' }
   const blob = (await git(context, ['cat-file', 'blob', found.oid], { maxOutput: maxBytes })).stdout
   try {
     return blob.includes(0)

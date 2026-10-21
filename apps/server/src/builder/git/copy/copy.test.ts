@@ -18,6 +18,7 @@ const PAGE = 2
 async function bucket(t: TestContext) {
   const objects = new Map<string, Buffer>()
   const deletes: number[] = []
+  const refused = new Set<string>()
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? '/', 'http://x')
     const chunks: Buffer[] = []
@@ -44,10 +45,13 @@ async function bucket(t: TestContext) {
     } else {
       const doomed = [...body.toString().matchAll(/<Key>([^<]+)<\/Key>/g)].map((m) => m[1] ?? '')
       deletes.push(doomed.length)
-      for (const k of doomed) objects.delete(k)
+      for (const k of doomed.filter((k) => !refused.has(k))) objects.delete(k)
+      const errors = doomed
+        .filter((k) => refused.has(k))
+        .map((k) => `<Error><Key>${k}</Key><Code>InternalError</Code><Message>no</Message></Error>`)
       response
         .writeHead(200, { 'content-type': 'application/xml' })
-        .end('<DeleteResult></DeleteResult>')
+        .end(`<DeleteResult>${errors.join('')}</DeleteResult>`)
     }
   })
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
@@ -56,7 +60,7 @@ async function bucket(t: TestContext) {
   assert.ok(address !== null && typeof address === 'object')
   const endpoint = `http://127.0.0.1:${address.port}`
   const copy = createGitCopy(testConfig(await unreachableDatabaseUrl()), endpoint)
-  return { copy, objects, deletes }
+  return { copy, objects, deletes, refused }
 }
 
 test('cópia: cada versão é um objeto, repetir a mesma é o mesmo objeto, e a última volta inteira', async (t) => {
@@ -93,4 +97,17 @@ test('cópia: remover o Projeto apaga de mil em mil e deixa os outros Projetos',
   await copy.removeProject({ companyId: COMPANY, projectId: PROJECT })
   assert.deepEqual(deletes, [1_000, 1])
   assert.deepEqual([...objects.keys()], [`git/${COMPANY}/${OTHER}/00000001-${SHA('b')}.bundle`])
+})
+
+test('cópia: o R2 recusa uma chave com 200 e a remoção falha, para tentar de novo', async (t) => {
+  const { copy, objects, refused } = await bucket(t)
+  const kept = `git/${COMPANY}/${PROJECT}/00000001-${SHA('a')}.bundle`
+  objects.set(kept, Buffer.alloc(0))
+  objects.set(`git/${COMPANY}/${PROJECT}/00000002-${SHA('b')}.bundle`, Buffer.alloc(0))
+  refused.add(kept)
+  await assert.rejects(copy.removeProject({ companyId: COMPANY, projectId: PROJECT }))
+  assert.deepEqual([...objects.keys()], [kept])
+  refused.clear()
+  await copy.removeProject({ companyId: COMPANY, projectId: PROJECT })
+  assert.equal(objects.size, 0)
 })

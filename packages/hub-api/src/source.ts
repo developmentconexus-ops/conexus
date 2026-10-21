@@ -14,11 +14,11 @@ const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] 
 
 export const SourceFile = z.object({ path: z.string().min(1), bytes: z.int().nonnegative() })
 
-/** The Projeto's current version: its number (0 before the first), its commit, its files. */
+/** The Projeto's current version: its number (0 before the first), its commit and time (null before the first), its files. */
 export const ProjectSource = z.object({
   version: z.int().nonnegative(),
-  commit: Commit,
-  savedAt: z.iso.datetime(),
+  commit: Commit.nullable(),
+  savedAt: z.iso.datetime().nullable(),
   files: z.array(SourceFile).max(SOURCE_MAX_FILES),
 })
 export type ProjectSource = z.infer<typeof ProjectSource>
@@ -47,5 +47,10 @@ export const readProjectFile = defineOperation({
     query: z.object({ commit: Commit, path: z.string().min(1).max(512) }),
   },
   success: { status: 200, body: z.object({ text: z.string() }) },
-  failures: [...READ_FAILURES, 'SOURCE_FILE_NOT_FOUND', 'SOURCE_FILE_NOT_TEXT'],
+  failures: [
+    ...READ_FAILURES,
+    'SOURCE_FILE_NOT_FOUND',
+    'SOURCE_FILE_NOT_TEXT',
+    'SOURCE_FILE_TOO_LARGE',
+  ],
 })

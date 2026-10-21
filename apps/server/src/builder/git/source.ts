@@ -41,7 +41,9 @@ export function registerSourceRoutes(app: FastifyInstance, deps: Deps): void {
   serve(app, readProjectSource, async ({ person, params }) => {
     await admit(deps, person, params)
     const repository = deps.repository(params)
-    const commit = await repository.ensure()
+    const commit = await repository.head()
+    // A Projeto that never saved a version has no repository, and a read does not make one.
+    if (commit === null) return answer({ version: 0, commit: null, savedAt: null, files: [] })
     const files = (await repository.tree(commit)) ?? []
     return answer({
       version: await repository.version(),
@@ -59,6 +61,7 @@ export function registerSourceRoutes(app: FastifyInstance, deps: Deps): void {
       maxBytes: SOURCE_FILE_MAX_BYTES,
     })
     if (read.kind === 'not-found') throw new Failure('SOURCE_FILE_NOT_FOUND')
+    if (read.kind === 'too-large') throw new Failure('SOURCE_FILE_TOO_LARGE')
     if (read.kind === 'not-text') throw new Failure('SOURCE_FILE_NOT_TEXT')
     return answer({ text: read.text })
   })

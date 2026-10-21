@@ -1,24 +1,35 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
 import type { Context } from './context.ts'
-import { git, inMain, MAIN, MAX_BYTES, readRef, Sha, text } from './context.ts'
+import {
+  git,
+  inMain,
+  MAIN,
+  MAX_BUNDLE_BYTES,
+  MAX_BYTES,
+  present,
+  readRef,
+  Sha,
+  text,
+} from './context.ts'
 import { GitFault, runGit } from './exec.ts'
 import type { FileRead, SaveRefusal, TreeFile } from './tree.ts'
 import { fileOf, inspectTree, treeOf } from './tree.ts'
 
 /** The ref a machine's bundle carries its one commit under. */
 export const CANDIDATE_REF = 'refs/conexus/candidate'
-const EMPTY_TREE = '4b825dc642cb6eb9a060e54bf8d69288fbee4904'
-const NO_OBJECT = '0'.repeat(40)
 const IDENTITY = ['-c', 'user.name=Conexus Builder', '-c', 'user.email=builder@conexus.invalid']
 
 export type Repository = {
   /** Creates the repository with an empty first commit on `main` if it has none; answers `main`. */
   ensure(): Promise<Sha>
   main(): Promise<Sha>
+  /** `main`, or null when the Projeto has no repository yet; it never creates one. */
+  head(): Promise<Sha | null>
   /** A bundle holding `main` only, for a machine to fetch as its seed. */
   bundleOfMain(): Promise<Buffer>
   /** A bundle holding a run's candidate, with its history, for the copy. */
@@ -41,23 +52,36 @@ export type Repository = {
 }
 
 async function ensure(context: Context): Promise<Sha> {
-  await mkdir(join(context.dir, '..'), { recursive: true, mode: 0o700 })
-  await runGit(['init', '--quiet', '--bare', '--template=', context.dir], {
-    timeoutMs: context.timeoutMs,
-    maxOutput: 1024,
-  })
-  await git(context, ['symbolic-ref', 'HEAD', MAIN])
-  const existing = await readRef(context, MAIN)
+  const existing = await head(context)
   if (existing !== null) return existing
-  await git(context, ['hash-object', '-t', 'tree', '-w', '--stdin'])
-  const first = Sha.parse(
-    await text(context, [...IDENTITY, 'commit-tree', EMPTY_TREE, '-m', 'Start the app']),
-  )
-  // Create-only: an ensure that got there first wins, and this one answers its `main`.
-  await git(context, ['update-ref', MAIN, first, NO_OBJECT]).catch(async (error: unknown) => {
-    if ((await readRef(context, MAIN)) === null) throw error
-  })
+  const parent = join(context.dir, '..')
+  await mkdir(parent, { recursive: true, mode: 0o700 })
+  // Built beside the repository and renamed into place: a read never meets it half made, and two
+  // ensures never share a lock. The one that loses the rename answers the winner's `main`.
+  const building = { ...context, dir: join(parent, `.creating-${randomUUID()}`) }
+  try {
+    await runGit(['init', '--quiet', '--bare', '--template=', building.dir], {
+      timeoutMs: context.timeoutMs,
+      maxOutput: 1024,
+    })
+    await git(building, ['symbolic-ref', 'HEAD', MAIN])
+    const tree = await text(building, ['hash-object', '-t', 'tree', '-w', '--stdin'])
+    const first = Sha.parse(
+      await text(building, [...IDENTITY, 'commit-tree', tree, '-m', 'Start the app']),
+    )
+    await git(building, ['update-ref', MAIN, first])
+    await rename(building.dir, context.dir).catch((error: unknown) => {
+      if (!['EEXIST', 'ENOTEMPTY'].includes(String(Reflect.get(Object(error), 'code')))) throw error
+    })
+  } finally {
+    await rm(building.dir, { recursive: true, force: true })
+  }
   return main(context)
+}
+
+/** `main`, or null when the Projeto has no repository or its repository has no `main`. */
+async function head(context: Context): Promise<Sha | null> {
+  return (await present(context)) ? readRef(context, MAIN) : null
 }
 
 async function main(context: Context): Promise<Sha> {
@@ -158,6 +182,12 @@ async function receive(
   return { ok: true, value: Sha.parse(commit) }
 }
 
+async function bundleOf(context: Context, ref: string): Promise<Buffer> {
+  return (
+    await git(context, ['bundle', 'create', '--quiet', '-', ref], { maxOutput: MAX_BUNDLE_BYTES })
+  ).stdout
+}
+
 export function openRepository(input: {
   root: string
   companyId: CompanyId
@@ -175,10 +205,9 @@ export function openRepository(input: {
   return {
     ensure: () => ensure(context),
     main: () => main(context),
-    bundleOfMain: async () =>
-      (await git(context, ['bundle', 'create', '--quiet', '-', MAIN])).stdout,
-    bundleOfRun: async (runId) =>
-      (await git(context, ['bundle', 'create', '--quiet', '-', runRef(runId)])).stdout,
+    head: () => head(context),
+    bundleOfMain: () => bundleOf(context, MAIN),
+    bundleOfRun: (runId) => bundleOf(context, runRef(runId)),
     savedAt: async (sha) =>
       new Date(await text(context, ['log', '-1', '--format=%cI', sha])).toISOString(),
     versionAt: async (sha) => Number(await text(context, ['rev-list', '--count', sha])) - 1,
