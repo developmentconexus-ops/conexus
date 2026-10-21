@@ -1,6 +1,7 @@
 {
   "name": "@conexus/server",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "prestart": "npm run build",
