@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import type { Block } from './test-anthropic-stream.ts'
 import { events } from './test-anthropic-stream.ts'
+import { isModelList } from './test-model-lists.ts'
 import { replayed } from './test-recordings.ts'
 
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
@@ -48,6 +49,7 @@ const ERROR_TYPES = {
   401: 'authentication_error',
   402: 'billing_error',
   403: 'permission_error',
+  404: 'not_found_error',
   429: 'rate_limit_error',
   500: 'api_error',
   529: 'overloaded_error',
@@ -326,7 +328,7 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
       return chatReplied(chat, anthropic.chat(chat), init?.signal)
     }
     if (!url.startsWith(MESSAGES_URL)) {
-      anthropic.elsewhere.push(url)
+      if (!isModelList(url)) anthropic.elsewhere.push(url)
       return await real(input, init)
     }
     const sent = sentOf(init)

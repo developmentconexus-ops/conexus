@@ -14,7 +14,9 @@ const EXPECTED = [
 ]
 
 test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabeçalho, token ou e-mail (T24, S40)', () => {
-  const files = readdirSync(RECORDINGS).sort()
+  const files = readdirSync(RECORDINGS)
+    .filter((file) => !file.endsWith('.list.json') && !file.endsWith('-models.json'))
+    .sort()
   const bodies = files.filter((file) => file.endsWith('.sse')).map((file) => file.slice(0, -4))
   assert.deepEqual(bodies, EXPECTED)
   assert.deepEqual(

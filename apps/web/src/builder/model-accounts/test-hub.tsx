@@ -58,6 +58,15 @@ function membersPages(view: View): HttpHandler {
   })
 }
 
+/** What the Hub offers each picker: the providers a test says are connected, with all their models. */
+function choicesFor(view: View) {
+  const connected = view.connected ?? { mine: [], company: [] }
+  return {
+    mine: PROVIDERS.filter((one) => connected.mine.includes(one.id)),
+    company: PROVIDERS.filter((one) => connected.company.includes(one.id)),
+  }
+}
+
 function reads(view: View): HttpHandler[] {
   return [
     sessionRead(() => ANA),
@@ -67,9 +76,9 @@ function reads(view: View): HttpHandler[] {
       HttpResponse.json(
         listModelAccounts.success.body.parse({
           defaults: { company: null, mine: null, start: null, companyStart: null },
-          connected: { mine: [], company: [] },
           fallback: { enabled: false, chain: [], revision: 0 },
           usableProviders: [],
+          choices: choicesFor(view),
           ...view,
         }),
       ),

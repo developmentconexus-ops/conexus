@@ -8,6 +8,7 @@ import { accountsOf, usableForAll, usableInOrder } from './accounts.ts'
 import { isChoosable, STARTER_MODELS } from './providers.ts'
 import type { QueueDeps } from './queue.ts'
 import { admitted, hasAccount, providerOf } from './queue.ts'
+import { servesModel } from './served.ts'
 import { companyModel, personModelDefault } from './tables.ts'
 import { effortFor } from './thinking.ts'
 import type { Turn } from './turn.ts'
@@ -49,7 +50,8 @@ function firstStep(
   for (const step of steps) {
     if (!isChoosable(step.model)) continue
     const provider = providerOf(step.model)
-    const [first] = usableOf(rows.filter((row) => row.provider === provider))
+    const serving = rows.filter((row) => row.provider === provider && servesModel(row, step.model))
+    const [first] = usableOf(serving)
     if (first !== undefined)
       return { ...step, effort: effortFor(step.model, step.effort), account: first.label }
   }

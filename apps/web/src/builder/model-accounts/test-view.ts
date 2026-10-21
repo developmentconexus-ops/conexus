@@ -2,6 +2,7 @@ import type { ModelFallback as Fallback, ProviderOrder, SignInKind } from '@cone
 import { ATTEMPT_KEY_HEADER, ModelAccount } from '@conexus/hub-api'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 
+type Offered = { id: string; name: string; models: { id: string; efforts: string[] }[] }
 type Chosen = { model: string; effort: string }
 type Started = Chosen & { from: 'mine' | 'company' | 'starter'; account: string }
 
@@ -17,7 +18,10 @@ export type View = {
     start: Started | null
     companyStart: Started | null
   }
+  /** The providers a test says are connected, offered with all their models. */
   connected?: { mine: string[]; company: string[] }
+  /** What the Hub offers each picker, when a test needs a provider with fewer models. */
+  choices?: { mine: Offered[]; company: Offered[] }
   fallback?: Fallback
   mayManage: boolean
   /** The viewer's role in the company; an owner when they manage, a member when not. */

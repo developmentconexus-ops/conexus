@@ -72,6 +72,10 @@ export const modelAccount = builder.table(
     limitedUntil: instant('limited_until'),
     // The lease of a subscription's token refresh: one refresh at a time (security S34, data D25).
     refreshUntil: instant('refresh_until'),
+    // The model ids the provider answered for this credential, as it sent them; null while unread
+    // (a kind with no reader, a failed read, a row from before): then the registry's list stands.
+    servedModels: text('served_models').array(),
+    servedAt: instant('served_at'),
   },
   (table) => [
     companyKey('model_account_company_id_fkey', table),

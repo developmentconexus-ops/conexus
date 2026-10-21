@@ -34,6 +34,8 @@ import {
   testAppsConfig,
 } from './test-cloudflare.ts'
 import { mastraUrlOf } from './test-mastra-database.ts'
+import type { ModelLists } from './test-model-lists.ts'
+import { plantModelLists } from './test-model-lists.ts'
 import { NO_NEON_SERVER, TEST_NEON_ORG, testNeon } from './test-neon.ts'
 import type { PasswordService } from './test-password-service.ts'
 import { plantPasswordService } from './test-password-service.ts'
@@ -124,6 +126,7 @@ export type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
 export type TestDatabase = {
   passwords: PasswordService
+  lists: ModelLists
   database: Database
   ownerUrl: DatabaseUrl
   runtimeUrl: DatabaseUrl
@@ -201,6 +204,7 @@ export async function createTestDatabase(t: Lifetime, locale?: 'C'): Promise<Tes
   await withRoleLock(() => migrate({ ownerUrl, runtimeUrl, mastraUrl }))
   return {
     passwords: plantPasswordService(t),
+    lists: plantModelLists(t),
     database,
     ownerUrl,
     runtimeUrl,

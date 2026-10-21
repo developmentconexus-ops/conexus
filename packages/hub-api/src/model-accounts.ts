@@ -100,10 +100,11 @@ export const ModelFallback = z.object({
 export type ModelFallback = z.infer<typeof ModelFallback>
 
 /**
- * The providers with a connected account in any state (P5): for the viewer, their own and the
- * company's they may use; for the company, its own. A paused account still counts as connected.
+ * What each picker offers (P5), the one list the Hub decides: the providers with a connected
+ * account in any state, with only the models those accounts serve. For the viewer, their own
+ * accounts and the company's they may use; for the company, its own. A paused account still counts.
  */
-const Connected = z.object({ mine: z.array(ProviderId), company: z.array(ProviderId) })
+const Choices = z.object({ mine: z.array(Provider), company: z.array(Provider) })
 
 const Accounts = z.object({
   company: z.array(ModelAccount),
@@ -111,7 +112,7 @@ const Accounts = z.object({
   order: z.array(ProviderOrder),
   kinds: z.array(SignInKind),
   defaults: Defaults,
-  connected: Connected,
+  choices: Choices,
   fallback: ModelFallback,
   /**
    * The providers the viewer may converse with now, by id: those with an account the Builder's

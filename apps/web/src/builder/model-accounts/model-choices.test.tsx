@@ -62,3 +62,11 @@ test('sem fornecedor conectado a escolha diz "Conecte uma conta de modelo"', asy
   expect(await screen.findByText('Conecte uma conta de modelo')).toBeTruthy()
   expect(screen.queryAllByRole('option')).toEqual([])
 })
+
+test('os pickers listam só os modelos que o Hub diz que a conta atende', async () => {
+  const sonnet = { id: 'anthropic/claude-sonnet-4', efforts: ['off', 'low', 'high'] }
+  const only = [{ id: 'anthropic', name: 'Anthropic', models: [sonnet] }]
+  const shown = view({ choices: { mine: only, company: only } })
+  await openPicker('settings/defaults', shown, 'Padrões da empresa', 'Modelo e raciocínio')
+  expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Claude Sonnet 4'])
+})

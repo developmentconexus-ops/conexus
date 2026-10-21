@@ -26,8 +26,11 @@ export async function connect(
   accounts: string,
   provider: string,
   owner = 'company',
+  served?: string[],
 ) {
-  const body = { owner, provider, label: provider, key: `sk-${provider}-${randomUUID()}` }
+  const key = `sk-${provider}-${randomUUID()}`
+  if (served !== undefined) hub.test.lists.served.set(key, served)
+  const body = { owner, provider, label: provider, key }
   const linked = await post(hub, person, accounts, body)
   assert.equal(linked.statusCode, 201, linked.body)
   return String(Object(linked.json()).account.id)

@@ -125,7 +125,7 @@ function modelAccountsPage(id: string, mayManage: boolean): Replies {
       order: [],
       kinds: [],
       defaults: { company: null, mine: null, start: null, companyStart: null },
-      connected: { mine: [], company: [] },
+      choices: { mine: [], company: [] },
       fallback: { enabled: false, chain: [], revision: 0 },
       usableProviders: [],
       mayManage,

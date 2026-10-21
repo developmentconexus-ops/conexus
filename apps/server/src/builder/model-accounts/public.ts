@@ -22,6 +22,7 @@ export {
 } from './processors.ts'
 export type { QueueDeps } from './queue.ts'
 export { callModel, conversationModel, providerOf } from './queue.ts'
+export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'
 export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
 export { chosenModel, NOTICE_PART, Notice, Turn, turnContext } from './turn.ts'
 
@@ -36,6 +37,7 @@ export function createModelAccounts(deps: {
   identity: IdentityPorts
   sealKeys: SealKeys
   flows: SignInFlows
+  log: FailureLog
 }) {
   const store = createModelAccountStore(deps)
   return Object.freeze({

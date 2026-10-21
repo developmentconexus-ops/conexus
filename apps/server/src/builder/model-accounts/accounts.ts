@@ -14,13 +14,19 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../platform/seal.ts'
 import { open, seal } from '../../platform/seal.ts'
 import { openKindsOf } from './kinds.ts'
 import { modelAccount, modelAccountAssignee } from './tables.ts'
 
-export type Deps = { database: Database; identity: IdentityPorts; sealKeys: SealKeys }
+export type Deps = {
+  database: Database
+  identity: IdentityPorts
+  sealKeys: SealKeys
+  log: FailureLog
+}
 export type Viewer = { person: Person; companyId: CompanyId }
 
 export const HINT_LENGTH = 4
@@ -39,6 +45,7 @@ export const AccountRow = z.object({
   linkedAt: z.date(),
   revision: z.number().int().nonnegative(),
   attemptKey: z.string(),
+  served: z.array(z.string()).nullable(),
 })
 export type AccountRow = z.infer<typeof AccountRow>
 
@@ -60,6 +67,7 @@ export const columns = {
   linkedAt: modelAccount.linkedAt,
   revision: modelAccount.revision,
   attemptKey: modelAccount.attemptKey,
+  served: modelAccount.servedModels,
 }
 
 export function scopeOf(viewer: Viewer): Scope {
@@ -147,22 +155,6 @@ export function usableForAll(rows: AccountRow[], context: Context): AccountRow[]
     .sort((left, right) => left.position - right.position)
 }
 
-/**
- * The providers with an account in any state, paused or limited too (P5): for `me`, the person's
- * own and the company's given to them or to all; for `company`, the company's own.
- */
-export function connectedProviders(
-  rows: AccountRow[],
-  context: Context,
-  owner: Owner,
-  personId: PersonId,
-): ProviderId[] {
-  const own = rows.filter((row) =>
-    owner === 'company' ? row.personId === null : partOf(row, context, personId) !== undefined,
-  )
-  return [...new Set(own.map((row) => row.provider))].sort()
-}
-
 /** Every account the transaction's scope may read, with the company's context; the caller admitted the person. */
 export async function accountsOf(tx: ReadTx, companyId: CompanyId) {
   const rows = await tx
@@ -172,14 +164,8 @@ export async function accountsOf(tx: ReadTx, companyId: CompanyId) {
   return { rows: rows.map((row) => AccountRow.parse(row)), context: await contextOf(tx, companyId) }
 }
 
-/** The same, read in the transaction. */
-export async function connectedIn(tx: ReadTx, viewer: Viewer, owner: Owner): Promise<ProviderId[]> {
-  const { rows, context } = await accountsOf(tx, viewer.companyId)
-  return connectedProviders(rows, context, owner, viewer.person.id)
-}
-
 export function viewOf(row: AccountRow, context: Context): ModelAccount {
-  const { attemptKey: _attemptKey, personId: _personId, ...shown } = row
+  const { attemptKey: _attemptKey, personId: _personId, served: _served, ...shown } = row
   return {
     ...shown,
     owner: ownerOf(row),

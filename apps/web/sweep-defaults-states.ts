@@ -1,4 +1,6 @@
+import type { Provider } from '@conexus/hub-api'
 import { listModelAccounts, listModelProviders, ModelAccount } from '@conexus/hub-api'
+import type { z } from 'zod'
 import { ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
@@ -25,6 +27,15 @@ const CLAUDE_DA_EMPRESA = ModelAccount.parse({
   revision: 1,
 })
 
+const PROVIDERS: z.input<typeof Provider>[] = [
+  {
+    id: 'anthropic',
+    name: 'Anthropic',
+    models: [{ id: SONNET, efforts: ['off', 'low', 'high'] }],
+  },
+  { id: 'openai', name: 'OpenAI', models: [{ id: GPT, efforts: ['low', 'medium', 'high'] }] },
+]
+
 /** The company's accounts with the defaults the 12.3 script sets: GPT 5 for the company. */
 function withDefaults(base: typeof OWNER, mayManage: boolean, mine: boolean) {
   const company = { model: GPT, effort: 'medium' } as const
@@ -44,21 +55,12 @@ function withDefaults(base: typeof OWNER, mayManage: boolean, mine: boolean) {
           : { ...company, from: 'company', account: CLAUDE_DA_EMPRESA.label },
         companyStart: { ...company, from: 'company', account: CLAUDE_DA_EMPRESA.label },
       },
-      connected: { mine: ['anthropic', 'openai'], company: ['anthropic', 'openai'] },
+      choices: { mine: PROVIDERS, company: PROVIDERS },
       fallback: { enabled: false, chain: [], revision: 0 },
       usableProviders: ['anthropic', 'openai'],
       mayManage,
     }),
-    'GET /api/model-providers': ok(listModelProviders, {
-      providers: [
-        {
-          id: 'anthropic',
-          name: 'Anthropic',
-          models: [{ id: SONNET, efforts: ['off', 'low', 'high'] }],
-        },
-        { id: 'openai', name: 'OpenAI', models: [{ id: GPT, efforts: ['low', 'medium', 'high'] }] },
-      ],
-    }),
+    'GET /api/model-providers': ok(listModelProviders, { providers: PROVIDERS }),
   }
 }
 

@@ -49,7 +49,7 @@ export function CompanyAccounts() {
       {mayManage ? (
         <ModelFallbackSection
           companyId={companyId}
-          providers={providers.filter((one) => accounts.connected.company.includes(one.id))}
+          providers={accounts.choices.company}
           fallback={accounts.fallback}
         />
       ) : (

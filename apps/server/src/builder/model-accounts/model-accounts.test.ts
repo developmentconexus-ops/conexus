@@ -42,17 +42,8 @@ function patch(hub: Hub, person: Person, url: string, body: object) {
   })
 }
 
-test('ligar por chave: lacra e grava no fim da fila do fornecedor, sem chamada, e a chave nunca volta', async (t) => {
+test('ligar por chave: lacra e grava no fim da fila do fornecedor, só lê a lista de modelos do fornecedor, e a chave nunca volta', async (t) => {
   const { hub, ana, accounts } = await company(t)
-  const calls: unknown[] = []
-  const original = globalThis.fetch
-  globalThis.fetch = async (...args) => {
-    calls.push(args[0])
-    return original(...args)
-  }
-  t.after(() => {
-    globalThis.fetch = original
-  })
   const first = await link(hub, ana, accounts, {})
   assert.equal(first.statusCode, 201)
   const { account } = Object(first.json())
@@ -76,7 +67,9 @@ test('ligar por chave: lacra e grava no fim da fila do fornecedor, sem chamada, 
   assert.equal(Object(second.json()).account.position, 1)
   const other = await link(hub, ana, accounts, { provider: 'openai', label: 'OpenAI' })
   assert.equal(Object(other.json()).account.position, 0)
-  assert.deepEqual(calls, [])
+  // Linking calls the provider only to read the models its list names for the key.
+  const reads = hub.test.lists.reads.map((read) => read.provider)
+  assert.deepEqual(reads, ['anthropic', 'anthropic', 'openai'])
   const rows = await hub.test.asOwner(`select sealed, key_id from builder.model_account`)
   for (const row of rows) {
     assert.equal(Buffer.from(Object(row).sealed).includes(KEY), false)

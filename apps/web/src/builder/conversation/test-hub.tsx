@@ -104,6 +104,7 @@ function accountsRead(view: View): HttpHandler[] {
   return [
     http.get(`*/api/companies/${COMPANY.id}/model-accounts`, () => {
       const mine = view.providers.map(accountOf)
+      const offered = PROVIDERS.filter((one) => view.providers.includes(one.id))
       return HttpResponse.json(
         listModelAccounts.success.body.parse({
           company: [],
@@ -111,7 +112,7 @@ function accountsRead(view: View): HttpHandler[] {
           order: mine.map((one) => ({ provider: one.provider, accounts: [one.id] })),
           kinds: [],
           defaults: { company: COMPANY_DEFAULT, mine: null, start: null, companyStart: null },
-          connected: { mine: view.providers, company: [] },
+          choices: { mine: offered, company: [] },
           fallback: { enabled: false, chain: [], revision: 0 },
           usableProviders: view.usable ?? view.providers,
           mayManage: false,

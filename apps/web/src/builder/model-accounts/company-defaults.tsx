@@ -51,8 +51,7 @@ export function CompanyDefaults() {
   const { companyId } = route.useParams()
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
   const { providers } = useSuspenseQuery(providersQuery).data
-  const { defaults, connected, mayManage } = accounts
-  const shown = providers.filter((one) => connected.company.includes(one.id))
+  const { defaults, choices, mayManage } = accounts
   return (
     <div className="flex flex-col gap-lg">
       <p className="text-label text-text-2">Toda a empresa</p>
@@ -66,7 +65,7 @@ export function CompanyDefaults() {
         companyId={companyId}
         scope="company"
         defaults={defaults}
-        providers={shown}
+        providers={choices.company}
         mayChange={mayManage}
       />
     </div>

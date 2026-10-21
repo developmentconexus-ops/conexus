@@ -30,6 +30,22 @@ const identityMiddleware: LanguageModelMiddleware = {
   }),
 }
 
+/**
+ * The headers of a call as the subscription's endpoint takes it: the access token as a bearer,
+ * never as an API key, and the betas it requires beside those `headers` already ask for.
+ */
+export function subscriptionHeaders(headers: Headers, accessToken: string): Headers {
+  const sent = new Headers(headers)
+  sent.delete('authorization')
+  sent.delete('x-api-key')
+  sent.set('Authorization', `Bearer ${accessToken}`)
+  const requested = (sent.get('anthropic-beta') ?? '').split(',').map((beta) => beta.trim())
+  const betas = new Set([...OAUTH_REQUIRED_BETAS, ...requested.filter(Boolean)])
+  sent.set('anthropic-beta', [...betas].join(','))
+  sent.set('anthropic-version', '2023-06-01')
+  return sent
+}
+
 /** The subscription's model for one call: the access token as a bearer, never as an API key. */
 export function subscriptionModel(modelName: string, accessToken: string) {
   const provider = createAnthropic({
@@ -37,14 +53,7 @@ export function subscriptionModel(modelName: string, accessToken: string) {
     fetch: async (url, init) => {
       const headers = new Headers(url instanceof Request ? url.headers : undefined)
       for (const [key, value] of new Headers(init?.headers)) headers.set(key, value)
-      headers.delete('authorization')
-      headers.delete('x-api-key')
-      headers.set('Authorization', `Bearer ${accessToken}`)
-      const requested = (headers.get('anthropic-beta') ?? '').split(',').map((beta) => beta.trim())
-      const betas = new Set([...OAUTH_REQUIRED_BETAS, ...requested.filter(Boolean)])
-      headers.set('anthropic-beta', [...betas].join(','))
-      headers.set('anthropic-version', '2023-06-01')
-      return fetch(url, { ...init, headers })
+      return fetch(url, { ...init, headers: subscriptionHeaders(headers, accessToken) })
     },
   })
   return wrapLanguageModel({ model: provider(modelName), middleware: identityMiddleware })

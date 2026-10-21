@@ -10,7 +10,6 @@ import {
   accountView,
   admitFor,
   columns,
-  connectedProviders,
   contextOf,
   credentialOf,
   HINT_LENGTH,
@@ -33,8 +32,10 @@ import {
   setFallback,
   setMine,
 } from './changes.ts'
+import { choicesOf } from './choices.ts'
 import { savedDefaults, startsOf } from './defaults.ts'
 import { keyProviderOf } from './providers.ts'
+import { keepServed } from './served.ts'
 import { companyModelFallback, modelAccount } from './tables.ts'
 
 /**
@@ -100,9 +101,9 @@ function list(deps: Deps, viewer: Viewer) {
       usableProviders: usableProviders(viewer, rows, context),
       kinds: [...context.open].sort(),
       defaults: { company, mine, ...(await startsOf(tx, who)) },
-      connected: {
-        mine: connectedProviders(rows, context, 'me', viewer.person.id),
-        company: connectedProviders(rows, context, 'company', viewer.person.id),
+      choices: {
+        mine: choicesOf(rows, context, 'me', viewer.person.id),
+        company: choicesOf(rows, context, 'company', viewer.person.id),
       },
       fallback: ModelFallback.parse(switched ?? { enabled: false, chain: [], revision: 0 }),
       mayManage: deps.identity.allows(admitted.role, 'manageModelAccounts'),
@@ -131,6 +132,17 @@ function parsedConnection(input: Connection) {
  * the same key with another body is another request (code C37), compared with the sealed key.
  */
 async function connect(deps: Deps, input: Connection) {
+  const made = await linked(deps, input)
+  // The list is read once the account is committed, never inside its transaction (data D22).
+  if (made.created) {
+    const { id, kind, provider } = made.account
+    const account = { id, kind, provider, companyId: input.companyId }
+    await keepServed(deps, scopeOf(input), account, input.key.trim())
+  }
+  return made
+}
+
+async function linked(deps: Deps, input: Connection) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await transactionLock(tx, `conexus.model-account:${input.companyId}:${input.attemptKey}`)
     await admitFor(deps, tx, input, input.owner)

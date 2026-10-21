@@ -7,6 +7,9 @@
 // provider, API, SDK version and date beside it. The credential comes from the environment only
 // and never reaches a file or the output (security S40): CONEXUS_RECORD_CLAUDE_TOKEN for Claude,
 // CONEXUS_RECORD_CLIPROXY_URL and CONEXUS_RECORD_CLIPROXY_KEY for Gemini. Every prompt is invented.
+// `--provider anthropic|openai|google --case models` saves the first page of the model list the
+// provider gives the credential (CONEXUS_RECORD_CLAUDE_TOKEN, CONEXUS_RECORD_OPENAI_KEY or
+// CONEXUS_RECORD_GOOGLE_KEY): one GET, authorized by the founder's "A" of 2026-10-21 (step 12.3).
 // Gemini records only `abort`: its thinking waits for #172, its search for #150. Authorized once,
 // by the founder's "2A" of 2026-10-20.
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -16,6 +19,7 @@ import { ModelId, ProviderId } from '@conexus/hub-api'
 import { z } from 'zod'
 import {
   callModel,
+  listRequest,
   providerOptionsOf,
   subscriptionModel,
 } from '../apps/server/src/builder/model-accounts/public.ts'
@@ -44,6 +48,19 @@ const Args = z.discriminatedUnion('provider', [
   z.object({ provider: z.literal('google'), case: z.literal('abort') }),
 ])
 type Args = z.infer<typeof Args>
+type ModelsArgs = z.infer<typeof ModelsArgs>
+
+// The model lists (card 12.3, review 1b): `--case models` saves the first page of what the provider
+// lists for the credential, to check the schemas the Hub reads it with against the real answer.
+const ModelsArgs = z.object({
+  provider: z.enum(['anthropic', 'openai', 'google']),
+  case: z.literal('models'),
+})
+const ListKeys = z.object({
+  anthropic: z.object({ CONEXUS_RECORD_CLAUDE_TOKEN: z.string().min(1) }),
+  openai: z.object({ CONEXUS_RECORD_OPENAI_KEY: z.string().min(1) }),
+  google: z.object({ CONEXUS_RECORD_GOOGLE_KEY: z.string().min(1) }),
+})
 
 const Claude = z.object({ CONEXUS_RECORD_CLAUDE_TOKEN: z.string().min(1) })
 const Gemini = z.object({
@@ -219,7 +236,47 @@ async function record(args: Args) {
   console.log(`Saved ${name}.sse (${body.length} bytes) and ${name}.json.`)
 }
 
+/** The credential the case reads from the environment, and the kind that carries it. */
+function listCredential(provider: ModelsArgs['provider']) {
+  if (provider === 'anthropic') {
+    const secret = ListKeys.shape.anthropic.parse(process.env).CONEXUS_RECORD_CLAUDE_TOKEN
+    return { secret, target: { kind: 'claude_subscription' as const, provider } }
+  }
+  const secret =
+    provider === 'openai'
+      ? ListKeys.shape.openai.parse(process.env).CONEXUS_RECORD_OPENAI_KEY
+      : ListKeys.shape.google.parse(process.env).CONEXUS_RECORD_GOOGLE_KEY
+  return { secret, target: { kind: 'api_key' as const, provider } }
+}
+
+/** One GET of the provider's list, saved as the provider sent it, and nothing else of the exchange. */
+async function recordModels(args: ModelsArgs) {
+  const { secret, target } = listCredential(args.provider)
+  const request = listRequest(target, secret)
+  if (request === undefined) throw new Error('This provider has no list reader.')
+  const response = await fetch(request.url, {
+    headers: request.headers,
+    signal: AbortSignal.timeout(CALL_MS),
+  })
+  if (!response.ok) throw new Error(`The provider refused the list with ${response.status}.`)
+  const text = await response.text()
+  if (text.includes(secret) || LEAK.test(text)) {
+    throw new Error('The list carries a credential, an address or a bearer; nothing is saved.')
+  }
+  const name = `${args.provider}-models`
+  const meta: Recording = {
+    provider: ProviderId.parse(args.provider),
+    api: `${args.provider} model list, first page`,
+    sdk: 'none: the Hub reads it with fetch',
+    recordedAt: new Date().toISOString().slice(0, 10),
+  }
+  writeFileSync(join(RECORDINGS, `${name}.list.json`), `${text.trim()}\n`)
+  writeFileSync(join(RECORDINGS, `${name}.json`), `${JSON.stringify(meta, null, 2)}\n`)
+  console.log(`Saved ${name}.list.json (${text.length} bytes) and ${name}.json.`)
+}
+
 const { values } = parseArgs({
   options: { provider: { type: 'string' }, case: { type: 'string' } },
 })
-await record(Args.parse(values))
+if (values.case === 'models') await recordModels(ModelsArgs.parse(values))
+else await record(Args.parse(values))

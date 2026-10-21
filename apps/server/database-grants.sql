@@ -198,6 +198,8 @@ GRANT SELECT(revision),UPDATE(revision) ON TABLE builder.model_account TO hub_co
 GRANT SELECT(attempt_key) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(limited_until),UPDATE(limited_until) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT(refresh_until),UPDATE(refresh_until) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(served_models),UPDATE(served_models) ON TABLE builder.model_account TO hub_company;
+GRANT SELECT(served_at),UPDATE(served_at) ON TABLE builder.model_account TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;

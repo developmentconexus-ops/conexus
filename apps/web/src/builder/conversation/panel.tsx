@@ -111,7 +111,6 @@ function Screen(params: Params) {
   ).data
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
   const usable = useMemo(() => new Set(accounts.usableProviders), [accounts.usableProviders])
-  const connected = useMemo(() => new Set(accounts.connected.mine), [accounts.connected.mine])
   const canAnswer = usable.size > 0
   const [gone, setGone] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
@@ -162,7 +161,7 @@ function Screen(params: Params) {
               <ModelChoice
                 ids={params}
                 conversation={conversation}
-                connected={connected}
+                providers={accounts.choices.mine}
                 onError={setError}
               />
             )

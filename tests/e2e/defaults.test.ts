@@ -68,12 +68,16 @@ async function ownDefault(ana: Page, owner: Page, companyId: string, base: strin
   await ana.getByRole('combobox', { name: 'Modelo e raciocínio' }).click()
   const slider = ana.getByRole('slider', { name: 'Raciocínio' })
   await slider.waitFor()
-  await slider.press('End')
+  await slider.press('Home')
+  for (let step = 0; step < 6 && (await slider.getAttribute('aria-valuetext')) !== 'Alto'; step++) {
+    await slider.press('ArrowRight')
+  }
+  assert.equal(await slider.getAttribute('aria-valuetext'), 'Alto')
   await ana.keyboard.press('Escape')
   await ana.getByRole('button', { name: 'Salvar padrão' }).click()
   await ana.getByText(/^Uma conversa nova começa em: .*sonnet.* — seu padrão$/i).waitFor()
   await ana.getByText('Conta usada primeiro (Anthropic): Claude da empresa').waitFor()
-  await newConversationChoice(ana, companyId, /sonnet.*·\s*Muito alto/i)
+  await newConversationChoice(ana, companyId, /sonnet.*·\s*Alto/i)
 
   const accounts = `${TEST_ORIGIN}/companies/${companyId}/settings/model-accounts`
   await owner.goto(accounts)

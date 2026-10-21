@@ -16,7 +16,6 @@ import {
   accountView,
   admitFor,
   columns,
-  connectedIn,
   contextOf,
   heldFor,
   labelOf,
@@ -27,8 +26,8 @@ import {
   scopeOf,
   viewOf,
 } from './accounts.ts'
+import { choicesIn } from './choices.ts'
 import { isChoosable } from './providers.ts'
-import { providerOf } from './queue.ts'
 import {
   companyModel,
   companyModelFallback,
@@ -112,8 +111,8 @@ async function assertDefaultAllowed(
 ) {
   if (!isChoosable(chosen.model)) throw new Failure('MODEL_UNKNOWN')
   if (!effortsOf(chosen.model).includes(chosen.effort)) throw new Failure('EFFORT_UNSUPPORTED')
-  const connected = await connectedIn(tx, viewer, owner)
-  if (!connected.some((one) => one === providerOf(chosen.model)))
+  const choices = await choicesIn(tx, viewer, owner)
+  if (!choices.some((one) => one.models.some((model) => model.id === chosen.model)))
     throw new Failure('MODEL_NO_ACCOUNT')
 }
 
