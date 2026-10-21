@@ -16,7 +16,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Phase as MachinePhase } from '../machine/public.ts'
 import type { Turn } from '../model-accounts/public.ts'
-import type { Outcome, SavedVersion } from '../runs/public.ts'
+import type { Outcome } from '../runs/public.ts'
 import type { Question } from './kept.ts'
 import { keepFailure, keepPart, keptInList, queued, THINKING_KEY, ThoughtTime } from './kept.ts'
 import type { Place } from './parts.ts'
@@ -31,6 +31,9 @@ export { keepQuestion, questionId } from './kept.ts'
 export type { Listener, Said } from './turn-log.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
+/** The version a saved turn reached, with its file counts. */
+type SavedVersion = Extract<Outcome, { kind: 'saved' }>['version']
+
 /** A run Mastra woke for one of this conversation's messages, until its end. */
 type Run = { turn: Turn; ended: () => void }
 
@@ -85,6 +88,7 @@ function newTurn(id: RunId | undefined, traceId?: string): TurnLog {
     answer,
     after: undefined,
     buffer: '',
+    flusher: undefined,
     queue: Promise.resolve(),
     thinking: undefined,
     shells: new Map(),

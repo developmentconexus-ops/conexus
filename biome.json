@@ -172,6 +172,7 @@
         "!apps/server/src/builder/model-accounts/google/calls.ts",
         "!apps/server/src/builder/model-accounts/google/google.ts",
         "!apps/server/src/builder/model-accounts/claude/store.ts",
+        "!apps/server/src/builder/conversation/turn-log.ts",
         "!**/*.test.ts",
         "!**/test-*.ts"
       ],
@@ -185,8 +186,8 @@
                   "vitest": "Only screen files use Vitest (decision 0034).",
                   "msw": "Only screen files use MSW (decision 0034).",
                   "@testing-library/react": "Only screen files use Testing Library (decision 0034).",
-                  "node:timers": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/.",
-                  "node:timers/promises": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/."
+                  "node:timers": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/, and the short text in conversation/turn-log.ts.",
+                  "node:timers/promises": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/, and the short text in conversation/turn-log.ts."
                 }
               }
             },

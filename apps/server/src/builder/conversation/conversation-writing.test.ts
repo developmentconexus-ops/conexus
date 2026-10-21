@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
 import { applyEvent } from '@conexus/hub-api'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, messagesOf, title } from './test-conversation.ts'
+import { asked, conversing, messagesOf, sent, streamOf, title } from './test-conversation.ts'
 
 const SECRET = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789'
 const WRITE = { name: 'mastra_workspace_write_file', input: { path: 'a.ts', content: 'x\n' } }
@@ -95,6 +95,29 @@ test('o que dura do turno fica depois do fim e ao reabrir: as linhas do comando 
     ['shell', 'version'],
   )
   assert.deepEqual(lasting(read?.parts ?? []), lasting(partsOf(events)))
+})
+
+test('a máquina refeita fica dita depois do fim e ao reabrir', async (t) => {
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (call) => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step % 2 === 0) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: [{ type: 'tool_use', ...WRITE }] }
+  })
+  const { url } = await asked(t, { hub, person: ana, conversations })
+  hub.builder.control.exists = false
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'De novo')).statusCode, 202)
+  const again = await stream.turn()
+  const replaced = { type: 'machine', phase: 'replaced' }
+  assert.ok(partsOf(again).some((part) => JSON.stringify(part) === JSON.stringify(replaced)))
+  const read = (await messagesOf(hub, ana, url)).at(-1)
+  assert.deepEqual(
+    read?.parts.filter((part) => part.type === 'machine'),
+    [replaced],
+  )
 })
 
 test('a saída de um comando chega enquanto ele roda, sem código de saída, antes do fim', async (t) => {

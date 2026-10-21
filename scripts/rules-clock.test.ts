@@ -29,12 +29,13 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos três 
   )
 })
 
-test('P0: o Biome recusa o relógio importado de node:timers em builder/, aceita nos donos e nos testes', () => {
+test('P0: o Biome recusa o relógio importado de node:timers em builder/, aceita nos donos, no texto curto de turn-log.ts e nos testes', () => {
   const clock =
     "import { setTimeout } from 'node:timers/promises'\nimport { setInterval } from 'node:timers'\nexport async function wait() {\n  await setTimeout(1)\n  return setInterval\n}\n"
   const runs = 'apps/server/src/builder/runs'
   const run = biomeLint({
     'apps/server/src/builder/conversation/wait.ts': clock,
+    'apps/server/src/builder/conversation/turn-log.ts': clock,
     [`${runs}/lease.ts`]: clock,
     [`${runs}/runs.test.ts`]: clock,
     'apps/server/src/hub/a/timer.ts': clock,
