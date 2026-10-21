@@ -161,7 +161,7 @@ function Screen(params: Params) {
               <ModelChoice
                 ids={params}
                 conversation={conversation}
-                usable={usable}
+                providers={accounts.choices.mine}
                 onError={setError}
               />
             )

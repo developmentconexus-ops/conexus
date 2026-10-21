@@ -12,7 +12,7 @@ const OWNER = {
 type Picked = NonNullable<Awaited<ReturnType<Parameters<Turn['account']>[0]>>>
 
 async function picked(): Promise<Picked> {
-  const id = 'anthropic/claude-sonnet-4-5'
+  const id = 'anthropic/claude-sonnet-4-6'
   const model = await resolveModelConfig({ id, apiKey: 'sk-ant-planted' })
   if (model.specificationVersion === 'v1') throw new Error('the planted model is not v1')
   return {

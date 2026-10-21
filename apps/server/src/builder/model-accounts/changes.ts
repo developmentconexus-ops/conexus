@@ -1,12 +1,13 @@
 import type {
   ModelAccountId,
+  ModelDefault,
   ModelFallback,
-  ModelId,
   Owner,
   PersonId,
   ProviderId,
 } from '@conexus/hub-api'
 import { and, asc, eq, inArray } from 'drizzle-orm'
+import type { ReadTx } from '../../platform/database.ts'
 import { violatedReference } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Deps, Viewer } from './accounts.ts'
@@ -25,8 +26,16 @@ import {
   scopeOf,
   viewOf,
 } from './accounts.ts'
-import { isRegistryModel } from './providers.ts'
-import { companyModel, companyModelFallback, modelAccount, modelAccountAssignee } from './tables.ts'
+import { choicesIn } from './choices.ts'
+import { isChoosable } from './providers.ts'
+import {
+  companyModel,
+  companyModelFallback,
+  modelAccount,
+  modelAccountAssignee,
+  personModelDefault,
+} from './tables.ts'
+import { effortsOf } from './thinking.ts'
 
 const ASSIGNEE_MEMBER_KEY = 'model_account_assignee_member_fkey'
 
@@ -90,16 +99,66 @@ export function assign(
   })
 }
 
-/** Sets the company's default model, any of the registry (founder, C4). */
-export function setDefault(deps: Deps, input: Viewer & { model: ModelId }) {
+/**
+ * Throws a default's refusal, in the order a form fixes them: a model the picker does not offer, a level the model
+ * does not take, a provider with no account connected in this scope (P5).
+ */
+async function assertDefaultAllowed(
+  tx: ReadTx,
+  viewer: Viewer,
+  owner: Owner,
+  chosen: ModelDefault,
+) {
+  if (!isChoosable(chosen.model)) throw new Failure('MODEL_UNKNOWN')
+  if (!effortsOf(chosen.model).includes(chosen.effort)) throw new Failure('EFFORT_UNSUPPORTED')
+  const choices = await choicesIn(tx, viewer, owner)
+  if (!choices.some((one) => one.models.some((model) => model.id === chosen.model)))
+    throw new Failure('MODEL_NO_ACCOUNT')
+}
+
+/** Sets the company's default model and level: the final state, the last write wins. */
+export function setDefault(deps: Deps, input: Viewer & ModelDefault) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'company')
-    if (!isRegistryModel(input.model)) throw new Failure('MODEL_UNKNOWN')
+    const { model, effort } = input
+    await assertDefaultAllowed(tx, input, 'company', { model, effort })
     await tx
       .insert(companyModel)
-      .values({ companyId: input.companyId, model: input.model })
-      .onConflictDoUpdate({ target: companyModel.companyId, set: { model: input.model } })
-    return { defaultModel: input.model }
+      .values({ companyId: input.companyId, model, effort })
+      .onConflictDoUpdate({ target: companyModel.companyId, set: { model, effort } })
+    return { defaultModel: { model, effort } }
+  })
+}
+
+/** Sets the person's own default model and level: the final state, the last write wins. */
+export function setMine(deps: Deps, input: Viewer & ModelDefault) {
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitFor(deps, tx, input, 'me')
+    const { model, effort } = input
+    await assertDefaultAllowed(tx, input, 'me', { model, effort })
+    await tx
+      .insert(personModelDefault)
+      .values({ companyId: input.companyId, personId: input.person.id, model, effort })
+      .onConflictDoUpdate({
+        target: [personModelDefault.companyId, personModelDefault.personId],
+        set: { model, effort },
+      })
+    return { mine: { model, effort } }
+  })
+}
+
+/** Clears the person's own default; with none it changes nothing and answers the same. */
+export function clearMine(deps: Deps, input: Viewer) {
+  return deps.database.command(scopeOf(input), async (tx) => {
+    await admitFor(deps, tx, input, 'me')
+    await tx
+      .delete(personModelDefault)
+      .where(
+        and(
+          eq(personModelDefault.companyId, input.companyId),
+          eq(personModelDefault.personId, input.person.id),
+        ),
+      )
   })
 }
 
@@ -163,7 +222,7 @@ export function remove(deps: Deps, input: Viewer & { accountId: ModelAccountId }
 export function setFallback(deps: Deps, input: Viewer & ModelFallback) {
   return deps.database.command(scopeOf(input), async (tx) => {
     await admitFor(deps, tx, input, 'company')
-    if (!input.chain.every(isRegistryModel)) throw new Failure('MODEL_UNKNOWN')
+    if (!input.chain.every(isChoosable)) throw new Failure('MODEL_UNKNOWN')
     const { enabled, chain, revision } = input
     const written =
       revision === 0

@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { CompanyId, Revision } from './companies.ts'
 import { Effort, ModelId } from './conversations.ts'
 import { PersonId } from './identity.ts'
+import { Defaults } from './model-defaults.ts'
 import { defineOperation } from './operation.ts'
 
 export const ModelAccountId = z.uuid().brand('ModelAccountId')
@@ -98,12 +99,20 @@ export const ModelFallback = z.object({
 })
 export type ModelFallback = z.infer<typeof ModelFallback>
 
+/**
+ * What each picker offers (P5), the one list the Hub decides: the providers with a connected
+ * account in any state, with only the models those accounts serve. For the viewer, their own
+ * accounts and the company's they may use; for the company, its own. A paused account still counts.
+ */
+const Choices = z.object({ mine: z.array(Provider), company: z.array(Provider) })
+
 const Accounts = z.object({
   company: z.array(ModelAccount),
   mine: z.array(ModelAccount),
   order: z.array(ProviderOrder),
   kinds: z.array(SignInKind),
-  defaultModel: ModelId.nullable(),
+  defaults: Defaults,
+  choices: Choices,
   fallback: ModelFallback,
   /**
    * The providers the viewer may converse with now, by id: those with an account the Builder's
@@ -134,7 +143,7 @@ const READ_FAILURES = ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'] 
 export const listModelAccounts = defineOperation({
   id: 'listModelAccounts',
   summary:
-    'Lists the company’s model accounts and the person’s own, their order per provider, the open kinds and the default model.',
+    'Lists the company’s model accounts and the person’s own, their order per provider, the open kinds, the defaults and the connected providers.',
   access: 'session',
   method: 'GET',
   path: '/api/companies/{companyId}/model-accounts',
@@ -203,18 +212,6 @@ export const assignModelAccount = defineOperation({
   input: { params: OfAccount, body: z.object({ personIds: z.array(PersonId).max(500) }) },
   success: { status: 200, body: z.object({ account: ModelAccount }) },
   failures: [...READ_FAILURES, 'MODEL_ACCOUNT_PERSONAL'],
-})
-
-export const setDefaultModel = defineOperation({
-  id: 'setDefaultModel',
-  summary: 'Sets the company’s default model, any model of the router’s registry.',
-  access: 'session',
-  method: 'PUT',
-  path: '/api/companies/{companyId}/default-model',
-  bodyLimit: 1024,
-  input: { params: InCompany, body: z.object({ model: ModelId }) },
-  success: { status: 200, body: z.object({ defaultModel: ModelId }) },
-  failures: [...READ_FAILURES, 'MODEL_UNKNOWN'],
 })
 
 export const orderModelAccounts = defineOperation({

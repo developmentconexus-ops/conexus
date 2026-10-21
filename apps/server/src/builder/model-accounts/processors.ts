@@ -13,7 +13,7 @@ import { defaultStabilityErrorProcessors, StreamErrorRetryProcessor } from '@mas
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
-import type { CallFailure } from './errors.ts'
+import type { AccountFailure } from './errors.ts'
 import { callFailureOf } from './errors.ts'
 import { nextModels } from './fallback.ts'
 import type { QueueDeps } from './queue.ts'
@@ -184,18 +184,16 @@ export function accountPick(deps: QueueDeps): InputProcessor {
   }
 }
 
-function failedText(
-  account: Picked,
-  failure: Extract<CallFailure, { kind: 'limited' | 'refused' }>,
-) {
-  return failure.kind === 'limited'
-    ? `${account.label} no limite até ${until(failure.until)}`
-    : `${account.label} foi recusada. Ligue de novo`
+function failedText(account: Picked, failure: AccountFailure) {
+  if (failure.kind === 'limited') return `${account.label} no limite até ${until(failure.until)}`
+  if (failure.kind === 'missing') return `${account.label} não atende a este modelo`
+  return `${account.label} foi recusada. Ligue de novo`
 }
 
 /**
  * Error lane, last, after Mastra's own processors: 429 and 402 put the account in its limit, 401
- * and 403 refuse it (a subscription refreshes once first), and the next account takes the call,
+ * and 403 refuse it (a subscription refreshes once first), a 404 reads the models it serves again,
+ * and the next account takes the call,
  * never `abort()`, which ends the stream silently (study, proved). A 400 or anything else Mastra
  * did not retry ends the turn as the model's failure, with no switch.
  */

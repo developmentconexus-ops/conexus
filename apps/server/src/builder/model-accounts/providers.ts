@@ -1,7 +1,7 @@
 import type { Provider } from '@conexus/hub-api'
 import { ModelId, ProviderId } from '@conexus/hub-api'
 import type { ProviderConfig } from '@mastra/core/llm'
-import { PROVIDER_REGISTRY, parseModelString } from '@mastra/core/llm'
+import { PROVIDER_REGISTRY } from '@mastra/core/llm'
 import { effortsOf } from './thinking.ts'
 
 // The router's registry, bundled in the installed @mastra/core (decision 0027): read in memory,
@@ -64,11 +64,24 @@ export function keyProviderOf(id: string): Provider | undefined {
   return parsed.success ? KEY_PROVIDERS.get(parsed.data) : undefined
 }
 
-// Every model of the registry by provider, the company's default may be any of them (founder, C4).
-const MODELS = new Map(REGISTRY.map(([id, config]) => [id, new Set(config.models)]))
+// Every model a person may choose, the very list the picker reads (`chatModelsOf` of each key
+// provider): one owner of "a model one may choose" (code C26), so a default or a start never names
+// a retired or non-chat model the picker does not offer.
+const CHOOSABLE: ReadonlySet<string> = new Set(
+  [...KEY_PROVIDERS.values()].flatMap((provider) => provider.models.map((model) => model.id)),
+)
 
-/** Whether `provider/model` names a model of the registry. */
-export function isRegistryModel(model: string): boolean {
-  const { provider, modelId } = parseModelString(model)
-  return provider !== null && (MODELS.get(provider)?.has(modelId) ?? false)
+/** Whether `provider/model` is a model the picker offers. */
+export function isChoosable(model: string): boolean {
+  return CHOOSABLE.has(model)
 }
+
+/**
+ * The models a conversation starts on when neither the person nor the company chose one (P3): the
+ * first with a usable account. Each is a model of the registry, which a test checks.
+ */
+export const STARTER_MODELS: readonly ModelId[] = [
+  ModelId.parse('anthropic/claude-sonnet-5-5'),
+  ModelId.parse('openai/gpt-5'),
+  ModelId.parse('google/gemini-2.5-pro'),
+]

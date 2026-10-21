@@ -65,12 +65,14 @@ export {
   renewInvitation,
 } from './companies.ts'
 export {
+  applyEvent,
   CONVERSATION_HEARTBEAT_MS,
   Conversation,
   ConversationEvent,
   ConversationId,
   ConversationSummary,
   createConversation,
+  EFFORTS,
   Effort,
   listConversations,
   MESSAGE_MAX_LENGTH,
@@ -78,6 +80,7 @@ export {
   MessageId,
   MessagePart,
   ModelId,
+  type PartEvent,
   providerOfModel,
   readConversation,
   runningEffort,
@@ -131,10 +134,18 @@ export {
   SignInId,
   SignInKind,
   setAccountKinds,
-  setDefaultModel,
   setModelFallback,
   startModelAccountSignIn,
 } from './model-accounts.ts'
+export {
+  ConversationStart,
+  clearMyModelDefault,
+  Defaults,
+  ModelDefault,
+  StartSource,
+  setDefaultModel,
+  setMyModelDefault,
+} from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
   type AccessKind,

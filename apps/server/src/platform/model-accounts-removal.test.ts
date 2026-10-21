@@ -29,7 +29,9 @@ const SEED = `
   insert into builder.model_account_assignee(account_id, company_id, person_id) values ('${TIME_2}', '${A}', 'person-a');
   insert into builder.model_account_sign_in(id, company_id, person_id, owner, kind, label, sealed, key_id, expires_at) values
     (gen_random_uuid(), '${A}', 'person-a', 'me', 'claude_subscription', 'Assinatura', '\\x04', 'k1', now() + interval '10 minutes');
-  insert into builder.company_model(company_id, model) values ('${A}', 'anthropic/claude-sonnet-4-5');
+  insert into builder.company_model(company_id, model, effort) values ('${A}', 'anthropic/claude-sonnet-4-5', 'high');
+  insert into builder.person_model_default(company_id, person_id, model, effort) values
+    ('${A}', 'person-a', 'openai/gpt-5', 'low'), ('${A}', 'person-d', 'openai/gpt-5', 'medium');
   insert into builder.company_account_kind(company_id, kind) values ('${A}', 'claude_subscription');`
 
 const COUNTS = `select
@@ -37,9 +39,10 @@ const COUNTS = `select
   (select count(*)::int from builder.model_account_assignee) as assignees,
   (select count(*)::int from builder.model_account_sign_in) as sign_ins,
   (select count(*)::int from builder.company_model) as models,
+  (select count(*)::int from builder.person_model_default) as defaults,
   (select count(*)::int from builder.company_account_kind) as kinds`
 
-test('contas de modelo: tirar a pessoa apaga as contas e as entradas dela, e a conta dada volta para todos', async (t) => {
+test('contas de modelo: tirar a pessoa apaga as contas, as entradas e o padrão dela, e a conta dada volta para todos', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)
   await database.command({ kind: 'COMPANY', companyId: A, personId: BRUNO }, (tx) =>
@@ -50,7 +53,7 @@ test('contas de modelo: tirar a pessoa apaga as contas e as entradas dela, e a c
     { id: TIME_2 },
   ])
   assert.deepEqual(await asOwner(COUNTS), [
-    { accounts: 2, assignees: 0, sign_ins: 0, models: 1, kinds: 1 },
+    { accounts: 2, assignees: 0, sign_ins: 0, models: 1, defaults: 1, kinds: 1 },
   ])
 })
 
@@ -63,6 +66,6 @@ test('contas de modelo: apagar a empresa apaga tudo dela', async (t) => {
     await tx.execute(sql`delete from auth.company where id = ${A}`)
   })
   assert.deepEqual(await asOwner(COUNTS), [
-    { accounts: 0, assignees: 0, sign_ins: 0, models: 0, kinds: 0 },
+    { accounts: 0, assignees: 0, sign_ins: 0, models: 0, defaults: 0, kinds: 0 },
   ])
 })

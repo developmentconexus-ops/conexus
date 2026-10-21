@@ -1,0 +1,6 @@
+{
+  "provider": "anthropic",
+  "api": "Anthropic Messages API, streamed",
+  "sdk": "@ai-sdk/anthropic 3.0.133",
+  "recordedAt": "2026-10-21"
+}

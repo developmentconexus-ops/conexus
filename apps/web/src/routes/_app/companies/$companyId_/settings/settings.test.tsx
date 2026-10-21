@@ -63,14 +63,16 @@ test('Configurações: Voltar, a busca, Você e a empresa, cada seção na sua o
   expect(linksOf(groupOf(nav, 'Você'))).toEqual([
     'Minha conta',
     'Minhas contas de modelo',
+    'Meus padrões',
     'Aparência',
   ])
   expect(linksOf(groupOf(nav, COMPANY.name))).toEqual([
     'Geral',
     'Pessoas e convites',
     'Contas de modelo',
+    'Padrões da empresa',
   ])
-  expect(sections(nav)).toHaveLength(6)
+  expect(sections(nav)).toHaveLength(8)
 })
 
 test('a busca acha pelo nome e pelas palavras, sem acento: "convite" leva a Pessoas e convites', async () => {
@@ -85,6 +87,16 @@ test('a busca acha pelo nome e pelas palavras, sem acento: "convite" leva a Pess
   expect(sections(nav)).toEqual(['Aparência'])
 })
 
+test('"raciocínio" e "modelo padrão" acham Meus padrões e Padrões da empresa, e Contas de modelo não guarda mais o modelo padrão', async () => {
+  open()
+  const nav = await index()
+  const search = nav.getByRole('searchbox', { name: 'Buscar nas configurações' })
+  for (const typed of ['raciocínio', 'raciocinio', 'modelo padrão']) {
+    fireEvent.change(search, { target: { value: typed } })
+    expect(sections(nav)).toEqual(['Meus padrões', 'Padrões da empresa'])
+  }
+})
+
 test('a busca sem resultado diz "Nenhuma seção encontrada." e volta com o campo vazio', async () => {
   open()
   const nav = await index()
@@ -94,7 +106,7 @@ test('a busca sem resultado diz "Nenhuma seção encontrada." e volta com o camp
   expect(sections(nav)).toHaveLength(0)
   fireEvent.change(search, { target: { value: '' } })
   expect(nav.queryByText('Nenhuma seção encontrada.')).toBeNull()
-  expect(sections(nav)).toHaveLength(6)
+  expect(sections(nav)).toHaveLength(8)
 })
 
 test('uma filha de settings com staticData.section aparece na sua ordem, sem mudar o índice', async () => {
@@ -114,6 +126,7 @@ test('uma filha de settings com staticData.section aparece na sua ordem, sem mud
     'Cobrança',
     'Pessoas e convites',
     'Contas de modelo',
+    'Padrões da empresa',
   ])
   fireEvent.change(nav.getByRole('searchbox', { name: 'Buscar nas configurações' }), {
     target: { value: 'fatura' },

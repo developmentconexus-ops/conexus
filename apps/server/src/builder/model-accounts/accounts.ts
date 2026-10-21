@@ -14,13 +14,19 @@ import type { IdentityPorts } from '../../hub/identity/public.ts'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { CommandTx, Database, ReadTx, Scope } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
+import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../platform/seal.ts'
 import { open, seal } from '../../platform/seal.ts'
 import { openKindsOf } from './kinds.ts'
 import { modelAccount, modelAccountAssignee } from './tables.ts'
 
-export type Deps = { database: Database; identity: IdentityPorts; sealKeys: SealKeys }
+export type Deps = {
+  database: Database
+  identity: IdentityPorts
+  sealKeys: SealKeys
+  log: FailureLog
+}
 export type Viewer = { person: Person; companyId: CompanyId }
 
 export const HINT_LENGTH = 4
@@ -39,6 +45,7 @@ export const AccountRow = z.object({
   linkedAt: z.date(),
   revision: z.number().int().nonnegative(),
   attemptKey: z.string(),
+  served: z.array(z.string()).nullable(),
 })
 export type AccountRow = z.infer<typeof AccountRow>
 
@@ -60,6 +67,7 @@ export const columns = {
   linkedAt: modelAccount.linkedAt,
   revision: modelAccount.revision,
   attemptKey: modelAccount.attemptKey,
+  served: modelAccount.servedModels,
 }
 
 export function scopeOf(viewer: Viewer): Scope {
@@ -114,6 +122,11 @@ export function partOf(
   return given.includes(personId) ? 1 : undefined
 }
 
+/** The queue's own test of an account: ready, out of its limit and of a kind left open. */
+function isUsable(row: AccountRow, context: Context): boolean {
+  return row.state === 'ready' && row.limitedUntil === null && kindOpen(row, context)
+}
+
 /**
  * The accounts the person may call now, in their order (the queue's rule, step 12): a paused or
  * refused one, one of a closed kind, one in its limit and one given only to others are left out.
@@ -125,7 +138,7 @@ export function usableInOrder(
   personId: PersonId,
 ): AccountRow[] {
   return rows
-    .filter((row) => row.state === 'ready' && row.limitedUntil === null && kindOpen(row, context))
+    .filter((row) => isUsable(row, context))
     .flatMap((row) => {
       const part = partOf(row, context, personId)
       return part === undefined ? [] : [{ row, part }]
@@ -134,8 +147,25 @@ export function usableInOrder(
     .map((each) => each.row)
 }
 
+/** The company's own accounts that anyone may call now, in the company's order. */
+export function usableForAll(rows: AccountRow[], context: Context): AccountRow[] {
+  return rows
+    .filter((row) => row.personId === null && !context.assignees.has(row.id))
+    .filter((row) => isUsable(row, context))
+    .sort((left, right) => left.position - right.position)
+}
+
+/** Every account the transaction's scope may read, with the company's context; the caller admitted the person. */
+export async function accountsOf(tx: ReadTx, companyId: CompanyId) {
+  const rows = await tx
+    .select(columns)
+    .from(modelAccount)
+    .where(eq(modelAccount.companyId, companyId))
+  return { rows: rows.map((row) => AccountRow.parse(row)), context: await contextOf(tx, companyId) }
+}
+
 export function viewOf(row: AccountRow, context: Context): ModelAccount {
-  const { attemptKey: _attemptKey, personId: _personId, ...shown } = row
+  const { attemptKey: _attemptKey, personId: _personId, served: _served, ...shown } = row
   return {
     ...shown,
     owner: ownerOf(row),

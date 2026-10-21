@@ -95,21 +95,28 @@ test('uma ferramenta que falha fica `error`, sem o texto do erro; uma desconheci
   assert.doesNotMatch(raw, /not found|Available tools|planted_tool|ENOTFOUND|SECRET-PLANTED-TEXT/)
 })
 
-test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só, com o modelo e sem segundos', async (t) => {
+test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só, com o modelo e os segundos ditos ao vivo (#176)', async (t) => {
   const { hub, ana, conversations } = await conversing(t, await researching(t))
-  const { url } = await asked(t, { hub, person: ana, conversations })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const seconds = events.flatMap((event) =>
+    event.type === 'part' && event.part.type === 'reasoning' && event.part.state === 'completed'
+      ? [event.part.seconds]
+      : [],
+  )
+  assert.equal(seconds.length, 1)
+  assert.equal(typeof seconds[0], 'number')
   const messages = await messagesOf(await hubBeside(t, hub), ana, url)
   assert.deepEqual(
     messages.map((message) => [message.role, message.model]),
     [
       ['person', null],
-      ['builder', 'anthropic/claude-sonnet-4-5'],
+      ['builder', 'anthropic/claude-sonnet-4-6'],
     ],
   )
   const parts = messages[1]?.parts.map((part) => ('id' in part ? { ...part, id: '' } : part))
   const tool = { type: 'tool', id: '', state: 'completed' } as const
   assert.deepEqual(parts, [
-    { type: 'reasoning', id: '', state: 'completed', seconds: null },
+    { type: 'reasoning', id: '', state: 'completed', seconds: seconds[0] },
     { ...tool, kind: 'search_web', subject: { query: 'apps de encomenda de padaria' } },
     ...PAGES.map((url) => ({ ...tool, kind: 'read_page', subject: { url, title: null } })),
     { ...tool, kind: 'read_page', state: 'error', subject: { url: UNREACHABLE, title: null } },

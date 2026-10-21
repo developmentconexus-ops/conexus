@@ -13,6 +13,7 @@ import {
   SMALL_PHONE,
   ZOOMED_PHONE,
 } from './layout-harness.ts'
+import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { central, companies, PROJECT_ID, PROJECT_NAME } from './sweep-replies.ts'
 
 const WIDE_PHONE = { width: 600, height: 900 }
@@ -128,6 +129,16 @@ for (const viewport of [SMALL_PHONE, ZOOMED_PHONE]) {
   })
 }
 
+for (const state of DEFAULT_STATES) {
+  test(`${state.name} cabe numa tela de ${ZOOMED_PHONE.width}px, a 200% de ampliação, sem rolagem lateral`, async () => {
+    const page = await open(state.path, ZOOMED_PHONE, state.replies)
+    await state.settle(page)
+    const scroll = await page.evaluate(() => document.documentElement.scrollWidth)
+    assert.equal(scroll, ZOOMED_PHONE.width)
+    await page.close()
+  })
+}
+
 test('a gaveta tem tudo da barra: a empresa, Início, os Projetos, Configurações e a conta', async () => {
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('button', { name: 'Abrir navegação' }).click()
@@ -205,6 +216,8 @@ test('numa tela de 390px o Tab começa em Abrir navegação e não entra na gave
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('heading', { name: 'O que vamos construir?' }).waitFor()
   // The owner's Início opens with the preparation card, whose Continuar is the first of the content.
+  // The card is not shown while its reads load, so Tab waits for it.
+  await page.getByRole('link', { name: 'Continuar' }).waitFor()
   assert.deepEqual(await presses(page, 'Tab', 2), [
     'Abrir navegação solid 2px',
     'Continuar solid 2px',

@@ -165,10 +165,38 @@
     },
     {
       "includes": [
+        "apps/server/src/builder/**",
+        "!apps/server/src/builder/runs/deadline.ts",
+        "!apps/server/src/builder/runs/lease.ts",
+        "!apps/server/src/builder/runs/copy-retry.ts",
+        "!apps/server/src/builder/model-accounts/google/calls.ts",
+        "!apps/server/src/builder/model-accounts/google/google.ts",
+        "!**/*.test.ts",
+        "!**/test-*.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedGlobals": {
+              "level": "error",
+              "options": {
+                "deniedGlobals": {
+                  "setTimeout": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/.",
+                  "setInterval": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": [
         "apps/web/**/*.test.tsx",
         "apps/web/src/platform/test-hub.tsx",
         "apps/web/src/platform/test-hub-versions.tsx",
         "apps/web/src/builder/model-accounts/test-hub.tsx",
+        "apps/web/src/builder/model-accounts/test-writes.tsx",
         "apps/web/src/builder/conversation/test-hub.tsx",
         "apps/web/src/hub/identity/test-hub.tsx",
         "apps/web/vitest.*",

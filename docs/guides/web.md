@@ -148,8 +148,9 @@ tudo". The lines of [screens](../reference/screens.md) say which screen is on wh
   sections, each added by its step: Sobre, Versões, Quem usa o app, Dados da empresa,
   Publicação. [review]
 - **W32.** Configurações **should** swap the sidebar for an index with "← Voltar" and a search, in
-  two groups: Você (Minha conta, Minhas contas de modelo, Aparência) and the company's, headed by
-  its name (Geral, Pessoas e convites, Contas de modelo, Sistemas da empresa, Conectores); founder,
+  two groups: Você (Minha conta, Minhas contas de modelo, Meus padrões, Aparência) and the company's,
+  headed by its name (Geral, Pessoas e convites, Contas de modelo, Padrões da empresa, Sistemas da
+  empresa, Conectores); founder,
   2026-10-20: "1. A". Owner and administrator change the company's group; a member reads Pessoas.
   Memória, Atividade and Uso have their place reserved there and appear only when a card asks for
   them. [review]

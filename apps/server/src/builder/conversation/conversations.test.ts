@@ -130,8 +130,12 @@ test('a mesma chave: uma conversa, um modelo e um turno, também depois de reini
   assert.equal(Object(again.json()).conversation.id, id)
   // A late repeat runs nothing again: a default with no account now still answers the thread's model.
   const company = conversations.slice(0, conversations.indexOf('/projects/'))
-  const unusable = { model: 'openai/gpt-4o-mini' }
+  const openai = { owner: 'company', provider: 'openai', label: 'OpenAI', key: 'sk-openai-0001' }
+  const linked = await post(hub, ana, `${company}/model-accounts`, openai)
+  const unusable = { model: 'openai/gpt-4o-mini', effort: 'off' }
   assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, unusable)).statusCode, 200)
+  const gone = `${company}/model-accounts/${Object(linked.json()).account.id}`
+  assert.equal((await call(hub, ana, 'DELETE', gone)).statusCode, 204)
   const late = await post(hub, ana, conversations, {}, key)
   assert.deepEqual([late.statusCode, Object(late.json()).conversation.model], [201, MODEL])
   const conflict = await post(hub, ana, conversations, { model: MODEL }, key)
@@ -170,11 +174,11 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
     kind: 'text',
     text: 'ok',
   }))
-  const created = await post(hub, ana, conversations, { model: 'openai/gpt-4' })
+  const created = await post(hub, ana, conversations, { model: 'openai/gpt-5' })
   assert.equal(created.statusCode, 422)
   assert.equal(codeOf(created), 'MODEL_NO_ACCOUNT')
   const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const gpt = { model: 'openai/gpt-4', effort: 'off' }
+  const gpt = { model: 'openai/gpt-5', effort: 'off' }
   const switched = await call(hub, ana, 'PUT', `${url}/model`, gpt)
   assert.equal(switched.statusCode, 422)
   assert.equal(codeOf(switched), 'MODEL_NO_ACCOUNT')
@@ -246,7 +250,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
   await stream.turn()
   assert.deepEqual(thinkings(), [HIGH])
 
-  const refused = await model('max')
+  const refused = await model('xhigh')
   assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'EFFORT_UNSUPPORTED'])
   assert.equal(await effortOn(hub), 'high')
 

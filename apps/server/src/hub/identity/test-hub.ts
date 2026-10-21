@@ -79,6 +79,7 @@ async function hubServing(
     postgres,
     projects,
     repair: apps.repair,
+    readUnserved: subjects.modelAccounts.readUnserved,
     close,
   }
 }

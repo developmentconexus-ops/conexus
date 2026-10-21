@@ -7,7 +7,11 @@ import type { Credential } from '../../platform/seal.ts'
 import { open, seal } from '../../platform/seal.ts'
 import type { Deps, Viewer } from './accounts.ts'
 import { accountView, admitFor, insertAccount, labelOf, scopeOf } from './accounts.ts'
+import { SubscriptionTokens } from './claude/anthropic-login.ts'
 import { openKindsOf } from './kinds.ts'
+import { keepServed } from './served.ts'
+import type { ReadingDeps } from './served-reads.ts'
+import { readServedOf } from './served-reads.ts'
 import { modelAccountSignIn } from './tables.ts'
 
 /**
@@ -23,6 +27,9 @@ export type SignInFlow = {
   complete(pending: Credential, code: string): Promise<Credential>
 }
 export type SignInFlows = Readonly<Record<SignInKind, SignInFlow>>
+
+/** What the sign-in routes hold: the flows, and the means to read a Google account's list once linked. */
+export type SignInDeps = { flows: SignInFlows; googleCalls: ReadingDeps['googleCalls'] }
 
 type SignIn = { id: SignInId; companyId: CompanyId; personId: PersonId; kind: SignInKind }
 
@@ -138,7 +145,7 @@ function take(deps: Deps, input: Viewer & { signInId: SignInId }) {
  * nothing new. The credential is then sealed whole to a new account at the end of its queue.
  */
 export async function completeSignIn(
-  deps: Deps & { flows: SignInFlows },
+  deps: Deps & SignInDeps,
   input: Viewer & { signInId: SignInId; code: string },
 ) {
   const taken = await take(deps, input)
@@ -151,7 +158,7 @@ export async function completeSignIn(
     blob: taken.sealed,
   })
   const credential = await flow.complete(pending, input.code)
-  return deps.database.command(scopeOf(input), async (tx) => {
+  const made = await deps.database.command(scopeOf(input), async (tx) => {
     await admitOpen(deps, tx, input, owner, kind)
     const id = await insertAccount(deps, tx, input, {
       owner,
@@ -164,4 +171,18 @@ export async function completeSignIn(
     })
     return { account: await accountView(tx, input, id) }
   })
+  if (kind === 'claude_subscription') {
+    const { id, provider } = made.account
+    const access = SubscriptionTokens.parse(JSON.parse(credential.reveal())).access
+    await keepServed(
+      deps,
+      scopeOf(input),
+      { id, kind, provider, companyId: input.companyId },
+      access,
+    )
+  }
+  if (kind === 'google_cliproxy') {
+    await readServedOf(deps, scopeOf(input), input.companyId, made.account.id)
+  }
+  return made
 }

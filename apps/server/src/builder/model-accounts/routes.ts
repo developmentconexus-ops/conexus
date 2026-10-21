@@ -1,6 +1,7 @@
 import {
   assignModelAccount,
   changeModelAccount,
+  clearMyModelDefault,
   completeModelAccountSignIn,
   connectModelAccount,
   getAccountKinds,
@@ -11,6 +12,7 @@ import {
   setAccountKinds,
   setDefaultModel,
   setModelFallback,
+  setMyModelDefault,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -18,7 +20,7 @@ import { answer, serve } from '../../platform/http.ts'
 import type { Deps } from './accounts.ts'
 import { readKinds, setKinds } from './kinds.ts'
 import { listKeyProviders } from './providers.ts'
-import type { SignInFlows } from './sign-ins.ts'
+import type { SignInDeps } from './sign-ins.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import type { ModelAccountStore } from './store.ts'
 
@@ -26,7 +28,7 @@ const PROVIDERS = { providers: listKeyProviders() }
 
 export function registerModelAccountRoutes(
   app: FastifyInstance,
-  deps: Deps & { store: ModelAccountStore; flows: SignInFlows },
+  deps: Deps & SignInDeps & { store: ModelAccountStore },
 ): void {
   const { store } = deps
 
@@ -66,12 +68,6 @@ export function registerModelAccountRoutes(
     }
     log.info(fields, 'MODEL_ACCOUNT_CHANGED')
     return answer(given)
-  })
-
-  serve(app, setDefaultModel, async ({ person, params, body, log }) => {
-    const set = await store.setDefault({ person, ...params, model: body.model })
-    log.info({ companyId: params.companyId, model: set.defaultModel }, 'MODEL_ACCOUNT_CHANGED')
-    return answer(set)
   })
 
   serve(app, setModelFallback, async ({ person, params, body, log }) => {
@@ -114,10 +110,34 @@ export function registerModelAccountRoutes(
     return answer(set)
   })
 
+  registerDefaultRoutes(app, deps)
   registerSignInRoutes(app, deps)
 }
 
-function registerSignInRoutes(app: FastifyInstance, deps: Deps & { flows: SignInFlows }) {
+/** The company's default model and the person's own, each at a level (card 12.3). */
+function registerDefaultRoutes(app: FastifyInstance, deps: Deps & { store: ModelAccountStore }) {
+  const { store } = deps
+
+  serve(app, setDefaultModel, async ({ person, params, body, log }) => {
+    const set = await store.setDefault({ person, ...params, ...body })
+    log.info({ companyId: params.companyId, scope: 'company' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(set)
+  })
+
+  serve(app, setMyModelDefault, async ({ person, params, body, log }) => {
+    const set = await store.setMine({ person, ...params, ...body })
+    log.info({ companyId: params.companyId, scope: 'mine' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(set)
+  })
+
+  serve(app, clearMyModelDefault, async ({ person, params, log }) => {
+    await store.clearMine({ person, ...params })
+    log.info({ companyId: params.companyId, scope: 'mine' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(undefined)
+  })
+}
+
+function registerSignInRoutes(app: FastifyInstance, deps: Deps & SignInDeps) {
   serve(app, startModelAccountSignIn, async ({ person, params, body, log }) => {
     const started = await startSignIn(deps, { person, ...params, ...body })
     log.info(

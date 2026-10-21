@@ -72,7 +72,7 @@ async function linkAccounts(owner: Page, companyA: string) {
   await owner.getByText('Google 1 · Google · ligada').first().waitFor()
 }
 
-/** Step 4: Time 2 goes up, Time 1 pauses, and a Claude Sonnet model becomes the default. */
+/** Step 4: Time 2 goes up and Time 1 pauses. */
 async function arrange(owner: Page) {
   await owner.getByRole('button', { name: 'Subir Time 2' }).click()
   await owner.getByRole('button', { name: 'Subir Time 1' }).waitFor({ state: 'detached' })
@@ -81,15 +81,24 @@ async function arrange(owner: Page) {
   const [first, second] = await rowsText(queueRows(owner, 'Anthropic'))
   assert.match(first ?? '', /^Time 2.*Assinatura Claude · ligada · para todos/)
   assert.match(second ?? '', /^Time 1.*chave …x7Qa · pausada/)
-  await pickModel(owner, owner, 'Modelo padrão', 'Anthropic', 'sonnet')
-  const chosen = await owner.getByText(/^Escolhido: .*sonnet/i).innerText()
-  await owner.getByRole('button', { name: 'Salvar modelo padrão' }).click()
+}
+
+/** Step 4b: a Claude Sonnet model becomes the company's default, in Padrões da empresa. */
+async function chooseDefault(owner: Page, companyA: string) {
+  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/defaults`)
+  await pickModel(owner, owner, 'Modelo e raciocínio', 'Anthropic', 'sonnet')
+  await owner.getByRole('button', { name: 'Salvar padrão' }).click()
   await owner
-    .getByRole('button', { name: 'Salvar modelo padrão' })
+    .getByRole('button', { name: 'Salvar padrão' })
     .and(owner.locator(':disabled'))
     .waitFor()
   await owner.reload()
-  assert.equal(await owner.getByText(/^Escolhido: /).innerText(), chosen)
+  await owner
+    .getByText(
+      /^Com as contas da empresa, uma conversa nova começa em: .*sonnet.* — padrão da empresa$/i,
+    )
+    .waitFor()
+  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/model-accounts`)
 }
 
 /** Step 5: Time 2 goes to Carla, who reads her order and links a key of her own. */
@@ -156,6 +165,7 @@ test('o roteiro da conta de modelo: tipos, chave, assinatura Claude, Google, fil
   await openKinds(ana, companyA, companyB)
   await linkAccounts(owner, companyA)
   await arrange(owner)
+  await chooseDefault(owner, companyA)
   await giveAndRead(owner, member, companyA)
   await removeFirst(owner)
   for (const page of [ana, owner, member]) {

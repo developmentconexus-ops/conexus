@@ -5,7 +5,11 @@ import { causeChain } from '../../platform/failure.ts'
 export type CallFailure =
   | { kind: 'limited'; until: Date }
   | { kind: 'refused' }
+  | { kind: 'missing' }
   | { kind: 'unknown'; status: number | null }
+
+/** A failure that is the account's, which the queue answers with the next account. */
+export type AccountFailure = Exclude<CallFailure, { kind: 'unknown' }>
 
 // The provider's error as the AI SDK's APICallError carries it, wherever it sits in the cause chain.
 const ProviderError = z.object({
@@ -48,5 +52,7 @@ export function callFailureOf(error: unknown, now = Date.now()): CallFailure {
     return { kind: 'limited', until: new Date(now + after) }
   }
   if (status === 401 || status === 403) return { kind: 'refused' }
+  // The provider does not know the model for this credential: the list it serves has changed.
+  if (status === 404) return { kind: 'missing' }
   return { kind: 'unknown', status }
 }

@@ -130,3 +130,32 @@ test('contas de modelo: as entradas e as atribuições seguem a política de lin
   await run(B, BRUNO, sql`delete from builder.model_account_assignee`)
   assert.deepEqual((await run(A, ANA, assignees)).rows, [{ n: 1 }])
 })
+
+test('padrão de modelo: com o escopo de Ana, o padrão de outra pessoa não se lê, não se grava nem se apaga', async (t) => {
+  const { database, asOwner } = await createTestDatabase(t)
+  await asOwner(SEED)
+  await asOwner(`insert into builder.person_model_default(company_id, person_id, model, effort) values
+    ('${A}', 'person-a', 'anthropic/claude-sonnet-4-5', 'high'),
+    ('${A}', 'person-b', 'anthropic/claude-sonnet-4-5', 'low')`)
+  function asAna(statement: ReturnType<typeof sql>) {
+    return database.command({ kind: 'COMPANY', companyId: A, personId: ANA }, (tx) =>
+      tx.execute(statement),
+    )
+  }
+  const own = await asAna(sql`select person_id from builder.person_model_default`)
+  assert.deepEqual(own.rows, [{ person_id: 'person-a' }])
+  await assert.rejects(
+    asAna(sql`insert into builder.person_model_default(company_id, person_id, model, effort)
+      values (${A}, 'person-b', 'openai/gpt-5', 'low')`),
+    refusedWith('42501'),
+  )
+  await asAna(sql`update builder.person_model_default set effort = 'max'`)
+  await asAna(sql`delete from builder.person_model_default where person_id = 'person-b'`)
+  assert.deepEqual(
+    await asOwner(`select person_id, effort from builder.person_model_default order by person_id`),
+    [
+      { person_id: 'person-a', effort: 'max' },
+      { person_id: 'person-b', effort: 'low' },
+    ],
+  )
+})
