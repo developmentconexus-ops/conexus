@@ -3,6 +3,7 @@ import { rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
 import { applyEvent } from '@conexus/hub-api'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
@@ -83,15 +84,16 @@ async function stoppedOf(
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, person, url, 'Liste nomes de padarias')).statusCode, 202)
+  // The journal says text in pieces of 200 characters, so this short text waits for the turn's end:
+  // the stop comes once the recording's words have reached the turn.
   const opening = await stream.next()
-  const first = await stream.said()
-  assert.equal(first.type, 'text')
+  await setTimeout(1000)
   const reopened = await streamOf(hub, person, url)
   t.after(() => reopened.close())
   const snapshot = await reopened.next()
   assert.equal(snapshot.type, 'turn')
   assert.equal((await post(hub, person, `${url}/stop`, {})).statusCode, 204)
-  const events = [opening, first, ...(await stream.turn())]
+  const events = [opening, ...(await stream.turn())]
   const again = [snapshot, ...(await reopened.turn())]
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
   const read = await readAnswer(hub, person, url)

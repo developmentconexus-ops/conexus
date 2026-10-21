@@ -19,7 +19,9 @@ async function removeProject(
     async () => {
       if (machine !== undefined) await machines.kill(SandboxId.parse(machine.sandboxId))
     },
-    () => copy.removeProject(ids),
+    async () => {
+      if (await store.hasVersion(ids.companyId, ids.projectId)) await copy.removeProject(ids)
+    },
     () => context.repository(ids).remove(),
     () => machines.release(ids.projectId),
   ]

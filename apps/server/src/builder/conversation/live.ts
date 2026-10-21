@@ -6,8 +6,9 @@ import type {
   Message,
   PartEvent,
   PersonId,
+  RunId,
 } from '@conexus/hub-api'
-import { applyEvent, EventId, MessageId, TurnFailureCode } from '@conexus/hub-api'
+import { applyEvent, MessageId, TurnFailureCode } from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -16,12 +17,12 @@ import type { Turn } from '../model-accounts/public.ts'
 import type { Outcome } from '../runs/public.ts'
 import type { Place } from './parts.ts'
 import { modelOf, partOf } from './parts.ts'
+import type { Journal, Listener, TurnLog } from './turn-log.ts'
+import { flushText, say } from './turn-log.ts'
+
+export type { Listener, Said } from './turn-log.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
-/** An event as the stream sends it, with the id a reconnect names it by. */
-export type Said = { id: EventId; event: ConversationEvent }
-export type Listener = (said: Said) => void
-
 /** The person's questions not yet saved by Mastra, kept on the thread so a crash loses none. */
 export const QUESTION_KEY = 'conexus.questions'
 /** One kept question, named by its message's Idempotency-Key. */
@@ -52,28 +53,9 @@ export type ThoughtTime = z.infer<typeof ThoughtTime>
  * The most events a turn keeps for a reconnect to resume from; past it, a reconnect reads the turn
  * so far instead.
  */
-const TURN_EVENTS_KEPT = 10_000
 
 /** A run Mastra woke for one of this conversation's messages, until its end. */
 type Run = { turn: Turn; ended: () => void }
-
-/**
- * A turn of the Builder's, from the message that opened it to its end, and the last one once over:
- * its answer so far, the events it said, and the thinking whose clock runs.
- */
-type TurnLog = {
-  id: string
-  startedAt: string
-  answer: Message
-  /** The person's message the turn answers, as a read shows it, once known. */
-  after: MessageId | undefined
-  /** Every event said, each named `<id>.<its number>`, up to `TURN_EVENTS_KEPT` of them. */
-  said: number
-  events: ConversationEvent[]
-  thinking: { id: string; since: number } | undefined
-  failureKept: boolean
-  ended: boolean
-}
 
 /** A conversation open in this process: its controller session and its turn. */
 export type Live = {
@@ -82,6 +64,10 @@ export type Live = {
   log: FailureLog
   session: Session
   listeners: Set<Listener>
+  /** Keeps an event in the run's journal (data D25). */
+  journal: Journal
+  /** Stops the turn once its run is not this copy's: Mastra's run aborts and no more is said. */
+  lose: () => void
   turn: TurnLog | undefined
   /** The turns of the messages sent and not yet over: their run, or the one they joined, runs. */
   asked: Set<Turn>
@@ -97,41 +83,16 @@ export type Live = {
   questions: Question[]
   kept: Promise<void>
   /** The run of the message in progress: ends and saves it when Mastra's run is about to end. */
-  run: { finish: (reason: string) => Promise<Outcome | 'gone'> } | undefined
+  run: { id: RunId; finish: (reason: string) => Promise<Outcome | 'gone'> } | undefined
   /** Why saving failed, for the turn's end to say (card, the failures table). */
   saveFailure: TurnFailureCode | undefined
   unsubscribe: () => void
 }
 
-/** The id of the turn's `n`th event: the turn, and the event's place in it. */
-function eventId(turn: TurnLog, n: number): EventId {
-  return EventId.parse(`${turn.id}.${n}`)
-}
-
-/** An event's place in its turn, from 1, as `eventId` writes it. */
-const EventPlace = z
-  .string()
-  .regex(/^[1-9]\d*$/)
-  .transform(Number)
-  .pipe(z.int())
-/** What an `eventId` names, read back strictly: its turn, and its place in it. */
-const SeenEvent = z
-  .string()
-  .transform((id) => id.split('.'))
-  .pipe(z.tuple([z.uuid(), EventPlace]))
-
-function say(live: Live, turn: TurnLog, event: ConversationEvent): void {
-  turn.said += 1
-  if (turn.said <= TURN_EVENTS_KEPT) turn.events.push(event)
-  const said = { id: eventId(turn, turn.said), event }
-  for (const listener of live.listeners) listener(said)
-}
-
-function newTurn(): TurnLog {
-  const id = randomUUID()
+function newTurn(id: RunId | undefined): TurnLog {
   const startedAt = new Date().toISOString()
   const answer: Message = {
-    id: MessageId.parse(id),
+    id: MessageId.parse(id ?? randomUUID()),
     role: 'builder',
     parts: [],
     model: null,
@@ -142,8 +103,8 @@ function newTurn(): TurnLog {
     startedAt,
     answer,
     after: undefined,
-    said: 0,
-    events: [],
+    buffer: '',
+    queue: Promise.resolve(),
     thinking: undefined,
     failureKept: false,
     ended: false,
@@ -153,7 +114,7 @@ function newTurn(): TurnLog {
 /** The turn in progress, or a new one, which the stream opens with its `turn`. */
 export function openTurn(live: Live): TurnLog {
   if (live.turn !== undefined && !live.turn.ended) return live.turn
-  const turn = newTurn()
+  const turn = newTurn(live.run?.id)
   live.turn = turn
   const { answer, startedAt } = turn
   say(live, turn, { type: 'turn', message: structuredClone(answer), startedAt })
@@ -162,7 +123,7 @@ export function openTurn(live: Live): TurnLog {
 
 /** The turn an event outside every turn belongs to, such as a title after a restart. */
 function lastTurn(live: Live): TurnLog {
-  live.turn ??= { ...newTurn(), ended: true }
+  live.turn ??= { ...newTurn(undefined), ended: true }
   return live.turn
 }
 
@@ -223,31 +184,6 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
       onPart(live, turn, event.event.part, { messageId, index: event.event.index })
     }
   }
-}
-
-/**
- * What a stream that opens reads first: the events after the last one it read, when that one is
- * of the turn in progress or of the last one and every later event is kept; otherwise the turn in
- * progress so far, or nothing when none runs. An id from elsewhere, of another conversation too,
- * names nothing here (security S10).
- */
-export function resumeOf(live: Live, lastEventId: EventId | null): Said[] {
-  const turn = live.turn
-  if (turn === undefined) return []
-  const read = SeenEvent.safeParse(lastEventId)
-  const seen = read.success && read.data[0] === turn.id ? read.data[1] : undefined
-  const keptEvery = turn.said === turn.events.length
-  if (keptEvery && seen !== undefined && seen <= turn.said) {
-    return turn.events.slice(seen).map((event, at) => ({ id: eventId(turn, seen + at + 1), event }))
-  }
-  if (turn.ended) return []
-  const { answer, startedAt } = turn
-  return [
-    {
-      id: eventId(turn, turn.said),
-      event: { type: 'turn', message: structuredClone(answer), startedAt },
-    },
-  ]
 }
 
 /** The controller's events as the person's: text, thinking, tools, notices, the title, the end. */

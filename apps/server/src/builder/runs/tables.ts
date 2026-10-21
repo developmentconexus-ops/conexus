@@ -36,6 +36,7 @@ export const run = builder.table(
     companyId: text('company_id').notNull(),
     projectId: text('project_id').notNull(),
     personId: text('person_id').notNull(),
+    conversationId: text('conversation_id').notNull(),
     state: text('state').notNull(),
     baseSha: text('base_sha'),
     candidateSha: text('candidate_sha'),

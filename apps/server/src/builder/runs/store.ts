@@ -1,18 +1,26 @@
 import { randomUUID } from 'node:crypto'
-import { CompanyId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
-import { and, eq, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
+import {
+  CompanyId,
+  ConversationEvent,
+  ConversationId,
+  PersonId,
+  ProjectId,
+  RunId,
+} from '@conexus/hub-api'
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Sha } from '../git/public.ts'
 import { machine } from '../machine/public.ts'
 import { LEASE_MS } from './lease.ts'
-import { run } from './tables.ts'
+import { run, runEvent } from './tables.ts'
 
 const Row = z.object({
   id: RunId,
   companyId: CompanyId,
   projectId: ProjectId,
   personId: PersonId,
+  conversationId: ConversationId,
   state: z.enum(['open', 'saving', 'saved', 'unchanged', 'stopped', 'interrupted', 'failed']),
   baseSha: Sha.nullable(),
   candidateSha: Sha.nullable(),
@@ -26,6 +34,7 @@ const columns = {
   companyId: run.companyId,
   projectId: run.projectId,
   personId: run.personId,
+  conversationId: run.conversationId,
   state: run.state,
   baseSha: run.baseSha,
   candidateSha: run.candidateSha,
@@ -56,6 +65,7 @@ export class RunStore {
     companyId: CompanyId
     projectId: ProjectId
     personId: PersonId
+    conversationId: ConversationId
     deadlineAt: Date
   }): Promise<RunId | undefined> {
     const id = RunId.parse(randomUUID())
@@ -77,12 +87,25 @@ export class RunStore {
   }
 
   /** Moves the run from one state to another; false when it was not in `from`. */
-  async move(input: { companyId: CompanyId; id: RunId; from: RunState; to: RunState }) {
+  async move(input: {
+    companyId: CompanyId
+    id: RunId
+    from: RunState
+    to: RunState
+    /** Only if this copy of the program still holds the run (data D25). */
+    mine?: true
+  }) {
     const rows = await this.#database.command(inCompany(input.companyId), (tx) =>
       tx
         .update(run)
         .set({ state: input.to })
-        .where(and(eq(run.id, input.id), eq(run.state, input.from)))
+        .where(
+          and(
+            eq(run.id, input.id),
+            eq(run.state, input.from),
+            input.mine === undefined ? undefined : eq(run.owner, this.#owner),
+          ),
+        )
         .returning({ id: run.id }),
     )
     return rows.length > 0
@@ -208,9 +231,88 @@ export class RunStore {
     return row
   }
 
+  /** Whether a version of the Projeto was ever saved: only then is there anything in the bucket. */
+  async hasVersion(companyId: CompanyId, projectId: ProjectId): Promise<boolean> {
+    const found = await this.#database.read(inCompany(companyId), (tx) =>
+      tx
+        .select({ id: run.id })
+        .from(run)
+        .where(and(eq(run.projectId, projectId), isNotNull(run.candidateSha)))
+        .limit(1),
+    )
+    return found.length > 0
+  }
+
   async forgetMachine(companyId: CompanyId, projectId: ProjectId) {
     await this.#database.command(inCompany(companyId), (tx) =>
       tx.delete(machine).where(eq(machine.projectId, projectId)),
     )
+  }
+
+  /** Keeps one event of the run's turn, numbered after the last, if the run is still this copy's. */
+  async appendEvent(input: {
+    companyId: CompanyId
+    runId: RunId
+    event: ConversationEvent
+  }): Promise<number | undefined> {
+    const { companyId, runId, event } = input
+    const written = await this.#database.command(inCompany(companyId), (tx) =>
+      tx.execute(sql`
+        insert into builder.run_event (run_id, company_id, n, event)
+        select r.id, r.company_id,
+          coalesce((select max(e.n) from builder.run_event e where e.run_id = r.id), 0) + 1,
+          ${JSON.stringify(event)}::jsonb
+        from builder.run r
+        where r.id = ${runId}::uuid and r.owner = ${this.#owner}::uuid
+        returning n`),
+    )
+    const [row] = written.rows
+    return row === undefined ? undefined : Number(Object(row).n)
+  }
+
+  /** The events of a run after `after`, in order. */
+  async readEvents(input: { companyId: CompanyId; runId: RunId; after: number }) {
+    const rows = await this.#database.read(inCompany(input.companyId), (tx) =>
+      tx
+        .select({ n: runEvent.n, event: runEvent.event })
+        .from(runEvent)
+        .where(and(eq(runEvent.runId, input.runId), gt(runEvent.n, input.after)))
+        .orderBy(asc(runEvent.n)),
+    )
+    return rows.map((row) => ({ n: row.n, event: ConversationEvent.parse(row.event) }))
+  }
+
+  /** The conversation's latest run, or none. */
+  async lastRunOf(companyId: CompanyId, conversationId: ConversationId) {
+    const [row] = await this.#database.read(inCompany(companyId), (tx) =>
+      tx
+        .select({ id: run.id, state: run.state })
+        .from(run)
+        .where(eq(run.conversationId, conversationId))
+        .orderBy(desc(run.deadlineAt))
+        .limit(1),
+    )
+    return row === undefined ? undefined : { id: RunId.parse(row.id), state: row.state }
+  }
+
+  /**
+   * Takes the runs of the company whose lease ended while `open` and whose hour is not over: this
+   * copy drives them now. The others are settled as they stand.
+   */
+  async takeOver(companyId: CompanyId): Promise<Run[]> {
+    const rows = await this.#database.command(inCompany(companyId), (tx) =>
+      tx
+        .update(run)
+        .set({ owner: this.#owner, leaseUntil: leaseEnd() })
+        .where(
+          and(
+            eq(run.state, 'open'),
+            lt(run.leaseUntil, sql`now()`),
+            gt(run.deadlineAt, sql`now()`),
+          ),
+        )
+        .returning(columns),
+    )
+    return rows.map((row) => Row.parse(row))
   }
 }

@@ -202,7 +202,11 @@ async function runServer(): Promise<void> {
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
-      void runs.settleRuns().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      // The turns left open with time are taken first; what is left of the old leases is settled.
+      void conversations
+        .resumeRuns()
+        .then(() => runs.settleRuns())
+        .catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))

@@ -49,19 +49,39 @@ export async function threadModel(builder: Builder, owner: Owner, conversationId
 }
 
 /** The questions kept on the thread that no saved message of the person's came after. */
+function unsavedQuestions(kept: Question[], messages: Message[]): Question[] {
+  return kept.filter(
+    (asked) =>
+      !messages.some((message) => message.role === 'person' && message.createdAt >= asked.at),
+  )
+}
+
 function unsaved(conversationId: ConversationId, kept: Question[], messages: Message[]): Message[] {
-  return kept
-    .filter(
-      (asked) =>
-        !messages.some((message) => message.role === 'person' && message.createdAt >= asked.at),
-    )
-    .map((asked) => ({
-      id: questionId(conversationId, asked.key),
-      role: 'person',
-      parts: [{ type: 'text', text: asked.content }],
-      model: null,
-      createdAt: asked.at,
-    }))
+  return unsavedQuestions(kept, messages).map((asked) => ({
+    id: questionId(conversationId, asked.key),
+    role: 'person',
+    parts: [{ type: 'text', text: asked.content }],
+    model: null,
+    createdAt: asked.at,
+  }))
+}
+
+/** The last question kept on the thread that Mastra has not saved: the one an interrupted turn answers. */
+export async function pendingQuestion(
+  builder: Builder,
+  owner: Owner,
+  conversationId: ConversationId,
+): Promise<Question | undefined> {
+  const resourceId = memoryOwner(owner)
+  const thread = await builder.memory.getThreadById({ threadId: conversationId, resourceId })
+  if (thread === null) return undefined
+  const recalled = await builder.memory.recall({
+    threadId: conversationId,
+    resourceId,
+    perPage: false,
+  })
+  const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
+  return unsavedQuestions(metadataOf(thread)[QUESTION_KEY], messages).at(-1)
 }
 
 /**

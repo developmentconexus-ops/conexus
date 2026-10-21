@@ -137,7 +137,7 @@ test('git: a base velha não move o main; o main nunca anda para trás', async (
 
 test('git: o gc que falha é anotado e o main segue onde a versão o deixou', async (t) => {
   const { repository, base, root, errors } = await opened(t, { gcEvery: 1 })
-  writeFileSync(join(root, COMPANY, `${PROJECT}.git`, 'config'), '[gc]\n\tauto = nao\n', {
+  writeFileSync(join(root, COMPANY, `${PROJECT}.git`, 'config'), '[gc]\n\tpruneExpire = nao\n', {
     flag: 'a',
   })
   const box = await machine(t, await repository.bundleOfMain())

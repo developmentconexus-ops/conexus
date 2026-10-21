@@ -10,19 +10,14 @@ import type {
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
-import type { Runs } from '../runs/public.ts'
+import type { Runs, TakenRun } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
+import { catchUp } from './catch-up.ts'
+import { pendingQuestion } from './history.ts'
 import type { Listener, Live, Owner, Question, Said } from './live.ts'
-import {
-  beforeAgentEnd,
-  endTurn,
-  keepQuestion,
-  onEvent,
-  openTurn,
-  questionId,
-  resumeOf,
-} from './live.ts'
+import { beforeAgentEnd, endTurn, keepQuestion, onEvent, openTurn, questionId } from './live.ts'
+import { after } from './turn-log.ts'
 
 /**
  * A conversation's place in this process: its session, opening or open, and how many holders use
@@ -66,6 +61,11 @@ export class Sessions {
       .then((session) => {
         const opened: Live = {
           ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
+          ...{
+            journal: (runId, event) =>
+              this.#runs.append({ companyId: owner.companyId, runId, event }),
+            lose: () => session.abort(),
+          },
           ...{ turn: undefined, asked: new Set(), runs: new Map() },
           ...{ unclaimed: undefined, questions: [], kept: Promise.resolve() },
           ...{ run: undefined, saveFailure: undefined },
@@ -163,6 +163,34 @@ export class Sessions {
   }
 
   /**
+   * Continues a turn another copy of the program left, on the run this one took (data D25): the
+   * question it answered is still on the thread, and is sent again on the same run, with the same
+   * hour. A run with no question left to answer is ended and saved as it stands.
+   */
+  async resume(taken: TakenRun): Promise<void> {
+    const { companyId, personId, conversationId, runId } = taken
+    const owner = { companyId, personId }
+    const question = await pendingQuestion(this.#builder, owner, conversationId)
+    if (question === undefined) {
+      await this.#runs.finish({ runId, reason: 'error' })
+      return
+    }
+    const entry = this.#hold({ owner, conversationId })
+    const turn = new Turn(owner)
+    const answered: Promise<void> = entry.live
+      .then((live) => {
+        live.asked.add(turn)
+        return this.#answer(live, question, turn, runId)
+      })
+      .then(() => this.#release(conversationId, entry))
+      .catch((cause: unknown) =>
+        logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
+      )
+      .finally(() => this.#turns.delete(answered))
+    this.#turns.add(answered)
+  }
+
+  /**
    * Mastra decides where the message goes (`requireDelivery`): it wakes a run, which carries this
    * message's turn to the queue until that run's `agent_end`, or it joins the run in progress,
    * whose turn stays (criterion 12). `sendSignal` is `sendMessage`'s own call, which keeps that
@@ -175,8 +203,8 @@ export class Sessions {
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
     const id = questionId(live.conversationId, question.key)
+    live.run = { id: writing, finish: (reason) => this.#runs.finish({ runId: writing, reason }) }
     const opened = openTurn(live)
-    live.run = { finish: (reason) => this.#runs.finish({ runId: writing, reason }) }
     this.#runs.attach(writing, () => live.session.abort())
     try {
       const requestContext = this.#runs.contextOf(turnContext(turn), writing)
@@ -207,6 +235,8 @@ export class Sessions {
         live.unclaimed = undefined
         endTurn(live, { reason, turn: undefined })
       }
+      // The turn is over once its last event is journaled and sent: the drain waits for that.
+      await live.turn?.queue
     }
   }
 
@@ -222,24 +252,39 @@ export class Sessions {
       await release()
       throw error
     })
-    return this.#listen(live, { ...input, release })
+    return await this.#listen(live, { ...input, release })
   }
 
-  #listen(
+  async #listen(
     live: Live,
     input: { signal: AbortSignal; lastEventId: EventId | null; release: () => Promise<void> },
   ) {
     const { signal, release } = input
-    const waiting: Said[] = resumeOf(live, input.lastEventId)
+    const waiting: Said[] = []
+    // What the turn says while the journal is read: it joins `waiting` after what the read found.
+    const early: Said[] = []
+    let gathering = true
     let wake: (() => void) | undefined
     const listener: Listener = (said) => {
-      waiting.push(said)
+      if (gathering) early.push(said)
+      else waiting.push(said)
       wake?.()
+    }
+    live.listeners.add(listener)
+    try {
+      const where = { companyId: live.owner.companyId, conversationId: live.conversationId }
+      const found = await catchUp(this.#runs, where, input.lastEventId)
+      waiting.push(...found, ...after(found.at(-1), early))
+    } catch (error) {
+      live.listeners.delete(listener)
+      await release()
+      throw error
+    } finally {
+      gathering = false
     }
     function stop() {
       wake?.()
     }
-    live.listeners.add(listener)
     const ended = AbortSignal.any([signal, this.#closing.signal])
     ended.addEventListener('abort', stop, { once: true })
     async function* drained() {

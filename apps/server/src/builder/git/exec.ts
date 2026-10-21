@@ -13,14 +13,16 @@ export class GitFault extends Error {
 
 // No system or user configuration, no hooks and no prompt: what the server's git does depends only
 // on the repository and the arguments it is given.
-const ENVIRONMENT = {
+// `spawn` types `env` as `NodeJS.ProcessEnv`, which the edge's generated declarations give required
+// keys in the programs that include them; copying onto a bare object keeps the literal untyped there.
+const ENVIRONMENT: NodeJS.ProcessEnv = Object.assign(Object.create(null), {
   PATH: '/usr/local/bin:/usr/bin:/bin',
   LC_ALL: 'C',
   GIT_CONFIG_NOSYSTEM: '1',
   GIT_CONFIG_GLOBAL: '/dev/null',
   GIT_ATTR_NOSYSTEM: '1',
   GIT_TERMINAL_PROMPT: '0',
-}
+})
 
 export type GitOptions = {
   /** Killed with SIGKILL when it runs past this (code C57). */

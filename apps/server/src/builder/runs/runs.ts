@@ -1,5 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import type { CompanyId, ConversationId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ConversationEvent,
+  ConversationId,
+  PersonId,
+  ProjectId,
+  RunId,
+} from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Result } from '../../platform/result.ts'
@@ -35,6 +42,9 @@ type Admission = {
   conversationId: ConversationId
   personId: PersonId
 }
+
+/** A run another copy of the program left open, taken over to be driven here. */
+export type TakenRun = Admission & { runId: RunId; deadlineAt: Date }
 
 /**
  * The Builder's runs (decision 0051): one turn that may write per Projeto, the workspace it works
@@ -78,7 +88,9 @@ export class Runs {
     await settleExpired(this.#context, { companyId, projectId })
     this.#sweepDaily()
     const deadlineAt = new Date(Date.now() + (this.#deps.turnMs?.() ?? TURN_MS))
-    const id = await this.#context.store.admit({ companyId, projectId, personId, deadlineAt })
+    const { conversationId } = input
+    const row = { companyId, projectId, personId, conversationId, deadlineAt }
+    const id = await this.#context.store.admit(row)
     const fields = { companyId, projectId, conversationId: input.conversationId }
     if (id === undefined) {
       this.#deps.log.info(fields, 'RUN_BUSY')
@@ -109,6 +121,43 @@ export class Runs {
     }
   }
 
+  /**
+   * Keeps an event of the run's turn, even after the run ended: its last events follow its save.
+   * `undefined` once the run is not this copy's (data D25).
+   */
+  append(input: { companyId: CompanyId; runId: RunId; event: ConversationEvent }) {
+    return this.#context.store.appendEvent(input)
+  }
+
+  /** The events a run kept after `after`. */
+  events(input: { companyId: CompanyId; runId: RunId; after: number }) {
+    return this.#context.store.readEvents(input)
+  }
+
+  /** The conversation's latest run, to tell which turn a reconnecting stream belongs to. */
+  lastRunOf(companyId: CompanyId, conversationId: ConversationId) {
+    return this.#context.store.lastRunOf(companyId, conversationId)
+  }
+
+  /**
+   * At start: the runs another copy left `open` with their lease ended become this copy's (data
+   * D25), each driven again with the same hour (card, the clocks). A run whose hour is over is
+   * saved as it stands instead of continued.
+   */
+  async takeOver(): Promise<TakenRun[]> {
+    const taken: TakenRun[] = []
+    for (const companyId of await this.#context.store.companiesWithRuns()) {
+      for (const row of await this.#context.store.takeOver(companyId)) {
+        const { projectId, personId, conversationId, deadlineAt } = row
+        const idle = { workspace: undefined, stop: () => undefined, lost: false }
+        this.#driven.set(row.id, { companyId, projectId, deadlineAt, ...idle })
+        this.#deps.log.info({ companyId, projectId, runId: row.id }, 'RUN_RESUMED')
+        taken.push({ companyId, projectId, personId, conversationId, deadlineAt, runId: row.id })
+      }
+    }
+    return taken
+  }
+
   /** The request context of the turn, naming its run. */
   contextOf(context: RequestContext, runId: RunId): RequestContext {
     return withRun(context, runId)
@@ -134,7 +183,10 @@ export class Runs {
     const { companyId, projectId } = mine
     const { store } = this.#context
     try {
-      const claimed = await store.move({ companyId, id: input.runId, from: 'open', to: 'saving' })
+      const claimed = await store.move({
+        ...{ companyId, id: input.runId, from: 'open', to: 'saving' },
+        mine: true,
+      })
       const saved = claimed ? await store.get(companyId, input.runId) : undefined
       if (saved === undefined) return 'gone'
       const fields = { companyId, projectId, runId: input.runId, reason: input.reason }
@@ -159,7 +211,6 @@ export class Runs {
   }
 
   async settleRuns(): Promise<void> {
-    this.#sweepDaily()
     await settleRuns(this.#context)
   }
 
