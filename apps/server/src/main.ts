@@ -122,6 +122,8 @@ export function subjectsOf(deps: {
   repository: RepositoryOf
   copy: GitCopy
   turnMs?: () => number
+  renewMs?: () => number
+  yieldMs?: () => number
   log: FailureLog
 }): {
   runs: Runs
@@ -139,7 +141,10 @@ export function subjectsOf(deps: {
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
   const { repository, copy } = deps
   const machines = deps.machinesOf(database)
-  const runs = createRuns({ database, log, machines, repository, copy, turnMs: deps.turnMs })
+  const runs = createRuns({
+    ...{ database, log, machines, repository, copy },
+    ...{ turnMs: deps.turnMs, renewMs: deps.renewMs, yieldMs: deps.yieldMs },
+  })
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },
     pool: deps.mastraPool,

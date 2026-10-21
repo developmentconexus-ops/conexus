@@ -48,12 +48,13 @@ export function testAppPorts(
     cloudflare: fakeCloudflare(),
     postgres: heldCompanyPostgres(config),
   },
+  machineFolder?: string,
 ) {
   return {
     neon: doubles.neon.neon,
     companyPostgres: doubles.postgres.companyPostgres,
     cloudflare: doubles.cloudflare.cloudflare,
-    ...testBuilderPorts(config),
+    ...testBuilderPorts(config, machineFolder),
     log: silent,
   }
 }

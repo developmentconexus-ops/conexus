@@ -150,6 +150,14 @@ test('a máquina cai antes de guardar: failed, MACHINE_LOST, e o main como era',
   )
 })
 
+test('a máquina não liga na primeira ferramenta: o aviso de que não ligou, não o de que caiu; nada é guardado', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, working(writing('a.ts', 'x\n')))
+  hub.builder.control.start = 'unreachable'
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
+  assert.equal((await runs(hub))[0]?.state, 'failed')
+})
+
 test('recusa ao guardar (2.000 arquivos): o texto da recusa, o main como era', async (t) => {
   const many = {
     name: COMMAND,

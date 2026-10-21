@@ -17,7 +17,7 @@ import { createCopyRetry } from './copy-retry.ts'
 import { dailySweep, sweep } from './daily.ts'
 import { watchDeadline } from './deadline.ts'
 import { runIn, withRun } from './keys.ts'
-import { holdLease } from './lease.ts'
+import { holdLease, RENEW_MS, repeatEvery } from './lease.ts'
 import type { ReleaseScope } from './removal.ts'
 import { releaseRuns } from './removal.ts'
 import { saveRun } from './save.ts'
@@ -26,6 +26,9 @@ import { RunStore } from './store.ts'
 
 /** A turn's hour (card, limits). */
 const TURN_MS = 3_600_000
+
+/** How long a stopping copy waits for its turns to end before it lets go of their leases. */
+const YIELD_AFTER_MS = 8_000
 
 function idleRun(taken: boolean) {
   return {
@@ -75,6 +78,7 @@ export class Runs {
   readonly #driven = new Map<RunId, Driven>()
   readonly #retry = createCopyRetry(() => copyPending(this.#context))
   readonly #sweepDaily: () => void
+  #stopRetaking: () => void = () => undefined
 
   constructor(deps: RunsDeps) {
     this.#deps = deps
@@ -138,6 +142,7 @@ export class Runs {
     if (mine === undefined) return
     const stopDeadline = watchDeadline(mine.deadlineAt, abort)
     const stopLease = holdLease({
+      everyMs: this.#deps.renewMs?.(),
       renew: () => this.#context.store.renew(mine.companyId, runId),
       lost: () => {
         mine.lost = true
@@ -188,6 +193,33 @@ export class Runs {
       }
     }
     return taken
+  }
+
+  /**
+   * Looks again, as long as this copy runs, for the turns another copy left whose lease has since
+   * ended (data D25): a copy that was killed leaves its lease up to ninety seconds ahead, so the
+   * look at start finds nothing. `resume` drives what is found.
+   */
+  retakeEvery(resume: () => Promise<void>): void {
+    this.#stopRetaking = repeatEvery({
+      everyMs: this.#deps.renewMs?.() ?? RENEW_MS,
+      work: resume,
+      failed: (error) => this.#deps.log.error({ error: String(error) }, 'RUN_RETAKE_FAILED'),
+    })
+  }
+
+  /**
+   * Lets go of the leases once the turns are drained, or after a short wait if they are not, so
+   * another copy takes the turns a stuck call holds and not the ninety seconds' wait; the turns
+   * still draining go on until the process ends.
+   */
+  async yieldAfter(drained: Promise<void>): Promise<void> {
+    const gave = AbortSignal.timeout(this.#deps.yieldMs?.() ?? YIELD_AFTER_MS)
+    await Promise.race([
+      drained,
+      new Promise<void>((done) => gave.addEventListener('abort', () => done())),
+    ])
+    await this.stop()
   }
 
   /** The request context of the turn, naming its run. */
@@ -263,6 +295,7 @@ export class Runs {
 
   /** The stop of this copy: timers end and the leases are yielded, nothing is settled (code C62). */
   async stop(): Promise<void> {
+    this.#stopRetaking()
     this.#retry.stop()
     const mine = [...this.#driven.values()]
     for (const each of mine) {

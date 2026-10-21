@@ -11,12 +11,27 @@ export type Control = {
   /** Whether the provider still holds the recorded machine. */
   exists: boolean
   networkClosed: number
+  /** How long the machine takes to come up after it says it runs, as E2B's start does. */
+  upMs: number
+  /** Starts the latest machine again as the provider does after it died: its `onStart` runs once more. */
+  restart: () => Promise<void>
+  /** The ids the machines asked the provider to reattach. */
+  reattached: (string | undefined)[]
   /** The deadline each machine was asked for. */
   deadlines: Date[]
 }
 
 export function newControl(): Control {
-  return { outcome: 'created', start: 'ok', exists: true, networkClosed: 0, deadlines: [] }
+  return {
+    outcome: 'created',
+    start: 'ok',
+    exists: true,
+    networkClosed: 0,
+    upMs: 0,
+    restart: async () => undefined,
+    reattached: [],
+    deadlines: [],
+  }
 }
 
 /** A machine that is a folder of this computer: E2B's start, its outcome and its failures made by hand. */
@@ -24,10 +39,15 @@ export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
     mkdirSync(folder, { recursive: true })
     control.deadlines.push(options.deadline)
+    control.reattached.push(options.sandboxId)
     const sandbox = new LocalSandbox({
       workingDirectory: folder,
-      onStart: (started) => options.onStart({ ...started, outcome: control.outcome }),
+      onStart: async (started) => {
+        await new Promise((up) => setTimeout(up, control.upMs))
+        await options.onStart({ ...started, outcome: control.outcome })
+      },
     })
+    control.restart = () => Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
     const start = sandbox.start.bind(sandbox)
     sandbox.start = async (...args) => {
       if (control.start === 'hang') return new Promise<never>(() => undefined)

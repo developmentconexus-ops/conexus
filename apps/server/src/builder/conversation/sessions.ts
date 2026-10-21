@@ -15,6 +15,7 @@ import type { Runs, TakenRun } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import { catchUp } from './catch-up.ts'
+import { deliver } from './deliver.ts'
 import { pendingQuestion } from './history.ts'
 import type { Listener, Live, Owner, Question, Said } from './live.ts'
 import {
@@ -174,18 +175,20 @@ export class Sessions {
   }
 
   /**
-   * Continues a turn another copy of the program left, on the run this one took (data D25): the
-   * question it answered is still on the thread, and is sent again on the same run, with the same
-   * hour. A run with no question left to answer is ended and saved as it stands.
+   * Continues a turn another copy of the program left, on the run this one took (data D25), with
+   * the same hour. The steps it took are not on the thread (`savePerStep: false`), so the model is
+   * told the server restarted and to look at `git status` (card, "A continuação"); a question not
+   * saved yet is sent again instead. A run whose hour is over is ended and saved as it
+   * stands.
    */
   async resume(taken: TakenRun): Promise<void> {
     const { companyId, personId, conversationId, runId } = taken
     const owner = { companyId, personId }
-    const question = await pendingQuestion(this.#builder, owner, conversationId)
-    if (question === undefined) {
-      await this.#runs.finish({ runId, reason: 'error' })
+    if (taken.expired) {
+      await this.#runs.finish({ runId, reason: 'deadline' })
       return
     }
+    const question = await pendingQuestion(this.#builder, owner, conversationId)
     const entry = this.#hold({ owner, conversationId })
     const turn = new Turn(owner)
     const answered: Promise<void> = entry.live
@@ -212,7 +215,7 @@ export class Sessions {
    */
   async #answer(
     live: Live,
-    question: Question,
+    question: Question | undefined,
     turn: Turn,
     run: { runId: RunId; traceId: string },
     began?: 'resumed',
@@ -220,7 +223,7 @@ export class Sessions {
     const writing = run.runId
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
-    const id = questionId(live.conversationId, question.key)
+    const id = questionId(live.conversationId, question?.key ?? writing)
     live.run = {
       id: writing,
       traceId: run.traceId,
@@ -234,9 +237,8 @@ export class Sessions {
       const requestContext = this.#runs.contextOf(turnContext(turn), writing)
       // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
       const tracingOptions = { traceId: run.traceId.replaceAll('-', '') }
-      const options = { requestContext, requireDelivery: true, tracingOptions }
-      const signal = { type: 'user', id, contents: question.content } as const
-      const accepted = await live.session.sendSignal(signal, options).accepted
+      const options = { requestContext, requireDelivery: true, tracingOptions } as const
+      const accepted = await deliver(live, { question, id }, options)
       opened.after ??= id
       const runId = accepted.action === 'wake' ? accepted.runId : undefined
       if (runId !== undefined && live.unclaimed?.run === runId) {
