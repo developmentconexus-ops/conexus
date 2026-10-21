@@ -214,3 +214,23 @@ test('a falha do turno, parte da resposta, segue na conversa relida depois do fi
       .map((alert) => alert.textContent),
   ).toEqual(['O modelo não respondeu. Envie a mensagem de novo.'])
 })
+
+test('o turno retomado após reiniciar, relido acabado, diz que o servidor reiniciou sem relógio', async () => {
+  await openConversation(
+    conversationOf({
+      id: FIRST,
+      messages: [
+        {
+          ...builderSaid(''),
+          parts: [
+            { type: 'text', text: 'Guardei o endereço.' },
+            { type: 'machine', phase: 'resumed' },
+          ],
+        },
+      ],
+    }),
+  )
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  await within(log).findByText('O servidor reiniciou; continuando…')
+  expect(within(log).queryByText(/\(há /)).toBeNull()
+})

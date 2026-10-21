@@ -236,26 +236,6 @@ function withGeometry() {
   }
 }
 
-test('o turno retomado após reiniciar, relido acabado, diz que o servidor reiniciou sem relógio', async () => {
-  await openConversation(
-    conversationOf({
-      id: FIRST,
-      messages: [
-        {
-          ...builderSaid(''),
-          parts: [
-            { type: 'text', text: 'Guardei o endereço.' },
-            { type: 'machine', phase: 'resumed' },
-          ],
-        },
-      ],
-    }),
-  )
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
-  await within(log).findByText('O servidor reiniciou; continuando…')
-  expect(within(log).queryByText(/\(há /)).toBeNull()
-})
-
 test('a conversa abre no fim, quem subiu não é puxado quando ela cresce e volta com "Ir para o fim da conversa"', async () => {
   const restore = withGeometry()
   try {
