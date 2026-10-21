@@ -5,6 +5,7 @@
   ".github/workflows/rollback.yml": 1,
   "apps/server/src/builder/conversation/kept.ts": 1,
   "apps/server/src/builder/conversation/sessions.ts": 3,
+  "apps/server/src/builder/machine/in-machine.ts": 1,
   "apps/server/src/builder/model-accounts/google/calls.ts": 1,
   "apps/server/src/hub/apps/prune.ts": 1,
   "apps/server/src/hub/apps/versions.ts": 3,
