@@ -65,6 +65,7 @@ async function succeeds(context: Context, args: readonly string[]): Promise<bool
 /** Whether `main` holds this commit in its history: the only commits the source view reads. */
 export async function inMain(context: Context, sha: Sha): Promise<boolean> {
   return (
+    (await present(context)) &&
     (await succeeds(context, ['rev-parse', '--verify', '--quiet', `${sha}^{commit}`])) &&
     (await succeeds(context, ['merge-base', '--is-ancestor', sha, MAIN]))
   )
