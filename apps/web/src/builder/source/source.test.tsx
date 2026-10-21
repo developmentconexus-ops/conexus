@@ -22,7 +22,11 @@ beforeEach(() => server.use(conversationsNone, ...projectsRead(VIEW)))
 
 function source(files: { path: string; bytes: number }[], version = 1) {
   return http.get(SOURCE, () =>
-    HttpResponse.json({ version, commit: COMMIT, savedAt: '2026-10-21T12:00:00.000Z', files }),
+    HttpResponse.json(
+      version === 0
+        ? { version, commit: null, savedAt: null, files }
+        : { version, commit: COMMIT, savedAt: '2026-10-21T12:00:00.000Z', files },
+    ),
   )
 }
 
