@@ -36,6 +36,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@mastra/evals": "1.10.7",
     "@react-email/render": "2.1.0",
     "@types/pg": "8.23.1",
     "drizzle-kit": "1.0.0-rc.4",

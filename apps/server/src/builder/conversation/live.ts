@@ -19,6 +19,7 @@ import type { Outcome } from '../runs/public.ts'
 import type { Place } from './parts.ts'
 import { fileOf, modelOf, partOf } from './parts.ts'
 import { ShellTail } from './shell.ts'
+import { TurnTally, turnLine } from './turn-line.ts'
 import type { Journal, Listener, TurnLog } from './turn-log.ts'
 import { flushText, say } from './turn-log.ts'
 
@@ -85,7 +86,9 @@ export type Live = {
   questions: Question[]
   kept: Promise<void>
   /** The run of the message in progress: ends and saves it when Mastra's run is about to end. */
-  run: { id: RunId; finish: (reason: string) => Promise<Outcome | 'gone'> } | undefined
+  run:
+    | { id: RunId; traceId: string; finish: (reason: string) => Promise<Outcome | 'gone'> }
+    | undefined
   /** Why saving failed, for the turn's end to say (card, the failures table). */
   saveFailure: TurnFailureCode | undefined
   /** The version the turn saved, for its end to say. */
@@ -93,7 +96,7 @@ export type Live = {
   unsubscribe: () => void
 }
 
-function newTurn(id: RunId | undefined): TurnLog {
+function newTurn(id: RunId | undefined, traceId?: string): TurnLog {
   const startedAt = new Date().toISOString()
   const answer: Message = {
     id: MessageId.parse(id ?? randomUUID()),
@@ -111,6 +114,8 @@ function newTurn(id: RunId | undefined): TurnLog {
     queue: Promise.resolve(),
     thinking: undefined,
     shells: new Map(),
+    tally: new TurnTally(),
+    traceId,
     failureKept: false,
     ended: false,
   }
@@ -119,7 +124,7 @@ function newTurn(id: RunId | undefined): TurnLog {
 /** The turn in progress, or a new one, which the stream opens with its `turn`. */
 export function openTurn(live: Live): TurnLog {
   if (live.turn !== undefined && !live.turn.ended) return live.turn
-  const turn = newTurn(live.run?.id)
+  const turn = newTurn(live.run?.id, live.run?.traceId)
   live.turn = turn
   const { answer, startedAt } = turn
   say(live, turn, { type: 'turn', message: structuredClone(answer), startedAt })
@@ -175,6 +180,7 @@ function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
   // The text arrives by its deltas.
   if (shown.type === 'text') return
   tell(live, turn, { type: 'part', part: shown })
+  if (shown.type === 'tool' && shown.state === 'error') turn.tally.failed(shown.kind)
   const file = shown.type === 'tool' ? fileOf(shown) : undefined
   if (file !== undefined) tell(live, turn, { type: 'part', part: file })
 }
@@ -218,6 +224,8 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
     }
     endTurn(live, { reason: event.reason, turn: run?.turn })
     run?.ended()
+  } else if (event.type === 'usage_update') {
+    live.turn?.tally.step(event.usage.totalTokens)
   } else if (event.type === 'shell_output' || event.type === 'command_exit') {
     onShellEvent(live, event)
   } else onMessageEvent(live, event)
@@ -337,12 +345,11 @@ export function endTurn(live: Live, ending: Ending): void {
     void keepFailure(live, turn, code)
   }
   const { conversationId, owner } = live
-  const fields = {
-    companyId: owner.companyId,
-    conversationId,
-    reason: ended,
-    ...(code && { code }),
-  }
+  const line = turnLine({
+    ...{ runId: turn.id, traceId: turn.traceId, startedAt: turn.startedAt, tally: turn.tally },
+    ...{ end: ended, errorCode: code },
+  })
+  const fields = { companyId: owner.companyId, conversationId, reason: ended, ...line }
   live.log.info(fields, 'CONVERSATION_TURN_ENDED')
   say(live, turn, { type: 'turnEnd', reason: ended })
 }

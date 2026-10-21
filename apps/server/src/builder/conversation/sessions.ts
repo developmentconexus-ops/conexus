@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type {
   ConversationId,
   Effort,
@@ -133,7 +134,9 @@ export class Sessions {
    * Keeps the person's question on the thread, then sends it on a turn of its own, whose answer
    * comes on the stream; resolves once the question is kept.
    */
-  async send(input: OfConversation & { projectId: ProjectId; question: Question }): Promise<void> {
+  async send(
+    input: OfConversation & { projectId: ProjectId; question: Question; traceId: string },
+  ): Promise<void> {
     const { owner, conversationId } = input
     const admitted = await this.#runs.admit({
       ...owner,
@@ -157,7 +160,7 @@ export class Sessions {
     })
     const answered: Promise<void> = kept
       .then(
-        (live) => this.#answer(live, input.question, turn, runId),
+        (live) => this.#answer(live, input.question, turn, { runId, traceId: input.traceId }),
         // The question was not kept: `send` throws it to the caller, and no turn starts.
         () => this.#runs.finish({ runId, reason: 'error' }),
       )
@@ -188,7 +191,7 @@ export class Sessions {
     const answered: Promise<void> = entry.live
       .then((live) => {
         live.asked.add(turn)
-        return this.#answer(live, question, turn, runId, 'resumed')
+        return this.#answer(live, question, turn, { runId, traceId: randomUUID() }, 'resumed')
       })
       .then(() => this.#release(conversationId, entry))
       .catch((cause: unknown) =>
@@ -211,20 +214,27 @@ export class Sessions {
     live: Live,
     question: Question,
     turn: Turn,
-    writing: RunId,
+    run: { runId: RunId; traceId: string },
     began?: 'resumed',
   ): Promise<void> {
+    const writing = run.runId
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
     const id = questionId(live.conversationId, question.key)
-    live.run = { id: writing, finish: (reason) => this.#runs.finish({ runId: writing, reason }) }
+    live.run = {
+      id: writing,
+      traceId: run.traceId,
+      finish: (reason) => this.#runs.finish({ runId: writing, reason }),
+    }
     const opened = openTurn(live)
     if (began !== undefined) tellMachine(live, began)
     this.#runs.attach(writing, () => live.session.abort())
     this.#runs.onPhase(writing, (phase) => tellMachine(live, phase))
     try {
       const requestContext = this.#runs.contextOf(turnContext(turn), writing)
-      const options = { requestContext, requireDelivery: true }
+      // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
+      const tracingOptions = { traceId: run.traceId.replaceAll('-', '') }
+      const options = { requestContext, requireDelivery: true, tracingOptions }
       const signal = { type: 'user', id, contents: question.content } as const
       const accepted = await live.session.sendSignal(signal, options).accepted
       opened.after ??= id

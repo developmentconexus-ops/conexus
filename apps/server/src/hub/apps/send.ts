@@ -214,7 +214,7 @@ export async function sendVersion(
   if (stored.kind === 'REPLAY') return { version: stored.version, created: false }
   const versionId = stored.version.id
   const sending: Sending = { scope, companyId, projectId, versionId, received }
-  deps.log.info({ companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')
+  deps.log.info({ by: person.id, companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')
   // A throw on the way (the Hub's database, Neon refusing its key) abandons the send as well.
   const prepared = await prepare(deps, { ...sending, databaseReady: stored.databaseReady }).catch(
     async (error: unknown) => {
@@ -235,7 +235,7 @@ export async function sendVersion(
     throw error
   }
   if (finished.kind !== 'LIVE') return stop(deps, sending, finished.kind)
-  deps.log.info({ companyId, projectId, versionId }, 'APP_VERSION_LIVE')
+  deps.log.info({ by: person.id, companyId, projectId, versionId }, 'APP_VERSION_LIVE')
   // The version is on the air: a prune that cannot finish now is retried by the next one.
   await prune(deps, sending).catch((error: unknown) => logFailure(deps.log, databaseFailure(error)))
   return { version: { ...stored.version, state: 'ready', live: true }, created: true }

@@ -1,7 +1,15 @@
 name: conexus
 
+# The log is a file the engine rotates: ten megabytes a file, five files a service, so it never fills the disk.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: "5"
+
 services:
   hub:
+    logging: *logging
     image: ${HUB_IMAGE:?HUB_IMAGE must name the image by digest}
     init: true
     restart: unless-stopped
@@ -69,6 +77,7 @@ services:
       start_period: 10s
 
   migrate:
+    logging: *logging
     image: ${HUB_IMAGE:?HUB_IMAGE must name the image by digest}
     init: true
     profiles:
@@ -85,6 +94,7 @@ services:
       HUB_MIGRATION_DATABASE_URL_FILE: /run/secrets/hub_migration_database_url
 
   cloudflared:
+    logging: *logging
     image: cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
     init: true
     restart: unless-stopped

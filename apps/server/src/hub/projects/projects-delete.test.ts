@@ -124,6 +124,7 @@ test('log: PROJECT_CREATED, COMPANY_DATABASE_CREATED e PROJECT_DELETED levam ids
   for (const message of ['COMPANY_DATABASE_CREATED', 'PROJECT_CREATED', 'PROJECT_DELETED']) {
     const line = lines.find((logged) => logged.msg === message)
     assert.equal(line?.companyId, companyId, message)
+    assert.match(String(line?.by), /^\S+$/, `${message} says who did it`)
     assert.match(String(line?.traceId), /^[0-9a-f-]{36}$/, message)
   }
   assert.doesNotMatch(JSON.stringify(lines), /Pedidos Secretos/)

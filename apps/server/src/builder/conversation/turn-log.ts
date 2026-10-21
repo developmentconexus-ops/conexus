@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { ShellTail } from './shell.ts'
+import type { TurnTally } from './turn-line.ts'
 
 /** An event as the stream sends it, with the id a reconnect names it by. */
 export type Said = { id: EventId; event: ConversationEvent }
@@ -33,6 +34,9 @@ export type TurnLog = {
   thinking: { id: string; since: number } | undefined
   /** The output of the commands in progress, by the tool call that runs them. */
   shells: Map<string, ShellTail>
+  tally: TurnTally
+  /** The request that began the turn, for its log line. */
+  traceId: string | undefined
   failureKept: boolean
   ended: boolean
 }

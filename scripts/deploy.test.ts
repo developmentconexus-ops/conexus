@@ -247,3 +247,14 @@ test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usu
   )
   assert.ok(compose.services.hub.secrets.includes('hub_e2b_api_key'))
 })
+
+test('o log de cada serviço gira: json-file, dez megabytes, cinco arquivos (S42)', () => {
+  const compose = parse(readFileSync(join(INFRA, 'compose.yaml'), 'utf8'))
+  for (const [name, service] of Object.entries<{ logging?: unknown }>(compose.services)) {
+    assert.deepEqual(
+      service.logging,
+      { driver: 'json-file', options: { 'max-size': '10m', 'max-file': '5' } },
+      name,
+    )
+  }
+})

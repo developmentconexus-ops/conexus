@@ -225,6 +225,8 @@ type Parsed<O extends Operation, K extends 'params' | 'query' | 'body'> = NonNul
 type Input<O extends Operation> = {
   headers: Headers
   log: FailureLog
+  /** The request's id, the one every log line of it carries as `traceId`. */
+  traceId: string
   signal: AbortSignal
 } & Parsed<O, 'params'> &
   Parsed<O, 'query'> &
@@ -250,6 +252,7 @@ export function serve(
   handler: (input: {
     headers: Headers
     log: FailureLog
+    traceId: string
     signal: AbortSignal
     params: unknown
     query: unknown
@@ -269,6 +272,7 @@ export function serve(
       const input = {
         headers: headersOf(request),
         log: request.log,
+        traceId: request.id,
         signal: untilClientLeaves(reply),
         ...partsOf(operation, request),
         ...(operation.access === 'session'
