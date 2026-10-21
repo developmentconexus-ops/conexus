@@ -171,7 +171,7 @@ test('o modelo inicial: sem padrão a empresa só com chave OpenAI abre em GPT-5
   await hub.test.asOwner(`delete from builder.model_account`)
   await connect(hub, ana, accounts, 'google')
   assert.deepEqual(await startOf(hub, carla, accounts), {
-    model: 'google/gemini-2.5-pro',
+    model: 'google/gemini-3.5-flash-lite',
     effort: 'low',
     from: 'starter',
     account: 'google',

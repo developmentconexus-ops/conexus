@@ -11,7 +11,7 @@ A person and the company each keep a default `{model, effort}` (Meus padrões, P
 The owner and the administrator change the company's; each member, their own. A new
 conversation copies the default at birth, so a later change touches no existing conversation. Its
 model is the first usable of: the one asked for, the person's default, the company's, then the
-starter models in order (Claude Sonnet 5.5, GPT-5, Gemini 2.5 Pro). A default with no usable account is skipped, and the screens say so. A level the
+starters in order (Claude Sonnet 5.5, GPT-5, Gemini 3.5 Flash Lite, founder 2026-10-21). A default with no usable account is skipped, and the screens say so. A level the
 model does not accept descends to the highest it accepts below, else the lowest. The account used
 first is the first of the provider's queue.
 
