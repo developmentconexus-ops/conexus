@@ -10,7 +10,8 @@ decision record. A careful report is 3,000 to 8,000 words; past 8,000, split the
 2. The library's own code and embedded docs, at the installed version. For Mastra, the `mastra`
    skill, then the package's `dist/docs` and source ([library](library.md)); then how Mastra's own
    products (Factory, Mastra Code) do it.
-3. Reference products' code, read at a pinned commit, the same questions asked of each.
+3. Reference products' code, read at a pinned commit, the same questions asked of each; for
+   Cloudflare and the AI build flow, vibesdk ([stack](../../../../docs/reference/stack.md)).
 4. Vendor pages, with the date read.
 5. A small proof on the real service, only for an expensive choice ([proof](proof.md)).
 

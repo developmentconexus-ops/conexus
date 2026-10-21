@@ -116,8 +116,8 @@ constrói não lê o estudo):
   in a pull request of its own ([delivery L20](../../../../docs/guides/delivery.md)).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - A criterion about a provider's behaviour cites the installed provider's code.
-- The column "Nativo / referência" of the table of parts says what Mastra, Mastra Code and Conexus
-  OS use for the part, with `file:line`; a divergence is a question on the founder's page.
+- The column "Nativo / referência" of the table of parts says what Mastra, Mastra Code, vibesdk and
+  Conexus OS use for the part, with `file:line`; a divergence is a question on the founder's page.
 - The order of the work names guide rules by identifier and never restates them.
 - Every write or command the step adds, its own or a library's, has its row in the failure table,
   and each cell names its criterion; a step with no write writes "nenhuma". Founder, 2026-10-15:
