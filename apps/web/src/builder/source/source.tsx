@@ -37,8 +37,8 @@ function FileText(props: { commit: string; path: string }) {
   )
 }
 
-function Files(props: { source: ProjectSource }) {
-  const { source } = props
+function Files(props: { source: ProjectSource; commit: string }) {
+  const { source, commit } = props
   const [chosen, setChosen] = useState<string>()
   const path = source.files.some((file) => file.path === chosen) ? chosen : source.files[0]?.path
   return (
@@ -51,8 +51,8 @@ function Files(props: { source: ProjectSource }) {
               aria-current={file.path === path ? 'true' : undefined}
               onClick={() => setChosen(file.path)}
               className={cn(
-                'w-full truncate rounded-control px-sm py-xs text-left font-mono text-fact hover:bg-surface-3',
-                file.path === path && 'bg-surface-3 text-text',
+                'w-full break-all rounded-control px-sm py-xs text-left font-mono text-fact',
+                file.path === path ? 'bg-accent-soft text-text' : 'hover:bg-surface-3',
               )}
             >
               {file.path}
@@ -60,7 +60,7 @@ function Files(props: { source: ProjectSource }) {
           </li>
         ))}
       </ul>
-      {path !== undefined && <FileText commit={source.commit} path={path} />}
+      {path !== undefined && <FileText commit={commit} path={path} />}
     </div>
   )
 }
@@ -84,7 +84,8 @@ export function Source() {
     )
   }
   const source = read.data
-  if (source.version === 0) {
+  const { commit, savedAt } = source
+  if (commit === null || savedAt === null) {
     return (
       <p className="text-text-2">
         Ainda não há código. O Builder escreve aqui quando você descreve o aplicativo.
@@ -94,9 +95,9 @@ export function Source() {
   return (
     <div className="flex flex-col gap-md">
       <p className="text-text-2">
-        Versão {source.version}, guardada em {dayAndHour(source.savedAt)}
+        Versão {source.version}, guardada em {dayAndHour(savedAt)}
       </p>
-      <Files source={source} />
+      <Files source={source} commit={commit} />
     </div>
   )
 }

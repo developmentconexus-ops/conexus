@@ -131,7 +131,7 @@ export function createGitCopy(
     async removeProject(input) {
       const keys = await keysOf(prefixOf(input))
       for (let at = 0; at < keys.length; at += DELETE_BATCH) {
-        await call((abortSignal) =>
+        const deleted = await call((abortSignal) =>
           client.send(
             new DeleteObjectsCommand({
               Bucket,
@@ -140,6 +140,10 @@ export function createGitCopy(
             { abortSignal },
           ),
         )
+        // R2 answers 200 with the keys it refused: a removal that leaves one has not finished.
+        if (deleted.Errors?.length) {
+          throw new Error(`R2 refused to delete ${deleted.Errors.length} of the Projeto's copies`)
+        }
       }
     },
   }

@@ -22,7 +22,11 @@ beforeEach(() => server.use(conversationsNone, ...projectsRead(VIEW)))
 
 function source(files: { path: string; bytes: number }[], version = 1) {
   return http.get(SOURCE, () =>
-    HttpResponse.json({ version, commit: COMMIT, savedAt: '2026-10-21T12:00:00.000Z', files }),
+    HttpResponse.json(
+      version === 0
+        ? { version, commit: null, savedAt: null, files }
+        : { version, commit: COMMIT, savedAt: '2026-10-21T12:00:00.000Z', files },
+    ),
   )
 }
 
@@ -73,6 +77,20 @@ test('um arquivo que não é texto: a frase da recusa, e os outros seguem', asyn
   expect(screen.getByRole('button', { name: 'logo.png' })).toBeTruthy()
 })
 
+test('um arquivo grande demais diz que é grande, e o caminho longo quebra em vez de ser cortado', async () => {
+  const long = `src/${'pasta/'.repeat(12)}relatorio-de-encomendas.ts`
+  server.use(
+    source([{ path: long, bytes: 1_200_000 }]),
+    http.get(`${SOURCE}/file`, () => refusal('SOURCE_FILE_TOO_LARGE')),
+  )
+  open()
+  expect(await screen.findByText(/grande demais para mostrar/)).toBeTruthy()
+  const row = screen.getByRole('button', { name: long })
+  expect(row.className).toContain('break-all')
+  expect(row.className).not.toContain('truncate')
+  expect(row.className).toContain('bg-accent-soft')
+})
+
 test('a leitura que falha: a frase e "Tentar de novo", que lê outra vez', async () => {
   let calls = 0
   server.use(
@@ -82,8 +100,8 @@ test('a leitura que falha: a frase e "Tentar de novo", que lê outra vez', async
         ? refusal('DATABASE_UNAVAILABLE')
         : HttpResponse.json({
             version: 0,
-            commit: COMMIT,
-            savedAt: '2026-10-21T12:00:00.000Z',
+            commit: null,
+            savedAt: null,
             files: [],
           })
     }),

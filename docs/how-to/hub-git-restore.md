@@ -4,7 +4,7 @@ Como voltar o Git de um Projeto da cópia no R2, quando o volume `hub_git` perde
 
 ## Antes
 
-Faça logo, antes de alguém escrever no Projeto. Um repositório que some é refeito vazio na primeira leitura da aba Código ou na primeira mensagem, e a próxima versão nasceria como a de número 1. Se alguém já escreveu depois da perda, pare e avise o Firstmate: não restaure por cima.
+Faça logo, antes de alguém escrever no Projeto. Um repositório que some é refeito vazio na primeira mensagem ao Builder, e a próxima versão nasceria como a de número 1. A aba Código só lê: sem repositório, ela mostra "nenhuma versão guardada" e não o refaz. Se alguém já escreveu depois da perda, pare e avise o Firstmate: não restaure por cima.
 
 Reúna o id da empresa e o id do Projeto (estão no endereço da tela do Projeto) e a chave do bucket (`hub_git_copy_key`, no servidor).
 

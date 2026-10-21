@@ -1,3 +1,4 @@
+import { stat } from 'node:fs/promises'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { runGit } from './exec.ts'
@@ -12,6 +13,8 @@ export type Sha = z.infer<typeof Sha>
 export const MAIN = 'refs/heads/main'
 export const MAX_FILES = 2_000
 export const MAX_BYTES = 64 * 1024 * 1024
+/** A bundle holds the whole history, each version up to `MAX_BYTES`, so it has a bound of its own (code C59). */
+export const MAX_BUNDLE_BYTES = 1024 * 1024 * 1024
 
 export type Context = {
   dir: string
@@ -36,6 +39,17 @@ export async function text(context: Context, args: readonly string[]): Promise<s
   return (await git(context, args)).stdout.toString('utf8').trim()
 }
 
+/** Whether the repository exists: a read of a Projeto that never saved a version finds none. */
+export async function present(context: Context): Promise<boolean> {
+  return stat(context.dir).then(
+    () => true,
+    (error: unknown) => {
+      if (Reflect.get(Object(error), 'code') === 'ENOENT') return false
+      throw error
+    },
+  )
+}
+
 /** The commit a ref names, or null when there is none: git exits 1, silently, for "no". */
 export async function readRef(context: Context, ref: string): Promise<Sha | null> {
   const found = await git(context, ['rev-parse', '--verify', '--quiet', `${ref}^{commit}`], {
@@ -51,6 +65,7 @@ async function succeeds(context: Context, args: readonly string[]): Promise<bool
 /** Whether `main` holds this commit in its history: the only commits the source view reads. */
 export async function inMain(context: Context, sha: Sha): Promise<boolean> {
   return (
+    (await present(context)) &&
     (await succeeds(context, ['rev-parse', '--verify', '--quiet', `${sha}^{commit}`])) &&
     (await succeeds(context, ['merge-base', '--is-ancestor', sha, MAIN]))
   )

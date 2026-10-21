@@ -171,7 +171,8 @@ function withOptions(
  * the queue must come after Mastra's retries (Mastra Code, `account-rotation-processor.ts:12-20`).
  * Each attempt gets its account's model; after the automatic switch, the new model reads pages
  * but does not search again (founder, card reading 3 A), since the search tool was resolved for
- * the first model (`agent.ts:5300-5301`).
+ * the first model (`agent.ts:5300-5301`). The set it narrows is the mode's own (`availableTools`,
+ * `permissions.ts`), never the agent's whole toolset.
  */
 export function accountPick(deps: QueueDeps): InputProcessor {
   return {
@@ -189,8 +190,8 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
         result.providerOptions = withOptions(args.providerOptions, thinking)
-      if (turn.switched) {
-        result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)
+      if (turn.switched && args.activeTools !== undefined) {
+        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)
       }
       return result
     },
