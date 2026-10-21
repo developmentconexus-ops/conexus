@@ -121,12 +121,12 @@ function tell(live: Live, turn: TurnLog, event: PartEvent): void {
   say(live, turn, event)
 }
 
-/** The machine's step, told as the part that says what the turn waits for; a replaced machine lasts. */
+/** The machine's step, told as the part that says what the turn waits for; a replaced machine and a restart last. */
 export function tellMachine(live: Live, phase: MachinePhase): void {
   const turn = openTurn(live)
   const part: MessagePart = { type: 'machine', phase }
   tell(live, turn, { type: 'part', part })
-  if (phase === 'replaced') void keepPart(live, turn, part)
+  if (phase === 'replaced' || phase === 'resumed') void keepPart(live, turn, part)
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */

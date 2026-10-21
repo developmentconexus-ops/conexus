@@ -71,6 +71,12 @@ export function keptInList<T>(
   )
 }
 
+/** A machine part is of the kind of its phase; any other part, of its type. */
+function sameKind(one: MessagePart, other: MessagePart): boolean {
+  if (one.type !== other.type) return false
+  return one.type !== 'machine' || (other.type === 'machine' && one.phase === other.phase)
+}
+
 /** Keeps a lasting part of the turn on the thread, after the person's message it answers. */
 export function keepPart(keeper: Keeper, turn: TurnLog, part: MessagePart): Promise<void> {
   const { after } = turn
@@ -79,7 +85,7 @@ export function keepPart(keeper: Keeper, turn: TurnLog, part: MessagePart): Prom
     key: TURN_PARTS_KEY,
     list: z.array(TurnPart),
     item: { after, part },
-    same: (each) => each.after === after && each.part.type === part.type,
+    same: (each) => each.after === after && sameKind(each.part, part),
   })
 }
 

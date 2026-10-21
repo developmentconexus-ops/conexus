@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
   asked,
   conversing,
   hubBeside,
   PARTIAL,
+  rolesAndParts,
   sent,
   started,
   streamOf,
@@ -90,6 +92,17 @@ test('reinício no meio do turno: o turno retomado é avisado do reinício, e te
   assert.match(
     told,
     /O servidor reiniciou no meio do turno\. Veja `git status` e termine o pedido\./,
+  )
+  const shown = JSON.stringify(rolesAndParts(await call(world.beside, world.ana, 'GET', world.url)))
+  assert.match(
+    shown,
+    /"type":"machine","phase":"resumed"/,
+    'the restart is in the stored transcript',
+  )
+  assert.match(
+    shown,
+    /"type":"version","number":1/,
+    'the saved version is in the stored transcript',
   )
 })
 

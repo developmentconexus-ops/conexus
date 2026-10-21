@@ -16,7 +16,7 @@ import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import { catchUp } from './catch-up.ts'
 import { deliver } from './deliver.ts'
-import { pendingQuestion } from './history.ts'
+import { interruptedTurn } from './history.ts'
 import type { Listener, Live, Owner, Question, Said } from './live.ts'
 import {
   beforeAgentEnd,
@@ -188,13 +188,14 @@ export class Sessions {
       await this.#runs.finish({ runId, reason: 'deadline' })
       return
     }
-    const question = await pendingQuestion(this.#builder, owner, conversationId)
+    const { question, after } = await interruptedTurn(this.#builder, owner, conversationId)
     const entry = this.#hold({ owner, conversationId })
     const turn = new Turn(owner)
     const answered: Promise<void> = entry.live
       .then((live) => {
         live.asked.add(turn)
-        return this.#answer(live, question, turn, { runId, traceId: randomUUID() }, 'resumed')
+        const run = { runId, traceId: randomUUID() }
+        return this.#answer(live, question, turn, run, { after })
       })
       .then(() => this.#release(conversationId, entry))
       .catch((cause: unknown) =>
@@ -218,7 +219,7 @@ export class Sessions {
     question: Question | undefined,
     turn: Turn,
     run: { runId: RunId; traceId: string },
-    began?: 'resumed',
+    resuming?: { after: MessageId | undefined },
   ): Promise<void> {
     const writing = run.runId
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
@@ -230,7 +231,10 @@ export class Sessions {
       finish: (reason) => this.#runs.finish({ runId: writing, reason }),
     }
     const opened = openTurn(live)
-    if (began !== undefined) tellMachine(live, began)
+    if (resuming !== undefined) {
+      opened.after = resuming.after
+      tellMachine(live, 'resumed')
+    }
     this.#runs.attach(writing, () => live.session.abort())
     this.#runs.onPhase(writing, (phase) => tellMachine(live, phase))
     try {
