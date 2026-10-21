@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
   asked,
@@ -8,6 +9,7 @@ import {
   holding,
   hubBeside,
   PARTIAL,
+  rolesAndParts,
   sent,
   started,
   streamOf,
@@ -17,7 +19,10 @@ import {
 const WRITE = 'mastra_workspace_write_file'
 
 /** A first process that writes `a.ts` and then hangs, as if it died; released at the test's end. */
-async function dying(t: Parameters<typeof conversing>[0]) {
+async function dying(
+  t: Parameters<typeof conversing>[0],
+  leaseEnds = `now() - interval '1 second'`,
+) {
   const pause = Promise.withResolvers<void>()
   t.after(() => pause.resolve())
   let calls = 0
@@ -36,7 +41,7 @@ async function dying(t: Parameters<typeof conversing>[0]) {
   t.after(() => alive.close())
   assert.equal((await sent(hub, ana, url, 'Faça a página')).statusCode, 202)
   for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
-  await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
+  await hub.test.asOwner(`update builder.run set lease_until = ${leaseEnds}`)
   const beside = await hubBeside(t, hub)
   beside.builder.control.outcome = 'connected'
   const repository = beside.builder.repository({
@@ -52,18 +57,24 @@ async function dying(t: Parameters<typeof conversing>[0]) {
   return { ...world, url, alive, beside, version, state, release: () => pause.resolve() }
 }
 
-test('dois processos, um banco; o primeiro morre: o segundo, ao partir, guarda o que a máquina tem como uma versão e diz o reinício; o primeiro não grava nem pausa a máquina', async (t) => {
+test('dois processos, um banco; o primeiro morre: o segundo, ao partir, guarda o que a máquina tem como uma versão e diz o reinício ao stream já aberto e à releitura; o primeiro não grava nem pausa a máquina', {
+  timeout: 30_000,
+}, async (t) => {
   const { hub, ana, url, alive, beside, version, state, release } = await dying(t)
   const midway = alive.seen.ids.at(-1)
+  // The browser reconnects to the second process before its settle at start.
+  const reopened = await streamOf(beside, ana, url, midway)
+  t.after(() => reopened.close())
   await beside.restart()
   assert.equal(await state(), 'saved')
   assert.equal(await version(), 1)
-  const reopened = await streamOf(beside, ana, url, midway)
-  t.after(() => reopened.close())
+  const restarted = { type: 'restarted', kept: 1 }
   assert.deepEqual((await reopened.turn()).slice(-2), [
-    { type: 'part', part: { type: 'restarted', kept: 1 } },
+    { type: 'part', part: restarted },
     { type: 'turnEnd', reason: 'aborted' },
   ])
+  const read = rolesAndParts(await call(beside, ana, 'GET', url))
+  assert.deepEqual(read.at(-1)?.[1].at(-1), restarted, 'a read shows the restart at the turn end')
   release()
   await hub.close()
   assert.equal(await version(), 1, 'the first process writes nothing')
@@ -77,6 +88,35 @@ test('dois processos, um banco; o primeiro morre: o segundo, ao partir, guarda o
     rows.map((row) => row.n),
     rows.map((_, index) => index + 1),
   )
+})
+
+test('o primeiro morre antes de o Builder dizer algo: a releitura mostra o reinício depois da mensagem, sem versão', async (t) => {
+  const held = holding(t)
+  const { hub, ana, conversations } = await conversing(t, (call) => title(call) ?? held.reply)
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const alive = await streamOf(hub, ana, url)
+  t.after(() => alive.close())
+  assert.equal((await sent(hub, ana, url, 'Faça a página')).statusCode, 202)
+  for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
+  await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
+  const beside = await hubBeside(t, hub)
+  await beside.restart()
+  const read = rolesAndParts(await call(beside, ana, 'GET', url))
+  assert.deepEqual(read.slice(-2), [
+    ['person', [{ type: 'text', text: 'Faça a página' }]],
+    ['builder', [{ type: 'restarted', kept: 'nothing' }]],
+  ])
+})
+
+test('o primeiro morre e o segundo parte antes da posse vencer: o turno é assentado quando ela vence, sem mensagem nova', async (t) => {
+  const { beside, version, state } = await dying(t, `now() + interval '2 seconds'`)
+  await beside.restart()
+  assert.equal(await state(), 'open')
+  for (let attempt = 0; attempt < 60 && (await state()) !== 'saved'; attempt += 1) {
+    await new Promise((done) => setTimeout(done, 100))
+  }
+  assert.equal(await state(), 'saved')
+  assert.equal(await version(), 1)
 })
 
 test('a posse do primeiro vence e chega mensagem no Projeto antes da partida do segundo: a admissão guarda o turno órfão, não o marca interrupted, e admite a nova', async (t) => {

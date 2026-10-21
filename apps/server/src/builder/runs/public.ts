@@ -1,4 +1,4 @@
-export type { Outcome } from './context.ts'
+export type { Outcome, Restart } from './context.ts'
 export type { MachinesOf, RepositoryOf } from './ports.ts'
 export { builderPortsOf } from './ports.ts'
 export type { Runs } from './runs.ts'

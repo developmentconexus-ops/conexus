@@ -1,4 +1,11 @@
-import type { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ConversationEvent,
+  ConversationId,
+  PersonId,
+  ProjectId,
+  RunId,
+} from '@conexus/hub-api'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
@@ -20,12 +27,23 @@ export type RunsDeps = {
   yieldMs?: () => number
 }
 
+/** What a restart told the stream of the turn it ended: each event with its place in the run. */
+export type Restart = {
+  companyId: CompanyId
+  personId: PersonId
+  conversationId: ConversationId
+  runId: RunId
+  said: { n: number; event: ConversationEvent }[]
+}
+
 /** What the runs share: the ports and the rows. */
 export type RunsContext = RunsDeps & {
   store: RunStore
   retry: { kick(): void }
   /** Lets go of a run this copy drives: its timers stop and its workspace is forgotten. */
   stopped(runId: RunId): Promise<void>
+  /** Hands what a restart told a turn to its conversation, for its open streams and its thread. */
+  restarted(restart: Restart): Promise<void>
 }
 
 /** A saved version: its number, the paths in its tree, and the paths the turn changed against its base. */

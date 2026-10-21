@@ -2638,5 +2638,38 @@
       "file": "src/builder/conversation/permissions.test.ts",
       "name": "a sessão começa em yolo: nenhuma ferramenta da lista pede aprovação"
     }
+  },
+  {
+    "id": "restart-told-to-open-streams",
+    "file": "apps/server/src/builder/conversation/sessions.ts",
+    "find": "        for (const listener of live.listeners) listener(said)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "diz o reinício ao stream já aberto"
+    }
+  },
+  {
+    "id": "restart-kept-on-thread",
+    "file": "apps/server/src/builder/conversation/sessions.ts",
+    "find": "        if (event.type === 'part') await keepPart(live, turn, event.part)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "antes de o Builder dizer algo"
+    }
+  },
+  {
+    "id": "settle-when-lease-ends",
+    "file": "apps/server/src/builder/runs/runs.ts",
+    "find": "    if (ends === undefined) return\n",
+    "replace": "    return\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "antes da posse vencer"
+    }
   }
 ]

@@ -11,13 +11,13 @@ import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Phase } from '../machine/public.ts'
-import type { Outcome, RunsContext, RunsDeps } from './context.ts'
+import type { Outcome, Restart, RunsContext, RunsDeps } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
 import { dailySweep, sweep } from './daily.ts'
 import { watchDeadline } from './deadline.ts'
 import { runIn, withRun } from './keys.ts'
-import { holdLease } from './lease.ts'
+import { holdLease, onceAfter } from './lease.ts'
 import type { ReleaseScope } from './removal.ts'
 import { releaseRuns } from './removal.ts'
 import { saveRun } from './save.ts'
@@ -77,6 +77,8 @@ export class Runs {
   readonly #driven = new Map<RunId, Driven>()
   readonly #retry = createCopyRetry(() => copyPending(this.#context))
   readonly #sweepDaily: () => void
+  #told: (restart: Restart) => Promise<void> = async () => undefined
+  #stopSettle: () => void = () => undefined
 
   constructor(deps: RunsDeps) {
     this.#deps = deps
@@ -92,6 +94,7 @@ export class Runs {
         this.#driven.delete(runId)
         await this.#unregister(mine)
       },
+      restarted: (restart) => this.#told(restart),
     }
     this.#sweepDaily = dailySweep(this.#context)
   }
@@ -261,8 +264,23 @@ export class Runs {
     return copyPending(this.#context)
   }
 
+  /** Where a restart's word on a turn goes: its conversation's streams and thread. */
+  onRestart(told: (restart: Restart) => Promise<void>): void {
+    this.#told = told
+  }
+
+  /**
+   * Settles the runs other copies left (card, the restart). A copy that died less than a lease ago
+   * still holds its runs: one more settle runs when the last of those leases ends.
+   */
   async settleRuns(): Promise<void> {
-    await settleRuns(this.#context)
+    const ends = await settleRuns(this.#context)
+    if (ends === undefined) return
+    this.#stopSettle = onceAfter(ends, () => {
+      void settleRuns(this.#context).catch((error: unknown) =>
+        this.#deps.log.error({ error: String(error) }, 'RUN_SETTLE_FAILED'),
+      )
+    })
   }
 
   /** Kills the marked machines idle for seven days, now; the daily gate calls it too. */
@@ -277,6 +295,7 @@ export class Runs {
   /** The stop of this copy: timers end and the leases are yielded, nothing is settled (code C62). */
   async stop(): Promise<void> {
     this.#retry.stop()
+    this.#stopSettle()
     const mine = [...this.#driven.values()]
     for (const each of mine) {
       each.stopDeadline()

@@ -2,6 +2,13 @@
 export const LEASE_MS = 90_000
 const RENEW_MS = 30_000
 
+/** Does `work` once, `ms` from now, unless the returned stop comes first. */
+export function onceAfter(ms: number, work: () => void): () => void {
+  const timer = setTimeout(work, ms)
+  timer.unref()
+  return () => clearTimeout(timer)
+}
+
 /**
  * Keeps a turn's lease while it runs (data D25): `renew` answers whether the row is still this
  * copy's. A renewal that fails or is refused calls `lost` once and stops. Returns the stop.

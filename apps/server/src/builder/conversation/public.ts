@@ -46,6 +46,7 @@ export function createConversations(deps: {
   const builder = createBuilder({ pool: deps.pool, queue, runs: deps.runs, log: deps.log })
   const store = createConversationStore(deps)
   const sessions = new Sessions({ builder, runs: deps.runs, log: deps.log })
+  deps.runs.onRestart((restart) => sessions.restarted(restart))
 
   const release: ReleaseConversations = async (scope) => {
     // The runs first: a turn the removal aborts then finds its run settled and writes nothing.

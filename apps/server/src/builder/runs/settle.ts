@@ -1,5 +1,5 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import type { Outcome, RunsContext } from './context.ts'
+import type { Outcome, Restart, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 import { holdLease } from './lease.ts'
 import { saveRun } from './save.ts'
@@ -19,9 +19,17 @@ async function toldRestart(context: RunsContext, run: Run, kept: Kept) {
     { type: 'part', part: { type: 'restarted', kept } },
     { type: 'turnEnd', reason: 'aborted' },
   ] as const
+  const told: Restart['said'] = []
   for (const event of said) {
-    await context.store.appendEvent({ companyId: run.companyId, runId: run.id, event })
+    const n = await context.store.appendEvent({ companyId: run.companyId, runId: run.id, event })
+    if (n !== undefined) told.push({ n, event })
   }
+  const { companyId, personId, conversationId } = run
+  await context
+    .restarted({ companyId, personId, conversationId, runId: run.id, said: told })
+    .catch((error: unknown) =>
+      context.log.error({ companyId, runId: run.id, error: String(error) }, 'RUN_RESTART_UNTOLD'),
+    )
 }
 
 /**
@@ -104,11 +112,15 @@ export async function settleExpired(
 /**
  * At start, every company with work left: the runs whose lease ended are settled, and the copies not
  * made are tried. Never at stop (code C62): a stopping copy of the program only yields its leases.
+ * Answers in how many milliseconds the last lease another copy still holds ends, or none.
  */
-export async function settleRuns(context: RunsContext): Promise<void> {
-  const companies = await context.store.companiesWithRuns()
-  for (const companyId of companies) {
+export async function settleRuns(context: RunsContext): Promise<number | undefined> {
+  let last: number | undefined
+  for (const companyId of await context.store.companiesWithRuns()) {
     await settleExpired(context, { companyId })
     if ((await context.store.uncopied(companyId)).length > 0) context.retry.kick()
+    const ends = await context.store.heldElsewhereFor(companyId)
+    if (ends !== undefined) last = Math.max(last ?? 0, ends)
   }
+  return last
 }

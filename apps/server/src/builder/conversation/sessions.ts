@@ -8,15 +8,17 @@ import type {
   ProjectId,
   RunId,
 } from '@conexus/hub-api'
+import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
-import type { Runs } from '../runs/public.ts'
+import type { Restart, Runs } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import { catchUp } from './catch-up.ts'
 import { deliver } from './deliver.ts'
-import type { Listener, Live, Owner, Question, Said } from './live.ts'
+import { keepPart, QUESTION_KEY, Question } from './kept.ts'
+import type { Listener, Live, Owner, Said } from './live.ts'
 import {
   beforeAgentEnd,
   endTurn,
@@ -26,7 +28,7 @@ import {
   questionId,
   tellMachine,
 } from './live.ts'
-import { after } from './turn-log.ts'
+import { after, eventId } from './turn-log.ts'
 
 /**
  * A conversation's place in this process: its session, opening or open, and how many holders use
@@ -297,6 +299,31 @@ export class Sessions {
       }
     }
     return drained()
+  }
+
+  /**
+   * Tells the conversation's open streams what a restart said of a turn another copy of the program
+   * ran, and keeps its lasting part on the thread after the person's last message, which that turn
+   * answered (card, the restart).
+   */
+  async restarted(restart: Restart): Promise<void> {
+    const { companyId, personId, conversationId } = restart
+    const entry = this.#hold({ owner: { companyId, personId }, conversationId })
+    try {
+      const live = await entry.live
+      const asked = z
+        .array(Question)
+        .safeParse(await live.session.thread.getSetting({ key: QUESTION_KEY }))
+      const last = asked.success ? asked.data.at(-1) : undefined
+      const turn = { after: last === undefined ? undefined : questionId(conversationId, last.key) }
+      for (const { n, event } of restart.said) {
+        if (event.type === 'part') await keepPart(live, turn, event.part)
+        const said = { id: eventId(restart.runId, n), event }
+        for (const listener of live.listeners) listener(said)
+      }
+    } finally {
+      await this.#release(conversationId, entry)
+    }
   }
 
   /** The person's message that the turn in progress answers, or none: the stream tells that turn whole. */

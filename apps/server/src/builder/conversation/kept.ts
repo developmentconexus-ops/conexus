@@ -34,7 +34,7 @@ export type ThoughtTime = z.infer<typeof ThoughtTime>
 
 /**
  * The parts of a turn that last past its end and Mastra does not save, kept on the thread so a read
- * shows them: the version it saved, and the machine it replaced.
+ * shows them: the version it saved, the machine it replaced, and the restart that ended it.
  */
 export const TURN_PARTS_KEY = 'conexus.turnParts'
 /** A lasting part of the turn that answers the person's message `after`. */
@@ -78,7 +78,11 @@ function sameKind(one: MessagePart, other: MessagePart): boolean {
 }
 
 /** Keeps a lasting part of the turn on the thread, after the person's message it answers. */
-export function keepPart(keeper: Keeper, turn: TurnLog, part: MessagePart): Promise<void> {
+export function keepPart(
+  keeper: Keeper,
+  turn: Pick<TurnLog, 'after'>,
+  part: MessagePart,
+): Promise<void> {
   const { after } = turn
   if (after === undefined) return Promise.resolve()
   return keptInList(keeper, {

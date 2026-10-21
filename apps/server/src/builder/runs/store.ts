@@ -7,7 +7,7 @@ import {
   ProjectId,
   RunId,
 } from '@conexus/hub-api'
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -215,6 +215,21 @@ export class RunStore {
         .returning(columns),
     )
     return rows.map((row) => Row.parse(row))
+  }
+
+  /** In how many milliseconds the last lease of the company's live runs another copy holds ends, or none. */
+  async heldElsewhereFor(companyId: CompanyId): Promise<number | undefined> {
+    const [row] = await this.#database.read(inCompany(companyId), (tx) =>
+      tx
+        .select({
+          ms: sql<string | null>`extract(epoch from max(${run.leaseUntil}) - now()) * 1000`,
+        })
+        .from(run)
+        .where(
+          and(inArray(run.state, LIVE), ne(run.owner, this.#owner), gt(run.leaseUntil, sql`now()`)),
+        ),
+    )
+    return row?.ms === null || row?.ms === undefined ? undefined : Math.ceil(Number(row.ms))
   }
 
   /** The company's runs in any of `states`, narrowed by Projeto or person. */
