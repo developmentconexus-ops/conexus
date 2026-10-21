@@ -13,7 +13,8 @@ import { subscriptionModel } from './claude/subscription-model.ts'
 import type { AccountFailure } from './errors.ts'
 import type { GoogleAccount } from './google/calls.ts'
 import { isChoosable } from './providers.ts'
-import { keepServed, servesModel } from './served.ts'
+import { servesModel } from './served.ts'
+import { readServedOf } from './served-reads.ts'
 import { modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
 
@@ -21,7 +22,7 @@ import type { Picked, Turn } from './turn.ts'
  * The process of a Google account that takes its calls on this machine (step 12 U10); `hold`
  * keeps it while a call runs and gives back its release.
  */
-type GoogleCalls = (
+export type GoogleCalls = (
   account: GoogleAccount,
   scope: Scope,
 ) => Promise<{ url: string; apiKey: string; hold: () => () => void }>
@@ -227,30 +228,7 @@ export async function markAccount(
  * whether the queue keeps it for this one.
  */
 async function readServedAgain(deps: QueueDeps, turn: Turn, accountId: ModelAccountId) {
-  const found = await deps.database.read(scopeOf(turn), async (tx) => {
-    await admitted(deps, tx, turn)
-    const [row] = await tx
-      .select(columns)
-      .from(modelAccount)
-      .where(and(eq(modelAccount.id, accountId), eq(modelAccount.companyId, turn.companyId)))
-    if (row === undefined) return undefined
-    const account = AccountRow.parse(row)
-    const credential = await credentialOf(deps, tx, { ...account, companyId: turn.companyId })
-    return { account, credential }
-  })
-  if (found === undefined) return
-  const { account, credential } = found
-  const secret =
-    account.kind === 'claude_subscription'
-      ? await subscriptionAccess(
-          { ...deps, scope: scopeOf(turn) },
-          { ...account, companyId: turn.companyId, credential },
-        )
-      : credential.reveal()
-  await keepServed(
-    deps,
-    scopeOf(turn),
-    { id: account.id, kind: account.kind, provider: account.provider, companyId: turn.companyId },
-    secret,
+  await readServedOf(deps, scopeOf(turn), turn.companyId, accountId, (tx) =>
+    admitted(deps, tx, turn),
   )
 }

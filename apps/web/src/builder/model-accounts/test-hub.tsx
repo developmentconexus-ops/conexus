@@ -16,6 +16,12 @@ import { writes } from './test-writes.tsx'
 
 const DIEGO = { personId: 'person-diego', name: 'Diego', email: 'diego@example.test' }
 
+/** Sonnet takes every level, Mistral Large never "off", the others only "off". */
+function effortsOfFake(name: string) {
+  if (name === 'claude-sonnet-4') return ['off', 'low', 'high']
+  return name === 'mistral-large' ? ['low', 'high'] : ['off']
+}
+
 const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
   { id: 'mistral', name: 'Mistral', models: ['mistral-large'] },
@@ -24,7 +30,7 @@ const PROVIDERS = [
   ...provider,
   models: provider.models.map((name) => ({
     id: `${provider.id}/${name}`,
-    efforts: name === 'claude-sonnet-4' ? ['off', 'low', 'high'] : ['off'],
+    efforts: effortsOfFake(name),
   })),
 }))
 

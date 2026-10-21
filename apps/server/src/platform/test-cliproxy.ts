@@ -1,7 +1,8 @@
 // A double of CLIProxyAPI v8.0.33's management API for Google's sign-in (T15), run as the program:
 // it reads the config it is given, refuses to listen off 127.0.0.1, and writes one login file once
 // the callback brings its state. In the folder after `--control`, the file `mode` says `refuse` to
-// fail the login, and `runs` gets its pid and folder, a line per run. Its model route, `/v1`'s Chat
+// fail the login, and `runs` gets its pid and folder, a line per run. Its model list, `/v1/models`,
+// answers the ids the file `models` holds, comma apart, or the five the founder's proxy listed. Its model route, `/v1`'s Chat
 // Completions, answers with the recording the file `recording` names (testing T24).
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
@@ -24,6 +25,13 @@ const control = process.argv[process.argv.indexOf('--control') + 1] ?? ''
 appendFileSync(join(control, 'runs'), `${process.pid} ${process.cwd()}\n`)
 const modeFile = join(control, 'mode')
 const mode = existsSync(modeFile) ? readFileSync(modeFile, 'utf8').trim() : 'ok'
+const LISTED = [
+  'gemini-3.1-flash-image',
+  'gemini-3.5-flash-lite',
+  'gemini-3.8-flash-high',
+  'gemini-3-flash',
+  'gemini-3.1-flash-lite',
+]
 const state = `estado-${process.pid}`
 let status = 'wait'
 
@@ -63,6 +71,11 @@ const server = createServer(async (request, response) => {
   }
   if (url.pathname === '/v0/management/get-auth-status') {
     return reply(200, url.searchParams.has('state') ? { status } : { status: 'ok' })
+  }
+  if (url.pathname === '/v1/models' && request.method === 'GET') {
+    const file = join(control, 'models')
+    const ids = existsSync(file) ? readFileSync(file, 'utf8').trim().split(',') : LISTED
+    return reply(200, { object: 'list', data: ids.map((id) => ({ id, object: 'model' })) })
   }
   if (url.pathname === '/v1/chat/completions' && request.method === 'POST') {
     const name = readFileSync(join(control, 'recording'), 'utf8').trim()

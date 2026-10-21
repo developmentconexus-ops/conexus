@@ -57,6 +57,28 @@ test('sem padrão próprio: a linha de início diz o padrão da empresa, o botã
   expect(screen.queryByRole('button', { name: 'Usar o da empresa' })).toBeNull()
 })
 
+test('o padrão da empresa que o modelo não aceita desligado: a linha da empresa diz o nível em que a conversa roda, como o topo', async () => {
+  const saved = { model: 'mistral/mistral-large', effort: 'off' }
+  const running = { ...saved, effort: 'low' }
+  await open(
+    view({
+      defaults: {
+        company: saved,
+        mine: null,
+        start: { ...running, from: 'company', account: 'Claude da empresa' },
+        companyStart: { ...running, from: 'company', account: 'Claude da empresa' },
+      },
+    }),
+  )
+  expect(
+    await screen.findByText(
+      'Uma conversa nova começa em: Mistral Large · Baixo — padrão da empresa',
+    ),
+  ).toBeTruthy()
+  expect(screen.getByText('Padrão da empresa: Mistral Large · Baixo')).toBeTruthy()
+  expect(screen.queryByText(/Desligado/)).toBeNull()
+})
+
 test('salvar o seu: o modelo e o nível seguem ao Hub, o topo passa a "seu padrão"; Usar o da empresa o desfaz', async () => {
   const { sent } = await open(view())
   await choose(
