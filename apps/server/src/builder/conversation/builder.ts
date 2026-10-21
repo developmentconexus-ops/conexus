@@ -22,7 +22,7 @@ import {
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, INSTRUCTIONS } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
-import { AVAILABLE_TOOLS, categoryOf, PERMISSION_RULES } from './permissions.ts'
+import { TOOL_CLOSURE } from './permissions.ts'
 import { createMastraStorage } from './storage.ts'
 import { webFetch } from './web-fetch.ts'
 
@@ -138,12 +138,12 @@ export function createBuilder(deps: {
     storage,
     memory,
     agent,
-    modes: [{ id: CONVERSATION_MODE, availableTools: AVAILABLE_TOOLS }],
+    modes: [{ id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools }],
     // The turn's run owns its workspace; a session made outside a turn has none.
     workspace: ({ requestContext }) => deps.runs.workspaceOf(requestContext),
     disableBuiltinTools: BUILTIN_TOOLS,
-    toolCategoryResolver: categoryOf,
-    initialState: { yolo: false, permissionRules: PERMISSION_RULES },
+    toolCategoryResolver: TOOL_CLOSURE.toolCategoryResolver,
+    initialState: TOOL_CLOSURE.initialState,
   })
   const mastra = new Mastra({
     logger: new BuilderLogger(deps.log),
