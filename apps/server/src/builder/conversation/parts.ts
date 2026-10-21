@@ -91,7 +91,8 @@ function reasoningId(place: Place): string {
 
 /**
  * What the person sees of one of Mastra's parts: its text, that it thought (never what), a tool
- * call, and a queue notice; the rest stays inside. Thinking read here is over and has no time.
+ * call, and a queue notice; the rest stays inside. Thinking read here is over; its time is the
+ * thread's (`history.ts`).
  */
 export function partOf(part: MastraMessagePart | unknown, place: Place): MessagePart | undefined {
   const text = Text.safeParse(part)

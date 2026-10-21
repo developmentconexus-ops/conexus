@@ -41,6 +41,12 @@ export const TURN_FAILURES_KEY = 'conexus.turnFailures'
 export const TurnFailure = z.object({ after: MessageId, code: TurnFailureCode })
 export type TurnFailure = z.infer<typeof TurnFailure>
 
+/** How long each thinking took, kept on the thread so a read shows it as the stream did (#176). */
+export const THINKING_KEY = 'conexus.thinking'
+/** One thinking's time, named by its part's `id`. */
+export const ThoughtTime = z.object({ id: z.string(), seconds: z.number().int().nonnegative() })
+export type ThoughtTime = z.infer<typeof ThoughtTime>
+
 /**
  * The most events a turn keeps for a reconnect to resume from; past it, a reconnect reads the turn
  * so far instead.
@@ -171,6 +177,12 @@ function settleThinking(live: Live, turn: TurnLog): void {
     type: 'part',
     part: { type: 'reasoning', id: thinking.id, state: 'completed', seconds },
   })
+  void keptInList(live, {
+    key: THINKING_KEY,
+    list: z.array(ThoughtTime),
+    item: { id: thinking.id, seconds },
+    same: (each) => each.id === thinking.id,
+  })
 }
 
 function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
@@ -268,33 +280,49 @@ function failureOf(ending: Ending): TurnFailureCode | undefined {
   return ending.turn?.outcome === 'exhausted' ? 'MODEL_NO_ACCOUNT' : 'MODEL_CALL_FAILED'
 }
 
-/** Keeps the turn's failure on the thread, once per message (`after`), after the writes before it. */
+/**
+ * Keeps `item` in the thread's list under `key`, in place of the one it is the `same` as, after the
+ * writes before it. A write that fails is logged and the turn goes on without it.
+ */
+function keptInList<T>(
+  live: Live,
+  kept: { key: string; list: z.ZodType<T[]>; item: T; same: (each: T) => boolean },
+): Promise<void> {
+  const { key, list, item, same } = kept
+  return queued(live, async () => {
+    const read = list.safeParse(await live.session.thread.getSetting({ key }))
+    const others = (read.success ? read.data : []).filter((each) => !same(each))
+    await live.session.thread.setSetting({ key, value: [...others, item] })
+  }).catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
+}
+
+/** Keeps the turn's failure on the thread, once per message (`after`). */
 function keepFailure(live: Live, turn: TurnLog, code: TurnFailureCode): Promise<void> {
   const { after } = turn
   if (after === undefined || turn.failureKept) return Promise.resolve()
   turn.failureKept = true
-  return queued(live, async () => {
-    const read = z
-      .array(TurnFailure)
-      .safeParse(await live.session.thread.getSetting({ key: TURN_FAILURES_KEY }))
-    const others = (read.success ? read.data : []).filter((each) => each.after !== after)
-    await live.session.thread.setSetting({
-      key: TURN_FAILURES_KEY,
-      value: [...others, { after, code }],
-    })
-  }).catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
+  return keptInList(live, {
+    key: TURN_FAILURES_KEY,
+    list: z.array(TurnFailure),
+    item: { after, code },
+    same: (each) => each.after === after,
+  })
 }
 
 /**
- * Keeps a failed turn's failure before Mastra says its run ended, so the read a screen makes at the
- * end finds it with the turn's messages, which Mastra saves after the end.
+ * Keeps a failed turn's failure, and waits for the thinking times kept before it, before Mastra
+ * says its run ended, so the read a screen makes at the end finds them with the turn's messages,
+ * which Mastra saves after the end.
  */
 export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Promise<void> {
   const runId = live.session.run.getRunId()
   const run = runId === null ? undefined : live.runs.get(runId)
   const code = failureOf({ reason, turn: run?.turn })
-  if (run === undefined || code === undefined || live.turn === undefined) return
-  await keepFailure(live, live.turn, code)
+  if (run !== undefined && code !== undefined && live.turn !== undefined) {
+    await keepFailure(live, live.turn, code)
+  }
+  // A write of nothing, queued last, settles once every write before it has.
+  await queued(live, () => Promise.resolve())
 }
 
 /**

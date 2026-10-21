@@ -71,7 +71,7 @@ export const MessagePart = z.discriminatedUnion('type', [
     type: z.literal('reasoning'),
     id: z.string().min(1),
     state: z.enum(['running', 'completed']),
-    /** How long it thought, by the server's clock; `null` once read again. */
+    /** How long it thought, by the server's clock; `null` while it thinks or when none was kept. */
     seconds: z.int().nonnegative().nullable(),
   }),
   z.object({
