@@ -1,15 +1,14 @@
 ---
 name: conexus-qa
-description: "Tests a Conexus step's screens as a person would, at the candidate commit, as an agent that built none of it: runs the local Hub with provider doubles, walks the card's use script and state matrix in a real browser at three widths and both themes, opens every capture beside its named design, and posts one report of what it saw, read and did not prove. Reports, never fixes. Use when instructions name a step with a screen to test."
+description: "Tests a Conexus step's screens as a person would, at the candidate commit, as an agent that built none of it: runs the local Hub with provider doubles, walks the card's use script and state matrix in a real browser at three widths and both themes, opens every capture beside its named design, explores off the script as a first-time user, and posts one report of what it saw, read and did not prove. Reports, never fixes. Use when instructions name a step with a screen to test."
 ---
 
 # QA
 
 ## When to use
 
-A step that changes a screen ([testing T25](../../../docs/guides/testing.md)), at the candidate
-commit with CI green, before the two reviews ([delivery L9](../../../docs/guides/delivery.md)).
-Again at each delta check, on the screens the fix touched.
+A step that changes a screen ([testing T25](../../../docs/guides/testing.md)), when and where
+[delivery L9](../../../docs/guides/delivery.md) says: beside the reviews, and at each delta.
 
 ## Who
 
@@ -39,16 +38,21 @@ and [testing](../../../docs/guides/testing.md).
 5. Capture each state at 1366, 390 and 320 px, light and dark. Make a keyboard pass through the
    focus stops and a 200% zoom check. At a phone width, read the computed `font-size` of every
    focusable field: below 16px is a finding ([design V18](../../../docs/guides/design.md)). Record
-   console errors and CSP reports; an expected refusal on screen is not one.
+   console errors and CSP reports (T23).
 6. Open every capture beside its named design or wireframe in the card. Write one entry per
    defect: screen, state, width, theme, what is wrong, the design line or criterion it breaks, and
    the capture's file. Label it as [delivery L12](../../../docs/guides/delivery.md) says.
-7. Stop your own Hub, browser and container (`docker stop`), and nothing else.
+7. Explore for up to 30 minutes as a first-time user who never read the card, on the step's
+   screens and the paths into them: each field empty, spaced, 300 characters, accented, emoji and
+   `<b>`; a double submit; back, refresh, a bookmark after logout; two tabs saving in turn; a slow
+   or dropped network mid-save; each role; keyboard only; reload after saving; a state another
+   screen changes (an account paused or removed); a text a newcomer would misread. Replay each
+   find once.
+8. Stop your own Hub, browser and container (`docker stop`), and nothing else.
 
 ## What it produces
 
-Captures in the task folder, named `<criterion>-<state>-<width>-<theme>.png`; firstmate hands the
-folder to the reviewers. Nothing is committed to the repository (delivery L21). One comment on
+Captures in the task folder, named `<criterion>-<state>-<width>-<theme>.png`. Nothing is committed to the repository (delivery L21). One comment on
 the pull request:
 
 ```markdown
@@ -56,6 +60,9 @@ QA of <head commit>. Captures opened: <n> of <n>, in the task folder.
 
 ## Seen
 <action or state, and what the screen showed>
+
+## Explored
+<each probe of step 7, and what happened>
 
 ## Read only
 <what was checked in code or logs, not on screen>
@@ -65,7 +72,7 @@ QA of <head commit>. Captures opened: <n> of <n>, in the task folder.
 
 ## Findings
 1. <Bloqueia | Fechamento | Issue futura> <screen, state, width, theme>: <what is wrong>.
-   Breaks: <rule id or criterion>. Capture: <file>.
+   Breaks: <rule id, criterion or loss>. Capture: <file>.
 ```
 
 "No findings" is allowed only beside the count of captures opened.
@@ -77,5 +84,4 @@ QA of <head commit>. Captures opened: <n> of <n>, in the task folder.
 
 ## When it closes
 
-The comment names the commit it tested. QA never fixes: its findings join the review's in one fix
-round, built with [`conexus-build`](../conexus-build/SKILL.md).
+The comment names the commit it tested. QA never fixes: its findings join the fix round (L9).

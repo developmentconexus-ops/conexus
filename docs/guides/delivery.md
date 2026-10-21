@@ -40,18 +40,20 @@ only with the founder's word.
 
 ## 3. Build and review
 
-- **L9.** Review **should** follow the approved protocol. At the candidate commit, with CI green, a
-  step with a screen first gets its T25 QA report; then two models of different families that did
-  not build it read the whole step and the QA report. Each reviewer runs the refusal criteria,
-  reads every CI job's log, confirms that the test plan ran everything when a change touches the
-  test selector, its inputs or a dependency, opens the screens it doubts, and compares each part
-  that follows a reference with that reference by commit and file:line. QA and review findings go
-  into one fix round, and each delta check reruns QA on the screens the fix touched. After fixes,
-  one reader checks only the delta for closed Bloqueia and newly introduced defects. No per-unit
+- **L9.** Review **should** follow the approved protocol. When CI turns green at the candidate
+  commit, QA ([testing T25](testing.md)) and two reviewers start together: Claude on Opus and
+  Codex at high reasoning, neither a builder of the step, each following
+  [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md); the Claude reviewer alone runs
+  the refusal criteria and reads the CI logs. Nobody waits for QA; a review left incomplete is
+  finished by its reviewer, not repeated by a third. QA and review findings form one fix round,
+  split into fronts that share no file, built at once, one commit each; a Bloqueia that needs a
+  contract the card lacks is one more front with its own delta. One reader checks each front's
+  delta for closed Bloqueia and new defects, while QA reruns the screens it touched. No per-unit
   review or review robot. Documents-only changes get check-docs and one reader once; a card gets
   one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
-  2026-10-16: "Concordo". Failure: rereading everything after each fix samples new rules forever
-  instead of converging. [review]
+  2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". Failure: rereading everything
+  after each fix samples new rules forever; in step 12.3, QA and five reviews ran in a queue and
+  one front carried fifteen fixes and a new list in series. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
   and sweep its class through the whole diff. A third delta check blocking on the same premise
   returns to the card and founder. Failure: fixing one logger key per round leads to six reviews
