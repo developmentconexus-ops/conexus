@@ -26,7 +26,7 @@ The step's line in [the roadmap](../../../docs/roadmap.md), the study's answers 
    listed; each row yields criteria.
 4. Split the step into units that each end green on their own: a contract lands with its first
    implementer, and a migration that changes the catalog snapshot lands with the unit that owns
-   `database-grants.sql`. Units that share no folder may run in parallel. For each unit write the
+   `database-grants.sql`. For each unit write the
    blast radius (its folders, with who imports or calls them, and the owner of each contract it
    creates), the contracts it creates by signature and the shape of each state, id, shared fact and
    outside input ([card](references/card.md)); use pstack `architect`, and `arena` for competing
@@ -40,8 +40,9 @@ The step's line in [the roadmap](../../../docs/roadmap.md), the study's answers 
    step 5). A brought part has its file in the new tree, what is refactored as it enters, the
    study's count of changed lines (past a third, it is new), and each old decision it carries, with
    its basis.
-6. Name, per unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads, and
-   the maintainers' skills it loads.
+6. Name, per unit, the one guide beyond [code](../../../docs/guides/code.md) its builder reads; its
+   skills and reading list come from the rows of `docs/reference/stack.md` for its folders, never
+   from memory.
 7. Write the founder's page in Portuguese, one decision at a time, with an example. A guide rule
    the study found resting only on "implemented so" is one of them.
 8. Give the card to a reader of another model, who did not write it, at the exact commit the founder
@@ -64,5 +65,5 @@ code. Firstmate takes the founder's page to him.
 
 ## When it closes
 
-The founder approves the page, and the roadmap records his words, the date and the commit of the
+The founder approves the page, and the ledger records his words, the date and the commit of the
 card ([delivery](../../../docs/guides/delivery.md)).

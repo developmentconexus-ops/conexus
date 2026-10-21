@@ -23,14 +23,17 @@ The pull request, its head commit and the card; nothing from the builders' conve
 2. Read the step's whole diff against `main`, at the exact commit.
 3. Try a counterexample to every acceptance criterion.
 4. Run the refusal criteria against the published step or a real database, saying what you ran
-   (a claim not run is "read"). Look at a changed screen as [testing
-   T23](../../../docs/guides/testing.md) says; name the screenshots.
+   (a claim not run is "read"). Read every CI job's log; when the change touches the test
+   selector, its inputs or a dependency, confirm the plan ran everything. Read the QA report and
+   open its captures ([testing T25](../../../docs/guides/testing.md)); drive the browser where in
+   doubt.
 5. A file outside the card's folders and contract owners is a finding unless it follows from a
    contract or guard the card declares and the build report declares it (L7). Check each part
    against the card's table and the study rule ([`conexus-study`](../conexus-study/SKILL.md) step
    5): brought parts land in the named file with only the listed old decisions. A line existing only
-   because the old code had it is a finding unless the study defended it. When two findings fall on
-   one mechanism, ask whether it should exist.
+   because the old code had it is a finding unless the study defended it. Compare each part that
+   follows a reference with it, by commit and `file:line`. When two findings fall on one mechanism,
+   ask whether it should exist.
 6. Walk the checklist, sweeping each class across the whole diff, and fill its sweep table (a row
    per rule marked review: search made, result). With pstack, also `interrogate` the whole diff. A screen: [screen](references/screen.md).
 7. Label every finding ([delivery L12](../../../docs/guides/delivery.md)). **Bloqueia**: wrong
@@ -39,11 +42,9 @@ The pull request, its head commit and the card; nothing from the builders' conve
    undocumented API; a divergence from the card's contract; a "must" test that cannot fail (T12);
    two owners of one rule that can diverge; red CI. **Fechamento**: wording, a comment, a citation,
    a name, a tidy-up hiding no defect, a guide amendment. **Issue futura**: work outside the
-   card, a scale not yet reached (with its trigger), a development tool. On the border, ask: does
-   someone lose something in this step's use script or operation (Bloqueia)? Is it the first file
-   of its kind, wrong, and copied next (Bloqueia)? Does the loss appear only when the
-   code later changes (Fechamento, unless two owners can diverge)? Every Fechamento
-   about code shape goes on the closing list, checked as done.
+   card, a scale not yet reached (with its trigger), a development tool. On the border, ask
+   [labels](references/labels.md). Every Fechamento about code shape goes on the closing
+   list, checked as done.
 8. Write one verdict.
 9. A delta check reads `git diff <reviewed>..<new>` and the earlier Bloqueia findings: is each
    closed, did the fix create one. The pull request body counts it ("conferência 1 de no máximo 3").

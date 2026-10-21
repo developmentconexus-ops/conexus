@@ -17,8 +17,7 @@ The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the ca
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
 unit's one named guide, and loads the card's maintainers' skills before writing code. Where a
 skill's file and the installed package's own docs differ, such as `node_modules/fastify/docs`, the
-installed docs win. With pstack, it also loads `poteto-mode` and `typescript-best-practices`;
-without pstack, it skips only those two.
+installed docs win. With pstack, it also loads `poteto-mode` and `typescript-best-practices`.
 [bring](references/bring.md) only when the unit brings code; [bug](references/bug.md) only for a
 defect.
 
@@ -34,12 +33,14 @@ defect.
    carrying only the old decisions listed with their basis. A line the table does not justify is
    not brought. Keep the measure of the study rule ([`conexus-study`](../conexus-study/SKILL.md)
    step 5) as you go; when a part passes its limit, stop and report.
-5. Write the tests through the server's public door, with the negative cases
-   ([testing](../../../docs/guides/testing.md)). Write each screen text from the card's state
-   matrix; the founder approves the texts at the use script, so the build does not stop for one.
+5. Write the tests through the server's public door, with the negative cases, and provider doubles
+   per [testing T24](../../../docs/guides/testing.md). Write each screen text from the card's state
+   matrix.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
    changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
-   repository's verification skill when one exists (a screen: [screen](references/screen.md)).
+   repository's verification skill when one exists (a screen: [screen](references/screen.md)). A fix
+   that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
+   states, and a new guard gets its removal row (T12).
    Then answer [the checklist](../../../docs/reference/checklist.md) item by item, sweeping each
    class across the whole diff, and fill its sweep table in the integration request, saying which
    file each pattern was copied from. Run pstack `deslop` and `no-comments`; code C70 and C73

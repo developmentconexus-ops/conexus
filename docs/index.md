@@ -6,19 +6,21 @@ One line per document (`check-docs`).
 
 - [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
 - [README.md](../README.md): this repository.
-- [roadmap.md](roadmap.md): steps in order, approvals, use lines.
+- [roadmap.md](roadmap.md): steps.
+- [approvals.md](approvals.md): approvals and uses.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
 - [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
-- [how-to/hub-mail.md](how-to/hub-mail.md): the mail token and addresses.
+- [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/local-database.md](how-to/local-database.md): the disposable PostgreSQL 18 for tests.
+- [how-to/local-database.md](how-to/local-database.md): the tests' PostgreSQL 18.
 - [steps/](steps/): the card in construction.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
+- [reference/stack.md](reference/stack.md): each package's sources, skill, trap.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
-- [reference/checklist.md](reference/checklist.md): questions for readers.
-- [reference/screens.md](reference/screens.md): each screen and its floor.
+- [reference/checklist.md](reference/checklist.md): readers' questions.
+- [reference/screens.md](reference/screens.md): screens and their floors.
 - [reference/impeccable.md](reference/impeccable.md): Impeccable's files and commands.
 
 ## Guides: the rules
@@ -92,5 +94,5 @@ One line per document (`check-docs`).
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; a screen's card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md) and [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
 - [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): QA of a step's screens.
-- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): the review of a step; a screen.
+- [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md), [labels](../.agents/skills/conexus-review/references/labels.md): a step's review; a screen; labels.
 - [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [questions](../.agents/skills/conexus-explain/references/questions.md), [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.
