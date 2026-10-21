@@ -1,6 +1,7 @@
 {
   "name": "@conexus/hub-api",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

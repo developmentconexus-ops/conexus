@@ -1,6 +1,7 @@
 {
   "name": "@conexus/edge",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "typecheck": "wrangler types --check && tsc -p tsconfig.json",
