@@ -177,5 +177,20 @@ test('sem padrão próprio e com o da empresa pulado: a frase do critério 15 di
       'Você não tem conta disponível para OpenAI agora: as conversas novas começam no modelo inicial.',
     ),
   ).toBeTruthy()
+  expect(screen.getByText('Você segue o padrão da empresa.')).toBeTruthy()
+})
+
+test('com padrão próprio, "Você segue o padrão da empresa." não aparece', async () => {
+  await open(
+    view({
+      defaults: {
+        company: null,
+        mine: { model: SONNET, effort: 'low' },
+        start: { model: SONNET, effort: 'low', from: 'mine', account: 'Claude da empresa' },
+        companyStart: null,
+      },
+    }),
+  )
+  await screen.findByText(/Uma conversa nova começa em:/)
   expect(screen.queryByText('Você segue o padrão da empresa.')).toBeNull()
 })

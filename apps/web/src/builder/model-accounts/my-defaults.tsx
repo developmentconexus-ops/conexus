@@ -60,9 +60,7 @@ export function MyDefaults() {
     <div className="flex flex-col gap-lg">
       <p className="text-label text-text-2">Só você</p>
       <StartLine start={defaults.start} companyId={companyId} />
-      {defaults.start?.from === 'company' && (
-        <p className="text-text-2">Você segue o padrão da empresa.</p>
-      )}
+      {defaults.mine === null && <p className="text-text-2">Você segue o padrão da empresa.</p>}
       <SkippedLine
         mine={defaults.mine}
         company={defaults.company}
