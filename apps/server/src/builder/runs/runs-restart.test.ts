@@ -86,12 +86,6 @@ test('reinício no meio do turno: o turno retomado é avisado do reinício, e te
   }
   assert.equal(await stateOf(world.beside), 'saved')
   assert.equal(await versionOf(world), 1)
-  console.error(
-    'SEEN',
-    JSON.stringify(
-      world.turn.seen.map((x) => x.replace(/<system-reminder>.*<\/system-reminder>/s, '')),
-    ),
-  )
   const told = world.turn.seen.join('\n')
   assert.match(
     told,
