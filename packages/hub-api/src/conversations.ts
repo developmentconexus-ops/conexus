@@ -114,8 +114,8 @@ export const MessagePart = z.discriminatedUnion('type', [
     operation: z.enum(['write', 'edit']),
   }),
   /**
-   * What the machine is doing before a tool can run; the latest replaces the one before, except a
-   * replaced machine, which stays said.
+   * What the machine is doing before a tool can run; the latest replaces the one before, except the
+   * phases that last (`machinePhaseLasts`).
    */
   z.object({
     type: z.literal('machine'),
@@ -176,6 +176,16 @@ export const ConversationEvent = z.discriminatedUnion('type', [
 ])
 export type ConversationEvent = z.infer<typeof ConversationEvent>
 
+/**
+ * Whether a machine phase is a fact that stays said on the thread, without a clock: a replaced
+ * machine and a restart. Every other phase is a step in progress, over once anything follows it.
+ */
+export function machinePhaseLasts(
+  phase: Extract<MessagePart, { type: 'machine' }>['phase'],
+): boolean {
+  return phase === 'replaced' || phase === 'resumed'
+}
+
 /** The events that change a message's parts. */
 export type PartEvent = Extract<ConversationEvent, { type: 'text' | 'part' | 'notice' }>
 
@@ -189,7 +199,7 @@ function partKey(part: MessagePart): string | undefined {
     case 'file':
       return `${part.type}:${part.toolId}`
     case 'machine':
-      return part.phase === 'replaced' ? undefined : 'machine'
+      return machinePhaseLasts(part.phase) ? undefined : 'machine'
     default:
       return undefined
   }

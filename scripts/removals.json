@@ -2349,7 +2349,7 @@
     "replace": "denyOut: [] },\n      metadata",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/machine/machine.test.ts",
+      "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "lista de domínios"
     }
   },
@@ -2360,7 +2360,7 @@
     "replace": "query: {}",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/machine/machine.test.ts",
+      "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "varredura"
     }
   },
@@ -2514,8 +2514,30 @@
     "replace": "",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/machine/machine.test.ts",
+      "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausando ao vencer, com a marca"
+    }
+  },
+  {
+    "id": "machine-reconnect-keeps-files",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "if (!session.resumed && session.starts === 1) return this.seed(session)",
+    "replace": "if (!session.resumed) return this.seed(session)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "o Mastra religa no meio dele"
+    }
+  },
+  {
+    "id": "machine-save-margin",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": " - Date.now() + SAVE_MS,",
+    "replace": " - Date.now(),",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "na hora do turno a máquina segue ligada para guardar"
     }
   },
   {

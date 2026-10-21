@@ -5,7 +5,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
 import { createGitCopy, openRepository } from '../git/public.ts'
 import type { Machines } from '../machine/public.ts'
-import { createE2bApi, createE2bKit, createMachines } from '../machine/public.ts'
+import { createE2bApi, createE2bKit, createMachines, MARK } from '../machine/public.ts'
 
 export type RepositoryOf = (ids: { companyId: CompanyId; projectId: ProjectId }) => Repository
 /** The machines, made with the database that keeps their ids. */
@@ -21,7 +21,7 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
   function repository(ids: { companyId: CompanyId; projectId: ProjectId }) {
     return openRepository({ root: config.gitRoot, ...ids, log })
   }
-  const mark = { conexus_origin: new URL(config.publicOrigin).host }
+  const mark = { [MARK.origin]: new URL(config.publicOrigin).host }
   function machinesOf(database: Database) {
     return createMachines({
       ...{ database, log, mark },

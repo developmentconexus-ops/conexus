@@ -6,6 +6,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import { MachineFilesystem } from './filesystem.ts'
 import type { Kit, KitFactory, MachineApi, SandboxId } from './kit.ts'
+import { APP_FOLDER, MARK } from './kit.ts'
 import { MachineRows } from './rows.ts'
 import type { Collected } from './scripts.ts'
 import { collected, collectScript, keepScript, outFile, seedFile, seedScript } from './scripts.ts'
@@ -116,7 +117,7 @@ class BuilderMachines implements Machines {
   constructor(deps: MachinesDeps) {
     this.deps = deps
     this.rows = new MachineRows(deps.database)
-    this.workdir = deps.workdir ?? '/home/user/app'
+    this.workdir = deps.workdir ?? APP_FOLDER
     this.tmp = deps.tmp ?? '/tmp'
     this.startMs = deps.startMs ?? 120_000
   }
@@ -158,15 +159,17 @@ class BuilderMachines implements Machines {
 
   /**
    * What the machine holds once it is up. A woken one goes back to the Hub's `main`, unless the turn
-   * was taken over after a restart, which keeps its files. A new one is seeded; a second new one in
-   * the same turn is a machine that died, and what the turn wrote on it is gone.
+   * was taken over after a restart, which keeps its files. A later start in the same turn is Mastra
+   * reconnecting a machine that paused or dropped (`retryOnDead`): it keeps what the turn wrote. A new
+   * one is seeded; a second new one in the same turn is a machine that died, and what the turn wrote
+   * on it is gone.
    */
   private async onStart(session: Session, outcome: string | undefined) {
     const { kit, onPhase, projectId } = session
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
-      if (!session.resumed) return this.seed(session)
+      if (!session.resumed && session.starts === 1) return this.seed(session)
       const kept = await run(kit, keepScript(this.workdir))
       if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
       return
@@ -201,7 +204,7 @@ class BuilderMachines implements Machines {
       id: `conexus-${projectId}`,
       sandboxId,
       deadline: input.deadline,
-      metadata: { ...this.deps.mark, conexus_company: companyId, conexus_project: projectId },
+      metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },
       onStart: async ({ outcome }) => {
         if (holder.session !== undefined) await this.onStart(holder.session, outcome)
       },

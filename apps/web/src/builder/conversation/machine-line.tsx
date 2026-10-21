@@ -1,4 +1,5 @@
 import type { MessagePart } from '@conexus/hub-api'
+import { machinePhaseLasts } from '@conexus/hub-api'
 import { CheckIcon, CogIcon } from 'lucide-react'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
@@ -24,7 +25,7 @@ function Since() {
 
 /**
  * What the machine does before a tool can run, in a line of its own, with how long it has been at
- * it; a replaced machine is a fact, said without a clock.
+ * it; a phase that lasts is a fact, said without a clock.
  */
 export function MachineLine({ part }: { part: Machine }) {
   return (
@@ -34,7 +35,7 @@ export function MachineLine({ part }: { part: Machine }) {
       </MarkerIcon>
       <MarkerContent>
         {PHASES[part.phase]}
-        {part.phase !== 'replaced' && <Since />}
+        {!machinePhaseLasts(part.phase) && <Since />}
       </MarkerContent>
     </Marker>
   )

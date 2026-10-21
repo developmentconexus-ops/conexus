@@ -9,7 +9,7 @@ import type {
   RunId,
   TurnFailureCode,
 } from '@conexus/hub-api'
-import { applyEvent, MessageId } from '@conexus/hub-api'
+import { applyEvent, MessageId, machinePhaseLasts } from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -126,7 +126,7 @@ export function tellMachine(live: Live, phase: MachinePhase): void {
   const turn = openTurn(live)
   const part: MessagePart = { type: 'machine', phase }
   tell(live, turn, { type: 'part', part })
-  if (phase === 'replaced' || phase === 'resumed') void keepPart(live, turn, part)
+  if (machinePhaseLasts(phase)) void keepPart(live, turn, part)
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
