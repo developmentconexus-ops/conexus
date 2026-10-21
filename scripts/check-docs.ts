@@ -1,12 +1,15 @@
 // Defect: a document grows past its ceiling, hides from docs/index.md, holds a link that goes
 // nowhere, repeats or cites a rule that does not exist, names a retired process, or a second step
-// card waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24).
+// card waits in docs/steps/, or a skill's name leaves its folder's (delivery L5, L24). A package a
+// workspace depends on has no row in the stack map, a row repeats or names nothing the repository
+// uses, or a workspace pattern is one the check cannot read.
 // A link is inline or a reference definition, and a fragment must name a heading of the Markdown
 // file it points to, an ATX or a Setext heading, read by its rendered text. Refusals are proved by planting each one in check-docs.test.ts.
 // Revalidate by 2027-04-13, or when the list in delivery L24 changes.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import { parse } from 'yaml'
+import { z } from 'zod'
 
 const root = resolve(process.argv[2] ?? '.')
 
@@ -240,6 +243,83 @@ function checkSteps() {
   if (cards.length > 1) fail('second-card', 'docs/steps', cards.join(', '))
 }
 
+const STACK = 'docs/reference/stack.md'
+/** What the repository runs that no package.json declares: the database, the runtime, the images and the Hub image's Google sign-in binary. */
+const OTHER_PIECES = ['PostgreSQL', 'Node', 'Docker', 'cloudflared', 'CLIProxyAPI']
+
+const SECTIONS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
+const Manifest = z.looseObject({
+  name: z.string().optional(),
+  workspaces: z.array(z.string()).optional(),
+  ...Object.fromEntries(
+    SECTIONS.map((section) => [section, z.record(z.string(), z.string()).optional()]),
+  ),
+})
+type Manifest = z.infer<typeof Manifest>
+
+function manifest(dir: string): Manifest {
+  return Manifest.parse(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')))
+}
+
+/** The root and each workspace: a folder, or `folder/*` read as every folder under it with a package.json. */
+function manifests(): Manifest[] {
+  const top = manifest(root)
+  const dirs = (top.workspaces ?? []).flatMap((pattern) => {
+    const parent = pattern.endsWith('/*') ? pattern.slice(0, -2) : undefined
+    if (/[*!?[{]/.test(parent ?? pattern)) {
+      fail('stack-workspace-unread', 'package.json', pattern)
+      return []
+    }
+    if (parent === undefined) return [join(root, pattern)]
+    const folder = join(root, parent)
+    return existsSync(folder)
+      ? readdirSync(folder)
+          .map((name) => join(folder, name))
+          .filter((dir) => existsSync(join(dir, 'package.json')))
+      : []
+  })
+  return [top, ...dirs.map(manifest)]
+}
+
+const TABLE_RULE = /^\|(?:\s*:?-+:?\s*\|)+\s*$/
+
+/** The first cell of each table row, its code marks gone; a header is the line above a rule. */
+function stackRows(text: string): string[] {
+  const lines = withoutFences(text).split('\n')
+  return lines
+    .filter((line, i) => {
+      const next = lines[i + 1] ?? ''
+      return line.startsWith('|') && !TABLE_RULE.test(line) && !TABLE_RULE.test(next)
+    })
+    .map((line) => (line.split('|')[1] ?? '').replace(/`/g, '').trim())
+}
+
+function checkStack() {
+  if (!existsSync(join(root, 'package.json'))) return
+  const all = manifests()
+  const own = new Set(all.map((each) => each.name))
+  const pieces = new Set(OTHER_PIECES)
+  for (const each of all) {
+    for (const section of SECTIONS) {
+      const declared = each[section]
+      if (typeof declared !== 'object' || declared === null) continue
+      for (const name of Object.keys(declared)) if (!own.has(name)) pieces.add(name)
+    }
+  }
+  const path = join(root, STACK)
+  const listed = existsSync(path) ? stackRows(readFileSync(path, 'utf8')) : []
+  const rows = new Set(listed)
+  for (const [i, row] of listed.entries()) {
+    if (listed.indexOf(row) !== i) fail('stack-row-twice', STACK, row)
+  }
+  for (const piece of pieces) {
+    if (!rows.has(piece)) fail('stack-row-missing', STACK, piece)
+  }
+  for (const row of rows) {
+    if (!pieces.has(row)) fail('stack-row-unknown', STACK, row)
+  }
+}
+
 const texts = new Map(files.map((file) => [file, readFileSync(join(root, file), 'utf8')]))
 for (const [file, text] of texts) {
   checkCeiling(file, text)
@@ -250,6 +330,7 @@ for (const [file, text] of texts) {
 checkIndex()
 checkRules(texts)
 checkSteps()
+checkStack()
 
 if (problems.length > 0) {
   console.error(problems.join('\n'))
