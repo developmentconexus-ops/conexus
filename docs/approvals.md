@@ -86,3 +86,7 @@ Etapa 12.1 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.4 a v0.12.7); c
 
 Cartão da etapa 12.2 aprovado em 2026-10-20 (commit d4fcae61430a89e03e515c4cd16beba1aaf6300e): "Aprovo o cartão da 12.2"
 Etapa 12.2 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.8): "Aprovado tudo."
+
+## Etapa 12.3
+
+Cartão da etapa 12.3 aprovado em 2026-10-20 (commit 055a84a76e0bf837c0de71cf57bc1fae66108e19): "Tudo A"; sobre as duas frentes, "A"
