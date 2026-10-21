@@ -21,7 +21,7 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Configurações: Geral, Pessoas e convites, Contas de modelo, Padrões da empresa | `/companies/<c>/settings/general`, `people`, `model-accounts`, `defaults` | Empresa | owner, administrator, member (reads) |
 | The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
 | A Projeto, on its latest conversation | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, member |
-| A Projeto's conversation, with the tab Prévia or Projeto (`?lens=`) and its section Sobre or Versões (`?section=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
+| A Projeto's conversation, with the tab Prévia, Código or Projeto (`?lens=`) and its section Sobre or Versões (`?section=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
 | Central, Clientes | `/operations/clients` | Central | whoever operates the installation |
 | Estado do Hub | `/operations/status` | Central | whoever operates the installation |
 | Cadastrar cliente | `/operations/clients/new` | Central | whoever operates the installation |

@@ -96,5 +96,5 @@ label, so putting it back skips `migrate`.
 
 ## When it fails
 
-- A release that does not start: `deploy.sh` brings the earlier image back; the run ends red.
-- Read the state with `docker compose --file infra/compose.yaml ps`, `docker logs`.
+- A release that does not start: `deploy.sh` restores the earlier image; the run ends red.
+- State: `docker compose --file infra/compose.yaml ps`, `docker logs`. Logs carry no secret.
