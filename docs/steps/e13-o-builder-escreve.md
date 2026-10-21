@@ -47,21 +47,29 @@ construção para e pergunta.
 
 ## As unidades
 
-| Unidade | O que entrega | Pastas | Guia além do de código | Skills dos mantenedores | Depende de |
+| Unidade | O que entrega | Pastas | Guia além do de código | Skills, do mapa | Depende de |
 | --- | --- | --- | --- | --- | --- |
 | P0 | Regras de pacote e relógio | `.dependency-cruiser.cjs`, `biome.json` | — | — | — |
 | U1 | Registro 0051, prova ao vivo | `docs/` | testes | mastra | P0 |
-| U2 | O Git do app e a cópia no R2 | `builder/git/`, `infra/` | dados | node | U1 |
-| U3 | Tabelas e grants | migrações | dados | neon:neon-postgres | U1 |
+| U2 | O Git do app e a cópia no R2 | `builder/git/`, `infra/` | dados | — | U1 |
+| U3 | Tabelas e grants | migrações | dados | drizzle, neon:neon-postgres | U1 |
 | U4 | Máquina, semente, template | `builder/machine/`, `infra/e2b/` | segurança | mastra | U2, U3 |
-| U5 | A execução e a remoção | `builder/runs/`, `hub/` | dados | mastra | U4 |
+| U5 | A execução e a remoção | `builder/runs/`, `hub/` | dados | mastra, better-auth-best-practices | U4 |
 | U6 | Permissões, instruções, passos | `builder/conversation/`, `builder/model-accounts/` | segurança | mastra | U5 |
 | U7 | O turno durável | `builder/runs/`, `builder/conversation/` | dados | mastra | U6 |
-| U8 | O stream que escreve | `builder/conversation/`, web | código | mastra | U7 |
-| U9 | Aba Código, percurso | `builder/git/`, web | web | fastify-best-practices, shadcn | U8 |
+| U8 | O stream que escreve | `builder/conversation/`, web | código | mastra, router-core, shadcn | U7 |
+| U9 | Aba Código, percurso | `builder/git/`, web | web | fastify-best-practices, router-core, shadcn, playwright-cli | U8 |
 | U10 | Linha do turno, `by`, avaliação | `builder/conversation/`, `infra/` | segurança | mastra | U8 |
 
-Após a 12.1 e a 12.2. P0 antes (L20); U1 antes do código; U3 em PR próprio (D11); o resto em série.
+Skills e leitura: as linhas de `docs/reference/stack.md` pelas pastas, na sua ordem; em toda unidade
+`typescript-magician` e `node`. Pacote novo (`e2b`, `@mastra/e2b`, `@aws-sdk/client-s3`,
+`@mastra/evals`) entra com a sua linha.
+
+**Antes da aprovação** (0050), o estudo responde: aprovação e `ask_user`, dois eventos nossos ou as
+duas rotas do Mastra atrás da guarda de S39? Pode mudar U6 e U8; partes novas entram por
+`applyEvent` (12.3).
+
+Após a 12.3. P0 antes (L20); U1 antes do código; U3 em PR próprio (D11); o resto em série.
 
 **Orçamento de código alterado:** P0 30; U2 680; U3 160; U4 470; U5 850;
 U6 240; U7 400; U8 330; U9 780; U10 100. Total **4.040**; **4.240** com o filesystem nosso (Z2): 1 a
@@ -90,7 +98,7 @@ Linhas do `dist/`: `@mastra/core` 1.78.0, `@mastra/e2b` 0.14.1, `@mastra/code-sd
 ## Os relógios: um dono cada
 
 Nada tocado sem trabalho (§10, D27); o agendador do Mastra lê o banco a cada 10 s
-(`workflows/scheduler/types.d.ts:69-71`). P0 recusa `setTimeout` fora dos três donos.
+(`workflows/scheduler/types.d.ts:69-71`).
 
 | Tempo | Dono | Mecanismo |
 | --- | --- | --- |
@@ -117,12 +125,6 @@ Nada tocado sem trabalho (§10, D27); o agendador do Mastra lê o banco a cada 1
 
 **A continuação.** Sem os passos na memória (`savePerStep: false`, `fork` `agent-controller.ts:2063`),
 o servidor manda: "O servidor reiniciou no meio do turno. Veja `git status` e termine o pedido."
-
-## Os remendos antigos (`e0353c36`)
-
-**Nativos:** 1 (`timeout`), 2, 3, 4 (`reattach`, `onStart`), 9, 10, 13, 15, 16. **Sai:** 8
-(`allowOut`). **Nossos:** 5 ordem da remoção; 6 varredura marcada; 7 teto do pacote; 11 assentar; 12
-e 14, da 12; a posse.
 
 ## Os critérios de aceite
 
