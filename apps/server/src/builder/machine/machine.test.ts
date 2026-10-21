@@ -143,17 +143,18 @@ test('máquina: a máquina que cai no meio do turno é refeita, e o turno não g
   await assert.rejects(machines.collect({ projectId: PROJECT, base }), /died/)
 })
 
-test('máquina: a primeira ferramenta do Workspace espera a semente: o comando já vê o repositório', async (t) => {
+test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
   const { open, folder } = await world(t)
   const workspace = await open()
   const tools = await createWorkspaceTools(workspace)
   const command = tools[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]
   assert.ok(command, 'the workspace offers execute_command')
-  const seen = await command.execute(
-    { command: `cat ${join(folder, 'app')}/.git/HEAD` },
-    { workspace },
-  )
-  assert.match(JSON.stringify(seen), /ref: refs\/heads\/main/)
+  const head = { command: `cat ${join(folder, 'app')}/.git/HEAD` }
+  const seen = await Promise.all([
+    command.execute(head, { workspace }),
+    command.execute(head, { workspace }),
+  ])
+  for (const each of seen) assert.match(JSON.stringify(each), /ref: refs\/heads\/main/)
 })
 
 test('máquina: E2B calado passa do prazo externo e um 502 também, ambos MACHINE_UNAVAILABLE, sem gravar id', async (t) => {
