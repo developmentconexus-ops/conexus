@@ -90,3 +90,4 @@ Etapa 12.2 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.8): "Aprovado t
 ## Etapa 12.3
 
 Cartão da etapa 12.3 aprovado em 2026-10-20 (commit 055a84a76e0bf837c0de71cf57bc1fae66108e19): "Tudo A"; sobre as duas frentes, "A"
+Etapa 12.3 usada em (a linha de uso entra aqui, do firstmate)

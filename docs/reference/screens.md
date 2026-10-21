@@ -17,8 +17,8 @@ L24](../guides/delivery.md)): it grows by one line per screen.
 | Início of a company | `/companies/<c>` | Empresa | owner, administrator, member |
 | Todos os projetos | `/companies/<c>/projects` | Empresa | owner, administrator, member |
 | Configurações' index: the sections as a list on a phone; a wide screen opens Minha conta | `/companies/<c>/settings` | Empresa | owner, administrator, member |
-| Configurações: Minha conta, Minhas contas de modelo, Aparência | `/companies/<c>/settings/account`, `my-model-accounts`, `appearance` | Empresa | owner, administrator, member |
-| Configurações: Geral, Pessoas e convites, Contas de modelo | `/companies/<c>/settings/general`, `people`, `model-accounts` | Empresa | owner, administrator, member (reads) |
+| Configurações: Minha conta, Minhas contas de modelo, Meus padrões, Aparência | `/companies/<c>/settings/account`, `my-model-accounts`, `my-defaults`, `appearance` | Empresa | owner, administrator, member |
+| Configurações: Geral, Pessoas e convites, Contas de modelo, Padrões da empresa | `/companies/<c>/settings/general`, `people`, `model-accounts`, `defaults` | Empresa | owner, administrator, member (reads) |
 | The owner's first entry, steps 1 to 4 | `/companies/<c>/welcome/company`, `model-account`, `team`, `build` | Empresa | owner |
 | A Projeto, on its latest conversation | `/companies/<c>/projects/<p>` | Projeto | owner, administrator, member |
 | A Projeto's conversation, with the tab Prévia or Projeto (`?lens=`) and its section Sobre or Versões (`?section=`) | `/companies/<c>/projects/<p>/conversations/<id>` | Projeto | owner, administrator, member |
