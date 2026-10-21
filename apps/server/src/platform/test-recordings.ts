@@ -39,7 +39,7 @@ export function endedOf(body: Buffer): boolean {
 export function replayed(name: string, signal: AbortSignal | null | undefined): Response {
   const body = recordedBody(name)
   const headers = { 'content-type': 'text/event-stream' }
-  if (endedOf(body)) return new Response(body, { headers })
+  if (endedOf(body)) return new Response(new Uint8Array(body), { headers })
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(body)
