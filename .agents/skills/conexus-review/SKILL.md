@@ -69,6 +69,8 @@ Rules read: <files> at <main commit>. Reviewed: <head commit>.
 approve | request changes: <one line why>
 ```
 
+Only a Bloqueia holds the merge ([delivery L12](../../../docs/guides/delivery.md)).
+
 ## Stop and ask
 
 The card and a guide contradict each other: report both lines, choose neither.

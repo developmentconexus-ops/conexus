@@ -47,7 +47,7 @@ only with the founder's word.
   the refusal criteria and reads the CI logs. Nobody waits for QA; a review left incomplete is
   finished by its reviewer, not repeated by a third. QA and review findings form one fix round,
   split into fronts that share no file, built at once, one commit each; a Bloqueia that needs a
-  contract the card lacks is one more front with its own delta. One reader checks each front's
+  contract the card lacks follows L7, then is one more front with its own delta. One reader checks each front's
   delta for closed Bloqueia and new defects, while QA reruns the screens it touched. No per-unit
   review or review robot. Documents-only changes get check-docs and one reader once; a card gets
   one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
