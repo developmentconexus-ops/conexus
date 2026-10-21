@@ -18,9 +18,20 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
 }
 
+// The edge's own policy, read from its source so it cannot drift: a piece that needs a style
+// element or a data: URI fails here, in the browser, and not after the Release (web W22, testing T23).
+const POLICY = /APP_CONTENT_SECURITY_POLICY =\s*"([^"]+)"/.exec(
+  readFileSync(join(import.meta.dirname, '../edge/src/headers.ts'), 'utf8'),
+)?.[1]
+if (!POLICY)
+  throw new Error('the edge no longer declares its policy as APP_CONTENT_SECURITY_POLICY')
+const SECURITY_HEADERS = { 'Content-Security-Policy': POLICY }
+
 export const DESKTOP = { width: 1366, height: 900 }
 export const PHONE = { width: 390, height: 844 }
 export const SMALL_PHONE = { width: 320, height: 640 }
+// A 390px phone at 200% zoom lays out 195 CSS pixels (design V18).
+export const ZOOMED_PHONE = { width: 195, height: 422 }
 export type Viewport = { width: number; height: number }
 
 /** What the fake Hub answers a request with; `hold` keeps the reply back until it settles. */
@@ -55,9 +66,25 @@ export type Harness = {
       replies: Replies
       scheme?: 'light' | 'dark'
     },
-  ): Promise<Page & { seen: Seen[] }>
+  ): Promise<Page & { seen: Seen[]; problems: string[] }>
   /** The requests no reply was given for, over the whole run. */
   unanswered: string[]
+}
+
+/** `/pieces` is the page of chat pieces, built only here, never by `npm run build`. */
+function fileOf(pathname: string): string {
+  if (pathname.startsWith('/assets/')) return pathname
+  return pathname === '/pieces' ? '/pieces.html' : '/index.html'
+}
+
+/** A script error, or any console error, which is also where the browser reports a CSP refusal. */
+function watchProblems(page: Page): string[] {
+  const problems: string[] = []
+  page.on('pageerror', (error) => problems.push(error.message))
+  page.on('console', (message) => {
+    if (message.type() === 'error') problems.push(message.text())
+  })
+  return problems
 }
 
 export function createHarness(root: string): Harness {
@@ -75,6 +102,7 @@ export function createHarness(root: string): Harness {
       colorScheme: options.scheme ?? 'light',
     })
     const seen: Seen[] = []
+    const problems = watchProblems(page)
     await page.route(`${ORIGIN}/**`, async (route) => {
       const request = route.request()
       const url = new URL(request.url())
@@ -98,15 +126,16 @@ export function createHarness(root: string): Harness {
             : { status: reply.status, json: reply.json },
         )
       }
-      const file = url.pathname.startsWith('/assets/') ? url.pathname : '/index.html'
+      const file = fileOf(url.pathname)
       return route.fulfill({
         body: readFileSync(join(outDir, file)),
         contentType: TYPES[extname(file)] ?? 'text/html',
+        headers: SECURITY_HEADERS,
       })
     })
     await page.goto(`${ORIGIN}${path}`)
     await page.evaluate(() => document.fonts.ready)
-    return Object.assign(page, { seen })
+    return Object.assign(page, { seen, problems })
   }
 
   return {
@@ -114,7 +143,16 @@ export function createHarness(root: string): Harness {
     open,
     async start() {
       outDir = mkdtempSync(join(tmpdir(), 'conexus-web-layout-'))
-      await build({ root, logLevel: 'silent', build: { outDir } })
+      await build({
+        root,
+        logLevel: 'silent',
+        build: {
+          outDir,
+          rolldownOptions: {
+            input: { index: join(root, 'index.html'), pieces: join(root, 'pieces.html') },
+          },
+        },
+      })
       // The headless shell pinned by playwright-core, which the `pretest` script installs.
       browser = await chromium.launch()
     },
@@ -127,10 +165,16 @@ export function createHarness(root: string): Harness {
 
 /**
  * Where focus is after the key, once it settles: Base UI moves focus off its guards on the next
- * frame. Each stop reads its name, its drawn outline and whether it sits in the open dialog or menu.
+ * frame. Each stop reads its name, how its focus is drawn and whether it sits in the open dialog or
+ * menu: a 2px outline, or a field's `halo` on its own edge (design V28).
  */
 async function press(page: Page, key: string): Promise<string> {
   await page.keyboard.press(key)
+  return focusDrawn(page)
+}
+
+/** Where focus is once it settles, and how its focus is drawn, as `press` reads it. */
+export function focusDrawn(page: Page): Promise<string> {
   return page.evaluate(
     () =>
       new Promise<string>((settled) =>
@@ -141,10 +185,45 @@ async function press(page: Page, key: string): Promise<string> {
             const name =
               focused.getAttribute('aria-label') ||
               focused.textContent?.trim() ||
-              focused.getAttribute('name')
-            const { outlineStyle, outlineWidth } = getComputedStyle(focused)
+              focused.getAttribute('name') ||
+              (focused instanceof HTMLTextAreaElement || focused instanceof HTMLInputElement
+                ? focused.labels?.[0]?.textContent?.trim()
+                : undefined)
+            // A field draws a transparent outline for forced colors; its focus is the ipê edge and a
+            // see-through ipê halo, on the field or on the group around it (design V28, decision B).
+            function channels(colour: string) {
+              const canvas = document.createElement('canvas')
+              canvas.width = 1
+              canvas.height = 1
+              const context = canvas.getContext('2d', { willReadFrequently: true })
+              if (!context) return [0, 0, 0, 0]
+              context.fillStyle = colour
+              context.fillRect(0, 0, 1, 1)
+              return [...context.getImageData(0, 0, 1, 1).data]
+            }
+            function ipe(colour: string) {
+              const accent = getComputedStyle(document.documentElement).getPropertyValue(
+                '--color-accent',
+              )
+              const [r = 0, g = 0, b = 0, a = 0] = channels(colour)
+              const [ar = 0, ag = 0, ab = 0] = channels(accent)
+              return Math.max(Math.abs(r - ar), Math.abs(g - ag), Math.abs(b - ab)) <= 2 ? a : 0
+            }
+            const own = getComputedStyle(focused)
+            const frame = getComputedStyle(focused.closest('[data-focus-frame]') ?? focused)
+            const shadow = frame.boxShadow.slice(0, frame.boxShadow.indexOf(')') + 1)
+            // While the Builder answers, the field's edge is the turning ring (`working-ring`).
+            const edge =
+              ipe(frame.borderTopColor) === 255 || frame.backgroundImage.includes('conic')
+            const halo = edge && ipe(shadow) > 0 && ipe(shadow) < 255
+            const drawn =
+              own.outlineColor !== 'rgba(0, 0, 0, 0)'
+                ? `${own.outlineStyle} ${own.outlineWidth}`
+                : halo
+                  ? 'halo'
+                  : `${frame.outlineStyle} ${frame.outlineWidth}`
             const inside = focused.closest('[role=dialog], [role=menu]') ? ' inside' : ''
-            settled(`${name} ${outlineStyle} ${outlineWidth}${inside}`)
+            settled(`${name} ${drawn}${inside}`)
           }),
         ),
       ),

@@ -90,15 +90,15 @@ test('reconectar no meio de um turno: primeiro a resposta até ali, depois o res
   const first = await streamOf(hub, ana, url)
   t.after(() => first.close())
   assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
-  assert.deepEqual(await first.next(), { type: 'text', delta: PARTIAL })
+  assert.deepEqual(await first.said(), { type: 'text', delta: PARTIAL })
   first.close()
   const again = await streamOf(hub, ana, url)
   t.after(() => again.close())
   const snapshot = await again.next()
-  assert.equal(snapshot.type, 'turn')
   assert.ok(snapshot.type === 'turn')
   assert.equal(snapshot.message.role, 'builder')
   assert.deepEqual(snapshot.message.parts, [{ type: 'text', text: PARTIAL }])
+  assert.ok(Date.parse(snapshot.startedAt) <= Date.now())
   assert.deepEqual(rolesAndParts(await call(hub, ana, 'GET', url)), [
     ['person', [{ type: 'text', text: 'Uma pergunta' }]],
   ])
@@ -123,7 +123,9 @@ test('reconectar com o turno em curso e ainda mudo: o stream diz que ele trabalh
     await new Promise((done) => setTimeout(done, 20))
   const again = await streamOf(hub, ana, url)
   t.after(() => again.close())
-  assert.deepEqual(await again.next(), { type: 'working' })
+  const snapshot = await again.next()
+  assert.ok(snapshot.type === 'turn')
+  assert.deepEqual(snapshot.message.parts, [])
   stalled.release()
   assert.deepEqual((await again.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
 })
@@ -135,7 +137,7 @@ test('Parar: o turno termina `aborted` e o texto até ali fica na conversa', asy
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
-  assert.deepEqual(await stream.next(), { type: 'text', delta: PARTIAL })
+  assert.deepEqual(await stream.said(), { type: 'text', delta: PARTIAL })
   const stopped = await post(hub, ana, `${url}/stop`, {})
   assert.equal(stopped.statusCode, 204)
   assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'aborted' })
@@ -154,7 +156,7 @@ test('desligar espera o turno em curso, guarda o texto e só então fecha o stre
   const stream = await streamOf(closing, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 202)
-  assert.deepEqual(await stream.next(), { type: 'text', delta: PARTIAL })
+  assert.deepEqual(await stream.said(), { type: 'text', delta: PARTIAL })
   const closed = closing.close()
   assert.equal(await settles(closed), false, 'the close waits for the turn')
   assert.equal(stream.seen.ended, false)
@@ -179,7 +181,7 @@ test('apagar o Projeto no meio de um turno: a sessão fecha, e desligar não esp
   const stream = await streamOf(closing, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 202)
-  assert.deepEqual(await stream.next(), { type: 'text', delta: PARTIAL })
+  assert.deepEqual(await stream.said(), { type: 'text', delta: PARTIAL })
   const project = `/api/companies/${companyId}/projects/${projectId}`
   assert.equal(
     (await call(closing, ana, 'DELETE', project, { name: 'Encomendas' })).statusCode,
@@ -197,7 +199,7 @@ test('o processo para no meio de um turno: a pergunta não se perde, e aparece u
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Uma pergunta que não pode sumir')).statusCode, 202)
-  assert.deepEqual(await stream.next(), { type: 'text', delta: PARTIAL })
+  assert.deepEqual(await stream.said(), { type: 'text', delta: PARTIAL })
   const other = await hubBeside(t, hub)
   const asked = [['person', [{ type: 'text', text: 'Uma pergunta que não pode sumir' }]]]
   assert.deepEqual(rolesAndParts(await call(other, ana, 'GET', url)), asked)
@@ -224,7 +226,7 @@ test('uma pessoa com duas conversas ao mesmo tempo: sessões separadas, eventos 
   const onY = await streamOf(hub, ana, y)
   t.after(() => onY.close())
   assert.equal((await sent(hub, ana, x, 'Pergunta X')).statusCode, 202)
-  assert.deepEqual(await onX.next(), { type: 'text', delta: PARTIAL })
+  assert.deepEqual(await onX.said(), { type: 'text', delta: PARTIAL })
   assert.equal((await sent(hub, ana, y, 'Pergunta Y')).statusCode, 202)
   const ofY = await onY.turn()
   assert.deepEqual(textsOf(ofY), ['Resposta Y'])
@@ -249,16 +251,19 @@ test('o stream fecha enquanto a pergunta é guardada: a sessão fica, e o turno 
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const address = await hub.app.listen({ port: 0, host: '127.0.0.1' })
   const headers = { origin: TEST_ORIGIN, cookie: ana.cookie }
+  const arrived = once(hub.app.server, 'request')
   const first = http.get(`${address}${url}/events`, { headers })
   t.after(() => first.destroy())
   await once(first, 'response')
+  const [, response] = await arrived
+  assert.ok(response instanceof http.ServerResponse)
   const threads = await stalled(t, hub, 'mastra_threads')
   const sending = sent(hub, ana, url, 'Uma pergunta')
   await threads.waited()
   first.destroy()
-  await new Promise((done) => setTimeout(done, 200))
+  // The server sees the close, which ends the stream's signal, while the question waits on the lock.
+  await once(response, 'close')
   const opening = streamOf(hub, ana, url)
-  await new Promise((done) => setTimeout(done, 200))
   await threads.release()
   const second = await opening
   t.after(() => second.close())
@@ -278,8 +283,8 @@ test('o Mastra recusa a mensagem antes do turno: INTERNAL_UNEXPECTED, e um só f
   t.after(() => stream.close())
   await hub.test.mastraPool.query('alter table mastra.mastra_threads rename to mastra_threads_out')
   assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
-  assert.deepEqual(await stream.turn(), [
-    { type: 'failure', code: 'INTERNAL_UNEXPECTED' },
+  assert.deepEqual((await stream.turn()).slice(1), [
+    { type: 'part', part: { type: 'failure', code: 'INTERNAL_UNEXPECTED' } },
     { type: 'turnEnd', reason: 'error' },
   ])
   await hub.test.mastraPool.query('alter table mastra.mastra_threads_out rename to mastra_threads')

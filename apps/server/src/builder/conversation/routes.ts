@@ -14,7 +14,7 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel } from '../model-accounts/public.ts'
+import { conversationModel, effortsOf } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { historyOf, threadModel, titlesOf } from './history.ts'
 import type { Owner } from './live.ts'
@@ -49,7 +49,8 @@ function registerReads(app: FastifyInstance, deps: Deps) {
   serve(app, readConversation, async (input) => {
     const { person, params } = input
     const row = await store.owned({ person, ...params })
-    const read = await historyOf(builder, ownerOf(input), params.conversationId)
+    const inProgress = await sessions.inProgressAfter(params.conversationId)
+    const read = await historyOf(builder, ownerOf(input), params.conversationId, inProgress)
     // An index row whose thread Mastra does not hold: the conversation is gone (the step's states).
     if (read === undefined) {
       await store.remove({ person, ...params })
@@ -60,10 +61,11 @@ function registerReads(app: FastifyInstance, deps: Deps) {
   })
 
   serve(app, streamConversation, async (input) => {
-    const { person, params, signal } = input
+    const { person, params, signal, lastEventId } = input
     await store.owned({ person, ...params })
     const conversationId = params.conversationId
-    return answer(await sessions.events({ owner: ownerOf(input), conversationId, signal }))
+    const owner = ownerOf(input)
+    return answer(await sessions.events({ owner, conversationId, signal, lastEventId }))
   })
 }
 
@@ -86,7 +88,9 @@ async function created(
   const model = await conversationModel(deps.queue, owner, input.body.model)
   const made =
     earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
-  await deps.sessions.switchModel({ owner, conversationId: made.id, model })
+  // It starts at the model's lowest effort: `off` when the model can stop reasoning.
+  const [effort] = effortsOf(model)
+  await deps.sessions.switchModel({ owner, conversationId: made.id, model, effort })
   return { ...made, model }
 }
 
@@ -131,12 +135,14 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
     await store.owned({ person, ...params })
     const owner = ownerOf(input)
     const model = await conversationModel(deps.queue, owner, body.model)
-    await sessions.switchModel({ owner, conversationId: params.conversationId, model })
+    const { effort } = body
+    if (!effortsOf(model).includes(effort)) throw new Failure('EFFORT_UNSUPPORTED')
+    await sessions.switchModel({ owner, conversationId: params.conversationId, model, effort })
     input.log.info(
       { companyId: params.companyId, conversationId: params.conversationId },
       'CONVERSATION_MODEL_SET',
     )
-    return answer({ model })
+    return answer({ model, effort })
   })
 }
 

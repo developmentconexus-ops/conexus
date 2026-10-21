@@ -1,8 +1,27 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute } from '@tanstack/react-router'
+import { accountsQuery } from '../../../../builder/model-accounts/public.ts'
+import { PreparationCard } from '../../../../hub/identity/public.ts'
+import { Home, projectsQuery } from '../../../../hub/projects/public.ts'
+import { readOrNotFound } from '../../../../platform/hub.ts'
 
-// A company's address opens its Projects (screen map, D2).
+/** What the company still needs, for an owner or an administrator; a member never sees it. */
+function Preparation() {
+  const { companyId } = Route.useParams()
+  const accounts = useQuery(accountsQuery(companyId))
+  if (accounts.data === undefined) return null
+  return <PreparationCard companyId={companyId} companyAccounts={accounts.data.company.length} />
+}
+
+function HomePage() {
+  const { companyId } = Route.useParams()
+  const { role } = Route.useRouteContext()
+  return <Home companyId={companyId} aside={role === 'member' ? undefined : <Preparation />} />
+}
+
 export const Route = createFileRoute('/_app/companies/$companyId/')({
-  beforeLoad: ({ params }) => {
-    throw redirect({ to: '/companies/$companyId/projects', params, replace: true })
-  },
+  staticData: { place: 'Início' },
+  loader: ({ context, params }) =>
+    readOrNotFound(context.queryClient.ensureQueryData(projectsQuery(params.companyId, undefined))),
+  component: HomePage,
 })

@@ -4,7 +4,7 @@ import { cva } from 'class-variance-authority'
 import { cn } from './cn.ts'
 
 // Copied from shadcn's base-nova `button`, painted with the brand's button rows (design V6, V27).
-export const buttonVariants = cva(
+const buttonClasses = cva(
   'inline-flex shrink-0 items-center justify-center gap-sm whitespace-nowrap rounded-control border border-transparent font-body text-label select-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0',
   {
     variants: {
@@ -26,12 +26,20 @@ export const buttonVariants = cva(
   },
 )
 
+/**
+ * A button's classes, merged: the base's transparent border gives way to a variant's own, also on a
+ * link drawn as a button, which no `cn` reaches.
+ */
+export function buttonVariants(props?: VariantProps<typeof buttonClasses>): string {
+  return cn(buttonClasses(props))
+}
+
 export function Button({
   className,
   variant,
   size,
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonClasses>) {
   return (
     <ButtonPrimitive
       data-slot="button"

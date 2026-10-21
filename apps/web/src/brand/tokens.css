@@ -94,11 +94,17 @@
   --container-drawer: 20rem;
   --container-column: 24rem;
   --container-message: 28rem;
+  --container-page: 64rem;
+  /* The sidebar open and as icons (web W30); the drawer keeps --container-drawer. */
+  --container-sidebar: 16rem;
+  --container-sidebar-icon: 3.25rem;
 
   --ease-fit: cubic-bezier(0.65, 0, 0.35, 1);
   --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1);
   --animate-fit-a: fit-a 0.9s var(--ease-arrive) 0.3s both;
   --animate-fit-b: fit-b 0.9s var(--ease-arrive) 0.3s both;
+  --animate-working-a: working-a 1.2s var(--ease-fit) infinite;
+  --animate-working-b: working-b 1.2s var(--ease-fit) infinite;
 
   @keyframes fit-a {
     from {
@@ -115,6 +121,87 @@
     to {
       transform: none;
     }
+  }
+  /* The pieces slide apart two units along the diagonal and fit back, while the agent works. */
+  @keyframes working-a {
+    50% {
+      transform: translate(-2px, -2px);
+    }
+  }
+  @keyframes working-b {
+    50% {
+      transform: translate(2px, 2px);
+    }
+  }
+}
+
+/* A light sweeps across the text of work in progress; under reduced motion the text keeps its resting colour. */
+@utility shimmer {
+  background:
+    linear-gradient(110deg, var(--color-text-2) 40%, var(--color-text) 50%, var(--color-text-2) 60%)
+    100% 0 / 250% 100% no-repeat;
+  background-clip: text;
+  color: transparent;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: shimmer 1.8s linear infinite;
+  }
+}
+
+/* A field shows focus on its own edge, as shadcn's fields do: the edge turns ipê inside a soft ipê
+   halo (design V28). The field keeps a transparent outline, which forced colours paint instead. */
+@utility focus-field {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* A busy field's edge is the turning ring: focused, the whole ring turns ipê in the same halo. */
+@utility focus-ring {
+  --ring-base: color-mix(in srgb, var(--color-accent) 60%, var(--color-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* The thumb of a slider lifts off its track. */
+@utility lift {
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+/* The edge of the field while the Builder answers: an ipê arc turns round it (old
+   `composer.css:19-68`); still under reduced motion. The arc is the background under the 1px
+   transparent border. */
+@property --ring-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@utility working-ring {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--color-surface), var(--color-surface)) padding-box,
+    conic-gradient(
+      from var(--ring-angle),
+      var(--ring-base, var(--color-line)) 0deg,
+      var(--color-accent) 120deg,
+      var(--ring-base, var(--color-line)) 180deg,
+      var(--ring-base, var(--color-line)) 200deg,
+      var(--color-accent) 300deg,
+      var(--ring-base, var(--color-line)) 360deg
+    )
+    border-box;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: ring-turn 2.8s linear infinite;
+  }
+}
+
+@keyframes ring-turn {
+  to {
+    --ring-angle: 360deg;
+  }
+}
+
+@keyframes shimmer {
+  to {
+    background-position: 0 0;
   }
 }
 

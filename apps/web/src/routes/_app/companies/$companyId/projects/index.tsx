@@ -5,7 +5,7 @@ import { Projects, projectsQuery } from '../../../../../hub/projects/public.ts'
 import { readOrNotFound } from '../../../../../platform/hub.ts'
 
 export const Route = createFileRoute('/_app/companies/$companyId/projects/')({
-  staticData: { place: 'Projetos' },
+  staticData: { place: 'Todos os projetos' },
   validateSearch: listProjects.input.query
     .extend({ notice: z.literal('deleted').optional().catch(undefined) })
     .catch({}),

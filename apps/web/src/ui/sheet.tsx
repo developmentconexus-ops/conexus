@@ -11,10 +11,6 @@ export function Sheet(props: SheetPrimitive.Root.Props) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
 
-export function SheetTrigger(props: SheetPrimitive.Trigger.Props) {
-  return <SheetPrimitive.Trigger data-slot="sheet-trigger" {...props} />
-}
-
 export function SheetContent({
   className,
   title,

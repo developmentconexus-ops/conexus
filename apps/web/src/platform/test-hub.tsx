@@ -225,6 +225,12 @@ export const PEDIDOS = ProjectSummary.parse({
   createdAt: '2026-10-17T12:00:00.000Z',
 })
 
+/** The Projeto's panel asks for the person's conversations; for a test that has none to speak of. */
+export const conversationsNone = http.get(
+  `*/api/companies/${COMPANY.id}/projects/:projectId/conversations`,
+  () => HttpResponse.json({ conversations: [], next: { kind: 'END' } }),
+)
+
 /** What the Hub shows of Empresa Teste's Projects; a test changes it between reads. */
 export type ProjectsView = {
   projects: ProjectSummary[]

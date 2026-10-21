@@ -1,4 +1,11 @@
-import type { AccountKind, ModelAccount, PersonId, Provider, ProviderId } from '@conexus/hub-api'
+import type {
+  AccountKind,
+  Effort,
+  ModelAccount,
+  PersonId,
+  Provider,
+  ProviderId,
+} from '@conexus/hub-api'
 import { hourOf } from '../../platform/dates.ts'
 import { writeFailureText } from '../../platform/hub.ts'
 
@@ -62,3 +69,13 @@ export function plain(text: string): string {
     .replaceAll(/\p{Diacritic}/gu, '')
     .toLowerCase()
 }
+
+/** What a person reads for each reasoning level a model accepts. */
+export const EFFORT_LABELS = {
+  off: 'Desligado',
+  low: 'Baixo',
+  medium: 'Médio',
+  high: 'Alto',
+  xhigh: 'Muito alto',
+  max: 'Máximo',
+} as const satisfies Record<Effort, string>

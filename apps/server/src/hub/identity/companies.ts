@@ -1,14 +1,21 @@
 import type { PersonId } from '@conexus/hub-api'
 import { Company, CompanyDetail, CompanyId, Membership, PAGE_SIZE } from '@conexus/hub-api'
-import { and, asc, eq, isNull, sql } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { AppsDomain } from '../../platform/config.ts'
 import type { Database, ReadTx } from '../../platform/database.ts'
+import { Failure } from '../../platform/failure.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import { admit, mayInviteAs, mayOperate } from './admission.ts'
 import { company, member, user } from './tables.ts'
 
 const PersonRole = z.object({ role: z.string().nullable() })
+
+/**
+ * A company the person can open: any once it has its nickname, and before that only its owner's,
+ * who chooses it (security S10). The others do not see it, as an unknown company.
+ */
+const opens = or(eq(member.role, 'owner'), isNotNull(company.nickname))
 
 export function readMemberships(database: Database, personId: PersonId, page: string | undefined) {
   return database.read({ kind: 'PERSON', personId }, async (tx) => {
@@ -21,12 +28,13 @@ export function readMemberships(database: Database, personId: PersonId, page: st
         and(
           eq(member.userId, personId),
           isNull(company.deletingSince),
+          opens,
           after(sql`(${company.name}, ${company.id})`, key, (id) =>
             tx
               .select({ name: company.name, id: company.id })
               .from(company)
               .innerJoin(member, eq(member.organizationId, company.id))
-              .where(and(eq(company.id, id), eq(member.userId, personId))),
+              .where(and(eq(company.id, id), eq(member.userId, personId), opens)),
           ),
         ),
       )
@@ -73,8 +81,12 @@ export function readCompany(
   const { appsDomain, ...scope } = input
   return database.read({ kind: 'COMPANY', ...scope }, async (tx) => {
     const admitted = await admit({ tx, ...scope, action: 'readCompany' })
+    const detail = await companyDetailOf(tx, { companyId: admitted.companyId, appsDomain })
+    if (detail.nickname === null && admitted.role !== 'owner') {
+      throw new Failure('NOT_FOUND', { details: { reason: 'NO_NICKNAME' } })
+    }
     return {
-      company: await companyDetailOf(tx, { companyId: admitted.companyId, appsDomain }),
+      company: detail,
       role: admitted.role,
       mayInviteAs: mayInviteAs(admitted),
     }

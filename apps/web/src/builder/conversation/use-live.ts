@@ -2,6 +2,7 @@ import type {
   CompanyId,
   ConversationEvent,
   ConversationId,
+  EventId,
   ProjectId,
   readConversation,
 } from '@conexus/hub-api'
@@ -67,13 +68,18 @@ async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
 }
 
 /**
- * One line of the stream. A line opened again first reads the conversation, then forgets the
- * answer it showed: the read holds what finished in the gap, and the stream's `turn`, its first
- * event, tells the answer still in progress.
+ * One line of the stream. A line opened again sends the id of the last event read, then reads the
+ * conversation: the read holds what finished in the gap, and the stream tells what the answer in
+ * progress missed, or the whole answer again in its `turn`.
  */
 async function readOnce(
   hooks: Hooks,
-  options: { signal: AbortSignal; again: boolean; onEvent: () => void },
+  options: {
+    signal: AbortSignal
+    again: boolean
+    lastEventId: EventId | undefined
+    onEvent: (id: EventId) => void
+  },
 ): Promise<void> {
   const stalled = new AbortController()
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -92,9 +98,10 @@ async function readOnce(
       signal: AbortSignal.any([options.signal, stalled.signal]),
       onActivity: watch,
       opened,
+      ...(options.lastEventId === undefined ? {} : { lastEventId: options.lastEventId }),
     })
-    for await (const event of events) {
-      options.onEvent()
+    for await (const { id, event } of events) {
+      options.onEvent(id)
       await handle(event, hooks)
     }
   } finally {
@@ -110,13 +117,16 @@ async function readOnce(
 async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
   let pause = FIRST_RETRY_MS
   let again = false
+  let lastEventId: EventId | undefined
   while (!signal.aborted) {
     try {
       await readOnce(hooks, {
         signal,
         again,
-        onEvent: () => {
+        lastEventId,
+        onEvent: (id) => {
           pause = FIRST_RETRY_MS
+          lastEventId = id
         },
       })
     } catch (error) {

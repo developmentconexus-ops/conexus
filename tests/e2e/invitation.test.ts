@@ -10,10 +10,12 @@ import {
   linkIn,
   liveHub,
   mailProvider,
+  openSettings,
   PASSWORD,
   personWithPassword,
   reachHub,
   signIn,
+  waitForHome,
   watchConsole,
 } from './live-hub.ts'
 
@@ -42,10 +44,9 @@ async function ownerOfCompany(database: LiveDatabase) {
 async function anaInvites(page: Page) {
   await page.goto(`${TEST_ORIGIN}/`)
   await signIn(page, ANA.email, PASSWORD)
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
-  await page.getByRole('link', { name: 'Pessoas' }).first().click()
-  await page.getByRole('heading', { name: 'Empresa Teste', exact: true }).waitFor()
-  await page.getByText('Dono').waitFor()
+  await waitForHome(page)
+  await openSettings(page, 'Pessoas e convites')
+  await page.getByText('Dono', { exact: true }).waitFor()
   await page.getByLabel('E-mail').fill(DAVI.email)
   await page.getByRole('combobox', { name: 'Papel' }).click()
   await page.getByRole('option', { name: 'Administrador' }).click()
@@ -71,9 +72,8 @@ async function daviJoins(page: Page, mail: { next(): Promise<Mail> }) {
     .getByRole('heading', { name: 'Ana Lima convidou você para Empresa Teste como Administrador.' })
     .waitFor()
   await page.getByRole('button', { name: 'Aceitar convite' }).click()
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
-  await page.getByRole('link', { name: 'Pessoas' }).first().click()
-  await page.getByRole('heading', { name: 'Empresa Teste', exact: true }).waitFor()
+  await waitForHome(page)
+  await openSettings(page, 'Pessoas e convites')
   assert.equal(await page.getByRole('listitem').filter({ hasText: ANA.email }).count(), 1)
   assert.equal(await page.getByRole('listitem').filter({ hasText: DAVI.email }).count(), 1)
   await page.goto(invitationLink)

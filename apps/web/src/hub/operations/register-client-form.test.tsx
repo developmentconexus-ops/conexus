@@ -237,7 +237,7 @@ test('recarregar durante um cadastro que não decidiu: mostra a lista atual e pe
   expect(
     await screen.findByText('O último cadastro ficou sem resposta. O cliente está nesta lista?'),
   ).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'Central de Operação' })).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Clientes' })).toBeTruthy()
   expect(screen.getByText('Empresa Teste')).toBeTruthy()
   await waitFor(() => expect(reloaded.state.location.search).toEqual({}))
   expect(sent.length).toBe(1)
@@ -255,7 +255,7 @@ test('sair do formulário pelo app depois de uma resposta que não decide: o pr�
   await fill()
   await screen.findByRole('alert')
   await router.navigate({ to: '/operations/clients' })
-  await screen.findByRole('heading', { name: 'Central de Operação' })
+  await screen.findByRole('heading', { name: 'Clientes' })
   expect(
     screen.queryByText('O último cadastro ficou sem resposta. O cliente está nesta lista?'),
   ).toBeNull()

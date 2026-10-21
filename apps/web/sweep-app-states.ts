@@ -6,10 +6,10 @@ import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { LONG_NAME, OWNER, projectsPage, SIGNED_IN } from './sweep-replies.ts'
 
-const SETUP = `/companies/${COMPANY.id}/setup`
+const STEP_ONE = `/companies/${COMPANY.id}/welcome/company`
 const NICKNAME = `PUT /api/companies/${COMPANY.id}/nickname`
 const OPEN = `/apps/open?host=pedidos--empresa-teste&binding=${'b'.repeat(43)}`
-// The company before its owner chooses the nickname, so its pages lead to the setup alone.
+// The company before its owner chooses the nickname, so its pages lead to step 1 alone.
 const UNSET = {
   ...OWNER,
   [`GET /api/companies/${COMPANY.id}`]: ok(getCompany, {
@@ -21,40 +21,40 @@ const UNSET = {
 
 async function saveRefused(page: Page, sentence: string) {
   await page.getByLabel('Apelido').fill('conexus')
-  await page.getByRole('button', { name: 'Salvar', exact: true }).click()
+  await page.getByRole('button', { name: 'Salvar e continuar', exact: true }).click()
   await waitFor(page, sentence)
 }
 
 export const APP_STATES: State[] = [
   {
-    name: 'configurar a empresa',
-    path: SETUP,
+    name: 'passo 1, sua empresa',
+    path: STEP_ONE,
     replies: UNSET,
     settle: (p) => waitFor(p, 'Exemplo de endereço'),
   },
   {
-    name: 'configurar, apelido reservado',
-    path: SETUP,
+    name: 'passo 1, apelido reservado',
+    path: STEP_ONE,
     replies: { ...UNSET, [NICKNAME]: failure('COMPANY_NICKNAME_RESERVED') },
     settle: (p) => saveRefused(p, 'Esse apelido é reservado.'),
   },
   {
-    name: 'configurar, banco fora',
-    path: SETUP,
+    name: 'passo 1, banco fora',
+    path: STEP_ONE,
     replies: { ...UNSET, [NICKNAME]: failure('DATABASE_UNAVAILABLE') },
     settle: (page) => saveRefused(page, 'O banco do Conexus não respondeu.'),
   },
   {
     name: 'criar Projeto, nome sem endereço',
-    path: `/companies/${COMPANY.id}/projects`,
+    path: `/companies/${COMPANY.id}`,
     replies: {
       ...OWNER,
       ...projectsPage(COMPANY.id, { empty: true }),
       [`POST /api/companies/${COMPANY.id}/projects`]: failure('PROJECT_NAME_NO_ADDRESS'),
     },
     settle: async (page) => {
-      await page.getByLabel('Nome do Projeto').fill('TI')
-      await page.getByRole('button', { name: 'Criar Projeto', exact: true }).click()
+      await page.getByLabel('Nome do projeto').fill('TI')
+      await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
       await waitFor(page, 'O nome precisa ter ao menos três letras ou números.')
     },
   },

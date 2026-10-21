@@ -4,6 +4,7 @@ import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { APP_STATES } from './sweep-app-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
+import { HOUSE_STATES } from './sweep-house-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { PROJECT_STATES } from './sweep-project-states.ts'
@@ -39,6 +40,7 @@ export const STATES: State[] = [
   ...PROJECT_STATES,
   ...CONVERSATION_STATES,
   ...APP_STATES,
+  ...HOUSE_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',
@@ -127,10 +129,10 @@ export const STATES: State[] = [
     name: 'sem empresas',
     path: '/',
     replies: NO_COMPANIES,
-    settle: (p) => waitFor(p, 'Você ainda não participa'),
+    settle: (p) => waitFor(p, 'Você ainda não está em nenhuma empresa.'),
   },
   {
-    name: 'com empresas',
+    name: 'Início, a primeira de duas empresas',
     path: '/',
     replies: companies(
       [
@@ -139,17 +141,17 @@ export const STATES: State[] = [
       ],
       true,
     ),
-    settle: (p) => waitFor(p, 'Outra Empresa'),
+    settle: (p) => waitFor(p, 'O que vamos construir?'),
   },
   {
     name: 'dono',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: OWNER,
     settle: (p) => waitFor(p, 'Convidar pessoa'),
   },
   {
     name: 'sem convites pendentes',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: {
       ...OWNER,
       [`GET /api/companies/${COMPANY.id}/invitations`]: ok(listInvitations, {
@@ -161,7 +163,7 @@ export const STATES: State[] = [
   },
   {
     name: 'tirar uma pessoa, a confirmação',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: OWNER,
     settle: async (page) => {
       await page.getByRole('button', { name: /^Tirar da empresa:/ }).click()
@@ -170,7 +172,7 @@ export const STATES: State[] = [
   },
   {
     name: 'mudar o papel de uma pessoa',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: OWNER,
     settle: async (page) => {
       await page.getByRole('button', { name: /^Mudar papel:/ }).click()
@@ -179,13 +181,13 @@ export const STATES: State[] = [
   },
   {
     name: 'convite vencido na lista',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: WITH_EXPIRED,
     settle: (p) => waitFor(p, 'Reenviar'),
   },
   {
     name: 'convidar de novo recusado',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: {
       ...WITH_EXPIRED,
       [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MEMBER_EXISTS'),
@@ -200,15 +202,15 @@ export const STATES: State[] = [
   },
   {
     name: 'empresa que o Hub não acha',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: { ...SIGNED_IN, [`GET /api/companies/${COMPANY.id}`]: failure('NOT_FOUND') },
     settle: (p) => waitFor(p, 'Não encontramos o que você procurou.'),
   },
   {
     name: 'membro',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: MEMBER,
-    settle: (p) => waitFor(p, 'Pessoas'),
+    settle: (p) => waitFor(p, 'Só o dono ou um administrador convida pessoas.'),
   },
   {
     name: 'convite pendente',
@@ -239,7 +241,7 @@ export const STATES: State[] = [
   },
   {
     name: 'erro de campo',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: {
       ...OWNER,
       [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MEMBER_EXISTS'),
@@ -254,7 +256,7 @@ export const STATES: State[] = [
   },
   {
     name: '502',
-    path: `/companies/${COMPANY.id}/people`,
+    path: `/companies/${COMPANY.id}/settings/people`,
     replies: {
       ...OWNER,
       [`POST /api/companies/${COMPANY.id}/invitations`]: failure('MAIL_UNAVAILABLE'),

@@ -18,10 +18,12 @@ import { AppsDomain, PublicOrigin } from '../../apps/server/src/platform/config.
 import {
   closeBrowser,
   liveHub,
+  openProject,
   PASSWORD,
   personWithPassword,
   plantCompany,
   signIn,
+  waitForHome,
   watchConsole,
 } from './live-hub.ts'
 
@@ -220,7 +222,7 @@ test('passagem: o endereço do app sem sessão do Hub leva a Entrar e, logo depo
   const { page } = s
   await page.goto(`${HUB}/login`)
   await signIn(page, CARLA.email, PASSWORD)
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await waitForHome(page)
   await createPedidos(s, page)
   await page.context().clearCookies()
   await page.goto(`${APP}/`)
@@ -243,10 +245,10 @@ test('passagem: Abrir app no Projeto vai direto ao app, numa navegação vinda d
   const { page } = s
   await page.goto(`${HUB}/login`)
   await signIn(page, CARLA.email, PASSWORD)
-  await page.getByRole('heading', { name: 'Projetos', exact: true }).waitFor()
+  await waitForHome(page)
   await createPedidos(s, page)
-  await page.goto(`${HUB}/companies/${s.companyId}/projects`)
-  await page.getByRole('link', { name: /Pedidos/ }).click()
+  await page.goto(`${HUB}/companies/${s.companyId}`)
+  await openProject(page, 'Pedidos')
   const before = s.seen.length
   await page.getByRole('link', { name: 'Abrir app' }).click()
   await page.getByText(GREETING).waitFor()

@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
 import { AccountKinds, kindsQuery } from '../../../../builder/model-accounts/public.ts'
 import { invitationsQuery, membersQuery } from '../../../../hub/identity/public.ts'
-import { Client, clientQuery, operatorOnly } from '../../../../hub/operations/public.ts'
+import { Client, clientQuery } from '../../../../hub/operations/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../../platform/hub.ts'
 
 function ClientWithKinds() {
@@ -11,7 +11,6 @@ function ClientWithKinds() {
 }
 
 export const Route = createFileRoute('/_app/operations/clients/$companyId')({
-  beforeLoad: operatorOnly,
   staticData: { place: 'Cliente' },
   // The owner invitation whose address the provider refused at registration.
   validateSearch: z.object({

@@ -230,6 +230,40 @@ test('lista: só as empresas de quem pede, com o papel, 50 por página; mayOpera
   })
 })
 
+test('lista: empresa sem apelido só para o dono; membro e administrador não a recebem, nem pelo cursor, e a leem como desconhecida, 404', async (t) => {
+  const hub = await hubOn(t)
+  const [ana, bruno, carla] = await Promise.all([
+    personOn(hub, ANA_OWNER),
+    personOn(hub, BRUNO),
+    personOn(hub, CARLA),
+  ])
+  const unnamed = await plantCompany(hub.test, ana.id, 'Aaa Sem Apelido', null)
+  const named = await plantCompany(hub.test, ana.id, 'Bbb Com Apelido', 'bbb-com-apelido')
+  await join(hub, unnamed, bruno.id, 'member')
+  await join(hub, unnamed, carla.id, 'admin')
+  await join(hub, named, bruno.id, 'member')
+  async function listed(person: Person, query = '') {
+    const { companies } = Object((await call(hub, person, 'GET', `/api/companies${query}`)).json())
+    return companies.map((row: { company: { id: string } }) => row.company.id)
+  }
+  assert.deepEqual(await listed(ana), [unnamed, named])
+  assert.deepEqual(await listed(bruno), [named])
+  assert.deepEqual(await listed(carla), [])
+  assert.deepEqual(await listed(bruno, `?page=${Buffer.from(unnamed).toString('base64url')}`), [])
+  assert.equal((await call(hub, ana, 'GET', `/api/companies/${unnamed}`)).statusCode, 200)
+  for (const person of [bruno, carla]) {
+    const hidden = await call(hub, person, 'GET', `/api/companies/${unnamed}`)
+    const { status, code } = Object(hidden.json())
+    assert.deepEqual([hidden.statusCode, status, code], [404, 404, 'NOT_FOUND'])
+  }
+  await hub.test.asOwner('update auth.company set nickname = $2 where id = $1', [
+    unnamed,
+    'aaa-sem-apelido',
+  ])
+  assert.equal((await call(hub, bruno, 'GET', `/api/companies/${unnamed}`)).statusCode, 200)
+  assert.deepEqual(await listed(carla), [unnamed])
+})
+
 test('fora: o operador não lê a empresa como membro, ativa ou sem membro: getCompany dá 404, sem motivo na resposta; quem é membro de uma não convida na outra', async (t) => {
   const hub = await hubOn(t)
   const operator = await personOn(hub, CARLA_OPERATOR)

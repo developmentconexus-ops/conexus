@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
-import type { DeclaredOperation, FailureCode, Operation, Person } from '@conexus/hub-api'
+import type { DeclaredOperation, EventId, FailureCode, Operation, Person } from '@conexus/hub-api'
 import {
   FAILURES,
   failuresOf,
@@ -215,7 +215,7 @@ type Body<O extends Operation> = O['success'] extends {
 }
   ? z.input<S>
   : O['success'] extends { events: infer S extends z.ZodType }
-    ? AsyncIterable<z.input<S>>
+    ? AsyncIterable<{ id: EventId; event: z.input<S> }>
     : undefined
 type Parsed<O extends Operation, K extends 'params' | 'query' | 'body'> = NonNullable<
   O['input']
@@ -230,6 +230,7 @@ type Input<O extends Operation> = {
   Parsed<O, 'query'> &
   Parsed<O, 'body'> &
   (O['attemptKey'] extends true ? { attemptKey: string } : unknown) &
+  (O['success'] extends { resumable: true } ? { lastEventId: EventId | null } : unknown) &
   (O['access'] extends 'session'
     ? { person: Person; sessionToken: string }
     : O['id'] extends 'getInvitation' | 'createInvitationPassword' | 'declineInvitation'
@@ -254,6 +255,7 @@ export function serve(
     query: unknown
     body: unknown
     attemptKey: string | undefined
+    lastEventId: EventId | null | undefined
     person: Person | undefined
     sessionToken: string | undefined
   }) => Answer<unknown> | Promise<Answer<unknown>>,

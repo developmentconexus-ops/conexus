@@ -1,5 +1,5 @@
 import type { AccountKind, CompanyId, ModelAccountId, PersonId } from '@conexus/hub-api'
-import { ModelId } from '@conexus/hub-api'
+import { Effort, ModelId } from '@conexus/hub-api'
 import type { LanguageModel } from '@mastra/core/llm'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
@@ -40,6 +40,12 @@ type Stage =
 const ControllerContext = z.object({
   session: z.object({ modelId: ModelId }),
 })
+const ControllerState = z.object({
+  session: z.object({
+    state: z.object({ get: z.custom<() => unknown>((get) => typeof get === 'function') }),
+  }),
+})
+const SessionState = z.object({ thinkingLevel: Effort.optional() })
 
 /**
  * The conversation's model, as the controller holds it for this run (`session.model.switch`); a
@@ -51,6 +57,11 @@ export function chosenModel(context: RequestContext | undefined): ModelId {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'NO_SESSION_MODEL' } })
   }
   return parsed.data.session.modelId
+}
+
+function chosenEffort(context: RequestContext | undefined): Effort {
+  const { state } = ControllerState.parse(context?.get('controller')).session
+  return SessionState.parse(state.get()).thinkingLevel ?? 'off'
 }
 
 /**
@@ -70,8 +81,11 @@ export class Turn {
   /** What the turn's accounts keep open while it runs, such as a CLIProxy process. */
   readonly held: Array<() => void> = []
   #stage: Stage = { name: 'unpicked' }
-  /** The model the turn calls now, read from its run on first use; `switched` by the company's switch. */
-  #model: { id: ModelId; switched: boolean } | undefined
+  /**
+   * The model the turn calls now and the effort it asks, read from its run on first use, so a
+   * change during the turn holds for the next (design V54).
+   */
+  #model: { id: ModelId; effort: Effort; switched: boolean } | undefined
 
   constructor(owner: { companyId: CompanyId; personId: PersonId }) {
     this.companyId = owner.companyId
@@ -88,14 +102,22 @@ export class Turn {
     return this.#model?.switched ?? false
   }
 
-  /** The model the turn calls now: the conversation's, until the automatic switch moves it. */
-  modelId(context: RequestContext | undefined): ModelId {
-    this.#model ??= { id: chosenModel(context), switched: false }
-    return this.#model.id
+  #chosen(context: RequestContext | undefined) {
+    this.#model ??= { id: chosenModel(context), effort: chosenEffort(context), switched: false }
+    return this.#model
   }
 
-  switchTo(modelId: ModelId): void {
-    this.#model = { id: modelId, switched: true }
+  /** The model the turn calls now: the conversation's, until the automatic switch moves it. */
+  modelId(context: RequestContext | undefined): ModelId {
+    return this.#chosen(context).id
+  }
+
+  effort(context: RequestContext | undefined): Effort {
+    return this.#chosen(context).effort
+  }
+
+  switchTo(modelId: ModelId, context: RequestContext | undefined): void {
+    this.#model = { ...this.#chosen(context), id: modelId, switched: true }
   }
 
   /**

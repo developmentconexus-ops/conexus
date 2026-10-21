@@ -1,3 +1,4 @@
+import { listProjects } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
@@ -80,12 +81,24 @@ test('enquanto envia, o botão fica desabilitado com "Entrando…"', async () =>
 
 test('entrar a caminho de outra página leva o foco ao título dela, não ao corpo (#32-4)', async () => {
   const state = { signedIn: false }
-  server.use(...homeHub(state), ...companyRead({ role: 'owner' }))
+  server.use(
+    ...homeHub(state),
+    ...companyRead({ role: 'member' }),
+    http.get(`*/api/companies/${COMPANY.id}/projects`, () =>
+      HttpResponse.json(
+        listProjects.success.body.parse({
+          projects: [],
+          next: { kind: 'END' },
+          databaseReady: true,
+        }),
+      ),
+    ),
+  )
   render(
     <Conexus
       conexus={createConexus(
         createMemoryHistory({
-          initialEntries: [`/login?redirect=%2Fcompanies%2F${COMPANY.id}%2Fpeople`],
+          initialEntries: [`/login?redirect=%2Fcompanies%2F${COMPANY.id}`],
         }),
       )}
     />,
@@ -93,7 +106,7 @@ test('entrar a caminho de outra página leva o foco ao título dela, não ao cor
   fireEvent.change(await screen.findByLabelText('E-mail'), { target: { value: ANA.email } })
   fireEvent.change(screen.getByLabelText('Senha'), { target: { value: 'senha-certa-1' } })
   fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
-  const title = await screen.findByRole('heading', { name: COMPANY.name })
+  const title = await screen.findByRole('heading', { name: 'O que vamos construir?' })
   await waitFor(() => expect(document.activeElement).toBe(title))
 })
 

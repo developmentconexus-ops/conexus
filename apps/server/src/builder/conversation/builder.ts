@@ -1,7 +1,7 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import { Agent } from '@mastra/core/agent'
-import type { BuiltinToolId, PermissionRules, ToolCategory } from '@mastra/core/agent-controller'
+import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
 import { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -32,8 +32,6 @@ const INSTRUCTIONS = [
 ].join(' ')
 const TITLE_INSTRUCTIONS =
   'Dê à conversa um título curto em português, de até seis palavras, sem aspas nem ponto final.'
-const OBSERVER_INSTRUCTIONS =
-  'Escreva o thread-title em português do Brasil, em até seis palavras, sem aspas nem ponto final.'
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
 // stays out until the live proof of criterion 3 passes.
 const SEARCH_PROVIDERS = new Set(['anthropic', 'openai', 'xai'])
@@ -46,19 +44,6 @@ const BUILTIN_TOOLS: BuiltinToolId[] = [
   'task_check',
   'subagent',
 ]
-
-// The Builder's own tools only read; `recall` is Mastra memory's, added by `retrieval: true`.
-const READ_TOOLS = new Set(['web_fetch', 'web_search', 'recall'])
-// The controller asks before any tool it has no rule for and parks the turn on the answer, and no
-// screen answers: every category has a rule, and what is not `read` is denied.
-const PERMISSION_RULES: PermissionRules = {
-  categories: { read: 'allow', edit: 'deny', execute: 'deny', mcp: 'deny', other: 'deny' },
-  tools: {},
-}
-
-function toolCategory(toolName: string): ToolCategory {
-  return READ_TOOLS.has(toolName) ? 'read' : 'other'
-}
 
 function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}` {
   return modelId.includes('/')
@@ -119,8 +104,6 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
           blockAfter: 2,
-          threadTitle: true,
-          instruction: OBSERVER_INSTRUCTIONS,
         },
         reflection: {
           ...failSoft,
@@ -152,8 +135,9 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     agent,
     modes: [{ id: CONVERSATION_MODE }],
     disableBuiltinTools: BUILTIN_TOOLS,
-    toolCategoryResolver: toolCategory,
-    initialState: { permissionRules: PERMISSION_RULES },
+    // The Builder's tools only read, so they run without asking, as Mastra Code's sessions do: an
+    // approval parks the run and resumes it, which under load can end the turn (decision 0053).
+    initialState: { yolo: true },
   })
   const mastra = new Mastra({
     logger: new BuilderLogger(deps.log),

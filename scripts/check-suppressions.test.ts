@@ -81,3 +81,30 @@ test('recusa supressão de JSX sem causa', () => {
   assert.equal(run.status, 1)
   assert.match(run.stderr, /^suppression-without-cause: a\.tsx:1$/m)
 })
+
+test('conta a supressão de um workflow e recusa a que não tem causa', () => {
+  const file = '.github/workflows/a.yml'
+  const withCause = '- run: x # zizmor: ignore[github-env] the value is not from the event\n'
+  assert.equal(check({ [file]: withCause }, { [file]: 1 }).status, 0)
+  const counted = check({ [file]: withCause }, {})
+  assert.equal(counted.status, 1)
+  assert.match(
+    counted.stderr,
+    /^suppression-count-changed: \.github\/workflows\/a\.yml: 1 in the file/m,
+  )
+  const bare = check({ [file]: '- run: x # zizmor: ignore[github-env]\n' }, { [file]: 1 })
+  assert.match(bare.stderr, /^suppression-without-cause: \.github\/workflows\/a\.yml:1$/m)
+})
+
+test('conta o ignore da configuração do zizmor e recusa o que não tem comentário de causa', () => {
+  const file = '.github/zizmor.yml'
+  function body(comment: string): string {
+    return `rules:\n  self-repository:\n${comment}    ignore:\n      - ci.yml\n`
+  }
+  assert.equal(check({ [file]: body('    # why\n') }, { [file]: 1 }).status, 0)
+  assert.equal(check({ [file]: body('    # why\n') }, {}).status, 1)
+  assert.match(
+    check({ [file]: body('') }, { [file]: 1 }).stderr,
+    /^suppression-without-cause: \.github\/zizmor\.yml:3$/m,
+  )
+})

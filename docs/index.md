@@ -1,6 +1,6 @@
 # Documentation map
 
-One line per document; `check-docs` refuses a document without one.
+One line per document (`check-docs`).
 
 ## Overview
 
@@ -84,11 +84,13 @@ One line per document; `check-docs` refuses a document without one.
 - [0049](decisions/0049-model-accounts-keys-sign-ins-queues.md) accounts.
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
 - [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) one tracing path.
+- [0053](decisions/0053-builder-tools-run-without-asking.md) tools without asking.
 
 ## Skills
 
 - [conexus-study](../.agents/skills/conexus-study/SKILL.md), with [report](../.agents/skills/conexus-study/references/report.md), [proof](../.agents/skills/conexus-study/references/proof.md), [screens](../.agents/skills/conexus-study/references/screens.md), [library](../.agents/skills/conexus-study/references/library.md): the study; report; proof; screens; libraries.
 - [conexus-scope](../.agents/skills/conexus-scope/SKILL.md), with [card](../.agents/skills/conexus-scope/references/card.md), [screens](../.agents/skills/conexus-scope/references/screens.md): the card; a screen's card.
 - [conexus-build](../.agents/skills/conexus-build/SKILL.md), with [bring](../.agents/skills/conexus-build/references/bring.md) and [bug](../.agents/skills/conexus-build/references/bug.md), [screen](../.agents/skills/conexus-build/references/screen.md): building a unit; old code; a defect; a screen.
+- [conexus-qa](../.agents/skills/conexus-qa/SKILL.md): QA of a step's screens.
 - [conexus-review](../.agents/skills/conexus-review/SKILL.md), [screen](../.agents/skills/conexus-review/references/screen.md): the review of a step; a screen.
-- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [questions](../.agents/skills/conexus-explain/references/questions.md), [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder, in Portuguese.
+- [conexus-explain](../.agents/skills/conexus-explain/SKILL.md), with [questions](../.agents/skills/conexus-explain/references/questions.md), [outline](../.agents/skills/conexus-explain/references/outline.md): explaining a step to the founder.

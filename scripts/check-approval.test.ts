@@ -171,3 +171,43 @@ test('sem cartão não há o que conferir', () => {
   git(dir, 'init', '-q', '-b', 'main')
   assert.equal(run(dir).status, 0)
 })
+
+function twoCardRepository(): { dir: string; sha: string } {
+  const { dir } = repository()
+  git(dir, 'rm', '-q', 'docs/steps/e01-x.md')
+  write(dir, 'docs/steps/e121-a.md', 'card 12.1\n')
+  write(dir, 'docs/steps/e122-b.md', 'card 12.2\n')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-qam', 'two cards')
+  return { dir, sha: git(dir, 'rev-parse', 'HEAD') }
+}
+
+function approvalOf(step: string, sha: string): string {
+  return `Cartão da etapa ${step} aprovado em 2026-10-16 (commit ${sha}): "Aprovo"\n`
+}
+
+test('aceita dois cartões aprovados e inalterados', () => {
+  const { dir, sha } = twoCardRepository()
+  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
+  git(dir, 'commit', '-qam', 'approvals')
+  assert.equal(run(dir).status, 0)
+})
+
+test('recusa o segundo cartão sem aprovação, nomeando-o', () => {
+  const { dir, sha } = twoCardRepository()
+  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha))
+  git(dir, 'commit', '-qam', 'approval of the first')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^approval-missing: .*e122-b\.md/)
+})
+
+test('recusa o segundo cartão mudado depois da aprovação, nomeando-o', () => {
+  const { dir, sha } = twoCardRepository()
+  write(dir, 'docs/roadmap.md', approvalOf('12.1', sha) + approvalOf('12.2', sha))
+  write(dir, 'docs/steps/e122-b.md', 'card 12.2 changed\n')
+  git(dir, 'commit', '-qam', 'approvals and change')
+  const result = run(dir)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /^card-changed-after-approval: .*e122-b\.md/)
+})
