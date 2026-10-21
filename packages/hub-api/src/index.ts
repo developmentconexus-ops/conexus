@@ -93,7 +93,7 @@ export {
   streamConversation,
   TurnFailureCode,
 } from './conversations.ts'
-export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem } from './failures.ts'
+export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export { getHealth, Health } from './health.ts'
 export {
   COOKIE_PREFIX,

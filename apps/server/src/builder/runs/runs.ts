@@ -9,7 +9,6 @@ import type {
 } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
-import type { Result } from '../../platform/result.ts'
 import type { Phase } from '../machine/public.ts'
 import type { Outcome, RunsContext, RunsDeps } from './context.ts'
 import { copyPending } from './copy.ts'
@@ -107,7 +106,9 @@ export class Runs {
   }
 
   /** Opens the turn of a message, or says the Projeto's builder is busy (data D5, card 12). */
-  async admit(input: Admission): Promise<Result<RunId, 'busy'>> {
+  async admit(
+    input: Admission,
+  ): Promise<{ ok: true; value: RunId } | { ok: false; error: 'busy'; person?: string }> {
     const { companyId, projectId, personId } = input
     await settleExpired(this.#context, { companyId, projectId })
     this.#sweepDaily()
@@ -118,7 +119,8 @@ export class Runs {
     const fields = { companyId, projectId, conversationId: input.conversationId }
     if (id === undefined) {
       this.#deps.log.info(fields, 'RUN_BUSY')
-      return { ok: false, error: 'busy' }
+      const person = await this.#context.store.holder(companyId, projectId)
+      return { ok: false, error: 'busy', ...(person === undefined ? {} : { person }) }
     }
     this.#driven.set(id, { companyId, projectId, deadlineAt, ...idleRun(false) })
     this.#deps.log.info({ ...fields, runId: id }, 'RUN_ADMITTED')

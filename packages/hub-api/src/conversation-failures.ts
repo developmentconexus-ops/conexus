@@ -38,7 +38,7 @@ export const CONVERSATION_FAILURES = {
     category: 'USER',
     settles: true,
     status: 409,
-    phrase: 'O Builder está mudando este app agora.',
+    phrase: 'O Builder está mudando este app para {person}.',
     action: 'Tente de novo quando ele terminar.',
     actionKind: 'RETRY',
   },

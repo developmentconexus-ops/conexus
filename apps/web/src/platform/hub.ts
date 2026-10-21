@@ -5,6 +5,7 @@ import {
   FAILURES,
   LAST_EVENT_ID_HEADER,
   Problem,
+  phraseOf,
 } from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
@@ -20,12 +21,18 @@ export class HubFailure extends Error {
    * have acted, so a retry of a write must carry the same attempt key (code C37, web W24).
    */
   readonly outcomeUnknown: boolean
+  /** The person the Hub's phrase names, for the rows that do. */
+  readonly person: string | undefined
 
-  constructor(code: FailureCode, options: { cause?: unknown; outcomeUnknown?: boolean } = {}) {
+  constructor(
+    code: FailureCode,
+    options: { cause?: unknown; outcomeUnknown?: boolean; person?: string } = {},
+  ) {
     super(code, options)
     this.name = 'HubFailure'
     this.code = code
     this.outcomeUnknown = options.outcomeUnknown ?? true
+    this.person = options.person
   }
 }
 
@@ -46,7 +53,7 @@ async function failureOf(response: Response): Promise<HubFailure> {
   if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
   const { code } = problem.data
   const settled = FAILURES[code].settles
-  return new HubFailure(code, { outcomeUnknown: !settled })
+  return new HubFailure(code, { outcomeUnknown: !settled, person: problem.data.person })
 }
 
 /** The one fetch to the Hub: same origin, with cookies, under a deadline (web W9). */
@@ -277,14 +284,15 @@ export function hubMutation(operation: Operation, options?: { deadlineMs: number
 }
 
 /** What a person reads for a failure code: its phrase and what to do, from the failure table (V43). */
-export function sentenceOfCode(code: FailureCode): string {
-  const row = FAILURES[code]
-  return [row.phrase, row.action].filter(Boolean).join(' ')
+export function sentenceOfCode(code: FailureCode, person?: string): string {
+  return [phraseOf(code, person), FAILURES[code].action].filter(Boolean).join(' ')
 }
 
 /** What a person reads for a failure: its phrase and what to do, from the failure table (V43). */
 export function sentenceOf(error: unknown): string {
-  return sentenceOfCode(error instanceof HubFailure ? error.code : 'INTERNAL_UNEXPECTED')
+  return error instanceof HubFailure
+    ? sentenceOfCode(error.code, error.person)
+    : sentenceOfCode('INTERNAL_UNEXPECTED')
 }
 
 /**

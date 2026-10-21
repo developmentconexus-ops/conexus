@@ -34,10 +34,12 @@ function open() {
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [CODE] }))} />)
 }
 
-test('sem versão: o vazio diz que o Builder escreve aqui', async () => {
+test('sem versão: o vazio diz para pedir um app na Conversa', async () => {
   server.use(source([], 0))
   open()
-  expect(await screen.findByText(/Ainda não há código/)).toBeTruthy()
+  expect(
+    await screen.findByText(/Nenhuma versão guardada ainda\. Peça um app na Conversa\./),
+  ).toBeTruthy()
 })
 
 test('com versão: a lista de arquivos pelo teclado, o texto do escolhido e a versão', async () => {
@@ -73,7 +75,7 @@ test('um arquivo que não é texto: a frase da recusa, e os outros seguem', asyn
     http.get(`${SOURCE}/file`, () => refusal('SOURCE_FILE_NOT_TEXT')),
   )
   open()
-  expect(await screen.findByText(/não é um texto que dê para mostrar/)).toBeTruthy()
+  expect(await screen.findByText(/Não dá para mostrar este arquivo aqui/)).toBeTruthy()
   expect(screen.getByRole('button', { name: 'logo.png' })).toBeTruthy()
 })
 
@@ -108,5 +110,5 @@ test('a leitura que falha: a frase e "Tentar de novo", que lê outra vez', async
   )
   open()
   fireEvent.click(await screen.findByRole('button', { name: 'Tentar de novo' }))
-  await waitFor(() => expect(screen.getByText(/Ainda não há código/)).toBeTruthy())
+  await waitFor(() => expect(screen.getByText(/Nenhuma versão guardada ainda/)).toBeTruthy())
 })

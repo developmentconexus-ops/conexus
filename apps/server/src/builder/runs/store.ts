@@ -9,6 +9,7 @@ import {
 } from '@conexus/hub-api'
 import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Sha } from '../git/public.ts'
 import { LEASE_MS } from './lease.ts'
@@ -76,6 +77,17 @@ export class RunStore {
         .returning({ id: run.id }),
     )
     return rows.length === 0 ? undefined : id
+  }
+
+  /** The name of the person whose turn holds the Projeto, if a turn does and the person is still there. */
+  async holder(companyId: CompanyId, projectId: ProjectId): Promise<string | undefined> {
+    const [row] = await this.#database.read(inCompany(companyId), (tx) =>
+      tx
+        .select({ name: personNameColumn(run.personId) })
+        .from(run)
+        .where(and(eq(run.projectId, projectId), inArray(run.state, LIVE))),
+    )
+    return row?.name ?? undefined
   }
 
   async get(companyId: CompanyId, id: RunId): Promise<Run | undefined> {

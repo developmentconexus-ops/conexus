@@ -241,5 +241,12 @@ export const Problem = z.object({
   status: z.number().int(),
   code: z.string().refine((code): code is FailureCode => Object.hasOwn(FAILURES, code)),
   traceId: z.string(),
+  /** The person a failure names in its phrase, where the row has `{person}` (`RUN_BUSY`). */
+  person: z.string().optional(),
 })
 export type Problem = z.infer<typeof Problem>
+
+/** The phrase of a failure row, with the person it names put in place of `{person}`. */
+export function phraseOf(code: FailureCode, person?: string): string {
+  return FAILURES[code].phrase.replace('{person}', person ?? 'outra pessoa')
+}

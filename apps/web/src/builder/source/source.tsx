@@ -86,11 +86,7 @@ export function Source() {
   const source = read.data
   const { commit, savedAt } = source
   if (commit === null || savedAt === null) {
-    return (
-      <p className="text-text-2">
-        Ainda não há código. O Builder escreve aqui quando você descreve o aplicativo.
-      </p>
-    )
+    return <p className="text-text-2">Nenhuma versão guardada ainda. Peça um app na Conversa.</p>
   }
   return (
     <div className="flex flex-col gap-md">
