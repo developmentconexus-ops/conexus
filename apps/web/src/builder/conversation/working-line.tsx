@@ -1,14 +1,6 @@
-import { useEffect, useReducer } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
+import { useEverySecond } from './elapsed.ts'
 import { durationOf, WORKING } from './text.ts'
-
-function useEverySecond(): void {
-  const [, tick] = useReducer((count: number) => count + 1, 0)
-  useEffect(() => {
-    const timer = setInterval(tick, 1000)
-    return () => clearInterval(timer)
-  }, [])
-}
 
 /**
  * "Builder trabalhando · há 12 s", counted from the instant the server began the turn, so a screen

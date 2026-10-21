@@ -271,10 +271,11 @@ test('um turno que escreve: arquivo, comando e saída, máquina e versão, em pa
     },
     { type: 'shell', toolId: 'c', lines: ['1 teste falhou'], exitCode: 1 },
     { type: 'tool', id: 'x', kind: 'other', state: 'denied', subject: null },
-    { type: 'version', number: 2, changed: true },
+    { type: 'version', number: 2, changed: true, files: 7, changedFiles: 2 },
   )
-  await within(log).findByText('Guardei a versão 2.')
-  expect(within(log).getByText('Preparando a máquina de trabalho…')).toBeTruthy()
+  await within(log).findByText('Versão 2 guardada: 2 arquivos mudados.')
+  // The machine's step is over once anything came after it.
+  expect(within(log).queryByText(/Ligando a máquina/)).toBeNull()
   expect(within(log).getByText('Escreveu um arquivo')).toBeTruthy()
   expect(within(log).getByText('a.ts')).toBeTruthy()
   expect(within(log).getByText('npm test')).toBeTruthy()
@@ -282,4 +283,27 @@ test('um turno que escreve: arquivo, comando e saída, máquina e versão, em pa
   expect(within(log).getByText('O comando terminou com o código 1.')).toBeTruthy()
   expect(within(log).getByText('Não pôde usar uma ferramenta')).toBeTruthy()
   expect(within(log).getAllByText('a.ts')).toHaveLength(1)
+})
+
+test('ao vivo: a máquina e o comando dizem há quanto tempo; a máquina refeita fica; a versão 1 conta os arquivos', async () => {
+  const { log, parts } = await begin()
+  parts(
+    { type: 'machine', phase: 'replaced' },
+    { type: 'tool', id: 'r', kind: 'read_file', state: 'completed', subject: { path: 'a.ts' } },
+    { type: 'tool', id: 'c', kind: 'run_command', state: 'running', subject: { command: 'npm i' } },
+    { type: 'shell', toolId: 'c', lines: ['added 1 package'], exitCode: null },
+    { type: 'machine', phase: 'starting' },
+  )
+  await within(log).findByText(/Ligando a máquina…/)
+  expect(within(log).getByText('(há 0 s)')).toBeTruthy()
+  expect(within(log).getByText('(0 s)')).toBeTruthy()
+  expect(within(log).getByText('added 1 package')).toBeTruthy()
+  expect(within(log).queryByText(/O comando terminou/)).toBeNull()
+  expect(within(log).getByText('Leu um arquivo')).toBeTruthy()
+  expect(
+    within(log).getByText('A máquina anterior sumiu; refiz a partir do que está guardado.'),
+  ).toBeTruthy()
+  parts({ type: 'version', number: 1, changed: true, files: 7, changedFiles: 7 })
+  await within(log).findByText('Versão 1 guardada: 7 arquivos.')
+  expect(within(log).queryByText(/Ligando a máquina/)).toBeNull()
 })

@@ -93,13 +93,14 @@ export const MessagePart = z.discriminatedUnion('type', [
       'recall',
       'write_file',
       'edit_file',
+      'read_file',
       'run_command',
       'other',
     ]),
     state: z.enum(['running', 'completed', 'error', 'denied']),
     subject: ToolSubject,
   }),
-  /** The end of a command: its last lines, secrets masked, and how it exited. */
+  /** A command's last lines, secrets masked, and how it exited; no exit code while it runs. */
   z.object({
     type: z.literal('shell'),
     toolId: z.string().min(1),
@@ -112,13 +113,25 @@ export const MessagePart = z.discriminatedUnion('type', [
     path: Subject,
     operation: z.enum(['write', 'edit']),
   }),
-  /** What the machine is doing before a tool can run; the latest replaces the one before. */
+  /**
+   * What the machine is doing before a tool can run; the latest replaces the one before, except a
+   * replaced machine, which stays said.
+   */
   z.object({
     type: z.literal('machine'),
     phase: z.enum(['starting', 'waking', 'copying', 'replaced', 'resumed', 'saving']),
   }),
-  /** The version the turn saved: its number, and whether it changed the app. */
-  z.object({ type: z.literal('version'), number: z.int().positive(), changed: z.boolean() }),
+  /**
+   * The version the turn saved: its number, whether it changed the app, how many files it holds
+   * and how many of them changed.
+   */
+  z.object({
+    type: z.literal('version'),
+    number: z.int().positive(),
+    changed: z.boolean(),
+    files: z.int().nonnegative(),
+    changedFiles: z.int().nonnegative(),
+  }),
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('failure'), code: TurnFailureCode }),
 ])
@@ -176,7 +189,7 @@ function partKey(part: MessagePart): string | undefined {
     case 'file':
       return `${part.type}:${part.toolId}`
     case 'machine':
-      return 'machine'
+      return part.phase === 'replaced' ? undefined : 'machine'
     default:
       return undefined
   }

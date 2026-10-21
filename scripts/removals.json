@@ -2367,7 +2367,7 @@
   {
     "id": "run-busy-refused",
     "file": "apps/server/src/builder/conversation/sessions.ts",
-    "find": "    if (!admitted.ok) throw new Failure('RUN_BUSY')\n",
+    "find": "    if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",

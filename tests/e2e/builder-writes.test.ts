@@ -25,6 +25,8 @@ import { enter, linkKey } from './model-accounts-journey.ts'
 const NOT_FOUND = 'Não encontramos o que você procurou.'
 const PAGE = '<h1>Padaria</h1>\n'
 const SECOND_PAGE = '<h1>Padaria Nova</h1>\n'
+const WORKING = 'Builder trabalhando'
+const VERSION_1 = /^Versão 1 guardada: \d+ arquivos?\.$/
 
 type Call = { type: 'tool_use'; name: string; input: object }
 
@@ -39,7 +41,11 @@ const RUN = 'mastra_workspace_execute_command'
 const SCRIPT: (Call[] | string)[] = [
   [
     { type: 'tool_use', name: WRITE, input: { path: 'index.html', content: PAGE } },
-    { type: 'tool_use', name: RUN, input: { command: 'echo página escrita' } },
+    {
+      type: 'tool_use',
+      name: RUN,
+      input: { command: 'echo começo; sleep 3; echo página escrita' },
+    },
   ],
   'Escrevi a página.',
   [{ type: 'tool_use', name: READ, input: { path: 'index.html' } }],
@@ -71,14 +77,35 @@ async function setUp(owner: Page, companyA: string) {
   await owner.getByRole('heading', { name: 'Encomendas', exact: true }).waitFor()
 }
 
+function transcriptOf(chat: Page) {
+  return chat.getByRole('log', { name: 'Conversa com o Builder' })
+}
+
+/** The command's output as the transcript shows it, holding `text`. */
+function outputWith(chat: Page, text: string) {
+  return transcriptOf(chat).locator('pre', { hasText: text })
+}
+
+/** Waits for the turn's end, then checks that what lasts of it is on screen. */
+async function lastingShown(chat: Page, version: RegExp) {
+  await chat.getByText(WORKING).waitFor({ state: 'hidden' })
+  const transcript = transcriptOf(chat)
+  assert.ok(await transcript.getByText(version).isVisible(), 'the version line is gone')
+  assert.ok(await outputWith(chat, 'página escrita').isVisible(), 'the command lines are gone')
+}
+
 async function writeFirst(chat: Page) {
   await chat.getByRole('tab', { name: 'Código', exact: true }).click()
   await chat.getByText(/Nenhuma versão guardada ainda/).waitFor()
   await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
   await ask(chat, 'Faça a página da padaria')
-  await transcriptShowed(chat, 'Guardei a versão 1.')
+  // The command's first line and its clock show while it still runs.
+  const transcript = transcriptOf(chat)
+  await outputWith(chat, 'começo').waitFor()
+  await transcript.getByText(/^\(\d+ s\)$/).waitFor()
+  assert.equal(await outputWith(chat, 'página escrita').count(), 0)
+  await lastingShown(chat, VERSION_1)
   await transcriptShowed(chat, 'Escreveu um arquivo')
-  await transcriptShowed(chat, 'página escrita')
   await chat.getByText(/Versão 1, guardada em/).waitFor()
   await chat.getByRole('button', { name: 'index.html' }).waitFor()
   await chat
@@ -103,7 +130,7 @@ test('o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 
     await openProject(chat, 'Encomendas')
     await writeFirst(chat)
     await ask(chat, 'Mude o título')
-    await transcriptShowed(chat, 'Guardei a versão 2.')
+    await transcriptShowed(chat, 'Versão 2 guardada: 1 arquivo mudado.')
     await chat.getByText(/Versão 2, guardada em/).waitFor()
     await chat
       .getByRole('region', { name: 'Conteúdo de index.html' })
@@ -112,6 +139,8 @@ test('o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 
     const project = chat.url()
     await chat.reload()
     await chat.getByText(/Versão 2, guardada em/).waitFor()
+    await transcriptOf(chat).getByText('Versão 2 guardada: 1 arquivo mudado.').waitFor()
+    await lastingShown(chat, VERSION_1)
 
     await enter(diego, DIEGO.email, `/companies/${ids.companyB}`)
     await diego.goto(project.replace(ids.companyA, ids.companyB))
