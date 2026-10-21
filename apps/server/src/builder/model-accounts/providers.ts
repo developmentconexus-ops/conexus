@@ -83,5 +83,5 @@ export function isChoosable(model: string): boolean {
 export const STARTER_MODELS: readonly ModelId[] = [
   ModelId.parse('anthropic/claude-sonnet-5-5'),
   ModelId.parse('openai/gpt-5'),
-  ModelId.parse('google/gemini-2.5-pro'),
+  ModelId.parse('google/gemini-3.5-flash-lite'),
 ]

@@ -84,7 +84,7 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: só os ids do regi
   }
   const models = offered(await read())
   assert.deepEqual(models.sort(), ['google/gemini-3.1-flash-lite', 'google/gemini-3.5-flash-lite'])
-  assert.equal((await read()).defaults.start, null)
+  assert.equal((await read()).defaults.start.model, 'google/gemini-3.5-flash-lite')
   const refused = await call(hub, ana, 'PUT', `/api/companies/${companyId}/default-model`, {
     model: 'google/gemini-2.5-pro',
     effort: 'low',
