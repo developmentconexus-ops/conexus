@@ -112,3 +112,19 @@ test('configuração: sem a pasta, o bucket ou o arquivo da chave da cópia, ou 
   writeFileSync(env.HUB_GIT_COPY_KEY_FILE, 'so-uma-palavra\n')
   refusal(env, 'HUB_GIT_COPY_KEY_FILE')
 })
+
+test('configuração: a chave do E2B vem de arquivo e o molde nomeia a variável quando falta ou é inválido', async (t) => {
+  const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
+  const config = readConfig('serve', env)
+  assert.equal(String(config.e2bApiKey), '[E2bApiKey]')
+  assert.equal(config.machineTemplate, 'conexus-builder-test')
+  for (const name of ['HUB_E2B_API_KEY_FILE', 'HUB_E2B_TEMPLATE']) {
+    refusal({ ...env, [name]: undefined }, name)
+  }
+  refusal({ ...env, HUB_E2B_TEMPLATE: 'Molde Com Espaço' }, 'HUB_E2B_TEMPLATE')
+  chmodSync(env.HUB_E2B_API_KEY_FILE, 0o644)
+  refusal(env, 'HUB_E2B_API_KEY_FILE')
+  chmodSync(env.HUB_E2B_API_KEY_FILE, 0o600)
+  writeFileSync(env.HUB_E2B_API_KEY_FILE, '\n')
+  refusal(env, 'HUB_E2B_API_KEY_FILE')
+})

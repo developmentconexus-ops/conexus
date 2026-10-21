@@ -23,6 +23,7 @@ import {
   SessionSecret,
 } from './config.ts'
 import { GitCopyBucket, GitCopyKey } from './config-git.ts'
+import { E2bApiKey, MachineTemplate } from './config-machine.ts'
 import type { Database, MastraPool } from './database.ts'
 import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
@@ -118,6 +119,8 @@ export function testConfig(
     gitRoot: tmpdir(),
     gitCopyBucket: GitCopyBucket.parse('conexus-test-git'),
     gitCopyKey: GitCopyKey.parse('TESTKEYID testsecret'),
+    e2bApiKey: E2bApiKey.parse(randomBytes(16).toString('hex')),
+    machineTemplate: MachineTemplate.parse('conexus-builder-test'),
   }
 }
 
@@ -349,5 +352,7 @@ export function serveEnvironment(
     HUB_GIT_ROOT: tmpdir(),
     HUB_GIT_COPY_BUCKET: 'conexus-test-git',
     HUB_GIT_COPY_KEY_FILE: keyFile(t, 'hub_git_copy_key', 'TESTKEYID testsecret'),
+    HUB_E2B_API_KEY_FILE: keyFile(t, 'hub_e2b_api_key', randomBytes(16).toString('hex')),
+    HUB_E2B_TEMPLATE: 'conexus-builder-test',
   }
 }
