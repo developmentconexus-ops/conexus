@@ -65,5 +65,5 @@ code. Firstmate takes the founder's page to him.
 
 ## When it closes
 
-The founder approves the page, and the roadmap records his words, the date and the commit of the
+The founder approves the page, and the ledger records his words, the date and the commit of the
 card ([delivery](../../../docs/guides/delivery.md)).

@@ -20,7 +20,7 @@ function hangingGit(): { root: string; path: string } {
   mkdirSync(join(root, 'docs/steps'), { recursive: true })
   writeFileSync(join(root, 'docs/steps/e01-x.md'), '# x\n')
   writeFileSync(
-    join(root, 'docs/roadmap.md'),
+    join(root, 'docs/approvals.md'),
     'Cartão da etapa 1 aprovado em 2026-01-01 (commit abcdef1): "x"\n',
   )
   return { root, path: `${bin}${delimiter}${process.env.PATH}` }
