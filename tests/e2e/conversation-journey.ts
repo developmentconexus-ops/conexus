@@ -4,6 +4,7 @@ import type { TestContext } from 'node:test'
 import type { Locator, Page } from 'playwright-core'
 import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
+import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { personWithPassword, plantCompany } from './live-hub.ts'
 import { pickModel } from './model-accounts-journey.ts'
 
@@ -121,14 +122,12 @@ export function plantJourney(t: TestContext, pageUrl: string) {
   return { anthropic, state, hold }
 }
 
-/** The owner's setup page: the model the company starts conversations with. */
-export async function chooseDefaultModel(page: Page) {
-  await pickModel(page, page, 'Modelo padrão', 'Anthropic', 'sonnet')
-  await page.getByRole('button', { name: 'Salvar modelo padrão' }).click()
-  await page
-    .getByRole('button', { name: 'Salvar modelo padrão' })
-    .and(page.locator(':disabled'))
-    .waitFor()
+/** The owner's Padrões da empresa: the model the company starts conversations with. */
+export async function chooseDefaultModel(page: Page, companyId: string) {
+  await page.goto(`${TEST_ORIGIN}/companies/${companyId}/settings/defaults`)
+  await pickModel(page, page, 'Modelo e raciocínio', 'Anthropic', 'sonnet')
+  await page.getByRole('button', { name: 'Salvar padrão' }).click()
+  await page.getByRole('button', { name: 'Salvar padrão' }).and(page.locator(':disabled')).waitFor()
 }
 
 /** The automatic switch: the default model, then `SECOND_MODEL`, saved and read back as on. */
