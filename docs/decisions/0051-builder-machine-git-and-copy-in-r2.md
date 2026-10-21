@@ -38,5 +38,5 @@ hosts, its filesystem and where a version is kept.
 
 ## State
 
-Proposed 2026-10-21. Founder, 2026-10-20: "Aprovo", "13 sim", "15 sim". Check 4 read: terms ban nothing here; paused
-machines are kept without limit; $100 credits, then the workspace blocks. 1, 3 open.
+Proposed 2026-10-21. Founder: "Aprovo", "13 sim". Check 4 read: terms ban nothing here; paused machines kept
+without limit; credits end, workspace blocks. Check 1: `seed`, `tool-choice` ok; `net`, `resume`, 3 open.
