@@ -27,11 +27,9 @@ function FileText(props: { commit: string; path: string }) {
   if (text.isPending) return <Waiting label="Carregando o arquivo" />
   if (text.isError) return <p role="alert">{sentenceOf(text.error)}</p>
   return (
-    // A scrolling region the keyboard reaches, so a long file can be read without a pointer.
+    // A scrolling region: current browsers let the keyboard focus it, so no tabindex is set.
     <section
       aria-label={`Conteúdo de ${props.path}`}
-      // biome-ignore lint/a11y/noNoninteractiveTabindex: the region scrolls, so the keyboard must reach it
-      tabIndex={0}
       className="min-w-0 overflow-auto rounded-control bg-surface-3 p-sm"
     >
       <pre className="font-mono text-fact text-text">{text.data.text}</pre>
