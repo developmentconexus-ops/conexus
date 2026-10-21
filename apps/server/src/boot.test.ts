@@ -49,6 +49,9 @@ const WITH_FILE = {
   HUB_APPS_NAMESPACE: 'conexus-apps',
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: '/nowhere/hub_cloudflare_apps_token',
   HUB_SEAL_KEYS_FILE: '/nowhere/hub_seal_keys',
+  HUB_GIT_ROOT: '/var/lib/conexus/git',
+  HUB_GIT_COPY_BUCKET: 'conexus-git-test',
+  HUB_GIT_COPY_KEY_FILE: '/nowhere/hub_git_copy_key',
 }
 
 for (const name of Object.keys(WITH_FILE)) {

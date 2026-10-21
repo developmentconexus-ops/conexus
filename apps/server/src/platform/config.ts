@@ -1,5 +1,7 @@
 import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
+import type { GitCopyBucket } from './config-git.ts'
+import { GitCopyKey, GitEnvironment } from './config-git.ts'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
 import type { SealKeys } from './seal.ts'
@@ -129,6 +131,9 @@ export type Config = BaseConfig & {
   cloudflareAppsToken: CloudflareAppsToken
   sealKeys: SealKeys
   cliProxy: CliProxy
+  gitRoot: string
+  gitCopyBucket: GitCopyBucket
+  gitCopyKey: GitCopyKey
 }
 /**
  * CLIProxyAPI's program for Google's sign-in, the sha256 it must have to run, and how long it keeps
@@ -173,6 +178,7 @@ const ServeEnvironment = z.object({
   HUB_APPS_NAMESPACE: CloudflareName,
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: z.string().min(1),
   HUB_SEAL_KEYS_FILE: z.string().min(1),
+  ...GitEnvironment.shape,
 })
 
 function invalid(variables: string, reason?: string): Failure {
@@ -258,6 +264,9 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     ),
     sealKeys: readSecret('HUB_SEAL_KEYS_FILE', serve.HUB_SEAL_KEYS_FILE, parseSealKeys),
     cliProxy: CLIPROXY,
+    gitRoot: serve.HUB_GIT_ROOT,
+    gitCopyBucket: serve.HUB_GIT_COPY_BUCKET,
+    gitCopyKey: readSecret('HUB_GIT_COPY_KEY_FILE', serve.HUB_GIT_COPY_KEY_FILE, GitCopyKey.parse),
   }
 }
 

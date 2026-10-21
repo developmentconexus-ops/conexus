@@ -22,6 +22,7 @@ import {
   readTestDatabase,
   SessionSecret,
 } from './config.ts'
+import { GitCopyBucket, GitCopyKey } from './config-git.ts'
 import type { Database, MastraPool } from './database.ts'
 import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
@@ -114,6 +115,9 @@ export function testConfig(
     ...testAppsConfig(cloudflareApiUrl),
     sealKeys: parseSealKeys(testSealKeyLine()),
     cliProxy: testCliProxy(),
+    gitRoot: tmpdir(),
+    gitCopyBucket: GitCopyBucket.parse('conexus-test-git'),
+    gitCopyKey: GitCopyKey.parse('TESTKEYID testsecret'),
   }
 }
 
@@ -342,5 +346,8 @@ export function serveEnvironment(
     HUB_APPS_NAMESPACE: TEST_NAMESPACE,
     HUB_CLOUDFLARE_APPS_TOKEN_FILE: keyFile(t, 'hub_apps_token', randomBytes(16).toString('hex')),
     HUB_SEAL_KEYS_FILE: keyFile(t, 'hub_seal_keys', testSealKeyLine()),
+    HUB_GIT_ROOT: tmpdir(),
+    HUB_GIT_COPY_BUCKET: 'conexus-test-git',
+    HUB_GIT_COPY_KEY_FILE: keyFile(t, 'hub_git_copy_key', 'TESTKEYID testsecret'),
   }
 }

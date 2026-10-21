@@ -183,4 +183,5 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
+export { RunId } from './runs.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'

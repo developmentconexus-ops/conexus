@@ -15,8 +15,11 @@ services:
       - hub_app_login_key
       - hub_cloudflare_apps_token
       - hub_seal_keys
-    # HUB_MAIL_API_URL, HUB_MAIL_FROM, HUB_NEON_ORG_ID and HUB_CLOUDFLARE_ACCOUNT_ID: they name
-    # accounts, so they stay out of Git.
+      - hub_git_copy_key
+    volumes:
+      - hub_git:/var/lib/conexus/git
+    # HUB_MAIL_API_URL, HUB_MAIL_FROM, HUB_NEON_ORG_ID, HUB_CLOUDFLARE_ACCOUNT_ID and
+    # HUB_GIT_COPY_BUCKET: they name accounts, so they stay out of Git.
     env_file: /etc/conexus/hub.env
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url
@@ -38,6 +41,10 @@ services:
       HUB_APPS_NAMESPACE: conexus-apps
       # The installation's seal keys (security S32, S33): the last line seals, the others only open.
       HUB_SEAL_KEYS_FILE: /run/secrets/hub_seal_keys
+      # The apps' repositories on the server, and the key of the private R2 bucket that copies them
+      # (decision 0051).
+      HUB_GIT_ROOT: /var/lib/conexus/git
+      HUB_GIT_COPY_KEY_FILE: /run/secrets/hub_git_copy_key
       # The router's registry is the one bundled in the image, never refreshed (decision 0049).
       MASTRA_OFFLINE: "1"
       # Mastra's usage telemetry never leaves: no allowlist covers it (security S42).
@@ -84,6 +91,9 @@ services:
       hub:
         condition: service_healthy
 
+volumes:
+  hub_git:
+
 secrets:
   tunnel_token:
     file: /etc/conexus/secrets/tunnel_token
@@ -105,3 +115,5 @@ secrets:
     file: /etc/conexus/secrets/hub_cloudflare_apps_token
   hub_seal_keys:
     file: /etc/conexus/secrets/hub_seal_keys
+  hub_git_copy_key:
+    file: /etc/conexus/secrets/hub_git_copy_key
