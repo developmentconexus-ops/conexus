@@ -5,7 +5,7 @@ import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
 import { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
-import { webSearchTool } from '@mastra/core/tools'
+import { webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
 import type { MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -24,7 +24,6 @@ import { APP_SKILLS, INSTRUCTIONS } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { createMastraStorage } from './storage.ts'
-import { webFetch } from './web-fetch.ts'
 
 const BUILDER_ID = 'builder'
 const CONVERSATION_MODE = 'conversa'
@@ -61,7 +60,7 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
 
 /** `web_fetch` always; `web_search` only where Mastra resolves the provider's own search. */
 function toolsOf(modelId: ModelId): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetch }
+  const tools: ToolsInput = { web_fetch: webFetchTool }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }
@@ -142,7 +141,6 @@ export function createBuilder(deps: {
     // The turn's run owns its workspace; a session made outside a turn has none.
     workspace: ({ requestContext }) => deps.runs.workspaceOf(requestContext),
     disableBuiltinTools: BUILTIN_TOOLS,
-    toolCategoryResolver: TOOL_CLOSURE.toolCategoryResolver,
     initialState: TOOL_CLOSURE.initialState,
   })
   const mastra = new Mastra({

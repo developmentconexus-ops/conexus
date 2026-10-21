@@ -6,7 +6,9 @@ import { MessageList } from '@mastra/core/agent/message-list'
 import { AgentController } from '@mastra/core/agent-controller'
 import type { ProcessInputStepArgs } from '@mastra/core/processors'
 import { InMemoryStore } from '@mastra/core/storage'
+import { createTool } from '@mastra/core/tools'
 import { MockLanguageModelV3 } from 'ai/test'
+import { z } from 'zod'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { accountPick, callModel, Turn, turnContext } from '../model-accounts/public.ts'
@@ -87,8 +89,53 @@ test('escrever e rodar um comando não param à espera de aprovação: nenhuma e
   )
 })
 
-/** A session of a controller closed as the Builder's is, with no model or machine behind it. */
-async function closedSession() {
+/** A model whose first step calls `tool` and whose next answers. */
+function callingOnce(tool: string) {
+  let step = 0
+  return new MockLanguageModelV3({
+    doStream: async () => {
+      step += 1
+      const parts =
+        step === 1
+          ? [{ type: 'tool-call' as const, toolCallId: 'c1', toolName: tool, input: '{}' }]
+          : [
+              { type: 'text-start' as const, id: 't' },
+              { type: 'text-delta' as const, id: 't', delta: 'ok' },
+              { type: 'text-end' as const, id: 't' },
+            ]
+      return {
+        stream: new ReadableStream({
+          start(controller) {
+            controller.enqueue({ type: 'stream-start', warnings: [] })
+            for (const part of parts) controller.enqueue(part)
+            const usage = {
+              inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
+              outputTokens: { total: 1, text: 1, reasoning: 0 },
+            }
+            controller.enqueue({
+              type: 'finish',
+              finishReason: { unified: step === 1 ? 'tool-calls' : 'stop', raw: undefined },
+              usage,
+            })
+            controller.close()
+          },
+        }),
+      }
+    },
+  })
+}
+
+/** A controller closed as the Builder's is, with a tool the closure does not list. */
+async function closedSession(ran: string[]) {
+  const outside = createTool({
+    id: 'github_create_issue',
+    description: 'A tool outside the closed set.',
+    inputSchema: z.object({}),
+    execute: async () => {
+      ran.push('github_create_issue')
+      return 'created'
+    },
+  })
   const controller = new AgentController({
     id: 'closed',
     storage: new InMemoryStore(),
@@ -96,27 +143,27 @@ async function closedSession() {
       id: 'closed',
       name: 'Closed',
       instructions: 'None.',
-      model: new MockLanguageModelV3(),
+      model: callingOnce('github_create_issue'),
+      tools: { github_create_issue: outside },
     }),
     modes: [{ id: 'conversa', availableTools: TOOL_CLOSURE.availableTools }],
-    toolCategoryResolver: TOOL_CLOSURE.toolCategoryResolver,
     initialState: TOOL_CLOSURE.initialState,
   })
   await controller.init()
   return controller.createSession()
 }
 
-test('o fecho recusa o que as categorias não liberam: uma ferramenta de MCP, uma fora da lista e a que o Mastra tem desligada', async () => {
-  const session = await closedSession()
-  for (const name of ['mastra_workspace_write_file', 'mastra_workspace_execute_command', 'recall'])
-    assert.equal(session.resolveToolApproval(name), 'allow', name)
-  for (const name of [
-    'github_create_issue',
-    'mcp__github__create_issue',
-    'mastra_workspace_ast_edit',
-    'mastra_workspace_index',
-  ])
-    assert.equal(session.resolveToolApproval(name), 'deny', name)
+test('em yolo, uma ferramenta fora da lista do modo não é oferecida nem executada: chamada, é recusada', async () => {
+  const ran: string[] = []
+  const session = await closedSession(ran)
+  const events: string[] = []
+  session.subscribe((event) => {
+    events.push(event.type)
+  })
+  await session.sendMessage({ content: 'Abra uma issue.' })
+  assert.deepEqual(ran, [], 'the tool outside the set never ran')
+  assert.equal(events.includes('tool_approval_required'), false)
+  assert.ok(events.includes('tool_end'), events.join(' '))
 })
 
 function unused(): Promise<never> {

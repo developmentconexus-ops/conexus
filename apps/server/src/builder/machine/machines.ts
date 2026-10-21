@@ -226,8 +226,6 @@ class BuilderMachines implements Machines {
       }),
       tools: {
         hooks: { beforeToolCall: () => this.ensure(session) },
-        // The categories' rules allow these tools, so none waits: a per-tool answer overrides the run's.
-        requireApproval: () => false,
         [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },
         [WORKSPACE_TOOLS.FILESYSTEM.EDIT_FILE]: { requireReadBeforeWrite: true },
         [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },

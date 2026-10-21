@@ -88,7 +88,7 @@ async function calling(t: TestContext, blocks: Block[]) {
   return { tools, suspended: suspended.rows }
 }
 
-test('um turno com `web_fetch` nunca para à espera de aprovação: ele responde por si e roda', async (t) => {
+test('um turno com `web_fetch` nunca para à espera de aprovação: ele roda', async (t) => {
   const { tools, suspended } = await calling(t, [FETCH])
   assert.deepEqual(tools, [
     ['read_page', 'running'],
@@ -97,12 +97,13 @@ test('um turno com `web_fetch` nunca para à espera de aprovação: ele responde
   assert.deepEqual(suspended, [], 'no run was saved waiting for an approval')
 })
 
-// `recall` is Memory's tool and has no answer of its own: the rule of its category allows it, and
-// the controller approves it at once. It runs and ends; the run is saved waiting on the way.
-test('um turno com `recall` termina: a regra da categoria o libera', async (t) => {
-  const { tools } = await calling(t, [RECALL])
+// `recall` is Memory's tool, which has no answer of its own: under `yolo` it runs at once, with no
+// run saved waiting on the way.
+test('um turno com `recall` termina sem parar à espera de aprovação', async (t) => {
+  const { tools, suspended } = await calling(t, [RECALL])
   assert.deepEqual(tools, [
     ['recall', 'running'],
     ['recall', 'completed'],
   ])
+  assert.deepEqual(suspended, [], 'no run was saved waiting for an approval')
 })

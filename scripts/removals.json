@@ -2464,39 +2464,6 @@
     }
   },
   {
-    "id": "workspace-needs-no-approval",
-    "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "        requireApproval: () => false,\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/permissions.test.ts",
-      "name": "escrever e rodar um comando não param à espera de aprovação: nenhuma execução fica guardada como suspensa"
-    }
-  },
-  {
-    "id": "web-fetch-needs-no-approval",
-    "file": "apps/server/src/builder/conversation/web-fetch.ts",
-    "find": "  requireApproval: () => false,\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-tools.test.ts",
-      "name": "um turno com `web_fetch` nunca para à espera de aprovação: ele responde por si e roda"
-    }
-  },
-  {
-    "id": "tools-other-denied",
-    "file": "apps/server/src/builder/conversation/permissions.ts",
-    "find": "mcp: 'deny', other: 'deny'",
-    "replace": "mcp: 'deny', other: 'allow'",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/permissions.test.ts",
-      "name": "o fecho recusa o que as categorias não liberam"
-    }
-  },
-  {
     "id": "switch-keeps-closed-set",
     "file": "apps/server/src/builder/model-accounts/processors.ts",
     "find": "      if (turn.switched && args.activeTools !== undefined) {\n        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)",
@@ -2593,6 +2560,17 @@
       "cwd": "apps/server",
       "file": "src/builder/runs/runs.test.ts",
       "name": "recusa ao guardar .2.000 arquivos.: o texto da recusa, o main como era"
+    }
+  },
+  {
+    "id": "sessions-start-in-yolo",
+    "file": "apps/server/src/builder/conversation/permissions.ts",
+    "find": "initialState: { yolo: true }",
+    "replace": "initialState: { yolo: false }",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/permissions.test.ts",
+      "name": "escrever e rodar um comando não param à espera de aprovação: nenhuma execução fica guardada como suspensa"
     }
   }
 ]

@@ -1,37 +1,40 @@
-# 0053. The Builder's allowed tools run without asking, and `yolo` stays off
+# 0053. The Builder's tools run without asking: the controller's `yolo`
 
 ## Context
 
-With `yolo` off, Mastra's agent controller sets `requireToolApproval: true` on every run
-(`agent-controller-DRiP9C5v.js:8216`). Each tool call then suspends the run, saves its snapshot, and
-the controller answers the rules (0050) by resuming it. That saved a suspended snapshot several
-times for two tools, and under load the resume can find the snapshot deleted
-(`AGENT_RESUME_ALREADY_CLAIMED`) and end the turn in error (`@mastra/core` 1.78.0).
+Mastra's agent controller makes every tool call of a run wait for approval unless the session's
+state holds `yolo` (`requireToolApproval: !isYolo`), and gives the answer of its rules (0050) by
+resuming the run. Under load, that resume can find the run's saved snapshot deleted, throw
+`AGENT_RESUME_ALREADY_CLAIMED` and end the turn in error, the pages still "Lendo" (`@mastra/core`
+1.78.0, still in 1.79.0-alpha.8).
 
 ## Decision
 
-`yolo` stays off (card U6, "nunca yolo"), and the rules allow `read`, `edit` and `execute` and deny
-the rest. A tool that answers for itself whether it needs approval is not suspended: the verdict of
-a per-tool `requireApproval` function replaces the run's (`agent-Blan8B5o.js:30144-30162`). So the
-workspace's tools take `requireApproval: () => false` in their `tools` config, and `web_fetch` is
-Mastra's tool rebuilt with the same answer. `recall` is Memory's and has none: the rule of its
-category allows it and the controller approves it at once, one suspend and resume. The mode's
-`availableTools` closes the set the model is offered.
+The Builder's controller starts every session with `yolo: true`, as Mastra Code's SDK does
+(`mastracode/sdk/src/index.ts:1331`, and `requireToolApproval: yolo !== true` at `:858`) and Mastra
+Factory keeps; Conexus OS set it on each turn (`apps/hub/src/builder/run/turn.ts:52-53`). No
+approval, no resume: `web_fetch`,
+`web_search` and `recall` run at once. The permission rules and the category resolver of 0050
+leave, since only the approval path read them. The Builder has no tool that writes or runs, and
+the controller's own such tools stay disabled.
 
 ## Criterion
 
-**Question.** Does a turn that reads, writes and runs end complete with no run saved waiting?
+**Question.** Does a turn that reads several pages at once end complete under load, with no run
+waiting for an approval?
 
 **Fixed.** `@mastra/core` 1.78.0.
 
 | # | Check | Passes when |
 | --- | --- | --- |
-| 1 | A turn calling `web_fetch`; a turn writing and running | No run saved suspended |
-| 2 | A turn calling `recall` | The tool runs and the turn ends complete |
+| 1 | The three research tests, seven copies at once, 56 runs | Every run passes |
+| 2 | A turn calling `web_fetch` and `recall` | No run saved suspended |
 
 ## State
 
 Accepted 2026-10-20. Founder: "Pode deixar como liberar tudo, no futuro pensamos, vamos
-simplificar pelo menos por agora", then "B Eu autorizo". 2026-10-21: the mechanism changed from
-`yolo` to the tools' own answers, since the approved card says never `yolo`; what the founder
-decided, that the allowed tools run without asking, is the same.
+simplificar pelo menos por agora", then "B Eu autorizo". Fixed allow and deny rules return to the
+founder when tools that write or run arrive (step 13).
+2026-10-21, step 13: the rules did not return to the founder; asked whether to keep "nunca yolo" with
+per-tool answers or keep `yolo: true` with the set closed by the mode, he answered "A": `yolo`. The
+workspace's write and command tools run too, and the mode's `availableTools` is enforced at the call.
