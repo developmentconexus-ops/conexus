@@ -38,7 +38,7 @@ export function createE2bKit(config: Credentials): KitFactory {
       sandbox,
       transport: {
         write: (path, bytes) => sandbox.writeFiles([{ path, content: Buffer.from(bytes) }]),
-        read: async (path) => Buffer.from(await sandbox.e2b.files.read(path, { format: 'bytes' })),
+        read: (path) => sandbox.e2b.files.read(path, { format: 'stream' }),
       },
       sandboxId: () =>
         sandbox.sandboxId === undefined ? undefined : SandboxId.parse(sandbox.sandboxId),

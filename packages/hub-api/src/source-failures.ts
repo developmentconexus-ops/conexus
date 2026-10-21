@@ -18,12 +18,4 @@ export const SOURCE_FAILURES = {
     action: 'Escolha outro arquivo da lista.',
     actionKind: 'NONE',
   },
-  SOURCE_FILE_TOO_LARGE: {
-    category: 'USER',
-    settles: true,
-    status: 422,
-    phrase: 'Este arquivo é grande demais para mostrar aqui.',
-    action: 'Escolha outro arquivo da lista.',
-    actionKind: 'NONE',
-  },
 } as const satisfies Record<string, FailureRow>

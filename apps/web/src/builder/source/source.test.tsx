@@ -79,14 +79,14 @@ test('um arquivo que não é texto: a frase da recusa, e os outros seguem', asyn
   expect(screen.getByRole('button', { name: 'logo.png' })).toBeTruthy()
 })
 
-test('um arquivo grande demais diz que é grande, e o caminho longo quebra em vez de ser cortado', async () => {
+test('um arquivo grande demais tem a frase da recusa única, e o caminho longo quebra em vez de ser cortado', async () => {
   const long = `src/${'pasta/'.repeat(12)}relatorio-de-encomendas.ts`
   server.use(
     source([{ path: long, bytes: 1_200_000 }]),
-    http.get(`${SOURCE}/file`, () => refusal('SOURCE_FILE_TOO_LARGE')),
+    http.get(`${SOURCE}/file`, () => refusal('SOURCE_FILE_NOT_TEXT')),
   )
   open()
-  expect(await screen.findByText(/grande demais para mostrar/)).toBeTruthy()
+  expect(await screen.findByText(/Não dá para mostrar este arquivo aqui/)).toBeTruthy()
   const row = screen.getByRole('button', { name: long })
   expect(row.className).toContain('break-all')
   expect(row.className).not.toContain('truncate')

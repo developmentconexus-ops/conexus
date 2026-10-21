@@ -129,3 +129,36 @@ test('reconectar num turno de mais eventos do que a leitura aceita: nada se repe
   assert.ok(next.type === 'turn', 'the next turn opens, with nothing of the long one replayed')
   assert.deepEqual(next.message.parts, [])
 })
+
+test('um evento já guardado e ainda não dito, quando o stream abre, chega uma vez só', async (t) => {
+  const held = holding(t)
+  const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  // The journal keeps the text and holds its answer until the stream opened has read it back.
+  const kept = Promise.withResolvers<void>()
+  const answer = Promise.withResolvers<void>()
+  t.after(() => answer.resolve())
+  const append = hub.runs.append.bind(hub.runs)
+  hub.runs.append = async (input) => {
+    const n = await append(input)
+    if (input.event.type === 'text') {
+      kept.resolve()
+      await answer.promise
+    }
+    return n
+  }
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  await kept.promise
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  const snapshot = await stream.next()
+  assert.deepEqual(snapshot.type === 'turn' && snapshot.message.parts, [
+    { type: 'text', text: PARTIAL },
+  ])
+  answer.resolve()
+  held.release()
+  const rest = await stream.turn()
+  assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(rest.filter((event) => event.type === 'text' && event.delta === PARTIAL).length, 0)
+  assert.equal(new Set(stream.seen.ids).size, stream.seen.ids.length, stream.seen.ids.join(' '))
+})

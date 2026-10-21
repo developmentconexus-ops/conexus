@@ -5,6 +5,7 @@ import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
 import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
 import { masked } from './mask.ts'
+import { TOOL_CLOSURE } from './permissions.ts'
 import { ShellTail } from './shell.ts'
 
 type ToolPart = Extract<MessagePart, { type: 'tool' }>
@@ -96,11 +97,25 @@ function subjectOf(kind: ToolPart['kind'], args: unknown): ToolPart['subject'] {
   return null
 }
 
-/** A tool call as the person sees it: its kind, its state and what it was about, never its data. */
+const OFFERED = new Set(TOOL_CLOSURE.availableTools)
+
+/**
+ * A tool call as the person sees it: its kind, its state and what it was about, never its data. A
+ * call to a tool outside the closed set fails because the controller refuses it, not because the
+ * tool ran: it is `denied`, as Mastra's own `tool_end.denied` fires only for an approval (none here).
+ */
 function toolOf(invocation: Invocation): ToolPart {
   const kind = KINDS[invocation.toolName] ?? 'other'
   const subject = subjectOf(kind, invocation.args)
-  return { type: 'tool', id: invocation.toolCallId, kind, state: stateOf(invocation), subject }
+  const state = stateOf(invocation)
+  const refused = state === 'error' && !OFFERED.has(invocation.toolName)
+  return {
+    type: 'tool',
+    id: invocation.toolCallId,
+    kind,
+    state: refused ? 'denied' : state,
+    subject,
+  }
 }
 
 /** The file part a finished write or edit leaves, or none for any other tool state. */

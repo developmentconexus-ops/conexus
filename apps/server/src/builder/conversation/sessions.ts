@@ -27,7 +27,7 @@ import {
   questionId,
   tellMachine,
 } from './live.ts'
-import { after } from './turn-log.ts'
+import { onceEach } from './turn-log.ts'
 
 /**
  * A conversation's place in this process: its session, opening or open, and how many holders use
@@ -293,20 +293,21 @@ export class Sessions {
   ) {
     const { signal, release } = input
     const waiting: Said[] = []
-    // What the turn says while the journal is read: it joins `waiting` after what the read found.
+    // What the turn says while the journal is read joins `waiting` after what the read found; an
+    // event both hold, as one kept before the read and told after it, is said once (`onceEach`).
     const early: Said[] = []
+    const fresh = onceEach()
     let gathering = true
     let wake: (() => void) | undefined
     const listener: Listener = (said) => {
       if (gathering) early.push(said)
-      else waiting.push(said)
+      else waiting.push(...fresh([said]))
       wake?.()
     }
     live.listeners.add(listener)
     try {
       const where = { companyId: live.owner.companyId, conversationId: live.conversationId }
-      const found = await catchUp(this.#runs, where, input.lastEventId)
-      waiting.push(...found, ...after(found.at(-1), early))
+      waiting.push(...fresh(await catchUp(this.#runs, where, input.lastEventId)), ...fresh(early))
     } catch (error) {
       live.listeners.delete(listener)
       await release()

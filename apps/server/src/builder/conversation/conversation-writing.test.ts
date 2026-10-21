@@ -68,17 +68,34 @@ test('um turno que escreve: ferramentas por tipo e assunto, arquivo, saída do c
   assert.equal(JSON.stringify(events).includes(SECRET), false)
 })
 
-test('a saída de um comando longo chega só pelas últimas 20 linhas e 4 KiB', async (t) => {
-  const long = {
+test('a saída de um comando longo chega só pelas últimas 20 linhas e 4 KiB, cada limite por si', async (t) => {
+  // 50 short lines pass the lines and not the bytes; 30 lines of 300 bytes, the bytes and not the
+  // lines; one line of 9,000 bytes, the bytes alone. Spaced, so the secret filter leaves them be.
+  const many = { name: RUN.name, input: { command: 'seq 1 50' } }
+  const wide = {
     name: RUN.name,
-    input: { command: 'seq 1 50; head -c 9000 /dev/zero | tr "\\0" x' },
+    input: { command: 'for i in $(seq 101 130); do printf "%s%297s\\n" $i ""; done' },
   }
-  const { hub, ana, conversations } = await conversing(t, calling(long))
+  const long = { name: RUN.name, input: { command: 'yes x | head -c 9000 | tr "\\n" " "' } }
+  const { hub, ana, conversations } = await conversing(t, calling(many, wide, long))
   const { events } = await asked(t, { hub, person: ana, conversations })
-  const [shell] = partsOf(events).filter((part) => part.type === 'shell')
-  assert.ok(shell)
-  assert.ok(shell.lines.length <= 20)
-  assert.ok(Buffer.byteLength(shell.lines.join('\n')) <= 4096)
+  const shells = partsOf(events).flatMap((part) => (part.type === 'shell' ? [part.lines] : []))
+  function numbers(from: number, to: number) {
+    return Array.from({ length: to - from + 1 }, (_, at) => String(from + at))
+  }
+  assert.deepEqual(
+    shells.find((lines) => lines[0]?.length !== 300 && lines[0]?.[0] !== 'x'),
+    numbers(31, 50),
+  )
+  // Thirteen lines of 300 bytes and their breaks are 3,912 bytes; a fourteenth passes 4 KiB.
+  assert.deepEqual(
+    shells.find((lines) => lines[0]?.length === 300),
+    numbers(118, 130).map((n) => n + ' '.repeat(297)),
+  )
+  assert.deepEqual(
+    shells.find((lines) => lines[0]?.[0] === 'x'),
+    ['x '.repeat(2048)],
+  )
 })
 
 /** The parts of the Builder's turn that outlive it: the command's lines and the version. */

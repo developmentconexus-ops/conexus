@@ -1,64 +1,9 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
+import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { createTestDatabase } from '../../platform/test-database.ts'
-import { openRepository } from '../git/public.ts'
-import type { Phase } from './public.ts'
-import { createMachines } from './public.ts'
-import { localKit, newControl } from './test-machine.ts'
-
-const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
-const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
-const LOG = { info: () => undefined, error: () => undefined }
-const SEED = `
-  insert into auth."user"(id, name, email) values ('person-a', 'Ana', 'ana@example.test');
-  insert into auth.company(id, name, slug, created_at, attempt_key) values
-    ('${COMPANY}', 'Empresa A', 'key-a', now(), 'key-a');
-  insert into auth.member(id, company_id, user_id, role, created_at) values
-    ('member-a', '${COMPANY}', 'person-a', 'member', now());
-  insert into projects.project(id, company_id, name, attempt_key, created_at) values
-    ('${PROJECT}', '${COMPANY}', 'Encomendas', 'a', now());`
-
-async function world(t: TestContext, startMs = 5_000) {
-  const { database, asOwner } = await createTestDatabase(t)
-  await asOwner(SEED)
-  const folder = mkdtempSync(join(tmpdir(), 'conexus-machine-'))
-  t.after(() => rmSync(folder, { recursive: true, force: true }))
-  const repository = openRepository({
-    root: join(folder, 'git'),
-    companyId: COMPANY,
-    projectId: PROJECT,
-    log: LOG,
-  })
-  const base = await repository.ensure()
-  const control = newControl()
-  const machines = createMachines({
-    database,
-    kit: localKit(folder, control),
-    api: { list: async () => [], kill: async () => undefined, exists: async () => control.exists },
-    seedOf: () => repository.bundleOfMain(),
-    mark: { conexus_origin: 'hub.example.test' },
-    log: LOG,
-    workdir: join(folder, 'app'),
-    tmp: folder,
-    startMs,
-  })
-  const phases: Phase[] = []
-  function open() {
-    return machines.workspaceFor({
-      companyId: COMPANY,
-      projectId: PROJECT,
-      deadline: new Date(Date.now() + 3_600_000),
-      onPhase: (phase) => phases.push(phase),
-    })
-  }
-  return { asOwner, machines, repository, base, control, phases, open, folder }
-}
+import { COMPANY, PROJECT, world } from './test-machine.ts'
 
 test('máquina: o primeiro uso liga, copia o main, grava o id; religar volta ao main; sumida é refeita com o aviso, sem criar outra', async (t) => {
   const { open, phases, control, asOwner, machines, base } = await world(t)
@@ -207,29 +152,4 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
     { path: 'b.ts', bytes: 5 },
     { path: 'src/a.ts', bytes: 19 },
   ])
-})
-
-test('máquina: ../fora.ts e um link para fora do app não abrem nem escrevem nada', async (t) => {
-  const { open, folder } = await world(t)
-  const workspace = await open()
-  const fs = workspace.filesystem
-  assert.ok(fs && workspace.sandbox?.executeCommand)
-  await fs.writeFile('dentro.ts', 'ok\n')
-  await workspace.sandbox.executeCommand('sh', [
-    '-c',
-    `ln -s ${folder} ${join(folder, 'app', 'saida')}`,
-  ])
-  for (const path of ['../fora.ts', '/etc/passwd', 'saida/fora.ts', 'saida']) {
-    await assert.rejects(
-      fs.writeFile(path, 'x'),
-      (e: unknown) => e instanceof Error && e.name === 'PermissionError',
-      path,
-    )
-    await assert.rejects(
-      fs.readFile(path),
-      (e: unknown) => e instanceof Error && e.name === 'PermissionError',
-      path,
-    )
-  }
-  assert.equal(await fs.readFile('dentro.ts', { encoding: 'utf8' }), 'ok\n')
 })

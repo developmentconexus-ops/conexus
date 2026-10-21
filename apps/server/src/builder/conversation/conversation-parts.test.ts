@@ -84,12 +84,12 @@ test('o pensamento, os argumentos, os resultados e o erro de uma ferramenta não
   }
 })
 
-test('uma ferramenta que falha fica `error`, sem o texto do erro; uma desconhecida é `other`', async (t) => {
+test('uma ferramenta que falha fica `error`, sem o texto do erro; uma desconhecida é `other`, recusada (`denied`)', async (t) => {
   const { hub, ana, conversations } = await conversing(t, await researching(t))
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(toolStates(events).slice(-2), [
     { kind: 'read_page', subject: { url: UNREACHABLE, title: null }, states: ['running', 'error'] },
-    { kind: 'other', subject: null, states: ['running', 'error'] },
+    { kind: 'other', subject: null, states: ['running', 'denied'] },
   ])
   const raw = JSON.stringify(events)
   assert.doesNotMatch(raw, /not found|Available tools|planted_tool|ENOTFOUND|SECRET-PLANTED-TEXT/)
@@ -120,7 +120,7 @@ test('recarregar: o pensamento e as ferramentas relidos na ordem, num turno só,
     { ...tool, kind: 'search_web', subject: { query: 'apps de encomenda de padaria' } },
     ...PAGES.map((url) => ({ ...tool, kind: 'read_page', subject: { url, title: null } })),
     { ...tool, kind: 'read_page', state: 'error', subject: { url: UNREACHABLE, title: null } },
-    { ...tool, kind: 'other', state: 'error', subject: null },
+    { ...tool, kind: 'other', state: 'denied', subject: null },
     { type: 'text', text: 'Comparei as padarias.' },
   ])
 })

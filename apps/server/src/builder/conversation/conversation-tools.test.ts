@@ -3,7 +3,15 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, plantGemini, sent, started, streamOf } from './test-conversation.ts'
+import {
+  answeredOf,
+  asked,
+  conversing,
+  plantGemini,
+  sent,
+  started,
+  streamOf,
+} from './test-conversation.ts'
 import { routedTo, served } from './test-research.ts'
 
 test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fetch`; nos três, também `web_search`', async (t) => {
@@ -106,4 +114,30 @@ test('um turno com `recall` termina sem parar à espera de aprovação', async (
     ['recall', 'completed'],
   ])
   assert.deepEqual(suspended, [], 'no run was saved waiting for an approval')
+})
+
+// A tool outside the closed set is refused by the controller, not run: the person reads "Não pôde
+// usar uma ferramenta", live and read back, never an error of the Builder's.
+test('um turno que pede uma ferramenta fora das liberadas a vê `denied`, ao vivo e relida', async (t) => {
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (call) => {
+    if (!call.stream) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step > 1) return { kind: 'text', text: 'Não deu.' }
+    return {
+      kind: 'blocks',
+      blocks: [{ type: 'tool_use', name: 'github_create_issue', input: {} }],
+    }
+  })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const live = events.flatMap((event) =>
+    event.type === 'part' && event.part.type === 'tool'
+      ? [[event.part.kind, event.part.state]]
+      : [],
+  )
+  assert.deepEqual(live.at(-1), ['other', 'denied'])
+  const read = (await answeredOf(hub, ana, url)).flatMap((message) =>
+    message.parts.flatMap((part) => (part.type === 'tool' ? [[part.kind, part.state]] : [])),
+  )
+  assert.deepEqual(read, [['other', 'denied']])
 })

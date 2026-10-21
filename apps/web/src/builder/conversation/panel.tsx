@@ -146,7 +146,7 @@ function Screen(params: Params) {
         </p>
       )}
       {(state.kind === 'answering' || state.kind === 'resuming') && (
-        <WorkingLine startedAt={state.startedAt} />
+        <WorkingLine startedAt={state.startedAt} heard={state.parts} />
       )}
       <div className="px-md">
         <Composer

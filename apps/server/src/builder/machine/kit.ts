@@ -1,7 +1,7 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { SandboxStartHook, WorkspaceSandbox } from '@mastra/core/workspace'
 import { z } from 'zod'
-import type { Transport } from './filesystem.ts'
+import { MAX_BYTES } from '../git/public.ts'
 
 /** A machine's id at the provider, made only by parsing (code C23). */
 export const SandboxId = z.string().min(1).brand('SandboxId')
@@ -19,6 +19,36 @@ export const MARK = {
 
 /** The hosts a machine may reach: `npm install` needs the registry and nothing else (decision 0051). */
 export const ALLOWED_HOSTS = ['registry.npmjs.org']
+
+/**
+ * The most bytes the Hub takes from the machine in one read, by the file tools or as the turn's
+ * bundle: a version's cap, for nothing larger can be saved (code C59).
+ */
+export const READ_MAX = MAX_BYTES
+
+/** The most output the Hub keeps of a command it runs in the machine: a `READ_MAX` file as base64, and its reply around it. */
+export const OUTPUT_MAX = Math.ceil(READ_MAX / 3) * 4 + 4096
+
+/** How bytes cross to and from the machine for the Hub's own files, by the provider's upload and download. */
+export type Transport = {
+  write(path: string, bytes: Uint8Array): Promise<void>
+  read(path: string): Promise<AsyncIterable<Uint8Array>>
+}
+
+/** The file's bytes, or `too-large` once more than `READ_MAX` of them have come. */
+export async function readCapped(
+  transport: Transport,
+  path: string,
+): Promise<Buffer | 'too-large'> {
+  const chunks: Uint8Array[] = []
+  let length = 0
+  for await (const chunk of await transport.read(path)) {
+    length += chunk.byteLength
+    if (length > READ_MAX) return 'too-large'
+    chunks.push(chunk)
+  }
+  return Buffer.concat(chunks)
+}
 
 /** What the machine's provider gives the Builder: a Mastra sandbox, how bytes cross, and the network. */
 export type Kit = {

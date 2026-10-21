@@ -891,6 +891,13 @@ or its origin.
   `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `claude/store.ts`. A change
   that touches their timers moves each to a named owner.
-- **Eval gate.** `conversation/builder.eval.test.ts` runs the real Builder with `runExperiment`
-  from `@mastra/core/datasets`, not `runEvals`: at 1.78.0 only `runExperiment` takes tool mocks and
-  `unmockedToolPolicy: 'deny'` (`evals/run/index.d.ts:178-195`). Revisit when `runEvals` does.
+- **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
+  a scripted model and the test machine, then scores what Mastra saved with `checks.calledTool` and
+  `checks.noToolErrors` from `@mastra/evals/checks`, and requires the only tool called to be the
+  write tool. It does not use `runEvals`: the Builder's `Agent` is private to its controller, and
+  `runEvals` takes no tool mocks nor `unmockedToolPolicy` at 1.78.0 (`evals/run/index.d.ts`;
+  `ItemToolMock` and `unmockedToolPolicy` live on dataset items, `datasets/experiment/types.d.ts:60-62`).
+  The scripted model keys on facts the setup must give it (the app folder, the skill, the tools),
+  not on the instructions' sentences. A second case has a person paste a password: it proves the
+  secrets rule reaches the model and that the gate fails without it, not that a real model obeys.
+  Revisit when `runEvals` takes tool mocks, or the Builder's agent can be a target.
