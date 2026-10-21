@@ -80,6 +80,7 @@ export {
   MessageId,
   MessagePart,
   ModelId,
+  machinePhaseLasts,
   type PartEvent,
   providerOfModel,
   readConversation,

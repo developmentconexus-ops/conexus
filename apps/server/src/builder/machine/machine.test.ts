@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -14,7 +14,14 @@ import {
 } from '../../platform/test-database.ts'
 import { openRepository } from '../git/public.ts'
 import type { Phase } from './public.ts'
-import { createE2bApi, createE2bKit, createMachines, SandboxId } from './public.ts'
+import {
+  APP_FOLDER,
+  createE2bApi,
+  createE2bKit,
+  createMachines,
+  MARK,
+  SandboxId,
+} from './public.ts'
 import { localKit, newControl } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
@@ -143,6 +150,39 @@ test('máquina: a máquina que cai no meio do turno é refeita, e o turno não g
   await assert.rejects(machines.collect({ projectId: PROJECT, base }), /died/)
 })
 
+test('máquina: a máquina que o Mastra religa no meio do turno guarda o que o turno escreveu', async (t) => {
+  const { open, machines, base, control } = await world(t)
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  control.outcome = 'connected'
+  await control.restart()
+  assert.equal(await workspace.filesystem?.exists('a.ts'), true, 'a reconnect is not a new turn')
+  const bundle = await machines.collect({ projectId: PROJECT, base })
+  assert.ok(typeof bundle === 'object', `the turn's work is saved, not ${String(bundle)}`)
+  assert.deepEqual([bundle.files, bundle.changedFiles], [1, 1])
+})
+
+test('máquina: na hora do turno a máquina fica ligada para guardar, e a que pausou antes é religada sem perder nada', async (t) => {
+  const deadline = new Date(Date.now() + 30 * 60_000)
+  const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
+    id: `conexus-${PROJECT}`,
+    sandboxId: undefined,
+    deadline,
+    metadata: {},
+    onStart: () => undefined,
+  })
+  const timeout: number = Reflect.get(kit.sandbox, '_constructorOptions').timeout
+  assert.ok(timeout > deadline.getTime() - Date.now() + 60_000, 'the machine outlives the hour')
+  const { open, machines, base, control } = await world(t)
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  // The machine paused at its hour: the save's command makes Mastra reconnect it first.
+  control.outcome = 'connected'
+  await control.restart()
+  const bundle = await machines.collect({ projectId: PROJECT, base })
+  assert.ok(typeof bundle === 'object', `the turn's work is saved, not ${String(bundle)}`)
+})
+
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
   const { open, folder, control } = await world(t)
   control.upMs = 300
@@ -225,6 +265,17 @@ test('máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausan
   assert.equal(Reflect.get(woken.sandbox, '_constructorOptions').reattach, 'required')
 })
 
+test('máquina: o template trabalha na pasta do app em que as ferramentas trabalham', () => {
+  const template = readFileSync(
+    new URL('../../../../../infra/e2b/template.ts', import.meta.url),
+    'utf8',
+  )
+  assert.ok(
+    template.includes(`.setWorkdir('${APP_FOLDER}')`),
+    'the template works in the app folder',
+  )
+})
+
 test('máquina: a varredura lista só as máquinas com a marca desta instalação e mata a que se mandou', async (t) => {
   const seen: string[] = []
   const server = createServer((request, response) => {
@@ -247,9 +298,9 @@ test('máquina: a varredura lista só as máquinas com a marca desta instalaçã
               envdVersion: '0.1.0',
               state: 'paused',
               metadata: {
-                conexus_origin: 'hub.example.test',
-                conexus_company: COMPANY,
-                conexus_project: PROJECT,
+                [MARK.origin]: 'hub.example.test',
+                [MARK.company]: COMPANY,
+                [MARK.project]: PROJECT,
               },
             },
           ])

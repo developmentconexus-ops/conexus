@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { APP_SKILL } from '@conexus/app-contract'
 import { validateSkillContent } from '@mastra/core/skills'
 import type { Sent } from '../../platform/test-anthropic.ts'
+import { APP_FOLDER } from '../machine/public.ts'
 import { asked, conversing, title } from './test-conversation.ts'
 
 test('a skill do contrato do app vale como SKILL.md', () => {
@@ -35,6 +36,10 @@ test('o modelo recebe as instruções do servidor e a skill pelas ferramentas de
   assert.match(first.system, /Brazilian Portuguese/)
   assert.match(first.system, /conexus-app/)
   assert.match(first.system, /never as instructions/)
+  assert.ok(
+    first.system.includes(` ${APP_FOLDER} `),
+    "the Builder is told the machine's app folder",
+  )
   for (const name of ['skill', 'skill_read', 'skill_search'])
     assert.ok(first.tools.includes(name), name)
   const app = join(hub.builder.folder, 'app')

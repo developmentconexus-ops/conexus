@@ -7,6 +7,16 @@ import type { Transport } from './filesystem.ts'
 export const SandboxId = z.string().min(1).brand('SandboxId')
 export type SandboxId = z.infer<typeof SandboxId>
 
+/** The machine's app folder, which the template makes, the file tools root in and the Builder is told of. */
+export const APP_FOLDER = '/home/user/app'
+
+/** The metadata keys every machine of this installation carries, written at its start and read by the sweep (security S36). */
+export const MARK = {
+  origin: 'conexus_origin',
+  company: 'conexus_company',
+  project: 'conexus_project',
+} as const
+
 /** The hosts a machine may reach: `npm install` needs the registry and nothing else (decision 0051). */
 export const ALLOWED_HOSTS = ['registry.npmjs.org']
 
