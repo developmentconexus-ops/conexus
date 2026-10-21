@@ -14,13 +14,13 @@ cada versão mudou, linha a linha.
 2. Na barra: **Computador | Celular**, **Recarregar**, o endereço, "Versão 1", **Abrir em nova
    aba**. **Celular**: moldura de 390 px.
 3. "Agora guarde também o endereço." Durante o turno a Prévia segue na versão 1; depois recarrega
-   sozinha na 2; a Maria segue lá (A1) ou a Prévia volta vazia (A2). **Alterações** mostra "+2", as
+   sozinha na 2; a Maria segue lá, com os dados da prévia. **Alterações** mostra "+2", as
    linhas novas em verde, **Unificado | Lado a lado**.
 4. Como **Diego**, a Prévia abre e grava. Na **Empresa B**, o endereço da prévia dá "não
    encontrado". **Abrir app** segue no app do ar.
 5. No celular: o mesmo Projeto, com **App | Conversa** embaixo.
 
-**O que você faz, e quando.** No começo: aprova esta página e responde A e B. Em B1, antes da U1, abre no iPhone um link e diz o que viu. No fim: usa a etapa. Firstmate faz o roteiro e testa as telas.
+**O que você faz, e quando.** No começo: aprova esta página (A e B já respondidas). Antes da U1, abre no iPhone um link e diz o que viu. No fim: usa a etapa. Firstmate faz o roteiro e testa as telas.
 
 **Respondidas.** P1 A: a versão de verdade, montada na máquina e enviada pelo caminho da etapa 9 a
 um endereço de prévia (o D, 6 s, fica para depois). P2 A: um esquema "prévia" no banco
@@ -28,6 +28,10 @@ da empresa. P3 A: o Builder confere e tenta de novo até 3 vezes (4 conferência
 segue na última boa e aparece **Pedir ao Builder para corrigir**.
 P4 A: o desenho do Conexus OS (barra, abas, "+N", cartão da versão). P3 e P4: "3. A 03 e 04 A
 okay da 14", 2026-10-21.
+A: os dados da prévia sobrevivem a uma versão nova; uma mudança de tabela migra o esquema da prévia e
+mantém as linhas. B: autorizadas as provas reais da U1 (Cloudflare e E2B das etapas 8, 9 e 13,
+Neon de prova, conta Claude, Safari do iPhone). Fundador, 2026-10-21: "2. SIM" e "Autorizo provas
+reais".
 
 **Os limites.** A Prévia aparece uns 14 s depois de "Versão guardada" (laboratório, fora do Hub:
 13,4 a 14,2 s); a meta é 20 s, medida na publicação (32). Guardamos a do ar, a da
@@ -37,17 +41,7 @@ prévia e mais 3. Alterações: até 1.000 arquivos e 1 MiB por arquivo.
 Builder; publicar (17); mudar tabelas com dados (15); **Versões** do Builder (17). Nenhuma
 issue `next-card` toca estas pastas.
 
-**Abertas, só estas duas.**
-
-- **A. Dados da prévia numa versão nova.** A1: ficam; a Maria continua na versão 2. A2: a prévia
-  volta vazia a cada versão. *Padaria Sol:* em A1, Ana testa sem recadastrar; em A2, recadastra a
-  cada pedido, mas nunca vê dado velho num esquema novo. **Recomendo A1.**
-- **B. Chamadas reais da prova (U1).** Já provado: montar na máquina, subir e apagar scripts, o tempo. Falta: o iframe em Chrome, Firefox e Safari do iPhone, o certificado do host
-  `--previa`, 50 scripts podados, o Neon dormindo, o conserto com o Claude real. B1: autoriza tudo
-  isso, na Cloudflare e E2B das etapas 8, 9 e 13 (`cx-prova-e14-`, apagados no fim), num Neon de
-  prova e numa conta Claude (qual projeto e qual conta: escreva aqui). B2: só o iframe em Chrome e
-  Firefox e o certificado; o resto vira medida na publicação. *Padaria Sol:* em B1, o Safari que
-  recusaria a Prévia aparece antes; em B2, só na publicação. **Recomendo B1**: centavos.
+**Abertas.** Nenhuma.
 
 ## As unidades
 
@@ -100,17 +94,17 @@ depois de apontar. Hub reiniciado: `resumeRuns` refaz a partir de montar (22).
 
 Pelas rotas e `main.ts`, com `Machines` dublê (`LocalSandbox`), Cloudflare dublê e modelo roteirizado.
 **Ao vivo**: o não verificado dos estudos, anotado no registro; nenhum teste da suíte chama serviço
-de fora (T14). Em B1 valem 2 a 7; em B2, 2 e 3, e 4, 6 e 7 passam ao 32 (L17). Must, salvo "should".
+de fora (T14). Valem 2 a 7, autorizados pelo fundador (B). Must, salvo "should".
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova |
 | --- | --- | --- | --- |
 | 1 | U1 | 0054 "proposed" antes do código, com os critérios de B; o já provado, citado, não refeito | o registro |
-| 2 | U1 | **Ao vivo**: Worker `cx-prova-e14-` no despachante em `…--previa`, num iframe do Hub: a entrada da U5 (mensagem, passagem, cookie particionado) vale e o app grava, em Chrome, Firefox e Safari do iPhone (B2: sem o Safari, que vai ao 32); fora do iframe, sem passagem: a página de sessão | 0054 |
+| 2 | U1 | **Ao vivo**: Worker `cx-prova-e14-` no despachante em `…--previa`, num iframe do Hub: a entrada da U5 (mensagem, passagem, cookie particionado) vale e o app grava, em Chrome, Firefox e Safari do iPhone; fora do iframe, sem passagem: a página de sessão | 0054 |
 | 3 | U1 | **Ao vivo**: o host `<nome>--<apelido>--previa` responde em HTTPS com o certificado de hoje do domínio dos apps (0041, critério 5) | 0054 |
-| 4 | U1 | **Ao vivo**, B1: 50 scripts no namespace, podados: a contagem volta, cada GET dá 404 após a propagação, anotada | 0054 |
+| 4 | U1 | **Ao vivo**: 50 scripts no namespace, podados: a contagem volta, cada GET dá 404 após a propagação, anotada | 0054 |
 | 5 | U1 | Sem chamada nova, registra o estudo: `pack` na máquina monta (Node 22, 4 de 4; a 13 traz o 24); do fim do turno à Prévia, 13,4 a 14,2 s fora do Hub; a meta de 20 s no Hub (should) vai ao 32 | 0054 |
-| 6 | U1 | **Ao vivo**, B1: o `abort` com `retry` reabre o laço no `AgentController` (13) com o Claude real; B2: no 32 | 0054 |
-| 7 | U1 | **Ao vivo**, B1: primeira consulta com o Neon dormindo, anotada; B2: no 32 | 0054 |
+| 6 | U1 | **Ao vivo**: o `abort` com `retry` reabre o laço no `AgentController` (13) com o Claude real | 0054 |
+| 7 | U1 | **Ao vivo**: primeira consulta com o Neon dormindo, anotada | 0054 |
 | 8 | U2 | `previewHostOf` dá `<rótulo>--previa`; rótulo antigo de 56 a 63: `PREVIEW_NO_ADDRESS`; `HostLabel` recusa 3 partes, `PreviewHostLabel` só o sufixo | `address.test.ts` |
 | 9 | U2 | Esquema e logins `app_<id>_previa*`; o login de rodar da prévia lê o esquema do ar: 42501 | `company-postgres.test.ts` |
 | 10 | U2 | Apagar o Projeto: os dois esquemas, os logins, os scripts; falha isolada (12) | `removal.test.ts` |
@@ -135,8 +129,8 @@ de fora (T14). Em B1 valem 2 a 7; em B2, 2 e 3, e 4, 6 e 7 passam ao 32 (L17). M
 | 29 | U8 | Portão de montagem no CI, ferramentas falsas: o app gerado monta e o `Manifest` passa; o T14 inteiro é o 32 | `builder.eval.test.ts` |
 | 30 | U9 | Roteiro, dublês | `tests/e2e/builder-preview.test.ts` |
 | 31 | U9 | O relatório de QA no commit candidato (T25) | `conexus-qa` |
-| 32 | U9 | **Ao vivo**, publicado: o roteiro; Prévia aberta com a máquina apagada; tempo até a Prévia no Hub, 20 s (should); em B2, também 4, 6, 7 e o Safari | firstmate, fundador (L17) |
-| 33 | U2 | **A1**: o registro da prévia continua depois da versão seguinte; migração aplicada não muda (`APP_MIGRATION_CHANGED`, 0046). **A2**: a versão seguinte recria o esquema da prévia vazio, numa transação, repetível; o do ar não muda | `company-postgres.test.ts`, `preview-send.test.ts` |
+| 32 | U9 | **Ao vivo**, publicado: o roteiro; Prévia aberta com a máquina apagada; tempo até a Prévia no Hub, 20 s (should) | firstmate, fundador (L17) |
+| 33 | U2 | Os dados da prévia sobrevivem: o registro gravado na versão N é lido na N+1, e a Maria continua lá; uma mudança de tabela migra o esquema da prévia (razão 0046, tudo ou nada) e mantém as linhas; migração já aplicada não muda (`APP_MIGRATION_CHANGED`); o esquema do ar não muda | `company-postgres.test.ts`, `preview-send.test.ts` |
 
 ## A matriz de estados
 
@@ -181,8 +175,8 @@ de fora (T14). Em B1 valem 2 a 7; em B2, 2 e 3, e 4, 6 e 7 passam ao 32 (L17). M
 | `npm ci`, `pack` e leitura após guardar | um por tentativa | `PREVIEW_PACK_FAILED` | idem | `PREVIEW_PACKED` | 19, 22 |
 | `app_version` de prévia | chave única, `REPLAY` | reivindicação, C65 | 503 | `APP_VERSION_RECEIVED` | 12, 13 |
 | Upload do script | mesmo nome por versão | `abandon` apaga | Cloudflare: `failed` | `APP_VERSION_UPLOADED` | 20 |
-| Esquema e logins da prévia | `IF NOT EXISTS` | uma transação | Neon: `failed` | `APP_DATABASE_READY` | 9, 33 |
-| Migrações na prévia | razão 0046 | tudo ou nada | idem | `APP_MIGRATED` | 9, 20 |
+| Esquema e logins da prévia | `IF NOT EXISTS`; nunca recriado nem esvaziado por versão nova | uma transação | Neon: `failed` | `APP_DATABASE_READY` | 9, 33 |
+| Migrações na prévia | razão 0046; as linhas ficam | tudo ou nada | idem | `APP_MIGRATED` | 9, 20, 33 |
 | `preview_version_id` | `UPDATE … WHERE source_number <` | relido | — | `PREVIEW_VERSION_READY` | 21 |
 | `builder.run` `previewing`, `preview_attempt`, `preview_failure` | posse da 13 | retomada, tentativa + 1; falha: termina `saved` com `preview_failure` | — | `RUN_SETTLED` | 18, 19, 22 |
 | Remover esquema, logins e scripts da prévia | idempotente | pendente da 12 | pendente | `PROJECT_APP_DELETED` | 10 |
