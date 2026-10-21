@@ -93,18 +93,14 @@ not authorize violating an approved contract or claiming proof that did not run;
   1366, 390 and 320 px. Look at captures and observe submit, redirect and refresh transitions;
   record a trace when a still image misses the state. Stable measurements become tests in the
   existing browser check. Failure: text and console inspection approve a login column only 8 px
-  wide. The full matrix of captures belongs to T25's QA report, which exists before the reviews
-  start. A builder looks at the states its unit changes, and a reviewer reads the QA report, opens
-  its captures and drives the browser where it doubts one. An expected refusal shown by the screen
-  is not an uncaught error. [review]
+  wide. The full matrix of captures belongs to T25's QA report; a builder looks at the states its
+  unit changes, and a reviewer drives the browser where it doubts one. An expected refusal shown by
+  the screen is not an uncaught error. [review]
 - **T25.** A step that changes a screen **must** have a QA report at its candidate commit by an
   agent that did not build the step, following
-  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). The report walks the card's
-  use script and its state matrix, uses T24 data, looks at every capture against the screen's
-  named design at T23's widths and themes, and lists what it saw, what it only read and what is
-  not proved. Failure: the 12.2 pilot said "Findings: None"; it checked clipping and scrolling, not
-  each screen against its design, and missed links drawn as buttons without their border
-  (ca48451). [review]
+  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). Failure: the 12.2 pilot said
+  "Findings: None"; it checked clipping and scrolling, not each screen against its design, and
+  missed links drawn as buttons without their border (ca48451). [review]
 
 ## 6. From change to proof
 
