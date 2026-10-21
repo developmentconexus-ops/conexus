@@ -7,14 +7,14 @@ One line per document (`check-docs`).
 - [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
 - [README.md](../README.md): this repository.
 - [roadmap.md](roadmap.md): steps.
-- [approvals.md](approvals.md): approvals and uses.
+- [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
 - [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/local-database.md](how-to/local-database.md): the tests' PostgreSQL 18.
+- [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18.
 - [steps/](steps/): the card in construction.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
 - [reference/stack.md](reference/stack.md): each package's sources, skill, trap.
@@ -85,6 +85,7 @@ One line per document (`check-docs`).
 - [0048](decisions/0048-company-neon-project-named-by-nickname-and-id.md) Neon name.
 - [0049](decisions/0049-model-accounts-keys-sign-ins-queues.md) accounts.
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
+- [0051](decisions/0051-builder-machine-git-and-copy-in-r2.md) machine.
 - [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) one tracing path.
 - [0053](decisions/0053-builder-tools-run-without-asking.md) tools without asking.
 
