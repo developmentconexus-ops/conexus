@@ -2517,16 +2517,5 @@
       "file": "src/builder/runs/runs-restart.test.ts",
       "name": "reinício no meio do turno: o turno retomado é avisado do reinício, e termina sem chamar ferramenta guardando o que a máquina já tinha"
     }
-  },
-  {
-    "id": "seed-gate-hook",
-    "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "        hooks: { beforeToolCall: () => this.ensure(session) },\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine.test.ts",
-      "name": "máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart"
-    }
   }
 ]

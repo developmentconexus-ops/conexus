@@ -11,6 +11,8 @@ export type Control = {
   /** Whether the provider still holds the recorded machine. */
   exists: boolean
   networkClosed: number
+  /** How long the machine takes to come up after it says it runs, as E2B's start does. */
+  upMs: number
   /** Starts the latest machine again as the provider does after it died: its `onStart` runs once more. */
   restart: () => Promise<void>
   /** The ids the machines asked the provider to reattach. */
@@ -25,6 +27,7 @@ export function newControl(): Control {
     start: 'ok',
     exists: true,
     networkClosed: 0,
+    upMs: 0,
     restart: async () => undefined,
     reattached: [],
     deadlines: [],
@@ -39,7 +42,10 @@ export function localKit(folder: string, control: Control): KitFactory {
     control.reattached.push(options.sandboxId)
     const sandbox = new LocalSandbox({
       workingDirectory: folder,
-      onStart: (started) => options.onStart({ ...started, outcome: control.outcome }),
+      onStart: async (started) => {
+        await new Promise((up) => setTimeout(up, control.upMs))
+        await options.onStart({ ...started, outcome: control.outcome })
+      },
     })
     control.restart = () => Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
     const start = sandbox.start.bind(sandbox)

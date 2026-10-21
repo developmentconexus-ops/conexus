@@ -144,16 +144,17 @@ test('máquina: a máquina que cai no meio do turno é refeita, e o turno não g
 })
 
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
-  const { open, folder } = await world(t)
+  const { open, folder, control } = await world(t)
+  control.upMs = 300
   const workspace = await open()
   const tools = await createWorkspaceTools(workspace)
   const command = tools[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]
   assert.ok(command, 'the workspace offers execute_command')
   const head = { command: `cat ${join(folder, 'app')}/.git/HEAD` }
-  const seen = await Promise.all([
-    command.execute(head, { workspace }),
-    command.execute(head, { workspace }),
-  ])
+  const first = command.execute(head, { workspace })
+  // The second arrives while the machine already says `running` and the seed is still coming.
+  while (workspace.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))
+  const seen = [await first, await command.execute(head, { workspace })]
   for (const each of seen) assert.match(JSON.stringify(each), /ref: refs\/heads\/main/)
 })
 
