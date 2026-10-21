@@ -61,7 +61,7 @@ export type Kit = {
 }
 
 type KitOptions = {
-  /** `conexus-<projectId>`: the provider finds a machine of this Projeto by it. */
+  /** `conexus-<installation>-<companyId>-<projectId>`: the provider finds a machine of this Projeto by it. */
   id: string
   /** The machine to wake; the provider refuses to make another if it is gone (decision 0051). */
   sandboxId: SandboxId | undefined

@@ -111,3 +111,23 @@ test('cópia: o R2 recusa uma chave com 200 e a remoção falha, para tentar de 
   await copy.removeProject({ companyId: COMPANY, projectId: PROJECT })
   assert.equal(objects.size, 0)
 })
+
+test('cópia: um id hostil não chega à chave nem à remoção, e nada sai para o R2', async (t) => {
+  const { copy, objects, deletes } = await bucket(t)
+  const kept = `git/${COMPANY}/${PROJECT}/00000001-${SHA('a')}.bundle`
+  objects.set(kept, Buffer.alloc(0))
+  const hostile: ProjectId[] = JSON.parse(
+    '["../projectAAAAAAAAAAAAAAAAAAAAAAAAA", "", "a/b", "a\\u0000b"]',
+  )
+  for (const projectId of hostile) {
+    const ids = { companyId: COMPANY, projectId }
+    assert.throws(() => copyKey({ ...ids, version: 1, sha: SHA('a') }))
+    await assert.rejects(copy.put({ ...ids, version: 1, sha: SHA('a'), bundle: Buffer.alloc(0) }))
+    await assert.rejects(copy.latest({ ...ids, maxBytes: 1_000 }))
+    await assert.rejects(copy.removeProject(ids))
+  }
+  const company: CompanyId = JSON.parse('".."')
+  await assert.rejects(copy.removeProject({ companyId: company, projectId: PROJECT }))
+  assert.deepEqual([...objects.keys()], [kept])
+  assert.deepEqual(deletes, [])
+})

@@ -3,7 +3,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { COMPANY, PROJECT, world } from './test-machine.ts'
+import { COMPANY, INSTALLATION, OTHER_INSTALLATION, PROJECT, world } from './test-machine.ts'
 
 test('máquina: o primeiro uso liga, copia o main, grava o id; religar volta ao main; sumida é refeita com o aviso, sem criar outra', async (t) => {
   const { open, phases, control, asOwner, machines, base } = await world(t)
@@ -152,4 +152,14 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
     { path: 'b.ts', bytes: 5 },
     { path: 'src/a.ts', bytes: 19 },
   ])
+})
+
+test('máquina: o nome da máquina leva a instalação e a empresa, então a de outra instalação ou empresa nunca é a achada pelo nome', async (t) => {
+  const here = await world(t)
+  await here.open()
+  const other = await world(t, 5_000, OTHER_INSTALLATION)
+  await other.open()
+  assert.deepEqual(here.control.names, [`conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`])
+  assert.deepEqual(other.control.names, [`conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`])
+  assert.notEqual(here.control.names[0], other.control.names[0])
 })

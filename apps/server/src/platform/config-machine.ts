@@ -16,7 +16,18 @@ export const E2bApiKey = {
   },
 }
 
+/**
+ * A random id each installation (production, a developer's copy) gets once, put in its machines' names
+ * and marks so one never attaches or sweeps another's (S36). Never the public host.
+ */
+export const InstallationId = z
+  .string()
+  .regex(/^[a-z0-9]{16,32}$/)
+  .brand('InstallationId')
+export type InstallationId = z.infer<typeof InstallationId>
+
 export const MachineEnvironment = z.object({
+  HUB_INSTALLATION_ID: InstallationId,
   HUB_E2B_API_KEY_FILE: z.string().min(1),
   HUB_E2B_TEMPLATE: MachineTemplate,
 })

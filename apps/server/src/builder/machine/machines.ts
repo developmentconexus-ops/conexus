@@ -1,5 +1,6 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
+import type { InstallationId } from '../../platform/config-machine.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -63,6 +64,8 @@ export type MachinesDeps = {
   seedOf(input: { companyId: CompanyId; projectId: ProjectId }): Promise<Buffer>
   /** The mark every machine of this installation carries. */
   mark: Record<string, string>
+  /** This installation's id, in every machine's name: Mastra attaches by name alone (S36). */
+  installation: InstallationId
   log: FailureLog
   workdir?: string
   /** A folder the machine can write for the bundles that cross; `/tmp` on E2B. */
@@ -206,7 +209,7 @@ class BuilderMachines implements Machines {
     const sandboxId = gone ? undefined : recorded
     const holder: { session?: Session } = {}
     const kit = this.deps.kit({
-      id: `conexus-${projectId}`,
+      id: `conexus-${this.deps.installation}-${companyId}-${projectId}`,
       sandboxId,
       deadline: input.deadline,
       metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },

@@ -50,6 +50,14 @@ export const CONVERSATION_FAILURES = {
     action: 'A versão anterior continua. Peça de novo ao Builder.',
     actionKind: 'NONE',
   },
+  GIT_RESTORE_NEEDED: {
+    category: 'SYSTEM',
+    settles: true,
+    status: 503,
+    phrase: 'O Git deste app sumiu do servidor, mas há uma cópia guardada.',
+    action: 'Nada foi mudado. Avise quem cuida do Conexus para restaurar o Git.',
+    actionKind: 'NONE',
+  },
   MACHINE_LOST: {
     category: 'THIRD_PARTY',
     settles: true,

@@ -194,26 +194,41 @@ for (const [name, statement] of REFUSED) {
   })
 }
 
-test('as tabelas de empresa, auth.user e auth.session têm política por linha, sem FORCE', async (t) => {
+// The tables that hold no company data, or are reached only through a proof, so they have no policy
+// (`drizzle.__drizzle_migrations` is migrate's own bookkeeping).
+// A table not listed here and without one fails this test: say why it may go without, or police it.
+const WITHOUT_POLICY = [
+  'apps.app_session',
+  'apps.handoff',
+  'auth.account',
+  'auth.rate_limit',
+  'auth.verification',
+  'drizzle.__drizzle_migrations',
+  'hub.starts',
+]
+
+test('toda tabela de todo esquema tem política por linha, sem FORCE, salvo as da lista', async (t) => {
   const { asOwner } = await createTestDatabase(t)
   const tables = await asOwner(`select n.nspname || '.' || c.relname as name,
       c.relrowsecurity as enabled, c.relforcerowsecurity as forced
     from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where c.relkind = 'r' and n.nspname in ('auth', 'operations', 'hub') order by 1`)
+    where c.relkind in ('r', 'p') and n.nspname not in ('information_schema', 'public')
+      and n.nspname not like 'pg\\_%' order by 1`)
   // The owner only runs migrate (data D9), so it passes the policies and nobody else does.
-  const policed = [
-    'auth.company',
-    'auth.invitation',
-    'auth.member',
-    'auth.session',
-    'auth.user',
-    'operations.client',
-  ]
   assert.deepEqual(
-    tables,
-    tables.map((row) => ({ ...row, enabled: policed.includes(String(row.name)), forced: false })),
+    tables.filter((row) => row.forced),
+    [],
   )
-  assert.equal(tables.filter((row) => row.enabled).length, policed.length)
+  assert.deepEqual(
+    tables.filter((row) => !row.enabled).map((row) => row.name),
+    WITHOUT_POLICY,
+  )
+  for (const name of WITHOUT_POLICY) {
+    assert.ok(
+      tables.some((row) => row.name === name),
+      `${name} is in the list but is no table`,
+    )
+  }
 })
 
 test('o login do Hub não lê nem grava as tabelas de empresa', async (t) => {
