@@ -7,7 +7,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AccountRow } from './accounts.ts'
 import { subscriptionHeaders } from './claude/subscription-model.ts'
-import { isChoosable } from './providers.ts'
+import { isChoosable, isListed } from './providers.ts'
 import { modelAccount } from './tables.ts'
 
 // The models each provider says a credential can call, read when the credential changes (card
@@ -70,8 +70,8 @@ export function listRequest(
   via?: string,
 ): ListRequest | undefined {
   if (target.kind === 'google_cliproxy') {
-    // The ids CLIProxyAPI lists are the provider's own; the ones the registry has are the ones
-    // that serve, with no renaming, so the others leave the list when it is read against it.
+    // CLIProxyAPI lists the names it calls the models by, which are not always the registry's
+    // (`servesModel`).
     if (via === undefined) return undefined
     return {
       reader: 'openai',
@@ -164,12 +164,15 @@ async function readServed(
 }
 
 /**
- * Whether the account serves the model: a model the picker offers, and, once the provider's list
- * was read, one of its ids. An account never read serves what the registry offers.
+ * Whether the account serves the model, under the name the account calls it by: one of the ids its
+ * list holds once read, among the registry's chat models, or for a Google sign-in, among the Google
+ * chat models CLIProxy names its own way (`gemini-3.8-flash-high`). An account never read serves
+ * what the registry offers.
  */
-export function servesModel(row: Pick<AccountRow, 'served'>, model: ModelId): boolean {
-  if (!isChoosable(model)) return false
-  return row.served === null || row.served.includes(parseModelString(model).modelId)
+export function servesModel(row: Pick<AccountRow, 'kind' | 'served'>, model: ModelId): boolean {
+  if (row.served === null) return isListed(model)
+  const offered = row.kind === 'google_cliproxy' ? isChoosable(model) : isListed(model)
+  return offered && row.served.includes(parseModelString(model).modelId)
 }
 
 type Keeping = {

@@ -3,7 +3,8 @@
 // the callback brings its state. In the folder after `--control`, the file `mode` says `refuse` to
 // fail the login, and `runs` gets its pid and folder, a line per run. Its model list, `/v1/models`,
 // answers the ids the file `models` holds, comma apart, or the ids recorded from the founder's proxy. Its model route, `/v1`'s Chat
-// Completions, answers with the recording the file `recording` names (testing T24).
+// Completions, answers with the recording the file `recording` names (testing T24), and adds the
+// model each call asks for to the file `asked`, a line per call.
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
@@ -76,6 +77,7 @@ const server = createServer(async (request, response) => {
     return reply(200, { object: 'list', data: ids.map((id) => ({ id, object: 'model' })) })
   }
   if (url.pathname === '/v1/chat/completions' && request.method === 'POST') {
+    appendFileSync(join(control, 'asked'), `${(await body(request)).model}\n`)
     const name = readFileSync(join(control, 'recording'), 'utf8').trim()
     const recorded = recordedBody(name)
     response.writeHead(200, { 'content-type': 'text/event-stream' })

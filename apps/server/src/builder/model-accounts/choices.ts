@@ -1,9 +1,11 @@
 import type { Owner, PersonId, Provider } from '@conexus/hub-api'
+import { ModelId } from '@conexus/hub-api'
 import type { ReadTx } from '../../platform/database.ts'
 import type { AccountRow, Context, Viewer } from './accounts.ts'
 import { accountsOf, partOf } from './accounts.ts'
 import { keyProviderOf } from './providers.ts'
 import { servesModel } from './served.ts'
+import { effortsOf } from './thinking.ts'
 
 /**
  * What a picker offers (P5): the providers with an account in any state, paused or limited too,
@@ -22,12 +24,18 @@ export function choicesOf(
   return [...new Set(own.map((row) => row.provider))].sort().flatMap((id) => {
     const provider = keyProviderOf(id)
     const accounts = own.filter((row) => row.provider === id)
-    const models = provider?.models.filter((model) =>
-      accounts.some((row) => servesModel(row, model.id)),
-    )
-    return provider === undefined || models === undefined || models.length === 0
-      ? []
-      : [{ ...provider, models }]
+    if (provider === undefined) return []
+    // The registry's models first, then the names an account serves them by that it lacks.
+    const named = accounts.flatMap((row) => row.served ?? []).map((name) => `${id}/${name}`)
+    const models = [...new Set([...provider.models.map((model) => model.id), ...named])]
+      .flatMap((model) => {
+        const parsed = ModelId.safeParse(model)
+        return parsed.success && accounts.some((row) => servesModel(row, parsed.data))
+          ? [parsed.data]
+          : []
+      })
+      .map((model) => ({ id: model, efforts: effortsOf(model) }))
+    return models.length === 0 ? [] : [{ ...provider, models }]
   })
 }
 
