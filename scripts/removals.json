@@ -2332,14 +2332,36 @@
     }
   },
   {
-    "id": "machine-fs-real-path",
-    "file": "apps/server/src/builder/machine/filesystem.ts",
-    "find": "    if (result.exitCode === OUTSIDE) throw new PermissionError(path, operation)\n",
+    "id": "machine-fs-no-link",
+    "file": "apps/server/src/builder/machine/in-machine.ts",
+    "find": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY | O_NOFOLLOW)\n",
+    "replace": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-files.test.ts",
+      "name": "fora.ts"
+    }
+  },
+  {
+    "id": "machine-read-cap",
+    "file": "apps/server/src/builder/machine/in-machine.ts",
+    "find": "  if (found.size > request.max) throw fail('TOO_LARGE')\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/machine/machine.test.ts",
-      "name": "fora.ts"
+      "file": "src/builder/machine/machine-files.test.ts",
+      "name": "64 MiB"
+    }
+  },
+  {
+    "id": "machine-bundle-cap",
+    "file": "apps/server/src/builder/machine/kit.ts",
+    "find": "    if (length > READ_MAX) return 'too-large'\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-files.test.ts",
+      "name": "64 MiB"
     }
   },
   {
