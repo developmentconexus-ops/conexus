@@ -7,6 +7,7 @@ import { IDENTITY_FAILURES } from './identity-failures.ts'
 import { MODEL_ACCOUNT_FAILURES } from './model-account-failures.ts'
 import { PEOPLE_FAILURES } from './people-failures.ts'
 import { PROJECT_FAILURES } from './project-failures.ts'
+import { SOURCE_FAILURES } from './source-failures.ts'
 
 export const FAILURES = {
   INTERNAL_UNEXPECTED: {
@@ -51,6 +52,7 @@ export const FAILURES = {
   },
   ...IDENTITY_FAILURES,
   ...CONVERSATION_FAILURES,
+  ...SOURCE_FAILURES,
   REQUEST_MALFORMED: {
     category: 'USER',
     settles: true,

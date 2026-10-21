@@ -110,6 +110,11 @@ export class Runs {
     return { ok: true, value: id }
   }
 
+  /** The Projeto's repository, for the reads of its saved files. */
+  repositoryOf(ids: { companyId: CompanyId; projectId: ProjectId }) {
+    return this.#deps.repository(ids)
+  }
+
   /** Sets where the machine's phases of the run are told. */
   onPhase(runId: RunId, listener: (phase: Phase) => void): void {
     const mine = this.#driven.get(runId)

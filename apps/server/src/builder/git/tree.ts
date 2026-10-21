@@ -54,7 +54,8 @@ export async function fileOf(
   context: Context,
   { sha, path, maxBytes }: { sha: Sha; path: string; maxBytes: number },
 ): Promise<FileRead> {
-  if (!(await inMain(context, sha))) return { kind: 'not-found' }
+  const unsafe = path.includes('\0') || path.split('/').some((part) => UNSAFE_SEGMENTS.has(part))
+  if (unsafe || !(await inMain(context, sha))) return { kind: 'not-found' }
   const found = (await entries(context, [sha, '--', path])).find((entry) => entry.path === path)
   if (found === undefined || found.type !== 'blob') return { kind: 'not-found' }
   if (found.bytes > maxBytes) return { kind: 'not-text' }

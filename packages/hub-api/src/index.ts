@@ -186,4 +186,12 @@ export {
   ProjectSummary,
 } from './projects.ts'
 export { RunId } from './runs.ts'
+export {
+  ProjectSource,
+  readProjectFile,
+  readProjectSource,
+  SOURCE_FILE_MAX_BYTES,
+  SOURCE_MAX_FILES,
+  SourceFile,
+} from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'

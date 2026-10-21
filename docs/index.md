@@ -12,7 +12,7 @@ One line per document (`check-docs`).
 - [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
-- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco do Hub.
+- [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
 - [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18.
 - [steps/](steps/): the card in construction.

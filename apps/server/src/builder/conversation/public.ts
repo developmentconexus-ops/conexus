@@ -5,6 +5,7 @@ import type { Database, MastraPool } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
+import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
@@ -55,8 +56,13 @@ export function createConversations(deps: {
   }
 
   return Object.freeze({
-    routes: (app: FastifyInstance) =>
-      registerConversationRoutes(app, { store, sessions, builder, queue }),
+    routes: (app: FastifyInstance) => {
+      registerConversationRoutes(app, { store, sessions, builder, queue })
+      registerSourceRoutes(app, {
+        ...{ database, identity, projects: deps.projects },
+        repository: (ids) => deps.runs.repositoryOf(ids),
+      })
+    },
     release,
     /**
      * At start, before the runs are settled: the turns another copy left open, with time left, are
