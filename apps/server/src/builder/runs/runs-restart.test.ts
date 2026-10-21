@@ -157,3 +157,24 @@ test('o processo morto deixa a posse a vencer: o outro, ao partir, não acha nad
   }
   assert.notEqual(owner, first?.owner, 'the turn is taken once its lease ends')
 })
+
+test('parar o processo com um turno que não acaba: passada a espera, a posse é entregue e o turno fica livre para outro', async (t) => {
+  const turn = dyingTurn(t)
+  const { hub, ana, conversations } = await conversing(t, turn.answer)
+  hub.builder.knobs.yieldMs = 200
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const alive = await streamOf(hub, ana, url)
+  t.after(() => alive.close())
+  assert.equal((await sent(hub, ana, url, 'Faça a página')).statusCode, 202)
+  for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
+  const closing = hub.close()
+  for (let wait = 0; wait < 100; wait += 1) {
+    const [row] = await hub.test.asOwner(`select lease_until < now() as free from builder.run`)
+    if (row?.free === true) break
+    await new Promise((later) => setTimeout(later, 50))
+  }
+  const [row] = await hub.test.asOwner(`select lease_until < now() as free from builder.run`)
+  assert.equal(row?.free, true, 'the lease is given up while the turn still runs')
+  turn.release()
+  await closing
+})

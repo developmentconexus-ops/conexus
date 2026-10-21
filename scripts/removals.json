@@ -2517,5 +2517,27 @@
       "file": "src/builder/runs/runs-restart.test.ts",
       "name": "reinício no meio do turno: o turno retomado é avisado do reinício, e termina sem chamar ferramenta guardando o que a máquina já tinha"
     }
+  },
+  {
+    "id": "lease-yielded-after-wait",
+    "file": "apps/server/src/builder/runs/runs.ts",
+    "find": "    await this.stop()\n  }\n\n  /** The request context of the turn",
+    "replace": "  }\n\n  /** The request context of the turn",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-restart.test.ts",
+      "name": "parar o processo com um turno que não acaba: passada a espera, a posse é entregue e o turno fica livre para outro"
+    }
+  },
+  {
+    "id": "first-tool-boots-machine",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "        hooks: { beforeToolCall: () => this.ensure(session) },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs.test.ts",
+      "name": "recusa ao guardar .2.000 arquivos.: o texto da recusa, o main como era"
+    }
   }
 ]

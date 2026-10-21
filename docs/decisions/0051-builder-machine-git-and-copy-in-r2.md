@@ -18,8 +18,11 @@ hosts, its filesystem and where a version is kept.
   `walk` and `grep` are optional. The fork's `SandboxFilesystem` has 815 lines. Proposed: ours, about
   200 lines, writing through `writeFiles()`; past 300 lines, or if a 200 KB file fails, the fork's
   class is brought.
-- `running` precedes `onStart` (`workspace-BojqafFG.js:3991-3998`): `beforeToolCall` starts the
-  sandbox, then waits for the seed.
+- `running` precedes `onStart` (`workspace-BojqafFG.js:3986-4001`), yet live on E2B two first-step
+  tools both saw the seed without any gate (`seed-nohook`, 2026-10-21): Mastra's own start is joined
+  by the second tool. `beforeToolCall` stays for another job: it boots the machine through our
+  `ensure`, which says the phase, records the machine's id and marks the turn as one that used it,
+  so a turn that only ran commands is still saved.
 - The E2B key is the founder's free-account key, in a file (S31); the sweep kills only machines
   marked with this installation's origin.
 

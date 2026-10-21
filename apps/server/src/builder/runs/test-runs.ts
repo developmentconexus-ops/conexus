@@ -49,6 +49,7 @@ export function memoryCopy() {
 type Knobs = {
   turnMs: number
   renewMs: number
+  yieldMs: number
   dies: { receive: number; advance: number }
   /** While set, a save waits before it moves `main`. */
   holdAdvance: Promise<void> | undefined
@@ -58,6 +59,7 @@ function newKnobs(): Knobs {
   return {
     turnMs: 3_600_000,
     renewMs: 30_000,
+    yieldMs: 8_000,
     dies: { receive: 0, advance: 0 },
     holdAdvance: undefined,
   }
@@ -126,12 +128,16 @@ export function testBuilderPorts(
   function renewMs() {
     return knobs.renewMs
   }
+  function yieldMs() {
+    return knobs.yieldMs
+  }
   return {
     machinesOf,
     repository,
     copy: bucket.copy,
     turnMs,
     renewMs,
+    yieldMs,
     bucket,
     control,
     knobs,

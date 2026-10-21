@@ -214,7 +214,7 @@ export class Runs {
    * still draining go on until the process ends.
    */
   async yieldAfter(drained: Promise<void>): Promise<void> {
-    const gave = AbortSignal.timeout(YIELD_AFTER_MS)
+    const gave = AbortSignal.timeout(this.#deps.yieldMs?.() ?? YIELD_AFTER_MS)
     await Promise.race([
       drained,
       new Promise<void>((done) => gave.addEventListener('abort', () => done())),
