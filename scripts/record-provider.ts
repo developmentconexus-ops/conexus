@@ -28,7 +28,10 @@ const ROOT = join(import.meta.dirname, '..')
 const CLAUDE = 'claude-sonnet-4-6'
 // The local CLIProxy's Gemini model that the router's registry also knows.
 const GEMINI = 'gemini-3.5-flash-lite'
-/** The deltas an `abort` case lets through before it stops the call, as a person's stop would. */
+/**
+ * The deltas an `abort` case lets through before it stops the call, as a person's stop would; the
+ * body keeps every byte that had arrived by then, which can hold a few deltas more.
+ */
 const ABORT_AFTER = 4
 /** The whole call's budget (code C57). */
 const CALL_MS = 120_000
