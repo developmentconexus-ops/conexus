@@ -39,4 +39,4 @@ hosts, its filesystem and where a version is kept.
 ## State
 
 Proposed 2026-10-21. Founder: "Aprovo", "13 sim". Check 4 read: terms ban nothing here; paused machines kept
-without limit; credits end, workspace blocks. Check 1: `seed`, `tool-choice` ok; `net`, `resume`, 3 open.
+without limit; credits end, workspace blocks. Check 1 ok (nine lines, 2026-10-21); 3 open.
