@@ -1,6 +1,6 @@
 import type { MessagePart } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { builderSaid, conversationOf, FIRST, say, screens } from './test-hub.tsx'
 
@@ -233,4 +233,35 @@ test('o turno retomado após reiniciar, relido acabado, diz que o servidor reini
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   await within(log).findByText('O servidor reiniciou; continuando…')
   expect(within(log).queryByText(/\(há /)).toBeNull()
+})
+
+test('60 s sem o Builder dizer nada: "Ainda trabalhando…", contado desde o início do turno', async () => {
+  const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'Compare')
+  await screen.findByText('Pensando…')
+  const began = new Date(Date.now() - 20_000).toISOString()
+  lines[0]?.emit({ type: 'turn', message: { ...builderSaid(''), parts: [] }, startedAt: began })
+  vi.useFakeTimers({ toFake: ['Date'], now: Date.now() })
+  try {
+    lines[0]?.emit({ type: 'text', delta: 'Vou ver.' })
+    await screen.findByText('Vou ver.')
+    vi.setSystemTime(Date.now() + 59_000)
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toMatch(
+        /^Builder trabalhando · há 1 min 1[89] s$/,
+      ),
+    )
+    vi.setSystemTime(Date.now() + 2000)
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toMatch(
+        /^Ainda trabalhando… há 1 min 2[01] s$/,
+      ),
+    )
+    lines[0]?.emit({ type: 'text', delta: ' Pronto.' })
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toMatch(/^Builder trabalhando · há /),
+    )
+  } finally {
+    vi.useRealTimers()
+  }
 })
