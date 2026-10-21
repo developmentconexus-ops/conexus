@@ -93,7 +93,11 @@ async function chooseDefault(owner: Page, companyA: string) {
     .and(owner.locator(':disabled'))
     .waitFor()
   await owner.reload()
-  await owner.getByText(/^Uma conversa nova começa em: .*sonnet.* — padrão da empresa$/i).waitFor()
+  await owner
+    .getByText(
+      /^Com as contas da empresa, uma conversa nova começa em: .*sonnet.* — padrão da empresa$/i,
+    )
+    .waitFor()
   await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/model-accounts`)
 }
 
