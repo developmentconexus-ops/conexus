@@ -28,7 +28,9 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
     return each.stream
   }
   function searches(tools: readonly string[]) {
-    return tools.filter((name) => !name.startsWith('mastra_workspace_')).sort()
+    return tools
+      .filter((name) => !name.startsWith('mastra_workspace_') && !name.startsWith('skill'))
+      .sort()
   }
   assert.deepEqual(
     anthropic.chats.filter(streamed).map((each) => searches(each.tools)),

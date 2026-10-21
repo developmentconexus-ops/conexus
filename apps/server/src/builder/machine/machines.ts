@@ -1,5 +1,5 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import { Workspace } from '@mastra/core/workspace'
+import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { eq } from 'drizzle-orm'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -181,7 +181,12 @@ class BuilderMachines implements Machines {
           return run(kit, script)
         },
       }),
-      tools: { hooks: { beforeToolCall: () => this.ensure(session) } },
+      tools: {
+        hooks: { beforeToolCall: () => this.ensure(session) },
+        [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },
+        [WORKSPACE_TOOLS.FILESYSTEM.EDIT_FILE]: { requireReadBeforeWrite: true },
+        [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
+      },
     })
   }
 

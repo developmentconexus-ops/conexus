@@ -26,6 +26,19 @@ import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
 export const MAX_PROCESSOR_RETRIES = 9
 const WEB_SEARCH = 'web_search'
+/** The steps one turn may take (card, limits); Mastra's own ceiling is a thousand. */
+const TURN_STEPS = 100
+const LAST_STEP =
+  'This is the last step of this turn: use no tool. Say in Brazilian Portuguese what you did and what is left, and that the person can answer "continue" for more.'
+
+/** On the last step the model is given no tool and one sentence on why, so the turn ends in text, never in `abort()`. */
+function lastStep(args: ProcessInputStepArgs): ProcessInputStepResult {
+  if (args.stepNumber !== TURN_STEPS - 1) return {}
+  return {
+    toolChoice: 'none',
+    systemMessages: [...args.systemMessages, { role: 'system', content: LAST_STEP }],
+  }
+}
 
 type Writer = ProcessAPIErrorArgs['writer']
 
@@ -172,7 +185,7 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       if (account === undefined) {
         return { model: await noAccountModel(turn.modelId(args.requestContext)) }
       }
-      const result: ProcessInputStepResult = { model: account.model }
+      const result: ProcessInputStepResult = { ...lastStep(args), model: account.model }
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
         result.providerOptions = withOptions(args.providerOptions, thinking)

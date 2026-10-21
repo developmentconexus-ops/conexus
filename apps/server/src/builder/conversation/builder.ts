@@ -20,17 +20,14 @@ import {
   providerOf,
 } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
+import { APP_SKILLS, INSTRUCTIONS } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
+import { AVAILABLE_TOOLS, categoryOf, PERMISSION_RULES } from './permissions.ts'
 import { createMastraStorage } from './storage.ts'
 
 const BUILDER_ID = 'builder'
 const CONVERSATION_MODE = 'conversa'
 
-const INSTRUCTIONS = [
-  'You are the Builder of Conexus: you help a person in a company think through the business app',
-  'they want. Answer in Brazilian Portuguese. Search and read the web when it helps, and say which',
-  'pages you read.',
-].join(' ')
 const TITLE_INSTRUCTIONS =
   'Dê à conversa um título curto em português, de até seis palavras, sem aspas nem ponto final.'
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
@@ -125,6 +122,7 @@ export function createBuilder(deps: {
     id: BUILDER_ID,
     name: 'Builder',
     instructions: INSTRUCTIONS,
+    skills: APP_SKILLS,
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext)),
     inputProcessors: [accountPick(deps.queue)],
@@ -139,13 +137,12 @@ export function createBuilder(deps: {
     storage,
     memory,
     agent,
-    modes: [{ id: CONVERSATION_MODE }],
+    modes: [{ id: CONVERSATION_MODE, availableTools: AVAILABLE_TOOLS }],
     // The turn's run owns its workspace; a session made outside a turn has none.
     workspace: ({ requestContext }) => deps.runs.workspaceOf(requestContext),
     disableBuiltinTools: BUILTIN_TOOLS,
-    // The Builder's tools only read, so they run without asking, as Mastra Code's sessions do: an
-    // approval parks the run and resumes it, which under load can end the turn (decision 0053).
-    initialState: { yolo: true },
+    toolCategoryResolver: categoryOf,
+    initialState: { yolo: true, permissionRules: PERMISSION_RULES },
   })
   const mastra = new Mastra({
     logger: new BuilderLogger(deps.log),
