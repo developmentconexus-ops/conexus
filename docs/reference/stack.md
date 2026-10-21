@@ -17,8 +17,8 @@ can be another commit (one was at `729bdc5d`).
 | `@mastra/core` | `apps/server/src/builder` | `node_modules/@mastra/core/dist/docs/`; skill; `mastra.ai/llms.txt` | `mastra` | Mastra fork `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:206`; OS `apps/hub/src/builder/conversation.ts` | 0027, 0050, C75, W7 | The fork is at core 1.69.0 (`packages/core/package.json:3`); we pin 1.78.0 |
 | `@mastra/memory` | `apps/server/src/builder` | `node_modules/@mastra/memory/dist/docs/`; skill | `mastra` | OS `apps/hub/src/builder/conversation.ts` | 0010, 0011 | — |
 | `@mastra/pg` | `apps/server/src/builder` | `node_modules/@mastra/pg/dist/docs/`; skill | `mastra` | — | 0010 | — |
-| `ai` | `apps/server/src/builder` | `node_modules/ai/docs/`; `ai-sdk.dev/docs/*.md` | none | — | 0027 | — |
-| `@ai-sdk/anthropic` | `apps/server/src/builder` | `node_modules/@ai-sdk/anthropic/docs/05-anthropic.mdx` | none | — | 0049, 0053 | Models think adaptively unless sent `thinking: {type:'disabled'}` (PR 188). The stream sends one text block per cited span (PR 191); Mastra fork draws each as its own paragraph, `mastracode/factory-ui/src/ui/domains/chat/components/MessageBubble.tsx:123-134` |
+| `ai` | `apps/server/src/builder` | `node_modules/ai/docs/`; `ai-sdk.dev/docs/*.md` | none | — | 0027, T24 | — |
+| `@ai-sdk/anthropic` | `apps/server/src/builder` | `node_modules/@ai-sdk/anthropic/docs/05-anthropic.mdx` | none | — | 0049, 0053, T24 | Models think adaptively unless sent `thinking: {type:'disabled'}` (PR 188). The stream sends one text block per cited span (PR 191); Mastra fork draws each as its own paragraph, `mastracode/factory-ui/src/ui/domains/chat/components/MessageBubble.tsx:123-134` |
 | `zod` | every workspace, `scripts` | `zod.dev/llms.txt` | none | — | C27, C28, W27 | — |
 | `fastify` | `apps/server/src` | `node_modules/fastify/docs/`; skill; `fastify.dev/llms.txt` | `fastify-best-practices` | OS `apps/hub/src` | 0004 | — |
 | `@fastify/helmet` | `apps/server/src/platform` | README | none | — | security | — |
@@ -67,7 +67,7 @@ can be another commit (one was at `729bdc5d`).
 | `@testing-library/dom` | `apps/web` | follows `@testing-library/react` | none | — | T7 | — |
 | `jsdom` | `apps/web` (Vitest's environment) | README | none | — | 0034 | — |
 | `msw` | `apps/web` | docs site | none | Mastra fork `mastracode/factory-ui`; the reference pins `^2.12.11` | 0034, T14 | — |
-| `playwright-core` | `tests/e2e`, `apps/web` | `node_modules/playwright-core/lib/tools/skills/` | `playwright-cli` | Mastra fork `mastracode/factory-ui/e2e` | T23 | A library only: no `@playwright/test` |
+| `playwright-core` | `tests/e2e`, `apps/web` | `node_modules/playwright-core/lib/tools/skills/` | `playwright-cli` | Mastra fork `mastracode/factory-ui/e2e` | T23, T25 (the QA browser when `chrome-devtools-axi` cannot attach) | A library only: no `@playwright/test` |
 | `typescript` | every workspace | handbook | `typescript-magician` | — | code | — |
 | `@types/node` | every workspace | follows Node | none | — | — | — |
 | `@biomejs/biome` | `biome.json`, `scripts/*.grit` | `biome explain <rule>`; `biomejs.dev` | none | — | code | A nursery rule is not stable: review each bump |
