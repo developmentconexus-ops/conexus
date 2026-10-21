@@ -37,7 +37,9 @@ function open() {
 test('sem versão: o vazio diz para pedir um app na Conversa', async () => {
   server.use(source([], 0))
   open()
-  expect(await screen.findByText(/Nenhuma versão guardada ainda\. Peça um app na Conversa\./)).toBeTruthy()
+  expect(
+    await screen.findByText(/Nenhuma versão guardada ainda\. Peça um app na Conversa\./),
+  ).toBeTruthy()
 })
 
 test('com versão: a lista de arquivos pelo teclado, o texto do escolhido e a versão', async () => {
