@@ -88,7 +88,7 @@ export function Source() {
   if (commit === null || savedAt === null) {
     return (
       <p className="text-text-2">
-        Ainda não há código. O Builder escreve aqui quando você descreve o aplicativo.
+        Nenhuma versão guardada ainda. Peça um app na Conversa.
       </p>
     )
   }
