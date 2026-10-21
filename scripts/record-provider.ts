@@ -18,8 +18,11 @@ import { parseArgs } from 'node:util'
 import { ModelId, ProviderId } from '@conexus/hub-api'
 import { z } from 'zod'
 import {
+  AnthropicPage,
   callModel,
+  GooglePage,
   listRequest,
+  OpenAiList,
   providerOptionsOf,
   subscriptionModel,
 } from '../apps/server/src/builder/model-accounts/public.ts'
@@ -56,6 +59,13 @@ const ModelsArgs = z.object({
   provider: z.enum(['anthropic', 'openai', 'google']),
   case: z.literal('models'),
 })
+// The Hub's own schemas, loose: the body is checked as the Hub reads it and kept whole, indented as
+// the other recordings are.
+const LIST_SCHEMAS = {
+  anthropic: AnthropicPage.loose(),
+  openai: OpenAiList.loose(),
+  google: GooglePage.loose(),
+}
 const ListKeys = z.object({
   anthropic: z.object({ CONEXUS_RECORD_CLAUDE_TOKEN: z.string().min(1) }),
   openai: z.object({ CONEXUS_RECORD_OPENAI_KEY: z.string().min(1) }),
@@ -270,7 +280,8 @@ async function recordModels(args: ModelsArgs) {
     sdk: 'none: the Hub reads it with fetch',
     recordedAt: new Date().toISOString().slice(0, 10),
   }
-  writeFileSync(join(RECORDINGS, `${name}.list.json`), `${text.trim()}\n`)
+  const kept = JSON.stringify(LIST_SCHEMAS[args.provider].parse(JSON.parse(text)), null, 2)
+  writeFileSync(join(RECORDINGS, `${name}.list.json`), `${kept}\n`)
   writeFileSync(join(RECORDINGS, `${name}.json`), `${JSON.stringify(meta, null, 2)}\n`)
   console.log(`Saved ${name}.list.json (${text.length} bytes) and ${name}.json.`)
 }
