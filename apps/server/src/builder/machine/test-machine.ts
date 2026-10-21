@@ -21,6 +21,12 @@ export type Control = {
   start: 'ok' | 'gone' | 'hang' | 'unreachable'
   /** Whether the provider still holds the recorded machine. */
   exists: boolean
+  /** The name tag of the recorded machine, as Mastra's E2B sandbox checks it; none is an untagged machine. */
+  owner: string | undefined
+  /** The names of the machines the provider holds, which Mastra finds by name when no id is recorded. */
+  discoverable: string[]
+  /** The names the Hub's machines attached, by recorded id or by discovery. */
+  attached: string[]
   networkClosed: number
   /** How long the machine takes to come up after it says it runs, as E2B's start does. */
   upMs: number
@@ -47,6 +53,9 @@ export function newControl(): Control {
     outcome: 'created',
     start: 'ok',
     exists: true,
+    owner: undefined,
+    discoverable: [],
+    attached: [],
     networkClosed: 0,
     upMs: 0,
     restart: async () => undefined,
@@ -71,7 +80,13 @@ export function localKit(folder: string, control: Control): KitFactory {
       workingDirectory: folder,
       onStart: async (started) => {
         await new Promise((up) => setTimeout(up, control.upMs))
-        await options.onStart({ ...started, outcome: control.outcome })
+        const byName = options.sandboxId === undefined && control.discoverable.includes(options.id)
+        if (options.sandboxId !== undefined && ![undefined, options.id].includes(control.owner)) {
+          throw new Error(`Provider sandbox belongs to logical sandbox id "${control.owner}"`)
+        }
+        const outcome = byName ? 'connected' : control.outcome
+        if (outcome === 'connected') control.attached.push(options.id)
+        await options.onStart({ ...started, outcome })
       },
     })
     control.restart = () => Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
@@ -131,7 +146,12 @@ const SEED = `
     ('${PROJECT}', '${COMPANY}', 'Encomendas', 'a', now());`
 
 /** A company with one Projeto, its Git, and the machines of a local machine the test steers. */
-export async function world(t: TestContext, startMs = 5_000, installation = INSTALLATION) {
+export async function world(
+  t: TestContext,
+  startMs = 5_000,
+  installation = INSTALLATION,
+  seedOf?: () => Promise<Buffer>,
+) {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)
   const folder = mkdtempSync(join(tmpdir(), 'conexus-machine-'))
@@ -147,8 +167,12 @@ export async function world(t: TestContext, startMs = 5_000, installation = INST
   const machines = createMachines({
     database,
     kit: localKit(folder, control),
-    api: { list: async () => [], kill: async () => undefined, exists: async () => control.exists },
-    seedOf: () => repository.bundleOfMain(),
+    api: {
+      list: async () => [],
+      kill: async () => undefined,
+      holds: async (_id, name) => control.exists && [undefined, name].includes(control.owner),
+    },
+    seedOf: seedOf ?? (() => repository.bundleOfMain()),
     mark: { conexus_origin: installation },
     installation,
     log: LOG,

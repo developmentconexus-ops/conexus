@@ -96,6 +96,14 @@ function isGone(error: unknown): boolean {
   return error instanceof Error && Reflect.get(error, 'code') === 'SANDBOX_REATTACH_FAILED'
 }
 
+/** The Git's missing copy-backed repository, wherever Mastra's start wrapped it: it is no machine fault. */
+function restoreFailure(error: unknown): Failure | undefined {
+  for (let at = error; at instanceof Error; at = at.cause) {
+    if (at instanceof Failure && at.code === 'GIT_RESTORE_NEEDED') return at
+  }
+  return undefined
+}
+
 async function within<T>(work: Promise<T>, ms: number): Promise<T> {
   const budget = AbortSignal.timeout(ms)
   return Promise.race([
@@ -147,6 +155,8 @@ class BuilderMachines implements Machines {
     try {
       await within(session.kit.sandbox.start?.() ?? Promise.resolve(), this.startMs)
     } catch (cause) {
+      const restore = restoreFailure(cause)
+      if (restore !== undefined) throw restore
       this.deps.log.error({ reason: isGone(cause) ? 'GONE' : 'START' }, 'MACHINE_UNAVAILABLE')
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
@@ -192,10 +202,10 @@ class BuilderMachines implements Machines {
     await this.seed(session)
   }
 
-  /** Whether the provider still holds the recorded machine; a provider that does not answer in time is `MACHINE_UNAVAILABLE`. */
-  private async alive(id: SandboxId): Promise<boolean> {
+  /** Whether the provider still holds the recorded machine for this name; a provider that does not answer in time is `MACHINE_UNAVAILABLE`. */
+  private async alive(id: SandboxId, name: string): Promise<boolean> {
     try {
-      return await within(this.deps.api.exists(id), this.startMs)
+      return await within(this.deps.api.holds(id, name), this.startMs)
     } catch (cause) {
       this.deps.log.error({ reason: 'START' }, 'MACHINE_UNAVAILABLE')
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
@@ -205,11 +215,12 @@ class BuilderMachines implements Machines {
   async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
     const { companyId, projectId, onPhase } = input
     const recorded = (await this.rows.of(companyId, projectId))?.sandboxId
-    const gone = recorded !== undefined && !(await this.alive(recorded))
+    const name = `conexus-${this.deps.installation}-${companyId}-${projectId}`
+    const gone = recorded !== undefined && !(await this.alive(recorded, name))
     const sandboxId = gone ? undefined : recorded
     const holder: { session?: Session } = {}
     const kit = this.deps.kit({
-      id: `conexus-${this.deps.installation}-${companyId}-${projectId}`,
+      id: name,
       sandboxId,
       deadline: input.deadline,
       metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },

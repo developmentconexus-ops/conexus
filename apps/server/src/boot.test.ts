@@ -83,6 +83,8 @@ const OUT_OF_FORMAT = [
   ['HUB_CLOUDFLARE_API_URL', 'http://cloudflare.example.test/client/v4'],
   ['HUB_CLOUDFLARE_ACCOUNT_ID', 'Conta'],
   ['HUB_APPS_NAMESPACE', 'conexus_apps'],
+  ['HUB_INSTALLATION_ID', 'hub.example.test'],
+  ['HUB_INSTALLATION_ID', 'ABCDEF0123456789ABCDEF'],
 ] as const
 for (const [name, value] of OUT_OF_FORMAT) {
   test(`configuração: recusa subir com ${name}=${value} fora do formato`, async (t) => {

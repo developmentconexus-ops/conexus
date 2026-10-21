@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { Failure } from '../../platform/failure.ts'
 import { COMPANY, INSTALLATION, OTHER_INSTALLATION, PROJECT, world } from './test-machine.ts'
 
 test('máquina: o primeiro uso liga, copia o main, grava o id; religar volta ao main; sumida é refeita com o aviso, sem criar outra', async (t) => {
@@ -162,4 +163,49 @@ test('máquina: o nome da máquina leva a instalação e a empresa, então a de 
   assert.deepEqual(here.control.names, [`conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`])
   assert.deepEqual(other.control.names, [`conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`])
   assert.notEqual(here.control.names[0], other.control.names[0])
+})
+
+const OWN = `conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`
+
+test('máquina: a gravada com o nome antigo, de outra instalação ou de outra empresa nunca é ligada pelo id: vai para a trilha da refeita, sem matar a velha', async (t) => {
+  const { open, phases, control, asOwner } = await world(t)
+  await (await open()).filesystem?.exists('a.ts')
+  for (const owner of [
+    `conexus-${PROJECT}`,
+    `conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`,
+    `conexus-${INSTALLATION}-companyBBBBBBBBBBBBBBBBBBBBBBBBB-${PROJECT}`,
+  ]) {
+    control.owner = owner
+    phases.length = 0
+    const rebuilt = await open()
+    await rebuilt.filesystem?.exists('a.ts')
+    assert.deepEqual(phases, ['waking', 'replaced', 'copying'])
+    assert.equal(control.reattached.at(-1), undefined, 'no id is asked for')
+    assert.deepEqual(control.attached, [])
+  }
+  assert.equal(control.killed, false, 'the old machine is left alone')
+  assert.equal((await asOwner(`select sandbox_id from builder.machine`)).length, 1)
+})
+
+test('máquina: sem id gravado, só a máquina de nome igual ao deste Projeto é achada; as de outra instalação ou empresa não', async (t) => {
+  const { open, control, asOwner } = await world(t)
+  control.discoverable = [
+    `conexus-${PROJECT}`,
+    `conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`,
+    `conexus-${INSTALLATION}-companyBBBBBBBBBBBBBBBBBBBBBBBBB-${PROJECT}`,
+  ]
+  await (await open()).filesystem?.exists('a.ts')
+  assert.deepEqual(control.attached, [], 'a created machine, none of the others')
+  await asOwner('delete from builder.machine')
+  control.discoverable = [OWN]
+  await (await open()).filesystem?.exists('a.ts')
+  assert.deepEqual(control.attached, [OWN], 'its own name is found')
+})
+
+test('máquina: o Git a restaurar passa pelo início da máquina sem virar MACHINE_UNAVAILABLE', async (t) => {
+  const refused = new Failure('GIT_RESTORE_NEEDED')
+  const { open } = await world(t, 5_000, INSTALLATION, () => Promise.reject(refused))
+  await assert.rejects((await open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
+    code: 'GIT_RESTORE_NEEDED',
+  })
 })
