@@ -194,3 +194,12 @@ test('com padrão próprio, "Você segue o padrão da empresa." não aparece', a
   await screen.findByText(/Uma conversa nova começa em:/)
   expect(screen.queryByText('Você segue o padrão da empresa.')).toBeNull()
 })
+
+test('sem padrão próprio e sem o da empresa, "Você segue o padrão da empresa." não aparece', async () => {
+  const starter = { model: SONNET, effort: 'low', from: 'starter' as const, account: 'Claude' }
+  await open(
+    view({ defaults: { company: null, mine: null, start: starter, companyStart: starter } }),
+  )
+  await screen.findByText(/modelo inicial/)
+  expect(screen.queryByText('Você segue o padrão da empresa.')).toBeNull()
+})
