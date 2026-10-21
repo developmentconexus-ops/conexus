@@ -122,10 +122,14 @@ export const MessagePart = z.discriminatedUnion('type', [
     phase: z.enum(['starting', 'waking', 'copying', 'replaced', 'saving']),
   }),
   /**
-   * The server restarted in the middle of the turn, which ended there: what the Builder had written
-   * was saved as `version`, none when it had written nothing. The person sends the message again.
+   * The server restarted in the middle of the turn, which ended there. `kept` is the version that
+   * saved what the Builder had written, `nothing` when it had written nothing, or `lost` when the
+   * restart cut its save and its files were not saved.
    */
-  z.object({ type: z.literal('restarted'), version: z.int().positive().nullable() }),
+  z.object({
+    type: z.literal('restarted'),
+    kept: z.union([z.int().positive(), z.enum(['nothing', 'lost'])]),
+  }),
   /**
    * The version the turn saved: its number, whether it changed the app, how many files it holds
    * and how many of them changed.

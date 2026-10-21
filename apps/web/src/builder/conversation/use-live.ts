@@ -68,7 +68,7 @@ async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
     await sourceChanged(hooks.queryClient, { companyId, projectId })
   }
   if (event.type === 'part' && event.part.type === 'restarted') {
-    if (event.part.version !== null)
+    if (typeof event.part.kept === 'number')
       await sourceChanged(hooks.queryClient, { companyId, projectId })
     hooks.onRestarted()
   }

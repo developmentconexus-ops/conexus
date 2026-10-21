@@ -61,7 +61,7 @@ test('dois processos, um banco; o primeiro morre: o segundo, ao partir, guarda o
   const reopened = await streamOf(beside, ana, url, midway)
   t.after(() => reopened.close())
   assert.deepEqual((await reopened.turn()).slice(-2), [
-    { type: 'part', part: { type: 'restarted', version: 1 } },
+    { type: 'part', part: { type: 'restarted', kept: 1 } },
     { type: 'turnEnd', reason: 'aborted' },
   ])
   release()

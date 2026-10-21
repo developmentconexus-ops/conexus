@@ -67,7 +67,10 @@ export function VersionLine({ part }: { part: Version }) {
   )
 }
 
-/** The server restarted mid-turn: what the Builder had written is a version, and the person sends again. */
+/**
+ * The server restarted mid-turn: what the Builder had written is a version, and the person sends
+ * again; a restart that cut the save says its files were not saved.
+ */
 export function RestartedLine({ part }: { part: Restarted }) {
   return (
     <Marker className="text-text">
@@ -75,14 +78,20 @@ export function RestartedLine({ part }: { part: Restarted }) {
         <RotateCcwIcon />
       </MarkerIcon>
       <MarkerContent>
-        O servidor reiniciou no meio do turno.{' '}
-        {part.version !== null && (
+        {part.kept === 'lost' ? (
+          'O turno anterior foi cortado; os arquivos dele não foram guardados.'
+        ) : (
           <>
-            O que o Builder já tinha escrito foi guardado como{' '}
-            <strong>Versão {part.version}</strong>.{' '}
+            O servidor reiniciou no meio do turno.{' '}
+            {part.kept !== 'nothing' && (
+              <>
+                O que o Builder já tinha escrito foi guardado como{' '}
+                <strong>Versão {part.kept}</strong>.{' '}
+              </>
+            )}
+            Mande a mensagem de novo para ele continuar.
           </>
         )}
-        Mande a mensagem de novo para ele continuar.
       </MarkerContent>
     </Marker>
   )

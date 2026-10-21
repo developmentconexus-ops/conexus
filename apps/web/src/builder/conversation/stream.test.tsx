@@ -216,16 +216,21 @@ test('a falha do turno, parte da resposta, segue na conversa relida depois do fi
   ).toEqual(['O modelo não respondeu. Envie a mensagem de novo.'])
 })
 
-test('o turno que o reinício encerrou, relido, diz o que foi guardado, com e sem versão', async () => {
+test('o turno que o reinício encerrou, relido, diz o que foi guardado: a versão, nada, ou o guardar cortado', async () => {
   await openConversation(
     conversationOf({
       id: FIRST,
       messages: [
-        { ...builderSaid(''), parts: [{ type: 'restarted', version: 3 }] },
+        { ...builderSaid(''), parts: [{ type: 'restarted', kept: 3 }] },
         {
           ...builderSaid(''),
           id: MessageId.parse('builder-2'),
-          parts: [{ type: 'restarted', version: null }],
+          parts: [{ type: 'restarted', kept: 'nothing' }],
+        },
+        {
+          ...builderSaid(''),
+          id: MessageId.parse('builder-3'),
+          parts: [{ type: 'restarted', kept: 'lost' }],
         },
       ],
     }),
@@ -241,6 +246,9 @@ test('o turno que o reinício encerrou, relido, diz o que foi guardado, com e se
       'O servidor reiniciou no meio do turno. Mande a mensagem de novo para ele continuar.',
     ),
   ).toBeTruthy()
+  expect(
+    within(log).getByText('O turno anterior foi cortado; os arquivos dele não foram guardados.'),
+  ).toBeTruthy()
 })
 
 test('o reinício no meio do turno devolve a mensagem ao campo e a versão guardada atualiza o código', async () => {
@@ -249,7 +257,7 @@ test('o reinício no meio do turno devolve a mensagem ao campo e a versão guard
   await screen.findByText('Pensando…')
   await waitFor(() => expect(typed(field)).toBe(''))
   await waitFor(() => expect(reads.length).toBeGreaterThan(1))
-  lines[0]?.emit({ type: 'part', part: { type: 'restarted', version: 2 } })
+  lines[0]?.emit({ type: 'part', part: { type: 'restarted', kept: 2 } })
   lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
   await waitFor(() => expect(typed(field)).toBe('Compare os preços'))
 })
@@ -261,7 +269,7 @@ test('o reinício deixa em paz o texto que a pessoa já tem no campo', async () 
   await waitFor(() => expect(typed(field)).toBe(''))
   await waitFor(() => expect(reads.length).toBeGreaterThan(1))
   fireEvent.change(field, { target: { value: 'Outra coisa' } })
-  lines[0]?.emit({ type: 'part', part: { type: 'restarted', version: null } })
+  lines[0]?.emit({ type: 'part', part: { type: 'restarted', kept: 'nothing' } })
   lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
   expect(typed(field)).toBe('Outra coisa')

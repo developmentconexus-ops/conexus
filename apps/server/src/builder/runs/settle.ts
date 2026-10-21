@@ -1,9 +1,28 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import type { RunsContext } from './context.ts'
+import type { Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 import { holdLease } from './lease.ts'
 import { saveRun } from './save.ts'
 import type { Run, RunState } from './store.ts'
+
+/** What a restart kept of the turn: its version, nothing to save, or a save that did not happen. */
+type Kept = number | 'nothing' | 'lost'
+
+function keptBy(outcome: Outcome | 'gone'): Kept {
+  if (outcome === 'gone' || outcome.kind === 'failed') return 'lost'
+  return outcome.kind === 'saved' ? outcome.version.number : 'nothing'
+}
+
+/** The stream of the turn a restart ended is told so, with what was kept, and ends (card, the restart). */
+async function toldRestart(context: RunsContext, run: Run, kept: Kept) {
+  const said = [
+    { type: 'part', part: { type: 'restarted', kept } },
+    { type: 'turnEnd', reason: 'aborted' },
+  ] as const
+  for (const event of said) {
+    await context.store.appendEvent({ companyId: run.companyId, runId: run.id, event })
+  }
+}
 
 /**
  * A turn whose copy of the program is gone ends here (card, the restart): what the machine holds is
@@ -24,14 +43,9 @@ async function endTurn(context: RunsContext, orphan: Run): Promise<void> {
     })
     if (!(await context.store.claim(companyId, id))) return
     const outcome = await saveRun(context, { ...orphan, state: 'saving' })
-    const version = outcome !== 'gone' && outcome.kind === 'saved' ? outcome.version.number : null
-    const said = [
-      { type: 'part', part: { type: 'restarted', version } },
-      { type: 'turnEnd', reason: 'aborted' },
-    ] as const
-    for (const event of said) await context.store.appendEvent({ companyId, runId: id, event })
-    const fields = { companyId, projectId, runId: id }
-    context.log.info(version === null ? fields : { ...fields, version }, 'RUN_SETTLED')
+    const kept = keptBy(outcome)
+    await toldRestart(context, orphan, kept)
+    context.log.info({ companyId, projectId, runId: id, kept }, 'RUN_SETTLED')
   } finally {
     stopLease()
     await context.machines
@@ -61,6 +75,10 @@ async function settleOne(context: RunsContext, expired: Run): Promise<void> {
   const to = await settledState(context, expired)
   if (!(await context.store.end(companyId, expired.id, to))) return
   context.log.info({ companyId, projectId, runId: expired.id, state: to }, 'RUN_SETTLED')
+  const { candidateSha } = expired
+  const repository = context.repository({ companyId, projectId })
+  const saved = to === 'saved' && candidateSha !== null
+  await toldRestart(context, expired, saved ? await repository.versionAt(candidateSha) : 'lost')
   if (to === 'saved' && !(await copyVersion(context, expired))) context.retry.kick()
 }
 
