@@ -1,5 +1,5 @@
-import type { ConversationId, Message, MessageId, MessagePart } from '@conexus/hub-api'
-import { applyEvent, Effort, ModelId } from '@conexus/hub-api'
+import type { ConversationId, Message, MessagePart } from '@conexus/hub-api'
+import { applyEvent, Effort, MessageId, ModelId } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
@@ -70,33 +70,6 @@ function unsaved(conversationId: ConversationId, kept: Question[], messages: Mes
 }
 
 /**
- * The turn an interrupted run was answering: the last question kept on the thread that Mastra has
- * not saved, to be sent again, or else the last message of the person's that it saved, which the
- * turn's lasting parts follow. `after` is none for a thread with neither.
- */
-export async function interruptedTurn(
-  builder: Builder,
-  owner: Owner,
-  conversationId: ConversationId,
-): Promise<{ question: Question | undefined; after: MessageId | undefined }> {
-  const resourceId = memoryOwner(owner)
-  const thread = await builder.memory.getThreadById({ threadId: conversationId, resourceId })
-  if (thread === null) return { question: undefined, after: undefined }
-  const recalled = await builder.memory.recall({
-    threadId: conversationId,
-    resourceId,
-    perPage: false,
-  })
-  const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
-  const question = unsavedQuestions(metadataOf(thread)[QUESTION_KEY], messages).at(-1)
-  const asked = messages.filter((message) => message.role === 'person').at(-1)
-  return {
-    question,
-    after: question === undefined ? asked?.id : questionId(conversationId, question.key),
-  }
-}
-
-/**
  * The Builder's messages of one turn as one, folded as the stream told it: Mastra saves a message
  * per step, and a turn that called tools has several. The turn's model is the last one's.
  */
@@ -132,16 +105,31 @@ function withFailures(messages: Message[], failures: TurnFailure[]): Message[] {
 
 /**
  * Each turn's lasting parts in the Builder's turn after its message, where the stream said them: a
- * replaced machine after the tool that started it, the restart and the version at the end.
+ * replaced machine after the tool that started it, the version and the restart at the end. A turn a
+ * restart ended before Mastra saved any of it is the restart alone.
  */
 function withKept(messages: Message[], kept: TurnPart[]): Message[] {
   const shown = [...messages]
   for (const { after, part } of kept) {
     const at = shown.findIndex((message) => message.id === after) + 1
+    const asked = shown[at - 1]
+    if (at === 0 || asked === undefined) continue
+    if (part.type === 'restarted' && shown[at]?.role !== 'builder') {
+      const id = MessageId.parse(`${after}:restarted`)
+      const alone: Message = {
+        id,
+        role: 'builder',
+        parts: [part],
+        model: null,
+        createdAt: asked.createdAt,
+      }
+      shown.splice(at, 0, alone)
+      continue
+    }
     const turn = shown[at]
-    if (at === 0 || turn?.role !== 'builder') continue
+    if (turn?.role !== 'builder') continue
     const tool = turn.parts.findIndex((each) => each.type === 'tool') + 1
-    const place = part.type === 'machine' && part.phase !== 'resumed' ? tool : turn.parts.length
+    const place = part.type === 'machine' ? tool : turn.parts.length
     shown[at] = { ...turn, parts: turn.parts.toSpliced(place, 0, part) }
   }
   return shown
@@ -196,8 +184,8 @@ export async function historyOf(
   const asked = unsaved(conversationId, metadata[QUESTION_KEY], messages)
   const settled = inProgress === undefined ? messages : untilMessage(messages, inProgress)
   const timed = withSeconds(settled, metadata[THINKING_KEY])
-  const lasting = withKept(timed, metadata[TURN_PARTS_KEY])
-  const read = withFailures([...lasting, ...asked], metadata[TURN_FAILURES_KEY])
+  const lasting = withKept([...timed, ...asked], metadata[TURN_PARTS_KEY])
+  const read = withFailures(lasting, metadata[TURN_FAILURES_KEY])
   const effort = metadata.thinkingLevel ?? 'off'
   return { title: thread.title || null, model, effort, messages: read }
 }

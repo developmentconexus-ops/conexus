@@ -132,9 +132,9 @@ export async function hubBeside(t: TestContext, hub: Hub) {
     control: ports.control,
     knobs: ports.knobs,
   }
-  // What `runServer` does once it listens: the turns left open are taken first, the rest settled.
+  // What `runServer` does once it listens: the runs whose lease ended are settled.
   function restart() {
-    return subjects.conversations.resumeRuns().then(() => subjects.runs.settleRuns())
+    return subjects.runs.settleRuns()
   }
   return { ...hub, app, runs: subjects.runs, builder, close, restart }
 }

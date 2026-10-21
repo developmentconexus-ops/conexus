@@ -139,7 +139,7 @@ export function createBuilder(deps: {
     agent,
     modes: [{ id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools }],
     // The turn's run owns its workspace; a session made outside a turn has none.
-    workspace: ({ requestContext }) => deps.runs.workspaceOf(requestContext),
+    workspace: ({ requestContext, mastra }) => deps.runs.workspaceOf(requestContext, mastra),
     disableBuiltinTools: BUILTIN_TOOLS,
     initialState: TOOL_CLOSURE.initialState,
   })

@@ -28,3 +28,5 @@ export function useDraft(conversationId: ConversationId) {
     },
   }
 }
+
+export type Draft = ReturnType<typeof useDraft>

@@ -7,7 +7,7 @@ import {
   ProjectId,
   RunId,
 } from '@conexus/hub-api'
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
@@ -97,41 +97,73 @@ export class RunStore {
     return row === undefined ? undefined : Row.parse(row)
   }
 
-  /** Moves the run from one state to another; false when it was not in `from`. */
-  async move(input: {
-    companyId: CompanyId
-    id: RunId
-    from: RunState
-    to: RunState
-    /** Only if this copy of the program still holds the run (data D25). */
-    mine?: true
-  }) {
-    const rows = await this.#database.command(inCompany(input.companyId), (tx) =>
+  /**
+   * The one change of a run in `from` (code C21): only while this copy of the program holds it (data
+   * D25), so a run another copy took, or a removal stopped, is never changed here.
+   */
+  async #change(
+    companyId: CompanyId,
+    id: RunId,
+    from: RunState,
+    set: { state: RunState } | { baseSha: Sha } | { candidateSha: Sha },
+  ) {
+    const rows = await this.#database.command(inCompany(companyId), (tx) =>
       tx
         .update(run)
-        .set({ state: input.to })
-        .where(
-          and(
-            eq(run.id, input.id),
-            eq(run.state, input.from),
-            input.mine === undefined ? undefined : eq(run.owner, this.#owner),
-          ),
-        )
+        .set(set)
+        .where(and(eq(run.id, id), eq(run.state, from), eq(run.owner, this.#owner)))
         .returning({ id: run.id }),
     )
     return rows.length > 0
   }
 
-  async setBase(companyId: CompanyId, id: RunId, base: Sha) {
-    await this.#database.command(inCompany(companyId), (tx) =>
-      tx.update(run).set({ baseSha: base }).where(eq(run.id, id)),
-    )
+  /** The turn ends and its save begins; false when the run is not this copy's and `open`. */
+  claim(companyId: CompanyId, id: RunId) {
+    return this.#change(companyId, id, 'open', { state: 'saving' })
   }
 
-  async setCandidate(companyId: CompanyId, id: RunId, candidate: Sha) {
-    await this.#database.command(inCompany(companyId), (tx) =>
-      tx.update(run).set({ candidateSha: candidate }).where(eq(run.id, id)),
+  /** Whether another copy of the program holds the run now: its machine is that copy's. */
+  async heldElsewhere(companyId: CompanyId, id: RunId) {
+    const [row] = await this.#database.read(inCompany(companyId), (tx) =>
+      tx.select({ owner: run.owner }).from(run).where(eq(run.id, id)),
     )
+    return row !== undefined && row.owner !== this.#owner
+  }
+
+  /** The save of a run this copy holds ends in `to`; false once it is not this copy's to end. */
+  end(companyId: CompanyId, id: RunId, to: RunState) {
+    return this.#change(companyId, id, 'saving', { state: to })
+  }
+
+  /** The base of a save this copy holds; false once it is not this copy's or not `saving`. */
+  setBase(companyId: CompanyId, id: RunId, base: Sha) {
+    return this.#change(companyId, id, 'saving', { baseSha: base })
+  }
+
+  /** The candidate of a save this copy holds, before `main` moves; false once it is not this copy's or not `saving`. */
+  setCandidate(companyId: CompanyId, id: RunId, candidate: Sha) {
+    return this.#change(companyId, id, 'saving', { candidateSha: candidate })
+  }
+
+  /**
+   * A removal stops the runs not over of its scope, whoever holds them (card, criterion 24): the
+   * holder's next move finds them `stopped`.
+   */
+  async stop(input: { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }) {
+    const rows = await this.#database.command(inCompany(input.companyId), (tx) =>
+      tx
+        .update(run)
+        .set({ state: 'stopped' })
+        .where(
+          and(
+            inArray(run.state, LIVE),
+            input.projectId === undefined ? undefined : eq(run.projectId, input.projectId),
+            input.personId === undefined ? undefined : eq(run.personId, input.personId),
+          ),
+        )
+        .returning({ id: run.id }),
+    )
+    return rows.map((row) => RunId.parse(row.id))
   }
 
   async markCopied(companyId: CompanyId, id: RunId) {
@@ -164,21 +196,40 @@ export class RunStore {
     }
   }
 
-  /** The company's runs not over whose lease has ended, for one Projeto or for all. */
-  async expired(companyId: CompanyId, projectId?: ProjectId): Promise<Run[]> {
-    const rows = await this.#database.read(inCompany(companyId), (tx) =>
+  /**
+   * Takes the company's runs not over whose lease ended, for one Projeto or for all: their copy of
+   * the program is gone, and this one settles them now (data D25).
+   */
+  async takeExpired(companyId: CompanyId, projectId?: ProjectId): Promise<Run[]> {
+    const rows = await this.#database.command(inCompany(companyId), (tx) =>
       tx
-        .select(columns)
-        .from(run)
+        .update(run)
+        .set({ owner: this.#owner, leaseUntil: leaseEnd() })
         .where(
           and(
             inArray(run.state, LIVE),
             lt(run.leaseUntil, sql`now()`),
             projectId === undefined ? undefined : eq(run.projectId, projectId),
           ),
-        ),
+        )
+        .returning(columns),
     )
     return rows.map((row) => Row.parse(row))
+  }
+
+  /** In how many milliseconds the last lease of the company's live runs another copy holds ends, or none. */
+  async heldElsewhereFor(companyId: CompanyId): Promise<number | undefined> {
+    const [row] = await this.#database.read(inCompany(companyId), (tx) =>
+      tx
+        .select({
+          ms: sql<string | null>`extract(epoch from max(${run.leaseUntil}) - now()) * 1000`,
+        })
+        .from(run)
+        .where(
+          and(inArray(run.state, LIVE), ne(run.owner, this.#owner), gt(run.leaseUntil, sql`now()`)),
+        ),
+    )
+    return row?.ms === null || row?.ms === undefined ? undefined : Math.ceil(Number(row.ms))
   }
 
   /** The company's runs in any of `states`, narrowed by Projeto or person. */
@@ -286,20 +337,5 @@ export class RunStore {
         .limit(1),
     )
     return row === undefined ? undefined : { id: RunId.parse(row.id), state: row.state }
-  }
-
-  /**
-   * Takes the runs of the company whose lease ended while `open`: this copy drives them now, or
-   * saves them as they stand when their hour is over.
-   */
-  async takeOver(companyId: CompanyId): Promise<Run[]> {
-    const rows = await this.#database.command(inCompany(companyId), (tx) =>
-      tx
-        .update(run)
-        .set({ owner: this.#owner, leaseUntil: leaseEnd() })
-        .where(and(eq(run.state, 'open'), lt(run.leaseUntil, sql`now()`)))
-        .returning(columns),
-    )
-    return rows.map((row) => Row.parse(row))
   }
 }

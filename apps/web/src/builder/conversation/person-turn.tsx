@@ -3,7 +3,7 @@ import { hourOf } from '../../platform/dates.ts'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { MessageContent, MessageFooter, Message as Turn } from '../../ui/message.tsx'
 
-function textOf(message: Message): string {
+export function textOf(message: Message): string {
   return message.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
 }
 

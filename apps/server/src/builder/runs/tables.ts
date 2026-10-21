@@ -25,8 +25,8 @@ const OWN_COMPANY = sql`company_id = ${scoped.companyId}`
 
 /**
  * One turn that writes. At most one is `open` or `saving` per Projeto (D15). `lease_until` and
- * `owner` say which copy of the program drives it (data D25); `deadline_at` is the turn's hour,
- * which a resumed turn does not renew. `base_sha` is the `main` it started from, `candidate_sha` the
+ * `owner` say which copy of the program drives it (data D25); `deadline_at` is the turn's hour.
+ * `base_sha` is the `main` it started from, `candidate_sha` the
  * version it saved, `copied_at` when that version reached the bucket.
  */
 export const run = builder.table(

@@ -119,7 +119,16 @@ export const MessagePart = z.discriminatedUnion('type', [
    */
   z.object({
     type: z.literal('machine'),
-    phase: z.enum(['starting', 'waking', 'copying', 'replaced', 'resumed', 'saving']),
+    phase: z.enum(['starting', 'waking', 'copying', 'replaced', 'saving']),
+  }),
+  /**
+   * The server restarted in the middle of the turn, which ended there. `kept` is the version that
+   * saved what the Builder had written, `nothing` when it had written nothing, or `lost` when the
+   * restart cut its save and its files were not saved.
+   */
+  z.object({
+    type: z.literal('restarted'),
+    kept: z.union([z.int().positive(), z.enum(['nothing', 'lost'])]),
   }),
   /**
    * The version the turn saved: its number, whether it changed the app, how many files it holds
@@ -178,12 +187,12 @@ export type ConversationEvent = z.infer<typeof ConversationEvent>
 
 /**
  * Whether a machine phase is a fact that stays said on the thread, without a clock: a replaced
- * machine and a restart. Every other phase is a step in progress, over once anything follows it.
+ * machine. Every other phase is a step in progress, over once anything follows it.
  */
 export function machinePhaseLasts(
   phase: Extract<MessagePart, { type: 'machine' }>['phase'],
 ): boolean {
-  return phase === 'replaced' || phase === 'resumed'
+  return phase === 'replaced'
 }
 
 /** The events that change a message's parts. */

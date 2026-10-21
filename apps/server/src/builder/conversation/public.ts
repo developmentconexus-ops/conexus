@@ -46,6 +46,7 @@ export function createConversations(deps: {
   const builder = createBuilder({ pool: deps.pool, queue, runs: deps.runs, log: deps.log })
   const store = createConversationStore(deps)
   const sessions = new Sessions({ builder, runs: deps.runs, log: deps.log })
+  deps.runs.onRestart((restart) => sessions.restarted(restart))
 
   const release: ReleaseConversations = async (scope) => {
     // The runs first: a turn the removal aborts then finds its run settled and writes nothing.
@@ -67,17 +68,6 @@ export function createConversations(deps: {
       })
     },
     release,
-    /**
-     * At start, before the runs are settled: the turns another copy left open, with time left, are
-     * taken and go on (card, criterion 22).
-     */
-    async resumeRuns() {
-      async function resume() {
-        for (const taken of await deps.runs.takeOver()) await sessions.resume(taken)
-      }
-      await resume()
-      deps.runs.retakeEvery(resume)
-    },
     /** Mastra's tables, made once at start by its own login (decision 0010). */
     async prepare() {
       const storage = builder.mastra.getStorage()

@@ -222,7 +222,7 @@ test('reinício entre a candidata e o avanço: uma versão; sem candidata: inter
   assert.equal(hub.builder.bucket.held.size, 1)
 })
 
-test('o processo morre antes da candidata: a execução é interrupted e o main fica como era', async (t) => {
+test('o processo morre antes da candidata: a execução é interrupted, o main fica como era e o turno diz que foi cortado', async (t) => {
   const { hub, ana, conversations, companyId, projectId } = await conversing(
     t,
     working(writing('a.ts', 'x\n')),
@@ -233,6 +233,14 @@ test('o processo morre antes da candidata: a execução é interrupted e o main 
   await hub.close()
   await hub.runs.settleRuns()
   assert.equal((await runs(hub))[0]?.state, 'interrupted')
+  const told = await hub.test.asOwner('select event from builder.run_event order by n desc limit 2')
+  assert.deepEqual(
+    told.map((row) => row.event),
+    [
+      { type: 'turnEnd', reason: 'aborted' },
+      { type: 'part', part: { type: 'restarted', kept: 'lost' } },
+    ],
+  )
   assert.equal(
     await hub.builder
       .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })

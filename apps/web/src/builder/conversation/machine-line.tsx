@@ -1,19 +1,19 @@
 import type { MessagePart } from '@conexus/hub-api'
 import { machinePhaseLasts } from '@conexus/hub-api'
-import { CheckIcon, CogIcon } from 'lucide-react'
+import { CheckIcon, CogIcon, RotateCcwIcon } from 'lucide-react'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
 import { durationOf } from './text.ts'
 
 type Machine = Extract<MessagePart, { type: 'machine' }>
 type Version = Extract<MessagePart, { type: 'version' }>
+type Restarted = Extract<MessagePart, { type: 'restarted' }>
 
 const PHASES: Record<Machine['phase'], string> = {
   starting: 'Ligando a máquina…',
   waking: 'Ligando a máquina…',
   copying: 'Copiando os arquivos do app…',
   replaced: 'A máquina anterior sumiu; refiz a partir do que está guardado.',
-  resumed: 'O servidor reiniciou; continuando…',
   saving: 'Guardando a versão…',
 }
 
@@ -63,6 +63,36 @@ export function VersionLine({ part }: { part: Version }) {
         <CheckIcon />
       </MarkerIcon>
       <MarkerContent>{versionSentence(part)}</MarkerContent>
+    </Marker>
+  )
+}
+
+/**
+ * The server restarted mid-turn: what the Builder had written is a version, and the person sends
+ * again; a restart that cut the save says its files were not saved.
+ */
+export function RestartedLine({ part }: { part: Restarted }) {
+  return (
+    <Marker className="text-text">
+      <MarkerIcon>
+        <RotateCcwIcon />
+      </MarkerIcon>
+      <MarkerContent>
+        {part.kept === 'lost' ? (
+          'O turno anterior foi cortado; os arquivos dele não foram guardados.'
+        ) : (
+          <>
+            O servidor reiniciou no meio do turno.{' '}
+            {part.kept !== 'nothing' && (
+              <>
+                O que o Builder já tinha escrito foi guardado como{' '}
+                <strong>Versão {part.kept}</strong>.{' '}
+              </>
+            )}
+            Mande a mensagem de novo para ele continuar.
+          </>
+        )}
+      </MarkerContent>
     </Marker>
   )
 }

@@ -1,11 +1,10 @@
-import type { ConversationId } from '@conexus/hub-api'
 import { MESSAGE_MAX_LENGTH } from '@conexus/hub-api'
 import { ArrowUpIcon, SquareIcon } from 'lucide-react'
 import type { KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { InputGroup, InputGroupAddon, InputGroupTextarea } from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
-import { useDraft } from './draft.ts'
+import type { Draft } from './draft.ts'
 
 /** The round button at the end of the field: ink at rest, ipê under the pointer (design V5). */
 const ROUND =
@@ -16,18 +15,18 @@ const ROUND =
  * at the end, and the keys below. Enter sends and Shift+Enter breaks the line, except while an
  * input method is composing a character (design V30). While the Builder answers, the round
  * **Parar** takes the place of sending, and focus goes back to the field. What is typed is kept per
- * conversation.
+ * conversation, by the draft the screen holds.
  */
 export function Composer(props: {
   answering: boolean
   canSend: boolean
-  conversationId: ConversationId
+  draft: Draft
   field: Ref<HTMLTextAreaElement>
   onSend: (content: string) => Promise<boolean>
   onStop: () => void
   picker: ReactNode
 }) {
-  const draft = useDraft(props.conversationId)
+  const { draft } = props
   const content = draft.text
   const empty = content.trim() === ''
 
