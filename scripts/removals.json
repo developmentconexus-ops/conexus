@@ -2330,5 +2330,38 @@
       "file": "src/db.test.ts",
       "name": "db: chamado depois do prazo da chamada"
     }
+  },
+  {
+    "id": "machine-fs-real-path",
+    "file": "apps/server/src/builder/machine/filesystem.ts",
+    "find": "    if (result.exitCode === OUTSIDE) throw new PermissionError(path, operation)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "fora.ts"
+    }
+  },
+  {
+    "id": "machine-network-closed",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "denyOut: [ALL_TRAFFIC] },\n      metadata",
+    "replace": "denyOut: [] },\n      metadata",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "lista de domínios"
+    }
+  },
+  {
+    "id": "machine-sweep-mark",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "query: { metadata: mark }",
+    "replace": "query: {}",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "varredura"
+    }
   }
 ]

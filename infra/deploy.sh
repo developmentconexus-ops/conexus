@@ -55,7 +55,7 @@ require_secret() {
 
 require_secrets() {
   local name
-  for name in hub_session_secret hub_mail_token hub_neon_api_key hub_app_login_key hub_cloudflare_apps_token hub_seal_keys hub_mastra_database_url hub_git_copy_key; do
+  for name in hub_session_secret hub_mail_token hub_neon_api_key hub_app_login_key hub_cloudflare_apps_token hub_seal_keys hub_mastra_database_url hub_git_copy_key hub_e2b_api_key; do
     require_secret "$1" "$name"
   done
 }

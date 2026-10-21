@@ -22,12 +22,11 @@ import {
   readTestDatabase,
   SessionSecret,
 } from './config.ts'
-import { GitCopyBucket, GitCopyKey } from './config-git.ts'
-import { E2bApiKey, MachineTemplate } from './config-machine.ts'
 import type { Database, MastraPool } from './database.ts'
 import { DatabaseUrl, openDatabase, openMastraPool, RUNTIME_LOGIN } from './database.ts'
 import { migrate } from './migrate.ts'
 import { parseSealKeys } from './seal.ts'
+import { testBuilderConfig } from './test-builder-config.ts'
 import { testCliProxy } from './test-cliproxy-binary.ts'
 import {
   NO_CLOUDFLARE_SERVER,
@@ -116,11 +115,7 @@ export function testConfig(
     ...testAppsConfig(cloudflareApiUrl),
     sealKeys: parseSealKeys(testSealKeyLine()),
     cliProxy: testCliProxy(),
-    gitRoot: tmpdir(),
-    gitCopyBucket: GitCopyBucket.parse('conexus-test-git'),
-    gitCopyKey: GitCopyKey.parse('TESTKEYID testsecret'),
-    e2bApiKey: E2bApiKey.parse(randomBytes(16).toString('hex')),
-    machineTemplate: MachineTemplate.parse('conexus-builder-test'),
+    ...testBuilderConfig(),
   }
 }
 

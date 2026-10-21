@@ -4,7 +4,7 @@
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-anthropic|test-recordings)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff|builder/conversation/test-conversation|builder/conversation/test-defaults|builder/conversation/test-research)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-anthropic|test-recordings)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff|builder/conversation/test-conversation|builder/conversation/test-defaults|builder/conversation/test-research|builder/machine/test-machine)\\.ts$`
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */

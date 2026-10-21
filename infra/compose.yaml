@@ -16,6 +16,7 @@ services:
       - hub_cloudflare_apps_token
       - hub_seal_keys
       - hub_git_copy_key
+      - hub_e2b_api_key
     volumes:
       - hub_git:/var/lib/conexus/git
     # HUB_MAIL_API_URL, HUB_MAIL_FROM, HUB_NEON_ORG_ID, HUB_CLOUDFLARE_ACCOUNT_ID and
@@ -45,6 +46,9 @@ services:
       # (decision 0051).
       HUB_GIT_ROOT: /var/lib/conexus/git
       HUB_GIT_COPY_KEY_FILE: /run/secrets/hub_git_copy_key
+      # The build machines (decision 0051): the account's E2B key, and the template infra/e2b built.
+      HUB_E2B_API_KEY_FILE: /run/secrets/hub_e2b_api_key
+      HUB_E2B_TEMPLATE: conexus-builder
       # The router's registry is the one bundled in the image, never refreshed (decision 0049).
       MASTRA_OFFLINE: "1"
       # Mastra's usage telemetry never leaves: no allowlist covers it (security S42).
@@ -117,3 +121,5 @@ secrets:
     file: /etc/conexus/secrets/hub_seal_keys
   hub_git_copy_key:
     file: /etc/conexus/secrets/hub_git_copy_key
+  hub_e2b_api_key:
+    file: /etc/conexus/secrets/hub_e2b_api_key

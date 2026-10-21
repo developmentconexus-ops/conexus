@@ -99,6 +99,14 @@ export const FAILURES = {
     action: 'Tente de novo daqui a pouco.',
     actionKind: 'NONE',
   },
+  MACHINE_UNAVAILABLE: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 503,
+    phrase: 'Não consegui ligar a máquina agora. Sua conversa está guardada.',
+    action: 'Tente de novo em alguns minutos.',
+    actionKind: 'RETRY',
+  },
   MAIL_BOUNCED: {
     category: 'USER',
     settles: true,

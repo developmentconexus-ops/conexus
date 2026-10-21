@@ -155,6 +155,7 @@ const SECRETS = [
   'hub_seal_keys',
   'hub_mastra_database_url',
   'hub_git_copy_key',
+  'hub_e2b_api_key',
 ]
 
 test('--restart sem Hub rodando termina vermelho', () => {
@@ -240,4 +241,9 @@ test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usu
     '/run/secrets/hub_git_copy_key',
   )
   assert.ok(compose.services.hub.secrets.includes('hub_git_copy_key'))
+  assert.equal(
+    compose.services.hub.environment.HUB_E2B_API_KEY_FILE,
+    '/run/secrets/hub_e2b_api_key',
+  )
+  assert.ok(compose.services.hub.secrets.includes('hub_e2b_api_key'))
 })
