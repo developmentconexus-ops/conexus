@@ -73,7 +73,7 @@ async function setUp(owner: Page, companyA: string) {
 
 async function writeFirst(chat: Page) {
   await chat.getByRole('tab', { name: 'Código', exact: true }).click()
-  await chat.getByText(/Ainda não há código/).waitFor()
+  await chat.getByText(/Nenhuma versão guardada ainda/).waitFor()
   await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
   await ask(chat, 'Faça a página da padaria')
   await transcriptShowed(chat, 'Guardei a versão 1.')
