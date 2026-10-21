@@ -54,7 +54,7 @@ construção para e pergunta.
 | U2 | O Git do app e a cópia no R2 | `builder/git/`, `infra/` | dados | — | U1 |
 | U3 | Tabelas e grants | migrações | dados | drizzle, neon:neon-postgres | U1 |
 | U4 | Máquina, semente, template | `builder/machine/`, `infra/e2b/` | segurança | mastra | U2, U3 |
-| U5 | A execução e a remoção | `builder/runs/`, `hub/` | dados | mastra, better-auth-best-practices | U4 |
+| U5 | A execução e a remoção | `builder/runs/`, `hub/` | dados | mastra, as quatro de better-auth | U4 |
 | U6 | Permissões, instruções, passos | `builder/conversation/`, `builder/model-accounts/` | segurança | mastra | U5 |
 | U7 | O turno durável | `builder/runs/`, `builder/conversation/` | dados | mastra | U6 |
 | U8 | O stream que escreve | `builder/conversation/`, web | código | mastra, router-core, shadcn | U7 |
@@ -62,7 +62,7 @@ construção para e pergunta.
 | U10 | Linha do turno, `by`, avaliação | `builder/conversation/`, `infra/` | segurança | mastra | U8 |
 
 Skills e leitura: as linhas de `docs/reference/stack.md` pelas pastas, na sua ordem; em toda unidade
-`typescript-magician` e `node`. Pacote novo (`e2b`, `@mastra/e2b`, `@aws-sdk/client-s3`,
+`typescript-magician` e `node`; uma linha vale sob a sua pasta. Pacote novo (`e2b`, `@mastra/e2b`, `@aws-sdk/client-s3`,
 `@mastra/evals`) entra com a sua linha.
 
 **Antes da aprovação** (0050), o estudo responde: aprovação e `ask_user`, dois eventos nossos ou as
