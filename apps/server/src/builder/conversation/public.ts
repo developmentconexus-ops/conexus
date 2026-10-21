@@ -67,17 +67,6 @@ export function createConversations(deps: {
       })
     },
     release,
-    /**
-     * At start, before the runs are settled: the turns another copy left open, with time left, are
-     * taken and go on (card, criterion 22).
-     */
-    async resumeRuns() {
-      async function resume() {
-        for (const taken of await deps.runs.takeOver()) await sessions.resume(taken)
-      }
-      await resume()
-      deps.runs.retakeEvery(resume)
-    },
     /** Mastra's tables, made once at start by its own login (decision 0010). */
     async prepare() {
       const storage = builder.mastra.getStorage()

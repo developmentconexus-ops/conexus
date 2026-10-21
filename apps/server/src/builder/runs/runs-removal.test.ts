@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { call, codeOf, personOn } from '../../hub/identity/test-hub.ts'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { BRUNO, call, codeOf, memberOn, personOn } from '../../hub/identity/test-hub.ts'
 import {
   asked,
   conversing,
@@ -69,14 +70,48 @@ test('apagar o Projeto no meio de um turno que escreve: a execução para antes,
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Crie o app')).statusCode, 202)
   await stream.said()
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const [row] = await hub.test.asOwner('select count(*)::int as n from builder.machine')
+    if (row?.n === 1) break
+    await new Promise((done) => setTimeout(done, 50))
+  }
   const project = `/api/companies/${companyId}/projects/${projectId}`
   assert.equal((await call(hub, ana, 'DELETE', project, { name: 'Encomendas' })).statusCode, 204)
   held.release()
   await hub.close()
+  const kept = await hub.test.asOwner('select count(*)::int as n from builder.conversation')
+  assert.deepEqual(kept, [{ n: 0 }], 'the conversations go with the Projeto')
   assert.equal(hub.builder.bucket.held.size, 0)
   assert.equal(existsSync(folderOf(hub, companyId, projectId)), false)
   const said = hub.lines.map((line) => line.message)
   assert.equal(said.includes('RUN_SETTLING') || said.includes('VERSION_SAVED'), false)
+})
+
+test('tirar a pessoa enquanto o turno dela guarda: a execução para, e o main não anda', async (t) => {
+  const { hub, ana, companyId, projectId, conversations } = await conversing(t, writesOnce())
+  const bruno = await memberOn(hub, companyId, BRUNO, 'member')
+  const gate = Promise.withResolvers<void>()
+  t.after(() => gate.resolve())
+  hub.builder.knobs.holdReceive = gate.promise
+  void asked(t, { hub, person: bruno, conversations }).catch(() => undefined)
+  let state: unknown
+  for (let attempt = 0; attempt < 100 && state !== 'saving'; attempt += 1) {
+    await new Promise((done) => setTimeout(done, 50))
+    state = (await hub.test.asOwner('select state from builder.run'))[0]?.state
+  }
+  assert.equal(state, 'saving')
+  const member = `/api/companies/${companyId}/members/${bruno.id}`
+  assert.equal((await call(hub, ana, 'DELETE', member)).statusCode, 204)
+  gate.resolve()
+  // The save goes on past the removal's answer; it ends in a commit, or in nothing.
+  const repository = hub.builder.repository({
+    companyId: CompanyId.parse(companyId),
+    projectId: ProjectId.parse(projectId),
+  })
+  for (let attempt = 0; attempt < 30 && (await repository.version()) === 0; attempt += 1) {
+    await new Promise((done) => setTimeout(done, 100))
+  }
+  assert.equal(await repository.version(), 0)
 })
 
 test('apagar o cliente: o repositório e a cópia de cada Projeto saem', async (t) => {

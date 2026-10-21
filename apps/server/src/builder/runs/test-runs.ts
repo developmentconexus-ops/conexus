@@ -51,6 +51,8 @@ type Knobs = {
   renewMs: number
   yieldMs: number
   dies: { receive: number; advance: number }
+  /** While set, a save waits before it checks the turn's commit in. */
+  holdReceive: Promise<void> | undefined
   /** While set, a save waits before it moves `main`. */
   holdAdvance: Promise<void> | undefined
 }
@@ -61,6 +63,7 @@ function newKnobs(): Knobs {
     renewMs: 30_000,
     yieldMs: 8_000,
     dies: { receive: 0, advance: 0 },
+    holdReceive: undefined,
     holdAdvance: undefined,
   }
 }
@@ -89,6 +92,7 @@ export function testBuilderPorts(
     return {
       ...real,
       async receive(input: Parameters<typeof real.receive>[0]) {
+        await knobs.holdReceive
         dies('receive')
         return real.receive(input)
       },
@@ -109,6 +113,7 @@ export function testBuilderPorts(
         list: async () => listed,
         kill: async (id) => {
           killed.push(id)
+          control.killed = true
         },
       },
       mark: { conexus_origin: 'hub.example.test' },

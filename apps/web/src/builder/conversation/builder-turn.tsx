@@ -8,7 +8,7 @@ import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
-import { MachineLine, VersionLine } from './machine-line.tsx'
+import { MachineLine, RestartedLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
 import { ShellOutput } from './shell-output.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
@@ -36,6 +36,8 @@ function PartRow(props: { part: MessagePart; streaming: boolean }) {
       return <MachineLine key={part.phase} part={part} />
     case 'version':
       return <VersionLine part={part} />
+    case 'restarted':
+      return <RestartedLine part={part} />
     case 'file':
       return null
     case 'notice':

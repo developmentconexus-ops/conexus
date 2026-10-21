@@ -136,7 +136,6 @@ export function snapshotOf(
 ): Said | undefined {
   const last = rows.at(-1)
   if (last === undefined) return undefined
-  // A resumed run says its `turn` again: the answer it gives replaces the one the dead copy began.
   const from = rows.findLastIndex((row) => row.event.type === 'turn')
   const first = rows[from]?.event
   if (first?.type !== 'turn') return undefined

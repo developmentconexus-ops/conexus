@@ -70,33 +70,6 @@ function unsaved(conversationId: ConversationId, kept: Question[], messages: Mes
 }
 
 /**
- * The turn an interrupted run was answering: the last question kept on the thread that Mastra has
- * not saved, to be sent again, or else the last message of the person's that it saved, which the
- * turn's lasting parts follow. `after` is none for a thread with neither.
- */
-export async function interruptedTurn(
-  builder: Builder,
-  owner: Owner,
-  conversationId: ConversationId,
-): Promise<{ question: Question | undefined; after: MessageId | undefined }> {
-  const resourceId = memoryOwner(owner)
-  const thread = await builder.memory.getThreadById({ threadId: conversationId, resourceId })
-  if (thread === null) return { question: undefined, after: undefined }
-  const recalled = await builder.memory.recall({
-    threadId: conversationId,
-    resourceId,
-    perPage: false,
-  })
-  const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
-  const question = unsavedQuestions(metadataOf(thread)[QUESTION_KEY], messages).at(-1)
-  const asked = messages.filter((message) => message.role === 'person').at(-1)
-  return {
-    question,
-    after: question === undefined ? asked?.id : questionId(conversationId, question.key),
-  }
-}
-
-/**
  * The Builder's messages of one turn as one, folded as the stream told it: Mastra saves a message
  * per step, and a turn that called tools has several. The turn's model is the last one's.
  */
@@ -132,7 +105,7 @@ function withFailures(messages: Message[], failures: TurnFailure[]): Message[] {
 
 /**
  * Each turn's lasting parts in the Builder's turn after its message, where the stream said them: a
- * replaced machine after the tool that started it, the restart and the version at the end.
+ * replaced machine after the tool that started it, the version at the end.
  */
 function withKept(messages: Message[], kept: TurnPart[]): Message[] {
   const shown = [...messages]
@@ -141,7 +114,7 @@ function withKept(messages: Message[], kept: TurnPart[]): Message[] {
     const turn = shown[at]
     if (at === 0 || turn?.role !== 'builder') continue
     const tool = turn.parts.findIndex((each) => each.type === 'tool') + 1
-    const place = part.type === 'machine' && part.phase !== 'resumed' ? tool : turn.parts.length
+    const place = part.type === 'machine' ? tool : turn.parts.length
     shown[at] = { ...turn, parts: turn.parts.toSpliced(place, 0, part) }
   }
   return shown

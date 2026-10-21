@@ -41,6 +41,7 @@ type Hooks = {
   ids: Ids
   dispatch: (step: Step) => void
   onGone: () => void
+  onRestarted: () => void
 }
 
 /** The conversation read again, which shows what the stream cannot (the Builder's saved message). */
@@ -65,6 +66,11 @@ async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
   }
   if (event.type === 'part' && event.part.type === 'version') {
     await sourceChanged(hooks.queryClient, { companyId, projectId })
+  }
+  if (event.type === 'part' && event.part.type === 'restarted') {
+    if (event.part.version !== null)
+      await sourceChanged(hooks.queryClient, { companyId, projectId })
+    hooks.onRestarted()
   }
   // The ended answer stays on screen until the read holds it (`shownAnswer`), so it shows once.
   if (event.type === 'turnEnd') await reread(hooks)
@@ -156,10 +162,11 @@ async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
 }
 
 /** The answer in progress of a conversation, from its stream, and the way to say one was sent. */
-export function useLive(ids: Ids, onGone: () => void) {
+export function useLive(ids: Ids, onGone: () => void, onRestarted: () => void) {
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(live, IDLE)
   const gone = useEffectEvent(onGone)
+  const restarted = useEffectEvent(onRestarted)
   const { companyId, projectId, conversationId } = ids
   useEffect(() => {
     const controller = new AbortController()
@@ -168,6 +175,7 @@ export function useLive(ids: Ids, onGone: () => void) {
       ids: { companyId, projectId, conversationId },
       dispatch,
       onGone: gone,
+      onRestarted: restarted,
     }
     void follow(hooks, controller.signal)
     return () => controller.abort()

@@ -12,12 +12,13 @@ import type { Collected } from './scripts.ts'
 import { collected, collectScript, keepScript, outFile, seedFile, seedScript } from './scripts.ts'
 
 /** What Ana is told while the machine gets ready or saves (card, the stream's `machine` part). */
-export type Phase = 'starting' | 'waking' | 'copying' | 'replaced' | 'resumed' | 'saving'
+export type Phase = 'starting' | 'waking' | 'copying' | 'replaced' | 'saving'
 
 export type Machines = {
   /**
-   * The workspace of one turn: the machine is not touched until a tool needs it. A turn the server
-   * took over (`resumed`) keeps the files the machine holds; any other starts from the Hub's `main`.
+   * The workspace of one turn: the machine is not touched until a tool needs it. A turn whose copy
+   * of the program died (`resumed`) keeps the files the machine holds, to be saved; any other starts
+   * from the Hub's `main`.
    */
   workspaceFor(input: {
     companyId: CompanyId
@@ -32,10 +33,12 @@ export type Machines = {
    * throws, for what it wrote is gone.
    */
   collect(input: { projectId: ProjectId; base: Sha }): Promise<Bundled | 'unchanged' | 'too-large'>
-  /** Whether the Projeto's turn used the machine, or is a taken-over one: then there may be something to collect. */
+  /** Whether the Projeto's turn used the machine, or its copy of the program died: then there may be something to collect. */
   touched(projectId: ProjectId): boolean
   /** Ends the turn's use of the machine: it pauses and its last use is now. Safe to repeat. */
   release(projectId: ProjectId): Promise<void>
+  /** Forgets the turn's use of the machine without touching it: another copy of the program drives it now. */
+  drop(projectId: ProjectId): void
   list: MachineApi['list']
   kill: MachineApi['kill']
   /** The Projeto's machine as recorded: its id and the last turn that used it. */
@@ -77,7 +80,7 @@ type Session = {
   known: boolean
   /** The recorded machine is gone from the provider: the turn starts a new one from `main`. */
   replaced: boolean
-  /** A turn the server took over: the machine's files are kept as they are. */
+  /** A turn whose copy of the program died: the machine's files are kept as they are. */
   resumed: boolean
   /** How many times the machine started in this turn: a second `created` is a machine that died. */
   starts: number
@@ -158,8 +161,8 @@ class BuilderMachines implements Machines {
   }
 
   /**
-   * What the machine holds once it is up. A woken one goes back to the Hub's `main`, unless the turn
-   * was taken over after a restart, which keeps its files. A later start in the same turn is Mastra
+   * What the machine holds once it is up. A woken one goes back to the Hub's `main`, unless the turn's
+   * copy of the program died, which keeps its files. A later start in the same turn is Mastra
    * reconnecting a machine that paused or dropped (`retryOnDead`): it keeps what the turn wrote. A new
    * one is seeded; a second new one in the same turn is a machine that died, and what the turn wrote
    * on it is gone.
@@ -266,6 +269,10 @@ class BuilderMachines implements Machines {
     if (id !== undefined) {
       await this.rows.remember({ companyId: session.companyId, projectId, sandboxId: id })
     }
+  }
+
+  drop(projectId: ProjectId) {
+    this.sessions.delete(projectId)
   }
 }
 

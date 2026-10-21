@@ -14,7 +14,9 @@ async function removeProject(
 ) {
   const { store, machines, copy } = context
   const machine = await machines.rowOf(ids.companyId, ids.projectId)
+  // The turn's use of the machine ends before the kill: a killed machine cannot be paused.
   const steps = [
+    () => machines.release(ids.projectId),
     async () => {
       if (machine !== undefined) await machines.kill(machine.sandboxId)
     },
@@ -22,7 +24,6 @@ async function removeProject(
       if (await store.hasVersion(ids.companyId, ids.projectId)) await copy.removeProject(ids)
     },
     () => context.repository(ids).remove(),
-    () => machines.release(ids.projectId),
   ]
   const failures: unknown[] = []
   for (const step of steps) {
@@ -52,10 +53,8 @@ async function projectsOf(context: RunsContext, companyId: CompanyId): Promise<P
 export async function releaseRuns(context: RunsContext, scope: ReleaseScope): Promise<void> {
   const { store } = context
   const { companyId, projectId, personId } = scope
-  const open = await store.inStates({ companyId, states: ['open', 'saving'], projectId, personId })
-  for (const stopped of open) {
-    await store.move({ companyId, id: stopped.id, from: stopped.state, to: 'stopped' })
-    await context.stopped(stopped.id)
+  for (const stopped of await store.stop({ companyId, projectId, personId })) {
+    await context.stopped(stopped)
   }
   if (personId !== undefined) return
   const projects = projectId === undefined ? await projectsOf(context, companyId) : [projectId]

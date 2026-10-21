@@ -1,8 +1,9 @@
 import type { MessagePart } from '@conexus/hub-api'
+import { MessageId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { builderSaid, conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { builderSaid, conversationOf, FIRST, say, screens, typed } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
 const startedAt = '2026-10-19T12:01:00.000Z'
@@ -215,22 +216,53 @@ test('a falha do turno, parte da resposta, segue na conversa relida depois do fi
   ).toEqual(['O modelo não respondeu. Envie a mensagem de novo.'])
 })
 
-test('o turno retomado após reiniciar, relido acabado, diz que o servidor reiniciou sem relógio', async () => {
+test('o turno que o reinício encerrou, relido, diz o que foi guardado, com e sem versão', async () => {
   await openConversation(
     conversationOf({
       id: FIRST,
       messages: [
+        { ...builderSaid(''), parts: [{ type: 'restarted', version: 3 }] },
         {
           ...builderSaid(''),
-          parts: [
-            { type: 'text', text: 'Guardei o endereço.' },
-            { type: 'machine', phase: 'resumed' },
-          ],
+          id: MessageId.parse('builder-2'),
+          parts: [{ type: 'restarted', version: null }],
         },
       ],
     }),
   )
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
-  await within(log).findByText('O servidor reiniciou; continuando…')
-  expect(within(log).queryByText(/\(há /)).toBeNull()
+  const withVersion = await within(log).findByText(/O que o Builder já tinha escrito/)
+  expect(withVersion.textContent).toBe(
+    'O servidor reiniciou no meio do turno. O que o Builder já tinha escrito foi guardado como Versão 3. Mande a mensagem de novo para ele continuar.',
+  )
+  expect(within(withVersion).getByText('Versão 3').tagName).toBe('STRONG')
+  expect(
+    within(log).getByText(
+      'O servidor reiniciou no meio do turno. Mande a mensagem de novo para ele continuar.',
+    ),
+  ).toBeTruthy()
+})
+
+test('o reinício no meio do turno devolve a mensagem ao campo e a versão guardada atualiza o código', async () => {
+  const { field, lines, reads } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'Compare os preços')
+  await screen.findByText('Pensando…')
+  await waitFor(() => expect(typed(field)).toBe(''))
+  await waitFor(() => expect(reads.length).toBeGreaterThan(1))
+  lines[0]?.emit({ type: 'part', part: { type: 'restarted', version: 2 } })
+  lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
+  await waitFor(() => expect(typed(field)).toBe('Compare os preços'))
+})
+
+test('o reinício deixa em paz o texto que a pessoa já tem no campo', async () => {
+  const { field, lines, reads } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'Compare os preços')
+  await screen.findByText('Pensando…')
+  await waitFor(() => expect(typed(field)).toBe(''))
+  await waitFor(() => expect(reads.length).toBeGreaterThan(1))
+  fireEvent.change(field, { target: { value: 'Outra coisa' } })
+  lines[0]?.emit({ type: 'part', part: { type: 'restarted', version: null } })
+  lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
+  expect(typed(field)).toBe('Outra coisa')
 })

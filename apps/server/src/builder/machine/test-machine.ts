@@ -19,6 +19,10 @@ export type Control = {
   reattached: (string | undefined)[]
   /** The deadline each machine was asked for. */
   deadlines: Date[]
+  /** How many times a machine was paused. */
+  stops: number
+  /** The provider killed the machine: pausing it fails as E2B's does, until a start makes a new one. */
+  killed: boolean
 }
 
 export function newControl(): Control {
@@ -31,6 +35,8 @@ export function newControl(): Control {
     restart: async () => undefined,
     reattached: [],
     deadlines: [],
+    stops: 0,
+    killed: false,
   }
 }
 
@@ -54,7 +60,14 @@ export function localKit(folder: string, control: Control): KitFactory {
       if (control.start === 'gone')
         throw Object.assign(new Error('gone'), { code: 'SANDBOX_REATTACH_FAILED' })
       if (control.start === 'unreachable') throw new Error('502 Bad Gateway')
+      control.killed = false
       return start(...args)
+    }
+    const stop = sandbox.stop.bind(sandbox)
+    sandbox.stop = async () => {
+      if (control.killed) throw new Error('Sandbox local-machine not found')
+      control.stops += 1
+      return stop()
     }
     return {
       sandbox,

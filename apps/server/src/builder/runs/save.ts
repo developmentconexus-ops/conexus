@@ -6,7 +6,7 @@ import { copyVersion } from './copy.ts'
 import type { Run, RunState } from './store.ts'
 
 async function settle(context: RunsContext, saved: Run, to: RunState) {
-  await context.store.move({ companyId: saved.companyId, id: saved.id, from: 'saving', to })
+  await context.store.end(saved.companyId, saved.id, to)
 }
 
 /**
@@ -31,9 +31,10 @@ async function collectOf(
  * from, checked into a candidate ref, then `main` moved from exactly that base. Whatever fails
  * before `main` moves leaves `main` as it was. A turn that never needed the machine has no base and
  * saves nothing. A fault the code did not expect leaves the run `saving`, for the next admission
- * after its lease to settle by what `main` holds.
+ * after its lease to settle by what `main` holds. A run a removal stopped on the way is `gone`
+ * before `main` moves.
  */
-export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome> {
+export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome | 'gone'> {
   const { companyId, projectId } = saved
   const fields = { companyId, projectId, runId: saved.id }
   if (!context.machines.touched(projectId)) {
@@ -41,10 +42,11 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
     return { kind: 'unchanged' }
   }
   // The base is `main` as the machine's seed took it: no other run moves it meanwhile (data D15). A
-  // taken-over turn may reach here before any seed made the repository, so it is ensured.
+  // turn whose copy of the program died may reach here before any seed made the repository, so it
+  // is ensured.
   const repository = context.repository({ companyId, projectId })
   const base = await repository.ensure()
-  await context.store.setBase(companyId, saved.id, base)
+  if (!(await context.store.setBase(companyId, saved.id, base))) return 'gone'
   const bundle = await collectOf(context, { projectId, base, fields })
   if (typeof bundle === 'object' && 'failed' in bundle) {
     await settle(context, saved, 'failed')
@@ -64,7 +66,7 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }
   const candidate = received.value
-  await context.store.setCandidate(companyId, saved.id, candidate)
+  if (!(await context.store.setCandidate(companyId, saved.id, candidate))) return 'gone'
   if ((await repository.advance({ candidate, base })) === 'stale') {
     context.log.error({ ...fields, reason: 'stale' }, 'SAVE_REFUSED')
     await settle(context, saved, 'failed')

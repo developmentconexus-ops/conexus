@@ -11,12 +11,11 @@ import type {
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
-import type { Runs, TakenRun } from '../runs/public.ts'
+import type { Runs } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import { catchUp } from './catch-up.ts'
 import { deliver } from './deliver.ts'
-import { interruptedTurn } from './history.ts'
 import type { Listener, Live, Owner, Question, Said } from './live.ts'
 import {
   beforeAgentEnd,
@@ -175,37 +174,6 @@ export class Sessions {
   }
 
   /**
-   * Continues a turn another copy of the program left, on the run this one took (data D25), with
-   * the same hour. The steps it took are not on the thread (`savePerStep: false`), so the model is
-   * told the server restarted and to look at `git status` (card, "A continuação"); a question not
-   * saved yet is sent again instead. A run whose hour is over is ended and saved as it
-   * stands.
-   */
-  async resume(taken: TakenRun): Promise<void> {
-    const { companyId, personId, conversationId, runId } = taken
-    const owner = { companyId, personId }
-    if (taken.expired) {
-      await this.#runs.finish({ runId, reason: 'deadline' })
-      return
-    }
-    const { question, after } = await interruptedTurn(this.#builder, owner, conversationId)
-    const entry = this.#hold({ owner, conversationId })
-    const turn = new Turn(owner)
-    const answered: Promise<void> = entry.live
-      .then((live) => {
-        live.asked.add(turn)
-        const run = { runId, traceId: randomUUID() }
-        return this.#answer(live, question, turn, run, { after })
-      })
-      .then(() => this.#release(conversationId, entry))
-      .catch((cause: unknown) =>
-        logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
-      )
-      .finally(() => this.#turns.delete(answered))
-    this.#turns.add(answered)
-  }
-
-  /**
    * Mastra decides where the message goes (`requireDelivery`): it wakes a run, which carries this
    * message's turn to the queue until that run's `agent_end`, or it joins the run in progress,
    * whose turn stays (criterion 12). `sendSignal` is `sendMessage`'s own call, which keeps that
@@ -216,25 +184,20 @@ export class Sessions {
    */
   async #answer(
     live: Live,
-    question: Question | undefined,
+    question: Question,
     turn: Turn,
     run: { runId: RunId; traceId: string },
-    resuming?: { after: MessageId | undefined },
   ): Promise<void> {
     const writing = run.runId
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
-    const id = questionId(live.conversationId, question?.key ?? writing)
+    const id = questionId(live.conversationId, question.key)
     live.run = {
       id: writing,
       traceId: run.traceId,
       finish: (reason) => this.#runs.finish({ runId: writing, reason }),
     }
     const opened = openTurn(live)
-    if (resuming !== undefined) {
-      opened.after = resuming.after
-      tellMachine(live, 'resumed')
-    }
     this.#runs.attach(writing, () => live.session.abort())
     this.#runs.onPhase(writing, (phase) => tellMachine(live, phase))
     try {

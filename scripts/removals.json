@@ -2378,7 +2378,7 @@
   {
     "id": "release-stops-runs",
     "file": "apps/server/src/builder/runs/removal.ts",
-    "find": "    await store.move({ companyId, id: stopped.id, from: stopped.state, to: 'stopped' })\n    await context.stopped(stopped.id)\n",
+    "find": "  for (const stopped of await store.stop({ companyId, projectId, personId })) {\n    await context.stopped(stopped)\n  }\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2547,19 +2547,8 @@
     "replace": "eq(run.owner, this.#owner), eq(run.state, 'open')))",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/runs/runs-restart.test.ts",
+      "file": "src/builder/runs/runs-lease.test.ts",
       "name": "guardar leva mais que a posse: a posse segue renovada, outra mensagem não ganha o Projeto e a versão sai uma vez"
-    }
-  },
-  {
-    "id": "restart-continuation",
-    "file": "apps/server/src/builder/conversation/deliver.ts",
-    "find": "contents: CONTINUATION",
-    "replace": "contents: 'continue'",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-restart.test.ts",
-      "name": "reinício no meio do turno: o turno retomado é avisado do reinício, e termina sem chamar ferramenta guardando o que a máquina já tinha"
     }
   },
   {
@@ -2569,8 +2558,63 @@
     "replace": "  }\n\n  /** The request context of the turn",
     "test": {
       "cwd": "apps/server",
-      "file": "src/builder/runs/runs-restart.test.ts",
+      "file": "src/builder/runs/runs-lease.test.ts",
       "name": "parar o processo com um turno que não acaba: passada a espera, a posse é entregue e o turno fica livre para outro"
+    }
+  },
+  {
+    "id": "taken-machine-not-paused",
+    "file": "apps/server/src/builder/runs/runs.ts",
+    "find": "      if (elsewhere) this.#deps.machines.drop(projectId)\n      else\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "nem pausa a máquina"
+    }
+  },
+  {
+    "id": "workspace-leaves-mastra",
+    "file": "apps/server/src/builder/runs/runs.ts",
+    "find": "      await this.#unregister(mine)\n      if (elsewhere)",
+    "replace": "      if (elsewhere)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "nem pausa a máquina"
+    }
+  },
+  {
+    "id": "save-stops-when-stopped",
+    "file": "apps/server/src/builder/runs/save.ts",
+    "find": "  if (!(await context.store.setCandidate(companyId, saved.id, candidate))) return 'gone'\n",
+    "replace": "  await context.store.setCandidate(companyId, saved.id, candidate)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-removal.test.ts",
+      "name": "tirar a pessoa enquanto o turno dela guarda"
+    }
+  },
+  {
+    "id": "orphan-turn-saved",
+    "file": "apps/server/src/builder/runs/settle.ts",
+    "find": "  if (expired.state === 'open') return endTurn(context, expired)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "a admissão guarda o turno órfão"
+    }
+  },
+  {
+    "id": "deadline-stops-on-lost-lease",
+    "file": "apps/server/src/builder/runs/runs.ts",
+    "find": "    if (mine === undefined) return 'gone'\n    mine.stopDeadline()\n",
+    "replace": "    if (mine === undefined || mine.lost) return 'gone'\n    mine.stopDeadline()\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "uma renovação da posse falha"
     }
   },
   {
