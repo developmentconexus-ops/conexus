@@ -1,5 +1,5 @@
 // Defect: a step is built from a card the founder did not approve, or from one that changed after
-// he did. The roadmap line must cite a commit that is an ancestor of the tip, and the card must be
+// he did. The ledger line must cite a commit that is an ancestor of the tip, and the card must be
 // the same file at that commit and now (delivery L6).
 // Refusals are proved by planting each one in check-approval.test.ts.
 // Revalidate by 2027-04-13, or when the approval line changes shape.
@@ -47,7 +47,7 @@ if (cards.length === 0) {
   console.log('check-approval: no card in docs/steps, nothing to check')
   process.exit(0)
 }
-const roadmap = readFileSync(join(root, 'docs/roadmap.md'), 'utf8')
+const ledger = readFileSync(join(root, 'docs/approvals.md'), 'utf8')
 
 function checkCard(card: string): void {
   const digits = (card.match(/^e(\d+)-/) ?? [])[1] ?? ''
@@ -62,7 +62,7 @@ function checkCard(card: string): void {
     `^\\s*Cartão da etapa ${step.replace('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
     'm',
   )
-  const approved = roadmap.match(line)?.[1]
+  const approved = ledger.match(line)?.[1]
 
   if (approved === undefined) {
     if (onlyDocuments()) {
@@ -73,7 +73,7 @@ function checkCard(card: string): void {
     }
     refuse(
       'approval-missing',
-      `docs/roadmap.md has no approval line for step ${step} (${cardPath})`,
+      `docs/approvals.md has no approval line for step ${step} (${cardPath})`,
     )
   }
   if (!gitSucceeds('merge-base', '--is-ancestor', approved, 'HEAD')) {

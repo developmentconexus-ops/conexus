@@ -6,7 +6,8 @@ One line per document (`check-docs`).
 
 - [AGENTS.md](../AGENTS.md): what every agent reads first; skill per stage.
 - [README.md](../README.md): this repository.
-- [roadmap.md](roadmap.md): steps in order, approvals, use lines.
+- [roadmap.md](roadmap.md): steps.
+- [approvals.md](approvals.md): approvals and uses.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
 - [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
