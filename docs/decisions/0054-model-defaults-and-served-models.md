@@ -19,8 +19,10 @@ first is the first of the provider's queue.
 Every model choice (composer, defaults, switch queue) lists one thing: the models an account in its
 scope serves. Scope is the person's own accounts plus those the company gives them; the company's
 screen and queue read the company's. The Hub reads each provider's model list with the account's
-credential at link, sign-in, token refresh and a provider 404, and keeps the raw ids. A kind with no
-reader (CLIProxy) and a failed read leave the list unread, and the registry's chat models stand.
+credential at link, sign-in, token refresh and a provider 404, and at each start for every account
+whose list was never read; Google sign-in reads CLIProxy's `/v1/models` through the account's own
+proxy, and an exact id is the contract. A failed read leaves the list unread, and the registry's
+chat models stand.
 
 ## Criterion
 
@@ -29,9 +31,12 @@ routes; `tests/e2e/defaults.test.ts` for the founder's script.
 
 ## Result
 
-2026-10-21: the Anthropic list recorded from the founder's subscription (13 ids) is read by the
-Hub's schema; CI of https://github.com/developmentconexus-ops/conexus/pull/211 green, 17 of 17. OpenAI and Google
-readers are not recorded; the open points are https://github.com/developmentconexus-ops/conexus/issues/220.
+2026-10-21: the Anthropic list recorded from the founder's subscription (13 ids) and CLIProxy's
+list from his local proxy (ten ids, three of them registry chat models) are read by the Hub's
+schema; CI of https://github.com/developmentconexus-ops/conexus/pull/211 and, for v0.12.10,
+https://github.com/developmentconexus-ops/conexus/pull/224 green. OpenAI and Google-key readers
+are not recorded, and the server's own proxy is unverified; open points:
+https://github.com/developmentconexus-ops/conexus/issues/220.
 
 ## State
 
