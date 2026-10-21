@@ -153,6 +153,12 @@ async function closedSession(ran: string[]) {
   return controller.createSession()
 }
 
+test('a sessão começa em yolo: nenhuma ferramenta da lista pede aprovação', async () => {
+  const session = await closedSession([])
+  for (const name of ['mastra_workspace_write_file', 'mastra_workspace_execute_command', 'recall'])
+    assert.equal(session.resolveToolApproval(name), 'allow', name)
+})
+
 test('em yolo, uma ferramenta fora da lista do modo não é oferecida nem executada: chamada, é recusada', async () => {
   const ran: string[] = []
   const session = await closedSession(ran)
