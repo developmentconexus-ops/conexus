@@ -8,7 +8,7 @@ import type {
   ProviderId,
   StartSource,
 } from '@conexus/hub-api'
-import { providerOfModel } from '@conexus/hub-api'
+import { providerOfModel, runningEffort } from '@conexus/hub-api'
 import { hourOf } from '../../platform/dates.ts'
 import { writeFailureText } from '../../platform/hub.ts'
 import { modelLabel } from './model-label.ts'
@@ -92,6 +92,14 @@ export const EFFORT_LABELS = {
 /** "Claude Sonnet 4.5 · Alto": a model and the level it starts at. */
 export function choiceText(choice: ModelDefault): string {
   return `${modelLabel(choice.model)} · ${EFFORT_LABELS[choice.effort]}`
+}
+
+/** The default at the level its model runs at: a saved level the model does not take is the one it rises to. */
+export function runningDefault(providers: readonly Provider[], choice: ModelDefault): ModelDefault {
+  const levels = providers
+    .flatMap((one) => one.models)
+    .find((one) => one.id === choice.model)?.efforts
+  return levels === undefined ? choice : { ...choice, effort: runningEffort(levels, choice.effort) }
 }
 
 /** Where a new conversation's start comes from, as the line that names it ends. */

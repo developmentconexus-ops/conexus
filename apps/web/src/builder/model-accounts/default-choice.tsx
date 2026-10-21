@@ -7,7 +7,7 @@ import { Button } from '../../ui/button.tsx'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { ModelPicker } from './model-picker.tsx'
 import { sendDefaultModel, sendMyDefault, sendMyDefaultCleared } from './queries.ts'
-import { choiceText, defaultRefusalText } from './text.ts'
+import { choiceText, defaultRefusalText, runningDefault } from './text.ts'
 
 /** The levels a model of the list accepts, lowest first. */
 function levelsOf(providers: readonly Provider[], model: ModelId | null) {
@@ -19,6 +19,8 @@ type Props = {
   scope: 'mine' | 'company'
   defaults: Pick<Defaults, 'company' | 'mine'>
   providers: readonly Provider[]
+  /** Every provider's models, for the company line to read the level its model runs at. */
+  allProviders?: readonly Provider[]
   mayChange: boolean
 }
 
@@ -111,7 +113,7 @@ function Editor(props: Props & { refocus: RefObject<boolean> }) {
         />
       </Field>
       {props.scope === 'mine' && props.defaults.company !== null && (
-        <p className="text-label text-text-2">{`Padrão da empresa: ${choiceText(props.defaults.company)}`}</p>
+        <p className="text-label text-text-2">{`Padrão da empresa: ${choiceText(runningDefault(props.allProviders ?? props.providers, props.defaults.company))}`}</p>
       )}
       <FieldError>{send.isError ? defaultRefusalText(send.error) : undefined}</FieldError>
       <FieldError>{clear.isError ? defaultRefusalText(clear.error) : undefined}</FieldError>

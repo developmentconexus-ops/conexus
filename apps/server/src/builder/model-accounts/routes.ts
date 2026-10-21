@@ -20,7 +20,7 @@ import { answer, serve } from '../../platform/http.ts'
 import type { Deps } from './accounts.ts'
 import { readKinds, setKinds } from './kinds.ts'
 import { listKeyProviders } from './providers.ts'
-import type { SignInFlows } from './sign-ins.ts'
+import type { SignInDeps } from './sign-ins.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
 import type { ModelAccountStore } from './store.ts'
 
@@ -28,7 +28,7 @@ const PROVIDERS = { providers: listKeyProviders() }
 
 export function registerModelAccountRoutes(
   app: FastifyInstance,
-  deps: Deps & { store: ModelAccountStore; flows: SignInFlows },
+  deps: Deps & SignInDeps & { store: ModelAccountStore },
 ): void {
   const { store } = deps
 
@@ -137,7 +137,7 @@ function registerDefaultRoutes(app: FastifyInstance, deps: Deps & { store: Model
   })
 }
 
-function registerSignInRoutes(app: FastifyInstance, deps: Deps & { flows: SignInFlows }) {
+function registerSignInRoutes(app: FastifyInstance, deps: Deps & SignInDeps) {
   serve(app, startModelAccountSignIn, async ({ person, params, body, log }) => {
     const started = await startSignIn(deps, { person, ...params, ...body })
     log.info(

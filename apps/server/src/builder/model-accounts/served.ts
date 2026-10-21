@@ -64,7 +64,21 @@ export type ListRequest = {
 }
 
 /** The provider's list as one request for its first page, or none for a kind with no reader here. */
-export function listRequest(target: ServedTarget, secret: string): ListRequest | undefined {
+export function listRequest(
+  target: ServedTarget,
+  secret: string,
+  via?: string,
+): ListRequest | undefined {
+  if (target.kind === 'google_cliproxy') {
+    // The ids CLIProxyAPI lists are the provider's own; the ones the registry has are the ones
+    // that serve, with no renaming, so the others leave the list when it is read against it.
+    if (via === undefined) return undefined
+    return {
+      reader: 'openai',
+      url: new URL(`${via}/models`),
+      headers: new Headers({ authorization: `Bearer ${secret}` }),
+    }
+  }
   if (target.kind === 'claude_subscription') {
     return {
       reader: 'anthropic',
@@ -126,12 +140,22 @@ async function googleList(first: URL, headers: Headers): Promise<string[]> {
   return ids
 }
 
+/** Whether a list of this kind of account can be read here. */
+export function hasReader(target: ServedTarget): boolean {
+  return listRequest(target, '', 'http://127.0.0.1') !== undefined
+}
+
 /**
  * The model ids the provider lists for this credential, or none when the kind has no reader here.
- * `secret` is the API key, or a subscription's access token. A failed read throws.
+ * `secret` is the API key, or a subscription's access token; for a Google sign-in it is the key of
+ * the CLIProxyAPI process at `via`. A failed read throws.
  */
-async function readServed(target: ServedTarget, secret: string): Promise<string[] | undefined> {
-  const request = listRequest(target, secret)
+async function readServed(
+  target: ServedTarget,
+  secret: string,
+  via?: string,
+): Promise<string[] | undefined> {
+  const request = listRequest(target, secret, via)
   if (request === undefined) return undefined
   const { reader, url, headers } = request
   if (reader === 'anthropic') return anthropicList(url, headers)
@@ -163,9 +187,10 @@ export async function keepServed(
   scope: Scope,
   account: ServedTarget & { id: AccountRow['id']; companyId: CompanyId },
   secret: string,
+  via?: string,
 ): Promise<void> {
   try {
-    const ids = await readServed(account, secret)
+    const ids = await readServed(account, secret, via)
     if (ids === undefined) return
     await deps.database.command(scope, (tx) =>
       tx

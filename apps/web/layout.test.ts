@@ -216,6 +216,8 @@ test('numa tela de 390px o Tab começa em Abrir navegação e não entra na gave
   const page = await open('/', PHONE, HOUSE)
   await page.getByRole('heading', { name: 'O que vamos construir?' }).waitFor()
   // The owner's Início opens with the preparation card, whose Continuar is the first of the content.
+  // The card is not shown while its reads load, so Tab waits for it.
+  await page.getByRole('link', { name: 'Continuar' }).waitFor()
   assert.deepEqual(await presses(page, 'Tab', 2), [
     'Abrir navegação solid 2px',
     'Continuar solid 2px',

@@ -1,24 +1,16 @@
-import type { CompanyId, ModelAccountId, PersonId, ProviderId } from '@conexus/hub-api'
+import type { ModelAccountId } from '@conexus/hub-api'
 import { and, eq } from 'drizzle-orm'
 import type { Database, Scope } from '../../../platform/database.ts'
 import { Failure, logFailure } from '../../../platform/failure.ts'
-import type { Credential, SealKeys } from '../../../platform/seal.ts'
+import type { SealKeys } from '../../../platform/seal.ts'
 import { seal } from '../../../platform/seal.ts'
 import { sealContext } from '../accounts.ts'
 import { modelAccount } from '../tables.ts'
 import type { Process, Deps as ProcessDeps } from './google.ts'
 import { end, launch, loginFileOf } from './google.ts'
+import type { GoogleAccount } from './port.ts'
 
 const IDLE_MS = 10 * 60 * 1000
-
-export type GoogleAccount = {
-  id: ModelAccountId
-  companyId: CompanyId
-  personId: PersonId | null
-  provider: ProviderId
-  revision: number
-  credential: Credential
-}
 
 type Running = {
   process: Process
