@@ -101,7 +101,11 @@ export function ModelPicker(props: {
             </InputGroupAddon>
           </ComboboxInput>
         </div>
-        <ComboboxEmpty>Nenhum modelo encontrado.</ComboboxEmpty>
+        <ComboboxEmpty>
+          {props.providers.length === 0
+            ? 'Conecte uma conta de modelo'
+            : 'Nenhum modelo encontrado.'}
+        </ComboboxEmpty>
         <ComboboxList>
           {(group: Group) => (
             <ComboboxGroup key={group.value} items={group.items}>

@@ -4,17 +4,17 @@ import type {
   ConversationEvent,
   ConversationId,
   Message,
-  MessagePart,
+  PartEvent,
   PersonId,
 } from '@conexus/hub-api'
-import { EventId, MessageId, TurnFailureCode } from '@conexus/hub-api'
+import { applyEvent, EventId, MessageId, TurnFailureCode } from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Turn } from '../model-accounts/public.ts'
 import type { Place } from './parts.ts'
-import { appendText, modelOf, partOf } from './parts.ts'
+import { modelOf, partOf } from './parts.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
 /** An event as the stream sends it, with the id a reconnect names it by. */
@@ -40,6 +40,12 @@ export const TURN_FAILURES_KEY = 'conexus.turnFailures'
 /** A turn's failure, after the person's message of that turn. */
 export const TurnFailure = z.object({ after: MessageId, code: TurnFailureCode })
 export type TurnFailure = z.infer<typeof TurnFailure>
+
+/** How long each thinking took, kept on the thread so a read shows it as the stream did (#176). */
+export const THINKING_KEY = 'conexus.thinking'
+/** One thinking's time, named by its part's `id`. */
+export const ThoughtTime = z.object({ id: z.string(), seconds: z.number().int().nonnegative() })
+export type ThoughtTime = z.infer<typeof ThoughtTime>
 
 /**
  * The most events a turn keeps for a reconnect to resume from; past it, a reconnect reads the turn
@@ -155,13 +161,10 @@ function lastTurn(live: Live): TurnLog {
   return live.turn
 }
 
-/** A part with an `id` replaces the one with the same; any other comes at the end. */
-function put(live: Live, turn: TurnLog, part: MessagePart): void {
-  const { parts } = turn.answer
-  const at = 'id' in part ? parts.findIndex((each) => 'id' in each && each.id === part.id) : -1
-  if (at === -1) parts.push(part)
-  else parts[at] = part
-  say(live, turn, { type: 'part', part })
+/** An event that changes the answer: folded into it as the screen folds it, then said. */
+function tell(live: Live, turn: TurnLog, event: PartEvent): void {
+  turn.answer.parts = applyEvent(turn.answer.parts, event)
+  say(live, turn, event)
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
@@ -170,7 +173,16 @@ function settleThinking(live: Live, turn: TurnLog): void {
   if (thinking === undefined) return
   turn.thinking = undefined
   const seconds = Math.ceil((Date.now() - thinking.since) / 1000)
-  put(live, turn, { type: 'reasoning', id: thinking.id, state: 'completed', seconds })
+  tell(live, turn, {
+    type: 'part',
+    part: { type: 'reasoning', id: thinking.id, state: 'completed', seconds },
+  })
+  void keptInList(live, {
+    key: THINKING_KEY,
+    list: z.array(ThoughtTime),
+    item: { id: thinking.id, seconds },
+    same: (each) => each.id === thinking.id,
+  })
 }
 
 function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
@@ -180,12 +192,12 @@ function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
     if (turn.answer.parts.some((each) => each.type === 'reasoning' && each.id === shown.id)) return
     settleThinking(live, turn)
     turn.thinking = { id: shown.id, since: Date.now() }
-    put(live, turn, { ...shown, state: 'running' })
+    tell(live, turn, { type: 'part', part: { ...shown, state: 'running' } })
     return
   }
   settleThinking(live, turn)
   // The text arrives by its deltas.
-  if (shown.type !== 'text') put(live, turn, shown)
+  if (shown.type !== 'text') tell(live, turn, { type: 'part', part: shown })
 }
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
@@ -200,8 +212,7 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
     const turn = live.turn
     if (event.event.type === 'text-delta') {
       settleThinking(live, turn)
-      appendText(turn.answer.parts, event.event.delta)
-      say(live, turn, { type: 'text', delta: event.event.delta })
+      tell(live, turn, { type: 'text', delta: event.event.delta })
     } else if (event.event.type === 'part') {
       const messageId = MessageId.parse(event.id)
       onPart(live, turn, event.event.part, { messageId, index: event.event.index })
@@ -237,9 +248,7 @@ export function resumeOf(live: Live, lastEventId: EventId | null): Said[] {
 /** The controller's events as the person's: text, thinking, tools, notices, the title, the end. */
 export function onEvent(live: Live, event: AgentControllerEvent): void {
   if (event.type === 'info') {
-    const turn = openTurn(live)
-    turn.answer.parts.push({ type: 'notice', text: event.message })
-    say(live, turn, { type: 'notice', text: event.message })
+    tell(live, openTurn(live), { type: 'notice', text: event.message })
   } else if (event.type === 'thread_title_updated') {
     say(live, lastTurn(live), { type: 'title', title: event.title })
   } else if (event.type === 'agent_start') {
@@ -271,33 +280,49 @@ function failureOf(ending: Ending): TurnFailureCode | undefined {
   return ending.turn?.outcome === 'exhausted' ? 'MODEL_NO_ACCOUNT' : 'MODEL_CALL_FAILED'
 }
 
-/** Keeps the turn's failure on the thread, once per message (`after`), after the writes before it. */
+/**
+ * Keeps `item` in the thread's list under `key`, in place of the one it is the `same` as, after the
+ * writes before it. A write that fails is logged and the turn goes on without it.
+ */
+function keptInList<T>(
+  live: Live,
+  kept: { key: string; list: z.ZodType<T[]>; item: T; same: (each: T) => boolean },
+): Promise<void> {
+  const { key, list, item, same } = kept
+  return queued(live, async () => {
+    const read = list.safeParse(await live.session.thread.getSetting({ key }))
+    const others = (read.success ? read.data : []).filter((each) => !same(each))
+    await live.session.thread.setSetting({ key, value: [...others, item] })
+  }).catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
+}
+
+/** Keeps the turn's failure on the thread, once per message (`after`). */
 function keepFailure(live: Live, turn: TurnLog, code: TurnFailureCode): Promise<void> {
   const { after } = turn
   if (after === undefined || turn.failureKept) return Promise.resolve()
   turn.failureKept = true
-  return queued(live, async () => {
-    const read = z
-      .array(TurnFailure)
-      .safeParse(await live.session.thread.getSetting({ key: TURN_FAILURES_KEY }))
-    const others = (read.success ? read.data : []).filter((each) => each.after !== after)
-    await live.session.thread.setSetting({
-      key: TURN_FAILURES_KEY,
-      value: [...others, { after, code }],
-    })
-  }).catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
+  return keptInList(live, {
+    key: TURN_FAILURES_KEY,
+    list: z.array(TurnFailure),
+    item: { after, code },
+    same: (each) => each.after === after,
+  })
 }
 
 /**
- * Keeps a failed turn's failure before Mastra says its run ended, so the read a screen makes at the
- * end finds it with the turn's messages, which Mastra saves after the end.
+ * Keeps a failed turn's failure, and waits for the thinking times kept before it, before Mastra
+ * says its run ended, so the read a screen makes at the end finds them with the turn's messages,
+ * which Mastra saves after the end.
  */
 export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Promise<void> {
   const runId = live.session.run.getRunId()
   const run = runId === null ? undefined : live.runs.get(runId)
   const code = failureOf({ reason, turn: run?.turn })
-  if (run === undefined || code === undefined || live.turn === undefined) return
-  await keepFailure(live, live.turn, code)
+  if (run !== undefined && code !== undefined && live.turn !== undefined) {
+    await keepFailure(live, live.turn, code)
+  }
+  // A write of nothing, queued last, settles once every write before it has.
+  await queued(live, () => Promise.resolve())
 }
 
 /**
@@ -314,7 +339,7 @@ export function endTurn(live: Live, ending: Ending): void {
     ending.reason === 'error' || ending.reason === 'aborted' ? ending.reason : 'complete'
   const code = failureOf(ending)
   if (code !== undefined) {
-    put(live, turn, { type: 'failure', code })
+    tell(live, turn, { type: 'part', part: { type: 'failure', code } })
     void keepFailure(live, turn, code)
   }
   const { conversationId, owner } = live

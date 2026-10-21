@@ -14,7 +14,7 @@ import { Failure } from '../../platform/failure.ts'
 import { answer, serve } from '../../platform/http.ts'
 import { pageKey } from '../../platform/pages.ts'
 import type { QueueDeps } from '../model-accounts/public.ts'
-import { conversationModel, effortsOf } from '../model-accounts/public.ts'
+import { conversationModel, conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { historyOf, threadModel, titlesOf } from './history.ts'
 import type { Owner } from './live.ts'
@@ -85,11 +85,9 @@ async function created(
     const kept = await threadModel(deps.builder, owner, earlier.id)
     if (kept !== undefined) return { ...earlier, model: kept, created: false }
   }
-  const model = await conversationModel(deps.queue, owner, input.body.model)
+  const { model, effort } = await conversationStart(deps.queue, owner, input.body.model)
   const made =
     earlier === undefined ? await deps.store.create(attempt) : { ...earlier, created: false }
-  // It starts at the model's lowest effort: `off` when the model can stop reasoning.
-  const [effort] = effortsOf(model)
   await deps.sessions.switchModel({ owner, conversationId: made.id, model, effort })
   return { ...made, model }
 }

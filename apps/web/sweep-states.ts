@@ -4,6 +4,7 @@ import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { APP_STATES } from './sweep-app-states.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
+import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { HOUSE_STATES } from './sweep-house-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
@@ -41,6 +42,7 @@ export const STATES: State[] = [
   ...CONVERSATION_STATES,
   ...APP_STATES,
   ...HOUSE_STATES,
+  ...DEFAULT_STATES,
   {
     name: 'Central sem clientes',
     path: '/operations/clients',

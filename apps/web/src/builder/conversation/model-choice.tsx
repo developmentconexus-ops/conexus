@@ -5,7 +5,7 @@ import type {
   Effort,
   ModelId,
   ProjectId,
-  ProviderId,
+  Provider,
 } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
@@ -47,10 +47,10 @@ type Asked = {
 export function ModelChoice(props: {
   ids: { companyId: CompanyId; projectId: ProjectId }
   conversation: Conversation
-  usable: ReadonlySet<ProviderId>
+  /** What the Hub offers this person: their connected providers, with the models served. */
+  providers: readonly Provider[]
   onError: (text: string | undefined) => void
 }) {
-  const { providers } = useSuspenseQuery(providersQuery).data
   const queryClient = useQueryClient()
   const send = useMutation<Choice, Error, Asked>({
     ...sendModel,
@@ -60,10 +60,6 @@ export function ModelChoice(props: {
         (read) => read && { conversation: { ...read.conversation, ...kept } },
       ),
   })
-  const shown = useMemo(
-    () => providers.filter((provider) => props.usable.has(provider.id)),
-    [providers, props.usable],
-  )
   const now = send.isPending ? send.variables.body : props.conversation
 
   function choose(model: ModelId, effort: Effort) {
@@ -79,7 +75,7 @@ export function ModelChoice(props: {
 
   function pickModel(model: ModelId) {
     if (model === now.model) return
-    const efforts = shown
+    const efforts = props.providers
       .flatMap((provider) => provider.models)
       .find((one) => one.id === model)?.efforts
     // A level the new model lacks falls to its lowest, which is `off` where it can stop reasoning.
@@ -88,7 +84,7 @@ export function ModelChoice(props: {
 
   return (
     <ModelPicker
-      providers={shown}
+      providers={props.providers}
       value={now.model}
       name="Modelo e raciocínio"
       heading="Modelo desta conversa"

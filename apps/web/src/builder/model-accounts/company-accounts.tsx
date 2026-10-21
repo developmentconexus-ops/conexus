@@ -4,7 +4,6 @@ import { getRouteApi, Link } from '@tanstack/react-router'
 import { useRef } from 'react'
 import { everyMemberQuery } from '../../hub/identity/public.ts'
 import { Empty } from '../../ui/states.tsx'
-import { DefaultModel } from './default-model.tsx'
 import { LinkAccount } from './link-account.tsx'
 import { ModelFallbackSection } from './model-fallback.tsx'
 import { accountsQuery, providersQuery } from './queries.ts'
@@ -13,13 +12,11 @@ import { providerName, providersOf, queueOf } from './text.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/model-accounts')
 
-/** The default model and the automatic switch as a member reads them, without a way to change. */
-function ModelSettingsRead(props: { defaultModel: string | null; fallback: ModelFallback }) {
+/** The automatic switch as a member reads it, without a way to change. */
+function ModelSettingsRead(props: { fallback: ModelFallback }) {
   const { chain, enabled } = props.fallback
   return (
     <dl className="grid w-full max-w-column grid-cols-[auto_1fr] items-baseline gap-x-lg gap-y-sm">
-      <dt className="text-label text-text-2">Modelo padrão</dt>
-      <dd>{props.defaultModel ?? 'Nenhum escolhido'}</dd>
       <dt className="text-label text-text-2">Troca automática</dt>
       <dd>
         {enabled ? 'Ligada' : 'Desligada'}
@@ -31,7 +28,7 @@ function ModelSettingsRead(props: { defaultModel: string | null; fallback: Model
 
 /**
  * "Contas de modelo": the company's accounts, a queue per provider. An owner or an administrator
- * changes them; a member reads them, the default model and the switch included, and is told who
+ * changes them; a member reads them, the switch included, and is told who
  * can (web W34, design V29), the Hub's `mayManage`. After a
  * removal focus moves to the section, as the row it was on is gone.
  */
@@ -50,21 +47,14 @@ export function CompanyAccounts() {
       className="flex w-full flex-col gap-lg"
     >
       {mayManage ? (
-        <>
-          <DefaultModel
-            companyId={companyId}
-            providers={providers}
-            current={accounts.defaultModel}
-          />
-          <ModelFallbackSection
-            companyId={companyId}
-            providers={providers}
-            fallback={accounts.fallback}
-          />
-        </>
+        <ModelFallbackSection
+          companyId={companyId}
+          providers={accounts.choices.company}
+          fallback={accounts.fallback}
+        />
       ) : (
         <>
-          <ModelSettingsRead defaultModel={accounts.defaultModel} fallback={accounts.fallback} />
+          <ModelSettingsRead fallback={accounts.fallback} />
           <p className="text-text-2">
             Só o dono ou um administrador muda as contas de modelo da empresa.{' '}
             <Link

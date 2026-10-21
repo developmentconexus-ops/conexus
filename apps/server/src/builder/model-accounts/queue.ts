@@ -1,5 +1,4 @@
-import type { ModelAccountId } from '@conexus/hub-api'
-import { ModelId } from '@conexus/hub-api'
+import type { ModelAccountId, ModelId } from '@conexus/hub-api'
 import type { LanguageModel, MastraModelConfig } from '@mastra/core/llm'
 import { PROVIDER_REGISTRY, parseModelString, resolveModelConfig } from '@mastra/core/llm'
 import { and, asc, eq } from 'drizzle-orm'
@@ -11,10 +10,11 @@ import type { Credential, SealKeys } from '../../platform/seal.ts'
 import { AccountRow, columns, contextOf, credentialOf, usableInOrder } from './accounts.ts'
 import { subscriptionAccess } from './claude/store.ts'
 import { subscriptionModel } from './claude/subscription-model.ts'
-import type { CallFailure } from './errors.ts'
+import type { AccountFailure } from './errors.ts'
 import type { GoogleAccount } from './google/calls.ts'
-import { isRegistryModel } from './providers.ts'
-import { companyModel, modelAccount } from './tables.ts'
+import { isChoosable } from './providers.ts'
+import { keepServed, servesModel } from './served.ts'
+import { modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
 
 /**
@@ -62,31 +62,36 @@ function scopeOf(turn: Turn): Scope {
   return { kind: 'COMPANY', companyId: turn.companyId, personId: turn.personId }
 }
 
-type Asker = {
+export type Asker = {
   companyId: Turn['companyId']
   personId: Turn['personId']
   tried: ReadonlySet<ModelAccountId>
 }
 
 /**
- * The provider's accounts the person may use now, in their order (`usableInOrder`), less those
- * this turn tried. The caller admitted the person.
+ * The provider's accounts that serve the model and that the person may use now, in their order
+ * (`usableInOrder`), less those this turn tried. The caller admitted the person.
  */
-async function queuedRows(tx: ReadTx, asker: Asker, provider: string): Promise<AccountRow[]> {
+async function queuedRows(tx: ReadTx, asker: Asker, model: ModelId): Promise<AccountRow[]> {
   const rows = await tx
     .select(columns)
     .from(modelAccount)
-    .where(and(eq(modelAccount.companyId, asker.companyId), eq(modelAccount.provider, provider)))
+    .where(
+      and(
+        eq(modelAccount.companyId, asker.companyId),
+        eq(modelAccount.provider, providerOf(model)),
+      ),
+    )
     .orderBy(asc(modelAccount.position))
   const context = await contextOf(tx, asker.companyId)
   return usableInOrder(
     rows.map((row) => AccountRow.parse(row)),
     context,
     asker.personId,
-  ).filter((row) => !asker.tried.has(row.id))
+  ).filter((row) => servesModel(row, model) && !asker.tried.has(row.id))
 }
 
-function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
+export function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
   return deps.identity.admitMember({
     tx,
     personId: asker.personId,
@@ -99,39 +104,37 @@ function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
  * The next account of the provider for this turn, its credential opened in the transaction that
  * admits the person (security S32). Nothing is called and no key is read from the environment.
  */
-async function nextRow(deps: QueueDeps, turn: Turn, provider: string) {
+async function nextRow(deps: QueueDeps, turn: Turn, model: ModelId) {
   return deps.database.read(scopeOf(turn), async (tx) => {
     await admitted(deps, tx, turn)
-    const [first] = await queuedRows(tx, turn, provider)
+    const [first] = await queuedRows(tx, turn, model)
     if (first === undefined) return undefined
     const credential = await credentialOf(deps, tx, { ...first, companyId: turn.companyId })
     return { row: first, credential }
   })
 }
 
+/** Whether the person may call an account of the model's provider now. */
+export async function hasAccount(tx: ReadTx, who: Asker, model: ModelId): Promise<boolean> {
+  return (await queuedRows(tx, who, model)).length > 0
+}
+
 /**
- * The model a conversation starts on or changes to: the one asked, or the company's default; one
- * outside the registry is `MODEL_UNKNOWN`, and one with no account the person may use now is
- * `MODEL_NO_ACCOUNT`. No credential is opened.
+ * The model a conversation changes to: one the picker does not offer is `MODEL_UNKNOWN`, and one
+ * with no account the person may use now is `MODEL_NO_ACCOUNT`. No credential is opened.
  */
 export async function conversationModel(
   deps: QueueDeps,
   asker: { companyId: Turn['companyId']; personId: Turn['personId'] },
-  asked: ModelId | undefined,
+  asked: ModelId,
 ): Promise<ModelId> {
   const scope: Scope = { kind: 'COMPANY', ...asker }
   return deps.database.read(scope, async (tx) => {
     const who = { ...asker, tried: new Set<ModelAccountId>() }
     await admitted(deps, tx, who)
-    const [chosen] = await tx
-      .select({ model: companyModel.model })
-      .from(companyModel)
-      .where(eq(companyModel.companyId, asker.companyId))
-    const model = asked ?? (chosen === undefined ? undefined : ModelId.parse(chosen.model))
-    if (model === undefined || !isRegistryModel(model)) throw new Failure('MODEL_UNKNOWN')
-    const rows = await queuedRows(tx, who, providerOf(model))
-    if (rows.length === 0) throw new Failure('MODEL_NO_ACCOUNT')
-    return model
+    if (!isChoosable(asked)) throw new Failure('MODEL_UNKNOWN')
+    if (!(await hasAccount(tx, who, asked))) throw new Failure('MODEL_NO_ACCOUNT')
+    return asked
   })
 }
 
@@ -173,7 +176,7 @@ export async function pickAccount(
   modelId: ModelId,
 ): Promise<Picked | undefined> {
   for (;;) {
-    const found = await nextRow(deps, turn, providerOf(modelId))
+    const found = await nextRow(deps, turn, modelId)
     if (found === undefined) return undefined
     try {
       return await pickedOf(deps, turn, found, modelId)
@@ -198,8 +201,9 @@ export async function markAccount(
   deps: QueueDeps,
   turn: Turn,
   accountId: ModelAccountId,
-  failure: Extract<CallFailure, { kind: 'limited' | 'refused' }>,
+  failure: AccountFailure,
 ): Promise<void> {
+  if (failure.kind === 'missing') return readServedAgain(deps, turn, accountId)
   const set =
     failure.kind === 'limited' ? { limitedUntil: failure.until } : { state: 'refused' as const }
   try {
@@ -215,4 +219,38 @@ export async function markAccount(
     if (!(error instanceof Failure) || error.code !== 'DATABASE_UNAVAILABLE') throw error
     logFailure(deps.log, error)
   }
+}
+
+/**
+ * A provider that answered "not found" for the model says the list it serves has changed: reads it
+ * again with the account's credential. The account is not marked; the models it serves now decide
+ * whether the queue keeps it for this one.
+ */
+async function readServedAgain(deps: QueueDeps, turn: Turn, accountId: ModelAccountId) {
+  const found = await deps.database.read(scopeOf(turn), async (tx) => {
+    await admitted(deps, tx, turn)
+    const [row] = await tx
+      .select(columns)
+      .from(modelAccount)
+      .where(and(eq(modelAccount.id, accountId), eq(modelAccount.companyId, turn.companyId)))
+    if (row === undefined) return undefined
+    const account = AccountRow.parse(row)
+    const credential = await credentialOf(deps, tx, { ...account, companyId: turn.companyId })
+    return { account, credential }
+  })
+  if (found === undefined) return
+  const { account, credential } = found
+  const secret =
+    account.kind === 'claude_subscription'
+      ? await subscriptionAccess(
+          { ...deps, scope: scopeOf(turn) },
+          { ...account, companyId: turn.companyId, credential },
+        )
+      : credential.reveal()
+  await keepServed(
+    deps,
+    scopeOf(turn),
+    { id: account.id, kind: account.kind, provider: account.provider, companyId: turn.companyId },
+    secret,
+  )
 }

@@ -7,7 +7,9 @@ import type { Credential } from '../../platform/seal.ts'
 import { open, seal } from '../../platform/seal.ts'
 import type { Deps, Viewer } from './accounts.ts'
 import { accountView, admitFor, insertAccount, labelOf, scopeOf } from './accounts.ts'
+import { SubscriptionTokens } from './claude/anthropic-login.ts'
 import { openKindsOf } from './kinds.ts'
+import { keepServed } from './served.ts'
 import { modelAccountSignIn } from './tables.ts'
 
 /**
@@ -151,7 +153,7 @@ export async function completeSignIn(
     blob: taken.sealed,
   })
   const credential = await flow.complete(pending, input.code)
-  return deps.database.command(scopeOf(input), async (tx) => {
+  const made = await deps.database.command(scopeOf(input), async (tx) => {
     await admitOpen(deps, tx, input, owner, kind)
     const id = await insertAccount(deps, tx, input, {
       owner,
@@ -164,4 +166,15 @@ export async function completeSignIn(
     })
     return { account: await accountView(tx, input, id) }
   })
+  if (kind === 'claude_subscription') {
+    const { id, provider } = made.account
+    const access = SubscriptionTokens.parse(JSON.parse(credential.reveal())).access
+    await keepServed(
+      deps,
+      scopeOf(input),
+      { id, kind, provider, companyId: input.companyId },
+      access,
+    )
+  }
+  return made
 }

@@ -26,7 +26,7 @@ function view(fields: Partial<View> = {}): View {
     mine: [],
     order: [],
     kinds: [],
-    defaultModel: null,
+    connected: { mine: [], company: ['anthropic', 'mistral', 'openai'] },
     mayManage: true,
     ...fields,
   }

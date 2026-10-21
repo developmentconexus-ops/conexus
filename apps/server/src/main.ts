@@ -149,6 +149,7 @@ export function subjectsOf(deps: {
     identity,
     sealKeys: config.sealKeys,
     flows,
+    log,
   })
   return { projects, operations, apps, modelAccounts, conversations }
 }

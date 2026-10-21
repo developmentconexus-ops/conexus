@@ -1,6 +1,7 @@
 import {
   assignModelAccount,
   changeModelAccount,
+  clearMyModelDefault,
   completeModelAccountSignIn,
   connectModelAccount,
   getAccountKinds,
@@ -11,6 +12,7 @@ import {
   setAccountKinds,
   setDefaultModel,
   setModelFallback,
+  setMyModelDefault,
   startModelAccountSignIn,
 } from '@conexus/hub-api'
 import type { FastifyInstance } from 'fastify'
@@ -68,12 +70,6 @@ export function registerModelAccountRoutes(
     return answer(given)
   })
 
-  serve(app, setDefaultModel, async ({ person, params, body, log }) => {
-    const set = await store.setDefault({ person, ...params, model: body.model })
-    log.info({ companyId: params.companyId, model: set.defaultModel }, 'MODEL_ACCOUNT_CHANGED')
-    return answer(set)
-  })
-
   serve(app, setModelFallback, async ({ person, params, body, log }) => {
     const set = await store.setFallback({ person, ...params, ...body })
     log.info(
@@ -114,7 +110,31 @@ export function registerModelAccountRoutes(
     return answer(set)
   })
 
+  registerDefaultRoutes(app, deps)
   registerSignInRoutes(app, deps)
+}
+
+/** The company's default model and the person's own, each at a level (card 12.3). */
+function registerDefaultRoutes(app: FastifyInstance, deps: Deps & { store: ModelAccountStore }) {
+  const { store } = deps
+
+  serve(app, setDefaultModel, async ({ person, params, body, log }) => {
+    const set = await store.setDefault({ person, ...params, ...body })
+    log.info({ companyId: params.companyId, scope: 'company' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(set)
+  })
+
+  serve(app, setMyModelDefault, async ({ person, params, body, log }) => {
+    const set = await store.setMine({ person, ...params, ...body })
+    log.info({ companyId: params.companyId, scope: 'mine' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(set)
+  })
+
+  serve(app, clearMyModelDefault, async ({ person, params, log }) => {
+    await store.clearMine({ person, ...params })
+    log.info({ companyId: params.companyId, scope: 'mine' }, 'MODEL_ACCOUNT_CHANGED')
+    return answer(undefined)
+  })
 }
 
 function registerSignInRoutes(app: FastifyInstance, deps: Deps & { flows: SignInFlows }) {

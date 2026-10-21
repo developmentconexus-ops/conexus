@@ -13,6 +13,7 @@ import {
   SMALL_PHONE,
   ZOOMED_PHONE,
 } from './layout-harness.ts'
+import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { central, companies, PROJECT_ID, PROJECT_NAME } from './sweep-replies.ts'
 
 const WIDE_PHONE = { width: 600, height: 900 }
@@ -124,6 +125,16 @@ for (const viewport of [SMALL_PHONE, ZOOMED_PHONE]) {
       { scroll, openerEnd: (opener?.x ?? 0) + (opener?.width ?? 0) <= viewport.width },
       { scroll: viewport.width, openerEnd: true },
     )
+    await page.close()
+  })
+}
+
+for (const state of DEFAULT_STATES) {
+  test(`${state.name} cabe numa tela de ${ZOOMED_PHONE.width}px, a 200% de ampliação, sem rolagem lateral`, async () => {
+    const page = await open(state.path, ZOOMED_PHONE, state.replies)
+    await state.settle(page)
+    const scroll = await page.evaluate(() => document.documentElement.scrollWidth)
+    assert.equal(scroll, ZOOMED_PHONE.width)
     await page.close()
   })
 }

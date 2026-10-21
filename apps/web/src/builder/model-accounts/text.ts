@@ -2,12 +2,16 @@ import type {
   AccountKind,
   Effort,
   ModelAccount,
+  ModelDefault,
   PersonId,
   Provider,
   ProviderId,
+  StartSource,
 } from '@conexus/hub-api'
+import { providerOfModel } from '@conexus/hub-api'
 import { hourOf } from '../../platform/dates.ts'
 import { writeFailureText } from '../../platform/hub.ts'
+import { modelLabel } from './model-label.ts'
 
 export const KIND_NAMES = {
   api_key: 'Chave de API',
@@ -23,6 +27,11 @@ const UNCONFIRMED = 'Não confirmamos a mudança. Veja a lista.'
 /** What a failed write says: a refusal the Hub settled in its words, any other as one that may have saved. */
 export function refusalText(error: unknown): string {
   return writeFailureText(error, UNCONFIRMED)
+}
+
+/** What a failed write of a default says: the screen has no list to look at, so it says try again. */
+export function defaultRefusalText(error: unknown): string {
+  return writeFailureText(error, 'Não confirmamos a mudança. Tente de novo.')
 }
 
 /** The provider's name, or its id for one the key list does not hold, such as a subscription's. */
@@ -79,3 +88,21 @@ export const EFFORT_LABELS = {
   xhigh: 'Muito alto',
   max: 'Máximo',
 } as const satisfies Record<Effort, string>
+
+/** "Claude Sonnet 4.5 · Alto": a model and the level it starts at. */
+export function choiceText(choice: ModelDefault): string {
+  return `${modelLabel(choice.model)} · ${EFFORT_LABELS[choice.effort]}`
+}
+
+/** Where a new conversation's start comes from, as the line that names it ends. */
+export const START_SOURCE_TEXT = {
+  mine: 'seu padrão',
+  company: 'padrão da empresa',
+  starter: 'modelo inicial',
+} as const satisfies Record<StartSource, string>
+
+/** The name of the provider of `provider/model`, or the id when the list does not hold it. */
+export function modelProviderName(providers: readonly Provider[], model: ModelDefault['model']) {
+  const id = providerOfModel(model)
+  return providers.find((one) => one.id === id)?.name ?? id ?? model
+}
