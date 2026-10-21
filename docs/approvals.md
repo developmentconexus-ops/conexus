@@ -90,3 +90,7 @@ Etapa 12.2 usada em 2026-10-20 em https://hub.conexus.fun (v0.12.8): "Aprovado t
 ## Etapa 12.3
 
 Cartão da etapa 12.3 aprovado em 2026-10-20 (commit 055a84a76e0bf837c0de71cf57bc1fae66108e19): "Tudo A"; sobre as duas frentes, "A"
+
+## Etapa 13
+
+Cartão da etapa 13 aprovado em 2026-10-20 (commit 29e51c63b2e4937106f24c434b8fb219576e598e): "Aprovo"; sobre a chave do E2B, a da conta grátis que ele já tem, e não uma só desta instalação, como diz o cartão: "você não consegue pegar do Conexus OS ... e transferir"; em 2026-10-21, ciente de que o job de máquinas paradas apaga as pausadas da conta toda: "Limpa tudo sem dó e apaga e pode usar"
