@@ -49,7 +49,7 @@ export type Machines = {
 }
 
 /** A turn's tree as one bundle, with how many files the version holds and how many the turn changed. */
-export type Bundled = { bundle: Buffer; files: number; changedFiles: number }
+type Bundled = { bundle: Buffer; files: number; changedFiles: number }
 
 export type MachinesDeps = {
   database: Database
