@@ -25,8 +25,8 @@ it needs.
 - Study other apps only in a step that creates or changes a screen. Always with screenshots at 1280
   and 390 px, with today's screen beside, because text alone did not change a decision and a shot did.
 - The shelf is fixed: the old product run locally, Lovable, Base44 and Replit by their
-  documentation, Mastra Factory and Studio, Mastra Code (`mastracode/factory-ui`) and
-  `playground-ui` by their code, and Linear. A new entry joins only when
+  documentation, Mastra Factory and Studio, Mastra Code (`mastracode/factory-ui`),
+  `playground-ui` and vibesdk's `src` by their code, and Linear. A new entry joins only when
   none covers the subject.
 - The order: screenshots, then Impeccable `critique`, then two or three box layouts of different
   organisation (vary the organisation, never the visual), then the card. Visual and animation have a
