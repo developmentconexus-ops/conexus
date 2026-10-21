@@ -37,5 +37,5 @@ hosts, its filesystem and where a version is kept.
 
 ## State
 
-Proposed 2026-10-21. Founder: "Aprovo", "13 sim". Check 4 read: terms ban nothing here; paused machines kept
-without limit. Check 1 ok (nine lines, 2026-10-21); 3 open.
+Proposed 2026-10-21. Founder: "Aprovo", "13 sim". Results: 1 ok; 2 one copy (1.78.0); 3 ok on the real
+bucket (region automatic), three versions, one second; 4 terms ban nothing here.
