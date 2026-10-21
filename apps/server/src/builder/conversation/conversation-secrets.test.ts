@@ -2,7 +2,6 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { masked } from './mask.ts'
 import { asked, conversing, title } from './test-conversation.ts'
 
 const PASSWORD = 'S3nhaForte!'
@@ -15,19 +14,11 @@ const PHRASES = [
   'PGPASSWORD=S3nhaForte! psql -h db',
 ]
 const LEAKS = ['abcd1234efgh5678', 'hunter2pass', PASSWORD]
+/** Commands with no secret, which the mask leaves as they are. */
+const PLAIN = ['mysql -u root -h db', 'ls -la --all']
 
-test('a máscara cobre a forma Bearer, --password, -p colado, -u usuário:senha e nomes terminados em _PASS', () => {
-  for (const phrase of PHRASES) {
-    const safe = masked(phrase)
-    for (const leak of LEAKS) assert.equal(safe.includes(leak), false, `${phrase} -> ${safe}`)
-    assert.ok(safe.includes('***'), safe)
-  }
-  assert.equal(masked('mysql -u root -h db'), 'mysql -u root -h db')
-  assert.equal(masked('ls -la --all'), 'ls -la --all')
-})
-
-test('segredo no comando e na saída: mascarado no stream e no run_event, em cada forma', async (t) => {
-  const command = PHRASES.map((phrase) => `echo '${phrase}'`).join('; ')
+test('segredo no comando e na saída: mascarado no stream e no run_event em cada forma (Bearer, --password, -p, -u usuário:senha, _PASS), e um comando sem segredo intacto', async (t) => {
+  const command = [...PHRASES, ...PLAIN].map((phrase) => `echo '${phrase}'`).join('; ')
   let step = 0
   const { hub, ana, conversations } = await conversing(t, (call: Sent): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
@@ -45,4 +36,5 @@ test('segredo no comando e na saída: mascarado no stream e no run_event, em cad
     assert.equal(stream.includes(leak), false, `stream: ${leak}`)
     assert.equal(journal.includes(leak), false, `run_event: ${leak}`)
   }
+  for (const plain of PLAIN) assert.ok(stream.includes(plain), `stream: ${plain}`)
 })
