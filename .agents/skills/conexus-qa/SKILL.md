@@ -13,7 +13,6 @@ A step that changes a screen ([testing T25](../../../docs/guides/testing.md)), w
 ## Who
 
 An agent that built no unit of the step and has a working browser: Claude, or Codex through Pi.
-The Codex CLI sandbox could not start one in step 12.2.
 
 ## What it receives
 

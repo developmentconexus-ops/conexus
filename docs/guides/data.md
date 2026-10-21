@@ -2,12 +2,9 @@
 
 How Conexus stores data and changes its schema. This guide follows
 [Evolutionary Database Design](https://martinfowler.com/articles/evodb.html) by Pramod Sadalage and
-Martin Fowler, with the PostgreSQL documentation for roles and constraints. Each rule uses
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119): **must** and **must not** state a requirement;
-**should** and **should not** need a stated reason to break; **may** is a free choice. Each rule ends
-with its enforcing machine, or "review". Guidance does not reopen an approved contract or decision;
-[delivery L12](delivery.md) decides whether a finding blocks. Maintainers' skills own Drizzle and
-PostgreSQL usage; Neon's own sign-in, functions and storage are not used.
+Martin Fowler, with the PostgreSQL documentation for roles and constraints. Rules read as the
+opening of the [delivery guide](delivery.md) says. Neon's own sign-in, functions and storage are not
+used.
 
 Owners next door: [architecture](../architecture.md) for stores and company isolation,
 [security](security.md) for authority, [code](code.md) for errors and [testing](testing.md) for proof.
@@ -15,10 +12,9 @@ Database roles and grants live beside the migrations, not in a second list here.
 
 ## 1. Stores
 
-- **D1.** The Hub's database **must** hold the Hub's tables and, in a schema of its own, the
-  Builder's runs and model accounts [0011]. Mastra's tables **must** live in a separate database
-  under a login that cannot enter the Hub's [0010]. Conexus code **must not** write Mastra's tables.
-  [database grants]
+- **D1.** The Hub's database **must** hold the Hub's tables and the Builder's runs and model
+  accounts in a schema of its own, and Mastra's tables **must** live in a separate database under a
+  login that cannot enter the Hub's. [database grants]
 - **D4.** Each owner **should** have its own schema, not `public`. Failure: unrelated migrations
   create the same name and unintentionally widen privileges. [review]
 
@@ -28,28 +24,23 @@ Database roles and grants live beside the migrations, not in a second list here.
   with justified custom SQL for what it cannot generate and reproducible reference data. Examine
   impact, not just syntax. Failure: a manual database edit never reaches the next environment,
   or a generated rename drops data. [review]
-- **D6.** A migration **must** only add, so the previous image runs on the migrated database. A
-  rename or a drop **must** be a later migration, after no running code reads the old shape: expand,
-  move the callers, contract. [CI migration check]
+- **D6.** A migration **must** only add, and a rename or a drop **must** be a later migration, after
+  no running code reads the old shape. [CI migration check]
 - **D7.** An applied migration **must not** change. [CI migration check]
-- **D9.** Migrations **must** run by the program's `migrate` subcommand, which the deploy runs as a
-  one-off service before it starts the Hub, on the direct address, never a pooled one. The program
-  **must** refuse to start when the database lacks a migration it ships with. [boot check]
-- **D10.** Roles and grants **must** be created by SQL, never from Neon's console or API [0038]. The
-  Hub's login **must not** own a table, be a superuser or have `BYPASSRLS`. [catalog snapshot]
+- **D9.** Migrations **must** run by the program's `migrate` subcommand before the Hub starts, on
+  the direct address, and the program **must** refuse to start when the database lacks a
+  migration it ships with. [boot check]
+- **D10.** Roles and grants **must** be created by SQL, and the Hub's login **must not** own a
+  table, be a superuser or have `BYPASSRLS`. [catalog snapshot]
 - **D11.** The role and grant list **must** change only in a pull request of its own, with the
-  founder's word. After migration, CI compares a `pg_dump` and `pg_dumpall` snapshot of the catalog
-  with that list [0038]. The equality holds on CI's disposable cluster only: Neon adds roles and
-  grants of its own. [catalog snapshot, `catalog.test.ts`]
+  founder's word. [catalog snapshot, `catalog.test.ts`]
 - **D12.** Grants **must** keep each login's verbs and columns narrow, and **must not** be treated as
   row authorization: admission owns that ([security S7](security.md)). [catalog check, review]
 - **D13.** Removing a function **should** check its exact signature, callers and the replacement's
   invariants without implicit cascade. Failure: `CASCADE` removes protection another path still
   needs. The migration checker is a heuristic, not a complete SQL parser. [review]
 - **D32.** `migrate` **must** set a login's password only when that login, with its key file's
-  password, is refused with 28P01. Each `ALTER ROLE ... PASSWORD` stores a new SCRAM salt even for the
-  same password; on Neon a restart that rewrote it answered one request with 500, read as a new login
-  refused while Neon's proxy still held the old verifier. [`migrate.test.ts`, the verifier unchanged]
+  password, is refused with 28P01. [`migrate.test.ts`, the verifier unchanged]
 - **D33.** An index on an ICU collation (the Projects' unique name, `und-x-icu`) **must** be rebuilt
   with `REINDEX` when the provider's ICU major version changes. PostgreSQL only warns of the
   mismatch, and a stale index lets a duplicate in or hides a row. Failure: "Ação" and "AÇÃO" both insert after an upgrade. [review]
@@ -85,19 +76,16 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   explain the choice: repeatable read shares a snapshot but can require retry after concurrent
   updates; read committed with row locks lets the next command decide on the committed row.
   Neither an isolation name nor a ban on `merge` proves atomicity. [review]
-- **D25.** There **must not** be a session-level lock, or a session setting outside a transaction. A
-  single owner **must** be a lease row with an expiry, renewed by activity. [CI search, from the first
-  step with a database]
-- **D27.** Nothing **may** keep a connection or send a statement while nobody uses Conexus; an idle
-  database **must** be able to sleep [0009]. [sleeping-database test]
+- **D25.** There **must not** be a session-level lock, or a session setting outside a transaction,
+  and a single owner **must** be a lease row with an expiry, renewed by activity. [CI search]
+- **D27.** Nothing **may** keep a connection or send a statement while nobody uses Conexus.
+  [sleeping-database test]
 
 ## 5. Generated apps
 
-- **D28.** A generated app **must** reach its data only through `db.query(text, values)`, which
-  only reads, and `db.batch` for writes, one transaction, all or none [0045]. PostgreSQL refuses a
-  write through `db.query`, and the dispatcher bounds each call [0047]. The rule against two
-  separate writes for one action **must** live in the Builder's server skill. [PostgreSQL,
-  dispatcher]
+- **D28.** A generated app **must** reach its data only through `db.query(text, values)`, which only
+  reads, and `db.batch` for writes, in one transaction. The rule against two separate writes for one
+  action **must** live in the Builder's server skill. [PostgreSQL, dispatcher]
 - **D29.** An app's migrations **must** live in its own Git. The Hub **must** apply them with that
   app's migration login, and read them as SQL before Preview. [from step 15]
 
