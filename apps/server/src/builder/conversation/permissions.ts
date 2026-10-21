@@ -28,27 +28,36 @@ const EXECUTE = new Set<string>([
 
 /**
  * The permission category of each tool the Builder has (card, U6): reading and the web are `read`,
- * writing files `edit`, commands and their processes `execute`. A tool not named here is `other`,
- * which the rules deny, so a tool added later does nothing until it is classified here.
+ * writing files `edit`, commands and their processes `execute`. A tool not named here, an MCP
+ * tool included, is `other`, which the rules deny, so a tool added later does nothing until it is
+ * classified here.
  */
-export function categoryOf(toolName: string): ToolCategory {
+function categoryOf(toolName: string): ToolCategory {
   if (READ.has(toolName)) return 'read'
   if (EDIT.has(toolName)) return 'edit'
   if (EXECUTE.has(toolName)) return 'execute'
   return 'other'
 }
 
-/** The only tools a turn is offered: the three categories the rules allow. */
-export const AVAILABLE_TOOLS = [...READ, ...EDIT, ...EXECUTE]
-
 /**
  * What every session starts with (S2, S14, card U6, never `yolo`): the machine is the Builder's to
  * read, write and run in, nothing else is. A tool the rules allow does not wait: the workspace's
  * tools and `web_fetch` answer for themselves that they need no approval, which the run's own
- * requirement yields to; `recall`, Memory's, is approved by the rule at once. The mode's
- * `availableTools` closes the set the model is offered.
+ * requirement yields to; `recall`, Memory's, is approved by the rule at once.
  */
-export const PERMISSION_RULES: PermissionRules = {
+const PERMISSION_RULES: PermissionRules = {
   categories: { read: 'allow', edit: 'allow', execute: 'allow', mcp: 'deny', other: 'deny' },
   tools: {},
+}
+
+/**
+ * How the Builder's controller closes its tools, the one owner of the closed set: the mode offers
+ * the three categories the rules allow and no other tool (`availableTools`, which the controller
+ * narrows by the same rules), the resolver classifies each tool, and no session starts in `yolo`.
+ * The account queue narrows the set the mode offers and never rebuilds it.
+ */
+export const TOOL_CLOSURE = {
+  availableTools: [...READ, ...EDIT, ...EXECUTE],
+  toolCategoryResolver: categoryOf,
+  initialState: { yolo: false, permissionRules: PERMISSION_RULES },
 }

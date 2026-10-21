@@ -1,105 +1,84 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { Agent } from '@mastra/core/agent'
-import { runExperiment } from '@mastra/core/datasets'
-import { Mastra } from '@mastra/core/mastra'
-import { InMemoryStore } from '@mastra/core/storage'
-import { createTool } from '@mastra/core/tools'
+import type { MastraDBMessage } from '@mastra/core/agent'
 import { checks } from '@mastra/evals/checks'
-import { MockLanguageModelV3 } from 'ai/test'
-import { z } from 'zod'
+import type { Hub } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { asked, conversing, title } from './test-conversation.ts'
 
 const WRITE = 'mastra_workspace_write_file'
-const RUN = 'mastra_workspace_execute_command'
+const PAGE = { path: 'index.html', content: '<h1>Padaria</h1>\n' }
+const SKILL_TOOLS = ['skill', 'skill_read', 'skill_search']
+/** What the instructions must tell a model to write: where the app is, and the skill to read first. */
+const TELLS_TO_WRITE = [/read, write and edit files/, /\/home\/user\/app/, /skill conexus-app/]
 
-function fakeTool(id: string, input: z.ZodObject) {
-  return createTool({
-    id,
-    description: `A stand-in for ${id}; the experiment serves its mocked output.`,
-    inputSchema: input,
-    execute: async () => {
-      throw new Error('a tool that ran live in the gate')
-    },
-  })
+/**
+ * A model that does what the Builder's setup asks of it, and nothing else: it writes the page only
+ * when the call it is given carries the server's instructions, the skill's tools and the write
+ * tool. Break any of them and it answers in words, as a model with nothing to write with would.
+ */
+function obedient() {
+  let wrote = false
+  return (call: Sent): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    const equipped =
+      TELLS_TO_WRITE.every((rule) => rule.test(call.system)) &&
+      call.tools.includes(WRITE) &&
+      SKILL_TOOLS.every((name) => call.tools.includes(name))
+    if (!equipped || wrote) return { kind: 'text', text: 'Pronto.' }
+    wrote = true
+    return { kind: 'blocks', blocks: [{ type: 'tool_use', name: WRITE, input: PAGE }] }
+  }
 }
 
-function call(toolCallId: string, toolName: string, input: object) {
-  return { type: 'tool-call' as const, toolCallId, toolName, input: JSON.stringify(input) }
+/** What Mastra saved of the turn, as the scorers read it: the thread's messages in order. */
+async function savedMessages(pool: Hub['test']['mastraPool']) {
+  const { rows } = await pool.query(
+    'select id, role, content, "createdAt" from mastra.mastra_messages order by "createdAt"',
+  )
+  return rows.map(
+    (row: { id: string; role: string; content: unknown; createdAt: Date }): MastraDBMessage => ({
+      id: row.id,
+      role: row.role === 'user' ? 'user' : 'assistant',
+      createdAt: row.createdAt,
+      content: typeof row.content === 'string' ? JSON.parse(row.content) : row.content,
+    }),
+  )
 }
 
-const USAGE = {
-  inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
-  outputTokens: { total: 1, text: 1, reasoning: 0 },
-}
-
-/** A model that writes the page, then answers: the Builder's shape of a turn, one step a call. */
-function scriptedModel(steps: ('write' | 'stray' | 'answer')[]) {
-  let step = 0
-  return new MockLanguageModelV3({
-    doGenerate: async () => {
-      const now = steps[step++] ?? 'answer'
-      const content =
-        now === 'write'
-          ? [call('w', WRITE, { path: 'index.html', content: '<h1>Padaria</h1>' })]
-          : now === 'stray'
-            ? [call('s', RUN, { command: 'rm -rf /' })]
-            : [{ type: 'text' as const, text: 'Escrevi a página.' }]
-      const unified = now === 'answer' ? ('stop' as const) : ('tool-calls' as const)
-      return { content, finishReason: { unified, raw: undefined }, usage: USAGE, warnings: [] }
-    },
-  })
-}
-
-async function gate(steps: ('write' | 'stray' | 'answer')[]) {
-  const agent = new Agent({
-    id: 'builder',
-    name: 'Builder',
-    instructions: 'Write the files the person asks for.',
-    model: scriptedModel(steps),
-    tools: {
-      [WRITE]: fakeTool(WRITE, z.object({ path: z.string(), content: z.string() })),
-      [RUN]: fakeTool(RUN, z.object({ command: z.string() })),
-    },
-  })
-  const mastra = new Mastra({ agents: { builder: agent }, storage: new InMemoryStore() })
-  return runExperiment(mastra, {
-    targetType: 'agent',
-    targetId: 'builder',
-    data: [
-      {
-        input: 'Faça uma página para a padaria',
-        toolMocks: [
-          {
-            toolName: WRITE,
-            args: { path: 'index.html', content: '<h1>Padaria</h1>' },
-            output: 'Wrote index.html',
+async function gate(t: TestContext) {
+  const { hub, ana, conversations } = await conversing(t, obedient())
+  const { events } = await asked(
+    t,
+    { hub, person: ana, conversations },
+    'Faça uma página para a padaria',
+  )
+  const output = await savedMessages(hub.test.mastraPool)
+  const scores = []
+  for (const scorer of [checks.calledTool(WRITE), checks.noToolErrors()]) {
+    scores.push(
+      (
+        await scorer.run({
+          input: {
+            inputMessages: [],
+            rememberedMessages: [],
+            systemMessages: [],
+            taggedSystemMessages: {},
           },
-        ],
-      },
-    ],
-    scorers: [checks.calledTool(WRITE), checks.noToolErrors()],
-    unmockedToolPolicy: 'deny',
-    persistence: { experiments: 'none', scores: 'none' },
-  })
+          output,
+        })
+      ).score,
+    )
+  }
+  return { events, scores, folder: join(hub.builder.folder, 'app') }
 }
 
-test('o portão do Builder: escreveu os arquivos e nenhuma ferramenta deu erro', async () => {
-  const summary = await gate(['write', 'answer'])
-  assert.equal(summary.failedCount, 0)
-  const scores = summary.results.flatMap((result) => result.scores)
-  assert.deepEqual(
-    scores.map((score) => score.score),
-    [1, 1],
-  )
-})
-
-test('o portão pega o Builder que não escreve, ou que chama o que não foi combinado', async () => {
-  const silent = await gate(['answer'])
-  assert.deepEqual(
-    silent.results.flatMap((result) => result.scores).map((score) => score.score),
-    [0, 1],
-  )
-  const stray = await gate(['write', 'stray', 'answer'])
-  assert.equal(stray.failedCount, 1)
-  assert.equal(stray.results[0]?.error?.code, 'TOOL_MOCK_NOT_DECLARED')
+test('o portão do Builder: o Builder de verdade escreveu os arquivos e nenhuma ferramenta deu erro', async (t) => {
+  const { events, scores, folder } = await gate(t)
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(readFileSync(join(folder, PAGE.path), 'utf8'), PAGE.content)
+  assert.deepEqual(scores, [1, 1])
 })

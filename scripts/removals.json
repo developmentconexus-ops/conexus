@@ -2484,5 +2484,60 @@
       "file": "src/builder/conversation/conversation-tools.test.ts",
       "name": "um turno com `web_fetch` nunca para à espera de aprovação: ele responde por si e roda"
     }
+  },
+  {
+    "id": "tools-other-denied",
+    "file": "apps/server/src/builder/conversation/permissions.ts",
+    "find": "mcp: 'deny', other: 'deny'",
+    "replace": "mcp: 'deny', other: 'allow'",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/permissions.test.ts",
+      "name": "o fecho recusa o que as categorias não liberam"
+    }
+  },
+  {
+    "id": "switch-keeps-closed-set",
+    "file": "apps/server/src/builder/model-accounts/processors.ts",
+    "find": "      if (turn.switched && args.activeTools !== undefined) {\n        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)",
+    "replace": "      if (turn.switched) {\n        result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/permissions.test.ts",
+      "name": "a troca automática de modelo estreita o conjunto fechado"
+    }
+  },
+  {
+    "id": "gate-needs-instructions",
+    "file": "apps/server/src/builder/conversation/instructions.ts",
+    "find": "read, write and edit files there",
+    "replace": "read and look at files there",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder"
+    }
+  },
+  {
+    "id": "gate-needs-write-tool",
+    "file": "apps/server/src/builder/conversation/permissions.ts",
+    "find": "  availableTools: [...READ, ...EDIT, ...EXECUTE],",
+    "replace": "  availableTools: [...READ, ...EXECUTE],",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder"
+    }
+  },
+  {
+    "id": "gate-needs-account-pick",
+    "file": "apps/server/src/builder/conversation/builder.ts",
+    "find": "    inputProcessors: [accountPick(deps.queue)],\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder"
+    }
   }
 ]
