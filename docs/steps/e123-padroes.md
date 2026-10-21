@@ -66,7 +66,7 @@ do merge, este cartão volta (L7).
 
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
-| U1 | Os padrões no servidor, a ordem de início, os fornecedores conectados (P5) | `hub-api`, `builder/model-accounts/` e `builder/conversation/routes.ts` (servidor), `migrations/`, `database-grants.sql`; os dublês da tela que montam `Accounts` | dados | 12.1 e 12.2 fechadas |
+| U1 | Padrões no servidor, ordem de início, lista de P5 | `hub-api`, `builder/model-accounts/` e `builder/conversation/routes.ts` (servidor), `migrations/`, `database-grants.sql`; os dublês da tela que montam `Accounts` | dados | 12.1 e 12.2 fechadas |
 | U2 | As duas seções; toda escolha de modelo pela lista de P5 | `routes/…/$companyId_/settings/`, `builder/model-accounts/` e `builder/conversation/model-choice.tsx` (tela) | design | U1 |
 | U3 | As gravações e os dublês que as tocam | `scripts/`, `platform/` (servidor) | testes | U2 |
 | U4 | Uma dobra: `applyEvent` | `hub-api`, `builder/conversation/` | código | U3 |
@@ -115,7 +115,7 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 | 25 | U2 | Compositor e Meus padrões listam só `connected.mine`; Padrões da empresa e a fila, `connected.company`; vazia: "Conecte uma conta de modelo" | `model-choices.test.tsx` | must |
 | 26 | U3 | Cada gravação tem fornecedor, API, versão do SDK e data (T24); nenhum cabeçalho, token, id de conta ou e-mail (S40) | `recordings.test.ts` | must |
 | 27 | U3 | Pelo Hub, tocando a gravação: a busca citada dá um texto só (PR 191); o pensamento, `reasoning` com segundos; o erro, a ferramenta em `error`; a interrupção, `turnEnd` `aborted` | `conversation-recorded.test.ts` | must |
-| 28 | U4 | Só `applyEvent` torna evento em partes (servidor, tela, `messageOf`); os testes de stream da 12.1 passam sem mudar | `conversations.test.ts` (`hub-api`), `stream.test.tsx` | must |
+| 28 | U4 | Só `applyEvent` torna evento em partes; os testes de stream da 12.1 passam sem mudar | `conversations.test.ts` (`hub-api`), `stream.test.tsx` | must |
 | 29 | U5 | Por gravação, o stream dobrado por `applyEvent` é igual a `readConversation` no fim (T24), e após reabrir o stream no meio | `conversation-recorded.test.ts` | must |
 | 30 | U5 | Um pensamento reaberto mostra os segundos (#176); sem eles gravados, `seconds: null` | idem | must |
 
@@ -174,17 +174,17 @@ Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A3
 
 ## O que nasce novo e o que é trazido
 
-Mastra Factory e Mastra Code no fork `ce7e9c30`; Conexus OS em `e0353c36`.
+Fork `ce7e9c30`; OS `e0353c36`.
 
 | Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Nativo / referência |
 | --- | --- | --- | --- | --- | --- |
 | Padrão pessoal | nova | `model-accounts/tables.ts` | — | — | Factory: o do projeto; o pessoal não vale nele (`FactoryDefaultModelSection.tsx:28-29`); OS: por papel |
 | Nível no padrão da empresa | nova | idem | — | sai o `medium` constante do antigo (`models.ts:11`): você pediu escolher | Factory: sem nível |
-| Ordem de início e origem | nova; regra de `{level, source}` do Mastra Code (`thinking.ts:57-63`) | `model-accounts/defaults.ts` | — | — | Factory copia ao nascer (`factory-session.ts:363-366`) |
+| Ordem de início e origem | nova; regra de `{level, source}` do Mastra Code (`thinking.ts:57-63`) | `model-accounts/defaults.ts` | — | — | Factory copia ao nascer (`factory-session.ts:338,363-366`) |
 | Nível que desce | trazida da 12.1: `runLevel` de `thinking.ts`, a mesma regra de `getEffectiveThinkingLevel` (`openai-codex.ts:56-68`) | `thinking.ts` exporta `effortFor` | `runLevel` sobre `Effort` | o dono segue `thinking.ts` (C26) | Mastra Code, a mesma |
 | Seções | nova | `settings/my-defaults.tsx`, `defaults.tsx`, `model-accounts/default-choice.tsx` | `default-model.tsx` vira `default-choice.tsx` | — | Factory: `FactoryDefaultModelSection.tsx:19-48` |
 | Lista de P5 | nova | `model-accounts/store.ts` | — | — | Factory: o servidor filtra aos fornecedores com credencial (`useAvailableModels.ts:14-18`), como P5 A |
-| `applyEvent` | nova | `hub-api/src/conversations.ts` | — | — | Mastra Code: `applyEvent` (`transcript.ts:197`); OS: `transcriptReducer` (`features/builder/transcript.ts:84`); sobre eventos do Mastra, nós sobre os nossos (0050) |
+| `applyEvent` | nova | `hub-api/src/conversations.ts` | — | — | Mastra Code: `applyEvent` (`transcript.ts:197`); OS: `transcriptReducer` (`apps/web/src/features/builder/transcript.ts:84`); sobre eventos do Mastra, nós sobre os nossos (0050) |
 | Segundos guardados, gravações | nova | `live.ts`, `history.ts`; `scripts/`, `recordings/` | — | — | — |
 
 **A medida do transplante.** Nada trazido: o antigo tinha um padrão por papel na instalação
@@ -211,7 +211,8 @@ Mastra Factory e Mastra Code no fork `ce7e9c30`; Conexus OS em `e0353c36`.
 - `ModelDefault = z.object({model: ModelId, effort: Effort})`; `StartSource = z.enum(['mine',
   'company', 'starter'])`; `Accounts.defaults = {company: ModelDefault | null, mine: ModelDefault |
   null, start: (ModelDefault & {from: StartSource}) | null}`; `Accounts.connected = {mine:
-  ProviderId[], company: ProviderId[]}` (P5), por `list`.
+  ProviderId[], company: ProviderId[]}` (P5), por `list`; não `usableProviders`: a conta pausada segue
+  conectada.
 - `setDefaultModel` `PUT /api/companies/{companyId}/default-model`, corpo `ModelDefault`: 200
   `{defaultModel: ModelDefault}`; falhas `NOT_FOUND`, `SESSION_REQUIRED`, `DATABASE_UNAVAILABLE`,
   `MODEL_UNKNOWN`, `EFFORT_UNSUPPORTED`.
@@ -243,9 +244,10 @@ Mastra Factory e Mastra Code no fork `ce7e9c30`; Conexus OS em `e0353c36`.
 
 ### As skills e a leitura
 
-Do mapa (`docs/reference/stack.md`), pelas pastas, em toda unidade `typescript-magician` e `node`.
-Aqui: `mastra`; `fastify-best-practices`; `drizzle` (`node_modules/drizzle-kit/skills/`);
-`orm.drizzle.team/llms.txt`; `neon:neon-postgres`; `zod.dev/llms.txt`; nos dublês, `vitest` e `msw`.
+Do mapa (`docs/reference/stack.md`), na sua ordem; uma linha vale para toda pasta sob a sua. Em toda
+unidade `typescript-magician`, `node` e `zod.dev/llms.txt`; no servidor, `fastify-best-practices` e
+`orm.drizzle.team/llms.txt`. Aqui: `mastra`; `drizzle` (`node_modules/drizzle-kit/skills/`);
+`neon:neon-postgres`; nos dublês, `vitest` e `msw`.
 
 ### Como se prova
 
@@ -272,9 +274,9 @@ Regras: W32, W17, V29, V30, V31. O `ModelPicker` com `effort` da 12.1.
 
 ### As skills e a leitura
 
-`router-core` (de `@tanstack/router-core`, não de `react-router`); `node_modules/@base-ui/react/docs/`;
-`shadcn` (campos `text-base md:text-body`, V18); `react-hook-form.com/docs`;
-`tanstack.com/query/latest/llms.txt`; `react.dev/llms.txt`. Do Impeccable, `clarify` e `harden`.
+`react.dev/llms.txt`; `router-core` (de `@tanstack/router-core`, não de `react-router`);
+`tanstack.com/query/latest/llms.txt`; `node_modules/@base-ui/react/docs/`; `shadcn` (campos
+`text-base md:text-body`, V18); `react-hook-form.com/docs`. Do Impeccable, `clarify` e `harden`.
 
 ### Como se prova
 
@@ -284,14 +286,14 @@ Regras: W32, W17, V29, V30, V31. O `ModelPicker` com `effort` da 12.1.
 
 **O raio.** Cria `scripts/record-provider.ts` e `apps/server/src/platform/recordings/` (um
 `<fornecedor>-<caso>.sse` e o seu `.json`); `Reply` de `platform/test-anthropic.ts` ganha `{kind:
-'recorded'; name}`, e `test-cliproxy.ts` a rota de modelo `/v1`. Chamam: os testes da conversa.
+'recorded'; name}`, e `test-cliproxy.ts` a rota de modelo `/v1`.
 
 **Os contratos.** `Recording = z.object({provider: ProviderId, api: z.string(), sdk: z.string(),
 recordedAt: z.iso.date()})`, o `.json` (T24, C27). `record-provider.ts --provider anthropic|google
 --case cited|thinking|tool-error|abort`: um turno pelo `@ai-sdk/anthropic` instalado com a assinatura
 Claude, ou pelo CLIProxy com a conta Gemini, e um `fetch` que copia o corpo. Pergunta inventada; a
 credencial vem do ambiente, nunca a arquivo ou log (S40). Claude grava os quatro casos; Gemini,
-o pensamento e a interrupção (a busca espera #150). Só esta sessão é autorizada ("2A", 2026-10-20).
+a interrupção (o pensamento espera #172, a busca #150). Só esta sessão é autorizada ("2A", 2026-10-20).
 
 **As skills e a leitura.** `node_modules/@ai-sdk/anthropic/docs/05-anthropic.mdx` (armadilhas: PR
 188, PR 191); `node_modules/ai/docs/`; `mastra`; o README do CLIProxyAPI.
@@ -302,7 +304,7 @@ o pensamento e a interrupção (a busca espera #150). Só esta sessão é autori
 
 **O raio.** `hub-api/src/conversations.ts` cria `applyEvent`; no servidor, `put` e `appendText`
 saem e `TurnLog` (`live.ts`) e `messageOf` (`parts.ts`, por `history.ts`) a chamam; na tela,
-`appended` e `placed` saem de `live.ts` (`use-live.ts`, `panel.tsx` chamam).
+`appended` e `placed` saem de `live.ts`.
 
 **Os contratos.** `PartEvent = Extract<ConversationEvent, {type: 'text' | 'part' | 'notice'}>`;
 `applyEvent(parts: readonly MessagePart[], event: PartEvent): MessagePart[]`, pura: texto depois de
