@@ -108,7 +108,11 @@ export async function hubBeside(t: TestContext, hub: Hub) {
   const { test, config } = hub
   const identity = identityOf({ database: test.database, config, log: silent })
   const postgres = heldCompanyPostgres(config)
-  const ports = testAppPorts(config, { neon: fakeNeon(), cloudflare: fakeCloudflare(), postgres })
+  const ports = testAppPorts(
+    config,
+    { neon: fakeNeon(), cloudflare: fakeCloudflare(), postgres },
+    hub.builder.folder,
+  )
   const subjects = subjectsOf({
     ...{ mastraPool: test.mastraPool, database: test.database, config, identity },
     ...{ ...ports, log: silent },

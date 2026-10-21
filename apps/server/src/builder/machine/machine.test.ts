@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
+import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import {
   createTestDatabase,
   testConfig,
@@ -13,7 +14,7 @@ import {
 } from '../../platform/test-database.ts'
 import { openRepository } from '../git/public.ts'
 import type { Phase } from './public.ts'
-import { createE2bApi, createE2bKit, createMachines } from './public.ts'
+import { createE2bApi, createE2bKit, createMachines, SandboxId } from './public.ts'
 import { localKit, newControl } from './test-machine.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
@@ -64,7 +65,7 @@ async function world(t: TestContext, startMs = 5_000) {
   return { asOwner, machines, repository, base, control, phases, open, folder }
 }
 
-test('máquina: o primeiro uso liga, copia o main, grava o id; religar não copia; sumida é refeita com o aviso', async (t) => {
+test('máquina: o primeiro uso liga, copia o main, grava o id; religar volta ao main; sumida é refeita com o aviso, sem criar outra', async (t) => {
   const { open, phases, control, asOwner, machines, base } = await world(t)
   const first = await open()
   assert.deepEqual(phases, [])
@@ -76,17 +77,83 @@ test('máquina: o primeiro uso liga, copia o main, grava o id; religar não copi
   phases.length = 0
   control.outcome = 'connected'
   const woken = await open()
-  assert.equal(await woken.filesystem?.readFile('a.ts', { encoding: 'utf8' }), 'um\n')
-  assert.deepEqual(phases, ['waking'])
+  assert.equal(await woken.filesystem?.exists('a.ts'), false, 'a fresh turn starts from main')
+  assert.deepEqual(phases, ['waking', 'copying'])
   assert.equal(control.networkClosed, 1)
   phases.length = 0
   control.outcome = 'created'
+  control.exists = false
   const rebuilt = await open()
   await rebuilt.filesystem?.exists('a.ts')
   assert.deepEqual(phases, ['waking', 'replaced', 'copying'])
+  assert.equal(control.reattached.at(-1), undefined, 'a gone machine is not asked for by id')
   assert.equal(await rebuilt.filesystem?.exists('a.ts'), false)
   const bundle = await machines.collect({ projectId: PROJECT, base })
   assert.equal(bundle, 'unchanged')
+})
+
+test('máquina: um turno retomado guarda os arquivos que a máquina tem; o outro volta ao main, e um commit em outro ramo não apaga a versão anterior', async (t) => {
+  const { open, machines, repository, base, control, folder } = await world(t)
+  const first = await open()
+  const git = `git -c user.name=B -c user.email=b@x.test`
+  await first.filesystem?.writeFile('a.ts', 'um\n')
+  const committed = await first.sandbox?.executeCommand?.('sh', [
+    '-c',
+    `cd ${join(folder, 'app')} && git checkout -qb outro && git add -A && ${git} commit -qm um`,
+  ])
+  assert.equal(committed?.exitCode, 0, committed?.stderr)
+  const bundle = await machines.collect({ projectId: PROJECT, base })
+  assert.ok(typeof bundle === 'object')
+  assert.deepEqual([bundle.files, bundle.changedFiles], [1, 1])
+  const received = await repository.receive({
+    runId: RunId.parse('00000000-0000-4000-8000-000000000002'),
+    bundle: bundle.bundle,
+    base,
+  })
+  assert.ok(received.ok)
+  assert.equal(await repository.advance({ candidate: received.value, base }), 'advanced')
+  await machines.release(PROJECT)
+  control.outcome = 'connected'
+  const resumed = await machines.workspaceFor({
+    companyId: COMPANY,
+    projectId: PROJECT,
+    deadline: new Date(Date.now() + 3_600_000),
+    resumed: true,
+    onPhase: () => undefined,
+  })
+  assert.equal(machines.touched(PROJECT), true)
+  assert.equal(await resumed.filesystem?.exists('a.ts'), true, 'a resumed turn keeps its files')
+  await machines.release(PROJECT)
+  const next = await open()
+  assert.equal(
+    await next.filesystem?.exists('a.ts'),
+    true,
+    'the next turn starts from main, which holds a.ts',
+  )
+  const second = await machines.collect({ projectId: PROJECT, base: received.value })
+  assert.equal(second, 'unchanged')
+})
+
+test('máquina: a máquina que cai no meio do turno é refeita, e o turno não guarda o que se perdeu', async (t) => {
+  const { open, machines, base, control } = await world(t)
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  control.outcome = 'created'
+  await control.restart()
+  await assert.rejects(machines.collect({ projectId: PROJECT, base }), /died/)
+})
+
+test('máquina: a primeira ferramenta do Workspace espera a semente: o comando já vê o repositório', async (t) => {
+  const { open, folder } = await world(t)
+  const workspace = await open()
+  const tools = await createWorkspaceTools(workspace)
+  const command = tools[WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]
+  assert.ok(command, 'the workspace offers execute_command')
+  const seen = await command.execute(
+    { command: `cat ${join(folder, 'app')}/.git/HEAD` },
+    { workspace },
+  )
+  assert.match(JSON.stringify(seen), /ref: refs\/heads\/main/)
 })
 
 test('máquina: E2B calado passa do prazo externo e um 502 também, ambos MACHINE_UNAVAILABLE, sem gravar id', async (t) => {
@@ -118,10 +185,10 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
   ])
   assert.equal(committed.exitCode, 0, committed.stderr)
   const bundle = await machines.collect({ projectId: PROJECT, base })
-  assert.ok(Buffer.isBuffer(bundle))
+  assert.ok(typeof bundle === 'object')
   const received = await repository.receive({
     runId: RunId.parse('00000000-0000-4000-8000-000000000001'),
-    bundle,
+    bundle: bundle.bundle,
     base,
   })
   assert.ok(received.ok)
@@ -146,6 +213,14 @@ test('máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausan
   assert.deepEqual(options.network, { allowOut: ['registry.npmjs.org'], denyOut: ['0.0.0.0/0'] })
   assert.deepEqual(options.lifecycle, { onTimeout: 'pause' })
   assert.equal(options.metadata.conexus_origin, 'hub.example.test')
+  const woken = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
+    id: `conexus-${PROJECT}`,
+    sandboxId: SandboxId.parse('sb-1'),
+    deadline: new Date(Date.now() + 3_600_000),
+    metadata: {},
+    onStart: () => undefined,
+  })
+  assert.equal(Reflect.get(woken.sandbox, '_constructorOptions').reattach, 'required')
 })
 
 test('máquina: a varredura lista só as máquinas com a marca desta instalação e mata a que se mandou', async (t) => {

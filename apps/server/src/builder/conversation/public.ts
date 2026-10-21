@@ -69,7 +69,11 @@ export function createConversations(deps: {
      * taken and go on (card, criterion 22).
      */
     async resumeRuns() {
-      for (const taken of await deps.runs.takeOver()) await sessions.resume(taken)
+      async function resume() {
+        for (const taken of await deps.runs.takeOver()) await sessions.resume(taken)
+      }
+      await resume()
+      deps.runs.retakeEvery(resume)
     },
     /** Mastra's tables, made once at start by its own login (decision 0010). */
     async prepare() {
@@ -86,8 +90,9 @@ export function createConversations(deps: {
      * calls (code C62).
      */
     async close() {
-      await sessions.drain()
-      await deps.runs.stop()
+      const drained = sessions.drain()
+      await deps.runs.yieldAfter(drained)
+      await drained
       await builder.memory.settled()
       await builder.mastra.shutdown()
       await deps.google.stop()

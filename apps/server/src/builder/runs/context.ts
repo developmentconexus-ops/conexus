@@ -14,6 +14,8 @@ export type RunsDeps = {
   log: FailureLog
   /** How long a turn may run; an hour (card, limits) unless a test shortens it. */
   turnMs?: () => number
+  /** How often a turn's lease is renewed; every 30 seconds unless a test shortens it. */
+  renewMs?: () => number
 }
 
 /** What the runs share: the ports and the rows. */
@@ -25,10 +27,10 @@ export type RunsContext = RunsDeps & {
 }
 
 /** A saved version: its number, the paths in its tree, and the paths the turn changed against its base. */
-export type SavedVersion = { number: number; changed: boolean; files: number; changedFiles: number }
+type SavedVersion = { number: number; changed: boolean; files: number; changedFiles: number }
 
 /** How a turn that may write ended, for the person: a version, nothing, or why not. */
 export type Outcome =
   | { kind: 'saved'; version: SavedVersion }
   | { kind: 'unchanged' }
-  | { kind: 'failed'; code: 'SAVE_REFUSED' | 'MACHINE_LOST' }
+  | { kind: 'failed'; code: 'SAVE_REFUSED' | 'MACHINE_LOST' | 'MACHINE_UNAVAILABLE' }

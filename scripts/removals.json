@@ -2484,5 +2484,38 @@
       "file": "src/builder/conversation/conversation-tools.test.ts",
       "name": "um turno com `web_fetch` nunca para à espera de aprovação: ele responde por si e roda"
     }
+  },
+  {
+    "id": "reattach-required",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": ", reattach: 'required' as const",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine.test.ts",
+      "name": "máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausando ao vencer, com a marca"
+    }
+  },
+  {
+    "id": "lease-renewed-while-saving",
+    "file": "apps/server/src/builder/runs/store.ts",
+    "find": "eq(run.owner, this.#owner), inArray(run.state, LIVE)))",
+    "replace": "eq(run.owner, this.#owner), eq(run.state, 'open')))",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-restart.test.ts",
+      "name": "guardar leva mais que a posse: a posse segue renovada, outra mensagem não ganha o Projeto e a versão sai uma vez"
+    }
+  },
+  {
+    "id": "restart-continuation",
+    "file": "apps/server/src/builder/conversation/deliver.ts",
+    "find": "contents: CONTINUATION",
+    "replace": "contents: 'continue'",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-restart.test.ts",
+      "name": "reinício no meio do turno: o turno retomado é avisado do reinício, e termina sem chamar ferramenta guardando o que a máquina já tinha"
+    }
   }
 ]

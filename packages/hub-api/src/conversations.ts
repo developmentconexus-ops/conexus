@@ -44,6 +44,7 @@ export const TurnFailureCode = z.enum([
   'MODEL_CALL_FAILED',
   'SAVE_REFUSED',
   'MACHINE_LOST',
+  'MACHINE_UNAVAILABLE',
   'INTERNAL_UNEXPECTED',
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>
