@@ -11,21 +11,12 @@ import { AccountRow, columns, contextOf, credentialOf, usableInOrder } from './a
 import { subscriptionAccess } from './claude/store.ts'
 import { subscriptionModel } from './claude/subscription-model.ts'
 import type { AccountFailure } from './errors.ts'
-import type { GoogleAccount } from './google/calls.ts'
+import type { GoogleCalls } from './google/port.ts'
 import { isChoosable } from './providers.ts'
 import { servesModel } from './served.ts'
 import { readServedOf } from './served-reads.ts'
 import { modelAccount } from './tables.ts'
 import type { Picked, Turn } from './turn.ts'
-
-/**
- * The process of a Google account that takes its calls on this machine (step 12 U10); `hold`
- * keeps it while a call runs and gives back its release.
- */
-export type GoogleCalls = (
-  account: GoogleAccount,
-  scope: Scope,
-) => Promise<{ url: string; apiKey: string; hold: () => () => void }>
 
 export type QueueDeps = {
   database: Database

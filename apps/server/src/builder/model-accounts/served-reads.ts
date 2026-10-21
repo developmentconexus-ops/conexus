@@ -7,7 +7,8 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import { AccountRow, columns, credentialOf } from './accounts.ts'
 import { subscriptionAccess } from './claude/store.ts'
-import type { GoogleCalls } from './queue.ts'
+import type { GoogleCalls } from './google/port.ts'
+
 import { hasReader, keepServed } from './served.ts'
 import { modelAccount } from './tables.ts'
 

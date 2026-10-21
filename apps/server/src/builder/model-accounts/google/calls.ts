@@ -8,17 +8,9 @@ import { sealContext } from '../accounts.ts'
 import { modelAccount } from '../tables.ts'
 import type { Process, Deps as ProcessDeps } from './google.ts'
 import { end, launch, loginFileOf } from './google.ts'
+import type { GoogleAccount } from './port.ts'
 
 const IDLE_MS = 10 * 60 * 1000
-
-export type GoogleAccount = {
-  id: ModelAccountId
-  companyId: CompanyId
-  personId: PersonId | null
-  provider: ProviderId
-  revision: number
-  credential: Credential
-}
 
 type Running = {
   process: Process
