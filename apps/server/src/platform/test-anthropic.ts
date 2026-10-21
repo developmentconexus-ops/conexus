@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import type { Block } from './test-anthropic-stream.ts'
 import { events } from './test-anthropic-stream.ts'
+import { replayed } from './test-recordings.ts'
 
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
@@ -27,9 +28,9 @@ export type Sent = {
 
 /**
  * How the double answers one call: text, a `web_fetch` call, the blocks given, a provider's
- * refusal, a hang, a connection the provider resets in the middle of its stream, or (Chat
- * Completions only) a stream that ends with no content on Gemini's `MALFORMED_FUNCTION_CALL`, as
- * CLIProxy relays it.
+ * refusal, a hang, a connection the provider resets in the middle of its stream, a recording of the
+ * provider's own stream (`recordings/<name>.sse`), or (Chat Completions only) a stream that ends with
+ * no content on Gemini's `MALFORMED_FUNCTION_CALL`, as CLIProxy relays it.
  */
 export type Reply =
   | { kind: 'text'; text: string }
@@ -38,6 +39,7 @@ export type Reply =
   | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
   | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string }
   | { kind: 'reset' }
+  | { kind: 'recorded'; name: string }
   | { kind: 'malformed' }
 
 /** The Messages API's `error.type` for each status it answers (its documented errors). */
@@ -112,7 +114,8 @@ function heldChat(until: Promise<void>, lines: string[]): ReadableStream<Uint8Ar
 }
 
 /** Chat Completions' documented stream: chunks of `choices[].delta`, then `[DONE]`. */
-function chatReplied(sent: Sent, reply: Reply): Response {
+function chatReplied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefined): Response {
+  if (reply.kind === 'recorded') return replayed(reply.name, signal)
   if (reply.kind === 'refuse') {
     const error = { error: { message: 'planted refusal', type: 'invalid_request_error' } }
     return Response.json(error, { status: reply.status, headers: reply.headers })
@@ -244,7 +247,8 @@ function resetStream(head: string[]): Response {
   return new Response(body, { headers: { 'content-type': 'text/event-stream' } })
 }
 
-function replied(sent: Sent, reply: Reply): Response {
+function replied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefined): Response {
+  if (reply.kind === 'recorded') return replayed(reply.name, signal)
   if (reply.kind === 'refuse') {
     const error = {
       type: 'error',
@@ -319,7 +323,7 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
     if (url.startsWith(CHAT_URL)) {
       const chat = chatSentOf(init)
       anthropic.chats.push(chat)
-      return chatReplied(chat, anthropic.chat(chat))
+      return chatReplied(chat, anthropic.chat(chat), init?.signal)
     }
     if (!url.startsWith(MESSAGES_URL)) {
       anthropic.elsewhere.push(url)
@@ -328,7 +332,10 @@ export function plantAnthropic(t: Lifetime, answer: Anthropic['answer']): Anthro
     const sent = sentOf(init)
     anthropic.sent.push(sent)
     const unidentified = sent.bearer !== null && !sent.system.startsWith(SUBSCRIPTION_LINE)
-    return replied(sent, unidentified ? { kind: 'refuse', status: 429 } : anthropic.answer(sent))
+    const reply = unidentified
+      ? { kind: 'refuse' as const, status: 429 as const }
+      : anthropic.answer(sent)
+    return replied(sent, reply, init?.signal)
   }
   t.after(() => {
     globalThis.fetch = real

@@ -1,10 +1,12 @@
 // A double of CLIProxyAPI v8.0.33's management API for Google's sign-in (T15), run as the program:
 // it reads the config it is given, refuses to listen off 127.0.0.1, and writes one login file once
 // the callback brings its state. In the folder after `--control`, the file `mode` says `refuse` to
-// fail the login, and `runs` gets its pid and folder, a line per run.
+// fail the login, and `runs` gets its pid and folder, a line per run. Its model route, `/v1`'s Chat
+// Completions, answers with the recording the file `recording` names (testing T24).
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
+import { endedOf, recordedBody } from './test-recordings.ts'
 
 const configPath = process.argv[process.argv.indexOf('--config') + 1] ?? ''
 const config = readFileSync(configPath, 'utf8')
@@ -61,6 +63,13 @@ const server = createServer(async (request, response) => {
   }
   if (url.pathname === '/v0/management/get-auth-status') {
     return reply(200, url.searchParams.has('state') ? { status } : { status: 'ok' })
+  }
+  if (url.pathname === '/v1/chat/completions' && request.method === 'POST') {
+    const name = readFileSync(join(control, 'recording'), 'utf8').trim()
+    const recorded = recordedBody(name)
+    response.writeHead(200, { 'content-type': 'text/event-stream' })
+    // A stream the client cut stays open, as the provider was still sending, until the Hub stops.
+    return endedOf(recorded) ? response.end(recorded) : response.write(recorded)
   }
   return reply(404, {})
 })
