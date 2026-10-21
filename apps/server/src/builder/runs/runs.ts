@@ -10,6 +10,7 @@ import type {
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Result } from '../../platform/result.ts'
+import type { Phase } from '../machine/public.ts'
 import type { Outcome, RunsContext, RunsDeps } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
@@ -32,6 +33,8 @@ type Driven = {
   projectId: ProjectId
   deadlineAt: Date
   workspace: Promise<Workspace> | undefined
+  /** Where the machine's phases are told; the turn sets it, none until then. */
+  onPhase: (phase: Phase) => void
   stop: () => void
   lost: boolean
 }
@@ -78,7 +81,7 @@ export class Runs {
       companyId,
       projectId,
       deadline: mine.deadlineAt,
-      onPhase: () => undefined,
+      onPhase: (phase) => mine.onPhase(phase),
     })
   }
 
@@ -96,10 +99,21 @@ export class Runs {
       this.#deps.log.info(fields, 'RUN_BUSY')
       return { ok: false, error: 'busy' }
     }
-    const idle = { workspace: undefined, stop: () => undefined, lost: false }
+    const idle = {
+      workspace: undefined,
+      onPhase: () => undefined,
+      stop: () => undefined,
+      lost: false,
+    }
     this.#driven.set(id, { companyId, projectId, deadlineAt, ...idle })
     this.#deps.log.info({ ...fields, runId: id }, 'RUN_ADMITTED')
     return { ok: true, value: id }
+  }
+
+  /** Sets where the machine's phases of the run are told. */
+  onPhase(runId: RunId, listener: (phase: Phase) => void): void {
+    const mine = this.#driven.get(runId)
+    if (mine !== undefined) mine.onPhase = listener
   }
 
   /** Starts the turn's hour and its lease; `abort` stops the turn as Parar does. */
@@ -149,7 +163,12 @@ export class Runs {
     for (const companyId of await this.#context.store.companiesWithRuns()) {
       for (const row of await this.#context.store.takeOver(companyId)) {
         const { projectId, personId, conversationId, deadlineAt } = row
-        const idle = { workspace: undefined, stop: () => undefined, lost: false }
+        const idle = {
+          workspace: undefined,
+          onPhase: () => undefined,
+          stop: () => undefined,
+          lost: false,
+        }
         this.#driven.set(row.id, { companyId, projectId, deadlineAt, ...idle })
         this.#deps.log.info({ companyId, projectId, runId: row.id }, 'RUN_RESUMED')
         taken.push({ companyId, projectId, personId, conversationId, deadlineAt, runId: row.id })

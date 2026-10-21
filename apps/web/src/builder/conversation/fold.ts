@@ -16,6 +16,8 @@ export function fold(parts: readonly MessagePart[]): Row[] {
     run = []
   }
   for (const part of parts) {
+    // A file the turn wrote is for the Código tab: the tool row already says it in words.
+    if (part.type === 'file') continue
     if (part.type === 'tool') run.push(part)
     else {
       close()

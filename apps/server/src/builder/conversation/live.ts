@@ -13,10 +13,12 @@ import type { AgentControllerEvent, Session } from '@mastra/core/agent-controlle
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { Phase as MachinePhase } from '../machine/public.ts'
 import type { Turn } from '../model-accounts/public.ts'
 import type { Outcome } from '../runs/public.ts'
 import type { Place } from './parts.ts'
-import { modelOf, partOf } from './parts.ts'
+import { fileOf, modelOf, partOf } from './parts.ts'
+import { ShellTail } from './shell.ts'
 import type { Journal, Listener, TurnLog } from './turn-log.ts'
 import { flushText, say } from './turn-log.ts'
 
@@ -86,6 +88,8 @@ export type Live = {
   run: { id: RunId; finish: (reason: string) => Promise<Outcome | 'gone'> } | undefined
   /** Why saving failed, for the turn's end to say (card, the failures table). */
   saveFailure: TurnFailureCode | undefined
+  /** The version the turn saved, for its end to say. */
+  saved: number | undefined
   unsubscribe: () => void
 }
 
@@ -106,6 +110,7 @@ function newTurn(id: RunId | undefined): TurnLog {
     buffer: '',
     queue: Promise.resolve(),
     thinking: undefined,
+    shells: new Map(),
     failureKept: false,
     ended: false,
   }
@@ -131,6 +136,11 @@ function lastTurn(live: Live): TurnLog {
 function tell(live: Live, turn: TurnLog, event: PartEvent): void {
   turn.answer.parts = applyEvent(turn.answer.parts, event)
   say(live, turn, event)
+}
+
+/** The machine's step, told as the part that says what the turn waits for. */
+export function tellMachine(live: Live, phase: MachinePhase): void {
+  tell(live, openTurn(live), { type: 'part', part: { type: 'machine', phase } })
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
@@ -163,7 +173,10 @@ function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
   }
   settleThinking(live, turn)
   // The text arrives by its deltas.
-  if (shown.type !== 'text') tell(live, turn, { type: 'part', part: shown })
+  if (shown.type === 'text') return
+  tell(live, turn, { type: 'part', part: shown })
+  const file = shown.type === 'tool' ? fileOf(shown) : undefined
+  if (file !== undefined) tell(live, turn, { type: 'part', part: file })
 }
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
@@ -205,7 +218,26 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
     }
     endTurn(live, { reason: event.reason, turn: run?.turn })
     run?.ended()
+  } else if (event.type === 'shell_output' || event.type === 'command_exit') {
+    onShellEvent(live, event)
   } else onMessageEvent(live, event)
+}
+
+/** A command's output is kept to its last lines and said once, when it exits. */
+function onShellEvent(
+  live: Live,
+  event: Extract<AgentControllerEvent, { type: 'shell_output' | 'command_exit' }>,
+): void {
+  const turn = live.turn
+  if (turn === undefined || turn.ended) return
+  const tail = turn.shells.get(event.toolCallId) ?? new ShellTail()
+  turn.shells.set(event.toolCallId, tail)
+  if (event.type === 'shell_output') {
+    tail.add(event.output)
+    return
+  }
+  turn.shells.delete(event.toolCallId)
+  tell(live, turn, { type: 'part', part: tail.part(event.toolCallId, event.exitCode) })
 }
 
 type Ending = {
@@ -262,6 +294,9 @@ export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Prom
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'failed') {
     live.saveFailure = outcome.code
   }
+  if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'saved') {
+    live.saved = outcome.version
+  }
   const code = live.saveFailure ?? failureOf({ reason, turn: run?.turn })
   if (code !== undefined && live.turn !== undefined && (run !== undefined || live.saveFailure)) {
     await keepFailure(live, live.turn, code)
@@ -284,6 +319,10 @@ export function endTurn(live: Live, ending: Ending): void {
     ending.reason === 'error' || ending.reason === 'aborted' ? ending.reason : 'complete'
   const code = live.saveFailure ?? failureOf(ending)
   live.saveFailure = undefined
+  if (live.saved !== undefined) {
+    tell(live, turn, { type: 'part', part: { type: 'version', number: live.saved, changed: true } })
+    live.saved = undefined
+  }
   if (code !== undefined) {
     tell(live, turn, { type: 'part', part: { type: 'failure', code } })
     void keepFailure(live, turn, code)

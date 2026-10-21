@@ -3,6 +3,7 @@ import { applyEvent, EventId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
+import type { ShellTail } from './shell.ts'
 
 /** An event as the stream sends it, with the id a reconnect names it by. */
 export type Said = { id: EventId; event: ConversationEvent }
@@ -30,6 +31,8 @@ export type TurnLog = {
   /** The journal's writes and the stream's sends, one after the other. */
   queue: Promise<void>
   thinking: { id: string; since: number } | undefined
+  /** The output of the commands in progress, by the tool call that runs them. */
+  shells: Map<string, ShellTail>
   failureKept: boolean
   ended: boolean
 }

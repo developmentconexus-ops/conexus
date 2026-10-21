@@ -255,3 +255,31 @@ test('a conversa abre no fim, quem subiu não é puxado quando ela cresce e volt
     restore()
   }
 })
+
+test('um turno que escreve: arquivo, comando e saída, máquina e versão, em palavras; o arquivo escrito não vira linha', async () => {
+  const { log, parts } = await begin()
+  parts(
+    { type: 'machine', phase: 'starting' },
+    { type: 'tool', id: 'w', kind: 'write_file', state: 'completed', subject: { path: 'a.ts' } },
+    { type: 'file', toolId: 'w', path: 'a.ts', operation: 'write' },
+    {
+      type: 'tool',
+      id: 'c',
+      kind: 'run_command',
+      state: 'completed',
+      subject: { command: 'npm test' },
+    },
+    { type: 'shell', toolId: 'c', lines: ['1 teste falhou'], exitCode: 1 },
+    { type: 'tool', id: 'x', kind: 'other', state: 'denied', subject: null },
+    { type: 'version', number: 2, changed: true },
+  )
+  await within(log).findByText('Guardei a versão 2.')
+  expect(within(log).getByText('Preparando a máquina de trabalho…')).toBeTruthy()
+  expect(within(log).getByText('Escreveu um arquivo')).toBeTruthy()
+  expect(within(log).getByText('a.ts')).toBeTruthy()
+  expect(within(log).getByText('npm test')).toBeTruthy()
+  expect(within(log).getByText('1 teste falhou')).toBeTruthy()
+  expect(within(log).getByText('O comando terminou com o código 1.')).toBeTruthy()
+  expect(within(log).getByText('Não pôde usar uma ferramenta')).toBeTruthy()
+  expect(within(log).getAllByText('a.ts')).toHaveLength(1)
+})

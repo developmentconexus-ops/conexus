@@ -16,7 +16,15 @@ import { memoryOwner } from './builder.ts'
 import { catchUp } from './catch-up.ts'
 import { pendingQuestion } from './history.ts'
 import type { Listener, Live, Owner, Question, Said } from './live.ts'
-import { beforeAgentEnd, endTurn, keepQuestion, onEvent, openTurn, questionId } from './live.ts'
+import {
+  beforeAgentEnd,
+  endTurn,
+  keepQuestion,
+  onEvent,
+  openTurn,
+  questionId,
+  tellMachine,
+} from './live.ts'
 import { after } from './turn-log.ts'
 
 /**
@@ -68,7 +76,7 @@ export class Sessions {
           },
           ...{ turn: undefined, asked: new Set(), runs: new Map() },
           ...{ unclaimed: undefined, questions: [], kept: Promise.resolve() },
-          ...{ run: undefined, saveFailure: undefined },
+          ...{ run: undefined, saveFailure: undefined, saved: undefined },
           unsubscribe: () => undefined,
         }
         const unsubscribe = session.subscribe((event) => onEvent(opened, event))
@@ -180,7 +188,7 @@ export class Sessions {
     const answered: Promise<void> = entry.live
       .then((live) => {
         live.asked.add(turn)
-        return this.#answer(live, question, turn, runId)
+        return this.#answer(live, question, turn, runId, 'resumed')
       })
       .then(() => this.#release(conversationId, entry))
       .catch((cause: unknown) =>
@@ -199,13 +207,21 @@ export class Sessions {
    * failure is the turn's end when no other run is in progress. A turn Mastra ran keeps its
    * failure after the message that opened it, the one it saves the turn after.
    */
-  async #answer(live: Live, question: Question, turn: Turn, writing: RunId): Promise<void> {
+  async #answer(
+    live: Live,
+    question: Question,
+    turn: Turn,
+    writing: RunId,
+    began?: 'resumed',
+  ): Promise<void> {
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
     const id = questionId(live.conversationId, question.key)
     live.run = { id: writing, finish: (reason) => this.#runs.finish({ runId: writing, reason }) }
     const opened = openTurn(live)
+    if (began !== undefined) tellMachine(live, began)
     this.#runs.attach(writing, () => live.session.abort())
+    this.#runs.onPhase(writing, (phase) => tellMachine(live, phase))
     try {
       const requestContext = this.#runs.contextOf(turnContext(turn), writing)
       const options = { requestContext, requireDelivery: true }

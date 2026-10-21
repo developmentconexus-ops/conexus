@@ -84,6 +84,8 @@ export {
   providerOfModel,
   readConversation,
   runningEffort,
+  SHELL_MAX_BYTES,
+  SHELL_MAX_LINES,
   SUBJECT_MAX_LENGTH,
   sendConversationMessage,
   setConversationModel,

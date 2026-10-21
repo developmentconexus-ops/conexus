@@ -2429,5 +2429,27 @@
       "file": "src/builder/runs/runs-lease.test.ts",
       "name": "dois processos"
     }
+  },
+  {
+    "id": "command-masked",
+    "file": "apps/server/src/builder/conversation/parts.ts",
+    "find": "cut(masked(command.data.command))",
+    "replace": "cut(command.data.command)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-writing.test.ts",
+      "name": "um turno que escreve"
+    }
+  },
+  {
+    "id": "shell-masked",
+    "file": "apps/server/src/builder/conversation/shell.ts",
+    "find": "masked(this.#tail)",
+    "replace": "this.#tail",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-writing.test.ts",
+      "name": "um turno que escreve"
+    }
   }
 ]

@@ -67,7 +67,7 @@ async function world(t: TestContext, startMs = 5_000) {
 test('máquina: o primeiro uso liga, copia o main, grava o id; religar não copia; sumida é refeita com o aviso', async (t) => {
   const { open, phases, control, asOwner, machines, base } = await world(t)
   const first = await open()
-  assert.deepEqual(phases, ['starting'])
+  assert.deepEqual(phases, [])
   await first.filesystem?.writeFile('a.ts', 'um\n')
   assert.deepEqual(phases, ['starting', 'copying'])
   assert.deepEqual(await asOwner(`select sandbox_id from builder.machine`), [

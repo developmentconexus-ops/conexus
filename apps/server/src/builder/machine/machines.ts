@@ -12,7 +12,7 @@ import { collected, collectScript, outFile, seedFile, seedScript, wakeScript } f
 import { machine } from './tables.ts'
 
 /** What Ana is told while the machine gets ready or saves (card, the stream's `machine` part). */
-export type Phase = 'starting' | 'waking' | 'copying' | 'replaced' | 'saving'
+export type Phase = 'starting' | 'waking' | 'copying' | 'replaced' | 'resumed' | 'saving'
 
 export type Machines = {
   /** The workspace of one turn: the machine is not touched until a tool needs it. */
@@ -56,6 +56,8 @@ type Session = {
   companyId: CompanyId
   projectId: ProjectId
   onPhase: (phase: Phase) => void
+  /** Whether the Projeto had a machine when the turn began: it wakes, or starts. */
+  known: boolean
   ready: Promise<void> | undefined
 }
 
@@ -124,6 +126,7 @@ class BuilderMachines implements Machines {
   }
 
   private async boot(session: Session) {
+    session.onPhase(session.known ? 'waking' : 'starting')
     try {
       await within(session.kit.sandbox.start?.() ?? Promise.resolve(), this.startMs)
     } catch (cause) {
@@ -155,7 +158,6 @@ class BuilderMachines implements Machines {
   async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
     const { companyId, projectId, onPhase } = input
     const sandboxId = await this.known(companyId, projectId)
-    onPhase(sandboxId === undefined ? 'starting' : 'waking')
     const holder: { session?: Session } = {}
     const kit = this.deps.kit({
       id: `conexus-${projectId}`,
@@ -167,7 +169,8 @@ class BuilderMachines implements Machines {
           await this.onStart(holder.session, sandboxId !== undefined, outcome)
       },
     })
-    const session: Session = { kit, companyId, projectId, onPhase, ready: undefined }
+    const known = sandboxId !== undefined
+    const session: Session = { kit, companyId, projectId, onPhase, known, ready: undefined }
     holder.session = session
     this.sessions.set(projectId, session)
     return new Workspace({
