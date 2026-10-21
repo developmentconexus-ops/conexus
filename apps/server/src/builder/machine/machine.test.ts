@@ -44,7 +44,7 @@ async function world(t: TestContext, startMs = 5_000) {
   const machines = createMachines({
     database,
     kit: localKit(folder, control),
-    api: { list: async () => [], kill: async () => undefined },
+    api: { list: async () => [], kill: async () => undefined, exists: async () => control.exists },
     seedOf: () => repository.bundleOfMain(),
     mark: { conexus_origin: 'hub.example.test' },
     log: LOG,

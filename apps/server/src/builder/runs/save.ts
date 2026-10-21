@@ -39,7 +39,7 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
   const received =
     bundle === 'too-large'
       ? ({ ok: false, error: 'too-large' } as const)
-      : await repository.receive({ runId: saved.id, bundle, base })
+      : await repository.receive({ runId: saved.id, bundle: bundle.bundle, base })
   if (!received.ok) {
     context.log.error({ ...fields, reason: received.error }, 'SAVE_REFUSED')
     await settle(context, saved, 'failed')
@@ -56,5 +56,7 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
   const version = await repository.versionAt(candidate)
   context.log.info({ ...fields, version }, 'VERSION_SAVED')
   if (!(await copyVersion(context, { ...saved, candidateSha: candidate }))) context.retry.kick()
-  return { kind: 'saved', version }
+  if (bundle === 'too-large') return { kind: 'failed', code: 'SAVE_REFUSED' }
+  const { files, changedFiles } = bundle
+  return { kind: 'saved', version: { number: version, changed: true, files, changedFiles } }
 }

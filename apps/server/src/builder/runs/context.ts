@@ -24,8 +24,11 @@ export type RunsContext = RunsDeps & {
   stopped(runId: RunId): Promise<void>
 }
 
+/** A saved version: its number, the paths in its tree, and the paths the turn changed against its base. */
+export type SavedVersion = { number: number; changed: boolean; files: number; changedFiles: number }
+
 /** How a turn that may write ended, for the person: a version, nothing, or why not. */
 export type Outcome =
-  | { kind: 'saved'; version: number }
+  | { kind: 'saved'; version: SavedVersion }
   | { kind: 'unchanged' }
   | { kind: 'failed'; code: 'SAVE_REFUSED' | 'MACHINE_LOST' }

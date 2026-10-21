@@ -8,13 +8,15 @@ import { SandboxId } from './kit.ts'
 export type Control = {
   outcome: 'created' | 'connected'
   start: 'ok' | 'gone' | 'hang' | 'unreachable'
+  /** Whether the provider still holds the recorded machine. */
+  exists: boolean
   networkClosed: number
   /** The deadline each machine was asked for. */
   deadlines: Date[]
 }
 
 export function newControl(): Control {
-  return { outcome: 'created', start: 'ok', networkClosed: 0, deadlines: [] }
+  return { outcome: 'created', start: 'ok', exists: true, networkClosed: 0, deadlines: [] }
 }
 
 /** A machine that is a folder of this computer: E2B's start, its outcome and its failures made by hand. */

@@ -26,14 +26,14 @@ export function seedScript(workdir: string, tmp: string): string {
     'test -d .git || git init --quiet -b main',
     `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:refs/conexus/base'`,
     'git checkout --quiet --force -B main refs/conexus/base',
-    'git clean -fdq',
+    'git clean -fdq -e node_modules',
     `rm -f ${quoted(seed)}`,
   ].join('\n')
 }
 
-/** A woken machine goes back to the branch the Hub reads, with the files it holds left as they are. */
-export function wakeScript(workdir: string): string {
-  return `cd ${quoted(workdir)} && git checkout --quiet main`
+/** A turn the server took over keeps the machine's files as they are; it only needs the repository there. */
+export function keepScript(workdir: string): string {
+  return `cd ${quoted(workdir)} && git rev-parse --git-dir`
 }
 
 /**
@@ -53,6 +53,8 @@ export function collectScript(workdir: string, tmp: string, base: Sha): string {
     `git add --all -- . ':(exclude,glob)**/node_modules/**'`,
     'tree=$(git write-tree)',
     `if [ "$tree" = "$(git rev-parse ${base}^{tree})" ]; then echo UNCHANGED; exit 0; fi`,
+    `echo "files=$(git ls-tree -r --name-only "$tree" | wc -l)"`,
+    `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" | wc -l)"`,
     `commit=$(git ${identity} commit-tree "$tree" -p ${base} -m 'Conexus Builder')`,
     `git update-ref ${CANDIDATE_REF} "$commit"`,
     `rm -f ${quoted(out)}`,
@@ -61,11 +63,24 @@ export function collectScript(workdir: string, tmp: string, base: Sha): string {
   ].join('\n')
 }
 
-/** What the collect script printed: `UNCHANGED`, a size within the cap, or a size past it. */
-export function collected(stdout: string): 'unchanged' | 'too-large' | 'bundle' {
-  const last = stdout.trim().split('\n').at(-1) ?? ''
-  if (last === 'UNCHANGED') return 'unchanged'
-  const size = Number(/^size=(\d+)$/.exec(last)?.[1])
-  if (!Number.isSafeInteger(size)) throw new Error(`collect printed ${last}`)
-  return size > MAX_BYTES ? 'too-large' : 'bundle'
+/** What the collect script printed: nothing changed, a bundle past the cap, or a bundle and its file counts. */
+export type Collected =
+  | { kind: 'unchanged' }
+  | { kind: 'too-large' }
+  | { kind: 'bundle'; files: number; changedFiles: number }
+
+function counted(stdout: string, name: string): number {
+  const value = Number(new RegExp(`^${name}=(\\d+)$`, 'm').exec(stdout)?.[1])
+  if (!Number.isSafeInteger(value)) throw new Error(`collect printed no ${name}`)
+  return value
+}
+
+export function collected(stdout: string): Collected {
+  if (stdout.trim().split('\n').at(-1) === 'UNCHANGED') return { kind: 'unchanged' }
+  if (counted(stdout, 'size') > MAX_BYTES) return { kind: 'too-large' }
+  return {
+    kind: 'bundle',
+    files: counted(stdout, 'files'),
+    changedFiles: counted(stdout, 'changed'),
+  }
 }

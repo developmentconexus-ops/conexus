@@ -83,6 +83,7 @@ export function testBuilderPorts(config: Config) {
       log: silent,
       kit: localKit(folder, control),
       api: {
+        exists: async () => true,
         list: async () => listed,
         kill: async (id) => {
           killed.push(id)

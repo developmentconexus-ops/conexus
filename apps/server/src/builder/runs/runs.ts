@@ -27,6 +27,17 @@ import { RunStore } from './store.ts'
 /** A turn's hour (card, limits). */
 const TURN_MS = 3_600_000
 
+function idleRun(taken: boolean) {
+  return {
+    workspace: undefined,
+    onPhase: () => undefined,
+    taken,
+    stopDeadline: () => undefined,
+    stopLease: () => undefined,
+    lost: false,
+  }
+}
+
 /** A run this copy of the program drives: its Projeto, its timers and its workspace. */
 type Driven = {
   companyId: CompanyId
@@ -35,7 +46,11 @@ type Driven = {
   workspace: Promise<Workspace> | undefined
   /** Where the machine's phases are told; the turn sets it, none until then. */
   onPhase: (phase: Phase) => void
-  stop: () => void
+  /** A run another copy left and this one took: its machine keeps the files the turn wrote. */
+  taken: boolean
+  /** Ends the hour's timer; the lease goes on until the save is over. */
+  stopDeadline: () => void
+  stopLease: () => void
   lost: boolean
 }
 
@@ -47,7 +62,7 @@ type Admission = {
 }
 
 /** A run another copy of the program left open, taken over to be driven here. */
-export type TakenRun = Admission & { runId: RunId; deadlineAt: Date }
+export type TakenRun = Admission & { runId: RunId; deadlineAt: Date; expired: boolean }
 
 /**
  * The Builder's runs (decision 0051): one turn that may write per Projeto, the workspace it works
@@ -68,7 +83,8 @@ export class Runs {
       store: new RunStore(deps.database, randomUUID()),
       retry: this.#retry,
       stopped: async (runId) => {
-        this.#driven.get(runId)?.stop()
+        this.#driven.get(runId)?.stopDeadline()
+        this.#driven.get(runId)?.stopLease()
         this.#driven.delete(runId)
       },
     }
@@ -81,6 +97,7 @@ export class Runs {
       companyId,
       projectId,
       deadline: mine.deadlineAt,
+      resumed: mine.taken,
       onPhase: (phase) => mine.onPhase(phase),
     })
   }
@@ -99,13 +116,7 @@ export class Runs {
       this.#deps.log.info(fields, 'RUN_BUSY')
       return { ok: false, error: 'busy' }
     }
-    const idle = {
-      workspace: undefined,
-      onPhase: () => undefined,
-      stop: () => undefined,
-      lost: false,
-    }
-    this.#driven.set(id, { companyId, projectId, deadlineAt, ...idle })
+    this.#driven.set(id, { companyId, projectId, deadlineAt, ...idleRun(false) })
     this.#deps.log.info({ ...fields, runId: id }, 'RUN_ADMITTED')
     return { ok: true, value: id }
   }
@@ -134,10 +145,8 @@ export class Runs {
         abort()
       },
     })
-    mine.stop = () => {
-      stopDeadline()
-      stopLease()
-    }
+    mine.stopDeadline = stopDeadline
+    mine.stopLease = stopLease
   }
 
   /**
@@ -168,15 +177,14 @@ export class Runs {
     for (const companyId of await this.#context.store.companiesWithRuns()) {
       for (const row of await this.#context.store.takeOver(companyId)) {
         const { projectId, personId, conversationId, deadlineAt } = row
-        const idle = {
-          workspace: undefined,
-          onPhase: () => undefined,
-          stop: () => undefined,
-          lost: false,
-        }
-        this.#driven.set(row.id, { companyId, projectId, deadlineAt, ...idle })
-        this.#deps.log.info({ companyId, projectId, runId: row.id }, 'RUN_RESUMED')
-        taken.push({ companyId, projectId, personId, conversationId, deadlineAt, runId: row.id })
+        this.#driven.set(row.id, { companyId, projectId, deadlineAt, ...idleRun(true) })
+        const expired = deadlineAt.getTime() <= Date.now()
+        this.#deps.log.info({ companyId, projectId, runId: row.id, expired }, 'RUN_RESUMED')
+        taken.push({
+          ...{ companyId, projectId, personId, conversationId, deadlineAt },
+          runId: row.id,
+          expired,
+        })
       }
     }
     return taken
@@ -203,10 +211,15 @@ export class Runs {
   async finish(input: { runId: RunId; reason: string }): Promise<Outcome | 'gone'> {
     const mine = this.#driven.get(input.runId)
     if (mine === undefined || mine.lost) return 'gone'
-    mine.stop()
+    mine.stopDeadline()
     const { companyId, projectId } = mine
     const { store } = this.#context
     try {
+      // A taken-over run's machine holds what the first copy wrote, though no tool ran here.
+      if (mine.taken) {
+        mine.workspace ??= this.#openWorkspace(mine)
+        await mine.workspace
+      }
       const claimed = await store.move({
         ...{ companyId, id: input.runId, from: 'open', to: 'saving' },
         mine: true,
@@ -217,6 +230,7 @@ export class Runs {
       this.#deps.log.info(fields, 'RUN_SETTLING')
       return await saveRun(this.#context, saved)
     } finally {
+      mine.stopLease()
       this.#driven.delete(input.runId)
       await this.#deps.machines
         .release(projectId)
@@ -251,7 +265,10 @@ export class Runs {
   async stop(): Promise<void> {
     this.#retry.stop()
     const mine = [...this.#driven.values()]
-    for (const each of mine) each.stop()
+    for (const each of mine) {
+      each.stopDeadline()
+      each.stopLease()
+    }
     await this.#context.store.yieldLeases([...new Set(mine.map((each) => each.companyId))])
   }
 }

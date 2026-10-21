@@ -23,6 +23,7 @@ export type Kit = {
 type KitOptions = {
   /** `conexus-<projectId>`: the provider finds a machine of this Projeto by it. */
   id: string
+  /** The machine to wake; the provider refuses to make another if it is gone (decision 0051). */
   sandboxId: SandboxId | undefined
   deadline: Date
   metadata: Record<string, string>
@@ -33,6 +34,8 @@ export type KitFactory = (options: KitOptions) => Kit
 
 /** The machines of this installation the provider holds, found by the mark they carry. */
 export type MachineApi = {
+  /** Whether the provider still holds the machine, running or paused. */
+  exists(id: SandboxId): Promise<boolean>
   list(): Promise<{ id: SandboxId; companyId: CompanyId; projectId: ProjectId }[]>
   kill(id: SandboxId): Promise<void>
 }
