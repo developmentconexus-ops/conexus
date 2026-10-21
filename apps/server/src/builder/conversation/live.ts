@@ -290,7 +290,16 @@ function keepFailure(live: Live, turn: TurnLog, code: TurnFailureCode): Promise<
 export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Promise<void> {
   const runId = live.session.run.getRunId()
   const run = runId === null ? undefined : live.runs.get(runId)
-  const outcome = await live.run?.finish(reason ?? 'unknown')
+  // A save that throws is this turn's failure, said and logged here: Mastra would print the listener's
+  // error raw, and the turn would end without saying why.
+  const outcome = await live.run?.finish(reason ?? 'unknown').then(
+    (finished) => finished,
+    (cause: unknown) => {
+      logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+      live.saveFailure = 'INTERNAL_UNEXPECTED'
+      return undefined
+    },
+  )
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'failed') {
     live.saveFailure = outcome.code
   }
