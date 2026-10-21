@@ -82,8 +82,8 @@ test('a leitura que falha: a frase e "Tentar de novo", que lê outra vez', async
         ? refusal('DATABASE_UNAVAILABLE')
         : HttpResponse.json({
             version: 0,
-            commit: COMMIT,
-            savedAt: '2026-10-21T12:00:00.000Z',
+            commit: null,
+            savedAt: null,
             files: [],
           })
     }),

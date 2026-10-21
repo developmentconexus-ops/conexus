@@ -9,10 +9,6 @@ import { answer, serve } from '../../platform/http.ts'
 import { Sha } from './context.ts'
 import type { Repository } from './repository.ts'
 
-/** Git's own name for "no commit", and the time before any: the Código tab shows neither at version 0. */
-const NO_COMMIT = '0'.repeat(40)
-const NEVER = new Date(0).toISOString()
-
 type Ids = { companyId: CompanyId; projectId: ProjectId }
 type Deps = {
   database: Database
@@ -47,7 +43,7 @@ export function registerSourceRoutes(app: FastifyInstance, deps: Deps): void {
     const repository = deps.repository(params)
     const commit = await repository.head()
     // A Projeto that never saved a version has no repository, and a read does not make one.
-    if (commit === null) return answer({ version: 0, commit: NO_COMMIT, savedAt: NEVER, files: [] })
+    if (commit === null) return answer({ version: 0, commit: null, savedAt: null, files: [] })
     const files = (await repository.tree(commit)) ?? []
     return answer({
       version: await repository.version(),

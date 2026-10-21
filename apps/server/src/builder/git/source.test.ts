@@ -40,6 +40,8 @@ test('a aba Código lê o main: vazio antes da primeira versão; depois, arquivo
   assert.equal(before.statusCode, 200)
   assert.equal(Object(before.json()).version, 0)
   assert.deepEqual(Object(before.json()).files, [])
+  assert.equal(Object(before.json()).commit, null)
+  assert.equal(Object(before.json()).savedAt, null)
   // A read makes no repository: only the first turn's seed does.
   assert.equal(existsSync(join(hub.config.gitRoot, companyId, `${projectId}.git`)), false)
 
