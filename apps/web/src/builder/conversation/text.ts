@@ -2,6 +2,7 @@ import type { ConversationSummary } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
 
 export const WORKING = 'Builder trabalhando'
+export const STILL_WORKING = 'Ainda trabalhando…'
 export const EMPTY_CONVERSATION = 'Descreva o aplicativo que você quer criar.'
 export const UNCONFIRMED_SEND = 'Não confirmamos o envio. Envie de novo.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'

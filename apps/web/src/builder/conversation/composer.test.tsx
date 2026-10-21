@@ -26,6 +26,12 @@ test('o anel do compositor só gira enquanto o Builder trabalha; Enviar vira Par
   lines[0]?.emit({ type: 'text', delta: 'Olá' })
 })
 
+test('perto do campo uma linha pede para não colar senhas, chaves ou tokens na conversa', async () => {
+  const { field } = await openConversation(conversationOf({ id: FIRST }))
+  const line = screen.getByText('Não cole senhas, chaves ou tokens na conversa.')
+  expect(field.closest('form')?.contains(line)).toBe(true)
+})
+
 test('o seletor mostra o controle deslizante dos níveis do modelo, o nome do nível, e a troca leva o modelo e o nível', async () => {
   const { sent } = await openConversation(conversationOf({ id: FIRST }))
   fireEvent.click(screen.getByRole('combobox', PICKER))

@@ -6,7 +6,7 @@ import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import { MachineFilesystem } from './filesystem.ts'
 import type { Kit, KitFactory, MachineApi, SandboxId } from './kit.ts'
-import { APP_FOLDER, MARK } from './kit.ts'
+import { APP_FOLDER, MARK, OUTPUT_MAX, readCapped } from './kit.ts'
 import { MachineRows } from './rows.ts'
 import type { Collected } from './scripts.ts'
 import { collected, collectScript, keepScript, outFile, seedFile, seedScript } from './scripts.ts'
@@ -104,7 +104,9 @@ async function within<T>(work: Promise<T>, ms: number): Promise<T> {
 }
 
 async function run(kit: Kit, script: string) {
-  const result = await kit.sandbox.executeCommand?.('sh', ['-c', script])
+  const result = await kit.sandbox.executeCommand?.('sh', ['-c', script], {
+    maxRetainedBytes: OUTPUT_MAX,
+  })
   if (result === undefined) throw new Error('the machine cannot run commands')
   return result
 }
@@ -224,7 +226,6 @@ class BuilderMachines implements Machines {
       filesystem: new MachineFilesystem({
         id: `conexus-fs-${projectId}`,
         root: this.workdir,
-        transport: kit.transport,
         exec: async (script) => {
           await this.ensure(session)
           return run(kit, script)
@@ -251,7 +252,8 @@ class BuilderMachines implements Machines {
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
     const found: Collected = collected(result.stdout)
     if (found.kind !== 'bundle') return found.kind
-    const bundle = await session.kit.transport.read(outFile(this.tmp))
+    const bundle = await readCapped(session.kit.transport, outFile(this.tmp))
+    if (bundle === 'too-large') return bundle
     return { bundle, files: found.files, changedFiles: found.changedFiles }
   }
 

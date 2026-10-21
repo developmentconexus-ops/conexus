@@ -151,12 +151,26 @@ export function snapshotOf(
   }
 }
 
-/** The events of `said` that come after `last` in its run: what a catch-up read already holds is not said twice. */
-export function after(last: Said | undefined, said: Said[]): Said[] {
+/** The events of `said` that come after `last` in its run. */
+function after(last: Said | undefined, said: Said[]): Said[] {
   const seen = SeenEvent.safeParse(last?.id)
   if (!seen.success) return said
   return said.filter((each) => {
     const place = SeenEvent.safeParse(each.id)
     return !place.success || place.data[0] !== seen.data[0] || place.data[1] > seen.data[1]
   })
+}
+
+/**
+ * One stream's filter: each call answers the events of `said` past the last one it answered in
+ * their run, so an event the catch-up read found and the turn then tells, once its journal write is
+ * acknowledged, is said once.
+ */
+export function onceEach(): (said: Said[]) => Said[] {
+  let last: Said | undefined
+  return (said) => {
+    const fresh = after(last, said)
+    last = fresh.at(-1) ?? last
+    return fresh
+  }
 }

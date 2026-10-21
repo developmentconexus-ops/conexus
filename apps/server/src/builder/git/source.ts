@@ -42,11 +42,14 @@ export function registerSourceRoutes(app: FastifyInstance, deps: Deps): void {
     await admit(deps, person, params)
     const repository = deps.repository(params)
     const commit = await repository.head()
-    // A Projeto that never saved a version has no repository, and a read does not make one.
-    if (commit === null) return answer({ version: 0, commit: null, savedAt: null, files: [] })
+    // No repository, or only the empty first commit: no version was saved, and a read makes none.
+    const version = commit === null ? 0 : await repository.version()
+    if (commit === null || version === 0) {
+      return answer({ version: 0, commit: null, savedAt: null, files: [] })
+    }
     const files = (await repository.tree(commit)) ?? []
     return answer({
-      version: await repository.version(),
+      version,
       commit,
       savedAt: await repository.savedAt(commit),
       files: files.toSorted((a, b) => a.path.localeCompare(b.path)),
@@ -61,8 +64,8 @@ export function registerSourceRoutes(app: FastifyInstance, deps: Deps): void {
       maxBytes: SOURCE_FILE_MAX_BYTES,
     })
     if (read.kind === 'not-found') throw new Failure('SOURCE_FILE_NOT_FOUND')
-    if (read.kind === 'too-large') throw new Failure('SOURCE_FILE_TOO_LARGE')
-    if (read.kind === 'not-text') throw new Failure('SOURCE_FILE_NOT_TEXT')
+    if (read.kind === 'too-large' || read.kind === 'not-text')
+      throw new Failure('SOURCE_FILE_NOT_TEXT')
     return answer({ text: read.text })
   })
 }
