@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { post } from '../../hub/identity/test-hub.ts'
-import type { Sent } from '../../platform/test-anthropic.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, plantGemini, sent, started, streamOf } from './test-conversation.ts'
 import { routedTo, served } from './test-research.ts'
 
@@ -46,21 +47,24 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   )
 })
 
-test('um turno com `web_fetch` e `recall` nunca para à espera de aprovação: cada um roda e termina', async (t) => {
+type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
+
+const FETCH: Block = {
+  type: 'tool_use',
+  name: 'web_fetch',
+  input: { url: 'http://padaria.example.test/' },
+}
+const RECALL: Block = { type: 'tool_use', name: 'recall', input: { mode: 'messages' } }
+
+/** A turn calling `blocks` once, then answering; the runs Mastra saved waiting come back with it. */
+async function calling(t: TestContext, blocks: Block[]) {
   const site = await served(t, (_path, response) => response.end('Cardápio da padaria'))
   routedTo(t, { 'padaria.example.test': site.port })
   let step = 0
   const { hub, ana, conversations } = await conversing(t, (asked) => {
     if (!asked.stream) return { kind: 'text', text: 'Título' }
     step += 1
-    if (step > 1) return { kind: 'text', text: 'Li a página.' }
-    return {
-      kind: 'blocks',
-      blocks: [
-        { type: 'tool_use', name: 'web_fetch', input: { url: 'http://padaria.example.test/' } },
-        { type: 'tool_use', name: 'recall', input: { mode: 'messages' } },
-      ],
-    }
+    return step > 1 ? { kind: 'text', text: 'Li a página.' } : { kind: 'blocks', blocks }
   })
   /** Every run Mastra saves waiting, as an approval leaves it, from the moment its tables exist. */
   async function recordSuspensions() {
@@ -73,24 +77,32 @@ test('um turno com `web_fetch` e `recall` nunca para à espera de aprovação: c
         execute function mastra.record_suspension();
     `)
   }
-  const { events } = await asked(t, {
-    hub,
-    person: ana,
-    conversations,
-    between: recordSuspensions,
-  })
+  const { events } = await asked(t, { hub, person: ana, conversations, between: recordSuspensions })
   const tools = events.flatMap((event) =>
     event.type === 'part' && event.part.type === 'tool'
       ? [[event.part.kind, event.part.state]]
       : [],
   )
-  assert.deepEqual(tools, [
-    ['read_page', 'running'],
-    ['recall', 'running'],
-    ['read_page', 'completed'],
-    ['recall', 'completed'],
-  ])
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   const suspended = await hub.test.mastraPool.query('select run_id from mastra.suspended_runs')
-  assert.deepEqual(suspended.rows, [], 'no run was saved waiting for an approval')
+  return { tools, suspended: suspended.rows }
+}
+
+test('um turno com `web_fetch` nunca para à espera de aprovação: ele responde por si e roda', async (t) => {
+  const { tools, suspended } = await calling(t, [FETCH])
+  assert.deepEqual(tools, [
+    ['read_page', 'running'],
+    ['read_page', 'completed'],
+  ])
+  assert.deepEqual(suspended, [], 'no run was saved waiting for an approval')
+})
+
+// `recall` is Memory's tool and has no answer of its own: the rule of its category allows it, and
+// the controller approves it at once. It runs and ends; the run is saved waiting on the way.
+test('um turno com `recall` termina: a regra da categoria o libera', async (t) => {
+  const { tools } = await calling(t, [RECALL])
+  assert.deepEqual(tools, [
+    ['recall', 'running'],
+    ['recall', 'completed'],
+  ])
 })

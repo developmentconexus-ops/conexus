@@ -87,7 +87,7 @@ One line per document (`check-docs`).
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
 - [0051](decisions/0051-builder-machine-git-and-copy-in-r2.md) machine.
 - [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) tracing.
-- [0053](decisions/0053-builder-tools-run-without-asking.md) no approval.
+- [0053](decisions/0053-builder-tools-run-without-asking.md) no approval asked.
 - [0054](decisions/0054-model-defaults-and-served-models.md) defaults.
 
 ## Skills

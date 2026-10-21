@@ -42,10 +42,11 @@ export function categoryOf(toolName: string): ToolCategory {
 export const AVAILABLE_TOOLS = [...READ, ...EDIT, ...EXECUTE]
 
 /**
- * What every session starts with (S2, S14): the machine is the Builder's to read, write and run
- * in, nothing else is. `yolo` stays on (decision 0053: without it Mastra parks the run at every
- * tool call, 8 saved suspensions for one turn of two tools), and since it also allows what the rules
- * deny, the mode's `availableTools` closes the set the model is offered.
+ * What every session starts with (S2, S14, card U6, never `yolo`): the machine is the Builder's to
+ * read, write and run in, nothing else is. A tool the rules allow does not wait: the workspace's
+ * tools and `web_fetch` answer for themselves that they need no approval, which the run's own
+ * requirement yields to; `recall`, Memory's, is approved by the rule at once. The mode's
+ * `availableTools` closes the set the model is offered.
  */
 export const PERMISSION_RULES: PermissionRules = {
   categories: { read: 'allow', edit: 'allow', execute: 'allow', mcp: 'deny', other: 'deny' },

@@ -2462,5 +2462,27 @@
       "file": "src/builder/git/source.test.ts",
       "name": "a aba Código lê o main"
     }
+  },
+  {
+    "id": "workspace-needs-no-approval",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "        requireApproval: () => false,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/permissions.test.ts",
+      "name": "escrever e rodar um comando não param à espera de aprovação: nenhuma execução fica guardada como suspensa"
+    }
+  },
+  {
+    "id": "web-fetch-needs-no-approval",
+    "file": "apps/server/src/builder/conversation/web-fetch.ts",
+    "find": "  requireApproval: () => false,\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-tools.test.ts",
+      "name": "um turno com `web_fetch` nunca para à espera de aprovação: ele responde por si e roda"
+    }
   }
 ]
