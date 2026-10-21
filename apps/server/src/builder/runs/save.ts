@@ -1,9 +1,29 @@
+import type { ProjectId } from '@conexus/hub-api'
+import { Failure } from '../../platform/failure.ts'
+import type { Sha } from '../git/public.ts'
 import type { Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 import type { Run, RunState } from './store.ts'
 
 async function settle(context: RunsContext, saved: Run, to: RunState) {
   await context.store.move({ companyId: saved.companyId, id: saved.id, from: 'saving', to })
+}
+
+/**
+ * The turn's tree as a bundle. A machine that never came up for the turn (`MACHINE_UNAVAILABLE`) is
+ * told as that, with the conversation kept; one that died on the way, as lost.
+ */
+async function collectOf(
+  context: RunsContext,
+  input: { projectId: ProjectId; base: Sha; fields: Record<string, string> },
+) {
+  try {
+    return await context.machines.collect({ projectId: input.projectId, base: input.base })
+  } catch (error) {
+    const unavailable = error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE'
+    context.log.error({ ...input.fields, error: String(error) }, 'MACHINE_LOST')
+    return { failed: unavailable ? 'MACHINE_UNAVAILABLE' : 'MACHINE_LOST' } as const
+  }
 }
 
 /**
@@ -20,17 +40,15 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
     await settle(context, saved, 'unchanged')
     return { kind: 'unchanged' }
   }
-  // The base is `main` as the machine's seed took it: no other run moves it meanwhile (data D15).
+  // The base is `main` as the machine's seed took it: no other run moves it meanwhile (data D15). A
+  // taken-over turn may reach here before any seed made the repository, so it is ensured.
   const repository = context.repository({ companyId, projectId })
-  const base = await repository.main()
+  const base = await repository.ensure()
   await context.store.setBase(companyId, saved.id, base)
-  const bundle = await context.machines.collect({ projectId, base }).catch((error: unknown) => {
-    context.log.error({ ...fields, error: String(error) }, 'MACHINE_LOST')
-    return 'lost' as const
-  })
-  if (bundle === 'lost') {
+  const bundle = await collectOf(context, { projectId, base, fields })
+  if (typeof bundle === 'object' && 'failed' in bundle) {
     await settle(context, saved, 'failed')
-    return { kind: 'failed', code: 'MACHINE_LOST' }
+    return { kind: 'failed', code: bundle.failed }
   }
   if (bundle === 'unchanged') {
     await settle(context, saved, 'unchanged')
@@ -39,7 +57,7 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
   const received =
     bundle === 'too-large'
       ? ({ ok: false, error: 'too-large' } as const)
-      : await repository.receive({ runId: saved.id, bundle, base })
+      : await repository.receive({ runId: saved.id, bundle: bundle.bundle, base })
   if (!received.ok) {
     context.log.error({ ...fields, reason: received.error }, 'SAVE_REFUSED')
     await settle(context, saved, 'failed')
@@ -56,5 +74,7 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
   const version = await repository.versionAt(candidate)
   context.log.info({ ...fields, version }, 'VERSION_SAVED')
   if (!(await copyVersion(context, { ...saved, candidateSha: candidate }))) context.retry.kick()
-  return { kind: 'saved', version }
+  if (bundle === 'too-large') return { kind: 'failed', code: 'SAVE_REFUSED' }
+  const { files, changedFiles } = bundle
+  return { kind: 'saved', version: { number: version, changed: true, files, changedFiles } }
 }

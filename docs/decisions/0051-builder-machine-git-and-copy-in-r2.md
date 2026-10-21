@@ -9,17 +9,16 @@ hosts, its filesystem and where a version is kept.
 
 - One machine per Projeto, woken by id with `reattach: 'required'`; a lost one is rebuilt.
 - The network is a list of domains (`denyOut: [ALL_TRAFFIC]`, `allowOut`), starting with
-  `registry.npmjs.org`; the proof adds a host only when `npm install` fails without it, and writes
-  it here.
+  `registry.npmjs.org`; a host is added only when `npm install` fails without it, written here.
 - The Git is ours: a bare repository on the server, `main` moved by `update-ref` against the base
   read, one `git bundle` per changed turn checked by `transfer.fsckObjects` into a candidate ref
   first. Each version's bundle goes to a private R2 bucket.
-- Z2, on core 1.78.0: `WorkspaceFilesystem` requires 11 file operations and the identity; lifecycle,
-  `walk` and `grep` are optional. The fork's `SandboxFilesystem` has 815 lines. Proposed: ours, about
+- Z2, on core 1.78.0: `WorkspaceFilesystem` requires 11 file operations and the identity. Ours, about
   200 lines, writing through `writeFiles()`; past 300 lines, or if a 200 KB file fails, the fork's
-  class is brought.
-- `running` precedes `onStart` (`workspace-BojqafFG.js:3991-3998`): `beforeToolCall` starts the
-  sandbox, then waits for the seed.
+  815-line `SandboxFilesystem` is brought.
+- `running` precedes `onStart`, yet live on E2B two first-step
+  tools both saw the seed with no gate (`seed-nohook`, 2026-10-21). `beforeToolCall` stays to boot
+  the machine: phase, id, turn marked used.
 - The E2B key is the founder's free-account key, in a file (S31); the sweep kills only machines
   marked with this installation's origin.
 
@@ -39,4 +38,4 @@ hosts, its filesystem and where a version is kept.
 ## State
 
 Proposed 2026-10-21. Founder: "Aprovo", "13 sim". Check 4 read: terms ban nothing here; paused machines kept
-without limit; credits end, workspace blocks. Check 1 ok (nine lines, 2026-10-21); 3 open.
+without limit. Check 1 ok (nine lines, 2026-10-21); 3 open.

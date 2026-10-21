@@ -45,19 +45,40 @@ export function memoryCopy() {
   return { copy, held, refuse }
 }
 
-/**
- * The Builder's Git and machines as doubles (T14): the repository is real, on the test config's
+/** What a test sets: how long a turn may run, how often its lease is renewed, and how a save is cut. */
+type Knobs = {
+  turnMs: number
+  renewMs: number
+  yieldMs: number
+  dies: { receive: number; advance: number }
+  /** While set, a save waits before it moves `main`. */
+  holdAdvance: Promise<void> | undefined
+}
+
+function newKnobs(): Knobs {
+  return {
+    turnMs: 3_600_000,
+    renewMs: 30_000,
+    yieldMs: 8_000,
+    dies: { receive: 0, advance: 0 },
+    holdAdvance: undefined,
+  }
+}
+
+/** The Builder's Git and machines as doubles (T14): the repository is real, on the test config's
  * folder; the machine is a folder of this computer (`localKit`), whose start and outcome a test
  * sets through `control`; the bucket is `memoryCopy`.
  */
-export function testBuilderPorts(config: Config) {
-  const folder = join(config.gitRoot, `conexus-machine-${randomUUID()}`)
+export function testBuilderPorts(
+  config: Config,
+  machineFolder = join(config.gitRoot, `conexus-machine-${randomUUID()}`),
+) {
+  const folder = machineFolder
   const control = newControl()
   const bucket = memoryCopy()
   const killed: string[] = []
   const listed: Awaited<ReturnType<MachineApi['list']>> = []
-  // What a test sets: how long a turn may run, and the saves the process dies in the middle of.
-  const knobs = { turnMs: 3_600_000, dies: { receive: 0, advance: 0 } }
+  const knobs = newKnobs()
   function repository(ids: { companyId: CompanyId; projectId: ProjectId }) {
     const real = openRepository({ root: config.gitRoot, ...ids, log: silent })
     function dies(step: 'receive' | 'advance') {
@@ -72,6 +93,7 @@ export function testBuilderPorts(config: Config) {
         return real.receive(input)
       },
       async advance(input: Parameters<typeof real.advance>[0]) {
+        await knobs.holdAdvance
         dies('advance')
         return real.advance(input)
       },
@@ -83,6 +105,7 @@ export function testBuilderPorts(config: Config) {
       log: silent,
       kit: localKit(folder, control),
       api: {
+        exists: async () => control.exists,
         list: async () => listed,
         kill: async (id) => {
           killed.push(id)
@@ -102,11 +125,19 @@ export function testBuilderPorts(config: Config) {
   function turnMs() {
     return knobs.turnMs
   }
+  function renewMs() {
+    return knobs.renewMs
+  }
+  function yieldMs() {
+    return knobs.yieldMs
+  }
   return {
     machinesOf,
     repository,
     copy: bucket.copy,
     turnMs,
+    renewMs,
+    yieldMs,
     bucket,
     control,
     knobs,

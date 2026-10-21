@@ -1,6 +1,6 @@
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { E2BSandbox } from '@mastra/e2b'
-import { ALL_TRAFFIC, Sandbox } from 'e2b'
+import { ALL_TRAFFIC, Sandbox, SandboxNotFoundError } from 'e2b'
 import type { Config } from '../../platform/config.ts'
 import type { Kit, KitFactory, MachineApi } from './kit.ts'
 import { ALLOWED_HOSTS, SandboxId } from './kit.ts'
@@ -20,7 +20,9 @@ export function createE2bKit(config: Credentials): KitFactory {
     )
     const sandbox = new E2BSandbox({
       id: options.id,
-      ...(options.sandboxId === undefined ? {} : { sandboxId: options.sandboxId }),
+      ...(options.sandboxId === undefined
+        ? {}
+        : { sandboxId: options.sandboxId, reattach: 'required' as const }),
       template: config.machineTemplate,
       apiKey: config.e2bApiKey.reveal(),
       timeout,
@@ -52,6 +54,15 @@ export function createE2bApi(
   const apiKey = config.e2bApiKey.reveal()
   const where = apiUrl === undefined ? {} : { apiUrl }
   return {
+    async exists(id) {
+      return Sandbox.getInfo(id, { apiKey, ...where, requestTimeoutMs: CALL_MS }).then(
+        () => true,
+        (error: unknown) => {
+          if (error instanceof SandboxNotFoundError) return false
+          throw error
+        },
+      )
+    },
     async list() {
       const found: { id: SandboxId; companyId: CompanyId; projectId: ProjectId }[] = []
       const pages = Sandbox.list({

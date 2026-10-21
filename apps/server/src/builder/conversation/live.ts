@@ -313,7 +313,7 @@ export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Prom
     live.saveFailure = outcome.code
   }
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'saved') {
-    live.saved = outcome.version
+    live.saved = outcome.version.number
   }
   const code = live.saveFailure ?? failureOf({ reason, turn: run?.turn })
   if (code !== undefined && live.turn !== undefined && (run !== undefined || live.saveFailure)) {

@@ -11,7 +11,6 @@ import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from 'dri
 import { z } from 'zod'
 import type { Database } from '../../platform/database.ts'
 import { Sha } from '../git/public.ts'
-import { machine } from '../machine/public.ts'
 import { LEASE_MS } from './lease.ts'
 import { run, runEvent } from './tables.ts'
 
@@ -50,7 +49,7 @@ function inCompany(companyId: CompanyId) {
   return { kind: 'COMPANY', companyId, personId: null } as const
 }
 
-/** The `builder.run` and `builder.machine` rows, each call in the company's own scope (data D25). */
+/** The `builder.run` rows, each call in the company's own scope (data D25). */
 export class RunStore {
   readonly #database: Database
   readonly #owner: string
@@ -129,13 +128,13 @@ export class RunStore {
     )
   }
 
-  /** Renews the lease of a run this copy drives; false once the row is not this copy's. */
+  /** Renews the lease of a run this copy drives, saving included; false once the row is not this copy's. */
   async renew(companyId: CompanyId, id: RunId) {
     const rows = await this.#database.command(inCompany(companyId), (tx) =>
       tx
         .update(run)
         .set({ leaseUntil: leaseEnd() })
-        .where(and(eq(run.id, id), eq(run.owner, this.#owner), eq(run.state, 'open')))
+        .where(and(eq(run.id, id), eq(run.owner, this.#owner), inArray(run.state, LIVE)))
         .returning({ id: run.id }),
     )
     return rows.length > 0
@@ -210,25 +209,12 @@ export class RunStore {
     return found.rows.map((row) => CompanyId.parse(Object(row).company_id))
   }
 
-  /** The Projetos of the company that have a run or a machine. */
+  /** The Projetos of the company that have a run. */
   async projectsOf(companyId: CompanyId): Promise<ProjectId[]> {
-    return this.#database.read(inCompany(companyId), async (tx) => {
-      const runs = await tx.selectDistinct({ id: run.projectId }).from(run)
-      const machines = await tx.select({ id: machine.projectId }).from(machine)
-      return [...new Set([...runs, ...machines].map((row) => row.id))].map((id) =>
-        ProjectId.parse(id),
-      )
-    })
-  }
-
-  async machineOf(companyId: CompanyId, projectId: ProjectId) {
-    const [row] = await this.#database.read(inCompany(companyId), (tx) =>
-      tx
-        .select({ sandboxId: machine.sandboxId, usedAt: machine.usedAt })
-        .from(machine)
-        .where(eq(machine.projectId, projectId)),
+    const rows = await this.#database.read(inCompany(companyId), (tx) =>
+      tx.selectDistinct({ id: run.projectId }).from(run),
     )
-    return row
+    return rows.map((row) => ProjectId.parse(row.id))
   }
 
   /** Whether a version of the Projeto was ever saved: only then is there anything in the bucket. */
@@ -241,12 +227,6 @@ export class RunStore {
         .limit(1),
     )
     return found.length > 0
-  }
-
-  async forgetMachine(companyId: CompanyId, projectId: ProjectId) {
-    await this.#database.command(inCompany(companyId), (tx) =>
-      tx.delete(machine).where(eq(machine.projectId, projectId)),
-    )
   }
 
   /** Keeps one event of the run's turn, numbered after the last, if the run is still this copy's. */
@@ -297,21 +277,15 @@ export class RunStore {
   }
 
   /**
-   * Takes the runs of the company whose lease ended while `open` and whose hour is not over: this
-   * copy drives them now. The others are settled as they stand.
+   * Takes the runs of the company whose lease ended while `open`: this copy drives them now, or
+   * saves them as they stand when their hour is over.
    */
   async takeOver(companyId: CompanyId): Promise<Run[]> {
     const rows = await this.#database.command(inCompany(companyId), (tx) =>
       tx
         .update(run)
         .set({ owner: this.#owner, leaseUntil: leaseEnd() })
-        .where(
-          and(
-            eq(run.state, 'open'),
-            lt(run.leaseUntil, sql`now()`),
-            gt(run.deadlineAt, sql`now()`),
-          ),
-        )
+        .where(and(eq(run.state, 'open'), lt(run.leaseUntil, sql`now()`)))
         .returning(columns),
     )
     return rows.map((row) => Row.parse(row))

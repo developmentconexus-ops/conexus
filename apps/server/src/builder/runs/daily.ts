@@ -13,13 +13,13 @@ export async function sweep(context: RunsContext): Promise<number> {
   let killed = 0
   for (const found of await machines.list()) {
     const { companyId, projectId } = found
-    const row = await store.machineOf(companyId, projectId)
+    const row = await machines.rowOf(companyId, projectId)
     if (row === undefined || row.sandboxId !== found.id) continue
     if (Date.now() - row.usedAt.getTime() < IDLE_MS) continue
     const open = await store.inStates({ companyId, projectId, states: ['open', 'saving'] })
     if (open.length > 0) continue
     await machines.kill(found.id)
-    await store.forgetMachine(companyId, projectId)
+    await machines.forget(companyId, projectId)
     log.info({ companyId, projectId }, 'MACHINE_SWEPT')
     killed += 1
   }

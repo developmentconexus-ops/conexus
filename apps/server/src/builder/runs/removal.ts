@@ -1,5 +1,4 @@
 import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
-import { SandboxId } from '../machine/public.ts'
 import type { RunsContext } from './context.ts'
 
 /** What a release names: a company, and maybe one of its Projetos or one of its people. */
@@ -14,10 +13,10 @@ async function removeProject(
   ids: { companyId: CompanyId; projectId: ProjectId },
 ) {
   const { store, machines, copy } = context
-  const machine = await store.machineOf(ids.companyId, ids.projectId)
+  const machine = await machines.rowOf(ids.companyId, ids.projectId)
   const steps = [
     async () => {
-      if (machine !== undefined) await machines.kill(SandboxId.parse(machine.sandboxId))
+      if (machine !== undefined) await machines.kill(machine.sandboxId)
     },
     async () => {
       if (await store.hasVersion(ids.companyId, ids.projectId)) await copy.removeProject(ids)
@@ -33,6 +32,14 @@ async function removeProject(
     })
   }
   if (failures.length > 0) throw new AggregateError(failures, 'project source not released')
+}
+
+async function projectsOf(context: RunsContext, companyId: CompanyId): Promise<ProjectId[]> {
+  const found = [
+    ...(await context.store.projectsOf(companyId)),
+    ...(await context.machines.projectsOf(companyId)),
+  ]
+  return [...new Set(found)]
 }
 
 /**
@@ -51,7 +58,7 @@ export async function releaseRuns(context: RunsContext, scope: ReleaseScope): Pr
     await context.stopped(stopped.id)
   }
   if (personId !== undefined) return
-  const projects = projectId === undefined ? await store.projectsOf(companyId) : [projectId]
+  const projects = projectId === undefined ? await projectsOf(context, companyId) : [projectId]
   const failures: unknown[] = []
   for (const each of projects) {
     await removeProject(context, { companyId, projectId: each }).catch((error: unknown) =>
