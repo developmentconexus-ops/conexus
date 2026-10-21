@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
@@ -105,7 +113,7 @@ test('git: o turno que mudou arquivos vira uma versão, e a aba lê só o que o 
     kind: 'not-text',
   })
   assert.deepEqual(await repository.file({ sha: candidate, path: 'src/b.ts', maxBytes: 100 }), {
-    kind: 'not-text',
+    kind: 'too-large',
   })
   assert.deepEqual(await repository.file({ sha: candidate, path: 'nada.ts', maxBytes: 100 }), {
     kind: 'not-found',
@@ -221,4 +229,57 @@ test('git: remover apaga o repositório, e ensure o refaz vazio', async (t) => {
   await assert.rejects(repository.main())
   await repository.ensure()
   assert.equal(await repository.version(), 0)
+})
+
+test('git: o histórico passa de 64 MiB e a semente e a cópia seguem', async (t) => {
+  const { repository, base } = await opened(t)
+  const box = await machine(t, await repository.bundleOfMain())
+  let parent = base
+  for (const [index, run] of [
+    '00000000-0000-4000-8000-000000000011',
+    '00000000-0000-4000-8000-000000000012',
+    '00000000-0000-4000-8000-000000000013',
+  ].entries()) {
+    writeFileSync(join(box.dir, `v${index}.bin`), randomBytes(30 * 1024 * 1024))
+    rmSync(join(box.dir, `v${index - 1}.bin`), { force: true })
+    rmSync(join(box.dir, 'out.bundle'), { force: true })
+    commit(box.dir)
+    const received = await repository.receive({
+      runId: RunId.parse(run),
+      bundle: bundle(box.dir, parent),
+      base: parent,
+    })
+    assert.ok(received.ok)
+    assert.equal(await repository.advance({ candidate: received.value, base: parent }), 'advanced')
+    parent = received.value
+  }
+  const seed = await repository.bundleOfMain()
+  assert.ok(seed.byteLength > 64 * 1024 * 1024)
+  const copy = await repository.bundleOfRun(RunId.parse('00000000-0000-4000-8000-000000000013'))
+  assert.ok(copy.byteLength > 64 * 1024 * 1024)
+  const fresh = await machine(t, seed)
+  assert.equal(fresh.head(), parent)
+})
+
+test('git: ler não cria o repositório, e ler durante o ensure não falha', async (t) => {
+  const root = scratch(t)
+  const repository = openRepository({
+    root,
+    companyId: COMPANY,
+    projectId: PROJECT,
+    log: { info: () => undefined, error: () => undefined },
+  })
+  assert.equal(await repository.head(), null)
+  assert.equal(await repository.tree(Sha.parse('1'.repeat(40))), null)
+  assert.deepEqual(
+    await repository.file({ sha: Sha.parse('1'.repeat(40)), path: 'a.ts', maxBytes: 100 }),
+    { kind: 'not-found' },
+  )
+  assert.equal(existsSync(join(root, COMPANY)), false)
+  const reads = Array.from({ length: 200 }, () => repository.head())
+  const ensures = Array.from({ length: 8 }, () => repository.ensure())
+  const [heads, mains] = await Promise.all([Promise.all(reads), Promise.all(ensures)])
+  assert.equal(new Set(mains).size, 1)
+  assert.ok(heads.every((found) => found === null || found === mains[0]))
+  assert.equal(await repository.head(), mains[0])
 })

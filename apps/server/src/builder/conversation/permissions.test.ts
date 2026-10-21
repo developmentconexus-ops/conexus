@@ -1,9 +1,17 @@
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
 import { test } from 'node:test'
+import { CompanyId, ModelAccountId, ModelId, PersonId } from '@conexus/hub-api'
+import { Agent } from '@mastra/core/agent'
+import { MessageList } from '@mastra/core/agent/message-list'
+import { AgentController } from '@mastra/core/agent-controller'
+import type { ProcessInputStepArgs } from '@mastra/core/processors'
+import { InMemoryStore } from '@mastra/core/storage'
+import { MockLanguageModelV3 } from 'ai/test'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { accountPick, callModel, Turn, turnContext } from '../model-accounts/public.ts'
+import { TOOL_CLOSURE } from './public.ts'
+import { asked, conversing, MODEL, title } from './test-conversation.ts'
 
 const CONTROLLER_TOOLS = [
   'ask_user',
@@ -79,11 +87,99 @@ test('escrever e rodar um comando não param à espera de aprovação: nenhuma e
   )
 })
 
-test('uma ferramenta fora das categorias (ast_edit, desligada) não age: o turno segue e nada é escrito', async (t) => {
-  const edit = { name: 'mastra_workspace_ast_edit', input: { path: 'a.ts', transform: 'x' } }
-  const model = calling(edit)
-  const { hub, ana, conversations } = await conversing(t, model.answer)
-  const { events } = await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.equal(existsSync(join(hub.builder.folder, 'app', 'a.ts')), false)
+/** A session of a controller closed as the Builder's is, with no model or machine behind it. */
+async function closedSession() {
+  const controller = new AgentController({
+    id: 'closed',
+    storage: new InMemoryStore(),
+    agent: new Agent({
+      id: 'closed',
+      name: 'Closed',
+      instructions: 'None.',
+      model: new MockLanguageModelV3(),
+    }),
+    modes: [{ id: 'conversa', availableTools: TOOL_CLOSURE.availableTools }],
+    toolCategoryResolver: TOOL_CLOSURE.toolCategoryResolver,
+    initialState: TOOL_CLOSURE.initialState,
+  })
+  await controller.init()
+  return controller.createSession()
+}
+
+test('o fecho recusa o que as categorias não liberam: uma ferramenta de MCP, uma fora da lista e a que o Mastra tem desligada', async () => {
+  const session = await closedSession()
+  for (const name of ['mastra_workspace_write_file', 'mastra_workspace_execute_command', 'recall'])
+    assert.equal(session.resolveToolApproval(name), 'allow', name)
+  for (const name of [
+    'github_create_issue',
+    'mcp__github__create_issue',
+    'mastra_workspace_ast_edit',
+    'mastra_workspace_index',
+  ])
+    assert.equal(session.resolveToolApproval(name), 'deny', name)
+})
+
+function unused(): Promise<never> {
+  return Promise.reject(new Error('the processor calls no model'))
+}
+function secondModel() {
+  return callModel({
+    specificationVersion: 'v2',
+    provider: 'groq',
+    modelId: 'llama-3.3-70b-versatile',
+    supportedUrls: {},
+    doGenerate: unused,
+    doStream: unused,
+  })
+}
+
+/** The turn after the company's automatic switch: its account is given, so no database is asked. */
+class SwitchedTurn extends Turn {
+  override get switched() {
+    return true
+  }
+  override modelId() {
+    return ModelId.parse(MODEL)
+  }
+  override effort() {
+    return 'off' as const
+  }
+  override async account() {
+    return {
+      ...{
+        id: ModelAccountId.parse(crypto.randomUUID()),
+        label: 'Time 1',
+        kind: 'api_key' as const,
+      },
+      ...{ modelId: ModelId.parse(MODEL), model: await secondModel() },
+    }
+  }
+}
+
+test('a troca automática de modelo estreita o conjunto fechado e não o refaz: a ferramenta que não é da lista não volta', async () => {
+  const closed = TOOL_CLOSURE.availableTools
+  const tools = Object.fromEntries(
+    [...closed, 'web_search', 'github_create_issue'].map((name) => [name, {}]),
+  )
+  const turn = new SwitchedTurn({
+    companyId: CompanyId.parse('c'.repeat(32)),
+    personId: PersonId.parse('person-switched'),
+  })
+  const processor = accountPick(Object.create(null))
+  const result = await processor.processInputStep?.({
+    ...{ stepNumber: 0, steps: [], systemMessages: [], state: {}, messages: [], retryCount: 0 },
+    ...{
+      model: await secondModel(),
+      tools,
+      activeTools: [...closed, 'web_search'],
+      abort: () => assert.fail('the step is not aborted'),
+    },
+    messageList: new MessageList(),
+    requestContext: turnContext(turn),
+  })
+  assert.ok(result !== undefined && !Array.isArray(result) && !(result instanceof MessageList))
+  assert.deepEqual(
+    result.activeTools,
+    closed.filter((name) => name !== 'web_search'),
+  )
 })
