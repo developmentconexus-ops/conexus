@@ -68,12 +68,12 @@ do merge, este cartão volta (L7).
 | --- | --- | --- | --- | --- |
 | U1 | Padrões no servidor, ordem de início, lista de P5 | `hub-api`, `builder/model-accounts/` e `builder/conversation/routes.ts` (servidor), `migrations/`, `database-grants.sql`; os dublês da tela que montam `Accounts` | dados | 12.1 e 12.2 fechadas |
 | U2 | As duas seções; toda escolha de modelo pela lista de P5 | `routes/…/$companyId_/settings/`, `builder/model-accounts/` e `builder/conversation/model-choice.tsx` (tela) | design | U1 |
-| U3 | As gravações e os dublês que as tocam | `scripts/`, `platform/` (servidor) | testes | U2 |
+| U3 | As gravações e os dublês que as tocam | `scripts/`, `platform/` (servidor) | testes | 12.1 e 12.2 fechadas |
 | U4 | Uma dobra: `applyEvent` | `hub-api`, `builder/conversation/` | código | U3 |
 | U5 | Lido igual ao stream (#176) | `builder/conversation/` (servidor) | testes | U4 |
-| U6 | Percurso e roteiro | `tests/e2e/`, `apps/web/*.test.ts`, `sweep-*.ts` | testes | U5 |
+| U6 | Percurso e roteiro | `tests/e2e/`, `apps/web/*.test.ts`, `sweep-*.ts` | testes | U2 e U5 |
 
-Em série. Sem checagem nova. O QA (T25) vem antes das revisões (L9).
+Duas frentes, uma revisão, um merge: frente 1, U1 e U2; frente 2, U3, U4 e U5; U6 depois das duas. Dividem só `builder/conversation/routes.ts` (a U1 muda a escolha do modelo de início, a U4 a montagem da mensagem); a que chegar em segundo faz o merge da outra. O QA (T25) vem antes das revisões (L9).
 
 **Orçamento de código alterado** (sem testes nem gerados): U1 490 (contrato 80, `defaults.ts` 130,
 `changes.ts` 90, `store.ts` 60, rotas 70, `queue.ts` e `routes.ts` da conversa 40, tabela 20); U2 420
@@ -122,7 +122,7 @@ Servidor: `npm run test -w @conexus/server`. Tela: `npm run test -w @conexus/web
 ## As telas
 
 Desenhos do estudo de 2026-10-20, fora do repositório (L21): `wf-A1280`, `wf-A390` (recomendado),
-`wf-B*`, `wf-C*`. Nenhuma captura do produto antigo: ele não tinha padrão pessoal.
+`wf-B*`, `wf-C*`.
 
 ```text
 1280 ┌ Voltar ───────────┬ Meus padrões  [Só você] ─────────────────────────────┐
@@ -187,8 +187,7 @@ Fork `ce7e9c30`; OS `e0353c36`.
 | `applyEvent` | nova | `hub-api/src/conversations.ts` | — | — | Mastra Code: `applyEvent` (`transcript.ts:197`); OS: `transcriptReducer` (`apps/web/src/features/builder/transcript.ts:84`); sobre eventos do Mastra, nós sobre os nossos (0050) |
 | Segundos guardados, gravações | nova | `live.ts`, `history.ts`; `scripts/`, `recordings/` | — | — | — |
 
-**A medida do transplante.** Nada trazido: o antigo tinha um padrão por papel na instalação
-(`0033_model_account.sql:48-56`), sem pessoa nem nível.
+**A medida do transplante.** Nada trazido: o antigo tinha um padrão por papel (`0033_model_account.sql:48-56`).
 
 **A dívida.** Nenhuma.
 
@@ -266,7 +265,7 @@ unidade `typescript-magician`, `node` e `zod.dev/llms.txt`; no servidor, `fastif
 ### Os contratos que a unidade cria
 
 `DefaultChoice(props: {companyId; scope: 'mine' | 'company'; defaults: Accounts['defaults'];
-providers; mayChange: boolean})`. Textos em `text.ts` (C26). `mayChange` vem de `Accounts.mayManage` na empresa e é `true` no pessoal. Modelo: `my-accounts.tsx` (12.1), que cumpre C23 e C26 (textos em `text.ts`); C21 não se aplica, sem estado em união.
+providers; mayChange: boolean})`. `mayChange` vem de `Accounts.mayManage` na empresa e é `true` no pessoal. Modelo: `my-accounts.tsx` (12.1), que cumpre C23 e C26; C21 não se aplica, sem estado em união.
 
 ### A ordem do trabalho
 
@@ -291,14 +290,14 @@ Regras: W32, W17, V29, V30, V31. O `ModelPicker` com `effort` da 12.1.
 **Os contratos.** `Recording = z.object({provider: ProviderId, api: z.string(), sdk: z.string(),
 recordedAt: z.iso.date()})`, o `.json` (T24, C27). `record-provider.ts --provider anthropic|google
 --case cited|thinking|tool-error|abort`: um turno pelo `@ai-sdk/anthropic` instalado com a assinatura
-Claude, ou pelo CLIProxy com a conta Gemini, e um `fetch` que copia o corpo. Pergunta inventada; a
+Claude, ou pelo CLIProxy com a conta Gemini, e um `fetch` que copia o corpo; a
 credencial vem do ambiente, nunca a arquivo ou log (S40). Claude grava os quatro casos; Gemini,
 a interrupção (o pensamento espera #172, a busca #150). Só esta sessão é autorizada ("2A", 2026-10-20).
 
 **As skills e a leitura.** `node_modules/@ai-sdk/anthropic/docs/05-anthropic.mdx` (armadilhas: PR
 188, PR 191); `node_modules/ai/docs/`; `mastra`; o README do CLIProxyAPI.
 
-**Como se prova.** 26 e 27, `npm run test -w @conexus/server`.
+**Como se prova.** 26 e 27.
 
 ## U4 Uma dobra
 
@@ -322,11 +321,11 @@ metadata do fio, escrita por `settleThinking` pela fila `queued`, como `keepFail
 
 **As skills e a leitura.** `mastra` e `node_modules/@mastra/memory/dist/docs/`.
 
-**Como se prova.** 29 e 30, `npm run test -w @conexus/server`.
+**Como se prova.** 29 e 30.
 
 ## U6 Percurso e roteiro
 
 **As skills e a leitura.** `playwright-cli`; `vitest.dev/llms.txt`; o QA segue `conexus-qa`.
 
-**Como se prova.** 20 e 21: `npm run e2e`, `npm run test -w @conexus/web`; 22 pelo QA; 23 após o
+**Como se prova.** 20 e 21; 22 pelo QA; 23 após o
 Release (L17).
