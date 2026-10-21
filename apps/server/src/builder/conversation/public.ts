@@ -6,6 +6,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
+import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
 import { registerConversationRoutes } from './routes.ts'
 import { Sessions } from './sessions.ts'
@@ -27,6 +28,7 @@ export function createConversations(deps: {
   sealKeys: SealKeys
   google: ReturnType<typeof openGoogleCalls>
   pool: MastraPool
+  runs: Runs
   log: FailureLog
 }) {
   const { database, identity, sealKeys } = deps
@@ -37,11 +39,13 @@ export function createConversations(deps: {
     googleCalls: deps.google.googleCalls,
     log: deps.log,
   }
-  const builder = createBuilder({ pool: deps.pool, queue, log: deps.log })
+  const builder = createBuilder({ pool: deps.pool, queue, runs: deps.runs, log: deps.log })
   const store = createConversationStore(deps)
-  const sessions = new Sessions({ builder, log: deps.log })
+  const sessions = new Sessions({ builder, runs: deps.runs, log: deps.log })
 
   const release: ReleaseConversations = async (scope) => {
+    // The runs first: a turn the removal aborts then finds its run settled and writes nothing.
+    await deps.runs.release(scope)
     const ids = await store.releasedIds(scope)
     for (const id of ids) {
       await sessions.forget(id)
@@ -70,6 +74,7 @@ export function createConversations(deps: {
      */
     async close() {
       await sessions.drain()
+      await deps.runs.stop()
       await builder.memory.settled()
       await builder.mastra.shutdown()
       await deps.google.stop()

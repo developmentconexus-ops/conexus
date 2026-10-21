@@ -169,7 +169,11 @@ test('máquina: a varredura lista só as máquinas com a marca desta instalaçã
               diskSizeMB: 1024,
               envdVersion: '0.1.0',
               state: 'paused',
-              metadata: { conexus_origin: 'hub.example.test', conexus_project: PROJECT },
+              metadata: {
+                conexus_origin: 'hub.example.test',
+                conexus_company: COMPANY,
+                conexus_project: PROJECT,
+              },
             },
           ])
         : '',

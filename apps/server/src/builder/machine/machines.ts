@@ -22,8 +22,15 @@ export type Machines = {
     deadline: Date
     onPhase: (phase: Phase) => void
   }): Promise<Workspace>
-  /** One bundle of the whole tree on `base`, or why there is none. */
+  /**
+   * One bundle of the whole tree on `base`, or why there is none. A turn that never needed the
+   * machine is `unchanged` without waking it.
+   */
   collect(input: { projectId: ProjectId; base: Sha }): Promise<Buffer | 'unchanged' | 'too-large'>
+  /** Whether the Projeto's turn used the machine: only then is there anything to collect. */
+  touched(projectId: ProjectId): boolean
+  /** Ends the turn's use of the machine: it pauses and its last use is now. Safe to repeat. */
+  release(projectId: ProjectId): Promise<void>
   list: MachineApi['list']
   kill: MachineApi['kill']
 }
@@ -154,7 +161,7 @@ class BuilderMachines implements Machines {
       id: `conexus-${projectId}`,
       sandboxId,
       deadline: input.deadline,
-      metadata: { ...this.deps.mark, conexus_project: projectId },
+      metadata: { ...this.deps.mark, conexus_company: companyId, conexus_project: projectId },
       onStart: async ({ outcome }) => {
         if (holder.session !== undefined)
           await this.onStart(holder.session, sandboxId !== undefined, outcome)
@@ -180,13 +187,26 @@ class BuilderMachines implements Machines {
 
   async collect({ projectId, base }: { projectId: ProjectId; base: Sha }) {
     const session = this.sessions.get(projectId)
-    if (session === undefined) throw new Failure('MACHINE_UNAVAILABLE')
+    if (session?.ready === undefined) return 'unchanged'
     await this.ensure(session)
     session.onPhase('saving')
     const result = await run(session.kit, collectScript(this.workdir, this.tmp, base))
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
     const outcome = collected(result.stdout)
     return outcome === 'bundle' ? session.kit.transport.read(outFile(this.tmp)) : outcome
+  }
+
+  touched(projectId: ProjectId) {
+    return this.sessions.get(projectId)?.ready !== undefined
+  }
+
+  async release(projectId: ProjectId) {
+    const session = this.sessions.get(projectId)
+    this.sessions.delete(projectId)
+    if (session?.ready === undefined) return
+    const id = session.kit.sandboxId()
+    await session.kit.sandbox.stop?.()
+    if (id !== undefined) await this.remember(session, id)
   }
 }
 

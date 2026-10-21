@@ -1,4 +1,4 @@
-import { ProjectId } from '@conexus/hub-api'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
@@ -53,7 +53,7 @@ export function createE2bApi(
   const where = apiUrl === undefined ? {} : { apiUrl }
   return {
     async list() {
-      const found: { id: SandboxId; projectId: ProjectId | undefined }[] = []
+      const found: { id: SandboxId; companyId: CompanyId; projectId: ProjectId }[] = []
       const pages = Sandbox.list({
         apiKey,
         ...where,
@@ -63,9 +63,12 @@ export function createE2bApi(
       while (pages.hasNext) {
         for (const item of await pages.nextItems()) {
           const project = ProjectId.safeParse(item.metadata.conexus_project)
+          const company = CompanyId.safeParse(item.metadata.conexus_company)
+          if (!project.success || !company.success) continue
           found.push({
             id: SandboxId.parse(item.sandboxId),
-            projectId: project.success ? project.data : undefined,
+            companyId: company.data,
+            projectId: project.data,
           })
         }
       }

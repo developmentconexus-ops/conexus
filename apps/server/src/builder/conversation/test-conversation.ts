@@ -121,7 +121,13 @@ export async function hubBeside(t: TestContext, hub: Hub) {
     return closed
   }
   t.after(close)
-  return { ...hub, app, close }
+  const builder = {
+    ...hub.builder,
+    bucket: ports.bucket,
+    control: ports.control,
+    knobs: ports.knobs,
+  }
+  return { ...hub, app, runs: subjects.runs, builder, close }
 }
 
 export async function started(hub: Hub, person: Person, conversations: string, body: object = {}) {

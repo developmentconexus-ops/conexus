@@ -1,3 +1,5 @@
 export { MAX_BYTES, Sha } from './context.ts'
+export type { GitCopy } from './copy/copy.ts'
 export { copyKey, createGitCopy } from './copy/copy.ts'
+export type { Repository } from './repository.ts'
 export { CANDIDATE_REF, openRepository } from './repository.ts'

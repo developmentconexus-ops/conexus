@@ -21,6 +21,10 @@ export type Repository = {
   main(): Promise<Sha>
   /** A bundle holding `main` only, for a machine to fetch as its seed. */
   bundleOfMain(): Promise<Buffer>
+  /** A bundle holding a run's candidate, with its history, for the copy. */
+  bundleOfRun(runId: RunId): Promise<Buffer>
+  /** Which version a commit is: its depth in history, the empty first commit not counted. */
+  versionAt(sha: Sha): Promise<number>
   /** Takes the one commit of a machine's bundle into the run's own ref, or says why not. */
   receive(input: { runId: RunId; bundle: Uint8Array; base: Sha }): Promise<Result<Sha, SaveRefusal>>
   /** Moves `main` from exactly `base` to `candidate`; `stale` when `main` is anywhere else. */
@@ -171,6 +175,9 @@ export function openRepository(input: {
     main: () => main(context),
     bundleOfMain: async () =>
       (await git(context, ['bundle', 'create', '--quiet', '-', MAIN])).stdout,
+    bundleOfRun: async (runId) =>
+      (await git(context, ['bundle', 'create', '--quiet', '-', runRef(runId)])).stdout,
+    versionAt: async (sha) => Number(await text(context, ['rev-list', '--count', sha])) - 1,
     receive: (received) => receive(context, received),
     advance: (moved) => advance(context, moved),
     contains: (sha) => inMain(context, sha),

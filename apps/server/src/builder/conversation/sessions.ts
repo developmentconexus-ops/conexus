@@ -1,7 +1,16 @@
-import type { ConversationId, Effort, EventId, MessageId, ModelId } from '@conexus/hub-api'
+import type {
+  ConversationId,
+  Effort,
+  EventId,
+  MessageId,
+  ModelId,
+  ProjectId,
+  RunId,
+} from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
+import type { Runs } from '../runs/public.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import type { Listener, Live, Owner, Question, Said } from './live.ts'
@@ -30,6 +39,7 @@ type OfConversation = { owner: Owner; conversationId: ConversationId }
  */
 export class Sessions {
   readonly #builder: Builder
+  readonly #runs: Runs
   readonly #log: FailureLog
   readonly #open = new Map<ConversationId, Entry>()
   // Every message from its arrival to the end of its run, for the drain to wait on.
@@ -37,8 +47,9 @@ export class Sessions {
   // Ends every stream once the turns are drained, so the server's close does not wait on them.
   readonly #closing = new AbortController()
 
-  constructor(deps: { builder: Builder; log: FailureLog }) {
+  constructor(deps: { builder: Builder; runs: Runs; log: FailureLog }) {
     this.#builder = deps.builder
+    this.#runs = deps.runs
     this.#log = deps.log
   }
 
@@ -57,6 +68,7 @@ export class Sessions {
           ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
           ...{ turn: undefined, asked: new Set(), runs: new Map() },
           ...{ unclaimed: undefined, questions: [], kept: Promise.resolve() },
+          ...{ run: undefined, saveFailure: undefined },
           unsubscribe: () => undefined,
         }
         const unsubscribe = session.subscribe((event) => onEvent(opened, event))
@@ -113,7 +125,15 @@ export class Sessions {
    * Keeps the person's question on the thread, then sends it on a turn of its own, whose answer
    * comes on the stream; resolves once the question is kept.
    */
-  async send(input: OfConversation & { question: Question }): Promise<void> {
+  async send(input: OfConversation & { projectId: ProjectId; question: Question }): Promise<void> {
+    const { owner, conversationId } = input
+    const admitted = await this.#runs.admit({
+      ...owner,
+      conversationId,
+      projectId: input.projectId,
+    })
+    if (!admitted.ok) throw new Failure('RUN_BUSY')
+    const runId = admitted.value
     const entry = this.#hold(input)
     const turn = new Turn(input.owner)
     const kept = entry.live.then(async (live) => {
@@ -129,9 +149,9 @@ export class Sessions {
     })
     const answered: Promise<void> = kept
       .then(
-        (live) => this.#answer(live, input.question, turn),
+        (live) => this.#answer(live, input.question, turn, runId),
         // The question was not kept: `send` throws it to the caller, and no turn starts.
-        () => undefined,
+        () => this.#runs.finish({ runId, reason: 'error' }),
       )
       .then(() => this.#release(input.conversationId, entry))
       .catch((cause: unknown) =>
@@ -151,13 +171,16 @@ export class Sessions {
    * failure is the turn's end when no other run is in progress. A turn Mastra ran keeps its
    * failure after the message that opened it, the one it saves the turn after.
    */
-  async #answer(live: Live, question: Question, turn: Turn): Promise<void> {
+  async #answer(live: Live, question: Question, turn: Turn, writing: RunId): Promise<void> {
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
     const id = questionId(live.conversationId, question.key)
     const opened = openTurn(live)
+    live.run = { finish: (reason) => this.#runs.finish({ runId: writing, reason }) }
+    this.#runs.attach(writing, () => live.session.abort())
     try {
-      const options = { requestContext: turnContext(turn), requireDelivery: true }
+      const requestContext = this.#runs.contextOf(turnContext(turn), writing)
+      const options = { requestContext, requireDelivery: true }
       const signal = { type: 'user', id, contents: question.content } as const
       const accepted = await live.session.sendSignal(signal, options).accepted
       opened.after ??= id
@@ -177,6 +200,8 @@ export class Sessions {
     } finally {
       live.asked.delete(turn)
       turn.end()
+      live.run = undefined
+      await this.#runs.finish({ runId: writing, reason: 'error' })
       if (live.unclaimed !== undefined && live.asked.size === 0) {
         const { reason } = live.unclaimed
         live.unclaimed = undefined

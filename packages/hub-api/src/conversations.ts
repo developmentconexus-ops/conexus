@@ -42,6 +42,8 @@ export function runningEffort(efforts: readonly [Effort, ...Effort[]], effort: E
 export const TurnFailureCode = z.enum([
   'MODEL_NO_ACCOUNT',
   'MODEL_CALL_FAILED',
+  'SAVE_REFUSED',
+  'MACHINE_LOST',
   'INTERNAL_UNEXPECTED',
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>
@@ -223,7 +225,7 @@ export const sendConversationMessage = defineOperation({
   },
   attemptKey: true,
   success: { status: 202 },
-  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT'],
+  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT', 'RUN_BUSY'],
 })
 
 export const streamConversation = defineOperation({

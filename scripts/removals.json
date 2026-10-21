@@ -2363,5 +2363,49 @@
       "file": "src/builder/machine/machine.test.ts",
       "name": "varredura"
     }
+  },
+  {
+    "id": "run-busy-refused",
+    "file": "apps/server/src/builder/conversation/sessions.ts",
+    "find": "    if (!admitted.ok) throw new Failure('RUN_BUSY')\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-turns.test.ts",
+      "name": "segunda pergunta durante"
+    }
+  },
+  {
+    "id": "release-stops-runs",
+    "file": "apps/server/src/builder/runs/removal.ts",
+    "find": "    await store.move({ companyId, id: stopped.id, from: stopped.state, to: 'stopped' })\n    await context.stopped(stopped.id)\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-removal.test.ts",
+      "name": "no meio de um turno"
+    }
+  },
+  {
+    "id": "sweep-skips-open-runs",
+    "file": "apps/server/src/builder/runs/daily.ts",
+    "find": "    if (open.length > 0) continue\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs.test.ts",
+      "name": "varredura"
+    }
+  },
+  {
+    "id": "sweep-waits-seven-days",
+    "file": "apps/server/src/builder/runs/daily.ts",
+    "find": "    if (Date.now() - row.usedAt.getTime() < IDLE_MS) continue\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs.test.ts",
+      "name": "varredura"
+    }
   }
 ]

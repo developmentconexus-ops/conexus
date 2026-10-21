@@ -13,6 +13,7 @@ import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Turn } from '../model-accounts/public.ts'
+import type { Outcome } from '../runs/public.ts'
 import type { Place } from './parts.ts'
 import { modelOf, partOf } from './parts.ts'
 
@@ -95,6 +96,10 @@ export type Live = {
   /** The questions on the thread, and the thread's writes in flight, one after the other. */
   questions: Question[]
   kept: Promise<void>
+  /** The run of the message in progress: ends and saves it when Mastra's run is about to end. */
+  run: { finish: (reason: string) => Promise<Outcome | 'gone'> } | undefined
+  /** Why saving failed, for the turn's end to say (card, the failures table). */
+  saveFailure: TurnFailureCode | undefined
   unsubscribe: () => void
 }
 
@@ -317,8 +322,12 @@ function keepFailure(live: Live, turn: TurnLog, code: TurnFailureCode): Promise<
 export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Promise<void> {
   const runId = live.session.run.getRunId()
   const run = runId === null ? undefined : live.runs.get(runId)
-  const code = failureOf({ reason, turn: run?.turn })
-  if (run !== undefined && code !== undefined && live.turn !== undefined) {
+  const outcome = await live.run?.finish(reason ?? 'unknown')
+  if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'failed') {
+    live.saveFailure = outcome.code
+  }
+  const code = live.saveFailure ?? failureOf({ reason, turn: run?.turn })
+  if (code !== undefined && live.turn !== undefined && (run !== undefined || live.saveFailure)) {
     await keepFailure(live, live.turn, code)
   }
   // A write of nothing, queued last, settles once every write before it has.
@@ -337,7 +346,8 @@ export function endTurn(live: Live, ending: Ending): void {
   settleThinking(live, turn)
   const ended =
     ending.reason === 'error' || ending.reason === 'aborted' ? ending.reason : 'complete'
-  const code = failureOf(ending)
+  const code = live.saveFailure ?? failureOf(ending)
+  live.saveFailure = undefined
   if (code !== undefined) {
     tell(live, turn, { type: 'part', part: { type: 'failure', code } })
     void keepFailure(live, turn, code)

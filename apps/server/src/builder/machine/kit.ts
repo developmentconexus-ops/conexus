@@ -1,4 +1,4 @@
-import type { ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { SandboxStartHook, WorkspaceSandbox } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { Transport } from './filesystem.ts'
@@ -33,6 +33,6 @@ export type KitFactory = (options: KitOptions) => Kit
 
 /** The machines of this installation the provider holds, found by the mark they carry. */
 export type MachineApi = {
-  list(): Promise<{ id: SandboxId; projectId: ProjectId | undefined }[]>
+  list(): Promise<{ id: SandboxId; companyId: CompanyId; projectId: ProjectId }[]>
   kill(id: SandboxId): Promise<void>
 }

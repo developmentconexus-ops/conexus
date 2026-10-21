@@ -19,6 +19,7 @@ import {
   MAX_PROCESSOR_RETRIES,
   providerOf,
 } from '../model-accounts/public.ts'
+import type { Runs } from '../runs/public.ts'
 import { BuilderLogger } from './logger.ts'
 import { createMastraStorage } from './storage.ts'
 
@@ -83,7 +84,12 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
  * from the session and given its account by the queue's processors, its memory, its title and its
  * observation through the same account, in Mastra's own database.
  */
-export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: FailureLog }) {
+export function createBuilder(deps: {
+  pool: MastraPool
+  queue: QueueDeps
+  runs: Runs
+  log: FailureLog
+}) {
   const storage = createMastraStorage(deps.pool)
   const modelSettings = { timeout: MODEL_TIMEOUT }
   const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
@@ -134,6 +140,8 @@ export function createBuilder(deps: { pool: MastraPool; queue: QueueDeps; log: F
     memory,
     agent,
     modes: [{ id: CONVERSATION_MODE }],
+    // The turn's run owns its workspace; a session made outside a turn has none.
+    workspace: ({ requestContext }) => deps.runs.workspaceOf(requestContext),
     disableBuiltinTools: BUILTIN_TOOLS,
     // The Builder's tools only read, so they run without asking, as Mastra Code's sessions do: an
     // approval parks the run and resumes it, which under load can end the turn (decision 0053).

@@ -1,3 +1,4 @@
+import { testBuilderPorts } from '../builder/runs/test-runs.ts'
 import type { CompanyPostgres } from './company-postgres.ts'
 import { createCompanyPostgres } from './company-postgres.ts'
 import type { Config } from './config.ts'
@@ -52,6 +53,7 @@ export function testAppPorts(
     neon: doubles.neon.neon,
     companyPostgres: doubles.postgres.companyPostgres,
     cloudflare: doubles.cloudflare.cloudflare,
+    ...testBuilderPorts(config),
     log: silent,
   }
 }

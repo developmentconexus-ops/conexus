@@ -4,7 +4,7 @@
 const SERVER = '^apps/server/src'
 const WEB = '^apps/web/src'
 const PUBLIC_DOOR = '(^|/)public\\.tsx?$'
-const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-anthropic|test-recordings)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff|builder/conversation/test-conversation|builder/conversation/test-defaults|builder/conversation/test-research|builder/machine/test-machine)\\.ts$`
+const TEST_DATABASE = `${SERVER}/(platform/(test-database|test-neon|test-mail|test-hub-process|test-cloudflare|test-company-postgres|test-app-ports|test-cliproxy-binary|test-seal|test-mastra-database|test-anthropic|test-recordings)|hub/identity/test-hub|hub/apps/test-versions|hub/apps/test-handoff|builder/conversation/test-conversation|builder/conversation/test-defaults|builder/conversation/test-research|builder/machine/test-machine|builder/runs/test-runs)\\.ts$`
 const DRIVER_MODULES = `${SERVER}/platform/(database|migrate|test-database|test-mastra-database)\\.ts$`
 
 /** @type {import('dependency-cruiser').IConfiguration} */
@@ -50,7 +50,8 @@ module.exports = {
       comment: 'C7: platform/ holds no subject and imports none.',
       severity: 'error',
       from: { path: `${SERVER}/platform/` },
-      to: { path: `${SERVER}/(hub|builder)/` },
+      // The test ports hand every test Hub the Builder's doubles (T14), as they hand it Neon's.
+      to: { path: `${SERVER}/(hub|builder)/`, pathNot: `${SERVER}/builder/runs/test-runs\\.ts$` },
     },
     {
       name: 'program-imports-program-by-name',

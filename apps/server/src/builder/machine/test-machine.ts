@@ -9,15 +9,19 @@ export type Control = {
   outcome: 'created' | 'connected'
   start: 'ok' | 'gone' | 'hang' | 'unreachable'
   networkClosed: number
+  /** The deadline each machine was asked for. */
+  deadlines: Date[]
 }
 
 export function newControl(): Control {
-  return { outcome: 'created', start: 'ok', networkClosed: 0 }
+  return { outcome: 'created', start: 'ok', networkClosed: 0, deadlines: [] }
 }
 
 /** A machine that is a folder of this computer: E2B's start, its outcome and its failures made by hand. */
 export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
+    mkdirSync(folder, { recursive: true })
+    control.deadlines.push(options.deadline)
     const sandbox = new LocalSandbox({
       workingDirectory: folder,
       onStart: (started) => options.onStart({ ...started, outcome: control.outcome }),

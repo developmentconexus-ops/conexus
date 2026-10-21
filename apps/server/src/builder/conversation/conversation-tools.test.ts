@@ -27,16 +27,19 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   function streamed(each: Sent) {
     return each.stream
   }
+  function searches(tools: readonly string[]) {
+    return tools.filter((name) => !name.startsWith('mastra_workspace_')).sort()
+  }
   assert.deepEqual(
-    anthropic.chats.filter(streamed).map((each) => [...each.tools].sort()),
+    anthropic.chats.filter(streamed).map((each) => searches(each.tools)),
     [['recall', 'web_fetch']],
   )
   assert.ok(gemini.length > 0, 'Gemini was called')
   for (const tools of gemini.filter((each) => each.length > 0)) {
-    assert.deepEqual(tools, ['recall', 'web_fetch'])
+    assert.deepEqual(searches(tools), ['recall', 'web_fetch'])
   }
   assert.deepEqual(
-    anthropic.sent.filter(streamed).map((each) => [...each.tools].sort()),
+    anthropic.sent.filter(streamed).map((each) => searches(each.tools)),
     [['recall', 'web_fetch', 'web_search']],
   )
 })
