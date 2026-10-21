@@ -63,12 +63,48 @@ const REFUSALS: [string, Record<string, string>][] = [
         '- [code](guides/code.md): rules.\n- [steps](steps/): the card.\n- [a](../.agents/skills/a/SKILL.md): a.\n',
     },
   ],
+  [
+    'rule-sentence-twice',
+    {
+      'docs/guides/code.md': '- **C1.** A rule says the same thing twice. Founder, 2026-10-16.\n',
+      'docs/guides/web.md':
+        '- **W1.** Another rule.\n  A rule says the same thing\n  twice. [review]\n',
+      'docs/index.md':
+        '- [code](guides/code.md): rules.\n- [web](guides/web.md): rules.\n- [steps](steps/): the card.\n',
+    },
+  ],
   ['second-card', { 'docs/steps/e01-a.md': 'a\n', 'docs/steps/e02-b.md': 'b\n' }],
   [
     'founder-page-too-long',
     { 'docs/steps/e01-a.md': `## A página do fundador\n${words(601)}\n## As unidades\nx\n` },
   ],
 ]
+
+const MECHANISMS =
+  '| Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |\n| --- | --- | --- | --- | --- | --- |\n| Git | trazido | `builder/git/` | — | nenhuma | nenhuma faz |\n'
+
+/** The table of step 13's card, deleted at its closing (a583393^:docs/steps/e13-o-builder-escreve.md). */
+const STEP_13_TABLE =
+  '| Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |\n| --- | --- | --- | --- | --- |\n| Git (613 linhas) | trazida | `builder/git/` | prazo e sinal | pacote e avanço |\n| O resto | novo | `builder/` | — | candidata antes do `main` |\n'
+
+test('aceita o card com a tabela de mecanismos e a coluna de referência', () => {
+  const run = check({ 'docs/steps/e01-a.md': MECHANISMS })
+  assert.equal(run.status, 0, run.stderr)
+})
+
+test('recusa a tabela do card da etapa 13: sem a coluna de referência e com "O resto"', () => {
+  const run = check({ 'docs/steps/e13-o-builder-escreve.md': STEP_13_TABLE })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^card-without-references: /m)
+  assert.match(run.stderr, /^card-rest-row: .*\| O resto \|/m)
+})
+
+test('recusa card-rest-row também com a coluna de referência', () => {
+  const run = check({ 'docs/steps/e01-a.md': `${MECHANISMS}| o resto | nosso | x | — | — | — |\n` })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^card-rest-row: /m)
+  assert.doesNotMatch(run.stderr, /card-without-references/)
+})
 
 for (const [name, changes] of REFUSALS) {
   test(`recusa ${name}`, () => {
