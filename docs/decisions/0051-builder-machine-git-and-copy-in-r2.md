@@ -7,7 +7,7 @@ hosts, its filesystem and where a version is kept.
 
 ## Decision
 
-- One machine per Projeto, woken by id with `reattach: 'required'`; a lost one is rebuilt from `main`.
+- One machine per Projeto, woken by id with `reattach: 'required'`; a lost one is rebuilt.
 - The network is a list of domains (`denyOut: [ALL_TRAFFIC]`, `allowOut`), starting with
   `registry.npmjs.org`; the proof adds a host only when `npm install` fails without it, and writes
   it here.
@@ -31,12 +31,12 @@ hosts, its filesystem and where a version is kept.
 
 | # | Check | Passes when |
 | --- | --- | --- |
-| 1 | Live script: `net`, `resume`, `seed`, `tool-choice` | Every line says `ok: true` |
-| 2 | `npm ls @mastra/core` | One copy (done) |
-| 3 | A bundle deleted from R2 | Restored in under 15 minutes, same `main`; region noted |
-| 4 | E2B's free-plan terms | They admit the use, or it returns to the founder |
+| 1 | Live script: `net`, `resume`, `seed`, `tool-choice` | All `ok: true` |
+| 2 | `npm ls @mastra/core` | One copy |
+| 3 | A bundle deleted from R2 | Restored in under 15 minutes, same `main` |
+| 4 | E2B's free-plan terms | The use is admitted |
 
 ## State
 
-Proposed 2026-10-21. Founder, 2026-10-20: "Aprovo", "13 sim", "15 sim". Checks 1, 3, 4 open; 3 waits
-for the bucket.
+Proposed 2026-10-21. Founder, 2026-10-20: "Aprovo", "13 sim", "15 sim". Check 4 read: terms ban nothing here; paused
+machines are kept without limit; $100 credits, then the workspace blocks. 1, 3 open.
