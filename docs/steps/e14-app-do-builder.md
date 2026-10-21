@@ -58,7 +58,7 @@ a #153 espera as decisões dela.
 | U2 | O ambiente prévia | `hub/apps/`, `hub/projects/`, `hub-api/`, `platform/company-postgres.ts`, migrações, `apps/edge/src/hub.ts` | dados | drizzle, neon:neon-postgres | U1 |
 | U3 | Montar na máquina e voltar ao Builder | `infra/e2b/`, `scripts/app-pack.ts`, `builder/machine/`, `builder/conversation/` | segurança | mastra | U1 |
 | U4 | O envio da prévia no fim do turno | `hub/apps/`, `builder/runs/`, `builder/conversation/parts.ts`, `hub-api/` | dados | mastra, fastify-best-practices | U2, U3 |
-| U5 | A prévia dentro do Hub | `apps/edge/src/`, `platform/{http,access}.ts`, `hub/apps/{handoff,routes}.ts`, `hub-api/src/apps.ts` | segurança | cloudflare:workers-best-practices, cloudflare:wrangler | U2 |
+| U5 | A prévia dentro do Hub | `apps/edge/src/`, `platform/http.ts`, `hub/apps/{handoff,routes}.ts`, `hub-api/src/apps.ts` | segurança | cloudflare:workers-best-practices, cloudflare:wrangler | U2 |
 | U6 | A tela Prévia | `apps/web/src/builder/preview/`, `hub/projects/area.tsx`, `builder/conversation/` (web) | web | router-core, shadcn, playwright-cli | U4, U5 |
 | U7 | Alterações | `builder/git/`, `hub-api/src/source.ts`, `apps/web/src/builder/source/` | web | fastify-best-practices, router-core, shadcn | U1 |
 | U8 | A skill completa do contrato do app | `packages/app-contract/`, `builder/conversation/builder.eval.test.ts` | dados | mastra | U3 |
@@ -111,25 +111,25 @@ Pelas rotas e `main.ts`, `Machines` dublê (`LocalSandbox`), Cloudflare dublê, 
 | 1 | U1 | 0054 "proposed" antes do código, com os critérios 2 a 7 | o registro |
 | 2 | U1 | **Ao vivo**: Worker `cx-prova-e14-` no despachante em `…--previa`, num iframe do Hub: a entrada da U5 (mensagem, passagem, cookie particionado) vale e o app grava, em Chrome, Firefox e Safari do iPhone; fora do iframe, sem passagem: a página de sessão | 0054 |
 | 3 | U1 | **Ao vivo**: o host `<nome>--<apelido>--previa` responde em HTTPS com o certificado de hoje do domínio dos apps (0041, critério 5) | 0054 |
-| 4 | U1 | **Ao vivo**: 50 scripts de versão no namespace, podados: a contagem volta, o GET de cada um dá 404 depois da propagação, anotada | 0054 |
+| 4 | U1 | **Ao vivo**: 50 scripts no namespace, podados: a contagem volta, cada GET dá 404 após a propagação, anotada | 0054 |
 | 5 | U1 | **Ao vivo**: `pack` na máquina da 13 (Node 24, rede da lista) monta; tempo do fim do turno à Prévia anotado, até 20 s (should) | 0054 |
 | 6 | U1 | **Ao vivo**: o `abort` com `retry` do processador reabre o laço dentro do `AgentController` (13) com o Claude real | 0054 |
-| 7 | U1 | **Ao vivo**: primeira consulta da Prévia com o Neon da empresa dormindo, anotada | 0054 |
+| 7 | U1 | **Ao vivo**: primeira consulta com o Neon dormindo, anotada | 0054 |
 | 8 | U2 | `previewHostOf` dá `<rótulo>--previa`; rótulo novo cabe em 55, antigo de 56 a 63: `PREVIEW_NO_ADDRESS`; `HostLabel` recusa 3 partes, `PreviewHostLabel` aceita só o sufixo | `address.test.ts` |
 | 9 | U2 | Esquema e logins `app_<id>_previa*`; o login de rodar da prévia lê o esquema do ar: 42501 | `company-postgres.test.ts` |
 | 10 | U2 | Apagar o Projeto: os dois esquemas, os quatro logins, os scripts das duas; falha isolada (12) | `removal.test.ts` |
 | 11 | U2 | A poda mantém o ar, a prévia e as 3 `ready` mais novas de qualquer origem (`KEPT_OLD_VERSIONS`, `prune.ts`); `listAppVersions` só `origin = 'sent'` | `prune.test.ts`, `versions.test.ts` |
-| 12 | U4 | Duas chamadas com a mesma chave: uma versão (`REPLAY`); `preview_version_id` só sobe; o do ar não muda | `preview-send.test.ts` |
-| 13 | U4 | Envio de prévia concorre com envio manual: os dois terminam, cada um no seu ponteiro | idem |
-| 14 | U4 | `readPreview` (`MEMBER`): `none`, `pending`, `ready`, `failed` com a última boa; Projeto alheio 404 (S10) | `preview.test.ts` |
-| 15 | U5 | Host da prévia: cookies `Partitioned`; `frame-ancestors <origem do Hub>`; sem sessão, num iframe: a página de entrada, que manda só o hash; em nova aba: o salto de hoje; host do ar igual | `dispatcher-preview.test.ts` |
+| 12 | U4 | Mesma chave duas vezes: uma versão (`REPLAY`); o ponteiro só sobe; o do ar não muda | `preview-send.test.ts` |
+| 13 | U4 | Prévia e envio manual juntos: cada um no seu ponteiro | idem |
+| 14 | U4 | `readPreview` (`MEMBER`): `none`, `pending`, `ready`, `failed` e a última boa; alheio 404 (S10) | `preview.test.ts` |
+| 15 | U5 | Host da prévia: cookies `Partitioned`; `frame-ancestors <origem do Hub>`; sem sessão ou vencida, num iframe: a entrada, só o hash, e a falha na segunda seguida; em nova aba: o salto de hoje; host do ar igual | `dispatcher-preview.test.ts` |
 | 16 | U5 | `createPreviewHandoff`: membro recebe a passagem; outra empresa: 404 (S10); `Origin` alheio: `REQUEST_ORIGIN_REFUSED`; passagem repetida ou de outro navegador: `APP_HANDOFF_INVALID`; sessão de um ambiente não abre o outro | idem, `handoff-route.test.ts` |
-| 17 | U5 | O Hub ganha `frame-src https://*.<domínio dos apps>`; o resto do CSP fica | `http.test.ts` |
+| 17 | U5 | Hub: `frame-src https://*.<domínio dos apps>`, o resto igual | `http.test.ts` |
 | 18 | U3 | O modelo escreve um app que não monta: o erro volta, ele conserta, a versão monta; 3 falhas: o turno guarda e termina sem `abort` | `pack.test.ts` |
 | 19 | U3 | Pasta montada acima de `APP_LIMITS`, com link ou arquivo não regular, ou fora do `Manifest`: `PREVIEW_PACK_FAILED`, sem ler o resto (C59, S2) | idem |
-| 20 | U4 | Cloudflare recusa (10021): `failed` com `APP_VERSION_NOT_STARTING`, a última boa fica | `preview-send.test.ts` |
+| 20 | U4 | Cloudflare recusa (10021): `failed`, `APP_VERSION_NOT_STARTING`, a última boa fica | `preview-send.test.ts` |
 | 21 | U4 | A 3 termina antes da 2: o ponteiro fica na 3 | idem |
-| 22 | U4 | Hub morre em `previewing`: o segundo processo monta e envia, uma versão | `runs-preview.test.ts` |
+| 22 | U4 | Hub morre em `previewing`: o outro processo refaz, uma versão | `runs-preview.test.ts` |
 | 23 | U6 | Estados da matriz; a Prévia segue na última boa durante o turno; recarrega na parte `preview` | `preview.test.tsx` |
 | 24 | U6 | Barra: nomes e teclado (V30, V31); Celular, 390 px; **Abrir em nova aba** com a sessão; **Pedir ao Builder para corrigir** põe no campo o código e a versão | idem |
 | 25 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo; trocar de aba não recarrega | navegador (T23) |
@@ -137,7 +137,7 @@ Pelas rotas e `main.ts`, `Machines` dublê (`LocalSandbox`), Cloudflare dublê, 
 | 27 | U7 | Unificado, Lado a lado; linhas sem alteração recolhidas | `changes.test.tsx` |
 | 28 | U8 | `validateSkillContent` passa; cobre upsert, pai com filhos, `timestamptz`, erro do banco, limites, CSP do app, o `pack`, migração aplicada não muda | `instructions.test.ts` |
 | 29 | U8 | Portão de montagem no CI, ferramentas falsas: o app gerado monta e o `Manifest` passa; o T14 inteiro é o 32 | `builder.eval.test.ts` |
-| 30 | U9 | O roteiro com dublês | `tests/e2e/builder-preview.test.ts` |
+| 30 | U9 | Roteiro, dublês | `tests/e2e/builder-preview.test.ts` |
 | 31 | U9 | O relatório de QA no commit candidato (T25) | `conexus-qa` |
 | 32 | U9 | **Ao vivo**, publicado: o roteiro; Prévia aberta com a máquina apagada | firstmate, fundador (L17) |
 
@@ -145,7 +145,7 @@ Pelas rotas e `main.ts`, `Machines` dublê (`LocalSandbox`), Cloudflare dublê, 
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Prévia | "Ainda não há uma prévia. Descreva o aplicativo para começar." | idem | "Preparando a prévia…", sobre a última boa se há | com `last`: "A versão N não montou. A prévia continua na versão M."; sem: "A versão N não montou."; os dois com **Pedir ao Builder para corrigir** | a do Projeto | a do Projeto (membro vê) | sessão vencida: o salto pelo Hub, sem aviso |
+| Prévia | "Ainda não há uma prévia. Descreva o aplicativo para começar." | idem | "Preparando a prévia…", sobre a última boa se há | com `last`: "A versão N não montou. A prévia continua na versão M."; sem: "A versão N não montou."; os dois com **Pedir ao Builder para corrigir** | a do Projeto | a do Projeto (membro vê) | sessão vencida: a entrada da U5 de novo, sem aviso |
 | Alterações | "Nenhuma versão guardada ainda." | "Esta versão não mudou arquivos." | a partilhada | a de `ui/` | "Esta versão não está mais guardada." | a do Projeto | "Esta diferença é grande demais para mostrar aqui." |
 | Cartão da versão | — | — | — | o da 13 | — | — | — |
 | App \| Conversa (390) | Conversa | — | ponto "trabalhando" | — | — | — | — |
@@ -245,7 +245,7 @@ ver `prune.ts:17`, C26 sim). Regras: D6, D11, D12, D15, 0039.
 
 **Contratos.** `packVersion({source, out}): Packed | PackRefused`, de `pack.ts`, gravado no
 template em `/opt/conexus/pack.mjs`, fora da árvore do app; `npm ci` só sem `node_modules`.
-`PackRefused = {code: 'BUNDLE_FAILED' | 'MANIFEST_INVALID' | 'TOO_MANY_FILES' | 'TOO_LARGE', tail:
+`PackRefused = {code: 'BUNDLE_FAILED' | 'MANIFEST_INVALID' | 'TOO_MANY_FILES' | 'TOO_LARGE' | 'NOT_REGULAR', tail:
 string}` (`tail`: 20 linhas, 4 KiB, pelo filtro de segredos da 13). `Machines.pack({projectId}):
 Result<VersionFolder, PackRefused>`; a saída do comando passa por um esquema Zod `PackOutput` (C27)
 e a pasta por `receiveVersion`; só arquivos regulares (S2). `buildCheck: Processor`, `processOutputStep`: só sem
@@ -276,17 +276,18 @@ sourceNumber, code, last?}`, `last` = o `ready`. `PREVIEW_PACK_FAILED`, `PREVIEW
 ## U5 A prévia dentro do Hub
 
 **Raio.** `apps/edge/src/{dispatch,headers,pages}.ts`: muda; chama: publicar a borda.
-`apps/server/src/hub/apps/{handoff,routes}.ts`, `apps/server/src/platform/{http,access}.ts`,
+`apps/server/src/hub/apps/{handoff,routes}.ts`, `apps/server/src/platform/http.ts`,
 `packages/hub-api/src/{apps,failures,index}.ts`: cria, muda; chama: web, toda resposta.
 
 **Contratos.** O despachante lê o host por `appHostLabelOf`. Na prévia: `setCookie(name, value,
 environment)` dá `SameSite=None; Secure; Partitioned; HttpOnly`; `withSecurityHeaders` troca só
-`frame-ancestors` pela origem do Hub; sem sessão e com `Sec-Fetch-Dest: iframe`, a página de
-entrada `/__conexus/preview` (script próprio em `/__conexus/preview.js`) põe o cookie de vínculo e
-manda ao Hub, por `postMessage` com `targetOrigin` a origem do Hub, só o hash dele. A tela confere
-`event.origin`, chama `createPreviewHandoff` `POST …/projects/{projectId}/preview/handoff`
-`{binding}`, `session`, `MEMBER`, que é o `createHandoff` de hoje com o rótulo da prévia →
-`{location}`, e põe o `location` no iframe; o `redeem` é o de hoje (S22). Em nova aba, o salto
+`frame-ancestors` pela origem do Hub. Num iframe (`Sec-Fetch-Dest: iframe`) sem sessão ou com
+`APP_SESSION_INVALID`, nunca o salto: a página de entrada `/__conexus/preview` põe o cookie de
+vínculo e leva o hash dele num `data-`; `/__conexus/preview.js` o manda por `postMessage`, alvo a
+origem do Hub. Uma segunda entrada seguida no mesmo iframe (marca no `redeem`) dá a página de
+falha. A tela confere `event.origin` e `event.source`, chama `createPreviewHandoff` `POST
+…/projects/{projectId}/preview/handoff` `{binding}`, `session`, `MEMBER`: o `createHandoff` de
+hoje, com o host tirado do `projectId` (S9) → `{location}`, posto no iframe; o `redeem` é o de hoje. Em nova aba, o salto
 de hoje. `OnHost`, `AppOpenQuery` levam `AppHostLabel = HostLabel | PreviewHostLabel`. `callTo` lê o
 ponteiro e o login do ambiente; prévia sem versão: `APP_NOT_FOUND`. Helmet: `frameSrc`. Modelo:
 `handoff.ts` (C21, C23, C26 sim).
