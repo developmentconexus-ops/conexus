@@ -100,8 +100,9 @@ export function flushText(speaker: Speaker, turn: TurnLog): void {
 }
 
 /**
- * Says an event of the turn. Text waits until it fills a piece of `TEXT_CHUNK` characters or `TEXT_MAX_WAIT_MS` passes; any
- * other event, and the turn's end, say what waits before them, so the order holds.
+ * Says an event of the turn. Text waits until it fills a piece of `TEXT_CHUNK` characters, its part
+ * ends or `TEXT_MAX_WAIT_MS` passes; any other event, and the turn's end, say what waits before
+ * them, so the order holds.
  */
 export function say(speaker: Speaker, turn: TurnLog, event: ConversationEvent): void {
   if (event.type !== 'text') {
@@ -118,6 +119,7 @@ export function say(speaker: Speaker, turn: TurnLog, event: ConversationEvent): 
   if (turn.buffer !== '' && turn.flusher === undefined) waitToFlush(speaker, turn)
 }
 
+/** The short text's clock (one owner, this file): says what waits once `TEXT_MAX_WAIT_MS` passes. */
 function waitToFlush(speaker: Speaker, turn: TurnLog): void {
   const waiting = new AbortController()
   turn.flusher = waiting

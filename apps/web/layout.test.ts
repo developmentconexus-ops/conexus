@@ -310,6 +310,7 @@ test('os ícones têm 14px na barra, 16px ao lado de um texto e 18px no trilho',
   const opener = await iconWidth(page.getByRole('button', { name: 'Abrir navegação' }))
   await page.getByRole('button', { name: 'Abrir navegação' }).click()
   const drawer = page.getByRole('dialog', { name: 'Navegação' })
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
   const close = await iconWidth(drawer.getByRole('button', { name: 'Fechar navegação' }))
   const rail = await iconWidth(drawer.getByRole('link', { name: 'Início' }))
   await drawer.getByRole('button', { name: 'Conta de Ana Lima' }).click()

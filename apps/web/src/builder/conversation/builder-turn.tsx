@@ -33,7 +33,7 @@ function PartRow(props: { part: MessagePart; streaming: boolean }) {
     case 'shell':
       return <ShellOutput part={part} />
     case 'machine':
-      return <MachineLine part={part} />
+      return <MachineLine key={part.phase} part={part} />
     case 'version':
       return <VersionLine part={part} />
     case 'file':
