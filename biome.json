@@ -171,12 +171,25 @@
         "!apps/server/src/builder/runs/copy-retry.ts",
         "!apps/server/src/builder/model-accounts/google/calls.ts",
         "!apps/server/src/builder/model-accounts/google/google.ts",
+        "!apps/server/src/builder/model-accounts/claude/store.ts",
         "!**/*.test.ts",
         "!**/test-*.ts"
       ],
       "linter": {
         "rules": {
           "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "vitest": "Only screen files use Vitest (decision 0034).",
+                  "msw": "Only screen files use MSW (decision 0034).",
+                  "@testing-library/react": "Only screen files use Testing Library (decision 0034).",
+                  "node:timers": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/.",
+                  "node:timers/promises": "A clock has one owner (decision 0051): the deadline, the lease and the copy retry in builder/runs/."
+                }
+              }
+            },
             "noRestrictedGlobals": {
               "level": "error",
               "options": {

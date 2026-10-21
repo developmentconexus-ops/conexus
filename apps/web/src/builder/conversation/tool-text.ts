@@ -36,6 +36,12 @@ const SENTENCES: Record<Kind, Record<ToolPart['state'], string>> = {
     error: 'Não conseguiu editar um arquivo',
     denied: 'Não pôde editar um arquivo',
   },
+  read_file: {
+    running: 'Lendo um arquivo',
+    completed: 'Leu um arquivo',
+    error: 'Não conseguiu ler um arquivo',
+    denied: 'Não pôde ler um arquivo',
+  },
   run_command: {
     running: 'Rodando um comando',
     completed: 'Rodou um comando',
@@ -61,6 +67,7 @@ const DONE: Record<Kind, (count: number) => string> = {
   recall: (count) => `releu conversas anteriores ${counted(count, 'vez', 'vezes')}`,
   write_file: (count) => `escreveu ${counted(count, 'arquivo', 'arquivos')}`,
   edit_file: (count) => `editou ${counted(count, 'arquivo', 'arquivos')}`,
+  read_file: (count) => `leu ${counted(count, 'arquivo', 'arquivos')}`,
   run_command: (count) => `rodou ${counted(count, 'comando', 'comandos')}`,
   other: (count) => `usou ${counted(count, 'ferramenta', 'ferramentas')}`,
 }

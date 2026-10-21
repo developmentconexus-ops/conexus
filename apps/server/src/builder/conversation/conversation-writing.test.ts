@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { MessagePart } from '@conexus/hub-api'
+import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
+import { applyEvent } from '@conexus/hub-api'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { asked, conversing, messagesOf, title } from './test-conversation.ts'
 
 const SECRET = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789'
 const WRITE = { name: 'mastra_workspace_write_file', input: { path: 'a.ts', content: 'x\n' } }
@@ -22,8 +23,19 @@ function calling(...tools: { name: string; input: object }[]) {
   }
 }
 
-function partsOf(events: { type: string; part?: MessagePart }[]) {
-  return events.flatMap((event) => (event.type === 'part' && event.part ? [event.part] : []))
+/** The parts the turn's events add up to, as the screen folds them. */
+function partsOf(events: ConversationEvent[]): MessagePart[] {
+  return events.reduce<MessagePart[]>(
+    (parts, event) => (event.type === 'part' ? applyEvent(parts, event) : parts),
+    [],
+  )
+}
+
+/** Every `shell` part the turn said, in order: a command's lines as it ran, then at its end. */
+function shellsOf(events: ConversationEvent[]) {
+  return events.flatMap((event) =>
+    event.type === 'part' && event.part.type === 'shell' ? [event.part] : [],
+  )
 }
 
 test('um turno que escreve: ferramentas por tipo e assunto, arquivo, saída do comando sem segredo, máquina e versão', async (t) => {
@@ -48,7 +60,7 @@ test('um turno que escreve: ferramentas por tipo e assunto, arquivo, saída do c
   assert.ok(parts.some((part) => part.type === 'machine'))
   assert.deepEqual(
     parts.filter((part) => part.type === 'version'),
-    [{ type: 'version', number: 1, changed: true }],
+    [{ type: 'version', number: 1, changed: true, files: 1, changedFiles: 1 }],
   )
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   const journal = JSON.stringify(await hub.test.asOwner('select event from builder.run_event'))
@@ -67,4 +79,40 @@ test('a saída de um comando longo chega só pelas últimas 20 linhas e 4 KiB', 
   assert.ok(shell)
   assert.ok(shell.lines.length <= 20)
   assert.ok(Buffer.byteLength(shell.lines.join('\n')) <= 4096)
+})
+
+/** The parts of the Builder's turn that outlive it: the command's lines and the version. */
+function lasting(parts: MessagePart[]) {
+  return parts.filter((part) => part.type === 'shell' || part.type === 'version')
+}
+
+test('o que dura do turno fica depois do fim e ao reabrir: as linhas do comando e a versão', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, calling(WRITE, RUN))
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const read = (await messagesOf(hub, ana, url)).at(-1)
+  assert.deepEqual(
+    lasting(read?.parts ?? []).map((part) => part.type),
+    ['shell', 'version'],
+  )
+  assert.deepEqual(lasting(read?.parts ?? []), lasting(partsOf(events)))
+})
+
+test('a saída de um comando chega enquanto ele roda, sem código de saída, antes do fim', async (t) => {
+  const slow = { name: RUN.name, input: { command: 'echo começo; sleep 2; echo fim' } }
+  const { hub, ana, conversations } = await conversing(t, calling(slow))
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  const shells = shellsOf(events)
+  assert.deepEqual(shells.at(0), { ...shells.at(0), lines: ['começo'], exitCode: null })
+  assert.deepEqual(shells.at(-1), { ...shells.at(-1), lines: ['começo', 'fim'], exitCode: 0 })
+})
+
+test('ler um arquivo tem o seu tipo e o caminho como assunto', async (t) => {
+  const read = { name: 'mastra_workspace_read_file', input: { path: 'src/nada.ts' } }
+  const { hub, ana, conversations } = await conversing(t, calling(read))
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  const tools = partsOf(events).flatMap((part) => (part.type === 'tool' ? [part] : []))
+  assert.deepEqual(
+    tools.map((tool) => [tool.kind, tool.subject]),
+    [['read_file', { path: 'src/nada.ts' }]],
+  )
 })
