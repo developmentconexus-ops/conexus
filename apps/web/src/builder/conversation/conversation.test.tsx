@@ -46,6 +46,16 @@ test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens
   expect(models).toEqual(['Claude Sonnet 4', 'Claude Opus 4', 'Gemini 2.5 Pro', 'Gemini 2.5 Flash'])
 })
 
+test('o compositor lista os fornecedores conectados da pessoa, também o que o Hub diz sem conta usável agora', async () => {
+  await openConversation(
+    conversationOf({ id: FIRST }),
+    view({ providers: ['anthropic', 'google'], usable: ['anthropic'] }),
+  )
+  fireEvent.click(screen.getByRole('combobox', { name: 'Modelo e raciocínio' }))
+  const models = (await screen.findAllByRole('option')).map((one) => one.textContent)
+  expect(models).toEqual(['Claude Sonnet 4', 'Claude Opus 4', 'Gemini 2.5 Pro', 'Gemini 2.5 Flash'])
+})
+
 test('o Enter envia com a chave da tentativa; "Pensando…" e "Parar" até chegar o texto', async () => {
   const { field, lines, sent } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare dois apps de encomenda de padaria')

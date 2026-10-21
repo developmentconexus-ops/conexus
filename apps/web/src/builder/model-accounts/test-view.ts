@@ -33,6 +33,8 @@ export type Answers = Partial<
     | 'change'
     | 'assign'
     | 'default'
+    | 'mine'
+    | 'clear'
     | 'fallback'
     | 'order'
     | 'remove'

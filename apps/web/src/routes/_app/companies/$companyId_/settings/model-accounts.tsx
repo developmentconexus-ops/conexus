@@ -13,7 +13,7 @@ export const Route = createFileRoute('/_app/companies/$companyId_/settings/model
       group: 'company',
       label: 'Contas de modelo',
       order: 30,
-      keywords: ['modelo padrão', 'troca automática', 'chave', 'assinatura'],
+      keywords: ['troca automática', 'chave', 'assinatura'],
     },
   },
   loader: async ({ context, params }) => {

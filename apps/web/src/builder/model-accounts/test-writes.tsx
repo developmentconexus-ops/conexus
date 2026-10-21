@@ -64,18 +64,6 @@ function settingsWrites(view: View, sent: Sent[], answers: Answers): HttpHandler
       replace(view, String(params.accountId), (one) => ({ ...one, assignees: personIds }))
       return HttpResponse.json({ account: view.company.find((one) => one.id === params.accountId) })
     }),
-    http.put(`${BASE}/default-model`, async ({ request }) => {
-      const body = await note(request)
-      const replaced = answers.default?.()
-      if (replaced) return replaced
-      const company = ModelDefault.parse(body)
-      view.defaults = {
-        company,
-        mine: view.defaults?.mine ?? null,
-        start: view.defaults?.start ?? null,
-      }
-      return HttpResponse.json({ defaultModel: company })
-    }),
     http.put(`${BASE}/model-fallback`, async ({ request }) => {
       const body = ModelFallback.parse(await note(request))
       const replaced = answers.fallback?.()
@@ -145,11 +133,55 @@ function signIns(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
   ]
 }
 
+/** The Hub's writes on the defaults: the company's, the person's own and clearing it. */
+function defaultWrites(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
+  const note = noter(sent)
+  return [
+    http.put(`${BASE}/default-model`, async ({ request }) => {
+      const body = await note(request)
+      const replaced = answers.default?.()
+      if (replaced) return replaced
+      const company = ModelDefault.parse(body)
+      view.defaults = {
+        company,
+        mine: view.defaults?.mine ?? null,
+        start: view.defaults?.start ?? null,
+      }
+      return HttpResponse.json({ defaultModel: company })
+    }),
+    http.put(`${BASE}/my-model-default`, async ({ request }) => {
+      const body = await note(request)
+      const replaced = answers.mine?.()
+      if (replaced) return replaced
+      const mine = ModelDefault.parse(body)
+      view.defaults = {
+        company: view.defaults?.company ?? null,
+        mine,
+        start: { ...mine, from: 'mine' },
+      }
+      return HttpResponse.json({ mine })
+    }),
+    http.delete(`${BASE}/my-model-default`, async ({ request }) => {
+      await note(request)
+      const replaced = answers.clear?.()
+      if (replaced) return replaced
+      const company = view.defaults?.company ?? null
+      view.defaults = {
+        company,
+        mine: null,
+        start: company === null ? null : { ...company, from: 'company' },
+      }
+      return new HttpResponse(null, { status: 204 })
+    }),
+  ]
+}
+
 /** The Hub's writes on the company's model accounts, as they change `view` and are noted in `sent`. */
 export function writes(view: View, sent: Sent[], answers: Answers) {
   return [
     ...accountsWrites(view, sent, answers),
     ...settingsWrites(view, sent, answers),
+    ...defaultWrites(view, sent, answers),
     ...signIns(view, sent, answers),
   ]
 }

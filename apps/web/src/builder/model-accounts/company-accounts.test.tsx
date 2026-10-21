@@ -36,30 +36,23 @@ test('o dono abre Contas de modelo em Configurações, com o título e os contro
   expect(await screen.findByRole('heading', { name: 'Contas de modelo' })).toBeTruthy()
   expect(router.state.location.pathname).toBe(PAGE)
   expect(screen.getByRole('button', { name: 'Ligar conta' })).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Salvar modelo padrão' })).toBeTruthy()
   expect(screen.getByRole('region', { name: 'Troca automática' })).toBeTruthy()
   expect(screen.queryByText(SENTENCE)).toBeNull()
 })
 
-test('o membro lê as filas, o modelo padrão e a troca, vê a frase e o link a Minhas contas de modelo, sem controles de escrita', async () => {
+test('o membro lê as filas e a troca, vê a frase e o link a Minhas contas de modelo, sem controles de escrita', async () => {
   const { sent, router } = open(
     view({
       company: [accountOf({ label: 'Time 1' })],
-      defaults: {
-        company: { model: 'anthropic/claude-sonnet-5-5', effort: 'off' },
-        mine: null,
-        start: null,
-      },
       mayManage: false,
     }),
   )
   expect(await screen.findByText(/Só o dono ou um administrador muda/)).toBeTruthy()
   expect(screen.getByText(SENTENCE, { exact: false })).toBeTruthy()
   expect(screen.getByText('Time 1')).toBeTruthy()
-  expect(screen.getByText('anthropic/claude-sonnet-5-5')).toBeTruthy()
   expect(screen.getByText('Desligada')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Ligar conta' })).toBeNull()
-  expect(screen.queryByRole('button', { name: 'Salvar modelo padrão' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Salvar troca automática' })).toBeNull()
   expect(screen.queryByRole('region', { name: 'Troca automática' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Pausar Time 1' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Remover Time 1' })).toBeNull()

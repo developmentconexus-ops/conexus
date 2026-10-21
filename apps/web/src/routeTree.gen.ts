@@ -27,8 +27,10 @@ import { Route as AppCompaniesCompanyIdProjectsProjectIdRouteImport } from './ro
 import { Route as AppCompaniesCompanyIdSettingsIndexRouteImport } from './routes/_app/companies/$companyId_/settings/index.tsx'
 import { Route as AppCompaniesCompanyIdSettingsAccountRouteImport } from './routes/_app/companies/$companyId_/settings/account.tsx'
 import { Route as AppCompaniesCompanyIdSettingsAppearanceRouteImport } from './routes/_app/companies/$companyId_/settings/appearance.tsx'
+import { Route as AppCompaniesCompanyIdSettingsDefaultsRouteImport } from './routes/_app/companies/$companyId_/settings/defaults.tsx'
 import { Route as AppCompaniesCompanyIdSettingsGeneralRouteImport } from './routes/_app/companies/$companyId_/settings/general.tsx'
 import { Route as AppCompaniesCompanyIdSettingsModelAccountsRouteImport } from './routes/_app/companies/$companyId_/settings/model-accounts.tsx'
+import { Route as AppCompaniesCompanyIdSettingsMyDefaultsRouteImport } from './routes/_app/companies/$companyId_/settings/my-defaults.tsx'
 import { Route as AppCompaniesCompanyIdSettingsMyModelAccountsRouteImport } from './routes/_app/companies/$companyId_/settings/my-model-accounts.tsx'
 import { Route as AppCompaniesCompanyIdSettingsPeopleRouteImport } from './routes/_app/companies/$companyId_/settings/people.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeIndexRouteImport } from './routes/_app/companies/$companyId_/welcome/index.tsx'
@@ -170,6 +172,12 @@ const AppCompaniesCompanyIdSettingsAppearanceRoute =
     path: '/appearance',
     getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
   } as any)
+const AppCompaniesCompanyIdSettingsDefaultsRoute =
+  AppCompaniesCompanyIdSettingsDefaultsRouteImport.update({
+    id: '/defaults',
+    path: '/defaults',
+    getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
+  } as any)
 const AppCompaniesCompanyIdSettingsGeneralRoute =
   AppCompaniesCompanyIdSettingsGeneralRouteImport.update({
     id: '/general',
@@ -180,6 +188,12 @@ const AppCompaniesCompanyIdSettingsModelAccountsRoute =
   AppCompaniesCompanyIdSettingsModelAccountsRouteImport.update({
     id: '/model-accounts',
     path: '/model-accounts',
+    getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
+  } as any)
+const AppCompaniesCompanyIdSettingsMyDefaultsRoute =
+  AppCompaniesCompanyIdSettingsMyDefaultsRouteImport.update({
+    id: '/my-defaults',
+    path: '/my-defaults',
     getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
   } as any)
 const AppCompaniesCompanyIdSettingsMyModelAccountsRoute =
@@ -260,8 +274,10 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/projects/$projectId': typeof AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren
   '/companies/$companyId/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
   '/companies/$companyId/settings/appearance': typeof AppCompaniesCompanyIdSettingsAppearanceRoute
+  '/companies/$companyId/settings/defaults': typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   '/companies/$companyId/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
+  '/companies/$companyId/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   '/companies/$companyId/settings/my-model-accounts': typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
   '/companies/$companyId/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/companies/$companyId/welcome/build': typeof AppCompaniesCompanyIdWelcomeBuildRoute
@@ -290,8 +306,10 @@ export interface FileRoutesByTo {
   '/operations/clients': typeof AppOperationsClientsIndexRoute
   '/companies/$companyId/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
   '/companies/$companyId/settings/appearance': typeof AppCompaniesCompanyIdSettingsAppearanceRoute
+  '/companies/$companyId/settings/defaults': typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   '/companies/$companyId/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
+  '/companies/$companyId/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   '/companies/$companyId/settings/my-model-accounts': typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
   '/companies/$companyId/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/companies/$companyId/welcome/build': typeof AppCompaniesCompanyIdWelcomeBuildRoute
@@ -328,8 +346,10 @@ export interface FileRoutesById {
   '/_app/companies/$companyId/projects/$projectId': typeof AppCompaniesCompanyIdProjectsProjectIdRouteWithChildren
   '/_app/companies/$companyId_/settings/account': typeof AppCompaniesCompanyIdSettingsAccountRoute
   '/_app/companies/$companyId_/settings/appearance': typeof AppCompaniesCompanyIdSettingsAppearanceRoute
+  '/_app/companies/$companyId_/settings/defaults': typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   '/_app/companies/$companyId_/settings/general': typeof AppCompaniesCompanyIdSettingsGeneralRoute
   '/_app/companies/$companyId_/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
+  '/_app/companies/$companyId_/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   '/_app/companies/$companyId_/settings/my-model-accounts': typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
   '/_app/companies/$companyId_/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/_app/companies/$companyId_/welcome/build': typeof AppCompaniesCompanyIdWelcomeBuildRoute
@@ -365,8 +385,10 @@ export interface FileRouteTypes {
     | '/companies/$companyId/projects/$projectId'
     | '/companies/$companyId/settings/account'
     | '/companies/$companyId/settings/appearance'
+    | '/companies/$companyId/settings/defaults'
     | '/companies/$companyId/settings/general'
     | '/companies/$companyId/settings/model-accounts'
+    | '/companies/$companyId/settings/my-defaults'
     | '/companies/$companyId/settings/my-model-accounts'
     | '/companies/$companyId/settings/people'
     | '/companies/$companyId/welcome/build'
@@ -395,8 +417,10 @@ export interface FileRouteTypes {
     | '/operations/clients'
     | '/companies/$companyId/settings/account'
     | '/companies/$companyId/settings/appearance'
+    | '/companies/$companyId/settings/defaults'
     | '/companies/$companyId/settings/general'
     | '/companies/$companyId/settings/model-accounts'
+    | '/companies/$companyId/settings/my-defaults'
     | '/companies/$companyId/settings/my-model-accounts'
     | '/companies/$companyId/settings/people'
     | '/companies/$companyId/welcome/build'
@@ -432,8 +456,10 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId/projects/$projectId'
     | '/_app/companies/$companyId_/settings/account'
     | '/_app/companies/$companyId_/settings/appearance'
+    | '/_app/companies/$companyId_/settings/defaults'
     | '/_app/companies/$companyId_/settings/general'
     | '/_app/companies/$companyId_/settings/model-accounts'
+    | '/_app/companies/$companyId_/settings/my-defaults'
     | '/_app/companies/$companyId_/settings/my-model-accounts'
     | '/_app/companies/$companyId_/settings/people'
     | '/_app/companies/$companyId_/welcome/build'
@@ -622,6 +648,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdSettingsAppearanceRouteImport
       parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
     }
+    '/_app/companies/$companyId_/settings/defaults': {
+      id: '/_app/companies/$companyId_/settings/defaults'
+      path: '/defaults'
+      fullPath: '/companies/$companyId/settings/defaults'
+      preLoaderRoute: typeof AppCompaniesCompanyIdSettingsDefaultsRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
+    }
     '/_app/companies/$companyId_/settings/general': {
       id: '/_app/companies/$companyId_/settings/general'
       path: '/general'
@@ -634,6 +667,13 @@ declare module '@tanstack/react-router' {
       path: '/model-accounts'
       fullPath: '/companies/$companyId/settings/model-accounts'
       preLoaderRoute: typeof AppCompaniesCompanyIdSettingsModelAccountsRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
+    }
+    '/_app/companies/$companyId_/settings/my-defaults': {
+      id: '/_app/companies/$companyId_/settings/my-defaults'
+      path: '/my-defaults'
+      fullPath: '/companies/$companyId/settings/my-defaults'
+      preLoaderRoute: typeof AppCompaniesCompanyIdSettingsMyDefaultsRouteImport
       parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
     }
     '/_app/companies/$companyId_/settings/my-model-accounts': {
@@ -765,8 +805,10 @@ const AppCompaniesCompanyIdRouteRouteWithChildren =
 interface AppCompaniesCompanyIdSettingsRouteRouteChildren {
   AppCompaniesCompanyIdSettingsAccountRoute: typeof AppCompaniesCompanyIdSettingsAccountRoute
   AppCompaniesCompanyIdSettingsAppearanceRoute: typeof AppCompaniesCompanyIdSettingsAppearanceRoute
+  AppCompaniesCompanyIdSettingsDefaultsRoute: typeof AppCompaniesCompanyIdSettingsDefaultsRoute
   AppCompaniesCompanyIdSettingsGeneralRoute: typeof AppCompaniesCompanyIdSettingsGeneralRoute
   AppCompaniesCompanyIdSettingsModelAccountsRoute: typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
+  AppCompaniesCompanyIdSettingsMyDefaultsRoute: typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   AppCompaniesCompanyIdSettingsMyModelAccountsRoute: typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
   AppCompaniesCompanyIdSettingsPeopleRoute: typeof AppCompaniesCompanyIdSettingsPeopleRoute
   AppCompaniesCompanyIdSettingsIndexRoute: typeof AppCompaniesCompanyIdSettingsIndexRoute
@@ -778,10 +820,14 @@ const AppCompaniesCompanyIdSettingsRouteRouteChildren: AppCompaniesCompanyIdSett
       AppCompaniesCompanyIdSettingsAccountRoute,
     AppCompaniesCompanyIdSettingsAppearanceRoute:
       AppCompaniesCompanyIdSettingsAppearanceRoute,
+    AppCompaniesCompanyIdSettingsDefaultsRoute:
+      AppCompaniesCompanyIdSettingsDefaultsRoute,
     AppCompaniesCompanyIdSettingsGeneralRoute:
       AppCompaniesCompanyIdSettingsGeneralRoute,
     AppCompaniesCompanyIdSettingsModelAccountsRoute:
       AppCompaniesCompanyIdSettingsModelAccountsRoute,
+    AppCompaniesCompanyIdSettingsMyDefaultsRoute:
+      AppCompaniesCompanyIdSettingsMyDefaultsRoute,
     AppCompaniesCompanyIdSettingsMyModelAccountsRoute:
       AppCompaniesCompanyIdSettingsMyModelAccountsRoute,
     AppCompaniesCompanyIdSettingsPeopleRoute:

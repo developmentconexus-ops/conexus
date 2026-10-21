@@ -22,7 +22,10 @@ const PROVIDERS = [
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
 ].map((provider) => ({
   ...provider,
-  models: provider.models.map((name) => ({ id: `${provider.id}/${name}`, efforts: ['off'] })),
+  models: provider.models.map((name) => ({
+    id: `${provider.id}/${name}`,
+    efforts: name === 'claude-sonnet-4' ? ['off', 'low', 'high'] : ['off'],
+  })),
 }))
 
 export type { Answers, View } from './test-view.ts'

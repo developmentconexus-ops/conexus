@@ -2,12 +2,16 @@ import type {
   AccountKind,
   Effort,
   ModelAccount,
+  ModelDefault,
   PersonId,
   Provider,
   ProviderId,
+  StartSource,
 } from '@conexus/hub-api'
+import { providerOfModel } from '@conexus/hub-api'
 import { hourOf } from '../../platform/dates.ts'
 import { writeFailureText } from '../../platform/hub.ts'
+import { modelLabel } from './model-label.ts'
 
 export const KIND_NAMES = {
   api_key: 'Chave de API',
@@ -79,3 +83,21 @@ export const EFFORT_LABELS = {
   xhigh: 'Muito alto',
   max: 'Máximo',
 } as const satisfies Record<Effort, string>
+
+/** "Claude Sonnet 4.5 · Alto": a model and the level it starts at. */
+export function choiceText(choice: ModelDefault): string {
+  return `${modelLabel(choice.model)} · ${EFFORT_LABELS[choice.effort]}`
+}
+
+/** Where a new conversation's start comes from, as the line that names it ends. */
+export const START_SOURCE_TEXT = {
+  mine: 'seu padrão',
+  company: 'padrão da empresa',
+  starter: 'modelo inicial',
+} as const satisfies Record<StartSource, string>
+
+/** The name of the provider of `provider/model`, or the id when the list does not hold it. */
+export function modelProviderName(providers: readonly Provider[], model: ModelDefault['model']) {
+  const id = providerOfModel(model)
+  return providers.find((one) => one.id === id)?.name ?? id ?? model
+}

@@ -47,7 +47,7 @@ type Asked = {
 export function ModelChoice(props: {
   ids: { companyId: CompanyId; projectId: ProjectId }
   conversation: Conversation
-  usable: ReadonlySet<ProviderId>
+  connected: ReadonlySet<ProviderId>
   onError: (text: string | undefined) => void
 }) {
   const { providers } = useSuspenseQuery(providersQuery).data
@@ -61,8 +61,8 @@ export function ModelChoice(props: {
       ),
   })
   const shown = useMemo(
-    () => providers.filter((provider) => props.usable.has(provider.id)),
-    [providers, props.usable],
+    () => providers.filter((provider) => props.connected.has(provider.id)),
+    [providers, props.connected],
   )
   const now = send.isPending ? send.variables.body : props.conversation
 
