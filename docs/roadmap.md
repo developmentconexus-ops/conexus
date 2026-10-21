@@ -23,6 +23,7 @@ Aprovações e usos: [aprovações](approvals.md).
 12. **Primeira conversa.** Pergunta ao Builder, e ele responde.
     12.1 **A conversa no painel.** Conversa no painel e vê o Builder pensar.
     12.2 **A casa.** Barra lateral, Início e primeira entrada.
+    12.3 **Padrões.** Escolhe com que modelo as conversas começam.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
 14. **App do Builder.** Abre no Preview o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
