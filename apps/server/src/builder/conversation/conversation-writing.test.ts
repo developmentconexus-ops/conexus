@@ -58,10 +58,12 @@ test('um turno que escreve: ferramentas por tipo e assunto, arquivo, saída do c
   const [shell] = parts.filter((part) => part.type === 'shell')
   assert.deepEqual([shell?.lines, shell?.exitCode], [['token=***', 'pronto'], 0])
   assert.ok(parts.some((part) => part.type === 'machine'))
+  const versions = parts.filter((part) => part.type === 'version')
   assert.deepEqual(
-    parts.filter((part) => part.type === 'version'),
-    [{ type: 'version', number: 1, changed: true, files: 1, changedFiles: 1 }],
+    versions.map((part) => [part.number, part.changed, part.changedFiles]),
+    [[1, true, 1]],
   )
+  assert.ok((versions[0]?.files ?? 0) > 1, 'the version holds the starter beside the turn')
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   const journal = JSON.stringify(await hub.test.asOwner('select event from builder.run_event'))
   assert.equal(journal.includes(SECRET), false)

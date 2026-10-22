@@ -8,6 +8,7 @@ COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY packages/hub-api/package.json packages/hub-api/
 COPY packages/app-contract/package.json packages/app-contract/
+COPY packages/app/package.json packages/app/
 COPY apps/edge/package.json apps/edge/
 RUN npm ci --no-audit --no-fund
 COPY tsconfig.base.json ./
@@ -43,11 +44,13 @@ COPY apps/server/package.json apps/server/
 COPY apps/web/package.json apps/web/
 COPY packages/hub-api/package.json packages/hub-api/
 COPY packages/app-contract/package.json packages/app-contract/
+COPY packages/app/package.json packages/app/
 COPY apps/edge/package.json apps/edge/
 # Node refuses .ts files under node_modules, so the workspace packages stay linked to their folders.
 RUN npm ci --omit=dev --omit=optional --no-audit --no-fund -w @conexus/server && npm cache clean --force
 COPY packages/hub-api packages/hub-api
 COPY packages/app-contract packages/app-contract
+COPY packages/app packages/app
 COPY apps/server apps/server
 COPY --from=build /app/apps/web/dist apps/web/dist
 COPY --from=cliproxy /opt/cliproxy /opt/cliproxy

@@ -71,6 +71,24 @@ type KitOptions = {
   deadline: Date
   metadata: Record<string, string>
   onStart: SandboxStartHook
+  /** Where a command starts when it names no folder: the app folder. */
+  workingDirectory: string
+  /** What the model is told of the machine, in place of the provider's own words. */
+  instructions: string
+}
+
+/**
+ * The machine as the model is told of it (card of step 14, criterion 32): what the template holds
+ * (`infra/e2b/template.ts`), the closed network (decision 0051) and the folder its commands start
+ * in. The shell is not held in the folder: the machine is the boundary, and holds nothing of
+ * Conexus but its check (card, U4).
+ */
+export function machineInstructions(workdir: string): string {
+  return [
+    `The Projeto's own Linux machine, with Node 24, npm and git. Commands start in ${workdir},`,
+    `the app folder: work there and nowhere else. Its network reaches only ${ALLOWED_HOSTS.join(', ')}.`,
+    'Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.',
+  ].join(' ')
 }
 
 export type KitFactory = (options: KitOptions) => Kit

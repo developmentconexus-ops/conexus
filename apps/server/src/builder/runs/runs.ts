@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { CheckReport, PackageGrant } from '@conexus/app/check'
 import type {
   CompanyId,
   ConversationEvent,
@@ -6,12 +7,14 @@ import type {
   PersonId,
   ProjectId,
   RunId,
+  VersionCheck,
 } from '@conexus/hub-api'
 import { QUESTION_LIMITS } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
-import type { Phase } from '../machine/public.ts'
+import type { Result } from '../../platform/result.ts'
+import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
 import type { Outcome, Restart, RunsContext, RunsDeps } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
@@ -24,6 +27,12 @@ import { releaseRuns } from './removal.ts'
 import { saveRun } from './save.ts'
 import { settleExpired, settleRuns } from './settle.ts'
 import { RunStore } from './store.ts'
+
+/**
+ * The packages granted to the Projeto beyond the starter's: none until `builder.package_grant`,
+ * which unit U5 of step 14 brings with the card that asks for one.
+ */
+const GRANTS: readonly PackageGrant[] = []
 
 /** A turn's hour (card, limits). */
 const TURN_MS = 3_600_000
@@ -43,6 +52,7 @@ function idleRun() {
     stopWaiting: () => undefined,
     stopLease: () => undefined,
     lost: false,
+    check: undefined,
   }
 }
 
@@ -61,6 +71,8 @@ type Driven = {
   stopWaiting: () => void
   stopLease: () => void
   lost: boolean
+  /** What the end of the turn's check said last, for the version it saves. */
+  check: VersionCheck | undefined
 }
 
 type Admission = {
@@ -226,12 +238,44 @@ export class Runs {
     requestContext: RequestContext,
     registry?: Registry,
   ): Promise<Workspace | undefined> {
-    const runId = runIn(requestContext)
-    const mine = runId === undefined ? undefined : this.#driven.get(runId)
-    if (runId === undefined || mine === undefined) return undefined
+    const mine = this.#mine(requestContext)
+    if (mine === undefined) return undefined
     mine.registry ??= registry
     mine.workspace ??= this.#openWorkspace(mine)
     return mine.workspace
+  }
+
+  /** The Projeto of the turn's run, while this copy drives it: whose `main` the prompt reads. */
+  projectOf(
+    requestContext: RequestContext,
+  ): { companyId: CompanyId; projectId: ProjectId } | undefined {
+    const mine = this.#mine(requestContext)
+    return mine === undefined ? undefined : { companyId: mine.companyId, projectId: mine.projectId }
+  }
+
+  /** The run a turn's context names, while this copy drives it. */
+  #mine(requestContext: RequestContext): Driven | undefined {
+    const runId = runIn(requestContext)
+    return runId === undefined ? undefined : this.#driven.get(runId)
+  }
+
+  /** Whether the turn changed its app folder; one that never woke the machine did not. */
+  async changed(requestContext: RequestContext): Promise<boolean> {
+    const mine = this.#mine(requestContext)
+    return mine !== undefined && (await this.#deps.machines.changed({ projectId: mine.projectId }))
+  }
+
+  /** The check of the turn's app folder (decision 0055): the one path of `conexus_check` and of the turn's end. */
+  check(requestContext: RequestContext): Promise<Result<CheckReport, CheckPlatformFailed>> {
+    const mine = this.#mine(requestContext)
+    if (mine === undefined) return Promise.resolve({ ok: false, error: 'CHECK_PLATFORM_FAILED' })
+    return this.#deps.machines.check({ projectId: mine.projectId, grants: GRANTS })
+  }
+
+  /** Keeps what the end of the turn's check said, for the version the turn saves. */
+  judged(requestContext: RequestContext, check: VersionCheck): void {
+    const mine = this.#mine(requestContext)
+    if (mine !== undefined) mine.check = check
   }
 
   /**
@@ -265,7 +309,7 @@ export class Runs {
       }
       const fields = { companyId, projectId, runId: input.runId, reason: input.reason }
       this.#deps.log.info(fields, 'RUN_SETTLING')
-      return await saveRun(this.#context, saved)
+      return await saveRun(this.#context, saved, mine.check)
     } finally {
       mine.stopLease()
       this.#driven.delete(input.runId)

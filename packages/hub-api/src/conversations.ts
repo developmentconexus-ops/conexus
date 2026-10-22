@@ -8,6 +8,16 @@ import { PlanPart, QuestionAnswer, QuestionPart, TasksPart, ToolCallId } from '.
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
 
+/**
+ * Whether a saved version's app built (card of step 14): its check at the end of the turn passed,
+ * or failed the last time the turn could try.
+ */
+export const VersionCheck = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('passed') }),
+  z.object({ state: z.literal('failed'), code: z.literal('APP_CHECK_FAILED') }),
+])
+export type VersionCheck = z.infer<typeof VersionCheck>
+
 /** The longest message a person sends the Builder, in characters. */
 export const MESSAGE_MAX_LENGTH = 20_000
 /** A model of the router's registry, such as `anthropic/claude-sonnet-4-5` (decision 0049). */
@@ -135,7 +145,8 @@ export const MessagePart = z.discriminatedUnion('type', [
   }),
   /**
    * The version the turn saved: its number, whether it changed the app, how many files it holds
-   * and how many of them changed.
+   * and how many of them changed, and what the end of the turn's check said; none when the turn
+   * ended before its check gave a verdict.
    */
   z.object({
     type: z.literal('version'),
@@ -143,6 +154,7 @@ export const MessagePart = z.discriminatedUnion('type', [
     changed: z.boolean(),
     files: z.int().nonnegative(),
     changedFiles: z.int().nonnegative(),
+    check: VersionCheck.optional(),
   }),
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('failure'), code: TurnFailureCode }),

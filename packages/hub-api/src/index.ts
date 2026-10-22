@@ -94,6 +94,7 @@ export {
   stopConversation,
   streamConversation,
   TurnFailureCode,
+  VersionCheck,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export { getHealth, Health } from './health.ts'

@@ -40,7 +40,7 @@ const RUN = 'mastra_workspace_execute_command'
  */
 const SCRIPT: (Call[] | string)[] = [
   [
-    { type: 'tool_use', name: WRITE, input: { path: 'index.html', content: PAGE } },
+    { type: 'tool_use', name: WRITE, input: { path: 'pagina.html', content: PAGE } },
     {
       type: 'tool_use',
       name: RUN,
@@ -48,8 +48,8 @@ const SCRIPT: (Call[] | string)[] = [
     },
   ],
   'Escrevi a página.',
-  [{ type: 'tool_use', name: READ, input: { path: 'index.html' } }],
-  [{ type: 'tool_use', name: WRITE, input: { path: 'index.html', content: SECOND_PAGE } }],
+  [{ type: 'tool_use', name: READ, input: { path: 'pagina.html' } }],
+  [{ type: 'tool_use', name: WRITE, input: { path: 'pagina.html', content: SECOND_PAGE } }],
   'Mudei o título.',
 ]
 
@@ -57,7 +57,8 @@ function builderThatWrites(t: Parameters<typeof plantAnthropic>[0]) {
   let step = 0
   return plantAnthropic(t, (sent): Reply => {
     if (!sent.stream) return { kind: 'text', text: 'Página da padaria' }
-    if (!sent.system.includes('Builder of Conexus')) return { kind: 'text', text: 'Anotado.' }
+    if (!sent.system.includes('You are the Conexus Builder'))
+      return { kind: 'text', text: 'Anotado.' }
     const next = SCRIPT[step++] ?? 'Pronto.'
     return typeof next === 'string'
       ? { kind: 'text', text: next }
@@ -107,9 +108,9 @@ async function writeFirst(chat: Page) {
   await lastingShown(chat, VERSION_1)
   await transcriptShowed(chat, 'Escreveu um arquivo')
   await chat.getByText(/Versão 1, guardada em/).waitFor()
-  await chat.getByRole('button', { name: 'index.html' }).waitFor()
+  await chat.getByRole('button', { name: 'pagina.html' }).waitFor()
   await chat
-    .getByRole('region', { name: 'Conteúdo de index.html' })
+    .getByRole('region', { name: 'Conteúdo de pagina.html' })
     .getByText('<h1>Padaria</h1>')
     .waitFor()
 }
@@ -133,7 +134,7 @@ test('o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 
     await transcriptShowed(chat, 'Versão 2 guardada: 1 arquivo mudado.')
     await chat.getByText(/Versão 2, guardada em/).waitFor()
     await chat
-      .getByRole('region', { name: 'Conteúdo de index.html' })
+      .getByRole('region', { name: 'Conteúdo de pagina.html' })
       .getByText('<h1>Padaria Nova</h1>')
       .waitFor()
     const project = chat.url()

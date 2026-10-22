@@ -12,7 +12,8 @@
       "!**/*.woff2",
       "!apps/web/src/routeTree.gen.ts",
       "!apps/web/src/builder/model-accounts/marks",
-      "!packages/app/starter"
+      "!packages/app/starter",
+      "!packages/app/skills"
     ]
   },
   "formatter": {

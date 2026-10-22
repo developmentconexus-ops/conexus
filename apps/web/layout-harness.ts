@@ -1,6 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { extname, join } from 'node:path'
+import { APP_CONTENT_SECURITY_POLICY } from '@conexus/app-contract'
 import type { FailureCode } from '@conexus/hub-api'
 import { FAILURES } from '@conexus/hub-api'
 import type { Browser, Page } from 'playwright-core'
@@ -18,14 +19,9 @@ const TYPES: Record<string, string> = {
   '.woff2': 'font/woff2',
 }
 
-// The edge's own policy, read from its source so it cannot drift: a piece that needs a style
+// The policy the edge sends with an app's page, from its one owner: a piece that needs a style
 // element or a data: URI fails here, in the browser, and not after the Release (web W22, testing T23).
-const POLICY = /APP_CONTENT_SECURITY_POLICY =\s*"([^"]+)"/.exec(
-  readFileSync(join(import.meta.dirname, '../edge/src/headers.ts'), 'utf8'),
-)?.[1]
-if (!POLICY)
-  throw new Error('the edge no longer declares its policy as APP_CONTENT_SECURITY_POLICY')
-const SECURITY_HEADERS = { 'Content-Security-Policy': POLICY }
+const SECURITY_HEADERS = { 'Content-Security-Policy': APP_CONTENT_SECURITY_POLICY }
 
 export const DESKTOP = { width: 1366, height: 900 }
 export const PHONE = { width: 390, height: 844 }

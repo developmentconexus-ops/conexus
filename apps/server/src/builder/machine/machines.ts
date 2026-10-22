@@ -1,78 +1,25 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
-import type { InstallationId } from '../../platform/config-machine.ts'
-import type { Database } from '../../platform/database.ts'
-import type { FailureLog } from '../../platform/failure.ts'
 import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
+import type { TimedExec } from './check.ts'
+import { CHECK_PROGRAM, checkIn } from './check.ts'
 import { MachineFilesystem } from './filesystem.ts'
-import type { Kit, KitFactory, MachineApi, SandboxId } from './kit.ts'
-import { APP_FOLDER, MARK, OUTPUT_MAX, readCapped } from './kit.ts'
+import type { Kit, SandboxId } from './kit.ts'
+import { APP_FOLDER, MARK, machineInstructions, OUTPUT_MAX, readCapped } from './kit.ts'
+import { packIn } from './pack.ts'
+import type { Machines, MachinesDeps, Phase } from './port.ts'
 import { MachineRows } from './rows.ts'
 import type { Collected } from './scripts.ts'
-import { collected, collectScript, keepScript, outFile, seedFile, seedScript } from './scripts.ts'
-
-/** What Ana is told while the machine gets ready or saves (card, the stream's `machine` part). */
-export type Phase = 'starting' | 'waking' | 'copying' | 'replaced' | 'saving'
-
-export type Machines = {
-  /**
-   * The workspace of one turn: the machine is not touched until a tool needs it. A turn whose copy
-   * of the program died (`resumed`) keeps the files the machine holds, to be saved; any other starts
-   * from the Hub's `main`.
-   */
-  workspaceFor(input: {
-    companyId: CompanyId
-    projectId: ProjectId
-    deadline: Date
-    resumed?: boolean
-    onPhase: (phase: Phase) => void
-  }): Promise<Workspace>
-  /**
-   * One bundle of the whole tree on `base` with its file counts, or why there is none. A turn that
-   * never needed the machine is `unchanged` without waking it; one whose machine died on the way
-   * throws, for what it wrote is gone.
-   */
-  collect(input: { projectId: ProjectId; base: Sha }): Promise<Bundled | 'unchanged' | 'too-large'>
-  /** Whether the Projeto's turn used the machine, or its copy of the program died: then there may be something to collect. */
-  touched(projectId: ProjectId): boolean
-  /** Ends the turn's use of the machine: it pauses and its last use is now. Safe to repeat. */
-  release(projectId: ProjectId): Promise<void>
-  /** Forgets the turn's use of the machine without touching it: another copy of the program drives it now. */
-  drop(projectId: ProjectId): void
-  list: MachineApi['list']
-  kill: MachineApi['kill']
-  /** The Projeto's machine as recorded: its id and the last turn that used it. */
-  rowOf(
-    companyId: CompanyId,
-    projectId: ProjectId,
-  ): Promise<{ sandboxId: SandboxId; usedAt: Date } | undefined>
-  /** Forgets the Projeto's machine record. */
-  forget(companyId: CompanyId, projectId: ProjectId): Promise<void>
-  /** The company's Projetos that have a machine recorded. */
-  projectsOf(companyId: CompanyId): Promise<ProjectId[]>
-}
-
-/** A turn's tree as one bundle, with how many files the version holds and how many the turn changed. */
-type Bundled = { bundle: Buffer; files: number; changedFiles: number }
-
-export type MachinesDeps = {
-  database: Database
-  kit: KitFactory
-  api: MachineApi
-  /** The Git's `main` as a bundle, for the seed. */
-  seedOf(input: { companyId: CompanyId; projectId: ProjectId }): Promise<Buffer>
-  /** The mark every machine of this installation carries. */
-  mark: Record<string, string>
-  /** This installation's id, in every machine's name: Mastra attaches by name alone (S36). */
-  installation: InstallationId
-  log: FailureLog
-  workdir?: string
-  /** A folder the machine can write for the bundles that cross; `/tmp` on E2B. */
-  tmp?: string
-  /** The external budget of waking or creating a machine (code C57). */
-  startMs?: number
-}
+import {
+  changedScript,
+  collected,
+  collectScript,
+  keepScript,
+  outFile,
+  seedFile,
+  seedScript,
+} from './scripts.ts'
 
 type Session = {
   kit: Kit
@@ -114,9 +61,10 @@ async function within<T>(work: Promise<T>, ms: number): Promise<T> {
   ])
 }
 
-async function run(kit: Kit, script: string) {
+async function run(kit: Kit, script: string, timeoutMs?: number) {
   const result = await kit.sandbox.executeCommand?.('sh', ['-c', script], {
     maxRetainedBytes: OUTPUT_MAX,
+    ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
   })
   if (result === undefined) throw new Error('the machine cannot run commands')
   return result
@@ -224,6 +172,8 @@ class BuilderMachines implements Machines {
       sandboxId,
       deadline: input.deadline,
       metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },
+      workingDirectory: this.workdir,
+      instructions: machineInstructions(this.workdir),
       onStart: async ({ outcome }) => {
         if (holder.session !== undefined) await this.onStart(holder.session, outcome)
       },
@@ -269,6 +219,31 @@ class BuilderMachines implements Machines {
     const bundle = await readCapped(session.kit.transport, outFile(this.tmp))
     if (bundle === 'too-large') return bundle
     return { bundle, files: found.files, changedFiles: found.changedFiles }
+  }
+
+  async check({ projectId, grants }: Parameters<Machines['check']>[0]) {
+    const session = this.sessions.get(projectId)
+    if (session === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' } as const
+    await this.ensure(session)
+    const program = this.deps.checkProgram ?? CHECK_PROGRAM
+    const exec: TimedExec = (script, timeoutMs) => run(session.kit, script, timeoutMs)
+    return checkIn({ exec, program, workdir: this.workdir, grants, log: this.deps.log })
+  }
+
+  /** A machine whose comparison fails is taken as changed: the check that follows says why it cannot run. */
+  async changed({ projectId }: { projectId: ProjectId }) {
+    const session = this.sessions.get(projectId)
+    if (session === undefined || !this.touched(projectId)) return false
+    await this.ensure(session)
+    const result = await run(session.kit, changedScript(this.workdir))
+    return result.exitCode !== 0 || result.stdout.trim() !== 'UNCHANGED'
+  }
+
+  async pack({ projectId }: { projectId: ProjectId }) {
+    const session = this.sessions.get(projectId)
+    if (session === undefined) throw new Error('no turn holds the machine to pack')
+    await this.ensure(session)
+    return packIn((script) => run(session.kit, script), this.workdir)
   }
 
   touched(projectId: ProjectId) {

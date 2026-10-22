@@ -8,14 +8,21 @@
     },
     "apps/server": {
       "entry": ["src/**/*.check.ts"],
-      "ignoreBinaries": ["setpriv"]
+      "ignoreBinaries": ["setpriv", "mkfifo"]
     },
     "apps/web": {
       "entry": ["src/ui/pieces-fixture.tsx"]
     },
     "packages/app": {
       "entry": ["src/**/*.check.ts"],
-      "ignore": ["starter/**"]
+      "ignore": ["starter/**", "skills/**"],
+      "ignoreDependencies": [
+        "@hookform/resolvers",
+        "@tanstack/react-table",
+        "date-fns",
+        "react-day-picker",
+        "recharts"
+      ]
     },
     "apps/edge": {
       "ignoreDependencies": ["cloudflare"]

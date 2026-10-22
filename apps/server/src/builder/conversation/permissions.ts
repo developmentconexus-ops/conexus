@@ -1,4 +1,5 @@
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
+import { CHECK_TOOL } from './processors.ts'
 
 const { FILESYSTEM, SANDBOX } = WORKSPACE_TOOLS
 const READ = new Set<string>([
@@ -32,6 +33,7 @@ const EXECUTE = new Set<string>([
   SANDBOX.EXECUTE_COMMAND,
   SANDBOX.GET_PROCESS_OUTPUT,
   SANDBOX.KILL_PROCESS,
+  CHECK_TOOL,
 ])
 
 /**
