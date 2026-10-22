@@ -17,6 +17,7 @@ import { STARTER_DIR } from '../starter.ts'
 import { browseInChromium, navegador } from './browser.ts'
 import { spawnRunner } from './command.ts'
 import { dependencies } from './dependencies.ts'
+import { manifesto } from './manifest.ts'
 import type { CheckReport } from './report.ts'
 import { runCheck } from './run.ts'
 import type { CheckContext, Runner } from './step.ts'
@@ -113,6 +114,47 @@ test('o handler que devolve { codigo } falha em tipos na linha 13 e pula os pass
   })
   const [first] = report.steps[2]?.problems ?? []
   assert.deepEqual([first?.file, first?.line, first?.code], ['server/handlers.ts', 13, 'TS2322'])
+})
+
+// Every handler answers the same: the manifesto step starts the runtime, never calls them.
+const ANY_HANDLERS = `import { operations } from '../shared/operations'
+
+export const handlers = Object.fromEntries(Object.keys(operations).map((name) => [name, () => ({})]))
+`
+
+const NOT_JSON = `import { defineOperations } from '@conexus/app'
+import { z } from 'zod'
+
+const isoDate = z.codec(z.iso.date(), z.date(), { decode: (t) => new Date(t), encode: (d) => d.toISOString().slice(0, 10) })
+const Pagamento = z.discriminatedUnion('tipo', [z.object({ tipo: z.literal('pix') }), z.object({ tipo: z.literal('cartao'), parcelas: z.int() })])
+
+export const operations = defineOperations({
+  agendar: { input: z.object({ quando: z.object({ dia: z.date() }) }), output: z.object({}) },
+  somar: { input: z.object({}), output: z.object({ itens: z.array(z.object({ total: z.bigint() })) }) },
+  agrupar: { input: z.object({ grupos: z.map(z.string(), z.int()) }), output: z.object({}) },
+  contar: { input: z.object({}), output: z.object({ n: z.string().transform((text) => text.length) }) },
+  criarEncomenda: {
+    input: z.object({ email: z.email(), entrega: isoDate, situacao: z.enum(['aberta', 'entregue']).default('aberta'), pagamento: Pagamento }),
+    output: z.object({ id: z.uuid(), entrega: isoDate }),
+  },
+})
+`
+
+test('manifesto: z.date() sem codec, bigint, Map ou transform de mão única na saída é OPERATION_NOT_JSON com a operação e o caminho', async (t) => {
+  const root = appWith(t, { 'shared/operations.ts': NOT_JSON, 'server/handlers.ts': ANY_HANDLERS })
+  const outcome = await manifesto(contextOf(root))
+  assert.equal(outcome.state, 'failed')
+  const problems = outcome.state === 'failed' ? outcome.problems : []
+  assert.deepEqual(
+    problems.map(({ code, file, message }) => [code, file, message.split(':')[0]]),
+    [
+      ['OPERATION_NOT_JSON', 'shared/operations.ts', 'agendar input quando.dia'],
+      ['OPERATION_NOT_JSON', 'shared/operations.ts', 'somar output itens[].total'],
+      ['OPERATION_NOT_JSON', 'shared/operations.ts', 'agrupar input grupos'],
+      ['OPERATION_NOT_JSON', 'shared/operations.ts', 'contar output n'],
+    ],
+  )
+  assert.match(problems[0]?.message ?? '', /Date cannot be represented/)
 })
 
 async function refusalsOf(t: TestContext, files: Files, grants: CheckContext['grants'] = []) {

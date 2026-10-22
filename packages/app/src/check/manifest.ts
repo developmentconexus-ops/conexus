@@ -20,8 +20,21 @@ import { operations } from '../../shared/operations'
 export const api = createApi(operations)
 `
 
-/** What the program prints last: the migrations `server/handlers.ts` exports, for the manifest. */
-const Answer = z.strictObject({ migrations: z.unknown() })
+/**
+ * What the program prints last: each part of an operation JSON cannot carry, and the migrations
+ * `server/handlers.ts` exports, for the manifest.
+ */
+const Answer = z.strictObject({
+  notJson: z.array(
+    z.strictObject({
+      operation: z.string(),
+      side: z.enum(['input', 'output']),
+      path: z.string(),
+      message: z.string(),
+    }),
+  ),
+  migrations: z.unknown(),
+})
 
 const BuildErrors = z.array(
   z.object({
@@ -33,17 +46,24 @@ const BuildErrors = z.array(
 /**
  * A program that imports the app's operations and handlers as the Worker will and starts the
  * contract's runtime on them, which refuses an operation without its handler, a handler without its
- * operation or a name `/api` cannot say. It prints the migrations the manifest lists.
+ * operation or a name `/api` cannot say. It prints what of the operations JSON cannot carry, and the
+ * migrations the manifest lists.
  */
 function entryOf(operations: boolean, handlers: boolean): string {
   return [
     "import { serveApp } from '@conexus/app-contract'",
+    "import { notJson } from '@conexus/app/json'",
     operations ? `import { operations } from '../../${OPERATIONS}'` : 'const operations = {}',
     handlers ? `import * as server from '../../${HANDLERS}'` : 'const server = {}',
     'serveApp({ operations, handlers: server.handlers ?? {} })',
-    'console.log(JSON.stringify({ migrations: server.migrations ?? [] }))',
+    'const answer = { notJson: notJson(operations), migrations: server.migrations ?? [] }',
+    'console.log(JSON.stringify(answer))',
   ].join('\n')
 }
+
+/** What the model reads to fix an operation that does not travel. */
+const TRAVELS =
+  'An operation sends and answers JSON: a date is z.iso.date(), or a z.codec to a Date; a number, not a BigInt; an object or an array, not a Map or a Set.'
 
 /** The manifest's answer, the program's last line; the app's own prints come before it. */
 function answerOf(output: string): z.infer<typeof Answer> | Readonly<{ unreadable: string }> {
@@ -109,7 +129,18 @@ export async function manifesto(ctx: CheckContext): Promise<Outcome> {
   if (answer === undefined || 'unreadable' in answer) {
     return { state: 'failed', problems: [{ ...outputProblem(ctx, 'MANIFEST_INVALID', ran), file }] }
   }
-  const manifest = Manifest.safeParse({ contract: 1, entry: 'worker.js', ...answer, assets: [] })
+  if (answer.notJson.length > 0) {
+    const problems = answer.notJson.map(({ operation, side, path, message }) =>
+      problem({
+        code: 'OPERATION_NOT_JSON',
+        file: OPERATIONS,
+        message: `${operation} ${side}${path === '' ? '' : ` ${path}`}: ${message}. ${TRAVELS}`,
+      }),
+    )
+    return { state: 'failed', problems }
+  }
+  const { migrations } = answer
+  const manifest = Manifest.safeParse({ contract: 1, entry: 'worker.js', migrations, assets: [] })
   if (!manifest.success) {
     const message = z.prettifyError(manifest.error)
     return { state: 'failed', problems: [problem({ code: 'MANIFEST_INVALID', file, message })] }
