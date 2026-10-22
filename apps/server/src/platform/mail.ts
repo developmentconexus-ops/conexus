@@ -30,7 +30,7 @@ const SendReply = z.discriminatedUnion('success', [
 
 type Refusal = 'status' | 'unsuccessful' | 'shape' | 'too-large' | 'unreachable'
 
-/** The one adapter to the mail provider: one request, no retry, sent as the installation (C56, C58). */
+/** The one adapter to the mail provider: one request, no retry, sent as the installation (C56). */
 export function createMail(deps: { config: Config; log: FailureLog }): SendMail {
   const { mailApiUrl, mailFrom, mailToken } = deps.config
 
