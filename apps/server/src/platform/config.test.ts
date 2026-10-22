@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { randomBytes } from 'node:crypto'
 import { chmodSync, writeFileSync } from 'node:fs'
 import { test } from 'node:test'
+import { templateName } from '../../../../infra/e2b/name.ts'
 import { readConfig } from './config.ts'
 import { serveEnvironment, unreachableDatabaseUrl } from './test-database.ts'
 
@@ -117,11 +118,24 @@ test('configuração: a chave do E2B vem de arquivo e o molde nomeia a variável
   const env = serveEnvironment(t, await unreachableDatabaseUrl(), { port: 8080, edgePort: 8081 })
   const config = readConfig('serve', env)
   assert.equal(String(config.e2bApiKey), '[E2bApiKey]')
-  assert.equal(config.machineTemplate, 'conexus-builder-test')
+  assert.equal(config.machineTemplate, 'conexus-builder:test')
   for (const name of ['HUB_E2B_API_KEY_FILE', 'HUB_E2B_TEMPLATE']) {
     refusal({ ...env, [name]: undefined }, name)
   }
-  refusal({ ...env, HUB_E2B_TEMPLATE: 'Molde Com Espaço' }, 'HUB_E2B_TEMPLATE')
+  for (const value of [
+    'Molde Com Espaço',
+    'conexus-builder',
+    'conexus-builder:',
+    ':0b2d667',
+    'conexus-builder:a:b',
+  ]) {
+    refusal({ ...env, HUB_E2B_TEMPLATE: value }, 'HUB_E2B_TEMPLATE')
+  }
+  // The line `node infra/e2b/template.ts` prints, as the how-to tells to write it.
+  assert.equal(
+    readConfig('serve', { ...env, HUB_E2B_TEMPLATE: templateName('0b2d667') }).machineTemplate,
+    'conexus-builder:0b2d667',
+  )
   chmodSync(env.HUB_E2B_API_KEY_FILE, 0o644)
   refusal(env, 'HUB_E2B_API_KEY_FILE')
   chmodSync(env.HUB_E2B_API_KEY_FILE, 0o600)

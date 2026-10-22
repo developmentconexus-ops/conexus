@@ -14,7 +14,7 @@ export function testBuilderConfig(): Pick<
     gitCopyBucket: GitCopyBucket.parse('conexus-test-git'),
     gitCopyKey: GitCopyKey.parse('TESTKEYID testsecret'),
     e2bApiKey: E2bApiKey.parse(randomBytes(16).toString('hex')),
-    machineTemplate: MachineTemplate.parse('conexus-builder-test'),
+    machineTemplate: MachineTemplate.parse('conexus-builder:test'),
     installationId: InstallationId.parse('testinstallation0'),
   }
 }
