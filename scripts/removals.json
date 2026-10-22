@@ -2708,8 +2708,8 @@
   {
     "id": "migrate-limits-in-options",
     "file": "apps/server/src/platform/migrate.ts",
-    "find": "connected(deps.ownerUrl.reveal(), limitOptions(limits))",
-    "replace": "connected(deps.ownerUrl.reveal())",
+    "find": "connected(deps.ownerUrl.reveal(), session, limitOptions(limits))",
+    "replace": "connected(deps.ownerUrl.reveal(), session)",
     "test": {
       "cwd": "apps/server",
       "file": "src/platform/migrate.test.ts",
@@ -2719,12 +2719,34 @@
   {
     "id": "migrate-lock-busy-named",
     "file": "apps/server/src/platform/migrate.ts",
-    "find": "return named('LOCK_BUSY')",
-    "replace": "return databaseFailure(error)",
+    "find": "if (!busy && !session.lost) return undefined",
+    "replace": "if (!session.lost) return undefined",
     "test": {
       "cwd": "apps/server",
       "file": "src/platform/migrate.test.ts",
       "name": "trava ocupada desiste"
+    }
+  },
+  {
+    "id": "migrate-late-lock-busy-too-long",
+    "file": "apps/server/src/platform/migrate.ts",
+    "find": " - (busy ? limits.lockTimeoutMs : 0)",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/migrate.test.ts",
+      "name": "última espera do limite da transação"
+    }
+  },
+  {
+    "id": "migrate-owner-url-options-refused",
+    "file": "apps/server/src/platform/migrate.ts",
+    "find": "searchParams.has('options')",
+    "replace": "searchParams.has('options-never')",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/migrate.test.ts",
+      "name": "recusa a URL do dono com options"
     }
   }
 ]

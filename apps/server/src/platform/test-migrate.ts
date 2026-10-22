@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict'
 import { execFile } from 'node:child_process'
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { sql } from 'drizzle-orm'
 import { Failure } from './failure.ts'
+import { migrate } from './migrate.ts'
 import type { TestDatabase } from './test-database.ts'
-import { databaseWithPassword } from './test-database.ts'
+import { createTestDatabase, databaseWithPassword, withRoleLock } from './test-database.ts'
 
 const run = promisify(execFile)
 
@@ -62,4 +66,28 @@ export async function failureOf(outcome: Promise<unknown>): Promise<Failure> {
   )
   assert.ok(error instanceof Failure, 'the migration should have failed')
   return error
+}
+
+/** Migrates a fresh database with one probe migration of `sqlText`; the outcome is not awaited. */
+export async function migratingWith(
+  t: Parameters<typeof createTestDatabase>[0],
+  sqlText: string,
+  limits?: Parameters<typeof migrate>[0]['limits'],
+): Promise<{ test: TestDatabase; outcome: Promise<unknown> }> {
+  const test = await createTestDatabase(t)
+  const folder = mkdtempSync(join(tmpdir(), 'conexus-migrations-'))
+  t.after(() => rmSync(folder, { recursive: true, force: true }))
+  cpSync(join(import.meta.dirname, '..', '..', 'migrations'), folder, { recursive: true })
+  mkdirSync(join(folder, '99991231000000_probe'))
+  writeFileSync(join(folder, '99991231000000_probe', 'migration.sql'), sqlText)
+  const outcome = withRoleLock(() =>
+    migrate({
+      ownerUrl: test.ownerUrl,
+      mastraUrl: test.mastraUrl,
+      runtimeUrl: test.runtimeUrl,
+      migrationsFolder: folder,
+      ...(limits === undefined ? {} : { limits }),
+    }),
+  )
+  return { test, outcome }
 }

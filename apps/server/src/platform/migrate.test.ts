@@ -4,8 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { sql } from 'drizzle-orm'
+import { DatabaseUrl } from './database.ts'
 import { MIGRATE_RETRY_EXIT, migrate, migrateExitCode } from './migrate.ts'
-import type { TestDatabase } from './test-database.ts'
 import {
   createTestDatabase,
   databaseWithPassword,
@@ -19,7 +19,7 @@ import {
 } from './test-database.ts'
 import { startHub } from './test-hub-process.ts'
 import { inDatabase, loginAnswer } from './test-mastra-database.ts'
-import { failureOf, loginFails, loginWorks, storedVerifier } from './test-migrate.ts'
+import { failureOf, loginFails, loginWorks, migratingWith, storedVerifier } from './test-migrate.ts'
 
 test('o login do Hub recebe 42501 em DELETE e em DDL', async (t) => {
   const { database } = await createTestDatabase(t)
@@ -247,29 +247,8 @@ test('migrate recusa Mastra no banco do Hub (opção B) e dá senha ao login do 
   assert.equal(await loginAnswer(mastraUrl), 'ok')
 })
 
-async function migratingWith(
-  t: Parameters<typeof createTestDatabase>[0],
-  sqlText: string,
-  limits?: Parameters<typeof migrate>[0]['limits'],
-): Promise<{ test: TestDatabase; outcome: Promise<unknown> }> {
-  const test = await createTestDatabase(t)
-  const folder = mkdtempSync(join(tmpdir(), 'conexus-migrations-'))
-  t.after(() => rmSync(folder, { recursive: true, force: true }))
-  cpSync(join(import.meta.dirname, '..', '..', 'migrations'), folder, { recursive: true })
-  mkdirSync(join(folder, '99991231000000_probe'))
-  writeFileSync(join(folder, '99991231000000_probe', 'migration.sql'), sqlText)
-  const outcome = withRoleLock(() =>
-    migrate({
-      ownerUrl: test.ownerUrl,
-      mastraUrl: test.mastraUrl,
-      runtimeUrl: test.runtimeUrl,
-      migrationsFolder: folder,
-      ...(limits === undefined ? {} : { limits }),
-    }),
-  )
-  return { test, outcome }
-}
-
+// Reads the settings of the migrate's own session. A local Postgres also takes pg's loose parameters,
+// so this cannot tell `options` from them; only Neon's proxy does (data D25).
 test('a conexão do migrate abre com os limites do deploy em options (D25)', async (t) => {
   const { test, outcome } = await migratingWith(
     t,
@@ -291,7 +270,7 @@ test('migrate com a trava ocupada desiste em lock_timeout, nada fica aplicado e 
   )
   await withOwnerLock(test, 'lock table auth.user in share mode', [], async (release) => {
     const failure = await failureOf(outcome)
-    assert.equal(failure.details.migration, 'LOCK_BUSY')
+    assert.equal(failure.details.reason, 'LOCK_BUSY')
     assert.equal(migrateExitCode(failure), MIGRATE_RETRY_EXIT)
     await release()
   })
@@ -307,7 +286,7 @@ test('migrate cuja conexão cai antes do limite da transação: repetível, nada
     'create table public.dropped (id int); select pg_terminate_backend(pg_backend_pid());',
   )
   const failure = await failureOf(outcome)
-  assert.equal(failure.details.migration, 'CONNECTION_LOST')
+  assert.equal(failure.details.reason, 'CONNECTION_LOST')
   assert.equal(migrateExitCode(failure), MIGRATE_RETRY_EXIT)
   assert.deepEqual(await test.asOwner("select to_regclass('public.dropped') as found"), [
     { found: null },
@@ -321,7 +300,7 @@ test('migrate longa demais para o limite da transação: o servidor encerra, sem
     { lockTimeoutMs: 5_000, transactionTimeoutMs: 2_000, connectionCheckIntervalMs: 1_000 },
   )
   const failure = await failureOf(outcome)
-  assert.equal(failure.details.migration, 'TOO_LONG')
+  assert.equal(failure.details.reason, 'TOO_LONG')
   assert.equal(migrateExitCode(failure), 1)
   assert.deepEqual(await test.asOwner("select to_regclass('public.slow') as found"), [
     { found: null },
@@ -330,4 +309,28 @@ test('migrate longa demais para o limite da transação: o servidor encerra, sem
     "select count(*)::int as n from pg_stat_activity where query like '%pg_sleep(10)%' and pid <> pg_backend_pid()",
   )
   assert.deepEqual(sessions, [{ n: 0 }])
+})
+
+test('migrate com a trava ocupada na última espera do limite da transação: longa demais, sem repetir', async (t) => {
+  const { test, outcome } = await migratingWith(
+    t,
+    `create table public.early (id int); select pg_sleep(6.3);
+      alter table auth.user add column probe_column int;`,
+    { lockTimeoutMs: 1_000, transactionTimeoutMs: 8_000, connectionCheckIntervalMs: 1_000 },
+  )
+  await withOwnerLock(test, 'lock table auth.user in share mode', [], async (release) => {
+    const failure = await failureOf(outcome)
+    assert.equal(failure.details.reason, 'TOO_LONG')
+    assert.equal(migrateExitCode(failure), 1)
+    await release()
+  })
+})
+
+test('migrate recusa a URL do dono com options, que apagaria os limites', async (t) => {
+  const test = await createTestDatabase(t)
+  const ownerUrl = DatabaseUrl.parse(`${test.ownerUrl.reveal()}?options=-c%20application_name%3Dx`)
+  await assert.rejects(
+    migrate({ ownerUrl, runtimeUrl: test.runtimeUrl, mastraUrl: test.mastraUrl }),
+    (error: unknown) => error instanceof Error && error.message.startsWith('CONFIG_INVALID'),
+  )
 })

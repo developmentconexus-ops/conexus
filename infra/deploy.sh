@@ -22,10 +22,11 @@ migrate_if_labeled() {
     echo "no migrations in: $image"
     return 0
   fi
-  # Status 75 is `migrate` saying the lock was busy or the connection was lost, and nothing was
-  # applied (MIGRATE_RETRY_EXIT). The attempts and the pause are strong_migrations' example
-  # (lock_timeout_retries 3, lock_timeout_retry_delay 10 s). The 120 s is the server's 60 s
-  # transaction limit plus the worst boot seen (~8 s), twice over; the server ends the SQL by itself.
+  # Status 75 is `migrate` saying the lock was busy or the connection was lost (MIGRATE_RETRY_EXIT);
+  # the migrations are one transaction, so a try again repeats them whole. The 3 attempts and the
+  # 10 s pause are strong_migrations' example (lock_timeout_retries 3, lock_timeout_retry_delay 10 s,
+  # README.md:1030-1048); here 3 attempts in all. The 120 s is the server's 60 s
+  # transaction limit plus the worst boot seen (~8 s), with margin; the server ends the SQL by itself.
   local attempt=1 status
   while true; do
     status=0
