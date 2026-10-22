@@ -75,6 +75,15 @@ const SubmittedPlan = z.object({
     action: z.enum(['approved', 'rejected']),
   }),
 })
+// What Mastra keeps in the message of a call it suspended: the plan the tool suspended with.
+const SuspendedPlans = z.object({
+  suspendedTools: z.record(
+    z.string(),
+    z.object({
+      suspendPayload: z.object({ title: z.string().default(''), plan: z.string().default('') }),
+    }),
+  ),
+})
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 
 function cut(text: string): string {
@@ -237,6 +246,16 @@ export function modelOf(message: { content: { metadata?: unknown } }): ModelId |
   return model.success ? model.data : null
 }
 
+/** A plan Mastra holds only as a call it suspended or denied is read from what the call suspended with. */
+function withPlan(
+  shown: MessagePart | undefined,
+  suspended: z.infer<typeof SuspendedPlans>['suspendedTools'] | undefined,
+): MessagePart | undefined {
+  if (shown?.type !== 'plan' || shown.plan !== '') return shown
+  const payload = suspended?.[shown.toolCallId]?.suspendPayload
+  return payload === undefined ? shown : { ...shown, title: payload.title, plan: payload.plan }
+}
+
 /** A stored message as the person reads it: theirs, or the Builder's; none of Mastra's others. */
 export function messageOf(message: MastraDBMessage): Message | undefined {
   const role =
@@ -253,9 +272,10 @@ export function messageOf(message: MastraDBMessage): Message | undefined {
     const exit = CommandExit.safeParse(part)
     if (exit.success) exits.set(exit.data.data.toolCallId, exit.data.data.exitCode)
   }
+  const suspended = SuspendedPlans.safeParse(message.content.metadata)
   let parts: MessagePart[] = []
   for (const [index, part] of message.content.parts.entries()) {
-    const shown = partOf(part, { messageId: id, index })
+    const shown = withPlan(partOf(part, { messageId: id, index }), suspended.data?.suspendedTools)
     if (shown === undefined) continue
     parts = applyEvent(parts, eventOf(shown))
     const after = shown.type === 'tool' ? (fileOf(shown) ?? shellOf(part, exits)) : undefined

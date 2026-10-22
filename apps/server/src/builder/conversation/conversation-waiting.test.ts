@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { post } from '../../hub/identity/test-hub.ts'
 import { answeredOf, hubBeside, sent } from './test-conversation.ts'
-import { ask, cards, conversingWith, untilCard, WHO } from './test-questions.ts'
+import { ask, cards, conversingWith, SUBMIT, untilCard, WHO, WRITE_PLAN } from './test-questions.ts'
 
 const PARKED = `select 1 from mastra.mastra_workflow_snapshot where snapshot->>'status' = 'suspended'`
 
@@ -96,4 +96,18 @@ test('o Hub reinicia com uma pergunta aberta: a chamada fecha negada, a pergunta
   assert.ok(read.some((part) => part.type === 'restarted'))
   // The first copy, still alive in this test, lets its parked turn go.
   assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+})
+
+test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao suspender', async (t) => {
+  const { hub, ana, url, stream, send } = await conversingWith(t, [[WRITE_PLAN], [SUBMIT]])
+  assert.equal((await send()).statusCode, 202)
+  const { card } = await untilCard(stream, 'plan')
+  assert.equal(card.type === 'plan' && card.plan.length > 0, true)
+  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  await stream.turn()
+  const closed = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
+  assert.deepEqual(
+    closed.filter((part) => part.type === 'plan'),
+    [{ ...card, state: 'closed' }],
+  )
 })

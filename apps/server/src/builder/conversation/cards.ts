@@ -4,7 +4,7 @@ import type { AgentControllerEvent } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import { memoryOwner } from './builder.ts'
 import type { Question } from './kept.ts'
-import { keepQuestion, keepSuspension } from './kept.ts'
+import { keepQuestion } from './kept.ts'
 import type { Card, Live } from './live.ts'
 import { beforeAgentEnd, endRun, openTurn, tell } from './live.ts'
 import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
@@ -41,16 +41,12 @@ export function expire(live: Live): void {
   live.session.abort()
 }
 
-/** A question or a plan the turn now waits on: shown, kept if it is a plan, and clocked by its run. */
+/** A question or a plan the turn now waits on: shown, and clocked by its run. */
 function onSuspended(live: Live, event: Suspended) {
   const card = cardOf(event)
   if (card === undefined) return
   live.pending.set(card.toolCallId, { card, run: event.runId, claimed: false })
   tellCard(live, card)
-  if (card.type === 'plan') {
-    const { toolCallId, title, plan } = card
-    void keepSuspension(live, { toolCallId, plan: { title, plan } })
-  }
   void live.run?.waiting(true)
 }
 
@@ -67,10 +63,6 @@ function onCancelled(live: Live, event: Cancelled) {
   live.pending.delete(event.toolCallId)
   const { card } = found
   tellCard(live, { ...card, state: live.expiring ? 'expired' : 'closed' })
-  if (live.expiring) {
-    const plan = card.type === 'plan' ? { title: card.title, plan: card.plan } : undefined
-    void keepSuspension(live, { toolCallId: card.toolCallId, plan, expired: true })
-  }
   if (live.pending.size > 0) return
   live.expiring = false
   void live.run?.waiting(false)

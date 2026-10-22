@@ -1,5 +1,5 @@
 import type { ConversationId, TurnFailureCode as FailureCode } from '@conexus/hub-api'
-import { MessageId, MessagePart, ToolCallId, TurnFailureCode } from '@conexus/hub-api'
+import { MessageId, MessagePart, TurnFailureCode } from '@conexus/hub-api'
 import type { Session } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -40,18 +40,6 @@ export const TURN_PARTS_KEY = 'conexus.turnParts'
 /** A lasting part of the turn that answers the person's message `after`. */
 export const TurnPart = z.object({ after: MessageId, part: MessagePart })
 export type TurnPart = z.infer<typeof TurnPart>
-
-/**
- * What the thread keeps of the questions and plans that waited: the plan's text while it is open
- * (Mastra keeps the tool's input, not what the server read), and that a wait ended by expiring.
- */
-export const SUSPENSIONS_KEY = 'conexus.suspensions'
-export const Suspension = z.object({
-  toolCallId: ToolCallId,
-  plan: z.object({ title: z.string(), plan: z.string() }).optional(),
-  expired: z.boolean().optional(),
-})
-export type Suspension = z.infer<typeof Suspension>
 
 /** What keeping on a conversation's thread needs: its session, its log and its writes in flight. */
 export type Keeper = { session: Session; log: FailureLog; kept: Promise<void> }
@@ -102,16 +90,6 @@ export function keepPart(
     list: z.array(TurnPart),
     item: { after, part },
     same: (each) => each.after === after && sameKind(each.part, part),
-  })
-}
-
-/** Keeps what a question or plan left on the thread, in place of what it kept before. */
-export function keepSuspension(keeper: Keeper, kept: Suspension): Promise<void> {
-  return keptInList(keeper, {
-    key: SUSPENSIONS_KEY,
-    list: z.array(Suspension),
-    item: kept,
-    same: (each) => each.toolCallId === kept.toolCallId,
   })
 }
 
