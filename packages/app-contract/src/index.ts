@@ -6,7 +6,6 @@ export { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE, APP_LIMITS } from './limits.ts
 export {
   ASSETS_FOLDER,
   FilePath,
-  MAX_OPERATIONS,
   Manifest,
   OperationName,
   Shape,

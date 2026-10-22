@@ -1,13 +1,11 @@
 import { z } from 'zod'
 import { APP_LIMITS } from './limits.ts'
 
-// The manifest of a version, contract 1 (0 to 32 operations, decision 0055): what the Hub checks when it receives a version and what the
+// The manifest of a version, contract 1 (zero or more operations, decision 0055): what the Hub checks when it receives a version and what the
 // app's runtime checks on every call, from one schema (code C26). Its vocabulary of shapes is the old
 // manifest's (string, number, boolean, object, array, at most six levels); a shape may admit null.
 
 const MAX_DEPTH = 6
-/** How many operations a manifest may declare; the one place the number is written. */
-export const MAX_OPERATIONS = 32
 const MAX_PATH = 512
 
 /** A property or operation name: letters and digits, starting with a letter. */
@@ -123,7 +121,6 @@ export const Manifest = z
     entry: FilePath.refine((path) => path.endsWith('.js')),
     operations: z
       .record(OperationName, Operation)
-      .refine((operations) => Object.keys(operations).length <= MAX_OPERATIONS)
       .refine((operations) =>
         Object.values(operations).every(
           ({ input, output }) => depthOf(input) <= MAX_DEPTH && depthOf(output) <= MAX_DEPTH,

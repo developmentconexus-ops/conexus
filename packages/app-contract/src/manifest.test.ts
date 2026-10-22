@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { MAX_OPERATIONS, Manifest, versionFiles } from './index.ts'
+import { Manifest, versionFiles } from './index.ts'
 
 const GOOD = {
   contract: 1,
@@ -48,15 +48,13 @@ test('null é declarável numa forma', () => {
   assert.equal(Manifest.safeParse(copy).success, true)
 })
 
-test('aceita de 0 ao teto de operações e recusa uma a mais', () => {
+test('aceita zero operações, as de hoje e um manifesto grande', () => {
   const operation = GOOD.operations.listar
   function withCount(count: number) {
     const names = Array.from({ length: count }, (_, at) => `op${at}`)
     return { ...GOOD, operations: Object.fromEntries(names.map((name) => [name, operation])) }
   }
-  for (const count of [0, 1, MAX_OPERATIONS])
-    assert.equal(Manifest.safeParse(withCount(count)).success, true)
-  assert.equal(Manifest.safeParse(withCount(MAX_OPERATIONS + 1)).success, false)
+  for (const count of [0, 1, 200]) assert.equal(Manifest.safeParse(withCount(count)).success, true)
 })
 
 test('recusa contract diferente de 1', () => {
