@@ -5,7 +5,11 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./check": "./src/check/report.ts",
     "./starter": "./src/starter.ts"
+  },
+  "bin": {
+    "conexus-check": "./src/check/main.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
@@ -13,6 +17,10 @@
   },
   "dependencies": {
     "@conexus/app-contract": "*",
+    "esbuild": "0.28.2",
+    "playwright-core": "1.63.0",
+    "typescript": "6.0.3",
+    "wrangler": "4.151.1",
     "zod": "4.6.5"
   }
 }

@@ -1,14 +1,10 @@
+import { APP_CONTENT_SECURITY_POLICY } from '@conexus/app-contract'
 import { APP_SESSION_HEADER } from '@conexus/hub-api'
 
 /** The dispatcher's own cookies on an app's host; the app never reads nor sets one. */
 const COOKIE_PREFIX = '__Host-conexus-'
 export const BINDING_COOKIE = `${COOKIE_PREFIX}binding`
 export const APP_SESSION_COOKIE = `${COOKIE_PREFIX}app`
-
-// What an app's page may load on its own host: never framed, nothing submitted elsewhere, and
-// only its own origin for scripts, styles, images, fonts and calls (application-csp.ts:4,14).
-const APP_CONTENT_SECURITY_POLICY =
-  "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'"
 
 /** The headers every answer of the dispatcher carries, its own pages and the app's (security S24). */
 export function withSecurityHeaders(

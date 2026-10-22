@@ -1,24 +1,7 @@
-import { APP_LIMITS } from '@conexus/app-contract'
+import { APP_LIMITS, mediaTypeOf as mediaTypeOfPath } from '@conexus/app-contract'
 import type { VersionFileInput } from '@conexus/hub-api'
 
 const MANIFEST = 'manifest.json'
-const MEDIA_TYPES: Record<string, string> = {
-  js: 'text/javascript',
-  mjs: 'text/javascript',
-  json: 'application/json',
-  css: 'text/css',
-  html: 'text/html',
-  txt: 'text/plain',
-  svg: 'image/svg+xml',
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  gif: 'image/gif',
-  webp: 'image/webp',
-  ico: 'image/x-icon',
-  woff2: 'font/woff2',
-  wasm: 'application/wasm',
-}
 
 /** The folder a person picked, read and ready to send. */
 export type Folder = {
@@ -36,7 +19,7 @@ export type FolderRead = { folder: Folder } | { refusal: FolderRefusal }
 
 function mediaTypeOf(file: File, path: string): string {
   if (file.type !== '') return file.type
-  return MEDIA_TYPES[path.split('.').at(-1)?.toLowerCase() ?? ''] ?? 'application/octet-stream'
+  return mediaTypeOfPath(path)
 }
 
 async function base64Of(file: File): Promise<string> {
