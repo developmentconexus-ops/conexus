@@ -43,9 +43,25 @@ export class ShellTail {
   }
 }
 
-/** The end of a whole output, as a command's tail keeps it. */
-export function tailOf(output: string): Tail {
+/**
+ * The note `execute_command` writes into its result when it cut the output for the model: Mastra
+ * 1.78.0 `dist/workspace-*.js`, from `workspace/tools/output-helpers.ts` (`applyTail`,
+ * `applyTokenLimit`, `applyTokenLimitSandwich`, `noteDroppedOutput`). Mastra says the cut only there: its
+ * `data-sandbox-exit` has no such field, the tool has no option to leave the note out, and the
+ * streamed lines without it are transient, never stored.
+ */
+const MASTRA_CUT =
+  /^\[(?:showing last \d+ of \d+ lines|(?:\.\.\.)?output truncated\b.*|(?:stdout|stderr): the first \d+ bytes were dropped;.*)\]$/
+
+/**
+ * The end of a command's result as Mastra keeps it, as a command's tail keeps it: only what follows
+ * Mastra's last note of a cut, which the row says with `cut`, as it says its own.
+ */
+export function tailOf(result: string): Tail {
+  const lines = result.split('\n')
+  const note = lines.findLastIndex((line) => MASTRA_CUT.test(line))
   const tail = new ShellTail()
-  tail.add(output)
-  return tail.tail()
+  tail.add(note === -1 ? result : lines.slice(note + 1).join('\n'))
+  const kept = tail.tail()
+  return { output: kept.output, cut: kept.cut || note !== -1 }
 }

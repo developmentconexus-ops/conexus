@@ -96,6 +96,11 @@ function subjectCut(text: string): string {
   return text.slice(0, SUBJECT_MAX_LENGTH)
 }
 
+/** A command as its row says it, in its subject and its detail alike: masked, then cut (security S2). */
+function saidCommand(command: string): string {
+  return subjectCut(masked(command))
+}
+
 function stateOf(invocation: Invocation): ToolPart['state'] {
   switch (invocation.state) {
     case 'partial-call':
@@ -127,7 +132,7 @@ function subjectOf(kind: ToolPart['kind'], args: unknown): ToolPart['subject'] {
       : undefined
   if (file?.success) return { path: subjectCut(masked(file.data.path)) }
   const command = kind === 'run_command' ? CommandArgs.safeParse(args) : undefined
-  if (command?.success) return { command: subjectCut(masked(command.data.command)) }
+  if (command?.success) return { command: saidCommand(command.data.command) }
   return null
 }
 
@@ -151,8 +156,7 @@ function detailOf(
   const command = kind === 'run_command' ? CommandArgs.safeParse(args) : undefined
   if (command?.success) {
     const { output, cut } = typeof result === 'string' ? tailOf(result) : { output: [], cut: false }
-    const said = subjectCut(masked(command.data.command))
-    return { kind: 'command', command: said, output, exitCode, cut }
+    return { kind: 'command', command: saidCommand(command.data.command), output, exitCode, cut }
   }
   const write = kind === 'write_file' ? WriteArgs.safeParse(args) : undefined
   if (write?.success) {

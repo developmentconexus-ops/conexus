@@ -181,3 +181,23 @@ test('ler um arquivo tem o seu tipo e o caminho como assunto', async (t) => {
     [['read_file', { path: 'src/nada.ts' }]],
   )
 })
+
+test('a saída longa relida do resultado do Mastra termina em "…", sem a nota em inglês do corte que ele escreve para o modelo', async (t) => {
+  const many = { name: RUN.name, input: { command: 'seq 1 3000' } }
+  const long = { name: RUN.name, input: { command: 'yes x | head -c 9000 | tr "\\n" " "' } }
+  const { hub, ana, conversations } = await conversing(t, calling(many, long))
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const ended = commandsOf(partsOf(events))
+  const read = commandsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? [])
+  assert.deepEqual(read, ended, 'read again, each command opens on what the stream said at its end')
+  for (const line of ended.flatMap((command) => command.output)) {
+    assert.doesNotMatch(line, /truncated|showing|dropped/)
+  }
+  assert.deepEqual(
+    ended.map((command) => [command.cut, command.output.at(-1)?.slice(-4)]),
+    [
+      [true, '3000'],
+      [true, 'x x '],
+    ],
+  )
+})
