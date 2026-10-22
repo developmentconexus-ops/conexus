@@ -273,6 +273,8 @@ test('a imagem do Hub traz o git e a pasta dos repositórios é um volume do usu
     '/run/secrets/hub_e2b_api_key',
   )
   assert.ok(compose.services.hub.secrets.includes('hub_e2b_api_key'))
+  // The template is hub.env's: a value here would win over the line a candidate build prints.
+  assert.equal('HUB_E2B_TEMPLATE' in compose.services.hub.environment, false)
 })
 
 test('o log de cada serviço gira: json-file, dez megabytes, cinco arquivos (S42)', () => {

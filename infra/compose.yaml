@@ -54,9 +54,9 @@ services:
       # (decision 0051).
       HUB_GIT_ROOT: /var/lib/conexus/git
       HUB_GIT_COPY_KEY_FILE: /run/secrets/hub_git_copy_key
-      # The build machines (decision 0051): the account's E2B key, and the template infra/e2b built.
+      # The build machines (decision 0051): the account's E2B key. The template is HUB_E2B_TEMPLATE in
+      # hub.env, never here: a value fixed here would win over it (docs/how-to/builder-template.md).
       HUB_E2B_API_KEY_FILE: /run/secrets/hub_e2b_api_key
-      HUB_E2B_TEMPLATE: conexus-builder
       # The router's registry is the one bundled in the image, never refreshed (decision 0049).
       MASTRA_OFFLINE: "1"
       # Mastra's usage telemetry never leaves: no allowlist covers it (security S42).
