@@ -47,7 +47,7 @@ import { registerHealth } from './platform/health.ts'
 import { answer, createServer, serve } from './platform/http.ts'
 import { bootLog, listenQuietly, shutDownOnSignal } from './platform/lifecycle.ts'
 import { createMail } from './platform/mail.ts'
-import { migrate } from './platform/migrate.ts'
+import { migrate, migrateExitCode } from './platform/migrate.ts'
 import type { NeonProjects } from './platform/neon.ts'
 import { createNeonProjects } from './platform/neon.ts'
 
@@ -308,7 +308,7 @@ async function run(): Promise<void> {
     const failure =
       error instanceof Failure ? error : new Failure('INTERNAL_UNEXPECTED', { cause: error })
     logFailure(bootLog('info'), failure)
-    process.exitCode = 1
+    process.exitCode = migrateExitCode(failure)
   }
 }
 

@@ -19,7 +19,10 @@ case "$*" in
   "inspect --format {{.Config.Image}}"*) echo "\${STUB_RUNNING_IMAGE:-}" ;;
   "image inspect"*conexus.reseal*) echo "\${STUB_RESEAL_LABEL:-}" ;;
   "image inspect"*) echo "\${STUB_LABEL:-}" ;;
-  *" run --rm migrate") exit "\${STUB_MIGRATE_STATUS:-0}" ;;
+  *" run --rm migrate")
+    n=$(( $(cat "$CALLS.migrate" 2>/dev/null || echo 0) + 1 )); echo "$n" > "$CALLS.migrate"
+    read -ra seq <<< "\${STUB_MIGRATE_SEQUENCE:-\${STUB_MIGRATE_STATUS:-0}}"
+    exit "\${seq[$((n - 1))]:-\${seq[\${#seq[@]}-1]}}" ;;
   *" run --rm --no-deps hub node apps/server/src/main.ts reseal") exit "\${STUB_RESEAL_STATUS:-0}" ;;
   "run --rm --network none --user 1000 --mount type=bind,source=/etc/conexus/secrets/"*)
     [[ -n "\${STUB_MISSING_SECRET:-}" && "$*" == *"/\${STUB_MISSING_SECRET},"* ]] && exit 1; exit 0 ;;
@@ -32,6 +35,7 @@ type Stub = {
   labeled?: boolean
   resealLabeled?: boolean
   migrateStatus?: number
+  migrateSequence?: string
   resealStatus?: number
   upStatus?: number
   missingSecret?: string
@@ -62,6 +66,8 @@ function deploy(argument: string, stub: Stub = {}) {
       STUB_LABEL: stub.labeled === false ? '' : '1',
       STUB_RESEAL_LABEL: stub.resealLabeled === false ? '' : '1',
       STUB_MIGRATE_STATUS: String(stub.migrateStatus ?? 0),
+      STUB_MIGRATE_SEQUENCE: stub.migrateSequence ?? '',
+      MIGRATE_RETRY_SECONDS: '0',
       STUB_RESEAL_STATUS: String(stub.resealStatus ?? 0),
       STUB_UP_STATUS: String(stub.upStatus ?? 0),
       STUB_MISSING_SECRET: stub.missingSecret ?? '',
@@ -97,6 +103,27 @@ test('migrate que falha termina vermelho e não sobe o Hub', () => {
   assert.equal(run.status, 1)
   assert.match(run.stderr, /migration failed/)
   assert.equal(count(' up '), 0)
+})
+
+test('migrate que diz 75 é repetido, e passando na terceira tentativa o Hub sobe', () => {
+  const { run, count } = deploy('hub@sha256:new', { migrateSequence: '75 75 0' })
+  assert.equal(run.status, 0, run.stderr)
+  assert.equal(count('run --rm migrate'), 3)
+  assert.equal(count(' up '), 1)
+})
+
+test('migrate que diz 75 três vezes termina vermelho e não sobe o Hub', () => {
+  const { run, count } = deploy('hub@sha256:new', { migrateSequence: '75' })
+  assert.equal(run.status, 1)
+  assert.equal(count('run --rm migrate'), 3)
+  assert.match(run.stderr, /migration failed/)
+  assert.equal(count(' up '), 0)
+})
+
+test('migrate que falha por outro motivo não é repetido', () => {
+  const { run, count } = deploy('hub@sha256:new', { migrateSequence: '1 0' })
+  assert.equal(run.status, 1)
+  assert.equal(count('run --rm migrate'), 1)
 })
 
 test('a imagem que já roda não muda nada', () => {

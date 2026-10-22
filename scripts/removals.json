@@ -2704,5 +2704,27 @@
       "file": "src/builder/runs/runs-lease.test.ts",
       "name": "antes da posse vencer"
     }
+  },
+  {
+    "id": "migrate-limits-in-options",
+    "file": "apps/server/src/platform/migrate.ts",
+    "find": "connected(deps.ownerUrl.reveal(), limitOptions(limits))",
+    "replace": "connected(deps.ownerUrl.reveal())",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/migrate-limits.test.ts",
+      "name": "limites do deploy em options"
+    }
+  },
+  {
+    "id": "migrate-lock-busy-named",
+    "file": "apps/server/src/platform/migrate.ts",
+    "find": "return named('LOCK_BUSY')",
+    "replace": "return databaseFailure(error)",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/migrate-limits.test.ts",
+      "name": "trava ocupada desiste"
+    }
   }
 ]
