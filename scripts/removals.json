@@ -2498,9 +2498,9 @@
   },
   {
     "id": "gate-needs-instructions",
-    "file": "apps/server/src/builder/conversation/instructions.ts",
-    "find": "whose folder ${APP_FOLDER} is the Projeto's app",
-    "replace": "whose folder is the Projeto's app",
+    "file": "apps/server/src/builder/conversation/prompt/builder.md",
+    "find": "the app is the folder {app folder}.",
+    "replace": "the app is the folder.",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
@@ -2509,9 +2509,9 @@
   },
   {
     "id": "gate-needs-secrets-rule",
-    "file": "apps/server/src/builder/conversation/instructions.ts",
-    "find": "through the connectors, and that secrets do not belong in the chat.",
-    "replace": "through the links, and that secrets do not belong in the chat.",
+    "file": "apps/server/src/builder/conversation/prompt/builder.md",
+    "find": "not even one the person pasted in the chat. If the person pastes one, do not use its value: say",
+    "replace": "and say",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",

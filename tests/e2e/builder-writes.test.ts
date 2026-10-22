@@ -57,7 +57,8 @@ function builderThatWrites(t: Parameters<typeof plantAnthropic>[0]) {
   let step = 0
   return plantAnthropic(t, (sent): Reply => {
     if (!sent.stream) return { kind: 'text', text: 'Página da padaria' }
-    if (!sent.system.includes('Builder of Conexus')) return { kind: 'text', text: 'Anotado.' }
+    if (!sent.system.includes('You are the Conexus Builder'))
+      return { kind: 'text', text: 'Anotado.' }
     const next = SCRIPT[step++] ?? 'Pronto.'
     return typeof next === 'string'
       ? { kind: 'text', text: next }

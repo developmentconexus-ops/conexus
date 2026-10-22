@@ -222,6 +222,14 @@ export class Runs {
     return mine.workspace
   }
 
+  /** The Projeto of the turn's run, while this copy drives it: whose `main` the prompt reads. */
+  projectOf(
+    requestContext: RequestContext,
+  ): { companyId: CompanyId; projectId: ProjectId } | undefined {
+    const mine = this.#mine(requestContext)
+    return mine === undefined ? undefined : { companyId: mine.companyId, projectId: mine.projectId }
+  }
+
   /** The run a turn's context names, while this copy drives it. */
   #mine(requestContext: RequestContext): Driven | undefined {
     const runId = runIn(requestContext)
