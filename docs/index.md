@@ -20,7 +20,7 @@ One line per document (`check-docs`).
 - [reference/stack.md](reference/stack.md): each package's sources, skill, trap.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): readers' questions.
-- [reference/screens.md](reference/screens.md): screens and their floors.
+- [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
 - [reference/impeccable.md](reference/impeccable.md): Impeccable's files and commands.
 
 ## Guides: the rules
