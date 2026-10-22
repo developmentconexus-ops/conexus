@@ -5,29 +5,20 @@ import { Manifest, versionFiles } from './index.ts'
 const GOOD = {
   contract: 1,
   entry: 'worker.js',
-  operations: {
-    listar: {
-      input: { type: 'object', properties: {} },
-      output: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: { id: { type: 'integer' }, texto: { type: 'string', maxLength: 500 } },
-          required: ['id', 'texto'],
-        },
-      },
-    },
-    escrever: {
-      input: {
-        type: 'object',
-        properties: { texto: { type: 'string', minLength: 1, maxLength: 500 } },
-        required: ['texto'],
-      },
-      output: { type: 'object', properties: { id: { type: 'integer' } }, required: ['id'] },
-    },
-  },
   migrations: [{ id: '001_recado', statements: ['CREATE TABLE recado (id int)'] }],
   assets: ['index.html', 'css/app.css'],
+}
+
+/** The shapes a manifest held before decision 0055's amendment, as the versions sent then keep them. */
+const STORED_OPERATIONS = {
+  escrever: {
+    input: {
+      type: 'object',
+      properties: { texto: { type: 'string', minLength: 1, maxLength: 500 } },
+      required: ['texto'],
+    },
+    output: { type: 'object', properties: { id: { type: 'integer' } }, required: ['id'] },
+  },
 }
 
 function refuses(change: (manifest: typeof GOOD) => unknown) {
@@ -40,53 +31,16 @@ test('um manifesto do contrato 1 passa e diz os arquivos da pasta', () => {
   assert.deepEqual(versionFiles(manifest), ['worker.js', 'assets/index.html', 'assets/css/app.css'])
 })
 
-test('null é declarável numa forma', () => {
-  const copy = structuredClone(GOOD)
-  Object.assign(copy.operations.escrever.output.properties, {
-    nota: { type: 'string', nullable: true },
-  })
-  assert.equal(Manifest.safeParse(copy).success, true)
+test('um manifesto guardado com operations segue válido, e nenhuma forma é lida', () => {
+  assert.equal(Manifest.safeParse({ ...GOOD, operations: STORED_OPERATIONS }).success, true)
+  assert.equal(Manifest.safeParse({ ...GOOD, operations: {} }).success, true)
+  const unread = { escrever: { input: { type: 'date' } }, outra: 'qualquer' }
+  assert.equal(Manifest.safeParse({ ...GOOD, operations: unread }).success, true)
 })
 
-test('aceita zero operações, as de hoje e um manifesto grande', () => {
-  const operation = GOOD.operations.listar
-  function withCount(count: number) {
-    const names = Array.from({ length: count }, (_, at) => `op${at}`)
-    return { ...GOOD, operations: Object.fromEntries(names.map((name) => [name, operation])) }
-  }
-  for (const count of [0, 1, 200]) assert.equal(Manifest.safeParse(withCount(count)).success, true)
-})
-
-test('recusa contract diferente de 1', () => {
+test('recusa contract diferente de 1 e campo a mais', () => {
   refuses((m) => ({ ...m, contract: 2 }))
-})
-
-test('recusa campo a mais no manifesto, na operação e na forma', () => {
   refuses((m) => ({ ...m, extra: true }))
-  refuses((m) => {
-    Object.assign(m.operations.listar, { handler: 'x' })
-  })
-  refuses((m) => {
-    Object.assign(m.operations.escrever.input, { additionalProperties: true })
-  })
-})
-
-test('recusa operação sem forma, forma desconhecida e required sem a propriedade', () => {
-  refuses((m) => ({ ...m, operations: { listar: { input: GOOD.operations.listar.input } } }))
-  refuses((m) => {
-    Object.assign(m.operations.listar, { input: { type: 'date' } })
-  })
-  refuses((m) => {
-    m.operations.escrever.input.required = ['outro']
-  })
-})
-
-test('recusa forma com mais de seis níveis', () => {
-  let shape: unknown = { type: 'string' }
-  for (let level = 0; level < 6; level += 1) shape = { type: 'array', items: shape }
-  refuses((m) => {
-    Object.assign(m.operations.listar, { output: shape })
-  })
 })
 
 test('recusa caminho absoluto, com .., repetido, e entrada que não é .js', () => {

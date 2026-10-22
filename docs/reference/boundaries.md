@@ -852,20 +852,6 @@ or its origin.
   on `apps/server/src/platform/http.check.ts` when `serve` takes an operation `defineOperation` did
   not declare. Revalidate by 2027-04-16, the only date, or when the Operation type gains a field.
 
-### The app's manifest, from the operations (step 14)
-
-- **Library line.** `z.toJSONSchema(schema, { io: 'input', override })` (`zod/v4/core/to-json-schema.d.ts`)
-  converts a schema. It converts a transform, a refinement and a default without error, drops the
-  refinement, and bounds `z.int()` to the safe integers.
-- **Hand-made piece.** `manifestOf` in `packages/app/src/manifest-of.ts`. `override` refuses, with
-  the operation and the path, any node that is not a string, number, boolean, array, object, enum,
-  nullable or optional, or that carries a refinement. The converted schema is normalized (`null`
-  into `nullable`, the safe-integer bounds and `additionalProperties: false` dropped) and read by the
-  contract's own `Shape`, which refuses every other keyword; the whole by `Manifest`.
-- **Why.** The manifest is the one check the runtime makes, so a type a handler sees must be what it
-  checks (decision 0055). Tests: `packages/app/src/manifest-of.test.ts`. Revalidate by 2027-04-21, or
-  when Zod's JSON Schema output changes.
-
 ## @neon/sdk 7.3.0
 
 ### The size of a reply

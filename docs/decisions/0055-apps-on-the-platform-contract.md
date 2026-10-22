@@ -8,15 +8,14 @@ and the dispatcher's CSP guarantee.
 
 ## Decision
 
-- The contract owns `shared/operations.ts` and `server/handlers.ts` (the manifest comes from them),
-  the generated client, `worker.js`, the check and the packing. The rest is the model's, from an
-  editable starter.
+- The contract owns `shared/operations.ts` and `server/handlers.ts`, the generated client,
+  `worker.js`, the check and the packing. The rest is the model's, from an editable starter.
 - Contract 1 allows zero or more operations; every manifest that exists stays valid [0019]. The packing
   generates `worker.js`. The upload sets `not_found_handling: 'single-page-application'`, `/api`
   staying in the Worker.
-- Operations are written in Zod. A library beyond the starter's and Conexus OS's five is asked of
-  the person; the grant is kept per Project, installed exact with `npm ci --ignore-scripts` through
-  the registry [0051] allowed.
+- Operations are in Zod; the Worker checks calls with them. A library beyond the starter's and
+  Conexus OS's five is asked of the person; the grant is kept per Project, installed exact with
+  `npm ci --ignore-scripts` through the registry [0051] allowed.
 - The browser step fails only on a CSP violation or an empty `#root`.
 - `ask_user`, `submit_plan` and `task_*` are on, wrapped [0053]; one mode, the plan a skill.
 

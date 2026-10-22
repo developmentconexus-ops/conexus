@@ -3,14 +3,7 @@ import { test } from 'node:test'
 import type { AppProps } from '@conexus/app-contract'
 import { APP_FAILURE_CODES, serveApp } from '@conexus/app-contract'
 import { z } from 'zod'
-import {
-  CallFailed,
-  createApi,
-  defineHandlers,
-  defineOperations,
-  failureText,
-  manifestOf,
-} from './index.ts'
+import { CallFailed, createApi, defineHandlers, defineOperations, failureText } from './index.ts'
 
 const operations = defineOperations({
   dobrar: { input: z.object({ n: z.int() }), output: z.object({ n: z.int() }) },
@@ -23,10 +16,8 @@ const PROPS: AppProps = {
 }
 
 function served() {
-  const manifest = manifestOf({ operations, migrations: [], assets: [] })
-  assert.equal(manifest.ok, true)
   const app = serveApp({
-    manifest: manifest.ok ? manifest.value : undefined,
+    operations,
     handlers: defineHandlers(operations, {
       dobrar: ({ n }) => ({ n: n * 2 }),
       quebrar: () => {

@@ -47,13 +47,13 @@ type Handlers<O extends Operations> = {
   readonly [K in keyof O & string]: (
     input: z.output<O[K]['input']>,
     context: Context,
-  ) => z.input<O[K]['output']> | Promise<z.input<O[K]['output']>>
+  ) => z.output<O[K]['output']> | Promise<z.output<O[K]['output']>>
 }
 
 /**
- * The handlers of the declared operations, typed by them. The manifest holds only shapes whose input
- * and output are the same in Zod and in JSON (`manifestOf` refuses the rest), and the runtime checks
- * both against it, so a handler's types are exactly what it is called with and may answer.
+ * The handlers of the declared operations, typed by them: the app's Worker decodes the input with
+ * the operation's Zod before the handler runs and encodes its output with it after (`serveApp`), so a
+ * handler takes and returns the decoded values, a `Date` where a codec says one.
  */
 export function defineHandlers<const O extends Operations>(
   operations: O,

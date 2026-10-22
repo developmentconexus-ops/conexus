@@ -7,9 +7,9 @@ import { CHECK_LIMITS } from './report.ts'
 import type { CheckContext, Outcome } from './step.ts'
 import { outputProblem, overran, PASSED, problem, workOf } from './step.ts'
 
-/** The two files of the contract the manifest comes from (decision 0055). */
-const OPERATIONS = 'shared/operations.ts'
-const HANDLERS = 'server/handlers.ts'
+/** The two files of the contract the app's Worker is made of (decision 0055). */
+export const OPERATIONS = 'shared/operations.ts'
+export const HANDLERS = 'server/handlers.ts'
 /** The client the screens call the operations with, written by the check and never by hand. */
 const CLIENT = 'src/conexus/api.gen.ts'
 
@@ -20,13 +20,8 @@ import { operations } from '../../shared/operations'
 export const api = createApi(operations)
 `
 
-const Answer = z.discriminatedUnion('ok', [
-  z.strictObject({ ok: z.literal(true), value: z.unknown() }),
-  z.strictObject({
-    ok: z.literal(false),
-    error: z.looseObject({ code: z.string(), path: z.array(z.string()) }),
-  }),
-])
+/** What the program prints last: the migrations `server/handlers.ts` exports, for the manifest. */
+const Answer = z.strictObject({ migrations: z.unknown() })
 
 const BuildErrors = z.array(
   z.object({
@@ -36,21 +31,17 @@ const BuildErrors = z.array(
 )
 
 /**
- * A program that imports the app's operations and handlers as the Worker will, makes the manifest
- * with the SDK's `manifestOf`, and starts the contract's runtime on it, which refuses an operation
- * without its handler or a handler without its operation. It prints the manifest's answer.
+ * A program that imports the app's operations and handlers as the Worker will and starts the
+ * contract's runtime on them, which refuses an operation without its handler, a handler without its
+ * operation or a name `/api` cannot say. It prints the migrations the manifest lists.
  */
 function entryOf(operations: boolean, handlers: boolean): string {
   return [
     "import { serveApp } from '@conexus/app-contract'",
-    "import { manifestOf } from '@conexus/app'",
-    operations
-      ? `import { operations } from '../../${OPERATIONS}'`
-      : 'const operations = undefined',
+    operations ? `import { operations } from '../../${OPERATIONS}'` : 'const operations = {}',
     handlers ? `import * as server from '../../${HANDLERS}'` : 'const server = {}',
-    'const made = manifestOf({ operations, migrations: server.migrations ?? [], assets: [] })',
-    'if (made.ok) serveApp({ manifest: made.value, handlers: server.handlers ?? {} })',
-    'console.log(JSON.stringify(made))',
+    'serveApp({ operations, handlers: server.handlers ?? {} })',
+    'console.log(JSON.stringify({ migrations: server.migrations ?? [] }))',
   ].join('\n')
 }
 
@@ -95,15 +86,16 @@ async function bundle(ctx: CheckContext, entry: string, out: string): Promise<Ou
 }
 
 /**
- * The manifest of the app from `shared/operations.ts` (zero operations without it), kept for the
- * `worker` step, and the generated client the screens import.
+ * The manifest of the app, its migrations from `server/handlers.ts` (none without it), kept for the
+ * `worker` step, and the generated client the screens import from `shared/operations.ts`.
  */
 export async function manifesto(ctx: CheckContext): Promise<Outcome> {
   const operations = existsSync(join(ctx.root, OPERATIONS))
+  const handlers = existsSync(join(ctx.root, HANDLERS))
   mkdirSync(workOf(ctx), { recursive: true })
   const entry = workOf(ctx, 'manifest-entry.ts')
   const out = workOf(ctx, 'manifest-entry.mjs')
-  writeFileSync(entry, entryOf(operations, existsSync(join(ctx.root, HANDLERS))))
+  writeFileSync(entry, entryOf(operations, handlers))
   const bundled = await bundle(ctx, entry, out)
   if (bundled.state !== 'passed') return bundled
   const ran = await ctx.run(process.execPath, [out], {
@@ -112,21 +104,17 @@ export async function manifesto(ctx: CheckContext): Promise<Outcome> {
   })
   const late = overran('manifesto', ran)
   if (late !== undefined) return late
-  const file = existsSync(join(ctx.root, HANDLERS)) ? HANDLERS : OPERATIONS
-  if (ran.code !== 0) {
+  const file = handlers ? HANDLERS : OPERATIONS
+  const answer = ran.code === 0 ? answerOf(ran.output) : undefined
+  if (answer === undefined || 'unreadable' in answer) {
     return { state: 'failed', problems: [{ ...outputProblem(ctx, 'MANIFEST_INVALID', ran), file }] }
   }
-  const answer = answerOf(ran.output)
-  if ('unreadable' in answer) {
-    return { state: 'failed', problems: [{ ...outputProblem(ctx, 'MANIFEST_INVALID', ran), file }] }
+  const manifest = Manifest.safeParse({ contract: 1, entry: 'worker.js', ...answer, assets: [] })
+  if (!manifest.success) {
+    const message = z.prettifyError(manifest.error)
+    return { state: 'failed', problems: [problem({ code: 'MANIFEST_INVALID', file, message })] }
   }
-  if (!answer.ok) {
-    const { code, path } = answer.error
-    const operation = String(Reflect.get(answer.error, 'operation') ?? '')
-    const message = `${operation} ${path.join('.')}: this shape cannot be said in the manifest.`
-    return { state: 'failed', problems: [problem({ code, file: OPERATIONS, message })] }
-  }
-  writeFileSync(workOf(ctx, 'manifest.json'), JSON.stringify(Manifest.parse(answer.value)))
+  writeFileSync(workOf(ctx, 'manifest.json'), JSON.stringify(manifest.data))
   const client = join(ctx.root, CLIENT)
   rmSync(client, { force: true })
   if (operations) {

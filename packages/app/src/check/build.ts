@@ -1,6 +1,7 @@
 import { cpSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { APP_COMPATIBILITY_DATE, ASSETS_FOLDER, Manifest } from '@conexus/app-contract'
+import { HANDLERS, OPERATIONS } from './manifest.ts'
 import { CHECK_LIMITS } from './report.ts'
 import type { CheckContext, Outcome } from './step.ts'
 import { outputProblem, overran, PASSED, problem, workOf } from './step.ts'
@@ -24,13 +25,18 @@ function filesUnder(folder: string): string[] {
     .sort()
 }
 
-/** The Worker the version runs: the contract's runtime over the app's handlers, never the app's own entry. */
-function workerSource(ctx: CheckContext, manifest: Manifest): string {
-  const handlers = existsSync(join(ctx.root, 'server/handlers.ts'))
+/**
+ * The Worker the version runs: the contract's runtime over the app's own operations and handlers,
+ * never the app's own entry (decision 0055).
+ */
+function workerSource(ctx: CheckContext): string {
+  const operations = existsSync(join(ctx.root, OPERATIONS))
+  const handlers = existsSync(join(ctx.root, HANDLERS))
   return [
     "import { serveApp } from '@conexus/app-contract'",
-    handlers ? "import { handlers } from '../../server/handlers.ts'" : 'const handlers = {}',
-    `export default serveApp({ manifest: ${JSON.stringify(manifest)}, handlers })`,
+    operations ? `import { operations } from '../../${OPERATIONS}'` : 'const operations = {}',
+    handlers ? `import { handlers } from '../../${HANDLERS}'` : 'const handlers = {}',
+    'export default serveApp({ operations, handlers })',
   ].join('\n')
 }
 
@@ -40,13 +46,13 @@ function workerSource(ctx: CheckContext, manifest: Manifest): string {
  */
 export async function worker(ctx: CheckContext): Promise<Outcome> {
   const dist = workOf(ctx, 'dist')
-  const operations = Manifest.parse(JSON.parse(readFileSync(workOf(ctx, 'manifest.json'), 'utf8')))
-  const manifest = Manifest.safeParse({ ...operations, assets: filesUnder(dist) })
+  const listed = Manifest.parse(JSON.parse(readFileSync(workOf(ctx, 'manifest.json'), 'utf8')))
+  const manifest = Manifest.safeParse({ ...listed, assets: filesUnder(dist) })
   if (!manifest.success) {
     const message = `The built screens do not fit the manifest: ${manifest.error.message}`
     return { state: 'failed', problems: [problem({ code: 'WORKER_FAILED', message })] }
   }
-  writeFileSync(workOf(ctx, 'worker.ts'), workerSource(ctx, manifest.data))
+  writeFileSync(workOf(ctx, 'worker.ts'), workerSource(ctx))
   writeFileSync(
     workOf(ctx, 'wrangler.json'),
     JSON.stringify({

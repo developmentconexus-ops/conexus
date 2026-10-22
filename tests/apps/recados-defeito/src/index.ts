@@ -1,10 +1,10 @@
 import { serveApp } from '@conexus/app-contract'
-import manifest from '../../recados/manifest.json' with { type: 'json' }
+import { operations } from '../../recados/src/operations.ts'
 import { handlers, rowsOf, textoOf } from '../../recados/src/recados.ts'
 
 /** Recados with a defect step 10 refuses at run time: it writes in `db.query`, which only reads. */
 export default serveApp({
-  manifest,
+  operations,
   handlers: {
     ...handlers,
     escreverRecado: async (input, { db }) =>
