@@ -49,7 +49,13 @@ const columns = {
   candidateSha: run.candidateSha,
   deadlineAt: run.deadlineAt,
 }
-const LIVE = ['open', 'waiting', 'saving']
+/** The states of a run whose turn is not over: it runs, waits on the person, or saves. */
+export const LIVE = ['open', 'waiting', 'saving'] as const satisfies readonly RunState[]
+
+/** Whether a run in `state` is not over. */
+function isLive(state: RunState): boolean {
+  return LIVE.some((each) => each === state)
+}
 
 function leaseEnd() {
   return new Date(Date.now() + LEASE_MS)
@@ -341,7 +347,7 @@ export class RunStore {
     return rows.map((row) => ({ n: row.n, event: ConversationEvent.parse(row.event) }))
   }
 
-  /** The conversation's latest run, or none. */
+  /** The conversation's latest run and whether it is over, or none. */
   async lastRunOf(companyId: CompanyId, conversationId: ConversationId) {
     const [row] = await this.#database.read(inCompany(companyId), (tx) =>
       tx
@@ -351,6 +357,8 @@ export class RunStore {
         .orderBy(desc(run.deadlineAt))
         .limit(1),
     )
-    return row === undefined ? undefined : { id: RunId.parse(row.id), state: row.state }
+    return row === undefined
+      ? undefined
+      : { id: RunId.parse(row.id), live: isLive(Row.shape.state.parse(row.state)) }
   }
 }

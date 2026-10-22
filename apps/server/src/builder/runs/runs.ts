@@ -45,6 +45,7 @@ function idleRun() {
     stopDeadline: () => undefined,
     stopWaiting: () => undefined,
     stopLease: () => undefined,
+    waits: Promise.resolve(),
     lost: false,
     check: undefined,
   }
@@ -63,6 +64,8 @@ type Driven = {
   stopDeadline: () => void
   /** Ends the question's clock, while the turn waits on an answer. */
   stopWaiting: () => void
+  /** The `waiting` writes in flight, one after the other. */
+  waits: Promise<void>
   stopLease: () => void
   lost: boolean
   /** What the end of the turn's check said last, for the version it saves. */
@@ -155,20 +158,25 @@ export class Runs {
 
   /**
    * The turn waits on the person's answer (`waiting`) or goes on after it; the run stays this copy's
-   * and its lease goes on. While it waits, `expire` is called once the question's time (thirty
-   * minutes, card) runs out. False once the run is not this copy's to change.
+   * and its lease goes on. The question's clock (thirty minutes, card) starts or stops at the call,
+   * so an answer stops it before any write; `expire` is called once it runs out. The writes go one
+   * after the other, and the turn's end waits for them (`finish`); a refused write rejects here.
    */
-  async waiting(runId: RunId, waiting: boolean, expire: () => void): Promise<boolean> {
+  waiting(runId: RunId, waiting: boolean, expire: () => void): Promise<void> {
     const mine = this.#driven.get(runId)
-    if (mine === undefined) return false
+    if (mine === undefined) return Promise.resolve()
     const { companyId, projectId } = mine
-    const changed = await this.#context.store.wait(companyId, runId, waiting)
-    if (!changed) return false
     mine.stopWaiting()
     const until = new Date(Date.now() + (this.#deps.questionMs?.() ?? QUESTION_LIMITS.waitMs))
     mine.stopWaiting = waiting ? watchDeadline(until, expire) : () => undefined
-    this.#deps.log.info({ companyId, projectId, runId }, waiting ? 'RUN_WAITING' : 'RUN_RESUMED')
-    return true
+    const write = async () => {
+      if (!(await this.#context.store.wait(companyId, runId, waiting))) return
+      this.#deps.log.info({ companyId, projectId, runId }, waiting ? 'RUN_WAITING' : 'RUN_RESUMED')
+    }
+    // After the write before it, refused or not: that refusal went to its own caller.
+    const written = mine.waits.then(write, write)
+    mine.waits = written
+    return written
   }
 
   /** Starts the turn's hour and its lease; `abort` stops the turn as Parar does. */
@@ -295,6 +303,7 @@ export class Runs {
     const { store } = this.#context
     let elsewhere = false
     try {
+      await Promise.allSettled([mine.waits])
       const claimed = !mine.lost && (await store.claim(companyId, input.runId))
       const saved = claimed ? await store.get(companyId, input.runId) : undefined
       if (saved === undefined) {

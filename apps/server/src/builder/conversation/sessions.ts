@@ -17,7 +17,7 @@ import type { Restart, Runs } from '../runs/public.ts'
 import { answerCard } from './answers.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import { denyParked, expire, onCardEvent, steerCards } from './cards.ts'
+import { denyParked, expire, onCardEvent, releaseCards, steerCards, takeCards } from './cards.ts'
 import { deliver } from './deliver.ts'
 import { keepPart, QUESTION_KEY, Question } from './kept.ts'
 import { listen } from './listen.ts'
@@ -91,7 +91,6 @@ export class Sessions {
             lose: () => session.abort(),
           },
           ...{ turn: undefined, asked: new Set(), runs: new Map() },
-          ...{ pending: new Map(), expiring: false },
           ...{ steering: undefined },
           ...{ unclaimed: undefined, questions: [], kept: Promise.resolve() },
           ...{ run: undefined, saveFailure: undefined, saved: undefined },
@@ -157,8 +156,7 @@ export class Sessions {
   ): Promise<void> {
     const { owner, conversationId } = input
     const waiting = await opened(this.#open.get(conversationId))
-    if (waiting !== undefined && waiting.pending.size > 0)
-      return steerCards(waiting, input.question)
+    if (waiting !== undefined && (await steerCards(waiting, input.question))) return
     const admitted = await this.#runs.admit({
       ...owner,
       conversationId,
@@ -334,7 +332,9 @@ export class Sessions {
   async stop(conversationId: ConversationId): Promise<void> {
     const live = await opened(this.#open.get(conversationId))
     if (live === undefined) return
+    const taken = await takeCards(live)
     live.session.abort()
+    releaseCards(live, taken)
     const fields = { companyId: live.owner.companyId, conversationId }
     this.#log.info(fields, 'CONVERSATION_STOPPED')
   }

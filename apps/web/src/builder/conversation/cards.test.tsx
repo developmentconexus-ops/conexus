@@ -83,6 +83,43 @@ test('o cartão de perguntas: uma por vez, a recomendada escolhida, outra respos
   ])
 })
 
+test('dois cliques em Enviar mandam a resposta uma vez', async () => {
+  const held = Promise.withResolvers<undefined>()
+  const bodies = answering(() => held.promise)
+  await turn({ type: 'question', toolCallId: CALL, questions: [WHO], state: 'open' })
+  const send = await screen.findByRole('button', { name: 'Enviar' })
+  fireEvent.click(send)
+  fireEvent.click(send)
+  await screen.findByRole('button', { name: 'Enviando…' })
+  held.resolve(undefined)
+  await waitFor(() => expect(bodies).toHaveLength(1))
+  await new Promise((settled) => setTimeout(settled, 50))
+  expect(bodies).toHaveLength(1)
+  expect(screen.queryByText(/Esta pergunta já foi respondida/)).toBeNull()
+})
+
+test('com uma pergunta aberta, a linha diz que o Builder espera a pessoa, sem relógio', async () => {
+  const { tell } = await turn({
+    type: 'question',
+    toolCallId: CALL,
+    questions: [WHO],
+    state: 'open',
+  })
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toBe('Builder esperando sua resposta.'),
+  )
+  tell({
+    type: 'question',
+    toolCallId: CALL,
+    questions: [WHO],
+    state: 'answered',
+    answers: ['Só eu'],
+  })
+  await waitFor(() =>
+    expect(screen.getByRole('status').textContent).toMatch(/^Builder trabalhando · há /),
+  )
+})
+
 test('o cartão de perguntas que falha: sem resposta do Hub, a frase do cartão; recusado, a da tabela', async () => {
   let refused = false
   answering(async () => (refused ? refusal('QUESTION_CLOSED') : HttpResponse.error()))
@@ -102,7 +139,7 @@ test('a pergunta vencida diz que expirou e não se responde', async () => {
   expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull()
 })
 
-test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILED; sem conferência e as de CHECK_PLATFORM_FAILED; sem veredito, só o que guardou', async () => {
+test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILED; sem conferência e as de CHECK_PLATFORM_FAILED; parada antes da conferência, sem conferência e sem palavras de falha', async () => {
   const version = { type: 'version', changed: true, files: 7, changedFiles: 2 } as const
   const { tell, log } = await turn({ ...version, number: 1, check: { state: 'passed' } })
   await within(log).findByText('Versão 1 guardada, montou: 7 arquivos.')
@@ -119,8 +156,8 @@ test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILE
     'Versão 3 guardada, sem conferência: 2 arquivos mudados.Não consegui conferir o app. O código ficou guardado sem conferência. Peça de novo ao Builder.',
   )
   tell({ ...version, number: 4 })
-  const stopped = await within(log).findByText('Versão 4 guardada: 2 arquivos mudados.')
-  expect(stopped.textContent).toBe('Versão 4 guardada: 2 arquivos mudados.')
+  const stopped = await within(log).findByText(/^Versão 4 guardada, sem conferência:/)
+  expect(stopped.textContent).toBe('Versão 4 guardada, sem conferência: 2 arquivos mudados.')
 })
 
 // jsdom lays nothing out: the plan's text says it is taller than its box when the test says so.
@@ -160,6 +197,16 @@ test('o plano que cabe: sem "Ler plano completo"; Pedir ajustes abre o campo do 
   )
   tell({ ...PLAN, state: 'rejected' })
   await within(card).findByText('Este plano foi substituído.')
+  expect(within(card).queryByRole('button', { name: 'Aprovar e construir' })).toBeNull()
+})
+
+test('o plano aprovado diz que foi aprovado; o fechado por Parar ou por uma mensagem, que foi fechado', async () => {
+  const { tell } = await turn(PLAN)
+  const card = await screen.findByRole('region', { name: 'Plano: App de encomendas' })
+  tell({ ...PLAN, state: 'approved' })
+  await within(card).findByText('Plano aprovado.')
+  tell({ ...PLAN, state: 'closed' })
+  await within(card).findByText('Este plano foi fechado.')
   expect(within(card).queryByRole('button', { name: 'Aprovar e construir' })).toBeNull()
 })
 
