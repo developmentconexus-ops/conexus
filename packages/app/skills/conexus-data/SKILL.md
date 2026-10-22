@@ -5,7 +5,7 @@ description: How an app saves data and runs logic on the server. Covers the oper
 
 # Server logic and saved data
 
-An app that saves or reads data has a server; a page with nothing saved has none (`conexus-app`). The platform contract owns two files, and the check makes the manifest from them:
+An app that saves or reads data has a server; a page with nothing saved has none (`conexus-app`). The platform contract owns two files, and the check builds the app's server from them:
 
 - `shared/operations.ts` exports `operations`, made with `defineOperations` from `@conexus/app`: each operation's name, its `input` and its `output`, in Zod. The screens and the server import the same file, so a field renamed there fails the check everywhere it is used.
 - `server/handlers.ts` exports `handlers`, made with `defineHandlers(operations, { ... })`, one handler per operation, and `migrations`, the tables.
@@ -14,9 +14,9 @@ An app that saves or reads data has a server; a page with nothing saved has none
 
 ## Operations
 
-- The browser calls an operation by name with a JSON body; the platform checks the input against its Zod before the handler runs and the output after it, so a handler only sees what its input declares.
+- The browser calls an operation by name with a JSON body. The app's server checks the input with the operation's own Zod before the handler runs, and the output with it after, so a handler only sees what its input declares: `z.email()`, `z.uuid()`, a default, a union of objects and a refinement all hold.
 - Input is always an object. An operation's name is letters and digits, starting with a letter.
-- Shapes are said with `z.string()` (`min`, `max`, `z.enum([...])`), `z.int()` and `z.number()` (`min`, `max`), `z.boolean()`, `z.array(...)` (`max`), `z.object({...})`, `.optional()` and `.nullable()`, at most six levels deep. A union of objects, a transform, a default or a refinement cannot be said in the manifest: the check fails with `MANIFEST_SHAPE_UNSUPPORTED` and the path.
+- Use the Zod the app needs, but what is sent and answered travels as JSON: a `Date`, a `BigInt`, a `Map` or a `Set` does not, and the check fails with `OPERATION_NOT_JSON`, the operation and the path. A date is `z.iso.date()` text, or a `z.codec(z.iso.date(), z.date(), { decode, encode })` when the handler or the screen needs a `Date`. A transform in an output must be a codec, since the server encodes the output back with it.
 - For a field with fixed values, such as a status, export the list from `shared/operations.ts` and use `z.enum(LIST)`, so the handlers, the types and the screens' words all follow one list.
 - Export from `shared/operations.ts` the types the screens need, with `z.output` and `z.input`.
 

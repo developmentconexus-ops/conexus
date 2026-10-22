@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
+import { readSkills } from '@conexus/app/skills'
 import { STARTER_DIR } from '@conexus/app/starter'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { APP_FOLDER } from '../machine/public.ts'
@@ -32,6 +33,13 @@ function filled(files: Pick<Filled, 'instructions' | 'memory'>): Filled {
     ...files,
   }
 }
+
+/** A sentence that tells the model when to run the check: only `conexus_check`'s description may. */
+const WHEN_TO_CHECK =
+  /\b(?:run (?:it|the check)|(?:run|call|use) `?conexus_check`?)\b[^.\n]*\b(?:after|before|at the end|each|every|when)\b/i
+/** A sentence that says the machine cannot build the app, which it does since step 14. */
+const CANNOT_BUILD =
+  /\bno (?:bundler|build step)\b|machine[^.\n]*\b(?:cannot|can't|does not|never)\b[^.\n]*\b(?:build|bundle)/i
 
 /** The machine's check passes, so the turn that wrote saves its version. */
 function passingCheck(folder: string) {
@@ -79,6 +87,14 @@ test('o prompt tem cada linha "igual" e "adaptada" da tabela, nenhuma "tirada"; 
   assert.deepEqual(broken(first.system, filled(MISSING), true), [])
   for (const word of ['Prévia', 'Integrações', 'Conexão', 'Conexões'])
     assert.ok(!first.system.includes(word), word)
+  const skills = readSkills().flatMap(({ content, references }) => [
+    content,
+    ...Object.values(references),
+  ])
+  for (const text of [first.system, ...skills]) {
+    assert.doesNotMatch(text, WHEN_TO_CHECK)
+    assert.doesNotMatch(text, CANNOT_BUILD)
+  }
   // The skills come through Mastra's skill tools; the second test sees none in the machine.
   for (const name of ['skill', 'skill_read', 'skill_search'])
     assert.ok(first.tools.includes(name), name)
