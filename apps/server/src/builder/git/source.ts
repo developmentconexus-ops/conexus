@@ -42,7 +42,7 @@ export function registerSourceRoutes(app: FastifyInstance, deps: Deps): void {
     await admit(deps, person, params)
     const repository = deps.repository(params)
     const commit = await repository.head()
-    // No repository, or only the empty first commit: no version was saved, and a read makes none.
+    // No repository, or only the starter commit: no version was saved, and a read makes none.
     const version = commit === null ? 0 : await repository.version()
     if (commit === null || version === 0) {
       return answer({ version: 0, commit: null, savedAt: null, files: [] })

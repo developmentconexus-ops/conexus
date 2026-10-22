@@ -34,7 +34,7 @@ const identityMiddleware: LanguageModelMiddleware = {
  * The headers of a call as the subscription's endpoint takes it: the access token as a bearer,
  * never as an API key, and the betas it requires beside those `headers` already ask for.
  */
-export function subscriptionHeaders(headers: Headers, accessToken: string): Headers {
+function subscriptionHeaders(headers: Headers, accessToken: string): Headers {
   const sent = new Headers(headers)
   sent.delete('authorization')
   sent.delete('x-api-key')

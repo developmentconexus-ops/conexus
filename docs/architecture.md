@@ -99,7 +99,7 @@ flowchart TB
 | Web | The Hub's screens, served by the server program | Nothing |
 | Dispatcher | Checks the session, hands the app a `db` capability bound to that app's login, calls the app [0019] [0043] | The key app passwords derive from |
 | Outbound wall | Refuses every network call from an app | Nothing |
-| Generated app | One Worker per app version, with its screen files inside, no binding and no secret [0018] | Nothing |
+| Generated app | One Worker per app version, with its screen files inside, no binding, no secret [0018] [0055] | Nothing |
 | Hub database | Companies, people, sessions, Projects; the Builder's space holds runs and model accounts [0011] | Company column on every table [0012] |
 | Mastra database | Mastra's own tables: threads, memory, traces, under a login of its own [0010] | Nothing of the Hub |
 | Company project | One schema and two logins per app and environment: one runs the app, one applies its migrations [0021] | The company's app data |

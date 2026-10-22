@@ -21,7 +21,16 @@ const Row = z.object({
   projectId: ProjectId,
   personId: PersonId,
   conversationId: ConversationId,
-  state: z.enum(['open', 'saving', 'saved', 'unchanged', 'stopped', 'interrupted', 'failed']),
+  state: z.enum([
+    'open',
+    'waiting',
+    'saving',
+    'saved',
+    'unchanged',
+    'stopped',
+    'interrupted',
+    'failed',
+  ]),
   baseSha: Sha.nullable(),
   candidateSha: Sha.nullable(),
   deadlineAt: z.date(),
@@ -40,7 +49,13 @@ const columns = {
   candidateSha: run.candidateSha,
   deadlineAt: run.deadlineAt,
 }
-const LIVE = ['open', 'saving']
+/** The states of a run whose turn is not over: it runs, waits on the person, or saves. */
+export const LIVE = ['open', 'waiting', 'saving'] as const satisfies readonly RunState[]
+
+/** Whether a run in `state` is not over. */
+function isLive(state: RunState): boolean {
+  return LIVE.some((each) => each === state)
+}
 
 function leaseEnd() {
   return new Date(Date.now() + LEASE_MS)
@@ -104,22 +119,28 @@ export class RunStore {
   async #change(
     companyId: CompanyId,
     id: RunId,
-    from: RunState,
+    from: RunState | RunState[],
     set: { state: RunState } | { baseSha: Sha } | { candidateSha: Sha },
   ) {
     const rows = await this.#database.command(inCompany(companyId), (tx) =>
       tx
         .update(run)
         .set(set)
-        .where(and(eq(run.id, id), eq(run.state, from), eq(run.owner, this.#owner)))
+        .where(and(eq(run.id, id), inArray(run.state, [from].flat()), eq(run.owner, this.#owner)))
         .returning({ id: run.id }),
     )
     return rows.length > 0
   }
 
-  /** The turn ends and its save begins; false when the run is not this copy's and `open`. */
+  /** The turn ends and its save begins; false when the run is not this copy's and `open` or `waiting`. */
   claim(companyId: CompanyId, id: RunId) {
-    return this.#change(companyId, id, 'open', { state: 'saving' })
+    return this.#change(companyId, id, ['open', 'waiting'], { state: 'saving' })
+  }
+
+  /** The turn waits on the person's answer, or goes on after it; false when it is not this copy's to change. */
+  wait(companyId: CompanyId, id: RunId, waiting: boolean) {
+    const [from, to] = waiting ? (['open', 'waiting'] as const) : (['waiting', 'open'] as const)
+    return this.#change(companyId, id, from, { state: to })
   }
 
   /** Whether another copy of the program holds the run now: its machine is that copy's. */
@@ -191,7 +212,7 @@ export class RunStore {
         tx
           .update(run)
           .set({ leaseUntil: new Date(0) })
-          .where(and(eq(run.owner, this.#owner), eq(run.state, 'open'))),
+          .where(and(eq(run.owner, this.#owner), inArray(run.state, ['open', 'waiting']))),
       )
     }
   }
@@ -326,7 +347,7 @@ export class RunStore {
     return rows.map((row) => ({ n: row.n, event: ConversationEvent.parse(row.event) }))
   }
 
-  /** The conversation's latest run, or none. */
+  /** The conversation's latest run and whether it is over, or none. */
   async lastRunOf(companyId: CompanyId, conversationId: ConversationId) {
     const [row] = await this.#database.read(inCompany(companyId), (tx) =>
       tx
@@ -336,6 +357,8 @@ export class RunStore {
         .orderBy(desc(run.deadlineAt))
         .limit(1),
     )
-    return row === undefined ? undefined : { id: RunId.parse(row.id), state: row.state }
+    return row === undefined
+      ? undefined
+      : { id: RunId.parse(row.id), live: isLive(Row.shape.state.parse(row.state)) }
   }
 }

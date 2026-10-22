@@ -120,21 +120,18 @@ test('recados-nao-inicia lança ao carregar; recados-laco tem Travar e o resto d
   await assert.rejects(import(pathToFileURL(join(naoInicia, 'worker.js')).href), {
     message: 'Recados não inicia',
   })
-  const manifest = Manifest.parse(JSON.parse(readFileSync(join(laco, 'manifest.json'), 'utf8')))
-  assert.deepEqual(Object.keys(manifest.operations), ['listarRecados', 'escreverRecado', 'travar'])
-  // The laco's manifest is Recados's own plus Travar: a change to Recados's must reach it too.
-  const { travar, ...operations } = manifestOf('tests/apps/recados-laco').operations
-  assert.ok(travar)
+  // The laco's manifest is Recados's own plus Travar's screen: a change to Recados's must reach it too.
+  const manifest = manifestOf('tests/apps/recados-laco')
   assert.deepEqual(
-    {
-      ...manifestOf('tests/apps/recados-laco'),
-      operations,
-      assets: manifest.assets.filter((asset) => asset !== 'travar.js'),
-    },
+    { ...manifest, assets: manifest.assets.filter((asset: string) => asset !== 'travar.js') },
     manifestOf('tests/apps/recados'),
   )
   const app = await run(laco)
   assert.equal((await app.call('escreverRecado', { texto: 'Comprar café' })).status, 200)
+  // Travar is an operation of its Worker, refused here at its input so its loop never runs.
+  assert.deepEqual(await (await app.call('travar', { a_mais: 1 })).json(), {
+    code: 'INPUT_INVALID',
+  })
 })
 
 test('app-pack recusa um arquivo da sobreposição que não substitui nenhum e o manifesto não nomeia', () => {

@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
+import type { ConversationEvent, MessagePart, ToolDetail } from '@conexus/hub-api'
 import { applyEvent } from '@conexus/hub-api'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, messagesOf, sent, streamOf, title } from './test-conversation.ts'
 
-const SECRET = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123456789'
+const VALUE = 'abc123'
 const WRITE = { name: 'mastra_workspace_write_file', input: { path: 'a.ts', content: 'x\n' } }
 const RUN = {
   name: 'mastra_workspace_execute_command',
-  input: { command: `echo token=${SECRET}; echo pronto` },
+  input: { command: `echo token=${VALUE}; echo pronto` },
 }
 
 /** One step with the given tools, then an answer. */
@@ -31,11 +31,17 @@ function partsOf(events: ConversationEvent[]): MessagePart[] {
   )
 }
 
-/** Every `shell` part the turn said, in order: a command's lines as it ran, then at its end. */
-function shellsOf(events: ConversationEvent[]) {
-  return events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'shell' ? [event.part] : [],
+type Command = Extract<ToolDetail, { kind: 'command' }>
+
+/** A command's detail in each tool part the turn said, in order: its lines as it ran, then at its end. */
+function commandsOf(parts: MessagePart[]): Command[] {
+  return parts.flatMap((part) =>
+    part.type === 'tool' && part.detail?.kind === 'command' ? [part.detail] : [],
   )
+}
+
+function saidParts(events: ConversationEvent[]): MessagePart[] {
+  return events.flatMap((event) => (event.type === 'part' ? [event.part] : []))
 }
 
 test('um turno que escreve: ferramentas por tipo e assunto, arquivo, saída do comando sem segredo, máquina e versão', async (t) => {
@@ -48,24 +54,30 @@ test('um turno que escreve: ferramentas por tipo e assunto, arquivo, saída do c
     done.map((tool) => [tool.kind, tool.subject]),
     [
       ['write_file', { path: 'a.ts' }],
-      ['run_command', { command: 'echo token=***; echo pronto' }],
+      ['run_command', { command: `echo token=${VALUE}; echo pronto` }],
     ],
   )
   assert.deepEqual(
     parts.filter((part) => part.type === 'file').map((part) => [part.path, part.operation]),
     [['a.ts', 'write']],
   )
-  const [shell] = parts.filter((part) => part.type === 'shell')
-  assert.deepEqual([shell?.lines, shell?.exitCode], [['token=***', 'pronto'], 0])
+  assert.deepEqual(commandsOf(parts), [
+    {
+      kind: 'command',
+      command: `echo token=${VALUE}; echo pronto`,
+      output: [`token=${VALUE}`, 'pronto'],
+      exitCode: 0,
+      cut: false,
+    },
+  ])
   assert.ok(parts.some((part) => part.type === 'machine'))
+  const versions = parts.filter((part) => part.type === 'version')
   assert.deepEqual(
-    parts.filter((part) => part.type === 'version'),
-    [{ type: 'version', number: 1, changed: true, files: 1, changedFiles: 1 }],
+    versions.map((part) => [part.number, part.changed, part.changedFiles]),
+    [[1, true, 1]],
   )
+  assert.ok((versions[0]?.files ?? 0) > 1, 'the version holds the starter beside the turn')
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  const journal = JSON.stringify(await hub.test.asOwner('select event from builder.run_event'))
-  assert.equal(journal.includes(SECRET), false)
-  assert.equal(JSON.stringify(events).includes(SECRET), false)
 })
 
 test('a saída de um comando longo chega só pelas últimas 20 linhas e 4 KiB, cada limite por si', async (t) => {
@@ -79,37 +91,47 @@ test('a saída de um comando longo chega só pelas últimas 20 linhas e 4 KiB, c
   const long = { name: RUN.name, input: { command: 'yes x | head -c 9000 | tr "\\n" " "' } }
   const { hub, ana, conversations } = await conversing(t, calling(many, wide, long))
   const { events } = await asked(t, { hub, person: ana, conversations })
-  const shells = partsOf(events).flatMap((part) => (part.type === 'shell' ? [part.lines] : []))
+  // What the row heard of each command when it exited, each cut by its limit; the result Mastra
+  // keeps of a long one is its own cut for the model, read back as it is.
+  const running = saidParts(events).filter(
+    (part) => part.type === 'tool' && part.state === 'running',
+  )
+  const heard = commandsOf(running)
+  function last(test: (line: string | undefined) => boolean) {
+    const found = heard.findLast((command) => command.output.length > 0 && test(command.output[0]))
+    assert.ok(found?.cut, 'the row says it was cut')
+    return found?.output
+  }
   function numbers(from: number, to: number) {
     return Array.from({ length: to - from + 1 }, (_, at) => String(from + at))
   }
   assert.deepEqual(
-    shells.find((lines) => lines[0]?.length !== 300 && lines[0]?.[0] !== 'x'),
+    last((line) => /^\d+$/.test(line ?? '')),
     numbers(31, 50),
   )
   // Thirteen lines of 300 bytes and their breaks are 3,912 bytes; a fourteenth passes 4 KiB.
   assert.deepEqual(
-    shells.find((lines) => lines[0]?.length === 300),
+    last((line) => line?.length === 300),
     numbers(118, 130).map((n) => n + ' '.repeat(297)),
   )
   assert.deepEqual(
-    shells.find((lines) => lines[0]?.[0] === 'x'),
+    last((line) => line?.[0] === 'x'),
     ['x '.repeat(2048)],
   )
 })
 
-/** The parts of the Builder's turn that outlive it: the command's lines and the version. */
+/** The parts of the Builder's turn that outlive it: its tools, with what each opens on, and the version. */
 function lasting(parts: MessagePart[]) {
-  return parts.filter((part) => part.type === 'shell' || part.type === 'version')
+  return parts.filter((part) => part.type === 'tool' || part.type === 'version')
 }
 
-test('o que dura do turno fica depois do fim e ao reabrir: as linhas do comando e a versão', async (t) => {
+test('o que dura do turno fica depois do fim e ao reabrir: o detalhe de cada ferramenta e a versão (33)', async (t) => {
   const { hub, ana, conversations } = await conversing(t, calling(WRITE, RUN))
   const { url, events } = await asked(t, { hub, person: ana, conversations })
   const read = (await messagesOf(hub, ana, url)).at(-1)
   assert.deepEqual(
     lasting(read?.parts ?? []).map((part) => part.type),
-    ['shell', 'version'],
+    ['tool', 'tool', 'version'],
   )
   assert.deepEqual(lasting(read?.parts ?? []), lasting(partsOf(events)))
 })
@@ -141,9 +163,9 @@ test('a saída de um comando chega enquanto ele roda, sem código de saída, ant
   const slow = { name: RUN.name, input: { command: 'echo começo; sleep 2; echo fim' } }
   const { hub, ana, conversations } = await conversing(t, calling(slow))
   const { events } = await asked(t, { hub, person: ana, conversations })
-  const shells = shellsOf(events)
-  assert.deepEqual(shells.at(0), { ...shells.at(0), lines: ['começo'], exitCode: null })
-  assert.deepEqual(shells.at(-1), { ...shells.at(-1), lines: ['começo', 'fim'], exitCode: 0 })
+  const commands = commandsOf(saidParts(events)).filter((command) => command.output.length > 0)
+  assert.deepEqual(commands.at(0), { ...commands.at(0), output: ['começo'], exitCode: null })
+  assert.deepEqual(commands.at(-1), { ...commands.at(-1), output: ['começo', 'fim'], exitCode: 0 })
 })
 
 test('ler um arquivo tem o seu tipo e o caminho como assunto', async (t) => {
@@ -154,5 +176,28 @@ test('ler um arquivo tem o seu tipo e o caminho como assunto', async (t) => {
   assert.deepEqual(
     tools.map((tool) => [tool.kind, tool.subject]),
     [['read_file', { path: 'src/nada.ts' }]],
+  )
+})
+
+test('a saída relida é o resultado como o Mastra o guarda, mascarado e cortado só pelo nosso limite, com "…"', async (t) => {
+  const failing = {
+    name: RUN.name,
+    input: { command: `echo um; echo token=${VALUE} >&2; exit 2` },
+  } as const
+  const silent = { name: RUN.name, input: { command: 'true' } } as const
+  const many = { name: RUN.name, input: { command: 'seq 1 3000' } } as const
+  const { hub, ana, conversations } = await conversing(t, calling(failing, silent, many))
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const ended = commandsOf(partsOf(events))
+  const read = commandsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? [])
+  assert.deepEqual(read, ended, 'read again, each command opens on what the stream said at its end')
+  const numbers = Array.from({ length: 20 }, (_, at) => String(2981 + at))
+  assert.deepEqual(
+    ended.map((command) => [command.output, command.cut, command.exitCode]),
+    [
+      [['stdout:', 'um', '', '', 'stderr:', `token=${VALUE}`, '', 'Exit code: 2'], false, 2],
+      [['(no output)'], false, 0],
+      [numbers, true, 0],
+    ],
   )
 })

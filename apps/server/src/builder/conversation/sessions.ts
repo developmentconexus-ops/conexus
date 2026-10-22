@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto'
 import type {
   ConversationId,
   Effort,
@@ -6,19 +5,23 @@ import type {
   MessageId,
   ModelId,
   ProjectId,
+  QuestionAnswer,
   RunId,
+  ToolCallId,
 } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
 import type { Restart, Runs } from '../runs/public.ts'
+import { answerCard } from './answers.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import { catchUp } from './catch-up.ts'
+import { denyParked, expire, onCardEvent, releaseCards, steerCards, takeCards } from './cards.ts'
 import { deliver } from './deliver.ts'
 import { keepPart, QUESTION_KEY, Question } from './kept.ts'
-import type { Listener, Live, Owner, Said } from './live.ts'
+import { listen } from './listen.ts'
+import type { Listener, Live, Owner } from './live.ts'
 import {
   beforeAgentEnd,
   endTurn,
@@ -28,13 +31,19 @@ import {
   questionId,
   tellMachine,
 } from './live.ts'
-import { eventId, onceEach } from './turn-log.ts'
+import { eventId } from './turn-log.ts'
 
 /**
  * A conversation's place in this process: its session, opening or open, and how many holders use
  * it, each counted before its first wait, so the session closes only once none is left.
  */
 type Entry = { live: Promise<Live>; holds: number }
+
+/** The entry's session, or none when it never opened: the failure reached every holder of the entry. */
+async function opened(entry: Entry | undefined): Promise<Live | undefined> {
+  // biome-ignore lint/plugin: the failure to open reached every holder of the entry; a session that never opened has nothing to close, ask or stop
+  return entry?.live.catch(() => undefined)
+}
 
 type OfConversation = { owner: Owner; conversationId: ConversationId }
 
@@ -53,7 +62,11 @@ export class Sessions {
   // Ends every stream once the turns are drained, so the server's close does not wait on them.
   readonly #closing = new AbortController()
 
-  constructor(deps: { builder: Builder; runs: Runs; log: FailureLog }) {
+  constructor(deps: {
+    builder: Builder
+    runs: Runs
+    log: FailureLog
+  }) {
     this.#builder = deps.builder
     this.#runs = deps.runs
     this.#log = deps.log
@@ -78,11 +91,15 @@ export class Sessions {
             lose: () => session.abort(),
           },
           ...{ turn: undefined, asked: new Set(), runs: new Map() },
+          ...{ steering: undefined },
           ...{ unclaimed: undefined, questions: [], kept: Promise.resolve() },
           ...{ run: undefined, saveFailure: undefined, saved: undefined },
           unsubscribe: () => undefined,
         }
-        const unsubscribe = session.subscribe((event) => onEvent(opened, event))
+        const unsubscribe = session.subscribe((event) => {
+          onEvent(opened, event)
+          onCardEvent(opened, event)
+        })
         const unhook = session.onBeforeAgentEnd((event) => beforeAgentEnd(opened, event.reason))
         opened.unsubscribe = () => {
           unsubscribe()
@@ -106,9 +123,7 @@ export class Sessions {
   async #close(conversationId: ConversationId, entry: Entry): Promise<void> {
     if (this.#open.get(conversationId) !== entry) return
     this.#open.delete(conversationId)
-    // A session that never opened has nothing to close; its holders met the failure.
-    // biome-ignore lint/plugin: the failure to open reached every holder of the entry; a session that never opened has nothing to close
-    const live = await entry.live.catch(() => undefined)
+    const live = await opened(entry)
     if (live === undefined) return
     live.unsubscribe()
     // A closed session ends no run, so its messages stop waiting here.
@@ -140,6 +155,8 @@ export class Sessions {
     input: OfConversation & { projectId: ProjectId; question: Question; traceId: string },
   ): Promise<void> {
     const { owner, conversationId } = input
+    const waiting = await opened(this.#open.get(conversationId))
+    if (waiting !== undefined && (await steerCards(waiting, input.question))) return
     const admitted = await this.#runs.admit({
       ...owner,
       conversationId,
@@ -176,6 +193,26 @@ export class Sessions {
   }
 
   /**
+   * The person's answer to the card the turn waits on: the answers to its questions, or the
+   * decision on its plan. The call is claimed first, so a second answer is `QUESTION_CLOSED`.
+   */
+  async answer(
+    input: OfConversation & {
+      toolCallId: ToolCallId
+      body: QuestionAnswer
+    },
+  ): Promise<void> {
+    const entry = this.#hold(input)
+    try {
+      await answerCard(await entry.live, input)
+      const fields = { companyId: input.owner.companyId, conversationId: input.conversationId }
+      this.#log.info(fields, 'QUESTION_ANSWERED')
+    } finally {
+      await this.#release(input.conversationId, entry)
+    }
+  }
+
+  /**
    * Mastra decides where the message goes (`requireDelivery`): it wakes a run, which carries this
    * message's turn to the queue until that run's `agent_end`, or it joins the run in progress,
    * whose turn stays (criterion 12). `sendSignal` is `sendMessage`'s own call, which keeps that
@@ -194,16 +231,18 @@ export class Sessions {
     const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
     this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
     const id = questionId(live.conversationId, question.key)
+    const requestContext = this.#runs.contextOf(turnContext(turn), writing)
     live.run = {
       id: writing,
       traceId: run.traceId,
+      context: requestContext,
       finish: (reason) => this.#runs.finish({ runId: writing, reason }),
+      waiting: (waiting) => this.#runs.waiting(writing, waiting, () => expire(live)),
     }
     const opened = openTurn(live)
     this.#runs.attach(writing, () => live.session.abort())
     this.#runs.onPhase(writing, (phase) => tellMachine(live, phase))
     try {
-      const requestContext = this.#runs.contextOf(turnContext(turn), writing)
       // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
       const tracingOptions = { traceId: run.traceId.replaceAll('-', '') }
       const options = { requestContext, requireDelivery: true, tracingOptions } as const
@@ -249,57 +288,12 @@ export class Sessions {
       await release()
       throw error
     })
-    return await this.#listen(live, { ...input, release })
-  }
-
-  async #listen(
-    live: Live,
-    input: { signal: AbortSignal; lastEventId: EventId | null; release: () => Promise<void> },
-  ) {
-    const { signal, release } = input
-    const waiting: Said[] = []
-    // What the turn says while the journal is read joins `waiting` after what the read found; an
-    // event both hold, as one kept before the read and told after it, is said once (`onceEach`).
-    const early: Said[] = []
-    const fresh = onceEach()
-    let gathering = true
-    let wake: (() => void) | undefined
-    const listener: Listener = (said) => {
-      if (gathering) early.push(said)
-      else waiting.push(...fresh([said]))
-      wake?.()
-    }
-    live.listeners.add(listener)
-    try {
-      const where = { companyId: live.owner.companyId, conversationId: live.conversationId }
-      waiting.push(...fresh(await catchUp(this.#runs, where, input.lastEventId)), ...fresh(early))
-    } catch (error) {
-      live.listeners.delete(listener)
-      await release()
-      throw error
-    } finally {
-      gathering = false
-    }
-    function stop() {
-      wake?.()
-    }
-    const ended = AbortSignal.any([signal, this.#closing.signal])
-    ended.addEventListener('abort', stop, { once: true })
-    async function* drained() {
-      try {
-        while (!ended.aborted) {
-          const next = waiting.shift()
-          if (next !== undefined) yield next
-          else await new Promise<void>((resolve) => (wake = resolve))
-          wake = undefined
-        }
-      } finally {
-        ended.removeEventListener('abort', stop)
-        live.listeners.delete(listener)
-        await release()
-      }
-    }
-    return drained()
+    return await listen(live, {
+      ...input,
+      release,
+      runs: this.#runs,
+      closing: this.#closing.signal,
+    })
   }
 
   /**
@@ -312,6 +306,7 @@ export class Sessions {
     const entry = this.#hold({ owner: { companyId, personId }, conversationId })
     try {
       const live = await entry.live
+      await denyParked(live, this.#builder.agent)
       const asked = z
         .array(Question)
         .safeParse(await live.session.thread.getSetting({ key: QUESTION_KEY }))
@@ -329,18 +324,17 @@ export class Sessions {
 
   /** The person's message that the turn in progress answers, or none: the stream tells that turn whole. */
   async inProgressAfter(conversationId: ConversationId): Promise<MessageId | undefined> {
-    // biome-ignore lint/plugin: a session that failed to open has no turn in progress; its holders met the failure
-    const live = await this.#open.get(conversationId)?.live.catch(() => undefined)
+    const live = await opened(this.#open.get(conversationId))
     return live?.turn?.ended === false ? live.turn.after : undefined
   }
 
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */
   async stop(conversationId: ConversationId): Promise<void> {
-    // A session that failed to open has no answer to stop; its holders met the failure.
-    // biome-ignore lint/plugin: the failure to open reached every holder of the entry; a session that never opened has no answer to stop
-    const live = await this.#open.get(conversationId)?.live.catch(() => undefined)
+    const live = await opened(this.#open.get(conversationId))
     if (live === undefined) return
+    const taken = await takeCards(live)
     live.session.abort()
+    releaseCards(live, taken)
     const fields = { companyId: live.owner.companyId, conversationId }
     this.#log.info(fields, 'CONVERSATION_STOPPED')
   }

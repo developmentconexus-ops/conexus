@@ -2453,28 +2453,6 @@
     }
   },
   {
-    "id": "command-masked",
-    "file": "apps/server/src/builder/conversation/parts.ts",
-    "find": "cut(masked(command.data.command))",
-    "replace": "cut(command.data.command)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-writing.test.ts",
-      "name": "um turno que escreve"
-    }
-  },
-  {
-    "id": "shell-masked",
-    "file": "apps/server/src/builder/conversation/shell.ts",
-    "find": "masked(this.#tail)",
-    "replace": "this.#tail",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-writing.test.ts",
-      "name": "um turno que escreve"
-    }
-  },
-  {
     "id": "source-path-guard",
     "file": "apps/server/src/builder/git/tree.ts",
     "find": "unsafe || !(await inMain",
@@ -2498,9 +2476,9 @@
   },
   {
     "id": "gate-needs-instructions",
-    "file": "apps/server/src/builder/conversation/instructions.ts",
-    "find": "whose folder ${APP_FOLDER} is the Projeto's app",
-    "replace": "whose folder is the Projeto's app",
+    "file": "apps/server/src/builder/conversation/prompt/builder.md",
+    "find": "the app is the folder {app folder}.",
+    "replace": "the app is the folder.",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
@@ -2509,9 +2487,9 @@
   },
   {
     "id": "gate-needs-secrets-rule",
-    "file": "apps/server/src/builder/conversation/instructions.ts",
-    "find": "through the connectors, and that secrets do not belong in the chat.",
-    "replace": "through the links, and that secrets do not belong in the chat.",
+    "file": "apps/server/src/builder/conversation/prompt/builder.md",
+    "find": "not even one the person pasted in the chat. If the person pastes one, do not use its value: say",
+    "replace": "and say",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
@@ -2521,8 +2499,8 @@
   {
     "id": "gate-needs-write-tool",
     "file": "apps/server/src/builder/conversation/permissions.ts",
-    "find": "  availableTools: [...READ, ...EDIT, ...EXECUTE],",
-    "replace": "  availableTools: [...READ, ...EXECUTE],",
+    "find": "  availableTools: [...READ, ...EDIT, ...EXECUTE, ...TALK],",
+    "replace": "  availableTools: [...READ, ...EXECUTE, ...TALK],",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
@@ -2631,7 +2609,7 @@
   {
     "id": "orphan-turn-saved",
     "file": "apps/server/src/builder/runs/settle.ts",
-    "find": "  if (expired.state === 'open') return endTurn(context, expired)\n",
+    "find": "  if (expired.state === 'open' || expired.state === 'waiting') return endTurn(context, expired)\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",

@@ -5,7 +5,7 @@ export async function rowsOf(result: Awaited<ReturnType<Db['query']>>) {
   return result.rows
 }
 
-/** The runtime already checked the shape; this only tells TypeScript what it holds. */
+/** The runtime already checked the input with its Zod; this only tells TypeScript what it holds. */
 export function textoOf(input: unknown): string {
   if (typeof input === 'object' && input !== null && 'texto' in input) return String(input.texto)
   throw new Error('Entrada sem texto')

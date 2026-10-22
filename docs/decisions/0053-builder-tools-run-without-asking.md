@@ -16,7 +16,8 @@ Factory keeps; Conexus OS set it on each turn (`apps/hub/src/builder/run/turn.ts
 approval, no resume: `web_fetch`,
 `web_search` and `recall` run at once. The permission rules and the category resolver of 0050
 leave, since only the approval path read them. The Builder has no tool that writes or runs, and
-the controller's own such tools stay disabled.
+`ask_user`, `submit_plan` and `task_*` are on, wrapped
+([0055](0055-apps-on-the-platform-contract.md)); the controller's `subagent` stays disabled.
 
 ## Criterion
 

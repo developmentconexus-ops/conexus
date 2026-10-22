@@ -19,8 +19,6 @@ import { recoveryMail } from './messages.ts'
 import { verification } from './tables.ts'
 
 const LINK_PACE_MS = 60_000
-// Past the adapter's own 10 s for one request, which the render before it does not count in.
-const MAIL_BUDGET_MS = 15_000
 
 /** A recovery e-mail to send once the answer is out: the link never leaves the command before. */
 export type RecoveryMail = { to: Email; name: string; link: string }
@@ -84,7 +82,7 @@ export function createPasswordRecovery(deps: {
         return found !== null && found.expiresAt >= new Date()
       }),
     send: async (mail: RecoveryMail): Promise<void> => {
-      await deps.sendMail(await recoveryMail(mail), AbortSignal.timeout(MAIL_BUDGET_MS))
+      await deps.sendMail(await recoveryMail(mail))
     },
   }
 }

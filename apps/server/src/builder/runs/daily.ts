@@ -1,4 +1,5 @@
 import type { RunsContext } from './context.ts'
+import { LIVE } from './store.ts'
 
 const DAY_MS = 86_400_000
 const IDLE_MS = 7 * DAY_MS
@@ -16,7 +17,11 @@ export async function sweep(context: RunsContext): Promise<number> {
     const row = await machines.rowOf(companyId, projectId)
     if (row === undefined || row.sandboxId !== found.id) continue
     if (Date.now() - row.usedAt.getTime() < IDLE_MS) continue
-    const open = await store.inStates({ companyId, projectId, states: ['open', 'saving'] })
+    const open = await store.inStates({
+      companyId,
+      projectId,
+      states: [...LIVE],
+    })
     if (open.length > 0) continue
     await machines.kill(found.id)
     await machines.forget(companyId, projectId)

@@ -38,20 +38,27 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   }
   function searches(tools: readonly string[]) {
     return tools
-      .filter((name) => !name.startsWith('mastra_workspace_') && !name.startsWith('skill'))
+      .filter(
+        (name) =>
+          !name.startsWith('mastra_workspace_') &&
+          !name.startsWith('skill') &&
+          !name.startsWith('task_') &&
+          name !== 'ask_user' &&
+          name !== 'submit_plan',
+      )
       .sort()
   }
   assert.deepEqual(
     anthropic.chats.filter(streamed).map((each) => searches(each.tools)),
-    [['recall', 'web_fetch']],
+    [['conexus_check', 'recall', 'web_fetch']],
   )
   assert.ok(gemini.length > 0, 'Gemini was called')
   for (const tools of gemini.filter((each) => each.length > 0)) {
-    assert.deepEqual(searches(tools), ['recall', 'web_fetch'])
+    assert.deepEqual(searches(tools), ['conexus_check', 'recall', 'web_fetch'])
   }
   assert.deepEqual(
     anthropic.sent.filter(streamed).map((each) => searches(each.tools)),
-    [['recall', 'web_fetch', 'web_search']],
+    [['conexus_check', 'recall', 'web_fetch', 'web_search']],
   )
 })
 

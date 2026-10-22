@@ -5,6 +5,7 @@ import type {
   PersonId,
   ProjectId,
   RunId,
+  VersionCheck,
 } from '@conexus/hub-api'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
@@ -21,6 +22,8 @@ export type RunsDeps = {
   log: FailureLog
   /** How long a turn may run; an hour (card, limits) unless a test shortens it. */
   turnMs?: () => number
+  /** How long a question waits for its answer; thirty minutes (card) unless a test shortens it. */
+  questionMs?: () => number
   /** How often a turn's lease is renewed; every 30 seconds unless a test shortens it. */
   renewMs?: () => number
   /** How long a stopping copy waits for its turns before it lets go of their leases; 8 seconds unless a test shortens it. */
@@ -46,8 +49,17 @@ export type RunsContext = RunsDeps & {
   restarted(restart: Restart): Promise<void>
 }
 
-/** A saved version: its number, the paths in its tree, and the paths the turn changed against its base. */
-type SavedVersion = { number: number; changed: boolean; files: number; changedFiles: number }
+/**
+ * A saved version: its number, the paths in its tree, the paths the turn changed against its base,
+ * and what the end of the turn's check said, when it gave a verdict.
+ */
+type SavedVersion = {
+  number: number
+  changed: boolean
+  files: number
+  changedFiles: number
+  check?: VersionCheck
+}
 
 /** How a turn that may write ended, for the person: a version, nothing, or why not. */
 export type Outcome =

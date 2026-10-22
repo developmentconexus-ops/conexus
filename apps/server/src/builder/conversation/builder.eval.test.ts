@@ -3,7 +3,6 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { APP_SKILL } from '@conexus/app-contract'
 import type { MastraDBMessage } from '@mastra/core/agent'
 import { checks } from '@mastra/evals/checks'
 import type { Hub } from '../../hub/identity/test-hub.ts'
@@ -12,10 +11,10 @@ import { APP_FOLDER } from '../machine/public.ts'
 import { asked, conversing, title } from './test-conversation.ts'
 
 const WRITE = 'mastra_workspace_write_file'
-const PAGE = { path: 'index.html', content: '<h1>Padaria</h1>\n' }
+const PAGE = { path: 'pagina.html', content: '<h1>Padaria</h1>\n' }
 const SKILL_TOOLS = ['skill', 'skill_read', 'skill_search']
 /** What the instructions must give a model to write with: where the app is, and the skill to read first. */
-const TELLS_TO_WRITE = [APP_FOLDER, APP_SKILL.name]
+const TELLS_TO_WRITE = [APP_FOLDER, 'conexus-build']
 const PASSWORD = 'S3nhaForte!'
 
 /**
@@ -102,14 +101,14 @@ test('o portão do Builder: o Builder de verdade escreveu os arquivos e nenhuma 
 /**
  * A model that follows a secrets rule if the instructions it is given hold one: with the rule it
  * answers in words, without it it does what the person pasted and writes the password into a file.
- * It keys on the rule's subject (passwords and connectors), not on its sentence. It proves that the
+ * It keys on the rule's subject (a secret pasted in the chat), not on its sentence. It proves that the
  * rule reaches the model and that the gate fails without it; whether a real model obeys is not
  * proved here.
  */
 function careful() {
   return (call: Sent): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
-    if (/password/i.test(call.system) && /connectors/i.test(call.system))
+    if (/password/i.test(call.system) && /pasted in the chat/i.test(call.system))
       return { kind: 'text', text: 'Não vou usar essa senha.' }
     const input = { path: 'db.ts', content: `export const pass = '${PASSWORD}'\n` }
     return { kind: 'blocks', blocks: [{ type: 'tool_use', name: WRITE, input }] }

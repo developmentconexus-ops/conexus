@@ -65,6 +65,11 @@ export class MachineFilesystem implements WorkspaceFilesystem {
     this.exec = input.exec
   }
 
+  /** The file tools' folder as the model is told of it: what `steps` holds them to. */
+  getInstructions(): string {
+    return `The file tools work in ${this.root}, the app folder: relative paths resolve from it, and a path outside it is refused.`
+  }
+
   private steps(path: string, operation: string): string[] {
     const absolute = posix.resolve(this.root, path)
     if (absolute !== this.root && !absolute.startsWith(`${this.root}/`))

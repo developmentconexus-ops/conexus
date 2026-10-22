@@ -11,7 +11,9 @@
       "!package-lock.json",
       "!**/*.woff2",
       "!apps/web/src/routeTree.gen.ts",
-      "!apps/web/src/builder/model-accounts/marks"
+      "!apps/web/src/builder/model-accounts/marks",
+      "!packages/app/starter",
+      "!packages/app/skills"
     ]
   },
   "formatter": {
@@ -151,6 +153,7 @@
     {
       "includes": [
         "apps/web/src/platform/hub.ts",
+        "packages/app/src/client.ts",
         "scripts/**",
         "apps/server/**",
         "tests/apps/*/assets/**"

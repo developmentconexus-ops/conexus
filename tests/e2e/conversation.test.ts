@@ -31,6 +31,8 @@ import { enter, linkKey, queueRows, rowsText } from './model-accounts-journey.ts
 // next question tries Claude again; Diego, in the same company or in another, finds nothing of hers.
 const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
+// The last account lost says why (a key refused), instead of the generic line.
+const REFUSED = 'Time 3 foi recusada. Ligue de novo.'
 const NOT_FOUND = 'Não encontramos o que você procurou.'
 const TITLE = 'Apps de encomenda de padaria'
 
@@ -284,9 +286,9 @@ async function pausedNoticeStays(
   await owner.goto(`${TEST_ORIGIN}/companies/${companyA}/settings/model-accounts`)
   await saving(owner, () => owner.getByRole('button', { name: 'Pausar Time 1' }).click())
   await owner.getByRole('button', { name: 'Retomar Time 1' }).waitFor()
-  await answered(chat, hold, 'E o segundo app?', EXHAUSTED)
+  await answered(chat, hold, 'E o segundo app?', REFUSED)
   await chat.reload()
-  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(EXHAUSTED).waitFor()
+  await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(REFUSED).waitFor()
 }
 
 test('o roteiro da 12.1: a conversa no painel, o pensamento, as ferramentas dobradas, a volta da linha, o rascunho, o celular e o aviso que fica', async (t) => {

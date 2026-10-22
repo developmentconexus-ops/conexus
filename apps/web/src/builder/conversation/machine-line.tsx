@@ -1,6 +1,7 @@
 import type { MessagePart } from '@conexus/hub-api'
 import { machinePhaseLasts } from '@conexus/hub-api'
-import { CheckIcon, CogIcon, RotateCcwIcon } from 'lucide-react'
+import { CheckIcon, CircleAlertIcon, CogIcon, RotateCcwIcon } from 'lucide-react'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
 import { durationOf } from './text.ts'
@@ -45,24 +46,45 @@ function files(count: number, changed: string): string {
   return `${count} ${count === 1 ? 'arquivo' : 'arquivos'}${changed}`
 }
 
-/** "Versão 1 guardada: 7 arquivos.", then "Versão 2 guardada: 2 arquivos mudados.". */
+/**
+ * What the end of the turn's check said of the saved version (card of step 14): it built, it did
+ * not, or the machine could not check it (founder, 2026-10-22: "Aprovookay").
+ */
+const BUILT = {
+  passed: ', montou',
+  failed: ', não montou',
+  unchecked: ', sem conferência',
+} as const
+
+/**
+ * "Versão 1 guardada, montou: 7 arquivos.", then "Versão 2 guardada, não montou: 2 arquivos
+ * mudados."; a turn that ended before its check ran (stopped, the hour, an error) saved its version
+ * without one, and says so (founder, 2026-10-22, "Aprovo").
+ */
 function versionSentence(part: Version): string {
   if (!part.changed) return `A versão ${part.number} segue a mesma.`
   const count =
     part.number === 1
       ? files(part.files, '')
       : files(part.changedFiles, part.changedFiles === 1 ? ' mudado' : ' mudados')
-  return `Versão ${part.number} guardada: ${count}.`
+  const built = BUILT[part.check?.state ?? 'unchecked']
+  return `Versão ${part.number} guardada${built}: ${count}.`
 }
 
-/** The version the turn saved. */
+/**
+ * The version the turn saved; one that did not build, or that the machine could not check, says
+ * its failure's words below it.
+ */
 export function VersionLine({ part }: { part: Version }) {
+  const said = part.check?.state === 'passed' ? undefined : part.check?.code
+  const failed = part.check?.state === 'failed'
   return (
-    <Marker className="text-text">
-      <MarkerIcon>
-        <CheckIcon />
-      </MarkerIcon>
-      <MarkerContent>{versionSentence(part)}</MarkerContent>
+    <Marker className={failed ? 'text-danger' : 'text-text'}>
+      <MarkerIcon>{said === undefined ? <CheckIcon /> : <CircleAlertIcon />}</MarkerIcon>
+      <MarkerContent>
+        {versionSentence(part)}
+        {said !== undefined && <span className="block">{sentenceOfCode(said)}</span>}
+      </MarkerContent>
     </Marker>
   )
 }

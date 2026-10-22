@@ -6,8 +6,8 @@ import { HubFailure } from './hub.ts'
  * A write that failed is no exception: an invitation whose e-mail failed stays in the list, and
  * the failure table cannot tell which refusals left a change behind. A 401 is: the session
  * handler drops the cache.
- * A failed read is shown, never retried by default (code C58). A 401 on any read or write calls
- * `onSessionEnded`, so no screen handles it (web W15).
+ * A failed read is shown, never retried by default (the library repeats it three times in the
+ * browser). A 401 on any read or write calls `onSessionEnded`, so no screen handles it (web W15).
  */
 export function createCache(onSessionEnded: () => void): QueryClient {
   function isSessionEnded(error: Error | null) {

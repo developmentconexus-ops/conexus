@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
+import { DETAIL_LIMITS } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
+  answeredOf,
   asked,
   conversing,
   hubBeside,
@@ -10,7 +13,9 @@ import {
   sent,
   started,
   streamOf,
+  title,
 } from './test-conversation.ts'
+import { conversingWith, tool } from './test-questions.ts'
 import { citing, FETCH_ERROR, PAGES, printedOf, researching, UNREACHABLE } from './test-research.ts'
 
 type Part = Extract<ConversationEvent, { type: 'part' }>['part']
@@ -138,5 +143,106 @@ test('uma resposta que cita a pesquisa é um texto só, ao vivo e relida, sem qu
   assert.deepEqual(
     messages[1]?.parts.map((part) => (part.type === 'text' ? part.text : part.type)),
     ['Vou buscar os apps.', 'tool', answer],
+  )
+})
+
+test('task_*: a parte `tasks` chega e sobrevive a recarregar', async (t) => {
+  const items = [
+    { content: 'Montar a tabela', status: 'in_progress', activeForm: 'Montando a tabela' },
+  ]
+  const { hub, ana, url, stream, send } = await conversingWith(t, [
+    [tool('task_write', { tasks: items })],
+  ])
+  assert.equal((await send()).statusCode, 202)
+  const events = await stream.turn()
+  const live = events.flatMap((event) =>
+    event.type === 'part' && event.part.type === 'tasks' ? [event.part] : [],
+  )
+  assert.deepEqual(
+    live.at(-1)?.items.map((each) => [each.content, each.status]),
+    [['Montar a tabela', 'in_progress']],
+  )
+  const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
+  assert.deepEqual(
+    read.filter((part) => part.type === 'tasks'),
+    [live.at(-1)],
+  )
+})
+
+// Joined here so the file holds no string a secret scanner would take for a real token.
+const VALUE = 'abc123'
+const LONG = Array.from({ length: 250 }, (_, at) => `linha ${at + 1}`).join('\n')
+const DETAILED = [
+  {
+    name: 'mastra_workspace_execute_command',
+    input: { command: `echo token=${VALUE}; echo pronto; exit 3` },
+  },
+  {
+    name: 'mastra_workspace_write_file',
+    input: { path: 'a.ts', content: `const key = '${VALUE}'\n${'x'.repeat(3000)}` },
+  },
+  {
+    name: 'mastra_workspace_edit_file',
+    input: { path: 'b.ts', old_string: LONG, new_string: `password=${VALUE}` },
+  },
+  { name: 'mastra_workspace_read_file', input: { path: 'a.ts' } },
+]
+
+test('a linha abre no comando e na cauda, no começo do arquivo, nos dois lados da edição, cortados e mascarados; relida dá o mesmo (33)', async (t) => {
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (sent: Sent): Reply => {
+    if (title(sent) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step > 1) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: DETAILED.map((each) => ({ type: 'tool_use', ...each })) }
+  })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const tools = new Map(
+    partsOf(events).flatMap((part) => (part.type === 'tool' ? [[part.kind, part]] : [])),
+  )
+  const command = tools.get('run_command')?.detail
+  assert.equal(command?.kind, 'command')
+  if (command?.kind !== 'command') return
+  assert.equal(command.command, `echo token=${VALUE}; echo pronto; exit 3`)
+  assert.deepEqual(command.output, [`token=${VALUE}`, 'pronto', '', 'Exit code: 3'])
+  assert.equal(command.exitCode, 3)
+  const file = tools.get('write_file')?.detail
+  assert.equal(file?.kind === 'file' && file.content.length, DETAIL_LIMITS.fileCharacters)
+  assert.ok(file?.kind === 'file' && file.cut && file.content.startsWith(`const key = '${VALUE}'`))
+  const edit = tools.get('edit_file')?.detail
+  assert.ok(edit?.kind === 'edit' && edit.cut)
+  assert.equal(edit.before.split('\n').length, DETAIL_LIMITS.editLines)
+  assert.equal(edit.after, `password=${VALUE}`)
+  assert.equal(tools.get('read_file')?.detail, undefined)
+  const read = (await messagesOf(await hubBeside(t, hub), ana, url)).at(-1)?.parts ?? []
+  const last = new Map(partsOf(events).map((part) => ['id' in part ? part.id : part.type, part]))
+  for (const part of read.filter((each) => each.type === 'tool')) {
+    assert.deepEqual(part, last.get(part.id))
+  }
+})
+
+function writing(content: string) {
+  return {
+    type: 'tool_use' as const,
+    name: 'mastra_workspace_write_file',
+    input: { path: 'notas.md', content },
+  }
+}
+
+test('a escrita que o espaço de trabalho recusa por falta de leitura fica `error` na linha, pelo resultado do Mastra', async (t) => {
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (sent: Sent): Reply => {
+    if (title(sent) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step > 2) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: [writing(`versão ${step}`)] }
+  })
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(
+    toolStates(events).map(({ kind, states }) => [kind, states.at(-1)]),
+    [
+      ['write_file', 'completed'],
+      ['write_file', 'error'],
+    ],
   )
 })

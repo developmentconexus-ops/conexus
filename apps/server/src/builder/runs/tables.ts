@@ -63,11 +63,11 @@ export const run = builder.table(
     }).onDelete('cascade'),
     check(
       'run_state',
-      sql`${table.state} IN ('open', 'saving', 'saved', 'unchanged', 'stopped', 'interrupted', 'failed')`,
+      sql`${table.state} IN ('open', 'waiting', 'saving', 'saved', 'unchanged', 'stopped', 'interrupted', 'failed')`,
     ),
     uniqueIndex('run_one_open_per_project')
       .on(table.projectId)
-      .where(sql`${table.state} IN ('open', 'saving')`),
+      .where(sql`${table.state} IN ('open', 'waiting', 'saving')`),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
     // The function behind companies_with_runs names the companies with work left, before any
     // company is known (migration e13_runs_grants); its role cannot log in.

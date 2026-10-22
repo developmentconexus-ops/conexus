@@ -33,6 +33,8 @@ export function createE2bKit(config: Credentials): KitFactory {
       network: { allowOut: ALLOWED_HOSTS, denyOut: [ALL_TRAFFIC] },
       metadata: options.metadata,
       onStart: options.onStart,
+      workingDirectory: options.workingDirectory,
+      instructions: options.instructions,
     })
     return {
       sandbox,

@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { CheckReport } from '@conexus/app/check'
 import type {
   CompanyId,
   ConversationEvent,
@@ -6,11 +7,14 @@ import type {
   PersonId,
   ProjectId,
   RunId,
+  VersionCheck,
 } from '@conexus/hub-api'
+import { QUESTION_LIMITS } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
-import type { Phase } from '../machine/public.ts'
+import type { Result } from '../../platform/result.ts'
+import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
 import type { Outcome, Restart, RunsContext, RunsDeps } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
@@ -39,8 +43,11 @@ function idleRun() {
     registry: undefined,
     onPhase: () => undefined,
     stopDeadline: () => undefined,
+    stopWaiting: () => undefined,
     stopLease: () => undefined,
+    waits: Promise.resolve(),
     lost: false,
+    check: undefined,
   }
 }
 
@@ -55,8 +62,14 @@ type Driven = {
   onPhase: (phase: Phase) => void
   /** Ends the hour's timer; the lease goes on until the save is over. */
   stopDeadline: () => void
+  /** Ends the question's clock, while the turn waits on an answer. */
+  stopWaiting: () => void
+  /** The `waiting` writes in flight, one after the other. */
+  waits: Promise<void>
   stopLease: () => void
   lost: boolean
+  /** What the end of the turn's check said last, for the version it saves. */
+  check: VersionCheck | undefined
 }
 
 type Admission = {
@@ -90,6 +103,7 @@ export class Runs {
         const mine = this.#driven.get(runId)
         if (mine === undefined) return
         mine.stopDeadline()
+        mine.stopWaiting()
         mine.stopLease()
         this.#driven.delete(runId)
         await this.#unregister(mine)
@@ -140,6 +154,29 @@ export class Runs {
   onPhase(runId: RunId, listener: (phase: Phase) => void): void {
     const mine = this.#driven.get(runId)
     if (mine !== undefined) mine.onPhase = listener
+  }
+
+  /**
+   * The turn waits on the person's answer (`waiting`) or goes on after it; the run stays this copy's
+   * and its lease goes on. The question's clock (thirty minutes, card) starts or stops at the call,
+   * so an answer stops it before any write; `expire` is called once it runs out. The writes go one
+   * after the other, and the turn's end waits for them (`finish`); a refused write rejects here.
+   */
+  waiting(runId: RunId, waiting: boolean, expire: () => void): Promise<void> {
+    const mine = this.#driven.get(runId)
+    if (mine === undefined) return Promise.resolve()
+    const { companyId, projectId } = mine
+    mine.stopWaiting()
+    const until = new Date(Date.now() + (this.#deps.questionMs?.() ?? QUESTION_LIMITS.waitMs))
+    mine.stopWaiting = waiting ? watchDeadline(until, expire) : () => undefined
+    const write = async () => {
+      if (!(await this.#context.store.wait(companyId, runId, waiting))) return
+      this.#deps.log.info({ companyId, projectId, runId }, waiting ? 'RUN_WAITING' : 'RUN_RESUMED')
+    }
+    // After the write before it, refused or not: that refusal went to its own caller.
+    const written = mine.waits.then(write, write)
+    mine.waits = written
+    return written
   }
 
   /** Starts the turn's hour and its lease; `abort` stops the turn as Parar does. */
@@ -203,12 +240,44 @@ export class Runs {
     requestContext: RequestContext,
     registry?: Registry,
   ): Promise<Workspace | undefined> {
-    const runId = runIn(requestContext)
-    const mine = runId === undefined ? undefined : this.#driven.get(runId)
-    if (runId === undefined || mine === undefined) return undefined
+    const mine = this.#mine(requestContext)
+    if (mine === undefined) return undefined
     mine.registry ??= registry
     mine.workspace ??= this.#openWorkspace(mine)
     return mine.workspace
+  }
+
+  /** The Projeto of the turn's run, while this copy drives it: whose `main` the prompt reads. */
+  projectOf(
+    requestContext: RequestContext,
+  ): { companyId: CompanyId; projectId: ProjectId } | undefined {
+    const mine = this.#mine(requestContext)
+    return mine === undefined ? undefined : { companyId: mine.companyId, projectId: mine.projectId }
+  }
+
+  /** The run a turn's context names, while this copy drives it. */
+  #mine(requestContext: RequestContext): Driven | undefined {
+    const runId = runIn(requestContext)
+    return runId === undefined ? undefined : this.#driven.get(runId)
+  }
+
+  /** Whether the turn changed its app folder; one that never woke the machine did not. */
+  async changed(requestContext: RequestContext): Promise<boolean> {
+    const mine = this.#mine(requestContext)
+    return mine !== undefined && (await this.#deps.machines.changed({ projectId: mine.projectId }))
+  }
+
+  /** The check of the turn's app folder (decision 0055): the one path of `conexus_check` and of the turn's end. */
+  async check(requestContext: RequestContext): Promise<Result<CheckReport, CheckPlatformFailed>> {
+    const mine = this.#mine(requestContext)
+    if (mine === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' }
+    return this.#deps.machines.check({ projectId: mine.projectId })
+  }
+
+  /** Keeps what the end of the turn's check said, for the version the turn saves. */
+  judged(requestContext: RequestContext, check: VersionCheck): void {
+    const mine = this.#mine(requestContext)
+    if (mine !== undefined) mine.check = check
   }
 
   /**
@@ -229,10 +298,12 @@ export class Runs {
     const mine = this.#driven.get(input.runId)
     if (mine === undefined) return 'gone'
     mine.stopDeadline()
+    mine.stopWaiting()
     const { companyId, projectId } = mine
     const { store } = this.#context
     let elsewhere = false
     try {
+      await Promise.allSettled([mine.waits])
       const claimed = !mine.lost && (await store.claim(companyId, input.runId))
       const saved = claimed ? await store.get(companyId, input.runId) : undefined
       if (saved === undefined) {
@@ -241,7 +312,7 @@ export class Runs {
       }
       const fields = { companyId, projectId, runId: input.runId, reason: input.reason }
       this.#deps.log.info(fields, 'RUN_SETTLING')
-      return await saveRun(this.#context, saved)
+      return await saveRun(this.#context, saved, mine.check)
     } finally {
       mine.stopLease()
       this.#driven.delete(input.runId)
@@ -299,6 +370,7 @@ export class Runs {
     const mine = [...this.#driven.values()]
     for (const each of mine) {
       each.stopDeadline()
+      each.stopWaiting()
       each.stopLease()
     }
     await this.#context.store.yieldLeases([...new Set(mine.map((each) => each.companyId))])

@@ -53,6 +53,8 @@ type Knobs = {
   turnMs: number
   renewMs: number
   yieldMs: number
+  /** How long a question waits for its answer. */
+  questionMs: number
   dies: { receive: number; advance: number }
   /** While set, a save waits before it checks the turn's commit in. */
   holdReceive: Promise<void> | undefined
@@ -65,6 +67,7 @@ function newKnobs(): Knobs {
     turnMs: 3_600_000,
     renewMs: 30_000,
     yieldMs: 8_000,
+    questionMs: 1_800_000,
     dies: { receive: 0, advance: 0 },
     holdReceive: undefined,
     holdAdvance: undefined,
@@ -134,6 +137,8 @@ export function testBuilderPorts(
       workdir: join(folder, 'app'),
       tmp: folder,
       startMs: 5_000,
+      // None until a test writes one there (`conversation-check.test.ts`): the check cannot run.
+      checkProgram: join(folder, 'check'),
     })
   }
   function turnMs() {
@@ -145,6 +150,9 @@ export function testBuilderPorts(
   function yieldMs() {
     return knobs.yieldMs
   }
+  function questionMs() {
+    return knobs.questionMs
+  }
   return {
     machinesOf,
     repository,
@@ -152,6 +160,7 @@ export function testBuilderPorts(
     turnMs,
     renewMs,
     yieldMs,
+    questionMs,
     bucket,
     control,
     knobs,

@@ -1,5 +1,6 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import {
+  answerQuestion,
   createConversation,
   listConversations,
   readConversation,
@@ -32,3 +33,4 @@ export const sendCreation = hubMutation(createConversation)
 export const sendMessage = hubMutation(sendConversationMessage)
 export const sendStop = hubMutation(stopConversation)
 export const sendModel = hubMutation(setConversationModel)
+export const sendAnswer = hubMutation(answerQuestion)

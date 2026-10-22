@@ -1,5 +1,6 @@
 import type { CompanyId, ModelId, Person } from '@conexus/hub-api'
 import {
+  answerQuestion,
   ConversationId,
   createConversation,
   listConversations,
@@ -131,6 +132,14 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
   serve(app, stopConversation, async (input) => {
     await store.owned({ person: input.person, ...input.params })
     await sessions.stop(input.params.conversationId)
+    return answer(undefined)
+  })
+
+  serve(app, answerQuestion, async (input) => {
+    const { person, params, body } = input
+    await store.owned({ person, ...params })
+    const { conversationId, toolCallId } = params
+    await sessions.answer({ owner: ownerOf(input), conversationId, toolCallId, body })
     return answer(undefined)
   })
 

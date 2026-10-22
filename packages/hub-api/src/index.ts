@@ -85,14 +85,12 @@ export {
   providerOfModel,
   readConversation,
   runningEffort,
-  SHELL_MAX_BYTES,
-  SHELL_MAX_LINES,
-  SUBJECT_MAX_LENGTH,
   sendConversationMessage,
   setConversationModel,
   stopConversation,
   streamConversation,
   TurnFailureCode,
+  VersionCheck,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export { getHealth, Health } from './health.ts'
@@ -186,6 +184,15 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
+export { answerQuestion } from './question-answer.ts'
+export {
+  Answer,
+  QUESTION_LIMITS,
+  Question,
+  QuestionAnswer,
+  Task,
+  ToolCallId,
+} from './questions.ts'
 export { RunId } from './runs.ts'
 export {
   ProjectSource,
@@ -196,3 +203,4 @@ export {
   SourceFile,
 } from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
+export { DETAIL_LIMITS, SUBJECT_MAX_LENGTH, ToolDetail } from './tool-detail.ts'

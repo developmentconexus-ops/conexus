@@ -42,20 +42,19 @@ test('pela rota, a escrita vai para o Projeto da conversa e não para o vizinho'
     projectId: ProjectId.parse(projectId),
   })
   const second = hub.builder.repository({ companyId: company, projectId: ProjectId.parse(otherId) })
-  assert.deepEqual(
-    (await first.tree(await first.main()))?.map((file) => file.path),
-    ['a.ts'],
-  )
-  assert.deepEqual(
-    (await second.tree(await second.main()))?.map((file) => file.path),
-    ['b.ts'],
-  )
+  const turn = /^[ab]\.ts$/
+  async function written(repository: typeof first): Promise<string[] | undefined> {
+    const tree = await repository.tree(await repository.main())
+    return tree?.map((file) => file.path).filter((path) => turn.test(path))
+  }
+  assert.deepEqual(await written(first), ['a.ts'])
+  assert.deepEqual(await written(second), ['b.ts'])
 })
 
 test('fora da pasta do app, por link ou escrevendo sem ler: recusado, e nada fora muda', async (t) => {
   const link = {
     name: 'mastra_workspace_execute_command',
-    input: { command: 'ln -s .. app/saida' },
+    input: { command: 'ln -s .. saida' },
   }
   const model = steps(
     [write('a.ts', 'um\n')],

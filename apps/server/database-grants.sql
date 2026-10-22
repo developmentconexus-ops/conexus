@@ -216,6 +216,8 @@ GRANT SELECT(served_at),UPDATE(served_at) ON TABLE builder.model_account TO hub_
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
+-- Step 14, founder 2026-10-21 ("SIM", the card): a company's routes record the libraries a Projeto's
+-- owner allowed, at an exact version, and read them for each check.
 -- Step 12.3, founder 2026-10-20 ("Tudo A", P1, P4): a person reads, writes and clears their own
 -- default model and level; the company's default carries a level an owner or an administrator sets.
 GRANT SELECT,INSERT,DELETE ON TABLE builder.person_model_default TO hub_company;

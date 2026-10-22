@@ -9,7 +9,8 @@ test('o modelo que sempre pede ferramenta: no passo 100 vai sem ferramenta (tool
   const { hub, ana, conversations } = await conversing(t, (call) => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     // The memory's observer calls the model with no tools too; only the Builder's steps count.
-    if (!call.system.includes('Builder of Conexus')) return { kind: 'text', text: 'Observação' }
+    if (!call.system.includes('You are the Conexus Builder'))
+      return { kind: 'text', text: 'Observação' }
     steps.push({ toolless: call.tools.length === 0, system: call.system })
     if (call.tools.length === 0) return { kind: 'text', text: 'Fiz as listagens; falta o resto.' }
     return { kind: 'blocks', blocks: [{ type: 'tool_use', name: LIST, input: { path: '.' } }] }

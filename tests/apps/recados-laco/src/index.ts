@@ -1,10 +1,14 @@
 import { serveApp } from '@conexus/app-contract'
+import { z } from 'zod'
+import { operations } from '../../recados/src/operations.ts'
 import { handlers } from '../../recados/src/recados.ts'
-import manifest from '../manifest.json' with { type: 'json' }
 
 /** Recados whose Travar never ends: the CPU limit of the call cuts it (step 10). */
 export default serveApp({
-  manifest,
+  operations: {
+    ...operations,
+    travar: { input: z.strictObject({}), output: z.strictObject({}) },
+  },
   handlers: {
     ...handlers,
     travar: () => {

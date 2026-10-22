@@ -77,7 +77,8 @@ function portOf(server: Awaited<ReturnType<typeof createHub>>): number {
 /**
  * The Hub in this process, on the CI database, serving the built screens on its public port and the
  * dispatcher's calls on its edge port; `names` are its public origin and apps' domain, when a
- * browser reaches it by the names the dispatcher is built with.
+ * browser reaches it by the names the dispatcher is built with. `machineFolder` is the test
+ * machine's folder, where a journey puts the check program the machine runs.
  */
 export async function liveHub(
   t: TestContext,
@@ -94,7 +95,7 @@ export async function liveHub(
   const config = { ...testConfig(database.runtimeUrl, mailUrl, neon.url, cloudflareUrl), ...names }
   const status = createStatus({ version: config.version, database: database.database })
   const identity = identityOf({ database: database.database, config, log: silent })
-  const { machinesOf, repository, copy } = testBuilderPorts(config)
+  const { machinesOf, repository, copy, folder } = testBuilderPorts(config)
   const { projects, operations, apps, modelAccounts, conversations } = subjectsOf({
     ...{ machinesOf, repository, copy },
     database: database.database,
@@ -127,7 +128,14 @@ export async function liveHub(
   t.after(() => edge.close())
   await app.listen({ host: '127.0.0.1', port: 0 })
   await edge.listen({ host: '127.0.0.1', port: 0 })
-  return { port: portOf(app), edgePort: portOf(edge), database, neon, config }
+  return {
+    port: portOf(app),
+    edgePort: portOf(edge),
+    database,
+    neon,
+    config,
+    machineFolder: folder,
+  }
 }
 
 /**

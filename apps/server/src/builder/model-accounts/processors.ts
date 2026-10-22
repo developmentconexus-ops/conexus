@@ -60,16 +60,22 @@ function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) 
   if (controller.success) controller.data.emitEvent({ type: 'info', message: text })
 }
 
-/** The turn's end when its accounts ran out, with the notice that says so. */
-function exhaust(args: Notifier, turn: Turn, modelId: ModelId) {
+/**
+ * The turn's end when its accounts ran out, with the notice that says so: the reason the last
+ * account was lost (refused, in its limit) when the turn saw one, else that none is left.
+ */
+function exhaust(args: Notifier, turn: Turn, modelId: ModelId, reason: string | undefined) {
   turn.finish('exhausted')
   const provider = providerName(providerOf(modelId))
-  notify(
-    args,
-    turn,
-    'accounts-exhausted',
-    `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`,
-  )
+  const text =
+    reason === undefined
+      ? `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`
+      : `${reason}.`
+  notify(args, turn, 'accounts-exhausted', text)
+}
+
+function refusedText(label: string) {
+  return `${label} foi recusada. Ligue de novo`
 }
 
 /**
@@ -116,7 +122,7 @@ function noAccountModel(modelId: ModelId) {
 /** The accounts refused as they were opened (a subscription's refresh), said with the next one. */
 function sayRefused(args: Notifier, turn: Turn, next: Picked) {
   for (const label of turn.unsaid.splice(0)) {
-    const text = `${label} foi recusada. Ligue de novo; continuei pela ${next.label}.`
+    const text = `${refusedText(label)}; continuei pela ${next.label}.`
     notify(args, turn, 'account-switched', text)
   }
 }
@@ -138,8 +144,8 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
     notify(args, turn, 'model-switched', `Troquei para ${name} pela troca automática da empresa.`)
     return switched
   }
-  turn.unsaid.length = 0
-  exhaust(args, turn, chosen)
+  const refused = turn.unsaid.splice(0).map(refusedText)
+  exhaust(args, turn, chosen, refused.length > 0 ? refused.join('. ') : turn.reasons.at(-1))
   return undefined
 }
 
@@ -201,7 +207,7 @@ export function accountPick(deps: QueueDeps): InputProcessor {
 function failedText(account: Picked, failure: AccountFailure) {
   if (failure.kind === 'limited') return `${account.label} no limite até ${until(failure.until)}`
   if (failure.kind === 'missing') return `${account.label} não atende a este modelo`
-  return `${account.label} foi recusada. Ligue de novo`
+  return refusedText(account.label)
 }
 
 /**
@@ -245,9 +251,10 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
   } else {
     await markAccount(deps, turn, account.id, failure)
     turn.tried.add(account.id)
+    turn.reasons.push(failedText(account, failure))
   }
   if (args.retryCount >= MAX_PROCESSOR_RETRIES) {
-    exhaust(args, turn, account.modelId)
+    exhaust(args, turn, account.modelId, turn.reasons.at(-1))
     return { retry: false }
   }
   turn.drop()

@@ -9,18 +9,18 @@ One line per document (`check-docs`).
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
-- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
+- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18.
+- [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md).
 - [steps/](steps/): the card in construction.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
 - [reference/stack.md](reference/stack.md): each package's sources, skill, trap.
 - [reference/components.md](reference/components.md): screen pieces and their tokens (design V23).
 - [reference/checklist.md](reference/checklist.md): readers' questions.
-- [reference/screens.md](reference/screens.md): screens and their floors.
+- [reference/screens.md](reference/screens.md): screens, floors; [prompt](reference/builder-prompt.md).
 - [reference/impeccable.md](reference/impeccable.md): Impeccable's files and commands.
 
 ## Guides: the rules
@@ -47,9 +47,9 @@ One line per document (`check-docs`).
 - [0010](decisions/0010-mastra-tables-own-database.md) Mastra's database.
 - [0011](decisions/0011-builder-space-in-hub-database.md) Builder's space.
 - [0012](decisions/0012-company-column-row-policy-later.md) company column.
-- [0013](decisions/0013-who-holds-the-hub-session.md) Hub session, reopened.
+- [0013](decisions/0013-who-holds-the-hub-session.md) Hub session.
 - [0014](decisions/0014-better-auth-for-passwords.md) Better Auth.
-- [0015](decisions/0015-where-companies-members-invitations-live.md) company tables, reopened.
+- [0015](decisions/0015-where-companies-members-invitations-live.md) company tables.
 - [0016](decisions/0016-closed-sign-up.md) closed sign-up.
 - [0017](decisions/0017-invitation-email-cloudflare.md) invitation e-mail.
 - [0018](decisions/0018-apps-on-workers-for-platforms.md) Workers for Platforms.
@@ -87,8 +87,9 @@ One line per document (`check-docs`).
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
 - [0051](decisions/0051-builder-machine-git-and-copy-in-r2.md) machine.
 - [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) tracing.
-- [0053](decisions/0053-builder-tools-run-without-asking.md) no approval asked.
+- [0053](decisions/0053-builder-tools-run-without-asking.md) no approval.
 - [0054](decisions/0054-model-defaults-and-served-models.md) defaults.
+- [0055](decisions/0055-apps-on-the-platform-contract.md) contract.
 
 ## Skills
 

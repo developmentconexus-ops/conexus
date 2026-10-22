@@ -1,62 +1,6 @@
 {
   "contract": 1,
   "entry": "worker.js",
-  "operations": {
-    "listarRecados": {
-      "input": {
-        "type": "object",
-        "properties": {}
-      },
-      "output": {
-        "type": "array",
-        "maxItems": 100,
-        "items": {
-          "type": "object",
-          "properties": {
-            "id": {
-              "type": "integer"
-            },
-            "texto": {
-              "type": "string"
-            }
-          },
-          "required": ["id", "texto"]
-        }
-      }
-    },
-    "escreverRecado": {
-      "input": {
-        "type": "object",
-        "properties": {
-          "texto": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 500
-          }
-        },
-        "required": ["texto"]
-      },
-      "output": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer"
-          }
-        },
-        "required": ["id"]
-      }
-    },
-    "travar": {
-      "input": {
-        "type": "object",
-        "properties": {}
-      },
-      "output": {
-        "type": "object",
-        "properties": {}
-      }
-    }
-  },
   "migrations": [
     {
       "id": "001_recado",
