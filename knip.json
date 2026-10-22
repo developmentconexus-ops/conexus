@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/starter-components.ts"],
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
       "ignoreBinaries": ["openssl"]
     },

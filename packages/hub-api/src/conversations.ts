@@ -68,12 +68,13 @@ export type TurnFailureCode = z.infer<typeof TurnFailureCode>
 export const MessageId = z.string().min(1).brand('MessageId')
 export type MessageId = z.infer<typeof MessageId>
 
-/** What a tool call was about: a page, a search, a file, a command, or nothing to say. */
+/** What a tool call was about: a page, a search, a file, a command, what a check found, or nothing to say. */
 const ToolSubject = z.union([
   z.object({ url: z.url(), title: Subject.nullable() }),
   z.object({ query: Subject }),
   z.object({ path: Subject }),
   z.object({ command: Subject }),
+  z.object({ check: Subject }),
   z.null(),
 ])
 
@@ -103,6 +104,7 @@ export const MessagePart = z.discriminatedUnion('type', [
       'edit_file',
       'read_file',
       'run_command',
+      'check',
       'other',
     ]),
     state: z.enum(['running', 'completed', 'error', 'denied']),

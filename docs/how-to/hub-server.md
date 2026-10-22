@@ -50,8 +50,8 @@ login, which only `migrate` mounts. `migrate` creates Mastra's database.
 The volume `hub_git` holds each app's Git. The founder makes a private R2 bucket and its key; firstmate
 writes `hub_git_copy_key` (`<key id> <secret>`), `hub_e2b_api_key` and, in `hub.env`,
 `HUB_GIT_COPY_BUCKET` and `HUB_INSTALLATION_ID` (`openssl rand -hex 12`), then builds the template
-once with `node infra/e2b/template.ts`
-([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation, a developer's
+the template as [builder-template](builder-template.md)
+says ([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation, a developer's
 copy included, makes its own id and never copies production's `hub.env`: the id alone keeps their
 machines apart.
 

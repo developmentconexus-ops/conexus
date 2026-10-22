@@ -1,7 +1,5 @@
-import type { ProjectId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
-import { LIBRARY_ANSWERS } from '@conexus/hub-api'
+import type { QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import type { PackageGrants } from '../packages/public.ts'
 import { openCards, tellCard, waitOn } from './cards.ts'
 import type { Card, Live } from './live.ts'
 import { PLAN_PATH } from './plan-tools.ts'
@@ -16,13 +14,9 @@ function resumeOf(card: Card, body: QuestionAnswer): unknown {
   if (body.kind !== 'answers' || body.answers.length !== card.questions.length) {
     throw new Failure('QUESTION_ANSWERS_INVALID')
   }
-  const fits = card.questions.every((question, index) => {
-    const answer = body.answers[index]
-    if (question.kind === 'library') {
-      return answer === LIBRARY_ANSWERS.allow || answer === LIBRARY_ANSWERS.deny
-    }
-    return Array.isArray(answer) ? question.multiSelect : true
-  })
+  const fits = card.questions.every((question, index) =>
+    Array.isArray(body.answers[index]) ? question.multiSelect : true,
+  )
   if (!fits) throw new Failure('QUESTION_ANSWERS_INVALID')
   return body.answers
 }
@@ -40,40 +34,21 @@ function answeredCard(card: Card, body: QuestionAnswer): Card {
   return { ...card, state: body.kind === 'plan' ? body.action : 'closed' }
 }
 
-/** Grants the Projeto each library the person allowed, before the turn goes on to check it. */
-async function grantAllowed(
-  live: Live,
-  grants: PackageGrants,
-  input: { projectId: ProjectId; card: Card; body: QuestionAnswer },
-): Promise<void> {
-  const { card, body } = input
-  if (card.type !== 'question' || body.kind !== 'answers') return
-  const { companyId, personId } = live.owner
-  for (const [index, question] of card.questions.entries()) {
-    if (question.kind !== 'library' || body.answers[index] !== LIBRARY_ANSWERS.allow) continue
-    const library = { name: question.name, version: question.version }
-    await grants.grant({ companyId, projectId: input.projectId, personId, library })
-  }
-}
-
 /**
  * The person's answer to the card the turn waits on: the answers to its questions, or the decision
- * on its plan. The libraries the person allowed are granted first, so the check finds them. Then
- * Mastra's claim takes the call at once, so a second answer is `QUESTION_CLOSED`, and the resume
- * starts in the same instant, as Mastra's own route does (`agent-controller.ts`, the
+ * on its plan. Mastra's claim takes the call at once, so a second answer is `QUESTION_CLOSED`, and
+ * the resume starts in the same instant, as Mastra's own route does (`agent-controller.ts`, the
  * tool-suspension route): a Parar, an expiry or a message that comes after it closes the call
  * through Mastra, which ends the turn once (`cards.ts`).
  */
 export async function answerCard(
   live: Live,
-  grants: PackageGrants,
-  input: { projectId: ProjectId; toolCallId: ToolCallId; body: QuestionAnswer },
+  input: { toolCallId: ToolCallId; body: QuestionAnswer },
 ): Promise<void> {
   const { toolCallId, body } = input
   const card = openCards(live).find((each) => each.toolCallId === toolCallId)
   if (card === undefined) throw new Failure('QUESTION_CLOSED')
   const resumeData = resumeOf(card, body)
-  await grantAllowed(live, grants, { projectId: input.projectId, card, body })
   const claim = live.session.claimToolSuspension(toolCallId)
   if (!claim.accepted) throw new Failure('QUESTION_CLOSED')
   tellCard(live, answeredCard(card, body))

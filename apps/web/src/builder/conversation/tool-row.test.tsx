@@ -102,3 +102,33 @@ test('sem detalhe, a linha não abre: a leitura diz só o assunto; "Pensou" diz 
   expect(screen.getByText('Pensou por 9 s')).toBeTruthy()
   expect(screen.queryByRole('button')).toBeNull()
 })
+
+test('a linha da conferência diz o assunto e abre no relatório, passo a passo (33)', async () => {
+  render(
+    <ToolRow
+      tool={tool({
+        kind: 'check',
+        subject: { check: 'tipos: server/handlers.ts:13 Type mismatch.' },
+        detail: {
+          kind: 'check',
+          cut: false,
+          steps: [
+            { name: 'dependências', state: 'passed', problems: [] },
+            {
+              name: 'tipos',
+              state: 'failed',
+              problems: [{ file: 'server/handlers.ts', line: 13, message: 'Type mismatch.' }],
+            },
+            { name: 'telas', state: 'skipped', problems: [] },
+          ],
+        },
+      })}
+    />,
+  )
+  screen.getByText('tipos: server/handlers.ts:13 Type mismatch.')
+  open(/Conferiu o app/)
+  const block = await screen.findByText(/telas: não rodou/)
+  expect(block.textContent).toBe(
+    'dependências: passou\ntipos: falhou\n  server/handlers.ts:13 Type mismatch.\ntelas: não rodou',
+  )
+})

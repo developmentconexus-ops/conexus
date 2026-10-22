@@ -55,7 +55,6 @@ ALTER TABLE builder.machine OWNER TO test_owner;
 ALTER TABLE builder.model_account OWNER TO test_owner;
 ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
-ALTER TABLE builder.package_grant OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
 ALTER TABLE builder.run OWNER TO test_owner;
 ALTER TABLE builder.run_event OWNER TO test_owner;
@@ -219,10 +218,6 @@ GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
 -- Step 14, founder 2026-10-21 ("SIM", the card): a company's routes record the libraries a Projeto's
 -- owner allowed, at an exact version, and read them for each check.
-GRANT SELECT,INSERT ON TABLE builder.package_grant TO hub_company;
-GRANT UPDATE(version) ON TABLE builder.package_grant TO hub_company;
-GRANT UPDATE(granted_by) ON TABLE builder.package_grant TO hub_company;
-GRANT UPDATE(granted_at) ON TABLE builder.package_grant TO hub_company;
 -- Step 12.3, founder 2026-10-20 ("Tudo A", P1, P4): a person reads, writes and clears their own
 -- default model and level; the company's default carries a level an owner or an administrator sets.
 GRANT SELECT,INSERT,DELETE ON TABLE builder.person_model_default TO hub_company;

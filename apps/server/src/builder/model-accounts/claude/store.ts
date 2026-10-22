@@ -7,7 +7,6 @@ import { Failure } from '../../../platform/failure.ts'
 import type { SealKeys } from '../../../platform/seal.ts'
 import { Credential, seal } from '../../../platform/seal.ts'
 import { credentialOf, sealContext } from '../accounts.ts'
-import { keepServed } from '../served.ts'
 import { modelAccount } from '../tables.ts'
 import type { SubscriptionTokens } from './anthropic-login.ts'
 import {
@@ -125,8 +124,6 @@ export async function subscriptionAccess(
       })
     }
     await store(deps, account, renewed)
-    // The new token reads the list again: at most one token's life old (card 12.3, review 1b).
-    await keepServed(deps, deps.scope, { ...account, kind: 'claude_subscription' }, renewed.access)
     deps.log.info({ companyId: account.companyId, accountId: account.id }, 'MODEL_TOKEN_REFRESHED')
     return renewed.access
   }

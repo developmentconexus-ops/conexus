@@ -1,5 +1,4 @@
 import type { Answer, MessagePart, Question, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
-import { LIBRARY_ANSWERS } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { SubmitEvent } from 'react'
@@ -59,14 +58,8 @@ export function useAnswer(toolCallId: ToolCallId) {
   return { answer, sending: send.isPending || send.isSuccess, error }
 }
 
-/** The answers a question offers: its options, or a library's two, allowing first. */
+/** The answers a question offers: its options. */
 function choicesOf(question: Question): { value: string; label: string; hint?: string }[] {
-  if (question.kind === 'library') {
-    return [
-      { value: LIBRARY_ANSWERS.allow, label: `${LIBRARY_ANSWERS.allow} (recomendado)` },
-      { value: LIBRARY_ANSWERS.deny, label: LIBRARY_ANSWERS.deny },
-    ]
-  }
   return question.options.map((option) => ({
     value: option.label,
     label: option.label,
@@ -81,22 +74,17 @@ function answersOf(form: FormData, questions: readonly Question[]): QuestionAnsw
       .getAll(`q${at}`)
       .map(String)
       .filter((value) => value.trim() !== '')
-    return question.kind === 'choice' && question.multiSelect ? given : (given.at(-1) ?? '')
+    return question.multiSelect ? given : (given.at(-1) ?? '')
   })
   return { kind: 'answers', answers }
 }
 
 function Ask({ question, at }: { question: Question; at: number }) {
   const choices = choicesOf(question)
-  const single = question.kind === 'library' || !question.multiSelect
+  const single = !question.multiSelect
   return (
     <QuestionnaireItem name={`q${at}`} multiple={!single} required>
       <QuestionnaireTitle>{question.question}</QuestionnaireTitle>
-      {question.kind === 'library' && (
-        <p className="font-mono text-fact text-text-2">
-          {question.name}@{question.version}
-        </p>
-      )}
       <QuestionnaireChoices>
         {choices.map((choice, index) => (
           <QuestionnaireChoice
@@ -108,9 +96,7 @@ function Ask({ question, at }: { question: Question; at: number }) {
             {choice.hint && <span className="text-fact text-text-2">{choice.hint}</span>}
           </QuestionnaireChoice>
         ))}
-        {question.kind === 'choice' && (
-          <QuestionnaireInput aria-label="Outra resposta" placeholder={CARD_TEXT.other} />
-        )}
+        <QuestionnaireInput aria-label="Outra resposta" placeholder={CARD_TEXT.other} />
       </QuestionnaireChoices>
       <QuestionnaireError>Escolha uma resposta para continuar.</QuestionnaireError>
     </QuestionnaireItem>
@@ -130,8 +116,8 @@ function closedText(state: QuestionPart['state']): string | undefined {
 
 /**
  * The Builder's questions, one at a time, on shadcn's `questionnaire`: a choice among its options,
- * the recommended first and chosen, or another answer typed; a library to allow is the same card
- * (card of step 14, U6; Conexus OS `ask-user-pt.tsx`, by hand, at e0353c36). Once closed it keeps
+ * the recommended first and chosen, or another answer typed (card of step 14, U6; Conexus OS
+ * `ask-user-pt.tsx`, by hand, at e0353c36). Once closed it keeps
  * only its questions; once answered, each answer under its question.
  */
 export function QuestionCard({ part }: { part: QuestionPart }) {

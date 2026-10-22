@@ -76,6 +76,8 @@ export class Turn {
   readonly refreshed = new Set<ModelAccountId>()
   /** The names of accounts refused as they were opened, for the next notice. */
   readonly unsaid: string[] = []
+  /** Why each account the call lost was lost, in order, for the notice of the turn's end. */
+  readonly reasons: string[] = []
   /** The notices said in the turn, in order, for its answer to keep (`keepNotices`). */
   readonly notices: Notice[] = []
   /** What the turn's accounts keep open while it runs, such as a CLIProxy process. */

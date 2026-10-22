@@ -4,37 +4,17 @@ import { z } from 'zod'
 export const ToolCallId = z.string().min(1).max(200).brand('ToolCallId')
 export type ToolCallId = z.infer<typeof ToolCallId>
 
-/** A package of the npm registry, by its name. */
-export const PackageName = z
-  .string()
-  .max(214)
-  .regex(/^(@[a-z0-9-~][a-z0-9-._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/)
-  .brand('PackageName')
-export type PackageName = z.infer<typeof PackageName>
-
-/** The two answers to a library's question, in the person's language. */
-export const LIBRARY_ANSWERS = { allow: 'Permitir', deny: 'Não, faça sem ela' } as const
-
 /** The most questions one card holds, and how long one waits for its answer. */
 export const QUESTION_LIMITS = { questions: 4, waitMs: 30 * 60_000 }
 
 const Option = z.object({ label: z.string().min(1), description: z.string().optional() })
-/** One question of a card: a choice among options or free text, or a library to allow. */
-export const Question = z.discriminatedUnion('kind', [
-  z.object({
-    kind: z.literal('choice'),
-    question: z.string().min(1),
-    header: z.string().optional(),
-    options: z.array(Option),
-    multiSelect: z.boolean(),
-  }),
-  z.object({
-    kind: z.literal('library'),
-    question: z.string().min(1),
-    name: PackageName,
-    version: z.string().min(1),
-  }),
-])
+/** One question of a card: a choice among options or free text. */
+export const Question = z.object({
+  question: z.string().min(1),
+  header: z.string().optional(),
+  options: z.array(Option),
+  multiSelect: z.boolean(),
+})
 export type Question = z.infer<typeof Question>
 
 /** One task of the Builder's list. */
@@ -78,8 +58,7 @@ const AskedCard = z.object({
 })
 
 /**
- * The card of questions the turn waits on; a library's is the same card with `kind: 'library'`.
- * An answered card holds the answer to each question, in order (founder, 2026-10-22: "4. e 5 Sim").
+ * The card of questions the turn waits on. An answered card holds the answer to each question, in order (founder, 2026-10-22: "4. e 5 Sim").
  */
 export const QuestionPart = z.discriminatedUnion('state', [
   AskedCard.extend({ state: z.enum(['open', 'expired', 'closed']) }),

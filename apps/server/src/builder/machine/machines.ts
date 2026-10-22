@@ -221,13 +221,13 @@ class BuilderMachines implements Machines {
     return { bundle, files: found.files, changedFiles: found.changedFiles }
   }
 
-  async check({ projectId, grants }: Parameters<Machines['check']>[0]) {
+  async check({ projectId }: Parameters<Machines['check']>[0]) {
     const session = this.sessions.get(projectId)
     if (session === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' } as const
     await this.ensure(session)
     const program = this.deps.checkProgram ?? CHECK_PROGRAM
     const exec: TimedExec = (script, timeoutMs) => run(session.kit, script, timeoutMs)
-    return checkIn({ exec, program, workdir: this.workdir, grants, log: this.deps.log })
+    return checkIn({ exec, program, workdir: this.workdir, log: this.deps.log })
   }
 
   /** A machine whose comparison fails is taken as changed: the check that follows says why it cannot run. */

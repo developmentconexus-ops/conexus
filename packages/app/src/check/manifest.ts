@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { Manifest } from '@conexus/app-contract'
 import { build } from 'esbuild'
@@ -21,7 +21,7 @@ export const api = createApi(operations)
 `
 
 /**
- * What the program prints last: each part of an operation JSON cannot carry, and the migrations
+ * What the program writes to its answer file: each part of an operation JSON cannot carry, and the migrations
  * `server/handlers.ts` exports, for the manifest.
  */
 const Answer = z.strictObject({
@@ -46,18 +46,19 @@ const BuildErrors = z.array(
 /**
  * A program that imports the app's operations and handlers as the Worker will and starts the
  * contract's runtime on them, which refuses an operation without its handler, a handler without its
- * operation or a name `/api` cannot say. It prints what of the operations JSON cannot carry, and the
- * migrations the manifest lists.
+ * operation or a name `/api` cannot say. It writes what of the operations JSON cannot carry, and the
+ * migrations the manifest lists, to a file: the app's own prints never mix with the answer.
  */
-function entryOf(operations: boolean, handlers: boolean): string {
+function entryOf(operations: boolean, handlers: boolean, answerPath: string): string {
   return [
+    "import { writeFileSync } from 'node:fs'",
     "import { serveApp } from '@conexus/app-contract'",
     "import { notJson } from '@conexus/app/json'",
     operations ? `import { operations } from '../../${OPERATIONS}'` : 'const operations = {}',
     handlers ? `import * as server from '../../${HANDLERS}'` : 'const server = {}',
     'serveApp({ operations, handlers: server.handlers ?? {} })',
     'const answer = { notJson: notJson(operations), migrations: server.migrations ?? [] }',
-    'console.log(JSON.stringify(answer))',
+    `writeFileSync(${JSON.stringify(answerPath)}, JSON.stringify(answer))`,
   ].join('\n')
 }
 
@@ -65,10 +66,10 @@ function entryOf(operations: boolean, handlers: boolean): string {
 const TRAVELS =
   'An operation sends and answers JSON: a date is z.iso.date(), or a z.codec to a Date; a number, not a BigInt; an object or an array, not a Map or a Set.'
 
-/** The manifest's answer, the program's last line; the app's own prints come before it. */
-function answerOf(output: string): z.infer<typeof Answer> | Readonly<{ unreadable: string }> {
+/** The manifest's answer, read from the file the program wrote it to. */
+function answerOf(path: string): z.infer<typeof Answer> | Readonly<{ unreadable: string }> {
   try {
-    const parsed = Answer.safeParse(JSON.parse(output.trim().split('\n').at(-1) ?? ''))
+    const parsed = Answer.safeParse(JSON.parse(readFileSync(path, 'utf8')))
     return parsed.success ? parsed.data : { unreadable: parsed.error.message }
   } catch (error) {
     return { unreadable: String(error) }
@@ -115,7 +116,8 @@ export async function manifesto(ctx: CheckContext): Promise<Outcome> {
   mkdirSync(workOf(ctx), { recursive: true })
   const entry = workOf(ctx, 'manifest-entry.ts')
   const out = workOf(ctx, 'manifest-entry.mjs')
-  writeFileSync(entry, entryOf(operations, handlers))
+  const answerPath = workOf(ctx, 'manifest-answer.json')
+  writeFileSync(entry, entryOf(operations, handlers, answerPath))
   const bundled = await bundle(ctx, entry, out)
   if (bundled.state !== 'passed') return bundled
   const ran = await ctx.run(process.execPath, [out], {
@@ -125,9 +127,9 @@ export async function manifesto(ctx: CheckContext): Promise<Outcome> {
   const late = overran('manifesto', ran)
   if (late !== undefined) return late
   const file = handlers ? HANDLERS : OPERATIONS
-  const answer = ran.code === 0 ? answerOf(ran.output) : undefined
+  const answer = ran.code === 0 ? answerOf(answerPath) : undefined
   if (answer === undefined || 'unreadable' in answer) {
-    return { state: 'failed', problems: [{ ...outputProblem(ctx, 'MANIFEST_INVALID', ran), file }] }
+    return { state: 'failed', problems: [{ ...outputProblem('MANIFEST_INVALID', ran), file }] }
   }
   if (answer.notJson.length > 0) {
     const problems = answer.notJson.map(({ operation, side, path, message }) =>

@@ -220,3 +220,29 @@ test('a linha abre no comando e na cauda, no começo do arquivo, nos dois lados 
     assert.deepEqual(part, last.get(part.id))
   }
 })
+
+function writing(content: string) {
+  return {
+    type: 'tool_use' as const,
+    name: 'mastra_workspace_write_file',
+    input: { path: 'notas.md', content },
+  }
+}
+
+test('a escrita que o espaço de trabalho recusa por falta de leitura fica `error` na linha, pelo resultado do Mastra', async (t) => {
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (sent: Sent): Reply => {
+    if (title(sent) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step > 2) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: [writing(`versão ${step}`)] }
+  })
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(
+    toolStates(events).map(({ kind, states }) => [kind, states.at(-1)]),
+    [
+      ['write_file', 'completed'],
+      ['write_file', 'error'],
+    ],
+  )
+})

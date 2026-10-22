@@ -28,10 +28,6 @@ export const WORK_FOLDER = 'node_modules/.conexus'
 /** The folder of the version the last passing check made, relative to the app folder. */
 export const VERSION_FOLDER = `${WORK_FOLDER}/version`
 
-/** A package and its exact version, as the server grants it to a Projeto and sends it on each check. */
-export const PackageGrant = z.strictObject({ name: z.string().min(1), version: z.string().min(1) })
-export type PackageGrant = z.infer<typeof PackageGrant>
-
 export const Problem = z.strictObject({
   file: z.string().nullable(),
   line: z.int().positive().nullable(),

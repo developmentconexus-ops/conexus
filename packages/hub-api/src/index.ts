@@ -187,8 +187,6 @@ export {
 export { answerQuestion } from './question-answer.ts'
 export {
   Answer,
-  LIBRARY_ANSWERS,
-  PackageName,
   QUESTION_LIMITS,
   Question,
   QuestionAnswer,

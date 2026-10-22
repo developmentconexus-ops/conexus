@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import type { PackageGrant, Problem } from './report.ts'
+import type { Problem } from './report.ts'
 import { WORK_FOLDER } from './report.ts'
 
 /** How one command ended: its exit code (none when it could not start), its output, its deadline. */
@@ -27,8 +27,6 @@ export type CheckContext = Readonly<{
   tools: string
   /** Where `@conexus/app` and its contract are copied from after the install; none when the app's `node_modules` already holds them. */
   platform: string | undefined
-  /** The packages granted to this Projeto, sent by the server on each call; the starter's are approved besides. */
-  grants: readonly PackageGrant[]
   run: Runner
   browse: Browser
 }>
@@ -54,22 +52,9 @@ export function problem(
   return { file: null, line: null, column: null, ...fields }
 }
 
-// A file of the app named in a tool's output, with its line and column when printed (after Conexus
-// OS `e0353c36` `check/problems.ts:20`).
-const LOCATION =
-  /(?:^|[\s"'(])((?:src|server|shared)\/[\w@./-]+?\.(?:tsx?|jsx?|mjs|css|html|json))(?::(\d+))?(?::(\d+))?/
-
-/** A tool's whole output as one problem, the app's paths relative and the first file it names located. */
-export function outputProblem(ctx: Pick<CheckContext, 'root'>, code: string, ran: Ran): Problem {
-  const text = ran.output.split(`${ctx.root}/`).join('').trim() || `exited with ${ran.code}`
-  const found = LOCATION.exec(text)
-  return problem({
-    code,
-    message: text,
-    file: found?.[1] ?? null,
-    line: found?.[2] === undefined ? null : Number(found[2]),
-    column: found?.[3] === undefined ? null : Number(found[3]),
-  })
+/** A tool's whole output as one problem, verbatim: the tool's own words, with no location of ours guessed from them. */
+export function outputProblem(code: string, ran: Ran): Problem {
+  return problem({ code, message: ran.output.trim() || `exited with ${ran.code}` })
 }
 
 /** A command that spent its minute is the platform's failure, not the app's (card step 14, U4). */

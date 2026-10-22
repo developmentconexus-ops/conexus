@@ -25,7 +25,7 @@ Build in small steps and prove each one before the next. A step is done when you
 - Test one idea at a time, and undo a change that did not help before you try the next.
 - When you fix a cause, look for the same mistake elsewhere in the app.
 - Never change the check, the environment, the generated client or the platform's files to get past an error.
-- A package the check refuses is outside the starter's list: use what the starter has, or ask for it as `conexus-app` says. Never install one the person has not allowed.
+- When the install fails, read the code and summary the check gives. Prefer what the starter has over a new package.
 - When fixes keep failing, suspect the design, not the line; say so when you stop.
 
 ## When the work leaves the plan

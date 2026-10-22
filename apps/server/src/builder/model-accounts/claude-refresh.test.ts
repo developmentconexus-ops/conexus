@@ -125,6 +125,21 @@ test('renovação recusada pela Anthropic: a conta fica recusada, o turno avisa 
   assert.equal(skipped?.fields.companyId, f.companyId)
 })
 
+test('renovação recusada e nenhuma outra conta: o turno acaba dizendo que a assinatura foi recusada, não que as contas estão indisponíveis', async (t) => {
+  const f = await subscribed(t, 1)
+  f.anthropic.refresh = () => ({ status: 400 })
+  await f.hub.test.asOwner(
+    `update builder.model_account set state = 'paused' where label = 'Time 1'`,
+  )
+  const { events } = await asked(t, f.where)
+  assert.deepEqual(noticesOf(events), ['Claude foi recusada. Ligue de novo.'])
+  assert.deepEqual(events.slice(-2), [
+    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
+    { type: 'turnEnd', reason: 'error' },
+  ])
+  assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'paused' })
+})
+
 test('a observação pede a conta antes do passo: uma escolha só, e a assinatura recusada ao abrir é dita no turno', async (t) => {
   const f = await subscribed(t, 1)
   const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
