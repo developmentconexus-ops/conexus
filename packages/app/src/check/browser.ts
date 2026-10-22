@@ -80,7 +80,7 @@ async function watch(page: Page, origin: string) {
 async function rootDrawn(page: Page, ceilingMs: number): Promise<boolean> {
   const children = page.locator('#root > *')
   try {
-    await children.first().waitFor({ timeout: ceilingMs })
+    await children.first().waitFor({ state: 'attached', timeout: ceilingMs })
   } catch (error) {
     if (error instanceof errors.TimeoutError) return false
     throw error
