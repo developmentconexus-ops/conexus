@@ -16,7 +16,7 @@ An app that saves or reads data has a server; a page with nothing saved has none
 
 - The browser calls an operation by name with a JSON body. The app's server checks the input with the operation's own Zod before the handler runs, and the output with it after, so a handler only sees what its input declares: `z.email()`, `z.uuid()`, a default, a union of objects and a refinement all hold.
 - Input is always an object. An operation's name is letters and digits, starting with a letter.
-- Use the Zod the app needs, but what is sent and answered travels as JSON: a `Date`, a `BigInt`, a `Map` or a `Set` does not, and the check fails with `OPERATION_NOT_JSON`, the operation and the path. A date is `z.iso.date()` text, or a `z.codec(z.iso.date(), z.date(), { decode, encode })` when the handler or the screen needs a `Date`. A transform in an output must be a codec, since the server encodes the output back with it.
+- Use the Zod the app needs, but what is sent and answered travels as JSON: a `Date`, a `BigInt`, a `Map` or a `Set` does not, and the check fails with `OPERATION_NOT_JSON`, the operation and the path. A date is `z.iso.date()` text, or `isoDate` from `src/lib/date-codec.ts` (a `z.codec` over `z.iso.date()` and `z.date()`) when the handler or the screen needs a `Date`. A transform in an output must be a codec, since the server encodes the output back with it.
 - For a field with fixed values, such as a status, export the list from `shared/operations.ts` and use `z.enum(LIST)`, so the handlers, the types and the screens' words all follow one list.
 - Export from `shared/operations.ts` the types the screens need, with `z.output` and `z.input`.
 

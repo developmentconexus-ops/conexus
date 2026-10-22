@@ -21,6 +21,7 @@ test('o starter é um app só de telas: uma rota, os provedores, nada de servido
   assert.equal(files.filter((file) => /^(server|shared)\//.test(file)).length, 0)
   assert.match(read('src/routes/home.tsx'), /Este app ainda está vazio/)
   assert.match(read('src/main.tsx'), /<CSPProvider disableStyleElements>/)
+  assert.match(read('src/lib/date-codec.ts'), /export const isoDate = z\.codec\(/)
 })
 
 test('o starter não injeta elemento <style>, que a política do app recusa', () => {
