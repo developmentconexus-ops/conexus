@@ -2521,8 +2521,8 @@
   {
     "id": "gate-needs-write-tool",
     "file": "apps/server/src/builder/conversation/permissions.ts",
-    "find": "  availableTools: [...READ, ...EDIT, ...EXECUTE],",
-    "replace": "  availableTools: [...READ, ...EXECUTE],",
+    "find": "  availableTools: [...READ, ...EDIT, ...EXECUTE, ...TALK],",
+    "replace": "  availableTools: [...READ, ...EXECUTE, ...TALK],",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
@@ -2631,7 +2631,7 @@
   {
     "id": "orphan-turn-saved",
     "file": "apps/server/src/builder/runs/settle.ts",
-    "find": "  if (expired.state === 'open') return endTurn(context, expired)\n",
+    "find": "  if (expired.state === 'open' || expired.state === 'waiting') return endTurn(context, expired)\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",

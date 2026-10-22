@@ -187,6 +187,16 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
+export { answerQuestion } from './question-answer.ts'
+export {
+  LIBRARY_ANSWERS,
+  PackageName,
+  QUESTION_LIMITS,
+  Question,
+  QuestionAnswer,
+  Task,
+  ToolCallId,
+} from './questions.ts'
 export { RunId } from './runs.ts'
 export {
   ProjectSource,

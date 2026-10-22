@@ -135,6 +135,23 @@ function withKept(messages: Message[], kept: TurnPart[]): Message[] {
   return shown
 }
 
+/**
+ * The questions and plans a turn closed that ended expired: Mastra reads a wait that ran out as a
+ * call it closed, and the turn's failure says which it was.
+ */
+function withExpired(messages: Message[]): Message[] {
+  function expired(part: MessagePart): MessagePart {
+    return (part.type === 'question' || part.type === 'plan') && part.state === 'closed'
+      ? { ...part, state: 'expired' }
+      : part
+  }
+  return messages.map((message) =>
+    message.parts.some((part) => part.type === 'failure' && part.code === 'QUESTION_EXPIRED')
+      ? { ...message, parts: message.parts.map(expired) }
+      : message,
+  )
+}
+
 /** Each thinking with the seconds the stream said it took, or `null` where none was kept. */
 function withSeconds(messages: Message[], times: ThoughtTime[]): Message[] {
   const seconds = new Map(times.map((time) => [time.id, time.seconds]))
@@ -185,7 +202,7 @@ export async function historyOf(
   const settled = inProgress === undefined ? messages : untilMessage(messages, inProgress)
   const timed = withSeconds(settled, metadata[THINKING_KEY])
   const lasting = withKept([...timed, ...asked], metadata[TURN_PARTS_KEY])
-  const read = withFailures(lasting, metadata[TURN_FAILURES_KEY])
+  const read = withExpired(withFailures(lasting, metadata[TURN_FAILURES_KEY]))
   const effort = metadata.thinkingLevel ?? 'off'
   return { title: thread.title || null, model, effort, messages: read }
 }

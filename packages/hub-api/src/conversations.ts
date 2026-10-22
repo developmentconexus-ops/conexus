@@ -3,6 +3,7 @@ import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
 import { ProjectId } from './projects.ts'
+import { PlanPart, QuestionPart, TasksPart } from './questions.ts'
 
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
@@ -56,6 +57,7 @@ export const TurnFailureCode = z.enum([
   'GIT_RESTORE_NEEDED',
   'MACHINE_LOST',
   'MACHINE_UNAVAILABLE',
+  'QUESTION_EXPIRED',
   'INTERNAL_UNEXPECTED',
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>
@@ -156,6 +158,9 @@ export const MessagePart = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('failure'), code: TurnFailureCode }),
+  QuestionPart,
+  PlanPart,
+  TasksPart,
 ])
 export type MessagePart = z.infer<typeof MessagePart>
 
@@ -217,6 +222,11 @@ function partKey(part: MessagePart): string | undefined {
     case 'reasoning':
     case 'tool':
       return `${part.type}:${part.id}`
+    case 'question':
+    case 'plan':
+      return `${part.type}:${part.toolCallId}`
+    case 'tasks':
+      return 'tasks'
     case 'shell':
     case 'file':
       return `${part.type}:${part.toolId}`
@@ -257,9 +267,9 @@ export function applyEvent(parts: readonly MessagePart[], event: PartEvent): Mes
 export const CONVERSATION_HEARTBEAT_MS = 25_000
 
 const InProject = z.object({ companyId: CompanyId, projectId: ProjectId })
-const OfConversation = InProject.extend({ conversationId: ConversationId })
-const BASE = '/api/companies/{companyId}/projects/{projectId}/conversations'
-const READ_FAILURES = [
+export const OfConversation = InProject.extend({ conversationId: ConversationId })
+export const BASE = '/api/companies/{companyId}/projects/{projectId}/conversations'
+export const READ_FAILURES = [
   'NOT_FOUND',
   'SESSION_REQUIRED',
   'DATABASE_UNAVAILABLE',

@@ -16,7 +16,11 @@ export async function sweep(context: RunsContext): Promise<number> {
     const row = await machines.rowOf(companyId, projectId)
     if (row === undefined || row.sandboxId !== found.id) continue
     if (Date.now() - row.usedAt.getTime() < IDLE_MS) continue
-    const open = await store.inStates({ companyId, projectId, states: ['open', 'saving'] })
+    const open = await store.inStates({
+      companyId,
+      projectId,
+      states: ['open', 'waiting', 'saving'],
+    })
     if (open.length > 0) continue
     await machines.kill(found.id)
     await machines.forget(companyId, projectId)

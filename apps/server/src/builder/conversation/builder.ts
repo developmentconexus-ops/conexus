@@ -23,6 +23,12 @@ import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
+import {
+  ASK_USER_TOOL,
+  createAskUserTool,
+  createSubmitPlanTool,
+  SUBMIT_PLAN_TOOL,
+} from './plan-tools.ts'
 import { CHECK_TOOL, checkGate, checkTool } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
 
@@ -34,15 +40,8 @@ const TITLE_INSTRUCTIONS =
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
 // stays out until the live proof of criterion 3 passes.
 const SEARCH_PROVIDERS = new Set(['anthropic', 'openai', 'xai'])
-const BUILTIN_TOOLS: BuiltinToolId[] = [
-  'ask_user',
-  'submit_plan',
-  'task_write',
-  'task_update',
-  'task_complete',
-  'task_check',
-  'subagent',
-]
+// `ask_user` and `submit_plan` are ours, under the native ids (`plan-tools.ts`); `subagent` stays off.
+const BUILTIN_TOOLS: BuiltinToolId[] = ['ask_user', 'submit_plan', 'subagent']
 
 function isRouterId(modelId: ModelId): modelId is ModelId & `${string}/${string}` {
   return modelId.includes('/')
@@ -145,6 +144,7 @@ export function createBuilder(deps: {
     // The turn's run owns its workspace; a session made outside a turn has none.
     workspace: ({ requestContext, mastra }) => deps.runs.workspaceOf(requestContext, mastra),
     disableBuiltinTools: BUILTIN_TOOLS,
+    tools: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
     initialState: TOOL_CLOSURE.initialState,
   })
   const mastra = new Mastra({
@@ -155,7 +155,7 @@ export function createBuilder(deps: {
   // Mastra 1.78.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
   for (const domain of Object.values(storage.stores)) domain?.__setLogger(mastra.getLogger())
-  return { controller, memory, mastra }
+  return { controller, memory, mastra, agent }
 }
 
 export type Builder = ReturnType<typeof createBuilder>

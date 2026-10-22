@@ -38,6 +38,10 @@ function PartRow(props: { part: MessagePart; streaming: boolean }) {
       return <VersionLine part={part} />
     case 'restarted':
       return <RestartedLine part={part} />
+    // The cards of a question, a plan and the tasks are drawn by U6.
+    case 'question':
+    case 'plan':
+    case 'tasks':
     case 'file':
       return null
     case 'notice':
