@@ -36,6 +36,8 @@ export type Owner = { companyId: CompanyId; personId: PersonId }
 /** A question or a plan the turn waits on. */
 export type Card = Extract<MessagePart, { type: 'question' | 'plan' }>
 
+type ToolPart = Extract<MessagePart, { type: 'tool' }>
+
 /** A card the turn waits on: the Mastra run that parked on it, and whether an answer claimed it. */
 type Pending = { card: Card; run: string | undefined; claimed: boolean }
 /** The version a saved turn reached, with its file counts. */
@@ -168,8 +170,33 @@ function settleThinking(live: Live, turn: TurnLog): void {
   })
 }
 
+/** The tool part the turn last told for a call, which holds what its command printed so far. */
+function toldTool(turn: TurnLog, call: string): ToolPart | undefined {
+  return turn.answer.parts.find(
+    (part): part is ToolPart => part.type === 'tool' && part.id === call,
+  )
+}
+
+/**
+ * A command's call says its output only once it has a result, and never its exit code: until then
+ * its row keeps what the turn heard of it (`onShellEvent`).
+ */
+function withHeard(turn: TurnLog, tool: ToolPart): ToolPart {
+  const told = toldTool(turn, tool.id)?.detail
+  if (tool.detail?.kind !== 'command' || told?.kind !== 'command' || tool.state !== 'running') {
+    return tool
+  }
+  return { ...tool, detail: { ...tool.detail, output: told.output, cut: told.cut } }
+}
+
+function exitHeard(turn: TurnLog, call: string): number | null {
+  const told = toldTool(turn, call)?.detail
+  return told?.kind === 'command' ? told.exitCode : null
+}
+
 function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
-  const shown = partOf(part, place)
+  const read = partOf(part, place, (call) => exitHeard(turn, call))
+  const shown = read?.type === 'tool' ? withHeard(turn, read) : read
   if (shown === undefined) return
   if (shown.type === 'reasoning') {
     if (turn.answer.parts.some((each) => each.type === 'reasoning' && each.id === shown.id)) return
@@ -247,23 +274,25 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
   } else onMessageEvent(live, event)
 }
 
-/** A command's output, kept to its last lines: said while it runs, and once more when it exits. */
+/** A command's output, kept to its last lines in its row: said while it runs, and once more when it exits. */
 function onShellEvent(
   live: Live,
   event: Extract<AgentControllerEvent, { type: 'shell_output' | 'command_exit' }>,
 ): void {
   const turn = live.turn
   if (turn === undefined || turn.ended) return
+  const tool = toldTool(turn, event.toolCallId)
+  if (tool?.detail?.kind !== 'command') return
   const tail = turn.shells.get(event.toolCallId) ?? new ShellTail()
   turn.shells.set(event.toolCallId, tail)
-  if (event.type === 'command_exit') {
-    turn.shells.delete(event.toolCallId)
-    tell(live, turn, { type: 'part', part: tail.part(event.toolCallId, event.exitCode) })
-    return
-  }
-  tail.add(event.output)
-  const running = tail.running(event.toolCallId)
-  if (running !== undefined) tell(live, turn, { type: 'part', part: running })
+  if (event.type === 'shell_output') tail.add(event.output)
+  const exited = event.type === 'command_exit'
+  if (exited) turn.shells.delete(event.toolCallId)
+  const heard = exited ? tail.tail() : tail.running()
+  if (heard === undefined) return
+  const exitCode = exited ? event.exitCode : null
+  const detail = { ...tool.detail, ...heard, exitCode }
+  tell(live, turn, { type: 'part', part: { ...tool, detail } })
 }
 
 type Ending = {

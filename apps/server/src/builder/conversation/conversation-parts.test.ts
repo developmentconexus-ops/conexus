@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
+import { DETAIL_LIMITS } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
+import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
   answeredOf,
   asked,
@@ -11,6 +13,7 @@ import {
   sent,
   started,
   streamOf,
+  title,
 } from './test-conversation.ts'
 import { conversingWith, tool } from './test-questions.ts'
 import { citing, FETCH_ERROR, PAGES, printedOf, researching, UNREACHABLE } from './test-research.ts'
@@ -164,4 +167,59 @@ test('task_*: a parte `tasks` chega e sobrevive a recarregar', async (t) => {
     read.filter((part) => part.type === 'tasks'),
     [live.at(-1)],
   )
+})
+
+// Joined here so the file holds no string a secret scanner would take for a real token.
+const SECRET = ['sk', 'ant-api03-abcdefghijklmnopqrstuvwxyz0123456789'].join('-')
+const LONG = Array.from({ length: 250 }, (_, at) => `linha ${at + 1}`).join('\n')
+const DETAILED = [
+  {
+    name: 'mastra_workspace_execute_command',
+    input: { command: `echo token=${SECRET}; echo pronto; exit 3` },
+  },
+  {
+    name: 'mastra_workspace_write_file',
+    input: { path: 'a.ts', content: `const key = '${SECRET}'\n${'x'.repeat(3000)}` },
+  },
+  {
+    name: 'mastra_workspace_edit_file',
+    input: { path: 'b.ts', old_string: LONG, new_string: `password=${SECRET}` },
+  },
+  { name: 'mastra_workspace_read_file', input: { path: 'a.ts' } },
+]
+
+test('a linha abre no comando e na cauda, no começo do arquivo, nos dois lados da edição, cortados e mascarados; relida dá o mesmo (33)', async (t) => {
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (sent: Sent): Reply => {
+    if (title(sent) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step > 1) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: DETAILED.map((each) => ({ type: 'tool_use', ...each })) }
+  })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const tools = new Map(
+    partsOf(events).flatMap((part) => (part.type === 'tool' ? [[part.kind, part]] : [])),
+  )
+  const command = tools.get('run_command')?.detail
+  assert.equal(command?.kind, 'command')
+  if (command?.kind !== 'command') return
+  assert.equal(command.command, 'echo token=***; echo pronto; exit 3')
+  assert.deepEqual(command.output.slice(0, 2), ['token=***', 'pronto'])
+  assert.equal(command.exitCode, 3)
+  const file = tools.get('write_file')?.detail
+  assert.equal(file?.kind === 'file' && file.content.length, DETAIL_LIMITS.fileCharacters)
+  assert.ok(file?.kind === 'file' && file.cut && file.content.startsWith("const key = '***'"))
+  const edit = tools.get('edit_file')?.detail
+  assert.ok(edit?.kind === 'edit' && edit.cut)
+  assert.equal(edit.before.split('\n').length, DETAIL_LIMITS.editLines)
+  assert.equal(edit.after, 'password=***')
+  assert.equal(tools.get('read_file')?.detail, undefined)
+  for (const said of [JSON.stringify(events), JSON.stringify(await messagesOf(hub, ana, url))]) {
+    assert.equal(said.includes(SECRET), false)
+  }
+  const read = (await messagesOf(await hubBeside(t, hub), ana, url)).at(-1)?.parts ?? []
+  const last = new Map(partsOf(events).map((part) => ['id' in part ? part.id : part.type, part]))
+  for (const part of read.filter((each) => each.type === 'tool')) {
+    assert.deepEqual(part, last.get(part.id))
+  }
 })

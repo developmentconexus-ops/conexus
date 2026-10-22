@@ -1,6 +1,7 @@
-import type { Message, MessagePart, PartEvent } from '@conexus/hub-api'
+import type { Message, MessagePart, PartEvent, ToolDetail } from '@conexus/hub-api'
 import {
   applyEvent,
+  DETAIL_LIMITS,
   MessageId,
   ModelId,
   SUBJECT_MAX_LENGTH,
@@ -14,7 +15,7 @@ import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
 import { masked } from './mask.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
-import { ShellTail } from './shell.ts'
+import { tailOf } from './shell.ts'
 
 type ToolPart = Extract<MessagePart, { type: 'tool' }>
 
@@ -56,6 +57,12 @@ const FailedResult = z.object({ isError: z.literal(true) })
 const PageArgs = z.object({ url: z.url() })
 const PathArgs = z.object({ path: z.string().min(1) })
 const CommandArgs = z.object({ command: z.string().min(1) })
+const WriteArgs = z.object({ path: z.string().min(1), content: z.string() })
+const EditArgs = z.object({
+  path: z.string().min(1),
+  old_string: z.string(),
+  new_string: z.string(),
+})
 const SearchArgs = z.object({ query: z.string() })
 const Notice = z.object({ type: z.literal(NOTICE_PART), data: NoticeData })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
@@ -86,7 +93,7 @@ const SuspendedPlans = z.object({
 })
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 
-function cut(text: string): string {
+function subjectCut(text: string): string {
   return text.slice(0, SUBJECT_MAX_LENGTH)
 }
 
@@ -114,25 +121,64 @@ function subjectOf(kind: ToolPart['kind'], args: unknown): ToolPart['subject'] {
   const page = kind === 'read_page' ? PageArgs.safeParse(args) : undefined
   if (page?.success) return { url: page.data.url, title: null }
   const search = kind === 'search_web' ? SearchArgs.safeParse(args) : undefined
-  if (search?.success) return { query: cut(search.data.query) }
+  if (search?.success) return { query: subjectCut(search.data.query) }
   const file =
     kind === 'read_file' || kind === 'write_file' || kind === 'edit_file'
       ? PathArgs.safeParse(args)
       : undefined
-  if (file?.success) return { path: cut(masked(file.data.path)) }
+  if (file?.success) return { path: subjectCut(masked(file.data.path)) }
   const command = kind === 'run_command' ? CommandArgs.safeParse(args) : undefined
-  if (command?.success) return { command: cut(masked(command.data.command)) }
+  if (command?.success) return { command: subjectCut(masked(command.data.command)) }
   return null
+}
+
+/** The first `limit` lines of a text, and whether it had more. */
+function firstLines(text: string, limit: number): { text: string; cut: boolean } {
+  const lines = text.split('\n')
+  return { text: lines.slice(0, limit).join('\n'), cut: lines.length > limit }
+}
+
+/**
+ * What a tool's row opens on, from its arguments, its result and how its command exited, masked
+ * before it is cut (security S2, S41): a command and its output's end, a written file's start, an
+ * edit's two sides; a read keeps only its subject (card of step 14, U6).
+ */
+function detailOf(
+  kind: ToolPart['kind'],
+  invocation: Invocation,
+  exitCode: number | null,
+): ToolDetail | undefined {
+  const { args, result } = invocation
+  const command = kind === 'run_command' ? CommandArgs.safeParse(args) : undefined
+  if (command?.success) {
+    const { output, cut } = typeof result === 'string' ? tailOf(result) : { output: [], cut: false }
+    const said = subjectCut(masked(command.data.command))
+    return { kind: 'command', command: said, output, exitCode, cut }
+  }
+  const write = kind === 'write_file' ? WriteArgs.safeParse(args) : undefined
+  if (write?.success) {
+    const content = masked(write.data.content)
+    const kept = content.slice(0, DETAIL_LIMITS.fileCharacters)
+    const path = subjectCut(masked(write.data.path))
+    return { kind: 'file', path, content: kept, cut: kept.length < content.length }
+  }
+  const edit = kind === 'edit_file' ? EditArgs.safeParse(args) : undefined
+  if (!edit?.success) return undefined
+  const before = firstLines(masked(edit.data.old_string), DETAIL_LIMITS.editLines)
+  const after = firstLines(masked(edit.data.new_string), DETAIL_LIMITS.editLines)
+  const path = subjectCut(masked(edit.data.path))
+  const cut = before.cut || after.cut
+  return { kind: 'edit', path, before: before.text, after: after.text, cut }
 }
 
 const OFFERED = new Set(TOOL_CLOSURE.availableTools)
 
 /**
- * A tool call as the person sees it: its kind, its state and what it was about, never its data. A
- * call to a tool outside the closed set fails because the controller refuses it, not because the
- * tool ran: it is `denied`, as Mastra's own `tool_end.denied` fires only for an approval (none here).
+ * A tool call as the person sees it: its kind, its state, what it was about and what its row opens
+ * on. A call to a tool outside the closed set fails because the controller refuses it, not because
+ * the tool ran: it is `denied`, as Mastra's own `tool_end.denied` fires only for an approval (none here).
  */
-function toolOf(invocation: Invocation): ToolPart {
+function toolOf(invocation: Invocation, exitCode: number | null): ToolPart {
   const kind = KINDS[invocation.toolName] ?? 'other'
   const subject = subjectOf(kind, invocation.args)
   const state = stateOf(invocation)
@@ -143,6 +189,7 @@ function toolOf(invocation: Invocation): ToolPart {
     kind,
     state: refused ? 'denied' : state,
     subject,
+    detail: detailOf(kind, invocation, exitCode),
   }
 }
 
@@ -188,20 +235,6 @@ export function fileOf(tool: ToolPart): MessagePart | undefined {
     : undefined
 }
 
-/** A command's last lines as its result keeps them, once it has ended (`exits`), or none. */
-function shellOf(part: unknown, exits: Map<string, number>): MessagePart | undefined {
-  const invocation = Invocation.safeParse(part)
-  if (!invocation.success) return undefined
-  const { toolCallId, toolName, result } = invocation.data.toolInvocation
-  const exitCode = exits.get(toolCallId)
-  if (KINDS[toolName] !== 'run_command' || typeof result !== 'string' || exitCode === undefined) {
-    return undefined
-  }
-  const tail = new ShellTail()
-  tail.add(result)
-  return tail.part(toolCallId, exitCode)
-}
-
 /** Where a part of Mastra's sits: its message and place in it, which name a thinking part. */
 export type Place = { messageId: MessageId; index: number }
 
@@ -213,9 +246,13 @@ function reasoningId(place: Place): string {
 /**
  * What the person sees of one of Mastra's parts: its text, that it thought (never what), a tool
  * call, and a queue notice; the rest stays inside. Thinking read here is over; its time is the
- * thread's (`history.ts`).
+ * thread's (`history.ts`). A command's exit code is Mastra's `data-sandbox-exit` beside the call.
  */
-export function partOf(part: MastraMessagePart | unknown, place: Place): MessagePart | undefined {
+export function partOf(
+  part: MastraMessagePart | unknown,
+  place: Place,
+  exitOf: (call: string) => number | null = () => null,
+): MessagePart | undefined {
   const text = Text.safeParse(part)
   if (text.success) return text.data
   if (Reasoning.safeParse(part).success) {
@@ -225,7 +262,7 @@ export function partOf(part: MastraMessagePart | unknown, place: Place): Message
   if (invocation.success) {
     const { toolName } = invocation.data.toolInvocation
     if (CARD_TOOLS.has(toolName)) return cardOf(invocation.data.toolInvocation)
-    return toolOf(invocation.data.toolInvocation)
+    return toolOf(invocation.data.toolInvocation, exitOf(invocation.data.toolInvocation.toolCallId))
   }
   const notice = Notice.safeParse(part)
   if (notice.success) return { type: 'notice', text: notice.data.data.text }
@@ -275,10 +312,12 @@ export function messageOf(message: MastraDBMessage): Message | undefined {
   const suspended = SuspendedPlans.safeParse(message.content.metadata)
   let parts: MessagePart[] = []
   for (const [index, part] of message.content.parts.entries()) {
-    const shown = withPlan(partOf(part, { messageId: id, index }), suspended.data?.suspendedTools)
+    const place = { messageId: id, index }
+    const read = partOf(part, place, (call) => exits.get(call) ?? null)
+    const shown = withPlan(read, suspended.data?.suspendedTools)
     if (shown === undefined) continue
     parts = applyEvent(parts, eventOf(shown))
-    const after = shown.type === 'tool' ? (fileOf(shown) ?? shellOf(part, exits)) : undefined
+    const after = shown.type === 'tool' ? fileOf(shown) : undefined
     if (after !== undefined) parts = applyEvent(parts, eventOf(after))
   }
   return {

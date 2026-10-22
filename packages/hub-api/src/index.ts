@@ -85,9 +85,6 @@ export {
   providerOfModel,
   readConversation,
   runningEffort,
-  SHELL_MAX_BYTES,
-  SHELL_MAX_LINES,
-  SUBJECT_MAX_LENGTH,
   sendConversationMessage,
   setConversationModel,
   stopConversation,
@@ -207,3 +204,4 @@ export {
   SourceFile,
 } from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
+export { DETAIL_LIMITS, SUBJECT_MAX_LENGTH, ToolDetail } from './tool-detail.ts'

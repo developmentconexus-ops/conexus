@@ -1,6 +1,6 @@
 import type { MessagePart } from '@conexus/hub-api'
 import { machinePhaseLasts } from '@conexus/hub-api'
-import { CheckIcon, CogIcon, RotateCcwIcon } from 'lucide-react'
+import { CheckIcon, CircleAlertIcon, CogIcon, RotateCcwIcon } from 'lucide-react'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
 import { durationOf } from './text.ts'
@@ -45,23 +45,29 @@ function files(count: number, changed: string): string {
   return `${count} ${count === 1 ? 'arquivo' : 'arquivos'}${changed}`
 }
 
-/** "Versão 1 guardada: 7 arquivos.", then "Versão 2 guardada: 2 arquivos mudados.". */
+/** Whether the saved version's app built, as the end of the turn's check said (card of step 14). */
+const BUILT = { passed: ', montou', failed: ', não montou' } as const
+
+/**
+ * "Versão 1 guardada: 7 arquivos.", then "Versão 2 guardada, montou: 2 arquivos mudados."; a
+ * version the turn could not check says only what it saved.
+ */
 function versionSentence(part: Version): string {
   if (!part.changed) return `A versão ${part.number} segue a mesma.`
   const count =
     part.number === 1
       ? files(part.files, '')
       : files(part.changedFiles, part.changedFiles === 1 ? ' mudado' : ' mudados')
-  return `Versão ${part.number} guardada: ${count}.`
+  const built = part.check === undefined ? '' : BUILT[part.check.state]
+  return `Versão ${part.number} guardada${built}: ${count}.`
 }
 
 /** The version the turn saved. */
 export function VersionLine({ part }: { part: Version }) {
+  const failed = part.check?.state === 'failed'
   return (
-    <Marker className="text-text">
-      <MarkerIcon>
-        <CheckIcon />
-      </MarkerIcon>
+    <Marker className={failed ? 'text-danger' : 'text-text'}>
+      <MarkerIcon>{failed ? <CircleAlertIcon /> : <CheckIcon />}</MarkerIcon>
       <MarkerContent>{versionSentence(part)}</MarkerContent>
     </Marker>
   )

@@ -80,10 +80,21 @@ test('escrever e rodar um comando não param à espera de aprovação: nenhuma e
   }
   const { events } = await asked(t, { hub, person: ana, conversations, between: recordSuspensions })
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  const states = events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'tool' ? [event.part.state] : [],
+  // A command's output comes on its tool part, said again while it runs.
+  const states = new Map<string, string[]>()
+  for (const event of events) {
+    if (event.type !== 'part' || event.part.type !== 'tool') continue
+    const said = states.get(event.part.id) ?? []
+    if (said.at(-1) !== event.part.state) said.push(event.part.state)
+    states.set(event.part.id, said)
+  }
+  assert.deepEqual(
+    [...states.values()],
+    [
+      ['running', 'completed'],
+      ['running', 'completed'],
+    ],
   )
-  assert.deepEqual(states, ['running', 'running', 'completed', 'completed'])
   assert.deepEqual(
     (await hub.test.mastraPool.query('select run_id from mastra.suspended_runs')).rows,
     [],

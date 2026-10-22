@@ -4,6 +4,7 @@ import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
 import { ProjectId } from './projects.ts'
 import { PlanPart, QuestionPart, TasksPart } from './questions.ts'
+import { Subject, ToolDetail } from './tool-detail.ts'
 
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
@@ -65,10 +66,6 @@ export type TurnFailureCode = z.infer<typeof TurnFailureCode>
 export const MessageId = z.string().min(1).brand('MessageId')
 export type MessageId = z.infer<typeof MessageId>
 
-/** The longest title or query a tool's subject keeps, in characters. */
-export const SUBJECT_MAX_LENGTH = 200
-const Subject = z.string().max(SUBJECT_MAX_LENGTH)
-
 /** What a tool call was about: a page, a search, a file, a command, or nothing to say. */
 const ToolSubject = z.union([
   z.object({ url: z.url(), title: Subject.nullable() }),
@@ -78,15 +75,11 @@ const ToolSubject = z.union([
   z.null(),
 ])
 
-/** The most lines of a command's output a `shell` part keeps, and the most bytes of them. */
-export const SHELL_MAX_LINES = 20
-export const SHELL_MAX_BYTES = 4096
-
 /**
  * A piece of a message. `reasoning` and `tool` carry an `id`: a later part with the same `id`
  * replaces it. Their states follow the controller's `ActiveToolState.status`; the thinking's text,
- * a tool's arguments and result and the provider's words never leave the server (security S9,
- * design V39, code C51).
+ * the provider's words and a tool's arguments and result never leave the server, but for a tool's
+ * `detail`, masked and cut (security S9, S41, design V39, code C51).
  */
 export const MessagePart = z.discriminatedUnion('type', [
   z.object({ type: z.literal('text'), text: z.string() }),
@@ -112,13 +105,8 @@ export const MessagePart = z.discriminatedUnion('type', [
     ]),
     state: z.enum(['running', 'completed', 'error', 'denied']),
     subject: ToolSubject,
-  }),
-  /** A command's last lines, secrets masked, and how it exited; no exit code while it runs. */
-  z.object({
-    type: z.literal('shell'),
-    toolId: z.string().min(1),
-    lines: z.array(z.string()).max(SHELL_MAX_LINES),
-    exitCode: z.int().nullable(),
+    /** What the row opens on; none for a tool that only has its subject to say. */
+    detail: ToolDetail.optional(),
   }),
   z.object({
     type: z.literal('file'),
@@ -227,7 +215,6 @@ function partKey(part: MessagePart): string | undefined {
       return `${part.type}:${part.toolCallId}`
     case 'tasks':
       return 'tasks'
-    case 'shell':
     case 'file':
       return `${part.type}:${part.toolId}`
     case 'machine':
@@ -240,7 +227,7 @@ function partKey(part: MessagePart): string | undefined {
 /**
  * A message's parts after one event, the only fold of events into parts, on the server and the
  * screen alike: text after text is one text, since Claude cuts an answer into one block per span it
- * cites; a tool, thinking, shell, file or machine part replaces the one it names; any other comes at the end.
+ * cites; a tool, thinking, file or machine part replaces the one it names; any other comes at the end.
  */
 export function applyEvent(parts: readonly MessagePart[], event: PartEvent): MessagePart[] {
   switch (event.type) {

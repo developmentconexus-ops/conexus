@@ -39,10 +39,13 @@ test('a máquina como o modelo a ouve: a pasta do app e o que ela tem, nenhum ou
     [],
     'the model is told of no folder but the app (the machine is this test folder) and the check',
   )
-  const [shell] = events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'shell' && event.part.exitCode !== null
-      ? [event.part]
+  const [ended] = events.flatMap((event) =>
+    event.type === 'part' &&
+    event.part.type === 'tool' &&
+    event.part.detail?.kind === 'command' &&
+    event.part.detail.exitCode !== null
+      ? [event.part.detail]
       : [],
   )
-  assert.deepEqual(shell?.lines, [realpathSync(app)])
+  assert.deepEqual(ended?.kind === 'command' && ended.output, [realpathSync(app)])
 })

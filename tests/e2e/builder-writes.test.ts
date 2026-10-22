@@ -82,9 +82,9 @@ function transcriptOf(chat: Page) {
   return chat.getByRole('log', { name: 'Conversa com o Builder' })
 }
 
-/** The command's output as the transcript shows it, holding `text`. */
+/** The command's output as its open row shows it, with `text` as a line of its own. */
 function outputWith(chat: Page, text: string) {
-  return transcriptOf(chat).locator('pre', { hasText: text })
+  return transcriptOf(chat).locator('pre', { hasText: new RegExp(`(^|\n)${text}(\n|$)`) })
 }
 
 /** Waits for the turn's end, then checks that what lasts of it is on screen. */
@@ -92,7 +92,9 @@ async function lastingShown(chat: Page, version: RegExp) {
   await chat.getByText(WORKING).waitFor({ state: 'hidden' })
   const transcript = transcriptOf(chat)
   assert.ok(await transcript.getByText(version).isVisible(), 'the version line is gone')
-  assert.ok(await outputWith(chat, 'página escrita').isVisible(), 'the command lines are gone')
+  // The command's row closes once it ends, and opens again on its output.
+  await transcript.getByRole('button', { name: /Rodou um comando/ }).click()
+  await outputWith(chat, 'página escrita').waitFor()
 }
 
 async function writeFirst(chat: Page) {
@@ -109,7 +111,7 @@ async function writeFirst(chat: Page) {
   await transcriptShowed(chat, 'Escreveu um arquivo')
   await chat.getByText(/Versão 1, guardada em/).waitFor()
   // The tree holds the starter's files beside the page, so no file is open until one is chosen.
-  await chat.getByRole('button', { name: 'pagina.html' }).click()
+  await chat.getByRole('button', { name: 'pagina.html', exact: true }).click()
   await chat
     .getByRole('region', { name: 'Conteúdo de pagina.html' })
     .getByText('<h1>Padaria</h1>')
