@@ -117,8 +117,12 @@ constrói não lê o estudo):
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - A criterion about a provider's behaviour cites the installed provider's code.
 - The table of parts has one row per mechanism, never "o resto". The reference cell says "nenhuma
-  faz" when none does, and a "nosso" row links its
-  [boundaries](../../../../docs/reference/boundaries.md) entry.
+  faz" when none does. A "nosso" row names the native candidate at the installed version and the
+  proof that it does not serve (a script's output or a test), and links its
+  [boundaries](../../../../docs/reference/boundaries.md) entry; a row without the proof goes back to
+  the study. "Embrulhado" says in one line what the wrapper adds.
+- Each unit lists what it deletes from `main` before what it adds. A fact used by two units has one
+  owner unit and one criterion whose test crosses both.
 - The order of the work names guide rules by identifier and never restates them.
 - Every write or command the step adds, its own or a library's, has its row in the failure table,
   and each cell names its criterion; a step with no write writes "nenhuma". Founder, 2026-10-15:

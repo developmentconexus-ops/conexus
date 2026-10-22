@@ -1,6 +1,6 @@
 # O Builder constrói: o percurso e o roteiro
 
-Como rodar e ler o percurso da etapa 14 (`tests/e2e/builder-builds.test.ts`, critério 26) e como o fundador faz o mesmo roteiro na nuvem. O roteiro é o do [card](../steps/e14-o-builder-constroi.md), "O roteiro de uso". Regras: [testes](../guides/testing.md) T14 e T23; [entrega](../guides/delivery.md) L17.
+Como rodar e ler o percurso da etapa 14 (`tests/e2e/builder-builds.test.ts`, critério 26) e como o fundador faz o mesmo roteiro na nuvem. O roteiro do fundador está no fim desta página. Regras: [testes](../guides/testing.md) T14 e T23; [entrega](../guides/delivery.md) L17.
 
 ## Rodar o percurso
 
@@ -16,11 +16,11 @@ O Hub é real, com banco, Git e telas construídas; o navegador é o Chromium. S
 - a máquina: uma pasta deste computador, onde o comando roda de verdade;
 - a conferência: o programa da máquina é um script do teste que imprime um relatório que passa. Os passos de verdade são provados em `check.test.ts`.
 
-Um percurso verde não prova o modelo de verdade nem o E2B (critérios 27 a 29 e 31, ao vivo).
+Um percurso verde não prova o modelo de verdade nem o E2B (provas ao vivo: [0055](../decisions/0055-apps-on-the-platform-contract.md)).
 
 ## Ler uma falha
 
-A mensagem diz o passo do roteiro: `questionsAndPlan` (1 e 2), `firstVersion` (3 e 4), `libraryAdded` (5), `screenOnly` (6). Um texto que não aparece é uma tela que mudou ou um defeito; nunca troque o texto do teste sem o texto aprovado no card.
+A mensagem diz o passo do roteiro: `questionsAndPlan` (1 e 2), `firstVersion` (3 e 4), `libraryAdded` (5), `screenOnly` (6). Um texto que não aparece é uma tela que mudou ou um defeito; nunca troque o texto do teste sem o texto aprovado ([aprovações](../approvals.md)).
 
 ## O roteiro do fundador, na nuvem
 

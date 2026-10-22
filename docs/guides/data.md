@@ -77,7 +77,10 @@ Neon's owner login joins `neon_superuser`; the Hub's runtime login does not [003
   updates; read committed with row locks lets the next command decide on the committed row.
   Neither an isolation name nor a ban on `merge` proves atomicity. [review]
 - **D25.** There **must not** be a session-level lock, or a session setting outside a transaction,
-  and a single owner **must** be a lease row with an expiry, renewed by activity. [CI search]
+  and a single owner **must** be a lease row with an expiry, renewed by activity. The one exception:
+  the `migrate` connection, on the direct address, opens with its limits in `options`, so
+  PostgreSQL itself cancels a stuck migration and frees its locks; killing the client does not.
+  Founder, 2026-10-22: "1 sim 2 A". [CI search]
 - **D27.** Nothing **may** keep a connection or send a statement while nobody uses Conexus.
   [sleeping-database test]
 

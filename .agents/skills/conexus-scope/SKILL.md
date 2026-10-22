@@ -22,9 +22,10 @@ The step's line in [the roadmap](../../../docs/roadmap.md), the study's answers 
 2. List what enters and what stays out, and why. Estimate each unit's changed lines; past the budget
    of [delivery L2](../../../docs/guides/delivery.md), split the step before the build.
 3. Write the acceptance criteria, each observable from outside, refusals included; each refusal
-   names the route of this step that reaches it. Fill the failure table for every write the study
-   listed; each row yields criteria.
-4. Split the step into units that each end green on their own: a contract lands with its first
+   names the route of this step that reaches it. List every write the step adds, and for each create the
+   ambiguous replies (a cut reply, a 502, a 503) and the client's response; fill the failure table
+   for each write, each row yielding criteria.
+4. Design from zero (pstack `poteto-mode`: first principles, subtract before adding). Split the step into units that each end green on their own: a contract lands with its first
    implementer, and a migration that changes the catalog snapshot lands with the unit that owns
    `database-grants.sql`. For each unit write the
    blast radius (its folders, with who imports or calls them, and the owner of each contract it
