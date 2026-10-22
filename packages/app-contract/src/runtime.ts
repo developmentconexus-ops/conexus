@@ -1,16 +1,24 @@
 import type { z } from 'zod'
 import type { Db } from './db.ts'
+import type { AppFailureCode } from './failures.ts'
 import { Manifest, schemaOf } from './manifest.ts'
 import type { AppProps, Caller } from './props.ts'
 
+/** What a handler receives beside its input (decision 0019). */
+export type Context = Readonly<{ db: Db; caller: Caller }>
+
 /** One operation's code: the checked input in, a value of the declared output shape out. */
-export type Handler = (input: unknown, context: Readonly<{ db: Db; caller: Caller }>) => unknown
+export type Handler = (input: unknown, context: Context) => unknown
 
 type Operation = Readonly<{ input: z.ZodType; output: z.ZodType; handler: Handler }>
 
 /** The runtime's own refusals, by code only: an answer never repeats the value it refused. */
 function answer(status: number, body: unknown): Response {
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
+}
+
+function refuse(status: number, code: AppFailureCode): Response {
+  return answer(status, { code })
 }
 
 function operationsOf(manifest: unknown, handlers: Readonly<Record<string, Handler>>) {
@@ -42,11 +50,11 @@ export function serveApp(
       const { pathname } = new URL(request.url)
       const name = pathname.startsWith('/api/') ? pathname.slice('/api/'.length) : ''
       const operation = request.method === 'POST' ? operations.get(name) : undefined
-      if (operation === undefined) return answer(404, { code: 'OPERATION_NOT_FOUND' })
+      if (operation === undefined) return refuse(404, 'OPERATION_NOT_FOUND')
       // biome-ignore lint/plugin: an unreadable body fails the operation's input schema next (C27, C53)
       const body: unknown = await request.json().catch(() => undefined)
       const input = operation.input.safeParse(body)
-      if (!input.success) return answer(400, { code: 'INPUT_INVALID' })
+      if (!input.success) return refuse(400, 'INPUT_INVALID')
       const { db, caller } = ctx.props
       let output: unknown
       try {
@@ -55,10 +63,10 @@ export function serveApp(
         // The Worker's log keeps which operation failed and how, never the message's values.
         const kind = error instanceof Error ? error.name : typeof error
         console.error(JSON.stringify({ level: 50, msg: 'HANDLER_FAILED', operation: name, kind }))
-        return answer(500, { code: 'HANDLER_FAILED' })
+        return refuse(500, 'HANDLER_FAILED')
       }
       const checked = operation.output.safeParse(output)
-      if (!checked.success) return answer(500, { code: 'OUTPUT_INVALID' })
+      if (!checked.success) return refuse(500, 'OUTPUT_INVALID')
       return answer(200, checked.data)
     },
   }

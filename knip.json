@@ -12,6 +12,9 @@
     "apps/web": {
       "entry": ["src/ui/pieces-fixture.tsx"]
     },
+    "packages/app": {
+      "entry": ["src/**/*.check.ts"]
+    },
     "apps/edge": {
       "ignoreDependencies": ["cloudflare"]
     }

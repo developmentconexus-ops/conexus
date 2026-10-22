@@ -108,3 +108,10 @@ test('o Worker não sobe com manifesto inválido ou handler a menos ou a mais', 
     serveApp({ manifest: MANIFEST, handlers: { escrever: () => ({ id: 1 }), outro: () => 1 } }),
   )
 })
+
+test('sem operações todo /api responde 404', async () => {
+  const empty = serveApp({ manifest: { ...MANIFEST, operations: {} }, handlers: {} })
+  const response = await call(empty, 'api/escrever', { texto: 'oi' })
+  assert.equal(response.status, 404)
+  assert.deepEqual(await response.json(), { code: 'OPERATION_NOT_FOUND' })
+})

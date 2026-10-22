@@ -151,6 +151,7 @@
     {
       "includes": [
         "apps/web/src/platform/hub.ts",
+        "packages/app/src/client.ts",
         "scripts/**",
         "apps/server/**",
         "tests/apps/*/assets/**"

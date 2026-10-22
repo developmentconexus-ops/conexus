@@ -2,7 +2,7 @@
 
 ## Context
 
-Until step 13 a generated app had a rigid frame: one to 32 operations and a fixed tree. The
+Until step 13 an app had a rigid frame: one to 32 operations and a fixed tree. The
 founder found it too tight: a pricing page needs no server. The platform keeps what [0019], [0018]
 and the dispatcher's CSP guarantee.
 

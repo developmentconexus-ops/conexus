@@ -48,6 +48,16 @@ test('null é declarável numa forma', () => {
   assert.equal(Manifest.safeParse(copy).success, true)
 })
 
+test('aceita de 0 a 32 operações e recusa 33', () => {
+  const operation = GOOD.operations.listar
+  function withCount(count: number) {
+    const names = Array.from({ length: count }, (_, at) => `op${at}`)
+    return { ...GOOD, operations: Object.fromEntries(names.map((name) => [name, operation])) }
+  }
+  for (const count of [0, 1, 32]) assert.equal(Manifest.safeParse(withCount(count)).success, true)
+  assert.equal(Manifest.safeParse(withCount(33)).success, false)
+})
+
 test('recusa contract diferente de 1', () => {
   refuses((m) => ({ ...m, contract: 2 }))
 })
@@ -64,7 +74,6 @@ test('recusa campo a mais no manifesto, na operação e na forma', () => {
 
 test('recusa operação sem forma, forma desconhecida e required sem a propriedade', () => {
   refuses((m) => ({ ...m, operations: { listar: { input: GOOD.operations.listar.input } } }))
-  refuses((m) => ({ ...m, operations: {} }))
   refuses((m) => {
     Object.assign(m.operations.listar, { input: { type: 'date' } })
   })

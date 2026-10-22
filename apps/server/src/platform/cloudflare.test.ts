@@ -151,7 +151,10 @@ test('cloudflare: o envio com arquivos estáticos, nas formas da API, do pedido 
     main_module: 'worker.js',
     compatibility_date: '2026-10-18',
     bindings: [],
-    assets: { jwt: 'pronto', config: { run_worker_first: false, not_found_handling: 'none' } },
+    assets: {
+      jwt: 'pronto',
+      config: { run_worker_first: false, not_found_handling: 'single-page-application' },
+    },
     limits: { cpu_ms: 50 },
     tags: ['company-c', 'project-p'],
   })

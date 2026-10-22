@@ -205,7 +205,7 @@ function metadataOf(input: WorkerUpload, assetsToken: string | undefined) {
       : {
           assets: {
             jwt: assetsToken,
-            config: { run_worker_first: false, not_found_handling: 'none' },
+            config: { run_worker_first: false, not_found_handling: 'single-page-application' },
           },
         }
   return {
