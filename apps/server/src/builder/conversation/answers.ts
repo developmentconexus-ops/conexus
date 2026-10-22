@@ -1,6 +1,6 @@
 import type { QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { openCards, tellCard, waitOn } from './cards.ts'
+import { openCards, resumed, tellCard, waitOn } from './cards.ts'
 import type { Card, Live } from './live.ts'
 import { PLAN_PATH } from './plan-tools.ts'
 
@@ -39,7 +39,8 @@ function answeredCard(card: Card, body: QuestionAnswer): Card {
  * on its plan. Mastra's claim takes the call at once, so a second answer is `QUESTION_CLOSED`, and
  * the resume starts in the same instant, as Mastra's own route does (`agent-controller.ts`, the
  * tool-suspension route): a Parar, an expiry or a message that comes after it closes the call
- * through Mastra, which ends the turn once (`cards.ts`).
+ * through Mastra, which ends the turn once (`cards.ts`). The answer is over once Mastra took the
+ * call, or refused it and keeps the card open.
  */
 export async function answerCard(
   live: Live,
@@ -54,8 +55,18 @@ export async function answerCard(
   tellCard(live, answeredCard(card, body))
   if (openCards(live).every((each) => each.toolCallId === toolCallId)) waitOn(live, false)
   const { address, claimKey } = claim
-  live.session
+  const taken = resumed(live, [card])
+  const responding = live.session
     .respondToToolSuspension({ address, resumeData, requestContext: live.run?.context })
     .catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
     .finally(() => live.session.releaseToolResponse(claimKey))
+  await taken
+  if (openCards(live).some((each) => each.toolCallId === toolCallId)) {
+    // Mastra refused the resume and keeps the call parked (`resumeToolCall`): it can show the call
+    // before it saved the parked run, and an answer that comes first loses Mastra's own claim.
+    await responding
+    tellCard(live, card)
+    waitOn(live, true)
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'RESUME_REFUSED' } })
+  }
 }

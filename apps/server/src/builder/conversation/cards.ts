@@ -59,7 +59,7 @@ export function waitOn(live: Live, waiting: boolean): void {
 }
 
 /** Until the resumed calls end, or the run does. */
-function resumed(live: Live, cards: Card[]): Promise<void> {
+export function resumed(live: Live, cards: Card[]): Promise<void> {
   const calls = new Set<string>(cards.map((card) => card.toolCallId))
   return new Promise((done) => {
     const unsubscribe = live.session.subscribe((event) => {
