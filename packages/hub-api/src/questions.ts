@@ -48,14 +48,16 @@ export const Task = z.object({
 /** The longest answer or reason a person sends back to a card, in characters. */
 const ANSWER_MAX_LENGTH = 20_000
 
+/** A person's answer to one question: the one given, or the choices of a multiple one. */
+export const Answer = z.union([
+  z.string().min(1).max(ANSWER_MAX_LENGTH),
+  z.array(z.string().min(1)),
+])
+export type Answer = z.infer<typeof Answer>
+
 /** What a person answers a card with: one answer per question, or the decision on a plan. */
 export const QuestionAnswer = z.discriminatedUnion('kind', [
-  z.object({
-    kind: z.literal('answers'),
-    answers: z.array(
-      z.union([z.string().min(1).max(ANSWER_MAX_LENGTH), z.array(z.string().min(1))]),
-    ),
-  }),
+  z.object({ kind: z.literal('answers'), answers: z.array(Answer) }),
   z
     .object({
       kind: z.literal('plan'),
@@ -69,13 +71,20 @@ export const QuestionAnswer = z.discriminatedUnion('kind', [
 ])
 export type QuestionAnswer = z.infer<typeof QuestionAnswer>
 
-/** The card of questions the turn waits on; a library's is the same card with `kind: 'library'`. */
-export const QuestionPart = z.object({
+const AskedCard = z.object({
   type: z.literal('question'),
   toolCallId: ToolCallId,
   questions: z.array(Question).min(1).max(QUESTION_LIMITS.questions),
-  state: z.enum(['open', 'answered', 'expired', 'closed']),
 })
+
+/**
+ * The card of questions the turn waits on; a library's is the same card with `kind: 'library'`.
+ * An answered card holds the answer to each question, in order (founder, 2026-10-22: "4. e 5 Sim").
+ */
+export const QuestionPart = z.discriminatedUnion('state', [
+  AskedCard.extend({ state: z.enum(['open', 'expired', 'closed']) }),
+  AskedCard.extend({ state: z.literal('answered'), answers: z.array(Answer) }),
+])
 
 /** The plan the turn waits on, read from the plan file. */
 export const PlanPart = z.object({

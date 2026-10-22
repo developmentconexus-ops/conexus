@@ -1,6 +1,6 @@
 import { posix } from 'node:path'
 import type { Question as HubQuestion } from '@conexus/hub-api'
-import { PackageName, QUESTION_LIMITS } from '@conexus/hub-api'
+import { Answer, PackageName, QUESTION_LIMITS } from '@conexus/hub-api'
 import { askUserTool, submitPlanTool } from '@mastra/core/agent-controller'
 import { createTool, formatQuestionAnswer } from '@mastra/core/tools'
 import { z } from 'zod'
@@ -34,7 +34,6 @@ const Library = z
 const Question = z.union([Library, Choice])
 /** What `ask_user` is called with and suspends with: 1 to 4 questions. */
 const Questions = z.object({ questions: z.array(Question).min(1).max(QUESTION_LIMITS.questions) })
-const Answers = z.array(z.union([z.string(), z.array(z.string())]))
 
 const ASK_USER_DESCRIPTION = [
   'Ask the person 1 to 4 questions in one card and wait for their answers. Use it only for what the person alone can decide:',
@@ -65,10 +64,15 @@ export function questionsOf(input: unknown): HubQuestion[] | undefined {
   })
 }
 
+/** What `ask_user` returns once answered: the model's line per question, and the answers themselves. */
+export const AskedResult = z.object({ content: z.string(), answers: z.array(Answer) })
+
 /**
  * `ask_user` for 1 to 4 questions, on Mastra's own suspend and resume (`askUserTool`): it suspends
  * with the questions and resumes with one answer per question, in order. It is registered under the
- * native id, and the native tool is disabled (decision 0053).
+ * native id, and the native tool is disabled (decision 0053). Its result keeps the answers, which
+ * Mastra stores as the call's result, while `toModelOutput` gives the model only its lines, stored
+ * apart in `providerMetadata.mastra.modelOutput` (`agent-*.js`, `computeModelOutputProviderMetadata`).
  */
 export function createAskUserTool() {
   return createTool({
@@ -76,17 +80,21 @@ export function createAskUserTool() {
     description: ASK_USER_DESCRIPTION,
     inputSchema: Questions,
     suspendSchema: Questions,
-    resumeSchema: Answers,
+    resumeSchema: z.array(Answer),
     execute: async ({ questions }, context) => {
       const answers = context?.agent?.resumeData
       if (answers !== undefined) {
         const lines = questions.map(
           (each, index) => `${each.question}: ${formatQuestionAnswer(answers[index] ?? '')}`,
         )
-        return { content: `User answered:\n${lines.join('\n')}`, isError: false }
+        return { content: `User answered:\n${lines.join('\n')}`, answers }
       }
       await context?.agent?.suspend?.({ questions })
       return undefined
+    },
+    toModelOutput: (output) => {
+      const asked = AskedResult.safeParse(output)
+      return asked.success ? { type: 'text', value: asked.data.content } : undefined
     },
   })
 }

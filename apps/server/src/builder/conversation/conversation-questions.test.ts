@@ -18,12 +18,19 @@ test('ask_user com 1 a 4 perguntas: a volta espera, a parte `question` chega e a
   assert.equal(answered.statusCode, 202, answered.body)
   const rest = await stream.turn()
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.equal(cards(rest).at(-1)?.state, 'answered')
-  assert.ok(calls[1]?.texts.some((text) => text.includes('User answered')))
+  const told = cards(rest).at(-1)
+  assert.deepEqual(told, { ...card, state: 'answered', answers: ['Todos (recomendado)'] })
+  const given = calls[1]?.texts.join('\n') ?? ''
+  assert.ok(given.includes(`User answered:\n${WHO.question}: Todos (recomendado)`), given)
+  assert.ok(
+    !given.includes('"answers"'),
+    'the model reads the lines, not the result kept for the card',
+  )
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(
-    read.flatMap((part) => (part.type === 'question' ? [part.state] : [])),
-    ['answered'],
+    read.filter((part) => part.type === 'question'),
+    [told],
+    'read again, the card holds the answers Mastra kept as the call’s result',
   )
 })
 

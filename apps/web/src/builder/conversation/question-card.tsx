@@ -1,4 +1,4 @@
-import type { MessagePart, Question, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
+import type { Answer, MessagePart, Question, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { LIBRARY_ANSWERS } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
@@ -112,6 +112,11 @@ function Ask({ question, at }: { question: Question; at: number }) {
   )
 }
 
+/** An answer as the card shows it: the one given, or the choices of a multiple one, as Mastra's `formatQuestionAnswer` joins them. */
+function answerText(answer: Answer | undefined): string {
+  return Array.isArray(answer) ? answer.join(', ') : (answer ?? '')
+}
+
 /** What a card no longer waiting says, by how it closed; an answered one says nothing more. */
 function closedText(state: QuestionPart['state']): string | undefined {
   if (state === 'expired') return CARD_TEXT.expired
@@ -121,8 +126,8 @@ function closedText(state: QuestionPart['state']): string | undefined {
 /**
  * The Builder's questions, one at a time, on shadcn's `questionnaire`: a choice among its options,
  * the recommended first and chosen, or another answer typed; a library to allow is the same card
- * (card of step 14, U6; Conexus OS `ask-user-pt.tsx`, by hand, at e0353c36). Once answered or
- * closed it keeps only its questions.
+ * (card of step 14, U6; Conexus OS `ask-user-pt.tsx`, by hand, at e0353c36). Once closed it keeps
+ * only its questions; once answered, each answer under its question.
  */
 export function QuestionCard({ part }: { part: QuestionPart }) {
   const { answer, sending, error } = useAnswer(part.toolCallId)
@@ -148,8 +153,13 @@ export function QuestionCard({ part }: { part: QuestionPart }) {
         </Questionnaire>
       ) : (
         <ul className="flex flex-col gap-xs text-text-2">
-          {part.questions.map((question) => (
-            <li key={question.question}>{question.question}</li>
+          {part.questions.map((question, at) => (
+            <li key={question.question} className="flex flex-col">
+              {question.question}
+              {part.state === 'answered' && (
+                <span className="text-text">{answerText(part.answers[at])}</span>
+              )}
+            </li>
           ))}
         </ul>
       )}

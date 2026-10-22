@@ -54,7 +54,7 @@ const STATE: Question = {
   multiSelect: false,
 }
 
-function question(state: 'open' | 'answered' | 'expired' | 'closed' = 'open'): MessagePart {
+function question(state: 'open' | 'expired' | 'closed' = 'open'): MessagePart {
   return { type: 'question', toolCallId: CALL, questions: [WHO, STATE], state }
 }
 
@@ -75,9 +75,14 @@ test('o cartão de perguntas: uma por vez, a recomendada escolhida, outra respos
   held.resolve(undefined)
   await waitFor(() => expect(bodies).toHaveLength(1))
   expect(bodies[0]).toEqual({ kind: 'answers', answers: ['Só eu', 'Só quando for entrega'] })
-  tell(question('answered'))
+  const answers = ['Só eu', ['Sim', 'Só quando for entrega']]
+  tell({ type: 'question', toolCallId: CALL, questions: [WHO, STATE], state: 'answered', answers })
   await waitFor(() => expect(screen.queryByRole('radio')).toBeNull())
-  expect(screen.getByText('Quem cadastra as encomendas?')).toBeTruthy()
+  const asked = screen.getByText('Quem cadastra as encomendas?').closest('ul')
+  expect([...(asked?.children ?? [])].map((item) => item.textContent)).toEqual([
+    'Quem cadastra as encomendas?Só eu',
+    'Uma encomenda tem situação?Sim, Só quando for entrega',
+  ])
 })
 
 test('o cartão de perguntas que falha: sem resposta do Hub, a frase do cartão; recusado, a da tabela', async () => {

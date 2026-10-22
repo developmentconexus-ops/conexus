@@ -14,7 +14,7 @@ import { z } from 'zod'
 import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
 import { masked } from './mask.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
-import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
+import { ASK_USER_TOOL, AskedResult, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { tailOf } from './shell.ts'
 
 type ToolPart = Extract<MessagePart, { type: 'tool' }>
@@ -74,7 +74,6 @@ const CommandExit = z.object({
 const TASK_TOOLS = new Set(['task_write', 'task_update', 'task_complete', 'task_check'])
 const CARD_TOOLS = new Set([ASK_USER_TOOL, SUBMIT_PLAN_TOOL, ...TASK_TOOLS])
 const TaskResult = z.object({ tasks: z.array(Task) })
-const Refused = z.object({ isError: z.literal(true) })
 const SubmittedPlan = z.object({
   submittedPlan: z.object({
     title: z.string().default(''),
@@ -196,7 +195,8 @@ function toolOf(invocation: Invocation, exitCode: number | null): ToolPart {
 /**
  * The cards of the controller's tools as the person sees them, in the place of a tool row: the
  * questions and the plan the turn waits on or got an answer to, and the task list. A call the tool
- * refused is not a card. The plan's text is the thread's while the plan is open (`withSuspended`).
+ * refused is not a card. An answered question's answers are its call's result, as Mastra keeps it;
+ * the plan's text is the thread's while the plan is open (`withSuspended`).
  */
 function cardOf(invocation: Invocation): MessagePart | undefined {
   const { toolName, toolCallId, args, result } = invocation
@@ -209,11 +209,13 @@ function cardOf(invocation: Invocation): MessagePart | undefined {
   }
   if (toolName === ASK_USER_TOOL) {
     const questions = questionsOf(args)
-    if (questions === undefined || Refused.safeParse(result).success) return undefined
-    const asked = state === 'running' ? 'open' : state === 'completed' ? 'answered' : 'closed'
-    return state === 'error'
-      ? undefined
-      : { type: 'question', toolCallId: id.data, questions, state: asked }
+    if (questions === undefined || state === 'error') return undefined
+    const card = { type: 'question', toolCallId: id.data, questions } as const
+    if (state !== 'completed') return { ...card, state: state === 'running' ? 'open' : 'closed' }
+    const answered = AskedResult.safeParse(result)
+    return answered.success
+      ? { ...card, state: 'answered', answers: answered.data.answers }
+      : undefined
   }
   const submitted = SubmittedPlan.safeParse(result)
   if (state === 'error' || (state === 'completed' && !submitted.success)) return undefined

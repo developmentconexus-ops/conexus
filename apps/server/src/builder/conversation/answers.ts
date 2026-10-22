@@ -27,9 +27,16 @@ function resumeOf(card: Card, body: QuestionAnswer): unknown {
   return body.answers
 }
 
-/** The card once answered: its questions answered, its plan approved or rejected. */
+/**
+ * The card once answered: its questions with the answers the tool resumes with, which its result
+ * keeps for a later read (`parts.ts`); its plan approved or rejected.
+ */
 function answeredCard(card: Card, body: QuestionAnswer): Card {
-  if (card.type === 'question') return { ...card, state: 'answered' }
+  if (card.type === 'question') {
+    return body.kind === 'answers'
+      ? { ...card, state: 'answered', answers: body.answers }
+      : { ...card, state: 'closed' }
+  }
   return { ...card, state: body.kind === 'plan' ? body.action : 'closed' }
 }
 
