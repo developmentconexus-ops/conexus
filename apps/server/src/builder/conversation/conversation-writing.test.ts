@@ -201,3 +201,20 @@ test('a saída longa relida do resultado do Mastra termina em "…", sem a nota 
     ],
   )
 })
+
+test('a saída relida do resultado do Mastra é só a do comando: sem `stdout:`, `stderr:`, `(no output)` nem `Exit code`', async (t) => {
+  const failing = { name: RUN.name, input: { command: 'echo um; echo dois >&2; exit 2' } } as const
+  const silent = { name: RUN.name, input: { command: 'true' } } as const
+  const { hub, ana, conversations } = await conversing(t, calling(failing, silent))
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const ended = commandsOf(partsOf(events))
+  const read = commandsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? [])
+  assert.deepEqual(read, ended, 'read again, each command opens on what the stream said at its end')
+  assert.deepEqual(
+    ended.map((command) => [command.output, command.exitCode]),
+    [
+      [['um', 'dois'], 2],
+      [[], 0],
+    ],
+  )
+})

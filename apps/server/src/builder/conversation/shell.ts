@@ -54,14 +54,39 @@ const MASTRA_CUT =
   /^\[(?:showing last \d+ of \d+ lines|(?:\.\.\.)?output truncated\b.*|(?:stdout|stderr): the first \d+ bytes were dropped;.*)\]$/
 
 /**
- * The end of a command's result as Mastra keeps it, as a command's tail keeps it: only what follows
- * Mastra's last note of a cut, which the row says with `cut`, as it says its own.
+ * The output alone of `execute_command`'s result, which Mastra 1.78.0 writes for the model around
+ * the two streams (`formatCommandOutput`, `appendTerminalLine` and `executeCommand`, in
+ * `dist/workspace-*.js` from `workspace/tools/execute-command.ts`): a `stdout:` and a `stderr:`
+ * header when stderr has lines, `(no output)` when neither has, and after a command that failed a
+ * last line with its exit code, which `data-sandbox-exit` holds, a cancelled run's note before it.
+ * The streams themselves are never stored apart: `data-sandbox-stdout` and `-stderr` are transient.
  */
-export function tailOf(result: string): Tail {
-  const lines = result.split('\n')
+function printedOf(result: string, exitCode: number | null): string {
+  if (result === '(no output)') return ''
+  let text = result
+  if (exitCode !== null && text.endsWith(`Exit code: ${exitCode}`)) {
+    const lines = text.split('\n').slice(0, -1)
+    if (/^(?:Command aborted: |The run was cancelled )/.test(lines.at(-1) ?? '')) lines.pop()
+    text = lines.join('\n').replace(/\n+$/, '')
+  }
+  if (text.startsWith('stderr:\n')) return text.slice('stderr:\n'.length)
+  const both = text.startsWith('stdout:\n') ? text.lastIndexOf('\n\nstderr:\n') : -1
+  if (both === -1) return text
+  const stdout = text.slice('stdout:\n'.length, both)
+  const stderr = text.slice(both + '\n\nstderr:\n'.length)
+  return stdout.endsWith('\n') ? stdout + stderr : `${stdout}\n${stderr}`
+}
+
+/**
+ * The end of a command's result as Mastra keeps it, as a command's tail keeps it: its output
+ * alone, and only what follows Mastra's last note of a cut, which the row says with `cut`.
+ */
+export function tailOf(result: string, exitCode: number | null): Tail {
+  const printed = printedOf(result, exitCode)
+  const lines = printed.split('\n')
   const note = lines.findLastIndex((line) => MASTRA_CUT.test(line))
   const tail = new ShellTail()
-  tail.add(note === -1 ? result : lines.slice(note + 1).join('\n'))
+  tail.add(note === -1 ? printed : lines.slice(note + 1).join('\n'))
   const kept = tail.tail()
   return { output: kept.output, cut: kept.cut || note !== -1 }
 }
