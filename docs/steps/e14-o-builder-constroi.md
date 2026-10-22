@@ -28,8 +28,8 @@ os textos dos cartões.
 **Respondidas em 2026-10-21.** Dividir; o Zod é a fonte das operações; `conexus_check` é
 ferramenta, o mesmo código do fim do turno; um modo só, o plano como skill; o prompt do OS,
 adaptado só onde a arquitetura mudou (U7). Depois: rígido só o
-contrato; um starter; bibliotecas com permissão; e as seis do estudo das formas (contrato 1 de 0 a
-32 operações e página única; a página fica atrás do login; o navegador bloqueia só CSP ou tela em
+contrato; um starter; bibliotecas com permissão; e as seis do estudo das formas (contrato 1 de zero
+ou mais operações e página única; a página fica atrás do login; o navegador bloqueia só CSP ou tela em
 branco; a biblioteca é sua, por Projeto, com as do starter e as cinco do OS já aprovadas; as
 dependências e uma skill por forma entram aqui). As capturas do OS dos cartões são tiradas no começo da U6 (A). Valem da 14 antiga: P3 A e
 "Autorizo provas reais".
@@ -77,7 +77,7 @@ serviço de fora (T14). Todos must.
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova |
 | --- | --- | --- | --- |
 | 1 | U1 | 0055 "proposed" antes do código, citando o já provado | o registro |
-| 2 | U2 | `Manifest` aceita 0 a 32 operações; os de hoje seguem válidos; 33: recusado | `manifest.test.ts` |
+| 2 | U2 | `Manifest` aceita zero ou mais operações; os de hoje seguem válidos | `manifest.test.ts` |
 | 3 | U2 | `manifestOf` passa no `Manifest`; sem `shared/operations.ts`: zero operações; `z.union` de objetos ou `z.transform`: `MANIFEST_SHAPE_UNSUPPORTED` com o caminho | `manifest-of.test.ts` |
 | 4 | U2 | `defineHandlers`: entrada fora 400 `INPUT_INVALID`; saída fora 500 `OUTPUT_INVALID`; o que lança: `HANDLER_FAILED`, sem a mensagem; com zero operações, todo `/api` 404 `OPERATION_NOT_FOUND` | `runtime.test.ts` |
 | 5 | U2 | `write` grava tudo ou nada (`db.batch`); erro do banco: `DatabaseRefused`, só o SQLSTATE; `createApi`: falha vira `CallFailed` com `failureText` em português | `server.test.ts`, `client.test.ts` |
@@ -184,7 +184,7 @@ serviço de fora (T14). Todos must.
 **Contratos.** 0055: o app é escrito contra o contrato, sobre um starter editável; o contrato é dono
 de `shared/operations.ts` e `server/handlers.ts` (os caminhos que geram o manifesto), do cliente
 gerado, de `worker.js`, da conferência e da montagem; o resto é do modelo. **Regras trocadas, não
-acrescidas**: contrato 1 "1 a 32 operações" vira "0 a 32" (0019: os manifestos de hoje seguem
+acrescidas**: contrato 1 "1 a 32 operações" vira "zero ou mais" (0019: os manifestos de hoje seguem
 válidos); cartão 9 "`serveApp` chamado pelo app" vira "gerado pela montagem"; a skill do contrato
 (`packages/app-contract/src/skill.ts`) sai, substituída pelas da U7; 0053 "the controller's own
 such tools stay disabled" vira "`ask_user`, `submit_plan` e `task_*` ligados, embrulhados";
@@ -195,7 +195,7 @@ such tools stay disabled" vira "`ask_user`, `submit_plan` e `task_*` ligados, em
 **Raio.** `packages/app-contract/src/manifest.ts`, `platform/cloudflare.ts`: muda; chama: envio, Hub.
 `packages/app/`: cria; chama: o starter, a conferência, as skills.
 
-**Contratos.** `Manifest.operations`: `.max(32)`, sem mínimo. `not_found_handling:
+**Contratos.** `Manifest.operations`: sem mínimo e sem teto. `not_found_handling:
 'single-page-application'` no upload (`cloudflare.ts:208`). `defineOperations`, `defineHandlers`
 (`Context = {db, caller}`, 0019), `query<R>(db, row: ZodType<R>, text, values?)`, `write(db,
 Statement[])`, `DatabaseRefused {code: Sqlstate}`, `manifestOf({operations?, migrations, assets}):
