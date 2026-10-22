@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { sql } from 'drizzle-orm'
+import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
 import { migrate } from './migrate.ts'
 import type { TestDatabase } from './test-database.ts'
@@ -90,4 +91,9 @@ export async function migratingWith(
     }),
   )
   return { test, outcome }
+}
+
+/** The same URL carrying an `options` of its own. */
+export function withOptionsInUrl(url: DatabaseUrl): DatabaseUrl {
+  return DatabaseUrl.parse(`${url.reveal()}?options=-c%20application_name%3Dx`)
 }

@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { sql } from 'drizzle-orm'
-import { DatabaseUrl } from './database.ts'
 import { MIGRATE_RETRY_EXIT, migrate, migrateExitCode } from './migrate.ts'
 import {
   createTestDatabase,
@@ -19,7 +18,14 @@ import {
 } from './test-database.ts'
 import { startHub } from './test-hub-process.ts'
 import { inDatabase, loginAnswer } from './test-mastra-database.ts'
-import { failureOf, loginFails, loginWorks, migratingWith, storedVerifier } from './test-migrate.ts'
+import {
+  failureOf,
+  loginFails,
+  loginWorks,
+  migratingWith,
+  storedVerifier,
+  withOptionsInUrl,
+} from './test-migrate.ts'
 
 test('o login do Hub recebe 42501 em DELETE e em DDL', async (t) => {
   const { database } = await createTestDatabase(t)
@@ -328,7 +334,7 @@ test('migrate com a trava ocupada na última espera do limite da transação: lo
 
 test('migrate recusa a URL do dono com options, que apagaria os limites', async (t) => {
   const test = await createTestDatabase(t)
-  const ownerUrl = DatabaseUrl.parse(`${test.ownerUrl.reveal()}?options=-c%20application_name%3Dx`)
+  const ownerUrl = withOptionsInUrl(test.ownerUrl)
   await assert.rejects(
     migrate({ ownerUrl, runtimeUrl: test.runtimeUrl, mastraUrl: test.mastraUrl }),
     (error: unknown) => error instanceof Error && error.message.startsWith('CONFIG_INVALID'),
