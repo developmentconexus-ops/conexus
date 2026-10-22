@@ -3,6 +3,7 @@ import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
 import { ProjectId } from './projects.ts'
+import { PlanPart, QuestionAnswer, QuestionPart, TasksPart, ToolCallId } from './questions.ts'
 
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
@@ -46,6 +47,7 @@ export const TurnFailureCode = z.enum([
   'GIT_RESTORE_NEEDED',
   'MACHINE_LOST',
   'MACHINE_UNAVAILABLE',
+  'QUESTION_EXPIRED',
   'INTERNAL_UNEXPECTED',
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>
@@ -144,6 +146,9 @@ export const MessagePart = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('notice'), text: z.string() }),
   z.object({ type: z.literal('failure'), code: TurnFailureCode }),
+  QuestionPart,
+  PlanPart,
+  TasksPart,
 ])
 export type MessagePart = z.infer<typeof MessagePart>
 
@@ -205,6 +210,11 @@ function partKey(part: MessagePart): string | undefined {
     case 'reasoning':
     case 'tool':
       return `${part.type}:${part.id}`
+    case 'question':
+    case 'plan':
+      return `${part.type}:${part.toolCallId}`
+    case 'tasks':
+      return 'tasks'
     case 'shell':
     case 'file':
       return `${part.type}:${part.toolId}`
@@ -352,4 +362,17 @@ export const setConversationModel = defineOperation({
   input: { params: OfConversation, body: z.object({ model: ModelId, effort: Effort }) },
   success: { status: 200, body: z.object({ model: ModelId, effort: Effort }) },
   failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT', 'EFFORT_UNSUPPORTED'],
+})
+
+export const answerQuestion = defineOperation({
+  id: 'answerQuestion',
+  summary:
+    'Answers the card a turn waits on: the answers to its questions, or the decision on its plan.',
+  access: 'session',
+  method: 'POST',
+  path: `${BASE}/{conversationId}/questions/{toolCallId}`,
+  bodyLimit: 128 * 1024,
+  input: { params: OfConversation.extend({ toolCallId: ToolCallId }), body: QuestionAnswer },
+  success: { status: 202 },
+  failures: [...READ_FAILURES, 'QUESTION_CLOSED', 'QUESTION_ANSWERS_INVALID'],
 })

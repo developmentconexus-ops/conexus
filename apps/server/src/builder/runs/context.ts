@@ -21,6 +21,8 @@ export type RunsDeps = {
   log: FailureLog
   /** How long a turn may run; an hour (card, limits) unless a test shortens it. */
   turnMs?: () => number
+  /** How long a question waits for its answer; thirty minutes (card) unless a test shortens it. */
+  questionMs?: () => number
   /** How often a turn's lease is renewed; every 30 seconds unless a test shortens it. */
   renewMs?: () => number
   /** How long a stopping copy waits for its turns before it lets go of their leases; 8 seconds unless a test shortens it. */

@@ -7,6 +7,7 @@ import type {
   ProjectId,
   RunId,
 } from '@conexus/hub-api'
+import { QUESTION_LIMITS } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
@@ -39,6 +40,7 @@ function idleRun() {
     registry: undefined,
     onPhase: () => undefined,
     stopDeadline: () => undefined,
+    stopWaiting: () => undefined,
     stopLease: () => undefined,
     lost: false,
   }
@@ -55,6 +57,8 @@ type Driven = {
   onPhase: (phase: Phase) => void
   /** Ends the hour's timer; the lease goes on until the save is over. */
   stopDeadline: () => void
+  /** Ends the question's clock, while the turn waits on an answer. */
+  stopWaiting: () => void
   stopLease: () => void
   lost: boolean
 }
@@ -90,6 +94,7 @@ export class Runs {
         const mine = this.#driven.get(runId)
         if (mine === undefined) return
         mine.stopDeadline()
+        mine.stopWaiting()
         mine.stopLease()
         this.#driven.delete(runId)
         await this.#unregister(mine)
@@ -140,6 +145,24 @@ export class Runs {
   onPhase(runId: RunId, listener: (phase: Phase) => void): void {
     const mine = this.#driven.get(runId)
     if (mine !== undefined) mine.onPhase = listener
+  }
+
+  /**
+   * The turn waits on the person's answer (`waiting`) or goes on after it; the run stays this copy's
+   * and its lease goes on. While it waits, `expire` is called once the question's time (thirty
+   * minutes, card) runs out. False once the run is not this copy's to change.
+   */
+  async waiting(runId: RunId, waiting: boolean, expire: () => void): Promise<boolean> {
+    const mine = this.#driven.get(runId)
+    if (mine === undefined) return false
+    const { companyId, projectId } = mine
+    const changed = await this.#context.store.wait(companyId, runId, waiting)
+    if (!changed) return false
+    mine.stopWaiting()
+    const until = new Date(Date.now() + (this.#deps.questionMs?.() ?? QUESTION_LIMITS.waitMs))
+    mine.stopWaiting = waiting ? watchDeadline(until, expire) : () => undefined
+    this.#deps.log.info({ companyId, projectId, runId }, waiting ? 'RUN_WAITING' : 'RUN_RESUMED')
+    return true
   }
 
   /** Starts the turn's hour and its lease; `abort` stops the turn as Parar does. */
@@ -229,6 +252,7 @@ export class Runs {
     const mine = this.#driven.get(input.runId)
     if (mine === undefined) return 'gone'
     mine.stopDeadline()
+    mine.stopWaiting()
     const { companyId, projectId } = mine
     const { store } = this.#context
     let elsewhere = false
@@ -299,6 +323,7 @@ export class Runs {
     const mine = [...this.#driven.values()]
     for (const each of mine) {
       each.stopDeadline()
+      each.stopWaiting()
       each.stopLease()
     }
     await this.#context.store.yieldLeases([...new Set(mine.map((each) => each.companyId))])

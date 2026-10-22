@@ -1,11 +1,19 @@
 import type { Message, MessagePart, PartEvent } from '@conexus/hub-api'
-import { applyEvent, MessageId, ModelId, SUBJECT_MAX_LENGTH } from '@conexus/hub-api'
+import {
+  applyEvent,
+  MessageId,
+  ModelId,
+  SUBJECT_MAX_LENGTH,
+  Task,
+  ToolCallId,
+} from '@conexus/hub-api'
 import type { MastraDBMessage, MastraMessagePart } from '@mastra/core/agent-controller'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
 import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
 import { masked } from './mask.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
+import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { ShellTail } from './shell.ts'
 
 type ToolPart = Extract<MessagePart, { type: 'tool' }>
@@ -55,6 +63,17 @@ const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
 const CommandExit = z.object({
   type: z.literal('data-sandbox-exit'),
   data: z.object({ toolCallId: z.string().min(1), exitCode: z.int() }),
+})
+const TASK_TOOLS = new Set(['task_write', 'task_update', 'task_complete', 'task_check'])
+const CARD_TOOLS = new Set([ASK_USER_TOOL, SUBMIT_PLAN_TOOL, ...TASK_TOOLS])
+const TaskResult = z.object({ tasks: z.array(Task) })
+const Refused = z.object({ isError: z.literal(true) })
+const SubmittedPlan = z.object({
+  submittedPlan: z.object({
+    title: z.string().default(''),
+    plan: z.string().default(''),
+    action: z.enum(['approved', 'rejected']),
+  }),
 })
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 
@@ -118,6 +137,37 @@ function toolOf(invocation: Invocation): ToolPart {
   }
 }
 
+/**
+ * The cards of the controller's tools as the person sees them, in the place of a tool row: the
+ * questions and the plan the turn waits on or got an answer to, and the task list. A call the tool
+ * refused is not a card. The plan's text is the thread's while the plan is open (`withSuspended`).
+ */
+function cardOf(invocation: Invocation): MessagePart | undefined {
+  const { toolName, toolCallId, args, result } = invocation
+  const id = ToolCallId.safeParse(toolCallId)
+  if (!id.success) return undefined
+  const state = stateOf(invocation)
+  if (TASK_TOOLS.has(toolName)) {
+    const tasks = TaskResult.safeParse(result)
+    return tasks.success ? { type: 'tasks', items: tasks.data.tasks } : undefined
+  }
+  if (toolName === ASK_USER_TOOL) {
+    const questions = questionsOf(args)
+    if (questions === undefined || Refused.safeParse(result).success) return undefined
+    const asked = state === 'running' ? 'open' : state === 'completed' ? 'answered' : 'closed'
+    return state === 'error'
+      ? undefined
+      : { type: 'question', toolCallId: id.data, questions, state: asked }
+  }
+  const submitted = SubmittedPlan.safeParse(result)
+  if (state === 'error' || (state === 'completed' && !submitted.success)) return undefined
+  const { title, plan, action } = submitted.success
+    ? submitted.data.submittedPlan
+    : { title: '', plan: '', action: undefined }
+  const closed = state === 'denied' ? 'closed' : (action ?? 'open')
+  return { type: 'plan', toolCallId: id.data, title, plan, state: closed }
+}
+
 /** The file part a finished write or edit leaves, or none for any other tool state. */
 export function fileOf(tool: ToolPart): MessagePart | undefined {
   const operation =
@@ -163,7 +213,11 @@ export function partOf(part: MastraMessagePart | unknown, place: Place): Message
     return { type: 'reasoning', id: reasoningId(place), state: 'completed', seconds: null }
   }
   const invocation = Invocation.safeParse(part)
-  if (invocation.success) return toolOf(invocation.data.toolInvocation)
+  if (invocation.success) {
+    const { toolName } = invocation.data.toolInvocation
+    if (CARD_TOOLS.has(toolName)) return cardOf(invocation.data.toolInvocation)
+    return toolOf(invocation.data.toolInvocation)
+  }
   const notice = Notice.safeParse(part)
   if (notice.success) return { type: 'notice', text: notice.data.data.text }
   return undefined

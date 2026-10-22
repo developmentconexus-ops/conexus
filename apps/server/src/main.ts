@@ -124,6 +124,7 @@ export function subjectsOf(deps: {
   turnMs?: () => number
   renewMs?: () => number
   yieldMs?: () => number
+  questionMs?: () => number
   log: FailureLog
 }): {
   runs: Runs
@@ -144,6 +145,7 @@ export function subjectsOf(deps: {
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
     ...{ turnMs: deps.turnMs, renewMs: deps.renewMs, yieldMs: deps.yieldMs },
+    questionMs: deps.questionMs,
   })
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },

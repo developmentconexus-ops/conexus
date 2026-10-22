@@ -78,7 +78,7 @@ async function settledState(context: RunsContext, expired: Run): Promise<RunStat
 }
 
 async function settleOne(context: RunsContext, expired: Run): Promise<void> {
-  if (expired.state === 'open') return endTurn(context, expired)
+  if (expired.state === 'open' || expired.state === 'waiting') return endTurn(context, expired)
   const { companyId, projectId } = expired
   const to = await settledState(context, expired)
   if (!(await context.store.end(companyId, expired.id, to))) return

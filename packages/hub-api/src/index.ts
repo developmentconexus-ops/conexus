@@ -65,6 +65,7 @@ export {
   renewInvitation,
 } from './companies.ts'
 export {
+  answerQuestion,
   applyEvent,
   CONVERSATION_HEARTBEAT_MS,
   Conversation,
@@ -186,6 +187,15 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
+export {
+  LIBRARY_ANSWERS,
+  PackageName,
+  QUESTION_LIMITS,
+  Question,
+  QuestionAnswer,
+  Task,
+  ToolCallId,
+} from './questions.ts'
 export { RunId } from './runs.ts'
 export {
   ProjectSource,

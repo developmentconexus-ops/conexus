@@ -8,6 +8,8 @@ import {
   QUESTION_KEY,
   Question,
   questionId,
+  SUSPENSIONS_KEY,
+  Suspension,
   THINKING_KEY,
   ThoughtTime,
   TURN_FAILURES_KEY,
@@ -28,6 +30,7 @@ const Metadata = z
     [TURN_FAILURES_KEY]: z.array(TurnFailure).default([]),
     [THINKING_KEY]: z.array(ThoughtTime).default([]),
     [TURN_PARTS_KEY]: z.array(TurnPart).default([]),
+    [SUSPENSIONS_KEY]: z.array(Suspension).default([]),
   })
   .loose()
 
@@ -135,6 +138,30 @@ function withKept(messages: Message[], kept: TurnPart[]): Message[] {
   return shown
 }
 
+/**
+ * Each question and plan with what the thread kept of it: the text of a plan Mastra holds only as a
+ * path, and that a wait ran out, which Mastra reads as a call it closed.
+ */
+function withSuspended(messages: Message[], kept: Suspension[]): Message[] {
+  function settled(part: MessagePart): MessagePart {
+    const found =
+      part.type === 'plan' || part.type === 'question'
+        ? kept.find((each) => each.toolCallId === part.toolCallId)
+        : undefined
+    if (found === undefined || part.type === 'text') return part
+    if (part.type === 'plan') {
+      const text = found.plan ?? part
+      const state = found.expired === true && part.state === 'closed' ? 'expired' : part.state
+      return { ...part, title: part.title || text.title, plan: part.plan || text.plan, state }
+    }
+    if (part.type === 'question' && found.expired === true && part.state === 'closed') {
+      return { ...part, state: 'expired' }
+    }
+    return part
+  }
+  return messages.map((message) => ({ ...message, parts: message.parts.map(settled) }))
+}
+
 /** Each thinking with the seconds the stream said it took, or `null` where none was kept. */
 function withSeconds(messages: Message[], times: ThoughtTime[]): Message[] {
   const seconds = new Map(times.map((time) => [time.id, time.seconds]))
@@ -183,7 +210,10 @@ export async function historyOf(
   const messages = turnsOf(recalled.messages.flatMap((message) => messageOf(message) ?? []))
   const asked = unsaved(conversationId, metadata[QUESTION_KEY], messages)
   const settled = inProgress === undefined ? messages : untilMessage(messages, inProgress)
-  const timed = withSeconds(settled, metadata[THINKING_KEY])
+  const timed = withSuspended(
+    withSeconds(settled, metadata[THINKING_KEY]),
+    metadata[SUSPENSIONS_KEY],
+  )
   const lasting = withKept([...timed, ...asked], metadata[TURN_PARTS_KEY])
   const read = withFailures(lasting, metadata[TURN_FAILURES_KEY])
   const effort = metadata.thinkingLevel ?? 'off'

@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { call } from '../../hub/identity/test-hub.ts'
 import {
+  answeredOf,
   asked,
   conversing,
   hubBeside,
@@ -11,6 +12,7 @@ import {
   started,
   streamOf,
 } from './test-conversation.ts'
+import { conversingWith, tool } from './test-questions.ts'
 import { citing, FETCH_ERROR, PAGES, printedOf, researching, UNREACHABLE } from './test-research.ts'
 
 type Part = Extract<ConversationEvent, { type: 'part' }>['part']
@@ -138,5 +140,28 @@ test('uma resposta que cita a pesquisa é um texto só, ao vivo e relida, sem qu
   assert.deepEqual(
     messages[1]?.parts.map((part) => (part.type === 'text' ? part.text : part.type)),
     ['Vou buscar os apps.', 'tool', answer],
+  )
+})
+
+test('task_*: a parte `tasks` chega e sobrevive a recarregar', async (t) => {
+  const items = [
+    { content: 'Montar a tabela', status: 'in_progress', activeForm: 'Montando a tabela' },
+  ]
+  const { hub, ana, url, stream, send } = await conversingWith(t, [
+    [tool('task_write', { tasks: items })],
+  ])
+  assert.equal((await send()).statusCode, 202)
+  const events = await stream.turn()
+  const live = events.flatMap((event) =>
+    event.type === 'part' && event.part.type === 'tasks' ? [event.part] : [],
+  )
+  assert.deepEqual(
+    live.at(-1)?.items.map((each) => [each.content, each.status]),
+    [['Montar a tabela', 'in_progress']],
+  )
+  const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
+  assert.deepEqual(
+    read.filter((part) => part.type === 'tasks'),
+    [live.at(-1)],
   )
 })

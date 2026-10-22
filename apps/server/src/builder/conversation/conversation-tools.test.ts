@@ -38,7 +38,14 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   }
   function searches(tools: readonly string[]) {
     return tools
-      .filter((name) => !name.startsWith('mastra_workspace_') && !name.startsWith('skill'))
+      .filter(
+        (name) =>
+          !name.startsWith('mastra_workspace_') &&
+          !name.startsWith('skill') &&
+          !name.startsWith('task_') &&
+          name !== 'ask_user' &&
+          name !== 'submit_plan',
+      )
       .sort()
   }
   assert.deepEqual(
