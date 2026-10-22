@@ -106,6 +106,4 @@ Respostas de 2026-10-21 sobre o cartão da etapa 14, levadas da página do cart�
 
 Emenda do cartão da etapa 14, 2026-10-22: ao estudo da Conversa, "1. Sim … 2.B" (a linha de ferramenta abre como no OS, mascarada e cortada; "Pensou", só o tempo; o plano no resultado da ferramenta, nativo; o registro único da conversa é a etapa 14.0); à auditoria nativa, "2. SIM" ("Permitir" chega à conferência; o cartão de perguntas é o questionário do shadcn instalado; uma frase só sobre quando conferir); ao estudo do contrato do app, "A" (o app confere cada chamada com o próprio Zod; e-mail, data e "pix ou cartão" funcionam); à leitura do plano, "A" (o plano longo, cortado, abre inteiro num Dialog); ao teto do cartão, "B". Em 2026-10-21, "A" ao relatório de base (2.6): sem teto de operações.
 
-Cartão da etapa 14 aprovado em 2026-10-22 (commit a1b1266ce6cf90ec2ae443db04fa8d72c87a7e68): "Aprovo"
-
 Cartão da etapa 14 aprovado em 2026-10-22 (commit a1b1266): "Aprovo"
