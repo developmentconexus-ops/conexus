@@ -129,6 +129,18 @@ jobs:
       - run: npm test -w @conexus/web
       - run: npm run build
 
+  packages:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
+      # The check program drives a real Chromium (decision 0055).
+      - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
+      - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/hub-api
+
   e2e:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -315,7 +327,7 @@ jobs:
 
   ci:
     if: always()
-    needs: [check, scripts, server, web, e2e, removals-plan, removals, image, workflows, audit]
+    needs: [check, scripts, server, web, packages, e2e, removals-plan, removals, image, workflows, audit]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -325,7 +337,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }} ${{ needs.workflows.result }} ${{ needs.audit.result }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }} ${{ needs.workflows.result }} ${{ needs.audit.result }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
