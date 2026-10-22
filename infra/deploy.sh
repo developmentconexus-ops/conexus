@@ -22,10 +22,26 @@ migrate_if_labeled() {
     echo "no migrations in: $image"
     return 0
   fi
-  if ! HUB_IMAGE="$image" timeout 60 "${compose[@]}" run --rm migrate; then
-    echo "migration failed: $image" >&2
-    return 1
-  fi
+  # Status 75 is `migrate` saying the lock was busy or the connection was lost (MIGRATE_RETRY_EXIT);
+  # the migrations are one transaction, so a try again repeats them whole. The 3 attempts and the
+  # 10 s pause are strong_migrations' example (lock_timeout_retries 3, lock_timeout_retry_delay 10 s,
+  # README.md:1030-1048); here 3 attempts in all. The 120 s is the server's 60 s
+  # transaction limit plus the worst boot seen (~8 s), with margin; the server ends the SQL by itself.
+  local attempt=1 status
+  while true; do
+    status=0
+    HUB_IMAGE="$image" timeout 120 "${compose[@]}" run --rm migrate || status=$?
+    if [ "$status" -eq 0 ]; then
+      return 0
+    fi
+    if [ "$status" -ne 75 ] || [ "$attempt" -ge 3 ]; then
+      echo "migration failed: $image" >&2
+      return 1
+    fi
+    echo "migration will be tried again: attempt $attempt of 3 did not finish" >&2
+    sleep "${MIGRATE_RETRY_SECONDS:-10}"
+    attempt=$((attempt + 1))
+  done
 }
 
 # After migrate: every model account's credential moves to the seal key file's last line (S32).
