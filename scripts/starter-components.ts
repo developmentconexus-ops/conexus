@@ -56,9 +56,50 @@ const HEADER = `/*
  */
 `
 
+/**
+ * The registry's chart writes its colors in a `<style>` element, which the app's policy refuses
+ * (decision 0055): they become custom properties on the chart's own container. `light-dark()`
+ * follows the page's `color-scheme`, which styles.css sets for both themes.
+ */
+export function patchedChart(source: string): string {
+  const style = source.slice(
+    source.indexOf('const ChartStyle ='),
+    source.indexOf('const ChartTooltip ='),
+  )
+  const swaps: [string, string][] = [
+    ['  className,\n  children,\n  config,', '  className,\n  style,\n  children,\n  config,'],
+    [
+      '        data-chart={chartId}\n',
+      '        data-chart={chartId}\n        style={{ ...chartColors(config), ...style }}\n',
+    ],
+    ['        <ChartStyle id={chartId} config={config} />\n', ''],
+    [style, CHART_COLORS],
+    ['  ChartStyle,\n', ''],
+  ]
+  return swaps.reduce((text, [from, to]) => {
+    if (from === '' || !text.includes(from))
+      throw new Error(`chart.tsx changed: ${from.slice(0, 40)}`)
+    return text.replace(from, () => to)
+  }, source)
+}
+
+const CHART_COLORS = `function chartColors(config: ChartConfig): React.CSSProperties {
+  const colors: Record<string, string> = {}
+  for (const [key, item] of Object.entries(config)) {
+    if (item.theme) colors[\`--color-\${key}\`] = \`light-dark(\${item.theme.light}, \${item.theme.dark})\`
+    else if (item.color) colors[\`--color-\${key}\`] = item.color
+  }
+  return colors
+}
+
+`
+
 /** The registry imports `cn` as a package, and overlays paint with the raw color `bg-black`; the app takes both from its own files and tokens. */
-export function patched(source: string): string {
-  return `${HEADER}${source.replaceAll('from "cn"', 'from "@/lib/utils"').replaceAll('bg-black', 'bg-scrim')}`
+export function patched(source: string, name = ''): string {
+  const own = source
+    .replaceAll('from "cn"', 'from "@/lib/utils"')
+    .replaceAll('bg-black', 'bg-scrim')
+  return `${HEADER}${name === 'chart.tsx' ? patchedChart(own) : own}`
 }
 
 function generate(): void {
@@ -121,7 +162,7 @@ function generate(): void {
         if (!name.endsWith(extension)) continue
         writeFileSync(
           join(SRC, folder, name),
-          patched(readFileSync(join(work, 'src', folder, name), 'utf8')),
+          patched(readFileSync(join(work, 'src', folder, name), 'utf8'), name),
         )
       }
     }
