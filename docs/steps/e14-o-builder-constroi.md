@@ -39,8 +39,8 @@ são da 13 e esperam o conserto dela; as da 12.x, de telas fora destas pastas.
 OS, mascarada e cortada; "Pensou", só o tempo; o plano fica no resultado da ferramenta, nativo. O
 registro único da conversa é a etapa 14.0. À auditoria nativa, "2. SIM": "Permitir" chega à
 conferência; o cartão de perguntas é o questionário do shadcn instalado; uma frase só sobre quando
-conferir. Em 2026-10-21, "A" ao relatório de base (2.6): sem teto de operações. **Pendente**: o achado 1 da
-auditoria (o app confere com o próprio Zod), na U2 e na 0055.
+conferir. Em 2026-10-21, "A" ao relatório de base (2.6): sem teto de operações. Ao estudo do contrato do app, "A":
+o app confere cada chamada com o próprio Zod; e-mail, data e "pix ou cartão" funcionam.
 
 ## As unidades
 
@@ -72,8 +72,8 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova |
 | --- | --- | --- | --- |
 | 1 | U1 | 0055 "proposed" antes do código, citando o já provado | o registro |
-| 2 | U2 | `Manifest` aceita zero ou mais operações, sem teto ("A"); os de hoje seguem válidos | `manifest.test.ts` |
-| 3 | U2 | `manifestOf` passa no `Manifest`; sem `shared/operations.ts`, zero operações; `z.union` de objetos ou `z.transform`: `MANIFEST_SHAPE_UNSUPPORTED` e o caminho | `manifest-of.test.ts` |
+| 2 | U2 | `Manifest` é contrato, entrada, arquivos e migrações; zero ou mais operações, sem teto ("A"); os guardados seguem válidos, `operations` aceita e não lida | `manifest.test.ts` |
+| 3 | U2 | Pelo `fetch` do Worker: e-mail inválido 400 `INPUT_INVALID`; a encomenda da Ana 200, com o padrão e a data codificada; saída com transform de mão única 500 `OUTPUT_INVALID`, nunca exceção; `manifesto`: `z.date()` sem codec, `bigint` ou `Map`: `OPERATION_NOT_JSON` com a operação e o caminho | `runtime.test.ts`, `check.test.ts` |
 | 4 | U2 | `defineHandlers`: entrada fora 400 `INPUT_INVALID`; saída fora 500 `OUTPUT_INVALID`; o que lança, `HANDLER_FAILED` sem a mensagem; sem operações, `/api` 404 `OPERATION_NOT_FOUND` | `runtime.test.ts` |
 | 5 | U2 | `write` grava tudo ou nada (`db.batch`); erro do banco: `DatabaseRefused`, só o SQLSTATE; `createApi`: falha vira `CallFailed`, `failureText` em português | `server.test.ts`, `client.test.ts` |
 | 6 | U2 | Todo upload leva `not_found_handling: 'single-page-application'`; `/api` segue no Worker | `cloudflare.test.ts` |
@@ -160,7 +160,7 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 
 | Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
 | --- | --- | --- | --- | --- | --- |
-| Operações em Zod, manifesto, handlers e cliente | nosso, novo | `packages/app/src/` | — | inverte o OS (manifesto JSON escrito) | OS `17-app-stack-decision.md:154-156`; vibesdk nenhuma faz |
+| Operações em Zod, conferidas no Worker; manifesto como lista de embarque | nosso, novo | `packages/app/src/`, `app-contract/src/runtime.ts` | sai a forma JSON das operações | inverte o OS (manifesto JSON escrito, `server-manifest.ts`) | OS `17-app-stack-decision.md:154-156`; vibesdk sem manifesto |
 | Navegação de página única | nativo | `platform/cloudflare.ts:208` | — | — | Cloudflare `not_found_handling`; vibesdk `think-user-deploy.ts:56` |
 | Starter editável | trazido como ideia | `packages/app/starter/` | sem casca guardada | `jitless`, `CSPProvider` | OS `starter-template/`; vibesdk `think.ts:160-161` |
 | Bibliotecas por Projeto | nosso, novo | `builder/packages/`, `packages/app/src/check/dependencies.ts` | a lista vem do Projeto | o `node_modules` só com o declarado | OS `allowlist.mjs:18-40`; vibesdk `SKILL.md:357-389` (sem lista) |
@@ -179,33 +179,40 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 ## U1 Registro 0055 e as regras trocadas
 
 **Raio.** `docs/decisions/0055-apps-on-the-platform-contract.md`: cria. `docs/{architecture,index}.md`,
-`docs/decisions/{0019,0053}-*.md`: muda. Chama: `check-docs`.
+`docs/decisions/{0019,0053}-*.md`, `docs/reference/boundaries.md`: muda. Chama: `check-docs`.
 
 **Contratos.** 0055: o app é escrito contra o contrato, sobre um starter editável; o contrato é dono
 de `shared/operations.ts` e `server/handlers.ts` (os caminhos que geram o manifesto), do cliente
 gerado, de `worker.js`, da conferência e da montagem; o resto é do modelo. **Regras trocadas, não
 acrescidas**: contrato 1 "1 a 32 operações" vira "zero ou mais" (0019: os manifestos de hoje seguem
-válidos); cartão 9 "`serveApp` chamado pelo app" vira "gerado pela montagem"; a skill do contrato
+válidos); 0019 "A manifest holds zero or more operations" vira "an app declares zero or more
+operations, in Zod"; 0055 "Operations are written in Zod" ganha "the app's Worker checks every call
+with them; the manifest holds what the Hub reads (contract, entry, assets, migrations)", e o
+Criterion, a prova do estudo do contrato; cartão 9 "`serveApp` chamado pelo app" vira "gerado pela
+montagem, com o Zod do app"; sai a entrada de `boundaries.md` do manifesto como única conferência; a skill do contrato
 (`packages/app-contract/src/skill.ts`) sai, substituída pelas da U7; 0053 "the controller's own
 such tools stay disabled" vira "`ask_user`, `submit_plan` e `task_*` ligados, embrulhados";
 `live.ts:289` "`suspended` cannot happen" cai.
 
 ## U2 O contrato afrouxado e o SDK
 
-**Raio.** `packages/app-contract/src/manifest.ts`, `platform/cloudflare.ts`: muda; chama: envio, Hub.
+**Raio.** `packages/app-contract/src/{manifest,runtime}.ts`, `platform/cloudflare.ts`, `tests/apps/recados*`:
+muda; chama: envio, Hub, despachante; `packages/app/src/manifest-of.ts`: apaga.
 `packages/app/`: cria; chama: o starter, a conferência, as skills.
 
-**Contratos.** `Manifest.operations`: sem mínimo e sem teto. `not_found_handling:
+**Contratos.** `Manifest = {contract: 1, entry, migrations, assets, operations?}`, `operations`
+aceita e não lida (`repair.ts:79`). `serveApp({operations, handlers})`: `input.safeParse`, saída por
+`safeEncode` (`$ZodEncodeError` vira `OUTPUT_INVALID`); `Handlers` recebe `z.output<input>`. `not_found_handling:
 'single-page-application'` no upload (`cloudflare.ts:208`). `defineOperations`, `defineHandlers`
 (`Context = {db, caller}`, 0019), `query<R>(db, row: ZodType<R>, text, values?)`, `write(db,
-Statement[])`, `DatabaseRefused {code: Sqlstate}`, `manifestOf({operations?, migrations, assets}):
-Result<Manifest, ManifestRefused>`, `ManifestRefused = {code: 'MANIFEST_SHAPE_UNSUPPORTED',
-operation, path}`, `createApi`, `CallFailed {code}`, `failureText: Record<AppFailureCode, string>`,
+Statement[])`, `DatabaseRefused {code: Sqlstate}`, `createApi`, `CallFailed {code}`, `failureText: Record<AppFailureCode, string>`,
 o dono das frases (C26). `OperationName` marcado (C23). Entrada: o corpo do `POST`, pelo Zod (C27).
 Modelo: `runtime.ts` (C21, C23, C26).
 
-**Ordem.** Regras: C21, C23, C26, C27, D28. Funções: `zod@4.6.5` `z.toJSONSchema` (`io: 'input'`),
-conferido contra `Shape`. **Pendente**: achado 1 da auditoria. **Prova.** 2 a 6.
+**Ordem.** Regras: C21, C23, C26, C27, D28. Funções: `zod@4.6.5` `safeParse`, `safeEncode`. Saem
+`Shape`, `schemaOf` e `manifest-of.ts` (apagar antes de pôr). O Recados e os apps de defeito do passo
+10 passam a ter operações em Zod e o mesmo `serveApp`. Base: estudo do contrato do app, §8, provado no
+`workerd`. **Prova.** 2 a 6.
 
 ## U3 O starter editável
 
@@ -213,7 +220,7 @@ conferido contra `Shape`. **Pendente**: achado 1 da auditoria. **Prova.** 2 a 6.
 
 **Contratos.** A árvore do estudo das formas, §8.2: `src/router.tsx` com uma rota `/`, sem Sidebar;
 `src/routes/home.tsx` "Este app ainda está vazio"; provedores e `CSPProvider` em `main.tsx`;
-componentes shadcn `base-nova` (`npx shadcn add`, gerados); sem `server/` nem `shared/`. Tudo editável. `startProject({projectId}): Result<Sha, GitFailure>`, só sem `main`. Modelo: `builder/git/`
+componentes shadcn `base-nova` (`npx shadcn add`, gerados); `lib/` com o codec de data (estudo do contrato, §8); sem `server/` nem `shared/`. Tudo editável. `startProject({projectId}): Result<Sha, GitFailure>`, só sem `main`. Modelo: `builder/git/`
 da 13 (C21, C23). Regras: W21, W22, V19. **Prova.** 7.
 
 ## U4 A montagem, `conexus_check` e o fim do turno
@@ -221,15 +228,15 @@ da 13 (C21, C23). Regras: W21, W22, V19. **Prova.** 7.
 **Raio.** `packages/app/src/check/`: cria. `infra/e2b/template.ts`, `scripts/app-pack.ts`,
 `builder/machine/`: muda. `builder/conversation/{processors,builder}.ts`: cria, muda.
 
-**Contratos.** `/opt/conexus/check` (só leitura): `dependências` (9), `manifesto` (gera também
-`src/conexus/api.gen.ts`), `tipos` (DOM e servidor), `telas` (`vite build`), `worker` (`serveApp`
-gerado, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (11). A lista vem do servidor a cada chamada, nunca da árvore; a U5 a liga (abaixo). `CheckReport = {ok, steps: [{name, state:
+**Contratos.** `/opt/conexus/check` (só leitura): `dependências` (9), `manifesto` (uma regra: o que a
+operação manda e devolve cabe em JSON, por `z.toJSONSchema` com `io: 'input'` e `'output'`; gera o
+manifesto sem formas e `src/conexus/api.gen.ts`), `tipos` (DOM e servidor), `telas` (`vite build`), `worker` (`workerSource` importa `operations` e chama `serveApp({operations, handlers})`, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (11). A lista vem do servidor a cada chamada, nunca da árvore; a U5 a liga (abaixo). `CheckReport = {ok, steps: [{name, state:
 'passed' | 'failed' | 'skipped' | 'informed', problems: [{file, line, column, code, message}]}]}`,
 esquema Zod (C27). `Machines.check({projectId}): Result<CheckReport, 'CHECK_PLATFORM_FAILED'>`;
 `Machines.pack({projectId}): Result<VersionFolder, PackRefused>`, por `receiveVersion` (S2); a 14.1
 a chama. `CHECK_LIMITS = {problems: 20, stepMs: 60_000, checks: 4}` (C26). `conexus_check`, sem
 entrada, descrito como no OS (`tools.ts:26-41`). `checkGate: Processor` em `processOutputStep`, sem
-`toolCalls` e com arquivos mudados; falha: `abort(…, {retry: true})`; `retryCount` 3 termina. `APP_CHECK_FAILED`, `DEPENDENCY_NOT_APPROVED`, `CHECK_PLATFORM_FAILED` (C48). Template:
+`toolCalls` e com arquivos mudados; falha: `abort(…, {retry: true})`; `retryCount` 3 termina. `APP_CHECK_FAILED`, `DEPENDENCY_NOT_APPROVED`, `CHECK_PLATFORM_FAILED`, `OPERATION_NOT_JSON` (C48). Template:
 Node 24, `/opt/conexus` com o cache npm das pré-aprovadas, `@conexus/app`, `wrangler`, Chromium.
 Rede: só `registry.npmjs.org`, já liberado (0051, `kit.ts:21`).
 **A pasta**: uma máquina e uma pasta por Projeto (`machines.ts:224-240`), `APP_FOLDER` (C26). `E2BSandbox({workingDirectory, instructions})` (`@mastra/e2b`
@@ -297,7 +304,8 @@ cria; chama: `createSkill`.
 **Contratos.** `instructions` como função (OS `prompt.ts:61-66`). Um dono de quando conferir, a
 descrição de `conexus_check`; a linha 54 só diz o que o Conexus faz no fim (auditoria 10:
 `instructions.ts:14-15` de `main` o contradizia). Skills do OS refeitas, sem `conexus/`, a lista fixa, o runner, o CTE e
-`conexus_run_operation`; `conexus-app` ensina as três formas (página, só `home.tsx`; painel; sistema com Sidebar), com as
+`conexus_run_operation`; `conexus-data` ensina o Zod que o app precisa ("o que não viaja em JSON, Date, BigInt, Map, é
+recusado; uma data é `z.iso.date()` ou o codec de `lib/` do starter"); `conexus-app` ensina as três formas (página, só `home.tsx`; painel; sistema com Sidebar), com as
 referências do OS (`shell`, `list`, `record`, `dashboard`, `form`), e a biblioteca pelo cartão.
 
 **A tabela do prompt**, por linha do `builder.md` do OS, com o veredito e a razão da arquitetura:
