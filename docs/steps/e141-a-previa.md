@@ -35,7 +35,7 @@ reais". iPhone no iOS 18: a Prévia em nova aba; o teste do iPhone antes da U1: 
 
 **Os limites.** A meta é a Prévia 20 s depois de "Versão guardada" (no laboratório, com esbuild e fora do
 Hub, 13,4 a 14,2 s), medida na publicação (32). Guardamos a do ar, a da
-prévia e mais 3. Alterações: até 1.000 arquivos e 1 MiB por arquivo.
+prévia e mais 3. Alterações: como Código, até 2.000 arquivos e 1 MiB por arquivo (não por diff).
 
 **Fica de fora.** O plano, as perguntas, as bibliotecas, o starter e a conferência (14); o D; a tela mudando enquanto o Builder escreve; erros de clique voltando ao
 Builder; publicar (17); mudar tabelas com dados (15); **Versões** do Builder (17). Nenhuma
@@ -122,7 +122,7 @@ de fora (T14). Valem 2 a 5 e 7, autorizados pelo fundador (B). Must, salvo "shou
 | 23 | U6 | Estados da matriz; a Prévia segue na última boa no turno; recarrega na parte `preview` | `preview.test.tsx` |
 | 24 | U6 | Barra: nomes e teclado (V30, V31); Celular, 390 px; **Abrir em nova aba** com a sessão; entrada recusada duas vezes: o aviso e **Abrir em nova aba**; **Pedir ao Builder para corrigir** põe código e versão no campo | idem |
 | 25 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo; trocar de aba não recarrega | navegador (T23) |
-| 26 | U7 | `readChanges`: novo, removido, renomeado, binário, `+N`; acima de 1.000: `SOURCE_CHANGES_TOO_MANY`; de 1 MiB: `SOURCE_DIFF_TOO_LARGE`, sem ler (C44, C59); commit fora do `main`: `SOURCE_VERSION_NOT_FOUND`; alheio: 404 | `changes.test.ts` |
+| 26 | U7 | `readChanges`: novo, removido, renomeado, binário, `+N`; arquivo de mais de `SOURCE_FILE_MAX_BYTES` num dos lados: `SOURCE_DIFF_TOO_LARGE`, sem ler (C44, C59); commit fora do `main`: `SOURCE_VERSION_NOT_FOUND`; alheio: 404 | `changes.test.ts` |
 | 27 | U7 | Unificado, Lado a lado; linhas sem alteração recolhidas | `changes.test.tsx` |
 | 30 | U9 | Roteiro, dublês | `tests/e2e/builder-preview.test.ts` |
 | 31 | U9 | O relatório de QA no commit candidato (T25) | `conexus-qa` |
@@ -281,9 +281,11 @@ muda; chama: web, OpenAPI. `apps/web/src/builder/source/`: muda; chama: `routeTr
 
 **Contratos.** Sob `/api/companies/{companyId}/projects/{projectId}/source`, `MEMBER`: `readChanges`
 `GET /changes?to` → `{from, to, files: [{path, previousPath?, status: 'added' | 'removed' |
-'renamed' | 'changed', binary, added, removed}]}` até 1.000; `from` é o pai de `to`.
-`readFileDiff` `GET /diff?to&path` → `{hunks}`, até 1 MiB (`--numstat` antes), esquema Zod (C27); 404
-`SOURCE_VERSION_NOT_FOUND`, 422 `SOURCE_CHANGES_TOO_MANY`, `SOURCE_DIFF_TOO_LARGE` (C48). `Sha` marcado (13 U2). Regras: C27, C44, C57, C59, S10.
+'renamed' | 'changed', binary, added, removed}]}` até `SOURCE_MAX_FILES`; `from` é o pai de `to`.
+`readFileDiff` `GET /diff?to&path` → `{hunks}`, cada lado até `SOURCE_FILE_MAX_BYTES`, medido no
+arquivo (`git cat-file -s`) antes de ler, esquema Zod (C27); 404 `SOURCE_VERSION_NOT_FOUND`, 422
+`SOURCE_DIFF_TOO_LARGE` (C48). Os limites são os de `hub-api/source.ts`, um dono; a gravação já
+recusa mais de 2.000 arquivos (13), então não há erro de arquivos demais. `Sha` marcado (13 U2). Regras: C27, C44, C57, C59, S10.
 
 **Prova.** 26, 27.
 
