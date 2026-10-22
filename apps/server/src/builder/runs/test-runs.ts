@@ -134,6 +134,8 @@ export function testBuilderPorts(
       workdir: join(folder, 'app'),
       tmp: folder,
       startMs: 5_000,
+      // None until a test writes one there (`conversation-check.test.ts`): the check cannot run.
+      checkProgram: join(folder, 'check'),
     })
   }
   function turnMs() {

@@ -23,6 +23,7 @@ import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, INSTRUCTIONS } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
+import { CHECK_TOOL, checkGate, checkTool } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
 
 const BUILDER_ID = 'builder'
@@ -58,9 +59,9 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
   return modelId
 }
 
-/** `web_fetch` always; `web_search` only where Mastra resolves the provider's own search. */
-function toolsOf(modelId: ModelId): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetchTool }
+/** `web_fetch` and the check always; `web_search` only where Mastra resolves the provider's own search. */
+function toolsOf(modelId: ModelId, check: ToolsInput[string]): ToolsInput {
+  const tools: ToolsInput = { web_fetch: webFetchTool, [CHECK_TOOL]: check }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }
@@ -88,6 +89,7 @@ export function createBuilder(deps: {
   log: FailureLog
 }) {
   const storage = createMastraStorage(deps.pool)
+  const check = checkTool(deps.runs)
   const modelSettings = { timeout: MODEL_TIMEOUT }
   const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
   const memory = new Memory({
@@ -124,8 +126,9 @@ export function createBuilder(deps: {
     instructions: INSTRUCTIONS,
     skills: APP_SKILLS,
     model: ({ requestContext }) => sessionModel(requestContext),
-    tools: ({ requestContext }) => toolsOf(sessionModel(requestContext)),
+    tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
     inputProcessors: [accountPick(deps.queue)],
+    outputProcessors: [checkGate(deps.runs)],
     errorProcessors: accountErrorProcessors(deps.queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,

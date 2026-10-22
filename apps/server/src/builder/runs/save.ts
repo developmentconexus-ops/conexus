@@ -1,4 +1,4 @@
-import type { ProjectId } from '@conexus/hub-api'
+import type { ProjectId, VersionCheck } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { Outcome, RunsContext } from './context.ts'
@@ -34,7 +34,11 @@ async function collectOf(
  * after its lease to settle by what `main` holds. A run a removal stopped on the way is `gone`
  * before `main` moves.
  */
-export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome | 'gone'> {
+export async function saveRun(
+  context: RunsContext,
+  saved: Run,
+  check?: VersionCheck,
+): Promise<Outcome | 'gone'> {
   const { companyId, projectId } = saved
   const fields = { companyId, projectId, runId: saved.id }
   if (!context.machines.touched(projectId)) {
@@ -86,5 +90,6 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
   if (!(await copyVersion(context, { ...saved, candidateSha: candidate }))) context.retry.kick()
   if (bundle === 'too-large') return { kind: 'failed', code: 'SAVE_REFUSED' }
   const { files, changedFiles } = bundle
-  return { kind: 'saved', version: { number: version, changed: true, files, changedFiles } }
+  const counts = { number: version, changed: true, files, changedFiles }
+  return { kind: 'saved', version: check === undefined ? counts : { ...counts, check } }
 }
