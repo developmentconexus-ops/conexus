@@ -11,8 +11,8 @@ import { runCommand } from './command.ts'
 export const SHADCN_CLI_VERSION = '4.21.0'
 export const SHADCN_STYLE = 'base-nova'
 // The 30 components of Conexus OS's starter (`scripts/generate-starter-components.mjs:12-17` at
-// e0353c36) but chart and calendar, which need libraries the starter does not hold (recharts,
-// react-day-picker): 28. The card (U3) asks for "componentes shadcn base-nova".
+// e0353c36); chart and calendar sit on recharts and react-day-picker, which the starter declares
+// (founder, 2026-10-22). The card (U3) asks for "componentes shadcn base-nova".
 export const STARTER_COMPONENTS = [
   'button',
   'card',
@@ -42,11 +42,13 @@ export const STARTER_COMPONENTS = [
   'breadcrumb',
   'toast',
   'sidebar',
+  'chart',
+  'calendar',
 ] as const
 
 const SRC = resolve(import.meta.dirname, '../packages/app/starter/src')
-// The run took 17.8 s on 2026-10-22; seven times that leaves room for a slow registry.
-const DEADLINE_MS = 120_000
+// The run took 308 s on 2026-10-22 (npx installs the CLI and the libraries chart and calendar need); twice that leaves room for a slow registry.
+const DEADLINE_MS = 600_000
 
 const HEADER = `/*
  * shadcn/ui (https://github.com/shadcn-ui/ui), MIT License, Copyright (c) 2023 shadcn.
