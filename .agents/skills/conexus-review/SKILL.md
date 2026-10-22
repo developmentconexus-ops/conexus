@@ -28,10 +28,11 @@ The pull request, its head commit and the card; nothing from the builders' conve
    everything. Both drive the browser where in doubt, and read QA's report if it is posted; never
    wait for it.
 5. A file outside the card's folders and contract owners is a finding unless it follows from a
-   contract or guard the card declares and the build report declares it (L7). Compare every row of
-   the card's table of parts, "nosso" included, with its reference cell, by commit and `file:line`,
-   and list each in the verdict's Ran. When two findings fall on one mechanism, ask whether it
-   should exist.
+   contract or guard the card declares and the build report declares it (L7). Run the native
+   candidate of every "nosso" or "embrulhado" row at the installed version, and list each in the
+   verdict's Ran; one that serves is a Bloqueia when the step writes the first file of its kind,
+   Fechamento otherwise. When two findings fall on one mechanism, ask whether it should exist and
+   whether a library already holds that fact.
 6. Walk the checklist, sweeping each class across the whole diff, and fill its sweep table (a row
    per rule marked review: search made, result). A screen: [screen](references/screen.md).
 7. Label every finding by [delivery L12](../../../docs/guides/delivery.md). On the border, ask

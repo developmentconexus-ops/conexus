@@ -56,6 +56,9 @@ Each question cites the rule it checks.
     sentence; does a screen read words by code (C48, C49)?
 23. Does each `catch` and `.catch` rethrow, log or map to a typed result, even when its body is
     more than a lone literal (C53)?
+24. Does any code parse or rewrite another library's message text, map its words by hand, or hide a
+    state the library shows legitimately, where its native data or a verbatim display would serve
+    (C52, C75)? A checklist sweep, not a gate.
 
 ## The sweep table
 
