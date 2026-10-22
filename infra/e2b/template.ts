@@ -1,14 +1,16 @@
 // Builds the E2B template the Builder's machines start from (decisions 0051, 0055): Node 24 and git,
 // the app folder, and in /opt/conexus the check program with its tools (TypeScript, esbuild,
 // wrangler, Chromium's headless shell), the SDK it copies into each app, and an npm cache of the
-// starter's packages. Firstmate runs it once, with the account's key in E2B_API_KEY (the SDK reads
-// it), and writes the name it prints into HUB_E2B_TEMPLATE.
+// starter's packages. Firstmate runs it from the commit to build, with the account's key in
+// E2B_API_KEY (the SDK reads it), and writes the `name:tag` it prints into HUB_E2B_TEMPLATE. The tag
+// is the commit, so a build never replaces the one production runs and the old tag is the rollback.
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { defaultBuildLogger, Template } from 'e2b'
 import { z } from 'zod'
+import { templateName } from './name.ts'
 
-const NAME = 'conexus-builder'
 const ROOT = resolve(import.meta.dirname, '../..')
 const OPT = '/opt/conexus'
 /** The npm cache: the user's to write, so a granted package joins the starter's ones (0055). */
@@ -70,5 +72,11 @@ const template = Template({ fileContextPath: ROOT, fileIgnorePatterns: ['**/node
   )
   .setWorkdir('/home/user/app')
 
-const built = await Template.build(template, NAME, { onBuildLogs: defaultBuildLogger() })
-console.log(built.name)
+const commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+  cwd: ROOT,
+  encoding: 'utf8',
+}).trim()
+const built = await Template.build(template, templateName(commit), {
+  onBuildLogs: defaultBuildLogger(),
+})
+console.log(`HUB_E2B_TEMPLATE=${built.name}:${built.tags.join(',')}`)

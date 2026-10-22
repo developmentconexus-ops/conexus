@@ -76,7 +76,7 @@ Done when each of the person's decisions is answered, handed to you and recorded
 
 ## 5. Write the plan
 
-Read `references/plan-template.md` and write `.conexus/plan.md` in its shape, sized to the change, replacing any earlier plan, with no code in it.
+Read `references/plan-template.md` and write `.conexus/plan.md` in its shape, sized to the change, replacing any earlier plan (read the file first: the workspace refuses to overwrite one you have not read), with no code in it.
 
 Done when what changes, what stays the same, what happens to saved data and how each part is checked are in the plan, each assumption and suggestion is marked, and the person's part has no technical word.
 

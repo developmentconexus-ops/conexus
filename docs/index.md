@@ -9,7 +9,7 @@ One line per document (`check-docs`).
 - [roadmap.md](roadmap.md): steps.
 - [approvals.md](approvals.md): approvals.
 - [architecture.md](architecture.md): goals, parts, deployment, risks, debt.
-- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back the Hub; [seal keys](how-to/seal-keys.md).
+- [how-to/hub-server.md](how-to/hub-server.md): the server; publishing and rolling back; [seal keys](how-to/seal-keys.md); [template](how-to/builder-template.md).
 - [how-to/apps-edge.md](how-to/apps-edge.md): the apps' edge, [token and key](how-to/apps-token-and-key.md).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).

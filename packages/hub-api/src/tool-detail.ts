@@ -8,7 +8,8 @@ export const Subject = z.string().max(SUBJECT_MAX_LENGTH)
  * How much of a tool call a `tool` part's `detail` keeps, each limit with its basis (card of step
  * 14, U6): the command as its subject keeps it; the output's last lines and bytes, the limits of the
  * `shell` part this detail replaced (step 13); the start of a written file and of each side of an
- * edit, as the card sets them.
+ * edit, as the card sets them; a check's problems by the check's own limit of 20 a step, each message
+ * cut short.
  */
 export const DETAIL_LIMITS = {
   command: SUBJECT_MAX_LENGTH,
@@ -16,6 +17,9 @@ export const DETAIL_LIMITS = {
   outputBytes: 4096,
   fileCharacters: 2000,
   editLines: 200,
+  checkSteps: 6,
+  checkProblems: 20,
+  problemCharacters: 300,
 } as const
 
 const Lines = z.string().refine((text) => text.split('\n').length <= DETAIL_LIMITS.editLines)
@@ -37,6 +41,27 @@ export const ToolDetail = z.discriminatedUnion('kind', [
     kind: z.literal('file'),
     path: Subject,
     content: z.string().max(DETAIL_LIMITS.fileCharacters),
+    cut: z.boolean(),
+  }),
+  z.object({
+    kind: z.literal('check'),
+    steps: z
+      .array(
+        z.object({
+          name: z.string().min(1),
+          state: z.enum(['passed', 'failed', 'skipped', 'informed']),
+          problems: z
+            .array(
+              z.object({
+                file: Subject.nullable(),
+                line: z.int().positive().nullable(),
+                message: z.string().max(DETAIL_LIMITS.problemCharacters),
+              }),
+            )
+            .max(DETAIL_LIMITS.checkProblems),
+        }),
+      )
+      .max(DETAIL_LIMITS.checkSteps),
     cut: z.boolean(),
   }),
   z.object({

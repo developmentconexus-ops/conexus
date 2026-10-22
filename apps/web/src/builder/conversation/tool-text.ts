@@ -48,6 +48,12 @@ const SENTENCES: Record<Kind, Record<ToolPart['state'], string>> = {
     error: 'Um comando falhou',
     denied: 'Não pôde rodar um comando',
   },
+  check: {
+    running: 'Conferindo o app',
+    completed: 'Conferiu o app',
+    error: 'Não conseguiu conferir o app',
+    denied: 'Não pôde conferir o app',
+  },
   other: {
     running: 'Usando uma ferramenta',
     completed: 'Usou uma ferramenta',
@@ -69,6 +75,7 @@ const DONE: Record<Kind, (count: number) => string> = {
   edit_file: (count) => `editou ${counted(count, 'arquivo', 'arquivos')}`,
   read_file: (count) => `leu ${counted(count, 'arquivo', 'arquivos')}`,
   run_command: (count) => `rodou ${counted(count, 'comando', 'comandos')}`,
+  check: (count) => `conferiu o app ${counted(count, 'vez', 'vezes')}`,
   other: (count) => `usou ${counted(count, 'ferramenta', 'ferramentas')}`,
 }
 

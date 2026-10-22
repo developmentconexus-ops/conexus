@@ -1,9 +1,9 @@
-import { existsSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync } from 'node:fs'
+import { join, relative } from 'node:path'
+import ts from 'typescript'
 import type { Problem } from './report.ts'
-import { CHECK_LIMITS } from './report.ts'
-import type { CheckContext, Outcome, Ran } from './step.ts'
-import { outputProblem, overran, PASSED, problem, workOf } from './step.ts'
+import type { CheckContext, Outcome } from './step.ts'
+import { PASSED, problem, workOf } from './step.ts'
 
 // The starter's own options (packages/app/starter/tsconfig.json), fixed by the check so the model's
 // tsconfig cannot loosen them; `allowImportingTsExtensions` reads the SDK, which ships its sources.
@@ -39,46 +39,29 @@ const PROGRAMS = {
   },
 }
 
-const LOCATED = /^(.+?)\((\d+),(\d+)\): error (TS\d+): (.*)$/
-const UNLOCATED = /^error (TS\d+): (.*)$/
-
-/** `tsc --pretty false` lines as problems, a continuation line joined to the one before (Conexus OS `e0353c36` `steps/typecheck.ts:16-30`). */
-function tscProblems(ctx: CheckContext, ran: Ran): Problem[] {
-  const problems: Problem[] = []
-  for (const line of ran.output.split('\n')) {
-    const located = LOCATED.exec(line)
-    const unlocated = UNLOCATED.exec(line)
-    const previous = problems.at(-1)
-    if (located !== null) {
-      const [, file = '', row, column, code = '', message = ''] = located
-      problems.push(problem({ file, line: Number(row), column: Number(column), code, message }))
-    } else if (unlocated !== null) {
-      problems.push(problem({ code: unlocated[1] ?? '', message: unlocated[2] ?? '' }))
-    } else if (/^\s+\S/.test(line) && previous !== undefined) {
-      problems[problems.length - 1] = {
-        ...previous,
-        message: `${previous.message}\n${line.trim()}`,
-      }
-    }
-  }
-  return problems.length > 0 ? problems : [outputProblem(ctx, 'TYPES_FAILED', ran)]
+/** One program's diagnostics from TypeScript's own compiler API, located where it says. */
+function diagnosticsOf(ctx: CheckContext, name: keyof typeof PROGRAMS): Problem[] {
+  const parsed = ts.parseJsonConfigFileContent(PROGRAMS[name], ts.sys, workOf(ctx))
+  const program = ts.createProgram({ rootNames: parsed.fileNames, options: parsed.options })
+  return ts.getPreEmitDiagnostics(program).map((diagnostic) => {
+    const code = `TS${diagnostic.code}`
+    const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n')
+    const { file, start } = diagnostic
+    if (file === undefined || start === undefined) return problem({ code, message })
+    const { line, character } = file.getLineAndCharacterOfPosition(start)
+    return problem({
+      code,
+      message,
+      file: relative(ctx.root, file.fileName),
+      line: line + 1,
+      column: character + 1,
+    })
+  })
 }
 
 export async function tipos(ctx: CheckContext): Promise<Outcome> {
-  const deadline = Date.now() + CHECK_LIMITS.stepMs
   const serverSide = ['server', 'shared'].some((folder) => existsSync(join(ctx.root, folder)))
   const names = serverSide ? (['screens', 'server'] as const) : (['screens'] as const)
-  const problems: Problem[] = []
-  for (const name of names) {
-    const config = workOf(ctx, `tsconfig.${name}.json`)
-    writeFileSync(config, JSON.stringify(PROGRAMS[name]))
-    const ran = await ctx.run(join(ctx.tools, '.bin/tsc'), ['-p', config, '--pretty', 'false'], {
-      cwd: ctx.root,
-      timeoutMs: Math.max(1, deadline - Date.now()),
-    })
-    const late = overran('tipos', ran)
-    if (late !== undefined) return late
-    if (ran.code !== 0) problems.push(...tscProblems(ctx, ran))
-  }
+  const problems = names.flatMap((name) => diagnosticsOf(ctx, name))
   return problems.length > 0 ? { state: 'failed', problems } : PASSED
 }

@@ -1,5 +1,5 @@
 import type { MessagePart, Question } from '@conexus/hub-api'
-import { PackageName, ToolCallId } from '@conexus/hub-api'
+import { ToolCallId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
@@ -42,13 +42,11 @@ async function turn(...parts: MessagePart[]) {
 }
 
 const WHO: Question = {
-  kind: 'choice',
   question: 'Quem cadastra as encomendas?',
   options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
   multiSelect: false,
 }
 const STATE: Question = {
-  kind: 'choice',
   question: 'Uma encomenda tem situação?',
   options: [{ label: 'Sim' }],
   multiSelect: false,
@@ -102,32 +100,6 @@ test('a pergunta vencida diz que expirou e não se responde', async () => {
   await turn(question('expired'))
   await screen.findByText('Esta pergunta expirou.')
   expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull()
-})
-
-test('o cartão de biblioteca: o nome e a versão, Permitir (recomendado) escolhido, e o envio', async () => {
-  const bodies = answering()
-  await turn({
-    type: 'question',
-    toolCallId: CALL,
-    questions: [
-      {
-        kind: 'library',
-        question: 'Preciso da biblioteca react-big-calendar (≈ 300 KB). Permitir?',
-        name: PackageName.parse('react-big-calendar'),
-        version: '1.19.4',
-      },
-    ],
-    state: 'open',
-  })
-  await screen.findByText('react-big-calendar@1.19.4')
-  expect(screen.getByRole('radio', { name: 'Permitir (recomendado)' })).toHaveProperty(
-    'checked',
-    true,
-  )
-  expect(screen.getByRole('radio', { name: 'Não, faça sem ela' })).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Outra resposta' })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
-  await waitFor(() => expect(bodies).toEqual([{ kind: 'answers', answers: ['Permitir'] }]))
 })
 
 test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILED; sem conferência e as de CHECK_PLATFORM_FAILED; sem veredito, só o que guardou', async () => {

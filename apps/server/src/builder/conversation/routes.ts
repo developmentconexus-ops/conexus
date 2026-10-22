@@ -138,8 +138,8 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
   serve(app, answerQuestion, async (input) => {
     const { person, params, body } = input
     await store.owned({ person, ...params })
-    const { projectId, conversationId, toolCallId } = params
-    await sessions.answer({ owner: ownerOf(input), conversationId, projectId, toolCallId, body })
+    const { conversationId, toolCallId } = params
+    await sessions.answer({ owner: ownerOf(input), conversationId, toolCallId, body })
     return answer(undefined)
   })
 

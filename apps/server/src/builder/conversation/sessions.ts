@@ -13,7 +13,6 @@ import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
-import type { PackageGrants } from '../packages/public.ts'
 import type { Restart, Runs } from '../runs/public.ts'
 import { answerCard } from './answers.ts'
 import type { Builder } from './builder.ts'
@@ -56,7 +55,6 @@ type OfConversation = { owner: Owner; conversationId: ConversationId }
 export class Sessions {
   readonly #builder: Builder
   readonly #runs: Runs
-  readonly #grants: PackageGrants
   readonly #log: FailureLog
   readonly #open = new Map<ConversationId, Entry>()
   // Every message from its arrival to the end of its run, for the drain to wait on.
@@ -67,12 +65,10 @@ export class Sessions {
   constructor(deps: {
     builder: Builder
     runs: Runs
-    grants: PackageGrants
     log: FailureLog
   }) {
     this.#builder = deps.builder
     this.#runs = deps.runs
-    this.#grants = deps.grants
     this.#log = deps.log
   }
 
@@ -200,19 +196,17 @@ export class Sessions {
 
   /**
    * The person's answer to the card the turn waits on: the answers to its questions, or the
-   * decision on its plan. A library they allow is granted to the Projeto before the turn goes on,
-   * so the check finds it; the call is claimed first, so a second answer is `QUESTION_CLOSED`.
+   * decision on its plan. The call is claimed first, so a second answer is `QUESTION_CLOSED`.
    */
   async answer(
     input: OfConversation & {
-      projectId: ProjectId
       toolCallId: ToolCallId
       body: QuestionAnswer
     },
   ): Promise<void> {
     const entry = this.#hold(input)
     try {
-      await answerCard(await entry.live, this.#grants, input)
+      await answerCard(await entry.live, input)
       const fields = { companyId: input.owner.companyId, conversationId: input.conversationId }
       this.#log.info(fields, 'QUESTION_ANSWERED')
     } finally {

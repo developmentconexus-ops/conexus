@@ -1,3 +1,4 @@
+import { CheckReport } from '@conexus/app/check'
 import type { Message, MessagePart, PartEvent, ToolDetail } from '@conexus/hub-api'
 import {
   applyEvent,
@@ -12,8 +13,10 @@ import type { MastraDBMessage, MastraMessagePart } from '@mastra/core/agent-cont
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
 import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
+import { checkDetail, foundBy } from './check-row.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { ASK_USER_TOOL, AskedResult, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
+import { CHECK_TOOL } from './processors.ts'
 import { tailOf } from './shell.ts'
 
 type ToolPart = Extract<MessagePart, { type: 'tool' }>
@@ -27,6 +30,7 @@ const KINDS: Readonly<Record<string, ToolPart['kind']>> = {
   [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: 'write_file',
   [WORKSPACE_TOOLS.FILESYSTEM.EDIT_FILE]: 'edit_file',
   [WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND]: 'run_command',
+  [CHECK_TOOL]: 'check',
 }
 
 const Text = z.object({ type: z.literal('text'), text: z.string() })
@@ -120,7 +124,10 @@ function stateOf(invocation: Invocation): ToolPart['state'] {
   }
 }
 
-function subjectOf(kind: ToolPart['kind'], args: unknown): ToolPart['subject'] {
+function subjectOf(kind: ToolPart['kind'], args: unknown, result: unknown): ToolPart['subject'] {
+  const report = kind === 'check' ? CheckReport.safeParse(result) : undefined
+  const found = report?.success ? foundBy(report.data) : undefined
+  if (found !== undefined) return { check: found }
   const page = kind === 'read_page' ? PageArgs.safeParse(args) : undefined
   if (page?.success) return { url: page.data.url, title: null }
   const search = kind === 'search_web' ? SearchArgs.safeParse(args) : undefined
@@ -157,6 +164,8 @@ function detailOf(
     const { output, cut } = typeof result === 'string' ? tailOf(result) : { output: [], cut: false }
     return { kind: 'command', command: saidCommand(command.data.command), output, exitCode, cut }
   }
+  const report = kind === 'check' ? CheckReport.safeParse(result) : undefined
+  if (report?.success) return checkDetail(report.data)
   const write = kind === 'write_file' ? WriteArgs.safeParse(args) : undefined
   if (write?.success) {
     const content = write.data.content
@@ -182,7 +191,7 @@ const OFFERED = new Set(TOOL_CLOSURE.availableTools)
  */
 function toolOf(invocation: Invocation, exitCode: number | null): ToolPart {
   const kind = KINDS[invocation.toolName] ?? 'other'
-  const subject = subjectOf(kind, invocation.args)
+  const subject = subjectOf(kind, invocation.args, invocation.result)
   const state = stateOf(invocation)
   const refused = state === 'error' && !OFFERED.has(invocation.toolName)
   return {

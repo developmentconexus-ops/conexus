@@ -83,7 +83,6 @@ async function checked(root: string): Promise<Outcome[]> {
     root,
     tools: MODULES,
     platform: undefined,
-    grants: [],
     run: (command, args, options) =>
       command === 'npm'
         ? Promise.resolve({ code: 0, output: '', timedOut: false })
@@ -135,7 +134,6 @@ test('cada exemplo entra em alguma forma, e as formas cobrem página, painel e s
   )
   const app = SKILLS.find(({ directory }) => directory === 'conexus-app')?.content ?? ''
   for (const heading of ['**Page.**', '**Panel.**', '**System.**']) assert.ok(app.includes(heading))
-  assert.match(app, /`ask_user`, one question with `library: \{ name, version \}`/)
 })
 
 test('um exemplo quebrado falha na conferência', async (t) => {

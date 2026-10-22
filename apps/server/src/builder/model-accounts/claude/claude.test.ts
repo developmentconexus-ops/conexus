@@ -49,7 +49,6 @@ async function opened(t: TestContext) {
 test('start dá o endereço e guarda o verificador lacrado 10 min; complete troca o código e grava a conta', async (t) => {
   const vendor = anthropic(t)
   const { hub, ana, companyId, start } = await opened(t)
-  hub.test.lists.served.set(ACCESS, ['claude-sonnet-5-5', 'claude-haiku-4-5-20251001'])
   const before = Date.now()
   const started = await start()
   assert.equal(new URL(started.address).origin, 'https://claude.ai')
@@ -73,9 +72,11 @@ test('start dá o endereço e guarda o verificador lacrado 10 min; complete troc
     assert.equal(Buffer.from(Object(kept).sealed).includes(secret), false)
     assert.equal(JSON.stringify(linked.json()).includes(secret), false)
   }
-  // The subscription's list is read with its access token once the account is kept.
+  // A subscription has no list to read (`/v1/models` answers its bearer 404): no read is made and
+  // the account serves what the registry offers, as in Mastra Code.
   const [list] = await hub.test.asOwner(`select served_models from builder.model_account`)
-  assert.deepEqual(Object(list).served_models, ['claude-sonnet-5-5', 'claude-haiku-4-5-20251001'])
+  assert.equal(Object(list).served_models, null)
+  assert.deepEqual(hub.test.lists.reads, [])
   assert.deepEqual(await hub.test.asOwner(`select id from builder.model_account_sign_in`), [])
   const again = await post(hub, ana, started.url, { code: `codigo-1#${started.verifier}` })
   assert.deepEqual([again.statusCode, codeOf(again)], [410, 'MODEL_ACCOUNT_SIGN_IN_EXPIRED'])

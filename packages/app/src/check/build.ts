@@ -13,8 +13,7 @@ export async function telas(ctx: CheckContext): Promise<Outcome> {
   const ran = await ctx.run(vite, args, { cwd: ctx.root, timeoutMs: CHECK_LIMITS.stepMs })
   const late = overran('telas', ran)
   if (late !== undefined) return late
-  if (ran.code !== 0)
-    return { state: 'failed', problems: [outputProblem(ctx, 'BUILD_FAILED', ran)] }
+  if (ran.code !== 0) return { state: 'failed', problems: [outputProblem('BUILD_FAILED', ran)] }
   return PASSED
 }
 
@@ -69,8 +68,7 @@ export async function worker(ctx: CheckContext): Promise<Outcome> {
   })
   const late = overran('worker', ran)
   if (late !== undefined) return late
-  if (ran.code !== 0)
-    return { state: 'failed', problems: [outputProblem(ctx, 'WORKER_FAILED', ran)] }
+  if (ran.code !== 0) return { state: 'failed', problems: [outputProblem('WORKER_FAILED', ran)] }
   const version = workOf(ctx, 'version')
   rmSync(version, { recursive: true, force: true })
   cpSync(dist, join(version, ASSETS_FOLDER), { recursive: true })

@@ -92,7 +92,7 @@ src/
 
 ## Libraries
 
-The packages in the starter's `package.json` are approved: use them without asking. A package beyond them needs the person's yes. When the work truly needs one, ask with `ask_user`, one question with `library: { name, version }` (an exact version) and, as the question, what it gives this app in the person's words. Only after the person allows it, add it to `package.json` with that exact version. Never add one silently, and never ask for one the starter already has. When the person says no, build without it.
+Prefer the libraries the starter's `package.json` already has: they are installed, tested together and cached on the machine. When the work truly needs another, add it to `package.json` with an exact version, and say in the plan why the starter's do not serve.
 
 ## Writing on screens
 

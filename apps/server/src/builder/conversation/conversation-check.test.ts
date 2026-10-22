@@ -60,7 +60,6 @@ function checking(folder: string, plan: Plan) {
       '#!/bin/sh',
       `n=$(( $(cat '${folder}/check-count' 2>/dev/null || echo 0) + 1 ))`,
       `echo $n > '${folder}/check-count'`,
-      `echo "$@" >> '${folder}/check-arguments'`,
       `report='${folder}/check-'$n; [ -f "$report" ] || report='${folder}/check-passed'`,
       '[ -s "$report" ] || exit 2',
       'cat "$report"',
@@ -71,16 +70,7 @@ function checking(folder: string, plan: Plan) {
     const count = join(folder, 'check-count')
     return existsSync(count) ? Number(readFileSync(count, 'utf8')) : 0
   }
-  /** The grants each run was given, as the program's `--grants` argument says them. */
-  function grantsSeen(): unknown[] {
-    const file = join(folder, 'check-arguments')
-    if (!existsSync(file)) return []
-    return readFileSync(file, 'utf8')
-      .split('\n')
-      .filter(Boolean)
-      .map((line) => JSON.parse(line.slice(line.indexOf('--grants ') + '--grants '.length)))
-  }
-  return { calls, grantsSeen }
+  return { calls }
 }
 
 type Blocks = Extract<Reply, { kind: 'blocks' }>['blocks']
@@ -221,20 +211,25 @@ test('Parar antes do fim do turno: a versão fica sem veredito, nem a conferênc
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })
 
-test('a biblioteca que a pessoa permitiu chega à conferência de cada volta (19)', async (t) => {
-  const model = turnOf([WRITE, CHECK])
-  const { hub, ana, conversations, companyId, projectId } = await conversing(t, model.answer)
-  await hub.test.asOwner(
-    `insert into builder.package_grant (company_id, project_id, name, version, granted_by, granted_at)
-     values ($1, $2, 'react-big-calendar', '1.19.4', $3, now())`,
-    [companyId, projectId, ana.id],
+/** The `conexus_check` rows of a turn. */
+function checkRows(events: ConversationEvent[]) {
+  return partsOf(events).flatMap((part) =>
+    part.type === 'tool' && part.kind === 'check' ? [part] : [],
   )
-  const check = checking(hub.builder.folder, [PASSED])
-  await asked(t, { hub, person: ana, conversations }, 'Crie o app')
-  assert.ok(check.calls() >= 2, 'the tool and the end of the turn')
-  const granted = [{ name: 'react-big-calendar', version: '1.19.4' }]
+}
+
+test('a linha de conexus_check diz o assunto e abre no relatório; a máquina que não conferiu é um erro da linha (33)', async (t) => {
+  const model = turnOf([WRITE, CHECK, CHECK])
+  const { hub, ana, conversations } = await conversing(t, model.answer)
+  checking(hub.builder.folder, [FAILED, 'platform'])
+  const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
+  const [failed, unavailable] = checkRows(events)
+  assert.deepEqual(failed?.subject, { check: 'tipos: server/handlers.ts:13 Type mismatch.' })
+  assert.equal(failed?.state, 'completed')
   assert.deepEqual(
-    check.grantsSeen(),
-    Array.from({ length: check.calls() }, () => granted),
+    failed?.detail?.kind === 'check' && failed.detail.steps.map(({ name, state }) => [name, state]),
+    FAILED.steps.map(({ name, state }) => [name, state]),
   )
+  assert.equal(unavailable?.state, 'error')
+  assert.equal(unavailable?.detail, undefined)
 })

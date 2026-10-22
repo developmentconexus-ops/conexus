@@ -1,11 +1,10 @@
 import { posix } from 'node:path'
 import type { Question as HubQuestion } from '@conexus/hub-api'
-import { Answer, PackageName, QUESTION_LIMITS } from '@conexus/hub-api'
+import { Answer, QUESTION_LIMITS } from '@conexus/hub-api'
 import { askUserTool, submitPlanTool } from '@mastra/core/agent-controller'
 import { createTool, formatQuestionAnswer } from '@mastra/core/tools'
 import { z } from 'zod'
 import { APP_FOLDER } from '../machine/public.ts'
-import { PREAPPROVED_PACKAGES } from '../packages/public.ts'
 
 export const ASK_USER_TOOL = askUserTool.id
 export const SUBMIT_PLAN_TOOL = submitPlanTool.id
@@ -23,17 +22,8 @@ const Choice = z
   .refine((each) => each.multiSelect !== true || (each.options?.length ?? 0) > 0, {
     message: 'multiSelect requires options',
   })
-const Library = z
-  .strictObject({
-    question: z.string().min(1),
-    library: z.object({ name: PackageName, version: z.string().regex(/^\d+\.\d+\.\d+$/) }),
-  })
-  .refine((each) => !PREAPPROVED_PACKAGES.has(each.library.name), {
-    message: 'the library is already approved: use it without asking',
-  })
-const Question = z.union([Library, Choice])
 /** What `ask_user` is called with and suspends with: 1 to 4 questions. */
-const Questions = z.object({ questions: z.array(Question).min(1).max(QUESTION_LIMITS.questions) })
+const Questions = z.object({ questions: z.array(Choice).min(1).max(QUESTION_LIMITS.questions) })
 
 const ASK_USER_DESCRIPTION = [
   'Ask the person 1 to 4 questions in one card and wait for their answers. Use it only for what the person alone can decide:',
@@ -42,26 +32,24 @@ const ASK_USER_DESCRIPTION = [
   'Give a question 2 to 4 `options` when it has likely answers, each a short `label` and an optional `description`.',
   'If you recommend one, make it the first option and end its label with "(recomendado)".',
   'Set `multiSelect: true` when more than one option can be picked. Omit `options` for an open question.',
-  'To ask for a library the starter does not have, send `library: {name, version}` (an exact version) with the reason as the `question`;',
-  'the person allows it or not. Never ask for one already approved.',
   "Write each question in the person's language. Returns one line per question with the answer.",
 ].join(' ')
 
 /**
  * The questions of an `ask_user` call as the card shows them, or none when its input is not a
- * card: a library's has the two answers for its options, a choice its own.
+ * card.
  */
 export function questionsOf(input: unknown): HubQuestion[] | undefined {
   const asked = Questions.safeParse(input)
   if (!asked.success) return undefined
-  return asked.data.questions.map((each): HubQuestion => {
-    if ('library' in each) {
-      const { name, version } = each.library
-      return { kind: 'library', question: each.question, name, version }
-    }
-    const { options = [], multiSelect = false } = each
-    return { kind: 'choice', question: each.question, header: each.header, options, multiSelect }
-  })
+  return asked.data.questions.map(
+    ({ question, header, options = [], multiSelect = false }): HubQuestion => ({
+      question,
+      header,
+      options,
+      multiSelect,
+    }),
+  )
 }
 
 /** What `ask_user` returns once answered: the model's line per question, and the answers themselves. */
@@ -123,7 +111,7 @@ const SUBMIT_PLAN_DESCRIPTION = [
   `Submit the plan you wrote to \`${PLAN_PATH}\` for the person to review.`,
   `Pass \`path\` as \`${PLAN_PATH}\`, the only file a plan lives in; write the file first and do not paste the plan text here.`,
   'Reuse the same file across revisions. The person approves it or asks for changes with a reason;',
-  'after a refusal, edit the file and call this tool again.',
+  'after a refusal, read the file, edit it, read it again to be sure the change is there, and call this tool again.',
 ].join(' ')
 
 type SubmitPlanExecute = NonNullable<typeof submitPlanTool.execute>

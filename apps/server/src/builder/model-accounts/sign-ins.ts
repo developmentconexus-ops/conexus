@@ -7,9 +7,7 @@ import type { Credential } from '../../platform/seal.ts'
 import { open, seal } from '../../platform/seal.ts'
 import type { Deps, Viewer } from './accounts.ts'
 import { accountView, admitFor, insertAccount, labelOf, scopeOf } from './accounts.ts'
-import { SubscriptionTokens } from './claude/anthropic-login.ts'
 import { openKindsOf } from './kinds.ts'
-import { keepServed } from './served.ts'
 import type { ReadingDeps } from './served-reads.ts'
 import { readServedOf } from './served-reads.ts'
 import { modelAccountSignIn } from './tables.ts'
@@ -171,16 +169,6 @@ export async function completeSignIn(
     })
     return { account: await accountView(tx, input, id) }
   })
-  if (kind === 'claude_subscription') {
-    const { id, provider } = made.account
-    const access = SubscriptionTokens.parse(JSON.parse(credential.reveal())).access
-    await keepServed(
-      deps,
-      scopeOf(input),
-      { id, kind, provider, companyId: input.companyId },
-      access,
-    )
-  }
   if (kind === 'google_cliproxy') {
     await readServedOf(deps, scopeOf(input), input.companyId, made.account.id)
   }

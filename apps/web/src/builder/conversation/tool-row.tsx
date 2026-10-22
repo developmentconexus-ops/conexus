@@ -1,6 +1,7 @@
 import {
   BookOpenIcon,
   CircleAlertIcon,
+  ClipboardCheckIcon,
   FilePenIcon,
   FilePlusIcon,
   FileTextIcon,
@@ -34,6 +35,7 @@ const ICONS = {
   edit_file: FilePenIcon,
   read_file: FileTextIcon,
   run_command: TerminalIcon,
+  check: ClipboardCheckIcon,
   other: WrenchIcon,
 } as const satisfies Record<ToolPart['kind'], unknown>
 
@@ -57,7 +59,9 @@ function Subject({ subject }: Pick<ToolPart, 'subject'>) {
         ? subject.path
         : 'command' in subject
           ? subject.command
-          : (subject.title ?? URL.parse(subject.url)?.hostname ?? subject.url)
+          : 'check' in subject
+            ? subject.check
+            : (subject.title ?? URL.parse(subject.url)?.hostname ?? subject.url)
   return (
     <TraceDescription className="min-w-24 flex-1 basis-24 truncate font-mono text-fact">
       {link ? <Anchor href={subject.url}>{label}</Anchor> : label}
@@ -86,6 +90,17 @@ const BLOCK =
   'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
 const CHANGES = { ' ': '', '-': 'text-danger', '+': 'text-success' } as const
 
+const STEP_STATES = {
+  passed: 'passou',
+  failed: 'falhou',
+  skipped: 'não rodou',
+  informed: 'avisou',
+} as const
+
+function failedCheck(detail: Detail): boolean {
+  return detail.kind === 'check' && detail.steps.some(({ state }) => state === 'failed')
+}
+
 function failedExit(detail: Detail): number | undefined {
   return detail.kind === 'command' && detail.exitCode !== null && detail.exitCode !== 0
     ? detail.exitCode
@@ -107,6 +122,16 @@ function Opened({ detail }: { detail: Detail }) {
         )}
       </div>
     )
+  }
+  if (detail.kind === 'check') {
+    const lines = detail.steps.flatMap(({ name, state, problems }) => [
+      `${name}: ${STEP_STATES[state]}`,
+      ...problems.map(
+        ({ file, line, message }) =>
+          `  ${file === null ? '' : `${file}${line === null ? '' : `:${line}`} `}${message}`,
+      ),
+    ])
+    return <pre className={BLOCK}>{[...lines, cut].filter(Boolean).join('\n')}</pre>
   }
   if (detail.kind === 'file') return <pre className={BLOCK}>{[detail.content, cut].join('\n')}</pre>
   return (
@@ -131,8 +156,9 @@ export function ToolRow({ tool }: { tool: ToolPart }) {
   const [chosen, setChosen] = useState<boolean>()
   const { detail } = tool
   const code = detail === undefined ? undefined : failedExit(detail)
+  const failed = code !== undefined || (detail !== undefined && failedCheck(detail))
   const line = (
-    <TraceLine className="flex-wrap" status={code === undefined ? statusOf(tool.state) : 'error'}>
+    <TraceLine className="flex-wrap" status={failed ? 'error' : statusOf(tool.state)}>
       <ToolIcon tool={tool} />
       <TraceTitle className="max-w-full shrink-0 whitespace-normal">{sentenceOf(tool)}</TraceTitle>
       <Subject subject={tool.subject} />

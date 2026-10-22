@@ -56,7 +56,6 @@ function contextOf(root: string, installs: string[][] = []): CheckContext {
     root,
     tools: MODULES,
     platform: undefined,
-    grants: [],
     run,
     browse: browseInChromium,
   }
@@ -157,58 +156,67 @@ test('manifesto: z.date() sem codec, bigint, Map ou transform de mão única na 
   assert.match(problems[0]?.message ?? '', /Date cannot be represented/)
 })
 
-async function refusalsOf(t: TestContext, files: Files, grants: CheckContext['grants'] = []) {
+/** The install's one command faked as npm itself prints it: what `npm ci --json` writes on stdout. */
+async function installing(t: TestContext, ran: Awaited<ReturnType<Runner>>) {
   const installs: string[][] = []
-  const outcome = await dependencies({ ...contextOf(appWith(t, files), installs), grants })
-  const problems = outcome.state === 'failed' ? outcome.problems : []
-  return {
-    state: outcome.state,
-    installs,
-    problems: problems.map(({ file, line, code }) => ({ file, line, code })),
+  const run: Runner = async (command, args) => {
+    installs.push([command, ...args])
+    return ran
   }
+  const outcome = await dependencies({ ...contextOf(appWith(t, {}), installs), run })
+  return { outcome, installs }
 }
 
-const STARTER_PACKAGE = readFileSync(join(STARTER_DIR, 'package.json'), 'utf8')
-
-/** The line of the starter's `package.json` that names `name`, counted from 1. */
-function lineOf(name: string): number {
-  return STARTER_PACKAGE.split('\n').findIndex((line) => line.includes(`"${name}"`)) + 1
+function npmError(code: string, summary: string) {
+  return { code: 1, output: JSON.stringify({ error: { code, summary } }), timedOut: false }
 }
 
-test('dependências: fora da lista, versão sem ser exata ou import sem declarar não é aprovado', async (t) => {
-  const outside = await refusalsOf(
-    t,
-    edit('package.json', (text) => text.replace('"clsx"', '"left-pad": "1.3.0",\n    "clsx"')),
-  )
-  assert.deepEqual(outside, {
-    state: 'failed',
-    installs: [],
-    problems: [{ file: 'package.json', line: lineOf('clsx'), code: 'DEPENDENCY_NOT_APPROVED' }],
-  })
-  const range = await refusalsOf(
-    t,
-    edit('package.json', (text) => text.replace('"recharts": "3.10.1"', '"recharts": "^3.10.1"')),
-  )
-  assert.deepEqual(range.problems, [
-    { file: 'package.json', line: lineOf('recharts'), code: 'DEPENDENCY_NOT_APPROVED' },
-  ])
-  const undeclared = await refusalsOf(
-    t,
-    edit('src/routes/home.tsx', (text) => `import dayjs from 'dayjs'\n${text}`),
-  )
-  assert.deepEqual(undeclared.problems, [
-    { file: 'src/routes/home.tsx', line: 1, code: 'DEPENDENCY_NOT_APPROVED' },
-  ])
+test('dependências: a instalação é npm ci --json --ignore-scripts, e qualquer pacote que o lockfile traga passa', async (t) => {
+  const { outcome, installs } = await installing(t, { code: 0, output: '', timedOut: false })
+  assert.equal(outcome.state, 'passed')
+  assert.deepEqual(installs[0]?.slice(0, 3), ['npm', 'ci', '--json'])
+  assert.ok(installs[0]?.includes('--ignore-scripts'))
 })
 
-test('dependências: o pacote concedido ao Projeto passa e a instalação é npm ci --ignore-scripts', async (t) => {
-  const granted = [{ name: 'left-pad', version: '1.3.0' }]
-  const files = edit('package.json', (text) =>
-    text.replace('"clsx"', '"left-pad": "1.3.0",\n    "clsx"'),
+test('dependências: o npm que recusa é do app pelo código do erro, e o registro fora do alcance é da máquina', async (t) => {
+  const refused = await installing(t, npmError('EUSAGE', 'package.json and lock are out of sync'))
+  assert.deepEqual(refused.outcome, {
+    state: 'failed',
+    problems: [
+      {
+        file: null,
+        line: null,
+        column: null,
+        code: 'INSTALL_FAILED',
+        message: 'EUSAGE: package.json and lock are out of sync',
+      },
+    ],
+  })
+  for (const code of ['ENOTFOUND', 'ETIMEDOUT', 'E503']) {
+    const unreachable = await installing(t, npmError(code, 'registry out'))
+    assert.deepEqual(unreachable.outcome, {
+      state: 'platform',
+      reason: 'npm could not reach the registry',
+    })
+  }
+  // A line of the app's own output that looks like npm's is no verdict: only the error's code is.
+  const noise = await installing(t, {
+    code: 1,
+    output: 'npm error code ENOTFOUND (printed by the app)',
+    timedOut: false,
+  })
+  assert.equal(noise.outcome.state, 'failed')
+})
+
+test('um import sem pacote no app falha em tipos, na linha do import', async (t) => {
+  const root = appWith(
+    t,
+    edit('src/routes/home.tsx', (text) => `import dayjs from 'dayjs'\nvoid dayjs\n${text}`),
   )
-  const { state, installs } = await refusalsOf(t, files, granted)
-  assert.equal(state, 'passed')
-  assert.deepEqual(installs[0]?.slice(0, 3), ['npm', 'ci', '--ignore-scripts'])
+  const report = await reportOf(contextOf(root))
+  assert.equal(states(report).tipos, 'failed')
+  const [first] = report.steps[2]?.problems ?? []
+  assert.deepEqual([first?.file, first?.line, first?.code], ['src/routes/home.tsx', 1, 'TS2307'])
 })
 
 const MAIN = 'src/main.tsx'
