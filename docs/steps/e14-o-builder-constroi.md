@@ -26,21 +26,18 @@ quando o app guarda dados. A Prévia, onde você usa o app, é a etapa 14.1.
 **O que você faz, e quando.** No começo: aprova esta página. No fim: faz o roteiro na nuvem e aprova
 os textos dos cartões.
 
-**Respondidas.** As de 2026-10-21 estão no registro de aprovações.
+**Respondidas** em 2026-10-21 e na emenda: no registro de aprovações.
 
 **Os limites.** 4 perguntas por cartão, que espera 30 min (do OS); 4 conferências por turno; 20
 problemas e 60 s por passo.
 
 **Fica de fora.** Prévia, envio e Alterações (14.1); Conexões (19 e 20); página pública;
-starters por tipo de app (depois, com avaliações); eventos e agendas. Issues `next-card`: 232 a 238
-são da 13 e esperam o conserto dela; as da 12.x, de telas fora destas pastas.
+starters por tipo de app (depois, com avaliações); eventos e agendas. Issues `next-card`: 232 a 238,
+da 13, esperam o conserto dela; as da 12.x tocam telas fora destas pastas.
 
-**Emenda de 2026-10-22.** Ao estudo da Conversa, "1. Sim … 2.B": a linha de ferramenta abre como no
-OS, mascarada e cortada; "Pensou", só o tempo; o plano fica no resultado da ferramenta, nativo. O
-registro único da conversa é a etapa 14.0. À auditoria nativa, "2. SIM": "Permitir" chega à
-conferência; o cartão de perguntas é o questionário do shadcn instalado; uma frase só sobre quando
-conferir. Em 2026-10-21, "A" ao relatório de base (2.6): sem teto de operações. Ao estudo do contrato do app, "A":
-o app confere cada chamada com o próprio Zod; e-mail, data e "pix ou cartão" funcionam.
+**Emenda de 2026-10-22**: a linha de ferramenta abre; "Pensou", só o tempo;
+"Permitir" chega à conferência; o plano longo abre inteiro; sem teto de operações; o app confere com o
+próprio Zod. O registro único da conversa é a etapa 14.0.
 
 ## As unidades
 
@@ -50,18 +47,17 @@ o app confere cada chamada com o próprio Zod; e-mail, data e "pix ou cartão" f
 | U2 | O contrato afrouxado e o SDK `@conexus/app` | `packages/app-contract/`, `packages/app/src/`, `platform/cloudflare.ts` | dados | U1 |
 | U3 | O starter editável | `packages/app/starter/`, `builder/git/` | web | U2 |
 | U4 | A montagem, `conexus_check` e o fim do turno | `packages/app/src/check/`, `infra/e2b/`, `scripts/app-pack.ts`, `builder/machine/`, `builder/conversation/` | segurança | U2, U3 |
-| U5 | Perguntas, plano, tarefas e bibliotecas no servidor | `builder/conversation/`, `builder/runs/`, `builder/packages/`, `hub-api/`, migrações | dados | U1; a ligação das bibliotecas, U4 |
+| U5 | Perguntas, plano, tarefas e bibliotecas no servidor | `builder/conversation/`, `builder/runs/`, `builder/packages/`, `hub-api/`, migrações | dados | U1; U4 (bibliotecas) |
 | U6 | Os cartões e a linha que abre | `apps/web/src/builder/conversation/`, `builder/conversation/`, `hub-api/` | web | U5 |
 | U7 | O prompt e as skills | `builder/conversation/prompt/`, `packages/app/skills/` | testes | U2 a U5 |
 | U8 | Percurso e prova | `tests/e2e/`, `docs/how-to/` | testes | todas |
 
-`builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. U2 e U5 em paralelo; QA (T25) antes
-das revisões (L9). **Pacotes novos**: `@conexus/app`; no
-starter, os cinco do OS (`compiler-template/package.json:10-35`); raiz: `package.json`,
+`builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. U2 e U5 em paralelo; QA (T25) antes das revisões (L9). **Pacotes novos**: `@conexus/app`; no
+starter, os cinco do OS (auditoria de base, §5); raiz: `package.json`,
 `package-lock.json`, `biome.json`, `ci.yml`.
 
 **Orçamento de código alterado.** U2 470; U3 150 (shadcn é gerado);
-U4 520; U5 500; U6 630; U7 650, quase todo texto; U8 80. Total: **3.000**, teto 4.000 (L2).
+U4 520; U5 500; U6 630; U7 650 (texto); U8 80. Total: **3.000**, teto 4.000 (L2).
 
 ## Os critérios de aceite
 
@@ -140,7 +136,7 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 │░░░ esmaecido ░░[Ler plano completo]        │[Ler plano completo] │
 │[Aprovar e construir][Pedir ajustes]        │[Aprovar e construir]│
 └──────────────────────────────────┘         └[Pedir ajustes]──────┘
-Ler plano completo: Dialog com o plano inteiro e os dois botões (390: tela cheia)
+Ler plano completo → Dialog (390: tela cheia)
 ```
 
 ## A tabela de falhas
@@ -163,7 +159,7 @@ Ler plano completo: Dialog com o plano inteiro e os dois botões (390: tela chei
 
 | Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
 | --- | --- | --- | --- | --- | --- |
-| Operações em Zod, conferidas no Worker; manifesto como lista de embarque | nosso, novo | `packages/app/src/`, `app-contract/src/runtime.ts` | sai a forma JSON das operações | inverte o OS (manifesto JSON escrito, `server-manifest.ts`) | OS `17-app-stack-decision.md:154-156`; vibesdk sem manifesto |
+| Operações em Zod no Worker; manifesto, lista de embarque | nosso, novo | `packages/app/src/`, `app-contract/src/runtime.ts` | sem formas JSON | inverte o OS (`server-manifest.ts`) | OS `17-app-stack-decision.md:154-156`; vibesdk sem manifesto |
 | Navegação de página única | nativo | `platform/cloudflare.ts:208` | — | — | Cloudflare `not_found_handling`; vibesdk `think-user-deploy.ts:56` |
 | Starter editável | trazido como ideia | `packages/app/starter/` | sem casca guardada | `jitless`, `CSPProvider` | OS `starter-template/`; vibesdk `think.ts:160-161` |
 | Bibliotecas por Projeto | nosso, novo | `builder/packages/`, `packages/app/src/check/dependencies.ts` | a lista vem do Projeto | o `node_modules` só com o declarado | OS `allowlist.mjs:18-40`; vibesdk `SKILL.md:357-389` (sem lista) |
@@ -185,45 +181,41 @@ Ler plano completo: Dialog com o plano inteiro e os dois botões (390: tela chei
 `docs/decisions/{0019,0053}-*.md`, `docs/reference/boundaries.md`: muda. Chama: `check-docs`.
 
 **Contratos.** 0055: o app é escrito contra o contrato, sobre um starter editável; o contrato é dono
-de `shared/operations.ts` e `server/handlers.ts` (os caminhos que geram o manifesto), do cliente
-gerado, de `worker.js`, da conferência e da montagem; o resto é do modelo. **Regras trocadas, não
-acrescidas**: contrato 1 "1 a 32 operações" vira "zero ou mais" (0019: os manifestos de hoje seguem
-válidos); 0019 "A manifest holds zero or more operations" vira "an app declares zero or more
-operations, in Zod"; 0055 "Operations are written in Zod" ganha "the app's Worker checks every call
-with them; the manifest holds what the Hub reads (contract, entry, assets, migrations)", e o
-Criterion, a prova do estudo do contrato; cartão 9 "`serveApp` chamado pelo app" vira "gerado pela
-montagem, com o Zod do app"; sai a entrada de `boundaries.md` do manifesto como única conferência; a skill do contrato
-(`packages/app-contract/src/skill.ts`) sai, substituída pelas da U7; 0053 "the controller's own
-such tools stay disabled" vira "`ask_user`, `submit_plan` e `task_*` ligados, embrulhados";
-`live.ts:289` "`suspended` cannot happen" cai.
+de `shared/operations.ts`, `server/handlers.ts`, do cliente gerado, de `worker.js`, da conferência e
+da montagem; o resto é do modelo. **Regras trocadas, não acrescidas**: contrato 1 "1 a 32 operações"
+vira "zero ou mais" (0019: os guardados seguem válidos); 0019 e 0055 com as frases do estudo do
+contrato ("O que muda no card 14 e na 0055"); cartão 9 "`serveApp` chamado pelo app" vira
+"gerado pela montagem"; saem a entrada de `boundaries.md` do manifesto como única conferência e a
+skill do contrato (`skill.ts`), pelas da U7; 0053 "the controller's own such tools stay disabled"
+vira "`ask_user`, `submit_plan` e `task_*` ligados, embrulhados"; `live.ts:289` "`suspended` cannot
+happen" cai.
 
 ## U2 O contrato afrouxado e o SDK
 
 **Raio.** `packages/app-contract/src/{manifest,runtime}.ts`, `platform/cloudflare.ts`, `tests/apps/recados*`:
-muda; chama: envio, Hub, despachante; `packages/app/src/manifest-of.ts`: apaga.
-`packages/app/`: cria; chama: o starter, a conferência, as skills.
+muda; chama: envio, Hub, despachante. `packages/app/`: cria (sem `manifest-of.ts`); chama: o
+starter, a conferência, as skills.
 
 **Contratos.** `Manifest = {contract: 1, entry, migrations, assets, operations?}`, `operations`
-aceita e não lida (`repair.ts:79`). `serveApp({operations, handlers})`: `input.safeParse`, saída por
-`safeEncode` (`$ZodEncodeError` vira `OUTPUT_INVALID`); `Handlers` recebe `z.output<input>`. `not_found_handling:
+aceita e não lida. `serveApp({operations, handlers})`: `input.safeParse`; saída por `safeEncode`, cujo
+erro vira `OUTPUT_INVALID`; `Handlers` recebe `z.output<input>`. `not_found_handling:
 'single-page-application'` no upload (`cloudflare.ts:208`). `defineOperations`, `defineHandlers`
 (`Context = {db, caller}`, 0019), `query<R>(db, row: ZodType<R>, text, values?)`, `write(db,
 Statement[])`, `DatabaseRefused {code: Sqlstate}`, `createApi`, `CallFailed {code}`, `failureText: Record<AppFailureCode, string>`,
-o dono das frases (C26). `OperationName` marcado (C23). Entrada: o corpo do `POST`, pelo Zod (C27).
+dono das frases (C26). `OperationName` marcado (C23). Entrada: o corpo do `POST` (C27).
 Modelo: `runtime.ts` (C21, C23, C26).
 
 **Ordem.** Regras: C21, C23, C26, C27, D28. Funções: `zod@4.6.5` `safeParse`, `safeEncode`. Saem
-`Shape`, `schemaOf` e `manifest-of.ts` (apagar antes de pôr). O Recados e os apps de defeito do passo
-10 passam a ter operações em Zod e o mesmo `serveApp`. Base: estudo do contrato do app, §8, provado no
-`workerd`. **Prova.** 2 a 6.
+`Shape`, `schemaOf` e `manifest-of.ts`, antes de pôr; o Recados e os apps de defeito do passo 10, em
+Zod (estudo do contrato, §8, provado no `workerd`). **Prova.** 2 a 6.
 
 ## U3 O starter editável
 
 **Raio.** `packages/app/starter/`: cria; chama: o template (U4), `builder/git/`.
 
-**Contratos.** A árvore do estudo das formas, §8.2: `src/router.tsx` com uma rota `/`, sem Sidebar;
+**Contratos.** Do estudo das formas, §8.2: `src/router.tsx` com uma rota `/`, sem Sidebar;
 `src/routes/home.tsx` "Este app ainda está vazio"; provedores e `CSPProvider` em `main.tsx`;
-componentes shadcn `base-nova` (`npx shadcn add`, gerados); `lib/` com o codec de data (estudo do contrato, §8); sem `server/` nem `shared/`. Tudo editável. `startProject({projectId}): Result<Sha, GitFailure>`, só sem `main`. Modelo: `builder/git/`
+componentes shadcn `base-nova` (`npx shadcn add`, gerados); `lib/` com o codec de data (estudo do contrato, §8); sem `server/` nem `shared/`; tudo editável. `startProject({projectId}): Result<Sha, GitFailure>`, só sem `main`. Modelo: `builder/git/`
 da 13 (C21, C23). Regras: W21, W22, V19. **Prova.** 7.
 
 ## U4 A montagem, `conexus_check` e o fim do turno
@@ -231,26 +223,22 @@ da 13 (C21, C23). Regras: W21, W22, V19. **Prova.** 7.
 **Raio.** `packages/app/src/check/`: cria. `infra/e2b/template.ts`, `scripts/app-pack.ts`,
 `builder/machine/`: muda. `builder/conversation/{processors,builder}.ts`: cria, muda.
 
-**Contratos.** `/opt/conexus/check` (só leitura): `dependências` (9), `manifesto` (uma regra: o que a
-operação manda e devolve cabe em JSON, por `z.toJSONSchema` com `io: 'input'` e `'output'`; gera o
-manifesto sem formas e `src/conexus/api.gen.ts`), `tipos` (DOM e servidor), `telas` (`vite build`), `worker` (`workerSource` importa `operations` e chama `serveApp({operations, handlers})`, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (11). A lista vem do servidor a cada chamada, nunca da árvore; a U5 a liga (abaixo). `CheckReport = {ok, steps: [{name, state:
+**Contratos.** `/opt/conexus/check` (só leitura): `dependências` (9), `manifesto` (só "cabe em JSON",
+por `z.toJSONSchema`, estudo do contrato §8; gera o manifesto e `src/conexus/api.gen.ts`), `tipos` (DOM e servidor), `telas` (`vite build`), `worker` (`workerSource` dá `operations` a `serveApp`, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (11). A lista de pacotes vem do servidor (U5), nunca da árvore. `CheckReport = {ok, steps: [{name, state:
 'passed' | 'failed' | 'skipped' | 'informed', problems: [{file, line, column, code, message}]}]}`,
 esquema Zod (C27). `Machines.check({projectId}): Result<CheckReport, 'CHECK_PLATFORM_FAILED'>`;
-`Machines.pack({projectId}): Result<VersionFolder, PackRefused>`, por `receiveVersion` (S2); a 14.1
-a chama. `CHECK_LIMITS = {problems: 20, stepMs: 60_000, checks: 4}` (C26). `conexus_check`, sem
-entrada, descrito como no OS (`tools.ts:26-41`). `checkGate: Processor` em `processOutputStep`, sem
-`toolCalls` e com arquivos mudados; falha: `abort(…, {retry: true})`; `retryCount` 3 termina. `APP_CHECK_FAILED`, `DEPENDENCY_NOT_APPROVED`, `CHECK_PLATFORM_FAILED`, `OPERATION_NOT_JSON` (C48). Template:
-Node 24, `/opt/conexus` com o cache npm das pré-aprovadas, `@conexus/app`, `wrangler`, Chromium.
-Rede: só `registry.npmjs.org`, já liberado (0051, `kit.ts:21`).
-**A pasta**: uma máquina e uma pasta por Projeto (`machines.ts:224-240`), `APP_FOLDER` (C26). `E2BSandbox({workingDirectory, instructions})` (`@mastra/e2b`
-`sandbox/index.d.ts:103`; `mastra-sandbox.d.ts:96`) e `MachineFilesystem.getInstructions`
-(`filesystem.d.ts:224`) dizem a pasta e a máquina, no lugar de "Cloud sandbox." (`index.js:1008`). `/opt/conexus` fica fora do workspace. **Escolha**: a
-fronteira dos comandos é a máquina do Projeto (rede fechada, nada do Conexus); prender o shell,
-recusado: sem opção nativa (`cwd` absoluto vence, `workspace-BojqafFG.js:3350-3351`), e filtrar texto
-não prende. Modelo:
+`Machines.pack({projectId}): Result<VersionFolder, PackRefused>`, por `receiveVersion` (S2), para a 14.1. `CHECK_LIMITS = {problems: 20, stepMs: 60_000, checks: 4}` (C26). `conexus_check`: sem
+entrada, a descrição do OS. `checkGate: Processor` em `processOutputStep`, sem
+`toolCalls`, com arquivos mudados; falha: `abort(…, {retry: true})`; `retryCount` 3 termina. `APP_CHECK_FAILED`, `DEPENDENCY_NOT_APPROVED`, `CHECK_PLATFORM_FAILED`, `OPERATION_NOT_JSON` (C48). Template:
+Node 24, `/opt/conexus` (cache npm das pré-aprovadas, `@conexus/app`, `wrangler`, Chromium).
+Rede: só `registry.npmjs.org` (0051).
+**A pasta**: uma máquina e uma pasta por Projeto, `APP_FOLDER` (C26), dita por `E2BSandbox({workingDirectory,
+instructions})` e `MachineFilesystem.getInstructions` no lugar de "Cloud sandbox."; `/opt/conexus`,
+fora do workspace. **Escolha**: a fronteira é a máquina do Projeto; prender o shell, sem opção
+nativa, recusado (auditoria de base, área F). Modelo:
 `model-accounts/processors.ts` da 12 (C21, C26).
 
-**Ordem.** 1. O 31 primeiro. 2. Regras: C50, C56, C57, C59, C75, S2, S14. Ler inteira
+**Ordem.** 1. O 31. 2. Regras: C50, C56, C57, C59, C75, S2, S14. Ler inteira
 `dist/docs/references/docs-agents-processors.md`. **Prova.** 8 a 14, 32.
 
 ## U5 Perguntas, plano, tarefas e bibliotecas
@@ -266,21 +254,15 @@ min}`, C26; só `.conexus/plan.md`); `task_*` nativos. Pergunta `kind: 'library'
 version, granted_by, granted_at)`, chave `(project_id, name)`, FK que apaga com o Projeto; só o
 **Permitir** do dono. `builder.run.state` ganha `waiting`. `answerQuestion` `POST
 …/conversations/{conversationId}/questions/{toolCallId}`, dono da Conversa (0050), outro 404: `{kind:
-'answers', answers} | {kind: 'plan', action, feedback?}`, `feedback` exigido em `rejected` → 202; 409 `QUESTION_CLOSED`, 422
-`QUESTION_ANSWERS_INVALID` (16); Zod (C27). `ToolCallId`, `PackageName` marcados (C23). Retomada por
-`respondToToolSuspension` (`session.d.ts:1814-1834`); `rejected` é o nativo (`submit-plan.ts:101`, fork
-`ce7e9c30c1`); mensagem com pergunta aberta: `session.steer` (fork
-`agent-controller/session.ts:3336-3360,4048-4051`; `session.d.ts:1752`), sem fecho nosso; só o Hub
-reiniciado fecha por `settleSuspendedToolCallsAsDenied`. **Sem lista nossa** (emenda, estudo U-d): o
-plano e o "expirou" vão no `suspendPayload` e no resultado (`submittedPlan`, `:81-112`);
-a parte se lê de `metadata.suspendedTools` ou do resultado (`tool-call-step.ts:188-230,370-398`); sem
-`conexus.suspensions` (C26, C75). **A lista da conferência**: `Runs.check` lê `PREAPPROVED_PACKAGES`
-(dono, C26) e `PackageGrants.of` do Projeto, um tipo só (auditoria 2: hoje `runs.ts:34,249` passa
-`GRANTS = []`).
+'answers', answers} | {kind: 'plan', action, feedback?}`, `feedback` exigido em `rejected` → 202; 409 `QUESTION_CLOSED`, 422 `QUESTION_ANSWERS_INVALID`; Zod (C27). `ToolCallId`, `PackageName` marcados (C23). Nativos, sem
+fecho nosso: `respondToToolSuspension`, `rejected` e `session.steer`; o Hub reiniciado fecha por
+`settleSuspendedToolCallsAsDenied` (estudo de como o Builder constrói, §5). **Sem lista nossa**: plano
+e "expirou" no `suspendPayload` e no resultado, lidos de `metadata.suspendedTools` ou dele (C26, C75;
+estudo da conversa, U-d). **A lista da conferência**: `Runs.check` lê `PREAPPROVED_PACKAGES`
+(C26) e `PackageGrants.of`, um tipo, sem `GRANTS = []` (auditoria nativa, achado 2).
 Modelo: `runs/settle.ts` da 13 (C21).
 
-**Ordem.** 1. Prova no `@mastra/core` instalado: suspender, responder, retomar, negar; falhou, volta
-ao cartão. 2. Regras: C21, C23, C48, C62, C65, D11, S8, S10, S41. **Prova.** 15 a 20.
+**Ordem.** 1. Prova no `@mastra/core` instalado: suspender, responder, retomar, negar; senão, card. 2. Regras: C21, C23, C48, C62, C65, D11, S8, S10, S41. **Prova.** 15 a 20.
 
 ## U6 Os cartões e a linha que abre
 
@@ -288,18 +270,14 @@ ao cartão. 2. Regras: C21, C23, C48, C62, C65, D11, S8, S10, S41. **Prova.** 15
 `transcript.tsx`, `builder-turn.tsx`, `tool-row.tsx`, `fold.ts`: muda; `shell-output.tsx`: apaga.
 `builder/conversation/{parts,live,shell}.ts`, `hub-api/conversations.ts`: muda; chama: web, OpenAPI.
 
-**Contratos.** Cada cartão lê a sua parte e chama `answerQuestion`; o de biblioteca é o de pergunta
-com `kind: 'library'`; textos em português (L23). O de perguntas usa o `questionnaire` do
-`@shadcn/react` 0.3.1 instalado (`Root`, `Item`, `Choices`, `Input`; `questionnaire/index.d.ts:5-78`),
-não um escrito à mão (auditoria 9); a U6 prova o encaixe primeiro (o "Revisar" do OS não foi
-conferido); sem encaixe, volta ao card. **O plano longo** (fundador, "A", 2026-10-22): cortado com esmaecido e
-**Ler plano completo** só quando não cabe, como o controle do Mastra se esconde sem corte
-(playground-ui `plan.tsx:259`); abre o `Dialog` do shadcn com o plano e os dois botões, como a tela do
-OS (`plan-pt.tsx:58-70`), sem o código dele. **A linha que abre** (emenda, estudo U-a):
-`tool.detail`, dos args, do resultado e de `data-sandbox-exit` gravados, por
-`masked()` (S2, S41), cortado como a Factory: comando, `SUBJECT_MAX_LENGTH`; saída, a cauda
-`SHELL_MAX_*`, mascarada antes; arquivo, 2.000 caracteres; edição, 200 linhas por lado (`DETAIL_LIMITS` em `hub-api`, C26), a diferença no
-navegador; leitura, só o assunto. "Pensou", só o tempo (V39). Regras: C26, C28, V19, V29 a V31, V54, W22, W31. **Prova.** 21, 22, 33, 34.
+**Contratos.** Cada cartão lê a sua parte e chama `answerQuestion`; o de biblioteca é o de pergunta,
+`kind: 'library'`; textos em português (L23). O de perguntas, o `questionnaire` do
+`@shadcn/react` 0.3.1, com o encaixe provado antes; senão, card (auditoria nativa, achado 9). **O plano longo** (34): como o controle do Mastra (playground-ui
+`plan.tsx:259`) e a tela do OS (`plan-pt.tsx:58-70`), no `Dialog` do shadcn. **A linha que abre** (estudo da conversa, U-a):
+`tool.detail` dos args, do resultado e de `data-sandbox-exit` gravados, por `masked()` (S2, S41),
+cortado em `DETAIL_LIMITS` (`hub-api`, C26), como a Factory: comando, `SUBJECT_MAX_LENGTH`; saída,
+`SHELL_MAX_*`; arquivo, 2.000 caracteres; edição, 200 linhas por lado, diferença no navegador;
+leitura, só o assunto. "Pensou", só o tempo (V39). Regras: C26, C28, V19, V29 a V31, V54, W22, W31. **Prova.** 21, 22, 33, 34.
 
 ## U7 O prompt e as skills
 
@@ -307,16 +285,11 @@ navegador; leitura, só o assunto. "Pensou", só o tempo (V39). Regras: C26, C28
 `packages/app/skills/{conexus-plan-new,conexus-plan-change,conexus-build,conexus-app,conexus-data}/`:
 cria; chama: `createSkill`.
 
-**Contratos.** `instructions` como função (OS `prompt.ts:61-66`). Um dono de quando conferir, a
-descrição de `conexus_check`; a linha 54 só diz o que o Conexus faz no fim (auditoria 10:
-`instructions.ts:14-15` de `main` o contradizia). Skills do OS refeitas, sem `conexus/`, a lista fixa, o runner, o CTE e
-`conexus_run_operation`; `conexus-data` ensina o Zod que o app precisa ("o que não viaja em JSON, Date, BigInt, Map, é
-recusado; uma data é `z.iso.date()` ou o codec de `lib/` do starter"); `conexus-app` ensina as três formas (página, só `home.tsx`; painel; sistema com Sidebar), com as
-referências do OS (`shell`, `list`, `record`, `dashboard`, `form`), e a biblioteca pelo cartão.
+**Contratos.** `instructions` como função (estudo de como o Builder constrói, §7). Quando conferir, só a
+descrição de `conexus_check` diz; a linha 54, o que o Conexus faz no fim (auditoria nativa, achado 10). Skills do OS sem `conexus/`, lista fixa, runner, CTE e `conexus_run_operation`; `conexus-data`, o Zod do app e o que não viaja em JSON (estudo do contrato, §8); `conexus-app`, as três formas (página, só `home.tsx`; painel; sistema com Sidebar), as referências
+do OS (`shell`, `list`, `record`, `dashboard`, `form`) e a biblioteca pelo cartão.
 
-**A tabela do prompt**, por linha do `builder.md` do OS, com o veredito e a razão da arquitetura:
-[reference/builder-prompt.md](../reference/builder-prompt.md), a dona desde a emenda, para onde foi
-sem mudar.
+**A tabela do prompt**: [reference/builder-prompt.md](../reference/builder-prompt.md), movida sem mudar.
 
 **Ordem.** Regras: T5, S2, S40, L23. **Prova.** 23 a 25.
 
