@@ -90,4 +90,21 @@ export const CONVERSATION_FAILURES = {
     action: 'O que não foi guardado se perdeu. Peça de novo ao Builder.',
     actionKind: 'NONE',
   },
+  // Founder, 2026-10-22, the step 14 texts: "Aprovo" and "Aprovookay".
+  APP_CHECK_FAILED: {
+    category: 'USER',
+    settles: true,
+    status: 422,
+    phrase: 'O app não passou na conferência depois de 4 tentativas.',
+    action: 'O código ficou guardado. Peça ao Builder para corrigir.',
+    actionKind: 'NONE',
+  },
+  CHECK_PLATFORM_FAILED: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 502,
+    phrase: 'Não consegui conferir o app.',
+    action: 'O código ficou guardado sem conferência. Peça de novo ao Builder.',
+    actionKind: 'NONE',
+  },
 } as const satisfies Record<string, FailureRow>

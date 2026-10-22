@@ -26,7 +26,7 @@ const NOT_FOUND = 'Não encontramos o que você procurou.'
 const PAGE = '<h1>Padaria</h1>\n'
 const SECOND_PAGE = '<h1>Padaria Nova</h1>\n'
 const WORKING = 'Builder trabalhando'
-const VERSION_1 = /^Versão 1 guardada: \d+ arquivos?\.$/
+const VERSION_1 = /^Versão 1 guardada, sem conferência: \d+ arquivos?\.$/
 
 type Call = { type: 'tool_use'; name: string; input: object }
 
@@ -134,7 +134,7 @@ test('o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 
     await openProject(chat, 'Encomendas')
     await writeFirst(chat)
     await ask(chat, 'Mude o título')
-    await transcriptShowed(chat, 'Versão 2 guardada: 1 arquivo mudado.')
+    await transcriptShowed(chat, 'Versão 2 guardada, sem conferência: 1 arquivo mudado.')
     await chat.getByText(/Versão 2, guardada em/).waitFor()
     await chat
       .getByRole('region', { name: 'Conteúdo de pagina.html' })
@@ -143,7 +143,9 @@ test('o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 
     const project = chat.url()
     await chat.reload()
     await chat.getByText(/Versão 2, guardada em/).waitFor()
-    await transcriptOf(chat).getByText('Versão 2 guardada: 1 arquivo mudado.').waitFor()
+    await transcriptOf(chat)
+      .getByText('Versão 2 guardada, sem conferência: 1 arquivo mudado.')
+      .waitFor()
     await lastingShown(chat, VERSION_1)
 
     await enter(diego, DIEGO.email, `/companies/${ids.companyB}`)

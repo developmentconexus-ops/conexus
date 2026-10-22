@@ -1,6 +1,7 @@
 import type { MessagePart } from '@conexus/hub-api'
 import { machinePhaseLasts } from '@conexus/hub-api'
 import { CheckIcon, CircleAlertIcon, CogIcon, RotateCcwIcon } from 'lucide-react'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
 import { durationOf } from './text.ts'
@@ -45,12 +46,20 @@ function files(count: number, changed: string): string {
   return `${count} ${count === 1 ? 'arquivo' : 'arquivos'}${changed}`
 }
 
-/** Whether the saved version's app built, as the end of the turn's check said (card of step 14). */
-const BUILT = { passed: ', montou', failed: ', não montou' } as const
+/**
+ * Whether the saved version's app built, as the end of the turn's check said (card of step 14), or
+ * that no check gave a verdict: the machine could not check, or the turn ended first (founder,
+ * 2026-10-22: "Aprovookay").
+ */
+const BUILT = {
+  passed: ', montou',
+  failed: ', não montou',
+  unchecked: ', sem conferência',
+} as const
 
 /**
- * "Versão 1 guardada: 7 arquivos.", then "Versão 2 guardada, montou: 2 arquivos mudados."; a
- * version the turn could not check says only what it saved.
+ * "Versão 1 guardada, montou: 7 arquivos.", then "Versão 2 guardada, não montou: 2 arquivos
+ * mudados."; a version no check judged says "sem conferência".
  */
 function versionSentence(part: Version): string {
   if (!part.changed) return `A versão ${part.number} segue a mesma.`
@@ -58,17 +67,20 @@ function versionSentence(part: Version): string {
     part.number === 1
       ? files(part.files, '')
       : files(part.changedFiles, part.changedFiles === 1 ? ' mudado' : ' mudados')
-  const built = part.check === undefined ? '' : BUILT[part.check.state]
+  const built = BUILT[part.check?.state ?? 'unchecked']
   return `Versão ${part.number} guardada${built}: ${count}.`
 }
 
-/** The version the turn saved. */
+/** The version the turn saved; one that did not build says its failure's words below it. */
 export function VersionLine({ part }: { part: Version }) {
-  const failed = part.check?.state === 'failed'
+  const failed = part.check?.state === 'failed' ? part.check.code : undefined
   return (
-    <Marker className={failed ? 'text-danger' : 'text-text'}>
-      <MarkerIcon>{failed ? <CircleAlertIcon /> : <CheckIcon />}</MarkerIcon>
-      <MarkerContent>{versionSentence(part)}</MarkerContent>
+    <Marker className={failed === undefined ? 'text-text' : 'text-danger'}>
+      <MarkerIcon>{failed === undefined ? <CheckIcon /> : <CircleAlertIcon />}</MarkerIcon>
+      <MarkerContent>
+        {versionSentence(part)}
+        {failed !== undefined && <span className="block">{sentenceOfCode(failed)}</span>}
+      </MarkerContent>
     </Marker>
   )
 }

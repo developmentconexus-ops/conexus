@@ -125,6 +125,21 @@ test('o cartão de biblioteca: o nome e a versão, Permitir (recomendado) escolh
   await waitFor(() => expect(bodies).toEqual([{ kind: 'answers', answers: ['Permitir'] }]))
 })
 
+test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILED; sem conferência', async () => {
+  const version = { type: 'version', changed: true, files: 7, changedFiles: 2 } as const
+  const { tell, log } = await turn({ ...version, number: 1, check: { state: 'passed' } })
+  await within(log).findByText('Versão 1 guardada, montou: 7 arquivos.')
+  tell({ ...version, number: 2, check: { state: 'failed', code: 'APP_CHECK_FAILED' } })
+  const failed = await within(log).findByText(
+    /^Versão 2 guardada, não montou: 2 arquivos mudados\./,
+  )
+  expect(failed.textContent).toBe(
+    'Versão 2 guardada, não montou: 2 arquivos mudados.O app não passou na conferência depois de 4 tentativas. O código ficou guardado. Peça ao Builder para corrigir.',
+  )
+  tell({ ...version, number: 3 })
+  await within(log).findByText('Versão 3 guardada, sem conferência: 2 arquivos mudados.')
+})
+
 // jsdom lays nothing out: the plan's text says it is taller than its box when the test says so.
 let planHeight = 0
 const scrollHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollHeight')
