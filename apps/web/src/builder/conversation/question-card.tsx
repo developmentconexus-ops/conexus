@@ -3,7 +3,7 @@ import { LIBRARY_ANSWERS } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { SubmitEvent } from 'react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import {
   Questionnaire,
@@ -43,11 +43,16 @@ export function useAnswer(toolCallId: ToolCallId) {
   const params = route.useParams()
   const send = useMutation({ ...sendAnswer, meta: { keepCache: true } })
   const [error, setError] = useState<string>()
+  // `isPending` is read at the next render; a second click before it would send the answer again.
+  const sent = useRef(false)
   async function answer(body: QuestionAnswer): Promise<void> {
+    if (sent.current) return
+    sent.current = true
     setError(undefined)
     try {
       await send.mutateAsync({ params: { ...params, toolCallId }, body })
     } catch (failure) {
+      sent.current = false
       setError(writeFailureText(failure, CARD_TEXT.unsent))
     }
   }

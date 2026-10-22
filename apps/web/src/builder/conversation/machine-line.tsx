@@ -58,8 +58,8 @@ const BUILT = {
 
 /**
  * "Versão 1 guardada, montou: 7 arquivos.", then "Versão 2 guardada, não montou: 2 arquivos
- * mudados."; a turn that ended before its check ran (stopped, the hour, an error) says only what it
- * saved, as its own end says why.
+ * mudados."; a turn that ended before its check ran (stopped, the hour, an error) saved its version
+ * without one, and says so (founder, 2026-10-22, "Aprovo").
  */
 function versionSentence(part: Version): string {
   if (!part.changed) return `A versão ${part.number} segue a mesma.`
@@ -67,7 +67,7 @@ function versionSentence(part: Version): string {
     part.number === 1
       ? files(part.files, '')
       : files(part.changedFiles, part.changedFiles === 1 ? ' mudado' : ' mudados')
-  const built = part.check === undefined ? '' : BUILT[part.check.state]
+  const built = BUILT[part.check?.state ?? 'unchecked']
   return `Versão ${part.number} guardada${built}: ${count}.`
 }
 

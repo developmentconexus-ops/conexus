@@ -1,8 +1,8 @@
 import type { ProjectId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { LIBRARY_ANSWERS } from '@conexus/hub-api'
-import { Failure } from '../../platform/failure.ts'
+import { Failure, logFailure } from '../../platform/failure.ts'
 import type { PackageGrants } from '../packages/public.ts'
-import { tellCard } from './cards.ts'
+import { openCards, tellCard, waitOn } from './cards.ts'
 import type { Card, Live } from './live.ts'
 import { PLAN_PATH } from './plan-tools.ts'
 
@@ -58,8 +58,11 @@ async function grantAllowed(
 
 /**
  * The person's answer to the card the turn waits on: the answers to its questions, or the decision
- * on its plan. The call is claimed first, so a second answer is `QUESTION_CLOSED`; the libraries the
- * person allowed are granted before the tool resumes, so the check finds them.
+ * on its plan. The libraries the person allowed are granted first, so the check finds them. Then
+ * Mastra's claim takes the call at once, so a second answer is `QUESTION_CLOSED`, and the resume
+ * starts in the same instant, as Mastra's own route does (`agent-controller.ts`, the
+ * tool-suspension route): a Parar, an expiry or a message that comes after it closes the call
+ * through Mastra, which ends the turn once (`cards.ts`).
  */
 export async function answerCard(
   live: Live,
@@ -67,22 +70,17 @@ export async function answerCard(
   input: { projectId: ProjectId; toolCallId: ToolCallId; body: QuestionAnswer },
 ): Promise<void> {
   const { toolCallId, body } = input
-  const found = live.pending.get(toolCallId)
-  if (found === undefined || found.claimed) throw new Failure('QUESTION_CLOSED')
-  const resumeData = resumeOf(found.card, body)
-  found.claimed = true
-  try {
-    await grantAllowed(live, grants, { projectId: input.projectId, card: found.card, body })
-    live.pending.delete(toolCallId)
-    tellCard(live, answeredCard(found.card, body))
-    if (live.pending.size === 0) await live.run?.waiting(false)
-    await live.session.respondToToolSuspension({
-      toolCallId,
-      resumeData,
-      requestContext: live.run?.context,
-    })
-  } catch (error) {
-    found.claimed = false
-    throw error
-  }
+  const card = openCards(live).find((each) => each.toolCallId === toolCallId)
+  if (card === undefined) throw new Failure('QUESTION_CLOSED')
+  const resumeData = resumeOf(card, body)
+  await grantAllowed(live, grants, { projectId: input.projectId, card, body })
+  const claim = live.session.claimToolSuspension(toolCallId)
+  if (!claim.accepted) throw new Failure('QUESTION_CLOSED')
+  tellCard(live, answeredCard(card, body))
+  if (openCards(live).every((each) => each.toolCallId === toolCallId)) waitOn(live, false)
+  const { address, claimKey } = claim
+  live.session
+    .respondToToolSuspension({ address, resumeData, requestContext: live.run?.context })
+    .catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
+    .finally(() => live.session.releaseToolResponse(claimKey))
 }

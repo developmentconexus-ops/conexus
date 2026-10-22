@@ -9,7 +9,7 @@ const CATCH_UP_EVENTS = 10_000
 /**
  * What a stream that opens reads first, from the run journal (card, criterion 22): the events after
  * the last one it read, when that one is of the conversation's latest run; otherwise that run's
- * turn so far when the run is not over, or nothing. An id from elsewhere, of another conversation
+ * turn so far when the run is not over (it runs, waits on the person, or saves), or nothing. An id from elsewhere, of another conversation
  * too, names nothing here (security S10).
  */
 export async function catchUp(
@@ -28,7 +28,7 @@ export async function catchUp(
       ? []
       : rows.map(({ n, event }) => ({ id: eventId(last.id, n), event }))
   }
-  if (last.state !== 'open' && last.state !== 'saving') return []
+  if (!last.live) return []
   const rows = await runs.events({ companyId, runId: last.id, after: 0, limit })
   if (rows.length > CATCH_UP_EVENTS) return []
   const snapshot = snapshotOf(last.id, rows)

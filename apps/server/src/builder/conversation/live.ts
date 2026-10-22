@@ -38,8 +38,6 @@ export type Card = Extract<MessagePart, { type: 'question' | 'plan' }>
 
 type ToolPart = Extract<MessagePart, { type: 'tool' }>
 
-/** A card the turn waits on: the Mastra run that parked on it, and whether an answer claimed it. */
-type Pending = { card: Card; run: string | undefined; claimed: boolean }
 /** The version a saved turn reached, with its file counts. */
 type SavedVersion = Extract<Outcome, { kind: 'saved' }>['version']
 
@@ -68,10 +66,6 @@ export type Live = {
    * the turn itself, since only it knows which turn the run was.
    */
   unclaimed: { run: string; reason: Ending['reason'] } | undefined
-  /** The cards the turn waits on, by the tool call that asked, and how long each waits. */
-  pending: Map<string, Pending>
-  /** The wait ran out: the cancellation of the cards is an expiry, not a stop. */
-  expiring: boolean
   /** The run a message steers, until the run it starts takes its place (card, criterion 18). */
   steering: { run: Run | undefined } | undefined
   /** The questions on the thread, and the thread's writes in flight, one after the other. */
@@ -85,8 +79,8 @@ export type Live = {
         /** What Mastra needs of the turn to go on after an answer or a message. */
         context: RequestContext
         finish: (reason: string) => Promise<Outcome | 'gone'>
-        /** The run waits on the person's answer, or goes on after it. */
-        waiting: (waiting: boolean) => Promise<boolean>
+        /** The run waits on the person's answer, or goes on after it; rejects when the database refuses. */
+        waiting: (waiting: boolean) => Promise<void>
       }
     | undefined
   /** Why the turn ended badly, for its end to say: a save that failed, or a question that expired (card, the failures table). */

@@ -10,8 +10,11 @@ import { CARD_TEXT, useAnswer } from './question-card.tsx'
 type PlanPart = Extract<MessagePart, { type: 'plan' }>
 type Decision = 'approved' | 'rejected'
 
+/** The words of a plan no longer open (card of step 14; founder, 2026-10-22, "Aprovo"). */
 const STATE_TEXT: Partial<Record<PlanPart['state'], string>> = {
+  approved: 'Plano aprovado.',
   rejected: 'Este plano foi substituído.',
+  closed: 'Este plano foi fechado.',
   expired: 'Este plano expirou.',
 }
 
