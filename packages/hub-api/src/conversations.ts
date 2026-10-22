@@ -3,7 +3,7 @@ import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
 import { ProjectId } from './projects.ts'
-import { PlanPart, QuestionAnswer, QuestionPart, TasksPart, ToolCallId } from './questions.ts'
+import { PlanPart, QuestionPart, TasksPart } from './questions.ts'
 
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
@@ -267,9 +267,9 @@ export function applyEvent(parts: readonly MessagePart[], event: PartEvent): Mes
 export const CONVERSATION_HEARTBEAT_MS = 25_000
 
 const InProject = z.object({ companyId: CompanyId, projectId: ProjectId })
-const OfConversation = InProject.extend({ conversationId: ConversationId })
-const BASE = '/api/companies/{companyId}/projects/{projectId}/conversations'
-const READ_FAILURES = [
+export const OfConversation = InProject.extend({ conversationId: ConversationId })
+export const BASE = '/api/companies/{companyId}/projects/{projectId}/conversations'
+export const READ_FAILURES = [
   'NOT_FOUND',
   'SESSION_REQUIRED',
   'DATABASE_UNAVAILABLE',
@@ -374,17 +374,4 @@ export const setConversationModel = defineOperation({
   input: { params: OfConversation, body: z.object({ model: ModelId, effort: Effort }) },
   success: { status: 200, body: z.object({ model: ModelId, effort: Effort }) },
   failures: [...READ_FAILURES, 'MODEL_UNKNOWN', 'MODEL_NO_ACCOUNT', 'EFFORT_UNSUPPORTED'],
-})
-
-export const answerQuestion = defineOperation({
-  id: 'answerQuestion',
-  summary:
-    'Answers the card a turn waits on: the answers to its questions, or the decision on its plan.',
-  access: 'session',
-  method: 'POST',
-  path: `${BASE}/{conversationId}/questions/{toolCallId}`,
-  bodyLimit: 128 * 1024,
-  input: { params: OfConversation.extend({ toolCallId: ToolCallId }), body: QuestionAnswer },
-  success: { status: 202 },
-  failures: [...READ_FAILURES, 'QUESTION_CLOSED', 'QUESTION_ANSWERS_INVALID'],
 })

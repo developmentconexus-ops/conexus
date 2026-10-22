@@ -25,7 +25,7 @@ const CARD_TOOLS = [
 ]
 const CONTROLLER_TOOLS = ['subagent']
 const ALLOWED =
-  /^(mastra_workspace_(read_file|list_files|grep|file_stat|write_file|edit_file|mkdir|delete|execute_command|get_process_output|kill_process)|web_search|web_fetch|recall|skill|skill_search|skill_read|ask_user|submit_plan|task_write|task_update|task_complete|task_check)$/
+  /^(mastra_workspace_(read_file|list_files|grep|file_stat|write_file|edit_file|mkdir|delete|execute_command|get_process_output|kill_process)|web_search|web_fetch|recall|skill|skill_search|skill_read|conexus_check|ask_user|submit_plan|task_write|task_update|task_complete|task_check)$/
 
 /** A model that calls `tools` in its first step and answers in the second. */
 function calling(...tools: { name: string; input: object }[]) {
