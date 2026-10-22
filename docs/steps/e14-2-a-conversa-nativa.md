@@ -30,9 +30,7 @@ raciocínio recolhido; a 0050 deixa argumentos e resultados irem à tela, cortad
 a tirou em 2026-10-22 (`9fd478b`).
 
 **Fica de fora.** "Pasta" e "SDK" (não aprovados). Issues `next-card`: entram 236, 268, 271, 272; as
-outras esperam a fila de defeitos (L4): migração (274, 275), testes
-instáveis (265, 266, 269), máquina, Git e registros da 13 (233 a 238, 253, 254), 267 e 270 (rotas
-e tabelas da 14, fora destas pastas).
+outras tocam outras pastas e esperam a fila de defeitos (L4).
 
 **A decisão sua pedida.** Nenhuma além desta página.
 
@@ -42,10 +40,10 @@ e tabelas da 14, fora destas pastas).
 | --- | --- | --- | --- | --- |
 | U1 | V39, 0050 e 0055 emendadas | `docs/` | design | — |
 | U2 | O fio do Mastra, com tarefas e memória | `builder/conversation/{wire,live,history,turn-log,parts,cards,check-row,shell}.ts`, `hub-api/` | segurança | U1 |
-| U3 | A transcrição, o painel de tarefas e os anéis | `apps/web/src/builder/conversation/` | web | U2 |
+| U3 | A transcrição, o painel de tarefas e os anéis | `apps/web/src/builder/conversation/` | web | U2, U4 |
 | U4 | O motor: Coding, Fim, Memória, Trava, Registro, LSP | `builder/conversation/{builder,processors,turn-line}.ts`, `builder/machine/machines.ts` | testes | U1 |
 | U5 | Níveis e o raciocínio do Gemini | `builder/model-accounts/`, `apps/web/src/builder/model-accounts/`, `platform/recordings/` | testes | U1 |
-| U6 | O que o app aprende: Contrato, Datas, Dinheiro, Histórico, Hora, Regras, Falha | `packages/app/{starter,skills,src/check/manifest.ts,src/skills.test.ts}` | dados | U1 |
+| U6 | O que o app aprende: Contrato, Datas, Dinheiro, Histórico, Hora, Regras, Falha | `packages/app/{starter,skills,src/skills.test.ts}` | dados | U1 |
 | U7 | Arquivos de migração e Fuso | `packages/app-contract/`, `packages/app/src/check/`, `platform/company-postgres.ts` | dados | U1 |
 | U8 | Plano A e "2 a" | `builder/conversation/plan-tools.ts`, `packages/app/skills/conexus-plan-*`, `builder/machine/scripts.ts` | dados | U1 |
 | U9 | Árvore na aba Código | `apps/web/src/builder/source/` | web | — |
@@ -53,7 +51,7 @@ e tabelas da 14, fora destas pastas).
 
 `builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. Começa com a 14.0 em
 `main` (L1: a U2 usa as partes `data-conexus-*` dela). Em paralelo: U2, U4 a U9 (arquivos
-distintos; a U6 segue o contrato da U7 deste cartão). U3 depois da U2; U10 por último; QA antes das
+distintos; a U6 segue o contrato da U7 deste cartão). U3 depois de U2 e U4; U10 por último; QA antes das
 revisões (L9). Pacote novo, só se a prova da U4 passar: `typescript-language-server` (L16).
 
 **Orçamento de código alterado** (apagado conta; sem testes nem texto de skill). U2 750; U3 950;
@@ -76,8 +74,8 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 9 | U3 | Raciocínio: "Pensando…", depois "Pensou por N s", fechado, abre no texto; grupo de 3 ou mais, sem `skill`, `ask_user`, `submit_plan`; `task_*` sem linha | `transcript.test.tsx` |
 | 10 | U3 | Painel "Tarefas · N de M" acima da caixa enquanto o turno roda; some com tudo feito ou com o turno no fim; nenhum "em andamento" girando depois (#271); relido, do `Conversation.tasks` | `task-panel.test.tsx` |
 | 11 | U3 | Anéis da memória de `om_status`, o quadro ao abrir, "Guardando a memória…" ou "Reorganizando a memória…" enquanto segura o turno, a marca de falha sem o texto do fornecedor (C48, C51) | `memory-status.test.tsx` |
-| 12 | U3 | Cartões de pergunta, plano e tarefas lidos da `tool-invocation` pelo nome; resposta livre em várias linhas (#272) | `cards.test.tsx` |
-| 13 | U3, U9 | 1280 e 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo | T23 |
+| 12 | U3 | Cartões de pergunta, plano e tarefas lidos da `tool-invocation` pelo nome; resposta livre em várias linhas (#272); o cartão da versão: montou, não montou, pela metade | `cards.test.tsx` |
+| 13 | U3, U9 | 1280 e 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo; a árvore com papéis ARIA, o `Sheet` a 390 px, o vazio | T23, `source.test.tsx` |
 | 14 | U4 | O Builder sai de `createCodingAgent` com `workspace: undefined`: não tem workspace próprio, a máquina E2B segue emprestada por volta; a lista volta ao modelo depois que a chamada sai da janela | `conversation-tasks.test.ts` (novo) |
 | 15 | U4 | Fim: turno que acaba com tarefa aberta volta ao modelo com "N tarefas abertas: …", no limite de `CHECK_LIMITS`; no limite, "Versão N guardada, pela metade"; parado, nada disso | `conversation-check.test.ts` |
 | 16 | U4 | Sem `requireReadBeforeWrite`: duas escritas seguidas no mesmo arquivo passam; uma escrita fora da pasta do app, recusada pelo Mastra, sai como erro | `conversation-machine.test.ts` |
@@ -88,7 +86,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 21 | U6 | As telas importam tipos e esquemas de `@/conexus/api.gen`, que a conferência gera; um import de `shared/operations` falha `tipos` | `check.test.ts`, `skills.test.ts` |
 | 22 | U6 | `formatDate('2026-10-22')` dá `22/10/2026`; `isoDate` decodifica para a meia-noite local | `starter.test.ts` |
 | 23 | U6 | `money`: `"1.234,56"` lê `1234.56`, guarda texto decimal, o campo mostra `R$ 1.234,56`; `"abc"` recusado | idem |
-| 24 | U6 | A referência grava encomenda e histórico num comando (CTE); a migração tem `CHECK` e índice; a transição é conferida no handler; `failure.ts` no starter aceita `unknown`; as referências tipam no starter | `skills.test.ts` |
+| 24 | U6 | A referência grava encomenda e histórico num comando (CTE); a migração tem `CHECK` e índice; a transição é conferida no handler; `failure.ts` no starter aceita `unknown`; `conexus-build` manda ler a referência no passo que escreve; as referências tipam | `skills.test.ts` |
 | 25 | U7 | Migrações em `server/migrations/NNNN_nome.sql`, lidas sem rodar `handlers.ts`; a conferência recusa editar, apagar ou reordenar uma já enviada (`MIGRATION_CHANGED`); o Hub confere o prefixo exato (posição, nome, sha) | `check.test.ts`, `company-postgres.test.ts` |
 | 26 | U7 | `CURRENT_DATE` no app é o dia de São Paulo | `company-postgres.test.ts` |
 | 27 | U8 | Cada plano em `.conexus/plans/<nome>.md`; `submit_plan` fora dessa pasta, recusado; o plano aprovado não é sobrescrito (#268); turno que só mudou planos, parado ou não: sem versão, sem conferência | `conversation-questions.test.ts`, `machine.test.ts` |
@@ -131,7 +129,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 └─────────────────────────────────────┘         └──────────────────┘
 [mensagem…]                                      [mensagem…]
 ◔ 14,9/30k ◔ 2,1/40k 🧠 Guardando a memória…    ◔ 14,9/30k ◔ 2,1/40k
-Código: árvore à esquerda, arquivo à direita     Código: arquivo; [Arquivos] abre a árvore no Sheet
+Código: árvore | arquivo                         Código: arquivo; [Arquivos] abre o Sheet
 ```
 
 ## A tabela de falhas
@@ -144,13 +142,15 @@ Código: árvore à esquerda, arquivo à direita     Código: arquivo; [Arquivos
 | `ALTER ROLE … SET TimeZone` | idempotente | uma transação | o banco da empresa | — | 26 |
 | Prefixo das migrações no envio | só leitura até aplicar | a aplicação da 9 | o banco da empresa | `MIGRATION_CHANGED` | 25 |
 | Pedido de raciocínio (U5) e LSP (U4), ao vivo | um por firstmate | — | CLIProxy ou E2B fora: a prova falha e o critério cai como dito | o registro | 18, 20 |
+| Memória: observador e `threadTitle` | nativo | a volta segue | o modelo do observador: `om_*_failed`, a marca | — | 11, 14 |
+| O que o modelo escreve: migrações, planos; o `api.gen.ts` da conferência | a 13 | a 13 | a máquina | — | 21, 25, 27 |
 | Leitura e stream (corte, 502, 503: repetem pelo `Last-Event-ID` da 12) | só leitura | — | o banco | — | 2 a 6 |
 
 ## O que nasce novo e o que é trazido
 
 | Mecanismo | Nativo, nosso ou trazido | Arquivo | Refatorado | Decisões que carrega | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
 | --- | --- | --- | --- | --- | --- |
-| Fio do Mastra | nativo | `mastra-parts.ts`, `live.ts` | novo; `live.ts` perde a tradução | 0050, "Why not Mastra's routes" | `AgentControllerWireEvent` (`agent-controller/wire.d.ts:30-36`); Factory `services/transcript.ts:202-300`; OS `transcript.ts:1-9`; vibesdk: nenhuma faz |
+| Fio do Mastra | nativo | `mastra-parts.ts`, `live.ts` | novo | 0050, "Why not Mastra's routes" | `AgentControllerWireEvent` (`agent-controller/wire.d.ts:30-36`); Factory `services/transcript.ts:202-300`; OS `transcript.ts:1-9`; vibesdk: nenhuma faz |
 | Cortes | nosso; o nativo, `getDisplayTransform` (`stream-content.d.ts:9`), transforma por ferramenta e não limita tamanho | `wire.ts`, `wire-limits.ts` | de `DETAIL_LIMITS` | limites da 14 (`tool-detail.ts:6-12`) | Factory corta na tela, 800 (`ToolCard.tsx:41,54,64`); OS `OUTPUT_LIMIT` 800 |
 | Redutor, linha por nome | nativo na forma | `transcript.ts`, `tool-presentation.ts` | uma porta viva e relida | conjunto fechado (`permissions.ts`) | Factory `transcript.ts:423-437,696-726`, `ToolFactory.tsx:78-117`; playground `tool-presentation.ts:70-119`; OS `tool-sentences.ts:21-71` |
 | Raciocínio recolhido | nativo | `thinking-line.tsx` | o tempo é nosso (12.1) | V39 emendada | Factory `MessageBubble.tsx:180-185`; OS `builder-conversation.tsx:159-172` |
@@ -173,22 +173,21 @@ Código: árvore à esquerda, arquivo à direita     Código: arquivo; [Arquivos
 | Plano A | nativo na forma | `plan-tools.ts` | `.conexus/plans/` | um plano por mudança | Mastra Code `utils/plans.ts:17,33-35,94` |
 | Árvore | nativo | `source/` | — | — | shadcn `sidebar-11`; OS `lens-code.tsx:2,14-38` |
 
-Cada "nosso" entra em `boundaries.md`. Nada copiado. Dívida: nenhuma.
+Citações em `.ts` do Mastra: a fonte em `6a465f9d`. Cada "nosso" entra em `boundaries.md`. Nada
+copiado. Dívida: nenhuma.
 
 ## U1 Regras
 
-**Raio.** `docs/guides/design.md`, `docs/decisions/{0050,0055}-*.md`: muda. **Trocadas, não acrescidas.**
-V39: "not exposed reasoning" vira "the model's reasoning is shown collapsed, in its own words; each
-tool row opens on what it received and returned". 0050: "sends the browser tool arguments, results and
-reasoning, which our parts keep server-side" vira "the Hub sends Mastra's own messages and events,
-cut". 0055: migrações em `server/migrations/`, cada plano em `.conexus/plans/`. Fundador, 2026-10-22,
-"A", "Plano A". **Prova.** 1.
+**Raio.** `docs/guides/design.md`, `docs/decisions/{0050,0055}-*.md`: muda, regras trocadas. V39:
+"not exposed reasoning" vira "reasoning shown collapsed, in the model's words; each tool row opens
+on what it received and returned". 0050: "which our parts keep server-side" vira "the Hub sends
+Mastra's own messages and events, cut". 0055: `server/migrations/`, `.conexus/plans/`. **Prova.** 1.
 
 ## U2 O fio do Mastra
 
 **Raio.** `hub-api/{conversations,questions,index}.ts`: muda; `mastra-parts.ts`, `wire-limits.ts`: cria;
-`tool-detail.ts`: apaga. `builder/conversation/wire.ts`: cria; `parts.ts`, `check-row.ts`, `cards.ts`,
-`shell.ts`: apaga ou encolhe; `live.ts`, `history.ts`, `turn-log.ts`: muda. Chama: web, OpenAPI,
+`tool-detail.ts`: apaga. `builder/conversation/wire.ts`: cria; `parts.ts`, `check-row.ts`: apaga; `cards.ts`,
+`shell.ts`: perdem a tradução; `live.ts`, `history.ts`, `turn-log.ts`: muda. Chama: web, OpenAPI,
 `sessions.ts`, `routes.ts`.
 
 **Contratos.**
@@ -198,8 +197,9 @@ cut". 0055: migrações em `server/migrations/`, cada plano em `.conexus/plans/`
   tipo que `MastraMessagePart` cabe em `z.input<typeof MastraPart>` (C27).
 - `Message = {id, role, parts, suspended, model, createdAt}`; `suspended` vem de
   `metadata.suspendedTools` (hoje `withPlan`, `parts.ts:301-307`).
-- `Conversation` ganha `tasks` (o armazenamento que `task_check` lê, `task-tools.ts:612-626`) e
-  `memory: OMProgressState | null` (`session.displayState.get()`, `session.d.ts:1303`).
+- `Conversation` ganha `tasks: TaskItemSnapshot[]` (o armazenamento que `task_check` lê,
+  `task-tools.ts:612-626`) e `memory: OMProgressState | null` (`session.d.ts:1303`), cada um com esquema
+  Zod (C27). Os nomes `data-conexus-*` são da 14.0.
 - `ConversationEvent`: `turn`, `turnEnd` e os eventos do critério 3, tipados por
   `AgentControllerWireEvent`; sem os textos livres `observations` e `error` dos `om_*`. As nossas partes
   vão como `data-conexus-*`.
@@ -215,7 +215,7 @@ Regras: C21, C23, C26, C27, C75, T5, T24. **Prova.** 2 a 7.
 ## U3 A transcrição, o painel e os anéis
 
 **Raio.** `apps/web/src/builder/conversation/`: `transcript.ts`, `tool-presentation.ts`,
-`task-panel.tsx`, `memory-status.tsx`: cria; `tool-row.tsx`, `builder-turn.tsx`, `fold.ts`,
+`task-panel.tsx`, `memory-status.tsx`: cria; `tool-row.tsx`, `tool-group.tsx`, `transcript.tsx`, `machine-line.tsx`, `builder-turn.tsx`, `fold.ts`,
 `thinking-line.tsx`, `use-live.ts`, `live.ts`, `question-card.tsx`, `plan-card.tsx`, `composer.tsx`:
 muda; `tool-text.ts`, `task-list.tsx`: apaga. Chama: `panel.tsx`, `workbench.tsx`.
 
@@ -258,11 +258,8 @@ marca de falha do OS. Frases em português (L23).
 (`llm-DtX483Xc.js:8463-8474`): manda `reasoning_effort` (`dist-Btgwa9QY.js:3326`), lê
 `reasoning_content` (`:3484`). O nome do CLIProxy carrega o nível (`gemini-3.8-flash-high`), fora do
 registro: `providerOptionsOf` não manda nada (`thinking.ts:150-152`) e o seletor esconde o
-**Raciocínio** (`thinking.ts:125-130`, `model-picker.tsx:62-64`). **Não provado**: qual pedido devolve os pensamentos, e se o nível vai no
-nome ou em `reasoning_effort`.
-
-**Ordem.** O 20 primeiro; depois as variantes viram um modelo com os níveis que o CLIProxy serve, e o
-nível escolhido vira o pedido provado. Regras: T14, T24, S40. **Prova.** 19, 20.
+**Raciocínio** (`thinking.ts:125-130`, `model-picker.tsx:62-64`). **Ordem.** O 20 primeiro; depois as
+variantes viram um modelo com os níveis que o CLIProxy serve. Regras: T14, T24, S40. **Prova.** 19, 20.
 
 ## U6 O que o app aprende
 
@@ -270,7 +267,7 @@ nível escolhido vira o pedido provado. Regras: T14, T24, S40. **Prova.** 19, 20
 `starter/src/components/`, `packages/app/skills/{conexus-app,conexus-data,conexus-build}/`,
 `packages/app/src/check/manifest.ts`, `packages/app/src/skills.test.ts`: muda ou cria.
 
-**Contratos.** `api.gen.ts` reexporta `type *` e os esquemas de `shared/operations`; as skills e
+**Contratos.** `api.gen.ts` (em `check/`, da U7) reexporta `type *` e os esquemas de `shared/operations`; as skills e
 referências importam só dele. `formatDate` lê data sem hora como calendário. `money`: codec Zod
 de texto decimal, `parseMoney` pt-BR, `MoneyInput`. `failureOf(error: unknown)` no starter; a
 referência sai. Referências: criação com histórico em CTE (o teste deixa de proibi-lo,
@@ -281,8 +278,9 @@ Regras: D28, W21, W22, L23. **Prova.** 21 a 24.
 
 ## U7 Arquivos de migração e Fuso
 
-**Raio.** `packages/app-contract/src/manifest.ts`, `packages/app/src/check/`,
-`apps/server/src/platform/company-postgres.ts`: muda.
+**Raio.** `packages/app-contract/src/manifest.ts`, `packages/app/src/check/` (dona; o `api.gen` da U6),
+`builder/runs/runs.ts` (`Runs.check` passa as migrações enviadas), `hub/apps/send.ts` (prefixo),
+`platform/company-postgres.ts`: muda.
 
 **Contratos.** `Manifest.migrations` vem de `server/migrations/NNNN_nome.sql`, lidos como arquivos; a
 conferência recebe do servidor as migrações já enviadas e recusa mudança com `MIGRATION_CHANGED` (C48);
@@ -302,9 +300,8 @@ teste de "sem mudança" (`:52`) e a contagem (`:73`) deixam `PLAN_DIR` de fora (
 ## U9 Árvore
 
 **Raio.** `apps/web/src/builder/source/{source,file-tree}.tsx`: muda, cria. **Contrato.** Árvore sobre o
-`Collapsible` (shadcn `sidebar-11`), com papéis ARIA de árvore; pastas do app primeiro, `components/ui`
-fechada; a 390 px, o arquivo na tela e **Arquivos** abre a árvore no `Sheet`. Os estados de #236.
-Regras: V30, V31, W22. **Prova.** 13 e o passo 4 do roteiro.
+`Collapsible` (shadcn `sidebar-11`); pastas do app primeiro, `components/ui` fechada; os estados de
+#236. Regras: V30, V31, W22. **Prova.** 13.
 
 ## U10 Dublês e percurso
 
@@ -315,11 +312,7 @@ com conteúdo inventado (S40, T24): a lista que sai da janela, o passo final vaz
 
 ## Por que a 14 deixou passar
 
-Para o fechamento (L19).
-
-1. `conexus-review` conferiu o código contra um cartão que permitia "não abre" e a lista em linha:
-   conferir cada estado da matriz contra Factory e OS.
-2. `conexus-qa` andou em dublês só das ferramentas nomeadas, só Anthropic: o conjunto fechado e o
-   modelo de produção (T24 já mudou).
-3. O ao vivo da 13 viu "Usou uma ferramenta", sem critério: achado ao vivo vira `next-card`.
-4. A 12 trocou `createCodingAgent` por `new Agent` sem motivo (`ab3dc05`): C75 já cobre.
+Para o fechamento (L19): `conexus-review` conferiu o código contra um cartão que permitia "não abre"
+(conferir a matriz contra Factory e OS); `conexus-qa` andou em dublês só das ferramentas nomeadas e
+só Anthropic (o conjunto fechado e o modelo de produção, T24); o ao vivo da 13 viu "Usou uma
+ferramenta" sem virar critério (achado ao vivo vira `next-card`).
