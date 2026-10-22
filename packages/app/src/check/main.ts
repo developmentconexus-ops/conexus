@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // The check program the machine runs as /opt/conexus/check (decision 0055): it prints the report
 // of the app folder on stdout and exits 0, or says on stderr why the machine could not check it and
 // exits 2, which the server reads as CHECK_PLATFORM_FAILED.

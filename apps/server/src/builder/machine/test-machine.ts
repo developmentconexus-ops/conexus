@@ -157,6 +157,7 @@ export async function world(
   startMs = 5_000,
   installation = INSTALLATION,
   seedOf?: () => Promise<Buffer>,
+  options: Readonly<{ checkProgram?: string }> = {},
 ) {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)
@@ -185,6 +186,7 @@ export async function world(
     workdir: join(folder, 'app'),
     tmp: folder,
     startMs,
+    ...options,
   })
   const phases: Phase[] = []
   function open() {

@@ -12,7 +12,7 @@ export function outFile(tmp: string): string {
 
 const CANDIDATE_REF = 'refs/conexus/candidate'
 
-function quoted(value: string): string {
+export function quoted(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`
 }
 

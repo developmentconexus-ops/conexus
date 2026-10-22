@@ -8,7 +8,7 @@
     },
     "apps/server": {
       "entry": ["src/**/*.check.ts"],
-      "ignoreBinaries": ["setpriv"]
+      "ignoreBinaries": ["setpriv", "mkfifo"]
     },
     "apps/web": {
       "entry": ["src/ui/pieces-fixture.tsx"]

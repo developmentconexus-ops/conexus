@@ -13,7 +13,7 @@ export type Runner = (
 ) => Promise<Ran>
 
 /** What the browser saw of the built screens: what fails the step and what only informs. */
-export type Seen = Readonly<{ violations: Problem[]; rootEmpty: boolean; errors: Problem[] }>
+type Seen = Readonly<{ violations: Problem[]; rootEmpty: boolean; errors: Problem[] }>
 
 /** Opens the built screens under the policy; `unavailable` when there is no browser to open them. */
 export type Browser = (
