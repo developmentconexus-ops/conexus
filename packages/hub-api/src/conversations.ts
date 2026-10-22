@@ -11,11 +11,13 @@ export type ConversationId = z.infer<typeof ConversationId>
 
 /**
  * Whether a saved version's app built (card of step 14): its check at the end of the turn passed,
- * or failed the last time the turn could try.
+ * failed the last time the turn could try, or could not run on the machine (founder, 2026-10-22,
+ * the words of `CHECK_PLATFORM_FAILED`).
  */
 export const VersionCheck = z.discriminatedUnion('state', [
   z.object({ state: z.literal('passed') }),
   z.object({ state: z.literal('failed'), code: z.literal('APP_CHECK_FAILED') }),
+  z.object({ state: z.literal('unchecked'), code: z.literal('CHECK_PLATFORM_FAILED') }),
 ])
 export type VersionCheck = z.infer<typeof VersionCheck>
 
@@ -134,7 +136,7 @@ export const MessagePart = z.discriminatedUnion('type', [
   /**
    * The version the turn saved: its number, whether it changed the app, how many files it holds
    * and how many of them changed, and what the end of the turn's check said; none when the turn
-   * ended before its check gave a verdict.
+   * ended before its check ran (stopped, the hour, an error).
    */
   z.object({
     type: z.literal('version'),

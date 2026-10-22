@@ -130,7 +130,7 @@ test('o cartão de biblioteca: o nome e a versão, Permitir (recomendado) escolh
   await waitFor(() => expect(bodies).toEqual([{ kind: 'answers', answers: ['Permitir'] }]))
 })
 
-test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILED; sem conferência', async () => {
+test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILED; sem conferência e as de CHECK_PLATFORM_FAILED; sem veredito, só o que guardou', async () => {
   const version = { type: 'version', changed: true, files: 7, changedFiles: 2 } as const
   const { tell, log } = await turn({ ...version, number: 1, check: { state: 'passed' } })
   await within(log).findByText('Versão 1 guardada, montou: 7 arquivos.')
@@ -141,8 +141,14 @@ test('o cartão da versão: montou; não montou e as palavras de APP_CHECK_FAILE
   expect(failed.textContent).toBe(
     'Versão 2 guardada, não montou: 2 arquivos mudados.O app não passou na conferência depois de 4 tentativas. O código ficou guardado. Peça ao Builder para corrigir.',
   )
-  tell({ ...version, number: 3 })
-  await within(log).findByText('Versão 3 guardada, sem conferência: 2 arquivos mudados.')
+  tell({ ...version, number: 3, check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' } })
+  const unchecked = await within(log).findByText(/^Versão 3 guardada, sem conferência:/)
+  expect(unchecked.textContent).toBe(
+    'Versão 3 guardada, sem conferência: 2 arquivos mudados.Não consegui conferir o app. O código ficou guardado sem conferência. Peça de novo ao Builder.',
+  )
+  tell({ ...version, number: 4 })
+  const stopped = await within(log).findByText('Versão 4 guardada: 2 arquivos mudados.')
+  expect(stopped.textContent).toBe('Versão 4 guardada: 2 arquivos mudados.')
 })
 
 // jsdom lays nothing out: the plan's text says it is taller than its box when the test says so.

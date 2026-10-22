@@ -6,8 +6,10 @@ import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
 import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
 import { applyEvent, CompanyId, ProjectId } from '@conexus/hub-api'
+import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, messagesOf, title } from './test-conversation.ts'
+import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 const WRITE = {
   type: 'tool_use',
@@ -182,12 +184,29 @@ test('um turno que não muda arquivo não confere', async (t) => {
   assert.equal(model.asked.length, 1)
 })
 
-test('a máquina que não confere no fim do turno: o turno termina e guarda a versão sem veredito', async (t) => {
+test('a máquina que não confere no fim do turno: o turno termina e guarda a versão sem conferência, CHECK_PLATFORM_FAILED', async (t) => {
   const model = turnOf([WRITE])
   const { hub, ana, conversations } = await conversing(t, model.answer)
   const check = checking(hub.builder.folder, ['platform'])
-  const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
+  const { url, events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
   assert.equal(check.calls(), 1)
   assert.equal(model.asked.length, 2)
+  const unchecked = [
+    { number: 1, changedFiles: 1, check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' } },
+  ]
+  assert.deepEqual(versionsOf(partsOf(events)), unchecked)
+  assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), unchecked)
+})
+
+test('Parar antes do fim do turno: a versão fica sem veredito, nem a conferência roda', async (t) => {
+  const write = tool(WRITE.name, WRITE.input)
+  const { hub, ana, url, stream, send } = await conversingWith(t, [[write, ask(WHO)]])
+  const check = checking(hub.builder.folder, ['platform'])
+  assert.equal((await send()).statusCode, 202)
+  await untilCard(stream, 'question')
+  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  const events = await stream.turn()
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
+  assert.equal(check.calls(), 0)
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })

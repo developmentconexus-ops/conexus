@@ -47,9 +47,8 @@ function files(count: number, changed: string): string {
 }
 
 /**
- * Whether the saved version's app built, as the end of the turn's check said (card of step 14), or
- * that no check gave a verdict: the machine could not check, or the turn ended first (founder,
- * 2026-10-22: "Aprovookay").
+ * What the end of the turn's check said of the saved version (card of step 14): it built, it did
+ * not, or the machine could not check it (founder, 2026-10-22: "Aprovookay").
  */
 const BUILT = {
   passed: ', montou',
@@ -59,7 +58,8 @@ const BUILT = {
 
 /**
  * "Versão 1 guardada, montou: 7 arquivos.", then "Versão 2 guardada, não montou: 2 arquivos
- * mudados."; a version no check judged says "sem conferência".
+ * mudados."; a turn that ended before its check ran (stopped, the hour, an error) says only what it
+ * saved, as its own end says why.
  */
 function versionSentence(part: Version): string {
   if (!part.changed) return `A versão ${part.number} segue a mesma.`
@@ -67,19 +67,23 @@ function versionSentence(part: Version): string {
     part.number === 1
       ? files(part.files, '')
       : files(part.changedFiles, part.changedFiles === 1 ? ' mudado' : ' mudados')
-  const built = BUILT[part.check?.state ?? 'unchecked']
+  const built = part.check === undefined ? '' : BUILT[part.check.state]
   return `Versão ${part.number} guardada${built}: ${count}.`
 }
 
-/** The version the turn saved; one that did not build says its failure's words below it. */
+/**
+ * The version the turn saved; one that did not build, or that the machine could not check, says
+ * its failure's words below it.
+ */
 export function VersionLine({ part }: { part: Version }) {
-  const failed = part.check?.state === 'failed' ? part.check.code : undefined
+  const said = part.check?.state === 'passed' ? undefined : part.check?.code
+  const failed = part.check?.state === 'failed'
   return (
-    <Marker className={failed === undefined ? 'text-text' : 'text-danger'}>
-      <MarkerIcon>{failed === undefined ? <CheckIcon /> : <CircleAlertIcon />}</MarkerIcon>
+    <Marker className={failed ? 'text-danger' : 'text-text'}>
+      <MarkerIcon>{said === undefined ? <CheckIcon /> : <CircleAlertIcon />}</MarkerIcon>
       <MarkerContent>
         {versionSentence(part)}
-        {failed !== undefined && <span className="block">{sentenceOfCode(failed)}</span>}
+        {said !== undefined && <span className="block">{sentenceOfCode(said)}</span>}
       </MarkerContent>
     </Marker>
   )

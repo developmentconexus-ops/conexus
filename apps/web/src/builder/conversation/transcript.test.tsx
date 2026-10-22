@@ -275,7 +275,7 @@ test('um turno que escreve: arquivo, comando e saída, máquina e versão, em pa
     { type: 'tool', id: 'x', kind: 'other', state: 'denied', subject: null },
     { type: 'version', number: 2, changed: true, files: 7, changedFiles: 2 },
   )
-  await within(log).findByText('Versão 2 guardada, sem conferência: 2 arquivos mudados.')
+  await within(log).findByText('Versão 2 guardada: 2 arquivos mudados.')
   // The machine's step is over once anything came after it.
   expect(within(log).queryByText(/Ligando a máquina/)).toBeNull()
   fireEvent.click(within(log).getByRole('button', { name: /^Escreveu 1 arquivo/ }))
@@ -314,6 +314,6 @@ test('ao vivo: a máquina e o comando dizem há quanto tempo; a máquina refeita
     within(log).getByText('A máquina anterior sumiu; refiz a partir do que está guardado.'),
   ).toBeTruthy()
   parts({ type: 'version', number: 1, changed: true, files: 7, changedFiles: 7 })
-  await within(log).findByText('Versão 1 guardada, sem conferência: 7 arquivos.')
+  await within(log).findByText('Versão 1 guardada: 7 arquivos.')
   expect(within(log).queryByText(/Ligando a máquina/)).toBeNull()
 })

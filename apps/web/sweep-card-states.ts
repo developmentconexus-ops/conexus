@@ -58,6 +58,14 @@ const CARDS = readConversation.success.body.parse({
             check: { state: 'failed', code: 'APP_CHECK_FAILED' },
           },
           {
+            type: 'version',
+            number: 3,
+            changed: true,
+            files: 9,
+            changedFiles: 1,
+            check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' },
+          },
+          {
             type: 'tool',
             id: 'c1',
             kind: 'run_command',
@@ -138,13 +146,14 @@ export const CARD_STATES: State[] = [
     },
   },
   {
-    name: 'Conversa, a pergunta respondida e a versão que não montou',
+    name: 'Conversa, a pergunta respondida, a versão que não montou e a sem conferência',
     path: PATH,
     replies: REPLIES,
     settle: async (page) => {
       await inChat(page)
       await page.getByText('Sábado, Domingo').scrollIntoViewIfNeeded()
       await waitFor(page, 'O app não passou na conferência depois de 4 tentativas.')
+      await waitFor(page, 'Não consegui conferir o app.')
     },
   },
   {

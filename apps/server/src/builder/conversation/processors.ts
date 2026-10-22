@@ -50,7 +50,8 @@ function feedback(report: CheckReport, failed: number): string {
  * The check at the end of the turn (card of step 14, U4): a step that ends the turn (no tool call)
  * in a turn that changed the app folder is checked; a failure goes back to the model with the
  * report (`abort` with `retry`), and the last failure of `CHECK_LIMITS.checks` lets the turn end,
- * the code kept as not built. A machine that could not check gives no verdict and costs no attempt.
+ * the code kept as not built. A machine that could not check costs no attempt; the turn ends, its
+ * version kept as unchecked.
  * The failures are counted in the processor's state, not by `retryCount`, which Mastra 1.78.0 sets
  * back to 0 after any step it did not retry (`agent-*.js`, `nextProcessorRetryCount`), as each step
  * that fixes the app with a tool is.
@@ -63,7 +64,10 @@ export function checkGate(runs: Runs): OutputProcessor {
       if (requestContext === undefined || (args.toolCalls?.length ?? 0) > 0) return messageList
       if (!(await runs.changed(requestContext))) return messageList
       const checked = await runs.check(requestContext)
-      if (!checked.ok) return messageList
+      if (!checked.ok) {
+        runs.judged(requestContext, { state: 'unchecked', code: checked.error })
+        return messageList
+      }
       if (checked.value.ok) {
         runs.judged(requestContext, { state: 'passed' })
         return messageList
