@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import { join, normalize } from 'node:path'
 import { APP_CONTENT_SECURITY_POLICY, mediaTypeOf } from '@conexus/app-contract'
 import type { Page, Browser as PlaywrightBrowser } from 'playwright-core'
-import { chromium } from 'playwright-core'
+import { chromium, errors } from 'playwright-core'
 import { z } from 'zod'
 import type { Problem } from './report.ts'
 import { CHECK_LIMITS } from './report.ts'
@@ -12,12 +12,9 @@ import type { Browser, CheckContext, Outcome } from './step.ts'
 import { PASSED, problem, workOf } from './step.ts'
 
 // The load does not wait for a module's fetches: #root is given 10 s to get a child, then 300 ms
-// for what the first render sets off, asking every 50 ms (Conexus OS `e0353c36` `steps/boot.ts:16-17,50-58`).
+// for what the first render sets off (Conexus OS `e0353c36` `steps/boot.ts:16-17`).
 const RENDER_CEILING_MS = 10_000
 const RENDER_SETTLE_MS = 300
-const POLL_MS = 50
-
-const ROOT_CHILDREN = "document.getElementById('root')?.children.length ?? 0"
 
 // The page reports each violation of its policy to the check, before any script of the app runs.
 const REPORT_VIOLATIONS = `document.addEventListener('securitypolicyviolation', (event) =>
@@ -66,8 +63,7 @@ async function watch(page: Page, origin: string) {
   })
   await page.addInitScript({ content: REPORT_VIOLATIONS })
   page.on('console', (message) => {
-    // Chromium also prints each violation; the listener above already reported it.
-    if (message.type() !== 'error' || message.text().includes('Content Security Policy')) return
+    if (message.type() !== 'error') return
     errors.push(problem({ code: 'CONSOLE_ERROR', message: message.text() }))
   })
   page.on('pageerror', (error) => {
@@ -77,20 +73,20 @@ async function watch(page: Page, origin: string) {
 }
 
 /**
- * How many children `#root` has once the first render settled, or at the ceiling. Read by
- * `evaluate`, which the page's policy does not see: Playwright's `waitForFunction` runs an `eval`
- * in the page, which the policy refuses and the step would report as the app's.
+ * Whether `#root` got a child by the ceiling and still has one once the first render settled, by
+ * Playwright's own locator wait: its engine runs in its own injected world, which the page's policy
+ * does not see.
  */
-async function childrenOfRoot(page: Page, ceilingMs: number): Promise<number> {
-  const ceiling = Date.now() + ceilingMs
-  for (;;) {
-    const children = z.number().parse(await page.evaluate(ROOT_CHILDREN))
-    if (children > 0 || Date.now() >= ceiling) {
-      await page.waitForTimeout(RENDER_SETTLE_MS)
-      return z.number().parse(await page.evaluate(ROOT_CHILDREN))
-    }
-    await page.waitForTimeout(POLL_MS)
+async function rootDrawn(page: Page, ceilingMs: number): Promise<boolean> {
+  const children = page.locator('#root > *')
+  try {
+    await children.first().waitFor({ timeout: ceilingMs })
+  } catch (error) {
+    if (error instanceof errors.TimeoutError) return false
+    throw error
   }
+  await page.waitForTimeout(RENDER_SETTLE_MS)
+  return (await children.count()) > 0
 }
 
 /** The real browser: Chromium's headless shell through playwright-core, within the step's time. */
@@ -118,8 +114,8 @@ export async function browseInChromium({
     const page = await browser.newPage()
     const { violations, errors } = await watch(page, origin)
     await page.goto(`${origin}/`, { waitUntil: 'load', timeout: left() })
-    const children = await childrenOfRoot(page, Math.min(RENDER_CEILING_MS, left()))
-    return { violations, rootEmpty: children === 0, errors }
+    const drawn = await rootDrawn(page, Math.min(RENDER_CEILING_MS, left()))
+    return { violations, rootEmpty: !drawn, errors }
   } finally {
     await browser.close()
     server.close()
