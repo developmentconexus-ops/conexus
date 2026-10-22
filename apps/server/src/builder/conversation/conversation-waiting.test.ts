@@ -196,16 +196,26 @@ function answerOf(type: 'question' | 'plan') {
 const RACE_DELAYS = [0, 1, 2, 3, 4, 5, 6, 8, 12]
 
 /**
- * After an answer raced something else: the turn ends once and says nothing after, no run is left
+ * After an answer raced something else: the turn ends once and says nothing after but its title, no run is left
  * in progress, and the next message is a turn of its own that completes.
  */
 async function endsOnce(conversation: Awaited<ReturnType<typeof conversingWith>>, delay: number) {
   const { hub, ana, url, stream } = conversation
   const events = await within(15_000, stream.turn())
   assert.ok(events !== undefined, `delay ${delay}: the turn never ended`)
+  // The title is said on its own clock (Mastra starts it when the run ends and never waits for
+  // it), so it may follow the end, as conversation-resume.test.ts expects; nothing else may.
   const late: ConversationEvent[] = []
-  await within(500, (async () => late.push(await stream.next()))())
-  assert.deepEqual(late, [], `delay ${delay}: nothing is said after the turn's end`)
+  const until = Date.now() + 500
+  for (let said = await within(500, stream.next()); said !== undefined; ) {
+    late.push(said)
+    said = await within(Math.max(until - Date.now(), 0), stream.next())
+  }
+  assert.deepEqual(
+    late.filter((event) => event.type !== 'title'),
+    [],
+    `delay ${delay}: nothing but the title is said after the turn's end`,
+  )
   const runs = await hub.test.asOwner('select state from builder.run')
   assert.ok(
     runs.every((run) => !['open', 'waiting', 'saving'].includes(String(run.state))),
