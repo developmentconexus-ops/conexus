@@ -47,9 +47,9 @@ One line per document (`check-docs`).
 - [0010](decisions/0010-mastra-tables-own-database.md) Mastra's database.
 - [0011](decisions/0011-builder-space-in-hub-database.md) Builder's space.
 - [0012](decisions/0012-company-column-row-policy-later.md) company column.
-- [0013](decisions/0013-who-holds-the-hub-session.md) Hub session, reopened.
+- [0013](decisions/0013-who-holds-the-hub-session.md) Hub session.
 - [0014](decisions/0014-better-auth-for-passwords.md) Better Auth.
-- [0015](decisions/0015-where-companies-members-invitations-live.md) company tables, reopened.
+- [0015](decisions/0015-where-companies-members-invitations-live.md) company tables.
 - [0016](decisions/0016-closed-sign-up.md) closed sign-up.
 - [0017](decisions/0017-invitation-email-cloudflare.md) invitation e-mail.
 - [0018](decisions/0018-apps-on-workers-for-platforms.md) Workers for Platforms.
@@ -87,8 +87,9 @@ One line per document (`check-docs`).
 - [0050](decisions/0050-conversation-on-the-agent-controller.md) conversation.
 - [0051](decisions/0051-builder-machine-git-and-copy-in-r2.md) machine.
 - [0052](decisions/0052-one-tracing-path-builder-to-grafana.md) tracing.
-- [0053](decisions/0053-builder-tools-run-without-asking.md) no approval asked.
+- [0053](decisions/0053-builder-tools-run-without-asking.md) no approval.
 - [0054](decisions/0054-model-defaults-and-served-models.md) defaults.
+- [0055](decisions/0055-apps-on-the-platform-contract.md) contract.
 
 ## Skills
 

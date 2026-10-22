@@ -6,7 +6,7 @@ Every generated app is written against one contract.
 
 ## Decision
 
-`handler(input, { db, caller, connectors })`, versioned in `packages/app-contract`. A fourth object is a change of contract. Basis: Implemented so and only tested so; accepted because it would be chosen again: with one login per app, PostgreSQL refuses, without trusting the Builder.
+`handler(input, { db, caller, connectors })`, versioned in `packages/app-contract`. A fourth object is a change of contract. A manifest holds 0 to 32 operations ([0055](0055-apps-on-the-platform-contract.md)): the manifests of before stay valid, and a page without a server is an app. Basis: Implemented so and only tested so; accepted because it would be chosen again: with one login per app, PostgreSQL refuses, without trusting the Builder.
 
 ## Criterion
 
