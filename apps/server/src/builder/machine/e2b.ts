@@ -3,7 +3,7 @@ import { E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox, SandboxNotFoundError } from 'e2b'
 import type { Config } from '../../platform/config.ts'
 import type { Kit, KitFactory, MachineApi } from './kit.ts'
-import { ALLOWED_HOSTS, MARK, SandboxId } from './kit.ts'
+import { ALLOWED_HOSTS, MARK, MASTRA_NAME, SandboxId } from './kit.ts'
 
 /** E2B's free plan keeps a machine up an hour at most; a reconnect resumes it for another. */
 const MAX_TIMEOUT_MS = 60 * 60 * 1000
@@ -57,9 +57,9 @@ export function createE2bApi(
   const apiKey = config.e2bApiKey.reveal()
   const where = apiUrl === undefined ? {} : { apiUrl }
   return {
-    async exists(id) {
+    async holds(id, name) {
       return Sandbox.getInfo(id, { apiKey, ...where, requestTimeoutMs: CALL_MS }).then(
-        () => true,
+        (info) => [undefined, name].includes(info.metadata?.[MASTRA_NAME]),
         (error: unknown) => {
           if (error instanceof SandboxNotFoundError) return false
           throw error

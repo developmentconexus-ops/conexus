@@ -3,7 +3,7 @@ import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
-import { createGitCopy, openRepository } from '../git/public.ts'
+import { createGitCopy, openRepository, restoreGuarded } from '../git/public.ts'
 import type { Machines } from '../machine/public.ts'
 import { createE2bApi, createE2bKit, createMachines, MARK } from '../machine/public.ts'
 
@@ -18,13 +18,14 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
   copy: GitCopy
 } {
   const { config, log } = deps
-  function repository(ids: { companyId: CompanyId; projectId: ProjectId }) {
-    return openRepository({ root: config.gitRoot, ...ids, log })
+  const copy = createGitCopy(config)
+  function repository(ids: { companyId: CompanyId; projectId: ProjectId }): Repository {
+    return restoreGuarded(openRepository({ root: config.gitRoot, ...ids, log }), copy, ids)
   }
-  const mark = { [MARK.origin]: new URL(config.publicOrigin).host }
+  const mark = { [MARK.origin]: config.installationId }
   function machinesOf(database: Database) {
     return createMachines({
-      ...{ database, log, mark },
+      ...{ database, log, mark, installation: config.installationId },
       kit: createE2bKit(config),
       api: createE2bApi(config, mark),
       seedOf: async (ids) => {
@@ -34,5 +35,5 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
       },
     })
   }
-  return { machinesOf, repository, copy: createGitCopy(config) }
+  return { machinesOf, repository, copy }
 }

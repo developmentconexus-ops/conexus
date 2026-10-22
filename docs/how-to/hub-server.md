@@ -1,6 +1,6 @@
 # Set up the Hub server
 
-How the server is prepared, and how the Hub is published and put back. Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
+Decision: [0035](../decisions/0035-publish-through-a-runner-on-the-server.md).
 
 ## Prepare the server
 
@@ -14,14 +14,13 @@ How the server is prepared, and how the Hub is published and put back. Decision:
    `/etc/conexus/secrets/tunnel_token` (0400, folder 0700) and starts the runner as a service of
    `runner`, a user with no login, in the `docker` group. Then set
    [the runner's mirror](apps-edge.md#the-runners-mirror).
-4. Make SSH key-only, then run `sshd -T` and read `passwordauthentication no`: the main SSH
+4. Make SSH key-only; run `sshd -T` and read `passwordauthentication no`: the main SSH
    configuration may lack the `Include` that reads a drop-in.
-5. Close SSH last, once the provider's console is proved. Without a console, stop and ask.
+5. Close SSH last, once the provider's console is proved; without one, ask.
 
 ## Check the GitHub settings
 
 - Actions, General, fork pull request workflows: require approval for all external contributors.
-  Only the hook refuses a branch's or fork's job on the server.
 - Environment `production`, made first: main's workflows run only from `main` and `v*` tags.
 - Actions, General, workflow permissions: read only by default.
 - Packages: keep the `conexus-hub` image private.
@@ -50,8 +49,11 @@ login, which only `migrate` mounts. `migrate` creates Mastra's database.
 
 The volume `hub_git` holds each app's Git. The founder makes a private R2 bucket and its key; firstmate
 writes `hub_git_copy_key` (`<key id> <secret>`), `hub_e2b_api_key` and, in `hub.env`,
-`HUB_GIT_COPY_BUCKET`, then builds the template once with `node infra/e2b/template.ts`
-([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)).
+`HUB_GIT_COPY_BUCKET` and `HUB_INSTALLATION_ID` (`openssl rand -hex 12`), then builds the template
+once with `node infra/e2b/template.ts`
+([0051](../decisions/0051-builder-machine-git-and-copy-in-r2.md)). Every installation, a developer's
+copy included, makes its own id and never copies production's `hub.env`: the id alone keeps their
+machines apart.
 
 ## Session secret and first person
 

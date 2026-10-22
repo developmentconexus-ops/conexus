@@ -53,4 +53,7 @@ type SavedVersion = { number: number; changed: boolean; files: number; changedFi
 export type Outcome =
   | { kind: 'saved'; version: SavedVersion }
   | { kind: 'unchanged' }
-  | { kind: 'failed'; code: 'SAVE_REFUSED' | 'MACHINE_LOST' | 'MACHINE_UNAVAILABLE' }
+  | {
+      kind: 'failed'
+      code: 'SAVE_REFUSED' | 'GIT_RESTORE_NEEDED' | 'MACHINE_LOST' | 'MACHINE_UNAVAILABLE'
+    }

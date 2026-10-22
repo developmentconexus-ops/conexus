@@ -45,7 +45,15 @@ export async function saveRun(context: RunsContext, saved: Run): Promise<Outcome
   // turn whose copy of the program died may reach here before any seed made the repository, so it
   // is ensured.
   const repository = context.repository({ companyId, projectId })
-  const base = await repository.ensure()
+  const base = await repository.ensure().catch((error: unknown) => {
+    if (error instanceof Failure && error.code === 'GIT_RESTORE_NEEDED') return error
+    throw error
+  })
+  if (base instanceof Failure) {
+    context.log.error(fields, 'GIT_RESTORE_NEEDED')
+    await settle(context, saved, 'failed')
+    return { kind: 'failed', code: 'GIT_RESTORE_NEEDED' }
+  }
   if (!(await context.store.setBase(companyId, saved.id, base))) return 'gone'
   const bundle = await collectOf(context, { projectId, base, fields })
   if (typeof bundle === 'object' && 'failed' in bundle) {

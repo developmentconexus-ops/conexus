@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
-import { CANDIDATE_REF, openRepository, Sha } from './public.ts'
+import { CANDIDATE_REF, openRepository, restoreGuarded, Sha } from './public.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
@@ -282,4 +282,24 @@ test('git: ler não cria o repositório, e ler durante o ensure não falha', asy
   assert.equal(new Set(mains).size, 1)
   assert.ok(heads.every((found) => found === null || found === mains[0]))
   assert.equal(await repository.head(), mains[0])
+})
+
+test('git: sem Git no disco e com cópia, ensure recusa e não recria vazio; sem cópia cria, e com o Git no disco segue', async (t) => {
+  const root = scratch(t)
+  const ids = { companyId: COMPANY, projectId: PROJECT }
+  const folder = join(root, COMPANY, `${PROJECT}.git`)
+  let copied: number | null = 3
+  const repository = restoreGuarded(
+    openRepository({ root, ...ids, log: { info: () => undefined, error: () => undefined } }),
+    { newestVersion: async () => copied },
+    ids,
+  )
+  await assert.rejects(repository.ensure(), { code: 'GIT_RESTORE_NEEDED' })
+  assert.equal(existsSync(folder), false, 'no empty repository was made')
+  assert.equal(await repository.head(), null)
+  copied = null
+  const first = await repository.ensure()
+  assert.equal(await repository.version(), 0)
+  copied = 3
+  assert.equal(await repository.ensure(), first, 'a Git on the disk is never refused')
 })

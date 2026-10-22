@@ -15,6 +15,7 @@ import {
   streamOf,
   title,
 } from '../conversation/test-conversation.ts'
+import { Sha } from '../git/public.ts'
 import { SandboxId } from '../machine/public.ts'
 
 const WRITE = 'mastra_workspace_write_file'
@@ -156,6 +157,26 @@ test('a máquina não liga na primeira ferramenta: o aviso de que não ligou, n�
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
   assert.equal((await runs(hub))[0]?.state, 'failed')
+})
+
+test('Git sumiu do disco e a cópia tem versão: o turno falha com GIT_RESTORE_NEEDED e nada recomeça na versão 1', async (t) => {
+  const { hub, ana, conversations, companyId, projectId } = await conversing(
+    t,
+    working(writing('a.ts', 'x\n')),
+  )
+  hub.builder.bucket.held.set(`${companyId}/${projectId}/3`, {
+    version: 3,
+    sha: Sha.parse('a'.repeat(40)),
+    bundle: Buffer.alloc(0),
+  })
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(failuresOf(events), ['GIT_RESTORE_NEEDED'])
+  assert.equal((await runs(hub))[0]?.state, 'failed')
+  const repository = hub.builder.repository({
+    companyId: CompanyId.parse(companyId),
+    projectId: ProjectId.parse(projectId),
+  })
+  assert.equal(await repository.head(), null)
 })
 
 test('recusa ao guardar (2.000 arquivos): o texto da recusa, o main como era', async (t) => {

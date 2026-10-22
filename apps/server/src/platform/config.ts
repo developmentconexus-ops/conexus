@@ -2,7 +2,7 @@ import { Email, Version } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { GitCopyBucket } from './config-git.ts'
 import { GitCopyKey, GitEnvironment } from './config-git.ts'
-import type { MachineTemplate } from './config-machine.ts'
+import type { InstallationId, MachineTemplate } from './config-machine.ts'
 import { E2bApiKey, MachineEnvironment } from './config-machine.ts'
 import { DatabaseUrl } from './database.ts'
 import { Failure } from './failure.ts'
@@ -138,6 +138,7 @@ export type Config = BaseConfig & {
   gitCopyKey: GitCopyKey
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
+  installationId: InstallationId
 }
 /**
  * CLIProxyAPI's program for Google's sign-in, the sha256 it must have to run, and how long it keeps
@@ -274,6 +275,7 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     gitCopyKey: readSecret('HUB_GIT_COPY_KEY_FILE', serve.HUB_GIT_COPY_KEY_FILE, GitCopyKey.parse),
     e2bApiKey: readSecret('HUB_E2B_API_KEY_FILE', serve.HUB_E2B_API_KEY_FILE, E2bApiKey.parse),
     machineTemplate: serve.HUB_E2B_TEMPLATE,
+    installationId: serve.HUB_INSTALLATION_ID,
   }
 }
 

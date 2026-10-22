@@ -20,7 +20,7 @@ hosts, its filesystem and where a version is kept.
   tools both saw the seed with no gate (`seed-nohook`, 2026-10-21). `beforeToolCall` stays to boot
   the machine: phase, id, turn marked used.
 - The E2B key is the founder's free-account key, in a file (S31); the sweep kills only machines
-  marked with this installation's origin.
+  marked with this installation's `HUB_INSTALLATION_ID`.
 
 ## Criterion
 

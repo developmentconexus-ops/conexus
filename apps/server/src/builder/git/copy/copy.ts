@@ -6,7 +6,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { Config } from '../../../platform/config.ts'
 import { Sha } from '../context.ts'
 
@@ -14,6 +14,8 @@ const CALL_MS = 60_000
 const DELETE_BATCH = 1_000
 /** The version number in the key has eight digits, so the newest key sorts last. */
 const VERSION_DIGITS = 8
+
+const NAMED = /\/(\d{8})-([0-9a-f]{40})\.bundle$/
 
 type CopiedVersion = { version: number; sha: Sha; bundle: Buffer }
 
@@ -33,6 +35,8 @@ export type GitCopy = {
     projectId: ProjectId
     maxBytes: number
   }): Promise<CopiedVersion | null>
+  /** The version of the newest copy of a Projeto by its key alone, or null when it has none. */
+  newestVersion(input: { companyId: CompanyId; projectId: ProjectId }): Promise<number | null>
   removeProject(input: { companyId: CompanyId; projectId: ProjectId }): Promise<void>
 }
 
@@ -52,14 +56,9 @@ async function readCapped(body: unknown, cap: number): Promise<Buffer | null> {
   return Buffer.concat(chunks)
 }
 
-function prefixOf({
-  companyId,
-  projectId,
-}: {
-  companyId: CompanyId
-  projectId: ProjectId
-}): string {
-  return `git/${companyId}/${projectId}/`
+/** Parses the ids again: a `/` or `..` that slipped past the brand must not reach a key or a removal (S2). */
+function prefixOf(ids: { companyId: CompanyId; projectId: ProjectId }): string {
+  return `git/${CompanyId.parse(ids.companyId)}/${ProjectId.parse(ids.projectId)}/`
 }
 
 export function copyKey(input: {
@@ -116,9 +115,14 @@ export function createGitCopy(
         }),
       )
     },
+    async newestVersion(input) {
+      const key = (await keysOf(prefixOf(input))).at(-1)
+      const named = key === undefined ? null : NAMED.exec(key)
+      return named === null ? null : Number(named[1])
+    },
     async latest(input) {
       const key = (await keysOf(prefixOf(input))).at(-1)
-      const named = key === undefined ? null : /\/(\d{8})-([0-9a-f]{40})\.bundle$/.exec(key)
+      const named = key === undefined ? null : NAMED.exec(key)
       if (key === undefined || named === null) return null
       const got = await call((abortSignal) =>
         client.send(new GetObjectCommand({ Bucket, Key: key }), { abortSignal }),
