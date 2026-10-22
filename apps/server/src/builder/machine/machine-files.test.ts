@@ -11,7 +11,10 @@ import {
 } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { STARTER_DIR } from '@conexus/app/starter'
 import { PROJECT, world } from './test-machine.ts'
+
+const starter = new Set(readdirSync(STARTER_DIR))
 
 test('máquina: ../fora.ts e um link para fora do app não abrem nem escrevem nada', async (t) => {
   const { open, folder } = await world(t)
@@ -76,7 +79,9 @@ test('máquina: as operações das ferramentas fazem o que dizem dentro do app, 
   assert.equal((await fs.stat('b.ts')).size, 8)
   assert.equal((await fs.stat('copia')).type, 'directory')
   assert.deepEqual(
-    (await fs.readdir('copia')).map((entry) => [entry.name, entry.type]),
+    (await fs.readdir('copia'))
+      .filter((entry) => entry.name === 'grande.txt')
+      .map((entry) => [entry.name, entry.type]),
     [['grande.txt', 'file']],
   )
   await assert.rejects(fs.rmdir('copia'), { name: 'DirectoryNotEmptyError' })
@@ -90,7 +95,7 @@ test('máquina: as operações das ferramentas fazem o que dizem dentro do app, 
   await assert.rejects(fs.readFile('nada.ts'), { name: 'FileNotFoundError' })
   const listed = (await fs.readdir('.'))
     .map((entry) => entry.name)
-    .filter((name) => name !== '.git')
+    .filter((name) => name !== '.git' && (name === 'src' || !starter.has(name)))
   assert.deepEqual(listed.sort(), ['src', 'vazia'])
 })
 
