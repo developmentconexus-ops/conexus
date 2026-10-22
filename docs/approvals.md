@@ -101,3 +101,7 @@ Em 2026-10-21, sobre o estudo do registro de execução da etapa 13: "Pode troca
 ## Etapa 14
 
 Cartão da etapa 14 aprovado em 2026-10-21 (commit 05b006ba443aea51c60ea3a74ae7f7f6c977c480): "SIM"
+
+## Etapa 14.1
+
+Cartão da etapa 14.1 aprovado em 2026-10-21 (commit 39912ec4b7fed56ee13ed9deea31d686cd18df0c): "Aprovo"
