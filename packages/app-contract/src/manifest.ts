@@ -6,7 +6,8 @@ import { APP_LIMITS } from './limits.ts'
 // manifest's (string, number, boolean, object, array, at most six levels); a shape may admit null.
 
 const MAX_DEPTH = 6
-const MAX_OPERATIONS = 32
+/** How many operations a manifest may declare; the one place the number is written. */
+export const MAX_OPERATIONS = 32
 const MAX_PATH = 512
 
 /** A property or operation name: letters and digits, starting with a letter. */

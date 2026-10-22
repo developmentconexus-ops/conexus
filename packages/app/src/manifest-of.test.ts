@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Manifest } from '@conexus/app-contract'
+import { MAX_OPERATIONS, Manifest } from '@conexus/app-contract'
 import { z } from 'zod'
 import { defineOperations, manifestOf } from './index.ts'
 
@@ -118,9 +118,11 @@ test('a saída também é conferida', () => {
   })
 })
 
-test('o que o Manifest recusa vira MANIFEST_INVALID com o caminho: 33 operações, nome ruim', () => {
+test('o que o Manifest recusa vira MANIFEST_INVALID com o caminho: uma operação acima do teto, nome ruim', () => {
   const operation = { input: z.object({}), output: z.object({}) }
-  const many = Object.fromEntries(Array.from({ length: 33 }, (_, at) => [`op${at}`, operation]))
+  const many = Object.fromEntries(
+    Array.from({ length: MAX_OPERATIONS + 1 }, (_, at) => [`op${at}`, operation]),
+  )
   assert.deepEqual(manifestOf({ operations: many, ...NONE }), {
     ok: false,
     error: { code: 'MANIFEST_INVALID', path: ['operations'] },
