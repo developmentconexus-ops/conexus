@@ -2712,7 +2712,7 @@
     "replace": "connected(deps.ownerUrl.reveal())",
     "test": {
       "cwd": "apps/server",
-      "file": "src/platform/migrate-limits.test.ts",
+      "file": "src/platform/migrate.test.ts",
       "name": "limites do deploy em options"
     }
   },
@@ -2723,7 +2723,7 @@
     "replace": "return databaseFailure(error)",
     "test": {
       "cwd": "apps/server",
-      "file": "src/platform/migrate-limits.test.ts",
+      "file": "src/platform/migrate.test.ts",
       "name": "trava ocupada desiste"
     }
   }
