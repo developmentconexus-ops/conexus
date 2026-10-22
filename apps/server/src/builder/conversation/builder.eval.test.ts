@@ -12,7 +12,7 @@ import { APP_FOLDER } from '../machine/public.ts'
 import { asked, conversing, title } from './test-conversation.ts'
 
 const WRITE = 'mastra_workspace_write_file'
-const PAGE = { path: 'index.html', content: '<h1>Padaria</h1>\n' }
+const PAGE = { path: 'pagina.html', content: '<h1>Padaria</h1>\n' }
 const SKILL_TOOLS = ['skill', 'skill_read', 'skill_search']
 /** What the instructions must give a model to write with: where the app is, and the skill to read first. */
 const TELLS_TO_WRITE = [APP_FOLDER, APP_SKILL.name]

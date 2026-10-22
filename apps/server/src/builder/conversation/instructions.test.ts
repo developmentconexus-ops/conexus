@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { STARTER_DIR } from '@conexus/app/starter'
 import { APP_SKILL } from '@conexus/app-contract'
 import { validateSkillContent } from '@mastra/core/skills'
 import type { Sent } from '../../platform/test-anthropic.ts'
@@ -43,9 +44,11 @@ test('o modelo recebe as instruções do servidor e a skill pelas ferramentas de
   for (const name of ['skill', 'skill_read', 'skill_search'])
     assert.ok(first.tools.includes(name), name)
   const app = join(hub.builder.folder, 'app')
+  const starter = new Set(readdirSync(STARTER_DIR))
   assert.deepEqual(
-    readdirSync(app).filter((name) => name !== '.git' && name !== 'a.ts'),
+    readdirSync(app).filter((name) => name !== '.git' && name !== 'a.ts' && !starter.has(name)),
     [],
+    'the folder holds the starter, the turn and nothing of the skill',
   )
   assert.equal(existsSync(join(app, 'SKILL.md')), false)
 })
