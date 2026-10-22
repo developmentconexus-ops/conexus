@@ -1,3 +1,4 @@
+-- contract: step 14's own unreleased state: the run's one-open-per-project index and state check take `waiting`, a turn that waits on an answer; no data of a released version changes (data D6).
 CREATE TABLE "builder"."package_grant" (
 	"company_id" text NOT NULL,
 	"project_id" text,
