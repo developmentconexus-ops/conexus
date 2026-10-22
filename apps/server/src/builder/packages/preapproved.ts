@@ -1,29 +1,20 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { STARTER_DIR } from '@conexus/app/starter'
+import { z } from 'zod'
+
+const Manifest = z.object({
+  dependencies: z.record(z.string(), z.string()).default({}),
+  devDependencies: z.record(z.string(), z.string()).default({}),
+})
+
 /**
- * The packages an app may import without asking: the starter's own, at the versions it pins. The
- * server owns the list and hands it to every check with the Projeto's grants (code C26).
+ * The packages an app may import without asking: the ones the starter's `package.json` declares,
+ * which is the one list (code C26).
  */
-export const PREAPPROVED_PACKAGES: ReadonlySet<string> = new Set([
-  '@base-ui/react',
-  '@hookform/resolvers',
-  '@tailwindcss/vite',
-  '@tanstack/react-query',
-  '@tanstack/react-router',
-  '@tanstack/react-table',
-  '@types/react',
-  '@types/react-dom',
-  '@vitejs/plugin-react',
-  'class-variance-authority',
-  'clsx',
-  'date-fns',
-  'lucide-react',
-  'react',
-  'react-day-picker',
-  'react-dom',
-  'react-hook-form',
-  'recharts',
-  'tailwind-merge',
-  'tailwindcss',
-  'typescript',
-  'vite',
-  'zod',
-])
+export const PREAPPROVED_PACKAGES: ReadonlySet<string> = (() => {
+  const manifest = Manifest.parse(
+    JSON.parse(readFileSync(join(STARTER_DIR, 'package.json'), 'utf8')),
+  )
+  return new Set([...Object.keys(manifest.dependencies), ...Object.keys(manifest.devDependencies)])
+})()

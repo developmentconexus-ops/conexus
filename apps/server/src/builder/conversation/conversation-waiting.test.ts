@@ -4,6 +4,22 @@ import { post } from '../../hub/identity/test-hub.ts'
 import { answeredOf, hubBeside, sent } from './test-conversation.ts'
 import { ask, cards, conversingWith, untilCard, WHO } from './test-questions.ts'
 
+const PARKED = `select 1 from mastra.mastra_workflow_snapshot where snapshot->>'status' = 'suspended'`
+
+/** Mastra drops the parked call's snapshot a moment after the turn ends. */
+async function parkedGone(hub: {
+  test: { mastraPool: { query(sql: string): Promise<{ rowCount: number | null }> } }
+}) {
+  for (
+    let attempt = 0;
+    attempt < 50 && (await hub.test.mastraPool.query(PARKED)).rowCount !== 0;
+    attempt += 1
+  ) {
+    await new Promise((done) => setTimeout(done, 100))
+  }
+  return (await hub.test.mastraPool.query(PARKED)).rowCount
+}
+
 test('uma pergunta sem resposta em 30 minutos expira: a volta termina e diz QUESTION_EXPIRED', async (t) => {
   const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
   hub.builder.knobs.questionMs = 150
@@ -39,10 +55,7 @@ test('Parar com uma pergunta aberta: a chamada fecha negada, a pergunta fecha e 
     ['closed'],
   )
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
-  const snapshots = await hub.test.mastraPool.query(
-    `select 1 from mastra.mastra_workflow_snapshot where snapshot->>'status' = 'suspended'`,
-  )
-  assert.deepEqual(snapshots.rows, [])
+  assert.equal(await parkedGone(hub), 0)
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(
     read.flatMap((part) => (part.type === 'question' ? [part.state] : [])),
@@ -74,15 +87,7 @@ test('o Hub reinicia com uma pergunta aberta: a chamada fecha negada, a pergunta
   await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
   const beside = await hubBeside(t, hub)
   await beside.restart()
-  const parked = `select 1 from mastra.mastra_workflow_snapshot where snapshot->>'status' = 'suspended'`
-  for (
-    let attempt = 0;
-    attempt < 50 && (await hub.test.mastraPool.query(parked)).rowCount !== 0;
-    attempt += 1
-  ) {
-    await new Promise((done) => setTimeout(done, 100))
-  }
-  assert.equal((await hub.test.mastraPool.query(parked)).rowCount, 0)
+  assert.equal(await parkedGone(hub), 0)
   const read = (await answeredOf(beside, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(
     read.flatMap((part) => (part.type === 'question' ? [part.state] : [])),
