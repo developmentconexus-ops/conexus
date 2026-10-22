@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { CheckReport, PackageGrant } from '@conexus/app/check'
+import type { CheckReport } from '@conexus/app/check'
 import type {
   CompanyId,
   ConversationEvent,
@@ -15,6 +15,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Result } from '../../platform/result.ts'
 import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
+import { PackageGrants } from '../packages/public.ts'
 import type { Outcome, Restart, RunsContext, RunsDeps } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
@@ -27,12 +28,6 @@ import { releaseRuns } from './removal.ts'
 import { saveRun } from './save.ts'
 import { settleExpired, settleRuns } from './settle.ts'
 import { RunStore } from './store.ts'
-
-/**
- * The packages granted to the Projeto beyond the starter's: none until `builder.package_grant`,
- * which unit U5 of step 14 brings with the card that asks for one.
- */
-const GRANTS: readonly PackageGrant[] = []
 
 /** A turn's hour (card, limits). */
 const TURN_MS = 3_600_000
@@ -90,6 +85,7 @@ type Admission = {
 export class Runs {
   readonly #deps: RunsDeps
   readonly #context: RunsContext
+  readonly #grants: PackageGrants
   readonly #driven = new Map<RunId, Driven>()
   readonly #retry = createCopyRetry(() => copyPending(this.#context))
   readonly #sweepDaily: () => void
@@ -98,6 +94,7 @@ export class Runs {
 
   constructor(deps: RunsDeps) {
     this.#deps = deps
+    this.#grants = new PackageGrants({ database: deps.database, log: deps.log })
     this.#context = {
       ...deps,
       store: new RunStore(deps.database, randomUUID()),
@@ -266,10 +263,11 @@ export class Runs {
   }
 
   /** The check of the turn's app folder (decision 0055): the one path of `conexus_check` and of the turn's end. */
-  check(requestContext: RequestContext): Promise<Result<CheckReport, CheckPlatformFailed>> {
+  async check(requestContext: RequestContext): Promise<Result<CheckReport, CheckPlatformFailed>> {
     const mine = this.#mine(requestContext)
-    if (mine === undefined) return Promise.resolve({ ok: false, error: 'CHECK_PLATFORM_FAILED' })
-    return this.#deps.machines.check({ projectId: mine.projectId, grants: GRANTS })
+    if (mine === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' }
+    const grants = await this.#grants.of(mine.companyId, mine.projectId)
+    return this.#deps.machines.check({ projectId: mine.projectId, grants })
   }
 
   /** Keeps what the end of the turn's check said, for the version the turn saves. */

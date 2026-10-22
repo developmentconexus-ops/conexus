@@ -60,6 +60,7 @@ function checking(folder: string, plan: Plan) {
       '#!/bin/sh',
       `n=$(( $(cat '${folder}/check-count' 2>/dev/null || echo 0) + 1 ))`,
       `echo $n > '${folder}/check-count'`,
+      `echo "$@" >> '${folder}/check-arguments'`,
       `report='${folder}/check-'$n; [ -f "$report" ] || report='${folder}/check-passed'`,
       '[ -s "$report" ] || exit 2',
       'cat "$report"',
@@ -70,7 +71,16 @@ function checking(folder: string, plan: Plan) {
     const count = join(folder, 'check-count')
     return existsSync(count) ? Number(readFileSync(count, 'utf8')) : 0
   }
-  return { calls }
+  /** The grants each run was given, as the program's `--grants` argument says them. */
+  function grantsSeen(): unknown[] {
+    const file = join(folder, 'check-arguments')
+    if (!existsSync(file)) return []
+    return readFileSync(file, 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => JSON.parse(line.slice(line.indexOf('--grants ') + '--grants '.length)))
+  }
+  return { calls, grantsSeen }
 }
 
 type Blocks = Extract<Reply, { kind: 'blocks' }>['blocks']
@@ -209,4 +219,22 @@ test('Parar antes do fim do turno: a versão fica sem veredito, nem a conferênc
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
   assert.equal(check.calls(), 0)
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
+})
+
+test('a biblioteca que a pessoa permitiu chega à conferência de cada volta (19)', async (t) => {
+  const model = turnOf([WRITE, CHECK])
+  const { hub, ana, conversations, companyId, projectId } = await conversing(t, model.answer)
+  await hub.test.asOwner(
+    `insert into builder.package_grant (company_id, project_id, name, version, granted_by, granted_at)
+     values ($1, $2, 'react-big-calendar', '1.19.4', $3, now())`,
+    [companyId, projectId, ana.id],
+  )
+  const check = checking(hub.builder.folder, [PASSED])
+  await asked(t, { hub, person: ana, conversations }, 'Crie o app')
+  assert.ok(check.calls() >= 2, 'the tool and the end of the turn')
+  const granted = [{ name: 'react-big-calendar', version: '1.19.4' }]
+  assert.deepEqual(
+    check.grantsSeen(),
+    Array.from({ length: check.calls() }, () => granted),
+  )
 })
