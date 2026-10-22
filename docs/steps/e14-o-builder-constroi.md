@@ -93,6 +93,7 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 | 20 | U5 | `task_*`: a parte `tasks` chega e sobrevive à recarga | `conversation-parts.test.ts` |
 | 21 | U6 | Com os textos aprovados: cartões de pergunta (pelo `questionnaire`: até 4, escolha, texto livre, enviar), biblioteca e plano, lista de tarefas; estados da matriz; teclado e nomes (V30, V31) | `cards.test.tsx` |
 | 22 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo | T23 |
+| 34 | U6 | Plano que não cabe: cortado com esmaecido e **Ler plano completo**; que cabe: sem o botão; o botão abre o `Dialog` com o plano inteiro (tela cheia a 390 px), **Aprovar e construir** e **Pedir ajustes** dentro | `cards.test.tsx`, T23 |
 | 23 | U7 | O teste guarda a tabela de `builder-prompt.md`, veredito e texto por linha do OS; o prompt tem cada `igual` e `adaptada`, nenhuma `tirada`; o CI não lê o OS | `prompt.test.ts` |
 | 24 | U7 | Os exemplos `.ts` e `.tsx` das skills tipam no starter e no SDK; um quebrado falha; `validateSkillContent` passa; `conexus-app` ensina página, painel e sistema | `skills.test.ts` |
 | 25 | U7 | A linha 51 do OS só enquanto `main` é o starter; `AGENTS.md` e `.conexus/memory/MEMORY.md` lidos do `main`; ausentes, a frase de vazio; só a descrição de `conexus_check` diz quando conferir, nada diz que a máquina não monta | `prompt.test.ts` |
@@ -111,7 +112,7 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Cartão de perguntas | o cartão aberto | — | "Enviando…", botão parado | "Não foi possível enviar. Tente de novo." | — | — (a Conversa é só do dono) | "Esta pergunta expirou." |
 | Cartão de biblioteca | nome, tamanho, motivo; **Permitir (recomendado)**, **Não, faça sem ela** | — | idem | idem | — | — | idem |
-| Cartão do plano | o plano e os dois botões; **Pedir ajustes** abre o campo do motivo | — | idem | idem | — | — | "Este plano foi substituído." |
+| Cartão do plano | o plano e os dois botões; **Pedir ajustes** abre o campo do motivo; plano longo: cortado, esmaecido, **Ler plano completo** | — | idem | idem | — | — | "Este plano foi substituído." |
 | Lista de tarefas | some sem tarefas | idem | "em andamento", uma por vez | — | — | — | "concluída" |
 | Cartão da versão | "Versão N guardada, montou" | — | — | "Versão N guardada, não montou" e o código | — | — | — |
 | Linha de ferramenta | fechada, o assunto | sem detalhe, não abre | a saída cresce | código de saída não zero | — | — | "…" no corte |
@@ -136,8 +137,10 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 │[outra resposta…]        [Enviar] │         │( )Só eu     [Enviar]│
 ├Plano: App de encomendas──────────┤         ├Plano────────────────┤
 │Para a pessoa… (Markdown)         │         │texto…               │
+│░░░ esmaecido ░░[Ler plano completo]        │[Ler plano completo] │
 │[Aprovar e construir][Pedir ajustes]        │[Aprovar e construir]│
 └──────────────────────────────────┘         └[Pedir ajustes]──────┘
+Ler plano completo: Dialog com o plano inteiro e os dois botões (390: tela cheia)
 ```
 
 ## A tabela de falhas
@@ -289,11 +292,14 @@ ao cartão. 2. Regras: C21, C23, C48, C62, C65, D11, S8, S10, S41. **Prova.** 15
 com `kind: 'library'`; textos em português (L23). O de perguntas usa o `questionnaire` do
 `@shadcn/react` 0.3.1 instalado (`Root`, `Item`, `Choices`, `Input`; `questionnaire/index.d.ts:5-78`),
 não um escrito à mão (auditoria 9); a U6 prova o encaixe primeiro (o "Revisar" do OS não foi
-conferido); sem encaixe, volta ao card. **A linha que abre** (emenda, estudo U-a):
+conferido); sem encaixe, volta ao card. **O plano longo** (fundador, "A", 2026-10-22): cortado com esmaecido e
+**Ler plano completo** só quando não cabe, como o controle do Mastra se esconde sem corte
+(playground-ui `plan.tsx:259`); abre o `Dialog` do shadcn com o plano e os dois botões, como a tela do
+OS (`plan-pt.tsx:58-70`), sem o código dele. **A linha que abre** (emenda, estudo U-a):
 `tool.detail`, dos args, do resultado e de `data-sandbox-exit` gravados, por
 `masked()` (S2, S41), cortado como a Factory: comando, `SUBJECT_MAX_LENGTH`; saída, a cauda
 `SHELL_MAX_*`, mascarada antes; arquivo, 2.000 caracteres; edição, 200 linhas por lado (`DETAIL_LIMITS` em `hub-api`, C26), a diferença no
-navegador; leitura, só o assunto. "Pensou", só o tempo (V39). Regras: C26, C28, V19, V29 a V31, V54, W22, W31. **Prova.** 21, 22, 33.
+navegador; leitura, só o assunto. "Pensou", só o tempo (V39). Regras: C26, C28, V19, V29 a V31, V54, W22, W31. **Prova.** 21, 22, 33, 34.
 
 ## U7 O prompt e as skills
 
