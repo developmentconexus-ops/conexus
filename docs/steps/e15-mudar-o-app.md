@@ -43,9 +43,8 @@ o Hub deixa passar só aquela migração. O desenho fica no cartão dela.
 **Fica de fora.** A porta (15.1); o ensaio num ramo do Neon (a B da 3), escolha cara da 17; fotos do
 banco (a B da 5); views, até a issue #254, a única `next-card` que toca migração; o app do ar (17).
 
-**A decisão sua pedida nesta etapa.** Uma: **A**, autoriza uma prova no Neon de prova (o da 14.1 B)
-para ver se o motivo do banco ("coluna telefone da tabela encomenda") chega ao Hub pelo Neon; ou
-**B**, sem prova: o Builder recebe só o código do erro (por exemplo 23502) até a 17.
+**A decisão sua pedida nesta etapa.** Respondida em 2026-10-22: **A**, uma prova no Neon de prova (o
+da 14.1 B) para ver se o motivo do banco ("restrição da tabela encomenda") chega ao Hub pelo Neon.
 
 ## As unidades
 
@@ -98,7 +97,7 @@ suíte chama serviço de fora (T14). Must, salvo "should".
 | 16 | U4 | Na prévia: `readPreview` `failed`, `APP_MIGRATION_REFUSED`; fica a última boa | `preview-send.test.ts` | must |
 | 17 | U4 | O banco recusa (23505 com tabela e restrição): `APP_MIGRATION_FAILED`; `readPreview` e a parte `preview` levam `cause {sqlstate, table, constraint}`, lido de volta pelo esquema Zod; `detail` e a mensagem do banco em lugar nenhum; **Pedir ao Builder para corrigir** põe o código, a versão e o motivo no campo; prova o caminho com o dublê, o Neon é o 19 | `preview.test.ts`, `preview.test.tsx` | must |
 | 18 | U4 | Leitor sem carga no Hub: não sobe | `boot.test.ts` | must |
-| 19 | U4 | **Ao vivo**, se a resposta for A: pelo Neon de prova, a falha de `SET NOT NULL` com nulos chega com tabela e coluna | 0057 | should |
+| 19 | U4 | **Ao vivo** (resposta A): pelo Neon de prova, um `CREATE UNIQUE INDEX` sobre valores repetidos (23505), que a regra aceita, falha com tabela e restrição no `cause` | 0057 | must |
 | 20 | U5 | `conexus-data` diz: só acrescenta; renomear é acrescentar e copiar; tirar é sumir da tela; obrigatório é no formulário; nomeia o leitor e não copia as listas; `conexus-plan-change` tem **Dados salvos**; os exemplos tipam | `skills.test.ts` | must |
 | 21 | U6 | Os passos 1 a 5 do roteiro, com modelo gravado: a Maria com WhatsApp, o produto de volta com o valor, o João lá; `readChanges` (14.1 U7) mostra cada migração nova e a `001` sem mudança | `tests/e2e/app-change.test.ts` | must |
 | 22 | U6 | **Ao vivo**: 3 corridas dos passos 1 a 4 com Gemini 3.8 Flash High e 1 com Claude: nenhuma recusa no Hub, nenhum turno "não montou" por migração, os dados intactos; lembretes anotados, sob o teto de 4 conferências da 14 | 0057 | must |
