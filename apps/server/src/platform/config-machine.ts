@@ -1,10 +1,14 @@
 import { z } from 'zod'
 import { Secret } from './secret.ts'
 
-/** The E2B template the build machines start from (decision 0051), built once by `infra/e2b`. */
+/**
+ * The E2B template the build machines start from (decision 0051), built once by `infra/e2b`: E2B's
+ * native `name:tag`, exactly the line that build prints. The tag is required, so a bare name that a
+ * later build could replace is refused. `infra/e2b/name.ts` builds the value with this rule.
+ */
 export const MachineTemplate = z
   .string()
-  .regex(/^[a-z0-9][a-z0-9-]{0,62}$/)
+  .regex(/^[a-z0-9][a-z0-9-]{0,62}:[a-z0-9][a-z0-9._-]{0,127}$/)
   .brand('MachineTemplate')
 export type MachineTemplate = z.infer<typeof MachineTemplate>
 

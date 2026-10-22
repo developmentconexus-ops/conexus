@@ -348,7 +348,7 @@ export function serveEnvironment(
     HUB_GIT_COPY_BUCKET: 'conexus-test-git',
     HUB_GIT_COPY_KEY_FILE: keyFile(t, 'hub_git_copy_key', 'TESTKEYID testsecret'),
     HUB_E2B_API_KEY_FILE: keyFile(t, 'hub_e2b_api_key', randomBytes(16).toString('hex')),
-    HUB_E2B_TEMPLATE: 'conexus-builder-test',
+    HUB_E2B_TEMPLATE: 'conexus-builder:test',
     HUB_INSTALLATION_ID: 'testinstallation0',
   }
 }
