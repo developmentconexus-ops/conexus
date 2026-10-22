@@ -5,8 +5,8 @@ import type { Locator, Page } from 'playwright-core'
 import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
-import { personWithPassword, plantCompany } from './live-hub.ts'
-import { pickModel } from './model-accounts-journey.ts'
+import { createProject, personWithPassword, plantCompany, waitForHome } from './live-hub.ts'
+import { enter, linkKey, pickModel } from './model-accounts-journey.ts'
 
 // What the first conversation's journey shares: the provider double and the public page it reads,
 // and the owner's and the person's moves on the screens.
@@ -206,4 +206,26 @@ export async function transcriptShowed(page: Page, text: string) {
     const shown = Reflect.get(window, 'shownInTranscript')
     return shown instanceof Set && [...shown].some((each) => String(each).includes(wanted))
   }, text)
+}
+
+/** Ana links a key, picks the company's model and creates the Projeto `name`, which opens. */
+export async function readyToBuild(owner: Page, companyId: string, name: string) {
+  await enter(owner, ANA.email, `/companies/${companyId}/settings/model-accounts`)
+  await owner.getByText('Nenhuma conta ligada').waitFor()
+  await linkKey(owner, 'Time 1', KEYS.first)
+  await owner.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
+  await chooseDefaultModel(owner, companyId)
+  await owner.goto(`${TEST_ORIGIN}/companies/${companyId}`)
+  await waitForHome(owner)
+  await createProject(owner, name)
+  await owner.getByRole('heading', { name, exact: true }).waitFor()
+}
+
+export function transcriptOf(chat: Page) {
+  return chat.getByRole('log', { name: 'Conversa com o Builder' })
+}
+
+/** The command's output as its open row shows it, with `text` as a line of its own. */
+export function outputWith(chat: Page, text: string) {
+  return transcriptOf(chat).locator('pre', { hasText: new RegExp(`(^|\n)${text}(\n|$)`) })
 }

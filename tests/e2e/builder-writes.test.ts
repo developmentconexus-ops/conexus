@@ -5,18 +5,18 @@ import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import {
-  ANA,
   ask,
-  chooseDefaultModel,
   DIEGO,
-  KEYS,
+  outputWith,
   plantTwoCompanies,
+  readyToBuild,
   recordTranscript,
+  transcriptOf,
   transcriptShowed,
 } from './conversation-journey.ts'
 import { anotherPage, hubWindow, openConversation } from './hub-window.ts'
-import { createProject, liveHub, openProject, waitForHome } from './live-hub.ts'
-import { enter, linkKey } from './model-accounts-journey.ts'
+import { liveHub, openProject } from './live-hub.ts'
+import { enter } from './model-accounts-journey.ts'
 
 // Step 13's journey in Chromium, on a real Hub, a test machine that is a folder, and Anthropic's
 // double: Ana asks for a page and the Builder writes it and runs a command, the conversation tells
@@ -67,27 +67,6 @@ function builderThatWrites(t: Parameters<typeof plantAnthropic>[0]) {
   })
 }
 
-async function setUp(owner: Page, companyA: string) {
-  await enter(owner, ANA.email, `/companies/${companyA}/settings/model-accounts`)
-  await owner.getByText('Nenhuma conta ligada').waitFor()
-  await linkKey(owner, 'Time 1', KEYS.first)
-  await owner.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
-  await chooseDefaultModel(owner, companyA)
-  await owner.goto(`${TEST_ORIGIN}/companies/${companyA}`)
-  await waitForHome(owner)
-  await createProject(owner, 'Encomendas')
-  await owner.getByRole('heading', { name: 'Encomendas', exact: true }).waitFor()
-}
-
-function transcriptOf(chat: Page) {
-  return chat.getByRole('log', { name: 'Conversa com o Builder' })
-}
-
-/** The command's output as its open row shows it, with `text` as a line of its own. */
-function outputWith(chat: Page, text: string) {
-  return transcriptOf(chat).locator('pre', { hasText: new RegExp(`(^|\n)${text}(\n|$)`) })
-}
-
 /** Waits for the turn's end, then checks that what lasts of it is on screen. */
 async function lastingShown(chat: Page, version: RegExp) {
   await chat.getByText(WORKING).waitFor({ state: 'hidden' })
@@ -128,7 +107,7 @@ test('o roteiro do Builder que escreve: a página, o comando, a versão 1 e a 2 
   try {
     const owner = await hubWindow(closers, port, '198.51.100.10', problems)
     const diego = await hubWindow(closers, port, '203.0.113.10', problems)
-    await setUp(owner, ids.companyA)
+    await readyToBuild(owner, ids.companyA, 'Encomendas')
     const chat = await anotherPage(owner.context(), problems)
     await recordTranscript(chat)
     await chat.goto(`${TEST_ORIGIN}/companies/${ids.companyA}`)
