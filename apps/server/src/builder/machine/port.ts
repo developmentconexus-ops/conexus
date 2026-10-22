@@ -1,4 +1,4 @@
-import type { CheckReport, PackageGrant } from '@conexus/app/check'
+import type { CheckReport } from '@conexus/app/check'
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { Workspace } from '@mastra/core/workspace'
 import type { InstallationId } from '../../platform/config-machine.ts'
@@ -33,13 +33,10 @@ export type Machines = {
    */
   collect(input: { projectId: ProjectId; base: Sha }): Promise<Bundled | 'unchanged' | 'too-large'>
   /**
-   * The check of the app folder (decision 0055), with the Projeto's grants; the starter's packages
-   * are approved by the program itself. A machine that could not check is `CHECK_PLATFORM_FAILED`.
+   * The check of the app folder (decision 0055). A machine that could not check is
+   * `CHECK_PLATFORM_FAILED`.
    */
-  check(input: {
-    projectId: ProjectId
-    grants: readonly PackageGrant[]
-  }): Promise<Result<CheckReport, CheckPlatformFailed>>
+  check(input: { projectId: ProjectId }): Promise<Result<CheckReport, CheckPlatformFailed>>
   /** Whether the turn changed the app folder from the `main` it started from; a machine the turn never woke did not. */
   changed(input: { projectId: ProjectId }): Promise<boolean>
   /** The version the last passing check left in the machine, read as the send takes it. */

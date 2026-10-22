@@ -15,7 +15,6 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Result } from '../../platform/result.ts'
 import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
-import { PackageGrants } from '../packages/public.ts'
 import type { Outcome, Restart, RunsContext, RunsDeps } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
@@ -85,7 +84,6 @@ type Admission = {
 export class Runs {
   readonly #deps: RunsDeps
   readonly #context: RunsContext
-  readonly #grants: PackageGrants
   readonly #driven = new Map<RunId, Driven>()
   readonly #retry = createCopyRetry(() => copyPending(this.#context))
   readonly #sweepDaily: () => void
@@ -94,7 +92,6 @@ export class Runs {
 
   constructor(deps: RunsDeps) {
     this.#deps = deps
-    this.#grants = new PackageGrants({ database: deps.database, log: deps.log })
     this.#context = {
       ...deps,
       store: new RunStore(deps.database, randomUUID()),
@@ -266,8 +263,7 @@ export class Runs {
   async check(requestContext: RequestContext): Promise<Result<CheckReport, CheckPlatformFailed>> {
     const mine = this.#mine(requestContext)
     if (mine === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' }
-    const grants = await this.#grants.of(mine.companyId, mine.projectId)
-    return this.#deps.machines.check({ projectId: mine.projectId, grants })
+    return this.#deps.machines.check({ projectId: mine.projectId })
   }
 
   /** Keeps what the end of the turn's check said, for the version the turn saves. */

@@ -6,7 +6,6 @@ import { parseArgs } from 'node:util'
 import { z } from 'zod'
 import { browseInChromium } from './browser.ts'
 import { spawnRunner } from './command.ts'
-import { PackageGrant } from './report.ts'
 import { runCheck } from './run.ts'
 
 const PLATFORM_FAILED = 2
@@ -16,7 +15,6 @@ const { values } = parseArgs({
     root: { type: 'string' },
     tools: { type: 'string' },
     platform: { type: 'string' },
-    grants: { type: 'string' },
   },
 })
 
@@ -24,14 +22,12 @@ const Options = z.object({
   root: z.string().min(1),
   tools: z.string().min(1),
   platform: z.string().min(1),
-  grants: z.string(),
 })
 
 try {
   const options = Options.parse(values)
   const result = await runCheck({
     ...options,
-    grants: z.array(PackageGrant).parse(JSON.parse(options.grants)),
     run: spawnRunner,
     browse: browseInChromium,
   })

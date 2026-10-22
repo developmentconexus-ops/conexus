@@ -41,7 +41,6 @@ const CARDS = readConversation.success.body.parse({
             state: 'answered',
             questions: [
               {
-                kind: 'choice',
                 question: 'Quais dias a padaria entrega?',
                 options: [{ label: 'Sábado' }, { label: 'Domingo' }],
                 multiSelect: true,
@@ -98,16 +97,9 @@ const CARDS = readConversation.success.body.parse({
             state: 'open',
             questions: [
               {
-                kind: 'choice',
                 question: 'Quem cadastra as encomendas?',
                 options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
                 multiSelect: false,
-              },
-              {
-                kind: 'library',
-                question: 'Preciso da biblioteca react-big-calendar (≈ 300 KB). Permitir?',
-                name: 'react-big-calendar',
-                version: '1.19.4',
               },
             ],
           },

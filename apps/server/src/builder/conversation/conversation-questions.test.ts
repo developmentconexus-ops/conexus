@@ -9,10 +9,9 @@ test('ask_user com 1 a 4 perguntas: a volta espera, a parte `question` chega e a
   assert.equal((await send()).statusCode, 202)
   const { card } = await untilCard(stream, 'question')
   assert.equal(card.type, 'question')
-  assert.deepEqual(
-    card.type === 'question' && card.questions.map((each) => [each.kind, each.question]),
-    [['choice', WHO.question]],
-  )
+  assert.deepEqual(card.type === 'question' && card.questions.map((each) => each.question), [
+    WHO.question,
+  ])
   const answers = { kind: 'answers', answers: ['Todos (recomendado)'] }
   const answered = await post(hub, ana, answerUrl(url, card.toolCallId), answers)
   assert.equal(answered.statusCode, 202, answered.body)

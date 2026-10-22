@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import type { CheckReport } from '@conexus/app/check'
@@ -22,9 +22,9 @@ import { createProject, liveHub, openHome, openProject } from './live-hub.ts'
 // Step 14's use script (card "O roteiro de uso", steps 1 to 6) in Chromium, on a real Hub, a test
 // machine that is a folder and Anthropic's double, which plays the Builder's tool calls in order:
 // Ana answers its questions, asks the plan for a change and approves it, sees the tasks, the
-// command and version 1 that builds over the starter; allows a library and version 2 builds; a
+// command and version 1 that builds over the starter; adds a library the starter lacks, with no question, and version 2 builds; a
 // new Projeto gets a screen-only version. The machine's check program is the one thing faked
-// beyond the providers: it prints a passing report and keeps the grants it was given.
+// beyond the providers: it prints a passing report.
 const WORKING = 'Builder trabalhando'
 const PLAN = '.conexus/plan.md'
 
@@ -63,10 +63,6 @@ const WHO = {
 const STATUS = {
   question: 'Uma encomenda tem situação?',
   options: [{ label: 'Sim: recebida, pronta, entregue (recomendado)' }, { label: 'Não' }],
-}
-const LIBRARY = {
-  question: 'Preciso da biblioteca react-big-calendar (≈ 300 KB). Permitir?',
-  library: { name: 'react-big-calendar', version: '1.19.4' },
 }
 const PRICES = {
   question: 'Quais produtos e preços entram na tabela?',
@@ -138,7 +134,7 @@ const PRICES_SCREEN = `export function Home() {
 /**
  * What the Builder does, a step per model call: the card's two questions, the plan, the plan again
  * after the person's change, the tasks, the operations, the table and the screen over the
- * starter's, a command, the check, the tasks done; then the library card and the calendar; then, in
+ * starter's, a command, the check, the tasks done; then the calendar, with a library the starter lacks, asked of no one; then, in
  * the new Projeto, the prices question and the screen alone. A file the starter has is read before
  * it is written, as a write over a file not read is refused.
  */
@@ -158,7 +154,6 @@ const SCRIPT: (Block[] | string)[] = [
   [tool('conexus_check', {})],
   [tasks('completed', 'completed')],
   'O app de encomendas está pronto.',
-  [questions(LIBRARY)],
   [read('package.json')],
   [
     tool('mastra_workspace_edit_file', {
@@ -195,26 +190,15 @@ const PASSED: CheckReport = {
 
 /**
  * The machine's check program, in the test machine's folder as the template puts it in
- * `/opt/conexus`: it prints a passing report, the steps' own proof being `check.test.ts`, and keeps
- * the grants the Hub gave each call (`--grants`, the fourth argument) for the test to read.
+ * `/opt/conexus`: it prints a passing report, the steps' own proof being `check.test.ts`.
  */
 function passingCheck(folder: string) {
   mkdirSync(folder, { recursive: true })
   const report = join(folder, 'check-report')
-  const grants = join(folder, 'check-grants')
   writeFileSync(report, JSON.stringify(PASSED))
-  writeFileSync(grants, '')
   const program = join(folder, 'check')
-  writeFileSync(
-    program,
-    ['#!/bin/sh', `printf '%s\\n' "$4" >> '${grants}'`, `cat '${report}'`].join('\n'),
-  )
+  writeFileSync(program, ['#!/bin/sh', `cat '${report}'`].join('\n'))
   chmodSync(program, 0o755)
-  return () =>
-    readFileSync(grants, 'utf8')
-      .split('\n')
-      .filter((line) => line !== '')
-      .map((line) => JSON.parse(line))
 }
 
 /** Waits for the turn's end and its version line. */
@@ -264,13 +248,10 @@ async function firstVersion(chat: Page) {
     .waitFor()
 }
 
-/** Step 5: the library card, allowed as it recommends; version 2 builds. */
-async function libraryAllowed(chat: Page) {
+/** Step 5: a library the starter lacks, added with no question; version 2 builds. */
+async function libraryAdded(chat: Page) {
   const transcript = transcriptOf(chat)
   await ask(chat, 'Agora mostre as entregas num calendário.')
-  await transcript.getByText(LIBRARY.question).waitFor()
-  await transcript.getByText('react-big-calendar@1.19.4').waitFor()
-  await transcript.getByRole('button', { name: 'Enviar' }).click()
   await versionSaid(chat, 'Versão 2 guardada, montou: 2 arquivos mudados.')
   await chat.getByRole('button', { name: 'src/routes/entregas.tsx', exact: true }).waitFor()
 }
@@ -294,10 +275,10 @@ async function screenOnly(chat: Page) {
   assert.equal(await files.getByRole('button', { name: /^(shared|server)\// }).count(), 0)
 }
 
-test('o roteiro do Builder que constrói: perguntas, plano ajustado e aprovado, tarefas, a versão que monta, a biblioteca permitida e um Projeto só de tela', async (t) => {
+test('o roteiro do Builder que constrói: perguntas, plano ajustado e aprovado, tarefas, a versão que monta, uma biblioteca nova sem pergunta e um Projeto só de tela', async (t) => {
   const anthropic = builderThatBuilds(t)
   const { port, database, machineFolder } = await liveHub(t, 'http://127.0.0.1:9/unused')
-  const grantsChecked = passingCheck(machineFolder)
+  passingCheck(machineFolder)
   const ids = await plantTwoCompanies(database)
   const problems: string[] = []
   const closers: (() => Promise<void>)[] = []
@@ -310,7 +291,7 @@ test('o roteiro do Builder que constrói: perguntas, plano ajustado e aprovado, 
     await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
     await questionsAndPlan(chat)
     await firstVersion(chat)
-    await libraryAllowed(chat)
+    await libraryAdded(chat)
     await screenOnly(chat)
   } finally {
     for (const close of closers) await close()
@@ -319,7 +300,4 @@ test('o roteiro do Builder que constrói: perguntas, plano ajustado e aprovado, 
   const modelRead = anthropic.sent.flatMap((call) => call.texts)
   assert.ok(modelRead.some((text) => text.includes(`User feedback: ${ADJUSTMENT}`)))
   assert.ok(modelRead.some((text) => text.includes(PRICES_GIVEN)))
-  const allowed = [{ name: 'react-big-calendar', version: '1.19.4' }]
-  // The tool and the end of turn 1, the end of turn 2, the end of the new Projeto's turn.
-  assert.deepEqual(grantsChecked(), [[], [], allowed, []])
 })

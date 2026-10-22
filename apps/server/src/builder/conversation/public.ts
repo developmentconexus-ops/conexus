@@ -7,7 +7,6 @@ import { Failure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
-import { PackageGrants } from '../packages/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
@@ -52,10 +51,8 @@ export function createConversations(deps: {
       }),
   })
   const store = createConversationStore(deps)
-  const grants = new PackageGrants({ database, log: deps.log })
   const sessions = new Sessions({
     builder,
-    grants,
     runs: deps.runs,
     log: deps.log,
   })

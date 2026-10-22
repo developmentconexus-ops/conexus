@@ -1,4 +1,3 @@
-import type { PackageGrant } from '@conexus/app/check'
 import { CHECK_LIMITS, CheckReport, STEP_NAMES } from '@conexus/app/check'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
@@ -23,7 +22,7 @@ export type TimedExec = (
 export type CheckPlatformFailed = 'CHECK_PLATFORM_FAILED'
 
 /**
- * Runs the check program over the app folder with the Projeto's grants, and reads its report at
+ * Runs the check program over the app folder, and reads its report at
  * the boundary (code C27). Anything else (a refused command, the program's exit 2, a reply that is
  * not a report) is the platform's failure, logged with its reason (code C50).
  */
@@ -32,12 +31,11 @@ export async function checkIn(
     exec: TimedExec
     program: string
     workdir: string
-    grants: readonly PackageGrant[]
     log: FailureLog
   }>,
 ): Promise<Result<CheckReport, CheckPlatformFailed>> {
-  const { exec, program, workdir, grants, log } = input
-  const script = `${quoted(program)} --root ${quoted(workdir)} --grants ${quoted(JSON.stringify(grants))}`
+  const { exec, program, workdir, log } = input
+  const script = `${quoted(program)} --root ${quoted(workdir)}`
   const failed = { ok: false, error: 'CHECK_PLATFORM_FAILED' } as const
   let ran: Awaited<ReturnType<TimedExec>>
   try {

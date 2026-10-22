@@ -24,26 +24,19 @@ async function machineChecking(t: TestContext, body: string) {
   return { ...machine, args: () => readFileSync(join(tools, 'args'), 'utf8').split('\n') }
 }
 
-const GRANTS = [{ name: 'react-big-calendar', version: '1.19.4' }]
-
-test('Machines.check: roda o programa na pasta do app com as concessões e lê o relatório', async (t) => {
+test('Machines.check: roda o programa na pasta do app e lê o relatório', async (t) => {
   const { machines, args, folder } = await machineChecking(t, `echo '${JSON.stringify(REPORT)}'`)
-  assert.deepEqual(await machines.check({ projectId: PROJECT, grants: GRANTS }), {
+  assert.deepEqual(await machines.check({ projectId: PROJECT }), {
     ok: true,
     value: REPORT,
   })
-  assert.deepEqual(args().slice(0, 4), [
-    '--root',
-    join(folder, 'app'),
-    '--grants',
-    JSON.stringify(GRANTS),
-  ])
+  assert.deepEqual(args().slice(0, 2), ['--root', join(folder, 'app')])
 })
 
 test('Machines.check: o programa sem relatório, ou que diz que a máquina falhou, é CHECK_PLATFORM_FAILED', async (t) => {
   const failed = { ok: false, error: 'CHECK_PLATFORM_FAILED' }
   const platform = await machineChecking(t, "echo 'navegador: Chromium did not start' >&2; exit 2")
-  assert.deepEqual(await platform.machines.check({ projectId: PROJECT, grants: [] }), failed)
+  assert.deepEqual(await platform.machines.check({ projectId: PROJECT }), failed)
   const garbled = await machineChecking(t, 'echo \'{"ok": true}\'')
-  assert.deepEqual(await garbled.machines.check({ projectId: PROJECT, grants: [] }), failed)
+  assert.deepEqual(await garbled.machines.check({ projectId: PROJECT }), failed)
 })

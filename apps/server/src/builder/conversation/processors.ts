@@ -10,7 +10,7 @@ export const CHECK_TOOL = 'conexus_check'
 
 /** Conexus OS `e0353c36` `harness/tools.ts:28-33`, with the steps of this check (decision 0055). */
 const CHECK_DESCRIPTION = [
-  "Runs Conexus's own check on the app folder: it checks the packages against the approved ones and installs them, checks that each operation's input and output fit in JSON and generates the client from them, type checks the screens and the server, builds both and opens the app in a browser.",
+  "Runs Conexus's own check on the app folder: it installs the packages from the lockfile, checks that each operation's input and output fit in JSON and generates the client from them, type checks the screens and the server, builds both and opens the app in a browser.",
   'Takes no input and returns one report: `ok` and each step as passed, failed, informed (with its problems: file, line, column, code, message) or skipped after a failed step.',
   'Run it at the end of each step of the work, and fix what a failed step lists before the next one.',
   'A passing report proves the app type checks, builds and opens. It does not prove that an operation returns the right data, that a screen shows the right values or that anything saves: prove those another way.',
@@ -20,6 +20,7 @@ const CHECK_DESCRIPTION = [
 const PLATFORM_FAILED = {
   error: 'CHECK_PLATFORM_FAILED',
   message: 'The machine could not run the check, which says nothing about the app.',
+  isError: true,
 } as const
 
 /** `conexus_check`: the same check as the end of the turn, by the same path (`Runs.check`). */
