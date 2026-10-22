@@ -35,10 +35,12 @@ problemas e 60 s por passo.
 starters por tipo de app (depois, com avaliações); eventos e agendas. Issues `next-card`: 232 a 238
 são da 13 e esperam o conserto dela; as da 12.x, de telas fora destas pastas.
 
-**Emenda de 2026-10-22** (estudo da Conversa, §8 e §13): "1. Sim … 2.B". A linha de ferramenta abre
-como no OS: comando e fim da saída, começo do arquivo escrito, trecho antigo e novo de uma edição,
-mascarados e cortados; "Pensou", só o tempo. O plano e o "expirou" ficam no resultado da ferramenta,
-nativo do Mastra, sem lista nossa. O registro único da conversa é a etapa 14.0.
+**Emenda de 2026-10-22.** Ao estudo da Conversa, "1. Sim … 2.B": a linha de ferramenta abre como no
+OS, mascarada e cortada; "Pensou", só o tempo; o plano fica no resultado da ferramenta, nativo. O
+registro único da conversa é a etapa 14.0. À auditoria nativa, "2. SIM": "Permitir" chega à
+conferência; o cartão de perguntas é o questionário do shadcn instalado; uma frase só sobre quando
+conferir. Antes, "A" ao relatório de base (2.6): sem teto de operações. **Pendente**: o achado 1 da
+auditoria (o app confere com o próprio Zod), na U2 e na 0055.
 
 ## As unidades
 
@@ -87,13 +89,13 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 | 16 | U5 | `answerQuestion` do dono da Conversa: a volta continua; repetida ou fechada: `QUESTION_CLOSED`; número errado de respostas: `QUESTION_ANSWERS_INVALID`; outra pessoa ou empresa: 404 (S10) | idem |
 | 17 | U5 | `submit_plan` fora de `.conexus/plan.md`: recusado; no caminho: a parte `plan`; **Pedir ajustes** retoma com `{action: 'rejected', feedback}`, o modelo lê "User feedback: …"; **Aprovar e construir** continua; relida, a parte vem da mensagem do Mastra, sem chave nova nos metadados | idem |
 | 18 | U5 | 30 min sem resposta: `stopped`, `QUESTION_EXPIRED`; **Parar** ou Hub reiniciado com pergunta aberta: a chamada fecha negada, nada no banco do Mastra; mensagem com pergunta aberta: `session.steer`, `tool_suspension_cancelled`, a mensagem segue na volta; sem pergunta: `RUN_BUSY` | idem, `runs.test.ts` |
-| 19 | U5 | **Permitir** grava `{nome, versão}` no Projeto e a conferência passa; **Não**: nada gravado; pré-aprovado: recusado ao modelo; apagar o Projeto apaga as concessões | `package-grants.test.ts` |
+| 19 | U5, U4 | **Permitir** pela rota grava `{nome, versão}` no Projeto e a conferência seguinte passa `dependências`; **Não**: nada gravado; pré-aprovado: recusado ao modelo; apagar o Projeto apaga as concessões | `package-grants.test.ts`, `conversation-check.test.ts` |
 | 20 | U5 | `task_*`: a parte `tasks` chega e sobrevive à recarga | `conversation-parts.test.ts` |
 | 21 | U6 | Com os textos aprovados: cartões de pergunta, biblioteca e plano, lista de tarefas; estados da matriz; teclado e nomes (V30, V31) | `cards.test.tsx` |
 | 22 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo | T23 |
-| 23 | U7 | O teste guarda a tabela da U7, veredito e texto por linha do OS; o prompt tem cada "igual" e "adaptada", nenhuma "tirada"; o CI não lê o OS | `prompt.test.ts` |
+| 23 | U7 | O teste guarda a tabela de `builder-prompt.md`, veredito e texto por linha do OS; o prompt tem cada "igual" e "adaptada", nenhuma "tirada"; o CI não lê o OS | `prompt.test.ts` |
 | 24 | U7 | Os exemplos `.ts` e `.tsx` das skills tipam no starter e no SDK; um quebrado falha; `validateSkillContent` passa; `conexus-app` ensina página, painel e sistema | `skills.test.ts` |
-| 25 | U7 | A linha 51 do OS só enquanto `main` é o starter; `AGENTS.md` e `.conexus/memory/MEMORY.md` lidos do `main`; ausentes, a frase de vazio | `prompt.test.ts` |
+| 25 | U7 | A linha 51 do OS só enquanto `main` é o starter; `AGENTS.md` e `.conexus/memory/MEMORY.md` lidos do `main`; ausentes, a frase de vazio; só a descrição de `conexus_check` diz quando conferir, nada diz que a máquina não monta | `prompt.test.ts` |
 | 26 | U8 | Os seis passos do roteiro, modelo gravado | `tests/e2e/builder-builds.test.ts` |
 | 27 | U8 | **Ao vivo**: o pedido da Ana, 3 vezes com Gemini 3.8 Flash High e 1 com Claude: perguntas e plano, monta no primeiro turno, nada fora de `/home/user/app`; `abort` com `retry` reabre o laço | 0055 |
 | 28 | U8 | **Ao vivo**: na máquina, `npm ci --ignore-scripts` instala uma biblioteca concedida pelo `registry.npmjs.org` (0051) | 0055 |
@@ -166,6 +168,7 @@ primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço 
 | Conferência no fim do turno | nativo | `builder/conversation/processors.ts` | — | 3 retentativas (OS `builder.md:54`) | `abort(…, {retry: true})` (`processors/index.d.ts:543,739`) |
 | Perguntas e plano | nativo, embrulhado | `builder/conversation/plan-tools.ts` | um modo só; sem lista nossa | 4 perguntas | `askUserTool`, `submitPlanTool`, `steer`; OS `harness/tools.ts:64-150` |
 | Linha que abre | nosso; a forma da Factory (A) | `tool-row.tsx`, `parts.ts` | — | máscara (S2) | Factory `ToolCard.tsx:41,54,64`; vibesdk `exec-commands.ts:35-46`; OS cru |
+| Cartão de perguntas | nativo | `question-card.tsx` | — | 4 perguntas | `@shadcn/react` `questionnaire`; OS `ask-user-pt.tsx`, à mão |
 | Volta que espera | trazida | `builder/runs/` | `waiting` | 30 min | OS `run/run.ts:240-256` |
 | Prompt e skills | trazidos, adaptados | `builder/conversation/prompt/`, `packages/app/skills/` | a tabela da U7; formas | seis estágios, três classes de decisão | OS `harness/prompt.ts:46-89`, `builder-skills/`; vibesdk `think/skills.ts:15-24` |
 
@@ -202,7 +205,7 @@ o dono das frases (C26). `OperationName` marcado (C23). Entrada: o corpo do `POS
 Modelo: `runtime.ts` (C21, C23, C26).
 
 **Ordem.** Regras: C21, C23, C26, C27, D28. Funções: `zod@4.6.5` `z.toJSONSchema` (`io: 'input'`),
-conferido contra `Shape`. **Prova.** 2 a 6.
+conferido contra `Shape`. **Pendente**: achado 1 da auditoria. **Prova.** 2 a 6.
 
 ## U3 O starter editável
 
@@ -220,8 +223,9 @@ da 13 (C21, C23). Regras: W21, W22, V19. **Prova.** 7.
 
 **Contratos.** `/opt/conexus/check` (só leitura): `dependências` (9), `manifesto` (gera também
 `src/conexus/api.gen.ts`), `tipos` (DOM e servidor), `telas` (`vite build`), `worker` (`serveApp`
-gerado, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (11). A lista vem do servidor a cada chamada (`PREAPPROVED_PACKAGES`, dono, C26, e
-`builder.package_grant`), nunca da árvore. `CheckReport = {ok, steps: [{name, state:
+gerado, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (11). A lista vem do servidor a cada chamada: `PREAPPROVED_PACKAGES` (dono, C26) e
+`PackageGrants.of` do Projeto, lidos por `Runs.check`, um tipo só, nunca da árvore (auditoria 2: hoje
+`runs.ts:34,249` passa `GRANTS = []`). `CheckReport = {ok, steps: [{name, state:
 'passed' | 'failed' | 'skipped' | 'informed', problems: [{file, line, column, code, message}]}]}`,
 esquema Zod (C27). `Machines.check({projectId}): Result<CheckReport, 'CHECK_PLATFORM_FAILED'>`;
 `Machines.pack({projectId}): Result<VersionFolder, PackRefused>`, por `receiveVersion` (S2); a 14.1
@@ -275,7 +279,10 @@ ao cartão. 2. Regras: C21, C23, C48, C62, C65, D11, S8, S10, S41. **Prova.** 15
 `builder/conversation/{parts,live,shell}.ts`, `hub-api/conversations.ts`: muda; chama: web, OpenAPI.
 
 **Contratos.** Cada cartão lê a sua parte e chama `answerQuestion`; o de biblioteca é o de pergunta
-com `kind: 'library'`; textos em português (L23). **A linha que abre** (emenda, estudo U-a):
+com `kind: 'library'`; textos em português (L23). O de perguntas usa o `questionnaire` do
+`@shadcn/react` 0.3.1 instalado (`Root`, `Item`, `Choices`, `Input`; `questionnaire/index.d.ts:5-78`),
+não um escrito à mão (auditoria 9); a U6 prova o encaixe primeiro (o "Revisar" do OS não foi
+conferido); sem encaixe, volta ao card. **A linha que abre** (emenda, estudo U-a):
 `tool.detail`, dos args, do resultado e de `data-sandbox-exit` gravados, por
 `masked()` (S2, S41), cortado como a Factory: comando, `SUBJECT_MAX_LENGTH`; saída, a cauda
 `SHELL_MAX_*`, mascarada antes; arquivo, 2.000 caracteres; edição, 200 linhas por lado, a diferença no
@@ -287,26 +294,14 @@ navegador; leitura, só o assunto. "Pensou", só o tempo (V39). Regras: C26, C28
 `packages/app/skills/{conexus-plan-new,conexus-plan-change,conexus-build,conexus-app,conexus-data}/`:
 cria; chama: `createSkill`.
 
-**Contratos.** `instructions` como função (OS `prompt.ts:61-66`). Skills do OS refeitas, sem `conexus/`, a lista fixa, o runner, o CTE e
+**Contratos.** `instructions` como função (OS `prompt.ts:61-66`). Um dono de quando conferir, a
+descrição de `conexus_check` (auditoria 10: `instructions.ts:14-15` de `main` o contradizia). Skills do OS refeitas, sem `conexus/`, a lista fixa, o runner, o CTE e
 `conexus_run_operation`; `conexus-app` ensina as três formas (página, só `home.tsx`; painel; sistema com Sidebar), com as
 referências do OS (`shell`, `list`, `record`, `dashboard`, `form`), e a biblioteca pelo cartão.
 
-**A tabela do prompt** (`builder.md` do OS, `e0353c36`; a razão é da arquitetura):
-
-| Linhas do OS | Veredito | Razão |
-| --- | --- | --- |
-| 1, 2, 5, 7 a 11, 19, 21, 23 a 27, 29 a 42, 44 a 47, 49, 50, 56 a 59, 63, 68 a 75 | igual | 0051 (19); `ask_user` e `task_*` na U5; memória observacional (`builder.ts:97`); `AGENTS.md` e `.conexus/memory/` lidos do `main` |
-| 3, 6, 22 | adaptada | sem Prévia até a 14.1, que devolve as frases; sem Integrações até a 19 |
-| 13 | adaptada | "The packages, the way screens call the server and the visual system are fixed" vira "the platform contract is fixed; the starter is yours to change; ask before adding a package" (0055); `conexus-server` vira `conexus-data` |
-| 15 | adaptada | sem Conexões até a 19: mantém "never invent data"; "Integrações" vira "connectors, later" |
-| 17 | adaptada | "Conexões" vira "connectors"; mais as frases de segurança da 13 (`instructions.ts:16-20`) |
-| 43 | adaptada | sem "Conexão" até a 19 |
-| 51 | igual, condicional | só enquanto `main` é o starter |
-| 52 | adaptada | os fatos do template da U4 |
-| 53 | adaptada | a Conversa e Código; a 14.1 soma Prévia e Alterações |
-| 54, 61 | adaptada | "after four, Conexus saves the code as not built" (P3 A); sem "updates the Prévia"; "a message closes an open question and continues this run" (18) |
-| 64 a 66 | tirada | volta com a 19 |
-| `prompt.ts:82-88` | tirada | `@mastra/code-sdk` não está no Hub; a 13 não faz merge na máquina (0051) |
+**A tabela do prompt**, por linha do `builder.md` do OS, com o veredito e a razão da arquitetura:
+[reference/builder-prompt.md](../reference/builder-prompt.md), a dona desde a emenda, para onde foi
+sem mudar.
 
 **Ordem.** Regras: T5, S2, S40, L23. **Prova.** 23 a 25.
 
