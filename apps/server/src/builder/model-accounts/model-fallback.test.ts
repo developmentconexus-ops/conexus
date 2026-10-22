@@ -87,8 +87,6 @@ test('troca automática: revisão velha dá 412; duas gravações juntas, uma ve
 })
 
 const GROQ = 'groq/llama-3.3-70b-versatile'
-const EXHAUSTED =
-  'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
 
 test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem busca; a seguinte tenta o escolhido; desligada, para', async (t) => {
   const limited: { on: boolean } = { on: true }
@@ -135,7 +133,7 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   })
   assert.equal(off.statusCode, 200)
   const third = await asked(t, where)
-  assert.equal(noticesOf(third.events).at(-1), EXHAUSTED)
+  assert.match(noticesOf(third.events).at(-1) ?? '', /^Time 1 no limite até \d{2}h\d{2}\.$/)
   assert.ok(!noticesOf(third.events).some((text) => text.startsWith('Troquei')))
   assert.deepEqual(third.events.slice(-2), [
     { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },

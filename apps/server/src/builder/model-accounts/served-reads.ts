@@ -6,7 +6,6 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
 import { AccountRow, columns, credentialOf } from './accounts.ts'
-import { subscriptionAccess } from './claude/store.ts'
 import type { GoogleCalls } from './google/port.ts'
 
 import { hasReader, keepServed } from './served.ts'
@@ -52,11 +51,7 @@ async function readThrowing(
     }
     return
   }
-  const secret =
-    account.kind === 'claude_subscription'
-      ? await subscriptionAccess({ ...deps, scope }, { ...account, companyId, credential })
-      : credential.reveal()
-  await keepServed(deps, scope, target, secret)
+  await keepServed(deps, scope, target, credential.reveal())
 }
 
 /**

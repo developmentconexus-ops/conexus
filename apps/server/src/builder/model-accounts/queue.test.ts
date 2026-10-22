@@ -236,7 +236,8 @@ test('todas fora: o aviso de que as contas acabaram, MODEL_NO_ACCOUNT e o fim co
   assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
   const notices = noticesOf(events)
   assert.match(notices[0] ?? '', /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/)
-  assert.equal(notices[1], EXHAUSTED)
+  // The end says why the last account was lost, not that none is left.
+  assert.match(notices[1] ?? '', /^Dois no limite até \d{2}h\d{2}\.$/)
   assert.equal(notices.length, 2)
   assert.deepEqual(events.slice(-2), [
     { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
@@ -254,7 +255,7 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   assert.deepEqual(f.calls(), labels.slice(0, 10))
   const notices = noticesOf(events)
   assert.equal(notices.length, 10)
-  assert.equal(notices.at(-1), EXHAUSTED)
+  assert.equal(notices.at(-1), 'Conta 10 foi recusada. Ligue de novo.')
   assert.deepEqual(await keptNotices(f.hub, f.ana, url), notices)
   assert.deepEqual(events.slice(-2), [
     { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
