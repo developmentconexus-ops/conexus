@@ -51,7 +51,8 @@ test('máquina: um turno retomado guarda os arquivos que a máquina tem; o outro
   assert.equal(committed?.exitCode, 0, committed?.stderr)
   const bundle = await machines.collect({ projectId: PROJECT, base })
   assert.ok(typeof bundle === 'object')
-  assert.deepEqual([bundle.files, bundle.changedFiles], [1, 1])
+  assert.equal(bundle.changedFiles, 1)
+  assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
   const received = await repository.receive({
     runId: RunId.parse('00000000-0000-4000-8000-000000000002'),
     bundle: bundle.bundle,
@@ -99,7 +100,8 @@ test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa n
   assert.equal(await workspace.filesystem?.exists('a.ts'), true, 'a reconnect is not a new turn')
   const bundle = await machines.collect({ projectId: PROJECT, base })
   assert.ok(typeof bundle === 'object', `the turn's work is saved, not ${String(bundle)}`)
-  assert.deepEqual([bundle.files, bundle.changedFiles], [1, 1])
+  assert.equal(bundle.changedFiles, 1)
+  assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
 })
 
 test('máquina: duas ferramentas do Workspace no primeiro passo esperam a semente, pois o running vem antes do onStart', async (t) => {
@@ -155,10 +157,15 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
   assert.ok(received.ok)
   assert.equal(await repository.advance({ candidate: received.value, base }), 'advanced')
   assert.equal(await repository.version(), 1)
-  assert.deepEqual(await repository.tree(received.value), [
-    { path: 'b.ts', bytes: 5 },
-    { path: 'src/a.ts', bytes: 19 },
-  ])
+  const turn = new Set(['b.ts', 'src/a.ts'])
+  const tree = (await repository.tree(received.value)) ?? []
+  assert.deepEqual(
+    tree.filter((file) => turn.has(file.path)),
+    [
+      { path: 'b.ts', bytes: 5 },
+      { path: 'src/a.ts', bytes: 19 },
+    ],
+  )
 })
 
 test('máquina: o nome da máquina leva a instalação e a empresa, então a de outra instalação ou empresa nunca é a achada pelo nome', async (t) => {
