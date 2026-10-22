@@ -61,7 +61,8 @@ choice of test tools.
   names the provider, the API, the SDK version and the date beside it, and carries invented
   content only (security S40). A part typed in the shape a screen wants is not a provider
   double. Any turn the screen draws from a stream is also read back after it ends, and the
-  test asserts the two are equal. [review]
+  test asserts the two are equal. A double plays every tool the model is offered, not only
+  those a card names, and the tests and QA read each tool's row on the screen. [review]
 - **T17.** Tests **should not** change authority to pass. Failure: a test-only header still accepted
   in production bypasses the session. [code C67](code.md) restricts `NODE_ENV`, not every possible
   bypass spelling. [review]

@@ -11,6 +11,10 @@ Read only when the step creates or changes a screen.
    interview ([delivery L23](../../../../docs/guides/delivery.md)).
 4. Use `onboard` when the step has a first time, and fill the matrix's "primeira vez" and "sem
    permissão" columns for every screen.
-5. A finding of Impeccable never blocks alone; [delivery L12](../../../../docs/guides/delivery.md)
+5. A matrix cell that declares "sem detalhe" or "não abre" for something the person sees **must**
+   carry the founder's word on his page; without it the cell opens on what the tool keeps (arguments,
+   result, error). Step 14's card declared such a row; the build met the card and the person met
+   "Usou uma ferramenta", and neither review nor QA could see it.
+6. A finding of Impeccable never blocks alone; [delivery L12](../../../../docs/guides/delivery.md)
    judges it. Which commands, hooks and configuration Conexus allows is owned by
    [Impeccable](../../../../docs/reference/impeccable.md).

@@ -15,8 +15,8 @@ session that wrote the card does not build it.
 The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the card is the contract.
 
 It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
-unit's one named guide, and loads the card's maintainers' skills before writing code. With
-pstack, it also loads `poteto-mode` and `typescript-best-practices`. [bring](references/bring.md)
+unit's one named guide, and loads the card's maintainers' skills before writing code. It loads
+pstack `poteto-mode` and `typescript-best-practices`. [bring](references/bring.md)
 only when the unit brings code; [bug](references/bug.md) only for a defect.
 
 ## Steps
@@ -25,12 +25,15 @@ only when the unit brings code; [bug](references/bug.md) only for a defect.
    its order of work.
 2. Check that every type, contract and value the unit needs exists on the step branch or is
    created by this unit; if not, stop.
+2a. Before writing a mechanism, look for it in the installed library (maintainers' skill,
+   Context7, `node_modules`); if the native one serves and the card says "nosso", stop: the card
+   goes back. Fix a defect at its root cause: name the first wrong state, fix there, sweep its class.
 3. Delete before adding: remove what the card removes and move every caller. No shim, no parallel
-   old path, no temporary shape for a later unit to replace.
+   old path, no temporary shape.
 4. Bring old code only as the card's table says: into the named file, refactored as listed,
-   carrying only the old decisions listed with their basis. A line the table does not justify is
-   not brought. Keep the measure of the study rule ([`conexus-study`](../conexus-study/SKILL.md)
-   step 5) as you go; when a part passes its limit, stop and report.
+   carrying only the old decisions listed. A line the table does not justify is not brought. Keep
+   the study rule's measure ([`conexus-study`](../conexus-study/SKILL.md)) as you go; past its limit,
+   stop and report.
 5. Write the tests through the server's public door, with the negative cases, and provider doubles
    per [testing T24](../../../docs/guides/testing.md). Write each screen text from the card's state
    matrix.
@@ -40,9 +43,8 @@ only when the unit brings code; [bug](references/bug.md) only for a defect.
    that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
    states, and a new guard gets its removal row (T12). Then answer [the
    checklist](../../../docs/reference/checklist.md) item by item and fill its sweep table; a "nosso"
-   mechanism adds or updates its entry in [boundaries](../../../docs/reference/boundaries.md). Run
-   pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves. Without pstack: reread
-   the diff and remove what a careful engineer would not write.
+   mechanism keeps the card's proof beside its [boundaries](../../../docs/reference/boundaries.md)
+   entry. Run pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves.
 7. One commit for the unit on the step branch. The tests the unit touches are green.
 
 ## What it produces

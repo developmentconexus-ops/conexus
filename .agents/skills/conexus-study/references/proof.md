@@ -1,6 +1,8 @@
 # A small proof for an expensive choice
 
-Read only when the study finds a choice on the expensive list.
+Read only when the study finds a one-way door: the Builder's engine, where the product runs, who
+holds the session, data isolation, or a ready-made piece holding state or identity or running
+third-party code.
 
 ## The four steps
 

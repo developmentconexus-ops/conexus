@@ -8,8 +8,8 @@ guides own what we decided about it; [boundaries](boundaries.md) owns what we wr
 `check-docs` refuses a dependency of any workspace without a row here, and a row that names
 nothing the repository uses. The version is the one `package.json` and the lockfile pin; "the
 reference pins X" marks a reference on another major. "Read first" names, in order, docs or skills
-inside `node_modules`, the maintainers' skill, `llms.txt` or `.md` pages, the README. Mastra fork
-is read at `ce7e9c30`; Cloudflare's vibesdk (`github.com/cloudflare/vibesdk`), the main reference
+inside `node_modules`, the maintainers' skill, `llms.txt` or `.md` pages, the README. Mastra is
+read in `node_modules` at the pin, and its own products (Mastra Code, Factory) at the reference shelf's tag for it; Cloudflare's vibesdk (`github.com/cloudflare/vibesdk`), the main reference
 for Cloudflare and the AI build flow, at `9da158d8` from its own checkout; Conexus OS only with `git show e0353c36:<path>`, because a checkout's HEAD
 can be another commit (one was at `729bdc5d`).
 

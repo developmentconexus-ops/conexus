@@ -84,7 +84,8 @@ merge.
   GitHub refuses a direct push. Founder, 2026-10-13, declining GitHub Pro: "3. Nao vou".
   [firstmate's merge script, review]
 - **L15.** CI **must** have one check that fails when any job fails, is skipped or is cancelled.
-  [CI]
+  Before waiting on CI, the pull request **must not** be CONFLICTING: a conflicting pull request
+  starts no `pull_request` run. [CI, review]
 - **L16.** CI **must** list every new dependency in the pull request, and the review asks whether one
   is on the list of expensive choices. [CI, review]
 - **L17.** After the merge, the step **must** be published on the cloud installation, checked live by
