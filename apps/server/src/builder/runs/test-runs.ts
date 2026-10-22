@@ -4,11 +4,11 @@ import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { Config } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import { silent } from '../../platform/test-database.ts'
-import type { GitCopy, Sha } from '../git/public.ts'
-import { openRepository } from '../git/public.ts'
+import type { GitCopy, Repository, Sha } from '../git/public.ts'
+import { openRepository, restoreGuarded } from '../git/public.ts'
 import type { MachineApi } from '../machine/public.ts'
 import { createMachines } from '../machine/public.ts'
-import { localKit, newControl } from '../machine/test-machine.ts'
+import { INSTALLATION, localKit, newControl } from '../machine/test-machine.ts'
 
 /** A bucket of memory: puts that fail on demand, and what it holds, by key. */
 export function memoryCopy() {
@@ -25,6 +25,9 @@ export function memoryCopy() {
         sha,
         bundle: Buffer.from(bundle),
       })
+    },
+    async newestVersion(ids) {
+      return (await copy.latest({ ...ids, maxBytes: Number.MAX_SAFE_INTEGER }))?.version ?? null
     },
     async latest({ companyId, projectId }) {
       const mine = [...held]
@@ -68,6 +71,28 @@ function newKnobs(): Knobs {
   }
 }
 
+/** A repository whose save stops where a test says: held before `receive` or `advance`, or dying there. */
+function withKnobs(real: Repository, knobs: Knobs): Repository {
+  function dies(step: 'receive' | 'advance') {
+    if (knobs.dies[step] === 0) return
+    knobs.dies[step] -= 1
+    throw new Error('the process died')
+  }
+  return {
+    ...real,
+    async receive(input) {
+      await knobs.holdReceive
+      dies('receive')
+      return real.receive(input)
+    },
+    async advance(input) {
+      await knobs.holdAdvance
+      dies('advance')
+      return real.advance(input)
+    },
+  }
+}
+
 /** The Builder's Git and machines as doubles (T14): the repository is real, on the test config's
  * folder; the machine is a folder of this computer (`localKit`), whose start and outcome a test
  * sets through `control`; the bucket is `memoryCopy`.
@@ -84,24 +109,7 @@ export function testBuilderPorts(
   const knobs = newKnobs()
   function repository(ids: { companyId: CompanyId; projectId: ProjectId }) {
     const real = openRepository({ root: config.gitRoot, ...ids, log: silent })
-    function dies(step: 'receive' | 'advance') {
-      if (knobs.dies[step] === 0) return
-      knobs.dies[step] -= 1
-      throw new Error('the process died')
-    }
-    return {
-      ...real,
-      async receive(input: Parameters<typeof real.receive>[0]) {
-        await knobs.holdReceive
-        dies('receive')
-        return real.receive(input)
-      },
-      async advance(input: Parameters<typeof real.advance>[0]) {
-        await knobs.holdAdvance
-        dies('advance')
-        return real.advance(input)
-      },
-    }
+    return restoreGuarded(withKnobs(real, knobs), bucket.copy, ids)
   }
   function machinesOf(database: Database) {
     return createMachines({
@@ -109,14 +117,15 @@ export function testBuilderPorts(
       log: silent,
       kit: localKit(folder, control),
       api: {
-        exists: async () => control.exists,
+        holds: async (_id, name) => control.exists && [undefined, name].includes(control.owner),
         list: async () => listed,
         kill: async (id) => {
           killed.push(id)
           control.killed = true
         },
       },
-      mark: { conexus_origin: 'hub.example.test' },
+      mark: { conexus_origin: INSTALLATION },
+      installation: INSTALLATION,
       seedOf: async (ids) => {
         const git = repository(ids)
         await git.ensure()

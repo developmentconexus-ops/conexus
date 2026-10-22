@@ -28,7 +28,7 @@ services:
     volumes:
       - hub_git:/var/lib/conexus/git
     # HUB_MAIL_API_URL, HUB_MAIL_FROM, HUB_NEON_ORG_ID, HUB_CLOUDFLARE_ACCOUNT_ID and
-    # HUB_GIT_COPY_BUCKET: they name accounts, so they stay out of Git.
+    # HUB_GIT_COPY_BUCKET and HUB_INSTALLATION_ID: they name accounts, so they stay out of Git.
     env_file: /etc/conexus/hub.env
     environment:
       HUB_DATABASE_URL_FILE: /run/secrets/hub_database_url

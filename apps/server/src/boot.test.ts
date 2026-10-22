@@ -54,6 +54,7 @@ const WITH_FILE = {
   HUB_GIT_COPY_KEY_FILE: '/nowhere/hub_git_copy_key',
   HUB_E2B_API_KEY_FILE: '/nowhere/hub_e2b_api_key',
   HUB_E2B_TEMPLATE: 'conexus-builder',
+  HUB_INSTALLATION_ID: 'bootinstallation0',
 }
 
 for (const name of Object.keys(WITH_FILE)) {
@@ -82,6 +83,8 @@ const OUT_OF_FORMAT = [
   ['HUB_CLOUDFLARE_API_URL', 'http://cloudflare.example.test/client/v4'],
   ['HUB_CLOUDFLARE_ACCOUNT_ID', 'Conta'],
   ['HUB_APPS_NAMESPACE', 'conexus_apps'],
+  ['HUB_INSTALLATION_ID', 'hub.example.test'],
+  ['HUB_INSTALLATION_ID', 'ABCDEF0123456789ABCDEF'],
 ] as const
 for (const [name, value] of OUT_OF_FORMAT) {
   test(`configuração: recusa subir com ${name}=${value} fora do formato`, async (t) => {

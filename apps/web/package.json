@@ -1,6 +1,7 @@
 {
   "name": "@conexus/web",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "build": "vite build",

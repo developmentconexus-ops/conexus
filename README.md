@@ -22,3 +22,5 @@ inglês, porque são os agentes que os leem quando estudam, constroem e revisam.
 decisão traz as suas palavras, na língua em que você as disse.
 
 Como cada etapa anda, do estudo até o seu uso, está no [AGENTS.md](AGENTS.md), em inglês.
+
+A licença está no [LICENSE](LICENSE): todos os direitos reservados.

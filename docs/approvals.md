@@ -98,6 +98,10 @@ Cartão da etapa 13 aprovado em 2026-10-20 (commit 29e51c63b2e4937106f24c434b8fb
 
 Em 2026-10-21, sobre o estudo do registro de execução da etapa 13: "Pode trocar". A resposta R2 b ("o turno sobrevive a um reinício do servidor") é trocada: no reinício o turno termina, o que o Builder já escreveu é guardado como versão, pelo mesmo caminho do Parar, e a pessoa manda a mensagem de novo.
 
+## Etapa 14
+
+Cartão da etapa 14 aprovado em 2026-10-21 (commit 05b006ba443aea51c60ea3a74ae7f7f6c977c480): "SIM"
+
 ## Etapa 14.1
 
 Cartão da etapa 14.1 aprovado em 2026-10-21 (commit 39912ec4b7fed56ee13ed9deea31d686cd18df0c): "Aprovo"

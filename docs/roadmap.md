@@ -26,7 +26,8 @@ Aprovações e usos: [aprovações](approvals.md).
     12.3 **Padrões.** Escolhe com que modelo as conversas começam.
 13. **O Builder escreve.** Pede um app e vê os arquivos guardados.
     13.1 **O primeiro pedido.** Alterações, o passo 4 da primeira entrada e o compositor do Início criando Projeto.
-14. **App do Builder.** Abre no Preview o app que ele escreveu.
+14. **O Builder constrói.** Pede um app, responde às perguntas, aprova o plano e vê a versão que monta.
+    14.1 **A Prévia.** Abre na Prévia o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
 16. **Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
 17. **Publicar.** Publica um app e o abre.
@@ -69,8 +70,9 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 | --- | --- | --- | --- |
 | 13 O Builder escreve | A chave do E2B. O bucket do R2 | A rede da máquina (10) | Onze achados do turno real. Fichas do motor, sandbox, Git. Testes 11, 12 |
 | 13.1 O primeiro pedido | A 13 e a 12.2 | Nenhuma | — |
-| 14 App do Builder | A 10 e a 13 | Nenhuma | Lacunas de instrução do Builder |
-| 15 Mudar o app | A 14 | Nenhuma | Migrações atômicas de app. O lote |
+| 14 O Builder constrói | A 13 | As capturas dos cartões do OS | O prompt, as skills e a casca do Conexus OS |
+| 14.1 A Prévia | A 10 e a 14 | Nenhuma | Lacunas de instrução do Builder |
+| 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
 | 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 17 Publicar | A 15 | Nenhuma | Pré-requisitos de Release e Publish. O estudo 04 |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
