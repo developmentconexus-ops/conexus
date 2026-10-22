@@ -205,8 +205,9 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   listed as an entry to escape that check. A compile-only file that [testing T9](testing.md)
   requires is an entry by rule: the compiler's entry point, imported by nothing. Founder,
   2026-10-15: "2. A". [knip, review]
-- **C75.** Before a custom mechanism, its author **should** compare the native public API at the
-  installed version and justify an exception beside the implementation. A correct native solution
+- **C75.** Before a custom mechanism, its author **must** compare the native public API at the
+  installed version and justify an exception beside the implementation; without both, review grades
+  it Bloqueia. Founder, 2026-10-22: "A". A correct native solution
   stays when a guide conflicts: record the conflict for closing; ask the founder when behavior or
   scope changes ([delivery L7](delivery.md)). Failure: using `internalAdapter` when `auth.api`
   already serves creates an unnecessary private dependency. [review]

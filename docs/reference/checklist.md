@@ -22,7 +22,7 @@ Each question cites the rule it checks.
 5. Written and never read, read and never written (D18): for each new column and contract field,
    who writes and who reads it, as the card's matrix says? A query without a column list reads all.
 6. Hand-made where the native one serves (C75): was the library's own way read at its installed
-   version? Is a hand-made exception justified beside its implementation?
+   version? Is a hand-made exception justified beside its implementation? Without both, Bloqueia (C75).
 7. A test that checks text, not behaviour (T6, T7).
 8. A lock held while calling outside (D22), or a session-level lock (D25).
 9. An owner reading another owner's table through hand-written SQL (C8).
