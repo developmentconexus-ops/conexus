@@ -36,6 +36,28 @@ const CARDS = readConversation.success.body.parse({
         parts: [
           { type: 'reasoning', id: 'r1', state: 'completed', seconds: 9 },
           {
+            type: 'question',
+            toolCallId: 'q0',
+            state: 'answered',
+            questions: [
+              {
+                kind: 'choice',
+                question: 'Quais dias a padaria entrega?',
+                options: [{ label: 'Sábado' }, { label: 'Domingo' }],
+                multiSelect: true,
+              },
+            ],
+            answers: [['Sábado', 'Domingo']],
+          },
+          {
+            type: 'version',
+            number: 2,
+            changed: true,
+            files: 9,
+            changedFiles: 3,
+            check: { state: 'failed', code: 'APP_CHECK_FAILED' },
+          },
+          {
             type: 'tool',
             id: 'c1',
             kind: 'run_command',
@@ -113,6 +135,16 @@ export const CARD_STATES: State[] = [
     settle: async (page) => {
       await inChat(page)
       await page.getByRole('button', { name: 'Ler plano completo' }).waitFor()
+    },
+  },
+  {
+    name: 'Conversa, a pergunta respondida e a versão que não montou',
+    path: PATH,
+    replies: REPLIES,
+    settle: async (page) => {
+      await inChat(page)
+      await page.getByText('Sábado, Domingo').scrollIntoViewIfNeeded()
+      await waitFor(page, 'O app não passou na conferência depois de 4 tentativas.')
     },
   },
   {
