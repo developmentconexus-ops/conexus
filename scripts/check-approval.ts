@@ -2,6 +2,7 @@
 // he did. The ledger line must cite a commit that is an ancestor of the tip, and the card must be
 // the same file at that commit and now (delivery L6).
 // Refusals are proved by planting each one in check-approval.test.ts.
+// An amended card has more than one approval line; the last one holds (founder, 2026-10-22).
 // Revalidate by 2027-04-13, or when the approval line changes shape.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
@@ -60,9 +61,10 @@ function checkCard(card: string): void {
   const cardPath = `docs/steps/${card}`
   const line = new RegExp(
     `^\\s*Cartão da etapa ${step.replace('.', '\\.')} aprovado em \\d{4}-\\d{2}-\\d{2} \\(commit ([0-9a-f]{7,40})\\): ".+"\\s*$`,
-    'm',
+    'gm',
   )
-  const approved = ledger.match(line)?.[1]
+  // An amended card is approved again: the newest line is the one that holds.
+  const approved = [...ledger.matchAll(line)].at(-1)?.[1]
 
   if (approved === undefined) {
     if (onlyDocuments()) {

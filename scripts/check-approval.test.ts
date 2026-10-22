@@ -50,6 +50,16 @@ test('aceita o cartão aprovado e inalterado', () => {
   assert.equal(run(dir).status, 0)
 })
 
+test('lê a aprovação mais nova de um cartão emendado', () => {
+  const { dir, card } = repository()
+  write(dir, 'docs/steps/e01-x.md', 'card amended\n')
+  git(dir, 'commit', '-qam', 'amendment')
+  const amended = git(dir, 'rev-parse', 'HEAD')
+  write(dir, 'docs/approvals.md', approval(card) + approval(amended))
+  git(dir, 'commit', '-qam', 'approvals')
+  assert.equal(run(dir).status, 0)
+})
+
 test('recusa commit fora da ponta', () => {
   const { dir } = repository()
   git(dir, 'checkout', '-q', '-b', 'other')
