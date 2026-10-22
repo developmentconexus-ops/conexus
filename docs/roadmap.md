@@ -28,7 +28,7 @@ Aprovações e usos: [aprovações](approvals.md).
     13.1 **O primeiro pedido.** Alterações, o passo 4 da primeira entrada e o compositor do Início criando Projeto.
 14. **O Builder constrói.** Pede um app, responde às perguntas, aprova o plano e vê a versão que monta.
     14.0 **Um registro da conversa.** Conversa como antes; depois de um reinício do Hub, vê o aviso direto.
-    14.2 **A conversa nativa.** Vê cada ferramenta abrir, o raciocínio e a memória, como na Factory.
+    14.2 **Correção de tudo.** Vê o Builder como na Factory, e o app sai com data, dinheiro e histórico certos.
     14.1 **A Prévia.** Abre na Prévia o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
 17. **Publicar.** Publica um app e o abre.
@@ -75,7 +75,7 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 | 13.1 O primeiro pedido | A 13 e a 12.2 | Nenhuma | — |
 | 14 O Builder constrói | A 13 | As capturas dos cartões do OS | O prompt, as skills e a casca do Conexus OS |
 | 14.0 Um registro da conversa | A 14 | Nenhuma | A 0050 revista: as mensagens do Mastra com partes `data-conexus-*`; saem o diário `run_event` e as listas nos metadados (fundador, 2026-10-22: "1. Sim … 2.B") |
-| 14.2 A conversa nativa | A 14.0 | Nenhuma | Fio do Mastra no lugar de `parts.ts`; V39 e 0050 emendadas; o plano não é mudança (fundador, 2026-10-22: "A", "2 a") |
+| 14.2 Correção de tudo | A 14.0 | Nenhuma | O fio e o agente de código do Mastra; o que o app aprende; V39, 0050 e 0055 emendadas (fundador, 2026-10-22: "A", "2 a", "tudo recomendado, Plano A, sem Pasta", "Aprovado tudo") |
 | 14.1 A Prévia | A 10 e a 14.0 | Nenhuma | Lacunas de instrução do Builder |
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
 | 17 Publicar | A 15 | Nenhuma | Pré-requisitos de Release e Publish. O estudo 04 |
