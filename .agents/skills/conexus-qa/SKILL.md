@@ -33,7 +33,7 @@ and [testing](../../../docs/guides/testing.md).
    ports 9333 or 9334.
 4. Walk every action of the card's use script. Then every row of its state matrix, including
    loading, server error, not found and expired, forcing each state through the doubles or the
-   database.
+   database, and a turn that calls every tool the model is offered ([testing T24](../../../docs/guides/testing.md)).
 5. Capture each state at 1366, 390 and 320 px, light and dark. Make a keyboard pass through the
    focus stops and a 200% zoom check. At a phone width, read the computed `font-size` of every
    focusable field: below 16px is a finding ([design V18](../../../docs/guides/design.md)). Record

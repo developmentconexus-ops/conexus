@@ -67,7 +67,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 - **C25.** Code **must** use `type`; `interface` only to augment a library or global declaration.
   [Biome useConsistentTypeDefinitions]
 - **C26.** Each fact **should** have one owner, including types, tables, state, constants and
-  behavior; consumers derive it rather than inferring it from timing, text or a stream ending.
+  behavior; consumers derive it rather than inferring it from timing, text or a stream ending. A value a script
+  produces and the Hub reads, such as the template's name, is built by the Hub's own rule, imported.
   A run's result comes from server settlement. Failure: two role maps diverge between server and
   screen, or a second state map contradicts the library's persisted state. [review]
 
@@ -183,7 +184,8 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
 
 - **C67.** Configuration **must** be read in one place, parsed by one Zod schema, and no other file
   **may** read `process.env` or branch on `NODE_ENV`. [Biome noProcessEnv, boot check, CI job
-  `image`]
+  `image`] A default in `compose.yaml` **must not** fix a variable that the environment file named by
+  a how-to sets: the fixed value wins and starts production from the wrong one. [deploy test]
 
 ## 11. Names and comments
 

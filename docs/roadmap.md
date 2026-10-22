@@ -30,13 +30,13 @@ Aprovações e usos: [aprovações](approvals.md).
     14.0 **Um registro da conversa.** Conversa como antes; depois de um reinício do Hub, vê o aviso direto.
     14.1 **A Prévia.** Abre na Prévia o app que ele escreveu.
 15. **Mudar o app.** Muda os dados sem perder nada.
-16. **Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
 17. **Publicar.** Publica um app e o abre.
 18. **Entrar num app.** Convida alguém só para um app, e tira o acesso.
 19. **Ligar o sistema da empresa.** Cadastra a ligação e a testa.
 20. **App com dados da empresa.** Abre um app com dados desse sistema.
 21. **Outras contas.** Liga a da OpenAI, se os termos confirmarem.
     21.1 **Ver o que acontece.** Vê a Atividade da empresa e o painel.
+16. **Atualizar sem cortar.** Conversa enquanto o Conexus é atualizado.
 22. **Ensaio geral.** Restaura tudo junto, pelo procedimento.
 23. **Primeira empresa.** Uma empresa de verdade usa um app.
 24. **Conectores de serviços.** Liga contas de serviços aos agentes e apps (resposta B, 2026-10-18).
@@ -64,6 +64,7 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 
 1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
    feitas." Vive no `conexus-study`, passo 5.
+2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "Cara, então vamos mudar esse roadmap aí, velho. Porque essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela; os consertos de execução da auditoria e os testes 9 e 10 vão com ela.
 
 ## 2. As etapas
 
@@ -75,13 +76,13 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 | 14.0 Um registro da conversa | A 14 | Nenhuma | A 0050 revista: as mensagens do Mastra com partes `data-conexus-*`; saem o diário `run_event` e as listas nos metadados (fundador, 2026-10-22: "1. Sim … 2.B") |
 | 14.1 A Prévia | A 10 e a 14.0 | Nenhuma | Lacunas de instrução do Builder |
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
-| 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 17 Publicar | A 15 | Nenhuma | Pré-requisitos de Release e Publish. O estudo 04 |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
 | 19 Ligar o sistema | A 11 | Usuário só de leitura (8, 17 sim) | Ficha `connectors` |
 | 20 App com dados | A 18 e a 19 | Nenhuma | A porta do conector, refeita. Como um Worker alcança o Hub |
 | 21 Outras contas | A 12 | Nenhuma | A leitura dos termos da OpenAI |
 | 21.1 Ver o que acontece | A 20 | Grafana no Brasil, provado | Um só caminho OTel (0052) |
+| 16 Atualizar sem cortar | A 14 | Nenhuma | Consertos de execução da auditoria. Testes 9 e 10 |
 | 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 | 24 Conectores de serviços | A 23 | Quem faz o OAuth | O estudo do Mastra Platform e Connect (referência) |

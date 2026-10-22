@@ -2,41 +2,43 @@
 
 ## Context
 
-Until step 13 an app had a rigid frame: one or more operations and a fixed tree. The
-founder found it too tight: a pricing page needs no server. The platform keeps what [0019], [0018]
-and the dispatcher's CSP guarantee.
+Until step 13 an app had a rigid frame. The platform keeps what
+[0019], [0018] and the dispatcher's CSP guarantee.
 
 ## Decision
 
-- The contract owns `shared/operations.ts` and `server/handlers.ts`, the generated client,
-  `worker.js`, the check and the packing. The rest is the model's, from an editable starter.
-- Contract 1 allows zero or more operations; every manifest that exists stays valid [0019]. The packing
-  generates `worker.js`. The upload sets `not_found_handling: 'single-page-application'`, `/api`
-  staying in the Worker.
-- Operations are in Zod; the Worker checks calls with them. A library beyond the starter's and
-  Conexus OS's five is asked of the person; the grant is kept per Project, installed exact with
-  `npm ci --ignore-scripts` through the registry [0051] allowed.
-- The browser step fails only on a CSP violation or an empty `#root`.
+- The contract owns `shared/operations.ts`, `server/handlers.ts`, the generated client, `worker.js`,
+  the check and the packing. The rest is the model's, from an editable starter.
+- Contract 1 allows zero or more operations [0019], in Zod, checked by the Worker. The upload sets
+  `not_found_handling: 'single-page-application'`, `/api` staying in the Worker.
+- No library gate: the model installs what an app needs; the check runs `npm ci --ignore-scripts`
+  through the registry [0051] allows. Founder, 2026-10-22: "Como que esses outros aplicativos fazem,
+  que já funcionam", then "A".
 - `ask_user`, `submit_plan` and `task_*` are on, wrapped [0053]; one mode, the plan a skill.
+- A tool row opens on what Mastra keeps, with no secret mask. Founder, 2026-10-22: "quando os
+  conectores trouxerem credenciais ... o builder nem vai ver essa credencial".
+- The boundary is the Projeto's machine and folder [0051]; fencing the shell was refused.
 
 ## Criterion
 
-**Question.** Does an app written this way build, check, pack and run?
-
-**Fixed.** `@mastra/core` 1.78.0, `zod` 4.6.5.
-
-Proved already: the machine and its network ([0051]); step 13's use script. Read, not run: the SPA
-mode leaves `/api` to the Worker.
-
 | # | Check | Passes when |
 | --- | --- | --- |
-| 1 | Step 14 criteria 2 to 25, 32, in CI | Green |
-| 2 | Live: the Ana request, four runs | The first turn builds; nothing looks outside `/home/user/app` |
-| 3 | Live: `npm ci --ignore-scripts` of a granted library | Installs |
-| 4 | Live: reload `/encomendas` of a routed app | The screen; `/api` stays the Worker |
-| 5 | Live: the E2B template and `wrangler` packing | Size and start time noted |
+| 1 | Live: the Ana request, Claude once, Gemini 3.8 Flash High three times | The first turn builds; nothing looks outside `/home/user/app` |
+| 2 | Live: reload `/encomendas` of a routed app | The screen; `/api` stays the Worker |
+| 3 | Live: the E2B template and `wrangler` packing | Size and start time noted |
+
+## Result
+
+2026-10-22, https://github.com/developmentconexus-ops/conexus/pull/255, v0.14.1:
+
+- Row 1 met: Claude once, Gemini three times after the release (founder: "B"); each built in the
+  first turn, no path outside the app. Gemini run 2 stopped halfway through the plan and was
+  saved as "montou"; cause unproved.
+- Rows 2 and 3 met: check 35.3 s cold, version folder equal to the lab's, start 1.3 s.
+
+**Not proved.** The end-of-turn `abort` with `retry`; which directory `list_files`, `file_stat` and
+`grep` listed.
 
 ## State
 
-Proposed 2026-10-21. Founder: "SIM" on step 14's card, then "Sim, seguindo nossa metodologia e
-optima implementação". Rows 2 to 5 await the live runs.
+Accepted 2026-10-22. Founder: "SIM" on step 14's card.
