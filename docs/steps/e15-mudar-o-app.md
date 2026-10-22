@@ -23,8 +23,8 @@ Maria, (11) 99999-0000, bolo de cenoura, e João, sem telefone.
 Se o Builder escrever uma migração que apaga, ou mexer numa antiga, a conferência recusa dentro do
 turno e ele reescreve, sem você ver.
 
-**O que você faz, e quando.** No começo: aprova esta página. No fim: faz o roteiro na nuvem e aprova
-os textos das falhas novas.
+**O que você faz, e quando.** No começo: aprova esta página. No fim: faz o roteiro na nuvem e aprova os textos
+das falhas novas.
 
 **Respondidas em 2026-10-22**, pelo número da pergunta do estudo. 1 sim: o campo some das telas e o dado fica; renomear é
 acrescentar e copiar (o Lovable e o Firebase fazem assim). 2 sim: a migração destrutiva é recusada
@@ -74,8 +74,7 @@ Total: 770, teto 4.000 (L2).
 
 ## Os critérios de aceite
 
-Pelas rotas e `main.ts`, com `Machines` dublê (`LocalSandbox`), Cloudflare e Neon dublês (o
-transporte de `company-postgres.ts`) e modelo gravado; os da regra pela entrada exportada
+Pelas rotas e `main.ts`, com `Machines`, Cloudflare e Neon dublês e modelo gravado; os da regra pela entrada exportada
 `@conexus/app-contract/migrations`, a porta pública do pacote, como o SDK na 14; `company-postgres.test.ts` pelo `test-neon.ts` de hoje (T5). **Ao vivo**: firstmate, anotado no 0057; nenhum teste da
 suíte chama serviço de fora (T14). Must, salvo "should".
 
@@ -83,10 +82,10 @@ suíte chama serviço de fora (T14). Must, salvo "should".
 | --- | --- | --- | --- | --- |
 | 1 | U1 | 0057 "proposed" antes do código; roteiro: a 15 sem "O lote" (0045, 0047) e a 15.1 | o registro, `check-docs` | must |
 | 2 | U2 | Aceitos: `CREATE TABLE` com `NOT NULL`; `ADD COLUMN` sem `NOT NULL` ou com `DEFAULT`; `ADD COLUMN` + `UPDATE` dela; `CREATE INDEX`; `… VIRTUAL` (sintaxe 18); `DROP NOT NULL`; `COMMENT`; `INSERT`; `CREATE TRIGGER`; função `NEW.updated_at = now()`; função que grava em histórico; função `sql` com `SELECT` | `migrations.test.ts` | must |
-| 3 | U2 | Recusados, `APP_MIGRATION_REFUSED` com a migração, o comando (a partir de 1) e o tipo do nó (`CHANGES_DATA` num subcomando de `ALTER TABLE`, `NOT_ALLOWED` num comando fora da lista): `DROP COLUMN` (também junto de `ADD` no mesmo comando), `RENAME`, `ALTER COLUMN TYPE`, `DROP TABLE`, `TRUNCATE`, `DELETE`, `GRANT`, `ALTER DEFAULT PRIVILEGES`, `OWNER TO`, `CREATE SCHEMA`, `SET`, `BEGIN`, `DO`, `CREATE VIEW`, `ALTER FUNCTION` | idem | must |
-| 4 | U2 | P1: `UPDATE encomenda SET telefone = NULL`: recusado, `OLD_COLUMN_UPDATE`; `UPDATE` que grava coluna acrescentada na mesma migração, ou de tabela criada nela: aceito | idem | must |
+| 3 | U2 | Recusados, `APP_MIGRATION_REFUSED` com a migração, o comando (a partir de 1) e o tipo do nó (`CHANGES_DATA` num subcomando de `ALTER TABLE`, `NOT_ALLOWED` num comando fora da lista): `DROP COLUMN` (também junto de `ADD` no mesmo comando), `RENAME`, `ALTER COLUMN TYPE`, `DROP TABLE`, `TRUNCATE`, `DELETE`, `GRANT`, `ALTER DEFAULT PRIVILEGES`, `OWNER TO`, `CREATE SCHEMA`, `SET`, `BEGIN`, `COMMIT`, `DO`, `CREATE VIEW`, `ALTER FUNCTION` | idem | must |
+| 4 | U2 | P1: `UPDATE encomenda SET telefone = NULL` e `INSERT … ON CONFLICT DO UPDATE` de coluna antiga: recusados, `OLD_COLUMN_UPDATE`; `UPDATE` que grava coluna acrescentada na mesma migração, ou de tabela criada nela: aceito | idem | must |
 | 5 | U2 | P2: `SET NOT NULL`, `ADD CONSTRAINT … NOT NULL` em coluna antiga e `ADD COLUMN … NOT NULL` sem `DEFAULT`, identidade ou expressão gerada: recusados, `REQUIRED_WITHOUT_DEFAULT` | idem | must |
-| 6 | U2 | Resposta 6: função `SECURITY DEFINER`; corpo com `DROP`, `TRUNCATE`, `GRANT`, `DELETE` ou `UPDATE` (também dentro de `IF`); `EXECUTE` de texto montado; linguagem fora de `sql` e `plpgsql`: recusados, `FUNCTION_POWER` | idem | must |
+| 6 | U2 | Resposta 6: função `SECURITY DEFINER`; corpo com `DROP`, `TRUNCATE`, `GRANT`, `DELETE`, `UPDATE` ou `ON CONFLICT DO UPDATE` (também dentro de `IF`); `EXECUTE` de texto montado; linguagem fora de `sql` e `plpgsql`: recusados, `FUNCTION_POWER` | idem | must |
 | 7 | U2 | SQL que o analisador não lê: `UNREADABLE`, sem lançar; migração congelada com outro resumo: `APP_MIGRATION_CHANGED` `edited`; ausente: `removed`; `migrationDigest` dá o mesmo resumo que o livro-razão de hoje | idem, `company-postgres.test.ts` | must |
 | 8 | U2 | `SESSION_CONTROL` sai de `manifest.ts`; os manifestos de `tests/apps/` seguem válidos e sem problema; `BEGIN` e `SET` agora recusados pela regra | `manifest.test.ts`, `migrations.test.ts` | must |
 | 9 | U2 | A recusa tem linha em `scripts/removals.json`: sem ela, o 3 falha (T12) | `npm run removals` | must |
@@ -101,8 +100,8 @@ suíte chama serviço de fora (T14). Must, salvo "should".
 | 18 | U4 | Leitor sem carga no Hub: não sobe | `boot.test.ts` | must |
 | 19 | U4 | **Ao vivo**, se a resposta for A: pelo Neon de prova, a falha de `SET NOT NULL` com nulos chega com tabela e coluna | 0057 | should |
 | 20 | U5 | `conexus-data` diz: só acrescenta; renomear é acrescentar e copiar; tirar é sumir da tela; obrigatório é no formulário; nomeia o leitor e não copia as listas; `conexus-plan-change` tem **Dados salvos**; os exemplos tipam | `skills.test.ts` | must |
-| 21 | U6 | Os passos 1 a 5 do roteiro, com modelo gravado: a Maria com WhatsApp, o produto de volta com o valor, o João lá; `readChanges` mostra cada migração nova e a `001` sem mudança | `tests/e2e/app-change.test.ts` | must |
-| 22 | U6 | **Ao vivo**: 3 corridas dos passos 1 a 4 com Gemini 3.8 Flash High e 1 com Claude: nenhuma recusa no Hub, nenhum turno "não montou" por migração, os dados intactos; lembretes da conferência anotados | 0057 | must |
+| 21 | U6 | Os passos 1 a 5 do roteiro, com modelo gravado: a Maria com WhatsApp, o produto de volta com o valor, o João lá; `readChanges` (14.1 U7) mostra cada migração nova e a `001` sem mudança | `tests/e2e/app-change.test.ts` | must |
+| 22 | U6 | **Ao vivo**: 3 corridas dos passos 1 a 4 com Gemini 3.8 Flash High e 1 com Claude: nenhuma recusa no Hub, nenhum turno "não montou" por migração, os dados intactos; lembretes anotados, sob o teto de 4 conferências da 14 | 0057 | must |
 | 23 | U6 | QA no commit candidato (T25); o roteiro publicado, pelo fundador (L17) | `conexus-qa`, fundador | must |
 
 ## A matriz de estados
@@ -111,7 +110,7 @@ suíte chama serviço de fora (T14). Must, salvo "should".
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Prévia | a da 14.1 | a da 14.1 | a da 14.1 | "A versão N não montou." e a frase de `APP_MIGRATION_REFUSED` ou de `APP_MIGRATION_FAILED` com o motivo; **Pedir ao Builder para corrigir** | a da 14.1 | a da 14.1 | a da 14.1 |
 | Envio manual (9) | a da 9 | — | a da 9 | a frase de `APP_MIGRATION_REFUSED` | a da 9 | a da 9 | — |
-| Alterações (14.1) | sem mudança | sem mudança | sem mudança | sem mudança | sem mudança | sem mudança | sem mudança |
+| Alterações (14.1) | igual | igual | igual | igual | igual | igual | igual |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -129,7 +128,7 @@ suíte chama serviço de fora (T14). Must, salvo "should".
 | --- | --- | --- | --- | --- | --- |
 | Carga do `libpg-query` (`loadModule`) | a biblioteca guarda a primeira | — | sem rede; falha: máquina `CHECK_PLATFORM_FAILED`, Hub não sobe | o erro de partida | 14, 18 |
 | Passo `migrações` | um por chamada; só leitura | prazo do passo da 14 (C57) | a máquina: `CHECK_PLATFORM_FAILED` | `APP_CHECKED` (14) | 10, 11, 13 |
-| Leitura da lista congelada | só leitura | — | o banco do Hub: a volta termina (13) | — | 12 |
+| Leitura da lista congelada | só leitura | — | o banco: a volta termina (13) | — | 12 |
 | Recusa em `prepare` | a chave da 9: `REPLAY` | antes do upload: nada a desfazer | nenhuma chamada | `APP_MIGRATION_REFUSED` | 15, 16 |
 | Migração com o motivo | o livro-razão (0046) | tudo ou nada | Neon: `NO_ANSWER`, `APP_VERSION_FAILED` | `APP_MIGRATION_FAILED` com SQLSTATE, tabela, coluna, restrição | 17, 19 |
 | `builder.run.preview_failure_cause` | posse da 13 | na mesma gravação de `preview_failure` (14.1) | o banco: a volta termina | `RUN_SETTLED` | 17 |
@@ -143,10 +142,10 @@ suíte chama serviço de fora (T14). Must, salvo "should".
 | Analisador de SQL | nativo do PostgreSQL, em WASM | `packages/app-contract/src/migrations.ts` | — | gramática 18 (estudo do Mastra §3.5, 32 casos) | `libpg-query` 18.1.5 `README.md:59,94,162-170` (`parsePlPgSQL` só a partir da 18; os síncronos depois de `loadModule`); 1,8 MB desempacotado (`npm view`, `dist.unpackedSize`) |
 | A regra (listas e leitura de funções) | trazida como desenho, escrita nova ([boundaries](../reference/boundaries.md), entrada da U2) | idem | lista do que pode, em vez de só controle de transação | carga e forma do erro | OS `apps/hub/src/app-runner/migration-sql.ts:2,21-36`; Mastra nenhuma faz (trava o caminho, `mastracode/sdk/src/agents/tool-availability.ts:62-89`); vibesdk nenhuma faz (`worker/agents/think/skills/app-file-structure/SKILL.md:86-93`) |
 | Recusa dentro do turno | nativo | `builder/conversation/processors.ts` (14 U4), sem mudança | — | 3 retentativas (14) | `abort(…, {retry: true})`, `@mastra/core@1.78.0` `6a465f9d` `packages/core/src/loop/workflows/agentic-execution/llm-execution-step.ts:3150-3163,3256-3262` |
-| Migração congelada na máquina | nosso, novo | `packages/app/src/check/migrations.ts` | — | D7 do Hub | `scripts/check-migrations.ts:43-58`; OS `apps/hub/src/builder/application-build.ts:49-54` (só no envio) |
-| Recusa no envio | nosso, novo | `hub/apps/send.ts` | — | S2 | nenhuma faz |
+| Migração congelada na máquina | nosso | `packages/app/src/check/migrations.ts` | — | D7 do Hub | `scripts/check-migrations.ts:43-58`; OS `apps/hub/src/builder/application-build.ts:49-54` (só no envio) |
+| Recusa no envio | nosso | `hub/apps/send.ts` | — | S2 | nenhuma faz |
 | Motivo do banco | nativo | `platform/company-postgres.ts` | — | campos sem valor (C52) | `NeonDbError` (1.2.0) `index.d.ts:834-854` |
-| Texto da skill e do plano | trazido, adaptado | `packages/app/skills/` | sem `conexus/` | "acrescentar, copiar, conferir" | OS `builder-skills/conexus-plan-change/references/plan-template.md:30`, `SKILL.md:37` |
+| Texto da skill e do plano | trazido | `packages/app/skills/` | sem `conexus/` | "acrescentar, copiar" | OS `builder-skills/conexus-plan-change/references/plan-template.md:30`, `SKILL.md:37` |
 
 **A medida do transplante.** Nenhum código copiado: o leitor do OS (36 linhas) muda quase todo e,
 pela regra 5 do estudo, é escrito novo.
