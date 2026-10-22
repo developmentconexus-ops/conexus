@@ -204,7 +204,7 @@ test('a linha abre no comando e na cauda, no começo do arquivo, nos dois lados 
   assert.equal(command?.kind, 'command')
   if (command?.kind !== 'command') return
   assert.equal(command.command, 'echo token=***; echo pronto; exit 3')
-  assert.deepEqual(command.output, ['token=***', 'pronto'])
+  assert.deepEqual(command.output, ['token=***', 'pronto', '', 'Exit code: 3'])
   assert.equal(command.exitCode, 3)
   const file = tools.get('write_file')?.detail
   assert.equal(file?.kind === 'file' && file.content.length, DETAIL_LIMITS.fileCharacters)

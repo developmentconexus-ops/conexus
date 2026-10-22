@@ -155,8 +155,7 @@ function detailOf(
   const { args, result } = invocation
   const command = kind === 'run_command' ? CommandArgs.safeParse(args) : undefined
   if (command?.success) {
-    const { output, cut } =
-      typeof result === 'string' ? tailOf(result, exitCode) : { output: [], cut: false }
+    const { output, cut } = typeof result === 'string' ? tailOf(result) : { output: [], cut: false }
     return { kind: 'command', command: saidCommand(command.data.command), output, exitCode, cut }
   }
   const write = kind === 'write_file' ? WriteArgs.safeParse(args) : undefined
