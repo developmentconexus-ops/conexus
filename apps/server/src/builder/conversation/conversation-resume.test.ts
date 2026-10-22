@@ -116,7 +116,29 @@ test('reconectar num turno de mais eventos do que a leitura aceita: nada se repe
     t,
     (asked) => title(asked) ?? { kind: 'text', text: 'Curta' },
   )
-  const { url, ids } = await asked(t, { hub, person: ana, conversations })
+  // The title is said on its own clock, here forced after the turn's end: the run's journal is the
+  // test's to write only once the title, its last event, is kept.
+  const ended = Promise.withResolvers<void>()
+  t.after(() => ended.resolve())
+  const append = hub.runs.append.bind(hub.runs)
+  hub.runs.append = async (input) => {
+    const n = await append(input)
+    if (input.event.type === 'turnEnd') ended.resolve()
+    return n
+  }
+  const provider = globalThis.fetch
+  globalThis.fetch = async (input, init) => {
+    const body = typeof init?.body === 'string' ? init.body : ''
+    if (body.includes('"messages"') && !body.includes('"stream":true')) await ended.promise
+    return provider(input, init)
+  }
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  const events = await stream.turn()
+  while (!events.some((event) => event.type === 'title')) events.push(await stream.next())
+  const ids = stream.seen.ids
   await hub.test.asOwner(`
     insert into builder.run_event (run_id, company_id, n, event)
     select r.id, r.company_id, (select max(n) from builder.run_event) + g, '{"type":"text","delta":"x"}'::jsonb
