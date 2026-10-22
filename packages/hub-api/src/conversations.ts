@@ -81,7 +81,7 @@ const ToolSubject = z.union([
  * A piece of a message. `reasoning` and `tool` carry an `id`: a later part with the same `id`
  * replaces it. Their states follow the controller's `ActiveToolState.status`; the thinking's text,
  * the provider's words and a tool's arguments and result never leave the server, but for a tool's
- * `detail`, masked and cut (security S9, S41, design V39, code C51).
+ * `detail`, cut (security S9, design V39, code C51).
  */
 export const MessagePart = z.discriminatedUnion('type', [
   z.object({ type: z.literal('text'), text: z.string() }),

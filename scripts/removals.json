@@ -2453,28 +2453,6 @@
     }
   },
   {
-    "id": "command-masked",
-    "file": "apps/server/src/builder/conversation/parts.ts",
-    "find": "subjectCut(masked(command))",
-    "replace": "subjectCut(command)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-writing.test.ts",
-      "name": "um turno que escreve"
-    }
-  },
-  {
-    "id": "shell-masked",
-    "file": "apps/server/src/builder/conversation/shell.ts",
-    "find": "masked(this.#tail)",
-    "replace": "this.#tail",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-writing.test.ts",
-      "name": "um turno que escreve"
-    }
-  },
-  {
     "id": "source-path-guard",
     "file": "apps/server/src/builder/git/tree.ts",
     "find": "unsafe || !(await inMain",

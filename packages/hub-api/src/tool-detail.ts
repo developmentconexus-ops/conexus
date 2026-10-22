@@ -21,7 +21,7 @@ export const DETAIL_LIMITS = {
 const Lines = z.string().refine((text) => text.split('\n').length <= DETAIL_LIMITS.editLines)
 
 /**
- * What a tool row opens on, its secrets masked: a command and the end of its output, with its exit
+ * What a tool row opens on: a command and the end of its output, with its exit
  * code once it ended; the start of a written file; the two sides of an edit, which the screen
  * compares. `cut` says the server kept less than there was, so the screen ends it with "…".
  */

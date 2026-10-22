@@ -1,5 +1,4 @@
 import { DETAIL_LIMITS } from '@conexus/hub-api'
-import { masked } from './mask.ts'
 
 /** A running command's lines are said at most this often; all of them once more when it exits. */
 const SAID_EVERY_MS = 1000
@@ -30,9 +29,9 @@ export class ShellTail {
     return this.tail()
   }
 
-  /** Secrets masked before the lines are cut, so one that spans a break is found. */
+  /** The end of the output as it is, cut to our limits of lines and bytes. */
   tail(): Tail {
-    const lines = masked(this.#tail).split('\n')
+    const lines = this.#tail.split('\n')
     if (lines.at(-1) === '') lines.pop()
     const kept = lines.slice(-outputLines)
     while (kept.length > 1 && Buffer.byteLength(kept.join('\n')) > outputBytes) kept.shift()

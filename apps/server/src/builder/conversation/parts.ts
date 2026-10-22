@@ -12,7 +12,6 @@ import type { MastraDBMessage, MastraMessagePart } from '@mastra/core/agent-cont
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
 import { NOTICE_PART, Notice as NoticeData } from '../model-accounts/public.ts'
-import { masked } from './mask.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { ASK_USER_TOOL, AskedResult, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { tailOf } from './shell.ts'
@@ -96,9 +95,9 @@ function subjectCut(text: string): string {
   return text.slice(0, SUBJECT_MAX_LENGTH)
 }
 
-/** A command as its row says it, in its subject and its detail alike: masked, then cut (security S2). */
+/** A command as its row says it, in its subject and its detail alike: cut, as it was written. */
 function saidCommand(command: string): string {
-  return subjectCut(masked(command))
+  return subjectCut(command)
 }
 
 function stateOf(invocation: Invocation): ToolPart['state'] {
@@ -130,7 +129,7 @@ function subjectOf(kind: ToolPart['kind'], args: unknown): ToolPart['subject'] {
     kind === 'read_file' || kind === 'write_file' || kind === 'edit_file'
       ? PathArgs.safeParse(args)
       : undefined
-  if (file?.success) return { path: subjectCut(masked(file.data.path)) }
+  if (file?.success) return { path: subjectCut(file.data.path) }
   const command = kind === 'run_command' ? CommandArgs.safeParse(args) : undefined
   if (command?.success) return { command: saidCommand(command.data.command) }
   return null
@@ -143,8 +142,8 @@ function firstLines(text: string, limit: number): { text: string; cut: boolean }
 }
 
 /**
- * What a tool's row opens on, from its arguments, its result and how its command exited, masked
- * before it is cut (security S2, S41): a command and its output's end, a written file's start, an
+ * What a tool's row opens on, from its arguments, its result and how its command exited, cut
+ * as it is: a command and its output's end, a written file's start, an
  * edit's two sides; a read keeps only its subject (card of step 14, U6).
  */
 function detailOf(
@@ -160,16 +159,16 @@ function detailOf(
   }
   const write = kind === 'write_file' ? WriteArgs.safeParse(args) : undefined
   if (write?.success) {
-    const content = masked(write.data.content)
+    const content = write.data.content
     const kept = content.slice(0, DETAIL_LIMITS.fileCharacters)
-    const path = subjectCut(masked(write.data.path))
+    const path = subjectCut(write.data.path)
     return { kind: 'file', path, content: kept, cut: kept.length < content.length }
   }
   const edit = kind === 'edit_file' ? EditArgs.safeParse(args) : undefined
   if (!edit?.success) return undefined
-  const before = firstLines(masked(edit.data.old_string), DETAIL_LIMITS.editLines)
-  const after = firstLines(masked(edit.data.new_string), DETAIL_LIMITS.editLines)
-  const path = subjectCut(masked(edit.data.path))
+  const before = firstLines(edit.data.old_string, DETAIL_LIMITS.editLines)
+  const after = firstLines(edit.data.new_string, DETAIL_LIMITS.editLines)
+  const path = subjectCut(edit.data.path)
   const cut = before.cut || after.cut
   return { kind: 'edit', path, before: before.text, after: after.text, cut }
 }
