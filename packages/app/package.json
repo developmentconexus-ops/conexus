@@ -1,0 +1,18 @@
+{
+  "name": "@conexus/app",
+  "private": true,
+  "license": "UNLICENSED",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./starter": "./src/starter.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "node --test --test-reporter=../../scripts/test-reporter.ts \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@conexus/app-contract": "*",
+    "zod": "4.6.5"
+  }
+}

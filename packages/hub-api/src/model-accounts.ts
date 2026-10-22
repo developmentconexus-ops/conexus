@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CAPACITY } from './capacity.ts'
 import { CompanyId, Revision } from './companies.ts'
 import { Effort, ModelId } from './conversations.ts'
 import { PersonId } from './identity.ts'
@@ -209,7 +210,10 @@ export const assignModelAccount = defineOperation({
   method: 'PUT',
   path: '/api/companies/{companyId}/model-accounts/{accountId}/assignees',
   bodyLimit: 16 * 1024,
-  input: { params: OfAccount, body: z.object({ personIds: z.array(PersonId).max(500) }) },
+  input: {
+    params: OfAccount,
+    body: z.object({ personIds: z.array(PersonId).max(CAPACITY.members) }),
+  },
   success: { status: 200, body: z.object({ account: ModelAccount }) },
   failures: [...READ_FAILURES, 'MODEL_ACCOUNT_PERSONAL'],
 })
@@ -221,7 +225,7 @@ export const orderModelAccounts = defineOperation({
   method: 'PUT',
   path: '/api/companies/{companyId}/model-account-orders/{owner}/{provider}',
   bodyLimit: 16 * 1024,
-  input: { params: OfQueue, body: z.object({ ids: z.array(ModelAccountId).max(500) }) },
+  input: { params: OfQueue, body: z.object({ ids: z.array(ModelAccountId) }) },
   success: { status: 200, body: z.object({ accounts: z.array(ModelAccount) }) },
   failures: [...READ_FAILURES, 'MODEL_ACCOUNT_ORDER_STALE'],
 })

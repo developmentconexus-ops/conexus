@@ -2,7 +2,7 @@
 
 ## Context
 
-Until step 13 a generated app had a rigid frame: one to 32 operations and a fixed tree. The
+Until step 13 an app had a rigid frame: one or more operations and a fixed tree. The
 founder found it too tight: a pricing page needs no server. The platform keeps what [0019], [0018]
 and the dispatcher's CSP guarantee.
 
@@ -11,7 +11,7 @@ and the dispatcher's CSP guarantee.
 - The contract owns `shared/operations.ts` and `server/handlers.ts` (the manifest comes from them),
   the generated client, `worker.js`, the check and the packing. The rest is the model's, from an
   editable starter.
-- Contract 1 allows 0 to 32 operations; every manifest that exists stays valid [0019]. The packing
+- Contract 1 allows zero or more operations; every manifest that exists stays valid [0019]. The packing
   generates `worker.js`. The upload sets `not_found_handling: 'single-page-application'`, `/api`
   staying in the Worker.
 - Operations are written in Zod. A library beyond the starter's and Conexus OS's five is asked of

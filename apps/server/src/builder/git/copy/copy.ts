@@ -84,7 +84,6 @@ export function createGitCopy(
     region: 'auto',
     endpoint: endpoint ?? `https://${config.cloudflareAccountId}.r2.cloudflarestorage.com`,
     credentials: { accessKeyId, secretAccessKey },
-    maxAttempts: 3,
     forcePathStyle: true,
   })
   const Bucket = config.gitCopyBucket

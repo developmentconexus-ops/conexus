@@ -8,7 +8,7 @@ import { Failure } from './failure.ts'
 export type MailMessage = { to: Email; subject: string; text: string; html?: string }
 export type SendMail = (
   message: MailMessage,
-  signal: AbortSignal,
+  signal?: AbortSignal,
 ) => Promise<'DELIVERED' | 'QUEUED'>
 
 /** The name every message carries beside the configured address (founder, 2026-10-15). */
@@ -30,7 +30,7 @@ const SendReply = z.discriminatedUnion('success', [
 
 type Refusal = 'status' | 'unsuccessful' | 'shape' | 'too-large' | 'unreachable'
 
-/** The one adapter to the mail provider: one request, no retry, sent as the installation (C56, C58). */
+/** The one adapter to the mail provider: one request, no retry, sent as the installation (C56). */
 export function createMail(deps: { config: Config; log: FailureLog }): SendMail {
   const { mailApiUrl, mailFrom, mailToken } = deps.config
 
@@ -73,7 +73,10 @@ export function createMail(deps: { config: Config; log: FailureLog }): SendMail 
   return async (message, signal) => {
     let body: unknown
     try {
-      body = await reply(message, AbortSignal.any([AbortSignal.timeout(DEADLINE_MS), signal]))
+      body = await reply(
+        message,
+        AbortSignal.any([AbortSignal.timeout(DEADLINE_MS), ...(signal ? [signal] : [])]),
+      )
     } catch (error) {
       if (error instanceof Failure) throw error
       return refuse('unreachable', error)

@@ -89,7 +89,7 @@ test('git: o turno que mudou arquivos vira uma versão, e a aba lê só o que o 
   const box = await machine(t, await repository.bundleOfMain())
   writeFileSync(join(box.dir, 'a.ts'), 'export const a = 1\n')
   writeFileSync(join(box.dir, 'logo.bin'), Buffer.from([0, 1, 2, 255]))
-  mkdirSync(join(box.dir, 'src'))
+  mkdirSync(join(box.dir, 'src'), { recursive: true })
   writeFileSync(join(box.dir, 'src', 'b.ts'), 'x'.repeat(2_000))
   commit(box.dir)
   const received = await repository.receive({ runId: RUN, bundle: bundle(box.dir, base), base })
@@ -118,11 +118,17 @@ test('git: o turno que mudou arquivos vira uma versão, e a aba lê só o que o 
   assert.deepEqual(await repository.file({ sha: candidate, path: 'nada.ts', maxBytes: 100 }), {
     kind: 'not-found',
   })
-  assert.deepEqual(await repository.tree(candidate), [
-    { path: 'a.ts', bytes: 19 },
-    { path: 'logo.bin', bytes: 4 },
-    { path: 'src/b.ts', bytes: 2_000 },
-  ])
+  const turn = new Set(['a.ts', 'logo.bin', 'src/b.ts'])
+  const tree = (await repository.tree(candidate)) ?? []
+  assert.deepEqual(
+    tree.filter((file) => turn.has(file.path)),
+    [
+      { path: 'a.ts', bytes: 19 },
+      { path: 'logo.bin', bytes: 4 },
+      { path: 'src/b.ts', bytes: 2_000 },
+    ],
+  )
+  assert.ok(tree.some((file) => file.path === 'src/main.tsx'))
   assert.equal(await repository.tree(Sha.parse('1'.repeat(40))), null)
 })
 

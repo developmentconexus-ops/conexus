@@ -51,11 +51,17 @@ test('a aba Código lê o main: vazio antes da primeira versão; depois, arquivo
   const read = await call(hub, ana, 'GET', source)
   const { version, commit, files } = Object(read.json())
   assert.equal(version, 1)
-  assert.deepEqual(files, [
-    { path: 'a.ts', bytes: 2 },
-    { path: 'b.bin', bytes: 3 },
-    { path: 'big.txt', bytes: 1_100_000 },
-  ])
+  // The versions stand on the starter: its files are there beside the turn's three.
+  const paths = files.map((each: { path: string }) => each.path)
+  assert.deepEqual(
+    files.filter((each: { path: string }) => /^[ab]\.|^big/.test(each.path)),
+    [
+      { path: 'a.ts', bytes: 2 },
+      { path: 'b.bin', bytes: 3 },
+      { path: 'big.txt', bytes: 1_100_000 },
+    ],
+  )
+  assert.ok(paths.includes('src/main.tsx') && paths.includes('package.json'))
 
   function file(path: string, at = commit) {
     return call(hub, ana, 'GET', `${source}/file?commit=${at}&path=${encodeURIComponent(path)}`)
@@ -83,7 +89,7 @@ test('a aba Código lê o main: vazio antes da primeira versão; depois, arquivo
   }
 })
 
-test('um repositório que só tem o primeiro commit vazio responde como sem versão', async (t) => {
+test('um repositório que só tem o commit do starter responde como sem versão', async (t) => {
   const { hub, ana, companyId, projectId } = await conversing(t, writesThree())
   const source = `/api/companies/${companyId}/projects/${projectId}/source`
   const silent = { info: () => undefined, error: () => undefined }

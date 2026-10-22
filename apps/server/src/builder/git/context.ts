@@ -1,4 +1,5 @@
 import { stat } from 'node:fs/promises'
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { runGit } from './exec.ts'
@@ -13,11 +14,17 @@ export type Sha = z.infer<typeof Sha>
 export const MAIN = 'refs/heads/main'
 export const MAX_FILES = 2_000
 export const MAX_BYTES = 64 * 1024 * 1024
-/** A bundle holds the whole history, each version up to `MAX_BYTES`, so it has a bound of its own (code C59). */
-export const MAX_BUNDLE_BYTES = 1024 * 1024 * 1024
+/**
+ * A bundle holds the whole history, each version up to `MAX_BYTES`, so it has a bound of its own
+ * (code C59). A bundle the copy cannot move within R2's 60 s per call would fail for ever: 228 MiB
+ * took 35 s when measured (founder, 2026-10-22), and the largest real app bundle is 66.6 MiB.
+ */
+export const MAX_BUNDLE_BYTES = 256 * 1024 * 1024
 
 export type Context = {
   dir: string
+  /** Whose repository this is, for the log lines. */
+  ids: { companyId: CompanyId; projectId: ProjectId }
   timeoutMs: number
   gcEvery: number
   log: FailureLog

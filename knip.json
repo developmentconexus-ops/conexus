@@ -2,6 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
+      "entry": ["scripts/starter-components.ts"],
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
       "ignoreBinaries": ["openssl"]
     },
@@ -11,6 +12,10 @@
     },
     "apps/web": {
       "entry": ["src/ui/pieces-fixture.tsx"]
+    },
+    "packages/app": {
+      "entry": ["src/**/*.check.ts"],
+      "ignore": ["starter/**"]
     },
     "apps/edge": {
       "ignoreDependencies": ["cloudflare"]

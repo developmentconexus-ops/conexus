@@ -15,7 +15,7 @@ export const APP_SKILL = Object.freeze({
 A version of an app is a folder with:
 
 - \`manifest.json\`: \`contract\` (always 1), \`entry\` (a \`.js\` module of the folder), \`operations\`
-  (1 to 32, each with an \`input\` and an \`output\` shape), \`migrations\` and \`assets\`.
+  (each with an \`input\` and an \`output\` shape), \`migrations\` and \`assets\`.
 - the entry module: it starts with \`import { serveApp } from '@conexus/app-contract'\`, calls
   \`serveApp({ manifest, handlers })\` and has one handler per operation, \`handler(input, { db, caller })\`.
 - \`${ASSETS_FOLDER}/\`: the static files (HTML, CSS, JS) the person opens. Each is listed in \`assets\`.
