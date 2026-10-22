@@ -14,7 +14,7 @@ One line per document (`check-docs`).
 - [how-to/hub-mail.md](how-to/hub-mail.md): mail token, addresses.
 - [how-to/hub-database-restore.md](how-to/hub-database-restore.md): restaurar o banco; [Git](how-to/hub-git-restore.md).
 - [how-to/hub-company-databases.md](how-to/hub-company-databases.md): companies' Neon key.
-- [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18.
+- [how-to/local-database.md](how-to/local-database.md): test PostgreSQL 18; [Builder](how-to/builder-builds.md).
 - [steps/](steps/): the card in construction.
 - [reference/boundaries.md](reference/boundaries.md): each mechanism Conexus writes over its library's.
 - [reference/stack.md](reference/stack.md): each package's sources, skill, trap.
