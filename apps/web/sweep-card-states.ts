@@ -53,7 +53,12 @@ const CARDS = readConversation.success.body.parse({
             type: 'tasks',
             items: [
               { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
-              { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'in_progress' },
+              {
+                id: '2',
+                content: 'Fazer a tela',
+                activeForm: 'Fazendo a tela',
+                status: 'in_progress',
+              },
               { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
             ],
           },
