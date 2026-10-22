@@ -1,5 +1,6 @@
+export type { CheckPlatformFailed } from './check.ts'
 export { createE2bApi, createE2bKit } from './e2b.ts'
 export type { MachineApi } from './kit.ts'
-export { APP_FOLDER, MARK, SandboxId } from './kit.ts'
+export { APP_FOLDER, MARK, machineInstructions, SandboxId } from './kit.ts'
 export { createMachines } from './machines.ts'
 export type { Machines, Phase } from './port.ts'

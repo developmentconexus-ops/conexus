@@ -6,12 +6,20 @@ import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
 import { MachineFilesystem } from './filesystem.ts'
 import type { Kit, SandboxId } from './kit.ts'
-import { APP_FOLDER, MARK, OUTPUT_MAX, readCapped } from './kit.ts'
+import { APP_FOLDER, MARK, machineInstructions, OUTPUT_MAX, readCapped } from './kit.ts'
 import { packIn } from './pack.ts'
 import type { Machines, MachinesDeps, Phase } from './port.ts'
 import { MachineRows } from './rows.ts'
 import type { Collected } from './scripts.ts'
-import { collected, collectScript, keepScript, outFile, seedFile, seedScript } from './scripts.ts'
+import {
+  changedScript,
+  collected,
+  collectScript,
+  keepScript,
+  outFile,
+  seedFile,
+  seedScript,
+} from './scripts.ts'
 
 type Session = {
   kit: Kit
@@ -164,6 +172,8 @@ class BuilderMachines implements Machines {
       sandboxId,
       deadline: input.deadline,
       metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },
+      workingDirectory: this.workdir,
+      instructions: machineInstructions(this.workdir),
       onStart: async ({ outcome }) => {
         if (holder.session !== undefined) await this.onStart(holder.session, outcome)
       },
@@ -218,6 +228,15 @@ class BuilderMachines implements Machines {
     const program = this.deps.checkProgram ?? CHECK_PROGRAM
     const exec: TimedExec = (script, timeoutMs) => run(session.kit, script, timeoutMs)
     return checkIn({ exec, program, workdir: this.workdir, grants, log: this.deps.log })
+  }
+
+  /** A machine whose comparison fails is taken as changed: the check that follows says why it cannot run. */
+  async changed({ projectId }: { projectId: ProjectId }) {
+    const session = this.sessions.get(projectId)
+    if (session === undefined || !this.touched(projectId)) return false
+    await this.ensure(session)
+    const result = await run(session.kit, changedScript(this.workdir))
+    return result.exitCode !== 0 || result.stdout.trim() !== 'UNCHANGED'
   }
 
   async pack({ projectId }: { projectId: ProjectId }) {

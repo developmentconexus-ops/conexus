@@ -5,30 +5,44 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
-import { APP_FOLDER, createE2bApi, createE2bKit, MARK, SandboxId } from './public.ts'
+import {
+  APP_FOLDER,
+  createE2bApi,
+  createE2bKit,
+  MARK,
+  machineInstructions,
+  SandboxId,
+} from './public.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
+const IN_APP = { workingDirectory: APP_FOLDER, instructions: machineInstructions(APP_FOLDER) }
 
-test('máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausando ao vencer, com a marca', async () => {
+test('máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausando ao vencer, com a marca, na pasta do app e dizendo ao modelo o que a máquina tem', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
     id: `conexus-${PROJECT}`,
     sandboxId: undefined,
     deadline: new Date(Date.now() + 3_600_000),
     metadata: { conexus_origin: 'hub.example.test', conexus_project: PROJECT },
     onStart: () => undefined,
+    ...IN_APP,
   })
   const options = Reflect.get(kit.sandbox, '_constructorOptions')
   assert.equal('env' in options, false)
   assert.deepEqual(options.network, { allowOut: ['registry.npmjs.org'], denyOut: ['0.0.0.0/0'] })
   assert.deepEqual(options.lifecycle, { onTimeout: 'pause' })
   assert.equal(options.metadata.conexus_origin, 'hub.example.test')
+  assert.equal(options.workingDirectory, APP_FOLDER)
+  const told = kit.sandbox.getInstructions?.() ?? ''
+  assert.ok(told.includes(`Commands start in ${APP_FOLDER}`), told)
+  assert.equal(told.includes('Cloud sandbox'), false)
   const woken = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
     id: `conexus-${PROJECT}`,
     sandboxId: SandboxId.parse('sb-1'),
     deadline: new Date(Date.now() + 3_600_000),
     metadata: {},
     onStart: () => undefined,
+    ...IN_APP,
   })
   assert.equal(Reflect.get(woken.sandbox, '_constructorOptions').reattach, 'required')
 })
@@ -41,6 +55,7 @@ test('máquina: na hora do turno a máquina segue ligada para guardar', async ()
     deadline,
     metadata: {},
     onStart: () => undefined,
+    ...IN_APP,
   })
   const timeout: number = Reflect.get(kit.sandbox, '_constructorOptions').timeout
   assert.ok(timeout > deadline.getTime() - Date.now() + 60_000, 'the machine outlives the hour')

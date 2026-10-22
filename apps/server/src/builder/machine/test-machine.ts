@@ -83,7 +83,8 @@ export function localKit(folder: string, control: Control): KitFactory {
     control.names.push(options.id)
     control.reattached.push(options.sandboxId)
     const sandbox = new LocalSandbox({
-      workingDirectory: folder,
+      workingDirectory: options.workingDirectory,
+      instructions: options.instructions,
       onStart: async (started) => {
         await new Promise((up) => setTimeout(up, control.upMs))
         const byName = options.sandboxId === undefined && control.discoverable.includes(options.id)

@@ -140,7 +140,7 @@ test('erro depois de escrever: a versão é guardada', async (t) => {
 })
 
 test('a máquina cai antes de guardar: failed, MACHINE_LOST, e o main como era', async (t) => {
-  const remove = { name: COMMAND, input: { command: 'rm -rf app/.git' } }
+  const remove = { name: COMMAND, input: { command: 'rm -rf .git' } }
   const { hub, ana, conversations, companyId, projectId } = await conversing(
     t,
     working(writing('a.ts', 'x\n'), remove),
@@ -187,7 +187,7 @@ test('Git sumiu do disco e a cópia tem versão: o turno falha com GIT_RESTORE_N
 test('recusa ao guardar (2.000 arquivos): o texto da recusa, o main como era', async (t) => {
   const many = {
     name: COMMAND,
-    input: { command: 'mkdir -p app/m && cd app/m && seq 1 2100 | xargs touch' },
+    input: { command: 'mkdir -p m && cd m && seq 1 2100 | xargs touch' },
   }
   const { hub, ana, conversations, companyId, projectId } = await conversing(t, working(many))
   const { events } = await asked(t, { hub, person: ana, conversations })

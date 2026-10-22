@@ -40,6 +40,8 @@ export type Machines = {
     projectId: ProjectId
     grants: readonly PackageGrant[]
   }): Promise<Result<CheckReport, CheckPlatformFailed>>
+  /** Whether the turn changed the app folder from the `main` it started from; a machine the turn never woke did not. */
+  changed(input: { projectId: ProjectId }): Promise<boolean>
   /** The version the last passing check left in the machine, read as the send takes it. */
   pack(input: { projectId: ProjectId }): Promise<Result<VersionFolder, PackRefused>>
   /** Whether the Projeto's turn used the machine, or its copy of the program died: then there may be something to collect. */
