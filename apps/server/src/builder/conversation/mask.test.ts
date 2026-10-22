@@ -17,11 +17,14 @@ test('a saída que a pessoa lê (commit, árvore, integridade, caminho) passa se
   for (const sample of SAMPLES) assert.equal(masked(sample), sample)
 })
 
+function made(prefix: string, rest: string): string {
+  return prefix + rest
+}
+
 test('um segredo sem nome ao lado só é mascarado pelo prefixo do provedor', () => {
   const unnamed = 'q8Zr3VtN1xLw5Hc7Pd2Bm9Ks4Ja6Fe0YgUo8TnRiXb3C'
   assert.equal(masked(unnamed), unnamed, 'the accepted loss: no shape, no name')
   // Joined here so the file holds no string a secret scanner would take for a real token.
-  const made = (prefix: string, rest: string) => prefix + rest
   for (const token of [
     made('glpat', '-xYz1234567890abcdefg'),
     made('ghs', '_16C7e42F292c6912E7710c838347Ae178B4a'),
