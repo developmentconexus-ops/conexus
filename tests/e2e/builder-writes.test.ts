@@ -57,7 +57,8 @@ function builderThatWrites(t: Parameters<typeof plantAnthropic>[0]) {
   let step = 0
   return plantAnthropic(t, (sent): Reply => {
     if (!sent.stream) return { kind: 'text', text: 'Página da padaria' }
-    if (!sent.system.includes('Builder of Conexus')) return { kind: 'text', text: 'Anotado.' }
+    if (!sent.system.includes('You are the Conexus Builder'))
+      return { kind: 'text', text: 'Anotado.' }
     const next = SCRIPT[step++] ?? 'Pronto.'
     return typeof next === 'string'
       ? { kind: 'text', text: next }
@@ -107,7 +108,8 @@ async function writeFirst(chat: Page) {
   await lastingShown(chat, VERSION_1)
   await transcriptShowed(chat, 'Escreveu um arquivo')
   await chat.getByText(/Versão 1, guardada em/).waitFor()
-  await chat.getByRole('button', { name: 'pagina.html' }).waitFor()
+  // The tree holds the starter's files beside the page, so no file is open until one is chosen.
+  await chat.getByRole('button', { name: 'pagina.html' }).click()
   await chat
     .getByRole('region', { name: 'Conteúdo de pagina.html' })
     .getByText('<h1>Padaria</h1>')

@@ -15,7 +15,14 @@
     },
     "packages/app": {
       "entry": ["src/**/*.check.ts"],
-      "ignore": ["starter/**"]
+      "ignore": ["starter/**", "skills/**"],
+      "ignoreDependencies": [
+        "@hookform/resolvers",
+        "@tanstack/react-table",
+        "date-fns",
+        "react-day-picker",
+        "recharts"
+      ]
     },
     "apps/edge": {
       "ignoreDependencies": ["cloudflare"]

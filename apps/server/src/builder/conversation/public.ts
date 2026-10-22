@@ -43,7 +43,13 @@ export function createConversations(deps: {
     googleCalls: deps.google.googleCalls,
     log: deps.log,
   }
-  const builder = createBuilder({ pool: deps.pool, queue, runs: deps.runs, log: deps.log })
+  const builder = createBuilder({
+    ...{ pool: deps.pool, queue, runs: deps.runs, log: deps.log },
+    projectName: (ids) =>
+      database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
+        return (await deps.projects.liveProjectOf(tx, ids))?.name
+      }),
+  })
   const store = createConversationStore(deps)
   const sessions = new Sessions({ builder, runs: deps.runs, log: deps.log })
   deps.runs.onRestart((restart) => sessions.restarted(restart))

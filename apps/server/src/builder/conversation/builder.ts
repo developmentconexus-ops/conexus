@@ -20,7 +20,7 @@ import {
   providerOf,
 } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
-import { APP_SKILLS, INSTRUCTIONS } from './instructions.ts'
+import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { CHECK_TOOL, checkGate, checkTool } from './processors.ts'
@@ -87,6 +87,7 @@ export function createBuilder(deps: {
   queue: QueueDeps
   runs: Runs
   log: FailureLog
+  projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
   const storage = createMastraStorage(deps.pool)
   const check = checkTool(deps.runs)
@@ -123,7 +124,7 @@ export function createBuilder(deps: {
   const agent = new Agent({
     id: BUILDER_ID,
     name: 'Builder',
-    instructions: INSTRUCTIONS,
+    instructions: builderInstructions({ runs: deps.runs, projectName: deps.projectName }),
     skills: APP_SKILLS,
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),

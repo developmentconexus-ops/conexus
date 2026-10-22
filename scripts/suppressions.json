@@ -1,6 +1,6 @@
 {
   ".github/actions/test-database/action.yml": 1,
-  ".github/workflows/ci.yml": 12,
+  ".github/workflows/ci.yml": 13,
   ".github/workflows/publish.yml": 2,
   ".github/workflows/rollback.yml": 1,
   "apps/server/src/builder/conversation/kept.ts": 1,

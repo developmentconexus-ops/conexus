@@ -62,7 +62,11 @@ can be another commit (one was at `729bdc5d`).
 | `remark-gfm` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:226` | 0033 | As `react-markdown` |
 | `remend` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:70` | 0033 | As `react-markdown` |
 | `react-hook-form` | `apps/web/src` | `react-hook-form.com/docs` | none | — | W23 | — |
-| `@hookform/resolvers` | `apps/web/src/ui` | README | none | — | W23 | — |
+| `@hookform/resolvers` | `apps/web/src/ui`, `packages/app/starter` | README | none | — | W23 | — |
+| `@tanstack/react-table` | `packages/app/starter`, `packages/app/skills` | `node_modules/@tanstack/react-table/skills/` | `getting-started`, `table-state`, `migrate-v8-to-v9` (in the package) | — | — | v9: `useTable` and `tableFeatures`; the v8 `useReactTable` and `getCoreRowModel` that models know fail the check |
+| `date-fns` | `packages/app/starter`, `packages/app/skills` | `node_modules/date-fns/docs/` | none | — | — | — |
+| `react-day-picker` | `packages/app/starter` | README | none | — | — | — |
+| `recharts` | `packages/app/starter`, `packages/app/skills` | README | none | — | — | shadcn's `ChartStyle` writes a `<style>` element, which the app's policy blocks |
 | `react-resizable-panels` | `apps/web/src/ui`, `apps/web/src/builder` | README | none | OS `apps/web` | — | — |
 | `@brazilian-utils/brazilian-utils` | `packages/hub-api`, `apps/web/src/hub` | README | none | — | — | — |
 | `vite` | `apps/web` | `vite.dev/llms.txt` | none | — | 0002 | — |
