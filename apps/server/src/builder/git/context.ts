@@ -1,4 +1,5 @@
 import { stat } from 'node:fs/promises'
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { FailureLog } from '../../platform/failure.ts'
 import { runGit } from './exec.ts'
@@ -18,6 +19,8 @@ export const MAX_BUNDLE_BYTES = 1024 * 1024 * 1024
 
 export type Context = {
   dir: string
+  /** Whose repository this is, for the log lines. */
+  ids: { companyId: CompanyId; projectId: ProjectId }
   timeoutMs: number
   gcEvery: number
   log: FailureLog

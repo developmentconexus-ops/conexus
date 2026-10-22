@@ -17,6 +17,7 @@
     "@aws-sdk/client-s3": "3.1146.0",
     "@better-auth/core": "1.7.8",
     "@better-auth/drizzle-adapter": "1.7.8",
+    "@conexus/app": "*",
     "@conexus/hub-api": "*",
     "@fastify/helmet": "13.1.1",
     "@fastify/static": "10.1.5",

@@ -60,7 +60,12 @@ test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Pr
   })
   assert.equal(await repository.version(), 1)
   const main = await repository.main()
-  assert.deepEqual(await repository.tree(main), [{ path: 'src/a.ts', bytes: 19 }])
+  const files = (await repository.tree(main)) ?? []
+  assert.ok(files.some((file) => file.path === 'src/a.ts' && file.bytes === 19))
+  assert.ok(
+    files.some((file) => file.path === 'src/main.tsx'),
+    'the version stands on the starter',
+  )
   assert.equal(hub.builder.bucket.held.size, 1)
 })
 

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { STARTER_DIR } from '@conexus/app/starter'
 import type { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
@@ -25,7 +26,10 @@ export const CANDIDATE_REF = 'refs/conexus/candidate'
 const IDENTITY = ['-c', 'user.name=Conexus Builder', '-c', 'user.email=builder@conexus.invalid']
 
 export type Repository = {
-  /** Creates the repository with an empty first commit on `main` if it has none; answers `main`. */
+  /**
+   * Creates the repository if it has none, its first commit on `main` holding the starter, which is
+   * no version; answers `main`.
+   */
   ensure(): Promise<Sha>
   main(): Promise<Sha>
   /** `main`, or null when the Projeto has no repository yet; it never creates one. */
@@ -36,7 +40,7 @@ export type Repository = {
   bundleOfRun(runId: RunId): Promise<Buffer>
   /** When a commit was made, as an ISO time. */
   savedAt(sha: Sha): Promise<string>
-  /** Which version a commit is: its depth in history, the empty first commit not counted. */
+  /** Which version a commit is: its depth in history, the starter commit not counted. */
   versionAt(sha: Sha): Promise<number>
   /** Takes the one commit of a machine's bundle into the run's own ref, or says why not. */
   receive(input: { runId: RunId; bundle: Uint8Array; base: Sha }): Promise<Result<Sha, SaveRefusal>>
@@ -46,7 +50,7 @@ export type Repository = {
   contains(sha: Sha): Promise<boolean>
   tree(sha: Sha): Promise<TreeFile[] | null>
   file(input: { sha: Sha; path: string; maxBytes: number }): Promise<FileRead>
-  /** How many versions `main` holds: its commits but the empty first one. */
+  /** How many versions `main` holds: its commits but the starter one. */
   version(): Promise<number>
   remove(): Promise<void>
 }
@@ -65,14 +69,23 @@ async function ensure(context: Context): Promise<Sha> {
       maxOutput: 1024,
     })
     await git(building, ['symbolic-ref', 'HEAD', MAIN])
-    const tree = await text(building, ['hash-object', '-t', 'tree', '-w', '--stdin'])
+    // The starter's files go through the temporary repository's own index, which does not outlive it.
+    await git(building, ['-c', 'core.bare=false', '--work-tree', STARTER_DIR, 'add', '--all'])
+    const tree = await text(building, ['write-tree'])
+    await rm(join(building.dir, 'index'))
     const first = Sha.parse(
       await text(building, [...IDENTITY, 'commit-tree', tree, '-m', 'Start the app']),
     )
     await git(building, ['update-ref', MAIN, first])
-    await rename(building.dir, context.dir).catch((error: unknown) => {
-      if (!['EEXIST', 'ENOTEMPTY'].includes(String(Reflect.get(Object(error), 'code')))) throw error
-    })
+    const started = await rename(building.dir, context.dir).then(
+      () => true,
+      (error: unknown) => {
+        if (!['EEXIST', 'ENOTEMPTY'].includes(String(Reflect.get(Object(error), 'code'))))
+          throw error
+        return false
+      },
+    )
+    if (started) context.log.info(context.ids, 'PROJECT_STARTED')
   } finally {
     await rm(building.dir, { recursive: true, force: true })
   }
@@ -198,6 +211,7 @@ export function openRepository(input: {
 }): Repository {
   const context: Context = {
     dir: join(input.root, input.companyId, `${input.projectId}.git`),
+    ids: { companyId: input.companyId, projectId: input.projectId },
     timeoutMs: input.timeoutMs ?? 60_000,
     gcEvery: input.gcEvery ?? 50,
     log: input.log,

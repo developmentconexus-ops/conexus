@@ -6,7 +6,7 @@ import type { Operations } from './operations.ts'
  * What a refused statement answers: PostgreSQL's five characters, or the platform's word for a
  * statement that never reached it. Never the statement, a value or the login (decision 0045).
  */
-export const Sqlstate = z.string().min(1).max(32).brand<'Sqlstate'>()
+export const Sqlstate = z.string().min(1).brand<'Sqlstate'>()
 export type Sqlstate = z.infer<typeof Sqlstate>
 
 /** The database refused a call. It carries the code alone, so a log of it holds no app data. */
