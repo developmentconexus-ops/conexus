@@ -26,30 +26,19 @@ quando o app guarda dados. A Prévia, onde você usa o app, é a etapa 14.1.
 **O que você faz, e quando.** No começo: aprova esta página. No fim: faz o roteiro na nuvem e aprova
 os textos dos cartões.
 
-**Respondidas em 2026-10-21.** Dividir; o Zod é a fonte das operações; `conexus_check` é
-ferramenta, o mesmo código do fim do turno; um modo só, o plano como skill; o prompt do OS,
-adaptado só onde a arquitetura mudou (U7). Depois: rígido só o
-contrato; um starter; bibliotecas com permissão; e as seis do estudo das formas (contrato 1 de zero
-ou mais operações e página única; a página fica atrás do login; o navegador bloqueia só CSP ou tela em
-branco; a biblioteca é sua, por Projeto, com as do starter e as cinco do OS já aprovadas; as
-dependências e uma skill por forma entram aqui). As capturas do OS dos cartões são tiradas no começo da U6 (A). Valem da 14 antiga: P3 A e
-"Autorizo provas reais".
+**Respondidas.** As de 2026-10-21 estão no registro de aprovações.
 
-**Os limites.** 4 perguntas por cartão; uma pergunta espera 30 min (do OS). 4 conferências
-por turno; 20 problemas e 60 s por passo.
+**Os limites.** 4 perguntas por cartão, que espera 30 min (do OS); 4 conferências por turno; 20
+problemas e 60 s por passo.
 
-**Fica de fora.** A Prévia, o envio e as Alterações (14.1); Conexões (19 e 20); página pública;
+**Fica de fora.** Prévia, envio e Alterações (14.1); Conexões (19 e 20); página pública;
 starters por tipo de app (depois, com avaliações); eventos e agendas. Issues `next-card`: 232 a 238
 são da 13 e esperam o conserto dela; as da 12.x, de telas fora destas pastas.
 
-**Respondidas também.** "A sessão é individual": a Conversa é só de quem a abriu (0050). Uma
-mensagem com pergunta aberta: fecha do jeito nativo do Mastra e segue. **Pedir ajustes** pede o
-motivo e o devolve ao Builder, nativo.
-
 **Emenda de 2026-10-22** (estudo da Conversa, §8 e §13): "1. Sim … 2.B". A linha de ferramenta abre
-como no OS: o comando e o fim da saída, o começo do arquivo escrito, o trecho antigo e o novo de uma
-edição, mascarados e cortados; "Pensou" mostra só o tempo. O plano e o "expirou" ficam no resultado da
-ferramenta, como o Mastra faz, sem lista nossa. Um registro só da conversa é a etapa seguinte.
+como no OS: comando e fim da saída, começo do arquivo escrito, trecho antigo e novo de uma edição,
+mascarados e cortados; "Pensou", só o tempo. O plano e o "expirou" ficam no resultado da ferramenta,
+nativo do Mastra, sem lista nossa. O registro único da conversa é a etapa 14.0.
 
 ## As unidades
 
@@ -69,51 +58,50 @@ das revisões (L9). **Pacotes novos**: `@conexus/app`; no
 starter, os cinco do OS (`compiler-template/package.json:10-35`); raiz: `package.json`,
 `package-lock.json`, `biome.json`, `ci.yml`.
 
-**Orçamento de código alterado.** U2 470; U3 150 escritas (os componentes shadcn são gerados);
+**Orçamento de código alterado.** U2 470; U3 150 (shadcn é gerado);
 U4 520; U5 500; U6 630; U7 650, quase todo texto; U8 80. Total: **3.000**, teto 4.000 (L2).
 
 ## Os critérios de aceite
 
-Pelas rotas e `main.ts`, com `Machines` dublê (`LocalSandbox` com o template local) e modelo
-gravado (`record-provider`); os do SDK pela API exportada de `@conexus/app`. 6 e 8 a 14 dependem
-do 31, que a U4 roda primeiro. **Ao vivo**: firstmate, anotado no 0055; nenhum teste da suíte chama
-serviço de fora (T14). Todos must.
+Pelas rotas e `main.ts`, `Machines` dublê (`LocalSandbox`, template local), modelo gravado
+(`record-provider`); os do SDK pela API de `@conexus/app`. 6 e 8 a 14 dependem do 31, que a U4 roda
+primeiro. **Ao vivo**: firstmate, anotado no 0055; a suíte não chama serviço de fora (T14). Todos must.
 
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova |
 | --- | --- | --- | --- |
 | 1 | U1 | 0055 "proposed" antes do código, citando o já provado | o registro |
 | 2 | U2 | `Manifest` aceita zero ou mais operações; os de hoje seguem válidos | `manifest.test.ts` |
-| 3 | U2 | `manifestOf` passa no `Manifest`; sem `shared/operations.ts`: zero operações; `z.union` de objetos ou `z.transform`: `MANIFEST_SHAPE_UNSUPPORTED` com o caminho | `manifest-of.test.ts` |
-| 4 | U2 | `defineHandlers`: entrada fora 400 `INPUT_INVALID`; saída fora 500 `OUTPUT_INVALID`; o que lança: `HANDLER_FAILED`, sem a mensagem; com zero operações, todo `/api` 404 `OPERATION_NOT_FOUND` | `runtime.test.ts` |
-| 5 | U2 | `write` grava tudo ou nada (`db.batch`); erro do banco: `DatabaseRefused`, só o SQLSTATE; `createApi`: falha vira `CallFailed` com `failureText` em português | `server.test.ts`, `client.test.ts` |
-| 6 | U2 | O upload de toda versão leva `not_found_handling: 'single-page-application'`; `/api` segue no Worker | `cloudflare.test.ts` |
-| 7 | U3 | O starter passa em todos os passos, sem violação de CSP (`headers.ts:11`); Projeto sem `main`: o primeiro turno parte dele, sem número de versão, e não o regrava | `starter.test.ts`, `runs.test.ts` |
-| 8 | U4 | O handler que devolve `{ codigo }`: `tipos` falha com `server/handlers.ts:13` e TS2322; um passo que falha pula os seguintes | `check.test.ts` |
+| 3 | U2 | `manifestOf` passa no `Manifest`; sem `shared/operations.ts`, zero operações; `z.union` de objetos ou `z.transform`: `MANIFEST_SHAPE_UNSUPPORTED` e o caminho | `manifest-of.test.ts` |
+| 4 | U2 | `defineHandlers`: entrada fora 400 `INPUT_INVALID`; saída fora 500 `OUTPUT_INVALID`; o que lança, `HANDLER_FAILED` sem a mensagem; sem operações, `/api` 404 `OPERATION_NOT_FOUND` | `runtime.test.ts` |
+| 5 | U2 | `write` grava tudo ou nada (`db.batch`); erro do banco: `DatabaseRefused`, só o SQLSTATE; `createApi`: falha vira `CallFailed`, `failureText` em português | `server.test.ts`, `client.test.ts` |
+| 6 | U2 | Todo upload leva `not_found_handling: 'single-page-application'`; `/api` segue no Worker | `cloudflare.test.ts` |
+| 7 | U3 | O starter passa em todos os passos, sem violação de CSP (`headers.ts:11`); Projeto sem `main`: o primeiro turno parte dele, sem número de versão, sem regravá-lo | `starter.test.ts`, `runs.test.ts` |
+| 8 | U4 | Handler que devolve `{ codigo }`: `tipos` falha com `server/handlers.ts:13` e TS2322; passo que falha pula os seguintes | `check.test.ts` |
 | 9 | U4 | `dependências`: pacote nem pré-aprovado nem concedido, versão não exata, ou import fora do `package.json`: `DEPENDENCY_NOT_APPROVED` com arquivo e linha; instala por `npm ci --ignore-scripts` | idem |
 | 10 | U4 | Mudar `main.tsx`, `styles.css` ou os componentes: passa; sem `CSPProvider`, a tela injeta `<style>`: `navegador` falha | idem |
 | 11 | U4 | `navegador`: violação de CSP ou `#root` vazio falham; erro de console só informa e a versão monta | idem |
-| 12 | U4 | `conexus_check` e o processador: o mesmo relatório; Chromium ausente ou 60 s: `CHECK_PLATFORM_FAILED`, que não conta como tentativa | `conversation-check.test.ts` |
+| 12 | U4 | `conexus_check` e o processador, o mesmo relatório; sem Chromium ou 60 s: `CHECK_PLATFORM_FAILED`, sem contar tentativa | `conversation-check.test.ts` |
 | 13 | U4 | Fim do turno: falha volta ao Builder; 4 falhas: guarda, "não montou", `APP_CHECK_FAILED`; sem arquivo mudado: sem conferência | idem |
 | 14 | U4 | `Machines.pack`: a pasta da versão passa no `Manifest`; acima de `APP_LIMITS`, link ou não regular: `TOO_LARGE`, `NOT_REGULAR`, sem ler o resto (C59, S2) | `pack.test.ts` |
-| 15 | U5 | `ask_user` com 5 perguntas ou `multiSelect` sem opções: recusado ao modelo; com 1 a 4: a volta espera, a parte `question` chega | `conversation-questions.test.ts` |
-| 16 | U5 | `answerQuestion` do dono da Conversa: a volta continua; repetida ou fechada: `QUESTION_CLOSED`; respostas a mais ou a menos: `QUESTION_ANSWERS_INVALID`; outra pessoa ou empresa: 404 (S10) | idem |
-| 17 | U5 | `submit_plan` fora de `.conexus/plan.md`: recusado; no caminho: a parte `plan`; **Pedir ajustes** retoma com `{action: 'rejected', feedback}` e o modelo lê "User feedback: …"; **Aprovar e construir** continua; relida, a parte vem da mensagem do Mastra, sem chave nova nos metadados da Conversa | idem |
-| 18 | U5 | 30 min sem resposta: `stopped`, `QUESTION_EXPIRED`; **Parar** ou Hub reiniciado com pergunta aberta: a chamada fecha negada, nada fica no banco do Mastra; mensagem com pergunta aberta: `session.steer`, `tool_suspension_cancelled`, a mensagem segue na volta; sem pergunta: `RUN_BUSY` | idem, `runs.test.ts` |
+| 15 | U5 | `ask_user` com 5 perguntas ou `multiSelect` sem opções: recusado ao modelo; 1 a 4: a volta espera, chega a parte `question` | `conversation-questions.test.ts` |
+| 16 | U5 | `answerQuestion` do dono da Conversa: a volta continua; repetida ou fechada: `QUESTION_CLOSED`; número errado de respostas: `QUESTION_ANSWERS_INVALID`; outra pessoa ou empresa: 404 (S10) | idem |
+| 17 | U5 | `submit_plan` fora de `.conexus/plan.md`: recusado; no caminho: a parte `plan`; **Pedir ajustes** retoma com `{action: 'rejected', feedback}`, o modelo lê "User feedback: …"; **Aprovar e construir** continua; relida, a parte vem da mensagem do Mastra, sem chave nova nos metadados | idem |
+| 18 | U5 | 30 min sem resposta: `stopped`, `QUESTION_EXPIRED`; **Parar** ou Hub reiniciado com pergunta aberta: a chamada fecha negada, nada no banco do Mastra; mensagem com pergunta aberta: `session.steer`, `tool_suspension_cancelled`, a mensagem segue na volta; sem pergunta: `RUN_BUSY` | idem, `runs.test.ts` |
 | 19 | U5 | **Permitir** grava `{nome, versão}` no Projeto e a conferência passa; **Não**: nada gravado; pré-aprovado: recusado ao modelo; apagar o Projeto apaga as concessões | `package-grants.test.ts` |
-| 20 | U5 | `task_*`: a parte `tasks` chega e sobrevive a recarregar | `conversation-parts.test.ts` |
-| 21 | U6 | Com os textos aprovados pelo fundador: cartões de pergunta, de biblioteca e do plano, lista de tarefas; estados da matriz; teclado e nomes (V30, V31) | `cards.test.tsx` |
+| 20 | U5 | `task_*`: a parte `tasks` chega e sobrevive à recarga | `conversation-parts.test.ts` |
+| 21 | U6 | Com os textos aprovados: cartões de pergunta, biblioteca e plano, lista de tarefas; estados da matriz; teclado e nomes (V30, V31) | `cards.test.tsx` |
 | 22 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo | T23 |
-| 23 | U7 | O teste guarda a tabela da U7, por linha do OS o veredito e o texto; o prompt tem cada "igual" e "adaptada", nenhuma "tirada"; o CI não lê o OS | `prompt.test.ts` |
-| 24 | U7 | Os exemplos `.ts` e `.tsx` de cada skill tipam contra o starter e o SDK; um quebrado falha; `validateSkillContent` passa; `conexus-app` ensina página, painel e sistema | `skills.test.ts` |
-| 25 | U7 | A linha 51 do OS só enquanto `main` é o starter; `AGENTS.md` e `.conexus/memory/MEMORY.md` lidos do `main`, ausentes: a frase de vazio | `prompt.test.ts` |
-| 26 | U8 | Os seis passos do roteiro, com modelo gravado | `tests/e2e/builder-builds.test.ts` |
+| 23 | U7 | O teste guarda a tabela da U7, veredito e texto por linha do OS; o prompt tem cada "igual" e "adaptada", nenhuma "tirada"; o CI não lê o OS | `prompt.test.ts` |
+| 24 | U7 | Os exemplos `.ts` e `.tsx` das skills tipam no starter e no SDK; um quebrado falha; `validateSkillContent` passa; `conexus-app` ensina página, painel e sistema | `skills.test.ts` |
+| 25 | U7 | A linha 51 do OS só enquanto `main` é o starter; `AGENTS.md` e `.conexus/memory/MEMORY.md` lidos do `main`; ausentes, a frase de vazio | `prompt.test.ts` |
+| 26 | U8 | Os seis passos do roteiro, modelo gravado | `tests/e2e/builder-builds.test.ts` |
 | 27 | U8 | **Ao vivo**: o pedido da Ana, 3 vezes com Gemini 3.8 Flash High e 1 com Claude: perguntas e plano, monta no primeiro turno, nada fora de `/home/user/app`; `abort` com `retry` reabre o laço | 0055 |
-| 28 | U8 | **Ao vivo**: na máquina, `npm ci --ignore-scripts` instala uma biblioteca concedida pelo `registry.npmjs.org` já liberado (0051) | 0055 |
-| 29 | U8 | **Ao vivo**: no despachante, recarregar `/encomendas` de um app de rotas dá a tela; `/api/<op>` segue no Worker | 0055 |
+| 28 | U8 | **Ao vivo**: na máquina, `npm ci --ignore-scripts` instala uma biblioteca concedida pelo `registry.npmjs.org` (0051) | 0055 |
+| 29 | U8 | **Ao vivo**: no despachante, recarregar `/encomendas` de um app de rotas dá a tela; `/api/<op>`, o Worker | 0055 |
 | 30 | U8 | QA no commit candidato (T25); o roteiro publicado, pelo fundador (L17) | `conexus-qa`, fundador |
 | 31 | U8 | **Ao vivo**: o template no E2B, tamanho e início anotados; a montagem pelo `wrangler` dá o do laboratório | 0055 |
-| 32 | U4 | Modelo gravado: o primeiro comando roda em `/home/user/app`; nenhuma chamada nomeia caminho fora dela | `conversation-machine.test.ts` |
-| 33 | U6 | A linha abre no comando e na cauda, no começo do arquivo, no trecho antigo e no novo; acima do corte, cortada; segredo plantado: `***` no fio e na releitura, que dá o mesmo detalhe | `conversation-parts.test.ts`, `tool-row.test.tsx` |
+| 32 | U4 | Modelo gravado: o primeiro comando roda em `/home/user/app`; nenhuma chamada nomeia caminho fora | `conversation-machine.test.ts` |
+| 33 | U6 | A linha abre no comando e na cauda, no começo do arquivo, no trecho antigo e no novo, cortados; segredo plantado: `***` no fio e na releitura, que dá o mesmo detalhe | `conversation-parts.test.ts`, `tool-row.test.tsx` |
 
 ## A matriz de estados
 
@@ -124,20 +112,20 @@ serviço de fora (T14). Todos must.
 | Cartão do plano | o plano e os dois botões; **Pedir ajustes** abre o campo do motivo | — | idem | idem | — | — | "Este plano foi substituído." |
 | Lista de tarefas | some sem tarefas | idem | "em andamento", uma por vez | — | — | — | "concluída" |
 | Cartão da versão | "Versão N guardada, montou" | — | — | "Versão N guardada, não montou" e o código | — | — | — |
-| Linha de ferramenta | fechada, o assunto | sem detalhe: não abre | a saída cresce ao vivo | código de saída diferente de 0 | — | — | cortada: "…" no corte |
+| Linha de ferramenta | fechada, o assunto | sem detalhe, não abre | a saída cresce | código de saída não zero | — | — | "…" no corte |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
 | parte `question {toolCallId, questions, state: 'open' \| 'answered' \| 'expired' \| 'closed'}`; pergunta `{kind: 'choice'} \| {kind: 'library', name, version}` | U5 | U6 |
 | parte `plan {toolCallId, title, plan, state: 'open' \| 'approved' \| 'rejected' \| 'expired' \| 'closed'}` | U5 | U6 |
 | parte `tasks {items}` | U5 | U6 |
-| parte `tool` ganha `detail: {kind: 'command', command, output, exitCode} \| {kind: 'file', path, content} \| {kind: 'edit', path, before, after}`; a parte `shell` sai | U6 (servidor) | U6 (tela) |
+| parte `tool` ganha `detail: {kind: 'command', command, output, exitCode} \| {kind: 'file', path, content} \| {kind: 'edit', path, before, after}`; sai a parte `shell` | U6 | U6 |
 | parte `version` ganha `check: {state: 'passed'} \| {state: 'failed', code: 'APP_CHECK_FAILED'}` | U4 | U6, 14.1 |
 | `builder.run.state` ganha `waiting` | U5 | U5 (retomada), `answerQuestion` |
 | `builder.package_grant` | U5 | U4 (`dependências`), remoção do Projeto |
 | `CheckReport` | U4 | o modelo, o processador, a parte `version` |
 
-**Os desenhos** (capturas do OS no começo da U6, resposta A; OS `ask-user-pt.tsx`, `plan-pt.tsx`):
+**Os desenhos** (capturas do OS na U6, A; `ask-user-pt.tsx`, `plan-pt.tsx`):
 
 ```text
 1280 Conversa                                390 Conversa
@@ -176,7 +164,7 @@ serviço de fora (T14). Todos must.
 | Bibliotecas por Projeto | nosso, novo | `builder/packages/`, `packages/app/src/check/dependencies.ts` | a lista vem do Projeto | o `node_modules` só com o declarado | OS `allowlist.mjs:18-40`; vibesdk `SKILL.md:357-389` (sem lista) |
 | Conferência | trazido como ideia | `packages/app/src/check/` | passos do contrato | um passo que falha pula os seguintes | OS `check/report.ts:3-15`; vibesdk `run_analysis` |
 | Conferência no fim do turno | nativo | `builder/conversation/processors.ts` | — | 3 retentativas (OS `builder.md:54`) | `abort(…, {retry: true})` (`processors/index.d.ts:543,739`) |
-| Perguntas e plano | nativo, embrulhado | `builder/conversation/plan-tools.ts` | um modo só; sem lista nossa | 4 perguntas | `askUserTool`, `submitPlanTool`, `steer`; Mastra `submit-plan.ts:81-112`, `tool-call-step.ts:188-230`; OS `harness/tools.ts:64-150` |
+| Perguntas e plano | nativo, embrulhado | `builder/conversation/plan-tools.ts` | um modo só; sem lista nossa | 4 perguntas | `askUserTool`, `submitPlanTool`, `steer`; OS `harness/tools.ts:64-150` |
 | Linha que abre | nosso; a forma da Factory (A) | `tool-row.tsx`, `parts.ts` | — | máscara (S2) | Factory `ToolCard.tsx:41,54,64`; vibesdk `exec-commands.ts:35-46`; OS cru |
 | Volta que espera | trazida | `builder/runs/` | `waiting` | 30 min | OS `run/run.ts:240-256` |
 | Prompt e skills | trazidos, adaptados | `builder/conversation/prompt/`, `packages/app/skills/` | a tabela da U7; formas | seis estágios, três classes de decisão | OS `harness/prompt.ts:46-89`, `builder-skills/`; vibesdk `think/skills.ts:15-24` |
@@ -211,7 +199,7 @@ Statement[])`, `DatabaseRefused {code: Sqlstate}`, `manifestOf({operations?, mig
 Result<Manifest, ManifestRefused>`, `ManifestRefused = {code: 'MANIFEST_SHAPE_UNSUPPORTED',
 operation, path}`, `createApi`, `CallFailed {code}`, `failureText: Record<AppFailureCode, string>`,
 o dono das frases (C26). `OperationName` marcado (C23). Entrada: o corpo do `POST`, pelo Zod (C27).
-Modelo: `runtime.ts` (cumpre C21, C23, C26).
+Modelo: `runtime.ts` (C21, C23, C26).
 
 **Ordem.** Regras: C21, C23, C26, C27, D28. Funções: `zod@4.6.5` `z.toJSONSchema` (`io: 'input'`),
 conferido contra `Shape`. **Prova.** 2 a 6.
@@ -222,36 +210,33 @@ conferido contra `Shape`. **Prova.** 2 a 6.
 
 **Contratos.** A árvore do estudo das formas, §8.2: `src/router.tsx` com uma rota `/`, sem Sidebar;
 `src/routes/home.tsx` "Este app ainda está vazio"; provedores e `CSPProvider` em `main.tsx`;
-componentes shadcn `base-nova` (`npx shadcn add`, gerados); sem `server/` nem `shared/`. Tudo
-editável. `startProject({projectId}): Result<Sha, GitFailure>`, só sem `main`. Modelo: `builder/git/`
-da 13 (cumpre C21, C23). Regras: W21, W22, V19. **Prova.** 7.
+componentes shadcn `base-nova` (`npx shadcn add`, gerados); sem `server/` nem `shared/`. `startProject({projectId}): Result<Sha, GitFailure>`, só sem `main`. Modelo: `builder/git/`
+da 13 (C21, C23). Regras: W21, W22, V19. **Prova.** 7.
 
 ## U4 A montagem, `conexus_check` e o fim do turno
 
 **Raio.** `packages/app/src/check/`: cria. `infra/e2b/template.ts`, `scripts/app-pack.ts`,
 `builder/machine/`: muda. `builder/conversation/{processors,builder}.ts`: cria, muda.
 
-**Contratos.** `/opt/conexus/check` (só leitura): `dependências` (o `package.json` contra a lista,
-versão exata, `npm ci --ignore-scripts`, cada import declarado), `manifesto` (gera também
+**Contratos.** `/opt/conexus/check` (só leitura): `dependências` (9), `manifesto` (gera também
 `src/conexus/api.gen.ts`), `tipos` (DOM e servidor), `telas` (`vite build`), `worker` (`serveApp`
-gerado, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (falha só em CSP ou
-`#root` vazio). A lista vem do servidor a cada chamada, `PREAPPROVED_PACKAGES` (dono, C26) e
-`builder.package_grant`, nunca da árvore. `CheckReport = {ok, steps: [{name, state:
+gerado, `wrangler deploy --dry-run --outdir`, `Manifest.parse`), `navegador` (11). A lista vem do servidor a cada chamada (`PREAPPROVED_PACKAGES`, dono, C26, e
+`builder.package_grant`), nunca da árvore. `CheckReport = {ok, steps: [{name, state:
 'passed' | 'failed' | 'skipped' | 'informed', problems: [{file, line, column, code, message}]}]}`,
 esquema Zod (C27). `Machines.check({projectId}): Result<CheckReport, 'CHECK_PLATFORM_FAILED'>`;
 `Machines.pack({projectId}): Result<VersionFolder, PackRefused>`, por `receiveVersion` (S2); a 14.1
-a chama. `CHECK_LIMITS = {problems: 20, stepMs: 60_000, checks: 4}` (C26). `conexus_check`: sem
-entrada, a descrição do OS (`tools.ts:26-41`). `checkGate: Processor` em `processOutputStep`, sem
+a chama. `CHECK_LIMITS = {problems: 20, stepMs: 60_000, checks: 4}` (C26). `conexus_check`, sem
+entrada, descrito como no OS (`tools.ts:26-41`). `checkGate: Processor` em `processOutputStep`, sem
 `toolCalls` e com arquivos mudados; falha: `abort(…, {retry: true})`; `retryCount` 3 termina. `APP_CHECK_FAILED`, `DEPENDENCY_NOT_APPROVED`, `CHECK_PLATFORM_FAILED` (C48). Template:
 Node 24, `/opt/conexus` com o cache npm das pré-aprovadas, `@conexus/app`, `wrangler`, Chromium.
-Rede: `registry.npmjs.org` já liberado (0051, `kit.ts:21`), sem host novo.
+Rede: só `registry.npmjs.org`, já liberado (0051, `kit.ts:21`).
 **A pasta**: uma máquina e uma pasta por Projeto (`machines.ts:224-240`), `APP_FOLDER` (C26). `E2BSandbox({workingDirectory, instructions})` (`@mastra/e2b`
 `sandbox/index.d.ts:103`; `mastra-sandbox.d.ts:96`) e `MachineFilesystem.getInstructions`
-(`filesystem.d.ts:224`) dizem a pasta e a máquina, no lugar de "Cloud sandbox." (`index.js:1008`). `/opt/conexus`: ferramenta, só leitura, fora do workspace. **Escolha**: a
-fronteira dos comandos é a máquina do Projeto, rede fechada, nada do Conexus nela; recusado prender
-o shell: sem opção nativa (`cwd` absoluto vence, `workspace-BojqafFG.js:3350-3351`) e texto filtrado
-não prende um shell. Modelo:
-`model-accounts/processors.ts` da 12 (cumpre C21, C26).
+(`filesystem.d.ts:224`) dizem a pasta e a máquina, no lugar de "Cloud sandbox." (`index.js:1008`). `/opt/conexus` fica fora do workspace. **Escolha**: a
+fronteira dos comandos é a máquina do Projeto (rede fechada, nada do Conexus); prender o shell,
+recusado: sem opção nativa (`cwd` absoluto vence, `workspace-BojqafFG.js:3350-3351`), e filtrar texto
+não prende. Modelo:
+`model-accounts/processors.ts` da 12 (C21, C26).
 
 **Ordem.** 1. O 31 primeiro. 2. Regras: C50, C56, C57, C59, C75, S2, S14. Ler inteira
 `dist/docs/references/docs-agents-processors.md`. **Prova.** 8 a 14, 32.
@@ -264,21 +249,21 @@ não prende um shell. Modelo:
 
 **Contratos.** `disableBuiltinTools: ['ask_user', 'submit_plan', 'subagent']`; `ask_user` e
 `submit_plan` sob o id nativo, embrulhados como no OS (`QUESTION_LIMITS = {questions: 4, waitMs: 30
-min}`, C26; só `.conexus/plan.md`); `task_*` nativos. Pergunta `kind: 'library'` com `{name,
-version}`; fora de `PREAPPROVED_PACKAGES` só. `builder.package_grant (company_id, project_id, name,
+min}`, C26; só `.conexus/plan.md`); `task_*` nativos. Pergunta `kind: 'library'` só fora de
+`PREAPPROVED_PACKAGES`. `builder.package_grant (company_id, project_id, name,
 version, granted_by, granted_at)`, chave `(project_id, name)`, FK que apaga com o Projeto; só o
 **Permitir** do dono. `builder.run.state` ganha `waiting`. `answerQuestion` `POST
-…/conversations/{conversationId}/questions/{toolCallId}`, o dono da Conversa (0050), outro 404: `{kind:
-'answers', answers} | {kind: 'plan', action, feedback?}`, `feedback` exigido em `rejected` → 202; 409 `QUESTION_CLOSED`; 422
-`QUESTION_ANSWERS_INVALID`; Zod (C27). `ToolCallId`, `PackageName` marcados (C23). Retomada por
-`respondToToolSuspension` (`session.d.ts:1814-1834`); `rejected` é o nativo (fork `ce7e9c30c1`
-`tools/builtin/submit-plan.ts:101`); mensagem com pergunta aberta: `session.steer` (fork
+…/conversations/{conversationId}/questions/{toolCallId}`, dono da Conversa (0050), outro 404: `{kind:
+'answers', answers} | {kind: 'plan', action, feedback?}`, `feedback` exigido em `rejected` → 202; 409 `QUESTION_CLOSED`, 422
+`QUESTION_ANSWERS_INVALID` (16); Zod (C27). `ToolCallId`, `PackageName` marcados (C23). Retomada por
+`respondToToolSuspension` (`session.d.ts:1814-1834`); `rejected` é o nativo (`submit-plan.ts:101`, fork
+`ce7e9c30c1`); mensagem com pergunta aberta: `session.steer` (fork
 `agent-controller/session.ts:3336-3360,4048-4051`; `session.d.ts:1752`), sem fecho nosso; só o Hub
 reiniciado fecha por `settleSuspendedToolCallsAsDenied`. **Sem lista nossa** (emenda, estudo U-d): o
-plano e o "expirou" vão no `suspendPayload` e no resultado (`submittedPlan`, `submit-plan.ts:81-112`);
+plano e o "expirou" vão no `suspendPayload` e no resultado (`submittedPlan`, `:81-112`);
 a parte se lê de `metadata.suspendedTools` ou do resultado (`tool-call-step.ts:188-230,370-398`); sem
 `conexus.suspensions` (C26, C75).
-Modelo: `runs/settle.ts` da 13 (cumpre C21).
+Modelo: `runs/settle.ts` da 13 (C21).
 
 **Ordem.** 1. Prova no `@mastra/core` instalado: suspender, responder, retomar, negar; falhou, volta
 ao cartão. 2. Regras: C21, C23, C48, C62, C65, D11, S8, S10, S41. **Prova.** 15 a 20.
@@ -291,10 +276,10 @@ ao cartão. 2. Regras: C21, C23, C48, C62, C65, D11, S8, S10, S41. **Prova.** 15
 
 **Contratos.** Cada cartão lê a sua parte e chama `answerQuestion`; o de biblioteca é o de pergunta
 com `kind: 'library'`; textos em português (L23). **A linha que abre** (emenda, estudo U-a):
-`tool.detail` sai dos args, do resultado e de `data-sandbox-exit` gravados (fio e releitura iguais),
-por `masked()` (S2, S41), com os cortes da Factory: comando, `SUBJECT_MAX_LENGTH`; saída, a cauda
+`tool.detail`, dos args, do resultado e de `data-sandbox-exit` gravados, por
+`masked()` (S2, S41), cortado como a Factory: comando, `SUBJECT_MAX_LENGTH`; saída, a cauda
 `SHELL_MAX_*`, mascarada antes; arquivo, 2.000 caracteres; edição, 200 linhas por lado, a diferença no
-navegador; leitura, só o assunto. `Collapsible` de `ui/`; "Pensou", só o tempo (V39). Regras: C26, C28, V19, V29 a V31, V54, W22, W31. **Prova.** 21, 22, 33.
+navegador; leitura, só o assunto. "Pensou", só o tempo (V39). Regras: C26, C28, V19, V29 a V31, V54, W22, W31. **Prova.** 21, 22, 33.
 
 ## U7 O prompt e as skills
 
@@ -310,23 +295,17 @@ referências do OS (`shell`, `list`, `record`, `dashboard`, `form`), e a bibliot
 
 | Linhas do OS | Veredito | Razão |
 | --- | --- | --- |
-| 1, 2, 5, 7 a 11, 49, 50, 56 a 59, 63 | igual | — |
-| 3, 6 | adaptada | sem Prévia até a 14.1, que devolve as frases |
+| 1, 2, 5, 7 a 11, 19, 21, 23 a 27, 29 a 42, 44 a 47, 49, 50, 56 a 59, 63, 68 a 75 | igual | 0051 (19); `ask_user` e `task_*` na U5; memória observacional (`builder.ts:97`); `AGENTS.md` e `.conexus/memory/` lidos do `main` |
+| 3, 6, 22 | adaptada | sem Prévia até a 14.1, que devolve as frases; sem Integrações até a 19 |
 | 13 | adaptada | "The packages, the way screens call the server and the visual system are fixed" vira "the platform contract is fixed; the starter is yours to change; ask before adding a package" (0055); `conexus-server` vira `conexus-data` |
 | 15 | adaptada | sem Conexões até a 19: mantém "never invent data"; "Integrações" vira "connectors, later" |
 | 17 | adaptada | "Conexões" vira "connectors"; mais as frases de segurança da 13 (`instructions.ts:16-20`) |
-| 19 | igual | 0051 |
-| 22 | adaptada | sem Prévia nem Integrações até existirem |
-| 21, 23 a 27 | igual | `ask_user` e `task_*` ligados na U5 |
-| 29 a 42, 44 a 47 | igual | memória observacional ligada (`builder.ts:97`); `.conexus/memory/` lida do `main` |
 | 43 | adaptada | sem "Conexão" até a 19 |
 | 51 | igual, condicional | só enquanto `main` é o starter |
 | 52 | adaptada | os fatos do template da U4 |
 | 53 | adaptada | a Conversa e Código; a 14.1 soma Prévia e Alterações |
-| 54 | adaptada | "after four, Conexus saves the code as not built" (P3 A); sem "updates the Prévia"; "a message closes an open question and continues this run" (18) |
-| 61 | adaptada | idem |
+| 54, 61 | adaptada | "after four, Conexus saves the code as not built" (P3 A); sem "updates the Prévia"; "a message closes an open question and continues this run" (18) |
 | 64 a 66 | tirada | volta com a 19 |
-| 68 a 75 | igual | `AGENTS.md` e a memória lidos do `main` |
 | `prompt.ts:82-88` | tirada | `@mastra/code-sdk` não está no Hub; a 13 não faz merge na máquina (0051) |
 
 **Ordem.** Regras: T5, S2, S40, L23. **Prova.** 23 a 25.
