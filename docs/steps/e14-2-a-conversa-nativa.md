@@ -79,21 +79,21 @@ firstmate. Todos must.
 | 1 | U1 | V39 e 0050 com a regra trocada e a frase do fundador; nenhuma outra regra diz "reasoning not exposed" ou "keep server-side" | `check-docs`, o registro |
 | 2 | U2 | `readConversation` devolve as partes como o Mastra as guarda: `text`, `reasoning` com o texto, `tool-invocation` com `toolName`, `args`, `result` e `state`, `data-*`; o tipo de Mastra cabe no esquema do contrato, e um campo novo do Mastra passa sem mudança nossa | `conversation-wire.test.ts`, checagem de tipo |
 | 3 | U2 | O stream manda `message_start`, `message_update` (`text-delta`, `reasoning-delta`, `part`), `message_end`, `shell_output`, `command_exit`, `om_*` e `agent_end` na forma do Mastra; os nossos, `turn` e as partes `data-conexus-*`; nenhum outro evento do controle sai | idem |
-| 4 | U2 | Ao vivo e relido, a mesma parte: para `skill`, `list_files`, `grep`, `read_file`, `write_file`, `edit_file`, `execute_command`, `conexus_check` e uma ferramenta que o contrato não conhece | idem |
-| 5 | U2 | Os cortes de `WIRE_LIMITS`, um dono (C26), sobre a forma do Mastra: texto de argumento ou resultado acima do limite sai cortado com `…` e o campo `cut`; o resto do objeto segue; nenhum corte fora de `wire.ts` | idem |
+| 4 | U2 | Ao vivo e relido, a mesma parte: para `skill`, `list_files`, `grep`, `read_file`, `write_file`, `edit_file`, `execute_command` (a saída cortada pelos mesmos `WIRE_LIMITS` nos `shell_output` e no `result` relido), `conexus_check` e uma ferramenta que o contrato não conhece | idem |
+| 5 | U2 | Os cortes de `WIRE_LIMITS`, um dono (C26), sobre a forma do Mastra: texto de argumento ou resultado acima do limite sai cortado com `…` e o seu caminho em `cuts`; o resto do objeto segue; nenhum corte fora de `wire.ts` | idem |
 | 6 | U2 | Ferramenta fora do conjunto fechado (`TOOL_CLOSURE`): a parte sai com o erro do controle, `state: 'output-error'`; a escrita recusada por `requireReadBeforeWrite` sai com o texto de `FileReadRequiredError` no resultado | idem |
 | 7 | U2 | Saem `MessagePart` `tool`/`reasoning`/`file`, `ToolDetail`, `ToolSubject`, `KINDS`, `subjectOf`, `detailOf`, `toolOf`, `cardOf`, `fileOf`, `partOf`, `eventOf`, `withHeard`, `exitHeard`, `toldTool` e os testes que os afirmam; `grep` não acha nenhum | linha de remoção (CI) |
-| 8 | U3 | Gemini pelo CLIProxy: o corpo do pedido leva o pedido de raciocínio provado na U3, também para um nome do CLIProxy fora do registro (`gemini-3.8-flash-high`); Claude segue `display: 'summarized'` | `thinking.test.ts`, `model-served.test.ts` |
-| 9 | U3 | A gravação do CLIProxy com `reasoning_content` vira `reasoning` com o texto no fio e na releitura | `conversation-wire.test.ts` |
+| 8 | U3 | Gemini pelo CLIProxy: o corpo do pedido leva o pedido de raciocínio provado na U3, também para um nome do CLIProxy fora do registro (`gemini-3.8-flash-high`); Claude segue `display: 'summarized'`. Depende do 20 | `thinking.test.ts`, `served-recordings.test.ts` |
+| 9 | U3 | A gravação do CLIProxy com `reasoning_content` vira `reasoning` com o texto no fio e na releitura. Depende do 20 | `conversation-wire.test.ts` |
 | 10 | U4 | Toda linha com argumentos ou resultado abre; a leitura abre no começo do conteúdo; `list_files` e `grep`, no resultado; `skill`, "Usou a skill *nome*" e as instruções em Markdown; desconhecida: o nome legível, argumentos e resultado; comando, cauda e código; edição, diferença | `tool-row.test.tsx` |
 | 11 | U4 | Ferramenta que falhou: vermelha, abre primeiro no erro, depois nos argumentos | idem |
 | 12 | U4 | Raciocínio: "Pensando…" enquanto chega, depois "Pensou por N s" (ou "Pensou", sem tempo), fechado, abre no texto em Markdown | `transcript.test.tsx` |
 | 13 | U4 | Três ou mais ferramentas seguidas viram um grupo (`TOOL_GROUP_MIN`); texto ou raciocínio quebra o grupo; `skill`, `ask_user` e `submit_plan` nunca agrupam; `task_*` não têm linha | idem |
 | 14 | U4 | Memória: dois anéis, mensagens e observações, `tokens/limite` de `om_status`, e, ao abrir, o quadro; ao reler, o estado da sessão; observando ou refletindo, o anel gira com "Guardando a memória…" ou "Reorganizando a memória…"; falha: a marca "A memória não foi atualizada" até a mesma operação passar, sem o texto do fornecedor (C48, C51) | `memory-status.test.tsx` |
-| 15 | U4 | Perguntas, plano e tarefas seguem os cartões da 14, agora lidos da `tool-invocation` pelo nome da ferramenta; estados e textos da 14 | `cards.test.tsx` |
+| 15 | U4 | Perguntas, plano e tarefas seguem os cartões da 14, agora lidos da `tool-invocation` pelo nome da ferramenta (o plano aberto, de `Message.suspended`); estados e textos da 14 | `cards.test.tsx` |
 | 16 | U4 | 1280, 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo | T23 |
 | 17 | U5 | Turno que só escreveu `.conexus/plan.md`, parado ou terminado: sem versão, sem conferência; com outro arquivo mudado: a versão guarda os dois | `machine.test.ts`, `runs.test.ts` |
-| 18 | U6 | O percurso no Chromium com o Anthropic dublê chamando `skill`, `list_files`, `grep` e uma escrita recusada, e o CLIProxy dublê com a gravação que pensa: cada linha abre; recarregar dá o mesmo | `tests/e2e/conversation-native.test.ts` |
+| 18 | U6 | O percurso no Chromium com o Anthropic dublê chamando `skill`, `list_files`, `grep` e uma escrita recusada, e o CLIProxy dublê com a gravação que pensa: cada linha abre, a recusada no motivo; recarregar dá as mesmas linhas e os anéis da memória. A parte do Gemini depende do 20 | `tests/e2e/conversation-native.test.ts` |
 | 19 | U6 | QA no commit candidato (T25), com o conjunto fechado inteiro e o Gemini; o roteiro, pelo fundador (L17) | `conexus-qa`, fundador |
 | 20 | U3 | **Ao vivo**, firstmate: uma chamada ao Gemini 3.8 Flash High pela conta Google do fundador devolve `reasoning_content`; a gravação entra em `platform/recordings/` | o registro da U3 |
 
@@ -103,7 +103,7 @@ firstmate. Todos must.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Linha de ferramenta | fechada, a frase e o assunto | sem argumentos nem resultado: não abre | rodando; a saída cresce | vermelha, abre no erro | — | — (a Conversa é só do dono) | recusada pelo conjunto fechado: "Não pôde …", abre no motivo |
 | Linha do raciocínio | fechada, "Pensou por N s" | sem texto: "Pensou", não abre | "Pensando…" | — | — | — | turno parado: o texto até ali |
-| Símbolo da memória | os anéis em repouso, `0/30k` | sem limite (memória desligada): some | o anel gira; "Guardando a memória…" ou "Reorganizando a memória…" | a marca "A memória não foi atualizada" | — | — | — |
+| Símbolo da memória | os anéis em repouso, `0/30k` | `memory: null` (a sessão não está nesta cópia do Hub): os anéis esperam o primeiro `om_status` | o anel gira; "Guardando a memória…" ou "Reorganizando a memória…" | a marca "A memória não foi atualizada" | — | — | — |
 | Cartões (pergunta, plano, tarefas) | os da 14 | idem | idem | idem | — | — | idem |
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -111,9 +111,9 @@ firstmate. Todos must.
 | `Message.parts: MastraPart[]` (`text`, `reasoning`, `tool-invocation`, `data-*`) | U2, do Mastra | U4 |
 | `Message.suspended`: de `metadata.suspendedTools`, só `suspendPayload` (o plano aberto) | U2 | U4 (cartão do plano) |
 | `ConversationEvent`: `turn`, `message_*`, `shell_output`, `command_exit`, `om_*`, `agent_end` | U2 | U4 |
-| `Conversation.memory`: o `omProgress` da sessão (`OMProgressState` do Mastra) | U2 | U4 (os anéis ao abrir) |
-| `cut` em cada campo cortado | U2 (`wire.ts`) | U4 ("…") |
-| `WIRE_LIMITS` | U2 (`hub-api`) | U2, U4 |
+| `Conversation.memory`: o `omProgress` da sessão (`OMProgressState` do Mastra), ou `null` | U2 | U4 (os anéis ao abrir) |
+| `cuts` na parte e no `shell_output`: os caminhos cortados | U2 (`wire.ts`) | U4 ("…") |
+| `WIRE_LIMITS`, em `hub-api/src/wire-limits.ts` | U2 | U2 (`wire.ts`) |
 | pedido de raciocínio do Google pelo CLIProxy | U3 | o CLIProxy |
 
 **Os desenhos** (Factory `ToolCard.tsx`, `MessageBubble.tsx`; o OS no seu fluxo de ferramenta):
@@ -138,13 +138,14 @@ firstmate. Todos must.
 | Coleta da versão sem `.conexus/plan.md` na comparação | a da 13 | a da 13 | a máquina: a da 13 | `VERSION_SAVED` ou nada | 17 |
 | Pedido de raciocínio do Gemini | um por passo | o passo da 12 | CLIProxy fora: `MODEL_CALL_FAILED` da 12 | — | 8, 20 |
 | Leitura e stream da Conversa | só leitura | — | o banco: a da 14.0 | — | 2 a 6 |
+| A prova ao vivo da U3 (20) | uma por firstmate | — | nenhum campo devolve `reasoning_content`: 8, 9 e a parte do Gemini do 18 param, a etapa volta ao fundador; o resto segue | o pedido provado, no registro da U3 | 8, 9, 18, 20 |
 
 ## O que nasce novo e o que é trazido
 
 | Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
 | --- | --- | --- | --- | --- | --- |
-| Fio: eventos e mensagens do Mastra | nativo | `hub-api/src/mastra-parts.ts`, `builder/conversation/live.ts` | — | dono e rotas da 0050 | Factory `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:202-300`; OS `apps/web/src/features/builder/transcript.ts:1-9,119-188`; vibesdk: nenhuma faz |
-| Cortes num dono | nosso | `builder/conversation/wire.ts`, `WIRE_LIMITS` | de `DETAIL_LIMITS` por parte a um corte por texto | limites da 14 (`tool-detail.ts:6-12`) | Factory corta na tela, 800 (`components/tool/ToolCard.tsx:41,54,64`); OS `OUTPUT_LIMIT = 800` (`components/builder-conversation.tsx:121`) |
+| Fio: eventos e mensagens do Mastra | nativo | `hub-api/src/mastra-parts.ts`, `builder/conversation/live.ts` | novo; `live.ts` perde a tradução | dono e rotas da 0050, "Why not Mastra's routes" | Factory `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:202-300`; OS `apps/web/src/features/builder/transcript.ts:1-9,119-188`; vibesdk: nenhuma faz |
+| Cortes num dono | nosso, novo | `builder/conversation/wire.ts`, `hub-api/src/wire-limits.ts` | de `DETAIL_LIMITS` por parte a um corte por texto | limites da 14 (`tool-detail.ts:6-12`) | Factory corta na tela, 800 (`components/tool/ToolCard.tsx:41,54,64`); OS `OUTPUT_LIMIT = 800` (`components/builder-conversation.tsx:121`) |
 | Redutor da transcrição | nativo na forma, nosso no código | `apps/web/.../transcript.ts` | uma porta para vivo e relido | uma mensagem por passo guardada, uma por volta ao vivo | Factory `mastracode/factory-ui/src/ui/domains/chat/services/transcript.ts:423-437,696-726`; Mastra Code `mastracode/tui/src/tui/event-dispatch.ts:100-130` |
 | Linha de ferramenta por nome, com volta | nativo na forma | `tool-presentation.ts`, `tool-row.tsx` | frases em português | conjunto fechado (`permissions.ts`) | `packages/playground-ui/src/.../tool-presentation.ts:70-119`; Factory `components/tool/ToolCard.tsx:27-30,70-74`, `components/ToolFactory.tsx:78-117`; OS `construir/tool-sentences.ts:21-71,123`; vibesdk `exec-commands.ts:35-46` |
 | Falha abre no erro | nativo | `tool-row.tsx` | — | — | Factory `ToolCard.tsx:40-42`; OS `builder-conversation.tsx:143-144` |
@@ -179,7 +180,8 @@ a 0050 fica em 350 palavras (L24). **Prova.** 1.
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `packages/hub-api/src/conversations.ts`, `tool-detail.ts`, `questions.ts` | muda; `tool-detail.ts` apaga | web, OpenAPI, servidor |
+| `packages/hub-api/src/conversations.ts`, `questions.ts`, `index.ts` | muda | web, OpenAPI, servidor |
+| `packages/hub-api/src/tool-detail.ts` → `wire-limits.ts` | apaga; cria `WIRE_LIMITS` e `SUBJECT_MAX_LENGTH` | `wire.ts` |
 | `packages/hub-api/src/mastra-parts.ts` | cria | `conversations.ts`, web |
 | `builder/conversation/wire.ts` | cria: o dono dos cortes | `live.ts`, `history.ts` |
 | `builder/conversation/{parts,check-row,cards,shell}.ts` | apaga ou encolhe ao que não é tradução | `live.ts`, `history.ts`, `routes.ts` |
@@ -194,13 +196,16 @@ a 0050 fica em 350 palavras (L24). **Prova.** 1.
   `{type: \`data-${string}\`, data}`. `args`, `result` e `data` são `unknown` (o contrato não fecha
   ferramentas); o estado é o enum do Mastra (`partial-call` … `output-denied`). O servidor prova em
   tipo que `MastraMessagePart` de `@mastra/core/agent-controller` cabe em `z.input<typeof MastraPart>`
-  (C27: o esquema é a entrada de fora; Mastra é a fonte).
-- `Conversation` ganha `memory`: o `omProgress` de `session.displayState.get()`
-  (`session.d.ts:1286-1303`), na forma do Mastra (`types.d.ts:450-485`), como o OS o lê ao abrir
-  (`mastra-session.ts:119-121`).
+  (C27: o esquema é a entrada de fora; Mastra é a fonte). Cada variante ganha só `cuts?: string[]`, os
+  caminhos que `wire.ts` cortou (`toolInvocation.result`, `reasoning`); opcional, a prova de tipo segue.
+- Os ids: `toolCallId` e `id` chegam como texto do Mastra; o redutor da U4 os lê por `ToolCallId` e
+  `MessageId` (C23), na entrada; um que falha a marca é descartado.
+- `Conversation` ganha `memory: OMProgressState | null`: o `omProgress` de
+  `session.displayState.get()` (`session.d.ts:1303`; `types.d.ts:585`, forma em `:461-485`) quando a
+  sessão está nesta cópia do Hub, senão `null`, como o OS o lê ao abrir (`mastra-session.ts:119-121`).
 - `Message = {id, role, parts: MastraPart[], suspended, model, createdAt}`; `suspended:
   Record<ToolCallId, unknown>`, o `suspendPayload` de `metadata.suspendedTools` (hoje `withPlan`,
-  `parts.ts:288-295`); nada mais da `metadata`.
+  `parts.ts:301-307`); nada mais da `metadata`.
 - `ConversationEvent`: `turn {message, startedAt}` e `turnEnd` ficam (nossos: reconectar, D da
   13); entram, como o Mastra os emite (`agent-controller/types.d.ts:660-680`, `:792-900`),
   tipados por `AgentControllerWireEvent`, o tipo do Mastra para um evento depois do JSON
@@ -211,8 +216,8 @@ a 0050 fica em 350 palavras (L24). **Prova.** 1.
   partes (`machine`, `version`, `restarted`, `failure`, `notice`) vão como `message_update` de parte
   `data-conexus-<nome>`, os nomes que a 14.0 guarda.
 - `cutPart(part: MastraPart): MastraPart` e `cutEvent(event)`, em `wire.ts`, o único lugar que corta:
-  cada texto em `args`, `result`, `reasoning` e `shell_output` acima de `WIRE_LIMITS` (em `hub-api`,
-  C26) sai cortado, com `cut: true` ao lado. `WIRE_LIMITS = {text: 2000, outputLines: 20, outputBytes:
+  cada texto em `args`, `result`, `reasoning` e `shell_output` acima de `WIRE_LIMITS`
+  (`wire-limits.ts`, C26) sai cortado e o seu caminho vai para `cuts`. `WIRE_LIMITS = {text: 2000, outputLines: 20, outputBytes:
   4096}`: os de `DETAIL_LIMITS` da 14, cuja base está em `tool-detail.ts:6-12`, e 2.000 caracteres para
   todo texto, como o arquivo escrito da 14 (a Factory corta a leitura em 800, ver a tabela).
 - Sem máscara (fundador, 2026-10-22, `9fd478b`).
@@ -245,7 +250,7 @@ muda.
 modelo espalha `providerOptions.google` no corpo e manda `reasoning_effort`
 (`dist-Btgwa9QY.js:3322-3326`), e lê `delta.reasoning_content` como raciocínio (`:3484`). A gravação
 do CLIProxy já traz o campo, vazio (`recordings/google-abort.sse`). Hoje `providerOptionsOf` não manda
-nada para `gemini-3.8-flash-high` (`thinking.ts:150-152`) e, para o resto, um `thinkingConfig` que o
+nada para `gemini-3.8-flash-high` (`thinking.ts:150-152`) e, para o resto, um `thinkingConfig` (`:167-175`) que o
 corpo leva cru. **Não provado**: qual campo faz o CLIProxy v8.0.33 devolver os pensamentos.
 
 **Ordem.** 1. O 20 primeiro, por firstmate: `reasoning_effort` e, se vier vazio, `thinkingConfig:
@@ -293,12 +298,14 @@ muda. `tool-text.ts`: apaga (as frases vão para `tool-presentation.ts`). Chama:
 
 ## U5 O plano não é mudança do app
 
-**Raio.** `builder/machine/scripts.ts`: muda; chama: `save.ts`, `processors.ts` (sem arquivo mudado,
-sem conferência, critério 13 da 14).
+**Raio.** `builder/machine/scripts.ts`: muda; chama: `builder/runs/save.ts`,
+`builder/conversation/processors.ts` (sem arquivo mudado, sem conferência, critério 13 da 14).
 
-**Contrato.** `treeOf` (`scripts.ts:43-53`) compara a árvore com a base fora de `PLAN_PATH`
-(`plan-tools.ts:12`), por pathspec de exclusão do Git, como já faz com `node_modules`; a versão que
-guarda outra mudança leva o plano junto. Fundador, 2026-10-22, "2 a". **Prova.** 17.
+**Contrato.** `treeOf` (`scripts.ts:43-53`, de `changedScript` e da coleta) segue escrevendo a árvore
+inteira, com o plano; só o teste de "sem mudança" (`:52`) passa da igualdade de árvores para
+`git diff-tree --quiet` da base contra a árvore fora de `PLAN_PATH` (`plan-tools.ts:12`, pathspec de
+exclusão). Assim a versão que guarda outra mudança leva o plano junto, e a contagem `changed` (`:73`)
+usa a mesma exclusão. Fundador, 2026-10-22, "2 a". **Prova.** 17.
 
 ## U6 Dublês e percurso
 
