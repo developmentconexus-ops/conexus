@@ -40,6 +40,7 @@ const CONVERSATION = readConversation.success.body.parse({
         id: 'm1',
         role: 'person',
         parts: [{ type: 'text', text: `Compare dois apps de encomenda de padaria ${LONG_WORD}` }],
+        suspended: {},
         model: null,
         createdAt: '2026-10-19T12:00:00.000Z',
       },
@@ -47,31 +48,43 @@ const CONVERSATION = readConversation.success.body.parse({
         id: 'm2',
         role: 'builder',
         parts: [
-          { type: 'notice', text: 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.' },
-          { type: 'reasoning', id: 'r1', state: 'completed', seconds: null },
-          ...['a', 'b', 'c'].map((id) => ({
-            type: 'tool' as const,
-            id,
-            kind: 'read_page' as const,
-            state: 'completed' as const,
-            subject: { url: LONG_WORD, title: null },
+          {
+            type: 'data-conexus-notice',
+            data: { text: 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.' },
+          },
+          { type: 'reasoning', reasoning: 'Vou comparar os dois apps.', details: [] },
+          ...['a', 'b', 'c'].map((toolCallId) => ({
+            type: 'tool-invocation' as const,
+            toolInvocation: {
+              state: 'result' as const,
+              toolCallId,
+              toolName: 'web_fetch',
+              args: { url: LONG_WORD },
+              result: { title: null },
+            },
           })),
           {
-            type: 'tool',
-            id: 'd',
-            kind: 'search_web',
-            state: 'completed',
-            subject: {
-              query: 'apps de encomenda de padaria com pedido pelo celular e plano mensal',
+            type: 'tool-invocation',
+            toolInvocation: {
+              state: 'result',
+              toolCallId: 'd',
+              toolName: 'web_search',
+              args: {
+                query: 'apps de encomenda de padaria com pedido pelo celular e plano mensal',
+              },
+              result: ['dois apps de encomenda de padaria'],
             },
           },
           { type: 'text', text: ANSWER },
-          { type: 'failure', code: 'MODEL_CALL_FAILED' },
+          { type: 'data-conexus-failure', data: { code: 'MODEL_CALL_FAILED' } },
         ],
+        suspended: {},
         model: 'anthropic/claude-sonnet-4',
         createdAt: '2026-10-19T12:01:00.000Z',
       },
     ],
+    tasks: [],
+    memory: null,
   },
 })
 
@@ -185,7 +198,7 @@ export const CONVERSATION_STATES: State[] = [
     replies: { ...WITH_ACCOUNT, ...OPEN },
     settle: async (page) => {
       await inChat(page, 'Encontrei')
-      await page.getByRole('button', { name: 'Leu 3 páginas, pesquisou 1 vez' }).click()
+      await page.getByRole('button', { name: /4 ferramentas/ }).click()
       await waitFor(page, 'Pesquisou na internet')
     },
   },

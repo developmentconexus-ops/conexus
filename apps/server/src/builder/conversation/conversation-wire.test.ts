@@ -288,7 +288,7 @@ function writing(content: string) {
   }
 }
 
-test('a escrita que o espaço de trabalho recusa por falta de leitura termina com o erro do Mastra no resultado', async (t) => {
+test('o resultado do segundo write_file é sucesso mesmo sem leitura prévia', async (t) => {
   let step = 0
   const { hub, ana, conversations } = await conversing(t, (sent: Sent): Reply => {
     if (title(sent) !== undefined) return { kind: 'text', text: 'Título' }
@@ -305,5 +305,6 @@ test('a escrita que o espaço de trabalho recusa por falta de leitura termina co
   )
   const [first, second] = [...callsOf(foldedParts(events)).values()]
   assert.equal(first?.toolInvocation.state, 'result')
-  assert.equal(second?.toolInvocation.isError ?? second?.toolInvocation.state, true)
+  assert.equal(second?.toolInvocation.state, 'result')
+  assert.notEqual(second?.toolInvocation.isError, true)
 })

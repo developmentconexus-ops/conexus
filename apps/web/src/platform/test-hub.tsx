@@ -5,7 +5,9 @@ import {
   getCompany,
   getProject,
   listCompanies,
+  listConversations,
   listInvitations,
+  listModelAccounts,
   listMembers,
   listProjects,
   Member,
@@ -182,6 +184,26 @@ export function hubServer() {
   const server = setupServer(
     sessionRead(() => undefined),
     http.get('*/api/companies', () => HttpResponse.json(NO_COMPANIES)),
+    http.get('*/api/companies/:companyId/model-accounts', () =>
+      HttpResponse.json(
+        listModelAccounts.success.body.parse({
+          company: [],
+          mine: [],
+          order: [],
+          kinds: [],
+          defaults: { company: null, mine: null, start: null, companyStart: null },
+          choices: { mine: [], company: [] },
+          mayManage: false,
+          fallback: { enabled: false, chain: [], revision: 0 },
+          usableProviders: [],
+        }),
+      ),
+    ),
+    http.get('*/api/companies/:companyId/projects/:projectId/conversations', () =>
+      HttpResponse.json(
+        listConversations.success.body.parse({ conversations: [], next: { kind: 'END' } }),
+      ),
+    ),
   )
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }))
   afterEach(() => server.resetHandlers())
