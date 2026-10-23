@@ -91,7 +91,7 @@ async function writeFirst(chat: Page) {
   await transcriptShowed(chat, 'Escreveu um arquivo')
   await chat.getByText(/Versão 1, guardada em/).waitFor()
   // The tree holds the starter's files beside the page, so no file is open until one is chosen.
-  await chat.getByRole('button', { name: 'pagina.html', exact: true }).click()
+  await chat.getByRole('treeitem', { name: 'pagina.html', exact: true }).click()
   await chat
     .getByRole('region', { name: 'Conteúdo de pagina.html' })
     .getByText('<h1>Padaria</h1>')
