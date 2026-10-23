@@ -55,6 +55,7 @@ ALTER TABLE builder.machine OWNER TO test_owner;
 ALTER TABLE builder.model_account OWNER TO test_owner;
 ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
+ALTER TABLE builder.observational_memory_models OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
 ALTER TABLE builder.run OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
@@ -175,6 +176,7 @@ GRANT SELECT,INSERT,DELETE ON TABLE builder.company_account_kind TO hub_operator
 GRANT SELECT,INSERT ON TABLE builder.company_model TO hub_company;
 GRANT UPDATE(model) ON TABLE builder.company_model TO hub_company;
 GRANT UPDATE(effort) ON TABLE builder.company_model TO hub_company;
+GRANT SELECT,INSERT,UPDATE(observer,reflector) ON TABLE builder.observational_memory_models TO hub_company;
 -- Step 12, founder 2026-10-19 ("1. A"): a company's routes index their own conversations and their
 -- messages' keys, and read and write the automatic switch; the queue marks an account limited and
 -- holds a token's refresh. The Hub's login reaches none of them.

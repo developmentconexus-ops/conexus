@@ -67,7 +67,7 @@ function getStringProp(obj: unknown, key: string): string | undefined {
   return undefined
 }
 
-export function ToolIcon({ tool }: { tool: ToolItem }) {
+function ToolIcon({ tool }: { tool: ToolItem }) {
   const failed = isFailed(tool)
   const presentation = presentTool(tool.toolName, tool.args, {
     isRunning: isRunning(tool.state),

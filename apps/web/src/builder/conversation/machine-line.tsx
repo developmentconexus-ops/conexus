@@ -13,14 +13,12 @@ import type {
 } from './transcript-items.ts'
 import { isMachineLasting } from './transcript-items.ts'
 
-export type { MachinePhase } from './transcript-items.ts'
 export {
   ConexusFailureData,
   ConexusMachineData,
   ConexusNoticeData,
   ConexusRestartedData,
   ConexusVersionData,
-  isMachineLasting,
 } from './transcript-items.ts'
 
 const PHASES: Record<MachinePhase, string> = {

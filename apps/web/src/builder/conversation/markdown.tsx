@@ -13,7 +13,7 @@ function safeAddress(raw: string): string | undefined {
   return url?.protocol === 'https:' || url?.protocol === 'http:' ? url.href : undefined
 }
 
-export function Anchor(props: { href: string; children: ReactNode }) {
+function Anchor(props: { href: string; children: ReactNode }) {
   const href = safeAddress(props.href)
   if (href === undefined) return <>{props.children}</>
   return (
