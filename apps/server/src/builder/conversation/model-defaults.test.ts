@@ -1,10 +1,7 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
-import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { CARLA, call, codeOf, memberOn, plantCompany, post } from '../../hub/identity/test-hub.ts'
-import { TEST_ORIGIN } from '../../platform/test-database.ts'
+import type { Person } from '../../hub/identity/test-hub.ts'
+import { call, codeOf, plantCompany } from '../../hub/identity/test-hub.ts'
 import { MODEL } from './test-conversation.ts'
 import { company, connect, created, pairOf, patch, startOf } from './test-defaults.ts'
 
