@@ -57,7 +57,6 @@ ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
 ALTER TABLE builder.run OWNER TO test_owner;
-ALTER TABLE builder.run_event OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -234,7 +233,6 @@ GRANT UPDATE(lease_until) ON TABLE builder.run TO hub_company;
 GRANT UPDATE(owner) ON TABLE builder.run TO hub_company;
 GRANT UPDATE(copied_at) ON TABLE builder.run TO hub_company;
 GRANT SELECT(copied_at) ON TABLE builder.run TO hub_runs;
-GRANT SELECT,INSERT ON TABLE builder.run_event TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
