@@ -1,6 +1,5 @@
 import type {
   CompanyId,
-  ConversationEvent,
   ConversationId,
   PersonId,
   ProjectId,
@@ -30,13 +29,16 @@ export type RunsDeps = {
   yieldMs?: () => number
 }
 
-/** What a restart told the stream of the turn it ended: each event with its place in the run. */
+/** What a restart kept of the turn: its version, nothing to save, or a save that did not happen. */
+export type Kept = number | 'nothing' | 'lost'
+
+/** What a restart tells the conversation of the turn it ended: the version kept, if any. */
 export type Restart = {
   companyId: CompanyId
   personId: PersonId
   conversationId: ConversationId
   runId: RunId
-  said: { n: number; event: ConversationEvent }[]
+  kept: Kept
 }
 
 /** What the runs share: the ports and the rows. */
@@ -69,3 +71,6 @@ export type Outcome =
       kind: 'failed'
       code: 'SAVE_REFUSED' | 'GIT_RESTORE_NEEDED' | 'MACHINE_LOST' | 'MACHINE_UNAVAILABLE'
     }
+
+/** A settled turn: its outcome, and how many times the end of the turn judged it. */
+export type Settled = Outcome & { rounds: number }

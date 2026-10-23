@@ -1,0 +1,6 @@
+{
+  "provider": "google",
+  "api": "Chat Completions through CLIProxyAPI, streamed",
+  "sdk": "@mastra/core 1.78.0 (its OpenAI-compatible model)",
+  "recordedAt": "2026-10-23"
+}

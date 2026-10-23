@@ -1,14 +1,14 @@
-import { DETAIL_LIMITS } from '@conexus/hub-api'
+import { WIRE_LIMITS } from '@conexus/hub-api'
 
 /** A running command's lines are said at most this often; all of them once more when it exits. */
 const SAID_EVERY_MS = 1000
-const { outputLines, outputBytes } = DETAIL_LIMITS
+const { outputLines, outputBytes } = WIRE_LIMITS
 
 /** The end of a command's output as its row shows it, and whether lines before it were left out. */
 export type Tail = { output: string[]; cut: boolean }
 
 /**
- * The end of a command's output: the last lines the row shows, at most `DETAIL_LIMITS.outputLines`
+ * The end of a command's output: the last lines the row shows, at most `WIRE_LIMITS.outputLines`
  * and `outputBytes`, kept as they arrive so a long run holds no more than that.
  */
 export class ShellTail {

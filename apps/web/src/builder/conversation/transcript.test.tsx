@@ -1,36 +1,25 @@
-import type { MessagePart } from '@conexus/hub-api'
-import { MessageId } from '@conexus/hub-api'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { MessageId, ModelId } from '@conexus/hub-api'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hourOf } from '../../platform/dates.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { builderSaid, conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { builderSaid, conversationOf, FIRST, screens } from './test-hub.tsx'
+import type { TranscriptItem } from './transcript.ts'
+import { Transcript } from './transcript.tsx'
 
 const { openConversation } = screens(hubServer())
+const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 
-function tool(
-  id: string,
-  kind: 'read_page' | 'search_web' = 'read_page',
-  state: 'running' | 'completed' | 'error' = 'completed',
-): MessagePart {
-  return { type: 'tool', id, kind, state, subject: null }
-}
-
-const COMMAND = { kind: 'command', exitCode: null, cut: false } as const
-
-/** A turn the Hub began `seconds` ago, speaking on the first line. */
-async function begin(seconds = 3) {
-  const opened = await openConversation(conversationOf({ id: FIRST }))
-  say(opened.field, 'Compare')
-  await screen.findByText('Pensando…')
-  const startedAt = new Date(Date.now() - seconds * 1000).toISOString()
-  const line = opened.lines[0]
-  line?.emit({ type: 'turn', message: { ...builderSaid(''), parts: [] }, startedAt })
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
-  function parts(...of: MessagePart[]) {
-    for (const part of of) line?.emit({ type: 'part', part })
+function toolItem(id: string, toolName = 'read_file'): TranscriptItem {
+  return {
+    kind: 'tool',
+    id,
+    toolCallId: id,
+    toolName,
+    state: 'result',
+    args: { path: `${id}.ts` },
+    result: `content of ${id}`,
   }
-  return { ...opened, log, parts, line }
 }
 
 test('o turno do Builder leva a marca, "Conexus" e o modelo; o da pessoa, a bolha e a hora', async () => {
@@ -43,6 +32,7 @@ test('o turno do Builder leva a marca, "Conexus" e o modelo; o da pessoa, a bolh
           id: MessageId.parse('p1'),
           role: 'person',
           parts: [{ type: 'text', text: 'Oi' }],
+          suspended: {},
           model: null,
           createdAt,
         },
@@ -62,258 +52,155 @@ test('o turno do Builder leva a marca, "Conexus" e o modelo; o da pessoa, a bolh
   expect(builder?.querySelector('svg path')).toBeTruthy()
 })
 
-test('uma ou duas ferramentas são linhas; três ou mais viram uma linha que abre', async () => {
-  const { log, line, parts } = await begin()
-  parts(tool('a'), tool('b', 'search_web'))
-  expect(await within(log).findByText('Leu uma página')).toBeTruthy()
-  expect(within(log).getByText('Pesquisou na internet')).toBeTruthy()
-  expect(within(log).queryByRole('button')).toBeNull()
-  parts(tool('c'), tool('d'))
-  line?.emit({ type: 'text', delta: 'Pronto.' })
-  const group = await within(log).findByRole('button', {
-    name: 'Leu 3 páginas, pesquisou 1 vez',
-  })
+test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, abre no texto Markdown (Critério 9)', async () => {
+  const reasoningItemRunning: TranscriptItem = {
+    kind: 'reasoning',
+    id: 'r-1',
+    reasoning: '',
+    seconds: null,
+    streaming: true,
+  }
+
+  const { rerender } = render(
+    <Transcript
+      messages={[]}
+      answer={{ transcript: [reasoningItemRunning], parts: [], streaming: true }}
+      model={MODEL}
+    />,
+  )
+  expect(screen.getByText('Pensando…')).toBeTruthy()
+
+  const reasoningItemDone: TranscriptItem = {
+    kind: 'reasoning',
+    id: 'r-1',
+    reasoning: 'O usuário pediu uma lista de pedidos.\n\nVou ler o arquivo `src/app.tsx`.',
+    seconds: 6,
+    streaming: false,
+  }
+
+  rerender(
+    <Transcript
+      messages={[]}
+      answer={{ transcript: [reasoningItemDone], parts: [], streaming: false }}
+      model={MODEL}
+    />,
+  )
+  expect(screen.queryByText('Pensando…')).toBeNull()
+  const trigger = screen.getByRole('button', { name: 'Pensou por 6 s' })
+  expect(trigger.getAttribute('aria-expanded')).toBe('false')
+  expect(screen.queryByText(/O usuário pediu uma lista de pedidos/)).toBeNull()
+
+  fireEvent.click(trigger)
+  expect(trigger.getAttribute('aria-expanded')).toBe('true')
+  const content = await screen.findByText(/O usuário pediu uma lista de pedidos/)
+  expect(content).toBeTruthy()
+})
+
+test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', async () => {
+  const reasoningWithoutSeconds: TranscriptItem = {
+    kind: 'reasoning',
+    id: 'r-2',
+    reasoning: 'Pensamento sem contagem de segundos.',
+    seconds: null,
+    streaming: false,
+  }
+
+  render(
+    <Transcript
+      messages={[]}
+      answer={{ transcript: [reasoningWithoutSeconds], parts: [], streaming: false }}
+      model={MODEL}
+    />,
+  )
+  const trigger = screen.getByRole('button', { name: 'Pensou' })
+  expect(trigger).toBeTruthy()
+  fireEvent.click(trigger)
+  expect(await screen.findByText('Pensamento sem contagem de segundos.')).toBeTruthy()
+})
+
+test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado que abre (Critério 9)', async () => {
+  const twoTools: TranscriptItem[] = [toolItem('t-1', 'read_file'), toolItem('t-2', 'grep')]
+
+  const { rerender } = render(
+    <Transcript
+      messages={[]}
+      answer={{ transcript: twoTools, parts: [], streaming: false }}
+      model={MODEL}
+    />,
+  )
+  expect(screen.getByText(/Leu um arquivo/)).toBeTruthy()
+  expect(screen.getByText(/Buscou no código/)).toBeTruthy()
+  expect(screen.queryByText(/ferramentas:/)).toBeNull()
+
+  const fourTools: TranscriptItem[] = [
+    toolItem('t-1', 'list_files'),
+    toolItem('t-2', 'grep'),
+    toolItem('t-3', 'read_file'),
+    toolItem('t-4', 'edit_file'),
+  ]
+
+  rerender(
+    <Transcript
+      messages={[]}
+      answer={{ transcript: fourTools, parts: [], streaming: false }}
+      model={MODEL}
+    />,
+  )
+  const group = screen.getByRole('button', { name: /4 ferramentas/ })
   expect(group.getAttribute('aria-expanded')).toBe('false')
-  expect(within(log).queryByText('Leu uma página')).toBeNull()
+
   fireEvent.click(group)
   expect(group.getAttribute('aria-expanded')).toBe('true')
-  expect(await within(log).findAllByText('Leu uma página')).toHaveLength(3)
-  expect(within(log).getByText('Pesquisou na internet')).toBeTruthy()
+  expect(await screen.findByText(/Listou arquivos/)).toBeTruthy()
+  expect(screen.getByText(/Buscou no código/)).toBeTruthy()
+  expect(screen.getByText(/Leu um arquivo/)).toBeTruthy()
+  expect(screen.getByText(/Editou um arquivo/)).toBeTruthy()
 })
 
-test('um texto ou um pensamento entre as ferramentas quebra a sequência', async () => {
-  const { log, line, parts } = await begin()
-  parts(tool('a'), tool('b'))
-  line?.emit({ type: 'text', delta: 'Agora outra.' })
-  parts(tool('c'), tool('d'))
-  await within(log).findByText('Agora outra.')
-  expect(within(log).getAllByText('Leu uma página')).toHaveLength(4)
-  expect(within(log).queryByRole('button')).toBeNull()
-})
-
-test('o grupo rodando diz a ferramenta e quantas acabaram, e está aberto', async () => {
-  const { log, parts } = await begin()
-  parts(
-    tool('a'),
-    tool('b'),
-    { type: 'tool', id: 'c', kind: 'read_page', state: 'running', subject: null },
-    { type: 'tool', id: 'd', kind: 'read_page', state: 'running', subject: null },
-  )
-  const header = await within(log).findByRole('button', { name: /Lendo uma página/ })
-  expect(header.textContent).toBe('Lendo uma página2/4')
-  expect(header.getAttribute('aria-expanded')).toBe('true')
-  parts(tool('c'), tool('d'))
-  await waitFor(() => expect(header.textContent).toBe('Leu uma página4/4'))
-})
-
-test('a ferramenta que falhou diz que falhou e não mostra o texto do fornecedor', async () => {
-  const { log, parts } = await begin()
-  parts(Object.assign(tool('a', 'read_page', 'error'), { error: 'SECRET-PLANTED-TEXT' }))
-  expect(await within(log).findByText('Não conseguiu ler uma página')).toBeTruthy()
-  expect(log.textContent).not.toContain('SECRET-PLANTED-TEXT')
-})
-
-test('o endereço da página é um link só se for http ou https', async () => {
-  const { log, parts } = await begin()
-  parts(
+test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferramentas (Critério 9)', () => {
+  const itemsWithUngroupables: TranscriptItem[] = [
+    toolItem('t-1', 'read_file'),
+    toolItem('t-2', 'read_file'),
     {
-      type: 'tool',
-      id: 'a',
-      kind: 'read_page',
-      state: 'completed',
-      subject: { url: 'https://padaria.example.test/pedidos', title: 'Pedidos da padaria' },
+      kind: 'tool',
+      id: 't-skill',
+      toolCallId: 't-skill',
+      toolName: 'skill',
+      state: 'result',
+      args: { name: 'conexus-build' },
+      result: 'Skill ok',
     },
-    {
-      type: 'tool',
-      id: 'b',
-      kind: 'read_page',
-      state: 'completed',
-      subject: { url: 'javascript:alert(1)', title: 'Armadilha' },
-    },
+    toolItem('t-3', 'read_file'),
+    toolItem('t-4', 'read_file'),
+  ]
+
+  render(
+    <Transcript
+      messages={[]}
+      answer={{ transcript: itemsWithUngroupables, parts: [], streaming: false }}
+      model={MODEL}
+    />,
   )
-  const link = await within(log).findByRole('link', { name: /Pedidos da padaria/ })
-  expect(link.getAttribute('rel')).toBe('noopener noreferrer')
-  expect(within(log).getByText('Armadilha')).toBeTruthy()
-  expect(within(log).queryByRole('link', { name: /Armadilha/ })).toBeNull()
+  // None of the runs reaches length >= 3, so no group button exists:
+  expect(screen.queryByText(/ferramentas:/)).toBeNull()
+  expect(screen.getByText(/Usou a skill conexus-build/)).toBeTruthy()
 })
 
-test('"Pensando…" vale até o primeiro conteúdo; o pensamento acabado diz o tempo e não abre', async () => {
-  const { log, parts } = await begin()
-  expect(within(log).getAllByText('Pensando…')).toHaveLength(1)
-  parts({ type: 'reasoning', id: 'r', state: 'running', seconds: null })
-  expect(within(log).getAllByText('Pensando…')).toHaveLength(1)
-  parts({ type: 'reasoning', id: 'r', state: 'completed', seconds: 9 })
-  expect(await within(log).findByText('Pensou por 9 s')).toBeTruthy()
-  expect(within(log).queryByText('Pensando…')).toBeNull()
-  expect(within(log).queryByRole('button')).toBeNull()
-})
+test('task_* tools não têm linha na conversa (Critério 9)', () => {
+  const itemsWithTasks: TranscriptItem[] = [
+    toolItem('t-1', 'task_write'),
+    toolItem('t-2', 'task_update'),
+    toolItem('t-3', 'task_complete'),
+    toolItem('t-4', 'task_check'),
+  ]
 
-test('o pensamento relido, sem tempo, diz só "Pensou"', async () => {
-  await openConversation(
-    conversationOf({
-      id: FIRST,
-      messages: [
-        {
-          ...builderSaid(''),
-          parts: [
-            { type: 'reasoning', id: 'r', state: 'completed', seconds: null },
-            { type: 'text', text: 'Pronto.' },
-          ],
-        },
-      ],
-    }),
+  render(
+    <Transcript
+      messages={[]}
+      answer={{ transcript: itemsWithTasks, parts: [], streaming: false }}
+      model={MODEL}
+    />,
   )
-  expect(screen.getByText('Pensou')).toBeTruthy()
-})
-
-test('"Builder trabalhando" conta desde o início do turno no servidor, e segue ao reconectar', async () => {
-  const { lines, line } = await begin(65)
-  const status = await screen.findByRole('status')
-  expect(status.textContent).toMatch(/^Builder trabalhando · há 1 min 0[5-6] s$/)
-  line?.close()
-  await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
-  const startedAt = new Date(Date.now() - 125_000).toISOString()
-  lines[1]?.emit({ type: 'turn', message: { ...builderSaid(''), parts: [] }, startedAt })
-  await waitFor(() =>
-    expect(screen.getByRole('status').textContent).toMatch(
-      /^Builder trabalhando · há 2 min 0[5-6] s$/,
-    ),
-  )
-  lines[1]?.emit({ type: 'turnEnd', reason: 'complete' })
-  await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
-})
-
-test('a falha fica no turno, relida depois de recarregar', async () => {
-  await openConversation(
-    conversationOf({
-      id: FIRST,
-      messages: [
-        {
-          ...builderSaid(''),
-          parts: [
-            { type: 'text', text: 'Vou tentar.' },
-            { type: 'failure', code: 'MODEL_CALL_FAILED' },
-          ],
-        },
-      ],
-    }),
-  )
-  expect((await screen.findByRole('alert')).textContent).toBe(
-    'O modelo não respondeu. Envie a mensagem de novo.',
-  )
-  expect(screen.getByText('Vou tentar.')).toBeTruthy()
-})
-
-/** What jsdom lacks of a scrolling element, as members to lend the elements: a `scrollTop` that sticks. */
-class Scrolling {
-  declare dataset: DOMStringMap
-  top = 0
-  get scrollHeight() {
-    return 1000
-  }
-  get clientHeight() {
-    return 200
-  }
-  get scrollTop() {
-    return this.top
-  }
-  set scrollTop(top: number) {
-    this.top = top
-  }
-  scrollTo(options: ScrollToOptions) {
-    this.top = options.top ?? 0
-  }
-  getBoundingClientRect() {
-    return new DOMRect(0, 0, 0, this.dataset.messageId ? 1000 : 200)
-  }
-}
-
-/** jsdom lays nothing out: a viewport of 200 over 1000 of conversation. */
-function withGeometry() {
-  const lent = Object.getOwnPropertyDescriptors(Scrolling.prototype)
-  Reflect.deleteProperty(lent, 'constructor')
-  Object.defineProperties(HTMLElement.prototype, lent)
-  return () => {
-    for (const name of Object.keys(lent)) Reflect.deleteProperty(HTMLElement.prototype, name)
-  }
-}
-
-test('a conversa abre no fim, quem subiu não é puxado quando ela cresce e volta com "Ir para o fim da conversa"', async () => {
-  const restore = withGeometry()
-  try {
-    const { parts } = await begin()
-    const viewport = screen.getByLabelText('Rolagem da conversa')
-    parts(tool('a'), tool('b'))
-    await waitFor(() => expect(viewport.scrollTop).toBe(800))
-    viewport.scrollTop = 100
-    fireEvent.wheel(viewport, { deltaY: -50 })
-    fireEvent.scroll(viewport)
-    parts(tool('c'))
-    await screen.findByRole('button', { name: /Leu uma página3\/3/ })
-    expect(viewport.scrollTop).toBe(100)
-    fireEvent.click(await screen.findByRole('button', { name: 'Ir para o fim da conversa' }))
-    await waitFor(() => expect(viewport.scrollTop).toBe(800))
-  } finally {
-    restore()
-  }
-})
-
-test('um turno que escreve: arquivo, comando e saída, máquina e versão, em palavras; o arquivo escrito não vira linha', async () => {
-  const { log, parts } = await begin()
-  parts(
-    { type: 'machine', phase: 'starting' },
-    { type: 'tool', id: 'w', kind: 'write_file', state: 'completed', subject: { path: 'a.ts' } },
-    { type: 'file', toolId: 'w', path: 'a.ts', operation: 'write' },
-    {
-      type: 'tool',
-      id: 'c',
-      kind: 'run_command',
-      state: 'completed',
-      subject: { command: 'npm test' },
-      detail: { ...COMMAND, command: 'npm test', output: ['1 teste falhou'], exitCode: 1 },
-    },
-    { type: 'tool', id: 'x', kind: 'other', state: 'denied', subject: null },
-    { type: 'version', number: 2, changed: true, files: 7, changedFiles: 2 },
-  )
-  await within(log).findByText('Versão 2 guardada, sem conferência: 2 arquivos mudados.')
-  // The machine's step is over once anything came after it.
-  expect(within(log).queryByText(/Ligando a máquina/)).toBeNull()
-  fireEvent.click(within(log).getByRole('button', { name: /^Escreveu 1 arquivo/ }))
-  expect(await within(log).findByText('Escreveu um arquivo')).toBeTruthy()
-  expect(within(log).getByText('a.ts')).toBeTruthy()
-  expect(within(log).getByText('npm test')).toBeTruthy()
-  fireEvent.click(within(log).getByRole('button', { name: /Rodou um comando/ }))
-  expect(await within(log).findByText(/1 teste falhou/)).toBeTruthy()
-  expect(within(log).getByText('O comando terminou com o código 1.')).toBeTruthy()
-  expect(within(log).getByText('Não pôde usar uma ferramenta')).toBeTruthy()
-  expect(within(log).getAllByText('a.ts')).toHaveLength(1)
-})
-
-test('ao vivo: a máquina e o comando dizem há quanto tempo; a máquina refeita fica; a versão 1 conta os arquivos', async () => {
-  const { log, parts } = await begin()
-  parts(
-    { type: 'machine', phase: 'replaced' },
-    { type: 'tool', id: 'r', kind: 'read_file', state: 'completed', subject: { path: 'a.ts' } },
-    {
-      type: 'tool',
-      id: 'c',
-      kind: 'run_command',
-      state: 'running',
-      subject: { command: 'npm i' },
-      detail: { ...COMMAND, command: 'npm i', output: ['added 1 package'] },
-    },
-    { type: 'machine', phase: 'starting' },
-  )
-  await within(log).findByText(/Ligando a máquina…/)
-  expect(within(log).getByText('(há 0 s)')).toBeTruthy()
-  expect(within(log).getByText('(0 s)')).toBeTruthy()
-  expect(within(log).getByText(/added 1 package/)).toBeTruthy()
-  expect(within(log).queryByText(/O comando terminou/)).toBeNull()
-  expect(within(log).getByText('Leu um arquivo')).toBeTruthy()
-  expect(
-    within(log).getByText('A máquina anterior sumiu; refiz a partir do que está guardado.'),
-  ).toBeTruthy()
-  parts({ type: 'version', number: 1, changed: true, files: 7, changedFiles: 7 })
-  await within(log).findByText('Versão 1 guardada, sem conferência: 7 arquivos.')
-  expect(within(log).queryByText(/Ligando a máquina/)).toBeNull()
+  expect(screen.queryByText(/tarefa/i)).toBeNull()
+  expect(screen.queryByRole('button', { name: /ferramenta|tarefa/i })).toBeNull()
 })

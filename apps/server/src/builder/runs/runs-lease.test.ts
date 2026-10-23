@@ -15,8 +15,16 @@ import {
   streamOf,
   title,
 } from '../conversation/test-conversation.ts'
+import { dataOf } from '../conversation/test-parts.ts'
 
 const WRITE = 'mastra_workspace_write_file'
+
+/** Waits until the Builder has said a word of its answer on the stream. */
+async function saying(stream: Awaited<ReturnType<typeof streamOf>>) {
+  for (let event = await stream.said(); ; event = await stream.said()) {
+    if (event.type === 'message_update' && event.event.type === 'text-delta') return
+  }
+}
 
 /** A first process that writes `a.ts` and then hangs, as if it died; released at the test's end. */
 async function dying(
@@ -40,7 +48,7 @@ async function dying(
   const alive = await streamOf(hub, ana, url)
   t.after(() => alive.close())
   assert.equal((await sent(hub, ana, url, 'Faça a página')).statusCode, 202)
-  for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
+  await saying(alive)
   await hub.test.asOwner(`update builder.run set lease_until = ${leaseEnds}`)
   const beside = await hubBeside(t, hub)
   beside.builder.control.outcome = 'connected'
@@ -68,26 +76,16 @@ test('dois processos, um banco; o primeiro morre: o segundo, ao partir, guarda o
   await beside.restart()
   assert.equal(await state(), 'saved')
   assert.equal(await version(), 1)
-  const restarted = { type: 'restarted', kept: 1 }
-  assert.deepEqual((await reopened.turn()).slice(-2), [
-    { type: 'part', part: restarted },
-    { type: 'turnEnd', reason: 'aborted' },
-  ])
+  const restarted = { type: 'data-conexus-restarted', data: { kept: 1 } }
+  const told = await reopened.turn()
+  assert.deepEqual(dataOf(told, 'data-conexus-restarted'), [restarted.data])
+  assert.deepEqual(told.at(-1), { type: 'turnEnd', reason: 'aborted' })
   const read = rolesAndParts(await call(beside, ana, 'GET', url))
   assert.deepEqual(read.at(-1)?.[1].at(-1), restarted, 'a read shows the restart at the turn end')
   release()
   await hub.close()
   assert.equal(await version(), 1, 'the first process writes nothing')
-  const [last] = await beside.test.asOwner(
-    'select event from builder.run_event order by n desc limit 1',
-  )
-  assert.deepEqual(last?.event, { type: 'turnEnd', reason: 'aborted' }, 'nor journals')
   assert.equal(hub.builder.control.stops, 0, 'the first process does not pause the machine')
-  const rows = await beside.test.asOwner('select n from builder.run_event order by n')
-  assert.deepEqual(
-    rows.map((row) => row.n),
-    rows.map((_, index) => index + 1),
-  )
 })
 
 test('o primeiro morre antes de o Builder dizer algo: a releitura mostra o reinício depois da mensagem, sem versão', async (t) => {
@@ -97,14 +95,14 @@ test('o primeiro morre antes de o Builder dizer algo: a releitura mostra o rein�
   const alive = await streamOf(hub, ana, url)
   t.after(() => alive.close())
   assert.equal((await sent(hub, ana, url, 'Faça a página')).statusCode, 202)
-  for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
+  await saying(alive)
   await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
   const beside = await hubBeside(t, hub)
   await beside.restart()
   const read = rolesAndParts(await call(beside, ana, 'GET', url))
   assert.deepEqual(read.slice(-2), [
     ['person', [{ type: 'text', text: 'Faça a página' }]],
-    ['builder', [{ type: 'restarted', kept: 'nothing' }]],
+    ['builder', [{ type: 'data-conexus-restarted', data: { kept: 'nothing' } }]],
   ])
 })
 
@@ -157,7 +155,7 @@ test('uma renovação da posse falha: o prazo do turno perdido não para o próx
   const alive = await streamOf(hub, ana, url)
   t.after(() => alive.close())
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
-  for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
+  await saying(alive)
   await hub.test.asOwner('update builder.run set owner = gen_random_uuid()')
   // A lost lease refuses the turn's events, so its end shows only in the log.
   function ended() {
@@ -170,7 +168,7 @@ test('uma renovação da posse falha: o prazo do turno perdido não para o próx
   await hub.test.asOwner(`update builder.run set state = 'interrupted'`)
   hub.builder.knobs.turnMs = 3_600_000
   assert.equal((await sent(hub, ana, url, 'Segunda')).statusCode, 202)
-  for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
+  await saying(alive)
   await new Promise((done) => setTimeout(done, 2_000))
   const open = await hub.test.asOwner(`select state from builder.run where state = 'open'`)
   assert.equal(open.length, 1, "the second turn still runs past the lost turn's hour")
@@ -220,7 +218,7 @@ test('parar o processo com um turno que não acaba: passada a espera, a posse é
   const alive = await streamOf(hub, ana, url)
   t.after(() => alive.close())
   assert.equal((await sent(hub, ana, url, 'Faça a página')).statusCode, 202)
-  for (let event = await alive.said(); event.type !== 'text'; event = await alive.said());
+  await saying(alive)
   const closing = hub.close()
   for (let wait = 0; wait < 100; wait += 1) {
     const [row] = await hub.test.asOwner(`select lease_until < now() as free from builder.run`)

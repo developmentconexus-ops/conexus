@@ -110,4 +110,10 @@ Cartão da etapa 14 aprovado em 2026-10-22 (commit a1b1266): "Aprovo"
 
 Etapa 14 usada em 2026-10-22 em https://hub.conexus.fun (v0.14.0 e o conserto v0.14.1, #262 e #263) por firstmate no lugar do fundador, com o Gemini 3.8 Flash High (execuções do Gemini depois do Release, "B"): perguntas, plano, **Pedir ajustes**, aprovação, versões 1 e 2 (o calendário sem biblioteca) e a página de preços só de tela montaram; recarregar e uma segunda aba com pergunta aberta trazem o cartão de volta; **Parar** fecha o plano. Textos, "Aprovo": "Builder esperando sua resposta.", "Plano aprovado.", "Este plano foi fechado.", "Versão N guardada, sem conferência: K arquivos mudados." Sem portão de bibliotecas ("A") e sem máscara de segredo: palavras no registro 0055. Corrida do Mastra, "A"; título tardio, "C". Pendências: #265 a #272, #274 a #276. Método no fechamento: o estudo refeito, "B"; o `poteto-mode` direto no estudo, no cartão e na construção, "... /pstack:poteto-mode quie tlvez esteja faltando. seja em estudo, build, scope".
 
-Cartão da etapa 14.2 aprovado em 2026-10-22 (commit 917b5e48613cb4e0a58562d780160c826fcd0fcb), com U6 e U7 à espera da bancada da harness: "aprovado esse estudo, tá bom? Pode seguir."
+Cartão da etapa 14.2 aprovado em 2026-10-22 (commit 917b5e48613cb4e0a58562d780160c826fcd0fcb): "aprovado esse estudo, tá bom? Pode seguir."
+
+U6 e U7 da etapa 14.2 esperam a bancada da harness.
+
+Cartão da etapa 14.2 aprovado em 2026-10-22 (commit f76f4dce0a7a34a215e416767b4f51e9fed2509d): "C"
+
+Essa emenda põe a etapa 14.0, "Um registro da conversa", dentro da U2, com o desenho aprovado em "1. Sim … 2.B".

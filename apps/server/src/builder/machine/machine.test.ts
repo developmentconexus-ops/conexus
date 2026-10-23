@@ -221,3 +221,16 @@ test('máquina: o Git a restaurar passa pelo início da máquina sem virar MACHI
     code: 'GIT_RESTORE_NEEDED',
   })
 })
+
+test('máquina: um turno que só mexeu nos planos não guarda versão; com o app, os planos vão e não contam', async (t) => {
+  const { open, machines, base } = await world(t)
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('.conexus/plans/um.md', '# Um\n')
+  assert.equal(await machines.changed({ projectId: PROJECT }), false)
+  assert.equal(await machines.collect({ projectId: PROJECT, base }), 'unchanged')
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  assert.equal(await machines.changed({ projectId: PROJECT }), true)
+  const bundle = await machines.collect({ projectId: PROJECT, base })
+  assert.ok(typeof bundle === 'object')
+  assert.equal(bundle.changedFiles, 1)
+})

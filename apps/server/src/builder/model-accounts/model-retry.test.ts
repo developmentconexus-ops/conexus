@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
-import { asked, conversing, KEY, noticesOf } from '../conversation/test-conversation.ts'
+import { asked, conversing, KEY } from '../conversation/test-conversation.ts'
+import { noticesOf } from '../conversation/test-parts.ts'
 
 /** A reply that is `first` for the first `times` streamed calls, then text. */
 function failingFirst(first: Reply, times: number) {

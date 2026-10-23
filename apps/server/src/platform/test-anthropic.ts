@@ -36,7 +36,7 @@ export type Sent = {
 export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
-  | { kind: 'blocks'; blocks: Block[] }
+  | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' }
   | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
   | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string }
   | { kind: 'reset' }
@@ -278,7 +278,8 @@ function replied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefine
       : reply.kind === 'text'
         ? [{ type: 'text', text: reply.text }]
         : [{ type: 'tool_use', name: 'web_fetch', input: { url: reply.url } }]
-  const stop = blocks.some((block) => block.type === 'tool_use') ? 'tool_use' : 'end_turn'
+  const used = blocks.some((block) => block.type === 'tool_use') ? 'tool_use' : 'end_turn'
+  const stop = reply.kind === 'blocks' ? (reply.stop ?? used) : used
   if (!sent.stream) {
     const content = blocks.flatMap((block): object[] => {
       if (block.type === 'text') return [block]

@@ -27,6 +27,7 @@ test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens
           id: MessageId.parse('p1'),
           role: 'person',
           parts: [{ type: 'text', text: 'Oi' }],
+          suspended: {},
           model: null,
           createdAt: '2026-10-19T12:00:00.000Z',
         },
@@ -66,7 +67,11 @@ test('o Enter envia com a chave da tentativa; "Pensando…" e "Parar" até chega
   expect(sent[0]?.body).toEqual({ content: 'Compare dois apps de encomenda de padaria' })
   expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
   expect(await screen.findByText('Compare dois apps de encomenda de padaria')).toBeTruthy()
-  lines[0]?.emit({ type: 'text', delta: 'O primeiro é ' })
+  lines[0]?.emit({
+    type: 'message_update',
+    id: MessageId.parse('builder-1'),
+    event: { type: 'text-delta', delta: 'O primeiro é ' },
+  })
   expect(await screen.findByText(/O primeiro é/)).toBeTruthy()
   expect(screen.queryByText('Pensando…')).toBeNull()
 })

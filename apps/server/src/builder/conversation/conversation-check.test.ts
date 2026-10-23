@@ -4,11 +4,13 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
-import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
-import { applyEvent, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { MastraPart } from '@conexus/hub-api'
+import { CompanyId, ProjectId, VersionCheck } from '@conexus/hub-api'
+import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, messagesOf, title } from './test-conversation.ts'
+import { partsOf } from './test-parts.ts'
 import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 const WRITE = {
@@ -92,20 +94,26 @@ function turnOf(blocks: Blocks, fix?: Blocks) {
   return { asked, answer }
 }
 
-function partsOf(events: ConversationEvent[]): MessagePart[] {
-  return events.reduce<MessagePart[]>(
-    (parts, event) => (event.type === 'part' ? applyEvent(parts, event) : parts),
-    [],
-  )
-}
+const Version = z.object({
+  number: z.number(),
+  changedFiles: z.number(),
+  check: VersionCheck.optional(),
+})
 
 /** The versions the parts say, by number, files changed and what the check said; the starter's files vary. */
-function versionsOf(parts: MessagePart[]) {
-  return parts.flatMap((part) =>
-    part.type === 'version'
-      ? [{ number: part.number, changedFiles: part.changedFiles, check: part.check ?? 'none' }]
-      : [],
-  )
+function versionsOf(parts: MastraPart[]) {
+  return parts.flatMap((part) => {
+    const read = part.type === 'data-conexus-version' ? Version.safeParse(part.data) : undefined
+    return read?.success
+      ? [
+          {
+            number: read.data.number,
+            changedFiles: read.data.changedFiles,
+            check: read.data.check ?? 'none',
+          },
+        ]
+      : []
+  })
 }
 
 /** The reports the model read in one call: a tool's result, or the words of a failed end of the turn. */
@@ -211,25 +219,101 @@ test('Parar antes do fim do turno: a versão fica sem veredito, nem a conferênc
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })
 
-/** The `conexus_check` rows of a turn. */
-function checkRows(events: ConversationEvent[]) {
-  return partsOf(events).flatMap((part) =>
-    part.type === 'tool' && part.kind === 'check' ? [part] : [],
-  )
+/** The `conexus_check` calls of a turn, each as its last `tool-invocation` part says it. */
+function checkCalls(events: Parameters<typeof partsOf>[0]) {
+  const last = new Map<string, Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation']>()
+  for (const part of partsOf(events)) {
+    if (part.type === 'tool-invocation' && part.toolInvocation.toolName === 'conexus_check') {
+      last.set(part.toolInvocation.toolCallId, part.toolInvocation)
+    }
+  }
+  return [...last.values()]
 }
 
-test('a linha de conexus_check diz o assunto e abre no relatório; a máquina que não conferiu é um erro da linha (33)', async (t) => {
+const Reported = z.object({
+  ok: z.boolean(),
+  steps: z.array(z.object({ name: z.string(), state: z.string() })),
+})
+
+test('a chamada de conexus_check guarda o relatório como resultado; a máquina que não conferiu é um erro da chamada (33)', async (t) => {
   const model = turnOf([WRITE, CHECK, CHECK])
   const { hub, ana, conversations } = await conversing(t, model.answer)
   checking(hub.builder.folder, [FAILED, 'platform'])
   const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
-  const [failed, unavailable] = checkRows(events)
-  assert.deepEqual(failed?.subject, { check: 'tipos: server/handlers.ts:13 Type mismatch.' })
-  assert.equal(failed?.state, 'completed')
-  assert.deepEqual(
-    failed?.detail?.kind === 'check' && failed.detail.steps.map(({ name, state }) => [name, state]),
-    FAILED.steps.map(({ name, state }) => [name, state]),
-  )
-  assert.equal(unavailable?.state, 'error')
-  assert.equal(unavailable?.detail, undefined)
+  const [failed, unavailable] = checkCalls(events)
+  assert.equal(failed?.state, 'result')
+  assert.deepEqual(Reported.parse(failed?.result), {
+    ok: false,
+    steps: FAILED.steps.map(({ name, state }) => ({ name, state })),
+  })
+  assert.equal(unavailable?.state, 'result')
+  assert.equal(Object(unavailable?.result).error, 'CHECK_PLATFORM_FAILED')
+  assert.equal(Reported.safeParse(unavailable?.result).success, false, 'no report to open')
+})
+
+const PLANNED = [
+  { content: 'Tabela de encomendas', activeForm: 'Criando a tabela', status: 'completed' },
+  { content: 'Tela de encomendas', activeForm: 'Fazendo a tela', status: 'in_progress' },
+  { content: 'Filtro por data', activeForm: 'Filtrando', status: 'pending' },
+]
+const TASKS = { type: 'tool_use', name: 'task_write', input: { tasks: PLANNED } } as const
+const DONE = {
+  type: 'tool_use',
+  name: 'task_write',
+  input: { tasks: PLANNED.map((task) => ({ ...task, status: 'completed' })) },
+} as const
+const OPEN = '2 tarefas abertas: Tela de encomendas; Filtro por data.'
+
+/** The calls whose texts carry the words of a turn that ended with tasks open. */
+function toldOpen(calls: Sent[]): Sent[] {
+  return calls.filter((call) => call.texts.some((text) => text.includes(OPEN)))
+}
+
+test('o passo final vazio com tarefas abertas volta ao modelo com elas; feitas, a conferência roda e monta (14.2, 15)', async (t) => {
+  const calls: Sent[] = []
+  const steps: Blocks[] = [[TASKS, WRITE], [], [DONE]]
+  const { hub, ana, conversations } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    calls.push(call)
+    const blocks = steps[calls.length - 1]
+    return blocks === undefined ? { kind: 'text', text: 'Pronto.' } : { kind: 'blocks', blocks }
+  })
+  const check = checking(hub.builder.folder, [])
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(toldOpen(calls), calls.slice(2), 'the empty end went back with the open tasks')
+  assert.equal(calls.length, 4)
+  assert.equal(check.calls(), 1, 'the check ran once the tasks were done')
+  assert.deepEqual(versionsOf(partsOf(events)), [
+    { number: 1, changedFiles: 1, check: { state: 'passed' } },
+  ])
+})
+
+test(`tarefas abertas em ${CHECK_LIMITS.checks} fins: a versão fica pela metade, sem conferência, e a linha conta as rodadas (14.2, 15, 17)`, async (t) => {
+  const model = turnOf([TASKS, WRITE])
+  const { hub, ana, conversations, lines } = await conversing(t, model.answer)
+  const check = checking(hub.builder.folder, [])
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  assert.equal(model.asked.length, 1 + CHECK_LIMITS.checks)
+  assert.equal(toldOpen(model.asked).length, CHECK_LIMITS.checks - 1)
+  assert.equal(check.calls(), 0)
+  const halfDone = [{ number: 1, changedFiles: 1, check: { state: 'unfinished', open: 2 } }]
+  assert.deepEqual(versionsOf(partsOf(events)), halfDone)
+  assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), halfDone)
+  const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
+  assert.equal(ended?.fields.rounds, CHECK_LIMITS.checks)
+})
+
+test('Parar com tarefas abertas: nada volta ao modelo e a versão fica sem veredito (14.2, 15)', async (t) => {
+  const write = tool(WRITE.name, WRITE.input)
+  const tasks = tool(TASKS.name, TASKS.input)
+  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[tasks, write, ask(WHO)]])
+  const check = checking(hub.builder.folder, [])
+  assert.equal((await send()).statusCode, 202)
+  await untilCard(stream, 'question')
+  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  const events = await stream.turn()
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
+  assert.deepEqual(toldOpen(calls), [])
+  assert.equal(check.calls(), 0)
+  assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })

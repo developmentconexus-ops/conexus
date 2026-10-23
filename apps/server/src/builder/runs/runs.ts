@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 import type { CheckReport } from '@conexus/app/check'
 import type {
   CompanyId,
-  ConversationEvent,
   ConversationId,
   PersonId,
   ProjectId,
@@ -15,7 +14,7 @@ import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Result } from '../../platform/result.ts'
 import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
-import type { Outcome, Restart, RunsContext, RunsDeps } from './context.ts'
+import type { Restart, RunsContext, RunsDeps, Settled } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
 import { dailySweep, sweep } from './daily.ts'
@@ -48,6 +47,7 @@ function idleRun() {
     waits: Promise.resolve(),
     lost: false,
     check: undefined,
+    rounds: 0,
   }
 }
 
@@ -70,6 +70,8 @@ type Driven = {
   lost: boolean
   /** What the end of the turn's check said last, for the version it saves. */
   check: VersionCheck | undefined
+  /** How many times the end of the turn judged it, for the turn's line. */
+  rounds: number
 }
 
 type Admission = {
@@ -196,24 +198,6 @@ export class Runs {
   }
 
   /**
-   * Keeps an event of the run's turn, even after the run ended: its last events follow its save.
-   * `undefined` once the run is not this copy's (data D25).
-   */
-  append(input: { companyId: CompanyId; runId: RunId; event: ConversationEvent }) {
-    return this.#context.store.appendEvent(input)
-  }
-
-  /** At most `limit` of the events a run kept after `after`. */
-  events(input: { companyId: CompanyId; runId: RunId; after: number; limit: number }) {
-    return this.#context.store.readEvents(input)
-  }
-
-  /** The conversation's latest run, to tell which turn a reconnecting stream belongs to. */
-  lastRunOf(companyId: CompanyId, conversationId: ConversationId) {
-    return this.#context.store.lastRunOf(companyId, conversationId)
-  }
-
-  /**
    * Lets go of the leases once the turns are drained, or after a short wait if they are not, so
    * another copy takes the turns a stuck call holds and not the ninety seconds' wait; the turns
    * still draining go on until the process ends.
@@ -280,6 +264,12 @@ export class Runs {
     if (mine !== undefined) mine.check = check
   }
 
+  /** Counts a round of the end of the turn (`checkGate`), for the turn's line. */
+  rounded(requestContext: RequestContext, rounds: number): void {
+    const mine = this.#mine(requestContext)
+    if (mine !== undefined) mine.rounds = rounds
+  }
+
   /**
    * Takes the turn's workspace out of Mastra once the run lets go of it: Mastra's shutdown stops
    * every workspace it keeps, which would pause a machine another copy of the program drives now.
@@ -294,7 +284,7 @@ export class Runs {
    * A run settled already, or whose lease was lost, answers `gone` and writes nothing; when another
    * copy holds it now, its machine is that copy's and is left as it is.
    */
-  async finish(input: { runId: RunId; reason: string }): Promise<Outcome | 'gone'> {
+  async finish(input: { runId: RunId; reason: string }): Promise<Settled | 'gone'> {
     const mine = this.#driven.get(input.runId)
     if (mine === undefined) return 'gone'
     mine.stopDeadline()
@@ -312,7 +302,8 @@ export class Runs {
       }
       const fields = { companyId, projectId, runId: input.runId, reason: input.reason }
       this.#deps.log.info(fields, 'RUN_SETTLING')
-      return await saveRun(this.#context, saved, mine.check)
+      const outcome = await saveRun(this.#context, saved, mine.check)
+      return outcome === 'gone' ? outcome : { ...outcome, rounds: mine.rounds }
     } finally {
       mine.stopLease()
       this.#driven.delete(input.runId)

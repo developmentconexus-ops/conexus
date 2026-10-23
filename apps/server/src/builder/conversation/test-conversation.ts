@@ -21,6 +21,7 @@ import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports
 import { fakeCloudflare } from '../../platform/test-cloudflare.ts'
 import { silent, TEST_ORIGIN, testWebRoot } from '../../platform/test-database.ts'
 import { fakeNeon } from '../../platform/test-neon.ts'
+import { noticesIn } from './test-parts.ts'
 
 export const MODEL = 'anthropic/claude-sonnet-4-6'
 /** One full piece of text (200 characters): the journal says text in pieces of that size. */
@@ -202,6 +203,15 @@ export async function streamOf(hub: Hub, person: Person, url: string, lastEventI
     const event = await next()
     return event.type === 'turn' ? next() : event
   }
+  /** The next piece of the model's text (a `text-delta`), whatever events come before it. */
+  async function text(): Promise<string> {
+    for (;;) {
+      const event = await next()
+      if (event.type === 'message_update' && event.event.type === 'text-delta') {
+        return event.event.delta
+      }
+    }
+  }
   /** Every event until the turn ends, the end included. */
   async function turn(): Promise<ConversationEvent[]> {
     const seen: ConversationEvent[] = []
@@ -219,7 +229,7 @@ export async function streamOf(hub: Hub, person: Person, url: string, lastEventI
     await until(() => seen.ended)
     return waiting.length === 0
   }
-  return { next, said, turn, close, ended, until, seen }
+  return { next, said, text, turn, close, ended, until, seen }
 }
 
 /**
@@ -278,25 +288,12 @@ export async function messagesOf(hub: Hub, person: Person, url: string): Promise
   return Object(read.json()).conversation.messages
 }
 
-/** The failures a turn said, in order. */
-export function failuresOf(events: ConversationEvent[]): string[] {
-  return events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'failure' ? [event.part.code] : [],
-  )
-}
-
-/** The notices of a turn, in order. */
-export function noticesOf(events: ConversationEvent[]): string[] {
-  return events.flatMap((event) => (event.type === 'notice' ? [event.text] : []))
-}
-
 /** The notices the person reads again in the conversation's Builder messages, in order. */
 export async function keptNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
   const messages = await answeredOf(hub, person, url)
-  return messages
-    .filter((message) => message.role === 'builder')
-    .flatMap((message) => message.parts)
-    .flatMap((part) => (part.type === 'notice' ? [part.text] : []))
+  return noticesIn(
+    messages.filter((message) => message.role === 'builder').flatMap((message) => message.parts),
+  )
 }
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/'

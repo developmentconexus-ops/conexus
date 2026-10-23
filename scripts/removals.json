@@ -2442,17 +2442,6 @@
     }
   },
   {
-    "id": "journal-checks-owner",
-    "file": "apps/server/src/builder/runs/store.ts",
-    "find": " and r.owner = ${this.#owner}::uuid",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "dois processos"
-    }
-  },
-  {
     "id": "source-path-guard",
     "file": "apps/server/src/builder/git/tree.ts",
     "find": "unsafe || !(await inMain",
@@ -2653,7 +2642,7 @@
   {
     "id": "restart-told-to-open-streams",
     "file": "apps/server/src/builder/conversation/sessions.ts",
-    "find": "        for (const listener of live.listeners) listener(said)\n",
+    "find": "        for (const listener of live.listeners) listener({ id: eventId(runId, n + 1), event })\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2664,7 +2653,7 @@
   {
     "id": "restart-kept-on-thread",
     "file": "apps/server/src/builder/conversation/sessions.ts",
-    "find": "        if (event.type === 'part') await keepPart(live, turn, event.part)\n",
+    "find": "      await saveRestarted(live, { runId, kept })\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",

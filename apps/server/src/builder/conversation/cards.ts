@@ -1,19 +1,27 @@
+import type { Question as AskedQuestion } from '@conexus/hub-api'
 import { ToolCallId } from '@conexus/hub-api'
 import type { Agent } from '@mastra/core/agent'
 import type { AgentControllerEvent } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { memoryOwner } from './builder.ts'
-import type { Question } from './kept.ts'
-import { keepQuestion } from './kept.ts'
-import type { Card, Live } from './live.ts'
-import { beforeAgentEnd, endRun, openTurn, tell } from './live.ts'
+import type { Live } from './live.ts'
+import { beforeAgentEnd, endRun } from './live.ts'
 import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 
 type Suspended = Extract<AgentControllerEvent, { type: 'tool_suspended' }>
 type Cancelled = Extract<AgentControllerEvent, { type: 'tool_suspension_cancelled' }>
 /** A call Mastra parked, as its event and its display state hold it. */
 type Parked = Pick<Suspended, 'toolCallId' | 'toolName' | 'suspendPayload'>
+
+/**
+ * A question or a plan the turn waits on, as the answer needs it: what the tool suspended with.
+ * The screen reads the same call from the stream's `tool_suspended` and the tool's result.
+ */
+export type Card = { toolCallId: ToolCallId } & (
+  | { type: 'question'; questions: AskedQuestion[] }
+  | { type: 'plan'; title: string; plan: string }
+)
 
 const Plan = z.object({ title: z.string().default(''), plan: z.string().default('') })
 
@@ -25,11 +33,11 @@ function cardOf(parked: Parked): Card | undefined {
     const questions = questionsOf(parked.suspendPayload)
     return questions === undefined
       ? undefined
-      : { type: 'question', toolCallId: toolCallId.data, questions, state: 'open' }
+      : { type: 'question', toolCallId: toolCallId.data, questions }
   }
   if (parked.toolName !== SUBMIT_PLAN_TOOL) return undefined
   const { title, plan } = Plan.parse(parked.suspendPayload)
-  return { type: 'plan', toolCallId: toolCallId.data, title, plan, state: 'open' }
+  return { type: 'plan', toolCallId: toolCallId.data, title, plan }
 }
 
 /**
@@ -39,11 +47,6 @@ function cardOf(parked: Parked): Card | undefined {
 export function openCards(live: Live): Card[] {
   const parked = live.session.displayState.get().pendingSuspensions.values()
   return [...parked].flatMap((each) => cardOf(each) ?? [])
-}
-
-/** A card told as it stands: new, answered or closed. */
-export function tellCard(live: Live, card: Card): void {
-  tell(live, openTurn(live), { type: 'part', part: card })
 }
 
 /**
@@ -108,11 +111,9 @@ export function expire(live: Live): void {
   live.session.abort()
 }
 
-/** A question or a plan the turn now waits on: shown, and clocked by its run. */
+/** A question or a plan the turn now waits on: the stream says it (`tool_suspended`), and its run clocks it. */
 function onSuspended(live: Live, event: Suspended) {
-  const card = cardOf(event)
-  if (card === undefined) return
-  tellCard(live, card)
+  if (cardOf(event) === undefined) return
   waitOn(live, true)
 }
 
@@ -125,27 +126,14 @@ async function endParked(live: Live, run: string | undefined): Promise<void> {
   }
 }
 
-/** The card the turn told for a call, answered or not, until it closes. */
-function toldCard(live: Live, toolCallId: ToolCallId): Card | undefined {
-  return live.turn?.answer.parts.find(
-    (part): part is Card =>
-      (part.type === 'question' || part.type === 'plan') &&
-      part.toolCallId === toolCallId &&
-      (part.state === 'open' || part.state === 'answered' || part.state === 'approved'),
-  )
-}
-
 /**
  * A call Mastra gave up on, because the person stopped the turn, wrote instead, or the wait ran
- * out: Mastra closes it denied, even when an answer had claimed it, so the card closes and, once
- * none waits, the turn ends. A call of no turn here, as one a stopped copy left, says nothing.
+ * out: Mastra closes it denied, even when an answer had claimed it, so, once none waits, the turn
+ * ends. A call of no turn here, as one a stopped copy left, says nothing.
  */
 function onCancelled(live: Live, event: Cancelled) {
-  const toolCallId = ToolCallId.safeParse(event.toolCallId)
-  const card = toolCallId.success ? toldCard(live, toolCallId.data) : undefined
-  if (card === undefined) return
-  const expired = live.saveFailure === 'QUESTION_EXPIRED'
-  tellCard(live, { ...card, state: expired ? 'expired' : 'closed' })
+  const turn = live.turn
+  if (turn === undefined || turn.ended || !turn.suspended.delete(event.toolCallId)) return
   if (openCards(live).length > 0) return
   waitOn(live, false)
   const { runId } = event
@@ -170,18 +158,15 @@ export function onCardEvent(live: Live, event: AgentControllerEvent): void {
  * A message sent while a question waits closes it and goes on in the same turn: Mastra aborts the
  * run parked on the question and starts the next with the message (`steer`), and the turn follows
  * the new run (`agent_start`). False when no card waits, or an answer went on first: the message
- * is then a turn of its own.
+ * is then a turn of its own. `steer` takes no id, so Mastra saves this message under one of its
+ * own, with the turn, and unlike a turn's question it is not saved before.
  */
-export async function steerCards(live: Live, question: Question): Promise<boolean> {
+export async function steerCards(live: Live, content: string): Promise<boolean> {
   const taken = await takeCards(live)
   if (taken.length === 0) return false
-  try {
-    await keepQuestion(live, question)
-  } finally {
-    releaseCards(live, taken)
-  }
+  releaseCards(live, taken)
   live.steering = { run: undefined }
-  await live.session.steer({ content: question.content, requestContext: live.run?.context })
+  await live.session.steer({ content, requestContext: live.run?.context })
   return true
 }
 

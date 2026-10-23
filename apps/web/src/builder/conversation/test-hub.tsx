@@ -39,15 +39,11 @@ const PROVIDERS = [
   { id: 'anthropic', name: 'Anthropic', models: ['claude-sonnet-4', 'claude-opus-4'] },
   { id: 'google', name: 'Google', models: ['gemini-2.5-pro', 'gemini-2.5-flash'] },
   { id: 'openai', name: 'OpenAI', models: ['gpt-5'] },
-].map((provider) => ({
-  ...provider,
-  models: provider.models.map((name) => ({
-    id: `${provider.id}/${name}`,
-    efforts: EFFORTS[name] ?? ['off'],
-  })),
+].map((p) => ({
+  ...p,
+  models: p.models.map((name) => ({ id: `${p.id}/${name}`, efforts: EFFORTS[name] ?? ['off'] })),
 }))
 
-/** A conversation as the Hub reads it, empty and untitled unless `fields` say otherwise. */
 export function conversationOf(fields: Partial<Conversation> & { id: ConversationId }) {
   return readConversation.success.body.parse({
     conversation: {
@@ -56,27 +52,23 @@ export function conversationOf(fields: Partial<Conversation> & { id: Conversatio
       model: MODEL,
       effort: 'off',
       messages: [],
+      tasks: [],
+      memory: null,
       ...fields,
     },
   }).conversation
 }
 
-/** What the Hub holds for Ana in the Projeto Pedidos; the tests change it between reads. */
 export type View = {
   conversations: Conversation[]
-  /** The providers Ana has an account for: her order lists them. */
   providers: string[]
-  /** The providers the Hub says Ana may use now; all of hers unless a test says otherwise. */
   usable?: string[]
 }
 
 type Sent = { method: string; path: string; body: unknown; attemptKey: string | null }
 
-/** A stream the Hub holds open for a test to speak on. */
 type Line = {
-  /** Says `event` with `id`, or with the next of the line's own ids. */
   emit: (event: ConversationEvent, id?: string) => void
-  /** Writes `text` as it is, such as a `data:` line that is not JSON. */
   write: (text: string) => void
   close: () => void
 }
@@ -130,7 +122,6 @@ function openLine(name: string): { line: Line; response: Response } {
   let said = 0
   let sink: ReadableStreamDefaultController<Uint8Array> | undefined
   const body = new ReadableStream<Uint8Array>({
-    // The Hub writes a comment as it opens the stream (`platform/event-stream.ts`).
     start(controller) {
       sink = controller
       controller.enqueue(encoder.encode(': \n\n'))
@@ -140,7 +131,7 @@ function openLine(name: string): { line: Line; response: Response } {
     try {
       sink?.enqueue(encoder.encode(text))
     } catch {
-      // The browser closed the line first.
+      // browser closed
     }
   }
   const line: Line = {
@@ -153,7 +144,7 @@ function openLine(name: string): { line: Line; response: Response } {
       try {
         sink?.close()
       } catch {
-        // Closed already.
+        // closed already
       }
     },
   }
@@ -196,6 +187,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
         id: MessageId.parse(`person-${conversation.messages.length}`),
         role: 'person',
         parts: [{ type: 'text', text }],
+        suspended: {},
         model: null,
         createdAt: '2026-10-19T12:01:00.000Z',
       })
@@ -222,7 +214,6 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
   ]
 }
 
-/** A reply that replaces the Hub's usual answer to a write. */
 export type Answers = Partial<
   Record<
     'create' | 'message' | 'model' | 'events',
@@ -230,11 +221,6 @@ export type Answers = Partial<
   >
 >
 
-/**
- * The Hub as Ana sees Pedidos' conversations. `lines` holds every stream the browser opened, in
- * order, for the test to speak on, and `resumedFrom` the `Last-Event-ID` each was opened with;
- * `sent` lists the writes the Hub received.
- */
 function conversationHub(view: View, answers: Answers = {}) {
   const sent: Sent[] = []
   const lines: Line[] = []
@@ -279,15 +265,12 @@ function conversationHub(view: View, answers: Answers = {}) {
   }
 }
 
-/** Opens a select of the UI by its trigger and picks the option named `name`. */
 export async function choose(trigger: HTMLElement, name: string) {
   fireEvent.click(trigger)
   const option = await screen.findByRole('option', { name })
-  fireEvent.pointerDown(option)
-  fireEvent.mouseDown(option)
-  fireEvent.pointerUp(option)
-  fireEvent.mouseUp(option)
-  fireEvent.click(option)
+  for (const event of ['pointerDown', 'mouseDown', 'pointerUp', 'mouseUp', 'click'] as const) {
+    fireEvent[event](option)
+  }
 }
 
 export function view(fields: Partial<View> = {}): View {
@@ -299,6 +282,7 @@ export function builderSaid(text: string): Message {
     id: MessageId.parse('builder-1'),
     role: 'builder',
     parts: [{ type: 'text', text }],
+    suspended: {},
     model: MODEL,
     createdAt: '2026-10-19T12:02:00.000Z',
   }
@@ -313,7 +297,6 @@ export function say(field: HTMLElement, text: string) {
   fireEvent.keyDown(field, { key: 'Enter' })
 }
 
-/** The Conexus open at `path`, over the Hub `shown` describes, through the test's `server`. */
 export function screens(server: ReturnType<typeof setupServer>) {
   function open(shown: View, path: string, answers: Answers = {}) {
     const hub = conversationHub(shown, answers)
@@ -323,7 +306,6 @@ export function screens(server: ReturnType<typeof setupServer>) {
     return { ...hub, conexus }
   }
 
-  /** The conversation, open, with its stream connected: the field is there and the line is ours. */
   async function openConversation(
     conversation: Conversation,
     shown = view(),
