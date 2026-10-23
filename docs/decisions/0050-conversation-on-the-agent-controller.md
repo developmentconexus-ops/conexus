@@ -32,7 +32,7 @@ answers; 4 Claude and Gemini search in Portuguese; 5 our `ui/` against `playgrou
 
 Run 2026-10-19 on LibSQL: 1 to 3 passed. Check 4 hung: the controller asks before an unruled tool;
 tools run unasked (0053) until step 13. Claude passes; Gemini shows no search. Check 5 counted
-dependencies, not built screens: `playground-ui` brings 43, needing routes the Hub lacks (S39).
+dependencies: `playground-ui` brings 43, needing routes the Hub lacks (S39).
 
 ## Why not Mastra's routes
 
@@ -40,12 +40,11 @@ Read in Mastra's source at `9d2e7398` (`@mastra/server` 1.79.0-alpha.3, not inst
 take `resourceId` from the URL, check a coarse permission
 (`packages/server/src/server/handlers/agent-controller.ts:94-108`, `:175`); per-resource checks
 need Enterprise FGA, barred from production without a licence (`ee/LICENSE:7`). Its stream has no
-replay and sends the browser tool arguments, results and reasoning, which our parts keep server-side
-(`apps/server/src/builder/conversation/parts.ts`). Revisit when open-source Mastra checks
-session owners or replays its stream, or steps 13 to 15 need most of its interactive surface;
-step 13's study asks first (approval, `ask_user`).
+replay and sends the browser arguments, results and reasoning; the Hub sends Mastra's own messages and events,
+cut once, on its owner-checked routes. Revisit when open-source Mastra checks
+session owners or replays its stream, or most of its interactive surface is needed.
 
 ## State
 
 Accepted 2026-10-19. Founder: the card's approval, "2. Autorizo". Amended 2026-10-20, founder:
-"3.A".
+"3.A", and 2026-10-22: "A", "Pode seguir".
