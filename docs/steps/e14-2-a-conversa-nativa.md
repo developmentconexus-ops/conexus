@@ -3,36 +3,36 @@
 ## A página do fundador
 
 **No fim desta etapa** você vê o Builder trabalhar como na Factory do Mastra (ferramentas que abrem,
-raciocínio, tarefas fixas, memória), e o app sai com data, dinheiro e histórico certos; um turno com
-tarefa aberta não vira "montou".
+raciocínio, tarefas fixas, memória), e um turno com tarefa aberta não vira "montou".
 
 **O roteiro.** Padaria Sol, Ana (dona), Gemini 3.8 Flash, **Raciocínio** alto.
 
 1. "Crie um app de encomendas com cliente, data de entrega e valor." "Pensou por 6 s" abre no texto
-   do modelo; "Usou a skill **conexus-build**" abre nas instruções; "Leu `src/router.tsx`" abre no
-   começo do arquivo; uma falha abre no motivo.
-2. Acima da caixa de mensagem, "Tarefas · 2 de 5", fixas enquanto o Builder trabalha; abaixo dela,
-   os anéis da memória. No fim, "Versão 1 guardada, montou", com todas as tarefas feitas.
-3. Ana grava uma encomenda para 22/10/2026 de R$ 1.234,56: a lista mostra **22/10/2026** e
-   **R$ 1.234,56**; o histórico tem a linha "criada"; "Atrasada" usa o dia de São Paulo.
+   do modelo; "Usou a skill **conexus-build**", nas instruções; "Leu `src/router.tsx`", no arquivo;
+   uma falha, no motivo.
+2. Acima da caixa, "Tarefas · 2 de 5", fixas enquanto o Builder trabalha; abaixo, os anéis da memória. No fim, "Versão 1 guardada, montou", com todas as tarefas feitas.
+3. *Em espera (U6, U7):* data, dinheiro e histórico.
 4. "Mostre as entregas num calendário"; **Parar** com o plano aberto: nenhuma versão nova. De novo,
    aprovado: em **Código**, numa árvore, o plano novo ao lado do primeiro, intacto.
 5. Ana recarrega: tudo abre igual.
 
-**O que você faz, e quando.** No começo: aprova esta página. Nas U4 e U5, firstmate faz duas provas ao
-vivo (o raciocínio do Gemini pela sua conta Google, o LSP na máquina). No fim: faz o roteiro e aprova
-os textos.
+**O que você faz.** Aprova esta página; firstmate faz as provas ao vivo da U4 e da U5 (LSP, raciocínio
+do Gemini pela sua conta Google); no fim, você faz o roteiro e aprova os textos.
 
 **As suas palavras que a etapa cumpre** (2026-10-22): "14.2 e pra vir correcao de tudo"; "A" (o fio do
 Mastra, a tela como a Factory) e "o simbolo de memoria observacional"; "2 a"; "tudo recomendado,
 Plano A, sem Pasta"; "Aprovado tudo" (Coding e Memória). Mudam duas regras: V39 passa a mostrar o
 raciocínio recolhido; a 0050 deixa argumentos e resultados irem à tela, cortados. Sem máscara: você
-a tirou em 2026-10-22 (`9fd478b`).
+a tirou em 2026-10-22 (`9fd478b`). Na bancada: "aprovado esse estudo, tá bom? Pode seguir", "a
+harness inicial, ela tem que ser totalmente funcional".
 
-**Fica de fora.** "Pasta" e "SDK" (não aprovados). Issues `next-card`: entram 236, 268, 271, 272; as
-outras tocam outras pastas e esperam a fila de defeitos (L4).
+**Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
+ficam como proposta.
 
-**A decisão sua pedida.** Nenhuma além desta página.
+**Fica de fora.** "Pasta" e "SDK". Issues `next-card`: entram 236, 268, 271, 272; as outras esperam a
+fila de defeitos (L4).
+
+**Decisão pedida.** Nenhuma além desta página.
 
 ## As unidades
 
@@ -43,19 +43,20 @@ outras tocam outras pastas e esperam a fila de defeitos (L4).
 | U3 | A transcrição, o painel de tarefas e os anéis | `apps/web/src/builder/conversation/` | web | U2, U4 |
 | U4 | O motor: Coding, Fim, Memória, Trava, Registro, LSP | `builder/conversation/{builder,processors,turn-line}.ts`, `builder/machine/machines.ts` | testes | U1 |
 | U5 | Níveis e o raciocínio do Gemini | `builder/model-accounts/`, `apps/web/src/builder/model-accounts/`, `platform/recordings/` | testes | U1 |
-| U6 | O que o app aprende: Contrato, Datas, Dinheiro, Histórico, Hora, Regras, Falha | `packages/app/{starter,skills,src/skills.test.ts}` | dados | U1 |
-| U7 | Arquivos de migração e Fuso | `packages/app-contract/`, `packages/app/src/check/`, `platform/company-postgres.ts` | dados | U1 |
+| U6 (em espera) | O que o app aprende: Contrato, Datas, Dinheiro, Histórico, Hora, Regras, Falha | `packages/app/{starter,skills,src/skills.test.ts}` | dados | a bancada |
+| U7 (em espera) | Arquivos de migração e Fuso | `packages/app-contract/`, `packages/app/src/check/`, `platform/company-postgres.ts` | dados | a bancada |
 | U8 | Plano A e "2 a" | `builder/conversation/plan-tools.ts`, `packages/app/skills/conexus-plan-*`, `builder/machine/scripts.ts` | dados | U1 |
 | U9 | Árvore na aba Código | `apps/web/src/builder/source/` | web | — |
-| U10 | Dublês e percurso | `tests/e2e/`, `platform/test-*` | testes | todas |
+| U10 | Dublês e percurso | `tests/e2e/`, `platform/test-*` | testes | as em curso |
 
 `builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. Começa com a 14.0 em
-`main` (L1: a U2 usa as partes `data-conexus-*` dela). Em paralelo: U2, U4 a U9 (arquivos
-distintos; a U6 segue o contrato da U7 deste cartão). U3 depois de U2 e U4; U10 por último; QA antes das
+`main` (L1: a U2 usa as partes `data-conexus-*` dela). Em paralelo: U2, U4, U5, U8, U9 (arquivos
+distintos). U3 depois de U2 e U4; U10 por último; QA antes das
 revisões (L9). Pacote novo, só se a prova da U4 passar: `typescript-language-server` (L16).
 
 **Orçamento de código alterado** (apagado conta; sem testes nem texto de skill). U2 750; U3 950;
-U4 150; U5 150; U6 350; U7 450; U8 80; U9 150; U10 60. Total **3.090**, teto 4.000 (L2).
+U4 150; U5 150; U8 80; U9 150; U10 60. Total **2.290**, teto 4.000 (L2); U6 350 e U7 450 voltam com a
+emenda.
 
 ## Os critérios de aceite
 
@@ -83,15 +84,20 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 18 | U4 | **Ao vivo**, firstmate: o LSP no template E2B dá diagnóstico de tipos numa escrita; passa: `Workspace({lsp})` e o resultado da escrita leva o diagnóstico; falha: sai numa issue | registro da U4 |
 | 19 | U5 | Gemini é um modelo só, com **Raciocínio**; a escolha chega ao CLIProxy pelo pedido provado no 20, também para o padrão; Claude segue `summarized` | `thinking.test.ts`, `served-recordings.test.ts` |
 | 20 | U5 | **Ao vivo**, firstmate: uma chamada pela conta Google do fundador devolve `reasoning_content` e diz se o nível vai no nome ou em `reasoning_effort`; a gravação entra em `platform/recordings/`; falha: 19 e a parte Gemini do 28 param, a etapa volta a ele | registro da U5 |
+| 27 | U8 | Cada plano em `.conexus/plans/<nome>.md`; `submit_plan` fora dessa pasta, recusado; o plano aprovado não é sobrescrito (#268); turno que só mudou planos, parado ou não: sem versão, sem conferência | `conversation-questions.test.ts`, `machine.test.ts` |
+| 28 | U10 | Percurso no Chromium nas sequências da exportação do Mastra, só das unidades em curso: cada linha abre; recarregar dá o mesmo | `tests/e2e/builder-native.test.ts` |
+| 29 | U10 | QA (T25) com o conjunto fechado e o Gemini; o roteiro pelo fundador (L17) | `conexus-qa`, fundador |
+
+**Em espera** (a bancada):
+
+| # | U | Critério, observável de fora, com a recusa | Teste |
+| --- | --- | --- | --- |
 | 21 | U6 | As telas importam tipos e esquemas de `@/conexus/api.gen`, que a conferência gera; um import de `shared/operations` falha `tipos` | `check.test.ts`, `skills.test.ts` |
 | 22 | U6 | `formatDate('2026-10-22')` dá `22/10/2026`; `isoDate` decodifica para a meia-noite local | `starter.test.ts` |
 | 23 | U6 | `money`: `"1.234,56"` lê `1234.56`, guarda texto decimal, o campo mostra `R$ 1.234,56`; `"abc"` recusado | idem |
 | 24 | U6 | A referência grava encomenda e histórico num comando (CTE); a migração tem `CHECK` e índice; a transição é conferida no handler; `failure.ts` no starter aceita `unknown`; `conexus-build` manda ler a referência no passo que escreve; as referências tipam | `skills.test.ts` |
 | 25 | U7 | Migrações em `server/migrations/NNNN_nome.sql`, lidas sem rodar `handlers.ts`; a conferência recusa editar, apagar ou reordenar uma já enviada (`MIGRATION_CHANGED`); o Hub confere o prefixo exato (posição, nome, sha) | `check.test.ts`, `company-postgres.test.ts` |
 | 26 | U7 | `CURRENT_DATE` no app é o dia de São Paulo | `company-postgres.test.ts` |
-| 27 | U8 | Cada plano em `.conexus/plans/<nome>.md`; `submit_plan` fora dessa pasta, recusado; o plano aprovado não é sobrescrito (#268); turno que só mudou planos, parado ou não: sem versão, sem conferência | `conversation-questions.test.ts`, `machine.test.ts` |
-| 28 | U10 | Percurso no Chromium nas sequências da exportação do Mastra (U10): cada linha abre; recarregar dá o mesmo | `tests/e2e/builder-native.test.ts` |
-| 29 | U10 | QA (T25) com o conjunto fechado e o Gemini; o roteiro pelo fundador (L17) | `conexus-qa`, fundador |
 
 ## A matriz de estados
 
@@ -261,7 +267,7 @@ registro: `providerOptionsOf` não manda nada (`thinking.ts:150-152`) e o seleto
 **Raciocínio** (`thinking.ts:125-130`, `model-picker.tsx:62-64`). **Ordem.** O 20 primeiro; depois as
 variantes viram um modelo com os níveis que o CLIProxy serve. Regras: T14, T24, S40. **Prova.** 19, 20.
 
-## U6 O que o app aprende
+## U6 O que o app aprende (em espera)
 
 **Raio.** `packages/app/starter/src/lib/{format,date-codec,money,failure}.ts`, um campo de dinheiro em
 `starter/src/components/`, `packages/app/skills/{conexus-app,conexus-data,conexus-build}/`,
@@ -276,7 +282,7 @@ referência sai. Referências: criação com histórico em CTE (o teste deixa de
 escreve. O parágrafo de migrações segue o contrato da U7. **Nada novo no prompt** (auditoria, RC4).
 Regras: D28, W21, W22, L23. **Prova.** 21 a 24.
 
-## U7 Arquivos de migração e Fuso
+## U7 Arquivos de migração e Fuso (em espera)
 
 **Raio.** `packages/app-contract/src/manifest.ts`, `packages/app/src/check/` (dona; o `api.gen` da U6),
 `builder/runs/runs.ts` (`Runs.check` passa as migrações enviadas), `hub/apps/send.ts` (prefixo),
@@ -312,7 +318,5 @@ com conteúdo inventado (S40, T24): a lista que sai da janela, o passo final vaz
 
 ## Por que a 14 deixou passar
 
-Para o fechamento (L19): `conexus-review` conferiu o código contra um cartão que permitia "não abre"
-(conferir a matriz contra Factory e OS); `conexus-qa` andou em dublês só das ferramentas nomeadas e
-só Anthropic (o conjunto fechado e o modelo de produção, T24); o ao vivo da 13 viu "Usou uma
-ferramenta" sem virar critério (achado ao vivo vira `next-card`).
+Para o fechamento (L19): a revisão leu um cartão que permitia "não abre"; a QA usou dublês parciais,
+só Anthropic (T24); o ao vivo da 13 viu "Usou uma ferramenta" sem virar critério.
