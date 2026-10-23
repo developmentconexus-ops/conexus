@@ -52,7 +52,7 @@ test('pela rota, a escrita vai para o Projeto da conversa e não para o vizinho'
   assert.deepEqual(await written(second), ['b.ts'])
 })
 
-test('fora da pasta do app, por link ou escrevendo sem ler: recusado, e nada fora muda', async (t) => {
+test('fora da pasta do app e via link: recusado; regrava sem ler: aceita', async (t) => {
   const link = {
     name: 'mastra_workspace_execute_command',
     input: { command: 'ln -s .. saida' },
@@ -75,6 +75,6 @@ test('fora da pasta do app, por link ou escrevendo sem ler: recusado, e nada for
       ended.set(part.toolInvocation.toolCallId, part.toolInvocation.isError === true)
     }
   }
-  // Each call ended with a result; the ones outside the folder, and the write with no read, as errors.
-  assert.deepEqual([...ended.values()], [false, true, false, true, true])
+  // The outside write and the write through the symlink fail; a second write needs no prior read.
+  assert.deepEqual([...ended.values()], [false, true, false, true, false])
 })

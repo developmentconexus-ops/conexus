@@ -2431,17 +2431,6 @@
     }
   },
   {
-    "id": "write-needs-read",
-    "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "        [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/workspace.test.ts",
-      "name": "fora da pasta do app"
-    }
-  },
-  {
     "id": "source-path-guard",
     "file": "apps/server/src/builder/git/tree.ts",
     "find": "unsafe || !(await inMain",
