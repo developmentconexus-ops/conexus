@@ -1,9 +1,10 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
-import { Agent } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
+import { createCodingAgent } from '@mastra/core/coding-agent'
 import { Mastra } from '@mastra/core/mastra'
+import { CyberRefusalHandler } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
@@ -37,6 +38,9 @@ const CONVERSATION_MODE = 'conversa'
 
 const TITLE_INSTRUCTIONS =
   'Dê à conversa um título curto em português, de até seis palavras, sem aspas nem ponto final.'
+/** The observer's title guidance names no language (Conexus OS `e0353c36` `builder/memory.ts:28`). */
+const OBSERVER_INSTRUCTION =
+  'Escreva o título da conversa em português do Brasil, sobre o que a pessoa quer construir ou mudar no app.'
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
 // stays out until the live proof of criterion 3 passes.
 const SEARCH_PROVIDERS = new Set(['anthropic', 'openai', 'xai'])
@@ -79,7 +83,10 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
 /**
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
  * from the session and given its account by the queue's processors, its memory, its title and its
- * observation through the same account, in Mastra's own database.
+ * observation through the same account, in Mastra's own database. It is Mastra Code's agent
+ * (`sdk/src/index.ts:1216-1223`): no workspace of its own, since the controller lends the turn's
+ * machine, the task list's signal with `memory`, and Mastra Code's idle activation, observer
+ * context and titles (`agents/memory.ts:355-417`).
  */
 export function createBuilder(deps: {
   pool: MastraPool
@@ -100,6 +107,7 @@ export function createBuilder(deps: {
         enabled: true,
         scope: 'thread',
         retrieval: true,
+        activateAfterIdle: { default: 'auto', anthropic: '1h' },
         activateOnProviderChange: true,
         temporalMarkers: true,
         observation: {
@@ -109,6 +117,9 @@ export function createBuilder(deps: {
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
           blockAfter: 2,
+          previousObserverTokens: 1000,
+          threadTitle: true,
+          instruction: OBSERVER_INSTRUCTION,
         },
         reflection: {
           ...failSoft,
@@ -120,7 +131,7 @@ export function createBuilder(deps: {
       },
     },
   })
-  const agent = new Agent({
+  const agent = createCodingAgent({
     id: BUILDER_ID,
     name: 'Builder',
     instructions: builderInstructions({ runs: deps.runs, projectName: deps.projectName }),
@@ -128,7 +139,8 @@ export function createBuilder(deps: {
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
     inputProcessors: [accountPick(deps.queue)],
-    outputProcessors: [checkGate(deps.runs)],
+    workspace: undefined,
+    outputProcessors: [new CyberRefusalHandler(), checkGate({ runs: deps.runs, storage })],
     errorProcessors: accountErrorProcessors(deps.queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,

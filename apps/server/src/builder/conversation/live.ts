@@ -17,7 +17,7 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Phase as MachinePhase } from '../machine/public.ts'
 import type { Turn } from '../model-accounts/public.ts'
-import type { Outcome } from '../runs/public.ts'
+import type { Outcome, Settled } from '../runs/public.ts'
 import type { Question } from './kept.ts'
 import { keepFailure, keepPart, keptInList, queued, THINKING_KEY, ThoughtTime } from './kept.ts'
 import type { Place } from './parts.ts'
@@ -78,7 +78,7 @@ export type Live = {
         traceId: string
         /** What Mastra needs of the turn to go on after an answer or a message. */
         context: RequestContext
-        finish: (reason: string) => Promise<Outcome | 'gone'>
+        finish: (reason: string) => Promise<Settled | 'gone'>
         /** The run waits on the person's answer, or goes on after it; rejects when the database refuses. */
         waiting: (waiting: boolean) => Promise<void>
       }
@@ -245,6 +245,7 @@ export function endRun(live: Live, reason: Ending['reason'], parked?: string): v
 
 /** The controller's events as the person's: text, thinking, tools, notices, the title, the end. */
 export function onEvent(live: Live, event: AgentControllerEvent): void {
+  live.turn?.tally.heard(event)
   if (event.type === 'info') {
     tell(live, openTurn(live), { type: 'notice', text: event.message })
   } else if (event.type === 'thread_title_updated') {
@@ -258,8 +259,6 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
   } else if (event.type === 'agent_end') {
     // A run parked on a question or a plan is not over: its turn goes on once it is answered.
     if (event.reason !== 'suspended') endRun(live, event.reason)
-  } else if (event.type === 'usage_update') {
-    live.turn?.tally.step(event.usage.totalTokens)
   } else if (event.type === 'shell_output' || event.type === 'command_exit') {
     onShellEvent(live, event)
   } else if (event.type === 'tool_input_start' || event.type === 'message_end') {
@@ -321,6 +320,9 @@ export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Prom
       return undefined
     },
   )
+  if (outcome !== undefined && outcome !== 'gone' && live.turn !== undefined) {
+    live.turn.tally.rounds = outcome.rounds
+  }
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'failed') {
     live.saveFailure = outcome.code
   }

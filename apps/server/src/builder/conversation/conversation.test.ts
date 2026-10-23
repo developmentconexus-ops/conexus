@@ -189,7 +189,7 @@ test('o título nasce na primeira mensagem, pela conta do turno, e chega no stre
   assert.equal(Object(read.json()).conversation.title, 'Encomendas da padaria')
 })
 
-test('a observação vai pela conta do turno e não pede título; um 429 nela: o turno termina, sem texto cru', async (t) => {
+test('a observação vai pela conta do turno e pede o título em português; um 429 nela: o turno termina, sem texto cru', async (t) => {
   const printed = printedOf(t)
   const long = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
   const { hub, ana, conversations, anthropic, link, lines } = await conversing(t, (asked) => {
@@ -213,7 +213,12 @@ test('a observação vai pela conta do turno e não pede título; um 429 nela: o
   assert.ok(observed.length > 0, 'the second turn, past the threshold, was observed')
   for (const each of observed) {
     assert.equal(each.key, 'sk-ant-conversation-key-0002')
-    assert.doesNotMatch(each.system, /thread-title/, 'the observer is never asked for a title')
+    assert.match(
+      each.system,
+      /thread-title/,
+      'the observer is asked for a title (card of 14.2, U4)',
+    )
+    assert.match(each.system, /título da conversa em português do Brasil/)
   }
   for (const text of [JSON.stringify(lines), printed.join(''), stream.seen.raw, read.body]) {
     assert.doesNotMatch(text, PLANTED)

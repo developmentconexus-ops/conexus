@@ -54,6 +54,7 @@ const BUILT = {
   passed: ', montou',
   failed: ', não montou',
   unchecked: ', sem conferência',
+  unfinished: ', pela metade',
 } as const
 
 /**
@@ -76,7 +77,10 @@ function versionSentence(part: Version): string {
  * its failure's words below it.
  */
 export function VersionLine({ part }: { part: Version }) {
-  const said = part.check?.state === 'passed' ? undefined : part.check?.code
+  const said =
+    part.check?.state === 'failed' || part.check?.state === 'unchecked'
+      ? part.check.code
+      : undefined
   const failed = part.check?.state === 'failed'
   return (
     <Marker className={failed ? 'text-danger' : 'text-text'}>
