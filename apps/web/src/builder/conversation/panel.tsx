@@ -1,4 +1,4 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, Conversation, ConversationId, ProjectId, Provider } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ReactNode, RefObject } from 'react'
@@ -12,9 +12,11 @@ import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
 import { shownAnswer } from './live.ts'
+import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
 import { textOf } from './person-turn.tsx'
 import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } from './queries.ts'
+import { TaskPanel } from './task-panel.tsx'
 import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
 import { Transcript } from './transcript.tsx'
 import { useLive } from './use-live.ts'
@@ -105,6 +107,64 @@ function useSending(
   return { error, setError, send, halt }
 }
 
+function PanelComposer(props: {
+  params: Params
+  conversation: Conversation
+  accounts: { choices: { mine: readonly Provider[] } }
+  state: ReturnType<typeof useLive>['state']
+  draft: ReturnType<typeof useDraft>
+  field: RefObject<HTMLTextAreaElement | null>
+  onSend: (content: string) => Promise<boolean>
+  onStop: () => void
+  onError: (error: string | undefined) => void
+  canAnswer: boolean
+}) {
+  const {
+    params,
+    conversation,
+    accounts,
+    state,
+    draft,
+    field,
+    onSend,
+    onStop,
+    onError,
+    canAnswer,
+  } = props
+  const isTurnRunning = state.kind === 'answering' || state.kind === 'resuming'
+  const activeTasks =
+    state.kind !== 'idle' && state.tasks.length > 0 ? state.tasks : conversation.tasks
+  const activeMemory =
+    state.kind !== 'idle' && state.memory !== null ? state.memory : conversation.memory
+  const omPhase = state.kind !== 'idle' ? state.omPhase : 'idle'
+  const memoryFailed = state.kind !== 'idle' ? state.memoryFailed : null
+
+  return (
+    <div className="px-md">
+      <Composer
+        answering={state.kind === 'answering'}
+        canSend={canAnswer}
+        draft={draft}
+        field={field}
+        onSend={onSend}
+        onStop={onStop}
+        taskPanel={<TaskPanel tasks={activeTasks} streaming={isTurnRunning} />}
+        memory={<MemoryStatus memory={activeMemory} omPhase={omPhase} failed={memoryFailed} />}
+        picker={
+          canAnswer && (
+            <ModelChoice
+              ids={params}
+              conversation={conversation}
+              providers={accounts.choices.mine}
+              onError={onError}
+            />
+          )
+        }
+      />
+    </div>
+  )
+}
+
 function Screen(params: Params) {
   const { companyId, projectId, conversationId } = params
   const queryClient = useQueryClient()
@@ -161,26 +221,18 @@ function Screen(params: Params) {
       {(state.kind === 'answering' || state.kind === 'resuming') && (
         <WorkingLine startedAt={state.startedAt} heard={state.parts} />
       )}
-      <div className="px-md">
-        <Composer
-          answering={state.kind === 'answering'}
-          canSend={canAnswer}
-          draft={draft}
-          field={field}
-          onSend={send}
-          onStop={halt}
-          picker={
-            canAnswer && (
-              <ModelChoice
-                ids={params}
-                conversation={conversation}
-                providers={accounts.choices.mine}
-                onError={setError}
-              />
-            )
-          }
-        />
-      </div>
+      <PanelComposer
+        params={params}
+        conversation={conversation}
+        accounts={accounts}
+        state={state}
+        draft={draft}
+        field={field}
+        onSend={send}
+        onStop={halt}
+        onError={setError}
+        canAnswer={canAnswer}
+      />
     </>
   )
 }
