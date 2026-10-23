@@ -1,4 +1,4 @@
-import { ModelId } from '@conexus/hub-api'
+import { MessageId, ModelId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -23,7 +23,11 @@ test('o anel do compositor só gira enquanto o Builder trabalha; Enviar vira Par
   stop.focus()
   fireEvent.click(stop)
   expect(document.activeElement).toBe(field)
-  lines[0]?.emit({ type: 'text', delta: 'Olá' })
+  lines[0]?.emit({
+    type: 'message_update',
+    id: MessageId.parse('builder-1'),
+    event: { type: 'text-delta', delta: 'Olá' },
+  })
 })
 
 test('perto do campo uma linha pede para não colar senhas, chaves ou tokens na conversa', async () => {

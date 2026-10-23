@@ -1,15 +1,4 @@
-import {
-  BookOpenIcon,
-  CircleAlertIcon,
-  ClipboardCheckIcon,
-  FilePenIcon,
-  FilePlusIcon,
-  FileTextIcon,
-  HistoryIcon,
-  SearchIcon,
-  TerminalIcon,
-  WrenchIcon,
-} from 'lucide-react'
+import { CircleAlertIcon } from 'lucide-react'
 import { useState } from 'react'
 import {
   TraceCollapsible,
@@ -21,60 +10,23 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useSecondsShown } from './elapsed.ts'
-import type { ToolPart } from './fold.ts'
-import { lineDiff } from './line-diff.ts'
-import { Anchor } from './markdown.tsx'
 import { durationOf } from './text.ts'
-import { sentenceOf } from './tool-text.ts'
+import { bareToolName, presentTool, prettifyToolName } from './tool-presentation.ts'
+import type { ToolItem } from './transcript.ts'
 
-const ICONS = {
-  read_page: BookOpenIcon,
-  search_web: SearchIcon,
-  recall: HistoryIcon,
-  write_file: FilePlusIcon,
-  edit_file: FilePenIcon,
-  read_file: FileTextIcon,
-  run_command: TerminalIcon,
-  check: ClipboardCheckIcon,
-  other: WrenchIcon,
-} as const satisfies Record<ToolPart['kind'], unknown>
+const BLOCK =
+  'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
 
-export function ToolIcon({ tool }: { tool: ToolPart }) {
-  const Icon =
-    tool.state === 'error' || tool.state === 'denied' ? CircleAlertIcon : ICONS[tool.kind]
-  return (
-    <TraceIcon>
-      <Icon />
-    </TraceIcon>
-  )
+function formatValue(value: unknown): string {
+  if (value === undefined || value === null) return ''
+  if (typeof value === 'string') return value
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
 }
 
-function Subject({ subject }: Pick<ToolPart, 'subject'>) {
-  if (subject === null) return null
-  const link = 'url' in subject
-  const label =
-    'query' in subject
-      ? subject.query
-      : 'path' in subject
-        ? subject.path
-        : 'command' in subject
-          ? subject.command
-          : 'check' in subject
-            ? subject.check
-            : (subject.title ?? URL.parse(subject.url)?.hostname ?? subject.url)
-  return (
-    <TraceDescription className="min-w-24 flex-1 basis-24 truncate font-mono text-fact">
-      {link ? <Anchor href={subject.url}>{label}</Anchor> : label}
-    </TraceDescription>
-  )
-}
-
-function statusOf(state: ToolPart['state']) {
-  if (state === 'completed') return undefined
-  return state === 'denied' ? 'error' : state
-}
-
-/** How long a command has run, for the eye: "(40 s)". */
 function Running() {
   const seconds = useSecondsShown()
   return (
@@ -84,94 +36,200 @@ function Running() {
   )
 }
 
-type Detail = NonNullable<ToolPart['detail']>
-
-const BLOCK =
-  'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
-const CHANGES = { ' ': '', '-': 'text-danger', '+': 'text-success' } as const
-
-const STEP_STATES = {
-  passed: 'passou',
-  failed: 'falhou',
-  skipped: 'não rodou',
-  informed: 'avisou',
-} as const
-
-function failedCheck(detail: Detail): boolean {
-  return detail.kind === 'check' && detail.steps.some(({ state }) => state === 'failed')
+function isRunning(state: ToolItem['state']): boolean {
+  return state === 'call' || state === 'partial-call'
 }
 
-function failedExit(detail: Detail): number | undefined {
-  return detail.kind === 'command' && detail.exitCode !== null && detail.exitCode !== 0
-    ? detail.exitCode
-    : undefined
+function isFailed(tool: ToolItem): boolean {
+  return tool.isError === true || tool.state === 'output-error' || tool.state === 'output-denied'
 }
 
-/** What the row opens on: the command and its output's end, a file's start, an edit's lines. */
-function Opened({ detail }: { detail: Detail }) {
-  const cut = detail.cut ? '…' : undefined
-  if (detail.kind === 'command') {
-    const code = failedExit(detail)
+function hasSomethingToOpen(tool: ToolItem): boolean {
+  if (isFailed(tool)) return true
+  if (tool.output !== undefined && tool.output.length > 0) return true
+  if (tool.result !== undefined && tool.result !== null) return true
+  if (
+    tool.args !== undefined &&
+    tool.args !== null &&
+    typeof tool.args === 'object' &&
+    Object.keys(tool.args).length > 0
+  ) {
+    return true
+  }
+  return false
+}
+
+function getStringProp(obj: unknown, key: string): string | undefined {
+  if (obj && typeof obj === 'object' && key in obj) {
+    const val = Reflect.get(obj, key)
+    return typeof val === 'string' ? val : undefined
+  }
+  return undefined
+}
+
+export function ToolIcon({ tool }: { tool: ToolItem }) {
+  const failed = isFailed(tool)
+  const presentation = presentTool(tool.toolName, tool.args, {
+    isRunning: isRunning(tool.state),
+    isError: failed,
+    isDenied: tool.state === 'output-denied',
+  })
+  const Icon = failed ? CircleAlertIcon : presentation.icon
+  return (
+    <TraceIcon>
+      <Icon />
+    </TraceIcon>
+  )
+}
+
+function ToolFileContent({ tool, hasCut }: { tool: ToolItem; hasCut?: boolean }) {
+  const content =
+    typeof tool.result === 'string' ? tool.result : getStringProp(tool.result, 'content')
+  const path = getStringProp(tool.args, 'path')
+  const display = content !== undefined ? content : path ? `$ cat ${path}` : ''
+  return (
+    <div className="flex min-w-0 flex-col gap-xs pt-xs">
+      <pre className={BLOCK}>
+        {display}
+        {hasCut ? '\n…' : ''}
+      </pre>
+    </div>
+  )
+}
+
+function ToolCommandContent({ tool, hasCut }: { tool: ToolItem; hasCut?: boolean }) {
+  const command = getStringProp(tool.args, 'command') ?? ''
+  const output = tool.output ?? formatValue(tool.result)
+  return (
+    <div className="flex min-w-0 flex-col gap-xs pt-xs">
+      <pre className={BLOCK}>
+        {[`$ ${command}`, ...(hasCut ? ['…'] : []), output].filter(Boolean).join('\n')}
+      </pre>
+      {tool.exitCode !== undefined && tool.exitCode !== 0 && (
+        <p className="text-fact text-text-2">O comando terminou com o código {tool.exitCode}.</p>
+      )}
+    </div>
+  )
+}
+
+function ToolGenericContent({ tool }: { tool: ToolItem }) {
+  const readable = prettifyToolName(tool.toolName)
+  const hasArgs =
+    tool.args !== undefined &&
+    tool.args !== null &&
+    typeof tool.args === 'object' &&
+    Object.keys(tool.args).length > 0
+
+  return (
+    <div className="flex min-w-0 flex-col gap-xs pt-xs font-mono text-fact text-text-2">
+      <div className="font-sans font-semibold text-text">{readable}</div>
+      {hasArgs && (
+        <div className="flex flex-col gap-xxs">
+          <span className="font-sans text-text-2">Argumentos:</span>
+          <pre className={BLOCK}>{formatValue(tool.args)}</pre>
+        </div>
+      )}
+      {tool.result !== undefined && (
+        <div className="flex flex-col gap-xxs">
+          <span className="font-sans text-text-2">Resultado:</span>
+          <pre className={BLOCK}>{formatValue(tool.result)}</pre>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function OpenedContent({ tool }: { tool: ToolItem }) {
+  const bare = bareToolName(tool.toolName)
+  const cuts = tool.cuts
+  const hasCut = cuts && cuts.length > 0
+
+  if (isFailed(tool)) {
+    const errorText =
+      getStringProp(tool.result, 'error') ??
+      getStringProp(tool.result, 'message') ??
+      (typeof tool.result === 'string' ? tool.result : undefined) ??
+      'Ocorreu um erro ao executar a ferramenta.'
     return (
-      <div className="flex min-w-0 flex-col gap-xs">
-        <pre className={BLOCK}>
-          {[`$ ${detail.command}`, ...(cut ? [cut] : []), ...detail.output].join('\n')}
-        </pre>
-        {code !== undefined && (
-          <p className="text-danger text-fact">O comando terminou com o código {code}.</p>
-        )}
+      <div className="flex min-w-0 flex-col gap-xs pt-xs">
+        <pre className={BLOCK}>{errorText}</pre>
       </div>
     )
   }
-  if (detail.kind === 'check') {
-    const lines = detail.steps.flatMap(({ name, state, problems }) => [
-      `${name}: ${STEP_STATES[state]}`,
-      ...problems.map(
-        ({ file, line, message }) =>
-          `  ${file === null ? '' : `${file}${line === null ? '' : `:${line}`} `}${message}`,
-      ),
-    ])
-    return <pre className={BLOCK}>{[...lines, cut].filter(Boolean).join('\n')}</pre>
+
+  if (bare === 'read_file' || bare === 'view') {
+    return <ToolFileContent tool={tool} hasCut={hasCut} />
   }
-  if (detail.kind === 'file') return <pre className={BLOCK}>{[detail.content, cut].join('\n')}</pre>
-  return (
-    <pre className={BLOCK}>
-      {lineDiff(detail.before, detail.after).map((line) => (
-        <span key={line.place} className={`block ${CHANGES[line.change]}`}>
-          {`${line.change} ${line.text}`}
-        </span>
-      ))}
-      {cut}
-    </pre>
-  )
+
+  if (['list_files', 'find_files', 'grep', 'search_content', 'search'].includes(bare)) {
+    const display =
+      tool.result !== undefined
+        ? formatValue(tool.result)
+        : (getStringProp(tool.args, 'path') ?? getStringProp(tool.args, 'pattern') ?? '')
+    return (
+      <div className="flex min-w-0 flex-col gap-xs pt-xs">
+        <pre className={BLOCK}>{display}</pre>
+      </div>
+    )
+  }
+
+  if (bare === 'skill' || bare === 'skill_read') {
+    const name = getStringProp(tool.args, 'name') ?? getStringProp(tool.result, 'name')
+    const instructions =
+      getStringProp(tool.args, 'instructions') ??
+      getStringProp(tool.result, 'instructions') ??
+      (typeof tool.result === 'string' ? tool.result : undefined)
+    return (
+      <div className="flex min-w-0 flex-col gap-xs pt-xs">
+        {name && <div className="font-semibold text-text">{name}</div>}
+        {instructions && <pre className={BLOCK}>{instructions}</pre>}
+      </div>
+    )
+  }
+
+  if (bare === 'execute_command') {
+    return <ToolCommandContent tool={tool} hasCut={hasCut} />
+  }
+
+  return <ToolGenericContent tool={tool} />
 }
 
 /**
- * One tool, as a sentence of what it does or did; a command still running says for how long. A
- * row with a detail opens on it, as the Factory's tool card does (`ToolCard.tsx:41,54,64` at
- * ce7e9c30c1): a running command open on its output as it grows, closed once it ends, unless the
- * person opened or closed it; a row with nothing more to say does not open.
+ * A line of tool invocation (Criterion 8).
+ * Opens on arguments and results per tool kind.
  */
-export function ToolRow({ tool }: { tool: ToolPart }) {
-  const [chosen, setChosen] = useState<boolean>()
-  const { detail } = tool
-  const code = detail === undefined ? undefined : failedExit(detail)
-  const failed = code !== undefined || (detail !== undefined && failedCheck(detail))
-  const line = (
-    <TraceLine className="flex-wrap" status={failed ? 'error' : statusOf(tool.state)}>
-      <ToolIcon tool={tool} />
-      <TraceTitle className="max-w-full shrink-0 whitespace-normal">{sentenceOf(tool)}</TraceTitle>
-      <Subject subject={tool.subject} />
-      {tool.kind === 'run_command' && tool.state === 'running' && <Running />}
-    </TraceLine>
-  )
-  if (detail === undefined) return line
-  const growing = tool.state === 'running' && detail.kind === 'command'
+export function ToolRow({ tool }: { tool: ToolItem }) {
+  const running = isRunning(tool.state)
+  const failed = isFailed(tool)
+  const presentation = presentTool(tool.toolName, tool.args, {
+    isRunning: running,
+    isError: failed,
+    isDenied: tool.state === 'output-denied',
+  })
+  const opens = hasSomethingToOpen(tool)
+  const [open, setOpen] = useState(running)
+
+  if (!opens) {
+    return (
+      <TraceLine status={presentation.status}>
+        <ToolIcon tool={tool} />
+        <TraceTitle>{presentation.sentence}</TraceTitle>
+        {running && <Running />}
+      </TraceLine>
+    )
+  }
+
   return (
-    <TraceCollapsible open={chosen ?? growing} onOpenChange={setChosen}>
-      <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
+    <TraceCollapsible open={open} onOpenChange={setOpen}>
+      <TraceCollapsibleTrigger>
+        <TraceLine status={presentation.status}>
+          <ToolIcon tool={tool} />
+          <TraceTitle>{presentation.sentence}</TraceTitle>
+          {running && <Running />}
+        </TraceLine>
+      </TraceCollapsibleTrigger>
       <TraceCollapsibleContent>
-        <Opened detail={detail} />
+        <OpenedContent tool={tool} />
       </TraceCollapsibleContent>
     </TraceCollapsible>
   )

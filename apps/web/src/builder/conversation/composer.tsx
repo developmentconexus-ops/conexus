@@ -25,6 +25,8 @@ export function Composer(props: {
   onSend: (content: string) => Promise<boolean>
   onStop: () => void
   picker: ReactNode
+  taskPanel?: ReactNode
+  memory?: ReactNode
 }) {
   const { draft } = props
   const content = draft.text
@@ -48,6 +50,7 @@ export function Composer(props: {
 
   return (
     <form onSubmit={submit} className="sticky bottom-0 flex flex-col gap-xs bg-canvas pb-sm">
+      {props.taskPanel}
       <InputGroup
         data-busy={props.answering || undefined}
         className="rounded-composer data-busy:working-ring"
@@ -92,6 +95,7 @@ export function Composer(props: {
           )}
         </InputGroupAddon>
       </InputGroup>
+      {props.memory && <div className="flex items-center px-xs">{props.memory}</div>}
       <p className="text-center text-fact text-text-2">Enter envia · Shift+Enter quebra a linha</p>
       <p className="text-center text-fact text-text-2">
         Não cole senhas, chaves ou tokens na conversa.

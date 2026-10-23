@@ -7,12 +7,11 @@ import type {
   ProjectId,
   Provider,
 } from '@conexus/hub-api'
-import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { useMemo } from 'react'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
-import { ModelPicker, providersQuery } from '../model-accounts/public.ts'
+import { ModelPicker } from '../model-accounts/public.ts'
 import { conversationQuery, sendModel } from './queries.ts'
 import { UNCONFIRMED_MODEL } from './text.ts'
 
