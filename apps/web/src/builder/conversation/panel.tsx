@@ -133,7 +133,7 @@ function PanelComposer(props: {
   } = props
   const isTurnRunning = state.kind === 'answering' || state.kind === 'resuming'
   const activeTasks =
-    state.kind !== 'idle' && state.tasks.length > 0 ? state.tasks : conversation.tasks
+    state.kind !== 'idle' && state.tasks !== null ? state.tasks : conversation.tasks
   const activeMemory =
     state.kind !== 'idle' && state.memory !== null ? state.memory : conversation.memory
   const omPhase = state.kind !== 'idle' ? state.omPhase : 'idle'

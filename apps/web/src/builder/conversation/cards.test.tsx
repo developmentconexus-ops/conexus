@@ -249,6 +249,28 @@ test('o plano lido da tool-invocation submit_plan: aprovação e pedido de ajust
   await within(card).findByText('Este plano foi fechado.')
 })
 
+test('o plano recusado permanece como recusado após a resposta do Builder', async () => {
+  const { tell } = await turn(PLAN_PART)
+  const card = await screen.findByRole('region', { name: 'Plano: App de encomendas' })
+  fireEvent.click(within(card).getByRole('button', { name: 'Pedir ajustes' }))
+  const reason = within(card).getByRole('textbox', { name: 'O que mudar no plano' })
+  fireEvent.change(reason, { target: { value: 'Adicione filtro por data' } })
+  fireEvent.click(within(card).getByRole('button', { name: 'Pedir ajustes' }))
+  tell({
+    type: 'tool-invocation',
+    toolInvocation: {
+      toolCallId: CALL,
+      toolName: 'submit_plan',
+      state: 'result',
+      args: PLAN_ARGS,
+      result: { action: 'rejected' },
+    },
+  })
+  await within(card).findByText('Ajustes pedidos ao plano.')
+  expect(within(card).getByText('Uma tela de encomendas.')).toBeTruthy()
+  expect(within(card).queryByRole('button', { name: 'Aprovar e construir' })).toBeNull()
+})
+
 test('o plano aprovado diz que foi aprovado (Critério 12)', async () => {
   const { tell } = await turn(PLAN_PART)
   const card = await screen.findByRole('region', { name: 'Plano: App de encomendas' })

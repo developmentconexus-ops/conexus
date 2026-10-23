@@ -1,6 +1,16 @@
-import type { ConversationEvent, MastraPart, Message, OMProgress } from '@conexus/hub-api'
+import type {
+  ConversationEvent,
+  Task as HubTask,
+  MastraPart,
+  Message,
+  OMProgress,
+} from '@conexus/hub-api'
 import { applyUpdate } from '@conexus/hub-api'
-import type { Task, TranscriptItem } from './transcript.ts'
+import type { z } from 'zod'
+
+type Task = z.infer<typeof HubTask>
+
+import type { TranscriptItem } from './transcript.ts'
 import { fromMessages, reduce } from './transcript.ts'
 
 export type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
@@ -12,29 +22,29 @@ export type Live =
       transcript: readonly TranscriptItem[]
       parts: readonly MastraPart[]
       startedAt: string | null
-      tasks: readonly Task[]
+      tasks: readonly Task[] | null
       memory: OMProgress | null
       omPhase: OMPhase
-      memoryFailed?: 'observation' | 'reflection' | null
+      memoryFailed?: 'observation' | 'reflection' | 'buffering' | null
     }
   | {
       kind: 'resuming'
       transcript: readonly TranscriptItem[]
       parts: readonly MastraPart[]
       startedAt: string | null
-      tasks: readonly Task[]
+      tasks: readonly Task[] | null
       memory: OMProgress | null
       omPhase: OMPhase
-      memoryFailed?: 'observation' | 'reflection' | null
+      memoryFailed?: 'observation' | 'reflection' | 'buffering' | null
     }
   | {
       kind: 'ended'
       transcript: readonly TranscriptItem[]
       parts: readonly MastraPart[]
-      tasks: readonly Task[]
+      tasks: readonly Task[] | null
       memory: OMProgress | null
       omPhase: OMPhase
-      memoryFailed?: 'observation' | 'reflection' | null
+      memoryFailed?: 'observation' | 'reflection' | 'buffering' | null
     }
 
 export const IDLE: Live = { kind: 'idle' }
@@ -65,7 +75,7 @@ function inProgress(state: Live): ActiveState {
     transcript: [],
     parts: [],
     startedAt: null,
-    tasks: [],
+    tasks: null,
     memory: null,
     omPhase: 'idle',
     memoryFailed: null,
@@ -126,8 +136,9 @@ function handleOmPhaseEvent(
     case 'om_buffering_start':
       return { ...current, omPhase: 'buffering' }
     case 'om_buffering_end':
+      return { ...current, omPhase: 'idle', memoryFailed: null }
     case 'om_buffering_failed':
-      return { ...current, omPhase: 'idle' }
+      return { ...current, omPhase: 'idle', memoryFailed: 'buffering' }
     default:
       return step satisfies never
   }
@@ -176,7 +187,7 @@ export function live(state: Live, step: Step): Live {
         transcript: fromMessages([step.message]),
         parts: step.message.parts,
         startedAt: step.startedAt,
-        tasks: [],
+        tasks: null,
         memory: null,
         omPhase: 'idle',
         memoryFailed: null,

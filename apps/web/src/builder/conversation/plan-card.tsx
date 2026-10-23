@@ -12,7 +12,7 @@ type Decision = 'approved' | 'rejected'
 
 const STATE_TEXT: Record<string, string> = {
   approved: 'Plano aprovado.',
-  rejected: 'Este plano foi substituído.',
+  rejected: 'Ajustes pedidos ao plano.',
   closed: 'Este plano foi fechado.',
   expired: 'Este plano expirou.',
 }

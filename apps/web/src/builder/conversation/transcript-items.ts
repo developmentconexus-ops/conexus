@@ -1,8 +1,6 @@
-import type { Answer, FailureCode, Task as HubTask, MastraPart, Question } from '@conexus/hub-api'
-import { FAILURES, VersionCheck } from '@conexus/hub-api'
+import type { Answer, FailureCode, MastraPart, Question } from '@conexus/hub-api'
+import { FAILURES, ToolCallId, VersionCheck } from '@conexus/hub-api'
 import { z } from 'zod'
-
-export type Task = z.infer<typeof HubTask>
 
 export const MachinePhase = z.enum(['starting', 'waking', 'copying', 'replaced', 'saving'])
 export type MachinePhase = z.infer<typeof MachinePhase>
@@ -36,14 +34,10 @@ export function isMachineLasting(phase: MachinePhase): boolean {
   return phase === 'replaced'
 }
 
-export type ToolInvocationState =
-  | 'partial-call'
-  | 'call'
-  | 'approval-requested'
-  | 'approval-responded'
-  | 'result'
-  | 'output-error'
-  | 'output-denied'
+export type ToolInvocationState = Extract<
+  MastraPart,
+  { type: 'tool-invocation' }
+>['toolInvocation']['state']
 
 export type TextItem = { kind: 'text'; id: string; text: string; cuts?: string[] }
 export type ReasoningItem = {
@@ -169,7 +163,7 @@ export function invocationToItem(
   suspendedPayload: unknown,
   cuts?: string[],
 ): TranscriptItem | null {
-  if (isTaskTool(inv.toolName)) return null
+  if (!ToolCallId.safeParse(inv.toolCallId).success || isTaskTool(inv.toolName)) return null
 
   if (inv.toolName === 'ask_user') {
     const questions = parseQuestions(suspendedPayload ?? inv.args)
@@ -190,8 +184,16 @@ export function invocationToItem(
 
   if (inv.toolName === 'submit_plan') {
     const planInfo = parsePlan(suspendedPayload ?? inv.args)
+    const action =
+      inv.result && typeof inv.result === 'object' ? Reflect.get(inv.result, 'action') : undefined
     const state =
-      inv.state === 'result' ? 'approved' : inv.state === 'output-error' ? 'closed' : 'open'
+      inv.state === 'result' && action === 'rejected'
+        ? 'rejected'
+        : inv.state === 'result'
+          ? 'approved'
+          : inv.state === 'output-error'
+            ? 'closed'
+            : 'open'
     return {
       kind: 'card',
       cardKind: 'plan',

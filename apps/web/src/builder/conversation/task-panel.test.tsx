@@ -1,10 +1,13 @@
+import type { Task as HubTask } from '@conexus/hub-api'
 import { MessageId } from '@conexus/hub-api'
 import { render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
+import type { z } from 'zod'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { TaskPanel } from './task-panel.tsx'
 import { conversationOf, FIRST, screens } from './test-hub.tsx'
-import type { Task } from './transcript.ts'
+
+type Task = z.infer<typeof HubTask>
 
 const { openConversation } = screens(hubServer())
 

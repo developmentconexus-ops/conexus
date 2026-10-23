@@ -1,5 +1,8 @@
+import type { Task as HubTask } from '@conexus/hub-api'
 import { CheckIcon, CircleIcon, PlayIcon } from 'lucide-react'
-import type { Task } from './transcript.ts'
+import type { z } from 'zod'
+
+type Task = z.infer<typeof HubTask>
 
 /**
  * Pinned task panel above the composer while the turn runs (Criterion 10).

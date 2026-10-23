@@ -60,7 +60,8 @@ function applyDelta(
     return [...transcript, { kind: 'text', id: `${eventId}:text`, text: update.delta }]
   }
   if (update.type === 'reasoning-delta') {
-    const at = transcript.findLastIndex((item) => item.kind === 'reasoning')
+    const id = `${eventId}:reasoning-${update.index}`
+    const at = transcript.findIndex((item) => item.kind === 'reasoning' && item.id === id)
     const item = at !== -1 ? transcript[at] : undefined
     if (item && item.kind === 'reasoning') {
       return transcript.with(at, { ...item, reasoning: item.reasoning + update.delta })
@@ -69,7 +70,7 @@ function applyDelta(
       ...transcript,
       {
         kind: 'reasoning',
-        id: `${eventId}:reasoning`,
+        id,
         reasoning: update.delta,
         seconds: null,
         streaming: true,
@@ -97,7 +98,8 @@ function applyPartUpdate(
     ]
   }
   if (part.type === 'reasoning') {
-    const at = transcript.findLastIndex((item) => item.kind === 'reasoning')
+    const id = `${eventId}:part-${index}`
+    const at = transcript.findIndex((item) => item.kind === 'reasoning' && item.id === id)
     const item = at !== -1 ? transcript[at] : undefined
     if (item && item.kind === 'reasoning') {
       return transcript.with(at, { ...item, reasoning: part.reasoning, cuts: part.cuts })
@@ -106,7 +108,7 @@ function applyPartUpdate(
       ...transcript,
       {
         kind: 'reasoning',
-        id: `${eventId}:part-${index}`,
+        id,
         reasoning: part.reasoning,
         seconds: null,
         streaming: true,
@@ -127,7 +129,9 @@ function applyPartUpdate(
     'seconds' in part.data
   ) {
     const seconds = Reflect.get(part.data, 'seconds')
-    const at = transcript.findLastIndex((item) => item.kind === 'reasoning')
+    const at = transcript.findLastIndex(
+      (item) => item.kind === 'reasoning' && item.id.startsWith(`${eventId}:part-`),
+    )
     const item = at !== -1 ? transcript[at] : undefined
     if (typeof seconds === 'number' && item && item.kind === 'reasoning') {
       return transcript.with(at, { ...item, seconds, streaming: false })

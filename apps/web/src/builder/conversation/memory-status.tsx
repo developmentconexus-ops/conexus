@@ -64,7 +64,7 @@ function TokenRing({
 export function MemoryStatus(props: {
   memory: MemoryGauge | null
   omPhase?: 'idle' | 'buffering' | 'observing' | 'reflecting'
-  failed?: 'observation' | 'reflection' | null
+  failed?: 'observation' | 'reflection' | 'buffering' | null
 }) {
   const { memory, omPhase = 'idle', failed = null } = props
 
@@ -90,7 +90,7 @@ export function MemoryStatus(props: {
   return (
     <Popover>
       <PopoverTrigger
-        className="flex items-center gap-sm text-fact text-text-2 hover:text-text focus-visible:outline-none"
+        className="flex items-center gap-sm text-fact text-text-2 hover:text-text"
         aria-label={`Memória da conversa: Mensagens ${msgReading}, Observações ${obsReading}${
           failed ? ' · Falha na memória' : ''
         }`}
@@ -135,7 +135,7 @@ export function MemoryStatus(props: {
             </span>
           </div>
           <p className="text-text-2">
-            {failed === 'observation'
+            {failed === 'observation' || failed === 'buffering'
               ? 'Não foi possível guardar as mensagens na memória.'
               : 'Quando encher, o Builder resume a conversa para lembrar do que importa.'}
           </p>
