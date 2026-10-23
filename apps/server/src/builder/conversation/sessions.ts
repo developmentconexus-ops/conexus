@@ -2,14 +2,14 @@ import type {
   ConversationId,
   Effort,
   EventId,
-  MessageId,
   ModelId,
+  OMProgress,
   ProjectId,
   QuestionAnswer,
   RunId,
   ToolCallId,
 } from '@conexus/hub-api'
-import { z } from 'zod'
+import { MessageId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
@@ -19,18 +19,11 @@ import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
 import { denyParked, expire, onCardEvent, releaseCards, steerCards, takeCards } from './cards.ts'
 import { deliver } from './deliver.ts'
-import { keepPart, QUESTION_KEY, Question } from './kept.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
-import {
-  beforeAgentEnd,
-  endTurn,
-  keepQuestion,
-  onEvent,
-  openTurn,
-  questionId,
-  tellMachine,
-} from './live.ts'
+import { beforeAgentEnd, endTurn, onEvent, openTurn, tellMachine } from './live.ts'
+import type { Question } from './record.ts'
+import { questionId, saveQuestion, saveRestarted, settled } from './record.ts'
 import { eventId } from './turn-log.ts'
 
 /**
@@ -85,15 +78,10 @@ export class Sessions {
       .then((session) => {
         const opened: Live = {
           ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
-          ...{
-            journal: (runId, event) =>
-              this.#runs.append({ companyId: owner.companyId, runId, event }),
-            lose: () => session.abort(),
-          },
+          ...{ memory: this.#builder.memory, kept: Promise.resolve() },
           ...{ turn: undefined, asked: new Set(), runs: new Map() },
-          ...{ steering: undefined },
-          ...{ unclaimed: undefined, questions: [], kept: Promise.resolve() },
-          ...{ run: undefined, saveFailure: undefined, saved: undefined },
+          ...{ steering: undefined, unclaimed: undefined },
+          ...{ run: undefined, saveFailure: undefined },
           unsubscribe: () => undefined,
         }
         const unsubscribe = session.subscribe((event) => {
@@ -148,15 +136,15 @@ export class Sessions {
   }
 
   /**
-   * Keeps the person's question on the thread, then sends it on a turn of its own, whose answer
-   * comes on the stream; resolves once the question is kept.
+   * Saves the person's question on the thread, then sends it on a turn of its own, whose answer
+   * comes on the stream; resolves once the question is saved.
    */
   async send(
     input: OfConversation & { projectId: ProjectId; question: Question; traceId: string },
   ): Promise<void> {
     const { owner, conversationId } = input
     const waiting = await opened(this.#open.get(conversationId))
-    if (waiting !== undefined && (await steerCards(waiting, input.question))) return
+    if (waiting !== undefined && (await steerCards(waiting, input.question.content))) return
     const admitted = await this.#runs.admit({
       ...owner,
       conversationId,
@@ -167,7 +155,7 @@ export class Sessions {
     const entry = this.#hold(input)
     const turn = new Turn(input.owner)
     const kept = entry.live.then(async (live) => {
-      const keeping = keepQuestion(live, input.question)
+      const keeping = saveQuestion(live, input.question)
       live.asked.add(turn)
       try {
         await keeping
@@ -180,7 +168,7 @@ export class Sessions {
     const answered: Promise<void> = kept
       .then(
         (live) => this.#answer(live, input.question, turn, { runId, traceId: input.traceId }),
-        // The question was not kept: `send` throws it to the caller, and no turn starts.
+        // The question was not saved: `send` throws it to the caller, and no turn starts.
         () => this.#runs.finish({ runId, reason: 'error' }),
       )
       .then(() => this.#release(input.conversationId, entry))
@@ -271,13 +259,13 @@ export class Sessions {
         live.unclaimed = undefined
         endTurn(live, { reason, turn: undefined })
       }
-      // The turn is over once its last event is journaled and sent: the drain waits for that.
-      await live.turn?.queue
+      // The turn is over once what it keeps on the thread is written: the drain waits for that.
+      await settled(live)
     }
   }
 
   /**
-   * The conversation's events: those after `lastEventId`, or the turn in progress first, then each
+   * The conversation's events: those after `lastEventId` or the turn in progress so far, then each
    * new one, until `signal`. It listens before it returns, so a message sent once the stream is
    * open loses none of its events.
    */
@@ -288,38 +276,42 @@ export class Sessions {
       await release()
       throw error
     })
-    return await listen(live, {
-      ...input,
-      release,
-      runs: this.#runs,
-      closing: this.#closing.signal,
-    })
+    return listen(live, { ...input, release, closing: this.#closing.signal })
   }
 
   /**
-   * Tells the conversation's open streams what a restart said of a turn another copy of the program
-   * ran, and keeps its lasting part on the thread after the person's last message, which that turn
-   * answered (card, the restart).
+   * Tells the conversation's open streams that a turn another copy of the program ran was ended by
+   * a restart, and keeps the restart on the thread after the person's question that turn answered
+   * (card, the restart).
    */
   async restarted(restart: Restart): Promise<void> {
-    const { companyId, personId, conversationId } = restart
+    const { companyId, personId, conversationId, runId, kept } = restart
     const entry = this.#hold({ owner: { companyId, personId }, conversationId })
     try {
       const live = await entry.live
       await denyParked(live, this.#builder.agent)
-      const asked = z
-        .array(Question)
-        .safeParse(await live.session.thread.getSetting({ key: QUESTION_KEY }))
-      const last = asked.success ? asked.data.at(-1) : undefined
-      const turn = { after: last === undefined ? undefined : questionId(conversationId, last.key) }
-      for (const { n, event } of restart.said) {
-        if (event.type === 'part') await keepPart(live, turn, event.part)
-        const said = { id: eventId(restart.runId, n), event }
-        for (const listener of live.listeners) listener(said)
+      await saveRestarted(live, { runId, kept })
+      const part = { type: 'data-conexus-restarted', data: { kept } } as const
+      const events = [
+        {
+          type: 'message_update',
+          id: MessageId.parse(runId),
+          event: { type: 'part', index: 0, part },
+        },
+        { type: 'turnEnd', reason: 'aborted' },
+      ] as const
+      for (const [n, event] of events.entries()) {
+        for (const listener of live.listeners) listener({ id: eventId(runId, n + 1), event })
       }
     } finally {
       await this.#release(conversationId, entry)
     }
+  }
+
+  /** The memory's progress in the conversation's open session, or none when this process has none open. */
+  async memoryOf(conversationId: ConversationId): Promise<OMProgress | null> {
+    const live = await opened(this.#open.get(conversationId))
+    return live?.session.displayState.get().omProgress ?? null
   }
 
   /** The person's message that the turn in progress answers, or none: the stream tells that turn whole. */

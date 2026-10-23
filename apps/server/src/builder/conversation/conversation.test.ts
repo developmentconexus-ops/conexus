@@ -3,17 +3,14 @@ import dns from 'node:dns'
 import { syncBuiltinESMExports } from 'node:module'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { ConversationEvent } from '@conexus/hub-api'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
-import { conversing, failuresOf, KEY, sent, started, streamOf } from './test-conversation.ts'
+import { conversing, KEY, messagesOf, sent, started, streamOf } from './test-conversation.ts'
+import { failuresOf, textsOf } from './test-parts.ts'
 import { printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
 const OBSERVER = /^You are the memory consciousness/
-
-function textOf(events: ConversationEvent[]): string {
-  return events.flatMap((event) => (event.type === 'text' ? [event.delta] : [])).join('')
-}
 
 test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra guarda a empresa no dono', async (t) => {
   const { hub, ana, companyId, conversations, anthropic } = await conversing(t, (asked) =>
@@ -30,7 +27,7 @@ test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra g
     202,
   )
   const events = await stream.turn()
-  assert.equal(textOf(events), 'Olá, Ana. Vamos comparar os apps.')
+  assert.equal(textsOf(events).join(''), 'Olá, Ana. Vamos comparar os apps.')
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.ok(anthropic.sent.every((each) => each.key === KEY))
   const read = Object((await call(hub, ana, 'GET', url)).json()).conversation
@@ -70,10 +67,8 @@ test('um 401 com texto plantado: o texto não sai no log, no stderr, nas respost
   const answered = await sent(hub, ana, url, 'Compare dois apps')
   assert.equal(answered.statusCode, 202)
   const events = await stream.turn()
-  assert.deepEqual(events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
   const read = await call(hub, ana, 'GET', url)
   const list = await call(hub, ana, 'GET', conversations)
   assert.equal(read.statusCode, 200)
@@ -141,16 +136,23 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   const events = await stream.turn()
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.deepEqual(failuresOf(events), [])
-  assert.equal(textOf(events), 'Não consegui abrir.')
-  const pages = addresses.map((address, at) => ({
-    ...{ type: 'tool', kind: 'read_page', subject: { url: address, title: null } },
-    state: at === 3 ? 'completed' : 'error',
-  }))
-  const read = Object((await call(hub, ana, 'GET', url)).json()).conversation
-  const kept = read.messages.flatMap((message: { parts: { type: string; id?: string }[] }) =>
-    message.parts.flatMap(({ id: _, ...part }) => (part.type === 'tool' ? [part] : [])),
+  assert.equal(textsOf(events).join(''), 'Não consegui abrir.')
+  const kept = (await messagesOf(hub, ana, url)).flatMap((message) => message.parts)
+  const pages = kept.flatMap((part) =>
+    part.type === 'tool-invocation'
+      ? [
+          [
+            Object(part.toolInvocation.args).url,
+            Object(part.toolInvocation.result).isError === true,
+          ],
+        ]
+      : [],
   )
-  assert.deepEqual(kept, pages, 'each refused page is an error, the one read is complete')
+  assert.deepEqual(
+    pages,
+    addresses.map((address, at) => [address, at !== 3]),
+    'each refused page is an error, the one read is not',
+  )
   assert.deepEqual(site.reached, ['/pagina', '/cardapio'])
   assert.deepEqual(internal.reached, [])
   const last =
@@ -166,7 +168,17 @@ test('`web_fetch` a IP interno, a nome que resolve para um ou a redirecionamento
   assert.match(last, /Cardápio da padaria/)
 })
 
-test('o título nasce na primeira mensagem, pela conta do turno, e chega no stream já guardado', async (t) => {
+/** The conversation's title once it has one, read again for at most five seconds. */
+async function titleOf(hub: Hub, person: Person, url: string): Promise<unknown> {
+  for (let attempt = 0; ; attempt += 1) {
+    const read = await call(hub, person, 'GET', url)
+    const { title } = Object(read.json()).conversation
+    if (title !== null || attempt === 50) return title
+    await new Promise((done) => setTimeout(done, 100))
+  }
+}
+
+test('o título nasce na primeira mensagem, pela conta do turno, e fica guardado na conversa', async (t) => {
   const { hub, ana, conversations, anthropic, link } = await conversing(t, (asked) => {
     if (asked.key === KEY && asked.stream) return { kind: 'refuse', status: 429 }
     if (!asked.stream) return { kind: 'text', text: 'Encomendas da padaria' }
@@ -177,16 +189,15 @@ test('o título nasce na primeira mensagem, pela conta do turno, e chega no stre
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Como organizo as encomendas?')).statusCode, 202)
-  let event = await stream.next()
-  while (event.type !== 'title') event = await stream.next()
-  assert.deepEqual(event, { type: 'title', title: 'Encomendas da padaria' })
-  const titled = anthropic.sent.filter((each) => !each.stream)
+  await stream.turn()
+  // The title is Mastra's, saved on the thread after the turn: the person reads it on the conversation.
+  const titled = await titleOf(hub, ana, url)
+  assert.equal(titled, 'Encomendas da padaria')
+  const titling = anthropic.sent.filter((each) => !each.stream)
   assert.deepEqual(
-    titled.map((each) => each.key),
+    titling.map((each) => each.key),
     ['sk-ant-conversation-key-0002'],
   )
-  const read = await call(hub, ana, 'GET', url)
-  assert.equal(Object(read.json()).conversation.title, 'Encomendas da padaria')
 })
 
 test('a observação vai pela conta do turno e pede o título em português; um 429 nela: o turno termina, sem texto cru', async (t) => {

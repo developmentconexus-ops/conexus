@@ -4,7 +4,6 @@ import { test } from 'node:test'
 import { ANA_OWNER, call, codeOf } from '../../hub/identity/test-hub.ts'
 import {
   conversing,
-  failuresOf,
   holding,
   PARTIAL,
   rolesAndParts,
@@ -13,6 +12,7 @@ import {
   streamOf,
   title,
 } from './test-conversation.ts'
+import { failuresOf } from './test-parts.ts'
 
 test('duas mensagens ao mesmo tempo no Projeto: uma abre o turno, a outra é RUN_BUSY, e o fim diz a falha do turno', async (t) => {
   const { hub, ana, conversations } = await conversing(
@@ -41,7 +41,7 @@ test('uma segunda pergunta durante a resposta: RUN_BUSY e fica fora da conversa;
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
-  assert.deepEqual(await stream.said(), { type: 'text', delta: PARTIAL })
+  assert.equal(await stream.text(), PARTIAL)
   const key = randomUUID()
   const busy = await sent(hub, ana, url, 'Segunda', key)
   assert.equal(codeOf(busy), 'RUN_BUSY')

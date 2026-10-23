@@ -1,32 +1,20 @@
 import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import type { Outcome, Restart, RunsContext } from './context.ts'
+import type { Kept, Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 import { holdLease } from './lease.ts'
 import { saveRun } from './save.ts'
 import type { Run, RunState } from './store.ts'
-
-/** What a restart kept of the turn: its version, nothing to save, or a save that did not happen. */
-type Kept = number | 'nothing' | 'lost'
 
 function keptBy(outcome: Outcome | 'gone'): Kept {
   if (outcome === 'gone' || outcome.kind === 'failed') return 'lost'
   return outcome.kind === 'saved' ? outcome.version.number : 'nothing'
 }
 
-/** The stream of the turn a restart ended is told so, with what was kept, and ends (card, the restart). */
+/** The conversation is told the turn a restart ended, with what was kept, and its stream ends (card, the restart). */
 async function toldRestart(context: RunsContext, run: Run, kept: Kept) {
-  const said = [
-    { type: 'part', part: { type: 'restarted', kept } },
-    { type: 'turnEnd', reason: 'aborted' },
-  ] as const
-  const told: Restart['said'] = []
-  for (const event of said) {
-    const n = await context.store.appendEvent({ companyId: run.companyId, runId: run.id, event })
-    if (n !== undefined) told.push({ n, event })
-  }
   const { companyId, personId, conversationId } = run
   await context
-    .restarted({ companyId, personId, conversationId, runId: run.id, said: told })
+    .restarted({ companyId, personId, conversationId, runId: run.id, kept })
     .catch((error: unknown) =>
       context.log.error({ companyId, runId: run.id, error: String(error) }, 'RUN_RESTART_UNTOLD'),
     )

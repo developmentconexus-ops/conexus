@@ -65,7 +65,6 @@ export {
   renewInvitation,
 } from './companies.ts'
 export {
-  applyEvent,
   CONVERSATION_HEARTBEAT_MS,
   Conversation,
   ConversationEvent,
@@ -78,10 +77,8 @@ export {
   MESSAGE_MAX_LENGTH,
   Message,
   MessageId,
-  MessagePart,
   ModelId,
-  machinePhaseLasts,
-  type PartEvent,
+  OMProgress,
   providerOfModel,
   readConversation,
   runningEffort,
@@ -89,6 +86,7 @@ export {
   setConversationModel,
   stopConversation,
   streamConversation,
+  THOUGHT_PART,
   TurnFailureCode,
   VersionCheck,
 } from './conversations.ts'
@@ -108,6 +106,7 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
+export { applyUpdate, CONEXUS_PARTS, MastraPart, MessageUpdate } from './mastra-parts.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
   ACCOUNT_KINDS,
@@ -203,4 +202,4 @@ export {
   SourceFile,
 } from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
-export { DETAIL_LIMITS, SUBJECT_MAX_LENGTH, ToolDetail } from './tool-detail.ts'
+export { WIRE_LIMITS } from './wire-limits.ts'

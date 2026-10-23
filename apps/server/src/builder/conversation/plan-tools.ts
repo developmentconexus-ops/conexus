@@ -53,7 +53,7 @@ export function questionsOf(input: unknown): HubQuestion[] | undefined {
 }
 
 /** What `ask_user` returns once answered: the model's line per question, and the answers themselves. */
-export const AskedResult = z.object({ content: z.string(), answers: z.array(Answer) })
+const AskedResult = z.object({ content: z.string(), answers: z.array(Answer) })
 
 /**
  * `ask_user` for 1 to 4 questions, on Mastra's own suspend and resume (`askUserTool`): it suspends

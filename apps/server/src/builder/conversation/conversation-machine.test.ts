@@ -39,15 +39,13 @@ test('a máquina como o modelo a ouve: a pasta do app e o que ela tem, nenhum ou
     [],
     'the model is told of no folder but the app (the machine is this test folder) and the check',
   )
-  const [ended] = events.flatMap((event) =>
-    event.type === 'part' &&
-    event.part.type === 'tool' &&
-    event.part.detail?.kind === 'command' &&
-    event.part.detail.exitCode !== null
-      ? [event.part.detail]
-      : [],
-  )
-  assert.deepEqual(ended?.kind === 'command' && ended.output, [realpathSync(app)])
+  const output = events.flatMap((event) => (event.type === 'shell_output' ? [event.output] : []))
+  const exit = events.find((event) => event.type === 'command_exit')
+  assert.deepEqual(exit && { exitCode: exit.exitCode, success: exit.success }, {
+    exitCode: 0,
+    success: true,
+  })
+  assert.equal(output.at(-1)?.trim(), realpathSync(app), 'each event says the whole tail')
 })
 
 function write(path: string, content: string) {

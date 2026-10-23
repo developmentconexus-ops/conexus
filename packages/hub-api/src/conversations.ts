@@ -1,10 +1,10 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
+import { MastraPart, MessageUpdate } from './mastra-parts.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
 import { ProjectId } from './projects.ts'
-import { PlanPart, QuestionPart, TasksPart } from './questions.ts'
-import { Subject, ToolDetail } from './tool-detail.ts'
+import { Task } from './questions.ts'
 
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
@@ -70,98 +70,18 @@ export type TurnFailureCode = z.infer<typeof TurnFailureCode>
 export const MessageId = z.string().min(1).brand('MessageId')
 export type MessageId = z.infer<typeof MessageId>
 
-/** What a tool call was about: a page, a search, a file, a command, what a check found, or nothing to say. */
-const ToolSubject = z.union([
-  z.object({ url: z.url(), title: Subject.nullable() }),
-  z.object({ query: Subject }),
-  z.object({ path: Subject }),
-  z.object({ command: Subject }),
-  z.object({ check: Subject }),
-  z.null(),
-])
+/** The part of a message that says a thinking took `seconds`, by our clock (step 12.1). */
+export const THOUGHT_PART = 'data-conexus-thought'
 
 /**
- * A piece of a message. `reasoning` and `tool` carry an `id`: a later part with the same `id`
- * replaces it. Their states follow the controller's `ActiveToolState.status`; the thinking's text,
- * the provider's words and a tool's arguments and result never leave the server, but for a tool's
- * `detail`, cut (security S9, design V39, code C51).
+ * A message as Mastra keeps it: its parts by Mastra's names, `cuts` where the Hub kept less; and
+ * `suspended`, the calls the message left waiting for the person, with what each suspended with.
  */
-export const MessagePart = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('text'), text: z.string() }),
-  z.object({
-    type: z.literal('reasoning'),
-    id: z.string().min(1),
-    state: z.enum(['running', 'completed']),
-    /** How long it thought, by the server's clock; `null` while it thinks or when none was kept. */
-    seconds: z.int().nonnegative().nullable(),
-  }),
-  z.object({
-    type: z.literal('tool'),
-    id: z.string().min(1),
-    kind: z.enum([
-      'read_page',
-      'search_web',
-      'recall',
-      'write_file',
-      'edit_file',
-      'read_file',
-      'run_command',
-      'check',
-      'other',
-    ]),
-    state: z.enum(['running', 'completed', 'error', 'denied']),
-    subject: ToolSubject,
-    /** What the row opens on; none for a tool that only has its subject to say. */
-    detail: ToolDetail.optional(),
-  }),
-  z.object({
-    type: z.literal('file'),
-    toolId: z.string().min(1),
-    path: Subject,
-    operation: z.enum(['write', 'edit']),
-  }),
-  /**
-   * What the machine is doing before a tool can run; the latest replaces the one before, except the
-   * phases that last (`machinePhaseLasts`).
-   */
-  z.object({
-    type: z.literal('machine'),
-    phase: z.enum(['starting', 'waking', 'copying', 'replaced', 'saving']),
-  }),
-  /**
-   * The server restarted in the middle of the turn, which ended there. `kept` is the version that
-   * saved what the Builder had written, `nothing` when it had written nothing, or `lost` when the
-   * restart cut its save and its files were not saved.
-   */
-  z.object({
-    type: z.literal('restarted'),
-    kept: z.union([z.int().positive(), z.enum(['nothing', 'lost'])]),
-  }),
-  /**
-   * The version the turn saved: its number, whether it changed the app, how many files it holds
-   * and how many of them changed, and what the end of the turn's check said; none when the turn
-   * ended before its check ran (stopped, the hour, an error).
-   */
-  z.object({
-    type: z.literal('version'),
-    number: z.int().positive(),
-    changed: z.boolean(),
-    files: z.int().nonnegative(),
-    changedFiles: z.int().nonnegative(),
-    check: VersionCheck.optional(),
-  }),
-  z.object({ type: z.literal('notice'), text: z.string() }),
-  z.object({ type: z.literal('failure'), code: TurnFailureCode }),
-  QuestionPart,
-  PlanPart,
-  TasksPart,
-])
-export type MessagePart = z.infer<typeof MessagePart>
-
 export const Message = z.object({
   id: MessageId,
   role: z.enum(['person', 'builder']),
-  parts: z.array(MessagePart),
+  parts: z.array(MastraPart),
+  suspended: z.record(z.string(), z.unknown()),
   /** The model that answered the Builder's turn, as Mastra recorded it; `null` for the person. */
   model: ModelId.nullable(),
   createdAt: z.iso.datetime(),
@@ -175,86 +95,95 @@ export const ConversationSummary = z.object({
 })
 export type ConversationSummary = z.infer<typeof ConversationSummary>
 
+/** The observational memory's progress, as the controller holds it (`OMProgressState`). */
+export const OMProgress = z.object({
+  status: z.enum(['idle', 'observing', 'reflecting']),
+  pendingTokens: z.number(),
+  threshold: z.number(),
+  thresholdPercent: z.number(),
+  observationTokens: z.number(),
+  reflectionThreshold: z.number(),
+  reflectionThresholdPercent: z.number(),
+  generationCount: z.number(),
+  stepNumber: z.number(),
+})
+export type OMProgress = z.infer<typeof OMProgress>
+
 export const Conversation = ConversationSummary.extend({
   model: ModelId,
   effort: Effort,
   messages: z.array(Message),
+  /** The Builder's task list, as Mastra's storage holds it. */
+  tasks: z.array(Task),
+  /** The memory's progress in this session, or `null` before it says. */
+  memory: OMProgress.nullable(),
 })
 export type Conversation = z.infer<typeof Conversation>
 
+const OmWindow = z.object({ tokens: z.number(), threshold: z.number() })
+const OmBuffer = z.object({ status: z.enum(['idle', 'running', 'complete']) })
+const OmCycle = z.object({ cycleId: z.string() })
+const OmOperation = OmCycle.extend({ operationType: z.enum(['observation', 'reflection']) })
+const OmFailed = OmCycle.extend({ durationMs: z.number() })
+
 /**
- * What the stream of a conversation says. `turn` opens each turn, and on a reconnect that cannot
- * resume it is the turn in progress so far; `part` adds a part, or replaces the one with its `id`;
- * a failed turn's `failure` part comes before its `turnEnd`.
+ * What the stream of a conversation says: `turn` opens each turn, and on a reconnect that cannot
+ * resume it is the turn in progress so far; `turnEnd` closes it. The rest are the controller's own
+ * events (`AgentControllerWireEvent`), cut by `wire.ts` and without the free text of an error or of
+ * the observer (security S41). A part of ours goes as a `message_update` of a `data-conexus-*` part.
  */
 export const ConversationEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('turn'), message: Message, startedAt: z.iso.datetime() }),
-  z.object({ type: z.literal('text'), delta: z.string() }),
-  z.object({ type: z.literal('part'), part: MessagePart }),
-  z.object({ type: z.literal('notice'), text: z.string() }),
-  z.object({ type: z.literal('title'), title: z.string() }),
   z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
+  z.object({ type: z.literal('message_start'), message: Message }),
+  z.object({ type: z.literal('message_update'), id: MessageId, event: MessageUpdate }),
+  z.object({ type: z.literal('message_end'), id: MessageId }),
+  z.object({
+    type: z.literal('shell_output'),
+    toolCallId: z.string().min(1),
+    output: z.string(),
+    stream: z.enum(['stdout', 'stderr']),
+    cuts: z.array(z.string()).optional(),
+  }),
+  z.object({
+    type: z.literal('command_exit'),
+    toolCallId: z.string().min(1),
+    exitCode: z.int(),
+    success: z.boolean(),
+  }),
+  z.object({
+    type: z.literal('tool_suspended'),
+    toolCallId: z.string().min(1),
+    toolName: z.string(),
+    args: z.unknown(),
+    suspendPayload: z.unknown(),
+    cuts: z.array(z.string()).optional(),
+  }),
+  z.object({ type: z.literal('task_updated'), tasks: z.array(Task) }),
+  z.object({
+    type: z.literal('om_status'),
+    windows: z.object({
+      active: z.object({ messages: OmWindow, observations: OmWindow }),
+      buffered: z.object({ observations: OmBuffer, reflection: OmBuffer }),
+    }),
+    stepNumber: z.number(),
+    generationCount: z.number(),
+  }),
+  z.object({ type: z.literal('om_observation_start'), ...OmOperation.shape }),
+  z.object({ type: z.literal('om_observation_end'), ...OmCycle.shape, durationMs: z.number() }),
+  z.object({ type: z.literal('om_observation_failed'), ...OmFailed.shape }),
+  z.object({ type: z.literal('om_reflection_start'), ...OmCycle.shape }),
+  z.object({ type: z.literal('om_reflection_end'), ...OmCycle.shape, durationMs: z.number() }),
+  z.object({ type: z.literal('om_reflection_failed'), ...OmFailed.shape }),
+  z.object({ type: z.literal('om_buffering_start'), ...OmOperation.shape }),
+  z.object({ type: z.literal('om_buffering_end'), ...OmOperation.shape }),
+  z.object({ type: z.literal('om_buffering_failed'), ...OmOperation.shape }),
+  z.object({
+    type: z.literal('agent_end'),
+    reason: z.enum(['complete', 'aborted', 'error', 'suspended']).optional(),
+  }),
 ])
 export type ConversationEvent = z.infer<typeof ConversationEvent>
-
-/**
- * Whether a machine phase is a fact that stays said on the thread, without a clock: a replaced
- * machine. Every other phase is a step in progress, over once anything follows it.
- */
-export function machinePhaseLasts(
-  phase: Extract<MessagePart, { type: 'machine' }>['phase'],
-): boolean {
-  return phase === 'replaced'
-}
-
-/** The events that change a message's parts. */
-export type PartEvent = Extract<ConversationEvent, { type: 'text' | 'part' | 'notice' }>
-
-/** What names a part among the message's, so a later one replaces it; none for the rest. */
-function partKey(part: MessagePart): string | undefined {
-  switch (part.type) {
-    case 'reasoning':
-    case 'tool':
-      return `${part.type}:${part.id}`
-    case 'question':
-    case 'plan':
-      return `${part.type}:${part.toolCallId}`
-    case 'tasks':
-      return 'tasks'
-    case 'file':
-      return `${part.type}:${part.toolId}`
-    case 'machine':
-      return machinePhaseLasts(part.phase) ? undefined : 'machine'
-    default:
-      return undefined
-  }
-}
-
-/**
- * A message's parts after one event, the only fold of events into parts, on the server and the
- * screen alike: text after text is one text, since Claude cuts an answer into one block per span it
- * cites; a tool, thinking, file or machine part replaces the one it names; any other comes at the end.
- */
-export function applyEvent(parts: readonly MessagePart[], event: PartEvent): MessagePart[] {
-  switch (event.type) {
-    case 'text': {
-      const last = parts.at(-1)
-      return last?.type === 'text'
-        ? [...parts.slice(0, -1), { type: 'text', text: last.text + event.delta }]
-        : [...parts, { type: 'text', text: event.delta }]
-    }
-    case 'part': {
-      const { part } = event
-      const key = partKey(part)
-      const at = key === undefined ? -1 : parts.findIndex((each) => partKey(each) === key)
-      return at === -1 ? [...parts, part] : parts.with(at, part)
-    }
-    case 'notice':
-      return [...parts, { type: 'notice', text: event.text }]
-    default:
-      return event satisfies never
-  }
-}
 
 /** How often the stream says it is alive, so a proxy keeps it open. */
 export const CONVERSATION_HEARTBEAT_MS = 25_000

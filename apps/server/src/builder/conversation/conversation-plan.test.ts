@@ -1,10 +1,21 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 import { answeredOf } from './test-conversation.ts'
-import { answerUrl, conversingWith, SUBMIT, tool, untilCard, WRITE_PLAN } from './test-questions.ts'
+import {
+  answerUrl,
+  conversingWith,
+  invocations,
+  SUBMIT,
+  tool,
+  untilCard,
+  WRITE_PLAN,
+} from './test-questions.ts'
 
-test('submit_plan: fora de `.conexus/plan.md` é recusado; no caminho chega a parte `plan`; Pedir ajustes devolve o motivo; Aprovar continua', async (t) => {
+const Planned = z.object({ title: z.string(), plan: z.string() })
+
+test('submit_plan: fora de `.conexus/plan.md` é recusado; no caminho chega o `tool_suspended` do plano; Pedir ajustes devolve o motivo; Aprovar continua', async (t) => {
   const elsewhere = tool('submit_plan', { path: 'outro.md' })
   const { hub, ana, url, stream, send, calls } = await conversingWith(t, [
     [elsewhere],
@@ -15,9 +26,10 @@ test('submit_plan: fora de `.conexus/plan.md` é recusado; no caminho chega a pa
   assert.equal((await send()).statusCode, 202)
   const first = await untilCard(stream, 'plan')
   const plan = first.card
-  assert.ok(plan.type === 'plan')
+  assert.equal(plan.toolName, 'submit_plan')
+  const suspended = Planned.parse(plan.suspendPayload)
   assert.deepEqual(
-    [plan.title, plan.plan.trim()],
+    [suspended.title, suspended.plan.trim()],
     ['App de encomendas', 'Para a pessoa: um cadastro simples.'],
   )
   assert.ok(
@@ -41,10 +53,10 @@ test('submit_plan: fora de `.conexus/plan.md` é recusado; no caminho chega a pa
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(
-    read.flatMap((part) => (part.type === 'plan' ? [[part.title, part.state]] : [])),
-    [
-      ['App de encomendas', 'rejected'],
-      ['App de encomendas', 'approved'],
-    ],
+    [plan.toolCallId, second.card.toolCallId].map((id) =>
+      invocations(read, id).map((each) => each.state),
+    ),
+    [['result'], ['result']],
+    'read again, both submissions are closed with the decision Mastra kept as their result',
   )
 })
