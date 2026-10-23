@@ -14,6 +14,7 @@ import {
   listModelAccounts,
   listModelProviders,
   listProjects,
+  readObservationalMemoryModels,
 } from '@conexus/hub-api'
 import type { Replies } from './layout-harness.ts'
 import { ok } from './layout-harness.ts'
@@ -119,6 +120,10 @@ function companyPage(
 /** The company's model accounts and the providers of their keys, which the rail preloads on focus. */
 function modelAccountsPage(id: string, mayManage: boolean): Replies {
   return {
+    [`GET /api/companies/${id}/observational-memory-models`]: ok(readObservationalMemoryModels, {
+      observer: null,
+      reflector: null,
+    }),
     [`GET /api/companies/${id}/model-accounts`]: ok(listModelAccounts, {
       company: [],
       mine: [],

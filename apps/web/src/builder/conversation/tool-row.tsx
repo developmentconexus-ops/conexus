@@ -209,12 +209,24 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
   const opens = hasSomethingToOpen(tool)
   const [open, setOpen] = useState(running)
 
+  const detail =
+    ['web_fetch', 'web_search'].includes(bareToolName(tool.toolName)) && !failed
+      ? presentation.detail
+      : undefined
+  const title = detail ? presentation.label : presentation.sentence
+  const titleClass = detail ? 'flex-1 whitespace-normal' : undefined
+  const side = detail ? (
+    <TraceDescription className="min-w-0 max-w-1/2 truncate">{detail}</TraceDescription>
+  ) : running ? (
+    <Running />
+  ) : null
+
   if (!opens) {
     return (
       <TraceLine status={presentation.status}>
         <ToolIcon tool={tool} />
-        <TraceTitle>{presentation.sentence}</TraceTitle>
-        {running && <Running />}
+        <TraceTitle className={titleClass}>{title}</TraceTitle>
+        {side}
       </TraceLine>
     )
   }
@@ -224,8 +236,8 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
       <TraceCollapsibleTrigger>
         <TraceLine status={presentation.status}>
           <ToolIcon tool={tool} />
-          <TraceTitle>{presentation.sentence}</TraceTitle>
-          {running && <Running />}
+          <TraceTitle className={titleClass}>{title}</TraceTitle>
+          {side}
         </TraceLine>
       </TraceCollapsibleTrigger>
       <TraceCollapsibleContent>
