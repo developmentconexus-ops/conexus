@@ -1,5 +1,6 @@
-import { listAppVersions } from '@conexus/hub-api'
+import { listAppVersions, readProjectFile, readProjectSource } from '@conexus/hub-api'
 import type { Page } from 'playwright-core'
+import type { Replies } from './layout-harness.ts'
 import { failure, ok } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
@@ -17,6 +18,8 @@ import {
 const HOME = `/companies/${COMPANY.id}`
 const PROJECTS = `${HOME}/projects`
 const ABOUT = `${PROJECTS}/${PROJECT_ID}?lens=project`
+const CODE = `${PROJECTS}/${PROJECT_ID}?lens=code`
+const SOURCE = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/source`
 const VERSIONS = `${ABOUT}&section=versions`
 const OF_OWNER = { ...OWNER, ...projectsPage(COMPANY.id) }
 const NOBODY = { ...OWNER, ...projectsPage(COMPANY.id, { empty: true }) }
@@ -26,6 +29,28 @@ async function createRefused(page: Page, sentence: string) {
   await page.getByLabel('Nome do projeto').fill('Pedidos')
   await page.getByRole('button', { name: 'Criar projeto', exact: true }).click()
   await waitFor(page, sentence)
+}
+
+/** The Projeto's first version, its files in the tree and the first one's text. */
+function withVersion(paths: string[]): Replies {
+  return {
+    ...OF_OWNER,
+    [`GET ${SOURCE}`]: ok(readProjectSource, {
+      version: 1,
+      commit: 'a'.repeat(40),
+      savedAt: '2026-10-21T12:00:00.000Z',
+      files: paths.map((path) => ({ path, bytes: 40 })),
+    }),
+    [`GET ${SOURCE}/file`]: ok(readProjectFile, { text: 'export const encomendas = []\n' }),
+  }
+}
+
+async function openFiles(page: Page) {
+  await waitFor(page, 'Versão 1, guardada em')
+  if ((page.viewportSize()?.width ?? 0) < 768) {
+    await page.getByRole('button', { name: 'Arquivos', exact: true }).click()
+  }
+  await page.getByRole('tree', { name: 'Arquivos do app' }).waitFor()
 }
 
 async function openDeletion(page: Page) {
@@ -95,6 +120,23 @@ export const PROJECT_STATES: State[] = [
     path: VERSIONS,
     replies: OF_MEMBER,
     settle: (p) => waitFor(p, 'Só o dono ou quem administra a empresa vê e envia as versões.'),
+  },
+  {
+    name: 'Projeto, Código com a árvore',
+    path: CODE,
+    replies: withVersion([
+      'package.json',
+      'src/router.tsx',
+      'src/pages/encomendas.tsx',
+      'src/components/ui/button.tsx',
+    ]),
+    settle: openFiles,
+  },
+  {
+    name: 'Projeto, Código de um app vazio',
+    path: CODE,
+    replies: withVersion([]),
+    settle: (p) => waitFor(p, 'Este app ainda está vazio'),
   },
   {
     name: 'apagar Projeto, a confirmação',

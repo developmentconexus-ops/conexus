@@ -5,26 +5,18 @@ import { useState } from 'react'
 import { dayAndHour } from '../../platform/dates.ts'
 import { sentenceOf } from '../../platform/hub.ts'
 import { Button } from '../../ui/button.tsx'
-import { cn } from '../../ui/cn.ts'
-import { Skeleton } from '../../ui/skeleton.tsx'
+import { Sheet, SheetContent } from '../../ui/sheet.tsx'
+import { Empty, Loading, ReadFailure } from '../../ui/states.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
+import { FileTree, firstShown, treeOf } from './file-tree.tsx'
 import { fileQuery, sourceQuery } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
 
-function Waiting({ label }: { label: string }) {
-  return (
-    <div role="status" aria-label={label} className="flex flex-col gap-sm">
-      <Skeleton className="w-1/2" />
-      <Skeleton className="w-2/3" />
-      <Skeleton className="w-1/3" />
-    </div>
-  )
-}
-
 function FileText(props: { commit: string; path: string }) {
   const { companyId, projectId } = route.useParams()
   const text = useQuery({ ...fileQuery({ companyId, projectId, ...props }), retry: false })
-  if (text.isPending) return <Waiting label="Carregando o arquivo" />
+  if (text.isPending) return <Loading />
   if (text.isError) return <p role="alert">{sentenceOf(text.error)}</p>
   return (
     // A scrolling region: current browsers let the keyboard focus it, so no tabindex is set.
@@ -39,27 +31,41 @@ function FileText(props: { commit: string; path: string }) {
 
 function Files(props: { source: ProjectSource; commit: string }) {
   const { source, commit } = props
+  const phone = useIsMobile()
   const [chosen, setChosen] = useState<string>()
-  const path = source.files.some((file) => file.path === chosen) ? chosen : source.files[0]?.path
+  const [listing, setListing] = useState(false)
+  const nodes = treeOf(source.files.map((file) => file.path))
+  if (source.files.length === 0) return <Empty>Este app ainda está vazio</Empty>
+  const path = source.files.some((file) => file.path === chosen)
+    ? chosen
+    : (firstShown(nodes) ?? source.files[0]?.path)
+  const tree = (
+    <FileTree
+      nodes={nodes}
+      chosen={path}
+      onChoose={(next) => {
+        setChosen(next)
+        setListing(false)
+      }}
+    />
+  )
+  if (phone) {
+    return (
+      <div className="flex min-h-0 flex-col gap-md">
+        <div className="flex items-center gap-sm">
+          <Button onClick={() => setListing(true)}>Arquivos</Button>
+          <span className="min-w-0 break-all font-mono text-fact">{path}</span>
+        </div>
+        <Sheet open={listing} onOpenChange={setListing}>
+          <SheetContent title="Arquivos do app">{tree}</SheetContent>
+        </Sheet>
+        {path !== undefined && <FileText commit={commit} path={path} />}
+      </div>
+    )
+  }
   return (
     <div className="grid min-h-0 gap-md md:grid-cols-[16rem_1fr]">
-      <ul aria-label="Arquivos do app" className="flex min-w-0 flex-col gap-xs">
-        {source.files.map((file) => (
-          <li key={file.path}>
-            <button
-              type="button"
-              aria-current={file.path === path ? 'true' : undefined}
-              onClick={() => setChosen(file.path)}
-              className={cn(
-                'w-full break-all rounded-control px-sm py-xs text-left font-mono text-fact',
-                file.path === path ? 'bg-accent-soft text-text' : 'hover:bg-surface-3',
-              )}
-            >
-              {file.path}
-            </button>
-          </li>
-        ))}
-      </ul>
+      {tree}
       {path !== undefined && <FileText commit={commit} path={path} />}
     </div>
   )
@@ -72,21 +78,14 @@ function Files(props: { source: ProjectSource; commit: string }) {
 export function Source() {
   const { companyId, projectId } = route.useParams()
   const read = useQuery(sourceQuery(companyId, projectId))
-  if (read.isPending) return <Waiting label="Carregando o código" />
+  if (read.isPending) return <Loading />
   if (read.isError) {
-    return (
-      <div className="flex flex-col items-start gap-md">
-        <p role="alert">{sentenceOf(read.error)}</p>
-        <Button variant="primary" onClick={() => void read.refetch()}>
-          Tentar de novo
-        </Button>
-      </div>
-    )
+    return <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
   }
   const source = read.data
   const { commit, savedAt } = source
   if (commit === null || savedAt === null) {
-    return <p className="text-text-2">Nenhuma versão guardada ainda. Peça um app na Conversa.</p>
+    return <Empty>Nenhuma versão guardada ainda. Peça um app na Conversa.</Empty>
   }
   return (
     <div className="flex flex-col gap-md">
