@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sent, started, streamOf, title } from './test-conversation.ts'
+import { connect } from './test-defaults.ts'
 
 const OBSERVER = /^You are the memory consciousness/
 const SNAPSHOT = '<current-task-list'
@@ -50,6 +52,27 @@ test('o Builder sai de createCodingAgent sem workspace próprio: as ferramentas 
     second?.texts.some((text) => text.includes(SNAPSHOT)),
     'the list rides the state lane',
   )
+})
+
+test('o Observer usa o modelo explícito da empresa pela fila de contas, sem mudar o modelo da conversa', async (t) => {
+  const { hub, ana, conversations, companyId, anthropic } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'text', text: LONG },
+  )
+  await connect(hub, ana, `/api/companies/${companyId}/model-accounts`, 'groq')
+  const settings = `/api/companies/${companyId}/observational-memory-models`
+  const chosen = 'groq/llama-3.3-70b-versatile'
+  const saved = await call(hub, ana, 'PUT', settings, { role: 'observer', model: chosen })
+  assert.equal(saved.statusCode, 200, saved.body)
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  for (const question of ['Primeira encomenda', 'Segunda encomenda']) {
+    assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
+    assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+  }
+  await hub.close()
+  assert.ok(anthropic.chats.length > 0, 'the Observer called the selected Groq account')
 })
 
 test('a lista volta ao modelo depois que a chamada de task_write sai da janela pela memória (14.2, 14)', async (t) => {

@@ -23,6 +23,7 @@ import {
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
+import { configuredMemoryModel } from './observational-memory-settings.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import {
   ASK_USER_TOOL,
@@ -104,7 +105,9 @@ function builderMemory(
         temporalMarkers: true,
         observation: {
           ...failSoft,
-          model: accountModel(queue, 'observer'),
+          model: accountModel(queue, 'observer', (owner) =>
+            configuredMemoryModel(queue, owner, 'observer'),
+          ),
           messageTokens: 30_000,
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
@@ -115,7 +118,9 @@ function builderMemory(
         },
         reflection: {
           ...failSoft,
-          model: accountModel(queue, 'reflection'),
+          model: accountModel(queue, 'reflection', (owner) =>
+            configuredMemoryModel(queue, owner, 'reflector'),
+          ),
           observationTokens: 40_000,
           bufferActivation: 1 / 2,
           blockAfter: 1.1,

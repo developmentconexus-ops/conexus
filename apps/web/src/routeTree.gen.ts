@@ -32,6 +32,7 @@ import { Route as AppCompaniesCompanyIdSettingsGeneralRouteImport } from './rout
 import { Route as AppCompaniesCompanyIdSettingsModelAccountsRouteImport } from './routes/_app/companies/$companyId_/settings/model-accounts.tsx'
 import { Route as AppCompaniesCompanyIdSettingsMyDefaultsRouteImport } from './routes/_app/companies/$companyId_/settings/my-defaults.tsx'
 import { Route as AppCompaniesCompanyIdSettingsMyModelAccountsRouteImport } from './routes/_app/companies/$companyId_/settings/my-model-accounts.tsx'
+import { Route as AppCompaniesCompanyIdSettingsObservationalMemoryRouteImport } from './routes/_app/companies/$companyId_/settings/observational-memory.tsx'
 import { Route as AppCompaniesCompanyIdSettingsPeopleRouteImport } from './routes/_app/companies/$companyId_/settings/people.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeIndexRouteImport } from './routes/_app/companies/$companyId_/welcome/index.tsx'
 import { Route as AppCompaniesCompanyIdWelcomeBuildRouteImport } from './routes/_app/companies/$companyId_/welcome/build.tsx'
@@ -202,6 +203,12 @@ const AppCompaniesCompanyIdSettingsMyModelAccountsRoute =
     path: '/my-model-accounts',
     getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
   } as any)
+const AppCompaniesCompanyIdSettingsObservationalMemoryRoute =
+  AppCompaniesCompanyIdSettingsObservationalMemoryRouteImport.update({
+    id: '/observational-memory',
+    path: '/observational-memory',
+    getParentRoute: () => AppCompaniesCompanyIdSettingsRouteRoute,
+  } as any)
 const AppCompaniesCompanyIdSettingsPeopleRoute =
   AppCompaniesCompanyIdSettingsPeopleRouteImport.update({
     id: '/people',
@@ -279,6 +286,7 @@ export interface FileRoutesByFullPath {
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   '/companies/$companyId/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   '/companies/$companyId/settings/my-model-accounts': typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
+  '/companies/$companyId/settings/observational-memory': typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   '/companies/$companyId/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/companies/$companyId/welcome/build': typeof AppCompaniesCompanyIdWelcomeBuildRoute
   '/companies/$companyId/welcome/company': typeof AppCompaniesCompanyIdWelcomeCompanyRoute
@@ -311,6 +319,7 @@ export interface FileRoutesByTo {
   '/companies/$companyId/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   '/companies/$companyId/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   '/companies/$companyId/settings/my-model-accounts': typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
+  '/companies/$companyId/settings/observational-memory': typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   '/companies/$companyId/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/companies/$companyId/welcome/build': typeof AppCompaniesCompanyIdWelcomeBuildRoute
   '/companies/$companyId/welcome/company': typeof AppCompaniesCompanyIdWelcomeCompanyRoute
@@ -351,6 +360,7 @@ export interface FileRoutesById {
   '/_app/companies/$companyId_/settings/model-accounts': typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   '/_app/companies/$companyId_/settings/my-defaults': typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   '/_app/companies/$companyId_/settings/my-model-accounts': typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
+  '/_app/companies/$companyId_/settings/observational-memory': typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   '/_app/companies/$companyId_/settings/people': typeof AppCompaniesCompanyIdSettingsPeopleRoute
   '/_app/companies/$companyId_/welcome/build': typeof AppCompaniesCompanyIdWelcomeBuildRoute
   '/_app/companies/$companyId_/welcome/company': typeof AppCompaniesCompanyIdWelcomeCompanyRoute
@@ -390,6 +400,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/settings/model-accounts'
     | '/companies/$companyId/settings/my-defaults'
     | '/companies/$companyId/settings/my-model-accounts'
+    | '/companies/$companyId/settings/observational-memory'
     | '/companies/$companyId/settings/people'
     | '/companies/$companyId/welcome/build'
     | '/companies/$companyId/welcome/company'
@@ -422,6 +433,7 @@ export interface FileRouteTypes {
     | '/companies/$companyId/settings/model-accounts'
     | '/companies/$companyId/settings/my-defaults'
     | '/companies/$companyId/settings/my-model-accounts'
+    | '/companies/$companyId/settings/observational-memory'
     | '/companies/$companyId/settings/people'
     | '/companies/$companyId/welcome/build'
     | '/companies/$companyId/welcome/company'
@@ -461,6 +473,7 @@ export interface FileRouteTypes {
     | '/_app/companies/$companyId_/settings/model-accounts'
     | '/_app/companies/$companyId_/settings/my-defaults'
     | '/_app/companies/$companyId_/settings/my-model-accounts'
+    | '/_app/companies/$companyId_/settings/observational-memory'
     | '/_app/companies/$companyId_/settings/people'
     | '/_app/companies/$companyId_/welcome/build'
     | '/_app/companies/$companyId_/welcome/company'
@@ -683,6 +696,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCompaniesCompanyIdSettingsMyModelAccountsRouteImport
       parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
     }
+    '/_app/companies/$companyId_/settings/observational-memory': {
+      id: '/_app/companies/$companyId_/settings/observational-memory'
+      path: '/observational-memory'
+      fullPath: '/companies/$companyId/settings/observational-memory'
+      preLoaderRoute: typeof AppCompaniesCompanyIdSettingsObservationalMemoryRouteImport
+      parentRoute: typeof AppCompaniesCompanyIdSettingsRouteRoute
+    }
     '/_app/companies/$companyId_/settings/people': {
       id: '/_app/companies/$companyId_/settings/people'
       path: '/people'
@@ -810,6 +830,7 @@ interface AppCompaniesCompanyIdSettingsRouteRouteChildren {
   AppCompaniesCompanyIdSettingsModelAccountsRoute: typeof AppCompaniesCompanyIdSettingsModelAccountsRoute
   AppCompaniesCompanyIdSettingsMyDefaultsRoute: typeof AppCompaniesCompanyIdSettingsMyDefaultsRoute
   AppCompaniesCompanyIdSettingsMyModelAccountsRoute: typeof AppCompaniesCompanyIdSettingsMyModelAccountsRoute
+  AppCompaniesCompanyIdSettingsObservationalMemoryRoute: typeof AppCompaniesCompanyIdSettingsObservationalMemoryRoute
   AppCompaniesCompanyIdSettingsPeopleRoute: typeof AppCompaniesCompanyIdSettingsPeopleRoute
   AppCompaniesCompanyIdSettingsIndexRoute: typeof AppCompaniesCompanyIdSettingsIndexRoute
 }
@@ -830,6 +851,8 @@ const AppCompaniesCompanyIdSettingsRouteRouteChildren: AppCompaniesCompanyIdSett
       AppCompaniesCompanyIdSettingsMyDefaultsRoute,
     AppCompaniesCompanyIdSettingsMyModelAccountsRoute:
       AppCompaniesCompanyIdSettingsMyModelAccountsRoute,
+    AppCompaniesCompanyIdSettingsObservationalMemoryRoute:
+      AppCompaniesCompanyIdSettingsObservationalMemoryRoute,
     AppCompaniesCompanyIdSettingsPeopleRoute:
       AppCompaniesCompanyIdSettingsPeopleRoute,
     AppCompaniesCompanyIdSettingsIndexRoute:

@@ -9,6 +9,7 @@ import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
+import { registerObservationalMemoryModelRoutes } from './observational-memory-settings.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { registerConversationRoutes } from './routes.ts'
 import { Sessions } from './sessions.ts'
@@ -72,6 +73,7 @@ export function createConversations(deps: {
   return Object.freeze({
     routes: (app: FastifyInstance) => {
       registerConversationRoutes(app, { store, sessions, builder, queue })
+      registerObservationalMemoryModelRoutes(app, queue)
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),
