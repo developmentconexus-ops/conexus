@@ -13,7 +13,7 @@ type Task = z.infer<typeof HubTask>
 import type { TranscriptItem } from './transcript.ts'
 import { fromMessages, reduce } from './transcript.ts'
 
-export type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
+type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
 
 export type Live =
   | { kind: 'idle' }

@@ -34,12 +34,12 @@ export function isMachineLasting(phase: MachinePhase): boolean {
   return phase === 'replaced'
 }
 
-export type ToolInvocationState = Extract<
+type ToolInvocationState = Extract<
   MastraPart,
   { type: 'tool-invocation' }
 >['toolInvocation']['state']
 
-export type TextItem = { kind: 'text'; id: string; text: string; cuts?: string[] }
+type TextItem = { kind: 'text'; id: string; text: string; cuts?: string[] }
 export type ReasoningItem = {
   kind: 'reasoning'
   id: string
@@ -82,8 +82,8 @@ export type PlanCardItem = {
   plan: string
   path?: string
 }
-export type CardItem = QuestionCardItem | PlanCardItem
-export type ConexusItem = {
+type CardItem = QuestionCardItem | PlanCardItem
+type ConexusItem = {
   kind: 'conexus'
   id: string
   partType: string
@@ -140,7 +140,7 @@ export function parseQuestions(input: unknown): Question[] {
   }))
 }
 
-export function parseAnswers(input: unknown): Answer[] | undefined {
+function parseAnswers(input: unknown): Answer[] | undefined {
   const parsed = z
     .object({ answers: z.array(z.union([z.string(), z.array(z.string())])) })
     .safeParse(input)

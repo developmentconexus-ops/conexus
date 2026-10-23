@@ -1,6 +1,6 @@
 # Aprovações e usos das etapas
 
-O registro de cada etapa: as palavras do fundador ao aprovar o cartão, com a data e o commit, e ao usar a etapa, com a data e o endereço (delivery L6, L17). A linha de cada etapa está no [roteiro](roadmap.md).
+O registro da etapa: as palavras do fundador ao aprovar o cartão, com a data e o commit, e ao usar a etapa, com a data e o endereço (delivery L6, L17). A linha de cada etapa está no [roteiro](roadmap.md).
 
 ## Etapa 1
 

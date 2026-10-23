@@ -70,7 +70,7 @@ async function setModel(
   },
 ) {
   const { person, params, body } = input
-  await deps.database.read(scopeOf(input), (tx) =>
+  await deps.database.command(scopeOf(input), (tx) =>
     deps.identity.admitMember({
       tx,
       personId: person.id,

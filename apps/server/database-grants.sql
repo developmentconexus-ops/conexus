@@ -55,6 +55,7 @@ ALTER TABLE builder.machine OWNER TO test_owner;
 ALTER TABLE builder.model_account OWNER TO test_owner;
 ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
+ALTER TABLE builder.observational_memory_models OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
 ALTER TABLE builder.run OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
@@ -215,6 +216,9 @@ GRANT SELECT(served_at),UPDATE(served_at) ON TABLE builder.model_account TO hub_
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
+GRANT SELECT,INSERT ON TABLE builder.observational_memory_models TO hub_company;
+GRANT UPDATE(observer) ON TABLE builder.observational_memory_models TO hub_company;
+GRANT UPDATE(reflector) ON TABLE builder.observational_memory_models TO hub_company;
 -- Step 14, founder 2026-10-21 ("SIM", the card): a company's routes record the libraries a Projeto's
 -- owner allowed, at an exact version, and read them for each check.
 -- Step 12.3, founder 2026-10-20 ("Tudo A", P1, P4): a person reads, writes and clears their own

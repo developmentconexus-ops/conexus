@@ -1,13 +1,17 @@
-import { readObservationalMemoryModels, setObservationalMemoryModel } from '@conexus/hub-api'
+import {
+  getAccountKinds,
+  listModelAccounts,
+  listModelProviders,
+  readObservationalMemoryModels,
+  setObservationalMemoryModel,
+} from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
-import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer } from '../../platform/test-hub.tsx'
-import type { View } from '../model-accounts/test-hub.tsx'
-import { modelHub } from '../model-accounts/test-hub.tsx'
+import { ANA, COMPANY } from '../../platform/fixtures.ts'
+import { companyRead, hubServer, sessionRead } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 const PAGE = `/companies/${COMPANY.id}/settings/observational-memory`
@@ -19,16 +23,31 @@ test('o dono configura cada papel, salva e retorna um deles ao Automático', asy
     observer: null,
     reflector: null,
   }
-  const hub = modelHub({
-    company: [],
-    mine: [],
-    order: [],
-    kinds: [],
-    mayManage: true,
-    connected: { mine: [], company: ['openai'] },
-  } satisfies View)
+  const providers = [{ id: 'openai', name: 'OpenAI', models: [{ id: MODEL, efforts: ['off'] }] }]
   server.use(
-    ...hub.handlers,
+    sessionRead(() => ANA),
+    ...companyRead({ role: 'owner' }),
+    http.get(`*/api/companies/${COMPANY.id}/model-accounts`, () =>
+      HttpResponse.json(
+        listModelAccounts.success.body.parse({
+          defaults: { company: null, mine: null, start: null, companyStart: null },
+          fallback: { enabled: false, chain: [], revision: 0 },
+          usableProviders: [],
+          choices: { mine: [], company: providers },
+          company: [],
+          mine: [],
+          order: [],
+          kinds: [],
+          mayManage: true,
+        }),
+      ),
+    ),
+    http.get('*/api/model-providers', () =>
+      HttpResponse.json(listModelProviders.success.body.parse({ providers })),
+    ),
+    http.get(`*/api/clients/${COMPANY.id}/account-kinds`, () =>
+      HttpResponse.json(getAccountKinds.success.body.parse({ kinds: [] })),
+    ),
     http.get(BASE, () =>
       HttpResponse.json(readObservationalMemoryModels.success.body.parse(state)),
     ),

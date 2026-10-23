@@ -9,7 +9,7 @@ import {
 
 export type Row = { kind: 'item'; item: TranscriptItem } | { kind: 'group'; tools: ToolItem[] }
 
-export const TOOL_GROUP_MIN = 3
+const TOOL_GROUP_MIN = 3
 
 function isGroupableTool(item: ToolItem): boolean {
   const bare = bareToolName(item.toolName)
