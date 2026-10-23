@@ -102,31 +102,39 @@ function offOf(
   }
 }
 
-// CLIProxy names the level a model runs at in its id (`gemini-3.8-flash-high`): the name asks it.
-const NAMED_LEVEL = new RegExp(`-(${ACTIVE.join('|')})$`)
+// CLIProxy names a Gemini model with the level it was built for (`gemini-3.8-flash-high`), but one
+// name takes every level: its OpenAI-compatible route reasons only when the request carries
+// `reasoning_effort`, and answers no reasoning without it (card 14.2, criterion 20, recorded in
+// `google-thinking`). So the name is one model, and the level rides in the request.
+const PROXY_LEVELS = ['low', 'medium', 'high'] as const satisfies readonly Active[]
+const PROXY_NAME = new RegExp(`-(${PROXY_LEVELS.join('|')})$`)
 const LISTED: ReadonlySet<string> = new Set(
   Object.entries(PROVIDER_REGISTRY).flatMap(([id, config]) =>
     config.models.map((model) => `${id}/${model}`),
   ),
 )
 
-/** The level a name the registry lacks carries, which is then the only one it takes. */
-function namedLevel(model: ModelId): Active | undefined {
-  if (LISTED.has(model)) return undefined
-  const named = ActiveEffort.safeParse(NAMED_LEVEL.exec(model)?.[1])
-  return named.success ? named.data : undefined
+/** A Google model under the name CLIProxy serves it by, which the registry lacks. */
+function isProxied(model: ModelId): boolean {
+  return (
+    !LISTED.has(model) && parseModelString(model).provider === 'google' && PROXY_NAME.test(model)
+  )
+}
+
+/** The name CLIProxy serves a model by, without the level it carries: the model it is one of. */
+export function proxiedBase(model: ModelId): string {
+  return isProxied(model) ? model.replace(PROXY_NAME, '') : model
 }
 
 /**
  * The efforts a model accepts, from Mastra's reasoning data, lowest first: `off` only when the
- * model can stop reasoning. One with no reasoning control takes the level its name carries
- * (`namedLevel`), else `off` alone.
+ * model can stop reasoning. A Gemini model under CLIProxy's name takes every level it serves, and
+ * `off` as no request for one; a model with no reasoning control takes `off` alone.
  */
 export function effortsOf(model: ModelId): [Effort, ...Effort[]] {
   const reasoning = reasoningOf(model)
   if (reasoning !== undefined) return effortsIn(reasoning)
-  const named = namedLevel(model)
-  return named === undefined ? ['off'] : [named]
+  return isProxied(model) ? ['off', ...PROXY_LEVELS] : ['off']
 }
 
 function effortsIn(reasoning: Reasoning): [Effort, ...Effort[]] {
@@ -149,7 +157,11 @@ export function effortFor(model: ModelId, wanted: Effort): Effort {
  */
 export function providerOptionsOf(model: ModelId, effort: Effort): ProviderOptions | undefined {
   const reasoning = reasoningOf(model)
-  if (reasoning === undefined) return undefined
+  if (reasoning === undefined) {
+    if (!isProxied(model)) return undefined
+    const asked = runningEffort(effortsOf(model), effort)
+    return asked === 'off' ? undefined : { google: { reasoningEffort: asked } }
+  }
   const level = runningEffort(effortsIn(reasoning), effort)
   if (level === 'off') return reasoning.off?.asked
   const { tokens, byEffort } = reasoning
