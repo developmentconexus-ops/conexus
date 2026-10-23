@@ -4,21 +4,19 @@ import type {
   ConversationId,
   EventId,
   ProjectId,
-  readConversation,
 } from '@conexus/hub-api'
 import { CONVERSATION_HEARTBEAT_MS, streamConversation } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useEffectEvent, useReducer } from 'react'
-import type { z } from 'zod'
 import { HubFailure, hubEvents } from '../../platform/hub.ts'
 import { sourceChanged } from '../source/public.ts'
 import type { Step } from './live.ts'
 import { IDLE, live } from './live.ts'
-import { allConversationsQueryKey, conversationQuery } from './queries.ts'
+import { conversationQuery } from './queries.ts'
+import { ConexusRestartedData } from './transcript-items.ts'
 
 type Ids = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
-type Read = z.output<typeof readConversation.success.body>
 
 /** Two missed heartbeats and a margin: a line quieter than this is dead, and is opened again. */
 const STALL_MS = 2 * CONVERSATION_HEARTBEAT_MS + 5000
@@ -54,23 +52,19 @@ function reread(hooks: Hooks): Promise<unknown> {
 }
 
 async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
-  const { companyId, projectId, conversationId } = hooks.ids
-  if (event.type === 'title') {
-    const key = conversationQuery(companyId, projectId, conversationId).queryKey
-    hooks.queryClient.setQueryData<Read>(key, (old) =>
-      old === undefined ? old : { conversation: { ...old.conversation, title: event.title } },
-    )
-    await hooks.queryClient.invalidateQueries({
-      queryKey: allConversationsQueryKey(companyId, projectId),
-    })
-  }
-  if (event.type === 'part' && event.part.type === 'version') {
-    await sourceChanged(hooks.queryClient, { companyId, projectId })
-  }
-  if (event.type === 'part' && event.part.type === 'restarted') {
-    if (typeof event.part.kept === 'number')
+  const { companyId, projectId } = hooks.ids
+  if (event.type === 'message_update' && event.event.type === 'part') {
+    const { part } = event.event
+    if (part.type === 'data-conexus-version') {
       await sourceChanged(hooks.queryClient, { companyId, projectId })
-    hooks.onRestarted()
+    }
+    if (part.type === 'data-conexus-restarted') {
+      const data = ConexusRestartedData.safeParse(part.data)
+      if (data.success && typeof data.data.kept === 'number') {
+        await sourceChanged(hooks.queryClient, { companyId, projectId })
+      }
+      hooks.onRestarted()
+    }
   }
   // The ended answer stays on screen until the read holds it (`shownAnswer`), so it shows once.
   if (event.type === 'turnEnd') await reread(hooks)

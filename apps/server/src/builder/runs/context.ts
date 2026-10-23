@@ -71,3 +71,6 @@ export type Outcome =
       kind: 'failed'
       code: 'SAVE_REFUSED' | 'GIT_RESTORE_NEEDED' | 'MACHINE_LOST' | 'MACHINE_UNAVAILABLE'
     }
+
+/** A settled turn: its outcome, and how many times the end of the turn judged it. */
+export type Settled = Outcome & { rounds: number }

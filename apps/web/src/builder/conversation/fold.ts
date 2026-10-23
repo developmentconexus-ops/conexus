@@ -1,32 +1,66 @@
-import type { MessagePart } from '@conexus/hub-api'
-import { machinePhaseLasts } from '@conexus/hub-api'
+import { bareToolName } from './tool-presentation.ts'
+import type { ToolItem, TranscriptItem } from './transcript-items.ts'
+import {
+  ConexusMachineData,
+  isMachineLasting,
+  isTaskTool,
+  UNGROUPABLE_TOOLS,
+} from './transcript-items.ts'
 
-export type ToolPart = Extract<MessagePart, { type: 'tool' }>
+export type Row = { kind: 'item'; item: TranscriptItem } | { kind: 'group'; tools: ToolItem[] }
 
-export type Row = { kind: 'part'; part: MessagePart } | { kind: 'group'; tools: ToolPart[] }
+export const TOOL_GROUP_MIN = 3
 
-/** Mirrors `playground-ui` `group-consecutive.ts`. */
-const TOOL_GROUP_MIN = 3
+function isGroupableTool(item: ToolItem): boolean {
+  const bare = bareToolName(item.toolName)
+  return !UNGROUPABLE_TOOLS.has(bare) && !isTaskTool(bare)
+}
 
-export function fold(parts: readonly MessagePart[]): Row[] {
+function checkMachineLasts(item: TranscriptItem): boolean {
+  if (item.kind !== 'conexus' || item.partType !== 'data-conexus-machine') return true
+  const parsed = ConexusMachineData.safeParse(item.data)
+  return parsed.success && isMachineLasting(parsed.data.phase)
+}
+
+export function fold(items: readonly TranscriptItem[]): Row[] {
   const rows: Row[] = []
-  let run: ToolPart[] = []
+  let run: ToolItem[] = []
+
   function close() {
-    if (run.length >= TOOL_GROUP_MIN) rows.push({ kind: 'group', tools: run })
-    else for (const tool of run) rows.push({ kind: 'part', part: tool })
+    if (run.length >= TOOL_GROUP_MIN) {
+      rows.push({ kind: 'group', tools: run })
+    } else {
+      for (const t of run) {
+        rows.push({ kind: 'item', item: t })
+      }
+    }
     run = []
   }
-  for (const [at, part] of parts.entries()) {
-    // A file the turn wrote is for the Código tab: the tool row already says it in words.
-    if (part.type === 'file') continue
-    // A step of the machine is over once anything comes after it; a phase that lasts stays said.
-    if (part.type === 'machine' && !machinePhaseLasts(part.phase) && at < parts.length - 1) continue
-    if (part.type === 'tool') run.push(part)
-    else {
+
+  for (const [at, item] of items.entries()) {
+    if (
+      item.kind === 'conexus' &&
+      item.partType === 'data-conexus-machine' &&
+      at < items.length - 1 &&
+      !checkMachineLasts(item)
+    ) {
+      continue
+    }
+
+    if (item.kind === 'tool') {
+      if (isTaskTool(item.toolName)) continue
+      if (isGroupableTool(item)) {
+        run.push(item)
+      } else {
+        close()
+        rows.push({ kind: 'item', item })
+      }
+    } else {
       close()
-      rows.push({ kind: 'part', part })
+      rows.push({ kind: 'item', item })
     }
   }
+
   close()
   return rows
 }

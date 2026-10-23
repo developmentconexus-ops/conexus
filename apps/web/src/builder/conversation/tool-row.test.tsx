@@ -1,134 +1,131 @@
-import type { MessagePart } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { ThinkingLine } from './thinking-line.tsx'
 import { ToolRow } from './tool-row.tsx'
-
-type ToolPart = Extract<MessagePart, { type: 'tool' }>
-
-function tool(fields: Partial<ToolPart> & Pick<ToolPart, 'kind'>): ToolPart {
-  return { type: 'tool', id: 't', state: 'completed', subject: null, ...fields }
-}
+import type { ToolItem } from './transcript.ts'
 
 function open(name: RegExp) {
   fireEvent.click(screen.getByRole('button', { name }))
 }
 
-test('a linha do comando abre no comando e na cauda; cortada, começa com "…"; saída não zero, o código (33)', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'run_command',
-        subject: { command: 'npm test' },
-        detail: {
-          kind: 'command',
-          command: 'npm test',
-          output: ['18 passaram', '1 teste falhou'],
-          exitCode: 1,
-          cut: true,
-        },
-      })}
-    />,
-  )
-  expect(screen.queryByText(/1 teste falhou/)).toBeNull()
-  open(/Rodou um comando/)
-  const block = await screen.findByText(/1 teste falhou/)
-  expect(block.textContent).toBe('$ npm test\n…\n18 passaram\n1 teste falhou')
-  expect(screen.getByText('O comando terminou com o código 1.')).toBeTruthy()
-})
-
-test('um comando que roda está aberto e a saída cresce; o código zero não se diz', () => {
-  function running(output: string[]) {
-    const detail = {
-      kind: 'command',
-      command: 'npm i',
-      output,
-      exitCode: null,
-      cut: false,
-    } as const
-    const subject = { command: 'npm i' }
-    return tool({ kind: 'run_command', state: 'running', subject, detail })
+test('leitura no começo: read_file abre no começo do arquivo e mostra cortes se houver (Critério 8)', async () => {
+  const tool: ToolItem = {
+    kind: 'tool',
+    id: 't-1',
+    toolCallId: 'call-1',
+    toolName: 'read_file',
+    state: 'result',
+    args: { path: 'src/router.tsx' },
+    result:
+      'import { createRouter } from "@tanstack/react-router"\nexport const router = createRouter()',
+    cuts: ['content'],
   }
-  const { rerender } = render(<ToolRow tool={running(['added 1'])} />)
-  expect(screen.getByText(/added 1/)).toBeTruthy()
-  rerender(<ToolRow tool={running(['added 1', 'added 2'])} />)
-  expect(screen.getByText(/added 2/)).toBeTruthy()
-  expect(screen.queryByText(/terminou com o código/)).toBeNull()
+  render(<ToolRow tool={tool} />)
+  expect(screen.queryByText(/createRouter/)).toBeNull()
+  open(/Leu um arquivo/)
+  const block = await screen.findByText(/createRouter/)
+  expect(block.textContent).toContain('import { createRouter } from "@tanstack/react-router"')
+  expect(block.textContent).toContain('…')
 })
 
-test('a linha do arquivo escrito abre no começo do arquivo, com "…" no corte', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'write_file',
-        subject: { path: 'src/app.tsx' },
-        detail: { kind: 'file', path: 'src/app.tsx', content: 'const a = 1', cut: true },
-      })}
-    />,
-  )
-  open(/Escreveu um arquivo/)
-  expect((await screen.findByText(/const a = 1/)).textContent).toBe('const a = 1\n…')
+test('list_files no resultado: abre no resultado retornado pela ferramenta (Critério 8)', async () => {
+  const listTool: ToolItem = {
+    kind: 'tool',
+    id: 't-2',
+    toolCallId: 'call-2',
+    toolName: 'list_files',
+    state: 'result',
+    args: { path: 'src' },
+    result: ['src/app.tsx', 'src/router.tsx', 'src/main.tsx'],
+  }
+  render(<ToolRow tool={listTool} />)
+  expect(screen.queryByText(/src\/router\.tsx/)).toBeNull()
+  open(/Listou arquivos/)
+  expect(await screen.findByText(/src\/router\.tsx/)).toBeTruthy()
 })
 
-test('a linha da edição abre na diferença, linha a linha, calculada no navegador', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'edit_file',
-        subject: { path: 'a.ts' },
-        detail: {
-          kind: 'edit',
-          path: 'a.ts',
-          before: 'um\ndois\ntrês',
-          after: 'um\nDOIS\ntrês',
-          cut: false,
-        },
-      })}
-    />,
-  )
-  open(/Editou um arquivo/)
-  const lines = (await screen.findByText('- dois')).parentElement?.children ?? []
-  expect([...lines].map((line) => line.textContent)).toEqual(['  um', '- dois', '+ DOIS', '  três'])
+test('grep no resultado: abre no resultado retornado pela ferramenta (Critério 8)', async () => {
+  const grepTool: ToolItem = {
+    kind: 'tool',
+    id: 't-3',
+    toolCallId: 'call-3',
+    toolName: 'grep',
+    state: 'result',
+    args: { pattern: 'router' },
+    result: 'src/main.tsx:5: import { router } from "./router"\nsrc/app.tsx:12: router.navigate()',
+  }
+  render(<ToolRow tool={grepTool} />)
+  expect(screen.queryByText(/router\.navigate/)).toBeNull()
+  open(/Buscou no código/)
+  expect(await screen.findByText(/router\.navigate/)).toBeTruthy()
 })
 
-test('sem detalhe, a linha não abre: a leitura diz só o assunto; "Pensou" diz só o tempo', () => {
-  render(
-    <>
-      <ToolRow tool={tool({ kind: 'read_file', subject: { path: 'a.ts' } })} />
-      <ThinkingLine part={{ type: 'reasoning', id: 'r', state: 'completed', seconds: 9 }} />
-    </>,
-  )
-  expect(screen.getByText('Leu um arquivo')).toBeTruthy()
-  expect(screen.getByText('Pensou por 9 s')).toBeTruthy()
+test('skill no nome e nas instruções: abre no nome legível e no conteúdo das instruções (Critério 8)', async () => {
+  const skillTool: ToolItem = {
+    kind: 'tool',
+    id: 't-4',
+    toolCallId: 'call-4',
+    toolName: 'skill',
+    state: 'result',
+    args: {
+      name: 'conexus-build',
+      instructions: 'Construa uma tela de encomendas com cliente, data e valor.',
+    },
+    result: 'Skill aplicada com sucesso.',
+  }
+  render(<ToolRow tool={skillTool} />)
+  expect(screen.queryByText('conexus-build')).toBeNull()
+  open(/Usou a skill/)
+  expect(await screen.findByText('conexus-build')).toBeTruthy()
+  expect(await screen.findByText(/Construa uma tela de encomendas/)).toBeTruthy()
+})
+
+test('desconhecida no nome legível, argumentos e resultado (Critério 8)', async () => {
+  const unknownTool: ToolItem = {
+    kind: 'tool',
+    id: 't-5',
+    toolCallId: 'call-5',
+    toolName: 'custom_data_fetcher',
+    state: 'result',
+    args: { endpoint: '/pedidos', timeout: 5000 },
+    result: { count: 42, status: 'ok' },
+  }
+  render(<ToolRow tool={unknownTool} />)
+  expect(screen.getByText('Usou Custom data fetcher')).toBeTruthy()
+  open(/Usou Custom data fetcher/)
+  expect(await screen.findByText(/Argumentos:/)).toBeTruthy()
+  expect(screen.getByText(/endpoint/)).toBeTruthy()
+  expect(screen.getByText(/Resultado:/)).toBeTruthy()
+  expect(screen.getByText(/count/)).toBeTruthy()
+})
+
+test('falha, vermelha, no erro: status de erro e abre no motivo da falha (Critério 8)', async () => {
+  const errorTool: ToolItem = {
+    kind: 'tool',
+    id: 't-6',
+    toolCallId: 'call-6',
+    toolName: 'write_file',
+    state: 'output-error',
+    args: { path: '../forbidden.ts' },
+    result: { error: 'Permissão negada fora do diretório do app.' },
+    isError: true,
+  }
+  render(<ToolRow tool={errorTool} />)
+  const line = screen.getByText(/Não conseguiu escrever/).closest('[data-slot="trace-line"]')
+  expect(line?.getAttribute('data-status')).toBe('error')
+  open(/Não conseguiu escrever/)
+  expect(await screen.findByText('Permissão negada fora do diretório do app.')).toBeTruthy()
+})
+
+test('linha sem argumentos nem resultado: não abre nada (Critério 8, matriz de estados)', () => {
+  const bareTool: ToolItem = {
+    kind: 'tool',
+    id: 't-7',
+    toolCallId: 'call-7',
+    toolName: 'conexus_check',
+    state: 'result',
+    args: {},
+  }
+  render(<ToolRow tool={bareTool} />)
+  expect(screen.getByText('Conferiu o app')).toBeTruthy()
   expect(screen.queryByRole('button')).toBeNull()
-})
-
-test('a linha da conferência diz o assunto e abre no relatório, passo a passo (33)', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'check',
-        subject: { check: 'tipos: server/handlers.ts:13 Type mismatch.' },
-        detail: {
-          kind: 'check',
-          cut: false,
-          steps: [
-            { name: 'dependências', state: 'passed', problems: [] },
-            {
-              name: 'tipos',
-              state: 'failed',
-              problems: [{ file: 'server/handlers.ts', line: 13, message: 'Type mismatch.' }],
-            },
-            { name: 'telas', state: 'skipped', problems: [] },
-          ],
-        },
-      })}
-    />,
-  )
-  screen.getByText('tipos: server/handlers.ts:13 Type mismatch.')
-  open(/Conferiu o app/)
-  const block = await screen.findByText(/telas: não rodou/)
-  expect(block.textContent).toBe(
-    'dependências: passou\ntipos: falhou\n  server/handlers.ts:13 Type mismatch.\ntelas: não rodou',
-  )
 })

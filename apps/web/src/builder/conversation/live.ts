@@ -1,86 +1,246 @@
-import type { ConversationEvent, Message, MessagePart } from '@conexus/hub-api'
-import { applyEvent } from '@conexus/hub-api'
+import type {
+  ConversationEvent,
+  Task as HubTask,
+  MastraPart,
+  Message,
+  OMProgress,
+} from '@conexus/hub-api'
+import { applyUpdate } from '@conexus/hub-api'
+import type { z } from 'zod'
 
-/**
- * The Builder's answer as the stream tells it. `answering` holds the parts so far and when the
- * server began the turn, which is `null` until the stream says; `resuming` keeps them once the line
- * was opened again, for the events the stream says it missed; `ended` keeps the parts until the
- * conversation's read holds the saved answer, which Mastra writes after the turn ends.
- */
+type Task = z.infer<typeof HubTask>
+
+import type { TranscriptItem } from './transcript.ts'
+import { fromMessages, reduce } from './transcript.ts'
+
+export type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
+
 export type Live =
   | { kind: 'idle' }
-  | { kind: 'answering'; parts: MessagePart[]; startedAt: string | null }
-  | { kind: 'resuming'; parts: MessagePart[]; startedAt: string | null }
-  | { kind: 'ended'; parts: MessagePart[] }
+  | {
+      kind: 'answering'
+      transcript: readonly TranscriptItem[]
+      parts: readonly MastraPart[]
+      startedAt: string | null
+      tasks: readonly Task[] | null
+      memory: OMProgress | null
+      omPhase: OMPhase
+      memoryFailed?: 'observation' | 'reflection' | 'buffering' | null
+    }
+  | {
+      kind: 'resuming'
+      transcript: readonly TranscriptItem[]
+      parts: readonly MastraPart[]
+      startedAt: string | null
+      tasks: readonly Task[] | null
+      memory: OMProgress | null
+      omPhase: OMPhase
+      memoryFailed?: 'observation' | 'reflection' | 'buffering' | null
+    }
+  | {
+      kind: 'ended'
+      transcript: readonly TranscriptItem[]
+      parts: readonly MastraPart[]
+      tasks: readonly Task[] | null
+      memory: OMProgress | null
+      omPhase: OMPhase
+      memoryFailed?: 'observation' | 'reflection' | 'buffering' | null
+    }
 
 export const IDLE: Live = { kind: 'idle' }
 
-/**
- * What the screen adds to the stream's events: a message is on its way, the Hub refused it, or the
- * line was opened again, after which the stream tells what the line missed, or the turn anew.
- */
 export type Step =
   | ConversationEvent
   | { type: 'sent' }
   | { type: 'unsent' }
   | { type: 'reconnected' }
 
-/** An event outside a turn starts one, as another tab's send. */
-function inProgress(state: Live): Extract<Live, { kind: 'answering' }> {
-  return state.kind === 'answering' || state.kind === 'resuming'
-    ? { kind: 'answering', parts: state.parts, startedAt: state.startedAt }
-    : { kind: 'answering', parts: [], startedAt: null }
+type ActiveState = Extract<Live, { kind: 'answering' }>
+
+function inProgress(state: Live): ActiveState {
+  if (state.kind === 'answering' || state.kind === 'resuming') {
+    return {
+      kind: 'answering',
+      transcript: state.transcript,
+      parts: state.parts,
+      startedAt: state.startedAt,
+      tasks: state.tasks,
+      memory: state.memory,
+      omPhase: state.omPhase,
+      memoryFailed: state.memoryFailed,
+    }
+  }
+  return {
+    kind: 'answering',
+    transcript: [],
+    parts: [],
+    startedAt: null,
+    tasks: null,
+    memory: null,
+    omPhase: 'idle',
+    memoryFailed: null,
+  }
 }
 
-export function live(state: Live, step: Step): Live {
+function handleOmStatus(
+  current: ActiveState,
+  step: Extract<ConversationEvent, { type: 'om_status' }>,
+): ActiveState {
+  const msgWindow = step.windows.active.messages
+  const obsWindow = step.windows.active.observations
+  const status =
+    current.omPhase === 'observing' || current.omPhase === 'reflecting' ? current.omPhase : 'idle'
+  const memory: OMProgress = {
+    status,
+    pendingTokens: msgWindow.tokens,
+    threshold: msgWindow.threshold,
+    thresholdPercent: msgWindow.threshold > 0 ? (msgWindow.tokens / msgWindow.threshold) * 100 : 0,
+    observationTokens: obsWindow.tokens,
+    reflectionThreshold: obsWindow.threshold,
+    reflectionThresholdPercent:
+      obsWindow.threshold > 0 ? (obsWindow.tokens / obsWindow.threshold) * 100 : 0,
+    generationCount: step.generationCount,
+    stepNumber: step.stepNumber,
+  }
+  return { ...current, memory }
+}
+
+function handleOmPhaseEvent(
+  current: ActiveState,
+  step: Extract<
+    ConversationEvent,
+    | { type: 'om_observation_start' }
+    | { type: 'om_observation_end' }
+    | { type: 'om_observation_failed' }
+    | { type: 'om_reflection_start' }
+    | { type: 'om_reflection_end' }
+    | { type: 'om_reflection_failed' }
+    | { type: 'om_buffering_start' }
+    | { type: 'om_buffering_end' }
+    | { type: 'om_buffering_failed' }
+  >,
+): ActiveState {
   switch (step.type) {
-    // Sent before the Hub answers: the stream may already be telling the answer by then.
-    case 'sent':
-      return state.kind === 'answering' ? state : { kind: 'answering', parts: [], startedAt: null }
-    case 'unsent':
-      return state.kind === 'answering' && state.parts.length === 0 ? IDLE : state
-    case 'reconnected':
-      return state.kind === 'answering'
-        ? { kind: 'resuming', parts: state.parts, startedAt: state.startedAt }
-        : state
-    case 'turn':
-      return { kind: 'answering', parts: step.message.parts, startedAt: step.startedAt }
-    case 'text':
-    case 'part':
-    case 'notice': {
-      const answer = inProgress(state)
-      return { ...answer, parts: applyEvent(answer.parts, step) }
-    }
-    case 'turnEnd':
-      return state.kind === 'answering' || state.kind === 'resuming'
-        ? { kind: 'ended', parts: state.parts }
-        : state
-    case 'title':
-      return state
+    case 'om_observation_start':
+      return { ...current, omPhase: 'observing' }
+    case 'om_observation_end':
+      return { ...current, omPhase: 'idle', memoryFailed: null }
+    case 'om_observation_failed':
+      return { ...current, omPhase: 'idle', memoryFailed: 'observation' }
+    case 'om_reflection_start':
+      return { ...current, omPhase: 'reflecting' }
+    case 'om_reflection_end':
+      return { ...current, omPhase: 'idle', memoryFailed: null }
+    case 'om_reflection_failed':
+      return { ...current, omPhase: 'idle', memoryFailed: 'reflection' }
+    case 'om_buffering_start':
+      return { ...current, omPhase: 'buffering' }
+    case 'om_buffering_end':
+      return { ...current, omPhase: 'idle', memoryFailed: null }
+    case 'om_buffering_failed':
+      return { ...current, omPhase: 'idle', memoryFailed: 'buffering' }
     default:
       return step satisfies never
   }
 }
 
-/**
- * The parts the screen draws after the conversation's messages, and whether they are still
- * arriving: an answer ended, or resumed, shows until the read holds a message of the Builder at its
- * end.
- */
+function handleMessageEvent(
+  current: ActiveState,
+  step: Extract<
+    ConversationEvent,
+    | { type: 'message_start' }
+    | { type: 'message_update' }
+    | { type: 'message_end' }
+    | { type: 'shell_output' }
+    | { type: 'command_exit' }
+    | { type: 'tool_suspended' }
+    | { type: 'agent_end' }
+  >,
+): ActiveState {
+  if (step.type === 'message_start') {
+    const transcript = [...current.transcript, ...fromMessages([step.message])]
+    return { ...current, transcript, parts: [...current.parts, ...step.message.parts] }
+  }
+  if (step.type === 'message_update') {
+    const transcript = reduce(current.transcript, step)
+    const parts = applyUpdate(current.parts, step.event)
+    return { ...current, transcript, parts }
+  }
+  if (step.type === 'agent_end') {
+    const transcript = reduce(current.transcript, step)
+    return { ...current, transcript, omPhase: 'idle' }
+  }
+  return { ...current, transcript: reduce(current.transcript, step) }
+}
+
+export function live(state: Live, step: Step): Live {
+  switch (step.type) {
+    case 'sent':
+      return state.kind === 'answering' ? state : inProgress(state)
+    case 'unsent':
+      return state.kind === 'answering' && state.parts.length === 0 ? IDLE : state
+    case 'reconnected':
+      return state.kind === 'answering' ? { ...inProgress(state), kind: 'resuming' } : state
+    case 'turn':
+      return {
+        kind: 'answering',
+        transcript: fromMessages([step.message]),
+        parts: step.message.parts,
+        startedAt: step.startedAt,
+        tasks: null,
+        memory: null,
+        omPhase: 'idle',
+        memoryFailed: null,
+      }
+    case 'task_updated':
+      return { ...inProgress(state), tasks: step.tasks }
+    case 'om_status':
+      return handleOmStatus(inProgress(state), step)
+    case 'om_observation_start':
+    case 'om_observation_end':
+    case 'om_observation_failed':
+    case 'om_reflection_start':
+    case 'om_reflection_end':
+    case 'om_reflection_failed':
+    case 'om_buffering_start':
+    case 'om_buffering_end':
+    case 'om_buffering_failed':
+      return handleOmPhaseEvent(inProgress(state), step)
+    case 'message_start':
+    case 'message_update':
+    case 'message_end':
+    case 'shell_output':
+    case 'command_exit':
+    case 'tool_suspended':
+    case 'agent_end':
+      return handleMessageEvent(inProgress(state), step)
+    case 'turnEnd':
+      return state.kind === 'answering' || state.kind === 'resuming'
+        ? { ...inProgress(state), kind: 'ended' }
+        : state
+    default:
+      return step satisfies never
+  }
+}
+
 export function shownAnswer(
   state: Live,
   messages: readonly Message[],
-): { parts: MessagePart[]; streaming: boolean } | null {
+): {
+  transcript: readonly TranscriptItem[]
+  parts: readonly MastraPart[]
+  streaming: boolean
+} | null {
   switch (state.kind) {
     case 'idle':
       return null
     case 'answering':
-      return { parts: state.parts, streaming: true }
+      return { transcript: state.transcript, parts: state.parts, streaming: true }
     case 'resuming':
     case 'ended':
       return state.parts.length === 0 || messages.at(-1)?.role === 'builder'
         ? null
-        : { parts: state.parts, streaming: false }
+        : { transcript: state.transcript, parts: state.parts, streaming: false }
     default:
       return state satisfies never
   }

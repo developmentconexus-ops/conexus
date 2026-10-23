@@ -21,13 +21,15 @@ import { callModel, markAccount, pickAccount, providerName, providerOf } from '.
 import type { ProviderOptions } from './thinking.ts'
 import { providerOptionsOf } from './thinking.ts'
 import type { Notice, Picked, Turn } from './turn.ts'
-import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
+import { Turn as ConversationTurn, chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
 export const MAX_PROCESSOR_RETRIES = 9
 const WEB_SEARCH = 'web_search'
 /** The steps one turn may take (card, limits); Mastra's own ceiling is a thousand. */
 const TURN_STEPS = 100
+const explicitSideTurns = new WeakMap<RequestContext, Map<SideCall, ConversationTurn>>()
+const explicitSideFailures = new WeakMap<RequestContext, ConversationTurn>()
 const LAST_STEP =
   'This is the last step of this turn: use no tool. Say in Brazilian Portuguese what you did and what is left, and that the person can answer "continue" for more.'
 
@@ -105,8 +107,12 @@ function until(date: Date): string {
 }
 
 /** A model the queue answers with when no account is left: it fails here and calls no one. */
-function noAccountModel(modelId: ModelId) {
+function noAccountModel(
+  modelId: ModelId,
+  explicit?: { requestContext: RequestContext; turn: Turn },
+) {
   function fail(): Promise<never> {
+    if (explicit !== undefined) explicitSideFailures.set(explicit.requestContext, explicit.turn)
     return Promise.reject(new Failure('MODEL_NO_ACCOUNT'))
   }
   return callModel({
@@ -132,11 +138,11 @@ function sayRefused(args: Notifier, turn: Turn, next: Picked) {
  * company's automatic switch, with its notice; none left, the turn ends with the notice that the
  * accounts ended.
  */
-async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
+async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier, allowFallback: boolean) {
   const chosen = turn.modelId(args.requestContext)
   const picked = await pickAccount(deps, turn, chosen)
   if (picked !== undefined) return picked
-  for (const next of await nextModels(deps, turn, chosen)) {
+  for (const next of allowFallback ? await nextModels(deps, turn, chosen) : []) {
     const switched = await pickAccount(deps, turn, next)
     if (switched === undefined) continue
     turn.switchTo(next, args.requestContext)
@@ -153,8 +159,13 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
  * The turn's account, picked once for all who ask meanwhile: the agent's step, its error lane, the
  * title and the observer await the same pick, so none overwrites another's or opens it twice.
  */
-function accountOf(deps: QueueDeps, turn: Turn, args: Notifier): Promise<Picked | undefined> {
-  return turn.account(() => chooseAccount(deps, turn, args))
+function accountOf(
+  deps: QueueDeps,
+  turn: Turn,
+  args: Notifier,
+  allowFallback = true,
+): Promise<Picked | undefined> {
+  return turn.account(() => chooseAccount(deps, turn, args, allowFallback))
 }
 
 /**
@@ -189,9 +200,8 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       const account = await accountOf(deps, turn, args)
       if (account !== undefined) sayRefused(args, turn, account)
       await keepNotices(args, turn)
-      if (account === undefined) {
+      if (account === undefined)
         return { model: await noAccountModel(turn.modelId(args.requestContext)) }
-      }
       const result: ProcessInputStepResult = { ...lastStep(args), model: account.model }
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
@@ -221,9 +231,11 @@ function accountQueue(deps: QueueDeps): ErrorProcessor {
   return {
     id: 'conexus-account-queue',
     async processAPIError(args: ProcessAPIErrorArgs) {
-      const turn = turnIn(args.requestContext)
+      const sideTurn = args.requestContext && explicitSideFailures.get(args.requestContext)
+      const turn = sideTurn ?? turnIn(args.requestContext)
       if (turn === undefined) return { retry: false }
-      const result = await afterFailure(deps, args, turn)
+      const result = await afterFailure(deps, args, turn, sideTurn === undefined)
+      if (args.requestContext !== undefined) explicitSideFailures.delete(args.requestContext)
       // A retried attempt is rolled back; the one that ends the turn keeps its notices.
       if (!result.retry) await keepNotices(args, turn)
       return result
@@ -232,7 +244,12 @@ function accountQueue(deps: QueueDeps): ErrorProcessor {
 }
 
 /** The queue's answer to a failed call: the next account's attempt, or the turn's end. */
-async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Turn) {
+async function afterFailure(
+  deps: QueueDeps,
+  args: ProcessAPIErrorArgs,
+  turn: Turn,
+  allowFallback = true,
+) {
   const account = turn.calling()
   if (account === undefined) return { retry: false }
   const failure = callFailureOf(args.error)
@@ -258,7 +275,7 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
     return { retry: false }
   }
   turn.drop()
-  const next = await accountOf(deps, turn, args)
+  const next = await accountOf(deps, turn, args, allowFallback)
   if (next === undefined) return { retry: false }
   sayRefused(args, turn, next)
   if (!refreshing && next.modelId === account.modelId && next.id !== account.id) {
@@ -279,10 +296,17 @@ export type SideCall = 'title' | 'observer' | 'reflection'
  * The model with its failures logged by call and account, since Mastra's own log line carries
  * neither and its message is not ours to keep (security S41). The error is thrown on, to Mastra.
  */
-function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): LanguageModel {
+function watched(
+  deps: QueueDeps,
+  turn: Turn,
+  account: Picked,
+  call: SideCall,
+  explicitContext?: RequestContext,
+): LanguageModel {
   const { model } = account
   if (typeof model === 'string' || model.specificationVersion !== 'v3') return model
   function report(error: unknown): never {
+    if (explicitContext !== undefined) explicitSideFailures.set(explicitContext, turn)
     const fields = { companyId: turn.companyId, accountId: account.id, call }
     deps.log.info({ ...fields, failure: callFailureOf(error).kind }, 'MODEL_SIDE_CALL_FAILED')
     throw error
@@ -305,10 +329,36 @@ function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): 
  * turn's account, the pick in flight, or the queue's next one when the observer runs before the
  * queue (`agent.ts:2392-2404`).
  */
-export function accountModel(deps: QueueDeps, call: SideCall) {
+export function accountModel(
+  deps: QueueDeps,
+  call: SideCall,
+  configured?: (owner: {
+    companyId: Turn['companyId']
+    personId: Turn['personId']
+  }) => Promise<ModelId | null>,
+) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
     const turn = turnIn(requestContext)
     if (turn === undefined) return noAccountModel(chosenModel(requestContext))
+    const selected = await configured?.({ companyId: turn.companyId, personId: turn.personId })
+    const conversationModel = turn.modelId(requestContext)
+    if (selected !== null && selected !== undefined && selected !== conversationModel) {
+      let turns = explicitSideTurns.get(requestContext)
+      if (turns === undefined) {
+        turns = new Map()
+        explicitSideTurns.set(requestContext, turns)
+      }
+      let sideTurn = turns.get(call)
+      if (sideTurn === undefined || sideTurn.modelId(requestContext) !== selected) {
+        sideTurn = new ConversationTurn({ companyId: turn.companyId, personId: turn.personId })
+        sideTurn.switchTo(selected, requestContext)
+        turns.set(call, sideTurn)
+      }
+      const account = await accountOf(deps, sideTurn, { requestContext }, false)
+      return account === undefined
+        ? noAccountModel(selected, { requestContext, turn: sideTurn })
+        : watched(deps, sideTurn, account, call, requestContext)
+    }
     const account = await accountOf(deps, turn, { requestContext })
     return account === undefined
       ? noAccountModel(turn.modelId(requestContext))

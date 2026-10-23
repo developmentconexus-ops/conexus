@@ -60,6 +60,24 @@ export const conversation = builder.table(
 )
 
 /** A message sent to a conversation, by its Idempotency-Key, so a repeat starts no second turn. */
+/** One company-wide Observer and Reflector selection; null means follow the conversation model. */
+export const observationalMemoryModels = builder.table(
+  'observational_memory_models',
+  {
+    companyId: text('company_id').primaryKey(),
+    observer: text('observer'),
+    reflector: text('reflector'),
+  },
+  (table) => [
+    foreignKey({
+      name: 'observational_memory_models_company_id_fkey',
+      columns: [table.companyId],
+      foreignColumns: [company.id],
+    }).onDelete('cascade'),
+    policy(SCOPE_ROLES.COMPANY, 'all', sql`company_id = ${scoped.companyId}`),
+  ],
+)
+
 export const conversationTurn = builder.table(
   'conversation_turn',
   {

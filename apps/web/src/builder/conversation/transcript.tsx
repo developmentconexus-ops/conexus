@@ -1,4 +1,4 @@
-import type { Message, MessagePart, ModelId } from '@conexus/hub-api'
+import type { MastraPart, Message, ModelId } from '@conexus/hub-api'
 import { useEffect, useRef } from 'react'
 import {
   MessageScroller,
@@ -11,6 +11,7 @@ import {
 } from '../../ui/message-scroller.tsx'
 import { BuilderTurn } from './builder-turn.tsx'
 import { PersonTurn } from './person-turn.tsx'
+import type { TranscriptItem } from './transcript.ts'
 
 /**
  * The conversation as a log a screen reader follows: `aria-busy` holds its announcements while the
@@ -21,7 +22,11 @@ import { PersonTurn } from './person-turn.tsx'
  */
 export function Transcript(props: {
   messages: readonly Message[]
-  answer: { parts: readonly MessagePart[]; streaming: boolean } | null
+  answer: {
+    transcript?: readonly TranscriptItem[]
+    parts: readonly MastraPart[]
+    streaming: boolean
+  } | null
   model: ModelId
 }) {
   const { answer } = props
@@ -48,6 +53,7 @@ export function Transcript(props: {
             {answer !== null && (
               <MessageScrollerItem messageId="answer">
                 <BuilderTurn
+                  items={answer.transcript}
                   parts={answer.parts}
                   model={props.model}
                   streaming={answer.streaming}

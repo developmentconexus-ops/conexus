@@ -184,6 +184,7 @@ test('quem envia lendo mais acima vai para o fim da conversa, e o campo mostra o
           id: 'm3',
           role: 'person',
           parts: [{ type: 'text', text: 'E o terceiro app?' }],
+          suspended: {},
           model: null,
           createdAt: '2026-10-19T12:02:00.000Z',
         },

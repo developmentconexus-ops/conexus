@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
 import type { MastraPart } from '@conexus/hub-api'
-import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ProjectId, VersionCheck } from '@conexus/hub-api'
 import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
@@ -97,7 +97,7 @@ function turnOf(blocks: Blocks, fix?: Blocks) {
 const Version = z.object({
   number: z.number(),
   changedFiles: z.number(),
-  check: z.object({ state: z.string(), code: z.string().optional() }).optional(),
+  check: VersionCheck.optional(),
 })
 
 /** The versions the parts say, by number, files changed and what the check said; the starter's files vary. */
@@ -249,4 +249,71 @@ test('a chamada de conexus_check guarda o relatório como resultado; a máquina 
   assert.equal(unavailable?.state, 'result')
   assert.equal(Object(unavailable?.result).error, 'CHECK_PLATFORM_FAILED')
   assert.equal(Reported.safeParse(unavailable?.result).success, false, 'no report to open')
+})
+
+const PLANNED = [
+  { content: 'Tabela de encomendas', activeForm: 'Criando a tabela', status: 'completed' },
+  { content: 'Tela de encomendas', activeForm: 'Fazendo a tela', status: 'in_progress' },
+  { content: 'Filtro por data', activeForm: 'Filtrando', status: 'pending' },
+]
+const TASKS = { type: 'tool_use', name: 'task_write', input: { tasks: PLANNED } } as const
+const DONE = {
+  type: 'tool_use',
+  name: 'task_write',
+  input: { tasks: PLANNED.map((task) => ({ ...task, status: 'completed' })) },
+} as const
+const OPEN = '2 tarefas abertas: Tela de encomendas; Filtro por data.'
+
+/** The calls whose texts carry the words of a turn that ended with tasks open. */
+function toldOpen(calls: Sent[]): Sent[] {
+  return calls.filter((call) => call.texts.some((text) => text.includes(OPEN)))
+}
+
+test('o passo final vazio com tarefas abertas volta ao modelo com elas; feitas, a conferência roda e monta (14.2, 15)', async (t) => {
+  const calls: Sent[] = []
+  const steps: Blocks[] = [[TASKS, WRITE], [], [DONE]]
+  const { hub, ana, conversations } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    calls.push(call)
+    const blocks = steps[calls.length - 1]
+    return blocks === undefined ? { kind: 'text', text: 'Pronto.' } : { kind: 'blocks', blocks }
+  })
+  const check = checking(hub.builder.folder, [])
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(toldOpen(calls), calls.slice(2), 'the empty end went back with the open tasks')
+  assert.equal(calls.length, 4)
+  assert.equal(check.calls(), 1, 'the check ran once the tasks were done')
+  assert.deepEqual(versionsOf(partsOf(events)), [
+    { number: 1, changedFiles: 1, check: { state: 'passed' } },
+  ])
+})
+
+test(`tarefas abertas em ${CHECK_LIMITS.checks} fins: a versão fica pela metade, sem conferência, e a linha conta as rodadas (14.2, 15, 17)`, async (t) => {
+  const model = turnOf([TASKS, WRITE])
+  const { hub, ana, conversations, lines } = await conversing(t, model.answer)
+  const check = checking(hub.builder.folder, [])
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  assert.equal(model.asked.length, 1 + CHECK_LIMITS.checks)
+  assert.equal(toldOpen(model.asked).length, CHECK_LIMITS.checks - 1)
+  assert.equal(check.calls(), 0)
+  const halfDone = [{ number: 1, changedFiles: 1, check: { state: 'unfinished', open: 2 } }]
+  assert.deepEqual(versionsOf(partsOf(events)), halfDone)
+  assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), halfDone)
+  const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
+  assert.equal(ended?.fields.rounds, CHECK_LIMITS.checks)
+})
+
+test('Parar com tarefas abertas: nada volta ao modelo e a versão fica sem veredito (14.2, 15)', async (t) => {
+  const write = tool(WRITE.name, WRITE.input)
+  const tasks = tool(TASKS.name, TASKS.input)
+  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[tasks, write, ask(WHO)]])
+  const check = checking(hub.builder.folder, [])
+  assert.equal((await send()).statusCode, 202)
+  await untilCard(stream, 'question')
+  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  const events = await stream.turn()
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
+  assert.deepEqual(toldOpen(calls), [])
+  assert.equal(check.calls(), 0)
+  assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })

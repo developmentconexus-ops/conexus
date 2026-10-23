@@ -901,3 +901,14 @@ or its origin.
   not on the instructions' sentences. A second case has a person paste a password: it proves the
   secrets rule reaches the model and that the gate fails without it, not that a real model obeys.
   Revisit when `runEvals` takes tool mocks, or the Builder's agent can be a target.
+
+## The Builder's end of the turn: open tasks (step 14.2)
+
+- **Open tasks go back to the model.** `conversation/processors.ts` `checkGate`, the output
+  processor that checks the app at the end of the turn, first reads the thread's task list from
+  Mastra's `threadState` store, as `task_check` reads it (`tools/builtin/task-tools.ts:385-391` at
+  `6a465f9d`). A step that ends the turn with tasks open goes back to the model with them by
+  `abort(…, { retry: true })`, counted with the failed checks in `CHECK_LIMITS.checks`; at the
+  limit the version is saved `unfinished`. Mastra's own `goal` judges completion with a model, not
+  the list (`agent/goal/scorer.ts:14-28`), so it does not serve. Proof: `conversation-check.test.ts`,
+  criterion 15 of step 14.2. Revisit when Mastra ends a turn on its task list itself.

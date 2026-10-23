@@ -1,4 +1,5 @@
-import type { Answer, MessagePart, Question, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
+import type { Answer, Question, QuestionAnswer } from '@conexus/hub-api'
+import { ToolCallId } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { SubmitEvent } from 'react'
@@ -18,8 +19,7 @@ import {
   QuestionnaireTitle,
 } from '../../ui/questionnaire.tsx'
 import { sendAnswer } from './queries.ts'
-
-type QuestionPart = Extract<MessagePart, { type: 'question' }>
+import type { QuestionCardItem } from './transcript.ts'
 
 const route = getRouteApi(
   '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
@@ -42,7 +42,6 @@ export function useAnswer(toolCallId: ToolCallId) {
   const params = route.useParams()
   const send = useMutation({ ...sendAnswer, meta: { keepCache: true } })
   const [error, setError] = useState<string>()
-  // `isPending` is read at the next render; a second click before it would send the answer again.
   const sent = useRef(false)
   async function answer(body: QuestionAnswer): Promise<void> {
     if (sent.current) return
@@ -82,46 +81,67 @@ function answersOf(form: FormData, questions: readonly Question[]): QuestionAnsw
 function Ask({ question, at }: { question: Question; at: number }) {
   const choices = choicesOf(question)
   const single = !question.multiSelect
+  const hasChoices = choices.length > 0
   return (
     <QuestionnaireItem name={`q${at}`} multiple={!single} required>
       <QuestionnaireTitle>{question.question}</QuestionnaireTitle>
-      <QuestionnaireChoices>
-        {choices.map((choice, index) => (
-          <QuestionnaireChoice
-            key={choice.value}
-            value={choice.value}
-            defaultChecked={single && index === 0}
-          >
-            <span>{choice.label}</span>
-            {choice.hint && <span className="text-fact text-text-2">{choice.hint}</span>}
-          </QuestionnaireChoice>
-        ))}
-        <QuestionnaireInput aria-label="Outra resposta" placeholder={CARD_TEXT.other} />
-      </QuestionnaireChoices>
-      <QuestionnaireError>Escolha uma resposta para continuar.</QuestionnaireError>
+      {hasChoices ? (
+        <QuestionnaireChoices>
+          {choices.map((choice, index) => (
+            <QuestionnaireChoice
+              key={choice.value}
+              value={choice.value}
+              defaultChecked={single && index === 0}
+            >
+              <span>{choice.label}</span>
+              {choice.hint && <span className="text-fact text-text-2">{choice.hint}</span>}
+            </QuestionnaireChoice>
+          ))}
+          <QuestionnaireInput
+            aria-label="Outra resposta"
+            placeholder={CARD_TEXT.other}
+            render={
+              <textarea
+                className="w-full min-h-16 rounded-control border border-line bg-surface p-sm text-base text-text md:text-body resize-y"
+                rows={2}
+              />
+            }
+          />
+        </QuestionnaireChoices>
+      ) : (
+        <QuestionnaireInput
+          aria-label="Resposta"
+          placeholder="Escreva sua resposta…"
+          render={
+            <textarea
+              className="w-full min-h-20 rounded-control border border-line bg-surface p-sm text-base text-text md:text-body resize-y"
+              rows={3}
+            />
+          }
+        />
+      )}
+      <QuestionnaireError>Escolha ou escreva uma resposta para continuar.</QuestionnaireError>
     </QuestionnaireItem>
   )
 }
 
-/** An answer as the card shows it: the one given, or the choices of a multiple one, as Mastra's `formatQuestionAnswer` joins them. */
 function answerText(answer: Answer | undefined): string {
   return Array.isArray(answer) ? answer.join(', ') : (answer ?? '')
 }
 
-/** What a card no longer waiting says, by how it closed; an answered one says nothing more. */
-function closedText(state: QuestionPart['state']): string | undefined {
+function closedText(state: QuestionCardItem['state']): string | undefined {
   if (state === 'expired') return CARD_TEXT.expired
   return state === 'closed' ? sentenceOfCode('QUESTION_CLOSED') : undefined
 }
 
 /**
  * The Builder's questions, one at a time, on shadcn's `questionnaire`: a choice among its options,
- * the recommended first and chosen, or another answer typed (card of step 14, U6; Conexus OS
- * `ask-user-pt.tsx`, by hand, at e0353c36). Once closed it keeps
- * only its questions; once answered, each answer under its question.
+ * the recommended first and chosen, or a multiline free response typed (Criterion 12, #272).
+ * Once closed it keeps only its questions; once answered, each answer under its question.
  */
-export function QuestionCard({ part }: { part: QuestionPart }) {
-  const { answer, sending, error } = useAnswer(part.toolCallId)
+export function QuestionCard({ part }: { part: QuestionCardItem }) {
+  const toolCallId = ToolCallId.parse(part.toolCallId)
+  const { answer, sending, error } = useAnswer(toolCallId)
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     void answer(answersOf(new FormData(event.currentTarget), part.questions))
@@ -147,7 +167,7 @@ export function QuestionCard({ part }: { part: QuestionPart }) {
           {part.questions.map((question, at) => (
             <li key={question.question} className="flex flex-col">
               {question.question}
-              {part.state === 'answered' && (
+              {part.state === 'answered' && part.answers && (
                 <span className="text-text">{answerText(part.answers[at])}</span>
               )}
             </li>

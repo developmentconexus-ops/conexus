@@ -148,6 +148,12 @@ export {
 } from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
+  ObservationalMemoryModels,
+  ObservationalMemoryRole,
+  readObservationalMemoryModels,
+  setObservationalMemoryModel,
+} from './observational-memory.ts'
+export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
   AttemptKey,

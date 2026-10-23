@@ -197,8 +197,6 @@ class BuilderMachines implements Machines {
       }),
       tools: {
         hooks: { beforeToolCall: () => this.ensure(session) },
-        [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },
-        [WORKSPACE_TOOLS.FILESYSTEM.EDIT_FILE]: { requireReadBeforeWrite: true },
         [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
       },
     })

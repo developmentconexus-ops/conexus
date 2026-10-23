@@ -15,7 +15,7 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Phase as MachinePhase } from '../machine/public.ts'
 import type { Turn } from '../model-accounts/public.ts'
 import { NOTICE_PART } from '../model-accounts/public.ts'
-import type { Outcome } from '../runs/public.ts'
+import type { Outcome, Settled } from '../runs/public.ts'
 import type { Recorder } from './record.ts'
 import { saveExtras, settled } from './record.ts'
 import { ShellTail } from './shell.ts'
@@ -60,7 +60,7 @@ export type Live = Recorder & {
         traceId: string
         /** What Mastra needs of the turn to go on after an answer or a message. */
         context: RequestContext
-        finish: (reason: string) => Promise<Outcome | 'gone'>
+        finish: (reason: string) => Promise<Settled | 'gone'>
         /** The run waits on the person's answer, or goes on after it; rejects when the database refuses. */
         waiting: (waiting: boolean) => Promise<void>
       }
@@ -208,6 +208,7 @@ export function endRun(live: Live, reason: Ending['reason'], parked?: string): v
 
 /** The controller's events as the stream says them (`wireEvent`), and what the turn keeps of them. */
 export function onEvent(live: Live, event: AgentControllerEvent): void {
+  live.turn?.tally.heard(event)
   if (event.type === 'agent_start') {
     openTurn(live)
     // The run a message started carries the turn of the one it steered.
@@ -220,8 +221,6 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
   } else if (event.type === 'info') {
     // The notice the model queue says live (`notify`); Mastra saves the same one with the answer, so ours is not kept.
     tellExtra(live, openTurn(live), { type: NOTICE_PART, data: { text: event.message } })
-  } else if (event.type === 'usage_update') {
-    live.turn?.tally.step(event.usage.totalTokens)
   } else if (event.type === 'shell_output' || event.type === 'command_exit') {
     onShellEvent(live, event)
   } else if (event.type === 'message_start' || event.type === 'message_update') {
@@ -306,6 +305,9 @@ export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Prom
       return undefined
     },
   )
+  if (outcome !== undefined && outcome !== 'gone' && live.turn !== undefined) {
+    live.turn.tally.rounds = outcome.rounds
+  }
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'failed') {
     live.saveFailure = outcome.code
   }

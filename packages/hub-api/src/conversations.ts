@@ -12,10 +12,12 @@ export type ConversationId = z.infer<typeof ConversationId>
 /**
  * Whether a saved version's app built (card of step 14): its check at the end of the turn passed,
  * failed the last time the turn could try, or could not run on the machine (founder, 2026-10-22,
- * the words of `CHECK_PLATFORM_FAILED`).
+ * the words of `CHECK_PLATFORM_FAILED`); or the turn ended with `open` tasks still open the last
+ * time it could try, the version saved half done (card of step 14.2, criterion 15).
  */
 export const VersionCheck = z.discriminatedUnion('state', [
   z.object({ state: z.literal('passed') }),
+  z.object({ state: z.literal('unfinished'), open: z.int().positive() }),
   z.object({ state: z.literal('failed'), code: z.literal('APP_CHECK_FAILED') }),
   z.object({ state: z.literal('unchecked'), code: z.literal('CHECK_PLATFORM_FAILED') }),
 ])
