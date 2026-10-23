@@ -8,13 +8,15 @@ import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
   asked,
   conversing,
-  failuresOf,
   holding,
+  hubBeside,
+  messagesOf,
   sent,
   started,
   streamOf,
   title,
 } from '../conversation/test-conversation.ts'
+import { failuresOf } from '../conversation/test-parts.ts'
 import { Sha } from '../git/public.ts'
 import { SandboxId } from '../machine/public.ts'
 
@@ -38,7 +40,7 @@ function writing(path: string, content: string): Tool {
   return { name: WRITE, input: { path, content } }
 }
 
-async function runs(hub: Awaited<ReturnType<typeof conversing>>['hub']) {
+async function runs(hub: Pick<Awaited<ReturnType<typeof conversing>>['hub'], 'test'>) {
   return hub.test.asOwner(
     `select state, base_sha, candidate_sha, copied_at is not null as copied, deadline_at from builder.run order by deadline_at`,
   )
@@ -254,19 +256,18 @@ test('o processo morre antes da candidata: a execução é interrupted, o main f
     working(writing('a.ts', 'x\n')),
   )
   hub.builder.knobs.dies.receive = 1
-  await asked(t, { hub, person: ana, conversations })
+  const { url } = await asked(t, { hub, person: ana, conversations })
   await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
   await hub.close()
-  await hub.runs.settleRuns()
-  assert.equal((await runs(hub))[0]?.state, 'interrupted')
-  const told = await hub.test.asOwner('select event from builder.run_event order by n desc limit 2')
-  assert.deepEqual(
-    told.map((row) => row.event),
-    [
-      { type: 'turnEnd', reason: 'aborted' },
-      { type: 'part', part: { type: 'restarted', kept: 'lost' } },
-    ],
-  )
+  const beside = await hubBeside(t, hub)
+  await beside.restart()
+  assert.equal((await runs(beside))[0]?.state, 'interrupted')
+  const told = (await messagesOf(beside, ana, url))
+    .flatMap((message) => message.parts)
+    .flatMap((part) =>
+      part.type === 'data-conexus-restarted' && 'data' in part ? [part.data] : [],
+    )
+  assert.deepEqual(told, [{ kept: 'lost' }])
   assert.equal(
     await hub.builder
       .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })

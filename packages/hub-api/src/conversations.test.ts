@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { MessagePart, PartEvent } from './conversations.ts'
-import { applyEvent, runningEffort } from './conversations.ts'
+import { runningEffort } from './conversations.ts'
+import type { MastraPart, MessageUpdate } from './mastra-parts.ts'
+import { applyUpdate } from './mastra-parts.ts'
 
 test('o nível em que o modelo roda: o mesmo, o mais perto abaixo, ou o mais baixo dele; Desligado só onde ele aceita', () => {
   assert.equal(runningEffort(['off', 'low', 'high'], 'high'), 'high')
@@ -13,35 +14,26 @@ test('o nível em que o modelo roda: o mesmo, o mais perto abaixo, ou o mais bai
   assert.equal(runningEffort(['off'], 'high'), 'off')
 })
 
-test('a dobra: texto depois de texto é um texto; parte com `id` troca a de mesmo `id`; as outras vão ao fim', () => {
-  const thinking = { type: 'reasoning', id: 'm.0', state: 'running', seconds: null } as const
-  const thought = { ...thinking, state: 'completed', seconds: 2 } as const
-  const reading = {
-    type: 'tool',
-    id: 'toolu_1',
-    kind: 'read_page',
-    state: 'running',
-    subject: { url: 'https://padaria.example.test/', title: null },
-  } as const
-  const events: PartEvent[] = [
-    { type: 'part', part: thinking },
-    { type: 'text', delta: 'A primeira' },
-    { type: 'text', delta: ', diz a fonte' },
-    { type: 'part', part: thought },
-    { type: 'part', part: reading },
-    { type: 'notice', text: 'Trocamos de conta.' },
-    { type: 'part', part: { ...reading, state: 'error' } },
-    { type: 'text', delta: 'Depois.' },
-    { type: 'part', part: { type: 'failure', code: 'MODEL_CALL_FAILED' } },
+test('a dobra de Mastra: o texto soma ao último texto, o raciocínio ao seu índice, e uma parte toma o seu lugar', () => {
+  function tool(state: 'call' | 'result') {
+    return {
+      type: 'tool-invocation',
+      toolInvocation: { state, toolCallId: 'toolu_1', toolName: 'view', args: { path: 'a.ts' } },
+    } as const
+  }
+  const updates: MessageUpdate[] = [
+    { type: 'reasoning-delta', index: 0, delta: 'Vou ' },
+    { type: 'reasoning-delta', index: 0, delta: 'ler.' },
+    { type: 'part', index: 1, part: tool('call') },
+    { type: 'part', index: 1, part: tool('result') },
+    { type: 'text-delta', delta: 'Li ' },
+    { type: 'text-delta', delta: 'o arquivo.' },
   ]
-  const before: MessagePart[] = []
-  assert.deepEqual(events.reduce(applyEvent, before), [
-    thought,
-    { type: 'text', text: 'A primeira, diz a fonte' },
-    { ...reading, state: 'error' },
-    { type: 'notice', text: 'Trocamos de conta.' },
-    { type: 'text', text: 'Depois.' },
-    { type: 'failure', code: 'MODEL_CALL_FAILED' },
+  const before: MastraPart[] = []
+  assert.deepEqual(updates.reduce(applyUpdate, before), [
+    { type: 'reasoning', reasoning: 'Vou ler.', details: [] },
+    tool('result'),
+    { type: 'text', text: 'Li o arquivo.' },
   ])
   assert.deepEqual(before, [], 'the parts given stay as they were')
 })

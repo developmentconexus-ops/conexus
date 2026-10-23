@@ -23,6 +23,7 @@ import {
   started,
   streamOf,
 } from './test-conversation.ts'
+import { textsOf } from './test-parts.ts'
 
 const DIEGO = { name: 'Diego Melo', email: 'diego@example.test' }
 
@@ -78,13 +79,8 @@ test('a conversa de outra pessoa ou de outra empresa: o mesmo 404 em toda rota; 
   assert.deepEqual((await anaStream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.equal((await sent(hub, diego, diegos, 'Pergunta de Diego')).statusCode, 202)
   const diegoEvents = await diegoStream.turn()
-  assert.deepEqual(
-    diegoEvents.filter((event) => event.type === 'text' || event.type === 'turnEnd'),
-    [
-      { type: 'text', delta: 'Resposta a Pergunta de Diego' },
-      { type: 'turnEnd', reason: 'complete' },
-    ],
-  )
+  assert.equal(textsOf(diegoEvents).join(''), 'Resposta a Pergunta de Diego')
+  assert.deepEqual(diegoEvents.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.doesNotMatch(diegoStream.seen.raw, /Ana/)
 
   for (const path of ['/api/agents', '/api/agents/builder', '/api/memory/threads?resourceId=x']) {
@@ -256,8 +252,10 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
 
   assert.equal((await sent(hub, ana, url, 'Segura')).statusCode, 202)
   let said = await stream.said()
-  while (said.type === 'title') said = await stream.said()
-  assert.deepEqual(said, { type: 'text', delta: PARTIAL })
+  while (!(said.type === 'message_update' && said.event.type === 'text-delta')) {
+    said = await stream.said()
+  }
+  assert.equal(said.event.delta, PARTIAL)
   assert.equal((await model('off')).statusCode, 200)
   held.release()
   await stream.turn()

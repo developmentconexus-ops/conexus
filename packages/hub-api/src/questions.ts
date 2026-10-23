@@ -50,29 +50,3 @@ export const QuestionAnswer = z.discriminatedUnion('kind', [
     }),
 ])
 export type QuestionAnswer = z.infer<typeof QuestionAnswer>
-
-const AskedCard = z.object({
-  type: z.literal('question'),
-  toolCallId: ToolCallId,
-  questions: z.array(Question).min(1).max(QUESTION_LIMITS.questions),
-})
-
-/**
- * The card of questions the turn waits on. An answered card holds the answer to each question, in order (founder, 2026-10-22: "4. e 5 Sim").
- */
-export const QuestionPart = z.discriminatedUnion('state', [
-  AskedCard.extend({ state: z.enum(['open', 'expired', 'closed']) }),
-  AskedCard.extend({ state: z.literal('answered'), answers: z.array(Answer) }),
-])
-
-/** The plan the turn waits on, read from the plan file. */
-export const PlanPart = z.object({
-  type: z.literal('plan'),
-  toolCallId: ToolCallId,
-  title: z.string(),
-  plan: z.string(),
-  state: z.enum(['open', 'approved', 'rejected', 'expired', 'closed']),
-})
-
-/** The task list as the Builder last wrote it. */
-export const TasksPart = z.object({ type: z.literal('tasks'), items: z.array(Task) })

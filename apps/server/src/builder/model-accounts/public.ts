@@ -26,7 +26,7 @@ export type { QueueDeps } from './queue.ts'
 export { callModel, conversationModel, providerOf } from './queue.ts'
 export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'
 export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
-export { chosenModel, NOTICE_PART, Notice, Turn, turnContext } from './turn.ts'
+export { chosenModel, NOTICE_PART, Turn, turnContext } from './turn.ts'
 
 export type ModelAccounts = ReturnType<typeof createModelAccounts>
 

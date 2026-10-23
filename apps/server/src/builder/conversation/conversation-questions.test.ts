@@ -1,24 +1,42 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { z } from 'zod'
 import { memberOn, post } from '../../hub/identity/test-hub.ts'
 import { answeredOf } from './test-conversation.ts'
-import { answerUrl, ask, cards, conversingWith, untilCard, WHO } from './test-questions.ts'
+import { partsOf } from './test-parts.ts'
+import {
+  answerUrl,
+  ask,
+  cards,
+  conversingWith,
+  invocations,
+  untilCard,
+  WHO,
+} from './test-questions.ts'
 
-test('ask_user com 1 a 4 perguntas: a volta espera, a parte `question` chega e a resposta a continua', async (t) => {
+const Asked = z.object({ questions: z.array(z.object({ question: z.string() })) })
+
+test('ask_user com 1 a 4 perguntas: a volta espera, o `tool_suspended` chega e a resposta a continua', async (t) => {
   const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[ask(WHO)]])
   assert.equal((await send()).statusCode, 202)
   const { card } = await untilCard(stream, 'question')
-  assert.equal(card.type, 'question')
-  assert.deepEqual(card.type === 'question' && card.questions.map((each) => each.question), [
-    WHO.question,
-  ])
+  assert.equal(card.toolName, 'ask_user')
+  assert.deepEqual(
+    Asked.parse(card.suspendPayload).questions.map((each) => each.question),
+    [WHO.question],
+  )
   const answers = { kind: 'answers', answers: ['Todos (recomendado)'] }
   const answered = await post(hub, ana, answerUrl(url, card.toolCallId), answers)
   assert.equal(answered.statusCode, 202, answered.body)
   const rest = await stream.turn()
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
-  const told = cards(rest).at(-1)
-  assert.deepEqual(told, { ...card, state: 'answered', answers: ['Todos (recomendado)'] })
+  assert.deepEqual(cards(rest), [], 'the call is not asked again once answered')
+  const told = invocations(partsOf(rest), card.toolCallId).at(-1)
+  assert.equal(told?.state, 'result')
+  assert.deepEqual(told.result, {
+    content: `User answered:\n${WHO.question}: Todos (recomendado)`,
+    answers: ['Todos (recomendado)'],
+  })
   const given = calls[1]?.texts.join('\n') ?? ''
   assert.ok(given.includes(`User answered:\n${WHO.question}: Todos (recomendado)`), given)
   assert.ok(
@@ -27,9 +45,9 @@ test('ask_user com 1 a 4 perguntas: a volta espera, a parte `question` chega e a
   )
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(
-    read.filter((part) => part.type === 'question'),
-    [told],
-    'read again, the card holds the answers Mastra kept as the call’s result',
+    invocations(read, card.toolCallId).map((each) => [each.state, each.result]),
+    [[told.state, told.result]],
+    'read again, the call holds the answers Mastra kept as its result',
   )
 })
 

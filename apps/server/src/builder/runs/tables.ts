@@ -2,11 +2,8 @@ import { sql } from 'drizzle-orm'
 import {
   check,
   foreignKey,
-  integer,
-  jsonb,
   pgPolicy,
   pgSchema,
-  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -72,25 +69,5 @@ export const run = builder.table(
     // The function behind companies_with_runs names the companies with work left, before any
     // company is known (migration e13_runs_grants); its role cannot log in.
     pgPolicy('runs_select', { for: 'select', to: 'hub_runs', using: sql`true` }),
-  ],
-)
-
-/** One event of a turn, kept by its position so a reconnect reads what it missed (card, 22). */
-export const runEvent = builder.table(
-  'run_event',
-  {
-    runId: uuid('run_id').notNull(),
-    companyId: text('company_id').notNull(),
-    n: integer('n').notNull(),
-    event: jsonb('event').notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.runId, table.n] }),
-    foreignKey({
-      name: 'run_event_run_id_fkey',
-      columns: [table.runId],
-      foreignColumns: [run.id],
-    }).onDelete('cascade'),
-    policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
   ],
 )

@@ -1,9 +1,13 @@
-import { setTimeout as sleep } from 'node:timers/promises'
-import type { ConversationEvent, Message, MessageId, RunId } from '@conexus/hub-api'
-import { applyEvent, EventId } from '@conexus/hub-api'
+import type {
+  ConversationEvent,
+  MastraPart,
+  Message,
+  MessageId,
+  ModelId,
+  RunId,
+} from '@conexus/hub-api'
+import { EventId } from '@conexus/hub-api'
 import { z } from 'zod'
-import type { FailureLog } from '../../platform/failure.ts'
-import { Failure, logFailure } from '../../platform/failure.ts'
 import type { ShellTail } from './shell.ts'
 import type { TurnTally } from './turn-line.ts'
 
@@ -11,49 +15,46 @@ import type { TurnTally } from './turn-line.ts'
 export type Said = { id: EventId; event: ConversationEvent }
 export type Listener = (said: Said) => void
 
-/** The longest text one event carries: the journal keeps the answer in pieces of this size. */
-const TEXT_CHUNK = 200
-/** Text that does not fill a piece is still said this long after it began to wait. */
-const TEXT_MAX_WAIT_MS = 250
-
-/** Keeps an event in the run's journal and answers its number, or `undefined` once the run is not ours. */
-export type Journal = (runId: RunId, event: ConversationEvent) => Promise<number | undefined>
+/** The most events of a turn kept to resume a stream that reconnects; past it, a reconnect gets the turn so far. */
+const RESUME_EVENTS = 10_000
 
 /**
  * A turn of the Builder's, from the message that opened it to its end, and the last one once over:
- * its answer so far, the text not yet said, the events on their way to the journal, and the
- * thinking whose clock runs. Its id is its run's.
+ * Mastra's messages of the turn as the stream said them, the parts of ours, and the events that a
+ * reconnect resumes from. Its id is its run's.
  */
 export type TurnLog = {
   id: RunId | undefined
+  /** The id of the answer as one message: the run's, or a made one for a turn with no run. */
+  answerId: MessageId
   startedAt: string
-  answer: Message
+  /** Mastra's messages of the turn, in the order they began. */
+  steps: { id: MessageId; parts: MastraPart[] }[]
+  /** The parts of ours, one message named by the turn (`data-conexus-*`). */
+  extras: MastraPart[]
+  model: ModelId | null
   /** The person's message the turn answers, as a read shows it, once known. */
   after: MessageId | undefined
-  /** Text said by the model and not yet an event: it is one when it fills a piece or its part ends. */
-  buffer: string
-  /** The timer that says a short text in time; none while nothing waits. */
-  flusher: AbortController | undefined
-  /** The journal's writes and the stream's sends, one after the other. */
-  queue: Promise<void>
-  thinking: { id: string; since: number } | undefined
+  /** The last events said, numbered from the turn's first. */
+  said: Said[]
+  next: number
+  /** When each reasoning began, by its message and index, until the first part after it. */
+  thinking: Map<string, number>
   /** The output of the commands in progress, by the tool call that runs them. */
   shells: Map<string, ShellTail>
   tally: TurnTally
   /** The request that began the turn, for its log line. */
   traceId: string | undefined
   failureKept: boolean
+  /** The calls the turn left waiting for the person, until Mastra closes them. */
+  suspended: Map<string, { suspendPayload: unknown; cuts?: string[] }>
+  /** When the message of ours was first saved: it keeps the time at each save. */
+  extrasAt: Date | undefined
   ended: boolean
 }
 
 /** What saying an event needs of a conversation open in this process. */
-export type Speaker = {
-  listeners: Set<Listener>
-  journal: Journal
-  log: FailureLog
-  /** Stops the turn once its run is no longer this copy's. */
-  lose: () => void
-}
+export type Speaker = { listeners: Set<Listener> }
 
 /** The id of a run's `n`th event: the run, and the event's place in it. */
 export function eventId(runId: RunId, n: number): EventId {
@@ -66,111 +67,53 @@ const EventPlace = z
   .transform(Number)
   .pipe(z.int())
 /** What an `eventId` names, read back strictly: its run, and its place in it. */
-export const SeenEvent = z
+const SeenEvent = z
   .string()
   .transform((id) => id.split('.'))
   .pipe(z.tuple([z.uuid(), EventPlace]))
 
-function send(speaker: Speaker, turn: TurnLog, event: ConversationEvent): void {
+/** Says an event of the turn to every open stream, and keeps it for a stream that reconnects. */
+export function say(speaker: Speaker, turn: TurnLog, event: ConversationEvent): void {
   const runId = turn.id
   if (runId === undefined) return
-  turn.queue = turn.queue.then(async () => {
-    const n = await speaker.journal(runId, event).then(
-      (written) => written,
-      (cause: unknown) => {
-        logFailure(speaker.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-        return -1
-      },
-    )
-    if (n === undefined) return speaker.lose()
-    if (n < 0) return
-    const said = { id: eventId(runId, n), event }
-    for (const listener of speaker.listeners) listener(said)
-  })
+  turn.next += 1
+  const said = { id: eventId(runId, turn.next), event }
+  turn.said.push(said)
+  if (turn.said.length > 2 * RESUME_EVENTS) turn.said = turn.said.slice(-RESUME_EVENTS)
+  for (const listener of speaker.listeners) listener(said)
 }
 
-/** Says the text held back as one event. */
-export function flushText(speaker: Speaker, turn: TurnLog): void {
-  turn.flusher?.abort()
-  turn.flusher = undefined
-  if (turn.buffer === '') return
-  const delta = turn.buffer
-  turn.buffer = ''
-  send(speaker, turn, { type: 'text', delta })
-}
-
-/**
- * Says an event of the turn. Text waits until it fills a piece of `TEXT_CHUNK` characters, its part
- * ends or `TEXT_MAX_WAIT_MS` passes; any other event, and the turn's end, say what waits before
- * them, so the order holds.
- */
-export function say(speaker: Speaker, turn: TurnLog, event: ConversationEvent): void {
-  if (event.type !== 'text') {
-    flushText(speaker, turn)
-    send(speaker, turn, event)
-    return
-  }
-  turn.buffer += event.delta
-  while (turn.buffer.length >= TEXT_CHUNK) {
-    const delta = turn.buffer.slice(0, TEXT_CHUNK)
-    turn.buffer = turn.buffer.slice(TEXT_CHUNK)
-    send(speaker, turn, { type: 'text', delta })
-  }
-  if (turn.buffer !== '' && turn.flusher === undefined) waitToFlush(speaker, turn)
-}
-
-/** The short text's clock (one owner, this file): says what waits once `TEXT_MAX_WAIT_MS` passes. */
-function waitToFlush(speaker: Speaker, turn: TurnLog): void {
-  const waiting = new AbortController()
-  turn.flusher = waiting
-  sleep(TEXT_MAX_WAIT_MS, undefined, { signal: waiting.signal }).then(
-    () => flushText(speaker, turn),
-    () => undefined,
-  )
-}
-
-/** The turn a run's kept events add up to, as the screen folds them: its snapshot. */
-export function snapshotOf(
-  runId: RunId,
-  rows: { n: number; event: ConversationEvent }[],
-): Said | undefined {
-  const last = rows.at(-1)
-  if (last === undefined) return undefined
-  const from = rows.findLastIndex((row) => row.event.type === 'turn')
-  const first = rows[from]?.event
-  if (first?.type !== 'turn') return undefined
-  const message = structuredClone(first.message)
-  for (const { event } of rows.slice(from + 1)) {
-    if (event.type === 'text' || event.type === 'part' || event.type === 'notice') {
-      message.parts = applyEvent(message.parts, event)
-    }
-  }
+/** The whole answer of the turn so far, Mastra's parts in order and then ours. */
+export function answerOf(turn: TurnLog): Message {
   return {
-    id: eventId(runId, last.n),
-    event: { type: 'turn', message, startedAt: first.startedAt },
+    id: turn.answerId,
+    role: 'builder',
+    parts: [...turn.steps.flatMap((step) => step.parts), ...turn.extras],
+    suspended: Object.fromEntries(turn.suspended),
+    model: turn.model,
+    createdAt: turn.startedAt,
   }
-}
-
-/** The events of `said` that come after `last` in its run. */
-function after(last: Said | undefined, said: Said[]): Said[] {
-  const seen = SeenEvent.safeParse(last?.id)
-  if (!seen.success) return said
-  return said.filter((each) => {
-    const place = SeenEvent.safeParse(each.id)
-    return !place.success || place.data[0] !== seen.data[0] || place.data[1] > seen.data[1]
-  })
 }
 
 /**
- * One stream's filter: each call answers the events of `said` past the last one it answered in
- * their run, so an event the catch-up read found and the turn then tells, once its journal write is
- * acknowledged, is said once.
+ * What a stream that opens reads first (card, criterion 31): the events after the last one it saw,
+ * when that one is of this turn and still kept; otherwise the turn so far if it is not over; or
+ * nothing, since a read of the conversation tells what is over. An id from elsewhere names
+ * nothing here (security S10).
  */
-export function onceEach(): (said: Said[]) => Said[] {
-  let last: Said | undefined
-  return (said) => {
-    const fresh = after(last, said)
-    last = fresh.at(-1) ?? last
-    return fresh
+export function catchUp(turn: TurnLog | undefined, lastEventId: EventId | null): Said[] {
+  if (turn?.id === undefined) return []
+  const seen = SeenEvent.safeParse(lastEventId)
+  if (seen.success && seen.data[0] === turn.id) {
+    const firstN = turn.next - turn.said.length + 1
+    if (seen.data[1] >= firstN - 1) return turn.said.filter((each) => nOf(each) > seen.data[1])
   }
+  if (turn.ended) return []
+  const event = { type: 'turn', message: answerOf(turn), startedAt: turn.startedAt } as const
+  return [{ id: eventId(turn.id, turn.next), event }]
+}
+
+function nOf(said: Said): number {
+  const place = SeenEvent.parse(said.id)
+  return place[1]
 }

@@ -1,19 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import {
-  CompanyId,
-  ConversationEvent,
-  ConversationId,
-  PersonId,
-  ProjectId,
-  RunId,
-} from '@conexus/hub-api'
-import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm'
+import { CompanyId, ConversationId, PersonId, ProjectId, RunId } from '@conexus/hub-api'
+import { and, eq, gt, inArray, isNotNull, isNull, lt, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Database } from '../../platform/database.ts'
 import { Sha } from '../git/public.ts'
 import { LEASE_MS } from './lease.ts'
-import { run, runEvent } from './tables.ts'
+import { run } from './tables.ts'
 
 const Row = z.object({
   id: RunId,
@@ -49,13 +42,9 @@ const columns = {
   candidateSha: run.candidateSha,
   deadlineAt: run.deadlineAt,
 }
+
 /** The states of a run whose turn is not over: it runs, waits on the person, or saves. */
 export const LIVE = ['open', 'waiting', 'saving'] as const satisfies readonly RunState[]
-
-/** Whether a run in `state` is not over. */
-function isLive(state: RunState): boolean {
-  return LIVE.some((each) => each === state)
-}
 
 function leaseEnd() {
   return new Date(Date.now() + LEASE_MS)
@@ -311,54 +300,5 @@ export class RunStore {
         .limit(1),
     )
     return found.length > 0
-  }
-
-  /** Keeps one event of the run's turn, numbered after the last, if the run is still this copy's. */
-  async appendEvent(input: {
-    companyId: CompanyId
-    runId: RunId
-    event: ConversationEvent
-  }): Promise<number | undefined> {
-    const { companyId, runId, event } = input
-    const written = await this.#database.command(inCompany(companyId), (tx) =>
-      tx.execute(sql`
-        insert into builder.run_event (run_id, company_id, n, event)
-        select r.id, r.company_id,
-          coalesce((select max(e.n) from builder.run_event e where e.run_id = r.id), 0) + 1,
-          ${JSON.stringify(event)}::jsonb
-        from builder.run r
-        where r.id = ${runId}::uuid and r.owner = ${this.#owner}::uuid
-        returning n`),
-    )
-    const [row] = written.rows
-    return row === undefined ? undefined : Number(Object(row).n)
-  }
-
-  /** At most `limit` events of a run after `after`, in order. */
-  async readEvents(input: { companyId: CompanyId; runId: RunId; after: number; limit: number }) {
-    const rows = await this.#database.read(inCompany(input.companyId), (tx) =>
-      tx
-        .select({ n: runEvent.n, event: runEvent.event })
-        .from(runEvent)
-        .where(and(eq(runEvent.runId, input.runId), gt(runEvent.n, input.after)))
-        .orderBy(asc(runEvent.n))
-        .limit(input.limit),
-    )
-    return rows.map((row) => ({ n: row.n, event: ConversationEvent.parse(row.event) }))
-  }
-
-  /** The conversation's latest run and whether it is over, or none. */
-  async lastRunOf(companyId: CompanyId, conversationId: ConversationId) {
-    const [row] = await this.#database.read(inCompany(companyId), (tx) =>
-      tx
-        .select({ id: run.id, state: run.state })
-        .from(run)
-        .where(eq(run.conversationId, conversationId))
-        .orderBy(desc(run.deadlineAt))
-        .limit(1),
-    )
-    return row === undefined
-      ? undefined
-      : { id: RunId.parse(row.id), live: isLive(Row.shape.state.parse(row.state)) }
   }
 }

@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto'
 import type { CheckReport } from '@conexus/app/check'
 import type {
   CompanyId,
-  ConversationEvent,
   ConversationId,
   PersonId,
   ProjectId,
@@ -193,24 +192,6 @@ export class Runs {
         abort()
       },
     })
-  }
-
-  /**
-   * Keeps an event of the run's turn, even after the run ended: its last events follow its save.
-   * `undefined` once the run is not this copy's (data D25).
-   */
-  append(input: { companyId: CompanyId; runId: RunId; event: ConversationEvent }) {
-    return this.#context.store.appendEvent(input)
-  }
-
-  /** At most `limit` of the events a run kept after `after`. */
-  events(input: { companyId: CompanyId; runId: RunId; after: number; limit: number }) {
-    return this.#context.store.readEvents(input)
-  }
-
-  /** The conversation's latest run, to tell which turn a reconnecting stream belongs to. */
-  lastRunOf(companyId: CompanyId, conversationId: ConversationId) {
-    return this.#context.store.lastRunOf(companyId, conversationId)
   }
 
   /**

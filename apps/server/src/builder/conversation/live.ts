@@ -1,42 +1,33 @@
 import { randomUUID } from 'node:crypto'
 import type {
   CompanyId,
+  ConversationEvent,
   ConversationId,
-  Message,
-  MessagePart,
-  PartEvent,
+  MastraPart,
   PersonId,
   RunId,
   TurnFailureCode,
 } from '@conexus/hub-api'
-import { applyEvent, MessageId, machinePhaseLasts } from '@conexus/hub-api'
+import { applyUpdate, MessageId, THOUGHT_PART, ToolCallId } from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import type { RequestContext } from '@mastra/core/request-context'
-import { z } from 'zod'
-import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Phase as MachinePhase } from '../machine/public.ts'
 import type { Turn } from '../model-accounts/public.ts'
+import { NOTICE_PART } from '../model-accounts/public.ts'
 import type { Outcome } from '../runs/public.ts'
-import type { Question } from './kept.ts'
-import { keepFailure, keepPart, keptInList, queued, THINKING_KEY, ThoughtTime } from './kept.ts'
-import type { Place } from './parts.ts'
-import { fileOf, modelOf, partOf } from './parts.ts'
+import type { Recorder } from './record.ts'
+import { saveExtras, settled } from './record.ts'
 import { ShellTail } from './shell.ts'
 import { TurnTally, turnLine } from './turn-line.ts'
-import type { Journal, Listener, TurnLog } from './turn-log.ts'
-import { flushText, say } from './turn-log.ts'
+import type { Listener, TurnLog } from './turn-log.ts'
+import { answerOf, say } from './turn-log.ts'
+import { modelOf, wireEvent, wireShell } from './wire.ts'
 
-export type { Question } from './kept.ts'
-export { keepQuestion, questionId } from './kept.ts'
+export type { Question } from './record.ts'
 export type { Listener } from './turn-log.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
-
-/** A question or a plan the turn waits on. */
-export type Card = Extract<MessagePart, { type: 'question' | 'plan' }>
-
-type ToolPart = Extract<MessagePart, { type: 'tool' }>
 
 /** The version a saved turn reached, with its file counts. */
 type SavedVersion = Extract<Outcome, { kind: 'saved' }>['version']
@@ -45,16 +36,10 @@ type SavedVersion = Extract<Outcome, { kind: 'saved' }>['version']
 type Run = { turn: Turn; ended: () => void }
 
 /** A conversation open in this process: its controller session and its turn. */
-export type Live = {
+export type Live = Recorder & {
   conversationId: ConversationId
-  owner: Owner
-  log: FailureLog
   session: Session
   listeners: Set<Listener>
-  /** Keeps an event in the run's journal (data D25). */
-  journal: Journal
-  /** Stops the turn once its run is not this copy's: Mastra's run aborts and no more is said. */
-  lose: () => void
   turn: TurnLog | undefined
   /** The turns of the messages sent and not yet over: their run, or the one they joined, runs. */
   asked: Set<Turn>
@@ -68,9 +53,6 @@ export type Live = {
   unclaimed: { run: string; reason: Ending['reason'] } | undefined
   /** The run a message steers, until the run it starts takes its place (card, criterion 18). */
   steering: { run: Run | undefined } | undefined
-  /** The questions on the thread, and the thread's writes in flight, one after the other. */
-  questions: Question[]
-  kept: Promise<void>
   /** The run of the message in progress: ends and saves it when Mastra's run is about to end. */
   run:
     | {
@@ -85,33 +67,27 @@ export type Live = {
     | undefined
   /** Why the turn ended badly, for its end to say: a save that failed, or a question that expired (card, the failures table). */
   saveFailure: TurnFailureCode | undefined
-  /** The version the turn saved, for its end to say. */
-  saved: SavedVersion | undefined
   unsubscribe: () => void
 }
 
 function newTurn(id: RunId | undefined, traceId?: string): TurnLog {
-  const startedAt = new Date().toISOString()
-  const answer: Message = {
-    id: MessageId.parse(id ?? randomUUID()),
-    role: 'builder',
-    parts: [],
-    model: null,
-    createdAt: startedAt,
-  }
   return {
     id,
-    startedAt,
-    answer,
+    answerId: MessageId.parse(id ?? randomUUID()),
+    startedAt: new Date().toISOString(),
+    steps: [],
+    extras: [],
+    model: null,
     after: undefined,
-    buffer: '',
-    flusher: undefined,
-    queue: Promise.resolve(),
-    thinking: undefined,
+    said: [],
+    next: 0,
+    thinking: new Map(),
     shells: new Map(),
     tally: new TurnTally(),
     traceId,
     failureKept: false,
+    suspended: new Map(),
+    extrasAt: undefined,
     ended: false,
   }
 }
@@ -121,111 +97,98 @@ export function openTurn(live: Live): TurnLog {
   if (live.turn !== undefined && !live.turn.ended) return live.turn
   const turn = newTurn(live.run?.id, live.run?.traceId)
   live.turn = turn
-  const { answer, startedAt } = turn
-  say(live, turn, { type: 'turn', message: structuredClone(answer), startedAt })
+  say(live, turn, { type: 'turn', message: answerOf(turn), startedAt: turn.startedAt })
   return turn
 }
 
-/** The turn an event outside every turn belongs to, such as a title after a restart. */
-function lastTurn(live: Live): TurnLog {
-  live.turn ??= { ...newTurn(undefined), ended: true }
-  return live.turn
-}
-
-/** An event that changes the answer: folded into it as the screen folds it, then said. */
-export function tell(live: Live, turn: TurnLog, event: PartEvent): void {
-  turn.answer.parts = applyEvent(turn.answer.parts, event)
+/** An event told as the stream says it, folded into the turn's answer as the screen folds it. */
+function tell(live: Live, turn: TurnLog, event: ConversationEvent): void {
+  if (event.type === 'message_start') {
+    turn.steps.push({ id: event.message.id, parts: event.message.parts })
+    turn.model = event.message.model ?? turn.model
+  } else if (event.type === 'message_update') {
+    const step = turn.steps.find((each) => each.id === event.id)
+    if (step !== undefined) step.parts = applyUpdate(step.parts, event.event)
+  }
   say(live, turn, event)
 }
 
-/** The machine's step, told as the part that says what the turn waits for; a replaced machine and a restart last. */
+/** What names a part of ours among the others, so a later one replaces it; none for the rest. */
+function extraKey(part: MastraPart): string | undefined {
+  if (part.type === 'data-conexus-machine') {
+    const { data } = part
+    const lasting =
+      typeof data === 'object' && data !== null && 'phase' in data && data.phase === 'replaced'
+    return lasting ? undefined : 'machine'
+  }
+  if (part.type === 'data-conexus-version') return 'version'
+  if (part.type === THOUGHT_PART) {
+    const { data } = part
+    return `thought:${typeof data === 'object' && data !== null && 'id' in data ? String(data.id) : ''}`
+  }
+  return undefined
+}
+
+/** A part of ours, told as a part of the message the turn names: it takes the place of the one it replaces. */
+function tellExtra(live: Live, turn: TurnLog, part: MastraPart): void {
+  const key = extraKey(part)
+  const at = key === undefined ? -1 : turn.extras.findIndex((each) => extraKey(each) === key)
+  const index = at === -1 ? turn.extras.length : at
+  turn.extras = applyUpdate(turn.extras, { type: 'part', index, part })
+  say(live, turn, {
+    type: 'message_update',
+    id: turn.answerId,
+    event: { type: 'part', index, part },
+  })
+}
+
+/** The machine's step, told as the part that says what the turn waits for; a replaced machine lasts. */
 export function tellMachine(live: Live, phase: MachinePhase): void {
   const turn = openTurn(live)
-  const part: MessagePart = { type: 'machine', phase }
-  tell(live, turn, { type: 'part', part })
-  if (machinePhaseLasts(phase)) void keepPart(live, turn, part)
+  tellExtra(live, turn, { type: 'data-conexus-machine', data: { phase } })
+  if (phase === 'replaced') void saveExtras(live, turn)
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
 function settleThinking(live: Live, turn: TurnLog): void {
-  const { thinking } = turn
-  if (thinking === undefined) return
-  turn.thinking = undefined
-  const seconds = Math.ceil((Date.now() - thinking.since) / 1000)
-  tell(live, turn, {
-    type: 'part',
-    part: { type: 'reasoning', id: thinking.id, state: 'completed', seconds },
-  })
-  void keptInList(live, {
-    key: THINKING_KEY,
-    list: z.array(ThoughtTime),
-    item: { id: thinking.id, seconds },
-    same: (each) => each.id === thinking.id,
-  })
-}
-
-/** The tool part the turn last told for a call, which holds what its command printed so far. */
-function toldTool(turn: TurnLog, call: string): ToolPart | undefined {
-  return turn.answer.parts.find(
-    (part): part is ToolPart => part.type === 'tool' && part.id === call,
-  )
-}
-
-/**
- * A command's call says its output only once it has a result, and never its exit code: until then
- * its row keeps what the turn heard of it (`onShellEvent`).
- */
-function withHeard(turn: TurnLog, tool: ToolPart): ToolPart {
-  const told = toldTool(turn, tool.id)?.detail
-  if (tool.detail?.kind !== 'command' || told?.kind !== 'command' || tool.state !== 'running') {
-    return tool
+  for (const [id, since] of turn.thinking) {
+    const seconds = Math.ceil((Date.now() - since) / 1000)
+    tellExtra(live, turn, { type: THOUGHT_PART, data: { id, seconds } })
   }
-  return { ...tool, detail: { ...tool.detail, output: told.output, cut: told.cut } }
+  turn.thinking.clear()
 }
 
-function exitHeard(turn: TurnLog, call: string): number | null {
-  const told = toldTool(turn, call)?.detail
-  return told?.kind === 'command' ? told.exitCode : null
-}
-
-function onPart(live: Live, turn: TurnLog, part: unknown, place: Place) {
-  const read = partOf(part, place, (call) => exitHeard(turn, call))
-  const shown = read?.type === 'tool' ? withHeard(turn, read) : read
-  if (shown === undefined) return
-  if (shown.type === 'reasoning') {
-    if (turn.answer.parts.some((each) => each.type === 'reasoning' && each.id === shown.id)) return
-    settleThinking(live, turn)
-    turn.thinking = { id: shown.id, since: Date.now() }
-    tell(live, turn, { type: 'part', part: { ...shown, state: 'running' } })
-    return
-  }
-  settleThinking(live, turn)
-  // The text arrives by its deltas; a question or a plan, by the suspension that asks it and the
-  // answer or cancellation that closes it, which know what Mastra's message does not (expiry).
-  if (shown.type === 'text' || shown.type === 'question' || shown.type === 'plan') return
-  tell(live, turn, { type: 'part', part: shown })
-  if (shown.type === 'tool' && shown.state === 'error') turn.tally.failed(shown.kind)
-  const file = shown.type === 'tool' ? fileOf(shown) : undefined
-  if (file !== undefined) tell(live, turn, { type: 'part', part: file })
+/** A reasoning begins at its first delta or part; the key is the one a read gives it: its message and place. */
+function startThinking(turn: TurnLog, messageId: MessageId, index: number): void {
+  const key = `${messageId}.${index}`
+  if (!turn.thinking.has(key)) turn.thinking.set(key, Date.now())
 }
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
   if (event.type === 'message_start' && event.message.role === 'assistant') {
     const turn = openTurn(live)
-    turn.answer.model = modelOf(event.message) ?? turn.answer.model
-    const messageId = MessageId.parse(event.message.id)
     for (const [index, part] of event.message.content.parts.entries()) {
-      onPart(live, turn, part, { messageId, index })
+      if (part.type === 'reasoning') startThinking(turn, MessageId.parse(event.message.id), index)
     }
-  } else if (event.type === 'message_update' && live.turn !== undefined && !live.turn.ended) {
-    const turn = live.turn
-    if (event.event.type === 'text-delta') {
-      settleThinking(live, turn)
-      tell(live, turn, { type: 'text', delta: event.event.delta })
-    } else if (event.event.type === 'part') {
-      const messageId = MessageId.parse(event.id)
-      onPart(live, turn, event.event.part, { messageId, index: event.event.index })
-    }
+    const wired = wireEvent(event)
+    if (wired !== undefined) tell(live, turn, wired)
+    turn.model ??= modelOf(event.message)
+    return
+  }
+  if (event.type !== 'message_update' || live.turn === undefined || live.turn.ended) return
+  const turn = live.turn
+  const { event: update } = event
+  if (update.type === 'reasoning-delta')
+    startThinking(turn, MessageId.parse(event.id), update.index)
+  else settleThinking(live, turn)
+  if (update.type === 'part' && update.part.type === 'reasoning') {
+    startThinking(turn, MessageId.parse(event.id), update.index)
+  }
+  const wired = wireEvent(event)
+  if (wired !== undefined) tell(live, turn, wired)
+  if (update.type === 'part' && update.part.type === 'tool-invocation') {
+    const { toolInvocation: call } = update.part
+    if (call.state === 'output-error') turn.tally.failed(call.toolName)
   }
 }
 
@@ -243,13 +206,9 @@ export function endRun(live: Live, reason: Ending['reason'], parked?: string): v
   run?.ended()
 }
 
-/** The controller's events as the person's: text, thinking, tools, notices, the title, the end. */
+/** The controller's events as the stream says them (`wireEvent`), and what the turn keeps of them. */
 export function onEvent(live: Live, event: AgentControllerEvent): void {
-  if (event.type === 'info') {
-    tell(live, openTurn(live), { type: 'notice', text: event.message })
-  } else if (event.type === 'thread_title_updated') {
-    say(live, lastTurn(live), { type: 'title', title: event.title })
-  } else if (event.type === 'agent_start') {
+  if (event.type === 'agent_start') {
     openTurn(live)
     // The run a message started carries the turn of the one it steered.
     const runId = live.session.run.getRunId()
@@ -258,25 +217,35 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
   } else if (event.type === 'agent_end') {
     // A run parked on a question or a plan is not over: its turn goes on once it is answered.
     if (event.reason !== 'suspended') endRun(live, event.reason)
+  } else if (event.type === 'info') {
+    // The notice the model queue says live (`notify`); Mastra saves the same one with the answer, so ours is not kept.
+    tellExtra(live, openTurn(live), { type: NOTICE_PART, data: { text: event.message } })
   } else if (event.type === 'usage_update') {
     live.turn?.tally.step(event.usage.totalTokens)
   } else if (event.type === 'shell_output' || event.type === 'command_exit') {
     onShellEvent(live, event)
-  } else if (event.type === 'tool_input_start' || event.type === 'message_end') {
-    // A text part ends where a tool call or the message begins to end: what waits of it is said.
-    if (live.turn !== undefined && !live.turn.ended) flushText(live, live.turn)
-  } else onMessageEvent(live, event)
+  } else if (event.type === 'message_start' || event.type === 'message_update') {
+    onMessageEvent(live, event)
+  } else if (live.turn !== undefined && !live.turn.ended) {
+    const wired = wireEvent(event)
+    if (wired !== undefined) tell(live, live.turn, wired)
+    if (wired?.type === 'tool_suspended') {
+      const { toolCallId, suspendPayload, cuts } = wired
+      live.turn.suspended.set(
+        toolCallId,
+        cuts === undefined ? { suspendPayload } : { suspendPayload, cuts },
+      )
+    }
+  }
 }
 
-/** A command's output, kept to its last lines in its row: said while it runs, and once more when it exits. */
+/** A command's output, kept to its last lines: said while it runs, and once more when it exits. */
 function onShellEvent(
   live: Live,
   event: Extract<AgentControllerEvent, { type: 'shell_output' | 'command_exit' }>,
 ): void {
   const turn = live.turn
   if (turn === undefined || turn.ended) return
-  const tool = toldTool(turn, event.toolCallId)
-  if (tool?.detail?.kind !== 'command') return
   const tail = turn.shells.get(event.toolCallId) ?? new ShellTail()
   turn.shells.set(event.toolCallId, tail)
   if (event.type === 'shell_output') tail.add(event.output)
@@ -284,9 +253,14 @@ function onShellEvent(
   if (exited) turn.shells.delete(event.toolCallId)
   const heard = exited ? tail.tail() : tail.running()
   if (heard === undefined) return
-  const exitCode = exited ? event.exitCode : null
-  const detail = { ...tool.detail, ...heard, exitCode }
-  tell(live, turn, { type: 'part', part: { ...tool, detail } })
+  const stream = event.type === 'shell_output' ? event.stream : 'stdout'
+  tell(
+    live,
+    turn,
+    wireShell({ toolCallId: ToolCallId.parse(event.toolCallId), tail: heard, stream }),
+  )
+  const wired = wireEvent(event)
+  if (exited && wired !== undefined) tell(live, turn, wired)
 }
 
 type Ending = {
@@ -302,10 +276,21 @@ function failureOf(ending: Ending): TurnFailureCode | undefined {
   return ending.turn?.outcome === 'exhausted' ? 'MODEL_NO_ACCOUNT' : 'MODEL_CALL_FAILED'
 }
 
+/** The turn's failure, told and kept once. */
+function tellFailure(live: Live, turn: TurnLog, code: TurnFailureCode): void {
+  if (turn.failureKept) return
+  turn.failureKept = true
+  tellExtra(live, turn, { type: 'data-conexus-failure', data: { code } })
+}
+
+function tellVersion(live: Live, turn: TurnLog, saved: SavedVersion): void {
+  tellExtra(live, turn, { type: 'data-conexus-version', data: saved })
+}
+
 /**
- * Keeps a failed turn's failure, and waits for the thinking times kept before it, before Mastra
- * says its run ended, so the read a screen makes at the end finds them with the turn's messages,
- * which Mastra saves after the end.
+ * Keeps a turn's version and failure, and waits for the thinking times, before Mastra says its run
+ * ended, so the read a screen makes at the end finds them with the turn's messages, which Mastra
+ * saves after the end.
  */
 export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Promise<void> {
   if (reason === 'suspended') return
@@ -324,26 +309,24 @@ export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Prom
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'failed') {
     live.saveFailure = outcome.code
   }
+  const turn = live.turn
+  if (turn !== undefined) settleThinking(live, turn)
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'saved') {
-    live.saved = outcome.version
-    if (live.turn !== undefined) await keepPart(live, live.turn, versionPart(outcome.version))
+    if (turn !== undefined) tellVersion(live, turn, outcome.version)
   }
   const code = live.saveFailure ?? failureOf({ reason, turn: run?.turn })
-  if (code !== undefined && live.turn !== undefined && (run !== undefined || live.saveFailure)) {
-    await keepFailure(live, live.turn, code)
+  if (code !== undefined && turn !== undefined && (run !== undefined || live.saveFailure)) {
+    tellFailure(live, turn, code)
   }
   // A write of nothing, queued last, settles once every write before it has.
-  await queued(live, () => Promise.resolve())
-}
-
-function versionPart(saved: SavedVersion): MessagePart {
-  return { type: 'version', ...saved }
+  if (turn !== undefined) await saveExtras(live, turn)
+  await settled(live)
 }
 
 /**
  * The end of a turn, said once: a failed one first says why, as a part, by how the queue ended
- * its run's turn (security S41). A failure not kept before the end, as a run whose message did not know it yet, is kept now;
- * one that could not be kept is logged, and the turn still ends.
+ * its run's turn (security S41). A failure not told before the end, as a run whose message did not
+ * know it yet, is told and kept now; one that could not be kept is logged, and the turn still ends.
  */
 export function endTurn(live: Live, ending: Ending): void {
   const turn = openTurn(live)
@@ -353,13 +336,9 @@ export function endTurn(live: Live, ending: Ending): void {
     ending.reason === 'error' || ending.reason === 'aborted' ? ending.reason : 'complete'
   const code = live.saveFailure ?? failureOf(ending)
   live.saveFailure = undefined
-  if (live.saved !== undefined) {
-    tell(live, turn, { type: 'part', part: versionPart(live.saved) })
-    live.saved = undefined
-  }
   if (code !== undefined) {
-    tell(live, turn, { type: 'part', part: { type: 'failure', code } })
-    void keepFailure(live, turn, code)
+    tellFailure(live, turn, code)
+    void saveExtras(live, turn)
   }
   const { conversationId, owner } = live
   const line = turnLine({
