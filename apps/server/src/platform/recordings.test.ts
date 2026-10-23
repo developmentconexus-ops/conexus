@@ -4,13 +4,14 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { LEAK, RECORDINGS, Recording } from './test-recordings.ts'
 
-// Claude's four cases and Gemini's interruption, as `record-provider.ts` names them.
+// Claude's four cases and Gemini's interruption and reasoning, as `record-provider.ts` names them.
 const EXPECTED = [
   'anthropic-abort',
   'anthropic-cited',
   'anthropic-thinking',
   'anthropic-tool-error',
   'google-abort',
+  'google-thinking',
 ]
 
 test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabeçalho, token ou e-mail (T24, S40)', () => {

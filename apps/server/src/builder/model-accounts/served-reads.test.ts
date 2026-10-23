@@ -87,12 +87,12 @@ test('o Google lê a lista do CLIProxy ao ligar e na partida: oferece cada Gemin
   assert.deepEqual(google.models, [
     { id: 'google/gemini-3.1-flash-lite', efforts: ['low', 'medium', 'high'] },
     { id: 'google/gemini-3.5-flash-lite', efforts: ['low', 'medium', 'high'] },
-    { id: 'google/gemini-3.8-flash-high', efforts: ['high'] },
+    { id: 'google/gemini-3.8-flash-high', efforts: ['off', 'low', 'medium', 'high'] },
     { id: 'google/gemini-3-flash', efforts: ['off'] },
   ])
   assert.deepEqual((await read()).defaults.start, {
     model: 'google/gemini-3.8-flash-high',
-    effort: 'high',
+    effort: 'off',
     from: 'starter',
     account: 'Google',
   })
