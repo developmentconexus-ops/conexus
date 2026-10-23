@@ -81,12 +81,56 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
 }
 
 /**
+ * The Builder's memory: its title and its observation through the turn's account, failing soft,
+ * in Mastra's own database, with Mastra Code's idle activation, observer context and titles
+ * (`agents/memory.ts:355-417`).
+ */
+function builderMemory(
+  storage: ReturnType<typeof createMastraStorage>,
+  queue: QueueDeps,
+  modelSettings: { timeout: typeof MODEL_TIMEOUT },
+): Memory {
+  const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
+  return new Memory({
+    storage,
+    options: {
+      generateTitle: { model: accountModel(queue, 'title'), instructions: TITLE_INSTRUCTIONS },
+      observationalMemory: {
+        enabled: true,
+        scope: 'thread',
+        retrieval: true,
+        activateAfterIdle: { default: 'auto', anthropic: '1h' },
+        activateOnProviderChange: true,
+        temporalMarkers: true,
+        observation: {
+          ...failSoft,
+          model: accountModel(queue, 'observer'),
+          messageTokens: 30_000,
+          bufferTokens: 1 / 5,
+          bufferActivation: 2000,
+          blockAfter: 2,
+          previousObserverTokens: 1000,
+          threadTitle: true,
+          instruction: OBSERVER_INSTRUCTION,
+        },
+        reflection: {
+          ...failSoft,
+          model: accountModel(queue, 'reflection'),
+          observationTokens: 40_000,
+          bufferActivation: 1 / 2,
+          blockAfter: 1.1,
+        },
+      },
+    },
+  })
+}
+
+/**
  * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
  * from the session and given its account by the queue's processors, its memory, its title and its
  * observation through the same account, in Mastra's own database. It is Mastra Code's agent
  * (`sdk/src/index.ts:1216-1223`): no workspace of its own, since the controller lends the turn's
- * machine, the task list's signal with `memory`, and Mastra Code's idle activation, observer
- * context and titles (`agents/memory.ts:355-417`).
+ * machine, and the task list's signal with `memory`.
  */
 export function createBuilder(deps: {
   pool: MastraPool
@@ -98,39 +142,7 @@ export function createBuilder(deps: {
   const storage = createMastraStorage(deps.pool)
   const check = checkTool(deps.runs)
   const modelSettings = { timeout: MODEL_TIMEOUT }
-  const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
-  const memory = new Memory({
-    storage,
-    options: {
-      generateTitle: { model: accountModel(deps.queue, 'title'), instructions: TITLE_INSTRUCTIONS },
-      observationalMemory: {
-        enabled: true,
-        scope: 'thread',
-        retrieval: true,
-        activateAfterIdle: { default: 'auto', anthropic: '1h' },
-        activateOnProviderChange: true,
-        temporalMarkers: true,
-        observation: {
-          ...failSoft,
-          model: accountModel(deps.queue, 'observer'),
-          messageTokens: 30_000,
-          bufferTokens: 1 / 5,
-          bufferActivation: 2000,
-          blockAfter: 2,
-          previousObserverTokens: 1000,
-          threadTitle: true,
-          instruction: OBSERVER_INSTRUCTION,
-        },
-        reflection: {
-          ...failSoft,
-          model: accountModel(deps.queue, 'reflection'),
-          observationTokens: 40_000,
-          bufferActivation: 1 / 2,
-          blockAfter: 1.1,
-        },
-      },
-    },
-  })
+  const memory = builderMemory(storage, deps.queue, modelSettings)
   const agent = createCodingAgent({
     id: BUILDER_ID,
     name: 'Builder',
