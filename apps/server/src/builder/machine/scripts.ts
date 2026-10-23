@@ -10,6 +10,10 @@ export function outFile(tmp: string): string {
   return `${tmp}/conexus-out.bundle`
 }
 
+/** The folder of the plans, in the app folder: they travel with the app but make no version on their own. */
+export const PLAN_DIR = '.conexus/plans'
+const PLANS_OUT = `':(exclude)${PLAN_DIR}'`
+
 const CANDIDATE_REF = 'refs/conexus/candidate'
 
 export function quoted(value: string): string {
@@ -38,7 +42,8 @@ export function keepScript(workdir: string): string {
 
 /**
  * The whole tree as `tree`, whatever `HEAD` is (the Builder may have committed or switched branch),
- * in an index of its own; prints UNCHANGED and ends when it is `base`'s. `node_modules` is left out.
+ * in an index of its own; prints UNCHANGED and ends when it is `base`'s apart from the plans.
+ * `node_modules` is left out.
  */
 function treeOf(workdir: string, base: string, index: string): string[] {
   return [
@@ -49,7 +54,7 @@ function treeOf(workdir: string, base: string, index: string): string[] {
     `git read-tree ${base}`,
     `git add --all -- . ':(exclude,glob)**/node_modules/**'`,
     'tree=$(git write-tree)',
-    `if [ "$tree" = "$(git rev-parse ${base}^{tree})" ]; then echo UNCHANGED; exit 0; fi`,
+    `if git diff-tree -r --quiet ${base} "$tree" -- . ${PLANS_OUT}; then echo UNCHANGED; exit 0; fi`,
   ]
 }
 
@@ -70,7 +75,7 @@ export function collectScript(workdir: string, tmp: string, base: Sha): string {
   return [
     ...treeOf(workdir, base, 'conexus-index'),
     `echo "files=$(git ls-tree -r --name-only "$tree" | wc -l)"`,
-    `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" | wc -l)"`,
+    `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" -- . ${PLANS_OUT} | wc -l)"`,
     `commit=$(git ${identity} commit-tree "$tree" -p ${base} -m 'Conexus Builder')`,
     `git update-ref ${CANDIDATE_REF} "$commit"`,
     `rm -f ${quoted(out)}`,

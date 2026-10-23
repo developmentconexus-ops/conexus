@@ -1,6 +1,6 @@
 ---
 name: conexus-plan-change
-description: Plans a change to a working app with the person before any code. Traces the request through the app as it is, finds what depends on it and which saved data is at risk, designs the change, interviews the person on what the change leaves open, writes the plan to `.conexus/plan.md` and gets approval with `submit_plan`. Use for any change to an existing app, one that already has screens of its own even if it is unfinished or broken, including a new feature inside it, when the request leaves open what the app must do, even a small one such as adding a field, a status or a kind of record.
+description: Plans a change to a working app with the person before any code. Traces the request through the app as it is, finds what depends on it and which saved data is at risk, designs the change, interviews the person on what the change leaves open, writes the plan to its own file in `.conexus/plans/` and gets approval with `submit_plan`. Use for any change to an existing app, one that already has screens of its own even if it is unfinished or broken, including a new feature inside it, when the request leaves open what the app must do, even a small one such as adding a field, a status or a kind of record.
 ---
 
 # Planning a change
@@ -76,12 +76,12 @@ Done when each of the person's decisions is answered, handed to you and recorded
 
 ## 5. Write the plan
 
-Read `references/plan-template.md` and write `.conexus/plan.md` in its shape, sized to the change, replacing any earlier plan (read the file first: the workspace refuses to overwrite one you have not read), with no code in it.
+Read `references/plan-template.md` and write the plan in its shape, sized to the change, to `.conexus/plans/<name>.md`, a short name for this change in lowercase with hyphens, with no code in it. Each change has a plan of its own: never write over a plan the person approved.
 
 Done when what changes, what stays the same, what happens to saved data and how each part is checked are in the plan, each assumption and suggestion is marked, and the person's part has no technical word.
 
 ## 6. Approval
 
-Show the person's part of the plan in your message, in their words, with the suggestions marked. Then call `submit_plan` with `.conexus/plan.md`. The person sees the plan in a card, with "Aprovar e construir" and "Pedir ajustes". Change nothing in the app before they approve. When they ask for changes, edit the parts of the plan their feedback touches, show the person's part again, and call `submit_plan` again; editing the file alone does not resubmit it.
+Show the person's part of the plan in your message, in their words, with the suggestions marked. Then call `submit_plan` with that file. The person sees the plan in a card, with "Aprovar e construir" and "Pedir ajustes". Change nothing in the app before they approve. When they ask for changes, edit the parts of the plan their feedback touches, show the person's part again, and call `submit_plan` again; editing the file alone does not resubmit it.
 
 Done when the person approved. Then build from the plan.

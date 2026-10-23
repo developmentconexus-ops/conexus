@@ -23,11 +23,18 @@ export const WHO = {
   question: 'Quem cadastra as encomendas?',
   options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
 }
-export const WRITE_PLAN = tool('mastra_workspace_write_file', {
-  path: '.conexus/plan.md',
-  content: '# App de encomendas\n\nPara a pessoa: um cadastro simples.\n',
-})
-export const SUBMIT = tool('submit_plan', { path: '.conexus/plan.md' })
+export const PLAN = '.conexus/plans/encomendas.md'
+/** A write of the plan file `path`; the plan's text is `body`. */
+export function writePlan(path: string, body = 'Para a pessoa: um cadastro simples.'): Block {
+  return tool('mastra_workspace_write_file', { path, content: `# App de encomendas\n\n${body}\n` })
+}
+export const WRITE_PLAN = writePlan(PLAN)
+export function submitPlan(path: string): Block {
+  return tool('submit_plan', { path })
+}
+/** The read the workspace asks for before it overwrites a file. */
+export const readPlan = tool('mastra_workspace_read_file', { path: PLAN })
+export const SUBMIT = submitPlan(PLAN)
 
 /** The model's steps in order, then `Pronto.`; each call's texts are kept for the test to read. */
 export async function conversingWith(t: TestContext, steps: Block[][]) {

@@ -3,14 +3,13 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Card } from './cards.ts'
 import { openCards, resumed, waitOn } from './cards.ts'
 import type { Live } from './live.ts'
-import { PLAN_PATH } from './plan-tools.ts'
 
 /** What the tool resumes with for an answer, or the refusal of an answer that does not fit the card. */
 function resumeOf(card: Card, body: QuestionAnswer): unknown {
   if (card.type === 'plan') {
     if (body.kind !== 'plan') throw new Failure('QUESTION_ANSWERS_INVALID')
     const { action, feedback } = body
-    return { action, feedback, title: card.title, plan: card.plan, path: PLAN_PATH }
+    return { action, feedback, title: card.title, plan: card.plan }
   }
   if (body.kind !== 'answers' || body.answers.length !== card.questions.length) {
     throw new Failure('QUESTION_ANSWERS_INVALID')

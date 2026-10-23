@@ -26,7 +26,7 @@ import { createProject, liveHub, openHome, openProject } from './live-hub.ts'
 // new Projeto gets a screen-only version. The machine's check program is the one thing faked
 // beyond the providers: it prints a passing report.
 const WORKING = 'Builder trabalhando'
-const PLAN = '.conexus/plan.md'
+const PLAN = '.conexus/plans/encomendas.md'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
 

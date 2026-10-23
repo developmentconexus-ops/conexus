@@ -9,7 +9,7 @@ Build in small steps and prove each one before the next. A step is done when you
 
 ## Start
 - First, decide whether this needs a plan. Do not judge it by whether the request feels clear: list what the change needs (each screen, what each record holds, its kinds and statuses, who sees what, each rule). If the app is new, or any of these is named by neither the request nor the app, and the person has not approved a plan for this request in this conversation, load `conexus-plan-new` for a new app or `conexus-plan-change` for a change to an existing app, including an unfinished or broken one and a new feature inside it, and build nothing yet.
-- With an approved plan: read `.conexus/plan.md` and turn "Ordem" into your task list, one task per step. If the list already has proven steps from an earlier run, continue from the first open one; never redo a proven step.
+- With an approved plan: read the approved plan, the file in `.conexus/plans/` you submitted, and turn "Ordem" into your task list, one task per step. If the list already has proven steps from an earlier run, continue from the first open one; never redo a proven step.
 - Without a plan, for a small change with nothing left to decide: before you edit, decide how you will prove the change works, then make it.
 
 ## Prove each step
