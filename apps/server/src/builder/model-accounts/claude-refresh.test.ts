@@ -8,11 +8,11 @@ import {
   beside,
   conversing,
   KEY,
-  noticesOf,
   sent,
   started,
   streamOf,
 } from '../conversation/test-conversation.ts'
+import { failuresOf, noticesOf } from '../conversation/test-parts.ts'
 
 const FIRST = { access: 'sk-ant-oat01-first-access', refresh: 'sk-ant-ort01-first-refresh' }
 const SECOND = { access: 'sk-ant-oat01-second-access', refresh: 'sk-ant-ort01-second-refresh' }
@@ -133,10 +133,8 @@ test('renovação recusada e nenhuma outra conta: o turno acaba dizendo que a as
   )
   const { events } = await asked(t, f.where)
   assert.deepEqual(noticesOf(events), ['Claude foi recusada. Ligue de novo.'])
-  assert.deepEqual(events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'paused' })
 })
 

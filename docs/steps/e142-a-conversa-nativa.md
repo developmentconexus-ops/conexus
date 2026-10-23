@@ -39,7 +39,7 @@ fila de defeitos (L4).
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
 | U1 | V39, 0050 e 0055 emendadas | `docs/` | design | — |
-| U2 | O fio do Mastra, com tarefas e memória | `builder/conversation/{wire,live,history,turn-log,parts,cards,check-row,shell}.ts`, `hub-api/` | segurança | U1 |
+| U2 | Um registro da conversa (a 14.0) e o fio do Mastra, com tarefas e memória | `builder/conversation/{wire,live,history,turn-log,sessions,parts,cards,check-row,shell,kept,catch-up}.ts`, `builder/runs/`, `hub-api/` | segurança | U1 |
 | U3 | A transcrição, o painel de tarefas e os anéis | `apps/web/src/builder/conversation/` | web | U2, U4 |
 | U4 | O motor: Coding, Fim, Memória, Trava, Registro, LSP | `builder/conversation/{builder,processors,turn-line}.ts`, `builder/machine/machines.ts` | testes | U1 |
 | U5 | Níveis e o raciocínio do Gemini | `builder/model-accounts/`, `apps/web/src/builder/model-accounts/`, `platform/recordings/` | testes | U1 |
@@ -49,13 +49,13 @@ fila de defeitos (L4).
 | U9 | Árvore na aba Código | `apps/web/src/builder/source/` | web | — |
 | U10 | Dublês e percurso | `tests/e2e/`, `platform/test-*` | testes | as em curso |
 
-`builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. Começa com a 14.0 em
-`main` (L1: a U2 usa as partes `data-conexus-*` dela). Em paralelo: U2, U4, U5, U8, U9 (arquivos
+`builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. A 14.0 é a primeira parte da U2
+("C"; "1. Sim … 2.B"). Em paralelo: U2, U4, U5, U8, U9 (arquivos
 distintos). U3 depois de U2 e U4; U10 por último; QA antes das
 revisões (L9). Pacote novo, só se a prova da U4 passar: `typescript-language-server` (L16).
 
-**Orçamento de código alterado** (apagado conta; sem testes nem texto de skill). U2 750; U3 950;
-U4 150; U5 150; U8 80; U9 150; U10 60. Total **2.290**, teto 4.000 (L2); U6 350 e U7 450 voltam com a
+**Orçamento de código alterado** (apagado conta; sem testes nem texto de skill). U2 1.600; U3 950;
+U4 150; U5 150; U8 80; U9 150; U10 60. Total **3.140**, teto 4.000 (L2); U6 350 e U7 450 voltam com a
 emenda.
 
 ## Os critérios de aceite
@@ -85,6 +85,9 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 19 | U5 | Gemini é um modelo só, com **Raciocínio**; a escolha chega ao CLIProxy pelo pedido provado no 20, também para o padrão; Claude segue `summarized` | `thinking.test.ts`, `served-recordings.test.ts` |
 | 20 | U5 | **Ao vivo**, firstmate: uma chamada pela conta Google do fundador devolve `reasoning_content` e diz se o nível vai no nome ou em `reasoning_effort`; a gravação entra em `platform/recordings/`; falha: 19 e a parte Gemini do 28 param, a etapa volta a ele | registro da U5 |
 | 27 | U8 | Cada plano em `.conexus/plans/<nome>.md`; `submit_plan` fora dessa pasta, recusado; o plano aprovado não é sobrescrito (#268); turno que só mudou planos, parado ou não: sem versão, sem conferência | `conversation-questions.test.ts`, `machine.test.ts` |
+| 30 | U2 | A pergunta é gravada antes do turno e lida uma vez; versão, falha, máquina e reinício voltam como `data-conexus-*`, sem ir ao modelo; a leitura só lê mensagens | `conversation-recorded.test.ts` |
+| 31 | U2 | O stream abre com o turno vivo até ali; depois de um reinício, o aviso e a versão | `conversation-stream.test.ts` |
+| 32 | U2 | Saem `run_event`, `catch-up.ts`, `kept.ts` e as listas | remoção (CI) |
 | 28 | U10 | Percurso no Chromium nas sequências da exportação do Mastra, só das unidades em curso: cada linha abre; recarregar dá o mesmo | `tests/e2e/builder-native.test.ts` |
 | 29 | U10 | QA (T25) com o conjunto fechado e o Gemini; o roteiro pelo fundador (L17) | `conexus-qa`, fundador |
 
@@ -191,12 +194,13 @@ Mastra's own messages and events, cut". 0055: `server/migrations/`, `.conexus/pl
 
 ## U2 O fio do Mastra
 
-**Raio.** `hub-api/{conversations,questions,index}.ts`: muda; `mastra-parts.ts`, `wire-limits.ts`: cria;
+**Raio.** `kept.ts`, `catch-up.ts`, `run_event` (`builder/runs/`, com migração): apaga; `sessions.ts`: muda. `hub-api/{conversations,questions,index}.ts`: muda; `mastra-parts.ts`, `wire-limits.ts`: cria;
 `tool-detail.ts`: apaga. `builder/conversation/wire.ts`: cria; `parts.ts`, `check-row.ts`: apaga; `cards.ts`,
 `shell.ts`: perdem a tradução; `live.ts`, `history.ts`, `turn-log.ts`: muda. Chama: web, OpenAPI,
 `sessions.ts`, `routes.ts`.
 
 **Contratos.**
+- **Um registro (14.0)**: a pergunta vai por `memory.saveMessages` antes do sinal; versão, falha, máquina e reinício, uma mensagem `data-conexus-*` após o fim; o stream abre com a foto do turno vivo.
 - `MastraPart`: união por `type` com os nomes do Mastra (C21): `text`, `reasoning {reasoning, details}`,
   `tool-invocation {toolInvocation: {state, toolCallId, toolName, args, result?}}`, `data-${string}`;
   `args`, `result`, `data` são `unknown`; cada variante ganha só `cuts?: string[]`. O servidor prova em
@@ -216,7 +220,7 @@ Mastra's own messages and events, cut". 0055: `server/migrations/`, `.conexus/pl
 
 **Leitura.** skill `mastra`; `agent-controller/{types,wire,session}.d.ts`. **Ordem.** Apagar `parts.ts`, `ToolDetail` e os testes de "não abre" (`conversation-parts.test.ts:65,92`,
 `tool-row.test.tsx:94`); depois o contrato, `wire.ts`, `live.ts`, `history.ts`, OpenAPI.
-Regras: C21, C23, C26, C27, C75, T5, T24. **Prova.** 2 a 7.
+Regras: C21, C23, C26, C27, C75, D25, T5, T24. **Prova.** 2 a 7, 30 a 32.
 
 ## U3 A transcrição, o painel e os anéis
 
@@ -273,13 +277,7 @@ variantes viram um modelo com os níveis que o CLIProxy serve. Regras: T14, T24,
 `starter/src/components/`, `packages/app/skills/{conexus-app,conexus-data,conexus-build}/`,
 `packages/app/src/check/manifest.ts`, `packages/app/src/skills.test.ts`: muda ou cria.
 
-**Contratos.** `api.gen.ts` (em `check/`, da U7) reexporta `type *` e os esquemas de `shared/operations`; as skills e
-referências importam só dele. `formatDate` lê data sem hora como calendário. `money`: codec Zod
-de texto decimal, `parseMoney` pt-BR, `MoneyInput`. `failureOf(error: unknown)` no starter; a
-referência sai. Referências: criação com histórico em CTE (o teste deixa de proibi-lo,
-`skills.test.ts:114-119`), `CHECK` de situação, índice do histórico, transição no handler (OS
-`conexus-server/SKILL.md:56-58`, adaptada). `conexus-build`: ler a referência do padrão no passo que
-escreve. O parágrafo de migrações segue o contrato da U7. **Nada novo no prompt** (auditoria, RC4).
+Contratos: `917b5e4`, na emenda.
 Regras: D28, W21, W22, L23. **Prova.** 21 a 24.
 
 ## U7 Arquivos de migração e Fuso (em espera)
@@ -288,10 +286,8 @@ Regras: D28, W21, W22, L23. **Prova.** 21 a 24.
 `builder/runs/runs.ts` (`Runs.check` passa as migrações enviadas), `hub/apps/send.ts` (prefixo),
 `platform/company-postgres.ts`: muda.
 
-**Contratos.** `Manifest.migrations` vem de `server/migrations/NNNN_nome.sql`, lidos como arquivos; a
-conferência recebe do servidor as migrações já enviadas e recusa mudança com `MIGRATION_CHANGED` (C48);
-o Hub, no envio, aplica só um prefixo exato. `ALTER ROLE <app> SET TimeZone = 'America/Sao_Paulo'`
-ao lado de `statement_timeout` (`:145`). Apps guardados com migrações em `handlers.ts` seguem válidos (0019). Regras: D11, D28, C48, S2. **Prova.** 25, 26.
+Contratos: `917b5e4`, na emenda.
+Regras: D11, D28, C48, S2. **Prova.** 25, 26.
 
 ## U8 Plano A e "2 a"
 

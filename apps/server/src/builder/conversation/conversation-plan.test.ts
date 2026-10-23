@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 import { answeredOf } from './test-conversation.ts'
 import {
   answerUrl,
   conversingWith,
+  invocations,
   PLAN,
   readPlan,
   SUBMIT,
@@ -15,7 +17,9 @@ import {
   writePlan,
 } from './test-questions.ts'
 
-test('submit_plan: fora de `.conexus/plans/` é recusado; no caminho chega a parte `plan`; Pedir ajustes devolve o motivo; Aprovar continua', async (t) => {
+const Planned = z.object({ title: z.string(), plan: z.string() })
+
+test('submit_plan: fora de `.conexus/plans/` é recusado; no caminho chega o `tool_suspended` do plano; Pedir ajustes devolve o motivo; Aprovar continua', async (t) => {
   const { hub, ana, url, stream, send, calls } = await conversingWith(t, [
     [submitPlan('.conexus/plan.md')],
     [WRITE_PLAN],
@@ -25,9 +29,10 @@ test('submit_plan: fora de `.conexus/plans/` é recusado; no caminho chega a par
   assert.equal((await send()).statusCode, 202)
   const first = await untilCard(stream, 'plan')
   const plan = first.card
-  assert.ok(plan.type === 'plan')
+  assert.equal(plan.toolName, 'submit_plan')
+  const suspended = Planned.parse(plan.suspendPayload)
   assert.deepEqual(
-    [plan.title, plan.plan.trim()],
+    [suspended.title, suspended.plan.trim()],
     ['App de encomendas', 'Para a pessoa: um cadastro simples.'],
   )
   assert.ok(
@@ -53,11 +58,11 @@ test('submit_plan: fora de `.conexus/plans/` é recusado; no caminho chega a par
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(
-    read.flatMap((part) => (part.type === 'plan' ? [[part.title, part.state]] : [])),
-    [
-      ['App de encomendas', 'rejected'],
-      ['App de encomendas', 'approved'],
-    ],
+    [plan.toolCallId, second.card.toolCallId].map((id) =>
+      invocations(read, id).map((each) => each.state),
+    ),
+    [['result'], ['result']],
+    'read again, both submissions are closed with the decision Mastra kept as their result',
   )
 })
 
@@ -80,8 +85,7 @@ test('submit_plan: o plano aprovado não é reescrito nem reenviado; outro plano
     202,
   )
   const second = await untilCard(stream, 'plan')
-  assert.ok(second.card.type === 'plan')
-  assert.equal(second.card.plan.trim(), 'Um calendário.')
+  assert.equal(Planned.parse(second.card.suspendPayload).plan.trim(), 'Um calendário.')
   assert.ok(
     calls.some((each) => each.texts.some((text) => text.includes(`${PLAN} is an approved plan`))),
   )
@@ -111,10 +115,7 @@ test('submit_plan: depois de uma escrita do plano que falhou, é recusado e não
     calls.some((each) => each.texts.some((text) => text.includes('the last write to'))),
     'the refusal came first',
   )
-  assert.equal(
-    card.events.filter((event) => event.type === 'part' && event.part.type === 'plan').length,
-    1,
-  )
+  assert.equal(card.events.filter((event) => event.type === 'tool_suspended').length, 1)
   assert.equal(
     (
       await post(hub, ana, answerUrl(url, card.card.toolCallId), {

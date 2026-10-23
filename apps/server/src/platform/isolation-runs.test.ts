@@ -36,7 +36,7 @@ function refusedWith(sqlstate: string) {
   }
 }
 
-test('execuções: sem filtro, a Empresa B não lê nem grava execução, evento ou máquina da A', async (t) => {
+test('execuções: sem filtro, a Empresa B não lê nem grava execução ou máquina da A', async (t) => {
   const { database, asOwner } = await createTestDatabase(t)
   await asOwner(SEED)
   function inB(statement: ReturnType<typeof sql>) {
@@ -45,11 +45,6 @@ test('execuções: sem filtro, a Empresa B não lê nem grava execução, evento
     )
   }
   assert.deepEqual((await inB(sql`select id from builder.run`)).rows, [{ id: RUN_B }])
-  await assert.rejects(
-    inB(sql`insert into builder.run_event(run_id, company_id, n, event)
-      values (${RUN_A}, ${A}, 1, '{}')`),
-    refusedWith('42501'),
-  )
   await assert.rejects(
     inB(sql`insert into builder.machine(project_id, company_id, sandbox_id, used_at)
       values ('project-a', ${A}, 'sandbox', now())`),

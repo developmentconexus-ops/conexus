@@ -9,6 +9,7 @@ import { STARTER_DIR } from '@conexus/app/starter'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { APP_FOLDER } from '../machine/public.ts'
 import { asked, conversing, sent, streamOf, title } from './test-conversation.ts'
+import { dataOf } from './test-parts.ts'
 import type { Filled } from './test-prompt.ts'
 import { expectedText, PROMPT_TABLE } from './test-prompt.ts'
 
@@ -122,10 +123,7 @@ test('depois da primeira versão: sem a linha 51, e AGENTS.md e MEMORY.md lidos 
       : undefined,
   )
   const { hub, ana, url, events } = await firstTurn(t, model)
-  assert.ok(
-    events.some((event) => event.type === 'part' && event.part.type === 'version'),
-    'the first turn saved a version',
-  )
+  assert.ok(dataOf(events, 'data-conexus-version').length > 0, 'the first turn saved a version')
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   const app = join(hub.builder.folder, 'app')
   const starter = new Set([...readdirSync(STARTER_DIR), '.git', 'AGENTS.md', '.conexus'])

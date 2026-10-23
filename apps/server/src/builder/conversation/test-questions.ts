@@ -1,10 +1,13 @@
 import type { TestContext } from 'node:test'
-import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
+import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { conversing, sent, started, streamOf } from './test-conversation.ts'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
-type Card = Extract<MessagePart, { type: 'question' | 'plan' }>
+type Suspended = Extract<ConversationEvent, { type: 'tool_suspended' }>
+
+/** The tool each kind of card is, as Mastra names the call it parks. */
+const CARD_TOOL = { question: 'ask_user', plan: 'submit_plan' } as const
 
 /** A tool call of the model's. */
 export function tool(name: string, input: object): Block {
@@ -53,27 +56,38 @@ export async function conversingWith(t: TestContext, steps: Block[][]) {
   return { ...hub, url, stream, calls, send }
 }
 
-/** The events up to the next card of `type` the turn waits on, the card last. */
-export async function untilCard(stream: Awaited<ReturnType<typeof streamOf>>, type: Card['type']) {
+/** The events up to the next card of `type` the turn waits on (its `tool_suspended`), the card last. */
+export async function untilCard(
+  stream: Awaited<ReturnType<typeof streamOf>>,
+  type: keyof typeof CARD_TOOL,
+) {
   const events: ConversationEvent[] = []
   for (;;) {
     const event = await stream.next()
     events.push(event)
-    if (event.type === 'part' && event.part.type === type && event.part.state === 'open') {
-      return { events, card: event.part }
+    if (event.type === 'tool_suspended' && event.toolName === CARD_TOOL[type]) {
+      return { events, card: event }
     }
   }
 }
 
-/** The questions and plans a turn said, in order. */
-export function cards(events: ConversationEvent[]): Card[] {
+/** The questions and plans a turn parked, in order. */
+export function cards(events: ConversationEvent[]): Suspended[] {
+  const tools: string[] = Object.values(CARD_TOOL)
   return events.flatMap((event) =>
-    event.type === 'part' && (event.part.type === 'question' || event.part.type === 'plan')
-      ? [event.part]
-      : [],
+    event.type === 'tool_suspended' && tools.includes(event.toolName) ? [event] : [],
   )
 }
 
 export function answerUrl(url: string, toolCallId: string) {
   return `${url}/questions/${toolCallId}`
+}
+
+/** The states of a call as its `tool-invocation` parts say it (`result` once answered), in order. */
+export function invocations(parts: MastraPart[], toolCallId: string) {
+  return parts.flatMap((part) =>
+    part.type === 'tool-invocation' && part.toolInvocation.toolCallId === toolCallId
+      ? [part.toolInvocation]
+      : [],
+  )
 }

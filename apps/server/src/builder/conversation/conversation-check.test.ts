@@ -4,11 +4,13 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
-import type { ConversationEvent, MessagePart } from '@conexus/hub-api'
-import { applyEvent, CompanyId, ProjectId } from '@conexus/hub-api'
+import type { MastraPart } from '@conexus/hub-api'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, messagesOf, title } from './test-conversation.ts'
+import { partsOf } from './test-parts.ts'
 import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 const WRITE = {
@@ -92,20 +94,26 @@ function turnOf(blocks: Blocks, fix?: Blocks) {
   return { asked, answer }
 }
 
-function partsOf(events: ConversationEvent[]): MessagePart[] {
-  return events.reduce<MessagePart[]>(
-    (parts, event) => (event.type === 'part' ? applyEvent(parts, event) : parts),
-    [],
-  )
-}
+const Version = z.object({
+  number: z.number(),
+  changedFiles: z.number(),
+  check: z.object({ state: z.string(), code: z.string().optional() }).optional(),
+})
 
 /** The versions the parts say, by number, files changed and what the check said; the starter's files vary. */
-function versionsOf(parts: MessagePart[]) {
-  return parts.flatMap((part) =>
-    part.type === 'version'
-      ? [{ number: part.number, changedFiles: part.changedFiles, check: part.check ?? 'none' }]
-      : [],
-  )
+function versionsOf(parts: MastraPart[]) {
+  return parts.flatMap((part) => {
+    const read = part.type === 'data-conexus-version' ? Version.safeParse(part.data) : undefined
+    return read?.success
+      ? [
+          {
+            number: read.data.number,
+            changedFiles: read.data.changedFiles,
+            check: read.data.check ?? 'none',
+          },
+        ]
+      : []
+  })
 }
 
 /** The reports the model read in one call: a tool's result, or the words of a failed end of the turn. */
@@ -211,25 +219,34 @@ test('Parar antes do fim do turno: a versão fica sem veredito, nem a conferênc
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })
 
-/** The `conexus_check` rows of a turn. */
-function checkRows(events: ConversationEvent[]) {
-  return partsOf(events).flatMap((part) =>
-    part.type === 'tool' && part.kind === 'check' ? [part] : [],
-  )
+/** The `conexus_check` calls of a turn, each as its last `tool-invocation` part says it. */
+function checkCalls(events: Parameters<typeof partsOf>[0]) {
+  const last = new Map<string, Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation']>()
+  for (const part of partsOf(events)) {
+    if (part.type === 'tool-invocation' && part.toolInvocation.toolName === 'conexus_check') {
+      last.set(part.toolInvocation.toolCallId, part.toolInvocation)
+    }
+  }
+  return [...last.values()]
 }
 
-test('a linha de conexus_check diz o assunto e abre no relatório; a máquina que não conferiu é um erro da linha (33)', async (t) => {
+const Reported = z.object({
+  ok: z.boolean(),
+  steps: z.array(z.object({ name: z.string(), state: z.string() })),
+})
+
+test('a chamada de conexus_check guarda o relatório como resultado; a máquina que não conferiu é um erro da chamada (33)', async (t) => {
   const model = turnOf([WRITE, CHECK, CHECK])
   const { hub, ana, conversations } = await conversing(t, model.answer)
   checking(hub.builder.folder, [FAILED, 'platform'])
   const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
-  const [failed, unavailable] = checkRows(events)
-  assert.deepEqual(failed?.subject, { check: 'tipos: server/handlers.ts:13 Type mismatch.' })
-  assert.equal(failed?.state, 'completed')
-  assert.deepEqual(
-    failed?.detail?.kind === 'check' && failed.detail.steps.map(({ name, state }) => [name, state]),
-    FAILED.steps.map(({ name, state }) => [name, state]),
-  )
-  assert.equal(unavailable?.state, 'error')
-  assert.equal(unavailable?.detail, undefined)
+  const [failed, unavailable] = checkCalls(events)
+  assert.equal(failed?.state, 'result')
+  assert.deepEqual(Reported.parse(failed?.result), {
+    ok: false,
+    steps: FAILED.steps.map(({ name, state }) => ({ name, state })),
+  })
+  assert.equal(unavailable?.state, 'result')
+  assert.equal(Object(unavailable?.result).error, 'CHECK_PLATFORM_FAILED')
+  assert.equal(Reported.safeParse(unavailable?.result).success, false, 'no report to open')
 })

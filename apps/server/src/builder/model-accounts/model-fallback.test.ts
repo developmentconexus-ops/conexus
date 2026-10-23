@@ -9,7 +9,8 @@ import {
   memberOn,
   post,
 } from '../../hub/identity/test-hub.ts'
-import { asked, conversing, MODEL, noticesOf } from '../conversation/test-conversation.ts'
+import { asked, conversing, MODEL } from '../conversation/test-conversation.ts'
+import { failuresOf, noticesOf } from '../conversation/test-parts.ts'
 
 const FIRST = 'anthropic/claude-sonnet-4-6'
 const SECOND = 'google/gemini-2.5-flash'
@@ -135,9 +136,7 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   const third = await asked(t, where)
   assert.match(noticesOf(third.events).at(-1) ?? '', /^Time 1 no limite até \d{2}h\d{2}\.$/)
   assert.ok(!noticesOf(third.events).some((text) => text.startsWith('Troquei')))
-  assert.deepEqual(third.events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(third.events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(third.events.at(-1), { type: 'turnEnd', reason: 'error' })
   assert.equal(streamedChats().length, 1)
 })

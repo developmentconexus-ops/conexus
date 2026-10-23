@@ -6,6 +6,7 @@ import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, title } from './test-conversation.ts'
+import { partsOf } from './test-parts.ts'
 
 type Tool = { name: string; input: object }
 
@@ -68,10 +69,12 @@ test('fora da pasta do app, por link ou escrevendo sem ler: recusado, e nada for
   const outside = join(hub.builder.folder, 'fora.ts')
   assert.equal(existsSync(outside), false)
   assert.equal(existsSync(join(hub.builder.folder, '..', 'fora.ts')), false)
-  const states = events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'tool' && event.part.state !== 'running'
-      ? [event.part.state]
-      : [],
-  )
-  assert.deepEqual(states, ['completed', 'error', 'completed', 'error', 'error'])
+  const ended = new Map<string, boolean>()
+  for (const part of partsOf(events)) {
+    if (part.type === 'tool-invocation' && part.toolInvocation.state === 'result') {
+      ended.set(part.toolInvocation.toolCallId, part.toolInvocation.isError === true)
+    }
+  }
+  // Each call ended with a result; the ones outside the folder, and the write with no read, as errors.
+  assert.deepEqual([...ended.values()], [false, true, false, true, true])
 })

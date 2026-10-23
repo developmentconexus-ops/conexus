@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
@@ -12,6 +13,7 @@ import {
   started,
   streamOf,
 } from './test-conversation.ts'
+import { partsOf } from './test-parts.ts'
 import { routedTo, served } from './test-research.ts'
 
 test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fetch`; nos três, também `web_search`', async (t) => {
@@ -71,6 +73,15 @@ const FETCH: Block = {
 }
 const RECALL: Block = { type: 'tool_use', name: 'recall', input: { mode: 'messages' } }
 
+/** The tool name and state of each tool part the events said, in order. */
+function toolStates(events: ConversationEvent[]) {
+  return partsOf(events).flatMap((part) =>
+    part.type === 'tool-invocation'
+      ? [[part.toolInvocation.toolName, part.toolInvocation.state]]
+      : [],
+  )
+}
+
 /** A turn calling `blocks` once, then answering; the runs Mastra saved waiting come back with it. */
 async function calling(t: TestContext, blocks: Block[]) {
   const site = await served(t, (_path, response) => response.end('Cardápio da padaria'))
@@ -93,11 +104,7 @@ async function calling(t: TestContext, blocks: Block[]) {
     `)
   }
   const { events } = await asked(t, { hub, person: ana, conversations, between: recordSuspensions })
-  const tools = events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'tool'
-      ? [[event.part.kind, event.part.state]]
-      : [],
-  )
+  const tools = toolStates(events)
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   const suspended = await hub.test.mastraPool.query('select run_id from mastra.suspended_runs')
   return { tools, suspended: suspended.rows }
@@ -106,8 +113,8 @@ async function calling(t: TestContext, blocks: Block[]) {
 test('um turno com `web_fetch` nunca para à espera de aprovação: ele roda', async (t) => {
   const { tools, suspended } = await calling(t, [FETCH])
   assert.deepEqual(tools, [
-    ['read_page', 'running'],
-    ['read_page', 'completed'],
+    ['web_fetch', 'call'],
+    ['web_fetch', 'result'],
   ])
   assert.deepEqual(suspended, [], 'no run was saved waiting for an approval')
 })
@@ -117,15 +124,15 @@ test('um turno com `web_fetch` nunca para à espera de aprovação: ele roda', a
 test('um turno com `recall` termina sem parar à espera de aprovação', async (t) => {
   const { tools, suspended } = await calling(t, [RECALL])
   assert.deepEqual(tools, [
-    ['recall', 'running'],
-    ['recall', 'completed'],
+    ['recall', 'call'],
+    ['recall', 'result'],
   ])
   assert.deepEqual(suspended, [], 'no run was saved waiting for an approval')
 })
 
 // A tool outside the closed set is refused by the controller, not run: the person reads "Não pôde
 // usar uma ferramenta", live and read back, never an error of the Builder's.
-test('um turno que pede uma ferramenta fora das liberadas a vê `denied`, ao vivo e relida', async (t) => {
+test('um turno que pede uma ferramenta fora das liberadas a vê recusada (erro), ao vivo e relida', async (t) => {
   let step = 0
   const { hub, ana, conversations } = await conversing(t, (call) => {
     if (!call.stream) return { kind: 'text', text: 'Título' }
@@ -137,14 +144,18 @@ test('um turno que pede uma ferramenta fora das liberadas a vê `denied`, ao viv
     }
   })
   const { url, events } = await asked(t, { hub, person: ana, conversations })
-  const live = events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'tool'
-      ? [[event.part.kind, event.part.state]]
-      : [],
+  function ended(parts: MastraPart[]) {
+    return parts.flatMap((part) =>
+      part.type === 'tool-invocation' && part.toolInvocation.state !== 'call'
+        ? [[part.toolInvocation.toolName, part.toolInvocation.state, part.toolInvocation.isError]]
+        : [],
+    )
+  }
+  // Live, Mastra says the refusal as a result that is an error; stored, as an `output-error`.
+  assert.deepEqual(ended(partsOf(events)), [['github_create_issue', 'result', true]])
+  const all = await answeredOf(hub, ana, url)
+  assert.deepEqual(
+    all.flatMap((message) => ended(message.parts)),
+    [['github_create_issue', 'output-error', undefined]],
   )
-  assert.deepEqual(live.at(-1), ['other', 'denied'])
-  const read = (await answeredOf(hub, ana, url)).flatMap((message) =>
-    message.parts.flatMap((part) => (part.type === 'tool' ? [[part.kind, part.state]] : [])),
-  )
-  assert.deepEqual(read, [['other', 'denied']])
 })

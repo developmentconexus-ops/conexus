@@ -4,16 +4,15 @@ import { CompanyId, ModelAccountId, ModelId, PersonId } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import { MessageList } from '@mastra/core/agent/message-list'
 import { AgentController } from '@mastra/core/agent-controller'
-import type { ProcessInputStepArgs } from '@mastra/core/processors'
 import { InMemoryStore } from '@mastra/core/storage'
 import { createTool } from '@mastra/core/tools'
 import { MockLanguageModelV3 } from 'ai/test'
 import { z } from 'zod'
-import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { accountPick, callModel, Turn, turnContext } from '../model-accounts/public.ts'
 import { TOOL_CLOSURE } from './public.ts'
 import { asked, conversing, MODEL, title } from './test-conversation.ts'
+import { partsOf } from './test-parts.ts'
 
 const CARD_TOOLS = [
   'ask_user',
@@ -82,17 +81,18 @@ test('escrever e rodar um comando não param à espera de aprovação: nenhuma e
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   // A command's output comes on its tool part, said again while it runs.
   const states = new Map<string, string[]>()
-  for (const event of events) {
-    if (event.type !== 'part' || event.part.type !== 'tool') continue
-    const said = states.get(event.part.id) ?? []
-    if (said.at(-1) !== event.part.state) said.push(event.part.state)
-    states.set(event.part.id, said)
+  for (const part of partsOf(events)) {
+    if (part.type !== 'tool-invocation') continue
+    const { toolCallId, state } = part.toolInvocation
+    const said = states.get(toolCallId) ?? []
+    if (said.at(-1) !== state) said.push(state)
+    states.set(toolCallId, said)
   }
   assert.deepEqual(
     [...states.values()],
     [
-      ['running', 'completed'],
-      ['running', 'completed'],
+      ['call', 'result'],
+      ['call', 'result'],
     ],
   )
   assert.deepEqual(

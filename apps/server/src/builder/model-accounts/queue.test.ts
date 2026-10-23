@@ -5,13 +5,8 @@ import { test } from 'node:test'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import {
-  asked,
-  conversing,
-  KEY,
-  keptNotices,
-  noticesOf,
-} from '../conversation/test-conversation.ts'
+import { asked, conversing, KEY, keptNotices } from '../conversation/test-conversation.ts'
+import { failuresOf, noticesOf } from '../conversation/test-parts.ts'
 
 const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
@@ -147,10 +142,8 @@ test('sem conta: nenhuma chamada ao fornecedor, nem com chave no ambiente', asyn
   }
   const stream = await f.ask(pause)
   assert.deepEqual(noticesOf(stream.events), [EXHAUSTED])
-  assert.deepEqual(stream.events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(stream.events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(stream.events.at(-1), { type: 'turnEnd', reason: 'error' })
   assert.equal(f.anthropic.sent.length, 0)
   assert.equal(f.anthropic.chats.length, 0)
 })
@@ -211,10 +204,8 @@ test('400, 500 e 529: o turno falha como MODEL_CALL_FAILED, sem troca e sem o te
     const f = await fleet(t, { 'Time 1': { kind: 'refuse', status } })
     await f.add('Dois')
     const { events } = await f.ask()
-    assert.deepEqual(events.slice(-2), [
-      { type: 'part', part: { type: 'failure', code: 'MODEL_CALL_FAILED' } },
-      { type: 'turnEnd', reason: 'error' },
-    ])
+    assert.deepEqual(failuresOf(events), ['MODEL_CALL_FAILED'])
+    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
     assert.ok(!f.calls().includes('Dois'), `${status}`)
     assert.deepEqual(noticesOf(events), [])
     assert.ok(!JSON.stringify(events).includes('SECRET-PLANTED-TEXT'))
@@ -239,10 +230,8 @@ test('todas fora: o aviso de que as contas acabaram, MODEL_NO_ACCOUNT e o fim co
   // The end says why the last account was lost, not that none is left.
   assert.match(notices[1] ?? '', /^Dois no limite até \d{2}h\d{2}\.$/)
   assert.equal(notices.length, 2)
-  assert.deepEqual(events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
 })
 
 test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async (t) => {
@@ -257,10 +246,8 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   assert.equal(notices.length, 10)
   assert.equal(notices.at(-1), 'Conta 10 foi recusada. Ligue de novo.')
   assert.deepEqual(await keptNotices(f.hub, f.ana, url), notices)
-  assert.deepEqual(events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
   const states = await f.states()
   assert.equal(states['Conta 11']?.state, 'ready')
 })
