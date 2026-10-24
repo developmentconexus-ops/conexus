@@ -11,9 +11,9 @@
 // and a repeated id, `--only` takes one id and `--shard 2/3` runs the second of three slices of the
 // rows, so CI can run the slices as parallel jobs. `--base origin/main` keeps only the rows the
 // changes since that ref affect (removals-select.ts), a run of all rows being the default, unless
-// `--pull-request '{"title":…,"headRef":…,"labels":[…]}'` says the pull request is a step's build
-// or carries the all-removals label. `--plan` prints how many rows that is and how many slices
-// they need, and why when it is all of them, without running one.
+// `--pull-request '{"title":…,"headRef":…,"labels":[…]}'` carries the all-removals label. `--plan`
+// prints how many rows that is and how many slices they need, one per ROWS_PER_SHARD rows up to
+// MAX_SHARDS, and why when it is all of them, without running one.
 // The refusals are proved by planting each one in removals.test.ts.
 // Revalidate by 2027-04-15, or when Node changes `run` from node:test.
 import {
@@ -35,8 +35,8 @@ import { dirname, join } from 'node:path'
 import { run } from 'node:test'
 import { z } from 'zod'
 import { runCommand } from './command.ts'
-import { changesSince, importsOf } from './removals-changes.ts'
-import { affected, pullRequestRunsEverything, runsEverything } from './removals-select.ts'
+import { changesSince } from './removals-changes.ts'
+import { affected, pullRequestRunsEverything } from './removals-select.ts'
 
 const text = z.string().min(1)
 const Removals = z
@@ -201,6 +201,8 @@ async function outcomeOf(
 const USAGE =
   'usage: removals.ts [--base <ref> [--pull-request <json>]] [--only <row id> | --shard <index>/<total> | --plan]'
 const MAX_SHARDS = 4
+// A row costs about 9 s in CI and a slice about 50 s of setup, so a few rows share one machine.
+const ROWS_PER_SHARD = 12
 const PullRequest = z.strictObject({
   title: z.string(),
   headRef: z.string(),
@@ -260,13 +262,11 @@ async function main(): Promise<void> {
       options.pullRequest === undefined
         ? undefined
         : PullRequest.parse(JSON.parse(options.pullRequest))
-    everything =
-      (pullRequest === undefined ? undefined : pullRequestRunsEverything(pullRequest)) ??
-      runsEverything(changed, all, before)
-    if (everything === undefined) removals = affected(all, changed, before, importsOf(root))
+    everything = pullRequest === undefined ? undefined : pullRequestRunsEverything(pullRequest)
+    if (everything === undefined) removals = affected(all, changed, before)
   }
   if (options.plan) {
-    const shards = Math.min(MAX_SHARDS, removals.length)
+    const shards = Math.min(MAX_SHARDS, Math.ceil(removals.length / ROWS_PER_SHARD))
     console.log(
       JSON.stringify({ selected: removals.length, total: all.length, shards, everything }),
     )
