@@ -138,27 +138,31 @@ export class Sessions {
     }
   }
 
-  /** Opens the Projeto's run for a turn of the conversation, or refuses it with whose run holds it. */
-  async #admit(input: OfTurn): Promise<RunId> {
+  /**
+   * Opens the Projeto's run for a turn of the conversation, or refuses it with whose run holds it,
+   * and gives what the turn writes with on the conversation and the hour that ends it.
+   */
+  async #writing(live: Live, input: OfTurn): Promise<Writing> {
     const admitted = await this.#runs.admit({
       ...input.owner,
       conversationId: input.conversationId,
       projectId: input.projectId,
     })
     if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })
-    return admitted.value
-  }
-
-  /** What the turn of `runId` writes with on the conversation, and the hour that ends it. */
-  async #writing(live: Live, runId: RunId, traceId: string): Promise<Writing> {
-    const memoryModels = await memoryModelsFor(this.#builder.queue, live.owner)
-    const turn = new Turn({ ...live.owner, memoryModels })
-    const { promise: over, resolve } = Promise.withResolvers<void>()
-    this.#runs.onPhase(runId, (phase) => tellMachine(live, phase))
-    this.#runs.attach(runId, () => live.session.abort())
-    const context = this.#runs.contextOf(turnContext(turn), runId)
-    const finish = (reason: string) => this.#runs.finish({ runId, reason })
-    return { id: runId, traceId, context, turn, finish, ended: resolve, over }
+    const runId = admitted.value
+    try {
+      const memoryModels = await memoryModelsFor(this.#builder.queue, live.owner)
+      const turn = new Turn({ ...live.owner, memoryModels })
+      const { promise: over, resolve } = Promise.withResolvers<void>()
+      this.#runs.onPhase(runId, (phase) => tellMachine(live, phase))
+      this.#runs.attach(runId, () => live.session.abort())
+      const context = this.#runs.contextOf(turnContext(turn), runId)
+      const finish = (reason: string) => this.#runs.finish({ runId, reason })
+      return { id: runId, traceId: input.traceId, context, turn, finish, ended: resolve, over }
+    } catch (error) {
+      await this.#runs.finish({ runId, reason: 'error' })
+      throw error
+    }
   }
 
   /**
@@ -222,19 +226,15 @@ export class Sessions {
         return
       }
     }
-    const runId = await this.#admit(input)
-    const live = await this.#hold(input).catch(async (error: unknown) => {
-      await this.#runs.finish({ runId, reason: 'error' })
-      throw error
-    })
+    const live = await this.#hold(input)
     // A card still open: the message is Mastra's `steer`, which saves the message as its own run's.
     const steering = openCards(live).length > 0
-    let writing: Writing
+    let writing: Writing | undefined
     try {
-      writing = await this.#writing(live, runId, input.traceId)
+      writing = await this.#writing(live, input)
       if (!steering) await saveQuestion(live, question)
     } catch (error) {
-      await this.#runs.finish({ runId, reason: 'error' })
+      await writing?.finish('error')
       await this.#release(conversationId, live)
       throw error
     }
@@ -274,7 +274,7 @@ export class Sessions {
     let writing: Writing
     try {
       claimed = claimAnswer(live, input)
-      writing = await this.#writing(live, await this.#admit(input), input.traceId)
+      writing = await this.#writing(live, input)
     } catch (error) {
       if (claimed !== undefined) releaseCards(live, [toolCallId])
       await this.#release(conversationId, live)
