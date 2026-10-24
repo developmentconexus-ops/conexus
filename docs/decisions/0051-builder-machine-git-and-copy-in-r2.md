@@ -13,9 +13,9 @@ hosts, its filesystem and where a version is kept.
 - The Git is ours: a bare repository on the server, `main` moved by `update-ref` against the base
   read, one `git bundle` per changed turn checked by `transfer.fsckObjects` into a candidate ref
   first. Each version's bundle goes to a private R2 bucket.
-- Z2, on core 1.78.0: `WorkspaceFilesystem` requires 11 file operations and the identity. Ours, about
-  200 lines, writing through `writeFiles()`; past 300 lines, or if a 200 KB file fails, the fork's
-  815-line `SandboxFilesystem` is brought.
+- Z2, amended 2026-10-24 (founder: "2. Okay"): the files are `@mastra/e2b`'s native
+  `E2BSandboxFilesystem`; paths are not held to the app folder, since `execute_command` writes
+  anywhere on the same machine.
 - `running` precedes `onStart`, yet live on E2B two first-step
   tools both saw the seed with no gate (`seed-nohook`, 2026-10-21). `beforeToolCall` stays to boot
   the machine: phase, id, turn marked used.

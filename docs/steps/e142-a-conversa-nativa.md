@@ -17,8 +17,8 @@ raciocínio, tarefas fixas, memória), e um turno com tarefa aberta não vira "m
 5. Ana recarrega: tudo abre igual.
 6. Em **Configurações › Memória observacional** você escolhe o modelo do Observador; quem não tem conta
    nele segue o da conversa, sem aviso.
-7. Com o plano aberto, o servidor atualiza ou cai: o plano continua lá; "Aprovar" segue o mesmo turno,
-   que monta. Com a pergunta aberta, Ana escreve outra coisa: a mensagem sai na hora.
+7. Com a pergunta aberta, Ana escreve outra coisa: a mensagem espera a resposta ou o **Parar**, e então
+   vai. O servidor atualiza ou cai: o cartão some, o turno fica parado e a próxima mensagem funciona.
 8. Enquanto o Builder trabalha, Ana escreve "Só eu cadastro." e aperta Enter: a mensagem aparece
    embaixo com "Vai ao Builder no próximo passo" e o Builder a lê no passo seguinte, sem parar a
    ferramenta em curso. Ana aperta Esc: o turno para, como em **Parar**, e a mensagem que o Builder
@@ -66,6 +66,22 @@ aberto atravessa a atualização e a queda (U14). O que o código fez diferente 
 escreveu está em cada unidade, em "Como foi construído", e o que ainda espera a sua palavra está logo
 abaixo.
 
+**A quarta emenda de 2026-10-24.** O Builder passa a ser o Mastra, com só o necessário do Conexus. As suas
+palavras: "Nosso builder inteiro foi construido e arquiteturado sob uma arquitetura muito ma feita e sem
+reaproveita o que a framework de agents ja tem ... implementar o builder dentro do conexus apenas com o
+necessario o resto tudo mastra." A regra: "se realmente não tem isso no master, não tem na factory, não tá
+utilizado, a gente não vai ter ... Talvez se um dia precisar no futuro ... Não agora." Sobre o desenho
+provado: "1. C sendo o mais simples possivel 2. Okay 3. Aceito 4. Esse pode manter e como se fosse uma tool
+nossa, claude code tem e ir um por um e ruim, usava no conexus os e dava super certo 5. Aprovado 6.
+Aprovado". Quer dizer: a trava do Projeto fica, na forma mais simples (41); o arquivo da máquina é o nativo
+do E2B (16, 0051); o stream vai como o Mastra manda, sem corte no servidor (3 a 5); o cartão de 1 a 4
+perguntas fica, como ferramenta nossa (12, 27); a mensagem com cartão aberto espera a resposta ou o
+**Parar**, como no Mastra (44); o turno que roda quando o servidor cai fica parado (49). Antes, você já
+tinha tirado o critério 30: mandar é o `sendMessage` do Mastra, com a janela do primeiro passo aceita. As
+rotas do Mastra entram atrás do guarda do Hub (0050), e o Fim passa ao `isTaskComplete` (15). Não agora:
+o cartão depois do reinício (a U14 sai, 47), o prazo de uma hora do turno, fechar sessões paradas e a nossa
+regra da mensagem pendente no fim do turno. As unidades M1 a M4 fazem isso.
+
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
 ficam como proposta.
 
@@ -78,13 +94,8 @@ fila de defeitos (L4).
 
 Escolhas que firstmate fez à noite e que ainda são suas:
 
-- **U14, o prazo do cartão.** Feito: opção C, 30 minutos novos a partir da adoção, sempre dentro da hora
-  do turno, sem migração. Opção A: a coluna `builder.run.waiting_until` com `GRANT UPDATE` próprio em
-  pull request separado (D11), que guarda os 30 minutos exatos entre cópias.
-- **U14, um teste mudou de sentido.** A reconexão do aviso de reinício (`conversation-resume.test.ts`)
-  agora reinicia um turno no meio da resposta, sem cartão estacionado; o caso antigo, reiniciar com a
-  pergunta aberta e acabar o turno, é o que a adoção troca. Três testes de `conversation-waiting.test.ts`
-  saíram para `conversation-update.test.ts`.
+- **U14.** Sai na quarta emenda (o cartão depois do reinício, "Não agora"); o prazo do cartão e o teste
+  que mudou de sentido fecham com ela.
 - **Critério 37, a escolha lateral e o rótulo "unsaid".** A conta de assinatura recusada quando a
   chamada lateral abre ainda põe o rótulo dela em `unsaid`, e o próximo aviso do turno pode citá-la.
   Recomendação: o critério 37 proíbe; hoje não proíbe.
@@ -110,7 +121,11 @@ Escolhas que firstmate fez à noite e que ainda são suas:
 | U11 | A escolha do Observador e do Reflector | `builder/model-accounts/`, `builder/conversation/`, `hub-api/`, `apps/web/src/builder/observational-memory/`, `migrations/` | dados | U4 |
 | U12 | Orientar o Builder enquanto ele trabalha (o servidor) | `builder/conversation/{sessions,live,cards,steer,tell,deliver,wire}.ts`, `hub-api/` | testes | Frente 4 |
 | U13 | Orientar o Builder enquanto ele trabalha (a tela) | `apps/web/src/builder/conversation/`, `apps/web/src/platform/attempt-key.ts`, `builder/conversation/record.ts`, `hub-api/` (`questionIdOf`) | web | U12, U3 |
-| U14 | O cartão aberto atravessa a atualização e a queda | `builder/conversation/{cards,sessions,turn-run,public,routes}.ts`, `builder/runs/{runs,driven,settle,store,context,public}.ts`, `main.ts` | — | U2 |
+| U14 (sai na quarta emenda) | O cartão aberto atravessa a atualização e a queda | `builder/conversation/{cards,sessions,turn-run,public,routes}.ts`, `builder/runs/{runs,driven,settle,store,context,public}.ts`, `main.ts` | — | U2 |
+| M1 | Conta, máquina e trava pela conversa | `builder/model-accounts/{processors,turn}.ts`, `builder/runs/`, `builder/conversation/{builder,sessions}.ts` | segurança | — |
+| M2 | As rotas do Mastra atrás do guarda, a tela pelo `@mastra/client-js`, o contrato e as remoções, numa unidade | `builder/conversation/`, `builder/runs/`, `apps/web/src/builder/conversation/`, `hub-api/` | segurança, web | M1 |
+| M3 | O Fim pelo `isTaskComplete` | `builder/conversation/{builder,processors}.ts` | testes | M1 |
+| M4 | O arquivo nativo do E2B | `builder/machine/` | testes | M1 |
 
 `builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. A 14.0 é a primeira parte da U2
 ("C"; "1. Sim … 2.B"). Em paralelo: U2, U4, U5, U8, U9 (arquivos
@@ -118,7 +133,9 @@ distintos). U3 depois de U2 e U4; U11 depois de U4; U10 por último; QA antes da
 revisões (L9). Como se constrói: U12 primeiro, sobre a Frente 4 (o fundador a escolheu primeiro, e ela corrige o
 defeito do envio com cartão aberto); depois as limpezas da sessão; depois a U14, que tem de manter
 `steerCards` achando o cartão frio que ela adota; depois o turno como um estado só (U2); U13 depois da
-U12 e da U3.
+U12 e da U3. Na quarta emenda: M1 primeiro, pelas rotas de hoje; depois a M2; a M3 e a M4 depois da M1,
+em paralelo com a M2 (arquivos distintos). A M2 apaga o que a U2, a U12, a U13 e a U14 fizeram e o Mastra
+já faz; a tela da U3 passa a ler o stream do Mastra.
 
 **Orçamento de código alterado** (apagado conta; sem testes nem texto de skill). U2 1.600; U3 950;
 U4 150; U5 150; U8 80; U9 150; U10 60; U11 150. Total **3.290**, teto 4.000 (L2); U6 350 e U7 450 voltam com a
@@ -155,35 +172,38 @@ de escopo para caber no teto, e a conta fica à vista para a revisão. A medida 
 arquivo duas vezes (apagado num, escrito noutro), o que pesa na U6a a U6d (cerca de 300 linhas) e na
 U3 (a tabela nova de 324 linhas substitui `tool-presentation.ts`, de 307).
 
+**Orçamento da quarta emenda.** Cada unidade M é medida no seu pull request. A direção é apagar: o estudo
+conta perto de 1,9 mil linhas a menos no servidor, e o interrogatório acha a conta otimista.
+
 ## Os critérios de aceite
 
 Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 
 | # | U | Critério, observável de fora, com a recusa | Teste |
 | --- | --- | --- | --- |
-| 1 | U1 | V39, 0050 e 0055 com a regra trocada e a frase do fundador | `check-docs` |
+| 1 | U1 | V39, 0050 e 0055 com a regra trocada e a frase do fundador; na quarta emenda, 0050 ("Mastra's routes") e 0051 Z2 | `check-docs` |
 | 2 | U2 | `readConversation` devolve as partes como o Mastra as guarda (`text`, `reasoning` com texto, `tool-invocation` com nome, `args`, `result`, `state`, `data-*`); o tipo do Mastra cabe no esquema | `conversation-wire.test.ts`, tipo |
-| 3 | U2 | O stream manda só `message_*`, `shell_output`, `command_exit`, `tool_suspended`, `task_updated`, `om_status`, `om_*_start/_end/_failed`, `agent_end` na forma do Mastra, `om_progress` (`displayState.omProgress`, após cada `om_*`), e os nossos `turn` e `data-conexus-*` | idem |
-| 4 | U2 | Ao vivo e relido, a mesma parte, para cada ferramenta do conjunto fechado e uma desconhecida; a saída de comando cortada igual nos dois; um turno que define tarefas e depois usa uma ferramenta do espaço de trabalho não perde ao recarregar o raciocínio, o primeiro `task_write` nem o texto do começo (as partes por id de mensagem ao vivo são iguais depois do `turnEnd`) | idem, `conversation-tasks.test.ts`, `tests/e2e/builder-native.test.ts` |
-| 5 | U2 | Texto acima de `WIRE_LIMITS` sai cortado com `…` e o caminho em `cuts`; o resto segue; nenhum corte fora de `wire.ts` | idem |
+| 3 | M2 | O stream é a rota do Mastra como ele manda (fundador: "3. Aceito"): os eventos do `AgentController`, `display_state_changed` com o `omProgress`, e as partes `data-conexus-*` gravadas; sem lista nossa nem `turn` | `conversation-stream.test.ts` |
+| 4 | M2 | Ao vivo e relido (`threads/:threadId/messages`), a mesma parte, para cada ferramenta do conjunto fechado e uma desconhecida; um turno que define tarefas e depois usa uma ferramenta do espaço de trabalho não perde ao recarregar o raciocínio, o primeiro `task_write` nem o texto do começo (as partes por id de mensagem ao vivo são iguais depois do `turnEnd`) | idem, `conversation-tasks.test.ts`, `tests/e2e/builder-native.test.ts` |
+| 5 | M2 | Nenhum corte no servidor: o texto vai como o Mastra manda e a tela corta em 800 (8); saem `wire.ts`, `wire.check.ts` e `WIRE_LIMITS` | remoção (CI) |
 | 6 | U2 | `Conversation.tasks` é a lista do armazenamento do Mastra; `Conversation.memory`, o `omProgress` da sessão ou `null` | idem |
 | 7 | U2 | Saem `ToolDetail`, `KINDS`, `subjectOf`, `detailOf`, `toolOf`, `cardOf`, `fileOf`, `partOf`, `eventOf`, `withHeard`, `exitHeard`, `toldTool` e os testes que os afirmam | remoção (CI) |
 | 8 | U3 | Toda linha com argumentos ou resultado abre, pelo corpo da tabela de ferramentas: leitura no começo, `list_files` e `grep` no resultado, `skill` no nome e nas instruções, a edição (`edit_file`) na mudança, o que saiu e o que entrou, e a escrita (`write_file`) no arquivo escrito, no antes e depois como a Factory, cada texto cortado em 800 (fundador, 2026-10-24: "2. A"), desconhecida no nome legível, argumentos e resultado; falha, vermelha, no motivo, ao vivo e relida (a edição e a escrita que falham mostram também a mudança) | `tool-row.test.tsx` |
 | 9 | U3 | Raciocínio: "Pensando…", depois "Pensou por N s", fechado, abre no texto; grupo de 3 ou mais, sem `skill`, `ask_user`, `submit_plan`; `task_*` sem linha | `transcript.test.tsx` |
 | 10 | U3 | Painel "Tarefas · N de M" acima da caixa enquanto o turno roda; some com tudo feito ou com o turno no fim; nenhum "em andamento" girando depois (#271); relido, do `Conversation.tasks`; a 390 px uma linha, a tarefa em andamento, cortada | `task-panel.test.tsx` |
 | 11 | U3 | Anéis da memória do `om_progress` (fundador, 2026-10-23: "A"), o quadro ao abrir, "Guardando a memória…" ou "Reorganizando a memória…" enquanto segura o turno, a marca de falha sem o texto do fornecedor (C48, C51) | `memory-status.test.tsx` |
-| 12 | U3 | Cartões de pergunta, plano e tarefas lidos da `tool-invocation` pelo nome, num decodificador por ferramenta; aberto é estar em `suspended` (as suspensões do Mastra), não um palpite pelo estado; o plano recusado lê "recusado" e o pedido; resposta livre em várias linhas (#272); o cartão da versão: montou, não montou, pela metade; aberto só enquanto a chamada espera a pessoa; parado, expirado ou fechado por mensagem: fechado, e a expiração na linha de falha | `cards.test.tsx` |
+| 12 | U3 | Cartões de pergunta (de 1 a 4 perguntas, ferramenta nossa), plano e tarefas lidos da `tool-invocation` pelo nome, num decodificador por ferramenta; aberto é estar em `suspended` (as suspensões do Mastra), não um palpite pelo estado; o plano recusado lê "recusado" e o pedido; resposta livre em várias linhas (#272); o cartão da versão: montou, não montou, pela metade; aberto só enquanto a chamada espera a pessoa; parado ou expirado: fechado, e a expiração na linha de falha; a chamada sem resultado depois de um reinício, pergunta que ficou sem resposta | `cards.test.tsx` |
 | 13 | U3, U9 | 1280 e 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo; a árvore com papéis ARIA, o `Sheet` a 390 px, o vazio | T23, `source.test.tsx` |
 | 14 | U4 | O Builder sai de `createCodingAgent` com `workspace: undefined`: não tem workspace próprio, a máquina E2B segue emprestada por volta; a lista volta ao modelo depois que a chamada sai da janela | `conversation-tasks.test.ts` (novo) |
-| 15 | U4 | Fim: turno que acaba com tarefa aberta volta ao modelo com "N tarefas abertas: …", no limite de `CHECK_LIMITS`; no limite, "Versão N guardada, pela metade"; parado, nada disso | `conversation-check.test.ts` |
-| 16 | U4 | Sem `requireReadBeforeWrite`: duas escritas seguidas no mesmo arquivo passam; uma escrita fora da pasta do app, recusada pelo Mastra, sai como erro | `conversation-machine.test.ts` |
+| 15 | M3 | Fim pelo `isTaskComplete` do Mastra: o avaliador `conexus-check` reprova o turno que acaba com tarefa aberta e o texto "N tarefas abertas: …" volta ao modelo, no limite de `CHECK_LIMITS`; no limite, "Versão N guardada, pela metade"; parado, nada disso; a tela recebe `task_complete_evaluation`; sai `checkGate` | `conversation-check.test.ts` |
+| 16 | M4 | Sem `requireReadBeforeWrite`: duas escritas seguidas no mesmo arquivo passam; as ferramentas de arquivo são o `E2BSandboxFilesystem` do Mastra (fundador: "2. Okay"), sem prender os caminhos à pasta do app; saem `MachineFilesystem` e `in-machine.ts` | `conversation-machine.test.ts`, prova ao vivo no E2B (firstmate) |
 | 17 | U4 | A linha `CONVERSATION_TURN_ENDED` leva `finishReason`, a ferramenta que falhou, o código, o maior `inputTokens` de um passo, `cachedInputTokens` e as rodadas da conferência; nenhum texto livre (S41) | `turn-line.test.ts` |
 | 18 | U4 | **Fora**, por palavra do fundador (2026-10-23 13:02): sem LSP; a prova ao vivo falhou e a issue [#282](https://github.com/developmentconexus-ops/conexus/issues/282) a guarda | — |
 | 19 | U5 | Gemini é um modelo só, com **Raciocínio**; a escolha chega ao CLIProxy pelo pedido provado no 20, também para o padrão; Claude segue `summarized` | `thinking.test.ts`, `served-recordings.test.ts` |
 | 20 | U5 | **Ao vivo**, firstmate: uma chamada pela conta Google do fundador devolve `reasoning_content` e diz se o nível vai no nome ou em `reasoning_effort`; a gravação entra em `platform/recordings/`; falha: 19 e a parte Gemini do 28 param, a etapa volta a ele | registro da U5 |
 | 27 | U8 | Cada plano em `.conexus/plans/<nome>.md`; `submit_plan` fora dessa pasta, recusado; o plano aprovado não é sobrescrito (#268); turno que só mudou planos, parado ou não: sem versão, sem conferência; nenhuma outra regra de escrita | `conversation-plan.test.ts` |
-| 30 | U2 | A pergunta é gravada antes do turno e lida uma vez; versão, falha, máquina e reinício voltam como `data-conexus-*`, sem ir ao modelo; a leitura só lê mensagens | `conversation-recorded.test.ts` |
-| 31 | U2 | O stream abre com o turno vivo até ali; depois de um reinício, o aviso e a versão | `conversation-stream.test.ts` |
+| 30 | M2 | Mandar é o `sendMessage` do Mastra; a pergunta não é gravada antes do turno (fundador: a janela do primeiro passo, aceita: o servidor caindo na primeira chamada ao modelo, ou um cartão no passo 0 seguido de reinício, perde a mensagem, e a tela a devolve ao campo, 46); versão, falha e máquina voltam como `data-conexus-*`, gravadas pelo `onBeforeAgentEnd`, sem ir ao modelo | `conversation-recorded.test.ts` |
+| 31 | M2 | O stream abre com a semente do estado da sessão do Mastra; a reconexão relê a transcrição pela rota `threads/:threadId/messages`, como a Factory UI | `conversation-stream.test.ts` |
 | 32 | U2 | Saem `catch-up.ts`, `kept.ts` e as listas; `run_event` sai em migração própria, depois que nenhum código o lê (D30: sem dados de empresa; fundador: "Porque manter tabela antiga se estamso apenas em estado de desenvolvimento, não quero amnter legacy"); nenhuma imagem anterior roda depois dela, e `architecture.md` "Roll back" ganha esse piso | remoção (CI), `check-migrations` |
 | 28 | U10 | Percurso no Chromium nas sequências da exportação do Mastra, só das unidades em curso: cada linha abre; recarregar dá o mesmo | `tests/e2e/builder-native.test.ts` |
 | 29 | U10 | QA (T25) com o conjunto fechado e o Gemini; o roteiro pelo fundador (L17) | `conexus-qa`, fundador |
@@ -195,15 +215,15 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 38 | U11 | As permissões `SELECT, INSERT, UPDATE (observer, reflector)` vão numa migração só delas, em pull request próprio para a branch da etapa, com a palavra do fundador (D11) | `catalog.test.ts` |
 | 39 | U4 | Cada passo do turno no Claude manda `cache_control` 1 h no último sistema e na última mensagem; título e Observador, só no sistema, 5 min; pela chave e pela assinatura; outro provedor, nada | `conversation.test.ts`, `claude-refresh.test.ts`, `prompt-cache.test.ts` |
 | 40 | U2 | Recusa do modelo: "O modelo recusou este pedido. Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder."; resposta cortada: "A resposta do modelo ficou grande demais e foi cortada. Peça ao Builder uma parte de cada vez."; falha de chamada segue `MODEL_CALL_FAILED`; nenhum texto do fornecedor | `turn-line.test.ts`, `stream.test.tsx` |
-| 41 | U12 | Mensagem durante a resposta: 202 assim que o Mastra aceita, sem `RUN_BUSY`; entra no próximo passo da mesma volta, sem parar a ferramenta em curso; uma linha `builder.run`, um `turnEnd`; outra conversa do mesmo Projeto segue `RUN_BUSY` | `conversation-steer.test.ts`, `conversation-turns.test.ts` |
-| 42 | U12 | A mensagem sai no stream como a da pessoa onde o Mastra a pôs (em texto), volta pelo `Last-Event-ID` e no quadro do turno, e a leitura a mostra uma vez depois do fim | `conversation-steer.test.ts` |
+| 41 | M1, M2 | Mensagem durante a resposta: `{ok: true}` da rota do Mastra; entra no próximo passo da mesma execução, sem parar a ferramenta em curso; a conta e a máquina vêm da conversa em toda execução (mensagem, orientar, fila). A trava (fundador: "1. C sendo o mais simples possivel"): outra conversa do mesmo Projeto é recusada no começo da execução com `RUN_BUSY` e o nome de quem trabalha, que chega como `error` no stream e `agent_end`, sem chamada ao modelo e sem guardar a mensagem; a mesma conversa não é recusada | `conversation-steer.test.ts`, `conversation-turns.test.ts` |
+| 42 | M2 | A mensagem sai no stream como a da pessoa onde o Mastra a pôs (`message_start`, `role: 'user'`), e a releitura a mostra uma vez depois do fim | `conversation-steer.test.ts` |
 | 43 | U12 | **Parar** tira as mensagens que o Builder não leu: nenhuma chega ao modelo, nenhuma volta nova começa | `conversation-steer.test.ts` |
-| 44 | U12 | Mensagem com pergunta ou plano aberto: 202 quando o Mastra aceita a volta seguinte (a pergunta aberta é abortada e o Mastra espera o fim da abortada, até 5 s), com a volta seguinte ainda em curso, não no fim dela (defeito achado na auditoria da sessão); a mensagem está gravada antes do sinal; Parar logo depois termina o turno uma vez | `conversation-steer.test.ts`, `conversation-waiting.test.ts` |
-| 45 | U13 | Enquanto o Builder trabalha a caixa fica aberta: Enter manda, Esc para, **Parar** e **Enviar** lado a lado; a mensagem aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream a confirma; duas mensagens seguidas, duas chaves | `composer.test.tsx`, `panel.test.tsx`, `live.test.tsx` |
-| 46 | U13 | Mensagem que o Builder não leu quando a volta acaba (Parar, falha, reinício) volta para o campo com "O Builder parou antes de ler sua mensagem. Ela voltou para o campo."; recarregar mostra a mensagem lida uma vez, no lugar dela | `panel.test.tsx`, `tests/e2e/builder-native.test.ts` |
-| 47 | U14 | Atualizar ou perder o servidor com pergunta ou plano aberto: a cópia nova mostra o cartão uma vez; a resposta segue o mesmo turno, que monta; vencer, Parar e mensagem funcionam na cópia nova; a cópia velha nunca nega o cartão; não há marca de saída limpa: a atualização e a queda seguem o mesmo caminho; a hora do turno ainda fecha o cartão adotado, e os 30 minutos do cartão recomeçam na cópia que adota (opção C, em "Pendente da palavra do fundador"); sem cartão estacionado, o reinício de antes | `conversation-update.test.ts` |
-| 48 | U2 | Toda saída da execução do Mastra termina o turno uma vez: aceitação recusada, Parar na aceitação, desmontagem, falha do consumidor, Parar sem `agent_end` | `conversation-run-ends.test.ts` |
-| 49 | U2 | Depois de um reinício, a reconexão pelo `Last-Event-ID` do aviso recebe o fim do turno | `conversation-resume.test.ts` |
+| 44 | M2 | Mensagem com pergunta ou plano aberto (fundador: "5. Aprovado"): a rota responde `{ok: true}` e o Mastra a segura até a resposta ou o **Parar**; no **Parar**, o cartão é cancelado e a mensagem roda logo depois; a tela a mostra como na fila | `conversation-steer.test.ts`, `conversation-waiting.test.ts` |
+| 45 | M2 | Enquanto o Builder trabalha a caixa fica aberta: Enter manda, Esc para, **Parar** e **Enviar** lado a lado; a mensagem aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream traz o `message_start` dela, casada pela ordem, como a Factory UI | `composer.test.tsx`, `panel.test.tsx`, `live.test.tsx` |
+| 46 | M2 | Mensagem que o Builder não leu quando a volta acaba (Parar sem cartão aberto, falha, reinício) volta para o campo com "O Builder parou antes de ler sua mensagem. Ela voltou para o campo."; recarregar mostra a mensagem lida uma vez, no lugar dela | `panel.test.tsx`, `tests/e2e/builder-native.test.ts` |
+| 47 | M2 | Não agora (quarta emenda): o cartão não atravessa a atualização nem a queda. Depois do reinício o cartão some e a próxima mensagem funciona, sem erro do fornecedor (o Mastra tira do pedido a chamada sem resposta); saem `restoreCards` e a adoção da U14 | `conversation-update.test.ts` |
+| 48 | M2 | O fim é o do Mastra: `onBeforeAgentEnd` chama `runs.finish` pela conversa uma vez por execução, também na recusada, e solta só a trava da sua conversa; saem o turno como estado nosso e o prazo de uma hora | `conversation-run-ends.test.ts` |
+| 49 | M2 | Turno que roda quando o servidor cai fica parado (fundador: "6. Aprovado"): depois do reinício a sessão volta sem execução e sem cartão, e a reconexão relê a transcrição; sem retomada automática | `conversation-resume.test.ts` |
 | 50 | U3 | Uma tabela de ferramentas, chaveada pelos nomes do conjunto fechado do `hub-api`, iguais aos do Mastra e ao fecho do Builder; nenhum nome de ferramenta testado fora dela; sem apelidos | `permissions.test.ts`, tipos |
 | 51 | U3 | O relógio de uma ferramenta conta desde que a tela ouviu a chamada; não volta a zero quando ela entra num grupo | `tool-row.test.tsx`, `live.test.tsx` |
 
@@ -282,22 +302,23 @@ Enter orienta o Builder · Esc para               Enter orienta o Builder · Esc
 | O que o modelo escreve: planos | a 13 | a 13 | a máquina | — | 27 |
 | Leitura e stream (corte, 502, 503: repetem pelo `Last-Event-ID` da 12) | só leitura | — | o banco | — | 2 a 6 |
 | Fim do modelo fora do normal | o da 14 | — | o modelo: recusa ou corte | `MODEL_REFUSED` ou `MODEL_ANSWER_CUT` | 40 |
-| Adoção da volta com cartão (atualização ou queda) | uma cópia por linha (`takeExpired`) | a resposta espera a adoção (`settleConversation`); a cópia velha que perde o lease solta sem negar | o banco do Mastra: sem cartão, o reinício | `QUESTION_EXPIRED` em 30 min na cópia nova, dentro da hora do turno | 47 |
-| Saída da execução do Mastra (aceitação recusada, Parar na aceitação, desmontagem, falha do consumidor, Parar sem `agent_end`) | um `agent_end` atrasado acha o turno acabado e não faz nada | o início da mensagem orientada falha: Parar, o turno acaba `aborted` e o envio volta; outra falha, `error` e o envio lança | a execução pendurada sem laço: o turno acaba no abort | `INTERNAL_UNEXPECTED` | 48 |
-| Mensagem durante a volta, com ou sem cartão aberto | a chave da tentativa | a gravação antes do sinal: falha, nada entra e o cartão fica | o banco do Mastra | — | 41, 44 |
+| Reinício com cartão aberto | — | — | o banco do Mastra: o cartão some, a próxima mensagem segue | — | 47 |
+| Trava do Projeto no começo da execução | a mesma conversa passa | `RUN_BUSY` antes do modelo, nada guardado | — | `error` no stream | 41 |
+| Fim da execução (`onBeforeAgentEnd`) | um por execução | a execução recusada não solta a trava de outra conversa | o banco do Mastra | a linha do turno | 48 |
+| Mensagem durante a volta, com ou sem cartão aberto | o Mastra a entrega uma vez | com cartão, espera a resposta ou o **Parar** | o banco do Mastra | — | 41, 44 |
 
 ## O que nasce novo e o que é trazido
 
 | Mecanismo | Nativo, nosso ou trazido | Arquivo | Refatorado | Decisões que carrega | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
 | --- | --- | --- | --- | --- | --- |
-| Fio do Mastra | nativo | `mastra-parts.ts`, `live.ts` | novo | 0050, "Why not Mastra's routes" | `AgentControllerWireEvent` (`agent-controller/wire.d.ts:30-36`); Factory `services/transcript.ts:202-300`; OS `transcript.ts:1-9`; vibesdk: nenhuma faz |
-| Cortes | nosso; o nativo, `getDisplayTransform` (`stream-content.d.ts:9`), transforma por ferramenta e não limita tamanho | `wire.ts`, `wire-limits.ts` | de `DETAIL_LIMITS` | limites da 14 (`tool-detail.ts:6-12`) | Factory corta na tela, 800 (`ToolCard.tsx:41,54,64`); OS `OUTPUT_LIMIT` 800 |
+| Fio do Mastra | nativo | `mastra-parts.ts`, `live.ts` | novo | 0050, "Mastra's routes" | `AgentControllerWireEvent` (`agent-controller/wire.d.ts:30-36`); Factory `services/transcript.ts:202-300`; OS `transcript.ts:1-9`; vibesdk: nenhuma faz |
+| Cortes | sai (M2); era nosso; o nativo, `getDisplayTransform` (`stream-content.d.ts:9`), transforma por ferramenta e não limita tamanho | `wire.ts`, `wire-limits.ts` | de `DETAIL_LIMITS` | limites da 14 (`tool-detail.ts:6-12`) | Factory corta na tela, 800 (`ToolCard.tsx:41,54,64`); OS `OUTPUT_LIMIT` 800 |
 | Redutor, linha por nome | nativo na forma | `transcript.ts`, `tool-registry.ts` (no lugar de `tool-presentation.ts`) | uma porta viva e relida; uma tabela por ferramenta com o corpo; a edição na mudança | conjunto fechado (`permissions.ts`) | Factory `transcript.ts:423-437,696-726`, `ToolFactory.tsx:78-117`, `ToolCard.tsx:32-67`; playground `tool-presentation.ts:70-119,121-137`, `tool-call-edit.tsx:46-78`; OS `tool-sentences.ts:21-71` |
 | Raciocínio recolhido | nativo | `thinking-line.tsx` | o tempo é nosso (12.1) | V39 emendada | Factory `MessageBubble.tsx:180-185`; OS `builder-conversation.tsx:159-172` |
 | Painel de tarefas | nativo | `task-panel.tsx` | some no fim do turno, do OS | — | Factory `SessionChatSurface.tsx:67-72`, `TaskPanel.tsx:7-9`; OS `construir.tsx:128,362-368` |
 | Anéis da memória | nativo | `memory-status.tsx` | marca de falha, do OS | `observationalMemory` | Factory `runtime.ts:194-207`, `OperationalMemoryStatus.tsx:11-90`; OS `memory-status.tsx:35-77` |
 | `createCodingAgent`, `CyberRefusalHandler` | nativo | `builder.ts` | `workspace: undefined`; a recusa também em `errorProcessors` | fila e conferência (0049, 0050, 0055) | `coding-agent/index.ts:90-136` (a recusa na trilha de erro, `:113-129`); Mastra Code `sdk/src/index.ts:1216-1223,1338,1357-1360`; OS `controller.ts:3,223,238` |
-| Fim | nosso; o nativo `goal` julga por modelo, não a lista (`agent/goal/scorer.ts:14-28`) | `processors.ts` | o portão da 14 | `abort(…, {retry})` | vibesdk `completion-signals.ts:14-28`; OS `controller.ts:159-178` |
+| Fim | nativo: `isTaskComplete` com o avaliador de código `conexus-check` (M3); o `goal` julga por modelo, não a lista (`agent/goal/scorer.ts:14-28`) | `builder.ts` | o portão da 14 | `abort(…, {retry})` | vibesdk `completion-signals.ts:14-28`; OS `controller.ts:159-178` |
 | Memória (3 opções) | nativo | `builder.ts` | — | — | Mastra Code `agents/memory.ts:355-417`; OS `memory.ts:50` |
 | Modelo do Observador e do Reflector | nativo na forma (lido uma vez por turno); a rota e a tela, nossas | `model-accounts/`, `sessions.ts` | de uma leitura por chamada | `null` segue a conversa | Factory `memory-settings-hydration.ts:49-53`; Mastra Code `agents/memory.ts:95-135`, `observer-runner.ts:190-196`; OS: nenhuma |
 | Trava fora | nativo | `machines.ts` | sai `requireReadBeforeWrite` (fundador, 2026-10-23) | prompt `builder.md:19` | Mastra Code e OS sem ela |
@@ -307,12 +328,17 @@ Enter orienta o Builder · Esc para               Enter orienta o Builder · Esc
 | Plano A | nativo na forma | `plan-tools.ts` | `.conexus/plans/` | um plano por mudança | Mastra Code `utils/plans.ts:17,33-35,94` |
 | Árvore | nativo | `source/` | — | — | shadcn `sidebar-11`; OS `lens-code.tsx:2,14-38` |
 | Cache de prompt do Claude | trazido | `model-accounts/claude/prompt-cache.ts` | por escopo na fila, não por provedor do Mastra Code | 0049 (a fila monta o modelo) | Mastra Code `providers/claude-max.ts:80-153,262-276`, `agents/mastracode-gateway.ts:150-162`, `agents/memory.ts:103,394`; OS: nenhuma |
-| Cartão entre cópias | nativo: `detachFromCurrent`, `listSuspendedRuns`, a retomada fria; a adoção da linha, nossa | `cards.ts`, `sessions.ts`, `turn-run.ts`, `runs/` | de `denyParked` | D25 (lease), C62 | `agent-controller/session.ts:991-999,4516-4517,5552-5595`; teste `agent-controller-ask-user.test.ts:294-313,728-868`; servidor do Mastra `handlers/agent-controller.ts:756-781`; OS: nenhuma |
-| Turno como estado | nosso, nos eventos do Mastra | `turn-state.ts` | de oito campos soltos (`turn`, `asked`, `runs`, `unclaimed`, `carry`, `ending`, `run`, `saveFailure`) | C21, C26 | Factory `live-sessions.ts:43-110`; `agent-controller/session.ts:4282-4338` |
+| Cartão entre cópias | sai (M2, "Não agora"); era nativo: `detachFromCurrent`, `listSuspendedRuns`, a retomada fria; a adoção da linha, nossa | `cards.ts`, `sessions.ts`, `turn-run.ts`, `runs/` | de `denyParked` | D25 (lease), C62 | `agent-controller/session.ts:991-999,4516-4517,5552-5595`; teste `agent-controller-ask-user.test.ts:294-313,728-868`; servidor do Mastra `handlers/agent-controller.ts:756-781`; OS: nenhuma |
+| Turno como estado | sai (M2); era nosso, nos eventos do Mastra | `turn-state.ts` | de oito campos soltos (`turn`, `asked`, `runs`, `unclaimed`, `carry`, `ending`, `run`, `saveFailure`) | C21, C26 | Factory `live-sessions.ts:43-110`; `agent-controller/session.ts:4282-4338` |
 | Edição antes e depois | nativo na forma | `tool-presentation.ts`, `tool-row.tsx` | de "Argumentos:" | V39 emendada | Factory `tool/ToolCard.tsx:144-184` |
 | Orientar durante a volta | nativo | `steer.ts`, `tell.ts`, `sessions.ts` | `RUN_BUSY` só entre conversas; o `steer` do Mastra sai (aborta e espera a volta) | D25 (uma linha por turno) | `sendSignal` com `ifActive` `deliver` (`agent-controller/session.ts:4897-4994`, `agent/thread-stream-runtime.ts:5641,5762-5774`); Mastra Code `tui/src/tui/mastra-tui.ts:616-640`; Factory `handlers/agent-controller.ts:672-706`; OS: nenhuma |
 | Caixa aberta durante a volta | nativo na forma | `composer.tsx`, `panel.tsx`, `live.ts`, `steers.ts`, `steer-screen.ts` | o balão pendente e a volta ao campo | V30, V31 | Factory `Composer.tsx:154-165,228-240`, `MessageBubble.tsx:51-56`; Mastra Code `mastra-tui.ts:616-640`, `render-messages.ts:279-298`, `setup.ts:42-87`; Claude Code (Esc para, o texto volta ao campo); OS: nenhuma |
-| Saída da execução do Mastra | nativo: espelha as esperas públicas de `waitForAcceptedRunCompletion`; o fim do turno, nosso | `turn-exits.ts` | de só `agent_end` | C75 (nota no arquivo), C21, C26 | `agent-controller/session.ts:4282-4338,2226-2232`, `session-run-engine.ts:602,1741,1787` (Mastra `6a465f9d`); OS: nenhuma |
+| Saída da execução do Mastra | sai (M2); era nativo: espelha as esperas públicas de `waitForAcceptedRunCompletion`; o fim do turno, nosso | `turn-exits.ts` | de só `agent_end` | C75 (nota no arquivo), C21, C26 | `agent-controller/session.ts:4282-4338,2226-2232`, `session-run-engine.ts:602,1741,1787` (Mastra `6a465f9d`); OS: nenhuma |
+| Rotas do Mastra | nativo: `@mastra/server` 1.79.0 por `@mastra/fastify` 1.5.23, lista fixa (M2) | `guard.ts` | o escopo encapsulado do OS | 0050, S39 | servidor do Mastra `handlers/agent-controller.js:493,568,650,684,758,795,1274,1337`; `@mastra/fastify` `index.js:391-470,664-685`; OS `mastra-session-routes.ts:266-367` |
+| Guarda da conversa | nosso: as rotas de agent-controller não usam o `resourceId` mapeado | `guard.ts` | — | 0050, S10 | Factory `routes/session-access.ts`; OS `mastra-session-routes.ts:279,311-323` |
+| Conta, máquina e trava pela conversa | nosso na forma da Factory; a trava, nossa (fundador: "1. C") | `model-accounts/processors.ts`, `runs/` | o `Turn` nasce na execução, não no pedido (M1) | 0049, 0051 | Factory `session/credential-policy.ts:37-39`, `sandbox/session-sandbox.ts:29-36`; Mastra Code `agents/memory.ts:101-140` |
+| Fim da execução | nativo: `onBeforeAgentEnd` | `end.ts` | de `turn-end.ts` | 0051 (a versão) | core `agent-controller-DO6rGsQm.js:4836-4859` |
+| Arquivo da máquina | nativo: `E2BSandboxFilesystem` (M4) | `machine/` | sai `MachineFilesystem` | 0051 Z2 | `@mastra/e2b` 0.15 `sandbox/filesystem.d.ts:5-13` |
 | Releitura igual ao vivo | nativo | `history.ts`, `processors.ts` (`workspaceMetadataLive`) | de `turnsOf`, que colava os passos | C21 | `llm-execution-step.ts:2916-2925`, `message-list.ts:865`; issue do Mastra #21940 (o pedaço `data-workspace-metadata` não é salvo) |
 
 Citações em `.ts` do Mastra: a fonte em `6a465f9d`. Cada "nosso" entra em `boundaries.md`; do
@@ -567,6 +593,8 @@ orientação) é do comportamento de antes.
 
 ## U14 O cartão aberto atravessa a atualização e a queda
 
+**Quarta emenda.** Sai: o cartão depois do reinício é "Não agora", e a M2 apaga o que esta unidade fez.
+
 **Raio.** `cards.ts`: sai `denyParked`, entram `detach` e `adoptCards`; `sessions.ts`: `adopt`, e o
 `drain` solta o turno estacionado; `turn-run.ts`: o turno de uma mensagem e o turno adotado, com o mesmo
 fim; `runs/`: `drive`, `onAdopt`, `settleConversation`, `attach` com `lost`, e `finish` acorda a máquina
@@ -600,6 +628,49 @@ no mesmo processo do Node, não um segundo processo do sistema; o cartão aparec
 e a tela unida não foi vista num navegador; uma linha `open` com snapshot velho (a corrida 6edddc96 do
 Mastra) seria adotada como cartão. Fora: manter um turno rodando, não estacionado, numa atualização
 (roteiro, etapa 16).
+
+## M1 Conta, máquina e trava pela conversa
+
+**Raio.** `model-accounts/processors.ts`: um processador primeiro, `turnOf`, cria o `Turn` em `processInput`
+pela conversa; `accountPick` recusa sem `Turn` (`NO_TURN`), em vez de `{}`; `accountModel` acha a conta pela
+conversa quando ainda não há `Turn`, porque o Observador roda antes. `runs/`: a máquina pela conversa; saem
+`context.ts`, `keys.ts` (`conexus.run`) e o prazo de uma hora (`deadline.ts`). `sessions.ts`: sai o `Turn`
+do pedido.
+
+**Contratos.** A conversa de uma execução é `requestContext.get('controller').sessionId`, em toda execução
+que o Mastra abre (mensagem, orientar, fila), como a Factory e o Mastra Code. A trava, na forma mais
+simples: um Projeto, uma conversa escrevendo; `turnOf` recusa outra conversa com `abort` e `RUN_BUSY`; o
+`onBeforeAgentEnd` solta só a trava da sua conversa. Pelas rotas de hoje; a tela não muda. Regras: C26,
+S39, T24. **Prova.** 35 a 37, 41.
+
+## M2 As rotas do Mastra, a tela e as remoções
+
+**Raio.** Servidor: cria `guard.ts` (o escopo das rotas, 0050) e `end.ts`; apaga `routes.ts` (mandar,
+Parar, cartão, stream), `sessions.ts`, `deliver.ts`, `steer.ts`, `answers.ts`, `cards.ts`, `listen.ts`,
+`live.ts`, `tell.ts`, `turn-log.ts`, `turn-state.ts`, `turn-events.ts`, `turn-end.ts`, `turn-parts.ts`,
+`wire.ts`, `wire.check.ts` e a gravação da pergunta em `record.ts`; `runs/driven.ts` sai. Tela: saem
+`use-live.ts`, `timeline.ts`, `parts.ts`, `steer-screen.ts`, `steers.ts`, `steer-events.json`. `hub-api/`:
+saem o stream próprio, `mastra-parts.ts` e `wire-limits.ts`.
+
+**Contratos.** A lista fixa: `GET …/stream`, `POST …/messages`, `POST …/abort`, `POST …/tool-suspension`,
+`POST …/steer`, `POST …/follow-up`, `GET …/threads/:threadId/messages`; o resto do Mastra dá 404. A sessão
+nasce na rota "nova conversa" do Hub, `createSession({ id, resourceId, threadId: id })`. `end.ts`:
+`onBeforeAgentEnd` chama `runs.finish` pela conversa (versão, bundle, `data-conexus-version`). Tela: o
+`MastraClient` (`baseUrl: '/api/builder'`, `credentials: 'include'`), `subscribe` com `reconnect`, o redutor
+sobre `display_state_changed` e `message_*` na forma da Factory UI. Regras: C21, C26, S10, S39, S41, T23,
+T24. **Prova.** 3 a 5, 30, 31, 41 a 49.
+
+## M3 O Fim pelo `isTaskComplete`
+
+**Raio.** `processors.ts`: sai `checkGate`; `builder.ts`: `defaultOptions.isTaskComplete` com o avaliador
+`conexus-check` (`createScorer`), que acha a máquina pela conversa em `customContext.controller`. Regras:
+C26, T24. **Prova.** 15.
+
+## M4 O arquivo nativo do E2B
+
+**Raio.** `machine/`: saem `MachineFilesystem` (`filesystem.ts`) e `in-machine.ts`; entra o
+`E2BSandboxFilesystem` de `@mastra/e2b` 0.15 na `Workspace` da máquina (0051 Z2). Regras: T24. **Prova.**
+16.
 
 ## Por que a 14 deixou passar
 
