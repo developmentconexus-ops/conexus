@@ -3,7 +3,6 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
 import type { Machines } from '../machine/public.ts'
-import type { RunStore } from './store.ts'
 
 export type RunsDeps = {
   database: Database
@@ -11,14 +10,15 @@ export type RunsDeps = {
   /** The Projeto's repository on the server's volume (decision 0051). */
   repository: (ids: { companyId: CompanyId; projectId: ProjectId }) => Repository
   copy: GitCopy
+  /** Every Projeto with a repository on the volume: where the bucket may be behind. */
+  repositories: () => Promise<{ companyId: CompanyId; projectId: ProjectId }[]>
   log: FailureLog
   /** How long a turn may run; an hour (card, limits) unless a test shortens it. */
   turnMs?: () => number
 }
 
-/** What the runs share: the ports, the rows of the versions saved, and the Projetos written now. */
+/** What the runs share: the ports and the Projetos written now. */
 export type RunsContext = RunsDeps & {
-  store: RunStore
   retry: { kick(): void }
   /** Whether a run of this process writes in the Projeto now. */
   writing(projectId: ProjectId): boolean
