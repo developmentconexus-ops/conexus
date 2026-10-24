@@ -117,3 +117,5 @@ U6 e U7 da etapa 14.2 esperam a bancada da harness.
 Cartão da etapa 14.2 aprovado em 2026-10-22 (commit f76f4dce0a7a34a215e416767b4f51e9fed2509d): "C"
 
 Essa emenda põe a etapa 14.0, "Um registro da conversa", dentro da U2, com o desenho aprovado em "1. Sim … 2.B".
+
+Cartão da etapa 14.2 aprovado em 2026-10-23 (commit 27681cac9b96fe3b945c1a1ee26f20517936ffbe): "Aprovado"
