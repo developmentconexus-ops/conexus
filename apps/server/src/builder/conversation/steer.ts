@@ -36,6 +36,12 @@ export async function deliverInto(
  * A message sent while a card is open is Mastra's `steer`, its route's call: the abort denies the
  * parked calls, and the message waits for the run that denial resumes, then opens the next turn's
  * run. The denied run's end is not that turn's (`closing`). Whether the turn's run started.
+ * Our own (code C75): the native `Session.steer` is not enough. With cards parked, Mastra 1.79 tears
+ * the denied run down after the next run has started, and `onBeforeAgentEnd` cannot tell the two
+ * runs apart, so the turn bookkeeping would close the next turn with the old run's end. The tests
+ * "uma mensagem com pergunta aberta abre o turno seguinte e responde antes de ele acabar"
+ * (conversation-steer.test.ts) and "uma mensagem com pergunta aberta a fecha e abre o turno
+ * seguinte, sem RUN_BUSY" (conversation-waiting.test.ts) fail without `closing`.
  */
 export async function steerCards(
   live: Live,
