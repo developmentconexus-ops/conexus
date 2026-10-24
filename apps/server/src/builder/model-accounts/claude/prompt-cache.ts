@@ -13,7 +13,7 @@ type Message = Parameters<Transform>[0]['params']['prompt'][number]
 type Marked = { providerOptions?: Message['providerOptions'] }
 
 /** The agent's breakpoints' TTL; `activateAfterIdle` names the same for Anthropic (`builder.ts`). */
-export const PROMPT_CACHE_TTL = '1h'
+const PROMPT_CACHE_TTL = '1h'
 
 /**
  * `conversation`: the last system message and the latest message, 1 h, for the agent's steps.
@@ -21,7 +21,7 @@ export const PROMPT_CACHE_TTL = '1h'
  * whose content changes every call.
  */
 export type PromptCacheScope = 'conversation' | 'system'
-export const PROMPT_CACHE_SCOPES = [
+const PROMPT_CACHE_SCOPES = [
   'conversation',
   'system',
 ] as const satisfies readonly PromptCacheScope[]
