@@ -4,7 +4,15 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
 import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
-import { answeredOf, hubBeside, sent, streamOf } from './test-conversation.ts'
+import {
+  answeredOf,
+  conversing,
+  hubBeside,
+  sent,
+  started,
+  streamOf,
+  title,
+} from './test-conversation.ts'
 import { failuresOf, partsOf } from './test-parts.ts'
 import {
   answerUrl,
@@ -116,8 +124,28 @@ test('o Hub reinicia com uma pergunta aberta: a chamada fecha negada, a pergunta
   const read = (await answeredOf(beside, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
   assert.ok(read.some((part) => part.type === 'data-conexus-restarted'))
-  // The first copy, still alive in this test, lets its parked turn go.
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+})
+
+test('desligar com uma pergunta aberta não espera a pessoa: o stream fecha, e a cópia seguinte fecha a pergunta', async (t) => {
+  const { hub, ana, conversations } = await conversing(
+    t,
+    (asked) => title(asked) ?? { kind: 'blocks', blocks: [ask(WHO)] },
+  )
+  const closing = await hubBeside(t, hub)
+  const url = `${conversations}/${await started(closing, ana, conversations)}`
+  const stream = await streamOf(closing, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(closing, ana, url, 'Crie um app de encomendas')).statusCode, 202)
+  const { card } = await untilCard(stream, 'question')
+  await waitingRun(hub)
+  const closed = closing.close().then(() => 'closed')
+  assert.equal(await within(5_000, closed), 'closed', 'the close does not wait for the answer')
+  assert.equal(await stream.ended(), true)
+  const next = await hubBeside(t, hub)
+  await next.restart()
+  const read = (await answeredOf(next, ana, url)).flatMap((message) => message.parts)
+  assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
+  assert.ok(read.some((part) => part.type === 'data-conexus-restarted'))
 })
 
 test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao suspender', async (t) => {

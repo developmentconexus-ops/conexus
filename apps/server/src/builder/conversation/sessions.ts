@@ -17,7 +17,15 @@ import type { Restart, Runs } from '../runs/public.ts'
 import { answerCard } from './answers.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import { denyParked, expire, onCardEvent, releaseCards, steerCards, takeCards } from './cards.ts'
+import {
+  denyParked,
+  expire,
+  onCardEvent,
+  parked,
+  releaseCards,
+  steerCards,
+  takeCards,
+} from './cards.ts'
 import { deliver } from './deliver.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
@@ -50,8 +58,8 @@ export class Sessions {
   readonly #runs: Runs
   readonly #log: FailureLog
   readonly #open = new Map<ConversationId, Entry>()
-  // Every message from its arrival to the end of its run, for the drain to wait on.
-  readonly #turns = new Set<Promise<void>>()
+  // Every message from its arrival to the end of its run, with its session, for the drain to wait on.
+  readonly #turns = new Map<Promise<void>, Promise<Live>>()
   // Ends every stream once the turns are drained, so the server's close does not wait on them.
   readonly #closing = new AbortController()
 
@@ -176,7 +184,7 @@ export class Sessions {
         logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
       )
       .finally(() => this.#turns.delete(answered))
-    this.#turns.add(answered)
+    this.#turns.set(answered, kept)
     await kept
   }
 
@@ -331,9 +339,16 @@ export class Sessions {
     this.#log.info(fields, 'CONVERSATION_STOPPED')
   }
 
-  /** Waits for every message and turn in progress, then ends the streams (code C62); the caller holds the deadline. */
+  /**
+   * Waits for every message and turn in progress until it ends or parks, then ends the streams
+   * (code C62); the caller holds the deadline. A parked turn waits on a person, not on this copy:
+   * Mastra keeps it on the thread, and the copy that takes its run settles it.
+   */
   async drain(): Promise<void> {
-    await Promise.all(this.#turns)
+    const turns = [...this.#turns].map(([answered, kept]) =>
+      Promise.race([answered, kept.then(parked, () => answered)]),
+    )
+    await Promise.all(turns)
     this.#closing.abort()
   }
 

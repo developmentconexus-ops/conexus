@@ -77,6 +77,21 @@ export function resumed(live: Live, cards: Card[]): Promise<void> {
   })
 }
 
+/**
+ * Until the turn waits only on the person: a card open and no run in flight, as Mastra's
+ * `agent_end` `suspended` leaves it.
+ */
+export function parked(live: Live): Promise<void> {
+  return new Promise((done) => {
+    if (openCards(live).length > 0 && !live.session.run.isRunning()) return done()
+    const unsubscribe = live.session.subscribe((event) => {
+      if (event.type !== 'agent_end' || event.reason !== 'suspended') return
+      unsubscribe()
+      done()
+    })
+  })
+}
+
 /** Gives back the cards `takeCards` took. */
 export function releaseCards(live: Live, taken: string[]): void {
   for (const key of taken) live.session.releaseToolResponse(key)

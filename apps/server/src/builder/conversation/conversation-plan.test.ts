@@ -11,7 +11,6 @@ import {
   readPlan,
   SUBMIT,
   submitPlan,
-  tool,
   untilCard,
   WRITE_PLAN,
   writePlan,
@@ -91,38 +90,6 @@ test('submit_plan: o plano aprovado não é reescrito nem reenviado; outro plano
   )
   assert.equal(
     (await post(hub, ana, answerUrl(url, second.card.toolCallId), approved)).statusCode,
-    202,
-  )
-})
-
-test('submit_plan: depois de uma escrita do plano que falhou, é recusado e não abre cartão', async (t) => {
-  const failed = tool('mastra_workspace_edit_file', {
-    path: PLAN,
-    old_string: 'texto que não está no plano',
-    new_string: 'novo',
-  })
-  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [
-    [WRITE_PLAN],
-    [failed],
-    [SUBMIT],
-    [readPlan],
-    [WRITE_PLAN],
-    [SUBMIT],
-  ])
-  assert.equal((await send()).statusCode, 202)
-  const card = await untilCard(stream, 'plan')
-  assert.ok(
-    calls.some((each) => each.texts.some((text) => text.includes('the last write to'))),
-    'the refusal came first',
-  )
-  assert.equal(card.events.filter((event) => event.type === 'tool_suspended').length, 1)
-  assert.equal(
-    (
-      await post(hub, ana, answerUrl(url, card.card.toolCallId), {
-        kind: 'plan',
-        action: 'approved',
-      })
-    ).statusCode,
     202,
   )
 })

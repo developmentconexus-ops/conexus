@@ -4,7 +4,6 @@ import { Answer, QUESTION_LIMITS } from '@conexus/hub-api'
 import { askUserTool, submitPlanTool } from '@mastra/core/agent-controller'
 import type { MastraDBMessage } from '@mastra/core/memory'
 import { createTool, formatQuestionAnswer } from '@mastra/core/tools'
-import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
 import { APP_FOLDER, PLAN_DIR } from '../machine/public.ts'
 
@@ -98,44 +97,30 @@ const PlanCall = z.object({
   type: z.literal('tool-invocation'),
   toolInvocation: z.object({
     toolName: z.string(),
-    state: z.string(),
     args: z.object({ path: z.string() }),
-    isError: z.boolean().optional(),
     result: z.unknown().optional(),
   }),
 })
 const Submitted = z.looseObject({ submittedPlan: z.object({ action: z.string() }) })
-const PLAN_WRITES = new Set<string>([
-  WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE,
-  WORKSPACE_TOOLS.FILESYSTEM.EDIT_FILE,
-])
 
-/**
- * What the thread says of the plan files, from Mastra's committed calls (`getMessages`): the ones
- * the person approved, and the ones whose last write or edit failed.
- */
-function planHistory(messages: readonly MastraDBMessage[]) {
+/** The plan files the person approved, from Mastra's committed calls (`getMessages`). */
+function approvedPlans(messages: readonly MastraDBMessage[]) {
   const approved = new Set<string>()
-  const unwritten = new Set<string>()
   for (const { content } of messages) {
     for (const part of content.parts) {
       const call = PlanCall.safeParse(part)
       const file = call.success ? planFileOf(call.data.toolInvocation.args.path) : undefined
       if (!call.success || file === undefined) continue
-      const { toolName, state, isError, result } = call.data.toolInvocation
+      const { toolName, result } = call.data.toolInvocation
       if (
         toolName === SUBMIT_PLAN_TOOL &&
         Submitted.safeParse(result).data?.submittedPlan.action === 'approved'
       ) {
         approved.add(file)
-      } else if (PLAN_WRITES.has(toolName)) {
-        const failed = state === 'output-error' || isError === true
-        if (failed) unwritten.add(file)
-        else unwritten.delete(file)
       }
     }
   }
-  return { approved, unwritten }
+  return approved
 }
 
 /** A plan file's text as the card shows it: a leading `# title` is the title, the rest the plan. */
@@ -163,7 +148,7 @@ type SubmitPlanExecute = NonNullable<typeof submitPlanTool.execute>
 
 /**
  * Mastra's `submit_plan`, with the plan's home checked at the boundary: a `.md` directly in
- * `.conexus/plans`, not one the person approved, not one whose last write failed. The server reads
+ * `.conexus/plans`, not one the person approved. The server reads
  * the plan from the machine and suspends with its title and text beside the path, so the browser,
  * which has no filesystem, shows it. A resumed call is the person's decision and goes straight to
  * the native tool, which gives the model "User feedback: …" on a rejection.
@@ -179,12 +164,8 @@ export function createSubmitPlanTool(): typeof submitPlanTool {
         if (file === undefined) {
           return `Refused: a plan is a .md file directly in ${PLAN_DIR}. Write it there and submit that path.`
         }
-        const { approved, unwritten } = planHistory(agent?.getMessages?.() ?? [])
-        if (approved.has(file)) {
+        if (approvedPlans(agent?.getMessages?.() ?? []).has(file)) {
           return `Refused: ${file} is an approved plan and stays as it was. Write the new plan in a file of its own in ${PLAN_DIR} and submit that path.`
-        }
-        if (unwritten.has(file)) {
-          return `Refused: the last write to ${file} failed, so it still holds the earlier plan. Write it again and submit it.`
         }
         const raw = await context?.workspace?.filesystem?.readFile(file, { encoding: 'utf-8' })
         if (typeof raw === 'string' && agent?.suspend) {

@@ -122,31 +122,23 @@ for (const viewport of [DESKTOP, PHONE]) {
     assert.ok(state, 'the sweep lacks the conversation state')
     const page = await harness.open(state.path, { viewport, replies: state.replies })
     await state.settle(page)
-    const rows = await page.locator('[data-slot=trace-line]').all()
-    assert.ok(rows.length > 0, 'the conversation shows no tool rows')
+    const rows = await page
+      .locator('[data-slot=trace-line]:has([data-slot=trace-description])')
+      .all()
+    assert.ok(rows.length >= 4, 'the conversation shows no tool rows')
     for (const row of rows) {
-      const title = row.locator('[data-slot=trace-title]')
-      const titleLayout = await title.evaluate((el) => ({
-        text: el.textContent,
-        clipped: el.scrollWidth > el.clientWidth,
-        width: el.clientWidth,
-      }))
-      assert.equal(
-        titleLayout.clipped,
-        false,
-        `"${titleLayout.text}" is cut at ${viewport.width}px (title width ${titleLayout.width}px)`,
+      const [title, detail] = await Promise.all(
+        ['trace-title', 'trace-description'].map((slot) =>
+          row.locator(`[data-slot=${slot}]`).evaluate((el) => ({
+            text: el.textContent,
+            clipped: el.scrollWidth > el.clientWidth,
+            width: Math.round(el.getBoundingClientRect().width),
+          })),
+        ),
       )
-      const detail = row.locator('[data-slot=trace-description]')
-      if (await detail.count()) {
-        const detailLayout = await detail.evaluate((el) => ({
-          text: el.textContent,
-          width: Math.round(el.getBoundingClientRect().width),
-        }))
-        assert.ok(
-          detailLayout.width >= 48,
-          `"${detailLayout.text}" has no room beside "${titleLayout.text}"`,
-        )
-      }
+      assert.ok(title && detail, 'a tool row lacks its sentence or its detail')
+      assert.equal(title.clipped, false, `"${title.text}" is cut at ${viewport.width}px`)
+      assert.ok(detail.width >= 48, `"${detail.text}" has no room beside "${title.text}"`)
     }
     assert.deepEqual(page.problems, [])
     await page.close()
