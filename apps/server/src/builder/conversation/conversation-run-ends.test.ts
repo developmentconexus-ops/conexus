@@ -19,7 +19,7 @@ import {
   streamOf,
   title,
 } from './test-conversation.ts'
-import { failuresOf } from './test-parts.ts'
+import { dataOf, failuresOf } from './test-parts.ts'
 
 /** Whether `promise` settles within `ms`. */
 async function within(promise: Promise<unknown>, ms: number): Promise<'settled' | 'hung'> {
@@ -35,7 +35,9 @@ function inProgressOf(read: { json(): unknown }): unknown {
   return 'inProgress' in conversation ? conversation.inProgress : undefined
 }
 
-test('o Mastra não consegue guardar a resposta no fim do turno: o turno termina, e desligar não espera para sempre', async (t) => {
+test('o Mastra não consegue guardar a resposta no fim do turno: o turno termina, e desligar não espera para sempre', {
+  timeout: 60_000,
+}, async (t) => {
   const held = holding(t)
   const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
   const closing = await hubBeside(t, hub)
@@ -52,7 +54,40 @@ test('o Mastra não consegue guardar a resposta no fim do turno: o turno termina
   assert.equal(await within(closing.close(), 10_000), 'settled', 'the close does not hang')
 })
 
-test('a linha cai e o turno acaba sem ela: a leitura diz que nenhum turno está em curso, para a tela sair de "trabalhando"', async (t) => {
+test('desligar no meio do turno o para como Parar: o fim diz parado, a versão fica guardada e o desligar acaba dentro do prazo', {
+  timeout: 60_000,
+}, async (t) => {
+  const held = holding(t)
+  const write = {
+    type: 'tool_use',
+    name: 'mastra_workspace_write_file',
+    input: { path: 'a.ts', content: 'x\n' },
+  } as const
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (asked) => {
+    if (title(asked) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    return step === 1 ? { kind: 'blocks', blocks: [write] } : held.reply
+  })
+  const closing = await hubBeside(t, hub)
+  const url = `${conversations}/${await started(closing, ana, conversations)}`
+  const stream = await streamOf(closing, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(closing, ana, url, 'Crie o app')).statusCode, 202)
+  assert.equal(await stream.text(), PARTIAL)
+  const closed = closing.close()
+  const events = await stream.turn()
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
+  assert.deepEqual(
+    dataOf(events, 'data-conexus-version').map((version) => Object(version).number),
+    [1],
+  )
+  assert.equal(await within(closed, 10_000), 'settled', 'the close ends within the deadline')
+})
+
+test('a linha cai e o turno acaba sem ela: a leitura diz que nenhum turno está em curso, para a tela sair de "trabalhando"', {
+  timeout: 60_000,
+}, async (t) => {
   const held = holding(t)
   const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
   const url = `${conversations}/${await started(hub, ana, conversations)}`
@@ -152,7 +187,9 @@ async function endOf(stream: Awaited<ReturnType<typeof streamOf>>) {
   return Promise.race([ended(), late])
 }
 
-test('o Mastra recusa a mensagem ao aceitá-la: o turno termina com erro, uma vez', async (t) => {
+test('o Mastra recusa a mensagem ao aceitá-la: o turno termina com erro, uma vez', {
+  timeout: 60_000,
+}, async (t) => {
   const send = Agent.prototype.sendSignal
   const mocked = t.mock.method(Agent.prototype, 'sendSignal', send)
   mocked.mock.mockImplementationOnce(() => {
@@ -162,7 +199,9 @@ test('o Mastra recusa a mensagem ao aceitá-la: o turno termina com erro, uma ve
   assert.deepEqual(await endOf(stream), { ends: ['error'], failures: ['INTERNAL_UNEXPECTED'] })
 })
 
-test('Parar enquanto o Mastra aceita a mensagem: o turno termina parado, uma vez', async (t) => {
+test('Parar enquanto o Mastra aceita a mensagem: o turno termina parado, uma vez', {
+  timeout: 60_000,
+}, async (t) => {
   const gated = gatedAcceptance(t)
   const { hub, ana, conversations } = await conversing(
     t,
@@ -178,7 +217,9 @@ test('Parar enquanto o Mastra aceita a mensagem: o turno termina parado, uma vez
   assert.deepEqual(await endOf(stream), { ends: ['aborted'], failures: [] })
 })
 
-test('o Mastra desmonta a linha do turno antes do fim: o turno termina parado, uma vez', async (t) => {
+test('o Mastra desmonta a linha do turno antes do fim: o turno termina parado, uma vez', {
+  timeout: 60_000,
+}, async (t) => {
   const sessions = sessionsOf(t)
   hungConsumer(t)
   const accepted = nextAcceptance(t)
@@ -190,7 +231,9 @@ test('o Mastra desmonta a linha do turno antes do fim: o turno termina parado, u
   assert.deepEqual(await endOf(stream), { ends: ['aborted'], failures: [] })
 })
 
-test('o laço que lê a linha do Mastra falha: o turno termina com erro, uma vez', async (t) => {
+test('o laço que lê a linha do Mastra falha: o turno termina com erro, uma vez', {
+  timeout: 60_000,
+}, async (t) => {
   t.mock.method(Session.prototype, 'processSubscribedThreadStream', () =>
     Promise.reject(new Error('consumer blew up')),
   )
@@ -198,7 +241,9 @@ test('o laço que lê a linha do Mastra falha: o turno termina com erro, uma vez
   assert.deepEqual(await endOf(stream), { ends: ['error'], failures: ['INTERNAL_UNEXPECTED'] })
 })
 
-test('Parar e o Mastra nunca diz o fim da execução: o turno termina parado, e desligar não espera', async (t) => {
+test('Parar e o Mastra nunca diz o fim da execução: o turno termina parado, e desligar não espera', {
+  timeout: 60_000,
+}, async (t) => {
   hungConsumer(t)
   const accepted = nextAcceptance(t)
   const { hub, ana, conversations } = await conversing(

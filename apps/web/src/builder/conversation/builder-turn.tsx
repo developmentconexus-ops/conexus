@@ -1,5 +1,5 @@
 import type { ModelId } from '@conexus/hub-api'
-import { FailureData, MachineData, NoticeData, RestartedData, VersionData } from '@conexus/hub-api'
+import { FailureData, MachineData, NoticeData, VersionData } from '@conexus/hub-api'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { hourOf } from '../../platform/dates.ts'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
@@ -7,13 +7,7 @@ import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
-import {
-  FailureLine,
-  MachineLine,
-  NoticeLine,
-  RestartedLine,
-  VersionLine,
-} from './machine-line.tsx'
+import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
 import { PersonBubble } from './person-turn.tsx'
 import { PlanCard } from './plan-card.tsx'
@@ -31,10 +25,6 @@ function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conex
   if (item.partType === 'data-conexus-version') {
     const parsed = VersionData.safeParse(item.data)
     return parsed.success ? <VersionLine data={parsed.data} /> : null
-  }
-  if (item.partType === 'data-conexus-restarted') {
-    const parsed = RestartedData.safeParse(item.data)
-    return parsed.success ? <RestartedLine data={parsed.data} /> : null
   }
   if (item.partType === 'data-conexus-failure') {
     const parsed = FailureData.safeParse(item.data)

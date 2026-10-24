@@ -94,12 +94,13 @@ test('tirar a pessoa enquanto o turno dela guarda: a execução para, e o main n
   t.after(() => gate.resolve())
   hub.builder.knobs.holdReceive = gate.promise
   void asked(t, { hub, person: bruno, conversations }).catch(() => undefined)
-  let state: unknown
-  for (let attempt = 0; attempt < 100 && state !== 'saving'; attempt += 1) {
-    await new Promise((done) => setTimeout(done, 50))
-    state = (await hub.test.asOwner('select state from builder.run'))[0]?.state
+  function saving() {
+    return hub.lines.some((line) => line.message === 'RUN_SETTLING')
   }
-  assert.equal(state, 'saving')
+  for (let attempt = 0; attempt < 100 && !saving(); attempt += 1) {
+    await new Promise((done) => setTimeout(done, 50))
+  }
+  assert.ok(saving(), 'the turn saves, held before its commit is checked in')
   const member = `/api/companies/${companyId}/members/${bruno.id}`
   assert.equal((await call(hub, ana, 'DELETE', member)).statusCode, 204)
   gate.resolve()

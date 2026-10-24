@@ -1,17 +1,9 @@
-import type {
-  CompanyId,
-  ConversationId,
-  Kept,
-  PersonId,
-  ProjectId,
-  RunId,
-  VersionCheck,
-} from '@conexus/hub-api'
+import type { CompanyId, PersonId, ProjectId, VersionCheck } from '@conexus/hub-api'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
 import type { Machines } from '../machine/public.ts'
-import type { Run, RunStore } from './store.ts'
+import type { RunStore } from './store.ts'
 
 export type RunsDeps = {
   database: Database
@@ -22,33 +14,20 @@ export type RunsDeps = {
   log: FailureLog
   /** How long a turn may run; an hour (card, limits) unless a test shortens it. */
   turnMs?: () => number
-  /** How long a question waits for its answer; thirty minutes (card) unless a test shortens it. */
-  questionMs?: () => number
-  /** How often a turn's lease is renewed; every 30 seconds unless a test shortens it. */
-  renewMs?: () => number
-  /** How long a stopping copy waits for its turns before it lets go of their leases; 8 seconds unless a test shortens it. */
-  yieldMs?: () => number
 }
 
-/** What a restart tells the conversation of the turn it ended: the version kept, if any. */
-export type Restart = {
-  companyId: CompanyId
-  personId: PersonId
-  conversationId: ConversationId
-  runId: RunId
-  kept: Kept
-}
-
-/** What the runs share: the ports and the rows. */
+/** What the runs share: the ports, the rows of the versions saved, and the Projetos written now. */
 export type RunsContext = RunsDeps & {
   store: RunStore
   retry: { kick(): void }
-  /** Lets go of a run this copy drives: its timers stop and its workspace is forgotten. */
-  stopped(runId: RunId): Promise<void>
-  /** Hands what a restart told a turn to its conversation, for its open streams and its thread. */
-  restarted(restart: Restart): Promise<void>
-  /** A run whose copy is gone, handed to its conversation when Mastra still parks its card; false when none is parked. */
-  adopted(run: Run): Promise<boolean>
+  /** Whether a run of this process writes in the Projeto now. */
+  writing(projectId: ProjectId): boolean
+  /** Lets go of the runs a removal reaches: their timers stop, their workspace is forgotten, and nothing of them is saved. */
+  stopWriting(scope: {
+    companyId: CompanyId
+    projectId?: ProjectId
+    personId?: PersonId
+  }): Promise<void>
 }
 
 /**

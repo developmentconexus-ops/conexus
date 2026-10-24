@@ -6,6 +6,9 @@ import { z } from 'zod'
 /** The provider replies `scripts/record-provider.ts` saved: `<provider>-<case>.sse` and its `.json`. */
 export const RECORDINGS = join(import.meta.dirname, 'recordings')
 
+/** What the native flow's recordings hold: `scripts/record.ts` saved `mastra/<scenario>.jsonl`. */
+export const NATIVE_RECORDINGS = join(RECORDINGS, 'mastra')
+
 /** An address, a bearer or a key's known prefix: a person or a credential, never in a recording (S40). */
 export const LEAK = /[\w.+-]+@[\w-]+\.[\w.-]+|bearer\s|sk-ant-|ya29\.|AIza/i
 
@@ -47,4 +50,40 @@ export function replayed(name: string, signal: AbortSignal | null | undefined): 
     },
   })
   return new Response(stream, { headers })
+}
+
+/** The first line of a native recording: the library, its version and the provider body it replayed (testing T24). */
+export const NativeHeader = z.object({
+  kind: z.literal('header'),
+  scenario: z.string().min(1),
+  library: z.string().min(1),
+  version: z.string().min(1),
+  sdk: z.string().min(1),
+  source: z.string().min(1),
+  recordedAt: z.iso.date(),
+})
+export type NativeHeader = z.infer<typeof NativeHeader>
+
+const NativeLine = z.discriminatedUnion('kind', [
+  NativeHeader,
+  z.object({ kind: z.literal('event'), event: z.looseObject({ type: z.string() }) }),
+  z.object({ kind: z.literal('row'), table: z.string(), row: z.unknown() }),
+])
+
+/**
+ * What Mastra's AgentController emitted and stored for one scenario, as it emitted and stored it:
+ * a test feeds our code these events and rows, never ones typed by hand (testing T24).
+ */
+export function nativeRecording(scenario: string) {
+  const lines = readFileSync(join(NATIVE_RECORDINGS, `${scenario}.jsonl`), 'utf8')
+    .split('\n')
+    .filter((line) => line !== '')
+    .map((line) => NativeLine.parse(JSON.parse(line)))
+  const [header, ...rest] = lines
+  if (header?.kind !== 'header') throw new Error(`${scenario}.jsonl does not start with its header`)
+  return {
+    header,
+    events: rest.flatMap((line) => (line.kind === 'event' ? [line.event] : [])),
+    rows: rest.flatMap((line) => (line.kind === 'row' ? [line] : [])),
+  }
 }

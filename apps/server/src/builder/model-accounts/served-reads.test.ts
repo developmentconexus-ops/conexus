@@ -12,7 +12,7 @@ import {
   post,
 } from '../../hub/identity/test-hub.ts'
 import { testCliProxy } from '../../platform/test-cliproxy-binary.ts'
-import { company, connect } from '../conversation/test-defaults.ts'
+import { company, connect } from './test-defaults.ts'
 
 const SONNET_NEW = 'anthropic/claude-sonnet-5-5'
 const SONNET_OLD = 'anthropic/claude-sonnet-4-5'

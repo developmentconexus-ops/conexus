@@ -9,8 +9,6 @@ import {
   asked,
   conversing,
   holding,
-  hubBeside,
-  messagesOf,
   sent,
   started,
   streamOf,
@@ -77,9 +75,7 @@ test('só resposta: o turno fecha sem versão e sem tocar a máquina', async (t)
     text: call.stream ? 'Só uma resposta' : 'Título',
   }))
   await asked(t, { hub, person: ana, conversations })
-  const [only] = await runs(hub)
-  assert.equal(only?.state, 'unchanged')
-  assert.equal(only?.base_sha, null)
+  assert.deepEqual(await runs(hub), [], 'no version, no row')
   assert.deepEqual(await hub.test.asOwner('select * from builder.machine'), [])
   assert.equal(existsSync(join(hub.builder.folder, 'app')), false)
 })
@@ -97,8 +93,6 @@ test('execução aberta: a mensagem de outro no Projeto é RUN_BUSY; em outro Pr
   await stream.said()
   const second = `${conversations}/${await started(hub, ana, conversations)}`
   assert.equal((await sent(hub, ana, second, 'Outra')).statusCode, 409)
-  const made = await hub.test.asOwner(`select 1 from builder.run where state = 'open'`)
-  assert.equal(made.length, 1)
   const projects = `/api/companies/${companyId}/projects`
   const other = await post(hub, ana, projects, { name: 'Estoque' })
   const inOther = `${projects}/${String(Object(other.json()).project.id)}/conversations`
@@ -149,7 +143,7 @@ test('a máquina cai antes de guardar: failed, MACHINE_LOST, e o main como era',
   )
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['MACHINE_LOST'])
-  assert.equal((await runs(hub))[0]?.state, 'failed')
+  assert.deepEqual(await runs(hub), [])
   assert.equal(
     await hub.builder
       .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })
@@ -163,7 +157,7 @@ test('a máquina não liga na primeira ferramenta: o aviso de que não ligou, n�
   hub.builder.control.start = 'unreachable'
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
-  assert.equal((await runs(hub))[0]?.state, 'failed')
+  assert.deepEqual(await runs(hub), [])
 })
 
 test('Git sumiu do disco e a cópia tem versão: o turno falha com GIT_RESTORE_NEEDED e nada recomeça na versão 1', async (t) => {
@@ -178,7 +172,7 @@ test('Git sumiu do disco e a cópia tem versão: o turno falha com GIT_RESTORE_N
   })
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['GIT_RESTORE_NEEDED'])
-  assert.equal((await runs(hub))[0]?.state, 'failed')
+  assert.deepEqual(await runs(hub), [])
   const repository = hub.builder.repository({
     companyId: CompanyId.parse(companyId),
     projectId: ProjectId.parse(projectId),
@@ -194,7 +188,7 @@ test('recusa ao guardar (2.000 arquivos): o texto da recusa, o main como era', a
   const { hub, ana, conversations, companyId, projectId } = await conversing(t, working(many))
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['SAVE_REFUSED'])
-  assert.equal((await runs(hub))[0]?.state, 'failed')
+  assert.deepEqual(await runs(hub), [])
   const repository = hub.builder.repository({
     companyId: CompanyId.parse(companyId),
     projectId: ProjectId.parse(projectId),
@@ -208,7 +202,7 @@ test('nada mudado: sem versão; o comando tocou a máquina, o turno fecha unchan
     working({ name: COMMAND, input: { command: 'echo oi' } }),
   )
   await asked(t, { hub, person: ana, conversations })
-  assert.equal((await runs(hub))[0]?.state, 'unchanged')
+  assert.deepEqual(await runs(hub), [])
   assert.equal(
     await hub.builder
       .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })
@@ -229,54 +223,7 @@ test('R2 fora: a versão fica guardada no servidor e a cópia pendente é repeti
   assert.equal(hub.builder.bucket.held.size, 1)
 })
 
-test('reinício entre a candidata e o avanço: uma versão; sem candidata: interrupted', async (t) => {
-  const { hub, ana, conversations, companyId, projectId } = await conversing(
-    t,
-    working(writing('a.ts', 'x\n')),
-  )
-  hub.builder.knobs.dies.advance = 1
-  await asked(t, { hub, person: ana, conversations })
-  const repository = hub.builder.repository({
-    companyId: CompanyId.parse(companyId),
-    projectId: ProjectId.parse(projectId),
-  })
-  assert.equal((await runs(hub))[0]?.state, 'saving')
-  assert.equal(await repository.version(), 0)
-  await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
-  await hub.close()
-  await hub.runs.settleRuns()
-  assert.equal((await runs(hub))[0]?.state, 'saved')
-  assert.equal(await repository.version(), 1)
-  assert.equal(hub.builder.bucket.held.size, 1)
-})
-
-test('o processo morre antes da candidata: a execução é interrupted, o main fica como era e o turno diz que foi cortado', async (t) => {
-  const { hub, ana, conversations, companyId, projectId } = await conversing(
-    t,
-    working(writing('a.ts', 'x\n')),
-  )
-  hub.builder.knobs.dies.receive = 1
-  const { url } = await asked(t, { hub, person: ana, conversations })
-  await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
-  await hub.close()
-  const beside = await hubBeside(t, hub)
-  await beside.restart()
-  assert.equal((await runs(beside))[0]?.state, 'interrupted')
-  const told = (await messagesOf(beside, ana, url))
-    .flatMap((message) => message.parts)
-    .flatMap((part) =>
-      part.type === 'data-conexus-restarted' && 'data' in part ? [part.data] : [],
-    )
-  assert.deepEqual(told, [{ kept: 'lost' }])
-  assert.equal(
-    await hub.builder
-      .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })
-      .version(),
-    0,
-  )
-})
-
-test('a varredura: só a máquina marcada, parada há 7 dias e sem execução aberta é morta', async (t) => {
+test('a varredura: só a máquina marcada, parada há 7 dias e sem turno escrevendo é morta', async (t) => {
   const held = holding(t)
   let step = 0
   const first = working(writing('a.ts', 'x\n'))

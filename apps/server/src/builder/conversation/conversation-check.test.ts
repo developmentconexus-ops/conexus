@@ -7,7 +7,6 @@ import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
 import type { MastraPart } from '@conexus/hub-api'
 import { CompanyId, ProjectId, VersionCheck } from '@conexus/hub-api'
 import { z } from 'zod'
-import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, messagesOf, title } from './test-conversation.ts'
 import { partsOf } from './test-parts.ts'
@@ -206,15 +205,15 @@ test('a máquina que não confere no fim do turno: o turno termina e guarda a ve
   assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), unchecked)
 })
 
-test('Parar antes do fim do turno: a versão fica sem veredito, nem a conferência roda', async (t) => {
+test('uma pergunta encerra o turno: a versão fica sem veredito, nem a conferência roda', {
+  timeout: 60_000,
+}, async (t) => {
   const write = tool(WRITE.name, WRITE.input)
-  const { hub, ana, url, stream, send } = await conversingWith(t, [[write, ask(WHO)]])
+  const { hub, stream, send } = await conversingWith(t, [[write, ask(WHO)]])
   const check = checking(hub.builder.folder, ['platform'])
   assert.equal((await send()).statusCode, 202)
-  await untilCard(stream, 'question')
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
-  const events = await stream.turn()
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
+  const { events } = await untilCard(stream, 'question')
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.equal(check.calls(), 0)
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })
@@ -303,16 +302,16 @@ test(`tarefas abertas em ${CHECK_LIMITS.checks} fins: a versão fica pela metade
   assert.equal(ended?.fields.rounds, CHECK_LIMITS.checks)
 })
 
-test('Parar com tarefas abertas: nada volta ao modelo e a versão fica sem veredito (14.2, 15)', async (t) => {
+test('uma pergunta com tarefas abertas: nada volta ao modelo e a versão fica sem veredito (14.2, 15)', {
+  timeout: 60_000,
+}, async (t) => {
   const write = tool(WRITE.name, WRITE.input)
   const tasks = tool(TASKS.name, TASKS.input)
-  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[tasks, write, ask(WHO)]])
+  const { hub, stream, send, calls } = await conversingWith(t, [[tasks, write, ask(WHO)]])
   const check = checking(hub.builder.folder, [])
   assert.equal((await send()).statusCode, 202)
-  await untilCard(stream, 'question')
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
-  const events = await stream.turn()
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
+  const { events } = await untilCard(stream, 'question')
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.deepEqual(toldOpen(calls), [])
   assert.equal(check.calls(), 0)
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])

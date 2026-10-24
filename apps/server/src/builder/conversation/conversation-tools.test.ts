@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { GROQ_MODEL } from '../model-accounts/test-defaults.ts'
 import {
   answeredOf,
   asked,
@@ -28,7 +29,7 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
   for (const account of [groq, google]) {
     assert.equal((await post(hub, ana, accounts, account)).statusCode, 201)
   }
-  for (const model of ['groq/llama-3.3-70b-versatile', 'google/gemini-2.5-flash', undefined]) {
+  for (const model of [GROQ_MODEL, 'google/gemini-2.5-flash', undefined]) {
     const url = `${conversations}/${await started(hub, ana, conversations, { model })}`
     const stream = await streamOf(hub, ana, url)
     t.after(() => stream.close())

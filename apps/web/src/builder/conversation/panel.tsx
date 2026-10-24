@@ -27,7 +27,6 @@ import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } fr
 import { useReturnedSteers, withoutTold } from './steer-screen.ts'
 import { TaskPanel } from './task-panel.tsx'
 import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
-import { textOf } from './transcript.ts'
 import { Transcript } from './transcript.tsx'
 import { useLive } from './use-live.ts'
 import { WorkingLine } from './working-line.tsx'
@@ -206,20 +205,12 @@ function Screen(params: Params) {
   const [gone, setGone] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
   const draft = useDraft(conversationId)
-  const { state, dispatch } = useLive(
-    params,
-    () => {
-      void queryClient.invalidateQueries({
-        queryKey: allConversationsQueryKey(companyId, projectId),
-      })
-      setGone(true)
-    },
-    // The restart ended the turn: the last message goes back in the field, to be sent again.
-    () => {
-      const last = conversation.messages.findLast((message) => message.role === 'person')
-      if (last && draft.text.trim() === '') draft.change(textOf(last))
-    },
-  )
+  const { state, dispatch } = useLive(params, () => {
+    void queryClient.invalidateQueries({
+      queryKey: allConversationsQueryKey(companyId, projectId),
+    })
+    setGone(true)
+  })
   const { error, setError, send, halt } = useSending(params, field, dispatch, () => setGone(true))
 
   useEffect(() => field.current?.focus(), [])

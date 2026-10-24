@@ -6,6 +6,7 @@ import { applyUpdate } from '@conexus/hub-api'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
 import {
   conversing,
   KEY,
@@ -16,7 +17,6 @@ import {
   streamOf,
   title,
 } from './test-conversation.ts'
-import { connect } from './test-defaults.ts'
 import { noticesOf } from './test-parts.ts'
 
 const OBSERVER = /^You are the memory consciousness/
@@ -68,7 +68,7 @@ test('o Builder sai de createCodingAgent sem workspace próprio: as ferramentas 
   )
 })
 
-const GROQ = 'groq/llama-3.3-70b-versatile'
+const GROQ = GROQ_MODEL
 
 /** The memory's calls among a provider's: the observer's prompt opens with its identity. */
 function observed(calls: Sent[]): Sent[] {

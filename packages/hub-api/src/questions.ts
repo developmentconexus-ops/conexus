@@ -4,8 +4,8 @@ import { z } from 'zod'
 export const ToolCallId = z.string().min(1).max(200).brand('ToolCallId')
 export type ToolCallId = z.infer<typeof ToolCallId>
 
-/** The most questions one card holds, and how long one waits for its answer. */
-export const QUESTION_LIMITS = { questions: 4, waitMs: 30 * 60_000 }
+/** The most questions one card holds; a card waits for its answer with no deadline. */
+export const QUESTION_LIMITS = { questions: 4 }
 
 const Option = z.object({ label: z.string().min(1), description: z.string().optional() })
 /** One question of a card: a choice among options or free text. */

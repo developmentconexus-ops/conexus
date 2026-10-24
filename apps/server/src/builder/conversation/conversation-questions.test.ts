@@ -5,6 +5,7 @@ import { memberOn, post } from '../../hub/identity/test-hub.ts'
 import { answeredOf } from './test-conversation.ts'
 import { partsOf } from './test-parts.ts'
 import {
+  answerTo,
   answerUrl,
   ask,
   cards,
@@ -26,7 +27,7 @@ test('ask_user com 1 a 4 perguntas: a volta espera, o `tool_suspended` chega e a
     [WHO.question],
   )
   const answers = { kind: 'answers', answers: ['Todos (recomendado)'] }
-  const answered = await post(hub, ana, answerUrl(url, card.toolCallId), answers)
+  const answered = await answerTo(hub, ana, url, card.toolCallId, answers)
   assert.equal(answered.statusCode, 202, answered.body)
   const rest = await stream.turn()
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
@@ -88,7 +89,10 @@ test('responder: dono da Conversa, uma vez, com as respostas certas; outra pesso
   }
   const plan = await post(hub, ana, where, { kind: 'plan', action: 'approved' })
   assert.equal(plan.statusCode, 422)
-  const right = await post(hub, ana, where, { kind: 'answers', answers: ['a', 'b'] })
+  const right = await answerTo(hub, ana, url, card.toolCallId, {
+    kind: 'answers',
+    answers: ['a', 'b'],
+  })
   assert.equal(right.statusCode, 202, right.body)
   const again = await post(hub, ana, where, { kind: 'answers', answers: ['a', 'b'] })
   assert.equal(again.statusCode, 409)

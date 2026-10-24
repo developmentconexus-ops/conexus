@@ -2,14 +2,14 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { asked, conversing, KEY } from './test-conversation.ts'
-import { company, connect, created, pairOf, patch } from './test-defaults.ts'
-import { noticesOf } from './test-parts.ts'
+import { asked, conversing, KEY } from '../conversation/test-conversation.ts'
+import { noticesOf } from '../conversation/test-parts.ts'
+import { company, connect, created, GROQ_MODEL, pairOf, patch } from './test-defaults.ts'
 
 const SONNET_NEW = 'anthropic/claude-sonnet-5-5'
 const SONNET_OLD = 'anthropic/claude-sonnet-4-5'
 const GPT = 'openai/gpt-5'
-const GROQ = 'groq/llama-3.3-70b-versatile'
+const GROQ = GROQ_MODEL
 
 /** The models the pickers offer the company, read from the Hub. */
 async function offered(

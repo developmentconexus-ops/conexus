@@ -1,9 +1,7 @@
 import type {
   FailureData,
-  Kept,
   MachineData,
   MachinePhase,
-  RestartedData,
   RunId,
   TurnFailureCode,
   VersionData,
@@ -52,22 +50,6 @@ export function beginTurn(live: Live, writing: Writing): TurnLog {
   const messages = messagesOf(turn, wireSuspended(parked))
   say(live, turn, { type: 'turn', messages, startedAt: turn.startedAt })
   return turn
-}
-
-/** A turn another copy ran, ended by a restart: said and kept as this process's last turn. */
-export function tellRestarted(live: Live, runId: RunId, kept: Kept): void {
-  if (isOpen(live.state)) {
-    // The Projeto's lock lets one turn run at a time, so a turn open here cannot be the restarted one's.
-    logFailure(
-      live.log,
-      new Failure('INTERNAL_UNEXPECTED', { cause: 'a restart met an open turn' }),
-    )
-    return
-  }
-  const turn = newTurn(runId)
-  live.state = { kind: 'ended', last: turn }
-  tellExtra(live, turn, { type: 'data-conexus-restarted', data: { kept } satisfies RestartedData })
-  say(live, turn, { type: 'turnEnd', reason: 'aborted' })
 }
 
 /** The machine's step, told as the part that says what the turn waits for; a replaced machine lasts. */

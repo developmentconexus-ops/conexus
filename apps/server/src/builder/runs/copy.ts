@@ -1,10 +1,9 @@
 import type { RunsContext } from './context.ts'
-import type { Run } from './store.ts'
+import type { SavedRun } from './store.ts'
 
 /** Puts a saved version's bundle in the bucket; false, logged, when the bucket did not take it. */
-export async function copyVersion(context: RunsContext, saved: Run): Promise<boolean> {
+export async function copyVersion(context: RunsContext, saved: SavedRun): Promise<boolean> {
   const { companyId, projectId, candidateSha } = saved
-  if (candidateSha === null) return true
   const repository = context.repository({ companyId, projectId })
   try {
     const version = await repository.versionAt(candidateSha)

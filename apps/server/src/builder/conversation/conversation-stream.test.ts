@@ -151,7 +151,9 @@ test('Parar: o turno termina `aborted` e o texto até ali fica na conversa', asy
   ])
 })
 
-test('desligar espera o turno em curso, guarda o texto e só então fecha o stream', async (t) => {
+test('desligar para o turno em curso como Parar, guarda o texto e só então fecha o stream', {
+  timeout: 60_000,
+}, async (t) => {
   const held = holding(t)
   const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
   const closing = await hubBeside(t, hub)
@@ -161,11 +163,8 @@ test('desligar espera o turno em curso, guarda o texto e só então fecha o stre
   assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 202)
   assert.equal(await stream.text(), PARTIAL)
   const closed = closing.close()
-  assert.equal(await settles(closed), false, 'the close waits for the turn')
-  assert.equal(stream.seen.ended, false)
-  held.release()
+  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'aborted' })
   await closed
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.equal(await stream.ended(), true)
   assert.deepEqual(rolesAndParts(await call(hub, ana, 'GET', url)), [
     ['person', [{ type: 'text', text: 'Uma pergunta' }]],

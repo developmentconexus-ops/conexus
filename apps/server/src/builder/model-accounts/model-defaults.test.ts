@@ -2,11 +2,11 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, plantCompany } from '../../hub/identity/test-hub.ts'
-import { MODEL } from './test-conversation.ts'
-import { company, connect, created, pairOf, patch, startOf } from './test-defaults.ts'
+import { MODEL } from '../conversation/test-conversation.ts'
+import { company, connect, created, GROQ_MODEL, pairOf, patch, startOf } from './test-defaults.ts'
 
 const GPT = 'openai/gpt-5'
-const GROQ = 'groq/llama-3.3-70b-versatile'
+const GROQ = GROQ_MODEL
 
 test('uma conversa nova começa no padrão da pessoa, senão no da empresa, e copia o par ao nascer', async (t) => {
   const { hub, ana, carla, conversations, mine } = await company(t)

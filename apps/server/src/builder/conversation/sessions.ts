@@ -7,37 +7,33 @@ import type {
   OMProgress,
   ProjectId,
   QuestionAnswer,
+  RunId,
   ToolCallId,
 } from '@conexus/hub-api'
+import { isSessionStartupCancelledError } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { memoryModelsFor, Turn } from '../model-accounts/public.ts'
-import type { Restart, Run, Runs } from '../runs/public.ts'
-import { answerCard } from './answers.ts'
+import { memoryModelsFor, Turn, turnContext } from '../model-accounts/public.ts'
+import type { Runs } from '../runs/public.ts'
+import { claimAnswer } from './answers.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import {
-  adoptCards,
-  detach,
-  onCardEvent,
-  openCards,
-  parked,
-  releaseCards,
-  takeCards,
-} from './cards.ts'
+import { openCards, releaseCards, restoreCards, takeCards } from './cards.ts'
+import { deliver } from './deliver.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
 import { cancelPending } from './live.ts'
 import type { Question } from './record.ts'
-import { questionId, saveQuestion, saveRestarted } from './record.ts'
-import { deliverInto, nextRunOrEnd, steerCards, turnOver } from './steer.ts'
-import { beforeAgentEnd } from './turn-end.ts'
+import { questionId, saveQuestion, settled } from './record.ts'
+import { deliverInto, steerCards } from './steer.ts'
+import { beforeAgentEnd, endUnstarted, runTurn } from './turn-end.ts'
 import { onEvent } from './turn-events.ts'
-import { tellRestarted } from './turn-parts.ts'
-import { adoptTurn, answerTurn } from './turn-run.ts'
-import { isOpen, logOf, writingOf } from './turn-state.ts'
+import { beginTurn, tellMachine } from './turn-parts.ts'
+import type { Writing } from './turn-state.ts'
+import { ended, isOpen, logOf, writingOf } from './turn-state.ts'
 
 type OfConversation = { owner: Owner; conversationId: ConversationId }
+type OfTurn = OfConversation & { projectId: ProjectId; traceId: string }
 
 /**
  * The conversations open in this process (decision 0050): one controller session per conversation,
@@ -52,16 +48,12 @@ export class Sessions {
   readonly #holds = new Map<ConversationId, number>()
   // The conversations open here, set once Mastra's `createSession` resolves.
   readonly #lives = new Map<ConversationId, Live>()
-  // Every message from its arrival to the end of its run, with its session, for the drain to wait on.
-  readonly #turns = new Map<Promise<void>, Promise<Live>>()
+  // Every turn from its admission to its end, for the drain to wait on.
+  readonly #turns = new Set<Promise<void>>()
   // Ends every stream once the turns are drained, so the server's close does not wait on them.
   readonly #closing = new AbortController()
 
-  constructor(deps: {
-    builder: Builder
-    runs: Runs
-    log: FailureLog
-  }) {
+  constructor(deps: { builder: Builder; runs: Runs; log: FailureLog }) {
     this.#builder = deps.builder
     this.#runs = deps.runs
     this.#log = deps.log
@@ -69,7 +61,8 @@ export class Sessions {
 
   /**
    * The conversation's session, held until `#release`. Mastra's `createSession` is get-or-create
-   * and waits for a `deleteSession` in flight, so the holder counts before it waits.
+   * and waits for a `deleteSession` in flight, so the holder counts before it waits. A session made
+   * here takes the cards Mastra keeps for the conversation.
    */
   async #hold({ owner, conversationId }: OfConversation): Promise<Live> {
     this.#holds.set(conversationId, (this.#holds.get(conversationId) ?? 0) + 1)
@@ -77,7 +70,7 @@ export class Sessions {
     try {
       const session = await this.#builder.controller.createSession({
         resourceId,
-        scope: conversationId,
+        id: conversationId,
         threadId: conversationId,
       })
       const found = this.#lives.get(conversationId)
@@ -85,7 +78,7 @@ export class Sessions {
       const opened: Live = {
         ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
         ...{ memory: this.#builder.memory, kept: Promise.resolve() },
-        ...{ state: { kind: 'idle' }, pending: new Set() },
+        ...{ state: { kind: 'idle' }, pending: new Set(), closing: new Set() },
         cancel: (signalIds) => {
           if (signalIds.length === 0) return
           const target = { resourceId, threadId: conversationId, signalIds }
@@ -93,16 +86,14 @@ export class Sessions {
         },
         unsubscribe: () => undefined,
       }
-      const unsubscribe = session.subscribe((event) => {
-        onEvent(opened, event)
-        onCardEvent(opened, event)
-      })
+      this.#lives.set(conversationId, opened)
+      const unsubscribe = session.subscribe((event) => onEvent(opened, event))
       const unhook = session.onBeforeAgentEnd((event) => beforeAgentEnd(opened, event.reason))
       opened.unsubscribe = () => {
         unsubscribe()
         unhook()
       }
-      this.#lives.set(conversationId, opened)
+      await restoreCards(opened, this.#builder.agent)
       return opened
     } catch (error) {
       this.#drop(conversationId)
@@ -126,10 +117,12 @@ export class Sessions {
     if (this.#lives.get(conversationId) !== live) return
     this.#lives.delete(conversationId)
     live.unsubscribe()
-    // A closed session ends no run, so its message stops waiting here.
+    // A closed session ends no run, so its turn stops waiting here.
     writingOf(live.state)?.ended()
-    const resourceId = memoryOwner(live.owner)
-    await this.#builder.controller.deleteSession({ resourceId, scope: conversationId })
+    // Mastra's `deleteSession` denies the cards a session keeps; a card waits on the person, not on
+    // this session, so it is let go first, as Mastra's detach keeps parked runs (`detachFromCurrent`).
+    if (openCards(live).length > 0) live.session.thread.detachFromCurrent()
+    await this.#builder.controller.deleteSession({ sessionId: conversationId })
   }
 
   /**
@@ -145,127 +138,159 @@ export class Sessions {
     }
   }
 
-  /**
-   * Saves the person's question on the thread, then sends it on a turn of its own, whose answer
-   * comes on the stream; resolves once the question is saved.
-   */
-  async send(
-    input: OfConversation & { projectId: ProjectId; question: Question; traceId: string },
-  ): Promise<void> {
-    const { owner, conversationId } = input
-    const id = questionId(conversationId, input.question.key)
-    for (let tries = 0; tries < 3; tries += 1) {
-      const live = this.#lives.get(conversationId)
-      if (live === undefined || !isOpen(live.state)) break // no turn of this conversation here
-      if (await steerCards(live, { question: input.question, id })) return
-      if (live.state.kind === 'closing' || live.state.kind === 'ending') {
-        await turnOver(live)
-        break // the turn ended: this message is a turn of its own
-      }
-      if ((await deliverInto(live, { question: input.question, id })) === 'delivered') {
-        this.#log.info({ companyId: owner.companyId, conversationId }, 'CONVERSATION_STEERED')
-        return
-      }
-      // Between two runs of the turn (a card closed, or leftover input): wait for the next to start.
-      await nextRunOrEnd(live)
-    }
+  /** Opens the Projeto's run for a turn of the conversation, or refuses it with whose run holds it. */
+  async #admit(input: OfTurn): Promise<RunId> {
     const admitted = await this.#runs.admit({
-      ...owner,
-      conversationId,
+      ...input.owner,
+      conversationId: input.conversationId,
       projectId: input.projectId,
     })
     if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })
-    const runId = admitted.value
-    const memoryModels = await memoryModelsFor(this.#builder.queue, owner)
-    const turn = new Turn({ ...owner, memoryModels })
-    const kept = this.#hold(input).then(async (live) => {
+    return admitted.value
+  }
+
+  /** What the turn of `runId` writes with on the conversation, and the hour that ends it. */
+  async #writing(live: Live, runId: RunId, traceId: string): Promise<Writing> {
+    const memoryModels = await memoryModelsFor(this.#builder.queue, live.owner)
+    const turn = new Turn({ ...live.owner, memoryModels })
+    const { promise: over, resolve } = Promise.withResolvers<void>()
+    this.#runs.onPhase(runId, (phase) => tellMachine(live, phase))
+    this.#runs.attach(runId, () => live.session.abort())
+    const context = this.#runs.contextOf(turnContext(turn), runId)
+    const finish = (reason: string) => this.#runs.finish({ runId, reason })
+    return { id: runId, traceId, context, turn, finish, ended: resolve, over }
+  }
+
+  /**
+   * A turn, from its start to Mastra's `agent_end`: `start` hands Mastra the message or the answer
+   * and says whether a run of it began. However the wait ends, the run is finished (a closed run
+   * answers `gone`) and the session let go.
+   */
+  #run(live: Live, writing: Writing, start: () => Promise<boolean>, after?: MessageId): void {
+    const { companyId } = live.owner
+    const { conversationId } = live
+    this.#log.info({ companyId, conversationId }, 'CONVERSATION_TURN_STARTED')
+    const opened = beginTurn(live, writing)
+    const turn: Promise<void> = (async () => {
       try {
-        await saveQuestion(live, input.question)
-      } catch (error) {
+        opened.after ??= after
+        if (!(await runTurn(live, writing, start))) {
+          await endUnstarted(live, 'error', 'INTERNAL_UNEXPECTED')
+        }
+      } catch (cause) {
+        // Mastra cancels a start that a Parar came first to (`SessionStartupCancelledError`).
+        const stopped = isSessionStartupCancelledError(cause)
+        if (!stopped) logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+        if (!live.session.stream.isActive()) {
+          await endUnstarted(
+            live,
+            stopped ? 'aborted' : 'error',
+            stopped ? undefined : 'INTERNAL_UNEXPECTED',
+          )
+        }
+      } finally {
+        writing.turn.end()
+        if (writingOf(live.state) === writing) live.state = ended(live.state)
+        await this.#runs.finish({ runId: writing.id, reason: 'error' })
+        // The turn is over once what it keeps on the thread is written: the drain waits for that.
+        await settled(live)
         await this.#release(conversationId, live)
-        throw error
       }
-      return live
-    })
-    const answered: Promise<void> = kept
-      .then(
-        async (live) => {
-          try {
-            const run = { runId, traceId: input.traceId }
-            await answerTurn(live, { runs: this.#runs, log: this.#log }, input.question, turn, run)
-          } finally {
-            await this.#release(conversationId, live)
-          }
-        },
-        // The question was not saved: `send` throws it to the caller, and no turn starts.
-        async () => {
-          await this.#runs.finish({ runId, reason: 'error' })
-        },
-      )
+    })()
       .catch((cause: unknown) =>
         logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
       )
-      .finally(() => this.#turns.delete(answered))
-    this.#turns.set(answered, kept)
-    await kept
+      .finally(() => this.#turns.delete(turn))
+    this.#turns.add(turn)
   }
 
   /**
-   * The person's answer to the card the turn waits on: the answers to its questions, or the
-   * decision on its plan. The call is claimed first, so a second answer is `QUESTION_CLOSED`.
+   * The person's message. While the Builder runs in this conversation, Mastra takes it into the run
+   * (`requireDelivery`, criterion 12); otherwise it opens a turn of its own: the Projeto's run is
+   * admitted, the question saved on the thread, and a card still open closed. Resolves once the
+   * question is saved; the answer comes on the stream.
    */
-  async answer(
-    input: OfConversation & {
-      toolCallId: ToolCallId
-      body: QuestionAnswer
-    },
-  ): Promise<void> {
-    await this.#settled(input)
-    const live = await this.#hold(input)
-    try {
-      await answerCard(live, input)
-      const fields = { companyId: input.owner.companyId, conversationId: input.conversationId }
-      this.#log.info(fields, 'QUESTION_ANSWERED')
-    } finally {
-      await this.#release(input.conversationId, live)
+  async send(input: OfTurn & { question: Question }): Promise<void> {
+    const { owner, conversationId, question } = input
+    const id = questionId(conversationId, question.key)
+    const running = this.#lives.get(conversationId)
+    if (running !== undefined && isOpen(running.state)) {
+      // A turn whose run is being finished takes no message: it is the next turn's.
+      if (running.state.end !== undefined) await running.state.writing.over
+      else if ((await deliverInto(running, { question, id })) === 'delivered') {
+        this.#log.info({ companyId: owner.companyId, conversationId }, 'CONVERSATION_STEERED')
+        return
+      }
     }
-  }
-
-  /**
-   * A run another copy left on a card: this copy takes the turn on, with the card open, and its
-   * answer, Parar, expiry or a message go on here as on the copy that asked (founder 2026-10-24,
-   * "4. B"); false when Mastra parks no card of it.
-   */
-  async adopt(run: Run): Promise<boolean> {
-    const owner = { companyId: run.companyId, personId: run.personId }
-    const { conversationId } = run
-    const live = await this.#hold({ owner, conversationId })
-    const parkedRuns = await adoptCards(live, this.#builder.agent).catch(async (error: unknown) => {
-      await this.#release(conversationId, live)
+    const runId = await this.#admit(input)
+    const live = await this.#hold(input).catch(async (error: unknown) => {
+      await this.#runs.finish({ runId, reason: 'error' })
       throw error
     })
-    if (parkedRuns.length === 0) {
+    // A card still open: the message is Mastra's `steer`, which saves the message as its own run's.
+    const steering = openCards(live).length > 0
+    let writing: Writing
+    try {
+      writing = await this.#writing(live, runId, input.traceId)
+      if (!steering) await saveQuestion(live, question)
+    } catch (error) {
+      await this.#runs.finish({ runId, reason: 'error' })
       await this.#release(conversationId, live)
-      return false
+      throw error
     }
-    const answered: Promise<void> = adoptTurn(live, this.#runs, run, this.#builder.queue)
-      .finally(() => this.#release(conversationId, live))
-      .catch((cause: unknown) =>
-        logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
+    const requestContext = writing.context
+    if (steering) {
+      this.#run(live, writing, () =>
+        steerCards(live, { content: question.content, requestContext }),
       )
-      .finally(() => this.#turns.delete(answered))
-    this.#turns.set(answered, Promise.resolve(live))
-    return true
+      return
+    }
+    // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
+    const tracingOptions = { traceId: input.traceId.replaceAll('-', '') }
+    const options = { requestContext, requireDelivery: true, tracingOptions } as const
+    this.#run(
+      live,
+      writing,
+      async () => {
+        const accepted = await deliver(live, { question, id }, options)
+        return 'runId' in accepted
+      },
+      id,
+    )
   }
 
   /**
-   * Settles the conversation's runs another copy left, when none is open here: an answer or a
-   * Parar can come before this copy's boot took them.
+   * The person's answer to a card: the answers to its questions, or the decision on its plan, once
+   * the turn that asked it ended. The call is claimed first, so a second answer is `QUESTION_CLOSED`; then the Projeto's run is
+   * admitted and Mastra resumes the call by its address, as its own route does, from this session
+   * or from its database. A resume Mastra refuses keeps the card open and ends the turn, saying so.
    */
-  async #settled({ owner, conversationId }: OfConversation): Promise<void> {
-    const live = this.#lives.get(conversationId)
-    if (live !== undefined && isOpen(live.state)) return
-    await this.#runs.settleConversation({ companyId: owner.companyId, conversationId })
+  async answer(input: OfTurn & { toolCallId: ToolCallId; body: QuestionAnswer }): Promise<void> {
+    const { conversationId, toolCallId } = input
+    const live = await this.#hold(input)
+    // The card is said before Mastra ends the run that asked it: the answer opens the next turn.
+    if (isOpen(live.state)) await live.state.writing.over
+    let claimed: ReturnType<typeof claimAnswer> | undefined
+    let writing: Writing
+    try {
+      claimed = claimAnswer(live, input)
+      writing = await this.#writing(live, await this.#admit(input), input.traceId)
+    } catch (error) {
+      if (claimed !== undefined) releaseCards(live, [toolCallId])
+      await this.#release(conversationId, live)
+      throw error
+    }
+    const { address, resumeData } = claimed
+    this.#log.info({ companyId: input.owner.companyId, conversationId }, 'QUESTION_ANSWERED')
+    this.#run(live, writing, async () => {
+      try {
+        const requestContext = writing.context
+        await live.session.respondToToolSuspension({ address, resumeData, requestContext })
+      } finally {
+        releaseCards(live, [toolCallId])
+      }
+      return !openCards(live).some((card) => card.toolCallId === toolCallId)
+    })
   }
 
   /**
@@ -277,22 +302,6 @@ export class Sessions {
     const live = await this.#hold(input)
     const release = () => this.#release(input.conversationId, live)
     return listen(live, { ...input, release, closing: this.#closing.signal })
-  }
-
-  /**
-   * Tells the conversation's open streams that a turn another copy of the program ran, with no card
-   * parked, was ended by a restart, and keeps the restart on the thread after the person's question
-   * that turn answered (card, the restart).
-   */
-  async restarted(restart: Restart): Promise<void> {
-    const { companyId, personId, conversationId, runId, kept } = restart
-    const live = await this.#hold({ owner: { companyId, personId }, conversationId })
-    try {
-      await saveRestarted(live, { runId, kept })
-      tellRestarted(live, runId, kept)
-    } finally {
-      await this.#release(conversationId, live)
-    }
   }
 
   /** The memory's progress in the conversation's open session, or none when this process has none open. */
@@ -307,41 +316,36 @@ export class Sessions {
     return live === undefined ? undefined : logOf(live.state)?.after
   }
 
-  /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */
+  /**
+   * Stops the answer in progress, and closes the cards open (`agent_end` `aborted`): Mastra keeps
+   * the text so far, and the run saves what it wrote.
+   */
   async stop(input: OfConversation): Promise<void> {
     const { conversationId } = input
-    await this.#settled(input)
-    const live = this.#lives.get(conversationId)
-    if (live === undefined) return
-    const taken = await takeCards(live)
-    cancelPending(live)
-    live.session.abort()
-    releaseCards(live, taken)
-    const fields = { companyId: live.owner.companyId, conversationId }
-    this.#log.info(fields, 'CONVERSATION_STOPPED')
+    const live = await this.#hold(input)
+    try {
+      const taken = await takeCards(live)
+      cancelPending(live)
+      live.session.abort()
+      releaseCards(live, taken)
+      this.#log.info({ companyId: live.owner.companyId, conversationId }, 'CONVERSATION_STOPPED')
+    } finally {
+      await this.#release(conversationId, live)
+    }
   }
 
   /**
-   * Waits for every message and turn in progress until it ends or parks, then ends the streams
-   * (code C62); the caller holds the deadline. A parked turn waits on a person, not on this copy:
-   * it is detached with its card open, and the copy that takes its run adopts it.
+   * Stops every turn in progress as Parar does, so each saves what it wrote, waits for them to end,
+   * then ends the streams (code C62); the caller holds the deadline. A card waits on a person, not
+   * on this process: its turn ended when it asked.
    */
   async drain(): Promise<void> {
-    const turns = [...this.#turns].map(([answered, kept]) =>
-      Promise.race([
-        answered.then(() => undefined),
-        kept.then(
-          async (live) => {
-            await parked(live)
-            return live
-          },
-          () => answered.then(() => undefined),
-        ),
-      ]),
-    )
-    for (const live of new Set(await Promise.all(turns))) {
-      if (live !== undefined && openCards(live).length > 0) detach(live)
+    for (const live of this.#lives.values()) {
+      if (!isOpen(live.state)) continue
+      cancelPending(live)
+      live.session.abort()
     }
+    await Promise.all(this.#turns)
     this.#closing.abort()
   }
 

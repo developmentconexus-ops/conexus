@@ -1,5 +1,5 @@
-import type { ConversationId, Kept, MastraPart, RestartedData, RunId } from '@conexus/hub-api'
-import { MachineData, MessageId, machinePhaseLasts, questionIdOf } from '@conexus/hub-api'
+import type { ConversationId, MastraPart, MessageId } from '@conexus/hub-api'
+import { MachineData, machinePhaseLasts, questionIdOf } from '@conexus/hub-api'
 import type { MastraDBMessage } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -77,7 +77,7 @@ export function settled(recorder: Recorder): Promise<void> {
   )
 }
 
-/** Whether a part of ours stays on the thread: a thinking's time, the version, the failure, the restart, a machine replaced. */
+/** Whether a part of ours stays on the thread: a thinking's time, the version, the failure, a machine replaced. */
 function lasts(part: MastraPart): boolean {
   if (part.type === 'data-conexus-machine') {
     const machine = MachineData.safeParse(part.data)
@@ -86,8 +86,7 @@ function lasts(part: MastraPart): boolean {
   return (
     part.type === 'data-conexus-thought' ||
     part.type === 'data-conexus-version' ||
-    part.type === 'data-conexus-failure' ||
-    part.type === 'data-conexus-restarted'
+    part.type === 'data-conexus-failure'
   )
 }
 
@@ -109,19 +108,4 @@ export function saveExtras(recorder: Recorder, turn: TurnLog): Promise<void> {
   return savedAfter(recorder, message).catch((cause: unknown) =>
     logFailure(recorder.log, new Failure('INTERNAL_UNEXPECTED', { cause })),
   )
-}
-
-/**
- * Keeps a restart's part on the thread, after the person's question the turn it ended answered: the
- * turn's own messages never reached Mastra's save, so the part stands alone (card, the restart).
- */
-export function saveRestarted(
-  recorder: Recorder,
-  input: { runId: RunId; kept: Kept },
-): Promise<void> {
-  const data: RestartedData = { kept: input.kept }
-  const part: MastraPart = { type: 'data-conexus-restarted', data }
-  const id = MessageId.parse(input.runId)
-  const message = messageOf(recorder, { id, role: 'assistant', at: new Date(), parts: [part] })
-  return savedAfter(recorder, message)
 }

@@ -48,50 +48,24 @@ export function memoryCopy() {
   return { copy, held, refuse }
 }
 
-/** What a test sets: how long a turn may run, how often its lease is renewed, and how a save is cut. */
+/** What a test sets: how long a turn may run, and where a save waits. */
 type Knobs = {
   turnMs: number
-  renewMs: number
-  yieldMs: number
-  /** How long a question waits for its answer. */
-  questionMs: number
-  dies: { receive: number; advance: number }
   /** While set, a save waits before it checks the turn's commit in. */
   holdReceive: Promise<void> | undefined
-  /** While set, a save waits before it moves `main`. */
-  holdAdvance: Promise<void> | undefined
 }
 
 function newKnobs(): Knobs {
-  return {
-    turnMs: 3_600_000,
-    renewMs: 30_000,
-    yieldMs: 8_000,
-    questionMs: 1_800_000,
-    dies: { receive: 0, advance: 0 },
-    holdReceive: undefined,
-    holdAdvance: undefined,
-  }
+  return { turnMs: 3_600_000, holdReceive: undefined }
 }
 
-/** A repository whose save stops where a test says: held before `receive` or `advance`, or dying there. */
+/** A repository whose save waits where a test says: before `receive`. */
 function withKnobs(real: Repository, knobs: Knobs): Repository {
-  function dies(step: 'receive' | 'advance') {
-    if (knobs.dies[step] === 0) return
-    knobs.dies[step] -= 1
-    throw new Error('the process died')
-  }
   return {
     ...real,
     async receive(input) {
       await knobs.holdReceive
-      dies('receive')
       return real.receive(input)
-    },
-    async advance(input) {
-      await knobs.holdAdvance
-      dies('advance')
-      return real.advance(input)
     },
   }
 }
@@ -144,23 +118,11 @@ export function testBuilderPorts(
   function turnMs() {
     return knobs.turnMs
   }
-  function renewMs() {
-    return knobs.renewMs
-  }
-  function yieldMs() {
-    return knobs.yieldMs
-  }
-  function questionMs() {
-    return knobs.questionMs
-  }
   return {
     machinesOf,
     repository,
     copy: bucket.copy,
     turnMs,
-    renewMs,
-    yieldMs,
-    questionMs,
     bucket,
     control,
     knobs,

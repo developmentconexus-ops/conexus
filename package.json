@@ -24,6 +24,7 @@
     "migrations": "node scripts/check-migrations.ts",
     "preremovals": "npm run build -w @conexus/server",
     "removals": "node scripts/removals.ts",
+    "record": "node scripts/record.ts",
     "record-provider": "node scripts/record-provider.ts",
     "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
@@ -38,6 +39,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.14",
+    "@mastra/core": "1.79.0",
+    "@mastra/memory": "1.39.0",
     "@types/node": "24.19.2",
     "better-auth": "1.7.8",
     "dependency-cruiser": "18.4.0",
