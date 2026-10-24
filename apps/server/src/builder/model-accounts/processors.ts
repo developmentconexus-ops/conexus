@@ -9,7 +9,11 @@ import type {
   ProcessInputStepArgs,
   ProcessInputStepResult,
 } from '@mastra/core/processors'
-import { defaultStabilityErrorProcessors, StreamErrorRetryProcessor } from '@mastra/core/processors'
+import {
+  CyberRefusalHandler,
+  defaultStabilityErrorProcessors,
+  StreamErrorRetryProcessor,
+} from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
@@ -21,15 +25,13 @@ import { callModel, markAccount, pickAccount, providerName, providerOf } from '.
 import type { ProviderOptions } from './thinking.ts'
 import { providerOptionsOf } from './thinking.ts'
 import type { Notice, Picked, Turn } from './turn.ts'
-import { Turn as ConversationTurn, chosenModel, NOTICE_PART, turnIn } from './turn.ts'
+import { chosenModel, NOTICE_PART, turnIn } from './turn.ts'
 
 /** At most ten calls for one question, as Claude Code and Codex (founder, card reading 7). */
 export const MAX_PROCESSOR_RETRIES = 9
 const WEB_SEARCH = 'web_search'
 /** The steps one turn may take (card, limits); Mastra's own ceiling is a thousand. */
 const TURN_STEPS = 100
-const explicitSideTurns = new WeakMap<RequestContext, Map<SideCall, ConversationTurn>>()
-const explicitSideFailures = new WeakMap<RequestContext, ConversationTurn>()
 const LAST_STEP =
   'This is the last step of this turn: use no tool. Say in Brazilian Portuguese what you did and what is left, and that the person can answer "continue" for more.'
 
@@ -107,12 +109,8 @@ function until(date: Date): string {
 }
 
 /** A model the queue answers with when no account is left: it fails here and calls no one. */
-function noAccountModel(
-  modelId: ModelId,
-  explicit?: { requestContext: RequestContext; turn: Turn },
-) {
+function noAccountModel(modelId: ModelId) {
   function fail(): Promise<never> {
-    if (explicit !== undefined) explicitSideFailures.set(explicit.requestContext, explicit.turn)
     return Promise.reject(new Failure('MODEL_NO_ACCOUNT'))
   }
   return callModel({
@@ -138,11 +136,11 @@ function sayRefused(args: Notifier, turn: Turn, next: Picked) {
  * company's automatic switch, with its notice; none left, the turn ends with the notice that the
  * accounts ended.
  */
-async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier, allowFallback: boolean) {
+async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier) {
   const chosen = turn.modelId(args.requestContext)
   const picked = await pickAccount(deps, turn, chosen)
   if (picked !== undefined) return picked
-  for (const next of allowFallback ? await nextModels(deps, turn, chosen) : []) {
+  for (const next of await nextModels(deps, turn, chosen)) {
     const switched = await pickAccount(deps, turn, next)
     if (switched === undefined) continue
     turn.switchTo(next, args.requestContext)
@@ -159,13 +157,8 @@ async function chooseAccount(deps: QueueDeps, turn: Turn, args: Notifier, allowF
  * The turn's account, picked once for all who ask meanwhile: the agent's step, its error lane, the
  * title and the observer await the same pick, so none overwrites another's or opens it twice.
  */
-function accountOf(
-  deps: QueueDeps,
-  turn: Turn,
-  args: Notifier,
-  allowFallback = true,
-): Promise<Picked | undefined> {
-  return turn.account(() => chooseAccount(deps, turn, args, allowFallback))
+function accountOf(deps: QueueDeps, turn: Turn, args: Notifier): Promise<Picked | undefined> {
+  return turn.account(() => chooseAccount(deps, turn, args))
 }
 
 /**
@@ -231,11 +224,9 @@ function accountQueue(deps: QueueDeps): ErrorProcessor {
   return {
     id: 'conexus-account-queue',
     async processAPIError(args: ProcessAPIErrorArgs) {
-      const sideTurn = args.requestContext && explicitSideFailures.get(args.requestContext)
-      const turn = sideTurn ?? turnIn(args.requestContext)
+      const turn = turnIn(args.requestContext)
       if (turn === undefined) return { retry: false }
-      const result = await afterFailure(deps, args, turn, sideTurn === undefined)
-      if (args.requestContext !== undefined) explicitSideFailures.delete(args.requestContext)
+      const result = await afterFailure(deps, args, turn)
       // A retried attempt is rolled back; the one that ends the turn keeps its notices.
       if (!result.retry) await keepNotices(args, turn)
       return result
@@ -244,12 +235,7 @@ function accountQueue(deps: QueueDeps): ErrorProcessor {
 }
 
 /** The queue's answer to a failed call: the next account's attempt, or the turn's end. */
-async function afterFailure(
-  deps: QueueDeps,
-  args: ProcessAPIErrorArgs,
-  turn: Turn,
-  allowFallback = true,
-) {
+async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Turn) {
   const account = turn.calling()
   if (account === undefined) return { retry: false }
   const failure = callFailureOf(args.error)
@@ -275,7 +261,7 @@ async function afterFailure(
     return { retry: false }
   }
   turn.drop()
-  const next = await accountOf(deps, turn, args, allowFallback)
+  const next = await accountOf(deps, turn, args)
   if (next === undefined) return { retry: false }
   sayRefused(args, turn, next)
   if (!refreshing && next.modelId === account.modelId && next.id !== account.id) {
@@ -290,23 +276,16 @@ async function afterFailure(
 }
 
 /** Mastra's own calls in a turn that are not the agent's: what the log names a failed one by. */
-export type SideCall = 'title' | 'observer' | 'reflection'
+type SideCall = 'title' | 'observer' | 'reflection'
 
 /**
  * The model with its failures logged by call and account, since Mastra's own log line carries
  * neither and its message is not ours to keep (security S41). The error is thrown on, to Mastra.
  */
-function watched(
-  deps: QueueDeps,
-  turn: Turn,
-  account: Picked,
-  call: SideCall,
-  explicitContext?: RequestContext,
-): LanguageModel {
+function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): LanguageModel {
   const { model } = account
   if (typeof model === 'string' || model.specificationVersion !== 'v3') return model
   function report(error: unknown): never {
-    if (explicitContext !== undefined) explicitSideFailures.set(explicitContext, turn)
     const fields = { companyId: turn.companyId, accountId: account.id, call }
     deps.log.info({ ...fields, failure: callFailureOf(error).kind }, 'MODEL_SIDE_CALL_FAILED')
     throw error
@@ -325,41 +304,23 @@ function watched(
 }
 
 /**
- * The model of Mastra's own calls in a turn, the title's, the observer's and the reflector's: the
- * turn's account, the pick in flight, or the queue's next one when the observer runs before the
- * queue (`agent.ts:2392-2404`).
+ * The model of Mastra's own calls in a turn: the title's is the turn's account. The observer's and
+ * the reflector's are the company's choice, read when the turn opened (`Turn.memoryModels`), picked
+ * once for the turn beside the queue and never through it: no rotation, no notice, a failure is
+ * the memory's own (`failurePolicy: 'continue'`) and is logged by `watched`. A choice with no
+ * account left follows the conversation's model.
  */
-export function accountModel(
-  deps: QueueDeps,
-  call: SideCall,
-  configured?: (owner: {
-    companyId: Turn['companyId']
-    personId: Turn['personId']
-  }) => Promise<ModelId | null>,
-) {
+export function accountModel(deps: QueueDeps, call: SideCall) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
     const turn = turnIn(requestContext)
     if (turn === undefined) return noAccountModel(chosenModel(requestContext))
-    const selected = await configured?.({ companyId: turn.companyId, personId: turn.personId })
-    const conversationModel = turn.modelId(requestContext)
-    if (selected !== null && selected !== undefined && selected !== conversationModel) {
-      let turns = explicitSideTurns.get(requestContext)
-      if (turns === undefined) {
-        turns = new Map()
-        explicitSideTurns.set(requestContext, turns)
-      }
-      let sideTurn = turns.get(call)
-      if (sideTurn === undefined || sideTurn.modelId(requestContext) !== selected) {
-        sideTurn = new ConversationTurn({ companyId: turn.companyId, personId: turn.personId })
-        sideTurn.switchTo(selected, requestContext)
-        turns.set(call, sideTurn)
-      }
-      const account = await accountOf(deps, sideTurn, { requestContext }, false)
-      return account === undefined
-        ? noAccountModel(selected, { requestContext, turn: sideTurn })
-        : watched(deps, sideTurn, account, call, requestContext)
-    }
-    const account = await accountOf(deps, turn, { requestContext })
+    const chosen =
+      call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
+    const side =
+      chosen === null || chosen === turn.modelId(requestContext)
+        ? undefined
+        : await turn.sidePick(chosen, () => pickAccount(deps, turn, chosen))
+    const account = side ?? (await accountOf(deps, turn, { requestContext }))
     return account === undefined
       ? noAccountModel(turn.modelId(requestContext))
       : watched(deps, turn, account, call)
@@ -385,12 +346,14 @@ function accountRetry(retry: StreamErrorRetryProcessor): ErrorProcessor {
 }
 
 /**
- * The agent's error lane: Mastra's stability defaults in their order, its retry not repeating an
- * account's failure, then the queue, last, as in Mastra Code (`index.ts:1345-1393`).
+ * The agent's error lane: the refusal handler first, as `createCodingAgent` has it, so a cyber
+ * refusal is retried once before the retry or the queue sees it (`coding-agent/index.ts:113-129`);
+ * Mastra's stability defaults in their order, its retry not repeating an account's failure, then the
+ * queue, last, as in Mastra Code (`index.ts:1345-1393`).
  */
 export function accountErrorProcessors(deps: QueueDeps): ErrorProcessor[] {
   const defaults = defaultStabilityErrorProcessors().map((processor) =>
     processor instanceof StreamErrorRetryProcessor ? accountRetry(processor) : processor,
   )
-  return [...defaults, accountQueue(deps)]
+  return [new CyberRefusalHandler(), ...defaults, accountQueue(deps)]
 }

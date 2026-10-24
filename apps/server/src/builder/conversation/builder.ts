@@ -23,7 +23,6 @@ import {
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
-import { configuredMemoryModel } from './observational-memory-settings.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import {
   ASK_USER_TOOL,
@@ -99,15 +98,13 @@ function builderMemory(
       observationalMemory: {
         enabled: true,
         scope: 'thread',
-        retrieval: true,
+        retrieval: { scope: 'thread' },
         activateAfterIdle: { default: 'auto', anthropic: '1h' },
         activateOnProviderChange: true,
         temporalMarkers: true,
         observation: {
           ...failSoft,
-          model: accountModel(queue, 'observer', (owner) =>
-            configuredMemoryModel(queue, owner, 'observer'),
-          ),
+          model: accountModel(queue, 'observer'),
           messageTokens: 30_000,
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
@@ -118,9 +115,7 @@ function builderMemory(
         },
         reflection: {
           ...failSoft,
-          model: accountModel(queue, 'reflection', (owner) =>
-            configuredMemoryModel(queue, owner, 'reflector'),
-          ),
+          model: accountModel(queue, 'reflection'),
           observationTokens: 40_000,
           bufferActivation: 1 / 2,
           blockAfter: 1.1,
@@ -184,7 +179,7 @@ export function createBuilder(deps: {
   // Mastra 1.78.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
   for (const domain of Object.values(storage.stores)) domain?.__setLogger(mastra.getLogger())
-  return { controller, memory, mastra, agent }
+  return { controller, memory, mastra, agent, queue: deps.queue }
 }
 
 export type Builder = ReturnType<typeof createBuilder>

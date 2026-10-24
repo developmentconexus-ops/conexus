@@ -12,7 +12,7 @@ import type {
 import { MessageId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { Turn, turnContext } from '../model-accounts/public.ts'
+import { memoryModelsFor, Turn, turnContext } from '../model-accounts/public.ts'
 import type { Restart, Runs } from '../runs/public.ts'
 import { answerCard } from './answers.ts'
 import type { Builder } from './builder.ts'
@@ -161,7 +161,8 @@ export class Sessions {
     if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })
     const runId = admitted.value
     const entry = this.#hold(input)
-    const turn = new Turn(input.owner)
+    const memoryModels = await memoryModelsFor(this.#builder.queue, owner)
+    const turn = new Turn({ ...owner, memoryModels })
     const kept = entry.live.then(async (live) => {
       const keeping = saveQuestion(live, input.question)
       live.asked.add(turn)
