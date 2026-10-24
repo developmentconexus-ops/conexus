@@ -64,6 +64,10 @@ export const MailToken = {
 export const NeonApiUrl = z.string().refine(overHttpsOrLoopback).brand('NeonApiUrl')
 export type NeonApiUrl = z.infer<typeof NeonApiUrl>
 
+/** Where the Git copy's bucket answers when it is not Cloudflare R2's own address: a test double on this machine. */
+const GitCopyUrl = z.string().refine(overHttpsOrLoopback).brand('GitCopyUrl')
+type GitCopyUrl = z.infer<typeof GitCopyUrl>
+
 /** The Neon organization that holds the companies' projects, apart from the Hub's own (decision 0040). */
 export const NeonOrgId = z.string().min(1).brand('NeonOrgId')
 export type NeonOrgId = z.infer<typeof NeonOrgId>
@@ -136,6 +140,7 @@ export type Config = BaseConfig & {
   gitRoot: string
   gitCopyBucket: GitCopyBucket
   gitCopyKey: GitCopyKey
+  gitCopyUrl?: GitCopyUrl
   e2bApiKey: E2bApiKey
   machineTemplate: MachineTemplate
   installationId: InstallationId
@@ -184,6 +189,7 @@ const ServeEnvironment = z.object({
   HUB_CLOUDFLARE_APPS_TOKEN_FILE: z.string().min(1),
   HUB_SEAL_KEYS_FILE: z.string().min(1),
   ...GitEnvironment.shape,
+  HUB_GIT_COPY_URL: GitCopyUrl.optional(),
   ...MachineEnvironment.shape,
 })
 
@@ -273,6 +279,7 @@ export function readConfig(mode: 'serve' | 'migrate', env = process.env): Config
     gitRoot: serve.HUB_GIT_ROOT,
     gitCopyBucket: serve.HUB_GIT_COPY_BUCKET,
     gitCopyKey: readSecret('HUB_GIT_COPY_KEY_FILE', serve.HUB_GIT_COPY_KEY_FILE, GitCopyKey.parse),
+    ...(serve.HUB_GIT_COPY_URL === undefined ? {} : { gitCopyUrl: serve.HUB_GIT_COPY_URL }),
     e2bApiKey: readSecret('HUB_E2B_API_KEY_FILE', serve.HUB_E2B_API_KEY_FILE, E2bApiKey.parse),
     machineTemplate: serve.HUB_E2B_TEMPLATE,
     installationId: serve.HUB_INSTALLATION_ID,

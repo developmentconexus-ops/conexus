@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
@@ -65,6 +67,9 @@ test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Pr
     'the version stands on the starter',
   )
   assert.equal(hub.builder.bucket.held.size, 1)
+  const dir = join(tmpdir(), companyId, `${projectId}.git`)
+  const refs = execFileSync('git', ['--git-dir', dir, 'for-each-ref', 'refs/conexus/runs'])
+  assert.equal(refs.toString(), '', "the run's own ref goes once main holds its commit")
 })
 
 test('só resposta: o turno fecha sem versão e sem tocar a máquina', async (t) => {

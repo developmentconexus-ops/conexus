@@ -12,6 +12,7 @@ import { RunId as RunIdSchema } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import { sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Result } from '../../platform/result.ts'
 import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
@@ -25,6 +26,9 @@ import { runIn, withRun } from './keys.ts'
 import type { ReleaseScope } from './removal.ts'
 import { releaseRuns } from './removal.ts'
 import { saveRun } from './save.ts'
+
+/** The one row `#nameOf` reads: the person's name, null once they are gone. */
+const PersonName = z.object({ name: z.string().nullable() })
 
 /** A turn's hour (card, limits). */
 const TURN_MS = 3_600_000
@@ -114,8 +118,7 @@ export class Runs {
       { kind: 'COMPANY', companyId, personId: null },
       (tx) => tx.execute(sql`select ${personNameColumn(sql`${personId}`)} as name`),
     )
-    const name: unknown = Object(found.rows[0]).name
-    return typeof name === 'string' ? name : undefined
+    return PersonName.parse(found.rows[0]).name ?? undefined
   }
 
   /** The Projeto's repository, for the reads of its saved files. */
