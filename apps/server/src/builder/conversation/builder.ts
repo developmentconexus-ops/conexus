@@ -1,4 +1,5 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
+import { BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
@@ -23,7 +24,6 @@ import {
 import type { Runs } from '../runs/public.ts'
 import { APP_SKILLS, builderInstructions } from './instructions.ts'
 import { BuilderLogger } from './logger.ts'
-import { configuredMemoryModel } from './observational-memory-settings.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import {
   ASK_USER_TOOL,
@@ -31,7 +31,7 @@ import {
   createSubmitPlanTool,
   SUBMIT_PLAN_TOOL,
 } from './plan-tools.ts'
-import { CHECK_TOOL, checkGate, checkTool } from './processors.ts'
+import { checkGate, checkTool, workspaceMetadataLive } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
 
 const BUILDER_ID = 'builder'
@@ -65,7 +65,7 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
 
 /** `web_fetch` and the check always; `web_search` only where Mastra resolves the provider's own search. */
 function toolsOf(modelId: ModelId, check: ToolsInput[string]): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetchTool, [CHECK_TOOL]: check }
+  const tools: ToolsInput = { web_fetch: webFetchTool, [BUILDER_TOOL.check]: check }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }
@@ -99,15 +99,13 @@ function builderMemory(
       observationalMemory: {
         enabled: true,
         scope: 'thread',
-        retrieval: true,
+        retrieval: { scope: 'thread' },
         activateAfterIdle: { default: 'auto', anthropic: '1h' },
         activateOnProviderChange: true,
         temporalMarkers: true,
         observation: {
           ...failSoft,
-          model: accountModel(queue, 'observer', (owner) =>
-            configuredMemoryModel(queue, owner, 'observer'),
-          ),
+          model: accountModel(queue, 'observer'),
           messageTokens: 30_000,
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
@@ -118,9 +116,7 @@ function builderMemory(
         },
         reflection: {
           ...failSoft,
-          model: accountModel(queue, 'reflection', (owner) =>
-            configuredMemoryModel(queue, owner, 'reflector'),
-          ),
+          model: accountModel(queue, 'reflection'),
           observationTokens: 40_000,
           bufferActivation: 1 / 2,
           blockAfter: 1.1,
@@ -157,7 +153,11 @@ export function createBuilder(deps: {
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
     inputProcessors: [accountPick(deps.queue)],
     workspace: undefined,
-    outputProcessors: [new CyberRefusalHandler(), checkGate({ runs: deps.runs, storage })],
+    outputProcessors: [
+      new CyberRefusalHandler(),
+      workspaceMetadataLive,
+      checkGate({ runs: deps.runs, storage }),
+    ],
     errorProcessors: accountErrorProcessors(deps.queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,
@@ -184,7 +184,7 @@ export function createBuilder(deps: {
   // Mastra 1.78.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
   for (const domain of Object.values(storage.stores)) domain?.__setLogger(mastra.getLogger())
-  return { controller, memory, mastra, agent }
+  return { controller, memory, mastra, agent, queue: deps.queue }
 }
 
 export type Builder = ReturnType<typeof createBuilder>

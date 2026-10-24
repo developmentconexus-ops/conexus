@@ -1,5 +1,5 @@
 import type { MastraPart, Question } from '@conexus/hub-api'
-import { MessageId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
+import { CARD_TOOLS, MessageId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
@@ -12,6 +12,7 @@ const { openConversation } = screens(server)
 const CALL = ToolCallId.parse('call-1')
 const ANSWER = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations/${FIRST}/questions/${CALL}`
 const BUILDER_MSG_ID = MessageId.parse('builder-msg-1')
+const STEP_MSG_ID = MessageId.parse('builder-step-1')
 
 function answering(reply: () => Promise<Response | undefined> = async () => undefined) {
   const bodies: unknown[] = []
@@ -31,16 +32,35 @@ async function turn(...parts: MastraPart[]) {
   const line = opened.lines[0]
   line?.emit({
     type: 'turn',
-    message: { ...builderSaid(''), id: BUILDER_MSG_ID, parts: [] },
+    messages: [{ ...builderSaid(''), id: BUILDER_MSG_ID, parts: [] }],
     startedAt: new Date().toISOString(),
+  })
+  line?.emit({
+    type: 'message_start',
+    message: { ...builderSaid(''), id: STEP_MSG_ID, parts: [] },
   })
   function tell(...more: MastraPart[]) {
     for (const [index, part] of more.entries()) {
       line?.emit({
         type: 'message_update',
-        id: BUILDER_MSG_ID,
+        id: STEP_MSG_ID,
         event: { type: 'part', index, part },
       })
+      // A card waits on the person when the Hub says it parked the call.
+      const call = part.type === 'tool-invocation' ? part.toolInvocation : undefined
+      if (
+        call !== undefined &&
+        (call.toolName === CARD_TOOLS.question || call.toolName === CARD_TOOLS.plan) &&
+        (call.state === 'call' || call.state === 'approval-requested')
+      ) {
+        line?.emit({
+          type: 'tool_suspended',
+          toolCallId: call.toolCallId,
+          toolName: call.toolName,
+          args: call.args,
+          suspendPayload: call.args,
+        })
+      }
     }
   }
   tell(...parts)
@@ -74,6 +94,16 @@ function questionPart(
   }
 }
 
+/** The card's own send button: the field's stays beside it while the Builder waits. */
+function questionSend() {
+  const field = screen.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const found = screen
+    .getAllByRole('button', { name: 'Enviar' })
+    .find((one) => one.closest('form') !== field.closest('form'))
+  if (!found) throw new Error('the card has no send button')
+  return found
+}
+
 test('cartão de perguntas da tool-invocation ask_user: resposta livre em várias linhas (#272), envio e respostas (Critério 12)', async () => {
   const held = Promise.withResolvers<undefined>()
   const bodies = answering(() => held.promise)
@@ -89,7 +119,7 @@ test('cartão de perguntas da tool-invocation ask_user: resposta livre em vária
   // Multiline free response (#272)
   const multilineText = 'Linha 1: só quando for entrega\nLinha 2: após as 18h'
   fireEvent.change(other, { target: { value: multilineText } })
-  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+  fireEvent.click(questionSend())
 
   const sending = await screen.findByRole('button', { name: 'Enviando…' })
   expect(sending).toHaveProperty('disabled', true)
@@ -121,7 +151,7 @@ test('dois cliques em Enviar mandam a resposta uma única vez', async () => {
       args: { questions: [WHO] },
     },
   })
-  const send = await screen.findByRole('button', { name: 'Enviar' })
+  const send = await waitFor(questionSend)
   fireEvent.click(send)
   fireEvent.click(send)
   await screen.findByRole('button', { name: 'Enviando…' })
@@ -153,7 +183,7 @@ test('pergunta vencida ou fechada diz que foi fechada e não se responde', async
     },
   })
   await screen.findByText(/Esta pergunta já foi respondida ou não espera mais/)
-  expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull()
+  expect(screen.getAllByRole('button', { name: 'Enviar' })).toHaveLength(1)
 })
 
 test('o cartão da versão: montou, não montou, pela metade, sem conferência (Critério 12)', async () => {
@@ -263,10 +293,18 @@ test('o plano recusado permanece como recusado após a resposta do Builder', asy
       toolName: 'submit_plan',
       state: 'result',
       args: PLAN_ARGS,
-      result: { action: 'rejected' },
+      result: {
+        content: 'Plan was not approved. The user wants revisions.',
+        submittedPlan: {
+          title: 'App de encomendas',
+          plan: 'Uma tela de encomendas.',
+          action: 'rejected',
+          feedback: 'Adicione filtro por data',
+        },
+      },
     },
   })
-  await within(card).findByText('Ajustes pedidos ao plano.')
+  await within(card).findByText('Este plano foi substituído.')
   expect(within(card).getByText('Uma tela de encomendas.')).toBeTruthy()
   expect(within(card).queryByRole('button', { name: 'Aprovar e construir' })).toBeNull()
 })

@@ -1,5 +1,5 @@
-import type { ConversationId, MastraPart, RunId } from '@conexus/hub-api'
-import { MessageId } from '@conexus/hub-api'
+import type { ConversationId, Kept, MastraPart, RestartedData, RunId } from '@conexus/hub-api'
+import { MachineData, MessageId, machinePhaseLasts, questionIdOf } from '@conexus/hub-api'
 import type { MastraDBMessage } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -15,7 +15,7 @@ export type Question = { key: string; content: string; at: string }
  * under it, so the question saved before the turn and the one the turn saves are one.
  */
 export function questionId(conversationId: ConversationId, key: string): MessageId {
-  return MessageId.parse(`${conversationId}:${key}`)
+  return questionIdOf(conversationId, key)
 }
 
 /** What writing to a conversation's thread needs: the memory, the owner, the log and the writes in flight. */
@@ -33,6 +33,13 @@ function queued(recorder: Pick<Recorder, 'kept'>, write: () => Promise<void>): P
   const kept = recorder.kept.catch(() => undefined).then(write)
   recorder.kept = kept
   return kept
+}
+
+/** Saves one message on the thread after the writes before it. */
+function savedAfter(recorder: Recorder, message: MastraDBMessage): Promise<void> {
+  return queued(recorder, async () => {
+    await recorder.memory.saveMessages({ messages: [message] })
+  })
 }
 
 function messageOf(
@@ -60,9 +67,7 @@ export function saveQuestion(recorder: Recorder, question: Question): Promise<vo
   const parts: MastraPart[] = [{ type: 'text', text: question.content }]
   const id = questionId(recorder.conversationId, question.key)
   const message = messageOf(recorder, { id, role: 'user', at: new Date(question.at), parts })
-  return queued(recorder, async () => {
-    await recorder.memory.saveMessages({ messages: [message] })
-  })
+  return savedAfter(recorder, message)
 }
 
 /** Waits for every write queued so far; one that failed is logged, for its own caller has gone on. */
@@ -75,8 +80,8 @@ export function settled(recorder: Recorder): Promise<void> {
 /** Whether a part of ours stays on the thread: a thinking's time, the version, the failure, the restart, a machine replaced. */
 function lasts(part: MastraPart): boolean {
   if (part.type === 'data-conexus-machine') {
-    const { data } = part
-    return typeof data === 'object' && data !== null && 'phase' in data && data.phase === 'replaced'
+    const machine = MachineData.safeParse(part.data)
+    return machine.success && machinePhaseLasts(machine.data.phase)
   }
   return (
     part.type === 'data-conexus-thought' ||
@@ -101,9 +106,7 @@ export function saveExtras(recorder: Recorder, turn: TurnLog): Promise<void> {
     at: turn.extrasAt,
     parts,
   })
-  return queued(recorder, async () => {
-    await recorder.memory.saveMessages({ messages: [message] })
-  }).catch((cause: unknown) =>
+  return savedAfter(recorder, message).catch((cause: unknown) =>
     logFailure(recorder.log, new Failure('INTERNAL_UNEXPECTED', { cause })),
   )
 }
@@ -114,12 +117,11 @@ export function saveExtras(recorder: Recorder, turn: TurnLog): Promise<void> {
  */
 export function saveRestarted(
   recorder: Recorder,
-  input: { runId: RunId; kept: unknown },
+  input: { runId: RunId; kept: Kept },
 ): Promise<void> {
-  const part: MastraPart = { type: 'data-conexus-restarted', data: { kept: input.kept } }
+  const data: RestartedData = { kept: input.kept }
+  const part: MastraPart = { type: 'data-conexus-restarted', data }
   const id = MessageId.parse(input.runId)
   const message = messageOf(recorder, { id, role: 'assistant', at: new Date(), parts: [part] })
-  return queued(recorder, async () => {
-    await recorder.memory.saveMessages({ messages: [message] })
-  })
+  return savedAfter(recorder, message)
 }

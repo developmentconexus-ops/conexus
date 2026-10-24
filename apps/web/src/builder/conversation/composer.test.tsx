@@ -10,8 +10,8 @@ const PICKER = { name: 'Modelo e raciocínio' }
 // suites name it (keyboard.test.ts).
 const SLIDER = { hidden: true } as const
 
-test('o anel do compositor só gira enquanto o Builder trabalha; Enviar vira Parar e o foco volta ao campo', async () => {
-  const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
+test('o anel do compositor só gira enquanto o Builder trabalha; enquanto ele trabalha, Parar e Enviar ficam lado a lado; Enter envia e Esc para', async () => {
+  const { field, lines, sent } = await openConversation(conversationOf({ id: FIRST }))
   function ring() {
     return field.closest('.rounded-composer')
   }
@@ -19,7 +19,15 @@ test('o anel do compositor só gira enquanto o Builder trabalha; Enviar vira Par
   say(field, 'Oi')
   const stop = await screen.findByRole('button', { name: 'Parar' })
   expect(ring()?.hasAttribute('data-busy')).toBe(true)
-  expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Enviar' })).toBeTruthy()
+  expect(field.getAttribute('placeholder')).toBe('Escreva para orientar o Builder')
+  expect(screen.getByText('Enter orienta o Builder · Esc para')).toBeTruthy()
+  say(field, 'Só eu cadastro.')
+  await waitFor(() => expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(2))
+  fireEvent.keyDown(field, { key: 'Escape', isComposing: true })
+  expect(sent.some((one) => one.path.endsWith('/stop'))).toBe(false)
+  fireEvent.keyDown(field, { key: 'Escape' })
+  await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/stop$/))
   stop.focus()
   fireEvent.click(stop)
   expect(document.activeElement).toBe(field)

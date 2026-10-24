@@ -62,11 +62,15 @@ test('o Enter envia com a chave da tentativa; "Pensando…" e "Parar" até chega
   say(field, 'Compare dois apps de encomenda de padaria')
   expect(await screen.findByText('Pensando…')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Enviar' })).toHaveProperty('disabled', true)
   await waitFor(() => expect(typed(field)).toBe(''))
   expect(sent[0]?.body).toEqual({ content: 'Compare dois apps de encomenda de padaria' })
   expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
   expect(await screen.findByText('Compare dois apps de encomenda de padaria')).toBeTruthy()
+  lines[0]?.emit({
+    type: 'message_start',
+    message: { ...builderSaid(''), parts: [] },
+  })
   lines[0]?.emit({
     type: 'message_update',
     id: MessageId.parse('builder-1'),

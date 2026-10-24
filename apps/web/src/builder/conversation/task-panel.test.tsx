@@ -70,18 +70,54 @@ test('ao recarregar, as tarefas são lidas de Conversation.tasks (Critério 10)'
   // Line starts a turn: task panel reads tasks from conversation.tasks
   lines[0]?.emit({
     type: 'turn',
-    message: {
-      id: MessageId.parse('builder-turn-1'),
-      role: 'builder',
-      parts: [],
-      suspended: {},
-      model: conversation.model,
-      createdAt: new Date().toISOString(),
-    },
+    messages: [
+      {
+        id: MessageId.parse('builder-turn-1'),
+        role: 'builder',
+        parts: [],
+        suspended: {},
+        model: conversation.model,
+        createdAt: new Date().toISOString(),
+      },
+    ],
     startedAt: new Date().toISOString(),
   })
 
   expect(await screen.findByRole('region', { name: 'Painel de tarefas' })).toBeTruthy()
   expect(screen.getByText('Tarefas · 1 de 3')).toBeTruthy()
   expect(screen.getByText('Fazendo a tela de pedidos')).toBeTruthy()
+})
+
+function visible(rendered: HTMLElement) {
+  return [...rendered.querySelectorAll('li')]
+    .filter((li) => !li.classList.contains('hidden'))
+    .map((li) => li.textContent)
+}
+
+test('a 390 px só a tarefa em andamento fica visível; sem nenhuma, a primeira pendente (Critério 10)', () => {
+  const working = render(<TaskPanel tasks={TASKS} streaming={true} />)
+  expect(visible(working.container)).toEqual(['Fazendo a tela de pedidos'])
+  expect(
+    [...working.container.querySelectorAll('li.hidden')].every((li) =>
+      li.classList.contains('md:flex'),
+    ),
+  ).toBe(true)
+  working.unmount()
+
+  const waiting = render(
+    <TaskPanel
+      tasks={[
+        {
+          id: '1',
+          content: 'Montar a tabela',
+          activeForm: 'Montando a tabela',
+          status: 'completed',
+        },
+        { id: '3', content: 'Conferir o app', activeForm: 'Conferindo o app', status: 'pending' },
+        { id: '4', content: 'Publicar', activeForm: 'Publicando', status: 'pending' },
+      ]}
+      streaming={true}
+    />,
+  )
+  expect(visible(waiting.container)).toEqual(['Conferir o app'])
 })

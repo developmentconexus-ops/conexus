@@ -912,3 +912,13 @@ or its origin.
   limit the version is saved `unfinished`. Mastra's own `goal` judges completion with a model, not
   the list (`agent/goal/scorer.ts:14-28`), so it does not serve. Proof: `conversation-check.test.ts`,
   criterion 15 of step 14.2. Revisit when Mastra ends a turn on its task list itself.
+
+## The Builder's turn across Mastra's runs (step 14.2)
+
+- **One row and one lease per turn.** `conversation/steer.ts` and the `pending` and `carry` of
+  `conversation/live.ts` are ours because Mastra gives the leftover run, not the turn that spans it:
+  a message sent while a turn runs joins it (`sendSignal`, `deliver`), and input the ending run never
+  read starts a fresh Mastra run (`agent/thread-stream-runtime.ts:4204-4207` at `6a465f9d`). Without
+  the carry that run has no `builder.run` row and no lease (data D25). Proof:
+  `conversation-steer.test.ts`, criteria 41 to 44 of step 14.2. Revisit when Mastra names the turn
+  across the runs it starts for leftover input.

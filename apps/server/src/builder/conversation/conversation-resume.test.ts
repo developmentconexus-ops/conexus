@@ -6,6 +6,7 @@ import {
   asked,
   conversing,
   holding,
+  hubBeside,
   PARTIAL,
   sent,
   started,
@@ -85,7 +86,10 @@ test('reconectar com um id de outro turno, estragado, fora da forma ou de outra 
     t.after(() => again.close())
     const snapshot = await again.next()
     assert.ok(snapshot.type === 'turn', `${id} reads the turn so far`)
-    assert.deepEqual(snapshot.message.parts, [{ type: 'text', text: PARTIAL }])
+    assert.deepEqual(
+      snapshot.messages.flatMap((message) => message.parts),
+      [{ type: 'text', text: PARTIAL }],
+    )
     again.close()
     assert.doesNotMatch(again.seen.raw, /Resposta Y/)
   }
@@ -111,7 +115,10 @@ test('reconectar depois do fim do turno, com o id do fim, de outra conversa ou e
   for (const stream of resumed) {
     const next = await stream.next()
     assert.ok(next.type === 'turn', 'the next turn opens, with nothing said before it')
-    assert.deepEqual(next.message.parts, [])
+    assert.deepEqual(
+      next.messages.flatMap((message) => message.parts),
+      [],
+    )
     assert.doesNotMatch(stream.seen.raw, /Resposta/)
   }
 })
@@ -128,12 +135,37 @@ test('um evento já dito e ainda não lido, quando o stream abre, chega uma vez 
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   const snapshot = await stream.next()
-  assert.deepEqual(snapshot.type === 'turn' && snapshot.message.parts, [
-    { type: 'text', text: PARTIAL },
-  ])
+  assert.deepEqual(
+    snapshot.type === 'turn' && snapshot.messages.flatMap((message) => message.parts),
+    [{ type: 'text', text: PARTIAL }],
+  )
   held.release()
   const rest = await stream.turn()
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.equal(saidText(rest), false)
   assert.equal(new Set(stream.seen.ids).size, stream.seen.ids.length, stream.seen.ids.join(' '))
+})
+
+test('depois de um reinício, uma reconexão com Last-Event-ID do aviso recebe o fim do turno', async (t) => {
+  // A turn mid-answer, with no card parked: the next copy ends it and says the restart (an open
+  // card is adopted instead, conversation-update.test.ts).
+  const held = holding(t)
+  const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  await stream.text()
+  const runId = stream.seen.ids.at(-1)?.split('.')[0]
+  assert.ok(runId !== undefined)
+  await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
+  const beside = await hubBeside(t, hub)
+  // The person's screen is connected to the new copy, which keeps the conversation open there.
+  const connected = await streamOf(beside, ana, url)
+  t.after(() => connected.close())
+  await beside.restart()
+  assert.deepEqual((await connected.turn()).at(-1), { type: 'turnEnd', reason: 'aborted' })
+  const reconnected = await streamOf(beside, ana, url, `${runId}.1`)
+  t.after(() => reconnected.close())
+  assert.deepEqual(await reconnected.next(), { type: 'turnEnd', reason: 'aborted' })
 })

@@ -20,7 +20,7 @@ async function picked(): Promise<Picked> {
     label: 'Time 1',
     kind: 'api_key',
     modelId: ModelId.parse(id),
-    model,
+    models: { conversation: model, system: model },
   }
 }
 

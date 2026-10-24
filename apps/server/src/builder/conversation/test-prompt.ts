@@ -20,7 +20,7 @@ export const PROMPT_TABLE: readonly Readonly<{
   {
     line: 6,
     verdict: 'adaptada',
-    text: "- Text you write outside tool calls is shown to the person in the chat, as Markdown. They also see your task list and your question cards, but not your tool calls. Nobody has a terminal, and you never see the app's screens yourself.",
+    text: "- Text you write outside tool calls is shown to the person in the chat, as Markdown. They also see your reasoning, each tool you use with what it received and returned, your task list and your question cards. Nobody has a terminal, and you never see the app's screens yourself.",
   },
   {
     line: 7,

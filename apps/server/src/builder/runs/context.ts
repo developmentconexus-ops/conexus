@@ -1,6 +1,7 @@
 import type {
   CompanyId,
   ConversationId,
+  Kept,
   PersonId,
   ProjectId,
   RunId,
@@ -10,7 +11,7 @@ import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
 import type { Machines } from '../machine/public.ts'
-import type { RunStore } from './store.ts'
+import type { Run, RunStore } from './store.ts'
 
 export type RunsDeps = {
   database: Database
@@ -29,9 +30,6 @@ export type RunsDeps = {
   yieldMs?: () => number
 }
 
-/** What a restart kept of the turn: its version, nothing to save, or a save that did not happen. */
-export type Kept = number | 'nothing' | 'lost'
-
 /** What a restart tells the conversation of the turn it ended: the version kept, if any. */
 export type Restart = {
   companyId: CompanyId
@@ -49,6 +47,8 @@ export type RunsContext = RunsDeps & {
   stopped(runId: RunId): Promise<void>
   /** Hands what a restart told a turn to its conversation, for its open streams and its thread. */
   restarted(restart: Restart): Promise<void>
+  /** A run whose copy is gone, handed to its conversation when Mastra still parks its card; false when none is parked. */
+  adopted(run: Run): Promise<boolean>
 }
 
 /**

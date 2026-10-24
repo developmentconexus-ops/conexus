@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { runningEffort } from './conversations.ts'
+import { ConversationId, questionIdOf, runningEffort } from './conversations.ts'
 import type { MastraPart, MessageUpdate } from './mastra-parts.ts'
 import { applyUpdate } from './mastra-parts.ts'
 
@@ -36,4 +36,9 @@ test('a dobra de Mastra: o texto soma ao último texto, o raciocínio ao seu ín
     { type: 'text', text: 'Li o arquivo.' },
   ])
   assert.deepEqual(before, [], 'the parts given stay as they were')
+})
+
+test('o id da mensagem da pessoa é a conversa e a chave do envio, a mesma que o servidor dá', () => {
+  const conversation = ConversationId.parse('11111111-1111-4111-8111-111111111111')
+  assert.equal(questionIdOf(conversation, 'a1b2'), '11111111-1111-4111-8111-111111111111:a1b2')
 })

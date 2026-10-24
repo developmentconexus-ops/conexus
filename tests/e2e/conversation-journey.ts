@@ -186,8 +186,9 @@ export async function pickLevel(page: Page, choice: Locator, level: string) {
 }
 
 /**
- * Keeps every text the transcript shows, from the first load on: a notice is shown only while the
- * turn runs, and the double ends a turn in milliseconds, too soon for a poll to see it.
+ * Keeps every text the transcript and the task panel above the composer show, from the first load
+ * on: a notice is shown only while the turn runs, and the double ends a turn in milliseconds, too
+ * soon for a poll to see it.
  */
 export async function recordTranscript(page: Page) {
   await page.addInitScript(() => {
@@ -196,6 +197,8 @@ export async function recordTranscript(page: Page) {
     new MutationObserver(() => {
       const log = document.querySelector('[role=log]')
       if (log instanceof HTMLElement) shown.add(log.innerText)
+      const tasks = document.querySelector('[aria-label="Painel de tarefas"]')
+      if (tasks instanceof HTMLElement) shown.add(tasks.innerText)
     }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true })
   })
 }

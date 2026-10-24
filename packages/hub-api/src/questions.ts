@@ -24,6 +24,7 @@ export const Task = z.object({
   activeForm: z.string(),
   status: z.enum(['pending', 'in_progress', 'completed']),
 })
+export type Task = z.infer<typeof Task>
 
 /** The longest answer or reason a person sends back to a card, in characters. */
 const ANSWER_MAX_LENGTH = 20_000
