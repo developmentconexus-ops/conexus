@@ -6,8 +6,8 @@ import { z } from 'zod'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { memoryOwner } from './builder.ts'
 import type { Live } from './live.ts'
-import { beforeAgentEnd, endRun } from './live.ts'
 import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
+import { beforeAgentEnd, endRun } from './turn-end.ts'
 
 type Suspended = Extract<AgentControllerEvent, { type: 'tool_suspended' }>
 type Cancelled = Extract<AgentControllerEvent, { type: 'tool_suspension_cancelled' }>

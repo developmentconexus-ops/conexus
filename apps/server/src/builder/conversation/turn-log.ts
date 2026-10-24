@@ -8,7 +8,6 @@ import type {
 } from '@conexus/hub-api'
 import { EventId } from '@conexus/hub-api'
 import { z } from 'zod'
-import type { ShellSaid } from './shell.ts'
 import type { TurnTally } from './turn-line.ts'
 
 /** An event as the stream sends it, with the id a reconnect names it by. */
@@ -40,8 +39,8 @@ export type TurnLog = {
   next: number
   /** When each reasoning began, by its message and index, until the first part after it. */
   thinking: Map<string, number>
-  /** The output of the commands in progress, by the tool call that runs them. */
-  shells: ShellSaid
+  /** When the lines of each command in progress were last said, by the tool call that runs it. */
+  shells: Map<string, number>
   tally: TurnTally
   /** The request that began the turn, for its log line. */
   traceId: string | undefined
@@ -57,7 +56,7 @@ export type TurnLog = {
 export type Speaker = { listeners: Set<Listener> }
 
 /** The id of a run's `n`th event: the run, and the event's place in it. */
-export function eventId(runId: RunId, n: number): EventId {
+function eventId(runId: RunId, n: number): EventId {
   return EventId.parse(`${runId}.${n}`)
 }
 

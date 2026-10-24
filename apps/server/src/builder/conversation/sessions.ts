@@ -21,18 +21,13 @@ import { denyParked, expire, onCardEvent, parked, releaseCards, takeCards } from
 import { deliver } from './deliver.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
-import {
-  beforeAgentEnd,
-  cancelPending,
-  endTurn,
-  onEvent,
-  openTurn,
-  tellMachine,
-  tellRestarted,
-} from './live.ts'
+import { cancelPending } from './live.ts'
 import type { Question } from './record.ts'
 import { questionId, saveQuestion, saveRestarted, settled } from './record.ts'
 import { deliverInto, nextRunOrEnd, steerCards, turnOver } from './steer.ts'
+import { beforeAgentEnd, endTurn } from './turn-end.ts'
+import { onEvent } from './turn-events.ts'
+import { openTurn, tellMachine, tellRestarted } from './turn-parts.ts'
 
 type OfConversation = { owner: Owner; conversationId: ConversationId }
 
