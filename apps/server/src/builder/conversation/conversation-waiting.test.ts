@@ -206,13 +206,14 @@ for (const [type, steps] of [
     t.after(() => fresh.close())
     const first = await within(5_000, fresh.next())
     assert.equal(first?.type, 'turn', 'the fresh view opens with the turn in progress')
-    const message = first?.type === 'turn' ? first.message : undefined
+    const messages = first?.type === 'turn' ? first.messages : []
+    const waiting = messages.find((message) => card.toolCallId in message.suspended)
     assert.deepEqual(
-      Object(message?.suspended[card.toolCallId]).suspendPayload,
+      Object(waiting?.suspended[card.toolCallId]).suspendPayload,
       card.suspendPayload,
       'the card is open, with what the call suspended with',
     )
-    assert.deepEqual(stateOf(message?.parts ?? [], card.toolCallId), ['call'])
+    assert.deepEqual(stateOf(waiting?.parts ?? [], card.toolCallId), ['call'])
     const where = answerUrl(url, card.toolCallId)
     let answered = await post(hub, ana, where, answerOf(type))
     // Mastra 1.78.0 can show a call before it saved the parked run: an answer that comes that fast

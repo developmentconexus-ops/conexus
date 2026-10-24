@@ -1,6 +1,7 @@
 import type {
   CompanyId,
   ConversationId,
+  Kept,
   PersonId,
   ProjectId,
   RunId,
@@ -28,9 +29,6 @@ export type RunsDeps = {
   /** How long a stopping copy waits for its turns before it lets go of their leases; 8 seconds unless a test shortens it. */
   yieldMs?: () => number
 }
-
-/** What a restart kept of the turn: its version, nothing to save, or a save that did not happen. */
-export type Kept = number | 'nothing' | 'lost'
 
 /** What a restart tells the conversation of the turn it ended: the version kept, if any. */
 export type Restart = {

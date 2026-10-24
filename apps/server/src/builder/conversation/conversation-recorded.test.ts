@@ -41,8 +41,8 @@ function folded(events: ConversationEvent[]): MastraPart[] {
   let answerId: string | undefined
   for (const event of events) {
     if (event.type === 'turn') {
-      answerId = event.message.id
-      steps.set(answerId, event.message.parts)
+      for (const message of event.messages) steps.set(message.id, message.parts)
+      answerId = event.messages.at(-1)?.id
     } else if (event.type === 'message_start') {
       steps.set(event.message.id, event.message.parts)
     } else if (event.type === 'message_update') {

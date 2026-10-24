@@ -118,7 +118,7 @@ test('ao reconectar, a conversa é lida de novo e o texto parcial volta pelo "tu
   const before = reads.length
   lines[0]?.close()
   await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
-  lines[1]?.emit({ type: 'turn', message: builderSaid('O primeiro é bom e o segun'), startedAt })
+  lines[1]?.emit({ type: 'turn', messages: [builderSaid('O primeiro é bom e o segun')], startedAt })
   expect(await screen.findByText('O primeiro é bom e o segun')).toBeTruthy()
   expect(reads.length).toBeGreaterThan(before)
   expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
@@ -131,7 +131,7 @@ test('ao reconectar com o turno em curso e ainda mudo, o "turn" vazio mostra "Pe
   lines[0]?.close()
   await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
   await waitFor(() => expect(screen.queryByText('Pensando…')).toBeNull())
-  lines[1]?.emit({ type: 'turn', message: { ...builderSaid(''), parts: [] }, startedAt })
+  lines[1]?.emit({ type: 'turn', messages: [{ ...builderSaid(''), parts: [] }], startedAt })
   expect(await screen.findByText('Pensando…')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
 })
@@ -151,6 +151,18 @@ test('a resposta que terminou com a linha caída aparece uma vez ao reconectar, 
   expect(log.getAttribute('aria-busy')).toBe('false')
   fireEvent.change(field, { target: { value: 'E o segundo?' } })
   expect(screen.getByRole('button', { name: 'Enviar' }).hasAttribute('disabled')).toBe(false)
+})
+
+test('o turno que acabou com a linha caída, sem nada guardado depois, não deixa "Builder trabalhando" ao reconectar', async () => {
+  const { field, lines, shown } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'Compare')
+  lines[0]?.emit({ type: 'turn', messages: [{ ...builderSaid(''), parts: [] }], startedAt })
+  await screen.findByText(/Builder trabalhando/)
+  lines[0]?.close()
+  shown.conversations[0]?.messages.push(builderSaid('Resposta guardada.'))
+  await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
+  await waitFor(() => expect(screen.queryByText(/Builder trabalhando/)).toBeNull())
+  expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull()
 })
 
 test('depois de "Parar", o texto parcial fica até a leitura trazer a resposta guardada', async () => {
@@ -177,7 +189,8 @@ test('uma linha do stream que não é JSON abre a linha de novo', async () => {
 })
 
 test('ao reconectar, a tela manda o id do último evento e o turno segue de onde parou', async () => {
-  const { field, lines, resumedFrom } = await openConversation(conversationOf({ id: FIRST }))
+  const conversation = conversationOf({ id: FIRST, inProgress: true })
+  const { field, lines, resumedFrom } = await openConversation(conversation)
   say(field, 'Compare')
   lines[0]?.emit(textDelta('O primeiro'), 'turn-1.1')
   lines[0]?.emit(textDelta(' é bom'), 'turn-1.2')
@@ -276,7 +289,7 @@ test('60 s sem o Builder dizer nada: "Ainda trabalhando…", contado desde o in�
     const now = Date.now()
     lines[0]?.emit({
       type: 'turn',
-      message: { ...builderSaid(''), parts: [] },
+      messages: [{ ...builderSaid(''), parts: [] }],
       startedAt: new Date(now).toISOString(),
     })
     lines[0]?.emit(textDelta('Vou ver.'))

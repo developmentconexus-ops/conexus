@@ -66,7 +66,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | --- | --- | --- | --- |
 | 1 | U1 | V39, 0050 e 0055 com a regra trocada e a frase do fundador | `check-docs` |
 | 2 | U2 | `readConversation` devolve as partes como o Mastra as guarda (`text`, `reasoning` com texto, `tool-invocation` com nome, `args`, `result`, `state`, `data-*`); o tipo do Mastra cabe no esquema | `conversation-wire.test.ts`, tipo |
-| 3 | U2 | O stream manda só `message_*`, `shell_output`, `command_exit`, `tool_suspended`, `task_updated`, `om_status`, `om_*_start/_end/_failed`, `agent_end` na forma do Mastra, e os nossos `turn` e `data-conexus-*` | idem |
+| 3 | U2 | O stream manda só `message_*`, `shell_output`, `command_exit`, `tool_suspended`, `task_updated`, `om_status`, `om_*_start/_end/_failed`, `agent_end` na forma do Mastra, `om_progress` (`displayState.omProgress`, após cada `om_*`), e os nossos `turn` e `data-conexus-*` | idem |
 | 4 | U2 | Ao vivo e relido, a mesma parte, para cada ferramenta do conjunto fechado e uma desconhecida; a saída de comando cortada igual nos dois | idem |
 | 5 | U2 | Texto acima de `WIRE_LIMITS` sai cortado com `…` e o caminho em `cuts`; o resto segue; nenhum corte fora de `wire.ts` | idem |
 | 6 | U2 | `Conversation.tasks` é a lista do armazenamento do Mastra; `Conversation.memory`, o `omProgress` da sessão ou `null` | idem |
@@ -74,7 +74,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 8 | U3 | Toda linha com argumentos ou resultado abre: leitura no começo, `list_files` e `grep` no resultado, `skill` no nome e nas instruções, desconhecida no nome legível, argumentos e resultado; falha, vermelha, no erro | `tool-row.test.tsx` |
 | 9 | U3 | Raciocínio: "Pensando…", depois "Pensou por N s", fechado, abre no texto; grupo de 3 ou mais, sem `skill`, `ask_user`, `submit_plan`; `task_*` sem linha | `transcript.test.tsx` |
 | 10 | U3 | Painel "Tarefas · N de M" acima da caixa enquanto o turno roda; some com tudo feito ou com o turno no fim; nenhum "em andamento" girando depois (#271); relido, do `Conversation.tasks` | `task-panel.test.tsx` |
-| 11 | U3 | Anéis da memória de `om_status`, o quadro ao abrir, "Guardando a memória…" ou "Reorganizando a memória…" enquanto segura o turno, a marca de falha sem o texto do fornecedor (C48, C51) | `memory-status.test.tsx` |
+| 11 | U3 | Anéis da memória do `om_progress` (fundador, 2026-10-23: "A"), o quadro ao abrir, "Guardando a memória…" ou "Reorganizando a memória…" enquanto segura o turno, a marca de falha sem o texto do fornecedor (C48, C51) | `memory-status.test.tsx` |
 | 12 | U3 | Cartões de pergunta, plano e tarefas lidos da `tool-invocation` pelo nome; resposta livre em várias linhas (#272); o cartão da versão: montou, não montou, pela metade | `cards.test.tsx` |
 | 13 | U3, U9 | 1280 e 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo; a árvore com papéis ARIA, o `Sheet` a 390 px, o vazio | T23, `source.test.tsx` |
 | 14 | U4 | O Builder sai de `createCodingAgent` com `workspace: undefined`: não tem workspace próprio, a máquina E2B segue emprestada por volta; a lista volta ao modelo depois que a chamada sai da janela | `conversation-tasks.test.ts` (novo) |

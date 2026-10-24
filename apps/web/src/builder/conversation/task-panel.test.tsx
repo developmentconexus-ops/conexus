@@ -70,14 +70,16 @@ test('ao recarregar, as tarefas são lidas de Conversation.tasks (Critério 10)'
   // Line starts a turn: task panel reads tasks from conversation.tasks
   lines[0]?.emit({
     type: 'turn',
-    message: {
-      id: MessageId.parse('builder-turn-1'),
-      role: 'builder',
-      parts: [],
-      suspended: {},
-      model: conversation.model,
-      createdAt: new Date().toISOString(),
-    },
+    messages: [
+      {
+        id: MessageId.parse('builder-turn-1'),
+        role: 'builder',
+        parts: [],
+        suspended: {},
+        model: conversation.model,
+        createdAt: new Date().toISOString(),
+      },
+    ],
     startedAt: new Date().toISOString(),
   })
 

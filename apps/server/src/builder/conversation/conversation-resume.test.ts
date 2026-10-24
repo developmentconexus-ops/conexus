@@ -85,7 +85,10 @@ test('reconectar com um id de outro turno, estragado, fora da forma ou de outra 
     t.after(() => again.close())
     const snapshot = await again.next()
     assert.ok(snapshot.type === 'turn', `${id} reads the turn so far`)
-    assert.deepEqual(snapshot.message.parts, [{ type: 'text', text: PARTIAL }])
+    assert.deepEqual(
+      snapshot.messages.flatMap((message) => message.parts),
+      [{ type: 'text', text: PARTIAL }],
+    )
     again.close()
     assert.doesNotMatch(again.seen.raw, /Resposta Y/)
   }
@@ -111,7 +114,10 @@ test('reconectar depois do fim do turno, com o id do fim, de outra conversa ou e
   for (const stream of resumed) {
     const next = await stream.next()
     assert.ok(next.type === 'turn', 'the next turn opens, with nothing said before it')
-    assert.deepEqual(next.message.parts, [])
+    assert.deepEqual(
+      next.messages.flatMap((message) => message.parts),
+      [],
+    )
     assert.doesNotMatch(stream.seen.raw, /Resposta/)
   }
 })
@@ -128,9 +134,10 @@ test('um evento já dito e ainda não lido, quando o stream abre, chega uma vez 
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   const snapshot = await stream.next()
-  assert.deepEqual(snapshot.type === 'turn' && snapshot.message.parts, [
-    { type: 'text', text: PARTIAL },
-  ])
+  assert.deepEqual(
+    snapshot.type === 'turn' && snapshot.messages.flatMap((message) => message.parts),
+    [{ type: 'text', text: PARTIAL }],
+  )
   held.release()
   const rest = await stream.turn()
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })

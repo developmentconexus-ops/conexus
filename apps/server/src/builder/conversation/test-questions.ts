@@ -1,13 +1,14 @@
 import type { TestContext } from 'node:test'
 import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { ASK_USER_TOOL, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { conversing, sent, started, streamOf } from './test-conversation.ts'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
 type Suspended = Extract<ConversationEvent, { type: 'tool_suspended' }>
 
 /** The tool each kind of card is, as Mastra names the call it parks. */
-const CARD_TOOL = { question: 'ask_user', plan: 'submit_plan' } as const
+const CARD_TOOL = { question: ASK_USER_TOOL, plan: SUBMIT_PLAN_TOOL } as const
 
 /** A tool call of the model's. */
 export function tool(name: string, input: object): Block {
@@ -16,7 +17,7 @@ export function tool(name: string, input: object): Block {
 
 /** An `ask_user` call with these questions. */
 export function ask(...questions: object[]): Block {
-  return tool('ask_user', { questions })
+  return tool(ASK_USER_TOOL, { questions })
 }
 
 export const WHO = {
@@ -30,7 +31,7 @@ export function writePlan(path: string, body = 'Para a pessoa: um cadastro simpl
 }
 export const WRITE_PLAN = writePlan(PLAN)
 export function submitPlan(path: string): Block {
-  return tool('submit_plan', { path })
+  return tool(SUBMIT_PLAN_TOOL, { path })
 }
 /** The read the workspace asks for before it overwrites a file. */
 export const readPlan = tool('mastra_workspace_read_file', { path: PLAN })

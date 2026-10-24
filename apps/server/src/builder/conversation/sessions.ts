@@ -6,6 +6,7 @@ import type {
   OMProgress,
   ProjectId,
   QuestionAnswer,
+  RestartedData,
   RunId,
   ToolCallId,
 } from '@conexus/hub-api'
@@ -299,7 +300,10 @@ export class Sessions {
       const live = await entry.live
       await denyParked(live, this.#builder.agent)
       await saveRestarted(live, { runId, kept })
-      const part = { type: 'data-conexus-restarted', data: { kept } } as const
+      const part = {
+        type: 'data-conexus-restarted',
+        data: { kept } satisfies RestartedData,
+      } as const
       const events = [
         {
           type: 'message_update',

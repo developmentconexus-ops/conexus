@@ -1,11 +1,7 @@
+import { MachineData, machinePhaseLasts } from '@conexus/hub-api'
 import { bareToolName } from './tool-presentation.ts'
 import type { ToolItem, TranscriptItem } from './transcript-items.ts'
-import {
-  ConexusMachineData,
-  isMachineLasting,
-  isTaskTool,
-  UNGROUPABLE_TOOLS,
-} from './transcript-items.ts'
+import { isTaskTool, UNGROUPABLE_TOOLS } from './transcript-items.ts'
 
 export type Row = { kind: 'item'; item: TranscriptItem } | { kind: 'group'; tools: ToolItem[] }
 
@@ -18,8 +14,8 @@ function isGroupableTool(item: ToolItem): boolean {
 
 function checkMachineLasts(item: TranscriptItem): boolean {
   if (item.kind !== 'conexus' || item.partType !== 'data-conexus-machine') return true
-  const parsed = ConexusMachineData.safeParse(item.data)
-  return parsed.success && isMachineLasting(parsed.data.phase)
+  const parsed = MachineData.safeParse(item.data)
+  return parsed.success && machinePhaseLasts(parsed.data.phase)
 }
 
 export function fold(items: readonly TranscriptItem[]): Row[] {

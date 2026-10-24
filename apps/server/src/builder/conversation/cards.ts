@@ -148,7 +148,7 @@ async function endParked(live: Live, run: string | undefined): Promise<void> {
  */
 function onCancelled(live: Live, event: Cancelled) {
   const turn = live.turn
-  if (turn === undefined || turn.ended || !turn.suspended.delete(event.toolCallId)) return
+  if (turn === undefined || turn.ended || !turn.parked.delete(event.toolCallId)) return
   if (openCards(live).length > 0) return
   waitOn(live, false)
   const { runId } = event

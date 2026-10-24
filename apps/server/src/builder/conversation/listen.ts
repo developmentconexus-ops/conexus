@@ -2,6 +2,7 @@ import type { EventId } from '@conexus/hub-api'
 import type { Live } from './live.ts'
 import type { Listener, Said } from './turn-log.ts'
 import { catchUp } from './turn-log.ts'
+import { wireSuspended } from './wire.ts'
 
 /**
  * A stream of a conversation's events: those the turn in progress kept after `lastEventId`, or the
@@ -19,7 +20,8 @@ export function listen(
   },
 ) {
   const { signal, release } = input
-  const waiting: Said[] = catchUp(live.turn, input.lastEventId)
+  const parked = live.session.displayState.get().pendingSuspensions.values()
+  const waiting: Said[] = catchUp(live.turn, input.lastEventId, wireSuspended(parked))
   let wake: (() => void) | undefined
   const listener: Listener = (said) => {
     waiting.push(said)
