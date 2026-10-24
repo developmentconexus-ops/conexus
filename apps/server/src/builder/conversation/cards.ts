@@ -162,11 +162,12 @@ export function onCardEvent(live: Live, event: AgentControllerEvent): void {
 }
 
 /**
- * A parked turn left to the next copy: our listener goes first, since Mastra's abort still says
- * `tool_suspension_cancelled` for each parked call, then Mastra keeps the run as it is
- * (`detachFromCurrent`), without closing the card.
+ * A parked turn left to the next copy: the watch of its run's exits and our listener go first,
+ * since Mastra's abort still says `tool_suspension_cancelled` for each parked call and tears the
+ * stream down, then Mastra keeps the run as it is (`detachFromCurrent`), without closing the card.
  */
 export function detach(live: Live): void {
+  writingOf(live.state)?.exits.abort()
   live.unsubscribe()
   live.session.thread.detachFromCurrent()
 }

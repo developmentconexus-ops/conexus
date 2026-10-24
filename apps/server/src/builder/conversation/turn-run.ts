@@ -9,6 +9,7 @@ import { deliver } from './deliver.ts'
 import type { Live, Question } from './live.ts'
 import { questionId, settled } from './record.ts'
 import { endWithout } from './turn-end.ts'
+import { watchExits } from './turn-exits.ts'
 import { beginTurn, tellMachine } from './turn-parts.ts'
 import type { Writing } from './turn-state.ts'
 import { ended, suspended, writingOf } from './turn-state.ts'
@@ -24,12 +25,17 @@ function bindRun(
   run: { runId: RunId; traceId: string },
 ): { writing: Writing; over: Promise<void> } {
   const id = run.runId
-  const { promise: over, resolve: ended } = Promise.withResolvers<void>()
+  const { promise: over, resolve } = Promise.withResolvers<void>()
+  const exits = new AbortController()
   const writing: Writing = {
     ...{ id, traceId: run.traceId, context: runs.contextOf(turnContext(turn), id), turn },
     finish: (reason) => runs.finish({ runId: id, reason }),
     waiting: (waiting) => runs.waiting(id, waiting, () => expire(live)),
-    ended,
+    ended: () => {
+      exits.abort()
+      resolve()
+    },
+    exits,
   }
   runs.onPhase(id, (phase) => tellMachine(live, phase))
   return { writing, over }
@@ -81,6 +87,7 @@ export async function answerTurn(
     abort: () => live.session.abort(),
     lost: () => (openCards(live).length > 0 ? leave(live) : live.session.abort()),
   })
+  const watched = watchExits(live, writing)
   try {
     // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
     const tracingOptions = { traceId: run.traceId.replaceAll('-', '') }
@@ -91,6 +98,7 @@ export async function answerTurn(
     } as const
     const accepted = await deliver(live, { question, id }, options)
     opened.after ??= id
+    watched()
     if ('runId' in accepted) await over
     else await endWithout(live, writing, 'error', 'INTERNAL_UNEXPECTED')
   } catch (cause) {
@@ -121,6 +129,7 @@ export async function adoptTurn(live: Live, runs: Runs, run: Run): Promise<void>
     lost: () => leave(live),
     expire: () => expire(live),
   })
+  watchExits(live, writing)()
   try {
     await over
   } finally {

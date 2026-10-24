@@ -15,8 +15,10 @@ export type Writing = {
   finish: (reason: string) => Promise<Settled | 'gone'>
   /** The run waits on the person's answer, or goes on after it; rejects when the database refuses. */
   waiting: (waiting: boolean) => Promise<void>
-  /** Resolves the message's wait (`answerTurn`), once. */
+  /** Resolves the message's wait (`answerTurn`), once, and stops the watch of Mastra's exits. */
   ended: () => void
+  /** Stops the watch of the ways Mastra's run ends besides `agent_end` (`turn-exits.ts`). */
+  exits: AbortController
 }
 
 type Open = { log: TurnLog; writing: Writing; failure: TurnFailureCode | undefined }
