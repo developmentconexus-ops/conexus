@@ -195,7 +195,10 @@ export function accountPick(deps: QueueDeps): InputProcessor {
       await keepNotices(args, turn)
       if (account === undefined)
         return { model: await noAccountModel(turn.modelId(args.requestContext)) }
-      const result: ProcessInputStepResult = { ...lastStep(args), model: account.model }
+      const result: ProcessInputStepResult = {
+        ...lastStep(args),
+        model: account.models.conversation,
+      }
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
         result.providerOptions = withOptions(args.providerOptions, thinking)
@@ -283,7 +286,7 @@ type SideCall = 'title' | 'observer' | 'reflection'
  * neither and its message is not ours to keep (security S41). The error is thrown on, to Mastra.
  */
 function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): LanguageModel {
-  const { model } = account
+  const model = account.models.system
   if (typeof model === 'string' || model.specificationVersion !== 'v3') return model
   function report(error: unknown): never {
     const fields = { companyId: turn.companyId, accountId: account.id, call }

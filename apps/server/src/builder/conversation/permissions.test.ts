@@ -210,13 +210,14 @@ class SwitchedTurn extends Turn {
     return 'off' as const
   }
   override async account() {
+    const model = await secondModel()
     return {
       ...{
         id: ModelAccountId.parse(crypto.randomUUID()),
         label: 'Time 1',
         kind: 'api_key' as const,
       },
-      ...{ modelId: ModelId.parse(MODEL), model: await secondModel() },
+      ...{ modelId: ModelId.parse(MODEL), models: { conversation: model, system: model } },
     }
   }
 }
