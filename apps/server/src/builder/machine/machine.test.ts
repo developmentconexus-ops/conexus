@@ -9,6 +9,7 @@ import {
   OTHER_INSTALLATION,
   PROJECT,
   restoreRefused,
+  sandboxOf,
   world,
 } from './test-machine.ts'
 
@@ -44,11 +45,11 @@ test('máquina: o turno seguinte volta ao main, e um commit em outro ramo não a
   const first = await open()
   const git = `git -c user.name=B -c user.email=b@x.test`
   await first.filesystem?.writeFile('a.ts', 'um\n')
-  const committed = await first.sandbox?.executeCommand?.('sh', [
+  const committed = await (await sandboxOf(first)).executeCommand('sh', [
     '-c',
     `cd ${join(folder, 'app')} && git checkout -qb outro && git add -A && ${git} commit -qm um`,
   ])
-  assert.equal(committed?.exitCode, 0, committed?.stderr)
+  assert.equal(committed.exitCode, 0, committed.stderr)
   const bundle = await machines.collect({ projectId: PROJECT, base })
   assert.ok(typeof bundle === 'object')
   assert.equal(bundle.changedFiles, 1)
@@ -104,7 +105,7 @@ test('máquina: duas ferramentas do Workspace no primeiro passo esperam a sement
   const head = { command: `cat ${join(folder, 'app')}/.git/HEAD` }
   const first = command.execute(head, { workspace })
   // The second arrives while the machine already says `running` and the seed is still coming.
-  while (workspace.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))
+  while (control.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))
   const seen = [await first, await command.execute(head, { workspace })]
   for (const each of seen) assert.match(JSON.stringify(each), /ref: refs\/heads\/main/)
 })
@@ -127,12 +128,12 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
   const { open, machines, repository, base, folder } = await world(t)
   const workspace = await open()
   const fs = workspace.filesystem
-  assert.ok(fs && workspace.sandbox?.executeCommand)
+  assert.ok(fs)
   const [first, second] = await Promise.all([fs.exists('.git/HEAD'), fs.exists('.git/HEAD')])
   assert.deepEqual([first, second], [true, true])
   await fs.writeFile('src/a.ts', 'export const a = 1\n')
   const git = `git -c user.name=B -c user.email=b@x.test`
-  const committed = await workspace.sandbox.executeCommand('sh', [
+  const committed = await (await sandboxOf(workspace)).executeCommand('sh', [
     '-c',
     `cd ${join(folder, 'app')} && git checkout -qb outro && git add -A && ${git} commit -qm um && echo dois > b.ts && git add -A && ${git} commit -qm dois`,
   ])
@@ -160,9 +161,9 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
 
 test('máquina: o nome da máquina leva a instalação e a empresa, então a de outra instalação ou empresa nunca é a achada pelo nome', async (t) => {
   const here = await world(t)
-  await here.open()
+  await (await here.open()).filesystem?.exists('a.ts')
   const other = await world(t, 5_000, OTHER_INSTALLATION)
-  await other.open()
+  await (await other.open()).filesystem?.exists('a.ts')
   assert.deepEqual(here.control.names, [`conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`])
   assert.deepEqual(other.control.names, [`conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`])
   assert.notEqual(here.control.names[0], other.control.names[0])
@@ -170,8 +171,8 @@ test('máquina: o nome da máquina leva a instalação e a empresa, então a de 
 
 const OWN = `conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`
 
-test('máquina: a gravada com o nome antigo, de outra instalação ou de outra empresa nunca é ligada pelo id: vai para a trilha da refeita, sem matar a velha', async (t) => {
-  const { open, phases, control, asOwner } = await world(t)
+test('máquina: a gravada com o nome antigo, de outra instalação ou de outra empresa nunca é ligada pelo id: o início a recusa, MACHINE_UNAVAILABLE, sem matar a velha', async (t) => {
+  const { open, control, asOwner } = await world(t)
   await (await open()).filesystem?.exists('a.ts')
   for (const owner of [
     `conexus-${PROJECT}`,
@@ -179,11 +180,9 @@ test('máquina: a gravada com o nome antigo, de outra instalação ou de outra e
     `conexus-${INSTALLATION}-companyBBBBBBBBBBBBBBBBBBBBBBBBB-${PROJECT}`,
   ]) {
     control.owner = owner
-    phases.length = 0
-    const rebuilt = await open()
-    await rebuilt.filesystem?.exists('a.ts')
-    assert.deepEqual(phases, ['waking', 'replaced', 'copying'])
-    assert.equal(control.reattached.at(-1), undefined, 'no id is asked for')
+    await assert.rejects((await open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
+      code: 'MACHINE_UNAVAILABLE',
+    })
     assert.deepEqual(control.attached, [])
   }
   assert.equal(control.killed, false, 'the old machine is left alone')

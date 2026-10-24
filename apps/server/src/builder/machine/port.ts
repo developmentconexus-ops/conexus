@@ -21,7 +21,6 @@ export type Machines = {
   workspaceFor(input: {
     companyId: CompanyId
     projectId: ProjectId
-    deadline: Date
     onPhase: (phase: Phase) => void
   }): Promise<Workspace>
   /**

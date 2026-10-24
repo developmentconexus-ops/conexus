@@ -12,7 +12,7 @@ import {
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { STARTER_DIR } from '@conexus/app/starter'
-import { PROJECT, world } from './test-machine.ts'
+import { PROJECT, sandboxOf, world } from './test-machine.ts'
 
 const starter = new Set(readdirSync(STARTER_DIR))
 
@@ -20,9 +20,9 @@ test('máquina: ../fora.ts e um link para fora do app não abrem nem escrevem na
   const { open, folder } = await world(t)
   const workspace = await open()
   const fs = workspace.filesystem
-  assert.ok(fs && workspace.sandbox?.executeCommand)
+  assert.ok(fs)
   await fs.writeFile('dentro.ts', 'ok\n')
-  await workspace.sandbox.executeCommand('sh', [
+  await (await sandboxOf(workspace)).executeCommand('sh', [
     '-c',
     `ln -s ${folder} ${join(folder, 'app', 'saida')}`,
   ])

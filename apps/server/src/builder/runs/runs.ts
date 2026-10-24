@@ -22,9 +22,6 @@ import { saveRun } from './save.ts'
 /** The one row `#nameOf` reads: the person's name, null once they are gone. */
 const PersonName = z.object({ name: z.string().nullable() })
 
-/** The machine's lease: an hour (card, limits). */
-const LEASE_MS = 3_600_000
-
 type Taking = {
   companyId: CompanyId
   projectId: ProjectId
@@ -77,7 +74,6 @@ export class Runs {
     return this.#deps.machines.workspaceFor({
       companyId,
       projectId,
-      deadline: new Date(Date.now() + LEASE_MS),
       onPhase: (phase) => {
         const holder = this.#writing.get(projectId)
         if (holder !== undefined) this.#phases.get(holder.conversationId)?.(phase)

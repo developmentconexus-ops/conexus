@@ -93,7 +93,6 @@ export function testBuilderPorts(
       log: silent,
       kit: localKit(folder, control),
       api: {
-        holds: async (_id, name) => control.exists && [undefined, name].includes(control.owner),
         list: async () => listed,
         kill: async (id) => {
           killed.push(id)
