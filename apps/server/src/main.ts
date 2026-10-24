@@ -208,7 +208,11 @@ async function runServer(): Promise<void> {
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
       // The copies the bucket did not take before the stop are tried again.
-      void runs.resumeCopies().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      void runs
+        .resumeCopies()
+        .catch((error: unknown) =>
+          logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error })),
+        )
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))

@@ -56,8 +56,15 @@ export async function saveRun(context: RunsContext, mine: Driven): Promise<Outco
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }
   const candidate = received.value
-  if (mine.stopped) return 'gone'
-  if ((await repository.advance({ candidate, base })) === 'stale') {
+  let advanced: 'advanced' | 'stale' | 'gone'
+  try {
+    advanced = mine.stopped ? 'gone' : await repository.advance({ candidate, base })
+  } finally {
+    // Whatever the answer, `main` holds the commit or nobody wants it: the run's ref has no reader left.
+    await repository.dropRun(runId)
+  }
+  if (advanced === 'gone') return 'gone'
+  if (advanced === 'stale') {
     context.log.error({ ...fields, reason: 'stale' }, 'SAVE_REFUSED')
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }

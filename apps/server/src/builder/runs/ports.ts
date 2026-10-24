@@ -18,7 +18,7 @@ export function builderPortsOf(deps: { config: Config; log: FailureLog }): {
   copy: GitCopy
 } {
   const { config, log } = deps
-  const copy = createGitCopy(config)
+  const copy = createGitCopy(config, config.gitCopyUrl)
   function repository(ids: { companyId: CompanyId; projectId: ProjectId }): Repository {
     return restoreGuarded(openRepository({ root: config.gitRoot, ...ids, log }), copy, ids)
   }

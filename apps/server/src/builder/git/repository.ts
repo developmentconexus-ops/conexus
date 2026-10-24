@@ -51,6 +51,8 @@ export type Repository = {
   versionAt(sha: Sha): Promise<number>
   /** Takes the one commit of a machine's bundle into the run's own ref, or says why not. */
   receive(input: { runId: RunId; bundle: Uint8Array; base: Sha }): Promise<Result<Sha, SaveRefusal>>
+  /** Deletes the run's own ref, once `advance` has answered: `main` holds the commit or nobody wants it. */
+  dropRun(runId: RunId): Promise<void>
   /** Moves `main` from exactly `base` to `candidate`; `stale` when `main` is anywhere else. */
   advance(input: { candidate: Sha; base: Sha }): Promise<'advanced' | 'stale'>
   /** Whether `main` holds this commit in its history. */
@@ -175,12 +177,16 @@ function runRef(runId: RunId): string {
   return `refs/conexus/runs/${runId}`
 }
 
+async function dropRun(context: Context, runId: RunId): Promise<void> {
+  await git(context, ['update-ref', '-d', runRef(runId)], { answers: [1] })
+}
+
 async function refuse(
   context: Context,
   runId: RunId,
   error: SaveRefusal,
 ): Promise<Result<Sha, SaveRefusal>> {
-  await git(context, ['update-ref', '-d', runRef(runId)], { answers: [1] })
+  await dropRun(context, runId)
   return { ok: false, error }
 }
 
@@ -264,6 +270,7 @@ export function openRepository(input: {
       new Date(await text(context, ['log', '-1', '--format=%cI', sha])).toISOString(),
     versionAt: async (sha) => Number(await text(context, ['rev-list', '--count', sha])) - 1,
     receive: (received) => receive(context, received),
+    dropRun: (runId) => dropRun(context, runId),
     advance: (moved) => advance(context, moved),
     contains: (sha) => inMain(context, sha),
     tree: (sha) => treeOf(context, sha),

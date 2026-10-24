@@ -101,6 +101,10 @@ test('configuração: a pasta dos repositórios, o bucket e a chave da cópia do
   assert.equal(config.gitRoot, env.HUB_GIT_ROOT)
   assert.equal(config.gitCopyBucket, 'conexus-test-git')
   assert.equal(String(config.gitCopyKey), '[GitCopyKey]')
+  assert.equal(config.gitCopyUrl, undefined)
+  const double = readConfig('serve', { ...env, HUB_GIT_COPY_URL: 'http://127.0.0.1:9000' })
+  assert.equal(double.gitCopyUrl, 'http://127.0.0.1:9000')
+  refusal({ ...env, HUB_GIT_COPY_URL: 'http://bucket.example.com' }, 'HUB_GIT_COPY_URL')
 })
 
 test('configuração: sem a pasta, o bucket ou o arquivo da chave da cópia, ou com a chave de uma palavra só, nomeia a variável', async (t) => {
