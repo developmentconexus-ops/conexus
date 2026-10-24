@@ -18,8 +18,8 @@ import {
   QuestionnaireSubmit,
   QuestionnaireTitle,
 } from '../../ui/questionnaire.tsx'
+import type { QuestionCardItem } from './parts.ts'
 import { sendAnswer } from './queries.ts'
-import type { QuestionCardItem } from './transcript.ts'
 
 const route = getRouteApi(
   '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',

@@ -1,6 +1,8 @@
 import { CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
+import type { ToolItem } from './parts.ts'
+import { invocationToItem } from './parts.ts'
 import type { Invocation } from './tool-fixtures.ts'
 import {
   EDIT_DONE,
@@ -11,8 +13,6 @@ import {
 } from './tool-fixtures.ts'
 import { presentTool, specOf, TOOLS } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
-import type { ToolItem } from './transcript.ts'
-import { invocationToItem } from './transcript.ts'
 
 afterEach(() => {
   vi.useRealTimers()

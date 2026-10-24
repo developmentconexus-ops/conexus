@@ -5,7 +5,7 @@ import type { Live } from './live.ts'
 import { onShellEvent } from './shell.ts'
 import { settleThinking, startThinking, tell, tellExtra } from './tell.ts'
 import { endTurn } from './turn-end.ts'
-import { logOf, started, suspended } from './turn-state.ts'
+import { logOf } from './turn-state.ts'
 import { modelOf, wireEvent } from './wire.ts'
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
@@ -49,14 +49,9 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
 export function onEvent(live: Live, event: AgentControllerEvent): void {
   const turn = logOf(live.state)
   turn?.tally.heard(event)
-  if (event.type === 'agent_start') {
-    // The run Mastra starts is the turn's: the one a message woke, or the next after a card or input
-    // the run before never read.
-    const runId = live.session.run.getRunId()
-    if (runId !== null) live.state = started(live.state, runId)
-  } else if (event.type === 'agent_end') {
-    // A run parked on a question or a plan is not over: its turn goes on once it is answered.
-    if (event.reason !== 'suspended') endTurn(live)
+  if (event.type === 'agent_end') {
+    // Any end, a question or a plan included: the answer opens the next turn.
+    endTurn(live)
   } else if (event.type === 'info') {
     // The notice the model queue says live (`notify`); Mastra saves the same one with the answer, so ours is not kept.
     if (turn !== undefined)
@@ -73,9 +68,6 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
         live.session.displayState.get()
       const progress = { omProgress, bufferingMessages, bufferingObservations }
       tell(live, turn, { type: 'om_progress', ...progress })
-    }
-    if (wired !== undefined && event.type === 'tool_suspended') {
-      live.state = suspended(live.state, event.toolCallId, event.runId)
     }
   }
 }

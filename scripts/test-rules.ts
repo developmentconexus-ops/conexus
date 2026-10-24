@@ -27,7 +27,7 @@ function biomeConfig(): string {
 
 export function biomeLint(files: Record<string, string>) {
   const dir = plant({ 'biome.json': biomeConfig(), ...files })
-  for (const grit of ['w25', 'conexus-code']) {
+  for (const grit of ['w25', 'conexus-code', 'library-shapes']) {
     cpSync(join(ROOT, `scripts/${grit}.grit`), join(dir, `scripts/${grit}.grit`))
   }
   const run = spawnSync(

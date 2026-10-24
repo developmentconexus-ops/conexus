@@ -39,7 +39,7 @@ test('máquina: o primeiro uso liga, copia o main, grava o id; religar volta ao 
   assert.equal(bundle, 'unchanged')
 })
 
-test('máquina: um turno retomado guarda os arquivos que a máquina tem; o outro volta ao main, e um commit em outro ramo não apaga a versão anterior', async (t) => {
+test('máquina: o turno seguinte volta ao main, e um commit em outro ramo não apaga a versão anterior', async (t) => {
   const { open, machines, repository, base, control, folder } = await world(t)
   const first = await open()
   const git = `git -c user.name=B -c user.email=b@x.test`
@@ -62,16 +62,6 @@ test('máquina: um turno retomado guarda os arquivos que a máquina tem; o outro
   assert.equal(await repository.advance({ candidate: received.value, base }), 'advanced')
   await machines.release(PROJECT)
   control.outcome = 'connected'
-  const resumed = await machines.workspaceFor({
-    companyId: COMPANY,
-    projectId: PROJECT,
-    deadline: new Date(Date.now() + 3_600_000),
-    resumed: true,
-    onPhase: () => undefined,
-  })
-  assert.equal(machines.touched(PROJECT), true)
-  assert.equal(await resumed.filesystem?.exists('a.ts'), true, 'a resumed turn keeps its files')
-  await machines.release(PROJECT)
   const next = await open()
   assert.equal(
     await next.filesystem?.exists('a.ts'),

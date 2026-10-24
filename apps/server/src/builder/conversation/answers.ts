@@ -1,9 +1,8 @@
 import type { QuestionAnswer, ToolCallId } from '@conexus/hub-api'
-import { Failure, logFailure } from '../../platform/failure.ts'
+import { Failure } from '../../platform/failure.ts'
 import type { Card } from './cards.ts'
-import { claimCard, openCards, releaseCards, resumed, waitOn } from './cards.ts'
+import { claimCard, openCards } from './cards.ts'
 import type { Live } from './live.ts'
-import { writingOf } from './turn-state.ts'
 
 /** What the tool resumes with for an answer, or the refusal of an answer that does not fit the card. */
 function resumeOf(card: Card, body: QuestionAnswer): unknown {
@@ -23,44 +22,17 @@ function resumeOf(card: Card, body: QuestionAnswer): unknown {
 }
 
 /**
- * The person's answer to the card the turn waits on: the answers to its questions, or the decision
- * on its plan. Mastra's claim takes the call at once, so a second answer is `QUESTION_CLOSED`, and
- * the resume starts in the same instant, as Mastra's own route does (`agent-controller.ts`, the
- * tool-suspension route): a Parar, an expiry or a message that comes after it closes the call
- * through Mastra, which ends the turn once (`cards.ts`). The answer is over once Mastra took the
- * call, or refused it and keeps the card open.
+ * The person's answer to a card: the answers to its questions, or the decision on its plan, checked
+ * against the card, then Mastra's claim on the call, taken at once, as Mastra's own route does
+ * (`agent-controller.ts`, the tool-suspension route), so a second answer is `QUESTION_CLOSED`. The
+ * claim is held until `releaseCards`.
  */
-export async function answerCard(
-  live: Live,
-  input: { toolCallId: ToolCallId; body: QuestionAnswer },
-): Promise<void> {
+export function claimAnswer(live: Live, input: { toolCallId: ToolCallId; body: QuestionAnswer }) {
   const { toolCallId, body } = input
   const card = openCards(live).find((each) => each.toolCallId === toolCallId)
   if (card === undefined) throw new Failure('QUESTION_CLOSED')
   const resumeData = resumeOf(card, body)
   const claim = claimCard(live, toolCallId)
   if (!claim.accepted) throw new Failure('QUESTION_CLOSED')
-  if (openCards(live).every((each) => each.toolCallId === toolCallId)) waitOn(live, false)
-  const taken = resumed(live, [card])
-  const responding = live.session
-    .respondToToolSuspension({
-      address: claim.address,
-      resumeData,
-      requestContext: writingOf(live.state)?.context,
-    })
-    .catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
-  try {
-    await taken
-    if (openCards(live).some((each) => each.toolCallId === toolCallId)) {
-      // Mastra refused the resume and keeps the call parked (`resumeToolCall`): it can show the call
-      // before it saved the parked run, and an answer that comes first loses Mastra's own claim.
-      await responding
-      waitOn(live, true)
-      throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'RESUME_REFUSED' } })
-    }
-  } finally {
-    // Given back once Mastra took the call or refused it: a Parar or a message waits for this
-    // (`takeCards`), not for an event, since Mastra says the refusal before the claim is given back.
-    releaseCards(live, [toolCallId])
-  }
+  return { address: claim.address, resumeData }
 }

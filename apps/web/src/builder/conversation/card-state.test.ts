@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { TASK_TOOLS } from '@conexus/hub-api'
-import { waitsOnPerson } from './live.ts'
+import { invocationToItem, waitsOnPerson } from './parts.ts'
 import { PLAN_DENIED, QUESTION_DENIED } from './tool-fixtures.ts'
-import { invocationToItem } from './transcript.ts'
 
 test('pergunta ou plano fechado pelo Mastra fica fechado, nunca aberto', () => {
   for (const denied of [QUESTION_DENIED, PLAN_DENIED]) {

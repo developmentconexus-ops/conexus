@@ -20,7 +20,7 @@ The pull request, its head commit and the card; nothing from the builders' conve
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the card's guides. Record the files and skills read and the commit; a skill that did not
    load is read from its `stack.md` docs column, and said so.
-2. Read the step's whole diff against `main`, at the exact commit.
+2. Read the step's whole diff against `main` and against each unit's section, at the exact commit.
 3. Try a counterexample to every acceptance criterion.
 4. The Claude reviewer (L9) runs the refusal criteria against the published step or a real
    database, saying what it ran (a claim not run is "read"), and reads every CI job's log; when the

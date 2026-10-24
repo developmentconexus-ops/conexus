@@ -4,7 +4,7 @@ import { biomeLint, removePlanted } from './test-rules.ts'
 
 after(removePlanted)
 
-test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos três donos e nos testes', () => {
+test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos donos e nos testes', () => {
   const clock =
     'export function wait() {\n  setTimeout(() => {}, 1)\n  setInterval(() => {}, 1)\n}\n'
   const runs = 'apps/server/src/builder/runs'
@@ -12,7 +12,6 @@ test('P0: o Biome recusa setTimeout e setInterval em builder/, aceita nos três 
     [`${runs}/other.ts`]: clock,
     'apps/server/src/builder/machine/wait.ts': clock,
     [`${runs}/deadline.ts`]: clock,
-    [`${runs}/lease.ts`]: clock,
     [`${runs}/copy-retry.ts`]: clock,
     [`${runs}/runs.test.ts`]: clock,
     'apps/server/src/hub/a/timer.ts': clock,
@@ -36,7 +35,6 @@ test('P0: o Biome recusa o relógio importado de node:timers em builder/, aceita
   const run = biomeLint({
     'apps/server/src/builder/conversation/wait.ts': clock,
     'apps/server/src/builder/conversation/turn-log.ts': clock,
-    [`${runs}/lease.ts`]: clock,
     [`${runs}/runs.test.ts`]: clock,
     'apps/server/src/hub/a/timer.ts': clock,
   })

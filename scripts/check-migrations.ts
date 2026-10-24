@@ -1,6 +1,6 @@
-// Defect: a migration the previous image cannot run on, an applied migration that changed, two
-// migrations whose branches conflict (drizzle-kit lets a fork whose changes commute stand), or a
-// session lock that fails behind a pooler (data D6, D7, D25).
+// Defect: a migration the previous image cannot run on, a migration that reached main and changed,
+// two migrations whose branches conflict (drizzle-kit lets a fork whose changes commute stand), or
+// a session lock that fails behind a pooler (data D6, D7, D25).
 // Each refusal is proved by planting it in check-migrations.test.ts.
 // Revalidate by 2027-04-13, or when drizzle-kit changes its snapshot format.
 import { readdirSync, readFileSync } from 'node:fs'
@@ -9,6 +9,7 @@ import { option } from './cli.ts'
 import { runCommand, spawnCommand } from './command.ts'
 
 const DRIZZLE_KIT_DEADLINE_MS = 120_000
+const GIT_DEADLINE_MS = 30_000
 const MIGRATIONS = 'apps/server/migrations'
 const SERVER_SOURCE = 'apps/server/src'
 const DRIZZLE_KIT = resolve(import.meta.dirname, '..', 'node_modules', '.bin', 'drizzle-kit')
@@ -26,11 +27,29 @@ if (base === undefined) {
   console.error('check-migrations: --base <ref> is required')
   process.exit(2)
 }
+const main = option('--main') ?? 'origin/main'
 const root = resolve(option('--root') ?? '.')
 const refusals: string[] = []
 
 function git(...args: string[]): string {
   return runCommand('git', args, { cwd: root })
+}
+
+function reachedMain(file: string): boolean {
+  return (
+    spawnCommand('git', ['cat-file', '-e', `${main}:${file}`], {
+      cwd: root,
+      deadline: GIT_DEADLINE_MS,
+    }).status === 0
+  )
+}
+
+function checkContract(file: string): void {
+  if (!file.endsWith('/migration.sql')) return
+  const sql = git('show', `HEAD:${file}`)
+  if (BREAKS_THE_PREVIOUS_IMAGE.test(withoutComments(sql)) && !CONTRACT.test(sql)) {
+    refusals.push(`${file}: DROP or RENAME needs a line "-- contract: <reason>" (data D6)`)
+  }
 }
 
 function withoutComments(sql: string): string {
@@ -44,16 +63,12 @@ function checkAgainstBase(): void {
   const changes = git('diff', '--name-status', '--no-renames', `${base}...HEAD`, '--', MIGRATIONS)
   for (const change of changes.split('\n').filter(Boolean)) {
     const [status = '', file = ''] = change.split('\t')
-    if (status === 'A') {
-      if (!file.endsWith('/migration.sql')) continue
-      const sql = git('show', `HEAD:${file}`)
-      if (BREAKS_THE_PREVIOUS_IMAGE.test(withoutComments(sql)) && !CONTRACT.test(sql)) {
-        refusals.push(`${file}: DROP or RENAME needs a line "-- contract: <reason>" (data D6)`)
-      }
-    } else {
+    if (reachedMain(file)) {
       refusals.push(
         `${file}: an applied migration was ${status === 'D' ? 'deleted' : 'changed'} (data D7)`,
       )
+    } else if (status !== 'D') {
+      checkContract(file)
     }
   }
 }

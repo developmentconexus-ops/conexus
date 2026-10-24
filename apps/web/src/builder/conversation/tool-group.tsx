@@ -9,9 +9,9 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
+import type { ToolItem } from './parts.ts'
 import { presentTool, summaryOfTools, toolStatus } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
-import type { ToolItem } from './transcript.ts'
 
 /**
  * Three tools or more in a row, as one line (Criterion 9). While the answer still works it names the tool in

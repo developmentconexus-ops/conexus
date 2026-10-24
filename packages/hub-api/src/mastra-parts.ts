@@ -7,7 +7,6 @@ const Cuts = z.array(z.string()).optional()
 /** A name of a part of ours, which Mastra keeps in the message as a `data-*` part (step 14.0). */
 export const CONEXUS_PARTS = [
   'data-conexus-machine',
-  'data-conexus-restarted',
   'data-conexus-version',
   'data-conexus-failure',
   'data-conexus-notice',
@@ -53,13 +52,6 @@ export const VersionData = z.object({
 })
 export type VersionData = z.infer<typeof VersionData>
 
-/** What a restart kept of the turn: its version, nothing to save, or a save that did not happen. */
-export const Kept = z.union([z.number(), z.literal('nothing'), z.literal('lost')])
-export type Kept = z.infer<typeof Kept>
-
-export const RestartedData = z.object({ kept: Kept })
-export type RestartedData = z.infer<typeof RestartedData>
-
 export const FailureData = z.object({
   code: z.string().refine((code): code is FailureCode => Object.hasOwn(FAILURES, code)),
 })
@@ -74,7 +66,6 @@ export type ThoughtData = z.infer<typeof ThoughtData>
 /** A part of ours with its payload, one variant per name in `CONEXUS_PARTS` (code C21). */
 export const ConexusPart = z.discriminatedUnion('type', [
   z.object({ type: z.literal('data-conexus-machine'), data: MachineData }),
-  z.object({ type: z.literal('data-conexus-restarted'), data: RestartedData }),
   z.object({ type: z.literal('data-conexus-version'), data: VersionData }),
   z.object({ type: z.literal('data-conexus-failure'), data: FailureData }),
   z.object({ type: z.literal('data-conexus-notice'), data: NoticeData }),

@@ -4,7 +4,7 @@ import type { LanguageModel } from '@mastra/core/llm'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
-import type { PromptCacheScope } from './claude/prompt-cache.ts'
+import type { PromptCacheScope } from './claude/models.ts'
 
 const TURN_KEY = 'conexus.turn'
 

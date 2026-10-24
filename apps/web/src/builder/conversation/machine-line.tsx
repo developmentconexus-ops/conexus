@@ -3,11 +3,10 @@ import type {
   MachineData,
   MachinePhase,
   NoticeData,
-  RestartedData,
   VersionData,
 } from '@conexus/hub-api'
 import { machinePhaseLasts } from '@conexus/hub-api'
-import { CheckIcon, CircleAlertIcon, CogIcon, InfoIcon, RotateCcwIcon } from 'lucide-react'
+import { CheckIcon, CircleAlertIcon, CogIcon, InfoIcon } from 'lucide-react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
@@ -74,32 +73,6 @@ export function VersionLine({ data }: { data: VersionData }) {
       <MarkerContent>
         {versionSentence(data)}
         {said !== undefined && <span className="block">{sentenceOfCode(said)}</span>}
-      </MarkerContent>
-    </Marker>
-  )
-}
-
-export function RestartedLine({ data }: { data: RestartedData }) {
-  return (
-    <Marker className="text-text">
-      <MarkerIcon>
-        <RotateCcwIcon />
-      </MarkerIcon>
-      <MarkerContent>
-        {data.kept === 'lost' ? (
-          'O turno anterior foi cortado; os arquivos dele não foram guardados.'
-        ) : (
-          <>
-            O servidor reiniciou no meio do turno.{' '}
-            {data.kept !== 'nothing' && (
-              <>
-                O que o Builder já tinha escrito foi guardado como{' '}
-                <strong>Versão {data.kept}</strong>.{' '}
-              </>
-            )}
-            Mande a mensagem de novo para ele continuar.
-          </>
-        )}
       </MarkerContent>
     </Marker>
   )

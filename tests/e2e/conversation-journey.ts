@@ -17,7 +17,7 @@ export const KEYS = {
 }
 export const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 export const DIEGO = { name: 'Diego Reis', email: 'diego@example.test' }
-export const SECOND_MODEL = 'llama-3.3-70b-versatile'
+export const SECOND_MODEL = 'openai/gpt-oss-120b'
 export const ANSWER_HEAD = 'Comparei os dois apps'
 const ANSWER_TAIL = ' pelo cardápio.'
 export const ANSWER = `${ANSWER_HEAD}${ANSWER_TAIL}`

@@ -1,5 +1,4 @@
-import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
-import { MessageId } from '@conexus/hub-api'
+import type { MastraPart } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
@@ -8,11 +7,13 @@ import {
   opening,
   ours,
   readPage,
+  savedOurs,
+  savedStep,
   stepStarted,
   textDelta,
   updatePart,
 } from './test-events.ts'
-import { builderSaid, conversationOf, FIRST, say, screens, typed } from './test-hub.tsx'
+import { builderSaid, conversationOf, FIRST, say, screens } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
 const startedAt = '2026-10-19T12:01:00.000Z'
@@ -137,7 +138,7 @@ test('a resposta que terminou com a linha caída aparece uma vez ao reconectar, 
   lines[0]?.emit(textDelta('O primeiro'))
   await screen.findByText(/O primeiro/)
   lines[0]?.close()
-  shown.conversations[0]?.messages.push(builderSaid('O primeiro é bom.'))
+  shown.conversations[0]?.messages.push(savedStep('O primeiro é bom.'))
   await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
@@ -173,7 +174,7 @@ test('depois de "Parar", o texto parcial fica até a leitura trazer a resposta g
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   expect(within(log).getByText('O primeiro é')).toBeTruthy()
   expect(log.getAttribute('aria-busy')).toBe('false')
-  shown.conversations[0]?.messages.push(builderSaid('O primeiro é'))
+  shown.conversations[0]?.messages.push(savedStep('O primeiro é'))
   lines[0]?.close()
   await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
   await waitFor(() => expect(within(log).getAllByText('O primeiro é')).toHaveLength(1))
@@ -212,7 +213,7 @@ test('a falha do turno, parte da resposta, segue na conversa relida depois do fi
   lines[0]?.emit(opening())
   const failure: MastraPart = { type: 'data-conexus-failure', data: { code: 'MODEL_CALL_FAILED' } }
   lines[0]?.emit(ours(failure))
-  shown.conversations[0]?.messages.push({ ...builderSaid(''), parts: [failure] })
+  shown.conversations[0]?.messages.push(savedOurs([failure]))
   lines[0]?.emit({ type: 'turnEnd', reason: 'error' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
@@ -221,67 +222,6 @@ test('a falha do turno, parte da resposta, segue na conversa relida depois do fi
       .getAllByRole('alert')
       .map((a) => a.textContent),
   ).toEqual(['O modelo não respondeu. Envie a mensagem de novo.'])
-})
-
-test('o turno que o reinício encerrou, relido, diz o que foi guardado: a versão, nada, ou o guardar cortado', async () => {
-  await openConversation(
-    conversationOf({
-      id: FIRST,
-      messages: [
-        { ...builderSaid(''), parts: [{ type: 'data-conexus-restarted', data: { kept: 3 } }] },
-        {
-          ...builderSaid(''),
-          id: MessageId.parse('builder-2'),
-          parts: [{ type: 'data-conexus-restarted', data: { kept: 'nothing' } }],
-        },
-        {
-          ...builderSaid(''),
-          id: MessageId.parse('builder-3'),
-          parts: [{ type: 'data-conexus-restarted', data: { kept: 'lost' } }],
-        },
-      ],
-    }),
-  )
-  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
-  const withVersion = await within(log).findByText(/O que o Builder já tinha escrito/)
-  expect(withVersion.textContent).toBe(
-    'O servidor reiniciou no meio do turno. O que o Builder já tinha escrito foi guardado como Versão 3. Mande a mensagem de novo para ele continuar.',
-  )
-  expect(within(withVersion).getByText('Versão 3').tagName).toBe('STRONG')
-  expect(
-    within(log).getByText(
-      'O servidor reiniciou no meio do turno. Mande a mensagem de novo para ele continuar.',
-    ),
-  ).toBeTruthy()
-  expect(
-    within(log).getByText('O turno anterior foi cortado; os arquivos dele não foram guardados.'),
-  ).toBeTruthy()
-})
-
-test('o reinício no meio do turno devolve a mensagem ao campo e a versão guardada atualiza o código', async () => {
-  const { field, lines, reads } = await openConversation(conversationOf({ id: FIRST }))
-  say(field, 'Compare os preços')
-  await screen.findByText('Pensando…')
-  await waitFor(() => expect(typed(field)).toBe(''))
-  await waitFor(() => expect(reads.length).toBeGreaterThan(1))
-  lines[0]?.emit(opening())
-  lines[0]?.emit(ours({ type: 'data-conexus-restarted', data: { kept: 2 } }))
-  lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
-  await waitFor(() => expect(typed(field)).toBe('Compare os preços'))
-})
-
-test('o reinício deixa em paz o texto que a pessoa já tem no campo', async () => {
-  const { field, lines, reads } = await openConversation(conversationOf({ id: FIRST }))
-  say(field, 'Compare os preços')
-  await screen.findByText('Pensando…')
-  await waitFor(() => expect(typed(field)).toBe(''))
-  await waitFor(() => expect(reads.length).toBeGreaterThan(1))
-  fireEvent.change(field, { target: { value: 'Outra coisa' } })
-  lines[0]?.emit(opening())
-  lines[0]?.emit(ours({ type: 'data-conexus-restarted', data: { kept: 'nothing' } }))
-  lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
-  expect(typed(field)).toBe('Outra coisa')
 })
 
 test('60 s sem o Builder dizer nada: "Ainda trabalhando…", contado desde o início do turno', async () => {

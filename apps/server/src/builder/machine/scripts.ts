@@ -20,7 +20,11 @@ export function quoted(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`
 }
 
-/** The app folder holds exactly `main` as the Hub has it: fetched from the seed bundle and checked out. */
+/**
+ * The app folder holds `main` as the Hub has it: fetched from the seed bundle and checked out. The
+ * plans make no version on their own, so a plan the person has still to approve stays for the turn
+ * their answer opens.
+ */
 export function seedScript(workdir: string, tmp: string): string {
   const seed = seedFile(tmp)
   return [
@@ -30,7 +34,7 @@ export function seedScript(workdir: string, tmp: string): string {
     'test -d .git || git init --quiet -b main',
     `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:refs/conexus/base'`,
     'git checkout --quiet --force -B main refs/conexus/base',
-    'git clean -fdq -e node_modules',
+    `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
     `rm -f ${quoted(seed)}`,
   ].join('\n')
 }

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import { bucketServer } from '../../platform/test-bucket.ts'
 import { appLoginsOf, appTablesOf } from '../../platform/test-company-postgres.ts'
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
@@ -92,7 +93,11 @@ test('ler: a lista de uma empresa sem Projeto diz que o banco ainda não existe'
 test('log: PROJECT_CREATED, COMPANY_DATABASE_CREATED e PROJECT_DELETED levam ids, nunca o nome', async (t) => {
   const { hub, companyId } = await companyOn(t)
   const neon = await neonServer(t)
-  const environment = { ...serveEnvironment(t, hub.test.runtimeUrl), HUB_NEON_API_URL: neon.url }
+  const bucket = await bucketServer(t)
+  const environment = {
+    ...serveEnvironment(t, hub.test.runtimeUrl),
+    ...{ HUB_NEON_API_URL: neon.url, HUB_GIT_COPY_URL: bucket.url },
+  }
   const { port, lines, stop } = await spawnHub(t, environment)
   const base = `http://127.0.0.1:${port}`
   const json = { origin: TEST_ORIGIN, 'content-type': 'application/json' }

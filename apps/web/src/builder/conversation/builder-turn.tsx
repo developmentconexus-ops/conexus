@@ -1,27 +1,19 @@
 import type { ModelId } from '@conexus/hub-api'
-import { FailureData, MachineData, NoticeData, RestartedData, VersionData } from '@conexus/hub-api'
+import { FailureData, MachineData, NoticeData, VersionData } from '@conexus/hub-api'
 import { ConexusMark } from '../../brand/mark.tsx'
-import { hourOf } from '../../platform/dates.ts'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
-import {
-  FailureLine,
-  MachineLine,
-  NoticeLine,
-  RestartedLine,
-  VersionLine,
-} from './machine-line.tsx'
+import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
-import { PersonBubble } from './person-turn.tsx'
+import type { TranscriptItem } from './parts.ts'
 import { PlanCard } from './plan-card.tsx'
 import { QuestionCard } from './question-card.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
-import type { TranscriptItem } from './transcript.ts'
 
 function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conexus' }> }) {
   if (item.partType === 'data-conexus-machine') {
@@ -31,10 +23,6 @@ function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conex
   if (item.partType === 'data-conexus-version') {
     const parsed = VersionData.safeParse(item.data)
     return parsed.success ? <VersionLine data={parsed.data} /> : null
-  }
-  if (item.partType === 'data-conexus-restarted') {
-    const parsed = RestartedData.safeParse(item.data)
-    return parsed.success ? <RestartedLine data={parsed.data} /> : null
   }
   if (item.partType === 'data-conexus-failure') {
     const parsed = FailureData.safeParse(item.data)
@@ -49,8 +37,6 @@ function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conex
 
 function ItemRow({ item, streaming }: { item: TranscriptItem; streaming: boolean }) {
   switch (item.kind) {
-    case 'person':
-      return <PersonBubble text={item.text} footer={hourOf(item.createdAt)} />
     case 'text':
       return (
         <Bubble variant="ghost">

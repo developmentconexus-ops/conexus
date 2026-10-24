@@ -90,14 +90,6 @@ export const CONVERSATION_FAILURES = {
     action: 'Responda a cada pergunta e envie de novo.',
     actionKind: 'NONE',
   },
-  QUESTION_EXPIRED: {
-    category: 'USER',
-    settles: true,
-    status: 410,
-    phrase: 'Esta pergunta expirou.',
-    action: 'Envie uma mensagem para o Builder continuar.',
-    actionKind: 'NONE',
-  },
   MACHINE_LOST: {
     category: 'THIRD_PARTY',
     settles: true,

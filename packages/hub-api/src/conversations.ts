@@ -50,7 +50,6 @@ export const TurnFailureCode = z.enum([
   'GIT_RESTORE_NEEDED',
   'MACHINE_LOST',
   'MACHINE_UNAVAILABLE',
-  'QUESTION_EXPIRED',
   'INTERNAL_UNEXPECTED',
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>

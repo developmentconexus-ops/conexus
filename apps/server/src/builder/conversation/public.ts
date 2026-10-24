@@ -56,11 +56,9 @@ export function createConversations(deps: {
     runs: deps.runs,
     log: deps.log,
   })
-  deps.runs.onRestart((restart) => sessions.restarted(restart))
-  deps.runs.onAdopt((run) => sessions.adopt(run))
 
   const release: ReleaseConversations = async (scope) => {
-    // The runs first: a turn the removal aborts then finds its run settled and writes nothing.
+    // The runs first: a turn the removal aborts then finds its run gone and writes nothing.
     await deps.runs.release(scope)
     const ids = await store.releasedIds(scope)
     for (const id of ids) {
@@ -94,9 +92,8 @@ export function createConversations(deps: {
      * calls (code C62).
      */
     async close() {
-      const drained = sessions.drain()
-      await deps.runs.yieldAfter(drained)
-      await drained
+      await sessions.drain()
+      deps.runs.stop()
       await builder.memory.settled()
       await builder.mastra.shutdown()
       await deps.google.stop()

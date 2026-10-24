@@ -7,6 +7,7 @@ import { z } from 'zod'
 import type { Conversations } from './builder/conversation/public.ts'
 import { createConversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
+import { repositoriesIn } from './builder/git/public.ts'
 import type { ModelAccounts } from './builder/model-accounts/public.ts'
 import {
   createModelAccounts,
@@ -122,9 +123,6 @@ export function subjectsOf(deps: {
   repository: RepositoryOf
   copy: GitCopy
   turnMs?: () => number
-  renewMs?: () => number
-  yieldMs?: () => number
-  questionMs?: () => number
   log: FailureLog
 }): {
   runs: Runs
@@ -144,8 +142,8 @@ export function subjectsOf(deps: {
   const machines = deps.machinesOf(database)
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
-    ...{ turnMs: deps.turnMs, renewMs: deps.renewMs, yieldMs: deps.yieldMs },
-    questionMs: deps.questionMs,
+    repositories: () => repositoriesIn(config.gitRoot),
+    turnMs: deps.turnMs,
   })
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },
@@ -209,9 +207,12 @@ async function runServer(): Promise<void> {
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
-      // The turns another copy left are adopted with their open card, or ended and saved as they
-      // stand (card, the restart).
-      void runs.settleRuns().catch((error: unknown) => logFailure(log, databaseFailure(error)))
+      // The copies the bucket did not take before the stop are tried again.
+      void runs
+        .resumeCopies()
+        .catch((error: unknown) =>
+          logFailure(log, new Failure('INTERNAL_UNEXPECTED', { cause: error })),
+        )
       void projects
         .nameDatabases()
         .catch((error: unknown) => logFailure(log, databaseFailure(error)))
