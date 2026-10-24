@@ -8,8 +8,8 @@ import { open, seal } from '../../platform/seal.ts'
 import type { Deps, Viewer } from './accounts.ts'
 import { accountView, admitFor, insertAccount, labelOf, scopeOf } from './accounts.ts'
 import { openKindsOf } from './kinds.ts'
-import type { ReadingDeps } from './served-reads.ts'
-import { readServedOf } from './served-reads.ts'
+import type { ReadingDeps } from './served.ts'
+import { readServedOf } from './served.ts'
 import { modelAccountSignIn } from './tables.ts'
 
 /**
