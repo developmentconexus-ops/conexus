@@ -495,6 +495,17 @@
     }
   },
   {
+    "id": "client-correction-company-lock",
+    "file": "apps/server/src/hub/operations/clients.ts",
+    "find": "    await identity.lockCompany(tx, input.companyId)\n    const personId = input.person.id\n    const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })",
+    "replace": "    const personId = input.person.id\n    const admitted = await identity.admitOperator({ tx, personId, action: 'correctClient' })",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/operations/client-reads.test.ts",
+      "name": "corrigir: contra a renovação do convite de dono"
+    }
+  },
+  {
     "id": "operator-company-scope",
     "file": "apps/server/migrations/20261017110517_operator_company_scope/migration.sql",
     "find": "FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and id = nullif(current_setting('conexus.company_id', true), ''));",
@@ -756,6 +767,17 @@
       "cwd": "apps/server",
       "file": "src/hub/projects/tables.test.ts",
       "name": "mesmo nome em outra caixa"
+    }
+  },
+  {
+    "id": "neon-exact-suffix",
+    "file": "apps/server/src/platform/neon.ts",
+    "find": "const exact = projects.filter((project) => isCompanys(project.name, companyId))",
+    "replace": "const exact = projects",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/platform/neon.test.ts",
+      "name": "find devolve só o final exato"
     }
   },
   {
@@ -1463,6 +1485,17 @@
     }
   },
   {
+    "id": "send-admission",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "  await deps.identity.admitMember({ tx, personId: person.id, companyId, action })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/versions.test.ts",
+      "name": "envio: dono e administrador 201"
+    }
+  },
+  {
     "id": "login-not-superuser",
     "file": "apps/server/src/platform/company-postgres.ts",
     "find": "LOGIN PASSWORD '${password}'",
@@ -1493,6 +1526,17 @@
       "cwd": "apps/server",
       "file": "src/platform/company-postgres.test.ts",
       "name": "banco do app: os logins de um app não leem"
+    }
+  },
+  {
+    "id": "live-same-project",
+    "file": "apps/server/src/hub/apps/live.ts",
+    "find": "          eq(appVersion.projectId, projectId),\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/live-version.test.ts",
+      "name": "voltar: 200"
     }
   },
   {
@@ -1694,6 +1738,17 @@
     }
   },
   {
+    "id": "send-readmission",
+    "file": "apps/server/src/hub/apps/send.ts",
+    "find": "    await deps.identity.admitMember({\n      tx,\n      personId: person.id,\n      companyId,\n      action: 'manageAppVersions',\n    })\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/hub/apps/send-guards.test.ts",
+      "name": "envio: quem deixou de ser administrador"
+    }
+  },
+  {
     "id": "version-file-operator-delete-policy",
     "file": "apps/server/migrations/20261018182440_app_versions/migration.sql",
     "find": "CREATE POLICY \"operator_delete\" ON \"apps\".\"version_file\" AS PERMISSIVE FOR DELETE TO \"hub_operator\" USING (auth.is_installation_administrator(nullif(current_setting('conexus.person_id', true), '')) and company_id = nullif(current_setting('conexus.company_id', true), ''));",
@@ -1790,6 +1845,83 @@
       "cwd": "apps/edge",
       "file": "src/db.test.ts",
       "name": "db: chamado depois do prazo da chamada"
+    }
+  },
+  {
+    "id": "machine-fs-no-link",
+    "file": "apps/server/src/builder/machine/in-machine.ts",
+    "find": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY | O_NOFOLLOW)\n",
+    "replace": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY)\n",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-files.test.ts",
+      "name": "fora.ts"
+    }
+  },
+  {
+    "id": "machine-network-closed",
+    "file": "apps/server/src/builder/machine/e2b.ts",
+    "find": "denyOut: [ALL_TRAFFIC] },\n      metadata",
+    "replace": "denyOut: [] },\n      metadata",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/machine/machine-e2b.test.ts",
+      "name": "lista de domínios"
+    }
+  },
+  {
+    "id": "release-stops-runs",
+    "file": "apps/server/src/builder/runs/removal.ts",
+    "find": "  for (const stopped of await store.stop({ companyId, projectId, personId })) {\n    await context.stopped(stopped)\n  }\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-removal.test.ts",
+      "name": "no meio de um turno"
+    }
+  },
+  {
+    "id": "write-needs-read",
+    "file": "apps/server/src/builder/machine/machines.ts",
+    "find": "        [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/workspace.test.ts",
+      "name": "fora da pasta do app"
+    }
+  },
+  {
+    "id": "journal-checks-owner",
+    "file": "apps/server/src/builder/runs/store.ts",
+    "find": " and r.owner = ${this.#owner}::uuid",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/runs-lease.test.ts",
+      "name": "dois processos"
+    }
+  },
+  {
+    "id": "source-path-guard",
+    "file": "apps/server/src/builder/git/tree.ts",
+    "find": "unsafe || !(await inMain",
+    "replace": "!(await inMain",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/git/source.test.ts",
+      "name": "a aba Código lê o main"
+    }
+  },
+  {
+    "id": "gate-needs-secrets-rule",
+    "file": "apps/server/src/builder/conversation/prompt/builder.md",
+    "find": "not even one the person pasted in the chat. If the person pastes one, do not use its value: say",
+    "replace": "and say",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/builder.eval.test.ts",
+      "name": "o portão do Builder: uma senha colada"
     }
   }
 ]

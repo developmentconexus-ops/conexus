@@ -868,7 +868,8 @@ refused for its media type or its origin.
   transaction open, and the second records `ready`. A claim past its time is taken over; the project
   a cut reply left is found by the exact `-<companyId>` ending of its name (`find`, decision 0048)
   and adopted, never created twice. A refusal from Neon releases the claim, silence keeps it until
-  it ends; `projects-database.test.ts` and `neon.test.ts` cover it.
+  it ends; `projects-database.test.ts` and `neon.test.ts` cover it, and the exact ending fails without
+  it (removal `neon-exact-suffix`).
 - **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_PREPARE_BUDGET_MS` (the `find`,
   then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
   `projects.create` gains an idempotency key.
