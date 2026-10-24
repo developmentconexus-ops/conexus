@@ -56,6 +56,11 @@ export type TurnFailureCode = z.infer<typeof TurnFailureCode>
 export const MessageId = z.string().min(1).brand('MessageId')
 export type MessageId = z.infer<typeof MessageId>
 
+/** The id of the person's message sent with the Idempotency-Key `key`: the server and the screen name it alike. */
+export function questionIdOf(conversationId: ConversationId, key: string): MessageId {
+  return MessageId.parse(`${conversationId}:${key}`)
+}
+
 /** The part of a message that says a thinking took `seconds`, by our clock (step 12.1). */
 export const THOUGHT_PART = 'data-conexus-thought'
 
