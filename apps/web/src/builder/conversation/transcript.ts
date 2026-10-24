@@ -1,9 +1,12 @@
 import type { MastraPart, Message, Suspended } from '@conexus/hub-api'
-import { textOf } from './person-turn.tsx'
 import type { TranscriptItem } from './transcript-items.ts'
 import { invocationToItem, thoughtSeconds } from './transcript-items.ts'
 
 export * from './transcript-items.ts'
+
+export function textOf(message: Message): string {
+  return message.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
+}
 
 /** What a command in progress has said, and how it ended: the whole of its tail, not a piece. */
 export type Running = {

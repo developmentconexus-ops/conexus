@@ -3,10 +3,7 @@ import type { ReactNode } from 'react'
 import { hourOf } from '../../platform/dates.ts'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { MessageContent, MessageFooter, Message as Turn } from '../../ui/message.tsx'
-
-export function textOf(message: Message): string {
-  return message.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
-}
+import { textOf } from './transcript.ts'
 
 /** The person's bubble, with `footer` under it: the hour of a sent message, or what a pending one waits for. */
 export function PersonBubble(props: { text: string; footer: ReactNode }) {
