@@ -169,11 +169,9 @@ jobs:
       - name: The founder's use script runs in a browser against a real Hub
         run: npm run e2e
 
-  # A pull request proves the removals its diff reaches: the files its rows name and everything
-  # they import, and every row when a row is deleted or a file no import shows changes
-  # (scripts/removals-select.ts). Every push to main, and every pull request that is a step's build
-  # (a branch ending in -build, or a title starting with "step N" or "feat: step N") or carries the
-  # `all-removals` label, proves all of them: the step's review reads a run that did.
+  # A pull request proves the removals whose protected file, test file or row its diff changes
+  # (scripts/removals-select.ts). Every push to main, and a pull request carrying the `all-removals`
+  # label, proves all of them.
   removals-plan:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
