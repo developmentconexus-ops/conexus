@@ -1,3 +1,4 @@
+import type { Message } from '@conexus/hub-api'
 import { MessageId, ModelId } from '@conexus/hub-api'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
@@ -95,6 +96,28 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
   expect(trigger.getAttribute('aria-expanded')).toBe('true')
   const content = await screen.findByText(/O usuário pediu uma lista de pedidos/)
   expect(content).toBeTruthy()
+})
+
+test('relido, o raciocínio do passo diz "Pensou por N s" com o tempo guardado na mensagem do turno', () => {
+  const at = '2026-10-19T12:02:00.000Z'
+  function saved(id: string, parts: Message['parts']): Message {
+    return {
+      ...{ id: MessageId.parse(id), role: 'builder', parts, suspended: {}, model: MODEL },
+      createdAt: at,
+    }
+  }
+  render(
+    <Transcript
+      messages={[
+        saved('step-1', [{ type: 'reasoning', reasoning: 'Vou comparar.', details: [] }]),
+        saved('step-2', [{ type: 'text', text: 'Pronto.' }]),
+        saved('turn', [{ type: 'data-conexus-thought', data: { id: 'step-1.0', seconds: 6 } }]),
+      ]}
+      answer={null}
+      model={MODEL}
+    />,
+  )
+  expect(screen.getByRole('button', { name: 'Pensou por 6 s' })).toBeTruthy()
 })
 
 test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', async () => {

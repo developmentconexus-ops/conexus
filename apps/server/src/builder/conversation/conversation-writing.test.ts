@@ -117,18 +117,24 @@ function lasting(parts: MastraPart[]) {
 test('o que dura do turno fica depois do fim e ao reabrir: cada ferramenta e a versão (33)', async (t) => {
   const { hub, ana, conversations } = await conversing(t, calling(WRITE, RUN))
   const { url, events } = await asked(t, { hub, person: ana, conversations })
-  const read = (await messagesOf(hub, ana, url)).at(-1)
+  const messages = await messagesOf(hub, ana, url)
+  // Mastra keeps a message per step: the turn is every message after the person's.
+  const read = {
+    parts: messages
+      .slice(messages.findLastIndex((message) => message.role === 'person') + 1)
+      .flatMap((message) => message.parts),
+  }
   assert.deepEqual(
-    lasting(read?.parts ?? []).map((part) => part.type),
+    lasting(read.parts).map((part) => part.type),
     ['tool-invocation', 'tool-invocation', 'data-conexus-version'],
   )
   const saidVersions = dataOf(events, 'data-conexus-version')
-  const readVersions = (read?.parts ?? []).flatMap((part) =>
+  const readVersions = read.parts.flatMap((part) =>
     part.type === 'data-conexus-version' ? [part.data] : [],
   )
   assert.deepEqual(readVersions, saidVersions)
   assert.deepEqual(
-    invocationsOf(read?.parts ?? []).map((call) => [call.toolName, call.state, call.args]),
+    invocationsOf(read.parts).map((call) => [call.toolName, call.state, call.args]),
     [
       [WRITE.name, 'result', WRITE.input],
       [RUN.name, 'result', RUN.input],

@@ -14,7 +14,7 @@ import { PersonBubble, PersonTurn } from './person-turn.tsx'
 import type { Steer } from './steers.ts'
 import { STEER_PENDING } from './text.ts'
 import type { TranscriptItem } from './transcript.ts'
-import { fromMessages } from './transcript.ts'
+import { fromEach } from './transcript.ts'
 
 /**
  * The conversation as a log a screen reader follows: `aria-busy` holds its announcements while the
@@ -32,10 +32,7 @@ export function Transcript(props: {
   model: ModelId
 }) {
   const { answer } = props
-  const saved = useMemo(
-    () => new Map(props.messages.map((message) => [message.id, fromMessages([message])])),
-    [props.messages],
-  )
+  const saved = useMemo(() => fromEach(props.messages), [props.messages])
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent messages={props.messages} />
