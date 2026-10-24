@@ -63,12 +63,12 @@ function drawn(parts: MastraPart[]): MastraPart[] {
   return parts.map((part) => (part.type === 'reasoning' ? { ...part, details: [] } : part))
 }
 
-/** The Builder's last message, as `readConversation` reads it once Mastra saved it. */
+/** The Builder's messages of the last turn, joined, as `readConversation` reads them once Mastra saved them. */
 async function readAnswer(hub: Hub, person: Person, url: string): Promise<MastraPart[]> {
   const messages = await answeredOf(hub, person, url)
-  const answer = messages.at(-1)
-  assert.equal(answer?.role, 'builder')
-  return answer.parts
+  const turn = messages.slice(messages.findLastIndex((message) => message.role === 'person') + 1)
+  assert.ok(turn.length > 0 && turn.every((message) => message.role === 'builder'))
+  return turn.flatMap((message) => message.parts)
 }
 
 /**
@@ -291,8 +291,10 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
       each.parts.map((part) => part.type).filter((type) => type.startsWith('data-conexus-')),
     )
   assert.deepEqual(kinds, [
+    [],
     ['data-conexus-version'],
-    ['data-conexus-notice', 'data-conexus-failure'],
+    ['data-conexus-notice'],
+    ['data-conexus-failure'],
   ])
   const toModel = anthropic.sent.filter((each) => each.stream).flatMap((each) => each.texts)
   assert.doesNotMatch(toModel.join('\n'), /conexus-(version|failure|machine)|MODEL_NO_ACCOUNT/)

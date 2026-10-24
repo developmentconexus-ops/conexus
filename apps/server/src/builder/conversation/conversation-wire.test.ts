@@ -134,9 +134,10 @@ test('uma ferramenta do conjunto, uma que falha e uma desconhecida: ao vivo e re
     [
       ['person', null],
       ['builder', 'anthropic/claude-sonnet-4-6'],
+      ['builder', null],
     ],
   )
-  const read = messages[1]?.parts ?? []
+  const read = messages.flatMap((message) => (message.role === 'builder' ? message.parts : []))
   assert.deepEqual(
     [...callsOf(read).values()].map((part) => part.toolInvocation.toolCallId),
     live.map((part) => part.toolInvocation.toolCallId),
