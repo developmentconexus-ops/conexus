@@ -3,34 +3,42 @@ import type {
   CompanyId,
   ConversationEvent,
   ConversationId,
+  FailureData,
+  MachinePhase,
   MastraPart,
   PersonId,
   RunId,
+  ThoughtData,
   TurnFailureCode,
+  VersionData,
 } from '@conexus/hub-api'
-import { applyUpdate, MessageId, THOUGHT_PART, ToolCallId } from '@conexus/hub-api'
+import {
+  applyUpdate,
+  MachineData,
+  MessageId,
+  machinePhaseLasts,
+  THOUGHT_PART,
+  ThoughtData as Thought,
+  ToolCallId,
+} from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import type { Phase as MachinePhase } from '../machine/public.ts'
 import type { Turn } from '../model-accounts/public.ts'
 import { NOTICE_PART } from '../model-accounts/public.ts'
-import type { Outcome, Settled } from '../runs/public.ts'
+import type { Settled } from '../runs/public.ts'
 import type { Recorder } from './record.ts'
 import { saveExtras, settled } from './record.ts'
 import { ShellTail } from './shell.ts'
 import { TurnTally, turnLine } from './turn-line.ts'
 import type { Listener, TurnLog } from './turn-log.ts'
-import { answerOf, say } from './turn-log.ts'
-import { modelOf, wireEvent, wireShell } from './wire.ts'
+import { messagesOf, say } from './turn-log.ts'
+import { modelOf, wireEvent, wireShell, wireSuspended } from './wire.ts'
 
 export type { Question } from './record.ts'
 export type { Listener } from './turn-log.ts'
 
 export type Owner = { companyId: CompanyId; personId: PersonId }
-
-/** The version a saved turn reached, with its file counts. */
-type SavedVersion = Extract<Outcome, { kind: 'saved' }>['version']
 
 /** A run Mastra woke for one of this conversation's messages, until its end. */
 type Run = { turn: Turn; ended: () => void }
@@ -86,7 +94,7 @@ function newTurn(id: RunId | undefined, traceId?: string): TurnLog {
     tally: new TurnTally(),
     traceId,
     failureKept: false,
-    suspended: new Map(),
+    parked: new Set(),
     extrasAt: undefined,
     ended: false,
   }
@@ -97,14 +105,17 @@ export function openTurn(live: Live): TurnLog {
   if (live.turn !== undefined && !live.turn.ended) return live.turn
   const turn = newTurn(live.run?.id, live.run?.traceId)
   live.turn = turn
-  say(live, turn, { type: 'turn', message: answerOf(turn), startedAt: turn.startedAt })
+  const parked = live.session.displayState.get().pendingSuspensions.values()
+  const messages = messagesOf(turn, wireSuspended(parked))
+  say(live, turn, { type: 'turn', messages, startedAt: turn.startedAt })
   return turn
 }
 
 /** An event told as the stream says it, folded into the turn's answer as the screen folds it. */
 function tell(live: Live, turn: TurnLog, event: ConversationEvent): void {
   if (event.type === 'message_start') {
-    turn.steps.push({ id: event.message.id, parts: event.message.parts })
+    // A copy: the event itself stays as said, for a stream that resumes after it.
+    turn.steps.push({ ...event.message })
     turn.model = event.message.model ?? turn.model
   } else if (event.type === 'message_update') {
     const step = turn.steps.find((each) => each.id === event.id)
@@ -116,16 +127,11 @@ function tell(live: Live, turn: TurnLog, event: ConversationEvent): void {
 /** What names a part of ours among the others, so a later one replaces it; none for the rest. */
 function extraKey(part: MastraPart): string | undefined {
   if (part.type === 'data-conexus-machine') {
-    const { data } = part
-    const lasting =
-      typeof data === 'object' && data !== null && 'phase' in data && data.phase === 'replaced'
-    return lasting ? undefined : 'machine'
+    const machine = MachineData.safeParse(part.data)
+    return machine.success && machinePhaseLasts(machine.data.phase) ? undefined : 'machine'
   }
   if (part.type === 'data-conexus-version') return 'version'
-  if (part.type === THOUGHT_PART) {
-    const { data } = part
-    return `thought:${typeof data === 'object' && data !== null && 'id' in data ? String(data.id) : ''}`
-  }
+  if (part.type === THOUGHT_PART) return `thought:${Thought.safeParse(part.data).data?.id ?? ''}`
   return undefined
 }
 
@@ -145,15 +151,15 @@ function tellExtra(live: Live, turn: TurnLog, part: MastraPart): void {
 /** The machine's step, told as the part that says what the turn waits for; a replaced machine lasts. */
 export function tellMachine(live: Live, phase: MachinePhase): void {
   const turn = openTurn(live)
-  tellExtra(live, turn, { type: 'data-conexus-machine', data: { phase } })
-  if (phase === 'replaced') void saveExtras(live, turn)
+  tellExtra(live, turn, { type: 'data-conexus-machine', data: { phase } satisfies MachineData })
+  if (machinePhaseLasts(phase)) void saveExtras(live, turn)
 }
 
 /** The thinking in progress ends with the first part after it: how long it took, by our clock. */
 function settleThinking(live: Live, turn: TurnLog): void {
   for (const [id, since] of turn.thinking) {
     const seconds = Math.ceil((Date.now() - since) / 1000)
-    tellExtra(live, turn, { type: THOUGHT_PART, data: { id, seconds } })
+    tellExtra(live, turn, { type: THOUGHT_PART, data: { id, seconds } satisfies ThoughtData })
   }
   turn.thinking.clear()
 }
@@ -228,13 +234,13 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
   } else if (live.turn !== undefined && !live.turn.ended) {
     const wired = wireEvent(event)
     if (wired !== undefined) tell(live, live.turn, wired)
-    if (wired?.type === 'tool_suspended') {
-      const { toolCallId, suspendPayload, cuts } = wired
-      live.turn.suspended.set(
-        toolCallId,
-        cuts === undefined ? { suspendPayload } : { suspendPayload, cuts },
-      )
+    if (wired?.type.startsWith('om_')) {
+      const { omProgress, bufferingMessages, bufferingObservations } =
+        live.session.displayState.get()
+      const progress = { omProgress, bufferingMessages, bufferingObservations }
+      tell(live, live.turn, { type: 'om_progress', ...progress })
     }
+    if (wired?.type === 'tool_suspended') live.turn.parked.add(wired.toolCallId)
   }
 }
 
@@ -279,10 +285,10 @@ function failureOf(ending: Ending): TurnFailureCode | undefined {
 function tellFailure(live: Live, turn: TurnLog, code: TurnFailureCode): void {
   if (turn.failureKept) return
   turn.failureKept = true
-  tellExtra(live, turn, { type: 'data-conexus-failure', data: { code } })
+  tellExtra(live, turn, { type: 'data-conexus-failure', data: { code } satisfies FailureData })
 }
 
-function tellVersion(live: Live, turn: TurnLog, saved: SavedVersion): void {
+function tellVersion(live: Live, turn: TurnLog, saved: VersionData): void {
   tellExtra(live, turn, { type: 'data-conexus-version', data: saved })
 }
 

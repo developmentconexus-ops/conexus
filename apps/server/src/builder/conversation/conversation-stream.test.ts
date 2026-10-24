@@ -96,8 +96,11 @@ test('reconectar no meio de um turno: primeiro a resposta até ali, depois o res
   t.after(() => again.close())
   const snapshot = await again.next()
   assert.ok(snapshot.type === 'turn')
-  assert.equal(snapshot.message.role, 'builder')
-  assert.deepEqual(snapshot.message.parts, [{ type: 'text', text: PARTIAL }])
+  assert.deepEqual(new Set(snapshot.messages.map((message) => message.role)), new Set(['builder']))
+  assert.deepEqual(
+    snapshot.messages.flatMap((message) => message.parts),
+    [{ type: 'text', text: PARTIAL }],
+  )
   assert.ok(Date.parse(snapshot.startedAt) <= Date.now())
   assert.deepEqual(rolesAndParts(await call(hub, ana, 'GET', url)), [
     ['person', [{ type: 'text', text: 'Uma pergunta' }]],
@@ -122,7 +125,10 @@ test('reconectar com o turno em curso e ainda mudo: o stream diz que ele trabalh
   t.after(() => again.close())
   const snapshot = await again.next()
   assert.ok(snapshot.type === 'turn')
-  assert.deepEqual(snapshot.message.parts, [])
+  assert.deepEqual(
+    snapshot.messages.flatMap((message) => message.parts),
+    [],
+  )
   stalled.release()
   assert.deepEqual((await again.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
 })

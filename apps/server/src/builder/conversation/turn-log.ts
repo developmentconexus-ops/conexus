@@ -28,8 +28,8 @@ export type TurnLog = {
   /** The id of the answer as one message: the run's, or a made one for a turn with no run. */
   answerId: MessageId
   startedAt: string
-  /** Mastra's messages of the turn, in the order they began. */
-  steps: { id: MessageId; parts: MastraPart[] }[]
+  /** Mastra's messages of the turn, as the stream said them, in the order they began. */
+  steps: Message[]
   /** The parts of ours, one message named by the turn (`data-conexus-*`). */
   extras: MastraPart[]
   model: ModelId | null
@@ -46,8 +46,8 @@ export type TurnLog = {
   /** The request that began the turn, for its log line. */
   traceId: string | undefined
   failureKept: boolean
-  /** The calls the turn left waiting for the person, until Mastra closes them. */
-  suspended: Map<string, { suspendPayload: unknown; cuts?: string[] }>
+  /** The calls the turn parked; what each waits with is Mastra's (`pendingSuspensions`). */
+  parked: Set<string>
   /** When the message of ours was first saved: it keeps the time at each save. */
   extrasAt: Date | undefined
   ended: boolean
@@ -83,16 +83,31 @@ export function say(speaker: Speaker, turn: TurnLog, event: ConversationEvent): 
   for (const listener of speaker.listeners) listener(said)
 }
 
-/** The whole answer of the turn so far, Mastra's parts in order and then ours. */
-export function answerOf(turn: TurnLog): Message {
-  return {
+/**
+ * The turn so far as its later events address it: Mastra's messages by their ids, each with the
+ * calls it left waiting, then ours as one message under the turn's id.
+ */
+export function messagesOf(turn: TurnLog, suspended: Message['suspended']): Message[] {
+  const waiting = new Map(Object.entries(suspended))
+  const steps = turn.steps.map((step) => {
+    const own = step.parts.flatMap((part) => {
+      if (part.type !== 'tool-invocation') return []
+      const call = waiting.get(part.toolInvocation.toolCallId)
+      return call === undefined ? [] : [call]
+    })
+    for (const call of own) waiting.delete(call.toolCallId)
+    const suspended = Object.fromEntries(own.map((call) => [call.toolCallId, call]))
+    return { ...step, suspended: { ...step.suspended, ...suspended } }
+  })
+  const ours: Message = {
     id: turn.answerId,
     role: 'builder',
-    parts: [...turn.steps.flatMap((step) => step.parts), ...turn.extras],
-    suspended: Object.fromEntries(turn.suspended),
+    parts: turn.extras,
+    suspended: Object.fromEntries(waiting),
     model: turn.model,
     createdAt: turn.startedAt,
   }
+  return [...steps, ours]
 }
 
 /**
@@ -101,7 +116,11 @@ export function answerOf(turn: TurnLog): Message {
  * nothing, since a read of the conversation tells what is over. An id from elsewhere names
  * nothing here (security S10).
  */
-export function catchUp(turn: TurnLog | undefined, lastEventId: EventId | null): Said[] {
+export function catchUp(
+  turn: TurnLog | undefined,
+  lastEventId: EventId | null,
+  suspended: Message['suspended'],
+): Said[] {
   if (turn?.id === undefined) return []
   const seen = SeenEvent.safeParse(lastEventId)
   if (seen.success && seen.data[0] === turn.id) {
@@ -109,7 +128,8 @@ export function catchUp(turn: TurnLog | undefined, lastEventId: EventId | null):
     if (seen.data[1] >= firstN - 1) return turn.said.filter((each) => nOf(each) > seen.data[1])
   }
   if (turn.ended) return []
-  const event = { type: 'turn', message: answerOf(turn), startedAt: turn.startedAt } as const
+  const messages = messagesOf(turn, suspended)
+  const event = { type: 'turn', messages, startedAt: turn.startedAt } as const
   return [{ id: eventId(turn.id, turn.next), event }]
 }
 

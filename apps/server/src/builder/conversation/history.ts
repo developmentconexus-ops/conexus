@@ -102,5 +102,8 @@ export async function historyOf(
   const read = inProgress === undefined ? messages : untilMessage(messages, inProgress)
   const effort = metadata.thinkingLevel ?? 'off'
   const tasks = await tasksOf(builder, conversationId)
-  return { title: thread.title || null, model, effort, messages: read, tasks, memory: open.memory }
+  return {
+    ...{ title: thread.title || null, model, effort, messages: read, tasks },
+    ...{ memory: open.memory, inProgress: inProgress !== undefined },
+  }
 }

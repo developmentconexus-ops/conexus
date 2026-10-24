@@ -1,31 +1,29 @@
 import type {
   ConversationEvent,
-  MastraPart,
   Message,
   MessageId,
   OMProgress,
-  Suspension,
+  Suspended,
   Task,
 } from '@conexus/hub-api'
 import { applyUpdate } from '@conexus/hub-api'
 import type { Running, TranscriptItem } from './transcript.ts'
-import { fromMessages, isOurs } from './transcript.ts'
+import { fromMessages } from './transcript.ts'
 
 type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
 type MemoryFailure = 'observation' | 'reflection' | 'buffering'
 
 /**
- * The turn in progress as the screen holds it: Mastra's messages as the stream gave them, by id,
- * and the parts of ours, which the stream tells as updates of the turn's own id. The rows are
- * derived from these (`itemsOf`), never kept beside them.
+ * The turn in progress as the screen holds it: the messages as the stream gave them, by id: Mastra's
+ * steps, and the one of ours, named by the turn, which the stream tells its parts into. The rows
+ * are derived from these (`itemsOf`), never kept beside them.
  */
 export type Turn = {
   startedAt: string | null
-  /** The id of the message the stream tells our parts under: the turn's. */
+  /** The id of the message of ours: the turn's, which the stream opens last. */
   answerId: MessageId | null
   messages: readonly Message[]
-  ours: readonly MastraPart[]
-  suspended: Readonly<Record<string, Suspension>>
+  suspended: Readonly<Record<string, Suspended>>
   running: Readonly<Record<string, Running>>
   tasks: readonly Task[] | null
   memory: OMProgress | null
@@ -41,13 +39,12 @@ export type Step =
   | ConversationEvent
   | { type: 'sent' }
   | { type: 'unsent' }
-  | { type: 'reconnected' }
+  | { type: 'reconnected'; inProgress: boolean }
 
 const NO_TURN: Turn = {
   startedAt: null,
   answerId: null,
   messages: [],
-  ours: [],
   suspended: {},
   running: {},
   tasks: null,
@@ -56,24 +53,19 @@ const NO_TURN: Turn = {
   memoryFailed: null,
 }
 
-function handleOmStatus(turn: Turn, step: Extract<ConversationEvent, { type: 'om_status' }>): Turn {
-  const msgWindow = step.windows.active.messages
-  const obsWindow = step.windows.active.observations
-  const status =
-    turn.omPhase === 'observing' || turn.omPhase === 'reflecting' ? turn.omPhase : 'idle'
-  const memory: OMProgress = {
-    status,
-    pendingTokens: msgWindow.tokens,
-    threshold: msgWindow.threshold,
-    thresholdPercent: msgWindow.threshold > 0 ? (msgWindow.tokens / msgWindow.threshold) * 100 : 0,
-    observationTokens: obsWindow.tokens,
-    reflectionThreshold: obsWindow.threshold,
-    reflectionThresholdPercent:
-      obsWindow.threshold > 0 ? (obsWindow.tokens / obsWindow.threshold) * 100 : 0,
-    generationCount: step.generationCount,
-    stepNumber: step.stepNumber,
-  }
-  return { ...turn, memory }
+/** The memory's progress as Mastra's display state holds it; its buffering shows as the phase. */
+function handleOmProgress(
+  turn: Turn,
+  step: Extract<ConversationEvent, { type: 'om_progress' }>,
+): Turn {
+  const buffering = step.bufferingMessages || step.bufferingObservations
+  const omPhase =
+    turn.omPhase === 'idle' && buffering
+      ? 'buffering'
+      : turn.omPhase === 'buffering' && !buffering
+        ? 'idle'
+        : turn.omPhase
+  return { ...turn, memory: step.omProgress, omPhase }
 }
 
 function handleOmPhaseEvent(
@@ -115,20 +107,13 @@ function handleOmPhaseEvent(
   }
 }
 
-/**
- * The turn the stream opens with: a reconnect that cannot resume tells the turn so far as one
- * message, and what it waits on. Our parts leave it, to be told again as updates of its id.
- */
+/** The turn the stream opens with: the turn so far as its messages, the one of ours the last. */
 function opened(step: Extract<ConversationEvent, { type: 'turn' }>): Turn {
-  const { message } = step
-  const parts = message.parts.filter((part) => !isOurs(part))
   return {
     ...NO_TURN,
     startedAt: step.startedAt,
-    answerId: message.id,
-    messages: parts.length === 0 ? [] : [{ ...message, parts }],
-    ours: message.parts.filter(isOurs),
-    suspended: message.suspended,
+    answerId: step.messages.at(-1)?.id ?? null,
+    messages: step.messages,
   }
 }
 
@@ -140,13 +125,9 @@ function started(messages: readonly Message[], message: Message): readonly Messa
 
 /**
  * An update of a message, by its id, as Mastra's display state applies it; one of an id the turn
- * does not hold is not told (a step the screen opened after, whose start it missed). Our parts
- * come as updates of the turn's id.
+ * does not hold is not told (a step whose start the screen missed).
  */
 function updated(turn: Turn, step: Extract<ConversationEvent, { type: 'message_update' }>): Turn {
-  if (step.id === turn.answerId) {
-    return { ...turn, ours: applyUpdate(turn.ours, step.event) }
-  }
   const at = turn.messages.findIndex((message) => message.id === step.id)
   const message = turn.messages[at]
   if (message === undefined) return turn
@@ -185,8 +166,11 @@ function handleMessageEvent(
       return { ...turn, running: { ...turn.running, [step.toolCallId]: running } }
     }
     case 'tool_suspended': {
-      const { suspendPayload, cuts } = step
-      const suspended = { ...turn.suspended, [step.toolCallId]: { suspendPayload, cuts } }
+      const { toolCallId, toolName, args, suspendPayload, cuts } = step
+      const suspended = {
+        ...turn.suspended,
+        [toolCallId]: { toolCallId, toolName, args, suspendPayload, cuts },
+      }
       return { ...turn, suspended }
     }
     case 'agent_end':
@@ -209,7 +193,9 @@ function nextTurn(turn: Turn, step: Told): Turn {
     case 'task_updated':
       return { ...turn, tasks: step.tasks }
     case 'om_status':
-      return handleOmStatus(turn, step)
+      return turn
+    case 'om_progress':
+      return handleOmProgress(turn, step)
     case 'om_observation_start':
     case 'om_observation_end':
     case 'om_observation_failed':
@@ -240,13 +226,11 @@ export function live(state: Live, step: Step): Live {
         ? state
         : { kind: 'answering', turn: state.kind === 'resuming' ? state.turn : NO_TURN }
     case 'unsent':
-      return state.kind === 'answering' &&
-        state.turn.messages.length === 0 &&
-        state.turn.ours.length === 0
-        ? IDLE
-        : state
+      return state.kind === 'answering' && state.turn.messages.length === 0 ? IDLE : state
     case 'reconnected':
-      return state.kind === 'answering' ? { kind: 'resuming', turn: state.turn } : state
+      // A turn that ended while the line was down sends no `turnEnd` to this line: the read says it is over.
+      if (state.kind !== 'answering') return state
+      return { kind: step.inProgress ? 'resuming' : 'ended', turn: state.turn }
     case 'turn':
       return { kind: 'answering', turn: opened(step) }
     case 'turnEnd':
@@ -258,24 +242,13 @@ export function live(state: Live, step: Step): Live {
   }
 }
 
-/** The rows of the turn's answer, derived from what the stream told. */
+/** The rows of the turn's answer, derived from what the stream told, our parts after Mastra's. */
 export function itemsOf(state: Live): readonly TranscriptItem[] {
   if (state.kind === 'idle') return []
   const { turn } = state
-  const ours: Message[] =
-    turn.answerId === null || turn.ours.length === 0
-      ? []
-      : [
-          {
-            id: turn.answerId,
-            role: 'builder',
-            parts: [...turn.ours],
-            suspended: {},
-            model: null,
-            createdAt: turn.startedAt ?? '',
-          },
-        ]
-  return fromMessages([...turn.messages, ...ours], {
+  const ours = turn.messages.filter((message) => message.id === turn.answerId)
+  const steps = turn.messages.filter((message) => message.id !== turn.answerId)
+  return fromMessages([...steps, ...ours], {
     suspended: turn.suspended,
     running: turn.running,
     live: state.kind === 'answering' || state.kind === 'resuming',
@@ -307,5 +280,5 @@ export function shownAnswer(
 }
 
 function heardAnything(turn: Turn): boolean {
-  return turn.messages.length > 0 || turn.ours.length > 0
+  return turn.messages.some((message) => message.parts.length > 0)
 }

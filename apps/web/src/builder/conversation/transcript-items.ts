@@ -1,38 +1,6 @@
-import type { Answer, FailureCode, MastraPart, Question, Suspension } from '@conexus/hub-api'
-import { FAILURES, ToolCallId, VersionCheck } from '@conexus/hub-api'
+import type { Answer, MastraPart, Suspended } from '@conexus/hub-api'
+import { CARD_TOOLS, Question, SKILL_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
 import { z } from 'zod'
-
-export const MachinePhase = z.enum(['starting', 'waking', 'copying', 'replaced', 'saving'])
-export type MachinePhase = z.infer<typeof MachinePhase>
-
-export const ConexusMachineData = z.object({ phase: MachinePhase })
-export type ConexusMachineData = z.infer<typeof ConexusMachineData>
-
-export const ConexusVersionData = z.object({
-  number: z.number(),
-  files: z.number(),
-  changed: z.boolean(),
-  changedFiles: z.number(),
-  check: VersionCheck.optional(),
-})
-export type ConexusVersionData = z.infer<typeof ConexusVersionData>
-
-export const ConexusRestartedData = z.object({
-  kept: z.union([z.number(), z.literal('nothing'), z.literal('lost')]),
-})
-export type ConexusRestartedData = z.infer<typeof ConexusRestartedData>
-
-export const ConexusFailureData = z.object({
-  code: z.string().refine((c): c is FailureCode => Object.hasOwn(FAILURES, c)),
-})
-export type ConexusFailureData = z.infer<typeof ConexusFailureData>
-
-export const ConexusNoticeData = z.object({ text: z.string() })
-export type ConexusNoticeData = z.infer<typeof ConexusNoticeData>
-
-export function isMachineLasting(phase: MachinePhase): boolean {
-  return phase === 'replaced'
-}
 
 type ToolInvocationState = Extract<
   MastraPart,
@@ -66,7 +34,7 @@ export type QuestionCardItem = {
   cardKind: 'question'
   id: string
   toolCallId: string
-  toolName: 'ask_user'
+  toolName: typeof CARD_TOOLS.question
   state: 'open' | 'answered' | 'closed' | 'expired'
   questions: readonly Question[]
   answers?: readonly Answer[]
@@ -76,7 +44,7 @@ export type PlanCardItem = {
   cardKind: 'plan'
   id: string
   toolCallId: string
-  toolName: 'submit_plan'
+  toolName: typeof CARD_TOOLS.plan
   state: 'open' | 'approved' | 'rejected' | 'closed' | 'expired'
   title: string
   plan: string
@@ -92,22 +60,12 @@ type ConexusItem = {
 }
 export type TranscriptItem = TextItem | ReasoningItem | ToolItem | CardItem | ConexusItem
 
-const TASK_TOOLS = new Set(['task_write', 'task_update', 'task_complete', 'task_check'])
-
 export function isTaskTool(toolName: string): boolean {
   const bare = toolName.replace(/^mastra_workspace_/, '')
-  return TASK_TOOLS.has(bare) || bare.startsWith('task_')
+  return bare.startsWith('task_')
 }
 
-export const UNGROUPABLE_TOOLS = new Set([
-  'ask_user',
-  'submit_plan',
-  'skill',
-  'skill_read',
-  'skill_search',
-])
-
-const ThoughtData = z.object({ id: z.string(), seconds: z.number() })
+export const UNGROUPABLE_TOOLS = new Set<string>([...Object.values(CARD_TOOLS), ...SKILL_TOOLS])
 
 /** How long each thinking took, by the key the server gives it: its message and its place in it. */
 export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number> {
@@ -120,12 +78,7 @@ export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number
   return seconds
 }
 
-const QuestionItemSchema = z.object({
-  question: z.string(),
-  header: z.string().optional(),
-  options: z.array(z.object({ label: z.string(), description: z.string().optional() })).optional(),
-  multiSelect: z.boolean().optional(),
-})
+const QuestionItemSchema = Question.partial({ options: true, multiSelect: true })
 
 export function parseQuestions(input: unknown): Question[] {
   const parsed = z.object({ questions: z.array(QuestionItemSchema) }).safeParse(input)
@@ -167,12 +120,12 @@ export function parsePlan(input: unknown): { title: string; plan: string; path?:
 
 export function invocationToItem(
   inv: Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation'],
-  suspension: Suspension | undefined,
+  suspension: Suspended | undefined,
   cuts?: string[],
 ): TranscriptItem | null {
   if (!ToolCallId.safeParse(inv.toolCallId).success || isTaskTool(inv.toolName)) return null
 
-  if (inv.toolName === 'ask_user') {
+  if (inv.toolName === CARD_TOOLS.question) {
     const questions = parseQuestions(
       suspension === undefined ? inv.args : suspension.suspendPayload,
     )
@@ -184,19 +137,18 @@ export function invocationToItem(
       cardKind: 'question',
       id: inv.toolCallId,
       toolCallId: inv.toolCallId,
-      toolName: 'ask_user',
+      toolName: CARD_TOOLS.question,
       state,
       questions,
       answers,
     }
   }
 
-  if (inv.toolName === 'submit_plan') {
+  if (inv.toolName === CARD_TOOLS.plan) {
     const submitted = SubmittedPlan.safeParse(inv.result)
     const planInfo = parsePlan(
-      suspension === undefined
-        ? (submitted.data?.submittedPlan ?? inv.args)
-        : suspension.suspendPayload,
+      submitted.data?.submittedPlan ??
+        (suspension === undefined ? inv.args : suspension.suspendPayload),
     )
     const state =
       inv.state === 'result' && submitted.data?.submittedPlan.action === 'rejected'
@@ -211,7 +163,7 @@ export function invocationToItem(
       cardKind: 'plan',
       id: inv.toolCallId,
       toolCallId: inv.toolCallId,
-      toolName: 'submit_plan',
+      toolName: CARD_TOOLS.plan,
       state,
       title: planInfo.title,
       plan: planInfo.plan,

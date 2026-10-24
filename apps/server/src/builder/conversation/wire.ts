@@ -1,6 +1,10 @@
 import type { ConversationEvent, Message, ToolCallId } from '@conexus/hub-api'
 import { MastraPart, MessageId, ModelId, WIRE_LIMITS } from '@conexus/hub-api'
-import type { AgentControllerEvent, MastraDBMessage } from '@mastra/core/agent-controller'
+import type {
+  AgentControllerDisplayState,
+  AgentControllerEvent,
+  MastraDBMessage,
+} from '@mastra/core/agent-controller'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
 import type { Tail } from './shell.ts'
@@ -14,6 +18,13 @@ import { tailOf } from './shell.ts'
  * a payload by tool and does not limit its size, so the limit is ours.
  */
 const DEEPEST = 8
+
+/** A failed call's reason, cut as any text of a call. */
+function cutText(text: string, cuts: string[]): string {
+  if (text.length <= WIRE_LIMITS.text) return text
+  cuts.push('toolInvocation.errorText')
+  return `${text.slice(0, WIRE_LIMITS.text)}…`
+}
 
 function cutLeaves(value: unknown, path: string, cuts: string[], depth = 0): unknown {
   if (typeof value === 'string') {
@@ -63,16 +74,18 @@ function cutPart(part: MastraPart): MastraPart {
   const cuts: string[] = []
   if (part.type === 'tool-invocation') {
     const { toolInvocation } = part
-    const { args, result } = toolInvocation
+    const { args, result, errorText } = toolInvocation
     const command = toolInvocation.toolName === WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND
     const output = command && typeof result === 'string' ? tailOf(result) : undefined
     if (output?.cut) cuts.push('toolInvocation.result')
     const cutResult =
       output === undefined ? cutLeaves(result, 'toolInvocation.result', cuts) : outputText(output)
     const cutArgs = cutLeaves(args, 'toolInvocation.args', cuts)
+    const cutError = errorText === undefined ? {} : { errorText: cutText(errorText, cuts) }
     // Mastra's stream says `isError: false` on a call that succeeded and its store leaves it out; the Hub says it only when true.
     const { isError, ...call } = toolInvocation
-    const shown = { ...call, ...(isError ? { isError } : {}), args: cutArgs, result: cutResult }
+    const failed = { ...(isError ? { isError } : {}), ...cutError }
+    const shown = { ...call, ...failed, args: cutArgs, result: cutResult }
     return cuts.length === 0
       ? { ...part, toolInvocation: shown }
       : { ...part, toolInvocation: shown, cuts }
@@ -109,7 +122,15 @@ function wirePart(part: MastraDBMessage['content']['parts'][number]): MastraPart
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
 const SuspendedTools = z.object({
-  suspendedTools: z.record(z.string(), z.object({ suspendPayload: z.unknown() })),
+  suspendedTools: z.record(
+    z.string(),
+    z.object({
+      toolCallId: z.string().min(1),
+      toolName: z.string(),
+      args: z.unknown(),
+      suspendPayload: z.unknown(),
+    }),
+  ),
 })
 
 /** The model that answered a message, `provider/model` as the router names it, or none. */
@@ -124,14 +145,27 @@ export function modelOf(message: { content: { metadata?: unknown } }): ModelId |
 function suspendedOf(metadata: unknown): Message['suspended'] {
   const read = SuspendedTools.safeParse(metadata)
   if (!read.success) return {}
+  return wireSuspended(Object.values(read.data.suspendedTools))
+}
+
+/** A call Mastra keeps waiting for the person, as its display state holds it. */
+type Parked = Pick<
+  Parameters<AgentControllerDisplayState['pendingSuspensions']['set']>[1],
+  'toolCallId' | 'toolName' | 'args' | 'suspendPayload'
+>
+
+/** The calls waiting for the person, by call, with what each suspended with, cut. */
+export function wireSuspended(calls: Iterable<Parked>): Message['suspended'] {
   return Object.fromEntries(
-    Object.entries(read.data.suspendedTools).map(([call, { suspendPayload }]) => {
+    [...calls].map(({ toolCallId, toolName, args, suspendPayload }) => {
       const cuts: string[] = []
-      const payload = cutLeaves(suspendPayload, 'suspendPayload', cuts)
-      return [
-        call,
-        cuts.length === 0 ? { suspendPayload: payload } : { suspendPayload: payload, cuts },
-      ]
+      const cut = {
+        toolCallId,
+        toolName,
+        args: cutLeaves(args, 'args', cuts),
+        suspendPayload: cutLeaves(suspendPayload, 'suspendPayload', cuts),
+      }
+      return [toolCallId, cuts.length === 0 ? cut : { ...cut, cuts }]
     }),
   )
 }

@@ -1,4 +1,4 @@
-import type { MastraPart, Message, Suspension } from '@conexus/hub-api'
+import type { Message, Suspended } from '@conexus/hub-api'
 import type { TranscriptItem } from './transcript-items.ts'
 import { invocationToItem, thoughtSeconds } from './transcript-items.ts'
 
@@ -13,7 +13,7 @@ export type Running = {
 
 /** What Mastra's messages do not carry: the calls waiting on the person, and the commands running. */
 export type View = {
-  suspended?: Readonly<Record<string, Suspension>>
+  suspended?: Readonly<Record<string, Suspended>>
   running?: Readonly<Record<string, Running>>
   /** The answer is still arriving: its last thinking is in progress. */
   live?: boolean
@@ -47,7 +47,7 @@ function fromParts(
         part.cuts,
       )
       if (item) items.push(item)
-    } else if (isOurs(part) && part.type !== 'data-conexus-thought') {
+    } else if (part.type.startsWith('data-conexus-') && part.type !== 'data-conexus-thought') {
       // Mastra's own `data-*` parts (the memory's) are not rows, and must not split a run of tools.
       items.push({ kind: 'conexus', id, partType: part.type, data: part.data, cuts: part.cuts })
     }
@@ -91,9 +91,4 @@ export function fromMessages(messages: readonly Message[], view: View = {}): Tra
     items[items.length - 1] = { ...last, streaming: true }
   }
   return items
-}
-
-/** The parts of a message of ours, as Mastra keeps them among the others. */
-export function isOurs(part: MastraPart): boolean {
-  return part.type.startsWith('data-conexus-')
 }

@@ -32,7 +32,7 @@ async function turn(...parts: MastraPart[]) {
   const line = opened.lines[0]
   line?.emit({
     type: 'turn',
-    message: { ...builderSaid(''), id: BUILDER_MSG_ID, parts: [] },
+    messages: [{ ...builderSaid(''), id: BUILDER_MSG_ID, parts: [] }],
     startedAt: new Date().toISOString(),
   })
   line?.emit({
