@@ -14,7 +14,6 @@ const STATE_TEXT: Record<string, string> = {
   approved: 'Plano aprovado.',
   rejected: 'Este plano foi substituído.',
   closed: 'Este plano foi fechado.',
-  expired: 'Este plano expirou.',
 }
 
 function useClipped() {

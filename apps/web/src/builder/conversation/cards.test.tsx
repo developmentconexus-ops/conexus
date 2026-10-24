@@ -1,5 +1,5 @@
 import type { MastraPart, Question } from '@conexus/hub-api'
-import { MessageId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
+import { CARD_TOOLS, MessageId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
@@ -46,6 +46,21 @@ async function turn(...parts: MastraPart[]) {
         id: STEP_MSG_ID,
         event: { type: 'part', index, part },
       })
+      // A card waits on the person when the Hub says it parked the call.
+      const call = part.type === 'tool-invocation' ? part.toolInvocation : undefined
+      if (
+        call !== undefined &&
+        (call.toolName === CARD_TOOLS.question || call.toolName === CARD_TOOLS.plan) &&
+        (call.state === 'call' || call.state === 'approval-requested')
+      ) {
+        line?.emit({
+          type: 'tool_suspended',
+          toolCallId: call.toolCallId,
+          toolName: call.toolName,
+          args: call.args,
+          suspendPayload: call.args,
+        })
+      }
     }
   }
   tell(...parts)

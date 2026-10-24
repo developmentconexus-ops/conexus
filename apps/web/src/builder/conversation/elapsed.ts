@@ -9,9 +9,13 @@ export function useEverySecond(): void {
   }, [])
 }
 
-/** The whole seconds since the component first showed, counted every second. */
-export function useSecondsShown(): number {
-  const [since] = useState(Date.now)
+/** The whole seconds since `since` (epoch ms), counted every second. */
+export function useSecondsSince(since: number): number {
   useEverySecond()
   return Math.floor((Date.now() - since) / 1000)
+}
+
+/** The whole seconds since the component first showed, counted every second. */
+export function useSecondsShown(): number {
+  return useSecondsSince(useState(Date.now)[0])
 }

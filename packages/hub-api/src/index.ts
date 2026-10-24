@@ -224,5 +224,13 @@ export {
   SourceFile,
 } from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
-export { CARD_TOOLS, SKILL_TOOLS, TASK_TOOLS } from './tools.ts'
+export type { ClosedTool } from './tools.ts'
+export {
+  BUILDER_TOOL,
+  CARD_TOOLS,
+  CLOSED_TOOLS,
+  SKILL_TOOLS,
+  TASK_TOOLS,
+  WORKSPACE_TOOL,
+} from './tools.ts'
 export { WIRE_LIMITS } from './wire-limits.ts'

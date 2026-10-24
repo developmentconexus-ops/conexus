@@ -31,7 +31,34 @@ export const ZOOMED_PHONE = { width: 195, height: 422 }
 export type Viewport = { width: number; height: number }
 
 /** What the fake Hub answers a request with; `hold` keeps the reply back until it settles. */
-export type Reply = { status: number; json?: unknown; hold?: Promise<unknown> }
+export type Reply = {
+  status: number
+  json?: unknown
+  /** A stream's body as the Hub sends it: `id:` and `data:` blocks (`text/event-stream`). */
+  events?: readonly unknown[]
+  hold?: Promise<unknown>
+}
+
+/** The events as the Hub's stream says them; the ids are any one-line string (`EventId`). */
+function streamBody(events: readonly unknown[]): string {
+  return events
+    .map((event, at) => `id: sweep.${at + 1}\ndata: ${JSON.stringify(event)}\n\n`)
+    .join('')
+}
+
+/** What the route sends for a reply: a stream's blocks, a JSON body or a bare status. */
+function answerOf(reply: Reply) {
+  if (reply.events !== undefined) {
+    return {
+      status: reply.status,
+      body: streamBody(reply.events),
+      contentType: 'text/event-stream',
+    }
+  }
+  return reply.json === undefined
+    ? { status: reply.status }
+    : { status: reply.status, json: reply.json }
+}
 
 /** A success reply checked against the operation's own schema, so a stale fake fails (testing T15). */
 export function ok<S extends z.ZodType>(
@@ -116,11 +143,7 @@ export function createHarness(root: string): Harness {
           return route.fulfill({ status: 500, json: failure('INTERNAL_UNEXPECTED').json })
         }
         await reply.hold
-        return route.fulfill(
-          reply.json === undefined
-            ? { status: reply.status }
-            : { status: reply.status, json: reply.json },
-        )
+        return route.fulfill(answerOf(reply))
       }
       const file = fileOf(url.pathname)
       return route.fulfill({

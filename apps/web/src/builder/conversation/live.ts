@@ -1,5 +1,6 @@
 import type {
   ConversationEvent,
+  MastraPart,
   Message,
   MessageId,
   OMProgress,
@@ -25,6 +26,8 @@ type Turn = {
   messages: readonly Message[]
   suspended: Readonly<Record<string, Suspended>>
   running: Readonly<Record<string, Running>>
+  /** When the screen first heard of each tool call, by its id, epoch ms (Factory `tool_start`). */
+  heard: Readonly<Record<string, number>>
   tasks: readonly Task[] | null
   memory: OMProgress | null
   omPhase: OMPhase
@@ -47,6 +50,7 @@ const NO_TURN: Turn = {
   messages: [],
   suspended: {},
   running: {},
+  heard: {},
   tasks: null,
   memory: null,
   omPhase: 'idle',
@@ -117,6 +121,21 @@ function opened(step: Extract<ConversationEvent, { type: 'turn' }>): Turn {
   }
 }
 
+/** The tool calls these parts name, each stamped the first time the screen hears it. */
+function heardOf(
+  heard: Readonly<Record<string, number>>,
+  parts: readonly MastraPart[],
+): Readonly<Record<string, number>> {
+  const fresh = parts.flatMap((part) =>
+    part.type === 'tool-invocation' && !Object.hasOwn(heard, part.toolInvocation.toolCallId)
+      ? [part.toolInvocation.toolCallId]
+      : [],
+  )
+  if (fresh.length === 0) return heard
+  const now = Date.now()
+  return { ...heard, ...Object.fromEntries(fresh.map((id) => [id, now])) }
+}
+
 /** A message the stream tells again, as Mastra's `message_start` does, takes the place of its first telling. */
 function started(messages: readonly Message[], message: Message): readonly Message[] {
   const at = messages.findIndex((each) => each.id === message.id)
@@ -150,9 +169,16 @@ function handleMessageEvent(
 ): Turn {
   switch (step.type) {
     case 'message_start':
-      return { ...turn, messages: started(turn.messages, step.message) }
-    case 'message_update':
-      return updated(turn, step)
+      return {
+        ...turn,
+        messages: started(turn.messages, step.message),
+        heard: heardOf(turn.heard, step.message.parts),
+      }
+    case 'message_update': {
+      const next = updated(turn, step)
+      const parts = next.messages.find((message) => message.id === step.id)?.parts ?? []
+      return { ...next, heard: heardOf(turn.heard, parts) }
+    }
     case 'message_end':
       return turn
     case 'shell_output': {
@@ -251,6 +277,7 @@ export function itemsOf(state: Live): readonly TranscriptItem[] {
   return fromMessages([...steps, ...ours], {
     suspended: turn.suspended,
     running: turn.running,
+    heard: turn.heard,
     live: state.kind === 'answering' || state.kind === 'resuming',
   })
 }
