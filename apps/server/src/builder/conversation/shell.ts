@@ -2,6 +2,7 @@ import { ToolCallId } from '@conexus/hub-api'
 import type { AgentControllerEvent } from '@mastra/core/agent-controller'
 import type { Live } from './live.ts'
 import { tell } from './tell.ts'
+import { logOf } from './turn-state.ts'
 import { cutTail, wireEvent, wireShell } from './wire.ts'
 
 /** A running command's lines are said at most this often; all of them once more when it exits. */
@@ -12,8 +13,8 @@ export function onShellEvent(
   live: Live,
   event: Extract<AgentControllerEvent, { type: 'shell_output' | 'command_exit' }>,
 ): void {
-  const turn = live.turn
-  if (turn === undefined || turn.ended) return
+  const turn = logOf(live.state)
+  if (turn === undefined) return
   const exited = event.type === 'command_exit'
   if (!exited && Date.now() - (turn.shells.get(event.toolCallId) ?? 0) < SAID_EVERY_MS) return
   if (exited) turn.shells.delete(event.toolCallId)

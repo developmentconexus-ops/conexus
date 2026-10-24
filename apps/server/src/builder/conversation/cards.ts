@@ -7,7 +7,8 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import { memoryOwner } from './builder.ts'
 import type { Live } from './live.ts'
 import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
-import { beforeAgentEnd, endRun } from './turn-end.ts'
+import { endWithout } from './turn-end.ts'
+import { cancelled, failing, writingOf } from './turn-state.ts'
 
 type Suspended = Extract<AgentControllerEvent, { type: 'tool_suspended' }>
 type Cancelled = Extract<AgentControllerEvent, { type: 'tool_suspension_cancelled' }>
@@ -54,11 +55,13 @@ export function openCards(live: Live): Card[] {
  * ends the turn, saying so (card, the failures table).
  */
 export function waitOn(live: Live, waiting: boolean): void {
-  live.run?.waiting(waiting).catch((cause: unknown) => {
-    logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-    live.saveFailure ??= 'INTERNAL_UNEXPECTED'
-    live.session.abort()
-  })
+  writingOf(live.state)
+    ?.waiting(waiting)
+    .catch((cause: unknown) => {
+      logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+      live.state = failing(live.state, 'INTERNAL_UNEXPECTED')
+      live.session.abort()
+    })
 }
 
 /** Until the resumed calls end, or the run does. */
@@ -122,7 +125,7 @@ export async function takeCards(live: Live): Promise<string[]> {
 
 /** The wait ran out: the turn ends as Parar ends it, saying why. */
 export function expire(live: Live): void {
-  live.saveFailure = 'QUESTION_EXPIRED'
+  live.state = failing(live.state, 'QUESTION_EXPIRED')
   live.session.abort()
 }
 
@@ -132,35 +135,24 @@ function onSuspended(live: Live, event: Suspended) {
   waitOn(live, true)
 }
 
-/** Mastra ends no run it parked and then aborted: the turn ends here, as an aborted run's does. */
-async function endParked(live: Live, run: string | undefined): Promise<void> {
-  try {
-    await beforeAgentEnd(live, 'aborted')
-  } finally {
-    endRun(live, 'aborted', run)
-  }
-}
-
 /**
  * A call Mastra gave up on, because the person stopped the turn, wrote instead, or the wait ran
  * out: Mastra closes it denied, even when an answer had claimed it, so, once none waits, the turn
- * ends. A call of no turn here says nothing.
+ * ends, as an aborted run's does, since Mastra ends no run it parked and then aborted. A call of
+ * no turn here, or of a turn a message carries on, says nothing more.
  */
 function onCancelled(live: Live, event: Cancelled) {
-  const turn = live.turn
-  if (turn === undefined || turn.ended || !turn.parked.delete(event.toolCallId)) return
-  if (openCards(live).length > 0) return
-  waitOn(live, false)
-  const { runId } = event
-  if (live.carry === undefined) {
-    endParked(live, runId).catch((cause: unknown) =>
-      logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })),
-    )
+  const s = live.state
+  const next = cancelled(s, event.toolCallId)
+  if (next !== 'end-parked') {
+    live.state = next
     return
   }
-  // A message steers the run: its turn goes on in the run the message starts (`agent_start`).
-  live.carry.run = runId === undefined ? undefined : live.runs.get(runId)
-  if (runId !== undefined) live.runs.delete(runId)
+  if (s.kind !== 'parked') return
+  waitOn(live, false)
+  endWithout(live, s.writing, 'aborted').catch((cause: unknown) =>
+    logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })),
+  )
 }
 
 /** The questions and plans of the turn: asked by a suspension, closed by a cancellation. */

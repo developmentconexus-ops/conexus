@@ -35,6 +35,7 @@ import { beforeAgentEnd } from './turn-end.ts'
 import { onEvent } from './turn-events.ts'
 import { tellRestarted } from './turn-parts.ts'
 import { adoptTurn, answerTurn } from './turn-run.ts'
+import { isOpen, logOf, writingOf } from './turn-state.ts'
 
 type OfConversation = { owner: Owner; conversationId: ConversationId }
 
@@ -84,14 +85,12 @@ export class Sessions {
       const opened: Live = {
         ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
         ...{ memory: this.#builder.memory, kept: Promise.resolve() },
-        ...{ turn: undefined, asked: new Set(), runs: new Map() },
-        ...{ pending: new Set(), carry: undefined, ending: false, unclaimed: undefined },
+        ...{ state: { kind: 'idle' }, pending: new Set() },
         cancel: (signalIds) => {
           if (signalIds.length === 0) return
           const target = { resourceId, threadId: conversationId, signalIds }
           this.#builder.agent.cancelQueuedMessages(target)
         },
-        ...{ run: undefined, saveFailure: undefined },
         unsubscribe: () => undefined,
       }
       const unsubscribe = session.subscribe((event) => {
@@ -127,9 +126,8 @@ export class Sessions {
     if (this.#lives.get(conversationId) !== live) return
     this.#lives.delete(conversationId)
     live.unsubscribe()
-    // A closed session ends no run, so its messages stop waiting here.
-    for (const run of live.runs.values()) run.ended()
-    live.runs.clear()
+    // A closed session ends no run, so its message stops waiting here.
+    writingOf(live.state)?.ended()
     const resourceId = memoryOwner(live.owner)
     await this.#builder.controller.deleteSession({ resourceId, scope: conversationId })
   }
@@ -158,9 +156,9 @@ export class Sessions {
     const id = questionId(conversationId, input.question.key)
     for (let tries = 0; tries < 3; tries += 1) {
       const live = this.#lives.get(conversationId)
-      if (live === undefined || live.run === undefined) break // no turn of this conversation here
+      if (live === undefined || !isOpen(live.state)) break // no turn of this conversation here
       if (await steerCards(live, { question: input.question, id })) return
-      if (live.ending) {
+      if (live.state.kind === 'closing' || live.state.kind === 'ending') {
         await turnOver(live)
         break // the turn ended: this message is a turn of its own
       }
@@ -180,12 +178,9 @@ export class Sessions {
     const runId = admitted.value
     const turn = new Turn(input.owner)
     const kept = this.#hold(input).then(async (live) => {
-      const keeping = saveQuestion(live, input.question)
-      live.asked.add(turn)
       try {
-        await keeping
+        await saveQuestion(live, input.question)
       } catch (error) {
-        live.asked.delete(turn)
         await this.#release(conversationId, live)
         throw error
       }
@@ -252,7 +247,7 @@ export class Sessions {
       await this.#release(conversationId, live)
       return false
     }
-    const answered: Promise<void> = adoptTurn(live, this.#runs, run, parkedRuns)
+    const answered: Promise<void> = adoptTurn(live, this.#runs, run)
       .finally(() => this.#release(conversationId, live))
       .catch((cause: unknown) =>
         logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
@@ -267,7 +262,8 @@ export class Sessions {
    * Parar can come before this copy's boot took them.
    */
   async #settled({ owner, conversationId }: OfConversation): Promise<void> {
-    if (this.#lives.get(conversationId)?.run !== undefined) return
+    const live = this.#lives.get(conversationId)
+    if (live !== undefined && isOpen(live.state)) return
     await this.#runs.settleConversation({ companyId: owner.companyId, conversationId })
   }
 
@@ -307,7 +303,7 @@ export class Sessions {
   /** The person's message that the turn in progress answers, or none: the stream tells that turn whole. */
   inProgressAfter(conversationId: ConversationId): MessageId | undefined {
     const live = this.#lives.get(conversationId)
-    return live?.turn?.ended === false ? live.turn.after : undefined
+    return live === undefined ? undefined : logOf(live.state)?.after
   }
 
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */

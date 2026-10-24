@@ -44,12 +44,8 @@ export type TurnLog = {
   tally: TurnTally
   /** The request that began the turn, for its log line. */
   traceId: string | undefined
-  failureKept: boolean
-  /** The calls the turn parked; what each waits with is Mastra's (`pendingSuspensions`). */
-  parked: Set<string>
   /** When the message of ours was first saved: it keeps the time at each save. */
   extrasAt: Date | undefined
-  ended: boolean
 }
 
 /** What saying an event needs of a conversation open in this process. */
@@ -117,6 +113,7 @@ export function messagesOf(turn: TurnLog, suspended: Message['suspended']): Mess
  */
 export function catchUp(
   turn: TurnLog | undefined,
+  over: boolean,
   lastEventId: EventId | null,
   suspended: Message['suspended'],
 ): Said[] {
@@ -126,7 +123,7 @@ export function catchUp(
     const firstN = turn.next - turn.said.length + 1
     if (seen.data[1] >= firstN - 1) return turn.said.filter((each) => nOf(each) > seen.data[1])
   }
-  if (turn.ended) return []
+  if (over) return []
   const messages = messagesOf(turn, suspended)
   const event = { type: 'turn', messages, startedAt: turn.startedAt } as const
   return [{ id: eventId(turn.id, turn.next), event }]

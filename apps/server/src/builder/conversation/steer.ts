@@ -4,7 +4,7 @@ import { deliver } from './deliver.ts'
 import type { Listener, Live, Question } from './live.ts'
 import { saveQuestion } from './record.ts'
 import { tell } from './tell.ts'
-import { openTurn } from './turn-parts.ts'
+import { isOpen, logOf, steered, writingOf } from './turn-state.ts'
 
 type Input = { question: Question; id: MessageId }
 
@@ -26,7 +26,11 @@ export async function deliverInto(
     const accepted = await deliver(
       live,
       { question, id },
-      { requestContext: live.run?.context, requireDelivery: true, ifIdle: { behavior: 'discard' } },
+      {
+        requestContext: writingOf(live.state)?.context,
+        requireDelivery: true,
+        ifIdle: { behavior: 'discard' },
+      },
     )
     if (accepted.action === 'deliver') return 'delivered'
   } catch (error) {
@@ -48,21 +52,22 @@ export async function steerCards(live: Live, { question, id }: Input): Promise<b
     throw error
   }
   releaseCards(live, taken)
-  live.carry = { run: undefined } // `onCancelled` fills it; `agent_start` takes it
+  live.state = steered(live.state) // `agent_start` of the run the message wakes takes it
   live.session.abort()
   const accepted = await deliver(
     live,
     { question, id },
-    { requestContext: live.run?.context, requireDelivery: true },
+    { requestContext: writingOf(live.state)?.context, requireDelivery: true },
   )
   // The woken run is the turn's next one; the screen sees the message now, where it goes.
-  tell(live, openTurn(live), personStart(id, question))
+  const turn = logOf(live.state)
+  if (turn !== undefined) tell(live, turn, personStart(id, question))
   return accepted.action === 'wake' || accepted.action === 'deliver'
 }
 
 /** Until the turn in progress says `turnEnd`, or now when none is open. */
 export function turnOver(live: Live): Promise<void> {
-  if (live.turn === undefined || live.turn.ended) return Promise.resolve()
+  if (!isOpen(live.state)) return Promise.resolve()
   return new Promise((done) => {
     const listener: Listener = ({ event }) => {
       if (event.type !== 'turnEnd') return
@@ -88,6 +93,6 @@ export function nextRunOrEnd(live: Live): Promise<void> {
       done()
     }
     live.listeners.add(ended)
-    if (live.turn === undefined || live.turn.ended) finish()
+    if (!isOpen(live.state)) finish()
   })
 }
