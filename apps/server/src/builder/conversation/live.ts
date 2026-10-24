@@ -1,26 +1,16 @@
 import { randomUUID } from 'node:crypto'
 import type {
   CompanyId,
-  ConversationEvent,
   ConversationId,
   FailureData,
+  MachineData,
   MachinePhase,
-  MastraPart,
   PersonId,
   RunId,
-  ThoughtData,
   TurnFailureCode,
   VersionData,
 } from '@conexus/hub-api'
-import {
-  applyUpdate,
-  MachineData,
-  MessageId,
-  machinePhaseLasts,
-  THOUGHT_PART,
-  ThoughtData as Thought,
-  ToolCallId,
-} from '@conexus/hub-api'
+import { MessageId, machinePhaseLasts, ToolCallId } from '@conexus/hub-api'
 import type { AgentControllerEvent, Session } from '@mastra/core/agent-controller'
 import type { RequestContext } from '@mastra/core/request-context'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -30,6 +20,7 @@ import type { Settled } from '../runs/public.ts'
 import type { Recorder } from './record.ts'
 import { saveExtras, settled } from './record.ts'
 import { ShellTail } from './shell.ts'
+import { settleThinking, startThinking, tell, tellExtra } from './tell.ts'
 import { TurnTally, turnLine } from './turn-line.ts'
 import type { Listener, TurnLog } from './turn-log.ts'
 import { messagesOf, say } from './turn-log.ts'
@@ -59,8 +50,20 @@ export type Live = Recorder & {
    * the turn itself, since only it knows which turn the run was.
    */
   unclaimed: { run: string; reason: Ending['reason'] } | undefined
-  /** The run a message steers, until the run it starts takes its place (card, criterion 18). */
-  steering: { run: Run | undefined } | undefined
+  /**
+   * Messages Mastra accepted into the running turn (`deliver`) and has not put on the transcript yet,
+   * by message id; read once its `message_start` (`role: 'signal'`) comes.
+   */
+  pending: Set<string>
+  /**
+   * The turn going on in the next run Mastra starts: a message closed its card, or Mastra keeps input
+   * the ending run never read. Set before that run's end, filled with its run, taken at `agent_start`.
+   */
+  carry: { run: Run | undefined } | undefined
+  /** Mastra is about to end the run (`beforeAgentEnd` began): a message now waits for the turn's end. */
+  ending: boolean
+  /** Removes messages Mastra has not read (`cancelQueuedMessages`), before a Parar aborts. */
+  cancel: (signalIds: string[]) => void
   /** The run of the message in progress: ends and saves it when Mastra's run is about to end. */
   run:
     | {
@@ -100,6 +103,12 @@ function newTurn(id: RunId | undefined, traceId?: string): TurnLog {
   }
 }
 
+/** Unread messages leave Mastra's queue before a Parar or an abort ends the turn. */
+export function cancelPending(live: Live): void {
+  live.cancel([...live.pending])
+  live.pending.clear()
+}
+
 /** The turn in progress, or a new one, which the stream opens with its `turn`. */
 export function openTurn(live: Live): TurnLog {
   if (live.turn !== undefined && !live.turn.ended) return live.turn
@@ -111,43 +120,6 @@ export function openTurn(live: Live): TurnLog {
   return turn
 }
 
-/** An event told as the stream says it, folded into the turn's answer as the screen folds it. */
-function tell(live: Live, turn: TurnLog, event: ConversationEvent): void {
-  if (event.type === 'message_start') {
-    // A copy: the event itself stays as said, for a stream that resumes after it.
-    turn.steps.push({ ...event.message })
-    turn.model = event.message.model ?? turn.model
-  } else if (event.type === 'message_update') {
-    const step = turn.steps.find((each) => each.id === event.id)
-    if (step !== undefined) step.parts = applyUpdate(step.parts, event.event)
-  }
-  say(live, turn, event)
-}
-
-/** What names a part of ours among the others, so a later one replaces it; none for the rest. */
-function extraKey(part: MastraPart): string | undefined {
-  if (part.type === 'data-conexus-machine') {
-    const machine = MachineData.safeParse(part.data)
-    return machine.success && machinePhaseLasts(machine.data.phase) ? undefined : 'machine'
-  }
-  if (part.type === 'data-conexus-version') return 'version'
-  if (part.type === THOUGHT_PART) return `thought:${Thought.safeParse(part.data).data?.id ?? ''}`
-  return undefined
-}
-
-/** A part of ours, told as a part of the message the turn names: it takes the place of the one it replaces. */
-function tellExtra(live: Live, turn: TurnLog, part: MastraPart): void {
-  const key = extraKey(part)
-  const at = key === undefined ? -1 : turn.extras.findIndex((each) => extraKey(each) === key)
-  const index = at === -1 ? turn.extras.length : at
-  turn.extras = applyUpdate(turn.extras, { type: 'part', index, part })
-  say(live, turn, {
-    type: 'message_update',
-    id: turn.answerId,
-    event: { type: 'part', index, part },
-  })
-}
-
 /** The machine's step, told as the part that says what the turn waits for; a replaced machine lasts. */
 export function tellMachine(live: Live, phase: MachinePhase): void {
   const turn = openTurn(live)
@@ -155,22 +127,15 @@ export function tellMachine(live: Live, phase: MachinePhase): void {
   if (machinePhaseLasts(phase)) void saveExtras(live, turn)
 }
 
-/** The thinking in progress ends with the first part after it: how long it took, by our clock. */
-function settleThinking(live: Live, turn: TurnLog): void {
-  for (const [id, since] of turn.thinking) {
-    const seconds = Math.ceil((Date.now() - since) / 1000)
-    tellExtra(live, turn, { type: THOUGHT_PART, data: { id, seconds } satisfies ThoughtData })
-  }
-  turn.thinking.clear()
-}
-
-/** A reasoning begins at its first delta or part; the key is the one a read gives it: its message and place. */
-function startThinking(turn: TurnLog, messageId: MessageId, index: number): void {
-  const key = `${messageId}.${index}`
-  if (!turn.thinking.has(key)) turn.thinking.set(key, Date.now())
-}
-
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
+  if (event.type === 'message_start' && event.message.role === 'signal') {
+    // Only a message the person sent into the running turn is told: a waking message is already
+    // the turn's question (`turn.after`).
+    if (!live.pending.delete(event.message.id)) return
+    const wired = wireEvent(event)
+    if (wired !== undefined) tell(live, openTurn(live), wired)
+    return
+  }
   if (event.type === 'message_start' && event.message.role === 'assistant') {
     const turn = openTurn(live)
     for (const [index, part] of event.message.content.parts.entries()) {
@@ -200,6 +165,13 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
 
 /** A run ended: its turn ends with it, or waits for the run it never learned the id of. */
 export function endRun(live: Live, reason: Ending['reason'], parked?: string): void {
+  if (live.carry !== undefined && live.carry.run === undefined && reason !== 'aborted') {
+    // Mastra starts a run for input this one never read: the turn goes on there (`agent_start`).
+    const carried = live.session.run.getRunId()
+    live.carry.run = carried === null ? undefined : live.runs.get(carried)
+    if (carried !== null) live.runs.delete(carried)
+    return
+  }
   // Mastra still names the ending run when it says so (`finishAgentRun`); a parked run is named by its suspension.
   const runId = parked ?? live.session.run.getRunId()
   const run = runId === null ? undefined : live.runs.get(runId)
@@ -217,10 +189,12 @@ export function onEvent(live: Live, event: AgentControllerEvent): void {
   live.turn?.tally.heard(event)
   if (event.type === 'agent_start') {
     openTurn(live)
-    // The run a message started carries the turn of the one it steered.
+    // The run Mastra starts carries the turn of the one before it: a message closed its card, or the
+    // one before ended with input it never read.
     const runId = live.session.run.getRunId()
-    if (live.steering?.run !== undefined && runId !== null) live.runs.set(runId, live.steering.run)
-    live.steering = undefined
+    if (live.carry?.run !== undefined && runId !== null) live.runs.set(runId, live.carry.run)
+    live.carry = undefined
+    live.ending = false
   } else if (event.type === 'agent_end') {
     // A run parked on a question or a plan is not over: its turn goes on once it is answered.
     if (event.reason !== 'suspended') endRun(live, event.reason)
@@ -299,6 +273,14 @@ function tellVersion(live: Live, turn: TurnLog, saved: VersionData): void {
  */
 export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Promise<void> {
   if (reason === 'suspended') return
+  if (reason !== 'aborted' && live.pending.size > 0) {
+    // Mastra starts a fresh run with input this run never read (`drainPendingSignals`): the turn,
+    // its row and its lease go on there.
+    live.carry = { run: undefined }
+    return
+  }
+  if (live.pending.size > 0) cancelPending(live)
+  live.ending = true
   const runId = live.session.run.getRunId()
   const run = runId === null ? undefined : live.runs.get(runId)
   // A save that throws is this turn's failure, said and logged here: Mastra would print the listener's
