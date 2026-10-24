@@ -26,7 +26,7 @@ Database roles and grants live beside the migrations, not in a second list here.
   or a generated rename drops data. [review]
 - **D6.** A migration **must** only add, and a rename or a drop **must** be a later migration, after
   no running code reads the old shape. [CI migration check]
-- **D7.** An applied migration **must not** change. [CI migration check]
+- **D7.** A migration that reached main **must not** change; before that it may. [CI migration check]
 - **D9.** Migrations **must** run by the program's `migrate` subcommand before the Hub starts, on
   the direct address, and the program **must** refuse to start when the database lacks a
   migration it ships with. [boot check]

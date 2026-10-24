@@ -50,8 +50,14 @@ function commit(dir: string, message: string) {
   git(dir, 'commit', '-q', '-m', message)
 }
 
-/** A repository whose base already holds the first migration; `change` is what the branch does. */
-function check(change: (dir: string) => void): { status: number | null; stderr: string } {
+/**
+ * A repository whose main already holds the first migration; `change` is what the branch does.
+ * `step` is what a step branch holds ahead of main, which the branch is based on.
+ */
+function check(
+  change: (dir: string) => void,
+  step?: (dir: string) => void,
+): { status: number | null; stderr: string } {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-migrations-'))
   dirs.push(dir)
   git(dir, 'init', '-q', '-b', 'main')
@@ -63,10 +69,16 @@ function check(change: (dir: string) => void): { status: number | null; stderr: 
   write(dir, 'apps/server/src/main.ts', 'export const x = 1\n')
   migration(dir, '20260101000000_first', 'CREATE TABLE a (id int);\n', FIRST, NIL)
   commit(dir, 'base')
+  if (step !== undefined) {
+    git(dir, 'checkout', '-q', '-b', 'step')
+    step(dir)
+    commit(dir, 'step')
+  }
   git(dir, 'checkout', '-q', '-b', 'topic')
   change(dir)
   commit(dir, 'change')
-  const run = spawnSync('node', [SCRIPT, '--base', 'main', '--root', dir], {
+  const base = step === undefined ? 'main' : 'step'
+  const run = spawnSync('node', [SCRIPT, '--base', base, '--main', 'main', '--root', dir], {
     encoding: 'utf8',
     timeout: 120_000,
   })
@@ -96,6 +108,40 @@ test('recusa uma migração da base apagada', () => {
   })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /an applied migration was deleted/)
+})
+
+test('aceita alterar uma migração que ainda não chegou à main', () => {
+  const run = check(
+    (dir) => second(dir, 'ALTER TABLE a ADD COLUMN c int;\n'),
+    (dir) => second(dir, 'ALTER TABLE a ADD COLUMN b int;\n'),
+  )
+  assert.deepEqual(run, { status: 0, stderr: '' })
+})
+
+test('aceita apagar uma migração que ainda não chegou à main', () => {
+  const run = check(
+    (dir) => rmSync(join(dir, 'apps/server/migrations/20260102000000_second'), { recursive: true }),
+    (dir) => second(dir, 'ALTER TABLE a ADD COLUMN b int;\n'),
+  )
+  assert.deepEqual(run, { status: 0, stderr: '' })
+})
+
+test('recusa DROP sem contrato acrescentado a uma migração que ainda não chegou à main', () => {
+  const run = check(
+    (dir) => second(dir, 'ALTER TABLE a DROP COLUMN id;\n'),
+    (dir) => second(dir, 'ALTER TABLE a ADD COLUMN b int;\n'),
+  )
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /_second\/migration\.sql: DROP or RENAME needs a line "-- contract/)
+})
+
+test('recusa alterar uma migração que chegou à main, ainda que a base seja um ramo do passo', () => {
+  const run = check(
+    (dir) => migration(dir, '20260101000000_first', 'CREATE TABLE a (id bigint);\n', FIRST, NIL),
+    (dir) => second(dir, 'ALTER TABLE a ADD COLUMN b int;\n'),
+  )
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /20260101000000_first\/migration\.sql: an applied migration was changed/)
 })
 
 for (const [name, sql] of [
