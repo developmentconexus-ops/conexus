@@ -42,6 +42,7 @@ export function runningEffort(efforts: readonly [Effort, ...Effort[]], effort: E
 
 /** The failures a turn ends with, rows of the failure table that the screen reads by code. */
 export const TurnFailureCode = z.enum([
+  'RUN_BUSY',
   'MODEL_NO_ACCOUNT',
   'MODEL_CALL_FAILED',
   'MODEL_REFUSED',
@@ -263,7 +264,7 @@ export const sendConversationMessage = defineOperation({
   },
   attemptKey: true,
   success: { status: 202 },
-  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT', 'RUN_BUSY'],
+  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT'],
 })
 
 export const streamConversation = defineOperation({

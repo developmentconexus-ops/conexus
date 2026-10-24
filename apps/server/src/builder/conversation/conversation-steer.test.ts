@@ -3,11 +3,13 @@ import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { ConversationEvent } from '@conexus/hub-api'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
   conversing,
   holding,
+  KEY,
   PARTIAL,
   rolesAndParts,
   sent,
@@ -15,7 +17,7 @@ import {
   streamOf,
   title,
 } from './test-conversation.ts'
-import { ask, WHO } from './test-questions.ts'
+import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 const STEER = 'Só eu cadastro.'
 const ANSWER = 'Certo, só você.'
@@ -82,6 +84,10 @@ test('uma mensagem enquanto o Builder escreve entra na mesma volta: 202, um fim'
     [{ type: 'turnEnd', reason: 'complete' }],
   )
   assert.equal(steersIn(lastOf(calls)), 1)
+  assert.ok(
+    calls.every((each) => each.key === KEY),
+    "the run took the message on the company's account",
+  )
   assert.ok(companyId)
   const read = rolesAndParts(await call(hub, ana, 'GET', url))
   assert.deepEqual(read, [
@@ -189,4 +195,37 @@ test('a mesma mensagem com a mesma chave duas vezes: uma vez no modelo', async (
   held.release()
   await stream.turn()
   assert.equal(steersIn(lastOf(calls)), 1)
+})
+
+test('a volta que uma mensagem abre com a pergunta aberta vai pela conta da empresa e escreve na máquina do Projeto', {
+  timeout: 60_000,
+}, async (t) => {
+  const write = tool('mastra_workspace_write_file', { path: 'src/quem.ts', content: 'eu\n' })
+  const { hub, ana, url, stream, send, calls, companyId, projectId } = await conversingWith(t, [
+    [ask(WHO)],
+    [write],
+  ])
+  assert.equal((await send()).statusCode, 202)
+  await untilCard(stream, 'question')
+  const asked = calls.length
+  assert.equal((await sent(hub, ana, url, 'Melhor: só eu cadastro.')).statusCode, 202)
+  const events = await stream.turn()
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  const steered = calls.slice(asked)
+  assert.ok(steered.length > 0)
+  assert.ok(
+    steered.every((each) => each.key === KEY),
+    "the company's account",
+  )
+  assert.ok(steered.every((each) => each.tools.includes('mastra_workspace_write_file')))
+  const repository = hub.builder.repository({
+    companyId: CompanyId.parse(companyId),
+    projectId: ProjectId.parse(projectId),
+  })
+  assert.equal(await repository.version(), 1)
+  const files = (await repository.tree(await repository.main())) ?? []
+  assert.ok(
+    files.some((file) => file.path === 'src/quem.ts'),
+    "the Projeto's machine wrote it",
+  )
 })

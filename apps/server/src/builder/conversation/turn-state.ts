@@ -1,17 +1,12 @@
 import type { RunId, TurnFailureCode } from '@conexus/hub-api'
-import type { RequestContext } from '@mastra/core/request-context'
-import type { Turn } from '../model-accounts/public.ts'
 import type { Settled } from '../runs/public.ts'
 import { FINISHES } from './turn-line.ts'
 import type { TurnLog } from './turn-log.ts'
 
-/** What a turn writes with: our run, Mastra's context, the model queue's turn. */
+/** What a turn writes with: its id, and the end of the run its Mastra run took (`turnOf`). */
 export type Writing = {
   id: RunId
   traceId: string
-  /** What Mastra needs of the turn: the run it writes for, the person's accounts. */
-  context: RequestContext
-  turn: Turn
   finish: (reason: string) => Promise<Settled | 'gone'>
   /** Resolves `over`, once: the turn said its end, or its session closed. */
   ended: () => void
@@ -25,6 +20,8 @@ type Open = {
   writing: Writing
   /** The turn's failure, decided once its run is finished. */
   failure: TurnFailureCode | undefined
+  /** Whose run holds the Projeto, for a turn refused as `RUN_BUSY`. */
+  person: string | undefined
   /** How the turn ends, once its run is finished and before Mastra says `agent_end`. */
   end: EndReason | undefined
 }
@@ -55,7 +52,7 @@ export function writingOf(s: TurnState): Writing | undefined {
 
 /** A message's or an answer's turn begins. */
 export function opened(log: TurnLog, writing: Writing): TurnState {
-  return { kind: 'running', log, writing, failure: undefined, end: undefined }
+  return { kind: 'running', log, writing, failure: undefined, person: undefined, end: undefined }
 }
 
 /**
@@ -81,7 +78,6 @@ function failureOf(
   if (outcome === 'threw') return 'INTERNAL_UNEXPECTED'
   if (outcome !== 'gone' && outcome.kind === 'failed') return outcome.code
   if (reason !== 'error') return undefined
-  if (s.writing.turn.outcome === 'exhausted') return 'MODEL_NO_ACCOUNT'
   const finish = s.log.tally.finishReason
   return (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED'
 }
@@ -92,7 +88,7 @@ export function ended(s: TurnState): TurnState {
 }
 
 /** A failure known before the run is finished: the turn's, unless one came first. */
-export function failing(s: TurnState, code: TurnFailureCode): TurnState {
-  if (s.kind !== 'running' || s.end !== undefined) return s
-  return { ...s, failure: s.failure ?? code }
+export function failing(s: TurnState, code: TurnFailureCode, person?: string): TurnState {
+  if (s.kind !== 'running' || s.end !== undefined || s.failure !== undefined) return s
+  return { ...s, failure: code, person }
 }

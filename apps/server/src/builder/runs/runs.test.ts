@@ -11,6 +11,7 @@ import {
   asked,
   conversing,
   holding,
+  PARTIAL,
   sent,
   started,
   streamOf,
@@ -72,6 +73,52 @@ test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Pr
   assert.equal(refs.toString(), '', "the run's own ref goes once main holds its commit")
 })
 
+test('uma mensagem enquanto a versão é guardada espera o fim e faz mais uma versão, sem misturar as duas', async (t) => {
+  const turns = [writing('src/a.ts', 'um\n'), writing('src/b.ts', 'dois\n')]
+  let step = 0
+  const { hub, ana, conversations, companyId, projectId } = await conversing(t, (call) => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    const tool = step % 2 === 1 ? turns[(step - 1) / 2] : undefined
+    if (tool === undefined) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: [{ type: 'tool_use', ...tool }] }
+  })
+  const gate = Promise.withResolvers<void>()
+  t.after(() => gate.resolve())
+  hub.builder.knobs.holdReceive = gate.promise
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
+  for (let attempt = 0; attempt < 100 && !settling(); attempt += 1) {
+    await new Promise((done) => setTimeout(done, 50))
+  }
+  function settling() {
+    return hub.lines.some((line) => line.message === 'RUN_SETTLING')
+  }
+  assert.ok(settling(), 'the first turn saves, held before its commit is checked in')
+  const second = sent(hub, ana, url, 'Segunda')
+  await new Promise((done) => setTimeout(done, 300))
+  assert.equal(step, 2, 'the second message calls no model while the first version is saved')
+  gate.resolve()
+  assert.equal((await second).statusCode, 202)
+  assert.deepEqual(failuresOf(await stream.turn()), [])
+  assert.deepEqual(failuresOf(await stream.turn()), [])
+  const repository = repositoryOf({ hub, companyId, projectId })
+  assert.equal(await repository.version(), 2)
+  const dir = join(tmpdir(), companyId, `${projectId}.git`)
+  function pathsAt(revision: string) {
+    const listed = execFileSync('git', ['--git-dir', dir, 'ls-tree', '-r', '--name-only', revision])
+    return listed
+      .toString()
+      .split('\n')
+      .filter((path) => path.startsWith('src/'))
+  }
+  assert.ok(pathsAt('main~1').includes('src/a.ts'))
+  assert.equal(pathsAt('main~1').includes('src/b.ts'), false, 'version 1 holds only its own turn')
+  assert.ok(pathsAt('main').includes('src/b.ts') && pathsAt('main').includes('src/a.ts'))
+})
+
 test('só resposta: o turno fecha sem versão e sem tocar a máquina', async (t) => {
   const { hub, ana, conversations } = await conversing(t, (call) => ({
     kind: 'text',
@@ -95,31 +142,18 @@ test('execução aberta: a mensagem de outro no Projeto é RUN_BUSY; em outro Pr
   assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
   await stream.said()
   const second = `${conversations}/${await started(hub, ana, conversations)}`
-  assert.equal((await sent(hub, ana, second, 'Outra')).statusCode, 409)
+  const busy = await streamOf(hub, ana, second)
+  t.after(() => busy.close())
+  assert.equal((await sent(hub, ana, second, 'Outra')).statusCode, 202)
+  assert.deepEqual(failuresOf(await busy.turn()), ['RUN_BUSY'])
   const projects = `/api/companies/${companyId}/projects`
   const other = await post(hub, ana, projects, { name: 'Estoque' })
   const inOther = `${projects}/${String(Object(other.json()).project.id)}/conversations`
   const elsewhere = `${inOther}/${await started(hub, ana, inOther)}`
+  const beside = await streamOf(hub, ana, elsewhere)
+  t.after(() => beside.close())
   assert.equal((await sent(hub, ana, elsewhere, 'Outro projeto')).statusCode, 202)
-})
-
-test('além da hora: o turno para, o que foi escrito é guardado e a máquina leva o prazo do turno', async (t) => {
-  const hang = new Promise<void>(() => undefined)
-  const first = working(writing('src/a.ts', 'um\n'))
-  let step = 0
-  const { hub, ana, conversations, companyId, projectId } = await conversing(t, (call) => {
-    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
-    step += 1
-    return step === 1 ? first(call) : { kind: 'hold', until: hang, text: 'Pensando' }
-  })
-  hub.builder.knobs.turnMs = 1_500
-  const before = Date.now()
-  const { events } = await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
-  assert.equal(await repositoryOf({ hub, companyId, projectId }).version(), 1)
-  const [deadline, ...more] = hub.builder.control.deadlines.map((at) => at.getTime())
-  assert.deepEqual(more, [])
-  assert.ok(deadline !== undefined && deadline >= before + 1_500 && deadline <= Date.now() + 1_500)
+  assert.equal(await beside.text(), PARTIAL, 'the other Projeto runs')
 })
 
 test('erro depois de escrever: a versão é guardada', async (t) => {

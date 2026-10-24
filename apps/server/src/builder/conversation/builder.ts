@@ -33,6 +33,8 @@ import {
 } from './plan-tools.ts'
 import { checkGate, checkTool, workspaceMetadataLive } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
+import type { ConversationIndex } from './turn-of.ts'
+import { projectIn, sideTurn, turnOf } from './turn-of.ts'
 
 const BUILDER_ID = 'builder'
 const CONVERSATION_MODE = 'conversa'
@@ -92,10 +94,14 @@ function builderMemory(
   modelSettings: { timeout: typeof MODEL_TIMEOUT },
 ): Memory {
   const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
+  const turnFor = sideTurn(queue)
   return new Memory({
     storage,
     options: {
-      generateTitle: { model: accountModel(queue, 'title'), instructions: TITLE_INSTRUCTIONS },
+      generateTitle: {
+        model: accountModel(queue, 'title', turnFor),
+        instructions: TITLE_INSTRUCTIONS,
+      },
       observationalMemory: {
         enabled: true,
         scope: 'thread',
@@ -105,7 +111,7 @@ function builderMemory(
         temporalMarkers: true,
         observation: {
           ...failSoft,
-          model: accountModel(queue, 'observer'),
+          model: accountModel(queue, 'observer', turnFor),
           messageTokens: 30_000,
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
@@ -116,7 +122,7 @@ function builderMemory(
         },
         reflection: {
           ...failSoft,
-          model: accountModel(queue, 'reflection'),
+          model: accountModel(queue, 'reflection', turnFor),
           observationTokens: 40_000,
           bufferActivation: 1 / 2,
           blockAfter: 1.1,
@@ -137,21 +143,27 @@ export function createBuilder(deps: {
   pool: MastraPool
   queue: QueueDeps
   runs: Runs
+  index: ConversationIndex
   log: FailureLog
   projectName: Parameters<typeof builderInstructions>[0]['projectName']
 }) {
   const storage = createMastraStorage(deps.pool)
   const check = checkTool(deps.runs)
+  const projectOf = projectIn(deps.index)
   const modelSettings = { timeout: MODEL_TIMEOUT }
   const memory = builderMemory(storage, deps.queue, modelSettings)
   const agent = createCodingAgent({
     id: BUILDER_ID,
     name: 'Builder',
-    instructions: builderInstructions({ runs: deps.runs, projectName: deps.projectName }),
+    instructions: builderInstructions({
+      runs: deps.runs,
+      projectOf,
+      projectName: deps.projectName,
+    }),
     skills: APP_SKILLS,
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
-    inputProcessors: [accountPick(deps.queue)],
+    inputProcessors: [turnOf(deps), accountPick(deps.queue)],
     workspace: undefined,
     outputProcessors: [
       new CyberRefusalHandler(),
@@ -170,8 +182,11 @@ export function createBuilder(deps: {
     memory,
     agent,
     modes: [{ id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools }],
-    // The turn's run owns its workspace; a session made outside a turn has none.
-    workspace: ({ requestContext, mastra }) => deps.runs.workspaceOf(requestContext, mastra),
+    // The machine of the conversation's Projeto (Factory `session-sandbox.ts:29-36`); none outside one.
+    workspace: async ({ requestContext, mastra }) => {
+      const ids = await projectOf(requestContext)
+      return ids === undefined ? undefined : deps.runs.workspaceOf(ids, mastra)
+    },
     disableBuiltinTools: BUILTIN_TOOLS,
     tools: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
     initialState: TOOL_CLOSURE.initialState,

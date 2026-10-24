@@ -13,8 +13,6 @@ export type RunsDeps = {
   /** Every Projeto with a repository on the volume: where the bucket may be behind. */
   repositories: () => Promise<{ companyId: CompanyId; projectId: ProjectId }[]>
   log: FailureLog
-  /** How long a turn may run; an hour (card, limits) unless a test shortens it. */
-  turnMs?: () => number
 }
 
 /** What the runs share: the ports and the Projetos written now. */
@@ -22,7 +20,7 @@ export type RunsContext = RunsDeps & {
   retry: { kick(): void }
   /** Whether a run of this process writes in the Projeto now. */
   writing(projectId: ProjectId): boolean
-  /** Lets go of the runs a removal reaches: their timers stop, their workspace is forgotten, and nothing of them is saved. */
+  /** Lets go of the runs a removal reaches: their workspace is forgotten, and nothing of them is saved. */
   stopWriting(scope: {
     companyId: CompanyId
     projectId?: ProjectId

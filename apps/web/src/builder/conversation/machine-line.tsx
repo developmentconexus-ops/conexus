@@ -84,7 +84,7 @@ export function FailureLine({ data }: { data: FailureData }) {
       <MarkerIcon>
         <CircleAlertIcon />
       </MarkerIcon>
-      <MarkerContent>{sentenceOfCode(data.code)}</MarkerContent>
+      <MarkerContent>{sentenceOfCode(data.code, data.person)}</MarkerContent>
     </Marker>
   )
 }

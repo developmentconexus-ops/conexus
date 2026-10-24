@@ -1,9 +1,8 @@
 import type { MessageId } from '@conexus/hub-api'
-import type { RequestContext } from '@mastra/core/request-context'
 import { releaseCards, takeCards } from './cards.ts'
 import { deliver } from './deliver.ts'
 import type { Live, Question } from './live.ts'
-import { isOpen, writingOf } from './turn-state.ts'
+import { isOpen } from './turn-state.ts'
 
 type Input = { question: Question; id: MessageId }
 
@@ -18,11 +17,7 @@ export async function deliverInto(
     const accepted = await deliver(
       live,
       { question, id },
-      {
-        requestContext: writingOf(live.state)?.context,
-        requireDelivery: true,
-        ifIdle: { behavior: 'discard' },
-      },
+      { requireDelivery: true, ifIdle: { behavior: 'discard' } },
     )
     if (accepted.action === 'deliver') return 'delivered'
   } catch (error) {
@@ -38,10 +33,7 @@ export async function deliverInto(
  * the parked calls, and the message waits for the run that denial resumes, then opens the next
  * turn's run. The denied run's end is not that turn's (`closing`). Whether the turn's run started.
  */
-export async function steerCards(
-  live: Live,
-  message: { content: string; requestContext: RequestContext },
-): Promise<boolean> {
+export async function steerCards(live: Live, message: { content: string }): Promise<boolean> {
   const taken = await takeCards(live)
   for (const parked of live.session.displayState.get().pendingSuspensions.values()) {
     if (parked.runId !== undefined) live.closing.add(parked.runId)
