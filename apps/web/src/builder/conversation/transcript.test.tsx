@@ -64,7 +64,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
   const { rerender } = render(
     <Transcript
       messages={[]}
-      answer={{ transcript: [reasoningItemRunning], parts: [], streaming: true }}
+      answer={{ items: [reasoningItemRunning], streaming: true }}
       model={MODEL}
     />,
   )
@@ -81,7 +81,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
   rerender(
     <Transcript
       messages={[]}
-      answer={{ transcript: [reasoningItemDone], parts: [], streaming: false }}
+      answer={{ items: [reasoningItemDone], streaming: false }}
       model={MODEL}
     />,
   )
@@ -108,7 +108,7 @@ test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', asy
   render(
     <Transcript
       messages={[]}
-      answer={{ transcript: [reasoningWithoutSeconds], parts: [], streaming: false }}
+      answer={{ items: [reasoningWithoutSeconds], streaming: false }}
       model={MODEL}
     />,
   )
@@ -122,11 +122,7 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
   const twoTools: TranscriptItem[] = [toolItem('t-1', 'read_file'), toolItem('t-2', 'grep')]
 
   const { rerender } = render(
-    <Transcript
-      messages={[]}
-      answer={{ transcript: twoTools, parts: [], streaming: false }}
-      model={MODEL}
-    />,
+    <Transcript messages={[]} answer={{ items: twoTools, streaming: false }} model={MODEL} />,
   )
   expect(screen.getByText(/Leu um arquivo/)).toBeTruthy()
   expect(screen.getByText(/Buscou no código/)).toBeTruthy()
@@ -140,11 +136,7 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
   ]
 
   rerender(
-    <Transcript
-      messages={[]}
-      answer={{ transcript: fourTools, parts: [], streaming: false }}
-      model={MODEL}
-    />,
+    <Transcript messages={[]} answer={{ items: fourTools, streaming: false }} model={MODEL} />,
   )
   const group = screen.getByRole('button', { name: /4 ferramentas/ })
   expect(group.getAttribute('aria-expanded')).toBe('false')
@@ -177,7 +169,7 @@ test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferrame
   render(
     <Transcript
       messages={[]}
-      answer={{ transcript: itemsWithUngroupables, parts: [], streaming: false }}
+      answer={{ items: itemsWithUngroupables, streaming: false }}
       model={MODEL}
     />,
   )
@@ -195,11 +187,7 @@ test('task_* tools não têm linha na conversa (Critério 9)', () => {
   ]
 
   render(
-    <Transcript
-      messages={[]}
-      answer={{ transcript: itemsWithTasks, parts: [], streaming: false }}
-      model={MODEL}
-    />,
+    <Transcript messages={[]} answer={{ items: itemsWithTasks, streaming: false }} model={MODEL} />,
   )
   expect(screen.queryByText(/tarefa/i)).toBeNull()
   expect(screen.queryByRole('button', { name: /ferramenta|tarefa/i })).toBeNull()

@@ -1,5 +1,5 @@
-import type { Answer, MastraPart } from '@conexus/hub-api'
-import { CARD_TOOLS, Question, SKILL_TOOLS, ToolCallId } from '@conexus/hub-api'
+import type { Answer, MastraPart, Suspended } from '@conexus/hub-api'
+import { CARD_TOOLS, Question, SKILL_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
 import { z } from 'zod'
 
 type ToolInvocationState = Extract<
@@ -67,24 +67,20 @@ export function isTaskTool(toolName: string): boolean {
 
 export const UNGROUPABLE_TOOLS = new Set<string>([...Object.values(CARD_TOOLS), ...SKILL_TOOLS])
 
-export function extractThoughtSeconds(parts: readonly MastraPart[]): number | null {
+/** How long each thinking took, by the key the server gives it: its message and its place in it. */
+export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number> {
+  const seconds = new Map<string, number>()
   for (const part of parts) {
-    if (
-      part.type === 'data-conexus-thought' &&
-      part.data &&
-      typeof part.data === 'object' &&
-      'seconds' in part.data
-    ) {
-      const val = Reflect.get(part.data, 'seconds')
-      if (typeof val === 'number') return val
-    }
+    if (part.type !== 'data-conexus-thought') continue
+    const data = ThoughtData.safeParse(part.data)
+    if (data.success) seconds.set(data.data.id, data.data.seconds)
   }
-  return null
+  return seconds
 }
 
 const QuestionItemSchema = Question.partial({ options: true, multiSelect: true })
 
-export function parseQuestions(input: unknown): Question[] {
+function parseQuestions(input: unknown): Question[] {
   const parsed = z.object({ questions: z.array(QuestionItemSchema) }).safeParse(input)
   if (!parsed.success) return []
   return parsed.data.questions.map((q) => ({
@@ -102,7 +98,16 @@ function parseAnswers(input: unknown): Answer[] | undefined {
   return parsed.success ? parsed.data.answers : undefined
 }
 
-export function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
+/** What Mastra's `submit_plan` returns once answered: the plan as submitted and the decision on it. */
+const SubmittedPlan = z.object({
+  submittedPlan: z.object({
+    action: z.string(),
+    title: z.string().optional(),
+    plan: z.string().optional(),
+  }),
+})
+
+function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
   const parsed = z
     .object({
       title: z.string().optional(),
@@ -115,13 +120,15 @@ export function parsePlan(input: unknown): { title: string; plan: string; path?:
 
 export function invocationToItem(
   inv: Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation'],
-  suspendedPayload: unknown,
+  suspension: Suspended | undefined,
   cuts?: string[],
 ): TranscriptItem | null {
   if (!ToolCallId.safeParse(inv.toolCallId).success || isTaskTool(inv.toolName)) return null
 
   if (inv.toolName === CARD_TOOLS.question) {
-    const questions = parseQuestions(suspendedPayload ?? inv.args)
+    const questions = parseQuestions(
+      suspension === undefined ? inv.args : suspension.suspendPayload,
+    )
     const answers = parseAnswers(inv.result)
     const isAnswered = inv.state === 'result' && answers !== undefined
     const state = isAnswered ? 'answered' : inv.state === 'output-error' ? 'closed' : 'open'
@@ -138,11 +145,13 @@ export function invocationToItem(
   }
 
   if (inv.toolName === CARD_TOOLS.plan) {
-    const planInfo = parsePlan(suspendedPayload ?? inv.args)
-    const action =
-      inv.result && typeof inv.result === 'object' ? Reflect.get(inv.result, 'action') : undefined
+    const submitted = SubmittedPlan.safeParse(inv.result)
+    const planInfo = parsePlan(
+      submitted.data?.submittedPlan ??
+        (suspension === undefined ? inv.args : suspension.suspendPayload),
+    )
     const state =
-      inv.state === 'result' && action === 'rejected'
+      inv.state === 'result' && submitted.data?.submittedPlan.action === 'rejected'
         ? 'rejected'
         : inv.state === 'result'
           ? 'approved'

@@ -117,3 +117,16 @@ export function checkGate(deps: { runs: Runs; storage: MastraCompositeStore }): 
     },
   }
 }
+
+/**
+ * Mastra saves a workspace tool's `data-workspace-metadata` chunk under the run's first message id,
+ * over the sealed row a task signal left behind (Mastra issue #21940), and the row loses its
+ * reasoning, text and tool parts. Nothing reads the chunk, so it is only streamed.
+ */
+export const workspaceMetadataLive: OutputProcessor = {
+  id: 'conexus-workspace-metadata-live',
+  processDataParts: true,
+  async processOutputStream({ part }) {
+    return part.type === 'data-workspace-metadata' ? { ...part, transient: true } : part
+  },
+}

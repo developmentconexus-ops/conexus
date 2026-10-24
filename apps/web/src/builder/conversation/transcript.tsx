@@ -1,5 +1,5 @@
-import type { MastraPart, Message, ModelId } from '@conexus/hub-api'
-import { useEffect, useRef } from 'react'
+import type { Message, ModelId } from '@conexus/hub-api'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -12,6 +12,7 @@ import {
 import { BuilderTurn } from './builder-turn.tsx'
 import { PersonTurn } from './person-turn.tsx'
 import type { TranscriptItem } from './transcript.ts'
+import { fromMessages } from './transcript.ts'
 
 /**
  * The conversation as a log a screen reader follows: `aria-busy` holds its announcements while the
@@ -22,14 +23,14 @@ import type { TranscriptItem } from './transcript.ts'
  */
 export function Transcript(props: {
   messages: readonly Message[]
-  answer: {
-    transcript?: readonly TranscriptItem[]
-    parts: readonly MastraPart[]
-    streaming: boolean
-  } | null
+  answer: { items: readonly TranscriptItem[]; streaming: boolean } | null
   model: ModelId
 }) {
   const { answer } = props
+  const saved = useMemo(
+    () => new Map(props.messages.map((message) => [message.id, fromMessages([message])])),
+    [props.messages],
+  )
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent messages={props.messages} />
@@ -46,15 +47,18 @@ export function Transcript(props: {
                 {message.role === 'person' ? (
                   <PersonTurn message={message} />
                 ) : (
-                  <BuilderTurn parts={message.parts} model={message.model} streaming={false} />
+                  <BuilderTurn
+                    items={saved.get(message.id) ?? []}
+                    model={message.model}
+                    streaming={false}
+                  />
                 )}
               </MessageScrollerItem>
             ))}
             {answer !== null && (
               <MessageScrollerItem messageId="answer">
                 <BuilderTurn
-                  items={answer.transcript}
-                  parts={answer.parts}
+                  items={answer.items}
                   model={props.model}
                   streaming={answer.streaming}
                 />

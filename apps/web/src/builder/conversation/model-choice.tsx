@@ -7,6 +7,7 @@ import type {
   ProjectId,
   Provider,
 } from '@conexus/hub-api'
+import { runningEffort } from '@conexus/hub-api'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
@@ -77,8 +78,8 @@ export function ModelChoice(props: {
     const efforts = props.providers
       .flatMap((provider) => provider.models)
       .find((one) => one.id === model)?.efforts
-    // A level the new model lacks falls to its lowest, which is `off` where it can stop reasoning.
-    choose(model, efforts?.includes(now.effort) ? now.effort : (efforts?.[0] ?? 'off'))
+    // A level the new model lacks runs as the closest one it offers, as the Hub asks the provider.
+    choose(model, efforts === undefined ? 'off' : runningEffort(efforts, now.effort))
   }
 
   return (

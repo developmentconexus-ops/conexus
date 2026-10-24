@@ -35,27 +35,6 @@ export async function threadModel(builder: Builder, owner: Owner, conversationId
   return thread === null ? undefined : metadataOf(thread).currentModelId
 }
 
-/**
- * The Builder's messages of one turn as one: Mastra saves a message per step, and a turn that
- * called tools has several, and the message of ours that a turn keeps follows them. The turn's
- * model is the last one's.
- */
-function turnsOf(messages: Message[]): Message[] {
-  const turns: Message[] = []
-  for (const message of messages) {
-    const last = turns.at(-1)
-    if (last?.role === 'builder' && message.role === 'builder') {
-      turns[turns.length - 1] = {
-        ...last,
-        parts: [...last.parts, ...message.parts],
-        suspended: { ...last.suspended, ...message.suspended },
-        model: message.model ?? last.model,
-      }
-    } else turns.push(message)
-  }
-  return turns
-}
-
 /** The messages up to the one `id`, or all of them when it is not saved yet. */
 function untilMessage(messages: Message[], id: MessageId): Message[] {
   const at = messages.findIndex((message) => message.id === id)
@@ -97,7 +76,7 @@ export async function historyOf(
     resourceId,
     perPage: false,
   })
-  const messages = turnsOf(recalled.messages.flatMap((message) => wireMessage(message) ?? []))
+  const messages = recalled.messages.flatMap((message) => wireMessage(message) ?? [])
   const { inProgress } = open
   const read = inProgress === undefined ? messages : untilMessage(messages, inProgress)
   const effort = metadata.thinkingLevel ?? 'off'

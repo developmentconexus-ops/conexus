@@ -82,10 +82,13 @@ async function writeFirst(chat: Page) {
   await chat.getByText(/Nenhuma versão guardada ainda/).waitFor()
   await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
   await ask(chat, 'Faça a página da padaria')
-  // The command's first line and its clock show while it still runs.
-  const transcript = transcriptOf(chat)
+  // The command's first line and a clock show while it still runs; the write and the command are
+  // one step's two calls, which Mastra runs together, so two rows run and each one has a clock.
   await outputWith(chat, 'começo').waitFor()
-  await transcript.getByText(/^\(\d+ s\)$/).waitFor()
+  await transcriptOf(chat)
+    .getByText(/^\(\d+ s\)$/)
+    .first()
+    .waitFor()
   assert.equal(await outputWith(chat, 'página escrita').count(), 0)
   await lastingShown(chat, VERSION_1)
   await transcriptShowed(chat, 'Escreveu um arquivo')

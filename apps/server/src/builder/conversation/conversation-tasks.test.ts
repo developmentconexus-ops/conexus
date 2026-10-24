@@ -1,11 +1,21 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { ConversationEvent } from '@conexus/hub-api'
+import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
+import { applyUpdate } from '@conexus/hub-api'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { conversing, KEY, MODEL, sent, started, streamOf, title } from './test-conversation.ts'
+import {
+  conversing,
+  KEY,
+  MODEL,
+  messagesOf,
+  sent,
+  started,
+  streamOf,
+  title,
+} from './test-conversation.ts'
 import { connect } from './test-defaults.ts'
 import { noticesOf } from './test-parts.ts'
 
@@ -185,4 +195,69 @@ test('a lista volta ao modelo depois que a chamada de task_write sai da janela p
     last.texts.some((text) => text.includes(SNAPSHOT)),
     'and the list came back to the model',
   )
+})
+
+/** What a part says on the screen: its kind, or its tool's name. Mastra's own bookkeeping parts are left out. */
+function shown(part: MastraPart): string[] {
+  if (part.type === 'tool-invocation') return [part.toolInvocation.toolName]
+  return part.type.startsWith('data-') ? [] : [part.type]
+}
+
+/** Each message the stream began, by id, folded as the screen folds it, in the order they began. */
+function liveMessages(events: ConversationEvent[]): Map<string, string[]> {
+  const parts = new Map<string, MastraPart[]>()
+  for (const event of events) {
+    if (event.type === 'message_start') parts.set(event.message.id, event.message.parts)
+    else if (event.type === 'message_update') {
+      parts.set(event.id, applyUpdate(parts.get(event.id) ?? [], event.event))
+    }
+  }
+  return new Map([...parts].map(([id, all]) => [id, all.flatMap(shown)]))
+}
+
+function write(status: string) {
+  const tasks = [{ content: 'Listar', activeForm: 'Listando', status }]
+  return { type: 'tool_use', name: 'task_write', input: { tasks } } as const
+}
+const LIST = {
+  type: 'tool_use',
+  name: 'mastra_workspace_list_files',
+  input: { path: '.' },
+} as const
+
+test('ao vivo e relido, a mesma parte: o raciocínio e a primeira task_write de um turno com tarefas e ferramenta do espaço de trabalho voltam, nas mesmas mensagens (14.2, 4)', async (t) => {
+  const script: Reply[] = [
+    {
+      kind: 'blocks',
+      blocks: [{ type: 'thinking', thinking: 'Vou listar.' }, write('in_progress')],
+    },
+    { kind: 'blocks', blocks: [LIST] },
+    { kind: 'blocks', blocks: [write('completed')] },
+    { kind: 'blocks', blocks: [] },
+  ]
+  let at = 0
+  const { hub, ana, conversations } = await conversing(t, (asked): Reply => {
+    if (title(asked) !== undefined) return { kind: 'text', text: 'Título' }
+    if (!asked.system.includes('You are the Conexus Builder')) return { kind: 'text', text: 'Obs' }
+    return script[at++] ?? { kind: 'blocks', blocks: [] }
+  })
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Liste')).statusCode, 202)
+  const events = await stream.turn()
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  const live = liveMessages(events)
+  const reread = new Map<string, string[]>(
+    (await messagesOf(hub, ana, url))
+      .filter((message) => message.role === 'builder')
+      .map((message) => [message.id, message.parts.flatMap(shown)]),
+  )
+  const lived = [...live.values()].flat()
+  for (const part of ['reasoning', 'task_write', 'mastra_workspace_list_files']) {
+    assert.ok(lived.includes(part), `the stream said ${part}`)
+  }
+  for (const [id, parts] of live) {
+    if (parts.length > 0) assert.deepEqual(reread.get(id), parts, `message ${id}`)
+  }
 })

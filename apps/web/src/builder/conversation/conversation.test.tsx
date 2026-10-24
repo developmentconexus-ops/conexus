@@ -68,6 +68,10 @@ test('o Enter envia com a chave da tentativa; "Pensando…" e "Parar" até chega
   expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
   expect(await screen.findByText('Compare dois apps de encomenda de padaria')).toBeTruthy()
   lines[0]?.emit({
+    type: 'message_start',
+    message: { ...builderSaid(''), parts: [] },
+  })
+  lines[0]?.emit({
     type: 'message_update',
     id: MessageId.parse('builder-1'),
     event: { type: 'text-delta', delta: 'O primeiro é ' },
