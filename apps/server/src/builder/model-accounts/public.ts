@@ -16,6 +16,7 @@ import { createModelAccountStore } from './store.ts'
 
 export { subscriptionModel } from './claude/subscription-model.ts'
 export { conversationStart } from './defaults.ts'
+export { memoryModelsFor } from './observational-memory-settings.ts'
 export {
   accountErrorProcessors,
   accountModel,

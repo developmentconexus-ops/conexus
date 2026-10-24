@@ -11,6 +11,8 @@ const MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
 const CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
 const MODEL = 'claude-sonnet-4-6'
+/** What a provider's cybersecurity safeguard answers with (Mastra's `CyberRefusalHandler` reads it). */
+const CYBER_REFUSAL = 'This content was flagged for possible cybersecurity risk.'
 /** The line the subscription's endpoint requires first in the system of a bearer call. */
 const SUBSCRIPTION_LINE = "You are Claude Code, Anthropic's official CLI for Claude."
 
@@ -29,7 +31,7 @@ export type Sent = {
 
 /**
  * How the double answers one call: text, a `web_fetch` call, the blocks given, a provider's
- * refusal, a hang, a connection the provider resets in the middle of its stream, a recording of the
+ * refusal (`cyber`: its cybersecurity safeguard's message), a hang, a connection the provider resets in the middle of its stream, a recording of the
  * provider's own stream (`recordings/<name>.sse`), or (Chat Completions only) a stream that ends with
  * no content on Gemini's `MALFORMED_FUNCTION_CALL`, as CLIProxy relays it.
  */
@@ -37,7 +39,7 @@ export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
   | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' }
-  | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
+  | { kind: 'refuse'; status: Refusal; headers?: Record<string, string>; cyber?: true }
   | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string }
   | { kind: 'reset' }
   | { kind: 'recorded'; name: string }
@@ -256,7 +258,7 @@ function replied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefine
       type: 'error',
       error: {
         type: ERROR_TYPES[reply.status],
-        message: 'planted refusal SECRET-PLANTED-TEXT',
+        message: reply.cyber === true ? CYBER_REFUSAL : 'planted refusal SECRET-PLANTED-TEXT',
       },
     }
     const headers = { 'content-type': 'application/json', ...reply.headers }

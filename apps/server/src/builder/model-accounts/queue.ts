@@ -83,7 +83,7 @@ async function queuedRows(tx: ReadTx, asker: Asker, model: ModelId): Promise<Acc
   ).filter((row) => servesModel(row, model) && !asker.tried.has(row.id))
 }
 
-export function admitted(deps: QueueDeps, tx: ReadTx, asker: Asker) {
+export function admitted(deps: Pick<QueueDeps, 'identity'>, tx: ReadTx, asker: Asker) {
   return deps.identity.admitMember({
     tx,
     personId: asker.personId,
