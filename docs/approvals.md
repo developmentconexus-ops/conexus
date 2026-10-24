@@ -122,5 +122,6 @@ Cartão da etapa 14.2 aprovado em 2026-10-23 (commit 27681cac9b96fe3b945c1a1ee26
 Permissões de `builder.observational_memory_models` (a migração própria, D11), aprovadas em 2026-10-23: "1. Aprovo"
 Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 588f2c4a7e3cf5230fc337ef6a5c4bddc2ab8ded): "2. Sim"
 Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 4563d3f9f5c408dad7d427438a97aa660bef7927): "5. Aprovo"
+Cartão da etapa 14.2 aprovado em 2026-10-24 (commit c09e13bab6974728bb537220b4bfe0d8c20c8138): "Sim"
 
 Em 2026-10-24, sobre a etapa 14.2: "4. B" e "A". A pergunta ou o plano aberto atravessa a atualização do servidor e também uma queda, pelo mesmo código: a cópia nova adota a volta.
