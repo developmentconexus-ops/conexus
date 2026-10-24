@@ -216,6 +216,8 @@ GRANT SELECT(served_at),UPDATE(served_at) ON TABLE builder.model_account TO hub_
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
+-- Step 14.2, founder 2026-10-23 ("1. Aprovo", D11): a company's people read the Observer and
+-- Reflector choice; an owner or an administrator saves it.
 GRANT SELECT,INSERT ON TABLE builder.observational_memory_models TO hub_company;
 GRANT UPDATE(observer) ON TABLE builder.observational_memory_models TO hub_company;
 GRANT UPDATE(reflector) ON TABLE builder.observational_memory_models TO hub_company;
