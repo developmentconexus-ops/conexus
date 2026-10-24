@@ -103,7 +103,8 @@ jobs:
 
   server:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # Twice a shard's usual time: a test that hangs answers in 10 min, not 15.
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:

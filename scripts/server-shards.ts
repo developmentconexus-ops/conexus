@@ -15,9 +15,9 @@ import { z } from 'zod'
 const RECORD = join(import.meta.dirname, 'server-test-seconds.json')
 const USAGE = 'usage: server-shards.ts <index>/<total> | all | --record <log>...'
 const Seconds = z.record(z.string(), z.number().positive())
-// The record holds a file's tests; its process start and module load come on top, about 2.5 s a file
-// in CI (shard 2 of run 40088733826: a 383 s step for 299 s of file time over 33 files).
-const FILE_START_SECONDS = 2.5
+// The record holds a file's tests; its process start and module load come on top, about 1.7 s a file
+// in CI with the compile cache (run 40091617511: 1321 s of steps for 1100 s of file time, 127 files).
+const FILE_START_SECONDS = 1.7
 
 /** Each file goes, heaviest first, to the shard with the least seconds so far. */
 export function shardsOf(
