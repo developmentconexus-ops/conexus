@@ -81,7 +81,8 @@ test('a recusa do modelo diz a frase e a ação da linha nova da tabela', async 
   const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
   await screen.findByText('Pensando…')
-  lines[0]?.emit(updatePart({ type: 'data-conexus-failure', data: { code: 'MODEL_REFUSED' } }, 0))
+  lines[0]?.emit(opening())
+  lines[0]?.emit(ours({ type: 'data-conexus-failure', data: { code: 'MODEL_REFUSED' } }))
   lines[0]?.emit({ type: 'turnEnd', reason: 'error' })
   expect((await screen.findByRole('alert')).textContent).toBe(
     'O modelo recusou este pedido. Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder.',
