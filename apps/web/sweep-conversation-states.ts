@@ -5,6 +5,7 @@ import { COMPANY } from './src/platform/fixtures.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { OWNER, PROJECT_ID } from './sweep-replies.ts'
+import { PLANNING, PLANNING_REPLIES, WORKING, WORKING_REPLIES } from './sweep-working.ts'
 
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const CONVERSATIONS = `${PROJECT}/conversations`
@@ -202,6 +203,38 @@ export const CONVERSATION_STATES: State[] = [
       await page.getByRole('button', { name: /4 ferramentas/ }).click()
       await waitFor(page, 'Pesquisou na internet')
     },
+  },
+  {
+    name: 'Conversa trabalhando, o painel de tarefas e a pergunta aberta',
+    path: `${CONVERSATIONS}/${WORKING}`,
+    replies: { ...WITH_ACCOUNT, ...WORKING_REPLIES },
+    settle: (p) => inChat(p, 'Tarefas · 1 de 5'),
+  },
+  {
+    name: 'Conversa trabalhando, a edição aberta',
+    path: `${CONVERSATIONS}/${WORKING}`,
+    replies: { ...WITH_ACCOUNT, ...WORKING_REPLIES },
+    settle: async (page) => {
+      await inChat(page, 'Editou um arquivo')
+      await page.getByRole('button', { name: /Editou um arquivo/ }).click()
+      await page.getByRole('group', { name: 'Mudança no arquivo' }).waitFor()
+    },
+  },
+  {
+    name: 'Conversa trabalhando, a falha aberta',
+    path: `${CONVERSATIONS}/${WORKING}`,
+    replies: { ...WITH_ACCOUNT, ...WORKING_REPLIES },
+    settle: async (page) => {
+      await inChat(page, 'Não conseguiu escrever')
+      await page.getByRole('button', { name: /Não conseguiu escrever/ }).click()
+      await waitFor(page, 'Permission denied: stat on ../fora.ts')
+    },
+  },
+  {
+    name: 'Conversa, o plano aberto',
+    path: `${CONVERSATIONS}/${PLANNING}`,
+    replies: { ...WITH_ACCOUNT, ...PLANNING_REPLIES },
+    settle: (p) => inChat(p, 'App de encomendas'),
   },
   {
     name: 'Conversa, o seletor de modelo e raciocínio aberto',

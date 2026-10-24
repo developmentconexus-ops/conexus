@@ -1,8 +1,18 @@
 import type { Task as HubTask } from '@conexus/hub-api'
 import { CheckIcon, CircleIcon, PlayIcon } from 'lucide-react'
 import type { z } from 'zod'
+import { cn } from '../../ui/cn.ts'
 
 type Task = z.infer<typeof HubTask>
+
+/** The task the folded list shows (Factory `focusedTaskIndex`, `task-list.tsx:176-182`). */
+function focusedTask(tasks: readonly Task[]): Task | undefined {
+  return (
+    tasks.find((t) => t.status === 'in_progress') ??
+    tasks.find((t) => t.status === 'pending') ??
+    tasks.at(-1)
+  )
+}
 
 /**
  * Pinned task panel above the composer while the turn runs (Criterion 10).
@@ -16,6 +26,7 @@ export function TaskPanel(props: { tasks: readonly Task[]; streaming: boolean })
   const total = tasks.length
   const completed = tasks.filter((t) => t.status === 'completed').length
   if (completed === total) return null
+  const focused = focusedTask(tasks)
 
   return (
     <section
@@ -25,9 +36,15 @@ export function TaskPanel(props: { tasks: readonly Task[]; streaming: boolean })
       <div className="font-medium text-text-2">
         Tarefas · {completed} de {total}
       </div>
-      <ul className="flex min-w-0 flex-wrap items-center gap-sm overflow-x-auto">
+      <ul className="flex min-w-0 items-center gap-sm overflow-hidden">
         {tasks.map((task) => (
-          <li key={task.id} className="flex min-w-0 shrink-0 items-center gap-xs">
+          <li
+            key={task.id}
+            className={cn(
+              'min-w-0 items-center gap-xs',
+              task.id === focused?.id ? 'flex flex-1 md:flex-none' : 'hidden md:flex md:shrink-0',
+            )}
+          >
             {task.status === 'completed' && (
               <>
                 <CheckIcon className="size-3.5 text-success" aria-hidden="true" />

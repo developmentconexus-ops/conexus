@@ -15,6 +15,8 @@ export type Running = {
 export type View = {
   suspended?: Readonly<Record<string, Suspended>>
   running?: Readonly<Record<string, Running>>
+  /** When the screen first heard of each tool call, by its id, epoch ms. */
+  heard?: Readonly<Record<string, number>>
   /** The answer is still arriving: its last thinking is in progress. */
   live?: boolean
 }
@@ -70,6 +72,16 @@ function withRunning(item: TranscriptItem, running: Running | undefined): Transc
   }
 }
 
+/** A tool's row counts its clock from when the screen first heard of the call. */
+function withHeard(
+  item: TranscriptItem,
+  heard: Readonly<Record<string, number>> | undefined,
+): TranscriptItem {
+  return item.kind === 'tool' && heard?.[item.id] !== undefined
+    ? { ...item, startedAt: heard[item.id] }
+    : item
+}
+
 /**
  * The one derivation of the conversation's rows, for a read and for the answer in progress alike.
  * Mastra gives a tool's call and its result in different messages, so a row of the same call
@@ -81,7 +93,7 @@ export function fromMessages(messages: readonly Message[], view: View = {}): Tra
   const placed = new Map<string, number>()
   for (const message of messages) {
     for (const found of fromParts(message, thoughts, view)) {
-      const item = withRunning(found, view.running?.[found.id])
+      const item = withHeard(withRunning(found, view.running?.[found.id]), view.heard)
       const at = placed.get(item.id)
       if (at === undefined) placed.set(item.id, items.push(item) - 1)
       else items[at] = item

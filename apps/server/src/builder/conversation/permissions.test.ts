@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { CompanyId, ModelAccountId, ModelId, PersonId } from '@conexus/hub-api'
+import { CLOSED_TOOLS, CompanyId, ModelAccountId, ModelId, PersonId } from '@conexus/hub-api'
 import { Agent } from '@mastra/core/agent'
 import { MessageList } from '@mastra/core/agent/message-list'
 import { AgentController } from '@mastra/core/agent-controller'
@@ -248,4 +248,8 @@ test('a troca automática de modelo estreita o conjunto fechado e não o refaz: 
     result.activeTools,
     closed.filter((name) => name !== 'web_search'),
   )
+})
+
+test('a tela e o Builder nomeiam o mesmo conjunto fechado', () => {
+  assert.deepEqual(new Set(TOOL_CLOSURE.availableTools), new Set(CLOSED_TOOLS))
 })

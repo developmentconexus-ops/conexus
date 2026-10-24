@@ -1,4 +1,5 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
+import { BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
@@ -30,7 +31,7 @@ import {
   createSubmitPlanTool,
   SUBMIT_PLAN_TOOL,
 } from './plan-tools.ts'
-import { CHECK_TOOL, checkGate, checkTool, workspaceMetadataLive } from './processors.ts'
+import { checkGate, checkTool, workspaceMetadataLive } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
 
 const BUILDER_ID = 'builder'
@@ -64,7 +65,7 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
 
 /** `web_fetch` and the check always; `web_search` only where Mastra resolves the provider's own search. */
 function toolsOf(modelId: ModelId, check: ToolsInput[string]): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetchTool, [CHECK_TOOL]: check }
+  const tools: ToolsInput = { web_fetch: webFetchTool, [BUILDER_TOOL.check]: check }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }

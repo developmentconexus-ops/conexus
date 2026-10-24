@@ -1,16 +1,10 @@
 import { MachineData, machinePhaseLasts } from '@conexus/hub-api'
-import { bareToolName } from './tool-presentation.ts'
+import { specOf } from './tool-registry.ts'
 import type { ToolItem, TranscriptItem } from './transcript-items.ts'
-import { isTaskTool, UNGROUPABLE_TOOLS } from './transcript-items.ts'
 
 export type Row = { kind: 'item'; item: TranscriptItem } | { kind: 'group'; tools: ToolItem[] }
 
 const TOOL_GROUP_MIN = 3
-
-function isGroupableTool(item: ToolItem): boolean {
-  const bare = bareToolName(item.toolName)
-  return !UNGROUPABLE_TOOLS.has(bare) && !isTaskTool(bare)
-}
 
 function isMachine(item: TranscriptItem): boolean {
   return item.kind === 'conexus' && item.partType === 'data-conexus-machine'
@@ -45,8 +39,7 @@ export function fold(items: readonly TranscriptItem[]): Row[] {
     }
 
     if (item.kind === 'tool') {
-      if (isTaskTool(item.toolName)) continue
-      if (isGroupableTool(item)) {
+      if (specOf(item.toolName)?.groups ?? true) {
         run.push(item)
       } else {
         close()

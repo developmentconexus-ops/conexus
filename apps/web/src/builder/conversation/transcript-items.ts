@@ -1,5 +1,5 @@
 import type { Answer, MastraPart, Suspended } from '@conexus/hub-api'
-import { CARD_TOOLS, Question, SKILL_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
+import { CARD_TOOLS, Question, TASK_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
 import { z } from 'zod'
 
 type ToolInvocationState = Extract<
@@ -27,6 +27,10 @@ export type ToolItem = {
   output?: string
   exitCode?: number
   isError?: boolean
+  /** Why the call failed, as the store keeps it (`output-error`). */
+  errorText?: string
+  /** When the screen first heard of the call, epoch ms; none on a read (a read row never runs). */
+  startedAt?: number
   cuts?: string[]
 }
 export type QuestionCardItem = {
@@ -35,7 +39,7 @@ export type QuestionCardItem = {
   id: string
   toolCallId: string
   toolName: typeof CARD_TOOLS.question
-  state: 'open' | 'answered' | 'closed' | 'expired'
+  state: 'open' | 'answered' | 'closed'
   questions: readonly Question[]
   answers?: readonly Answer[]
 }
@@ -45,7 +49,7 @@ export type PlanCardItem = {
   id: string
   toolCallId: string
   toolName: typeof CARD_TOOLS.plan
-  state: 'open' | 'approved' | 'rejected' | 'closed' | 'expired'
+  state: 'open' | 'approved' | 'rejected' | 'closed'
   title: string
   plan: string
   path?: string
@@ -59,13 +63,6 @@ type ConexusItem = {
   cuts?: string[]
 }
 export type TranscriptItem = TextItem | ReasoningItem | ToolItem | CardItem | ConexusItem
-
-export function isTaskTool(toolName: string): boolean {
-  const bare = toolName.replace(/^mastra_workspace_/, '')
-  return bare.startsWith('task_')
-}
-
-export const UNGROUPABLE_TOOLS = new Set<string>([...Object.values(CARD_TOOLS), ...SKILL_TOOLS])
 
 /** How long each thinking took, by the key the server gives it: its message and its place in it. */
 export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number> {
@@ -118,20 +115,38 @@ function parsePlan(input: unknown): { title: string; plan: string; path?: string
   return { title: parsed.data?.title ?? '', plan: parsed.data?.plan ?? '', path: parsed.data?.path }
 }
 
+type Invocation = Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation']
+
+/**
+ * A card from its call (Factory `awaitsPrompt`): open only while the call waits on the person, an
+ * answer once Mastra has one, closed once Mastra closed it without one; nothing while the call
+ * runs and has not yet said what it waits for.
+ */
+function cardState(inv: Invocation, waiting: boolean): 'open' | 'result' | 'closed' | 'none' {
+  if (inv.state === 'result') return 'result'
+  if (inv.state === 'output-error' || inv.state === 'output-denied') return 'closed'
+  return waiting ? 'open' : 'none'
+}
+
 export function invocationToItem(
-  inv: Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation'],
+  inv: Invocation,
   suspension: Suspended | undefined,
   cuts?: string[],
 ): TranscriptItem | null {
-  if (!ToolCallId.safeParse(inv.toolCallId).success || isTaskTool(inv.toolName)) return null
+  if (
+    !ToolCallId.safeParse(inv.toolCallId).success ||
+    TASK_TOOLS.some((name) => name === inv.toolName)
+  )
+    return null
 
   if (inv.toolName === CARD_TOOLS.question) {
+    const at = cardState(inv, suspension !== undefined)
+    if (at === 'none') return null
     const questions = parseQuestions(
       suspension === undefined ? inv.args : suspension.suspendPayload,
     )
     const answers = parseAnswers(inv.result)
-    const isAnswered = inv.state === 'result' && answers !== undefined
-    const state = isAnswered ? 'answered' : inv.state === 'output-error' ? 'closed' : 'open'
+    const state = at === 'result' ? (answers !== undefined ? 'answered' : 'closed') : at
     return {
       kind: 'card',
       cardKind: 'question',
@@ -145,19 +160,19 @@ export function invocationToItem(
   }
 
   if (inv.toolName === CARD_TOOLS.plan) {
+    const at = cardState(inv, suspension !== undefined)
+    if (at === 'none') return null
     const submitted = SubmittedPlan.safeParse(inv.result)
     const planInfo = parsePlan(
       submitted.data?.submittedPlan ??
         (suspension === undefined ? inv.args : suspension.suspendPayload),
     )
     const state =
-      inv.state === 'result' && submitted.data?.submittedPlan.action === 'rejected'
-        ? 'rejected'
-        : inv.state === 'result'
-          ? 'approved'
-          : inv.state === 'output-error'
-            ? 'closed'
-            : 'open'
+      at === 'result'
+        ? submitted.data?.submittedPlan.action === 'rejected'
+          ? 'rejected'
+          : 'approved'
+        : at
     return {
       kind: 'card',
       cardKind: 'plan',
@@ -180,6 +195,7 @@ export function invocationToItem(
     args: inv.args,
     result: inv.result,
     isError: inv.isError ?? (inv.state === 'output-error' || inv.state === 'output-denied'),
+    errorText: inv.errorText,
     cuts,
   }
 }
