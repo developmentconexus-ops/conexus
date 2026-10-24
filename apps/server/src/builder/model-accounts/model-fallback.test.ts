@@ -11,6 +11,7 @@ import {
 } from '../../hub/identity/test-hub.ts'
 import { asked, conversing, MODEL } from '../conversation/test-conversation.ts'
 import { failuresOf, noticesOf } from '../conversation/test-parts.ts'
+import { GROQ_MODEL } from './test-defaults.ts'
 
 const FIRST = 'anthropic/claude-sonnet-4-6'
 const SECOND = 'google/gemini-2.5-flash'
@@ -87,7 +88,7 @@ test('troca automática: revisão velha dá 412; duas gravações juntas, uma ve
   assert.deepEqual(await read(), { enabled: true, chain: [FIRST], revision: 1 })
 })
 
-const GROQ = 'groq/llama-3.3-70b-versatile'
+const GROQ = GROQ_MODEL
 
 test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem busca; a seguinte tenta o escolhido; desligada, para', async (t) => {
   const limited: { on: boolean } = { on: true }
@@ -105,7 +106,7 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   }
   const where = { hub, person: ana, conversations }
   const first = await asked(t, where)
-  const switched = 'Troquei para llama-3.3-70b-versatile pela troca automática da empresa.'
+  const switched = `Troquei para ${GROQ.slice('groq/'.length)} pela troca automática da empresa.`
   assert.deepEqual(noticesOf(first.events), [switched])
   assert.deepEqual(first.events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.deepEqual(

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { PROVIDER_REGISTRY } from '@mastra/core/llm'
 
 test('os fornecedores por chave são só os do critério 1, por nome, e importar e listar não chamam ninguém', async (t) => {
   const calls: unknown[] = []
@@ -18,7 +19,10 @@ test('os fornecedores por chave são só os do critério 1, por nome, e importar
   assert.equal(answer.statusCode, 200)
   const { providers } = Object(answer.json())
   const ids = providers.map(({ id }: { id: string }) => id)
-  assert.equal(ids.length, 210)
+  const byKeyAlone = Object.values(PROVIDER_REGISTRY).filter(
+    (config) => config.gateway === 'models.dev' && !/\$\{[A-Z0-9_]+\}/.test(config.url ?? ''),
+  )
+  assert.equal(ids.length, byKeyAlone.length)
   for (const out of [
     'cloudflare-workers-ai',
     'databricks',
@@ -127,7 +131,7 @@ test('o seletor lista só os modelos que conversam: sem os aposentados pelo Mast
 const HINTS_NOT_CHAT =
   /image|imagen|imagine|video|veo|sora|seedance|seedream|kling|wan|flux|sdxl|diffusion|recraft|ideogram|music|lyria|audio|speech|voice|tts|orpheus|eleven|voxtral|whisper|transcri|asr|stt|embed|bge|e5-|rerank|guard|moderat|detector|ocr|realtime|live|search|research|computer-use|omni|translate/i
 const CHAT_FAMILIES =
-  /vision|omni|inkling|hermes|nousresearch|sonar-pro-search|gpt-4o(-mini)?-search|relace-search|diffusiongemma|musica|riva-translate/i
+  /vision|omni|inkling|hermes|nousresearch|sonar-pro-search|gpt-(4o(-mini)?|5)-search(-api)?|relace-search|diffusiongemma|musica|riva-translate/i
 
 test('em todo fornecedor por chave, um nome que sugere mídia, voz, embedding ou tempo real fica fora, ou é uma família de conversa lida', async (t) => {
   const { ANA_OWNER, call, hubOn, personOn } = await import('../../hub/identity/test-hub.ts')

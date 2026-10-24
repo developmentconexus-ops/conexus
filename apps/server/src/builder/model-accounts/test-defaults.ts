@@ -4,7 +4,15 @@ import type { TestContext } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { conversing } from './test-conversation.ts'
+import { conversing } from '../conversation/test-conversation.ts'
+import { listKeyProviders } from './providers.ts'
+
+/** A Groq chat model the installed registry lists and has not retired, read from it. */
+export const GROQ_MODEL = (() => {
+  const model = listKeyProviders().find(({ id }) => id === 'groq')?.models[0]
+  if (model === undefined) throw new Error('The registry lists no Groq chat model.')
+  return model.id
+})()
 
 /** Empresa Teste with Ana's Anthropic key and its default `MODEL`; Carla is a member. */
 export async function company(t: TestContext) {

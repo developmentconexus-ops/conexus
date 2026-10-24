@@ -70,7 +70,7 @@ export class Sessions {
     try {
       const session = await this.#builder.controller.createSession({
         resourceId,
-        scope: conversationId,
+        id: conversationId,
         threadId: conversationId,
       })
       const found = this.#lives.get(conversationId)
@@ -122,8 +122,7 @@ export class Sessions {
     // Mastra's `deleteSession` denies the cards a session keeps; a card waits on the person, not on
     // this session, so it is let go first, as Mastra's detach keeps parked runs (`detachFromCurrent`).
     if (openCards(live).length > 0) live.session.thread.detachFromCurrent()
-    const resourceId = memoryOwner(live.owner)
-    await this.#builder.controller.deleteSession({ resourceId, scope: conversationId })
+    await this.#builder.controller.deleteSession({ sessionId: conversationId })
   }
 
   /**
