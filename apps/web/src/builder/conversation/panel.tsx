@@ -237,7 +237,7 @@ function Screen(params: Params) {
   return (
     <>
       <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
-      <div className="min-h-0 flex-1">
+      <div className="min-h-40 flex-1">
         <Transcript
           messages={saved}
           answer={answer}
