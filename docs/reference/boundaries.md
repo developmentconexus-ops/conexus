@@ -7,10 +7,9 @@ installed: Stryker 10.0.0, remark-validate-links 13.1.0, the Cloudflare SDK 7.3.
 and @asteasolutions/zod-to-openapi 9.1.0. When the library changes, reread the line it names. Every
 piece of this file that a row of `scripts/removals.json` protects names that row, and its test
 "fails without" the piece; a piece whose tests only "cover" it has no row. The rows this file does
-not name protect Hub rules that are not boundaries over a library: the mail adapter's refusal of a
-bounce, the replay of an attempt key, that only the Operations Central creates a company, the state
-of a listed invitation, the log line of an undeclared failure, and a write refused for its media type
-or its origin.
+not name protect Hub rules that are not boundaries over a library: the replay of an attempt key,
+that only the Operations Central creates a company, the state of a listed invitation, and a write
+refused for its media type or its origin.
 
 ## GitHub Actions and git
 
@@ -541,8 +540,7 @@ or its origin.
   `Headers` or the cookies of an `Answer`. The compilers would replace only `bodyOf` and the reply's
   parse, at about the same number of lines. The tests "corpo fora do esquema" and "o corpo lido pelo
   esquema da operação volta" in `http.test.ts` cover it, and "fora: o membro" in `companies.test.ts`
-  fails when a malformed path parameter stops answering `NOT_FOUND` (removal
-  `malformed-id-not-found`).
+  covers a malformed path parameter answering `NOT_FOUND`.
 
 ### A write's signal follows the reply, not the request
 
@@ -550,11 +548,10 @@ or its origin.
   `close`, which Node emits once the body is read, not when the client leaves.
 - **Hand-made piece.** `untilClientLeaves` in `apps/server/src/platform/reply-lifetime.ts`. It aborts when the
   reply closes before it finished; `whenReplyEnds` runs `Answer.afterReply` on `close`, since `finish`
-  never comes for a client that left (the test "desconexão", removal `reply-end-on-close`).
+  never comes for a client that left (the test "desconexão" covers it).
 - **Why.** With `request.signal`, every e-mail a write sends after reading its body is aborted
   (U4: the request's signal reaches the mail adapter). The test "registro" in
-  `invitation-journey.test.ts`, against a Hub on a real socket, fails with it (removal
-  `write-signal-follows-reply`).
+  `invitation-journey.test.ts`, against a Hub on a real socket, covers it.
 
 ## Platform: pg 8.23.1, Drizzle 1.0.0-rc.4, Fastify 5.12.5 and Node 24
 
@@ -630,12 +627,10 @@ or its origin.
   (`!client._queryable`), and Drizzle's `transaction` commits or rolls back before it returns
   (`drizzle-orm/node-postgres/session.js:54-61`), so a refused command keeps its connection. The
   test "password: an unknown link leaves the transaction pool connection reusable" in
-  `invitation-link.test.ts` fails when the release destroys the client (removal
-  `refused-command-keeps-connection`).
+  `invitation-link.test.ts` covers it.
 - **Why.** [Code C57](../guides/code.md): nothing native bounds a whole checkout on the client. The
-  test "uma consulta da biblioteca sem resposta cai no prazo de 15 s" in `database.test.ts` fails
-  without it (removal `library-read-deadline`), and "uma leitura parada além do prazo" fails when
-  the deadline is not the database's failure (removal `read-deadline-is-the-database`).
+  tests "uma consulta da biblioteca sem resposta cai no prazo de 15 s" and "uma leitura parada além
+  do prazo" in `database.test.ts` cover the deadline and that it is the database's failure.
 
 ### The Hub refuses to serve a database behind its migrations
 
@@ -681,8 +676,7 @@ or its origin.
 - **Hand-made piece.** `cappedText` in `apps/server/src/platform/capped-text.ts`, which `mail.ts`
   calls with 16 KiB. It reads the reply stream and stops at the cap.
 - **Why.** [Code C59](../guides/code.md), and no dependency for about 12 lines. The test "correio:
-  resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` fails without the
-  cap (removal `mail-reply-cap`).
+  resposta acima de 16 KiB é MAIL_UNAVAILABLE, num só pedido" in `mail.test.ts` covers the cap.
 
 ### The apps' Workers through Cloudflare's API
 
@@ -695,10 +689,9 @@ or its origin.
   `fetch` with one `AbortSignal` per call and `cappedText` at 1 MiB. A `10021` is a version that
   does not start (decision 0046); a `10007` is a script already gone.
 - **Why.** [Code C57, C59](../guides/code.md) and no dependency for three calls (decision 0043 read
-  them by the API). The tests in `cloudflare.test.ts` fail without the cap (removal
-  `cloudflare-reply-cap`) and check each request's shape and the asset hash, the SHA-256 of the
-  base64 and the extension as Cloudflare's direct-upload guide writes it (removal
-  `cloudflare-asset-hash`). Revalidate when the SDK caps a reply.
+  them by the API). The tests in `cloudflare.test.ts` cover the cap and check each
+  request's shape and the asset hash, the SHA-256 of the base64 and the extension as Cloudflare's
+  direct-upload guide writes it. Revalidate when the SDK caps a reply.
 
 ## TanStack Query 5.104.0, Better Auth 1.7.8 and the browser's `fetch`
 
@@ -717,8 +710,7 @@ or its origin.
   write committed, so each row of the failure table says whether a whole answer with its code
   settles the outcome (`settles` in `packages/hub-api/src/failures.ts`). The tests in
   `apps/web/hub.test.ts` (cut body, deadline, edge HTML, definite and uncertain failure) cover it,
-  and "resposta que não decide" fails when every failure counts as settled (removal
-  `attempt-key-outcome-unknown`).
+  with "resposta que não decide" for a failure that does not settle the outcome.
 
 ### A write that must survive a lost reply
 
@@ -745,10 +737,9 @@ or its origin.
 - **Why.** [Testing T4](../guides/testing.md). It cannot see the pipes of a Hub spawned by a test,
   so `startHub` in `apps/server/src/platform/test-database.ts` is a second entry point. Both decide
   what a log line is through one `parseLogLine` (`scripts/log-line.ts`, the row below). The test
-  "linha crua: recusa" in `scripts/test-reporter.test.ts` fails without the raw-line refusal
-  (removal `raw-output-in-process`), and "linha crua: um Hub iniciado que imprime" in
-  `test-database.test.ts` fails without the spawned Hub's (removal `raw-output-spawned-hub`). The
-  other tests in `test-reporter.test.ts` cover the rest of the policy.
+  "linha crua: recusa" in `scripts/test-reporter.test.ts` covers the raw-line refusal, "linha crua:
+  um Hub iniciado que imprime" in `test-database.test.ts` the spawned Hub's, and the other tests in
+  `test-reporter.test.ts` the rest of the policy.
 
 ### A log line: one top-level `level`, read from the text
 
@@ -877,8 +868,8 @@ or its origin.
   transaction open, and the second records `ready`. A claim past its time is taken over; the project
   a cut reply left is found by the exact `-<companyId>` ending of its name (`find`, decision 0048)
   and adopted, never created twice. A refusal from Neon releases the claim, silence keeps it until
-  it ends (removals `company-database-claim`, `neon-no-answer-keeps-claim`, `neon-exact-suffix`,
-  `create-company-lock`).
+  it ends; `projects-database.test.ts` and `neon.test.ts` cover it, and the exact ending fails without
+  it (removal `neon-exact-suffix`).
 - **Why.** [Code C37, C57, C65](../guides/code.md). The time is `NEON_PREPARE_BUDGET_MS` (the `find`,
   then the `create`) plus 5 s, so a claim outlives the calls that hold it. Revalidate when
   `projects.create` gains an idempotency key.
