@@ -284,12 +284,21 @@ export async function messagesOf(hub: Hub, person: Person, url: string): Promise
   return Object(read.json()).conversation.messages
 }
 
-/** The notices the person reads again in the conversation's Builder messages, in order. */
+/**
+ * The notices the person reads again in the conversation's Builder messages, in order. A failed
+ * turn's answer, notices included, lands a moment after its `turnEnd` (Mastra 1.79 ends an errored
+ * run before its memory saves it), so the read goes on until it holds them, as the screen keeps the
+ * live answer until its read does (`use-live.ts`).
+ */
 export async function keptNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
-  const messages = await answeredOf(hub, person, url)
-  return noticesIn(
-    messages.filter((message) => message.role === 'builder').flatMap((message) => message.parts),
-  )
+  for (let attempt = 0; ; attempt += 1) {
+    const messages = await answeredOf(hub, person, url)
+    const notices = noticesIn(
+      messages.filter((message) => message.role === 'builder').flatMap((message) => message.parts),
+    )
+    if (notices.length > 0 || attempt === 50) return notices
+    await new Promise((done) => setTimeout(done, 100))
+  }
 }
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/'

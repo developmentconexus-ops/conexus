@@ -22,8 +22,10 @@ function denied(live: Live): boolean {
 /**
  * Mastra's run ends, for any reason, a question or a plan included (`suspended`): the run is
  * finished, its version and failure kept, before Mastra says `agent_end`, so the read a screen makes
- * at the end finds them with the turn's messages. A run Mastra goes on from, with input it never
- * read (`drainPendingSignals`), keeps its turn and its run.
+ * at the end finds them. Mastra 1.79 saves a completed run's messages before that end, and an errored
+ * run's a moment after it (its memory processor runs past the `error` chunk): the screen keeps the
+ * live answer until its read holds it. A run Mastra goes on from, with input it never read
+ * (`drainPendingSignals`), keeps its turn and its run.
  */
 export async function beforeAgentEnd(live: Live, reason: AgentEnd): Promise<void> {
   const s = live.state
