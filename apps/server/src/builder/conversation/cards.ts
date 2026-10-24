@@ -95,31 +95,55 @@ export function parked(live: Live): Promise<void> {
   })
 }
 
-/** Gives back the cards `takeCards` took. */
-export function releaseCards(live: Live, taken: string[]): void {
-  for (const key of taken) live.session.releaseToolResponse(key)
+/** The calls held with Mastra's claim here, by call, each until given back (`releaseCards`). */
+const held = new WeakMap<
+  Live,
+  Map<ToolCallId, { claimKey: string; given: () => void; back: Promise<void> }>
+>()
+
+/** Mastra's claim on `toolCallId`, for an answer, a Parar or a message; held until `releaseCards`. */
+export function claimCard(live: Live, toolCallId: ToolCallId) {
+  const claim = live.session.claimToolSuspension(toolCallId)
+  if (!claim.accepted) return claim
+  const claims = held.get(live) ?? new Map()
+  const { promise: back, resolve: given } = Promise.withResolvers<void>()
+  held.set(live, claims.set(toolCallId, { claimKey: claim.claimKey, given, back }))
+  return claim
+}
+
+/** Gives back the calls claimed with `claimCard`, waking whoever waits for them. */
+export function releaseCards(live: Live, calls: ToolCallId[]): void {
+  for (const call of calls) {
+    const claim = held.get(live)?.get(call)
+    if (claim === undefined) continue
+    held.get(live)?.delete(call)
+    live.session.releaseToolResponse(claim.claimKey)
+    claim.given()
+  }
 }
 
 /**
  * Takes every open card with Mastra's claim, for a Parar or a message that closes them; none when
  * none is open. An answer that took a card first goes first: Mastra's abort does not see the claim,
- * and the resume the answer started would go on after the abort closed the call; so its call ends
- * first, and the Parar or the message then meets the run the answer goes on in. Held, the claims
- * make an answer that comes meanwhile `QUESTION_CLOSED`.
+ * and the resume the answer started would go on after the abort closed the call; so the claim is
+ * given back first, and the Parar or the message then meets the run the answer goes on in, or the
+ * card Mastra refused to resume. Held, the claims make an answer that comes meanwhile
+ * `QUESTION_CLOSED`.
  */
-export async function takeCards(live: Live): Promise<string[]> {
+export async function takeCards(live: Live): Promise<ToolCallId[]> {
   for (;;) {
-    const claims = openCards(live).map((card) => ({
-      card,
-      claim: live.session.claimToolSuspension(card.toolCallId),
+    const claims = openCards(live).map(({ toolCallId }) => ({
+      toolCallId,
+      claim: claimCard(live, toolCallId),
     }))
-    const taken = claims.flatMap(({ claim }) => (claim.accepted ? [claim.claimKey] : []))
-    const answered = claims.flatMap(({ card, claim }) =>
-      !claim.accepted && claim.reason === 'not_pending' ? [card] : [],
-    )
+    const taken = claims.flatMap(({ toolCallId, claim }) => (claim.accepted ? [toolCallId] : []))
+    const answered = claims.flatMap(({ toolCallId, claim }) => {
+      const back = held.get(live)?.get(toolCallId)?.back
+      return !claim.accepted && claim.reason === 'not_pending' && back !== undefined ? [back] : []
+    })
     if (answered.length === 0) return taken
     releaseCards(live, taken)
-    await resumed(live, answered)
+    await Promise.all(answered)
   }
 }
 

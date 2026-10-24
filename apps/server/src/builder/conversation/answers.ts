@@ -1,7 +1,7 @@
 import type { QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Card } from './cards.ts'
-import { openCards, resumed, waitOn } from './cards.ts'
+import { claimCard, openCards, releaseCards, resumed, waitOn } from './cards.ts'
 import type { Live } from './live.ts'
 import { writingOf } from './turn-state.ts'
 
@@ -38,25 +38,29 @@ export async function answerCard(
   const card = openCards(live).find((each) => each.toolCallId === toolCallId)
   if (card === undefined) throw new Failure('QUESTION_CLOSED')
   const resumeData = resumeOf(card, body)
-  const claim = live.session.claimToolSuspension(toolCallId)
+  const claim = claimCard(live, toolCallId)
   if (!claim.accepted) throw new Failure('QUESTION_CLOSED')
   if (openCards(live).every((each) => each.toolCallId === toolCallId)) waitOn(live, false)
-  const { address, claimKey } = claim
   const taken = resumed(live, [card])
   const responding = live.session
     .respondToToolSuspension({
-      address,
+      address: claim.address,
       resumeData,
       requestContext: writingOf(live.state)?.context,
     })
     .catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
-    .finally(() => live.session.releaseToolResponse(claimKey))
-  await taken
-  if (openCards(live).some((each) => each.toolCallId === toolCallId)) {
-    // Mastra refused the resume and keeps the call parked (`resumeToolCall`): it can show the call
-    // before it saved the parked run, and an answer that comes first loses Mastra's own claim.
-    await responding
-    waitOn(live, true)
-    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'RESUME_REFUSED' } })
+  try {
+    await taken
+    if (openCards(live).some((each) => each.toolCallId === toolCallId)) {
+      // Mastra refused the resume and keeps the call parked (`resumeToolCall`): it can show the call
+      // before it saved the parked run, and an answer that comes first loses Mastra's own claim.
+      await responding
+      waitOn(live, true)
+      throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'RESUME_REFUSED' } })
+    }
+  } finally {
+    // Given back once Mastra took the call or refused it: a Parar or a message waits for this
+    // (`takeCards`), not for an event, since Mastra says the refusal before the claim is given back.
+    releaseCards(live, [toolCallId])
   }
 }
