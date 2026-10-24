@@ -55,7 +55,7 @@ esperam a fila de defeitos (L4), nenhuma toca estas pastas.
 
 Constrói depois que a 14.2 entra em `main`. Lê dela, em `1a98660` (PR #303): o fim do turno no
 controlador do Mastra (`beforeAgentEnd` → `closeTurn`, `turn-end.ts:21-64`, que espera
-`Writing.finish` = `Runs.finish`, `runs.ts:267-306`), as partes `data-conexus-*` e `VersionCheck`
+`Writing.finish` = `Runs.finish`, `runs.ts:267-307`), as partes `data-conexus-*` e `VersionCheck`
 (`mastra-parts.ts:8-28,75-82`), `saveExtras` (`record.ts:81-112`), `tellVersion`
 (`turn-parts.ts:86-88`), o cartão `VersionLine` (`machine-line.tsx:55-80`) e `use-live.ts:55-66`.
 
@@ -66,8 +66,8 @@ controlador do Mastra (`beforeAgentEnd` → `closeTurn`, `turn-end.ts:21-64`, qu
 | U3 | O envio da prévia no Hub e `readPreview` | `hub/apps/{preview,send,versions,repair,routes,public}.ts`, `hub-api/src/{preview,failures,index}.ts` | dados | U2 |
 | U4 | O fim do turno empacota, guarda e solta o envio; a parte `data-conexus-preview` | `builder/runs/`, `builder/conversation/{turn-parts,record}.ts`, `hub-api/src/mastra-parts.ts`, `scripts/record.ts`, `platform/recordings/mastra/` | testes | U3 |
 | U5 | A prévia dentro do Hub: cookie, entrada, `createPreviewHandoff` | `apps/edge/src/`, `hub/apps/{handoff,routes}.ts`, `platform/http.ts`, `hub-api/src/apps.ts` | segurança | U2 |
-| U6 | A tela Prévia e o cartão da versão | `apps/web/src/builder/preview/`, `hub/projects/area.tsx`, `builder/conversation/` (web) | web | U3, U4, U5 |
-| U7 | Alterações e a #237 | `builder/git/`, `hub-api/src/source.ts`, `apps/web/src/builder/source/` | web | — |
+| U6 | A tela Prévia, a aba Alterações no Projeto, o cartão da versão | `apps/web/src/builder/preview/`, `hub/projects/{area,search}`, `builder/conversation/` (web) | web | U3, U4, U5, U7 |
+| U7 | Alterações (rotas e o componente `Changes`) e a #237 | `builder/git/`, `hub-api/src/source.ts`, `apps/web/src/builder/source/` | web | — |
 | U8 | Percurso, como fazer, QA | `tests/e2e/`, `docs/how-to/` | testes | todas |
 
 `builder/`, `hub/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. Em
@@ -94,24 +94,24 @@ Pelas rotas e `main.ts`, com `Machines` dublê (`LocalSandbox`), Cloudflare dubl
 | 6 | U2 | `previewHostOf` dá `<rótulo>--previa`; rótulo de 56 a 63: `undefined`; `appHostLabelOf` lê `live` e `preview`, recusa 4 partes e sufixo alheio | `address.test.ts` | must |
 | 7 | U2 | Esquema e logins `app_<id>_previa*`; o login de rodar da prévia lê o esquema do ar: 42501, e o do ar o da prévia: 42501 | `company-postgres.test.ts` | must |
 | 8 | U2 | Apagar o Projeto remove os dois esquemas, os logins e os scripts; falha isolada vira pendência | `removal.test.ts` | must |
-| 9 | U2 | A poda mantém o ar, a prévia, a pendente e as 3 `ready` mais novas; `listAppVersions` só `live` | `prune.test.ts`, `versions.test.ts` | must |
-| 10 | U3 | `storePreview` duas vezes com a mesma chave: uma versão (`REPLAY`); outra pasta, mesma chave: `IDEMPOTENCY_CONFLICT` | `preview.test.ts` | must |
+| 9 | U2 | A poda do ar mantém o ar e as 3 `ready` do ar mais novas; a da prévia, só o ponteiro e a pendente, e corre a cada prévia pronta; `listAppVersions` só `live`; `setLiveVersion` com uma versão de prévia: `APP_VERSION_NOT_FOUND` | `prune.test.ts`, `versions.test.ts`, `live-version.test.ts` | must |
+| 10 | U3 | `store` duas vezes com a mesma chave: uma versão (`REPLAY`, também com a primeira ainda `sending`); outra pasta, mesma chave: `FAILED`, logado `IDEMPOTENCY_CONFLICT` | `preview.test.ts` | must |
 | 11 | U3 | Prévia e envio manual ao mesmo tempo: cada um no seu ponteiro; o do ar não muda | idem | must |
 | 12 | U3 | A 3 guardada enquanto a 2 sobe: a 2 perde a reivindicação e seu Worker sai; o ponteiro fica na 3, nunca desce | idem | must |
-| 13 | U3 | Cloudflare recusa (10021): `failed`, `APP_VERSION_NOT_STARTING`, `last` na boa | idem | must |
+| 13 | U3 | Cloudflare recusa (10021): `failed`, `APP_VERSION_NOT_STARTING`; migração aplicada mudada: `failed`, `APP_MIGRATION_CHANGED`; nos dois, `last` na boa | idem | must |
 | 14 | U3 | Hub morre durante o envio: no início seguinte, `repairApps` retoma pelos arquivos guardados, uma versão, sem a máquina | `repair.test.ts` | must |
-| 15 | U3 | `readPreview` (membro, `readProjectSource`): `none`, `no-address`, `pending`, `ready`, `failed`, `kept` e `last`; outra empresa: 404 (S10) | `preview-route.test.ts` | must |
+| 15 | U3 | `readPreview` (membro, `readProjectSource`): `none`, `no-address`, `pending`, `ready`, `failed` (também a `sending` de reivindicação vencida), `kept` e `last`; outra empresa: 404 (S10) | `preview-route.test.ts` | must |
 | 16 | U3 | Os dados sobrevivem: o registro da N é lido na N+1; uma migração nova na prévia, tudo ou nada (0046); migração aplicada mudada: `APP_MIGRATION_CHANGED`; o esquema do ar não muda | `preview.test.ts` | must |
 | 17 | U4 | Versão `passed`: o fim do turno empacota e guarda antes de `agent_end`; o envio corre depois, e `agent_end` não espera o envio (dublê de Cloudflare que leva 5 s) | `runs-preview.test.ts` | must |
-| 18 | U4 | `failed`, `unchecked`, `unfinished`: nada é empacotado; a parte diz `kept` com o código, e `readPreview.kept` também | idem | must |
+| 18 | U4 | `failed`, `unchecked`, `unfinished`, e versão sem conferência (Parar, erro, a hora, retomada): nada é empacotado; a parte diz `kept` com o código, e `readPreview.kept` também; o cartão "Versão N guardada" sai sempre | idem | must |
 | 19 | U4 | Pasta acima de `APP_LIMITS`, com link ou não regular: `PREVIEW_PACK_FAILED`, sem ler o resto (C59, S2); a máquina lança: o mesmo código, logado uma vez, o turno termina | idem | must |
 | 20 | U4 | Relida a conversa, o cartão traz `data-conexus-preview` como o Mastra a guarda | `conversation-preview.test.ts` (gravação `preview-extras`) | must |
 | 21 | U4 | O prompt volta às frases da Prévia nas linhas 3, 6, 22, 53 e 54 da tabela de `builder-prompt.md` | `prompt.test.ts` | must |
-| 22 | U5 | Host da prévia: cookies `SameSite=None; Secure; Partitioned`; `frame-ancestors` a origem do Hub; num iframe sem sessão: a entrada, nunca o salto; segunda entrada seguida: a página de falha com `{type: 'entry-failed'}`; host do ar igual a hoje | `dispatcher-preview.test.ts` | must |
+| 22 | U5 | Host da prévia: cookies `SameSite=None; Secure; Partitioned`; `frame-ancestors` a origem do Hub; num iframe sem sessão: a entrada, nunca o salto; passagem recusada no iframe: a página de falha com `{type: 'entry-failed'}`; host do ar igual a hoje | `dispatcher-preview.test.ts` | must |
 | 23 | U5 | `createPreviewHandoff`: membro recebe a passagem; outra empresa: 404; `Origin` alheio: `REQUEST_ORIGIN_REFUSED`; passagem repetida ou de outro navegador: `APP_HANDOFF_INVALID`; sessão de um ambiente não abre o outro; prévia sem versão: `APP_NOT_FOUND` | `preview-handoff.test.ts` | must |
 | 24 | U5 | Hub: `frame-src https://*.<domínio dos apps>`, o resto da CSP igual | `http.test.ts` | must |
-| 25 | U6 | Estados da matriz; no turno, a Prévia segue na última boa; recarrega quando `readPreview` passa a `ready` de um número maior; "pela metade" e "não montou" com a versão de `last` | `preview.test.tsx` | must |
-| 26 | U6 | Barra: nomes e teclado (V30, V31); Celular, 390 px; **Abrir em nova aba**; entrada recusada duas vezes: o aviso e **Abrir em nova aba**; **Pedir ao Builder para corrigir** põe o código e a versão no campo | idem | must |
+| 25 | U6 | Estados da matriz; no turno, a Prévia segue na última boa; relê `readPreview` na parte `data-conexus-preview` e em todo `turnEnd`; recarrega quando passa a `ready` de um número maior; "pela metade" e "não montou" com a versão de `last` | `preview.test.tsx` | must |
+| 26 | U6 | Barra: nomes e teclado (V30, V31); Celular, 390 px; **Abrir em nova aba**; uma segunda mensagem `entry` sem a página do app carregada, ou `entry-failed`: o aviso e **Abrir em nova aba**; **Pedir ao Builder para corrigir** põe o código e a versão no campo | idem | must |
 | 27 | U6 | 1280, 390 px, 200 %, dois temas, CSP limpo; trocar de aba não recarrega o iframe | navegador (T23) | must |
 | 28 | U7 | `readChanges`: novo, removido, renomeado, binário, `+N −M`; arquivo acima de `SOURCE_FILE_MAX_BYTES` num lado: `SOURCE_DIFF_TOO_LARGE` sem ler (C44, C59); commit fora de `main`: `SOURCE_VERSION_NOT_FOUND`; outra empresa: 404 | `changes.test.ts` | must |
 | 29 | U7 | #237: `readProjectSource` dá `version` de `versionAt(commit)`, a admissão sai do arquivo da rota | `source.test.ts` | must |
@@ -122,7 +122,7 @@ Pelas rotas e `main.ts`, com `Machines` dublê (`LocalSandbox`), Cloudflare dubl
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Prévia | "Ainda não há uma prévia. Descreva o aplicativo para começar." (o texto de `Stage`) | idem | "Preparando a prévia…", sobre a última boa | `failed`: "A prévia da versão N não subiu." + `last`: "A prévia continua na versão M."; `kept`: "A versão N não montou." ou "A versão N ficou pela metade." + o mesmo; **Pedir ao Builder para corrigir** | a do Projeto | a do Projeto | sessão vencida: a entrada da U5, sem aviso; recusada duas vezes: "Este navegador não abre a prévia aqui dentro." e **Abrir em nova aba**; `no-address`: "O nome deste Projeto é longo demais para ter prévia." |
+| Prévia | "Ainda não há uma prévia disponível. Descreva o aplicativo para começar." (o texto de `Stage`) | idem | "Preparando a prévia…", sobre a última boa | `failed`: "A prévia da versão N não subiu." + `last`: "A prévia continua na versão M."; `kept`: "A versão N não montou." ou "A versão N ficou pela metade." + o mesmo; **Pedir ao Builder para corrigir** | a do Projeto | a do Projeto | sessão vencida: a entrada da U5, sem aviso; recusada duas vezes: "Este navegador não abre a prévia aqui dentro." e **Abrir em nova aba**; `no-address`: "O nome deste Projeto é longo demais para ter prévia." |
 | Alterações | "Nenhuma versão guardada ainda." | "Esta versão não mudou arquivos." | a partilhada | a de `ui/` | "Esta versão não está mais guardada." | a do Projeto | "Esta diferença é grande demais para mostrar aqui." |
 | Cartão da versão | — | — | — | o da 14.2 | — | — | — |
 | App \| Conversa (390) | Conversa | — | ponto "trabalhando" | — | — | — | — |
@@ -133,7 +133,7 @@ Pelas rotas e `main.ts`, com `Machines` dublê (`LocalSandbox`), Cloudflare dubl
 | `apps.app.preview_kept_number`, `preview_kept_code` | U3 (`keepPreview`, chamado pela U4) | U3 (`readPreview`) |
 | `apps.app_version.environment`, `source_number` | U3 | U2 (lista, poda), U3 (ponteiro, `readPreview`) |
 | parte `data-conexus-preview` `{sourceNumber, state, code?}` | U4 | U6 (o cartão; e invalida `readPreview`) |
-| `readPreview`, `createPreviewHandoff`, `readChanges`, `readFileDiff` | U3, U5, U7 | U6, U7 |
+| `readPreview`, `createPreviewHandoff`, `readChanges`, `readFileDiff`, o componente `Changes` | U3, U5, U7 | U6, U7 |
 
 **Os desenhos** (capturas do Conexus OS `os-34`, `os-35`, `os-37`, `os-63`, `os-64`, fora do
 repositório, L21):
@@ -163,12 +163,13 @@ repositório, L21):
 | Upload do script da prévia | nome por versão | `abandon` apaga | Cloudflare: `failed` | `APP_VERSION_UPLOADED` | 13 |
 | Esquema e logins da prévia | `IF NOT EXISTS`, nunca recriado | uma transação | Neon: `failed` | `APP_DATABASE_READY` | 7, 16 |
 | Migrações na prévia | razão 0046; linhas ficam | tudo ou nada | idem | `APP_MIGRATED` | 16 |
+| Reivindicação da prévia tomada da mais velha (`failVersion`) | sob `lockApp` `FOR UPDATE` | a velha vê `LOST` e faz `abandon` | banco: `FAILED` | `APP_VERSION_FAILED` | 12 |
 | Ponteiro da prévia | reivindicação (C65) e `source_number` maior | relido sob `FOR UPDATE` | — | `PREVIEW_VERSION_READY` | 11, 12 |
 | Retomada no início | uma cópia toma a reivindicação vencida | a próxima retomada | idem | `PREVIEW_RESUMED` | 14 |
 | `memory.saveMessages` do turno com a parte | upsert por `id` (gravação) | o da 14.2 | logado (`saveExtras`) | — | 20 |
 | Remover esquema, logins e scripts da prévia | idempotente | pendência da 12 | pendência | `PROJECT_APP_DELETED` | 8 |
 | Passagem e sessão no host da prévia | `DELETE … RETURNING` (S22) | — | Hub: a página | — | 23 |
-| Poda dos scripts | idempotente | a próxima | pendência | `APP_VERSION_PRUNED` | 4, 9 |
+| Poda dos scripts, do ar no envio do ar e da prévia a cada prévia pronta | idempotente | a próxima | pendência | `APP_VERSION_PRUNED` | 4, 9 |
 | `git diff` | só leitura | prazo e sinal (C57) | — | — | 28 |
 
 ## O mapa do estudo
@@ -204,7 +205,7 @@ repositório, L21):
 | --- | --- | --- | --- | --- | --- |
 | Empacotar no fim do turno | trazido (`main`, 14 U4, sem chamador) | `builder/machine/pack.ts`, `machines.ts:242-247` | não | S2, C59; base: segurança | vibesdk empacota na ferramenta de deploy (`worker/agents/think/deploy-tool.ts:23-50`) |
 | Envio da prévia | trazido (`hub/apps/send.ts`) + ambiente | `hub/apps/send.ts`, `preview.ts` | sim: ambiente, ponteiro por `source_number` | 0046, C65; base: medida (0046) | vibesdk sobe por REST ao WfP (estudo 2 §4.1); Mastra não tem |
-| Ponteiro, esquema e logins da prévia | nosso: WfP não tem ambiente; entrada nova em `boundaries.md` (U1) | `hub/apps/tables.ts`, migrações, `platform/company-postgres.ts` | — | 0021 | vibesdk: SQLite por ramo (`think-user-deploy.ts:50-62`) |
+| Ponteiro, esquema e logins da prévia | nosso: WfP não tem ambiente; entrada nova em `boundaries.md` (U1) | `hub/apps/tables.ts`, migrações, `platform/company-postgres.ts` | — | 0021 | vibesdk: banco próprio da prévia (estudo 2 §4.1, relay) |
 | Entrada e cookie no host da prévia | nosso: cookie não tem API no runtime; entrada nova em `boundaries.md` (U1) | `apps/edge/src/{dispatch,headers,pages}.ts` | — | S22, 0041 | vibesdk `worker/utils/spacePreviewToken.ts:58-87` |
 | Parte `data-conexus-preview` | nativo: parte `data-*` do Mastra | `hub-api/src/mastra-parts.ts`, `conversation/turn-parts.ts` | — | 14.2 | Mastra `@mastra/pg@1.31.2` `dist/index.js:13063-13070` (upsert) |
 | Recarregar ao ficar pronta | nativo: TanStack Query `refetchInterval` | `apps/web/src/builder/preview/` | — | — | vibesdk `src/routes/chat/utils/handle-websocket-message.ts:1023-1039`; Dyad `PreviewIframe.tsx:1676-1684` |
@@ -297,7 +298,7 @@ para todo Safari; volta ao fundador antes da U5.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `packages/hub-api/src/{address,app-login}.ts` | muda | Hub, web, despachante |
-| `apps/server/src/hub/apps/{tables,prune,removal,versions,app-database}.ts`, `hub/projects/{projects,hosts}.ts` | muda | `send.ts`, `main.ts` |
+| `apps/server/src/hub/apps/{tables,prune,removal,versions,app-database,live}.ts`, `hub/projects/tables.ts` (o `check` do rótulo, `project_host_label_preview_room`, até 55, `NOT VALID`) | muda | `send.ts`, `main.ts` |
 | `apps/server/src/platform/company-postgres.ts`, `apps/server/migrations/`, `platform/catalog.test.ts` | cria, muda | o Hub no início |
 
 ### Os contratos que a unidade cria
@@ -340,8 +341,11 @@ marcados no limite), C26 (um dono).
 2. Migração e `tables.ts`, `ENVIRONMENT_COLUMNS`; retrato do catálogo. Regras: D6, D11, D12, 0039.
 3. `appLogin(projectId, environment)`; `company-postgres.ts` cria o esquema e os logins da prévia
    com os grants do ar, cada login só no seu esquema. Regras: D15, 0021.
-4. `prune.ts` mantém `previewVersionId`, `previewSendingVersionId` e as 3 `ready` do ar mais
-   novas; `removal.ts` apaga os dois ambientes; `listVersions` filtra `environment = 'live'`.
+4. `prune.ts`: `markPrune(tx, {…, environment})`; o ar mantém o ponteiro e as 3 `ready` do ar mais
+   novas; a prévia, o ponteiro e a pendente. `removal.ts` apaga os dois ambientes; `listVersions` e
+   `setLiveVersion` (`live.ts:28-40`) filtram `environment = 'live'`.
+5. `versions.ts`: `lockApp`, `failVersion`, `holdsClaim` e `storeAppVersion` recebem
+   `environment` e leem `ENVIRONMENT_COLUMNS[environment]`; o ar passa `'live'`, sem mudança visível.
 
 ### Como se prova
 
@@ -385,35 +389,44 @@ o ponteiro que só sobe são concorrência.
 
 ```ts
 // packages/hub-api/src/preview.ts
-export const PreviewCode = z.enum(['APP_CHECK_FAILED', 'CHECK_PLATFORM_FAILED', 'VERSION_UNFINISHED',
-  'PREVIEW_PACK_FAILED', 'APP_VERSION_FAILED', 'APP_VERSION_NOT_STARTING'])
-const Last = z.object({ host: z.string(), sourceNumber: z.int().positive() })
+/** Os códigos de `VersionFailure` (a lista sai de `versions.ts:102` para cá, um dono) e os do turno. */
+export const VERSION_FAILURES = ['APP_VERSION_FAILED', 'APP_VERSION_NOT_STARTING', 'APP_MIGRATION_FAILED',
+  'APP_MIGRATION_CHANGED' /* … a lista inteira de hoje */] as const
+export const PreviewCode = z.enum([...VERSION_FAILURES, 'APP_CHECK_FAILED', 'CHECK_PLATFORM_FAILED',
+  'VERSION_UNFINISHED', 'VERSION_UNCHECKED', 'PREVIEW_PACK_FAILED'])
+export const SourceNumber = z.int().positive().brand('SourceNumber')
+const Last = z.object({ host: PreviewHostLabel, sourceNumber: SourceNumber })
 /** O que a Prévia mostra (C21): `state` separa as variantes. */
 export const Preview = z.discriminatedUnion('state', [
   z.object({ state: z.literal('none') }),
   z.object({ state: z.literal('no-address') }),
-  z.object({ state: z.literal('pending'), sourceNumber: z.int().positive(), last: Last.optional() }),
-  z.object({ state: z.literal('ready'), host: z.string(), sourceNumber: z.int().positive(), savedAt: z.iso.datetime() }),
-  z.object({ state: z.literal('failed'), sourceNumber: z.int().positive(), code: PreviewCode, last: Last.optional() }),
-  z.object({ state: z.literal('kept'), sourceNumber: z.int().positive(), code: PreviewCode, last: Last.optional() }),
+  z.object({ state: z.literal('pending'), sourceNumber: SourceNumber, last: Last.optional() }),
+  z.object({ state: z.literal('ready'), host: PreviewHostLabel, sourceNumber: SourceNumber }),
+  z.object({ state: z.literal('failed'), sourceNumber: SourceNumber, code: PreviewCode, last: Last.optional() }),
+  z.object({ state: z.literal('kept'), sourceNumber: SourceNumber, code: PreviewCode, last: Last.optional() }),
 ])
 export const readPreview = defineOperation({ id: 'readPreview', access: 'session', method: 'GET',
   path: '/api/companies/{companyId}/projects/{projectId}/preview', /* 200 Preview; 404 */ })
 // apps/server/src/hub/apps/public.ts, a porta que a U4 recebe em RunsDeps (C4)
 export type PreviewPort = {
   /** No turno: guarda a pasta e toma a reivindicação da prévia; a mais velha em curso perde. */
-  store(input: Ids & { personId: PersonId; runId: RunId; sourceNumber: number; folder: VersionFolder }):
+  /** Uma recusa lançada (`receiveVersion`, `replayOf`, o banco) vira `FAILED`, logada uma vez. */
+  store(input: Ids & { personId: PersonId; runId: RunId; sourceNumber: SourceNumber; folder: VersionFolder }):
     Promise<{ kind: 'STORED' | 'REPLAY'; versionId: AppVersionId } | { kind: 'FAILED' }>
-  /** Depois do turno: Worker, esquema, migrações e o ponteiro; nunca lança (C50). */
+  /** Depois do turno: Worker, esquema, migrações, o ponteiro e a poda da prévia; a pessoa é o
+   * `sent_by` da versão, relida (S8); nunca lança (C50). */
   send(input: Ids & { versionId: AppVersionId }): Promise<void>
   /** Uma versão que não vai à Prévia, e por quê; o número maior vence. */
-  keep(input: Ids & { sourceNumber: number; code: PreviewCode }): Promise<void>
+  keep(input: Ids & { sourceNumber: SourceNumber; code: PreviewCode }): Promise<void>
 }
 ```
 
 `ready` só quando o ponteiro é a versão de prévia mais nova; `pending` quando há reivindicação viva;
-`kept` quando `preview_kept_number` é maior que o da mais nova. `last` é o ponteiro. Chave de
-`store`: `runId` (C37). Admissão: `useConversations`, relida em `finish` (S8). Códigos novos em
+`kept` quando `preview_kept_number` é maior que o da mais nova; uma `sending` de reivindicação
+vencida lê-se `failed` `APP_VERSION_FAILED` até a retomada. `last` é o ponteiro. Chave de `store`:
+`runId` (C37); na prévia, `replayOf` devolve `REPLAY` também para a versão ainda `sending` (o turno
+que a guardou é o mesmo). Admissão: `identity.admitMember` com `useConversations`, pelo `sent_by`, em
+`store` e de novo em `finish` (S8); não copia o `admit` de `git/source.ts`, que a U7 move. Códigos novos em
 `failures.ts`: `PREVIEW_VERSION_READY`, `PREVIEW_RESUMED` (impressos, C48). Modelo: `send.ts`;
 cumpre C21, C26; C23 parcial (o `biome-ignore` de `failVersion`, que a U3 não amplia).
 
@@ -423,7 +436,7 @@ drizzle, `fastify-best-practices`, `neon:neon-postgres`.
 
 ### A ordem do trabalho
 
-1. `send.ts`: `prepare`, `abandon` e `finish` recebem `environment`; `finish` da prévia, sob
+1. `send.ts`: `prepare`, `abandon`, `finish` e `markPrune` recebem `environment`; `finish` da prévia, sob
    `lockApp` com `FOR UPDATE`, sobe o ponteiro só se `held.previewSendingVersionId` é a versão e o
    `source_number` dela é maior que o do ponteiro. Regras: C65, D22, 0046.
 2. `preview.ts`: `store` (o `storeAppVersion` com `environment: 'preview'`; reivindicação viva de
@@ -434,7 +447,9 @@ drizzle, `fastify-best-practices`, `neon:neon-postgres`.
 
 ### Como se prova
 
-Critérios 10 a 16 por `main.ts` e as rotas, Cloudflare dublê com atraso e 10021, o Postgres local.
+Critérios 10 a 16 pela porta pública do módulo (`createApps(deps).preview`, de `public.ts`, montada
+como em `main.ts`) e pela rota `readPreview` (T5), Cloudflare dublê com atraso e 10021, o Postgres
+local; o critério 17 da U4 cruza as duas unidades pelo turno.
 Falha hoje: `preview-route.test.ts` (404 da rota que não existe).
 
 ### Parar se
@@ -451,7 +466,7 @@ que entra nele e o que sai é concorrência.
 
 | Arquivo e símbolo | Linhas na base | Por quê |
 | --- | --- | --- |
-| `apps/server/src/builder/runs/runs.ts` `Runs.finish` (14.2) | `1a98660` 267-306 | o único lugar que ainda tem a máquina |
+| `apps/server/src/builder/runs/runs.ts` `Runs.finish` (14.2) | `1a98660` 267-307 | o único lugar que ainda tem a máquina |
 | `apps/server/src/builder/runs/save.ts` `saveRun` | 37-95 | dá `saved` com `check` |
 | `apps/server/src/builder/runs/context.ts` `RunsDeps`, `Settled` | `1a98660` 16-76 | a porta e o resultado |
 | `apps/server/src/builder/conversation/turn-end.ts` `closeTurn` | `1a98660` 40-64 | o `catch` que cobre o empacotamento |
@@ -473,7 +488,7 @@ que entra nele e o que sai é concorrência.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/server/src/builder/runs/{runs,context}.ts` | muda | `main.ts`, `turn-run.ts` |
-| `apps/server/src/builder/conversation/{turn-parts,record,turn-end}.ts`, `prompt/builder.md` | muda | `live.ts` |
+| `apps/server/src/builder/conversation/{turn-parts,record,turn-end}.ts`, `prompt/builder.md` | muda | `live.ts`; `turn-run.ts`, `sessions.ts` só leem |
 | `packages/hub-api/src/mastra-parts.ts` | muda | web |
 | `scripts/record.ts`, `apps/server/src/platform/recordings/mastra/preview-extras.jsonl` | cria, muda | os testes (T26) |
 | `apps/server/src/main.ts` | muda | passa `PreviewPort` a `createRuns` |
@@ -488,12 +503,14 @@ export const PreviewStart = z.discriminatedUnion('state', [
 ])
 // apps/server/src/builder/runs/context.ts
 export type RunsDeps = { /* … */ preview: PreviewPort }
-type SavedVersion = { /* … */ preview: PreviewStart }
+export type Settled = Outcome & { rounds: number; preview?: PreviewStart } // ao lado da versão, nunca dentro de `VersionData`
 ```
 
 `record.ts` `lasts` mantém `data-conexus-preview`. A parte não é regravada depois do envio: a tela lê
 `readPreview`. Do `check` para o código (o dono é `previewStartOf`, em `runs.ts`): `failed` →
-`APP_CHECK_FAILED`, `unchecked` → `CHECK_PLATFORM_FAILED`, `unfinished` → `VERSION_UNFINISHED`.
+`APP_CHECK_FAILED`, `unchecked` → `CHECK_PLATFORM_FAILED`, `unfinished` → `VERSION_UNFINISHED`,
+sem `check` (Parar, erro, a hora, uma retomada: `Run.check` é opcional, `context.ts:63`) →
+`VERSION_UNCHECKED`.
 
 ### As skills e a leitura
 
@@ -504,17 +521,28 @@ type SavedVersion = { /* … */ preview: PreviewStart }
 1. `runs.ts` `finish`, logo depois de `saveRun` e antes do `finally` que solta a máquina:
 
    ```ts
-   const outcome = await saveRun(this.#context, saved, mine.check)
-   if (outcome === 'gone' || outcome.kind !== 'saved') return outcome === 'gone' ? outcome : { ...outcome, rounds: mine.rounds }
-   const preview = await this.#previewOf(mine, saved, outcome.version) // pack + store, ou keep
-   return { ...outcome, version: { ...outcome.version, preview }, rounds: mine.rounds }
+   let toSend: Parameters<PreviewPort['send']>[0] | undefined
+   try {
+     // … como hoje até saveRun
+     const outcome = await saveRun(this.#context, saved, mine.check)
+     if (outcome === 'gone') return outcome
+     if (outcome.kind !== 'saved') return { ...outcome, rounds: mine.rounds }
+     const started = await this.#previewOf(mine, outcome.version) // pack + store, ou keep; nunca lança
+     toSend = started.send
+     return { ...outcome, rounds: mine.rounds, preview: started.preview }
+   } finally {
+     // … como hoje: lease, registro, a máquina solta
+     if (toSend !== undefined) void this.#deps.preview.send(toSend) // o turno não espera
+   }
    ```
 
-   `#previewOf`: `check.state !== 'passed'` → `keep` e `kept`; senão `machines.pack`, recusa ou
-   lançamento → `keep` `PREVIEW_PACK_FAILED`; `store`; `STORED` → `void this.#deps.preview.send(…)`
-   depois do `finally` (o turno não espera), `sending`. Regras: C50, C59, S2.
-2. `turn-end.ts` não muda: `tellVersion` leva o `preview` dentro da versão; `turn-parts.ts`
-   `tellPreview` diz a parte junto. `record.ts` `lasts`.
+   `#previewOf`: `check?.state !== 'passed'` → `keep` e `kept`; senão `machines.pack`, recusa ou
+   lançamento → `keep` `PREVIEW_PACK_FAILED`; `store` `FAILED` → `kept` `APP_VERSION_FAILED`; tudo
+   dentro de um `catch` próprio que loga uma vez e dá `kept`, para nunca virar o `'threw'` de
+   `closeTurn`. Regras: C50, C59, S2. `overTurn` (`turn-run.ts:52`) e `sessions.ts:202` descartam o
+   resultado: lá a prévia é guardada e enviada sem parte, e a tela a vê pelo `turnEnd` (U6).
+2. `turn-end.ts:54-56`: com `saved`, `tellVersion` e, havendo `outcome.preview`, `tellPreview`
+   (`turn-parts.ts`). `record.ts` `lasts`.
 3. `scripts/record.ts`: cenário `preview-extras` (o `record-preview.ts` do estudo), gravado com
    `npm run record -- preview-extras`, conteúdo inventado (S40).
 4. `prompt/builder.md`: as frases da Prévia das linhas 3, 6, 22, 53 e 54 de `builder-prompt.md`.
@@ -550,7 +578,7 @@ segurança sutil.
 
 | Pacote@versão ou repositório@commit, arquivo | Linhas | O que copiar e o que adaptar |
 | --- | --- | --- |
-| vibesdk@`9da158d` `worker/utils/spacePreviewToken.ts` | 58-87 | `SameSite=None; Secure; Partitioned`; nosso leva `__Host-` e `HttpOnly` |
+| vibesdk@`9da158d` `worker/utils/spacePreviewToken.ts` | 58-87 | `SameSite=None; Secure; Partitioned; HttpOnly`; o nosso muda só o prefixo `__Host-` e o `Path` |
 | estudo 3 (fora do repositório), as páginas `cx-prova` | — | a entrada por `postMessage` provada |
 
 ### O raio da mudança
@@ -564,6 +592,8 @@ segurança sutil.
 ### Os contratos que a unidade cria
 
 ```ts
+// packages/hub-api/src/apps.ts: `host` de `createAppSession`, `checkAppCall`, `AppOpenQuery` e `OnHost`
+export const AppHostLabel = z.union([HostLabel, PreviewHostLabel])
 // apps/edge/src/headers.ts
 export function setCookie(name: string, value: string, environment: AppEnvironment): string
 export function withSecurityHeaders(headers: Headers, csp?: string, frameAncestors?: string): Headers
@@ -578,11 +608,16 @@ export const createPreviewHandoff = defineOperation({ id: 'createPreviewHandoff'
   /* body {binding}; 200 {location}; 404; REQUEST_ORIGIN_REFUSED */ })
 ```
 
-O despachante lê o host por `appHostLabelOf`; `appHostOf` (o nome do host, `address.ts:85`) aceita os dois rótulos. Prévia: cookies particionados, `frame-ancestors` a origem
-do Hub. `Sec-Fetch-Dest: iframe` sem sessão ou `APP_SESSION_INVALID`: a página de entrada, com o hash
-do vínculo num `data-` e um script de hash fixo que o manda ao Hub por `postMessage` com
-`targetOrigin` a origem do Hub; uma segunda entrada seguida (marca no `redeem`): `entry-failed`. A
-tela confere `event.origin` e `event.source`. `createPreviewHandoff`: o `createHandoff` de hoje, o
+O despachante lê o host por `appHostLabelOf` (`dispatch.ts:162-165` hoje só `HostLabel`); `appHostOf`
+(o nome do host, `address.ts:85`) aceita os dois rótulos. `handoff.host_label` e
+`app_session.host_label` guardam o rótulo inteiro, então a sessão de um ambiente não abre o outro;
+`projectOfHost` recebe o `live` de `appHostLabelOf`. Prévia: cookies particionados, `frame-ancestors`
+a origem do Hub. `Sec-Fetch-Dest: iframe` sem sessão ou `APP_SESSION_INVALID`: a página de entrada
+em `PREVIEW_ENTRY_PATH` (o despachante a serve; `dispatch.ts:169` passa a recusar `/__conexus/` menos
+ela e o seu `.js`), com o hash do vínculo num `data-` e um script de hash fixo que o manda ao Hub por
+`postMessage` com `targetOrigin` a origem do Hub. A borda não guarda marca: a passagem recusada no
+iframe dá a página de falha com `entry-failed`, e a tela conta as mensagens `entry` (a segunda sem a
+página do app carregada é a recusa do navegador). A tela confere `event.origin` e `event.source`. `createPreviewHandoff`: o `createHandoff` de hoje, o
 host tirado do `projectId` por `previewHostOf` (S9). `callTo` lê `ENVIRONMENT_COLUMNS[environment]` e
 `appLogin(projectId, environment)`; prévia sem ponteiro: `APP_NOT_FOUND`. Em nova aba, o salto de
 hoje. Modelo: `handoff.ts`; cumpre C21, C23, C26.
@@ -633,12 +668,13 @@ O teste do iPhone dá outra resposta que a do estudo 3: a regra da nova aba muda
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/builder/preview/` | cria | a rota do Projeto |
-| `apps/web/src/hub/projects/{area,search}.tsx`, `routes/…/$projectId.tsx` | muda | `routeTree.gen.ts` |
+| `apps/web/src/hub/projects/{area,search}.tsx` (a aba **Alterações** e o `Lens` `changes`, com o `Changes` da U7), `routes/…/$projectId.tsx` | muda | `routeTree.gen.ts` |
 | `apps/web/src/builder/conversation/{stage,machine-line,use-live,public}` | apaga, muda | — |
 
 ### Os contratos que a unidade cria
 
-`PreviewFrame` lê `readPreview` (`refetchInterval` 1.000 ms enquanto `pending`), `key` do iframe
+`PreviewFrame` lê `readPreview` (`refetchInterval` 1.000 ms enquanto `pending`; relida em todo
+`turnEnd`), `key` do iframe
 `<host>#<sourceNumber>`, `title="Prévia do aplicativo"`, `sandbox="allow-scripts allow-same-origin
 allow-forms"`, montado sob as abas; `device: 'desktop' | 'phone'`. `use-live.ts`: parte
 `data-conexus-preview` invalida `previewQuery`. O cartão ganha **Ver aplicativo** (`sending`, abre a
@@ -715,7 +751,8 @@ export const readFileDiff  // GET /diff?to=<Commit>&path → {hunks: {header: st
 1. #237: a admissão sai de `source.ts` para a porta de identidade; `version` de `versionAt(commit)`.
    Regras: C13, C14, C26.
 2. `changes.ts` e as duas rotas. Regras: C27, C44, C57, C59, S10.
-3. A aba **Alterações** com "+N", em `source/`. Regras: V30, V31.
+3. O componente `Changes` com "+N", em `source/`, exportado por `public.ts`; a aba que o mostra é
+   da U6. Regras: V30, V31.
 
 ### Como se prova
 
