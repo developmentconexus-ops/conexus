@@ -31,7 +31,7 @@ import {
   createSubmitPlanTool,
   SUBMIT_PLAN_TOOL,
 } from './plan-tools.ts'
-import { CHECK_TOOL, checkGate, checkTool } from './processors.ts'
+import { CHECK_TOOL, checkGate, checkTool, workspaceMetadataLive } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
 
 const BUILDER_ID = 'builder'
@@ -157,7 +157,11 @@ export function createBuilder(deps: {
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
     inputProcessors: [accountPick(deps.queue)],
     workspace: undefined,
-    outputProcessors: [new CyberRefusalHandler(), checkGate({ runs: deps.runs, storage })],
+    outputProcessors: [
+      new CyberRefusalHandler(),
+      workspaceMetadataLive,
+      checkGate({ runs: deps.runs, storage }),
+    ],
     errorProcessors: accountErrorProcessors(deps.queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,
