@@ -18,7 +18,7 @@ import type { Runs } from '../runs/public.ts'
 import { claimAnswer } from './answers.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import { openCards, releaseCards, restoreCards, takeCards } from './cards.ts'
+import { openCards, restoreCards } from './cards.ts'
 import { deliver } from './deliver.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
@@ -261,8 +261,8 @@ export class Sessions {
 
   /**
    * The person's answer to a card: the answers to its questions, or the decision on its plan, once
-   * the turn that asked it ended. The call is claimed first, so a second answer is `QUESTION_CLOSED`; then the Projeto's run is
-   * admitted and Mastra resumes the call by its address, as its own route does, from this session
+   * the turn that asked it ended. The call is claimed first, so a second answer is `QUESTION_CLOSED`;
+   * then the Projeto's run is admitted and Mastra resumes the call by its address, as its own route does, from this session
    * or from its database. A resume Mastra refuses keeps the card open and ends the turn, saying so.
    */
   async answer(input: OfTurn & { toolCallId: ToolCallId; body: QuestionAnswer }): Promise<void> {
@@ -276,18 +276,18 @@ export class Sessions {
       claimed = claimAnswer(live, input)
       writing = await this.#writing(live, await this.#admit(input), input.traceId)
     } catch (error) {
-      if (claimed !== undefined) releaseCards(live, [toolCallId])
+      if (claimed !== undefined) live.session.releaseToolResponse(claimed.claimKey)
       await this.#release(conversationId, live)
       throw error
     }
-    const { address, resumeData } = claimed
+    const { address, claimKey, resumeData } = claimed
     this.#log.info({ companyId: input.owner.companyId, conversationId }, 'QUESTION_ANSWERED')
     this.#run(live, writing, async () => {
       try {
         const requestContext = writing.context
         await live.session.respondToToolSuspension({ address, resumeData, requestContext })
       } finally {
-        releaseCards(live, [toolCallId])
+        live.session.releaseToolResponse(claimKey)
       }
       return !openCards(live).some((card) => card.toolCallId === toolCallId)
     })
@@ -324,10 +324,8 @@ export class Sessions {
     const { conversationId } = input
     const live = await this.#hold(input)
     try {
-      const taken = await takeCards(live)
       cancelPending(live)
       live.session.abort()
-      releaseCards(live, taken)
       this.#log.info({ companyId: live.owner.companyId, conversationId }, 'CONVERSATION_STOPPED')
     } finally {
       await this.#release(conversationId, live)

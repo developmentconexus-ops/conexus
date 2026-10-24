@@ -26,12 +26,12 @@ const Planned = z.object({ plan: z.string() })
 const QUESTION = { kind: 'answers', answers: ['Todos (recomendado)'] }
 
 /**
- * Mastra 1.78.0 can write the parked run's snapshot after the release that deletes it, so a row
+ * Mastra 1.79.0 can write the parked run's snapshot after the release that deletes it, so a row
  * may outlive the turn (reported to Mastra, feedback id 6edddc96-17b5-4e31-a6df-986c1598d366).
  * The tests that own the leftover row are `todo`: remove the option when Mastra's fix lands.
  */
 const MASTRA_RACE =
-  'Mastra 1.78.0 can recreate the parked snapshot after abort (report 6edddc96-17b5-4e31-a6df-986c1598d366)'
+  'Mastra 1.79.0 can recreate the parked snapshot after abort (report 6edddc96-17b5-4e31-a6df-986c1598d366)'
 
 test('uma pergunta encerra o turno: o fim é dito, o Projeto fica livre e o cartão espera sem prazo', {
   timeout: 60_000,
