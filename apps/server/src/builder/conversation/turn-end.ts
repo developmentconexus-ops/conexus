@@ -13,6 +13,12 @@ import { closed, ended, failing } from './turn-state.ts'
 
 type AgentEnd = Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']
 
+/** The run ending is one a message's `steer` denied (`closing`), not the turn's. */
+function denied(live: Live): boolean {
+  const runId = live.session.getCurrentRunId()
+  return runId !== null && live.closing.has(runId)
+}
+
 /**
  * Mastra's run ends, for any reason, a question or a plan included (`suspended`): the run is
  * finished, its version and failure kept, before Mastra says `agent_end`, so the read a screen makes
@@ -21,7 +27,7 @@ type AgentEnd = Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']
  */
 export async function beforeAgentEnd(live: Live, reason: AgentEnd): Promise<void> {
   const s = live.state
-  if (s.kind !== 'running' || s.end !== undefined) return
+  if (s.kind !== 'running' || s.end !== undefined || denied(live)) return
   if (reason !== 'aborted' && reason !== 'suspended' && live.pending.size > 0) return
   const ending = reason === 'error' || reason === 'aborted' ? reason : 'complete'
   await closeTurn(live, ending, reason ?? 'unknown')
@@ -59,7 +65,7 @@ async function closeTurn(live: Live, reason: EndReason, finishing: string): Prom
 /** `agent_end`: the end of the closed turn, said once, with its log line (security S41). */
 export function endTurn(live: Live): void {
   const s = live.state
-  if (s.kind !== 'running' || s.end === undefined) return
+  if (s.kind !== 'running' || s.end === undefined || denied(live)) return
   live.state = ended(s)
   const turn = s.log
   settleThinking(live, turn)

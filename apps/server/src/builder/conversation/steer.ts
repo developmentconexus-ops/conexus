@@ -1,8 +1,9 @@
 import type { MessageId } from '@conexus/hub-api'
+import type { RequestContext } from '@mastra/core/request-context'
 import { releaseCards, takeCards } from './cards.ts'
 import { deliver } from './deliver.ts'
 import type { Live, Question } from './live.ts'
-import { writingOf } from './turn-state.ts'
+import { isOpen, writingOf } from './turn-state.ts'
 
 type Input = { question: Question; id: MessageId }
 
@@ -33,12 +34,25 @@ export async function deliverInto(
 }
 
 /**
- * A message sent while a card is open closes it (S1): Mastra's abort denies the parked calls, and
- * the message is the next turn's.
+ * A message sent while a card is open is Mastra's `steer`, its route's call (S1): the abort denies
+ * the parked calls, and the message waits for the run that denial resumes, then opens the next
+ * turn's run. The denied run's end is not that turn's (`closing`). Whether the turn's run started.
  */
-export async function closeCards(live: Live): Promise<void> {
+export async function steerCards(
+  live: Live,
+  message: { content: string; requestContext: RequestContext },
+): Promise<boolean> {
   const taken = await takeCards(live)
-  if (taken.length === 0) return
-  live.session.abort()
-  releaseCards(live, taken)
+  for (const parked of live.session.displayState.get().pendingSuspensions.values()) {
+    if (parked.runId !== undefined) live.closing.add(parked.runId)
+  }
+  try {
+    await live.session.steer(message)
+    // Accepted, the turn's run is the session's; a message Mastra did not send leaves none.
+    const runId = live.session.getCurrentRunId()
+    return (runId !== null && !live.closing.has(runId)) || !isOpen(live.state)
+  } finally {
+    live.closing.clear()
+    releaseCards(live, taken)
+  }
 }

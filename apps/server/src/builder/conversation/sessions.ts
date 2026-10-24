@@ -25,7 +25,7 @@ import type { Listener, Live, Owner } from './live.ts'
 import { cancelPending } from './live.ts'
 import type { Question } from './record.ts'
 import { questionId, saveQuestion, settled } from './record.ts'
-import { closeCards, deliverInto } from './steer.ts'
+import { deliverInto, steerCards } from './steer.ts'
 import { beforeAgentEnd, endUnstarted } from './turn-end.ts'
 import { onEvent } from './turn-events.ts'
 import { beginTurn, tellMachine } from './turn-parts.ts'
@@ -78,7 +78,7 @@ export class Sessions {
       const opened: Live = {
         ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
         ...{ memory: this.#builder.memory, kept: Promise.resolve() },
-        ...{ state: { kind: 'idle' }, pending: new Set() },
+        ...{ state: { kind: 'idle' }, pending: new Set(), closing: new Set() },
         cancel: (signalIds) => {
           if (signalIds.length === 0) return
           const target = { resourceId, threadId: conversationId, signalIds }
@@ -227,27 +227,31 @@ export class Sessions {
       await this.#runs.finish({ runId, reason: 'error' })
       throw error
     })
+    // A card still open: the message is Mastra's `steer`, which saves the message as its own run's.
+    const steering = openCards(live).length > 0
     let writing: Writing
     try {
       writing = await this.#writing(live, runId, input.traceId)
-      await saveQuestion(live, question)
+      if (!steering) await saveQuestion(live, question)
     } catch (error) {
       await this.#runs.finish({ runId, reason: 'error' })
       await this.#release(conversationId, live)
       throw error
     }
+    const requestContext = writing.context
+    if (steering) {
+      this.#run(live, writing, () =>
+        steerCards(live, { content: question.content, requestContext }),
+      )
+      return
+    }
     // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
     const tracingOptions = { traceId: input.traceId.replaceAll('-', '') }
-    const options = {
-      requestContext: writing.context,
-      requireDelivery: true,
-      tracingOptions,
-    } as const
+    const options = { requestContext, requireDelivery: true, tracingOptions } as const
     this.#run(
       live,
       writing,
       async () => {
-        await closeCards(live)
         const accepted = await deliver(live, { question, id }, options)
         return 'runId' in accepted
       },

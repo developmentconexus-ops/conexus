@@ -21,6 +21,8 @@ export type Live = Recorder & {
    * by message id; read once its `message_start` (`role: 'signal'`) comes.
    */
   pending: Set<string>
+  /** The parked runs a message's `steer` denies, by run id: their end is not the next turn's. */
+  closing: Set<string>
   /** Removes messages Mastra has not read (`cancelQueuedMessages`), before a Parar aborts. */
   cancel: (signalIds: string[]) => void
   unsubscribe: () => void

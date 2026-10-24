@@ -94,6 +94,14 @@ test('uma mensagem com pergunta aberta a fecha e abre o turno seguinte, sem RUN_
   assert.deepEqual(stateOf(partsOf(events), card.toolCallId).at(-1), CLOSED[0])
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.ok(calls.at(-1)?.texts.some((text) => text.includes('Melhor: só eu cadastro.')))
+  const said = (await answeredOf(hub, ana, url)).filter((message) =>
+    message.parts.some((part) => part.type === 'text' && part.text === 'Melhor: só eu cadastro.'),
+  )
+  assert.deepEqual(
+    said.map((message) => message.role),
+    ['person'],
+    'the steered message is on the thread once',
+  )
 })
 
 test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao suspender', {
