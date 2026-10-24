@@ -211,9 +211,10 @@ export class Runs {
   async #unregister(projectId: ProjectId) {
     const opened = this.#opened.get(projectId)
     this.#opened.delete(projectId)
-    // biome-ignore lint/plugin: one that did not open failed the run that asked for it; there is nothing to take out (code C53)
-    const workspace = await opened?.workspace.catch(() => undefined)
-    if (workspace !== undefined) await opened?.registry?.removeWorkspace(workspace.id)
+    if (opened === undefined) return
+    // One that did not open failed the run that asked for it: there is nothing to take out.
+    const [made] = await Promise.allSettled([opened.workspace])
+    if (made?.status === 'fulfilled') await opened.registry?.removeWorkspace(made.value.id)
   }
 
   /**
@@ -233,8 +234,8 @@ export class Runs {
       return 'gone'
     }
     const settling = this.#settle(mine, input.reason)
-    // biome-ignore lint/plugin: the save's failure goes to its own caller; who waits here waits only for its end (code C53)
-    mine.saving = settling.catch(() => undefined)
+    // The save's failure goes to its own caller; who waits here waits only for its end.
+    mine.saving = Promise.allSettled([settling])
     return settling
   }
 
