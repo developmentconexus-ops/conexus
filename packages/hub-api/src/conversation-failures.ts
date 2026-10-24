@@ -34,6 +34,22 @@ export const CONVERSATION_FAILURES = {
     action: 'Envie a mensagem de novo.',
     actionKind: 'RETRY',
   },
+  MODEL_REFUSED: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 502,
+    phrase: 'O modelo recusou este pedido.',
+    action: 'Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder.',
+    actionKind: 'NONE',
+  },
+  MODEL_ANSWER_CUT: {
+    category: 'THIRD_PARTY',
+    settles: true,
+    status: 502,
+    phrase: 'A resposta do modelo ficou grande demais e foi cortada.',
+    action: 'Peça ao Builder uma parte de cada vez.',
+    actionKind: 'NONE',
+  },
   RUN_BUSY: {
     category: 'USER',
     settles: true,

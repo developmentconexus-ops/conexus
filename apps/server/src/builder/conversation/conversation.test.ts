@@ -30,6 +30,19 @@ test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra g
   assert.equal(textsOf(events).join(''), 'Olá, Ana. Vamos comparar os apps.')
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.ok(anthropic.sent.every((each) => each.key === KEY))
+  const streamed = anthropic.sent.filter((each) => each.stream && !OBSERVER.test(each.system))
+  assert.ok(streamed.length > 0)
+  for (const each of streamed)
+    assert.deepEqual(
+      each.cached,
+      [
+        { at: 'system', ttl: '1h' },
+        { at: 'message', ttl: '1h' },
+      ],
+      'the agent caches the conversation for an hour (Mastra Code)',
+    )
+  for (const each of anthropic.sent.filter((one) => !one.stream))
+    assert.deepEqual(each.cached, [{ at: 'system', ttl: '5m' }])
   const read = Object((await call(hub, ana, 'GET', url)).json()).conversation
   assert.deepEqual(
     read.messages.map((message: { role: string; parts: unknown[] }) => [
@@ -224,6 +237,11 @@ test('a observação vai pela conta do turno e pede o título em português; um 
   assert.ok(observed.length > 0, 'the second turn, past the threshold, was observed')
   for (const each of observed) {
     assert.equal(each.key, 'sk-ant-conversation-key-0002')
+    assert.deepEqual(
+      each.cached,
+      [{ at: 'system', ttl: '5m' }],
+      'the observer caches only its instructions',
+    )
     assert.match(
       each.system,
       /thread-title/,

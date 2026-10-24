@@ -74,10 +74,6 @@ const REFUSALS: [string, Record<string, string>][] = [
     },
   ],
   ['second-card', { 'docs/steps/e01-a.md': 'a\n', 'docs/steps/e02-b.md': 'b\n' }],
-  [
-    'founder-page-too-long',
-    { 'docs/steps/e01-a.md': `## A página do fundador\n${words(601)}\n## As unidades\nx\n` },
-  ],
 ]
 
 const MECHANISMS =

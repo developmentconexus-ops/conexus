@@ -9,17 +9,9 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
-import { presentTool, summaryOfTools } from './tool-presentation.ts'
+import { presentTool, summaryOfTools, toolStatus } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
 import type { ToolItem } from './transcript.ts'
-
-function isToolRunning(tool: ToolItem): boolean {
-  return tool.state === 'call' || tool.state === 'partial-call'
-}
-
-function isToolFailed(tool: ToolItem): boolean {
-  return tool.isError === true || tool.state === 'output-error' || tool.state === 'output-denied'
-}
 
 /**
  * Three tools or more in a row, as one line (Criterion 9). While the answer still works it names the tool in
@@ -29,21 +21,17 @@ function isToolFailed(tool: ToolItem): boolean {
 export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
   const { tools, working } = props
   const [chosen, setChosen] = useState<boolean>()
-  const active = tools.findLast(isToolRunning) ?? tools.at(-1)
-  const failed = tools.some(isToolFailed)
+  const active = tools.findLast((t) => toolStatus(t) === 'running') ?? tools.at(-1)
+  const failed = tools.some((t) => {
+    const status = toolStatus(t)
+    return status === 'error' || status === 'denied'
+  })
 
-  const activePresentation = active
-    ? presentTool(active.toolName, active.args, {
-        isRunning: isToolRunning(active),
-        isError: isToolFailed(active),
-      })
-    : undefined
+  const activePresentation = active ? presentTool(active, toolStatus(active)) : undefined
 
-  const summary = summaryOfTools(
-    tools.map((t) => ({ toolName: t.toolName, isError: isToolFailed(t) })),
-  )
+  const summary = summaryOfTools(tools)
 
-  const completedCount = tools.filter((t) => !isToolRunning(t)).length
+  const completedCount = tools.filter((t) => toolStatus(t) !== 'running').length
 
   return (
     <TraceCollapsible open={chosen ?? working} onOpenChange={setChosen}>

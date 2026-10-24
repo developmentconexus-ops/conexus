@@ -130,6 +130,26 @@ test('um turno com `recall` termina sem parar à espera de aprovação', async (
   assert.deepEqual(suspended, [], 'no run was saved waiting for an approval')
 })
 
+// The memory's `recall` reads the conversation in progress only: another conversation of the same
+// person, even in the same Projeto, is not its to list (founder: "Scope correto", thread).
+test('`recall` lista só a conversa em curso, não as outras da mesma pessoa', async (t) => {
+  let step = 0
+  const results: string[][] = []
+  const recall: Block = { type: 'tool_use', name: 'recall', input: { mode: 'threads' } }
+  const { hub, ana, conversations } = await conversing(t, (call) => {
+    if (!call.stream) return { kind: 'text', text: 'Título' }
+    step += 1
+    results.push(call.texts)
+    if (step === 2) return { kind: 'blocks', blocks: [recall] }
+    return { kind: 'text', text: 'Pronto.' }
+  })
+  await asked(t, { hub, person: ana, conversations }, 'Primeira conversa')
+  await asked(t, { hub, person: ana, conversations }, 'Segunda conversa')
+  const listed = results.at(2)?.find((text) => text.includes('"threads"'))
+  assert.ok(listed !== undefined, 'the second conversation read the listing')
+  assert.equal(Object(JSON.parse(listed)).count, 1)
+})
+
 // A tool outside the closed set is refused by the controller, not run: the person reads "Não pôde
 // usar uma ferramenta", live and read back, never an error of the Builder's.
 test('um turno que pede uma ferramenta fora das liberadas a vê recusada (erro), ao vivo e relida', async (t) => {

@@ -85,6 +85,11 @@ test('token recusado e renovado: a chamada com o token novo passa e a conta segu
     f.anthropic.sent.filter((each) => each.stream).map((each) => each.bearer),
     [FIRST.access, SECOND.access],
   )
+  for (const each of f.anthropic.sent.filter((one) => one.stream))
+    assert.deepEqual(each.cached, [
+      { at: 'system', ttl: '1h' },
+      { at: 'message', ttl: '1h' },
+    ])
   assert.deepEqual(noticesOf(events), [])
   assert.deepEqual(await f.listed(), { Claude: 'ready', 'Time 1': 'ready' })
 })

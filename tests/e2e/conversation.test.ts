@@ -85,7 +85,7 @@ async function firstQuestion(chat: Page, hold: () => () => void) {
     .waitFor()
   await chat
     .getByRole('log', { name: 'Conversa com o Builder' })
-    .getByText('Leu 3 páginas, pesquisou 1 vez')
+    .getByText('4 ferramentas: leu página, pesquisou')
     .waitFor()
 }
 
@@ -175,7 +175,7 @@ test('o roteiro da primeira conversa: resposta com páginas e título, recusa, p
   assert.deepEqual(problems, [])
 })
 
-const FOLDED = 'Leu 3 páginas, pesquisou 1 vez'
+const FOLDED = '4 ferramentas: leu página, pesquisou'
 const DRAFT = 'rascunho da Ana'
 
 /** The Projeto in two regions: the Prévia and the Projeto tabs, the conversation on the right, the rail in icons. */

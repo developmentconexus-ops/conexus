@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { FailureCode } from './failures.ts'
+import { FAILURES } from './failures.ts'
 
 const Cuts = z.array(z.string()).optional()
 
@@ -11,6 +13,87 @@ export const CONEXUS_PARTS = [
   'data-conexus-notice',
   'data-conexus-thought',
 ] as const
+
+/**
+ * Whether a saved version's app built (card of step 14): its check at the end of the turn passed,
+ * failed the last time the turn could try, or could not run on the machine (founder, 2026-10-22,
+ * the words of `CHECK_PLATFORM_FAILED`); or the turn ended with `open` tasks still open the last
+ * time it could try, the version saved half done (card of step 14.2, criterion 15).
+ */
+export const VersionCheck = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('passed') }),
+  z.object({ state: z.literal('unfinished'), open: z.int().positive() }),
+  z.object({ state: z.literal('failed'), code: z.literal('APP_CHECK_FAILED') }),
+  z.object({ state: z.literal('unchecked'), code: z.literal('CHECK_PLATFORM_FAILED') }),
+])
+export type VersionCheck = z.infer<typeof VersionCheck>
+
+/** The steps of the machine a turn waits on, each told as a `data-conexus-machine` part. */
+export const MachinePhase = z.enum(['starting', 'waking', 'copying', 'replaced', 'saving'])
+export type MachinePhase = z.infer<typeof MachinePhase>
+
+/**
+ * Whether a machine phase is a fact that stays said on the thread, without a clock: a replaced
+ * machine. Every other phase is a step in progress, over once anything follows it.
+ */
+export function machinePhaseLasts(phase: MachinePhase): boolean {
+  return phase === 'replaced'
+}
+
+/** What each part of ours carries in its `data`, one schema per name in `CONEXUS_PARTS`. */
+export const MachineData = z.object({ phase: MachinePhase })
+export type MachineData = z.infer<typeof MachineData>
+
+export const VersionData = z.object({
+  number: z.number(),
+  files: z.number(),
+  changed: z.boolean(),
+  changedFiles: z.number(),
+  check: VersionCheck.optional(),
+})
+export type VersionData = z.infer<typeof VersionData>
+
+/** What a restart kept of the turn: its version, nothing to save, or a save that did not happen. */
+export const Kept = z.union([z.number(), z.literal('nothing'), z.literal('lost')])
+export type Kept = z.infer<typeof Kept>
+
+export const RestartedData = z.object({ kept: Kept })
+export type RestartedData = z.infer<typeof RestartedData>
+
+export const FailureData = z.object({
+  code: z.string().refine((code): code is FailureCode => Object.hasOwn(FAILURES, code)),
+})
+export type FailureData = z.infer<typeof FailureData>
+
+export const NoticeData = z.object({ text: z.string() })
+export type NoticeData = z.infer<typeof NoticeData>
+
+export const ThoughtData = z.object({ id: z.string(), seconds: z.number() })
+export type ThoughtData = z.infer<typeof ThoughtData>
+
+/** A part of ours with its payload, one variant per name in `CONEXUS_PARTS` (code C21). */
+export const ConexusPart = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('data-conexus-machine'), data: MachineData }),
+  z.object({ type: z.literal('data-conexus-restarted'), data: RestartedData }),
+  z.object({ type: z.literal('data-conexus-version'), data: VersionData }),
+  z.object({ type: z.literal('data-conexus-failure'), data: FailureData }),
+  z.object({ type: z.literal('data-conexus-notice'), data: NoticeData }),
+  z.object({ type: z.literal('data-conexus-thought'), data: ThoughtData }),
+])
+export type ConexusPart = z.infer<typeof ConexusPart>
+
+/**
+ * A call that waits for the person, as Mastra keeps it in the message's `metadata.suspendedTools`
+ * and its display state's `pendingSuspensions`; `cuts` as in a part.
+ */
+export const Suspended = z.object({
+  toolCallId: z.string().min(1),
+  toolName: z.string(),
+  args: z.unknown(),
+  suspendPayload: z.unknown(),
+  cuts: Cuts,
+})
+export type Suspended = z.infer<typeof Suspended>
 
 const ReasoningDetail = z.union([
   z.object({ type: z.literal('text'), text: z.string(), signature: z.string().optional() }),
@@ -32,6 +115,8 @@ const ToolInvocation = z.object({
   args: z.unknown(),
   result: z.unknown().optional(),
   isError: z.boolean().optional(),
+  /** Why a call failed: Mastra keeps a failed call as `output-error` with this, and no `result`. */
+  errorText: z.string().optional(),
 })
 
 /**

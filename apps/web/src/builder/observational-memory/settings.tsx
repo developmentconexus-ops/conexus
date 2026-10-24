@@ -1,13 +1,14 @@
 import { ModelId } from '@conexus/hub-api'
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
+import { writeFailureText } from '../../platform/hub.ts'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
 import { accountsQuery } from '../model-accounts/public.ts'
 import { observationalMemoryModelsQuery, setObservationalMemoryModelMutation } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/observational-memory')
 
-/** The company-level side-call models: Auto follows each conversation; explicit choices are independent. */
+/** The company's Observer and Reflector models: none follows each conversation's model; the two are chosen apart. */
 export function ObservationalMemorySettings() {
   const { companyId } = route.useParams()
   const { observer, reflector } = useSuspenseQuery(observationalMemoryModelsQuery(companyId)).data
@@ -34,7 +35,7 @@ export function ObservationalMemorySettings() {
           disabled={!accounts.mayManage || save.isPending}
           onChange={(event) => select(role, event.currentTarget.value)}
         >
-          <option value="">Automático · modelo da conversa</option>
+          <option value="">Segue o modelo da conversa</option>
           {models.map((model) => (
             <option key={model.id} value={model.id}>
               {model.id}
@@ -51,8 +52,8 @@ export function ObservationalMemorySettings() {
       className="flex w-full max-w-column flex-col gap-lg"
     >
       <p className="text-text-2">
-        Automático acompanha o modelo efetivo da conversa. Um modelo escolhido aqui vale apenas para
-        sua função e usa as contas da empresa.
+        Sem escolha, o observador e o refletor seguem o modelo da conversa. Quem não tem conta no
+        modelo escolhido aqui também segue o da conversa.
       </p>
       {selector('observer', observer, 'Modelo do observador')}
       {selector('reflector', reflector, 'Modelo do refletor')}
@@ -62,7 +63,12 @@ export function ObservationalMemorySettings() {
         </p>
       )}
       <FieldError>
-        {save.isError ? 'Não foi possível salvar o modelo. Tente novamente.' : undefined}
+        {save.isError
+          ? writeFailureText(
+              save.error,
+              'Não foi possível confirmar se o modelo foi salvo. Confira e tente de novo.',
+            )
+          : undefined}
       </FieldError>
     </section>
   )

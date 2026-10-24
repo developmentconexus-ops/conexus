@@ -9,7 +9,6 @@ import type {
   VersionCheck,
 } from '@conexus/hub-api'
 import { QUESTION_LIMITS } from '@conexus/hub-api'
-import type { Mastra } from '@mastra/core/mastra'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Result } from '../../platform/result.ts'
@@ -19,12 +18,15 @@ import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
 import { dailySweep, sweep } from './daily.ts'
 import { watchDeadline } from './deadline.ts'
+import type { Driven, Registry, Stop } from './driven.ts'
+import { idleRun } from './driven.ts'
 import { runIn, withRun } from './keys.ts'
 import { holdLease, onceAfter } from './lease.ts'
 import type { ReleaseScope } from './removal.ts'
 import { releaseRuns } from './removal.ts'
 import { saveRun } from './save.ts'
 import { settleExpired, settleRuns } from './settle.ts'
+import type { Run } from './store.ts'
 import { RunStore } from './store.ts'
 
 /** A turn's hour (card, limits). */
@@ -32,47 +34,6 @@ const TURN_MS = 3_600_000
 
 /** How long a stopping copy waits for its turns to end before it lets go of their leases. */
 const YIELD_AFTER_MS = 8_000
-
-/** Where Mastra keeps each workspace it resolved, to stop them all at its shutdown. */
-type Registry = Pick<Mastra, 'removeWorkspace'>
-
-function idleRun() {
-  return {
-    workspace: undefined,
-    registry: undefined,
-    onPhase: () => undefined,
-    stopDeadline: () => undefined,
-    stopWaiting: () => undefined,
-    stopLease: () => undefined,
-    waits: Promise.resolve(),
-    lost: false,
-    check: undefined,
-    rounds: 0,
-  }
-}
-
-/** A run this copy of the program drives: its Projeto, its timers and its workspace. */
-type Driven = {
-  companyId: CompanyId
-  projectId: ProjectId
-  deadlineAt: Date
-  workspace: Promise<Workspace> | undefined
-  registry: Registry | undefined
-  /** Where the machine's phases are told; the turn sets it, none until then. */
-  onPhase: (phase: Phase) => void
-  /** Ends the hour's timer; the lease goes on until the save is over. */
-  stopDeadline: () => void
-  /** Ends the question's clock, while the turn waits on an answer. */
-  stopWaiting: () => void
-  /** The `waiting` writes in flight, one after the other. */
-  waits: Promise<void>
-  stopLease: () => void
-  lost: boolean
-  /** What the end of the turn's check said last, for the version it saves. */
-  check: VersionCheck | undefined
-  /** How many times the end of the turn judged it, for the turn's line. */
-  rounds: number
-}
 
 type Admission = {
   companyId: CompanyId
@@ -93,6 +54,7 @@ export class Runs {
   readonly #retry = createCopyRetry(() => copyPending(this.#context))
   readonly #sweepDaily: () => void
   #told: (restart: Restart) => Promise<void> = async () => undefined
+  #adopt: (run: Run) => Promise<boolean> = async () => false
   #stopSettle: () => void = () => undefined
 
   constructor(deps: RunsDeps) {
@@ -111,6 +73,7 @@ export class Runs {
         await this.#unregister(mine)
       },
       restarted: (restart) => this.#told(restart),
+      adopted: (run) => this.#adopt(run),
     }
     this.#sweepDaily = dailySweep(this.#context)
   }
@@ -121,6 +84,7 @@ export class Runs {
       companyId,
       projectId,
       deadline: mine.deadlineAt,
+      resumed: mine.resumed,
       onPhase: (phase) => mine.onPhase(phase),
     })
   }
@@ -181,19 +145,35 @@ export class Runs {
     return written
   }
 
-  /** Starts the turn's hour and its lease; `abort` stops the turn as Parar does. */
-  attach(runId: RunId, abort: () => void): void {
+  /** Starts the turn's hour, which ends in `abort`, and its lease, whose loss calls `lost`. */
+  attach(runId: RunId, stop: Stop): void {
     const mine = this.#driven.get(runId)
     if (mine === undefined) return
-    mine.stopDeadline = watchDeadline(mine.deadlineAt, abort)
+    mine.stopDeadline = watchDeadline(mine.deadlineAt, stop.abort)
     mine.stopLease = holdLease({
       everyMs: this.#deps.renewMs?.(),
       renew: () => this.#context.store.renew(mine.companyId, runId),
       lost: () => {
         mine.lost = true
         this.#deps.log.error({ companyId: mine.companyId, runId }, 'RUN_LEASE_LOST')
-        abort()
+        stop.lost()
       },
+    })
+  }
+
+  /**
+   * Drives a run another copy left on a card: its hour, its lease, which `takeExpired` made this
+   * copy's, and the machine as it stands. The card's clock starts again here: Mastra keeps no
+   * stable time of the ask, and the turn's hour (`deadline_at`) still bounds it (firstmate
+   * 2026-10-24, option C).
+   */
+  drive(run: Run, stop: Stop & { expire: () => void }): void {
+    const { companyId, projectId, deadlineAt } = run
+    this.#driven.set(run.id, { companyId, projectId, deadlineAt, ...idleRun(), resumed: true })
+    this.attach(run.id, stop)
+    this.waiting(run.id, true, stop.expire).catch((error: unknown) => {
+      this.#deps.log.error({ companyId, runId: run.id, error: String(error) }, 'RUN_WAIT_FAILED')
+      stop.abort()
     })
   }
 
@@ -302,6 +282,11 @@ export class Runs {
       }
       const fields = { companyId, projectId, runId: input.runId, reason: input.reason }
       this.#deps.log.info(fields, 'RUN_SETTLING')
+      // A run from another copy wakes its machine, as it stands, to save it (card, the restart).
+      if (mine.resumed) {
+        mine.workspace ??= this.#openWorkspace(mine)
+        await mine.workspace
+      }
       const outcome = await saveRun(this.#context, saved, mine.check)
       return outcome === 'gone' ? outcome : { ...outcome, rounds: mine.rounds }
     } finally {
@@ -329,6 +314,19 @@ export class Runs {
   /** Where a restart's word on a turn goes: its conversation's streams and thread. */
   onRestart(told: (restart: Restart) => Promise<void>): void {
     this.#told = told
+  }
+
+  /** Where a run another copy left goes first: its conversation adopts it when Mastra parks its card. */
+  onAdopt(adopt: (run: Run) => Promise<boolean>): void {
+    this.#adopt = adopt
+  }
+
+  /** Settles the conversation's runs whose lease ended: the boot's settle may still be on its way. */
+  settleConversation(input: {
+    companyId: CompanyId
+    conversationId: ConversationId
+  }): Promise<void> {
+    return settleExpired(this.#context, input)
   }
 
   /**
