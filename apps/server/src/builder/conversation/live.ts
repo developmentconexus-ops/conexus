@@ -21,7 +21,7 @@ import type { Recorder } from './record.ts'
 import { saveExtras, settled } from './record.ts'
 import { ShellTail } from './shell.ts'
 import { settleThinking, startThinking, tell, tellExtra } from './tell.ts'
-import { TurnTally, turnLine } from './turn-line.ts'
+import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
 import type { Listener, TurnLog } from './turn-log.ts'
 import { messagesOf, say } from './turn-log.ts'
 import { modelOf, wireEvent, wireShell, wireSuspended } from './wire.ts'
@@ -180,7 +180,7 @@ export function endRun(live: Live, reason: Ending['reason'], parked?: string): v
     live.unclaimed = { run: runId, reason }
     return
   }
-  endTurn(live, { reason, turn: run?.turn })
+  endTurn(live, { reason, turn: run?.turn, finish: live.turn?.tally.finishReason })
   run?.ended()
 }
 
@@ -245,6 +245,8 @@ function onShellEvent(
 type Ending = {
   reason: 'complete' | 'aborted' | 'error' | 'suspended' | undefined
   turn: Turn | undefined
+  /** How the model finished, when Mastra said it was not a normal finish (`TurnTally.finishReason`). */
+  finish: string | undefined
   unexpected?: TurnFailureCode
 }
 
@@ -252,7 +254,8 @@ type Ending = {
 function failureOf(ending: Ending): TurnFailureCode | undefined {
   if (ending.reason !== 'error') return undefined
   if (ending.unexpected !== undefined) return ending.unexpected
-  return ending.turn?.outcome === 'exhausted' ? 'MODEL_NO_ACCOUNT' : 'MODEL_CALL_FAILED'
+  if (ending.turn?.outcome === 'exhausted') return 'MODEL_NO_ACCOUNT'
+  return (ending.finish === undefined ? undefined : FINISHES[ending.finish]) ?? 'MODEL_CALL_FAILED'
 }
 
 /** The turn's failure, told and kept once. */
@@ -304,7 +307,9 @@ export async function beforeAgentEnd(live: Live, reason: Ending['reason']): Prom
   if (outcome !== undefined && outcome !== 'gone' && outcome.kind === 'saved') {
     if (turn !== undefined) tellVersion(live, turn, outcome.version)
   }
-  const code = live.saveFailure ?? failureOf({ reason, turn: run?.turn })
+  const code =
+    live.saveFailure ??
+    failureOf({ reason, turn: run?.turn, finish: live.turn?.tally.finishReason })
   if (code !== undefined && turn !== undefined && (run !== undefined || live.saveFailure)) {
     tellFailure(live, turn, code)
   }

@@ -261,14 +261,19 @@ export class Sessions {
       if (runId !== undefined && live.unclaimed?.run === runId) {
         const { reason } = live.unclaimed
         live.unclaimed = undefined
-        endTurn(live, { reason, turn })
+        endTurn(live, { reason, turn, finish: live.turn?.tally.finishReason })
       } else if (runId !== undefined) {
         await new Promise<void>((ended) => live.runs.set(runId, { turn, ended }))
       }
     } catch (cause) {
       logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause }))
       if (live.runs.size === 0 && !live.session.stream.isActive()) {
-        endTurn(live, { reason: 'error', turn, unexpected: 'INTERNAL_UNEXPECTED' })
+        endTurn(live, {
+          reason: 'error',
+          turn,
+          finish: undefined,
+          unexpected: 'INTERNAL_UNEXPECTED',
+        })
       }
     } finally {
       live.asked.delete(turn)
@@ -278,7 +283,7 @@ export class Sessions {
       if (live.unclaimed !== undefined && live.asked.size === 0) {
         const { reason } = live.unclaimed
         live.unclaimed = undefined
-        endTurn(live, { reason, turn: undefined })
+        endTurn(live, { reason, turn: undefined, finish: live.turn?.tally.finishReason })
       }
       // The turn is over once what it keeps on the thread is written: the drain waits for that.
       await settled(live)
