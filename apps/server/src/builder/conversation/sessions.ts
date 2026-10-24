@@ -2,15 +2,14 @@ import type {
   ConversationId,
   Effort,
   EventId,
+  MessageId,
   ModelId,
   OMProgress,
   ProjectId,
   QuestionAnswer,
-  RestartedData,
   RunId,
   ToolCallId,
 } from '@conexus/hub-api'
-import { MessageId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { Turn, turnContext } from '../model-accounts/public.ts'
@@ -22,11 +21,18 @@ import { denyParked, expire, onCardEvent, parked, releaseCards, takeCards } from
 import { deliver } from './deliver.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
-import { beforeAgentEnd, cancelPending, endTurn, onEvent, openTurn, tellMachine } from './live.ts'
+import {
+  beforeAgentEnd,
+  cancelPending,
+  endTurn,
+  onEvent,
+  openTurn,
+  tellMachine,
+  tellRestarted,
+} from './live.ts'
 import type { Question } from './record.ts'
 import { questionId, saveQuestion, saveRestarted, settled } from './record.ts'
 import { deliverInto, nextRunOrEnd, steerCards, turnOver } from './steer.ts'
-import { eventId } from './turn-log.ts'
 
 /**
  * A conversation's place in this process: its session, opening or open, and how many holders use
@@ -317,21 +323,7 @@ export class Sessions {
       const live = await entry.live
       await denyParked(live, this.#builder.agent)
       await saveRestarted(live, { runId, kept })
-      const part = {
-        type: 'data-conexus-restarted',
-        data: { kept } satisfies RestartedData,
-      } as const
-      const events = [
-        {
-          type: 'message_update',
-          id: MessageId.parse(runId),
-          event: { type: 'part', index: 0, part },
-        },
-        { type: 'turnEnd', reason: 'aborted' },
-      ] as const
-      for (const [n, event] of events.entries()) {
-        for (const listener of live.listeners) listener({ id: eventId(runId, n + 1), event })
-      }
+      tellRestarted(live, runId, kept)
     } finally {
       await this.#release(conversationId, entry)
     }
