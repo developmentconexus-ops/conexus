@@ -4,6 +4,7 @@ import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { asked, conversing, KEY } from '../conversation/test-conversation.ts'
 import { noticesOf } from '../conversation/test-parts.ts'
+import { GROQ_MODEL } from './test-defaults.ts'
 
 /** A reply that is `first` for the first `times` streamed calls, then text. */
 function failingFirst(first: Reply, times: number) {
@@ -31,7 +32,7 @@ test('conexão cortada duas vezes no meio da resposta: o Mastra repete na mesma 
 })
 
 test('MALFORMED_FUNCTION_CALL do Gemini (pelo CLIProxy, em Chat Completions): repete na mesma conta antes de qualquer troca', async (t) => {
-  const groq = 'groq/llama-3.3-70b-versatile'
+  const groq = GROQ_MODEL
   const { hub, ana, companyId, conversations, anthropic } = await conversing(t, () => ({
     kind: 'text',
     text: 'Pronto.',

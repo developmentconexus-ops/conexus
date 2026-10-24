@@ -6,7 +6,7 @@ import type { ConversationEvent } from '@conexus/hub-api'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
-import { connect } from '../model-accounts/test-defaults.ts'
+import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
 import {
   answeredOf,
   conversing,
@@ -283,7 +283,7 @@ const OBSERVED = [
 test('a cópia que adota o turno lê a escolha da empresa: o Observador chama o dublê do Groq (14.2, 35)', {
   timeout: 60_000,
 }, async (t) => {
-  const groq = 'groq/llama-3.3-70b-versatile'
+  const groq = GROQ_MODEL
   const where = await parkedThenUpdated(
     t,
     'question',

@@ -4,6 +4,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { Effort, ModelId } from '@conexus/hub-api'
 import { getModelReasoningOptions, PROVIDER_REGISTRY } from '@mastra/core/llm'
 import { effortFor, effortsOf, providerOptionsOf } from './public.ts'
+import { GROQ_MODEL } from './test-defaults.ts'
 
 function asked(model: string, effort: Effort) {
   return providerOptionsOf(ModelId.parse(model), effort)
@@ -190,7 +191,7 @@ test('o nível com que a conversa começa é o guardado, o mais alto aceito abai
   assert.equal(effortFor(model('anthropic/claude-sonnet-4-5'), 'high'), 'high')
   assert.equal(effortFor(model('openai/gpt-5'), 'max'), 'high')
   assert.equal(effortFor(model('openai/gpt-5'), 'off'), 'low')
-  assert.equal(effortFor(model('groq/llama-3.3-70b-versatile'), 'high'), 'off')
+  assert.equal(effortFor(model(GROQ_MODEL), 'high'), 'off')
 })
 
 test('Gemini sob o nome do CLIProxy é um modelo só: oferece os níveis que o pedido provado liga, e o nível vai em reasoning_effort (14.2, critério 20)', () => {
