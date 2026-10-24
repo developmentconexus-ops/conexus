@@ -12,6 +12,11 @@ export const Sha = z
 export type Sha = z.infer<typeof Sha>
 
 export const MAIN = 'refs/heads/main'
+/**
+ * The newest version the bucket holds, kept in the Projeto's own repository: our invention (code
+ * C75), since no reference backs up to a bucket. A version is pending while `main` is past it.
+ */
+export const COPIED = 'refs/conexus/copied'
 export const MAX_FILES = 2_000
 export const MAX_BYTES = 64 * 1024 * 1024
 /**

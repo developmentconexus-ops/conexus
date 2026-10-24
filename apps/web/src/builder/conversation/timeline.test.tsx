@@ -2,10 +2,11 @@ import type { ConversationEvent, Message } from '@conexus/hub-api'
 import { MessageId, ModelId } from '@conexus/hub-api'
 import { afterEach, expect, test, vi } from 'vitest'
 import { fold } from './fold.ts'
-import type { Live, Step } from './live.ts'
-import { IDLE, itemsOf, live, waitsOnPerson } from './live.ts'
+import { waitsOnPerson } from './parts.ts'
+import type { Live, Step } from './timeline.ts'
+import { IDLE, live, timelineOf } from './timeline.ts'
 import { READ_DONE } from './tool-fixtures.ts'
-import { fromMessages } from './transcript.ts'
+import { shownOf } from './transcript.tsx'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -30,6 +31,16 @@ function message(
     model: MODEL,
     createdAt: STARTED,
   } satisfies Message
+}
+
+/** The turns on screen: the read joined to what the stream told. */
+function turns(state: Live, read: readonly Message[] = []) {
+  const running = state.kind === 'answering' || state.kind === 'resuming'
+  return shownOf(timelineOf(state), read, running)
+}
+
+function itemsOf(state: Live, read: readonly Message[] = []) {
+  return turns(state, read).flatMap((turn) => turn.items)
 }
 
 function told(...events: Step[]): Live {
@@ -154,7 +165,7 @@ test('o plano que espera abre com o texto do servidor, ao ler de novo e na segun
       suspendPayload: { title: 'Pedidos', plan: 'Um fluxo.' },
     },
   }
-  const reread = fromMessages([message(STEP_1, [plan], suspended)])
+  const reread = itemsOf(IDLE, [message(STEP_1, [plan], suspended)])
   expect(reread).toMatchObject([
     { kind: 'card', cardKind: 'plan', title: 'Pedidos', plan: 'Um fluxo.' },
   ])
@@ -200,7 +211,7 @@ test('o plano recusado mostra o que o Mastra devolve: submittedPlan com a ação
       },
     },
   } satisfies Message['parts'][number]
-  expect(fromMessages([message(STEP_1, [rejected])])).toMatchObject([
+  expect(itemsOf(IDLE, [message(STEP_1, [rejected])])).toMatchObject([
     { kind: 'card', state: 'rejected', title: 'Pedidos', plan: 'Um fluxo.' },
   ])
 })
@@ -261,7 +272,7 @@ test('um quadro do turno depois de reconectar mantém só as mensagens que ele a
   expect(state.kind === 'answering' && state.turn.steers).toEqual([{ id: B, content: 'segunda' }])
 })
 
-test('a mensagem lida entra na volta no lugar em que o Mastra a leu, sem se fundir ao texto do Builder', () => {
+test('a mensagem lida abre a sua volta no lugar em que o Mastra a leu, sem se fundir ao texto do Builder', () => {
   const state = told(
     opening,
     start(STEP_1, [{ type: 'text', text: 'Antes.' }]),
@@ -269,7 +280,12 @@ test('a mensagem lida entra na volta no lugar em que o Mastra a leu, sem se fund
     { type: 'message_start', message: personSaid(A, 'Só eu cadastro.') },
     start(STEP_2, [{ type: 'text', text: 'Depois.' }]),
   )
-  expect(itemsOf(state).map((item) => item.kind)).toEqual(['text', 'person', 'text'])
+  expect(
+    turns(state).map((turn) => [turn.person?.id, turn.items.map((item) => item.kind)]),
+  ).toEqual([
+    [undefined, ['text']],
+    [A, ['text']],
+  ])
   expect(state.kind === 'answering' && state.turn.steers).toEqual([])
 })
 

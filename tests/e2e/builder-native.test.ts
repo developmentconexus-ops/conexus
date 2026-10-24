@@ -158,14 +158,18 @@ test('percurso nativo em Chromium: ferramentas, pensamento, tarefas e transcriç
     // The one live/reread difference: HOLD is a text step that ends with tasks open, so `checkGate`
     // aborts it with a retry and Mastra rolls the attempt back out of its store; the live fold shows
     // it, the reread cannot (Mastra 1.78.0 `llm-execution-step.ts:2916-2925`, `rollbackToStepBoundary`
-    // at `message-list.ts:865`). Every other part is the same after the reload.
-    const before = (await transcript.innerText()).replace(HOLD, '')
+    // at `message-list.ts:865`); the screen keeps what it showed, and drops it with its paragraph
+    // break here. Every other part is the same after the reload. A line keeps the
+    // open or closed it had while the turn ran, and a reload starts them closed, so both sides are
+    // read with every line open.
+    await openEveryLine(chat)
+    const before = (await transcript.innerText()).replace(`\n\n${HOLD}`, '')
     assertSteerBetween(before)
     await chat.reload()
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
-    assert.equal((await transcriptOf(chat).innerText()).replace(HOLD, ''), before)
-    assertSteerBetween(await transcriptOf(chat).innerText())
     await openEveryLine(chat)
+    assert.equal(await transcriptOf(chat).innerText(), before)
+    assertSteerBetween(await transcriptOf(chat).innerText())
   } finally {
     held.resolve()
     for (const close of closers) await close()

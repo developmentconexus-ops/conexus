@@ -7,6 +7,8 @@ import {
   opening,
   ours,
   readPage,
+  savedOurs,
+  savedStep,
   stepStarted,
   textDelta,
   updatePart,
@@ -136,7 +138,7 @@ test('a resposta que terminou com a linha caída aparece uma vez ao reconectar, 
   lines[0]?.emit(textDelta('O primeiro'))
   await screen.findByText(/O primeiro/)
   lines[0]?.close()
-  shown.conversations[0]?.messages.push(builderSaid('O primeiro é bom.'))
+  shown.conversations[0]?.messages.push(savedStep('O primeiro é bom.'))
   await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
@@ -172,7 +174,7 @@ test('depois de "Parar", o texto parcial fica até a leitura trazer a resposta g
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   expect(within(log).getByText('O primeiro é')).toBeTruthy()
   expect(log.getAttribute('aria-busy')).toBe('false')
-  shown.conversations[0]?.messages.push(builderSaid('O primeiro é'))
+  shown.conversations[0]?.messages.push(savedStep('O primeiro é'))
   lines[0]?.close()
   await waitFor(() => expect(lines.length).toBe(2), { timeout: 4000 })
   await waitFor(() => expect(within(log).getAllByText('O primeiro é')).toHaveLength(1))
@@ -211,7 +213,7 @@ test('a falha do turno, parte da resposta, segue na conversa relida depois do fi
   lines[0]?.emit(opening())
   const failure: MastraPart = { type: 'data-conexus-failure', data: { code: 'MODEL_CALL_FAILED' } }
   lines[0]?.emit(ours(failure))
-  shown.conversations[0]?.messages.push({ ...builderSaid(''), parts: [failure] })
+  shown.conversations[0]?.messages.push(savedOurs([failure]))
   lines[0]?.emit({ type: 'turnEnd', reason: 'error' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })

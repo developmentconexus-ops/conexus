@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { fold } from './fold.ts'
+import type { ToolItem, TranscriptItem } from './parts.ts'
 import { summaryOfTools } from './tool-registry.ts'
-import type { ToolItem, TranscriptItem } from './transcript.ts'
 
 function tool(id: string, toolName = 'mastra_workspace_read_file'): ToolItem {
   return {

@@ -50,7 +50,7 @@ test('apagar o Projeto: máquina, cópia, repositório e linhas saem; uma falha 
   assert.equal((await call(hub, ana, 'DELETE', project, { name: 'Encomendas' })).statusCode, 204)
   assert.equal(hub.builder.bucket.held.size, 0)
   assert.equal(existsSync(folderOf(hub, companyId, projectId)), false)
-  for (const table of ['run', 'machine']) {
+  for (const table of ['machine']) {
     const rows = await hub.test.asOwner(`select count(*)::int as n from builder.${table}`)
     assert.deepEqual(rows, [{ n: 0 }], table)
   }

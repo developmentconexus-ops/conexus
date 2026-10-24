@@ -1,11 +1,4 @@
-import type {
-  CompanyId,
-  ConversationId,
-  PersonId,
-  ProjectId,
-  RunId,
-  VersionCheck,
-} from '@conexus/hub-api'
+import type { CompanyId, PersonId, ProjectId, RunId, VersionCheck } from '@conexus/hub-api'
 import type { Mastra } from '@mastra/core/mastra'
 import type { Workspace } from '@mastra/core/workspace'
 import type { Phase } from '../machine/public.ts'
@@ -22,7 +15,6 @@ export type Driven = {
   runId: RunId
   companyId: CompanyId
   projectId: ProjectId
-  conversationId: ConversationId
   personId: PersonId
   deadlineAt: Date
   workspace: Promise<Workspace> | undefined

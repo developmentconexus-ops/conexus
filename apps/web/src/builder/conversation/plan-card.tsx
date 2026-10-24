@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import { Label } from '../../ui/label.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { Markdown } from './markdown.tsx'
+import type { PlanCardItem } from './parts.ts'
 import { CARD_TEXT, useAnswer } from './question-card.tsx'
-import type { PlanCardItem } from './transcript.ts'
 
 type Decision = 'approved' | 'rejected'
 
