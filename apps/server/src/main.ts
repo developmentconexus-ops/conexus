@@ -7,6 +7,7 @@ import { z } from 'zod'
 import type { Conversations } from './builder/conversation/public.ts'
 import { createConversations } from './builder/conversation/public.ts'
 import type { GitCopy } from './builder/git/public.ts'
+import { repositoriesIn } from './builder/git/public.ts'
 import type { ModelAccounts } from './builder/model-accounts/public.ts'
 import {
   createModelAccounts,
@@ -141,6 +142,7 @@ export function subjectsOf(deps: {
   const machines = deps.machinesOf(database)
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
+    repositories: () => repositoriesIn(config.gitRoot),
     turnMs: deps.turnMs,
   })
   const conversations = createConversations({

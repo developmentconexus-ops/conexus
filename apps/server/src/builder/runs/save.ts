@@ -61,12 +61,9 @@ export async function saveRun(context: RunsContext, mine: Driven): Promise<Outco
     context.log.error({ ...fields, reason: 'stale' }, 'SAVE_REFUSED')
     return { kind: 'failed', code: 'SAVE_REFUSED' }
   }
-  const saved = { id: runId, companyId, projectId, candidateSha: candidate }
-  const { personId, conversationId, deadlineAt } = mine
-  await context.store.saved({ ...saved, personId, conversationId, deadlineAt })
   const version = await repository.versionAt(candidate)
   context.log.info({ ...fields, version }, 'VERSION_SAVED')
-  if (!(await copyVersion(context, saved))) context.retry.kick()
+  if (!(await copyVersion(context, { companyId, projectId }))) context.retry.kick()
   const { files, changedFiles } = bundle
   const counts = { number: version, changed: true, files, changedFiles }
   const { check } = mine

@@ -1,12 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, mkdtemp, rename, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { STARTER_DIR } from '@conexus/app/starter'
-import type { CompanyId, ProjectId, RunId } from '@conexus/hub-api'
+import type { RunId } from '@conexus/hub-api'
+import { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { Result } from '../../platform/result.ts'
 import type { Context } from './context.ts'
 import {
+  COPIED,
   git,
   inMain,
   MAIN,
@@ -36,8 +38,13 @@ export type Repository = {
   head(): Promise<Sha | null>
   /** A bundle holding `main` only, for a machine to fetch as its seed. */
   bundleOfMain(): Promise<Buffer>
-  /** A bundle holding a run's candidate, with its history, for the copy. */
-  bundleOfRun(runId: RunId): Promise<Buffer>
+  /**
+   * `main` when it is a version the bucket does not hold yet (past the `refs/conexus/copied` mark),
+   * null when the bucket is up to date or `main` is only the starter.
+   */
+  uncopied(): Promise<Sha | null>
+  /** Moves the mark of what the bucket holds to this commit of `main`. */
+  markCopied(sha: Sha): Promise<void>
   /** When a commit was made, as an ISO time. */
   savedAt(sha: Sha): Promise<string>
   /** Which version a commit is: its depth in history, the starter commit not counted. */
@@ -195,10 +202,40 @@ async function receive(
   return { ok: true, value: Sha.parse(commit) }
 }
 
+async function uncopied(context: Context): Promise<Sha | null> {
+  const found = await head(context)
+  if (found === null || (await version(context)) === 0) return null
+  return (await readRef(context, COPIED)) === found ? null : found
+}
+
 async function bundleOf(context: Context, ref: string): Promise<Buffer> {
   return (
     await git(context, ['bundle', 'create', '--quiet', '-', ref], { maxOutput: MAX_BUNDLE_BYTES })
   ).stdout
+}
+
+/**
+ * Every Projeto whose repository is on the volume, read from the folders (`<company>/<project>.git`):
+ * the Projetos the bucket may be behind on, found with no table to name them.
+ */
+export async function repositoriesIn(
+  root: string,
+): Promise<{ companyId: CompanyId; projectId: ProjectId }[]> {
+  const found: { companyId: CompanyId; projectId: ProjectId }[] = []
+  const companies = await readdir(root).catch((error: unknown) => {
+    if (Reflect.get(Object(error), 'code') === 'ENOENT') return []
+    throw error
+  })
+  for (const name of companies) {
+    const companyId = CompanyId.safeParse(name)
+    if (!companyId.success) continue
+    for (const entry of await readdir(join(root, name))) {
+      const projectId = ProjectId.safeParse(entry.replace(/\.git$/, ''))
+      if (entry.endsWith('.git') && projectId.success)
+        found.push({ companyId: companyId.data, projectId: projectId.data })
+    }
+  }
+  return found
 }
 
 export function openRepository(input: {
@@ -221,7 +258,8 @@ export function openRepository(input: {
     main: () => main(context),
     head: () => head(context),
     bundleOfMain: () => bundleOf(context, MAIN),
-    bundleOfRun: (runId) => bundleOf(context, runRef(runId)),
+    uncopied: () => uncopied(context),
+    markCopied: async (sha) => void (await git(context, ['update-ref', COPIED, sha])),
     savedAt: async (sha) =>
       new Date(await text(context, ['log', '-1', '--format=%cI', sha])).toISOString(),
     versionAt: async (sha) => Number(await text(context, ['rev-list', '--count', sha])) - 1,

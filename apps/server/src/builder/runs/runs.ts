@@ -11,6 +11,8 @@ import type {
 import { RunId as RunIdSchema } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
+import { sql } from 'drizzle-orm'
+import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Result } from '../../platform/result.ts'
 import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
 import type { RunsContext, RunsDeps, Settled } from './context.ts'
@@ -23,7 +25,6 @@ import { runIn, withRun } from './keys.ts'
 import type { ReleaseScope } from './removal.ts'
 import { releaseRuns } from './removal.ts'
 import { saveRun } from './save.ts'
-import { RunStore } from './store.ts'
 
 /** A turn's hour (card, limits). */
 const TURN_MS = 3_600_000
@@ -53,7 +54,6 @@ export class Runs {
     this.#deps = deps
     this.#context = {
       ...deps,
-      store: new RunStore(deps.database),
       retry: this.#retry,
       writing: (projectId) => this.#writing.has(projectId),
       stopWriting: async (scope) => {
@@ -93,12 +93,12 @@ export class Runs {
     const holder = this.#writing.get(projectId)
     if (holder !== undefined) {
       this.#deps.log.info(fields, 'RUN_BUSY')
-      const person = await this.#context.store.nameOf(companyId, holder.personId)
+      const person = await this.#nameOf(companyId, holder.personId)
       return { ok: false, error: 'busy', ...(person === undefined ? {} : { person }) }
     }
     const runId = RunIdSchema.parse(randomUUID())
     this.#writing.set(projectId, {
-      ...{ runId, companyId, projectId, conversationId, personId },
+      ...{ runId, companyId, projectId, personId },
       deadlineAt: new Date(Date.now() + (this.#deps.turnMs?.() ?? TURN_MS)),
       ...{ workspace: undefined, registry: undefined, onPhase: () => undefined },
       ...{ stopDeadline: () => undefined, check: undefined, rounds: 0, stopped: false },
@@ -106,6 +106,16 @@ export class Runs {
     this.#sweepDaily()
     this.#deps.log.info({ ...fields, runId }, 'RUN_ADMITTED')
     return { ok: true, value: runId }
+  }
+
+  /** The person's name, for the `RUN_BUSY` of whoever holds the Projeto; none once they are gone. */
+  async #nameOf(companyId: CompanyId, personId: PersonId): Promise<string | undefined> {
+    const found = await this.#deps.database.read(
+      { kind: 'COMPANY', companyId, personId: null },
+      (tx) => tx.execute(sql`select ${personNameColumn(sql`${personId}`)} as name`),
+    )
+    const name: unknown = Object(found.rows[0]).name
+    return typeof name === 'string' ? name : undefined
   }
 
   /** The Projeto's repository, for the reads of its saved files. */
