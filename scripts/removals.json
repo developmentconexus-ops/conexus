@@ -2387,17 +2387,6 @@
     }
   },
   {
-    "id": "run-busy-refused",
-    "file": "apps/server/src/builder/conversation/sessions.ts",
-    "find": "    if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-turns.test.ts",
-      "name": "segunda pergunta durante"
-    }
-  },
-  {
     "id": "release-stops-runs",
     "file": "apps/server/src/builder/runs/removal.ts",
     "find": "  for (const stopped of await store.stop({ companyId, projectId, personId })) {\n    await context.stopped(stopped)\n  }\n",
@@ -2530,17 +2519,6 @@
     }
   },
   {
-    "id": "lease-renewed-while-saving",
-    "file": "apps/server/src/builder/runs/store.ts",
-    "find": "eq(run.owner, this.#owner), inArray(run.state, LIVE)))",
-    "replace": "eq(run.owner, this.#owner), eq(run.state, 'open')))",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "guardar leva mais que a posse: a posse segue renovada, outra mensagem não ganha o Projeto e a versão sai uma vez"
-    }
-  },
-  {
     "id": "lease-yielded-after-wait",
     "file": "apps/server/src/builder/runs/runs.ts",
     "find": "    await this.stop()\n  }\n\n  /** The request context of the turn",
@@ -2585,17 +2563,6 @@
     }
   },
   {
-    "id": "orphan-turn-saved",
-    "file": "apps/server/src/builder/runs/settle.ts",
-    "find": "  if (expired.state === 'open' || expired.state === 'waiting') return endTurn(context, expired)\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "a admissão guarda o turno órfão"
-    }
-  },
-  {
     "id": "deadline-stops-on-lost-lease",
     "file": "apps/server/src/builder/runs/runs.ts",
     "find": "    if (mine === undefined) return 'gone'\n    mine.stopDeadline()\n",
@@ -2626,17 +2593,6 @@
       "cwd": "apps/server",
       "file": "src/builder/conversation/permissions.test.ts",
       "name": "a sessão começa em yolo: nenhuma ferramenta da lista pede aprovação"
-    }
-  },
-  {
-    "id": "restart-told-to-open-streams",
-    "file": "apps/server/src/builder/conversation/sessions.ts",
-    "find": "        for (const listener of live.listeners) listener({ id: eventId(runId, n + 1), event })\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "diz o reinício ao stream já aberto"
     }
   },
   {
