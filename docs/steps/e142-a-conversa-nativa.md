@@ -31,7 +31,7 @@ harness inicial, ela tem que ser totalmente funcional".
 **A emenda de 2026-10-24.** Entram as suas decisões depois da aprovação: sem LSP; sem trava de leitura;
 nenhum processador nosso novo; a recusa do Mastra nas duas trilhas; a escolha do modelo do Observador e
 do Reflector, no formato da Factory, com critério e teste (U11), e sem conta para a pessoa ele segue a
-conversa; `run_event` fica até a próxima etapa que mexe no banco do Builder; a permissão da tabela nova,
+conversa; `run_event` sai nesta etapa, em migração própria depois que nenhum código o lê (D30), e o piso da volta entra na arquitetura; a permissão da tabela nova,
 em migração própria; o plano é a pasta, sem regra de falha.
 
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
@@ -96,7 +96,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 27 | U8 | Cada plano em `.conexus/plans/<nome>.md`; `submit_plan` fora dessa pasta, recusado; o plano aprovado não é sobrescrito (#268); turno que só mudou planos, parado ou não: sem versão, sem conferência; nenhuma outra regra de escrita | `conversation-plan.test.ts` |
 | 30 | U2 | A pergunta é gravada antes do turno e lida uma vez; versão, falha, máquina e reinício voltam como `data-conexus-*`, sem ir ao modelo; a leitura só lê mensagens | `conversation-recorded.test.ts` |
 | 31 | U2 | O stream abre com o turno vivo até ali; depois de um reinício, o aviso e a versão | `conversation-stream.test.ts` |
-| 32 | U2 | Saem `catch-up.ts`, `kept.ts` e as listas; `run_event` fica, sem uso, e nenhuma migração o apaga (D6: v0.13.0 a v0.14.1 escrevem nele, e voltar a elas tem de valer) | remoção (CI), `check-migrations` |
+| 32 | U2 | Saem `catch-up.ts`, `kept.ts` e as listas; `run_event` sai em migração própria, depois que nenhum código o lê (D30: sem dados de empresa; fundador: "Porque manter tabela antiga se estamso apenas em estado de desenvolvimento, não quero amnter legacy"); nenhuma imagem anterior roda depois dela, e `architecture.md` "Roll back" ganha esse piso | remoção (CI), `check-migrations` |
 | 28 | U10 | Percurso no Chromium nas sequências da exportação do Mastra, só das unidades em curso: cada linha abre; recarregar dá o mesmo | `tests/e2e/builder-native.test.ts` |
 | 29 | U10 | QA (T25) com o conjunto fechado e o Gemini; o roteiro pelo fundador (L17) | `conexus-qa`, fundador |
 | 33 | U4 | `CyberRefusalHandler` primeiro em `errorProcessors` e em `outputProcessors`; a recusa não gira a conta do turno | `conversation-refusal.test.ts` (novo) |
@@ -194,7 +194,7 @@ Mastra's own messages and events, cut". 0055: `server/migrations/`, `.conexus/pl
 
 ## U2 O fio do Mastra
 
-**Raio.** `kept.ts`, `catch-up.ts`: apaga; `run_event` (`builder/runs/`): o código sai, a tabela fica (D6) até a próxima etapa que mexe no banco do Builder; `sessions.ts`: muda. `hub-api/{conversations,questions,index}.ts`: muda; `mastra-parts.ts`, `wire-limits.ts`: cria;
+**Raio.** `kept.ts`, `catch-up.ts`: apaga; `run_event` (`builder/runs/`): o código sai e, em migração própria depois dele, a tabela (D30; piso da volta em `architecture.md`, "Roll back"); `sessions.ts`: muda. `hub-api/{conversations,questions,index}.ts`: muda; `mastra-parts.ts`, `wire-limits.ts`: cria;
 `tool-detail.ts`: apaga. `builder/conversation/wire.ts`: cria; `parts.ts`, `check-row.ts`: apaga; `cards.ts`,
 `shell.ts`: perdem a tradução; `live.ts`, `history.ts`, `turn-log.ts`: muda. Chama: web, OpenAPI,
 `sessions.ts`, `routes.ts`.

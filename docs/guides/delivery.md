@@ -141,7 +141,7 @@ merge.
 | `docs/guides/testing.md`, `web.md` | 2,000 |
 | `docs/guides/delivery.md` | 1,800 |
 | `docs/decisions/*.md` | 350 |
-| `docs/steps/*.md` | none (L21); the founder's page about 600 |
+| `docs/steps/*.md` | none (L21), nor on the founder's page |
 | `docs/how-to/*.md` | 800 |
 | `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |

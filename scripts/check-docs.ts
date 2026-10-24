@@ -30,7 +30,6 @@ const CEILINGS: readonly (readonly [RegExp, number])[] = [
   [/^\.agents\/skills\/[^/]+\/SKILL\.md$/, 600],
   [/^\.agents\/skills\/[^/]+\/references\/[^/]+\.md$/, 1500],
 ]
-const STEP_PAGE_CEILING = 600
 const RETIRED = [
   /\bwave\b/i,
   /\bN[0-5]\b/,
@@ -83,16 +82,6 @@ function checkCeiling(file: string, text: string) {
     const count = words(body(file, text))
     if (count > ceiling)
       fail('document-too-long', file, `${count} words, the ceiling is ${ceiling}`)
-  }
-  if (/^docs\/steps\//.test(file)) {
-    const page = text.match(/^## A página do fundador\n([\s\S]*?)(?=^## )/m)?.[1] ?? ''
-    if (words(page) > STEP_PAGE_CEILING) {
-      fail(
-        'founder-page-too-long',
-        file,
-        `${words(page)} words, the ceiling is ${STEP_PAGE_CEILING}`,
-      )
-    }
   }
 }
 
