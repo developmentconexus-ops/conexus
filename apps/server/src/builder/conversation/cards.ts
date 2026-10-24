@@ -152,14 +152,14 @@ function onCancelled(live: Live, event: Cancelled) {
   if (openCards(live).length > 0) return
   waitOn(live, false)
   const { runId } = event
-  if (live.steering === undefined) {
+  if (live.carry === undefined) {
     endParked(live, runId).catch((cause: unknown) =>
       logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })),
     )
     return
   }
   // A message steers the run: its turn goes on in the run the message starts (`agent_start`).
-  live.steering.run = runId === undefined ? undefined : live.runs.get(runId)
+  live.carry.run = runId === undefined ? undefined : live.runs.get(runId)
   if (runId !== undefined) live.runs.delete(runId)
 }
 
@@ -167,22 +167,6 @@ function onCancelled(live: Live, event: Cancelled) {
 export function onCardEvent(live: Live, event: AgentControllerEvent): void {
   if (event.type === 'tool_suspended') onSuspended(live, event)
   else if (event.type === 'tool_suspension_cancelled') onCancelled(live, event)
-}
-
-/**
- * A message sent while a question waits closes it and goes on in the same turn: Mastra aborts the
- * run parked on the question and starts the next with the message (`steer`), and the turn follows
- * the new run (`agent_start`). False when no card waits, or an answer went on first: the message
- * is then a turn of its own. `steer` takes no id, so Mastra saves this message under one of its
- * own, with the turn, and unlike a turn's question it is not saved before.
- */
-export async function steerCards(live: Live, content: string): Promise<boolean> {
-  const taken = await takeCards(live)
-  if (taken.length === 0) return false
-  releaseCards(live, taken)
-  live.steering = { run: undefined }
-  await live.session.steer({ content, requestContext: live.run?.context })
-  return true
 }
 
 /**

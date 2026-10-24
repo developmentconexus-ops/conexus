@@ -121,6 +121,14 @@ function wirePart(part: MastraDBMessage['content']['parts'][number]): MastraPart
 
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
+const USER_MESSAGE_PART = 'data-user-message'
+/** What Mastra's controller puts in the part of a message the person sent into the running turn. */
+const UserMessageData = z.object({
+  contents: z.union([
+    z.string(),
+    z.array(z.object({ type: z.string(), text: z.string().optional() })),
+  ]),
+})
 const SuspendedTools = z.object({
   suspendedTools: z.record(
     z.string(),
@@ -170,20 +178,40 @@ export function wireSuspended(calls: Iterable<Parked>): Message['suspended'] {
   )
 }
 
+/** The words of the part a signal carries live (`data-user-message`), as a text part, or none. */
+function userTextOf(part: MastraDBMessage['content']['parts'][number]): MastraPart | undefined {
+  if (part.type !== USER_MESSAGE_PART || !('data' in part)) return undefined
+  const read = UserMessageData.safeParse(part.data)
+  if (!read.success) return undefined
+  const { contents } = read.data
+  const text =
+    typeof contents === 'string'
+      ? contents
+      : contents.flatMap((each) => (each.type === 'text' ? (each.text ?? []) : [])).join('\n')
+  return { type: 'text', text }
+}
+
+/** A signal is the person's when it was stored as theirs or carries the live part of their message. */
+function isPersonSignal(message: MastraDBMessage): boolean {
+  return (
+    PersonSignal.safeParse(message.content.metadata).success ||
+    message.content.parts.some((part) => part.type === USER_MESSAGE_PART)
+  )
+}
+
 /** A stored message as the person reads it: theirs, or the Builder's; none of Mastra's others. */
 export function wireMessage(message: MastraDBMessage): Message | undefined {
   const role =
     message.role === 'assistant'
       ? 'builder'
-      : message.role === 'user' ||
-          (message.role === 'signal' && PersonSignal.safeParse(message.content.metadata).success)
+      : message.role === 'user' || (message.role === 'signal' && isPersonSignal(message))
         ? 'person'
         : undefined
   if (role === undefined) return undefined
   return {
     id: MessageId.parse(message.id),
     role,
-    parts: message.content.parts.flatMap((part) => wirePart(part) ?? []),
+    parts: message.content.parts.flatMap((part) => userTextOf(part) ?? wirePart(part) ?? []),
     suspended: suspendedOf(message.content.metadata),
     model: role === 'builder' ? modelOf(message) : null,
     createdAt: new Date(message.createdAt).toISOString(),
@@ -210,7 +238,7 @@ export function wireEvent(event: AgentControllerEvent): ConversationEvent | unde
   switch (event.type) {
     case 'message_start': {
       const message = wireMessage(event.message)
-      return message?.role === 'builder' ? { type: 'message_start', message } : undefined
+      return message === undefined ? undefined : { type: 'message_start', message }
     }
     case 'message_update': {
       const id = MessageId.parse(event.id)
