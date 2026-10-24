@@ -13,14 +13,14 @@ import { BuilderTurn } from './builder-turn.tsx'
 import type { TranscriptItem } from './parts.ts'
 import { itemsOf } from './parts.ts'
 import { PersonBubble, PersonTurn } from './person-turn.tsx'
-import { STEER_PENDING } from './text.ts'
+import { STEER_FAILED, STEER_PENDING } from './text.ts'
 import type { Entry, Timeline } from './timeline.ts'
 import { merge } from './timeline.ts'
 
 type Group = {
   key: MessageId
   person: Message | undefined
-  pending?: string
+  pending?: { text: string; delivery: 'pending' | 'failed' }
   builder: Message[]
 }
 
@@ -30,7 +30,12 @@ function turnsOf(entries: readonly Entry[]): Group[] {
   const pending: Group[] = []
   for (const entry of entries) {
     if (entry.kind === 'local')
-      pending.push({ key: entry.id, person: undefined, pending: entry.text, builder: [] })
+      pending.push({
+        key: entry.id,
+        person: undefined,
+        pending: { text: entry.text, delivery: entry.delivery },
+        builder: [],
+      })
     else if (entry.kind === 'asked') turns.push({ key: entry.id, person: undefined, builder: [] })
     else if (entry.message.role === 'person')
       turns.push({ key: entry.message.id, person: entry.message, builder: [] })
@@ -49,7 +54,7 @@ export type ShownTurn = {
   key: MessageId
   person: Message | undefined
   /** The text of a message sent into the running turn that Mastra has not read. */
-  pending: string | undefined
+  pending: { text: string; delivery: 'pending' | 'failed' } | undefined
   items: readonly TranscriptItem[]
   model: ModelId | null
   streaming: boolean
@@ -102,7 +107,14 @@ export function Transcript(props: { turns: readonly ShownTurn[]; model: ModelId 
               <MessageScrollerItem key={turn.key} messageId={turn.key}>
                 {turn.person !== undefined && <PersonTurn message={turn.person} />}
                 {turn.pending !== undefined && (
-                  <PersonBubble text={turn.pending} footer={<span>{STEER_PENDING}</span>} />
+                  <PersonBubble
+                    text={turn.pending.text}
+                    footer={
+                      <span>
+                        {turn.pending.delivery === 'failed' ? STEER_FAILED : STEER_PENDING}
+                      </span>
+                    }
+                  />
                 )}
                 {(turn.items.length > 0 || turn.streaming) && (
                   <BuilderTurn

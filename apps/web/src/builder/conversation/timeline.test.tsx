@@ -275,7 +275,7 @@ test('um quadro do turno depois de reconectar mantém só as mensagens que ele a
     startedAt: STARTED,
   }
   const state = live(pending, again)
-  expect(locals(state)).toEqual([{ kind: 'local', id: B, text: 'segunda' }])
+  expect(locals(state)).toEqual([{ kind: 'local', id: B, text: 'segunda', delivery: 'pending' }])
 })
 
 test('a mensagem lida abre a sua volta no lugar em que o Mastra a leu, sem se fundir ao texto do Builder', () => {
@@ -295,12 +295,12 @@ test('a mensagem lida abre a sua volta no lugar em que o Mastra a leu, sem se fu
   expect(locals(state)).toEqual([])
 })
 
-test('a mensagem que o Builder não leu volta quando a volta acaba, uma vez, e a que falhou sai', () => {
+test('a mensagem que o Builder não leu volta quando a volta acaba, uma vez; a que falhou fica marcada e não volta', () => {
   const state = told(
     opening,
     { type: 'steer', id: A, text: 'não lida' },
     { type: 'steer', id: B, text: 'falhou' },
-    { type: 'unsteered', id: B },
+    { type: 'steerFailed', id: B },
     { type: 'turnEnd', reason: 'aborted' },
   )
   expect(state.kind === 'ended' && state.returned).toEqual(['não lida'])

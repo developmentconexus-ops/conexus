@@ -108,7 +108,7 @@ function useSending(
         return post.mutateAsync({ params, body: { content }, attemptKey })
       })
     } catch (failure) {
-      if (steered !== undefined) dispatch({ type: 'unsteered', id: steered })
+      if (steered !== undefined) dispatch({ type: 'steerFailed', id: steered })
       else dispatch({ type: 'unsent' })
       if (failure instanceof HubFailure && failure.code === 'CONVERSATION_NOT_FOUND') onGone()
       else setError(writeFailureText(failure, UNCONFIRMED_SEND))

@@ -6,7 +6,7 @@ import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import steerStart from './steer-events.json' with { type: 'json' }
 import { opening, stepStarted, textDelta } from './test-events.ts'
 import { conversationOf, FIRST, PROJECT, SECOND, say, screens, typed, view } from './test-hub.tsx'
-import { UNCONFIRMED_SEND } from './text.ts'
+import { STEER_FAILED, UNCONFIRMED_SEND } from './text.ts'
 
 const { open, openConversation } = screens(hubServer())
 
@@ -220,7 +220,7 @@ test('duas mensagens seguidas durante a resposta vão com chaves diferentes', as
   gate.resolve()
 })
 
-test('o envio que falha tira o balão e deixa o texto no campo', async () => {
+test('o envio que falha deixa o balão marcado como não enviado e o texto no campo', async () => {
   const { field } = await openConversation(conversationOf({ id: FIRST }), view(), {
     message: afterFirst(() => HttpResponse.error()),
   })
@@ -229,5 +229,6 @@ test('o envio que falha tira o balão e deixa o texto no campo', async () => {
   say(field, STEER)
   expect((await screen.findByRole('alert')).textContent).toBe(UNCONFIRMED_SEND)
   expect(screen.queryByText(PENDING)).toBeNull()
+  expect(screen.getByText(STEER_FAILED)).toBeTruthy()
   expect(typed(field)).toBe(STEER)
 })

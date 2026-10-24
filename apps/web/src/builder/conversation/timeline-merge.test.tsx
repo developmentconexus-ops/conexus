@@ -85,7 +85,7 @@ test('a mensagem enviada durante o trabalho fica embaixo, pendente, e a leitura 
   const pending = turns(state)
   expect(pending.map((turn) => [turn.key, turn.pending])).toEqual([
     [ASKED, undefined],
-    [A, 'No meio.'],
+    [A, { text: 'No meio.', delivery: 'pending' }],
   ])
   const read = [personSaid(ASKED, 'pergunta'), personSaid(A, 'No meio.'), message(TURN)]
   expect(turns(state, read).map((turn) => [turn.key, turn.pending, turn.person?.id])).toEqual([

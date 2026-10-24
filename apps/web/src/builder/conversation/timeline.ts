@@ -19,12 +19,12 @@ type MemoryFailure = 'observation' | 'reflection' | 'buffering'
  * holds it. It opens its turn, so the turn keeps one key before the read and after. A `local`
  * entry is a message sent into the running turn (Factory `localUser`): it has the same id, so the
  * person's `message_start`, or a read, takes its place by id, and it is pending until then. A send
- * that fails removes it, and the text stays in the field.
+ * that fails marks it `failed` (Factory `failLocalUser`), and the text stays in the field.
  */
 export type Entry =
   | { kind: 'message'; message: Message }
   | { kind: 'asked'; id: MessageId }
-  | { kind: 'local'; id: MessageId; text: string }
+  | { kind: 'local'; id: MessageId; text: string; delivery: 'pending' | 'failed' }
 
 /**
  * The conversation as the stream told it, one entry per id (Factory `upsertMessage`), and what
@@ -63,7 +63,7 @@ export type Step =
   | { type: 'unsent' }
   | { type: 'reconnected'; inProgress: boolean }
   | { type: 'steer'; id: MessageId; text: string }
-  | { type: 'unsteered'; id: MessageId }
+  | { type: 'steerFailed'; id: MessageId }
   | { type: 'returnedShown' }
 
 const NO_TIMELINE: Timeline = { entries: [], ours: null, suspended: {}, running: {}, heard: {} }
@@ -250,7 +250,9 @@ function ended(turn: Turn): Live {
       ...turn,
       timeline: { ...turn.timeline, entries: entries.filter((entry) => entry.kind !== 'local') },
     },
-    returned: entries.flatMap((entry) => (entry.kind === 'local' ? [entry.text] : [])),
+    returned: entries.flatMap((entry) =>
+      entry.kind === 'local' && entry.delivery === 'pending' ? [entry.text] : [],
+    ),
   }
 }
 
@@ -285,16 +287,20 @@ export function live(state: Live, step: Step): Live {
     case 'turnEnd':
       return running(state) ? ended(state.turn) : state
     case 'steer':
-    case 'unsteered': {
+    case 'steerFailed': {
       if (!running(state)) return state
       const { timeline } = state.turn
-      const held = timeline.entries.some((entry) => idOf(entry) === step.id)
+      const delivery = step.type === 'steer' ? 'pending' : 'failed'
+      const at = timeline.entries.findIndex((entry) => idOf(entry) === step.id)
+      const text = step.type === 'steer' ? step.text : ''
+      const was = timeline.entries[at]
+      // A retry is the same id: it makes a failed entry pending again; a message already told stays.
       const entries =
-        step.type === 'unsteered'
-          ? timeline.entries.filter((entry) => entry.kind !== 'local' || entry.id !== step.id)
-          : held
-            ? timeline.entries
-            : [...timeline.entries, { kind: 'local', id: step.id, text: step.text } as const]
+        was === undefined
+          ? [...timeline.entries, { kind: 'local', id: step.id, text, delivery } as const]
+          : was.kind === 'local'
+            ? timeline.entries.with(at, { ...was, delivery })
+            : timeline.entries
       return { ...state, turn: { ...state.turn, timeline: { ...timeline, entries } } }
     }
     case 'returnedShown':
