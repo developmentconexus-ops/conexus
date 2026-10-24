@@ -133,6 +133,8 @@ jobs:
           port: ${{ job.services.postgres.ports['5432'] }}
       # One file at a time in a job: files that share CPU starve each other's real-time margins
       # and migrate.test.ts changes the roles of the whole server. The shards are the parallelism.
+      # `--test-force-exit` ends a file's process once its tests are done: a failed test that leaves a
+      # turn parked on a card keeps a timer alive, and its file used to hold the shard to the timeout.
       - run: npm test -w @conexus/server
         env:
           TEST_SHARD: ${{ matrix.shard }}/6
