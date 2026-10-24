@@ -90,7 +90,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
     modes: [{ id: 'conversa' }],
   })
   await controller.init()
-  const session = await controller.createSession({ resourceId: OWNER, scope: scenario })
+  const session = await controller.createSession({ resourceId: OWNER, id: scenario })
   const events: unknown[] = []
   let deltas = 0
   session.subscribe((event) => {
