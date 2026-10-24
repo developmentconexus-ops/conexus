@@ -55,7 +55,7 @@ function personStarts(events: ConversationEvent[]) {
   )
 }
 
-test('uma mensagem enquanto o Builder escreve entra na mesma volta: 202, uma linha de run, um fim', async (t) => {
+test('uma mensagem enquanto o Builder escreve entra na mesma volta: 202, um fim', async (t) => {
   const { hub, ana, companyId, held, calls, url, stream } = await holdingConversation(t)
   assert.equal((await sent(hub, ana, url, 'Crie um app de encomendas')).statusCode, 202)
   assert.equal(await stream.text(), PARTIAL)
@@ -81,7 +81,6 @@ test('uma mensagem enquanto o Builder escreve entra na mesma volta: 202, uma lin
     events.filter((event) => event.type === 'turnEnd'),
     [{ type: 'turnEnd', reason: 'complete' }],
   )
-  assert.deepEqual(await hub.test.asOwner('select count(*)::int as n from builder.run'), [{ n: 1 }])
   assert.equal(steersIn(lastOf(calls)), 1)
   assert.ok(companyId)
   const read = rolesAndParts(await call(hub, ana, 'GET', url))
@@ -106,17 +105,11 @@ test('Parar com uma mensagem que o Builder não leu: ela não chega ao modelo', 
   await sleep(1000)
   assert.ok(calls.every((each) => steersIn(each) === 0))
   assert.equal(calls.length, 1)
-  assert.deepEqual(
-    await hub.test.asOwner(
-      `select count(*)::int as n from builder.run where state in ('open','waiting','saving')`,
-    ),
-    [{ n: 0 }],
-  )
   const read = JSON.stringify(rolesAndParts(await call(hub, ana, 'GET', url)))
   assert.ok(!read.includes(STEER))
 })
 
-test('uma mensagem com pergunta aberta responde antes da volta seguinte acabar', async (t) => {
+test('uma mensagem com pergunta aberta abre o turno seguinte e responde antes de ele acabar', async (t) => {
   const held = holding(t)
   const calls: Sent[] = []
   const hub = await conversing(t, (asked) => {
@@ -129,9 +122,10 @@ test('uma mensagem com pergunta aberta responde antes da volta seguinte acabar',
   const stream = await streamOf(hub.hub, hub.ana, url)
   t.after(() => stream.close())
   assert.equal((await sent(hub.hub, hub.ana, url, 'Crie um app de encomendas')).statusCode, 202)
+  // The question ends the turn that asked it.
   for (;;) {
     const event = await stream.next()
-    if (event.type === 'tool_suspended') break
+    if (event.type === 'turnEnd') break
   }
   const steering = sent(hub.hub, hub.ana, url, STEER)
   // Mastra gives an aborted parked run up to 5 s to end (`ABORT_STREAM_GRACE_MS`) before it accepts

@@ -48,13 +48,9 @@ export function memoryCopy() {
   return { copy, held, refuse }
 }
 
-/** What a test sets: how long a turn may run, how often its lease is renewed, and how a save is cut. */
+/** What a test sets: how long a turn may run, and how a save is cut. */
 type Knobs = {
   turnMs: number
-  renewMs: number
-  yieldMs: number
-  /** How long a question waits for its answer. */
-  questionMs: number
   dies: { receive: number; advance: number }
   /** While set, a save waits before it checks the turn's commit in. */
   holdReceive: Promise<void> | undefined
@@ -65,9 +61,6 @@ type Knobs = {
 function newKnobs(): Knobs {
   return {
     turnMs: 3_600_000,
-    renewMs: 30_000,
-    yieldMs: 8_000,
-    questionMs: 1_800_000,
     dies: { receive: 0, advance: 0 },
     holdReceive: undefined,
     holdAdvance: undefined,
@@ -144,23 +137,11 @@ export function testBuilderPorts(
   function turnMs() {
     return knobs.turnMs
   }
-  function renewMs() {
-    return knobs.renewMs
-  }
-  function yieldMs() {
-    return knobs.yieldMs
-  }
-  function questionMs() {
-    return knobs.questionMs
-  }
   return {
     machinesOf,
     repository,
     copy: bucket.copy,
     turnMs,
-    renewMs,
-    yieldMs,
-    questionMs,
     bucket,
     control,
     knobs,

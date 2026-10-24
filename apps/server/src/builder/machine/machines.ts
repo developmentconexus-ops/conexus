@@ -30,8 +30,6 @@ type Session = {
   known: boolean
   /** The recorded machine is gone from the provider: the turn starts a new one from `main`. */
   replaced: boolean
-  /** A turn whose copy of the program died: the machine's files are kept as they are. */
-  resumed: boolean
   /** How many times the machine started in this turn: a second `created` is a machine that died. */
   starts: number
   /** The machine died mid-turn, and what the turn wrote on it is gone. */
@@ -124,8 +122,7 @@ class BuilderMachines implements Machines {
   }
 
   /**
-   * What the machine holds once it is up. A woken one goes back to the Hub's `main`, unless the turn's
-   * copy of the program died, which keeps its files. A later start in the same turn is Mastra
+   * What the machine holds once it is up. A woken one goes back to the Hub's `main`. A later start in the same turn is Mastra
    * reconnecting a machine that paused or dropped (`retryOnDead`): it keeps what the turn wrote. A new
    * one is seeded; a second new one in the same turn is a machine that died, and what the turn wrote
    * on it is gone.
@@ -135,7 +132,7 @@ class BuilderMachines implements Machines {
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
-      if (!session.resumed && session.starts === 1) return this.seed(session)
+      if (session.starts === 1) return this.seed(session)
       const kept = await run(kit, keepScript(this.workdir))
       if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
       return
@@ -180,7 +177,7 @@ class BuilderMachines implements Machines {
     })
     const session: Session = {
       ...{ kit, companyId, projectId, onPhase },
-      ...{ known: recorded !== undefined, replaced: gone, resumed: input.resumed === true },
+      ...{ known: recorded !== undefined, replaced: gone },
       ...{ starts: 0, lost: false, ready: undefined },
     }
     holder.session = session
@@ -204,9 +201,7 @@ class BuilderMachines implements Machines {
 
   async collect({ projectId, base }: { projectId: ProjectId; base: Sha }) {
     const session = this.sessions.get(projectId)
-    if (session === undefined || (session.ready === undefined && !session.resumed)) {
-      return 'unchanged'
-    }
+    if (session?.ready === undefined) return 'unchanged'
     await this.ensure(session)
     if (session.lost) throw new Error('the machine died in the turn')
     session.onPhase('saving')
@@ -245,8 +240,7 @@ class BuilderMachines implements Machines {
   }
 
   touched(projectId: ProjectId) {
-    const session = this.sessions.get(projectId)
-    return session !== undefined && (session.ready !== undefined || session.resumed)
+    return this.sessions.get(projectId)?.ready !== undefined
   }
 
   async release(projectId: ProjectId) {
@@ -258,10 +252,6 @@ class BuilderMachines implements Machines {
     if (id !== undefined) {
       await this.rows.remember({ companyId: session.companyId, projectId, sandboxId: id })
     }
-  }
-
-  drop(projectId: ProjectId) {
-    this.sessions.delete(projectId)
   }
 }
 

@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { z } from 'zod'
-import { post } from '../../hub/identity/test-hub.ts'
 import { answeredOf } from './test-conversation.ts'
 import {
-  answerUrl,
+  answerTo,
   conversingWith,
   invocations,
   PLAN,
@@ -40,7 +39,7 @@ test('submit_plan: fora de `.conexus/plans/` é recusado; no caminho chega o `to
     ),
   )
   const rejected = { kind: 'plan', action: 'rejected', feedback: 'Falta o telefone.' }
-  assert.equal((await post(hub, ana, answerUrl(url, plan.toolCallId), rejected)).statusCode, 202)
+  assert.equal((await answerTo(hub, ana, url, plan.toolCallId, rejected)).statusCode, 202)
   const second = await untilCard(stream, 'plan')
   assert.ok(
     calls.some((each) =>
@@ -49,10 +48,7 @@ test('submit_plan: fora de `.conexus/plans/` é recusado; no caminho chega o `to
   )
   assert.notEqual(second.card.toolCallId, plan.toolCallId)
   const approved = { kind: 'plan', action: 'approved' }
-  assert.equal(
-    (await post(hub, ana, answerUrl(url, second.card.toolCallId), approved)).statusCode,
-    202,
-  )
+  assert.equal((await answerTo(hub, ana, url, second.card.toolCallId, approved)).statusCode, 202)
   const rest = await stream.turn()
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
@@ -79,17 +75,11 @@ test('submit_plan: o plano aprovado não é reescrito nem reenviado; outro plano
   assert.equal((await send()).statusCode, 202)
   const first = await untilCard(stream, 'plan')
   const approved = { kind: 'plan', action: 'approved' }
-  assert.equal(
-    (await post(hub, ana, answerUrl(url, first.card.toolCallId), approved)).statusCode,
-    202,
-  )
+  assert.equal((await answerTo(hub, ana, url, first.card.toolCallId, approved)).statusCode, 202)
   const second = await untilCard(stream, 'plan')
   assert.equal(Planned.parse(second.card.suspendPayload).plan.trim(), 'Um calendário.')
   assert.ok(
     calls.some((each) => each.texts.some((text) => text.includes(`${PLAN} is an approved plan`))),
   )
-  assert.equal(
-    (await post(hub, ana, answerUrl(url, second.card.toolCallId), approved)).statusCode,
-    202,
-  )
+  assert.equal((await answerTo(hub, ana, url, second.card.toolCallId, approved)).statusCode, 202)
 })

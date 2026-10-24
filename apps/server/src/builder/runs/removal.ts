@@ -44,18 +44,15 @@ async function projectsOf(context: RunsContext, companyId: CompanyId): Promise<P
 }
 
 /**
- * Stops what a removal reaches before anything is deleted (card, criterion 24): the runs not over
- * of the Projeto, the company or the person become `stopped` with nothing saved, so the turn's end
- * finds them settled and writes nothing. A person's removal stops only their runs; a Projeto's or a
+ * Stops what a removal reaches before anything is deleted (card, criterion 24): the runs writing in
+ * the Projeto, the company or the person's are let go with nothing saved, so the turn's end finds
+ * them gone and writes nothing. A person's removal stops only their runs; a Projeto's or a
  * company's takes machine, copy and repository too, each Projeto on its own; a failure is thrown
  * after all were tried, and the release can be repeated.
  */
 export async function releaseRuns(context: RunsContext, scope: ReleaseScope): Promise<void> {
-  const { store } = context
   const { companyId, projectId, personId } = scope
-  for (const stopped of await store.stop({ companyId, projectId, personId })) {
-    await context.stopped(stopped)
-  }
+  await context.stopWriting(scope)
   if (personId !== undefined) return
   const projects = projectId === undefined ? await projectsOf(context, companyId) : [projectId]
   const failures: unknown[] = []

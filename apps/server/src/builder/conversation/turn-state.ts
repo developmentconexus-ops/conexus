@@ -5,46 +5,42 @@ import type { Settled } from '../runs/public.ts'
 import { FINISHES } from './turn-line.ts'
 import type { TurnLog } from './turn-log.ts'
 
-/** What a turn writes with: our run row, Mastra's context, the model queue's turn. */
+/** What a turn writes with: our run, Mastra's context, the model queue's turn. */
 export type Writing = {
   id: RunId
   traceId: string
-  /** What Mastra needs of the turn to go on after an answer or a message. */
+  /** What Mastra needs of the turn: the run it writes for, the person's accounts. */
   context: RequestContext
   turn: Turn
   finish: (reason: string) => Promise<Settled | 'gone'>
-  /** The run waits on the person's answer, or goes on after it; rejects when the database refuses. */
-  waiting: (waiting: boolean) => Promise<void>
-  /** Resolves the message's wait (`answerTurn`), once, and stops the watch of Mastra's exits. */
+  /** Resolves `over`, once: the turn said its end, or its session closed. */
   ended: () => void
-  /** Stops the watch of the ways Mastra's run ends besides `agent_end` (`turn-exits.ts`). */
-  exits: AbortController
+  over: Promise<void>
 }
-
-type Open = { log: TurnLog; writing: Writing; failure: TurnFailureCode | undefined }
 
 export type EndReason = 'complete' | 'aborted' | 'error'
 
+type Open = {
+  log: TurnLog
+  writing: Writing
+  /** The turn's failure, decided once its run is finished. */
+  failure: TurnFailureCode | undefined
+  /** How the turn ends, once its run is finished and before Mastra says `agent_end`. */
+  end: EndReason | undefined
+}
+
 /**
- * The conversation's turn in this process, moved by Mastra's events (code C21): no turn yet; a run
- * of it in flight, its id known from `agent_start`; parked on the person's cards; carried into the
- * next run Mastra starts (a message closed its card, or Mastra keeps input the run never read);
- * closing while its run row is finished; its failure decided, waiting for `agent_end`; or over,
- * kept for a stream that reconnects (`Last-Event-ID`).
+ * The conversation's turn in this process, moved by Mastra's events (code C21): none yet; one Mastra
+ * run of it in flight, from the person's message or answer to Mastra's `agent_end`; or over, kept
+ * for a stream that reconnects (`Last-Event-ID`). A question ends the turn: its answer opens the next.
  */
 export type TurnState =
   | { kind: 'idle' }
-  | ({ kind: 'running'; mastraRun: string | undefined } & Open)
-  | ({ kind: 'parked'; mastraRun: string | undefined; calls: Set<string> } & Open)
-  | ({ kind: 'steering' } & Open)
-  | ({ kind: 'closing'; reason: EndReason } & Open)
-  | ({ kind: 'ending'; reason: EndReason } & Open)
+  | ({ kind: 'running' } & Open)
   | { kind: 'ended'; last: TurnLog }
 
-type OpenState = Extract<TurnState, Open>
-
-export function isOpen(s: TurnState): s is OpenState {
-  return s.kind !== 'idle' && s.kind !== 'ended'
+export function isOpen(s: TurnState): s is Extract<TurnState, { kind: 'running' }> {
+  return s.kind === 'running'
 }
 
 /** The turn in progress, or none. */
@@ -57,88 +53,46 @@ export function writingOf(s: TurnState): Writing | undefined {
   return isOpen(s) ? s.writing : undefined
 }
 
-/** A message's turn begins: its run is in flight, Mastra's id for it not known yet. */
+/** A message's or an answer's turn begins. */
 export function opened(log: TurnLog, writing: Writing): TurnState {
-  return { kind: 'running', mastraRun: undefined, log, writing, failure: undefined }
-}
-
-/** `agent_start`: the turn's run is Mastra's `runId`; a card answered or a message carried it here. */
-export function started(s: TurnState, mastraRun: string): TurnState {
-  if (s.kind !== 'running' && s.kind !== 'parked' && s.kind !== 'steering') return s
-  const { log, writing, failure } = s
-  return { kind: 'running', mastraRun, log, writing, failure }
-}
-
-/** `tool_suspended`: the turn waits on the person for `call`. */
-export function suspended(s: TurnState, call: string, mastraRun: string | undefined): TurnState {
-  if (s.kind === 'parked')
-    return { ...s, mastraRun: mastraRun ?? s.mastraRun, calls: new Set([...s.calls, call]) }
-  if (s.kind !== 'running') return s
-  const { log, writing, failure } = s
-  return {
-    kind: 'parked',
-    mastraRun: mastraRun ?? s.mastraRun,
-    calls: new Set([call]),
-    log,
-    writing,
-    failure,
-  }
+  return { kind: 'running', log, writing, failure: undefined, end: undefined }
 }
 
 /**
- * `tool_suspension_cancelled`: Mastra closed `call`; with none left waiting, the parked turn ends
- * (`end-parked`). A turn carried by a message goes on in the run the message starts.
+ * The run is finished: the turn's end and failure are decided here, once (card, the failures
+ * table): a failure said first, then the save, then how the queue ended the model's turn, never the
+ * provider's text (security S41).
  */
-export function cancelled(s: TurnState, call: string): TurnState | 'end-parked' {
-  if (s.kind !== 'parked' || !s.calls.has(call)) return s
-  const calls = new Set([...s.calls].filter((each) => each !== call))
-  return calls.size === 0 ? 'end-parked' : { ...s, calls }
-}
-
-/** A message closed the turn's cards, or Mastra keeps input its run never read: the next run carries it. */
-export function steered(s: TurnState): TurnState {
-  if (s.kind !== 'running' && s.kind !== 'parked') return s
-  const { log, writing, failure } = s
-  return { kind: 'steering', log, writing, failure }
-}
-
-/** The turn's run ends, or Mastra ends none of it here: its run row is being finished. */
-export function closing(s: TurnState, reason: EndReason): TurnState {
-  if (s.kind !== 'running' && s.kind !== 'parked' && s.kind !== 'steering') return s
-  const { log, writing, failure } = s
-  return { kind: 'closing', reason, log, writing, failure }
-}
-
-/**
- * The run row is finished: the turn's failure is decided here, once (card, the failures table): a
- * write refused or a wait run out first, then the save, then how the queue ended the model's
- * turn, never the provider's text (security S41).
- */
-export function deciding(s: TurnState, outcome: Settled | 'gone' | 'threw'): TurnState {
-  if (s.kind !== 'closing') return s
-  return { ...s, kind: 'ending', failure: failureOf(s, outcome) }
+export function closed(
+  s: TurnState,
+  reason: EndReason,
+  outcome: Settled | 'gone' | 'threw',
+): TurnState {
+  if (s.kind !== 'running' || s.end !== undefined) return s
+  return { ...s, end: reason, failure: failureOf(s, reason, outcome) }
 }
 
 function failureOf(
-  s: Extract<TurnState, { kind: 'closing' }>,
+  s: Extract<TurnState, { kind: 'running' }>,
+  reason: EndReason,
   outcome: Settled | 'gone' | 'threw',
 ): TurnFailureCode | undefined {
   if (s.failure !== undefined) return s.failure
   if (outcome === 'threw') return 'INTERNAL_UNEXPECTED'
   if (outcome !== 'gone' && outcome.kind === 'failed') return outcome.code
-  if (s.reason !== 'error') return undefined
+  if (reason !== 'error') return undefined
   if (s.writing.turn.outcome === 'exhausted') return 'MODEL_NO_ACCOUNT'
   const finish = s.log.tally.finishReason
   return (finish === undefined ? undefined : FINISHES[finish]) ?? 'MODEL_CALL_FAILED'
 }
 
-/** `agent_end`, or a wait that ended with no end here: the turn is over, kept for a reconnect. */
+/** `agent_end`: the turn is over, kept for a reconnect. */
 export function ended(s: TurnState): TurnState {
   return isOpen(s) ? { kind: 'ended', last: s.log } : s
 }
 
-/** A write the database refused, or a wait that ran out: the turn's failure, unless one came first. */
+/** A failure known before the run is finished: the turn's, unless one came first. */
 export function failing(s: TurnState, code: TurnFailureCode): TurnState {
-  if (s.kind === 'idle' || s.kind === 'ended' || s.kind === 'ending') return s
+  if (s.kind !== 'running' || s.end !== undefined) return s
   return { ...s, failure: s.failure ?? code }
 }

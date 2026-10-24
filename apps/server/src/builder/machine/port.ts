@@ -15,15 +15,13 @@ export type Phase = MachinePhase
 
 export type Machines = {
   /**
-   * The workspace of one turn: the machine is not touched until a tool needs it. A turn whose copy
-   * of the program died (`resumed`) keeps the files the machine holds, to be saved; any other starts
-   * from the Hub's `main`.
+   * The workspace of one turn: the machine is not touched until a tool needs it, and starts from the
+   * Hub's `main`.
    */
   workspaceFor(input: {
     companyId: CompanyId
     projectId: ProjectId
     deadline: Date
-    resumed?: boolean
     onPhase: (phase: Phase) => void
   }): Promise<Workspace>
   /**
@@ -41,12 +39,10 @@ export type Machines = {
   changed(input: { projectId: ProjectId }): Promise<boolean>
   /** The version the last passing check left in the machine, read as the send takes it. */
   pack(input: { projectId: ProjectId }): Promise<Result<VersionFolder, PackRefused>>
-  /** Whether the Projeto's turn used the machine, or its copy of the program died: then there may be something to collect. */
+  /** Whether the Projeto's turn used the machine: then there may be something to collect. */
   touched(projectId: ProjectId): boolean
   /** Ends the turn's use of the machine: it pauses and its last use is now. Safe to repeat. */
   release(projectId: ProjectId): Promise<void>
-  /** Forgets the turn's use of the machine without touching it: another copy of the program drives it now. */
-  drop(projectId: ProjectId): void
   list: MachineApi['list']
   kill: MachineApi['kill']
   /** The Projeto's machine as recorded: its id and the last turn that used it. */

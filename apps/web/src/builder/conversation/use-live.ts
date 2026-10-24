@@ -5,7 +5,7 @@ import type {
   EventId,
   ProjectId,
 } from '@conexus/hub-api'
-import { CONVERSATION_HEARTBEAT_MS, RestartedData, streamConversation } from '@conexus/hub-api'
+import { CONVERSATION_HEARTBEAT_MS, streamConversation } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useEffectEvent, useReducer } from 'react'
@@ -38,7 +38,6 @@ type Hooks = {
   ids: Ids
   dispatch: (step: Step) => void
   onGone: () => void
-  onRestarted: () => void
 }
 
 /** The conversation read again, which shows what the stream cannot (the Builder's saved message). */
@@ -56,13 +55,6 @@ async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
     const { part } = event.event
     if (part.type === 'data-conexus-version') {
       await sourceChanged(hooks.queryClient, { companyId, projectId })
-    }
-    if (part.type === 'data-conexus-restarted') {
-      const data = RestartedData.safeParse(part.data)
-      if (data.success && typeof data.data.kept === 'number') {
-        await sourceChanged(hooks.queryClient, { companyId, projectId })
-      }
-      hooks.onRestarted()
     }
   }
   // The ended answer stays on screen until the read holds it (`shownAnswer`), so it shows once.
@@ -155,11 +147,10 @@ async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
 }
 
 /** The answer in progress of a conversation, from its stream, and the way to say one was sent. */
-export function useLive(ids: Ids, onGone: () => void, onRestarted: () => void) {
+export function useLive(ids: Ids, onGone: () => void) {
   const queryClient = useQueryClient()
   const [state, dispatch] = useReducer(live, IDLE)
   const gone = useEffectEvent(onGone)
-  const restarted = useEffectEvent(onRestarted)
   const { companyId, projectId, conversationId } = ids
   useEffect(() => {
     const controller = new AbortController()
@@ -168,7 +159,6 @@ export function useLive(ids: Ids, onGone: () => void, onRestarted: () => void) {
       ids: { companyId, projectId, conversationId },
       dispatch,
       onGone: gone,
-      onRestarted: restarted,
     }
     void follow(hooks, controller.signal)
     return () => controller.abort()

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
+import { post } from '../../hub/identity/test-hub.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { ASK_USER_TOOL, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import { conversing, sent, started, streamOf } from './test-conversation.ts'
@@ -64,18 +66,21 @@ export async function conversingWith(t: TestContext, steps: Block[][]) {
   return { ...hub, url, stream, calls, send }
 }
 
-/** The events up to the next card of `type` the turn waits on (its `tool_suspended`), the card last. */
+/**
+ * The events of the turn that asks the next card of `type` (its `tool_suspended`), up to its
+ * `turnEnd`: a question ends the turn, and its answer opens the next one.
+ */
 export async function untilCard(
   stream: Awaited<ReturnType<typeof streamOf>>,
   type: keyof typeof CARD_TOOL,
 ) {
   const events: ConversationEvent[] = []
+  let card: Suspended | undefined
   for (;;) {
     const event = await stream.next()
     events.push(event)
-    if (event.type === 'tool_suspended' && event.toolName === CARD_TOOL[type]) {
-      return { events, card: event }
-    }
+    if (event.type === 'tool_suspended' && event.toolName === CARD_TOOL[type]) card ??= event
+    if (event.type === 'turnEnd' && card !== undefined) return { events, card }
   }
 }
 
@@ -115,15 +120,33 @@ export function stateOf(parts: MastraPart[], toolCallId: string): string[] {
   return invocations(parts, toolCallId).map((each) => each.state)
 }
 
-/** The run's row says `waiting` soon after the card is said: the database write follows the event. */
-export async function waitingRun(hub: { test: { asOwner(sql: string): Promise<unknown[]> } }) {
-  let rows: unknown[] = []
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    rows = await hub.test.asOwner('select state from builder.run')
-    if (JSON.stringify(rows) === JSON.stringify([{ state: 'waiting' }])) return
+const LOOP_PARKED = `select 1 from mastra.mastra_workflow_snapshot where workflow_name = 'agentic-loop' and snapshot->>'status' = 'suspended'`
+
+/**
+ * Waits until Mastra keeps the asking run parked: it writes the loop's snapshot a moment after the
+ * turn's end, and its own resume refuses an answer that comes first.
+ */
+export async function untilParked(hub: Hub) {
+  for (
+    let attempt = 0;
+    (await hub.test.mastraPool.query(LOOP_PARKED)).rowCount === 0;
+    attempt += 1
+  ) {
+    assert.ok(attempt < 50, 'Mastra keeps the parked run')
     await sleep(100)
   }
-  assert.deepEqual(rows, [{ state: 'waiting' }])
+}
+
+/** Answers a card as a person does, once Mastra keeps its run parked. */
+export async function answerTo(
+  hub: Hub,
+  person: Person,
+  url: string,
+  toolCallId: string,
+  body: object,
+) {
+  await untilParked(hub)
+  return post(hub, person, answerUrl(url, toolCallId), body)
 }
 
 export async function parkedRows(hub: {

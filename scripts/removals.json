@@ -2389,7 +2389,7 @@
   {
     "id": "release-stops-runs",
     "file": "apps/server/src/builder/runs/removal.ts",
-    "find": "  for (const stopped of await store.stop({ companyId, projectId, personId })) {\n    await context.stopped(stopped)\n  }\n",
+    "find": "  await context.stopWriting(scope)\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2400,7 +2400,7 @@
   {
     "id": "sweep-skips-open-runs",
     "file": "apps/server/src/builder/runs/daily.ts",
-    "find": "    if (open.length > 0) continue\n",
+    "find": "    if (context.writing(projectId)) continue\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -2499,8 +2499,8 @@
   {
     "id": "machine-reconnect-keeps-files",
     "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "if (!session.resumed && session.starts === 1) return this.seed(session)",
-    "replace": "if (!session.resumed) return this.seed(session)",
+    "find": "if (session.starts === 1) return this.seed(session)",
+    "replace": "return this.seed(session)",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/machine/machine.test.ts",
@@ -2519,58 +2519,14 @@
     }
   },
   {
-    "id": "lease-yielded-after-wait",
-    "file": "apps/server/src/builder/runs/runs.ts",
-    "find": "    await this.stop()\n  }\n\n  /** The request context of the turn",
-    "replace": "  }\n\n  /** The request context of the turn",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "parar o processo com um turno que não acaba: passada a espera, a posse é entregue e o turno fica livre para outro"
-    }
-  },
-  {
-    "id": "taken-machine-not-paused",
-    "file": "apps/server/src/builder/runs/runs.ts",
-    "find": "      if (elsewhere) this.#deps.machines.drop(projectId)\n      else\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "nem pausa a máquina"
-    }
-  },
-  {
-    "id": "workspace-leaves-mastra",
-    "file": "apps/server/src/builder/runs/runs.ts",
-    "find": "      await this.#unregister(mine)\n      if (elsewhere)",
-    "replace": "      if (elsewhere)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "nem pausa a máquina"
-    }
-  },
-  {
     "id": "save-stops-when-stopped",
     "file": "apps/server/src/builder/runs/save.ts",
-    "find": "  if (!(await context.store.setCandidate(companyId, saved.id, candidate))) return 'gone'\n",
-    "replace": "  await context.store.setCandidate(companyId, saved.id, candidate)\n",
+    "find": "  if (mine.stopped) return 'gone'\n",
+    "replace": "",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/runs/runs-removal.test.ts",
       "name": "tirar a pessoa enquanto o turno dela guarda"
-    }
-  },
-  {
-    "id": "deadline-stops-on-lost-lease",
-    "file": "apps/server/src/builder/runs/runs.ts",
-    "find": "    if (mine === undefined) return 'gone'\n    mine.stopDeadline()\n",
-    "replace": "    if (mine === undefined || mine.lost) return 'gone'\n    mine.stopDeadline()\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "uma renovação da posse falha"
     }
   },
   {
@@ -2593,28 +2549,6 @@
       "cwd": "apps/server",
       "file": "src/builder/conversation/permissions.test.ts",
       "name": "a sessão começa em yolo: nenhuma ferramenta da lista pede aprovação"
-    }
-  },
-  {
-    "id": "restart-kept-on-thread",
-    "file": "apps/server/src/builder/conversation/sessions.ts",
-    "find": "      await saveRestarted(live, { runId, kept })\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "antes de o Builder dizer algo"
-    }
-  },
-  {
-    "id": "settle-when-lease-ends",
-    "file": "apps/server/src/builder/runs/runs.ts",
-    "find": "    if (ends === undefined) return\n",
-    "replace": "    return\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "antes da posse vencer"
     }
   },
   {
