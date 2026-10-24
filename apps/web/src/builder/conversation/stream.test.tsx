@@ -3,62 +3,19 @@ import { MessageId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
+import {
+  MSG_ID,
+  opening,
+  ours,
+  readPage,
+  stepStarted,
+  textDelta,
+  updatePart,
+} from './test-events.ts'
 import { builderSaid, conversationOf, FIRST, say, screens, typed } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
 const startedAt = '2026-10-19T12:01:00.000Z'
-const MSG_ID = 'builder-msg-1'
-const TURN_ID = 'run-1'
-
-/** The turn the stream opens with, and the step of Mastra's it tells next, as the server says them. */
-function opening(): ConversationEvent {
-  return {
-    type: 'turn',
-    messages: [{ ...builderSaid(''), id: MessageId.parse(TURN_ID), parts: [] }],
-    startedAt,
-  }
-}
-
-function stepStarted(id = MSG_ID): ConversationEvent {
-  return {
-    type: 'message_start',
-    message: { ...builderSaid(''), id: MessageId.parse(id), parts: [] },
-  }
-}
-
-/** A part of ours, told as an update of the turn's own message. */
-function ours(part: MastraPart, index = 0): ConversationEvent {
-  return updatePart(part, index, TURN_ID)
-}
-
-function textDelta(delta: string, id = MSG_ID): ConversationEvent {
-  return {
-    type: 'message_update',
-    id: MessageId.parse(id),
-    event: { type: 'text-delta', delta },
-  }
-}
-
-function updatePart(part: MastraPart, index = 0, id = MSG_ID): ConversationEvent {
-  return {
-    type: 'message_update',
-    id: MessageId.parse(id),
-    event: { type: 'part', index, part },
-  }
-}
-
-function readPage(url: string, title?: string): MastraPart {
-  return {
-    type: 'tool-invocation',
-    toolInvocation: {
-      toolCallId: 'tool-1',
-      toolName: 'web_fetch',
-      state: title === undefined ? 'call' : 'result',
-      args: { url },
-      result: title ? { title } : undefined,
-    },
-  }
-}
 
 test('o texto parcial fecha a marca aberta, a região viva espera o fim e o aviso fica na conversa', async () => {
   const { field, lines, shown } = await openConversation(conversationOf({ id: FIRST }))

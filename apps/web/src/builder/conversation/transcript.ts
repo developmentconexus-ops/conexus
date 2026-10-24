@@ -30,7 +30,8 @@ function fromParts(
     const id = `${message.id}-${index}`
     // Mastra opens a step with an empty text part: it says nothing and must not split a run of tools.
     if (part.type === 'text') {
-      if (part.text !== '') items.push({ kind: 'text', id, text: part.text, cuts: part.cuts })
+      if (part.text.trim() !== '')
+        items.push({ kind: 'text', id, text: part.text, cuts: part.cuts })
     } else if (part.type === 'reasoning')
       items.push({
         kind: 'reasoning',

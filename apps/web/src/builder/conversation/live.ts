@@ -18,7 +18,7 @@ type MemoryFailure = 'observation' | 'reflection' | 'buffering'
  * steps, and the one of ours, named by the turn, which the stream tells its parts into. The rows
  * are derived from these (`itemsOf`), never kept beside them.
  */
-export type Turn = {
+type Turn = {
   startedAt: string | null
   /** The id of the message of ours: the turn's, which the stream opens last. */
   answerId: MessageId | null

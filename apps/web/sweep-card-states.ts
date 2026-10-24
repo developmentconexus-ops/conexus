@@ -113,15 +113,25 @@ const CARDS = readConversation.success.body.parse({
         ],
         suspended: {
           q1: {
-            questions: [
-              {
-                question: 'Quem cadastra as encomendas?',
-                options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
-                multiSelect: false,
-              },
-            ],
+            toolCallId: 'q1',
+            toolName: 'ask_user',
+            args: {},
+            suspendPayload: {
+              questions: [
+                {
+                  question: 'Quem cadastra as encomendas?',
+                  options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
+                  multiSelect: false,
+                },
+              ],
+            },
           },
-          p1: { title: 'App de encomendas', plan: PLAN },
+          p1: {
+            toolCallId: 'p1',
+            toolName: 'submit_plan',
+            args: {},
+            suspendPayload: { title: 'App de encomendas', plan: PLAN },
+          },
         },
         model: 'anthropic/claude-sonnet-4',
         createdAt: '2026-10-22T12:01:00.000Z',
@@ -133,6 +143,7 @@ const CARDS = readConversation.success.body.parse({
       { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
     ],
     memory: null,
+    inProgress: false,
   },
 })
 

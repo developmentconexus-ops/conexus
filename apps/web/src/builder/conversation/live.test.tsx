@@ -31,30 +31,36 @@ function told(...events: ConversationEvent[]): Live {
 }
 
 const opening: ConversationEvent = { type: 'turn', messages: [message(TURN)], startedAt: STARTED }
-const start = (id: MessageId, parts: Message['parts'] = []): ConversationEvent => ({
-  type: 'message_start',
-  message: message(id, parts),
-})
-const reasoningDelta = (id: MessageId, index: number, delta: string): ConversationEvent => ({
-  type: 'message_update',
-  id,
-  event: { type: 'reasoning-delta', index, delta },
-})
-const part = (
-  id: MessageId,
-  index: number,
-  value: Message['parts'][number],
-): ConversationEvent => ({
-  type: 'message_update',
-  id,
-  event: { type: 'part', index, part: value },
-})
-const text = (value: string): Message['parts'][number] => ({ type: 'text', text: value })
-const thinking = (value: string): Message['parts'][number] => ({
-  type: 'reasoning',
-  reasoning: value,
-  details: [],
-})
+function start(id: MessageId, parts: Message['parts'] = []): ConversationEvent {
+  return {
+    type: 'message_start',
+    message: message(id, parts),
+  }
+}
+function reasoningDelta(id: MessageId, index: number, delta: string): ConversationEvent {
+  return {
+    type: 'message_update',
+    id,
+    event: { type: 'reasoning-delta', index, delta },
+  }
+}
+function part(id: MessageId, index: number, value: Message['parts'][number]): ConversationEvent {
+  return {
+    type: 'message_update',
+    id,
+    event: { type: 'part', index, part: value },
+  }
+}
+function text(value: string): Message['parts'][number] {
+  return { type: 'text', text: value }
+}
+function thinking(value: string): Message['parts'][number] {
+  return {
+    type: 'reasoning',
+    reasoning: value,
+    details: [],
+  }
+}
 
 test('o raciocínio na ordem do Mastra é uma linha por pensamento, não três', () => {
   // The order of Mastra's own test (signal-messages.test.ts:1740-1784): the start carries the first
@@ -92,8 +98,8 @@ test('message_start do mesmo id substitui, não repete', () => {
 })
 
 test('o resultado que vem em outra mensagem fecha o cartão da chamada, no lugar dela', () => {
-  const call = (state: 'call' | 'result') =>
-    ({
+  function call(state: 'call' | 'result') {
+    return {
       type: 'tool-invocation',
       toolInvocation: {
         state,
@@ -102,7 +108,8 @@ test('o resultado que vem em outra mensagem fecha o cartão da chamada, no lugar
         args: { questions: [{ question: 'Quem cadastra?' }] },
         result: state === 'result' ? { content: 'ok', answers: ['Todos'] } : undefined,
       },
-    }) satisfies Message['parts'][number]
+    } satisfies Message['parts'][number]
+  }
   const asked = told(opening, start(STEP_1, [call('call')]), {
     type: 'tool_suspended',
     toolCallId: 'toolu_q',

@@ -80,7 +80,7 @@ export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number
 
 const QuestionItemSchema = Question.partial({ options: true, multiSelect: true })
 
-export function parseQuestions(input: unknown): Question[] {
+function parseQuestions(input: unknown): Question[] {
   const parsed = z.object({ questions: z.array(QuestionItemSchema) }).safeParse(input)
   if (!parsed.success) return []
   return parsed.data.questions.map((q) => ({
@@ -107,7 +107,7 @@ const SubmittedPlan = z.object({
   }),
 })
 
-export function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
+function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
   const parsed = z
     .object({
       title: z.string().optional(),
