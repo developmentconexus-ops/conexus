@@ -85,6 +85,7 @@ const CONVERSATION = readConversation.success.body.parse({
     ],
     tasks: [],
     memory: null,
+    inProgress: false,
   },
 })
 
