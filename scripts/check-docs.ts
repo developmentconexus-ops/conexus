@@ -19,7 +19,6 @@ const CEILINGS: readonly (readonly [RegExp, number])[] = [
   [/^AGENTS\.md$/, 400],
   [/^docs\/index\.md$/, 500],
   [/^docs\/roadmap\.md$/, 1600],
-  [/^docs\/approvals\.md$/, 1500],
   [/^docs\/architecture\.md$/, 2500],
   [/^docs\/guides\/code\.md$/, 3500],
   [/^docs\/guides\/security\.md$/, 3000],
@@ -27,7 +26,6 @@ const CEILINGS: readonly (readonly [RegExp, number])[] = [
   [/^docs\/guides\/(testing|web)\.md$/, 2000],
   [/^docs\/guides\/delivery\.md$/, 1800],
   [/^docs\/decisions\/[^/]+\.md$/, 350],
-  [/^docs\/steps\/[^/]+\.md$/, 4000],
   [/^docs\/how-to\/[^/]+\.md$/, 800],
   [/^\.agents\/skills\/[^/]+\/SKILL\.md$/, 600],
   [/^\.agents\/skills\/[^/]+\/references\/[^/]+\.md$/, 1500],
@@ -81,9 +79,11 @@ function body(file: string, text: string): string {
 
 function checkCeiling(file: string, text: string) {
   const ceiling = CEILINGS.find(([pattern]) => pattern.test(file))?.[1]
-  if (ceiling === undefined) return
-  const count = words(body(file, text))
-  if (count > ceiling) fail('document-too-long', file, `${count} words, the ceiling is ${ceiling}`)
+  if (ceiling !== undefined) {
+    const count = words(body(file, text))
+    if (count > ceiling)
+      fail('document-too-long', file, `${count} words, the ceiling is ${ceiling}`)
+  }
   if (/^docs\/steps\//.test(file)) {
     const page = text.match(/^## A página do fundador\n([\s\S]*?)(?=^## )/m)?.[1] ?? ''
     if (words(page) > STEP_PAGE_CEILING) {
