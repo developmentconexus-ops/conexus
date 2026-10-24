@@ -11,7 +11,7 @@ import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
-import { shownAnswer } from './live.ts'
+import { shownAnswer, waitsOnPerson } from './live.ts'
 import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
 import { textOf } from './person-turn.tsx'
@@ -132,12 +132,11 @@ function PanelComposer(props: {
     canAnswer,
   } = props
   const isTurnRunning = state.kind === 'answering' || state.kind === 'resuming'
-  const activeTasks =
-    state.kind !== 'idle' && state.tasks !== null ? state.tasks : conversation.tasks
-  const activeMemory =
-    state.kind !== 'idle' && state.memory !== null ? state.memory : conversation.memory
-  const omPhase = state.kind !== 'idle' ? state.omPhase : 'idle'
-  const memoryFailed = state.kind !== 'idle' ? state.memoryFailed : null
+  const turn = state.kind === 'idle' ? undefined : state.turn
+  const activeTasks = turn?.tasks ?? conversation.tasks
+  const activeMemory = turn?.memory ?? conversation.memory
+  const omPhase = turn?.omPhase ?? 'idle'
+  const memoryFailed = turn?.memoryFailed ?? null
 
   return (
     <div className="px-md">
@@ -195,6 +194,10 @@ function Screen(params: Params) {
 
   useEffect(() => field.current?.focus(), [])
 
+  const answer = useMemo(
+    () => shownAnswer(state, conversation.messages),
+    [state, conversation.messages],
+  )
   if (gone) return <NotFound />
   const empty = conversation.messages.length === 0 && state.kind === 'idle'
   const notice = !canAnswer || empty
@@ -207,11 +210,7 @@ function Screen(params: Params) {
         </div>
       )}
       <div className="min-h-0 flex-1">
-        <Transcript
-          messages={conversation.messages}
-          answer={shownAnswer(state, conversation.messages)}
-          model={conversation.model}
-        />
+        <Transcript messages={conversation.messages} answer={answer} model={conversation.model} />
       </div>
       {error !== undefined && (
         <p role="alert" className="px-md">
@@ -219,7 +218,11 @@ function Screen(params: Params) {
         </p>
       )}
       {(state.kind === 'answering' || state.kind === 'resuming') && (
-        <WorkingLine startedAt={state.startedAt} heard={state.parts} />
+        <WorkingLine
+          startedAt={state.turn.startedAt}
+          heard={state.turn.messages}
+          waiting={answer !== null && waitsOnPerson(answer.items)}
+        />
       )}
       <PanelComposer
         params={params}

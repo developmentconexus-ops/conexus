@@ -8,6 +8,28 @@ import { builderSaid, conversationOf, FIRST, say, screens, typed } from './test-
 const { openConversation } = screens(hubServer())
 const startedAt = '2026-10-19T12:01:00.000Z'
 const MSG_ID = 'builder-msg-1'
+const TURN_ID = 'run-1'
+
+/** The turn the stream opens with, and the step of Mastra's it tells next, as the server says them. */
+function opening(): ConversationEvent {
+  return {
+    type: 'turn',
+    message: { ...builderSaid(''), id: MessageId.parse(TURN_ID), parts: [] },
+    startedAt,
+  }
+}
+
+function stepStarted(id = MSG_ID): ConversationEvent {
+  return {
+    type: 'message_start',
+    message: { ...builderSaid(''), id: MessageId.parse(id), parts: [] },
+  }
+}
+
+/** A part of ours, told as an update of the turn's own message. */
+function ours(part: MastraPart, index = 0): ConversationEvent {
+  return updatePart(part, index, TURN_ID)
+}
 
 function textDelta(delta: string, id = MSG_ID): ConversationEvent {
   return {
@@ -43,9 +65,9 @@ test('o texto parcial fecha a marca aberta, a região viva espera o fim e o avis
   say(field, 'Compare')
   await screen.findByText('Pensando…')
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
-  lines[0]?.emit(
-    updatePart({ type: 'data-conexus-notice', data: { text: 'Time 3 foi recusada.' } }, 0),
-  )
+  lines[0]?.emit(opening())
+  lines[0]?.emit(stepStarted())
+  lines[0]?.emit(ours({ type: 'data-conexus-notice', data: { text: 'Time 3 foi recusada.' } }))
   lines[0]?.emit(updatePart(readPage('https://padaria.example.test/pedidos'), 1))
   lines[0]?.emit(
     updatePart(readPage('https://padaria.example.test/pedidos', 'Pedidos da padaria'), 1),
@@ -67,6 +89,8 @@ test('um endereço de página é acessível sem link arbitrário', async () => {
   const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Leia')
   await screen.findByText('Pensando…')
+  lines[0]?.emit(opening())
+  lines[0]?.emit(stepStarted())
   lines[0]?.emit(updatePart(readPage('javascript:alert(1)', 'Armadilha'), 0))
   expect(await screen.findByText(/Leu uma página/)).toBeTruthy()
 })
@@ -86,9 +110,8 @@ test('a falha do modelo diz a frase e a ação da tabela, e a resposta termina',
   const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
   await screen.findByText('Pensando…')
-  lines[0]?.emit(
-    updatePart({ type: 'data-conexus-failure', data: { code: 'MODEL_CALL_FAILED' } }, 0),
-  )
+  lines[0]?.emit(opening())
+  lines[0]?.emit(ours({ type: 'data-conexus-failure', data: { code: 'MODEL_CALL_FAILED' } }))
   lines[0]?.emit({ type: 'turnEnd', reason: 'error' })
   expect((await screen.findByRole('alert')).textContent).toBe(
     'O modelo não respondeu. Envie a mensagem de novo.',
@@ -101,9 +124,8 @@ test('sem conta no meio do turno, a falha diz a frase da conta e não a do model
   const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
   await screen.findByText('Pensando…')
-  lines[0]?.emit(
-    updatePart({ type: 'data-conexus-failure', data: { code: 'MODEL_NO_ACCOUNT' } }, 0),
-  )
+  lines[0]?.emit(opening())
+  lines[0]?.emit(ours({ type: 'data-conexus-failure', data: { code: 'MODEL_NO_ACCOUNT' } }))
   lines[0]?.emit({ type: 'turnEnd', reason: 'error' })
   expect((await screen.findByRole('alert')).textContent).toBe(
     'Nenhuma conta que você pode usar atende a este modelo. Escolha outro modelo ou fale com quem administra a empresa.',
@@ -113,6 +135,8 @@ test('sem conta no meio do turno, a falha diz a frase da conta e não a do model
 test('ao reconectar, a conversa é lida de novo e o texto parcial volta pelo "turn"', async () => {
   const { field, lines, reads } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
+  lines[0]?.emit(opening())
+  lines[0]?.emit(stepStarted())
   lines[0]?.emit(textDelta('O primeiro'))
   await screen.findByText(/O primeiro/)
   const before = reads.length
@@ -139,6 +163,8 @@ test('ao reconectar com o turno em curso e ainda mudo, o "turn" vazio mostra "Pe
 test('a resposta que terminou com a linha caída aparece uma vez ao reconectar, e o campo volta', async () => {
   const { field, lines, shown } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
+  lines[0]?.emit(opening())
+  lines[0]?.emit(stepStarted())
   lines[0]?.emit(textDelta('O primeiro'))
   await screen.findByText(/O primeiro/)
   lines[0]?.close()
@@ -156,6 +182,8 @@ test('a resposta que terminou com a linha caída aparece uma vez ao reconectar, 
 test('depois de "Parar", o texto parcial fica até a leitura trazer a resposta guardada', async () => {
   const { field, lines, shown } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
+  lines[0]?.emit(opening())
+  lines[0]?.emit(stepStarted())
   lines[0]?.emit(textDelta('O primeiro é'))
   await screen.findByText(/O primeiro é/)
   fireEvent.click(screen.getByRole('button', { name: 'Parar' }))
@@ -179,6 +207,8 @@ test('uma linha do stream que não é JSON abre a linha de novo', async () => {
 test('ao reconectar, a tela manda o id do último evento e o turno segue de onde parou', async () => {
   const { field, lines, resumedFrom } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
+  lines[0]?.emit(opening())
+  lines[0]?.emit(stepStarted())
   lines[0]?.emit(textDelta('O primeiro'), 'turn-1.1')
   lines[0]?.emit(textDelta(' é bom'), 'turn-1.2')
   await screen.findByText('O primeiro é bom')
@@ -197,8 +227,9 @@ test('a falha do turno, parte da resposta, segue na conversa relida depois do fi
   const { field, lines, shown } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
   await screen.findByText('Pensando…')
+  lines[0]?.emit(opening())
   const failure: MastraPart = { type: 'data-conexus-failure', data: { code: 'MODEL_CALL_FAILED' } }
-  lines[0]?.emit(updatePart(failure, 0))
+  lines[0]?.emit(ours(failure))
   shown.conversations[0]?.messages.push({ ...builderSaid(''), parts: [failure] })
   lines[0]?.emit({ type: 'turnEnd', reason: 'error' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
@@ -251,7 +282,8 @@ test('o reinício no meio do turno devolve a mensagem ao campo e a versão guard
   await screen.findByText('Pensando…')
   await waitFor(() => expect(typed(field)).toBe(''))
   await waitFor(() => expect(reads.length).toBeGreaterThan(1))
-  lines[0]?.emit(updatePart({ type: 'data-conexus-restarted', data: { kept: 2 } }, 0))
+  lines[0]?.emit(opening())
+  lines[0]?.emit(ours({ type: 'data-conexus-restarted', data: { kept: 2 } }))
   lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
   await waitFor(() => expect(typed(field)).toBe('Compare os preços'))
 })
@@ -263,7 +295,8 @@ test('o reinício deixa em paz o texto que a pessoa já tem no campo', async () 
   await waitFor(() => expect(typed(field)).toBe(''))
   await waitFor(() => expect(reads.length).toBeGreaterThan(1))
   fireEvent.change(field, { target: { value: 'Outra coisa' } })
-  lines[0]?.emit(updatePart({ type: 'data-conexus-restarted', data: { kept: 'nothing' } }, 0))
+  lines[0]?.emit(opening())
+  lines[0]?.emit(ours({ type: 'data-conexus-restarted', data: { kept: 'nothing' } }))
   lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
   expect(typed(field)).toBe('Outra coisa')
@@ -279,6 +312,7 @@ test('60 s sem o Builder dizer nada: "Ainda trabalhando…", contado desde o in�
       message: { ...builderSaid(''), parts: [] },
       startedAt: new Date(now).toISOString(),
     })
+    lines[0]?.emit(stepStarted(MSG_ID))
     lines[0]?.emit(textDelta('Vou ver.'))
     await screen.findByText('Vou ver.')
     vi.setSystemTime(now + 59_000)

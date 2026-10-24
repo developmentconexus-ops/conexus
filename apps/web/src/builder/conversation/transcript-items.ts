@@ -1,4 +1,4 @@
-import type { Answer, FailureCode, MastraPart, Question } from '@conexus/hub-api'
+import type { Answer, FailureCode, MastraPart, Question, Suspension } from '@conexus/hub-api'
 import { FAILURES, ToolCallId, VersionCheck } from '@conexus/hub-api'
 import { z } from 'zod'
 
@@ -107,19 +107,17 @@ export const UNGROUPABLE_TOOLS = new Set([
   'skill_search',
 ])
 
-export function extractThoughtSeconds(parts: readonly MastraPart[]): number | null {
+const ThoughtData = z.object({ id: z.string(), seconds: z.number() })
+
+/** How long each thinking took, by the key the server gives it: its message and its place in it. */
+export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number> {
+  const seconds = new Map<string, number>()
   for (const part of parts) {
-    if (
-      part.type === 'data-conexus-thought' &&
-      part.data &&
-      typeof part.data === 'object' &&
-      'seconds' in part.data
-    ) {
-      const val = Reflect.get(part.data, 'seconds')
-      if (typeof val === 'number') return val
-    }
+    if (part.type !== 'data-conexus-thought') continue
+    const data = ThoughtData.safeParse(part.data)
+    if (data.success) seconds.set(data.data.id, data.data.seconds)
   }
-  return null
+  return seconds
 }
 
 const QuestionItemSchema = z.object({
@@ -147,6 +145,15 @@ function parseAnswers(input: unknown): Answer[] | undefined {
   return parsed.success ? parsed.data.answers : undefined
 }
 
+/** What Mastra's `submit_plan` returns once answered: the plan as submitted and the decision on it. */
+const SubmittedPlan = z.object({
+  submittedPlan: z.object({
+    action: z.string(),
+    title: z.string().optional(),
+    plan: z.string().optional(),
+  }),
+})
+
 export function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
   const parsed = z
     .object({
@@ -160,13 +167,15 @@ export function parsePlan(input: unknown): { title: string; plan: string; path?:
 
 export function invocationToItem(
   inv: Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation'],
-  suspendedPayload: unknown,
+  suspension: Suspension | undefined,
   cuts?: string[],
 ): TranscriptItem | null {
   if (!ToolCallId.safeParse(inv.toolCallId).success || isTaskTool(inv.toolName)) return null
 
   if (inv.toolName === 'ask_user') {
-    const questions = parseQuestions(suspendedPayload ?? inv.args)
+    const questions = parseQuestions(
+      suspension === undefined ? inv.args : suspension.suspendPayload,
+    )
     const answers = parseAnswers(inv.result)
     const isAnswered = inv.state === 'result' && answers !== undefined
     const state = isAnswered ? 'answered' : inv.state === 'output-error' ? 'closed' : 'open'
@@ -183,11 +192,14 @@ export function invocationToItem(
   }
 
   if (inv.toolName === 'submit_plan') {
-    const planInfo = parsePlan(suspendedPayload ?? inv.args)
-    const action =
-      inv.result && typeof inv.result === 'object' ? Reflect.get(inv.result, 'action') : undefined
+    const submitted = SubmittedPlan.safeParse(inv.result)
+    const planInfo = parsePlan(
+      suspension === undefined
+        ? (submitted.data?.submittedPlan ?? inv.args)
+        : suspension.suspendPayload,
+    )
     const state =
-      inv.state === 'result' && action === 'rejected'
+      inv.state === 'result' && submitted.data?.submittedPlan.action === 'rejected'
         ? 'rejected'
         : inv.state === 'result'
           ? 'approved'

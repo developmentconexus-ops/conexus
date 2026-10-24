@@ -1,31 +1,42 @@
-import type { ConversationEvent, MastraPart, Message, MessageUpdate } from '@conexus/hub-api'
-import type { PlanCardItem, QuestionCardItem, TranscriptItem } from './transcript-items.ts'
-import {
-  extractThoughtSeconds,
-  invocationToItem,
-  parsePlan,
-  parseQuestions,
-} from './transcript-items.ts'
+import type { MastraPart, Message, Suspension } from '@conexus/hub-api'
+import type { TranscriptItem } from './transcript-items.ts'
+import { invocationToItem, thoughtSeconds } from './transcript-items.ts'
 
 export * from './transcript-items.ts'
 
-export function fromParts(
-  parts: readonly MastraPart[],
-  baseId = 'part',
-  suspended: Record<string, unknown> = {},
-): readonly TranscriptItem[] {
-  const items: TranscriptItem[] = []
-  const seconds = extractThoughtSeconds(parts)
+/** What a command in progress has said, and how it ended: the whole of its tail, not a piece. */
+export type Running = {
+  output: string
+  cuts?: string[]
+  exit?: { code: number; success: boolean }
+}
 
-  for (const [index, part] of parts.entries()) {
-    const id = `${baseId}-${index}`
-    if (part.type === 'text') items.push({ kind: 'text', id, text: part.text, cuts: part.cuts })
-    else if (part.type === 'reasoning')
+/** What Mastra's messages do not carry: the calls waiting on the person, and the commands running. */
+export type View = {
+  suspended?: Readonly<Record<string, Suspension>>
+  running?: Readonly<Record<string, Running>>
+  /** The answer is still arriving: its last thinking is in progress. */
+  live?: boolean
+}
+
+function fromParts(
+  message: Message,
+  thoughts: ReadonlyMap<string, number>,
+  view: View,
+): TranscriptItem[] {
+  const suspended = { ...view.suspended, ...message.suspended }
+  const items: TranscriptItem[] = []
+  for (const [index, part] of message.parts.entries()) {
+    const id = `${message.id}-${index}`
+    // Mastra opens a step with an empty text part: it says nothing and must not split a run of tools.
+    if (part.type === 'text') {
+      if (part.text !== '') items.push({ kind: 'text', id, text: part.text, cuts: part.cuts })
+    } else if (part.type === 'reasoning')
       items.push({
         kind: 'reasoning',
         id,
         reasoning: part.reasoning,
-        seconds,
+        seconds: thoughts.get(`${message.id}.${index}`) ?? null,
         streaming: false,
         cuts: part.cuts,
       })
@@ -36,210 +47,53 @@ export function fromParts(
         part.cuts,
       )
       if (item) items.push(item)
-    } else if (part.type !== 'data-conexus-thought') {
+    } else if (isOurs(part) && part.type !== 'data-conexus-thought') {
+      // Mastra's own `data-*` parts (the memory's) are not rows, and must not split a run of tools.
       items.push({ kind: 'conexus', id, partType: part.type, data: part.data, cuts: part.cuts })
     }
   }
   return items
 }
 
-export function fromMessages(messages: readonly Message[]): readonly TranscriptItem[] {
-  return messages.flatMap((m) => fromParts(m.parts, m.id, m.suspended))
+/** A tool's own row of a call that ended outside Mastra's parts: its output and its exit. */
+function withRunning(item: TranscriptItem, running: Running | undefined): TranscriptItem {
+  if (item.kind !== 'tool' || running === undefined) return item
+  const failed = running.exit?.success === false
+  return {
+    ...item,
+    output: running.output,
+    cuts: running.cuts ?? item.cuts,
+    exitCode: running.exit?.code,
+    state: failed ? 'output-error' : item.state,
+    isError: failed ? true : item.isError,
+  }
 }
 
-function applyDelta(
-  transcript: readonly TranscriptItem[],
-  eventId: string,
-  update: MessageUpdate,
-): readonly TranscriptItem[] {
-  if (update.type === 'text-delta') {
-    const last = transcript.at(-1)
-    if (last && last.kind === 'text') {
-      return [...transcript.slice(0, -1), { ...last, text: last.text + update.delta }]
+/**
+ * The one derivation of the conversation's rows, for a read and for the answer in progress alike.
+ * Mastra gives a tool's call and its result in different messages, so a row of the same call
+ * keeps the place of the first and the state of the last.
+ */
+export function fromMessages(messages: readonly Message[], view: View = {}): TranscriptItem[] {
+  const thoughts = thoughtSeconds(messages.flatMap((message) => message.parts))
+  const items: TranscriptItem[] = []
+  const placed = new Map<string, number>()
+  for (const message of messages) {
+    for (const found of fromParts(message, thoughts, view)) {
+      const item = withRunning(found, view.running?.[found.id])
+      const at = placed.get(item.id)
+      if (at === undefined) placed.set(item.id, items.push(item) - 1)
+      else items[at] = item
     }
-    return [...transcript, { kind: 'text', id: `${eventId}:text`, text: update.delta }]
   }
-  if (update.type === 'reasoning-delta') {
-    const id = `${eventId}:reasoning-${update.index}`
-    const at = transcript.findIndex((item) => item.kind === 'reasoning' && item.id === id)
-    const item = at !== -1 ? transcript[at] : undefined
-    if (item && item.kind === 'reasoning') {
-      return transcript.with(at, { ...item, reasoning: item.reasoning + update.delta })
-    }
-    return [
-      ...transcript,
-      {
-        kind: 'reasoning',
-        id,
-        reasoning: update.delta,
-        seconds: null,
-        streaming: true,
-      },
-    ]
+  const last = items.at(-1)
+  if (view.live === true && last?.kind === 'reasoning') {
+    items[items.length - 1] = { ...last, streaming: true }
   }
-  return transcript
+  return items
 }
 
-function applyPartUpdate(
-  transcript: readonly TranscriptItem[],
-  eventId: string,
-  part: MastraPart,
-  index: number,
-): readonly TranscriptItem[] {
-  if (part.type === 'text') {
-    const at = transcript.findLastIndex((item) => item.kind === 'text')
-    const item = at !== -1 ? transcript[at] : undefined
-    if (item && item.kind === 'text') {
-      return transcript.with(at, { ...item, text: part.text, cuts: part.cuts })
-    }
-    return [
-      ...transcript,
-      { kind: 'text', id: `${eventId}:part-${index}`, text: part.text, cuts: part.cuts },
-    ]
-  }
-  if (part.type === 'reasoning') {
-    const id = `${eventId}:part-${index}`
-    const at = transcript.findIndex((item) => item.kind === 'reasoning' && item.id === id)
-    const item = at !== -1 ? transcript[at] : undefined
-    if (item && item.kind === 'reasoning') {
-      return transcript.with(at, { ...item, reasoning: part.reasoning, cuts: part.cuts })
-    }
-    return [
-      ...transcript,
-      {
-        kind: 'reasoning',
-        id,
-        reasoning: part.reasoning,
-        seconds: null,
-        streaming: true,
-        cuts: part.cuts,
-      },
-    ]
-  }
-  if (part.type === 'tool-invocation') {
-    const item = invocationToItem(part.toolInvocation, undefined, part.cuts)
-    if (!item) return transcript
-    const at = transcript.findIndex((candidate) => candidate.id === item.id)
-    return at !== -1 ? transcript.with(at, item) : [...transcript, item]
-  }
-  if (
-    part.type === 'data-conexus-thought' &&
-    part.data &&
-    typeof part.data === 'object' &&
-    'seconds' in part.data
-  ) {
-    const seconds = Reflect.get(part.data, 'seconds')
-    const at = transcript.findLastIndex(
-      (item) => item.kind === 'reasoning' && item.id.startsWith(`${eventId}:part-`),
-    )
-    const item = at !== -1 ? transcript[at] : undefined
-    if (typeof seconds === 'number' && item && item.kind === 'reasoning') {
-      return transcript.with(at, { ...item, seconds, streaming: false })
-    }
-    return transcript
-  }
-  return [
-    ...transcript,
-    {
-      kind: 'conexus',
-      id: `${eventId}:part-${index}`,
-      partType: part.type,
-      data: part.data,
-      cuts: part.cuts,
-    },
-  ]
-}
-
-function applyToolSuspension(
-  transcript: readonly TranscriptItem[],
-  event: Extract<ConversationEvent, { type: 'tool_suspended' }>,
-): readonly TranscriptItem[] {
-  if (event.toolName === 'ask_user') {
-    const questions = parseQuestions(event.suspendPayload ?? event.args)
-    const card: QuestionCardItem = {
-      kind: 'card',
-      cardKind: 'question',
-      id: event.toolCallId,
-      toolCallId: event.toolCallId,
-      toolName: 'ask_user',
-      state: 'open',
-      questions,
-    }
-    const at = transcript.findIndex((item) => item.id === event.toolCallId)
-    return at !== -1 ? transcript.with(at, card) : [...transcript, card]
-  }
-  if (event.toolName === 'submit_plan') {
-    const planInfo = parsePlan(event.suspendPayload ?? event.args)
-    const card: PlanCardItem = {
-      kind: 'card',
-      cardKind: 'plan',
-      id: event.toolCallId,
-      toolCallId: event.toolCallId,
-      toolName: 'submit_plan',
-      state: 'open',
-      title: planInfo.title,
-      plan: planInfo.plan,
-      path: planInfo.path,
-    }
-    const at = transcript.findIndex((item) => item.id === event.toolCallId)
-    return at !== -1 ? transcript.with(at, card) : [...transcript, card]
-  }
-  return transcript
-}
-
-export function reduce(
-  transcript: readonly TranscriptItem[],
-  event: ConversationEvent,
-): readonly TranscriptItem[] {
-  switch (event.type) {
-    case 'turn':
-      return fromMessages([event.message])
-    case 'message_start':
-      return [...transcript, ...fromMessages([event.message])]
-    case 'message_update':
-      return event.event.type === 'part'
-        ? applyPartUpdate(transcript, event.id, event.event.part, event.event.index)
-        : applyDelta(transcript, event.id, event.event)
-    case 'shell_output': {
-      const at = transcript.findIndex((item) => item.id === event.toolCallId)
-      const item = at !== -1 ? transcript[at] : undefined
-      return item && item.kind === 'tool'
-        ? transcript.with(at, { ...item, output: (item.output ?? '') + event.output })
-        : transcript
-    }
-    case 'command_exit': {
-      const at = transcript.findIndex((item) => item.id === event.toolCallId)
-      const item = at !== -1 ? transcript[at] : undefined
-      return item && item.kind === 'tool'
-        ? transcript.with(at, {
-            ...item,
-            exitCode: event.exitCode,
-            state: event.success ? 'result' : 'output-error',
-            isError: !event.success,
-          })
-        : transcript
-    }
-    case 'tool_suspended':
-      return applyToolSuspension(transcript, event)
-    case 'message_end':
-    case 'turnEnd':
-    case 'agent_end':
-      return transcript.map((item) =>
-        item.kind === 'reasoning' ? { ...item, streaming: false } : item,
-      )
-    case 'task_updated':
-    case 'om_status':
-    case 'om_observation_start':
-    case 'om_observation_end':
-    case 'om_observation_failed':
-    case 'om_reflection_start':
-    case 'om_reflection_end':
-    case 'om_reflection_failed':
-    case 'om_buffering_start':
-    case 'om_buffering_end':
-    case 'om_buffering_failed':
-      return transcript
-    default:
-      return event satisfies never
-  }
+/** The parts of a message of ours, as Mastra keeps them among the others. */
+export function isOurs(part: MastraPart): boolean {
+  return part.type.startsWith('data-conexus-')
 }

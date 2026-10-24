@@ -82,6 +82,7 @@ export {
   providerOfModel,
   readConversation,
   runningEffort,
+  Suspension,
   sendConversationMessage,
   setConversationModel,
   stopConversation,

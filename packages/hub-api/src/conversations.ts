@@ -73,6 +73,13 @@ export type MessageId = z.infer<typeof MessageId>
 /** The part of a message that says a thinking took `seconds`, by our clock (step 12.1). */
 export const THOUGHT_PART = 'data-conexus-thought'
 
+/** What a call waiting for the person suspended with (`suspendPayload`), and where the Hub cut it. */
+export const Suspension = z.object({
+  suspendPayload: z.unknown(),
+  cuts: z.array(z.string()).optional(),
+})
+export type Suspension = z.infer<typeof Suspension>
+
 /**
  * A message as Mastra keeps it: its parts by Mastra's names, `cuts` where the Hub kept less; and
  * `suspended`, the calls the message left waiting for the person, with what each suspended with.
@@ -81,7 +88,7 @@ export const Message = z.object({
   id: MessageId,
   role: z.enum(['person', 'builder']),
   parts: z.array(MastraPart),
-  suspended: z.record(z.string(), z.unknown()),
+  suspended: z.record(z.string(), Suspension),
   /** The model that answered the Builder's turn, as Mastra recorded it; `null` for the person. */
   model: ModelId.nullable(),
   createdAt: z.iso.datetime(),

@@ -1,4 +1,4 @@
-import type { MastraPart, ModelId } from '@conexus/hub-api'
+import type { ModelId } from '@conexus/hub-api'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
@@ -24,7 +24,6 @@ import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
 import type { TranscriptItem } from './transcript.ts'
-import { fromParts } from './transcript.ts'
 
 function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conexus' }> }) {
   if (item.partType === 'data-conexus-machine') {
@@ -84,13 +83,11 @@ function rowKey(row: Row, index: number): string {
  * The Builder's turn (Criteria 8-12): mark, name, model badge, and its rows in arrival order.
  */
 export function BuilderTurn(props: {
-  parts?: readonly MastraPart[]
-  items?: readonly TranscriptItem[]
+  items: readonly TranscriptItem[]
   model: ModelId | null
   streaming: boolean
 }) {
-  const items = props.items ?? (props.parts ? fromParts(props.parts) : [])
-  const rows = fold(items)
+  const rows = fold(props.items)
 
   return (
     <Message>

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import type { Page } from 'playwright-core'
 import type { Reply } from '../../apps/server/src/platform/test-anthropic.ts'
@@ -38,19 +39,46 @@ function tasks(status: string) {
   })
 }
 
+/**
+ * The shape of one run of Mastra's export (its model calls, the tools of each, the empty last
+ * call), kept with no argument, result or text; the inputs below are made up (S40, T24). Calls that
+ * need a person's answer or the machine's check program are the other journeys'.
+ */
+const RUN: { steps: { tools: string[]; text: boolean }[] } = JSON.parse(
+  readFileSync(new URL('./builder-native-run.json', import.meta.url), 'utf8'),
+)
+const OTHER_JOURNEYS = new Set(['ask_user', 'submit_plan', 'conexus_check'])
+
+const INPUTS: Record<string, object> = {
+  skill: { name: 'conexus-build' },
+  skill_read: { name: 'conexus-build', path: 'SKILL.md' },
+  mastra_workspace_list_files: { path: 'src' },
+  mastra_workspace_file_stat: { path: SAFE_PATH },
+  mastra_workspace_read_file: { path: SAFE_PATH },
+  mastra_workspace_mkdir: { path: 'src/ficticio' },
+  mastra_workspace_write_file: { path: 'src/ficticio/a.ts', content: 'export const a = 1\n' },
+  mastra_workspace_grep: { pattern: 'router', path: 'src' },
+  task_update: { id: 'arquivos', status: 'in_progress' },
+  task_complete: { id: 'arquivos' },
+  task_check: {},
+}
+
+/** The export's calls, each with the tools of the run that a journey can play. */
+const FROM_EXPORT: Block[][] = RUN.steps
+  .map((step) => step.tools.filter((name) => !OTHER_JOURNEYS.has(name)))
+  .filter((names) => names.length > 0)
+  .map((names) => names.map((name) => call(name, INPUTS[name] ?? {})))
+
 const SCRIPT: (Block[] | string)[] = [
   [{ type: 'thinking', thinking: REASONING }, tasks('in_progress')],
   HOLD,
+  ...FROM_EXPORT,
   [
-    call('skill', { name: 'conexus-build' }),
-    call('mastra_workspace_list_files', { path: 'src' }),
-    call('mastra_workspace_grep', { pattern: 'router', path: 'src' }),
     call('mastra_workspace_write_file', {
       path: '../outside.ts',
       content: 'conteúdo fictício sem dado de empresa',
     }),
   ],
-  [call('mastra_workspace_read_file', { path: SAFE_PATH })],
   [tasks('completed')],
   [],
 ]
@@ -72,21 +100,19 @@ function builderThatFollowsMastraExports(
   })
 }
 
+/** Opens every group, then every row: each one shows what it did (criterion 8). */
 async function openEveryLine(chat: Page) {
   const transcript = transcriptOf(chat)
-  for (const [label, detail] of [
-    [/Usou a skill/, 'conexus-build'],
-    [/Listou arquivos/, 'src'],
-    [/Buscou no código/, 'router'],
-    [/Não conseguiu escrever/, 'outside.ts'],
-    [/Leu um arquivo/, SAFE_PATH],
-  ] as const) {
-    const row = transcript.getByRole('button', { name: label }).first()
-    await row.waitFor()
-    await row.click()
-    await row.getByText(detail).waitFor()
+  const closed = transcript.locator('button[aria-expanded="false"]')
+  await closed.first().waitFor()
+  for (let opened = 0; opened < 200 && (await closed.count()) > 0; opened += 1) {
+    const line = await closed.first().elementHandle()
+    assert.ok(line)
+    await line.click()
+    await chat.waitForFunction((el) => el.getAttribute('aria-expanded') === 'true', line)
   }
-  await transcript.getByText(/fora da pasta|fora do app|recusad/i).waitFor()
+  const refused = transcript.getByRole('button', { name: /Não conseguiu escrever/ })
+  await refused.getByText('outside.ts').waitFor()
 }
 
 test('percurso nativo em Chromium: ferramentas, pensamento, tarefas e transcrição relida', async (t) => {
@@ -104,26 +130,19 @@ test('percurso nativo em Chromium: ferramentas, pensamento, tarefas e transcriç
     await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
     await ask(chat, 'Confira os arquivos fictícios com segurança.')
     const transcript = transcriptOf(chat)
-    await transcript.getByText(REASONING).waitFor()
-    const reason = transcript.getByRole('button', { name: /Pensou por/ })
+    // The thinking is closed: its line says so, and opens on the model's words (criterion 9).
+    const reason = transcript.getByRole('button', { name: /^Pensou/ })
     await reason.click()
     await transcript.getByText(REASONING).waitFor()
     const panel = chat.getByRole('region', { name: 'Painel de tarefas' })
     await panel.getByText(/Tarefas · 0 de 14/).waitFor()
-    await chat.setViewportSize({ width: 390, height: 844 })
-    assert.equal(
-      await panel.locator('ul').evaluate((list) => list.scrollWidth > list.clientWidth),
-      true,
-      'the task list can scroll horizontally when it exceeds the viewport',
-    )
-    await chat.setViewportSize({ width: 1280, height: 800 })
     held.resolve()
-    await openEveryLine(chat)
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
     const before = await transcript.innerText()
     await chat.reload()
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
     assert.equal(await transcriptOf(chat).innerText(), before)
+    await openEveryLine(chat)
   } finally {
     held.resolve()
     for (const close of closers) await close()

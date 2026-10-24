@@ -12,6 +12,7 @@ const { openConversation } = screens(server)
 const CALL = ToolCallId.parse('call-1')
 const ANSWER = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations/${FIRST}/questions/${CALL}`
 const BUILDER_MSG_ID = MessageId.parse('builder-msg-1')
+const STEP_MSG_ID = MessageId.parse('builder-step-1')
 
 function answering(reply: () => Promise<Response | undefined> = async () => undefined) {
   const bodies: unknown[] = []
@@ -34,11 +35,15 @@ async function turn(...parts: MastraPart[]) {
     message: { ...builderSaid(''), id: BUILDER_MSG_ID, parts: [] },
     startedAt: new Date().toISOString(),
   })
+  line?.emit({
+    type: 'message_start',
+    message: { ...builderSaid(''), id: STEP_MSG_ID, parts: [] },
+  })
   function tell(...more: MastraPart[]) {
     for (const [index, part] of more.entries()) {
       line?.emit({
         type: 'message_update',
-        id: BUILDER_MSG_ID,
+        id: STEP_MSG_ID,
         event: { type: 'part', index, part },
       })
     }
@@ -263,10 +268,18 @@ test('o plano recusado permanece como recusado após a resposta do Builder', asy
       toolName: 'submit_plan',
       state: 'result',
       args: PLAN_ARGS,
-      result: { action: 'rejected' },
+      result: {
+        content: 'Plan was not approved. The user wants revisions.',
+        submittedPlan: {
+          title: 'App de encomendas',
+          plan: 'Uma tela de encomendas.',
+          action: 'rejected',
+          feedback: 'Adicione filtro por data',
+        },
+      },
     },
   })
-  await within(card).findByText('Ajustes pedidos ao plano.')
+  await within(card).findByText('Este plano foi substituído.')
   expect(within(card).getByText('Uma tela de encomendas.')).toBeTruthy()
   expect(within(card).queryByRole('button', { name: 'Aprovar e construir' })).toBeNull()
 })

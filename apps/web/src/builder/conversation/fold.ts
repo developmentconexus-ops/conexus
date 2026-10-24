@@ -16,8 +16,12 @@ function isGroupableTool(item: ToolItem): boolean {
   return !UNGROUPABLE_TOOLS.has(bare) && !isTaskTool(bare)
 }
 
+function isMachine(item: TranscriptItem): boolean {
+  return item.kind === 'conexus' && item.partType === 'data-conexus-machine'
+}
+
 function checkMachineLasts(item: TranscriptItem): boolean {
-  if (item.kind !== 'conexus' || item.partType !== 'data-conexus-machine') return true
+  if (item.kind !== 'conexus' || !isMachine(item)) return true
   const parsed = ConexusMachineData.safeParse(item.data)
   return parsed.success && isMachineLasting(parsed.data.phase)
 }
@@ -37,13 +41,10 @@ export function fold(items: readonly TranscriptItem[]): Row[] {
     run = []
   }
 
-  for (const [at, item] of items.entries()) {
-    if (
-      item.kind === 'conexus' &&
-      item.partType === 'data-conexus-machine' &&
-      at < items.length - 1 &&
-      !checkMachineLasts(item)
-    ) {
+  // A machine's step that does not last says what the turn waits for, until anything else comes.
+  const said = items.some((item) => !isMachine(item))
+  for (const item of items) {
+    if (isMachine(item) && said && !checkMachineLasts(item)) {
       continue
     }
 
