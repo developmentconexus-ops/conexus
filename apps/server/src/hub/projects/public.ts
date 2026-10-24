@@ -20,6 +20,7 @@ import { registerProjectRoutes } from './routes.ts'
 export { readyDatabaseOf } from './company-database.ts'
 /** For the Builder's conversations, made before Projects to hand Projects their release. */
 export { liveProjectOf } from './hosts.ts'
+export { projectIdsOf } from './ids.ts'
 export type { AppRemoval, ProjectConversationRelease } from './projects.ts'
 /** For the apps' foreign key alone (code C8). */
 export { project } from './tables.ts'

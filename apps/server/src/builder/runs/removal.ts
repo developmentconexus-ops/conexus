@@ -1,4 +1,5 @@
 import type { CompanyId, PersonId, ProjectId } from '@conexus/hub-api'
+import { projectIdsOf } from '../../hub/projects/public.ts'
 import type { RunsContext } from './context.ts'
 
 /** What a release names: a company, and maybe one of its Projetos or one of its people. */
@@ -12,7 +13,7 @@ async function removeProject(
   context: RunsContext,
   ids: { companyId: CompanyId; projectId: ProjectId },
 ) {
-  const { store, machines, copy } = context
+  const { machines, copy } = context
   const machine = await machines.rowOf(ids.companyId, ids.projectId)
   // The turn's use of the machine ends before the kill: a killed machine cannot be paused.
   const steps = [
@@ -20,9 +21,7 @@ async function removeProject(
     async () => {
       if (machine !== undefined) await machines.kill(machine.sandboxId)
     },
-    async () => {
-      if (await store.hasVersion(ids.companyId, ids.projectId)) await copy.removeProject(ids)
-    },
+    () => copy.removeProject(ids),
     () => context.repository(ids).remove(),
   ]
   const failures: unknown[] = []
@@ -37,7 +36,9 @@ async function removeProject(
 
 async function projectsOf(context: RunsContext, companyId: CompanyId): Promise<ProjectId[]> {
   const found = [
-    ...(await context.store.projectsOf(companyId)),
+    ...(await context.database.read({ kind: 'COMPANY', companyId, personId: null }, (tx) =>
+      projectIdsOf(tx, companyId),
+    )),
     ...(await context.machines.projectsOf(companyId)),
   ]
   return [...new Set(found)]

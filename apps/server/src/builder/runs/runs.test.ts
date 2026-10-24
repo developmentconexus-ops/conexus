@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
@@ -38,10 +40,13 @@ function writing(path: string, content: string): Tool {
   return { name: WRITE, input: { path, content } }
 }
 
-async function runs(hub: Pick<Awaited<ReturnType<typeof conversing>>['hub'], 'test'>) {
-  return hub.test.asOwner(
-    `select state, base_sha, candidate_sha, copied_at is not null as copied, deadline_at from builder.run order by deadline_at`,
-  )
+type Subject = Pick<Awaited<ReturnType<typeof conversing>>, 'hub' | 'companyId' | 'projectId'>
+
+function repositoryOf({ hub, companyId, projectId }: Subject) {
+  return hub.builder.repository({
+    companyId: CompanyId.parse(companyId),
+    projectId: ProjectId.parse(projectId),
+  })
 }
 
 test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Projeto aceita a próxima mensagem', async (t) => {
@@ -51,14 +56,9 @@ test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Pr
   )
   const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  const [saved] = await runs(hub)
-  assert.equal(saved?.state, 'saved')
-  assert.equal(saved?.copied, true)
-  const repository = hub.builder.repository({
-    companyId: CompanyId.parse(companyId),
-    projectId: ProjectId.parse(projectId),
-  })
+  const repository = repositoryOf({ hub, companyId, projectId })
   assert.equal(await repository.version(), 1)
+  assert.equal(await repository.uncopied(), null, 'the bucket holds the version')
   const main = await repository.main()
   const files = (await repository.tree(main)) ?? []
   assert.ok(files.some((file) => file.path === 'src/a.ts' && file.bytes === 19))
@@ -67,6 +67,9 @@ test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Pr
     'the version stands on the starter',
   )
   assert.equal(hub.builder.bucket.held.size, 1)
+  const dir = join(tmpdir(), companyId, `${projectId}.git`)
+  const refs = execFileSync('git', ['--git-dir', dir, 'for-each-ref', 'refs/conexus/runs'])
+  assert.equal(refs.toString(), '', "the run's own ref goes once main holds its commit")
 })
 
 test('só resposta: o turno fecha sem versão e sem tocar a máquina', async (t) => {
@@ -75,7 +78,7 @@ test('só resposta: o turno fecha sem versão e sem tocar a máquina', async (t)
     text: call.stream ? 'Só uma resposta' : 'Título',
   }))
   await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(await runs(hub), [], 'no version, no row')
+  assert.equal(hub.builder.bucket.held.size, 0, 'no version, no copy')
   assert.deepEqual(await hub.test.asOwner('select * from builder.machine'), [])
   assert.equal(existsSync(join(hub.builder.folder, 'app')), false)
 })
@@ -104,35 +107,32 @@ test('além da hora: o turno para, o que foi escrito é guardado e a máquina le
   const hang = new Promise<void>(() => undefined)
   const first = working(writing('src/a.ts', 'um\n'))
   let step = 0
-  const { hub, ana, conversations } = await conversing(t, (call) => {
+  const { hub, ana, conversations, companyId, projectId } = await conversing(t, (call) => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     step += 1
     return step === 1 ? first(call) : { kind: 'hold', until: hang, text: 'Pensando' }
   })
   hub.builder.knobs.turnMs = 1_500
+  const before = Date.now()
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
-  const [saved] = await runs(hub)
-  assert.equal(saved?.state, 'saved')
-  const deadline = saved?.deadline_at
-  assert.ok(deadline instanceof Date)
-  assert.deepEqual(
-    hub.builder.control.deadlines.map((at) => at.getTime()),
-    [deadline.getTime()],
-  )
+  assert.equal(await repositoryOf({ hub, companyId, projectId }).version(), 1)
+  const [deadline, ...more] = hub.builder.control.deadlines.map((at) => at.getTime())
+  assert.deepEqual(more, [])
+  assert.ok(deadline !== undefined && deadline >= before + 1_500 && deadline <= Date.now() + 1_500)
 })
 
 test('erro depois de escrever: a versão é guardada', async (t) => {
   const first = working(writing('a.ts', 'x\n'))
   let step = 0
-  const { hub, ana, conversations } = await conversing(t, (call) => {
+  const { hub, ana, conversations, companyId, projectId } = await conversing(t, (call) => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     step += 1
     return step === 1 ? first(call) : { kind: 'refuse', status: 401 }
   })
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.equal(events.at(-1)?.type, 'turnEnd')
-  assert.equal((await runs(hub))[0]?.state, 'saved')
+  assert.equal(await repositoryOf({ hub, companyId, projectId }).version(), 1)
 })
 
 test('a máquina cai antes de guardar: failed, MACHINE_LOST, e o main como era', async (t) => {
@@ -143,7 +143,7 @@ test('a máquina cai antes de guardar: failed, MACHINE_LOST, e o main como era',
   )
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['MACHINE_LOST'])
-  assert.deepEqual(await runs(hub), [])
+  assert.equal(hub.builder.bucket.held.size, 0)
   assert.equal(
     await hub.builder
       .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })
@@ -157,7 +157,7 @@ test('a máquina não liga na primeira ferramenta: o aviso de que não ligou, n�
   hub.builder.control.start = 'unreachable'
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['MACHINE_UNAVAILABLE'])
-  assert.deepEqual(await runs(hub), [])
+  assert.equal(hub.builder.bucket.held.size, 0)
 })
 
 test('Git sumiu do disco e a cópia tem versão: o turno falha com GIT_RESTORE_NEEDED e nada recomeça na versão 1', async (t) => {
@@ -172,7 +172,6 @@ test('Git sumiu do disco e a cópia tem versão: o turno falha com GIT_RESTORE_N
   })
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['GIT_RESTORE_NEEDED'])
-  assert.deepEqual(await runs(hub), [])
   const repository = hub.builder.repository({
     companyId: CompanyId.parse(companyId),
     projectId: ProjectId.parse(projectId),
@@ -188,7 +187,7 @@ test('recusa ao guardar (2.000 arquivos): o texto da recusa, o main como era', a
   const { hub, ana, conversations, companyId, projectId } = await conversing(t, working(many))
   const { events } = await asked(t, { hub, person: ana, conversations })
   assert.deepEqual(failuresOf(events), ['SAVE_REFUSED'])
-  assert.deepEqual(await runs(hub), [])
+  assert.equal(hub.builder.bucket.held.size, 0)
   const repository = hub.builder.repository({
     companyId: CompanyId.parse(companyId),
     projectId: ProjectId.parse(projectId),
@@ -202,7 +201,7 @@ test('nada mudado: sem versão; o comando tocou a máquina, o turno fecha unchan
     working({ name: COMMAND, input: { command: 'echo oi' } }),
   )
   await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(await runs(hub), [])
+  assert.equal(hub.builder.bucket.held.size, 0)
   assert.equal(
     await hub.builder
       .repository({ companyId: CompanyId.parse(companyId), projectId: ProjectId.parse(projectId) })
@@ -213,14 +212,21 @@ test('nada mudado: sem versão; o comando tocou a máquina, o turno fecha unchan
 })
 
 test('R2 fora: a versão fica guardada no servidor e a cópia pendente é repetida até o bucket aceitar', async (t) => {
-  const { hub, ana, conversations } = await conversing(t, working(writing('a.ts', 'x\n')))
+  const { hub, ana, conversations, companyId, projectId } = await conversing(
+    t,
+    working(writing('a.ts', 'x\n')),
+  )
   hub.builder.bucket.refuse.puts = 1
   await asked(t, { hub, person: ana, conversations })
-  assert.equal((await runs(hub))[0]?.copied, false)
+  const repository = repositoryOf({ hub, companyId, projectId })
+  assert.equal(await repository.uncopied(), await repository.main())
   assert.equal(hub.builder.bucket.held.size, 0)
   assert.equal(await hub.runs.retryCopies(), false)
-  assert.equal((await runs(hub))[0]?.copied, true)
-  assert.equal(hub.builder.bucket.held.size, 1)
+  assert.equal(await repository.uncopied(), null)
+  const mine = [...hub.builder.bucket.held.keys()].filter((key) =>
+    key.startsWith(`${companyId}/${projectId}/`),
+  )
+  assert.equal(mine.length, 1, 'the retry reaches every Projeto on the volume, this one among them')
 })
 
 test('a varredura: só a máquina marcada, parada há 7 dias e sem turno escrevendo é morta', async (t) => {
