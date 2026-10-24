@@ -209,7 +209,8 @@ async function runServer(): Promise<void> {
       await status.recordStart()
       // The passes at start run after the Hub answers: a Cloudflare or Neon out never keeps it down.
       void apps.repair().catch((error: unknown) => logFailure(log, databaseFailure(error)))
-      // The turns another copy left are ended and saved as they stand (card, the restart).
+      // The turns another copy left are adopted with their open card, or ended and saved as they
+      // stand (card, the restart).
       void runs.settleRuns().catch((error: unknown) => logFailure(log, databaseFailure(error)))
       void projects
         .nameDatabases()

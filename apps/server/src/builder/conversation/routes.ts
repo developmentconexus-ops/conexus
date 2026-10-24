@@ -135,7 +135,7 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
 
   serve(app, stopConversation, async (input) => {
     await store.owned({ person: input.person, ...input.params })
-    await sessions.stop(input.params.conversationId)
+    await sessions.stop({ owner: ownerOf(input), conversationId: input.params.conversationId })
     return answer(undefined)
   })
 
