@@ -4,7 +4,8 @@
 // AgentControllerEvent (@mastra/core 1.78.0, agent-controller/types.d.ts), or a stored row's key
 // (`suspendedTools`, `submittedPlan`, `toolInvocation`); the test loads the shape from a recording
 // that `npm run record` made (scripts/record.ts) through `nativeRecording`.
-// biome.json wires it to *.test.ts and *.test.tsx; the helpers named test-*.ts stay out, as the
+// biome.json wires it to the server's *.test.ts and *.test.tsx, where a library shape is fed to our code;
+// the web's and hub-api's tests build the Hub's own wire events, our contract, and stay out; the helpers named test-*.ts stay out, as the
 // other rules leave them.
 // Known blind spots: `info` and `error`, two controller types too common in other objects to
 // refuse; a shape built by spreading or by a function; a literal in a test helper.

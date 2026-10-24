@@ -244,12 +244,7 @@
       "plugins": ["./scripts/conexus-code.grit"]
     },
     {
-      "includes": [
-        "apps/**/*.test.ts",
-        "apps/**/*.test.tsx",
-        "packages/**/*.test.ts",
-        "packages/**/*.test.tsx"
-      ],
+      "includes": ["apps/server/**/*.test.ts", "apps/server/**/*.test.tsx"],
       "plugins": ["./scripts/library-shapes.grit"]
     }
   ],

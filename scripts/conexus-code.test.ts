@@ -94,6 +94,8 @@ const GOOD: Record<string, string> = {
   ].join('\n'),
   'apps/web/src/hub/ok3.ts': 'export function f(companyId: string) {\n  return companyId\n}\n',
   [`${SERVER}/ok5.test.ts`]: 'export const v = JSON.parse("1")\n',
+  'apps/web/src/builder/conversation/ok7.test.ts':
+    "export const wire = { type: 'message_update', id: 'a', event: { type: 'text-delta', delta: 'oi' } }\n",
   [`${SERVER}/ok6.test.ts`]: [
     "import { nativeRecording } from '../../platform/test-recordings.ts'",
     "const { events } = nativeRecording('cited')",
