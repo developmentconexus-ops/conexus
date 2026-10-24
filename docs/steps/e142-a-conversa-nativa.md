@@ -306,7 +306,7 @@ Enter orienta o Builder · Esc para               Enter orienta o Builder · Esc
 | Raciocínio do Gemini | nativo | `thinking.ts` | pelo modelo compatível com OpenAI | 0050 (CLIProxy) | `llm-DtX483Xc.js:8463-8474`; `dist-Btgwa9QY.js:3322-3326,3484` |
 | Plano A | nativo na forma | `plan-tools.ts` | `.conexus/plans/` | um plano por mudança | Mastra Code `utils/plans.ts:17,33-35,94` |
 | Árvore | nativo | `source/` | — | — | shadcn `sidebar-11`; OS `lens-code.tsx:2,14-38` |
-| Cache de prompt do Claude | trazido | `model-accounts/claude/prompt-cache.ts` | por escopo na fila, não por provedor do Mastra Code | 0049 (a fila monta o modelo) | Mastra Code `providers/claude-max.ts:80-153,262-276`, `agents/mastracode-gateway.ts:150-162`, `agents/memory.ts:103,394`; OS: nenhuma |
+| Cache de prompt do Claude | trazido | `model-accounts/claude/models.ts` | por escopo na fila, não por provedor do Mastra Code | 0049 (a fila monta o modelo) | Mastra Code `providers/claude-max.ts:80-153,262-276`, `agents/mastracode-gateway.ts:150-162`, `agents/memory.ts:103,394`; OS: nenhuma |
 | Cartão entre cópias | nativo: `detachFromCurrent`, `listSuspendedRuns`, a retomada fria; a adoção da linha, nossa | `cards.ts`, `sessions.ts`, `turn-run.ts`, `runs/` | de `denyParked` | D25 (lease), C62 | `agent-controller/session.ts:991-999,4516-4517,5552-5595`; teste `agent-controller-ask-user.test.ts:294-313,728-868`; servidor do Mastra `handlers/agent-controller.ts:756-781`; OS: nenhuma |
 | Turno como estado | nosso, nos eventos do Mastra | `turn-state.ts` | de oito campos soltos (`turn`, `asked`, `runs`, `unclaimed`, `carry`, `ending`, `run`, `saveFailure`) | C21, C26 | Factory `live-sessions.ts:43-110`; `agent-controller/session.ts:4282-4338` |
 | Edição antes e depois | nativo na forma | `tool-presentation.ts`, `tool-row.tsx` | de "Argumentos:" | V39 emendada | Factory `tool/ToolCard.tsx:144-184` |
@@ -454,9 +454,9 @@ Os grupos de campos usam `fieldset` ("Mudança no arquivo", "Arquivo escrito"), 
 
 **Leitura.** skill `mastra`, referências `create-coding-agent`, `task-signal-provider`. Regras: C50, C57, C75, S41, T14. **Prova.** 14 a 17, 33, 39.
 
-**Como foi construído.** `promptCacheMiddleware` (`claude/prompt-cache.ts`, copiado do Mastra Code, Apache
-2.0, cabeçalho no arquivo) marca o modelo do Claude por escopo na fila (`queue.ts`), pela chave
-(`claude/api-key-model.ts`) e pela assinatura (`subscription-model.ts`); sai também de `model-accounts/
+**Como foi construído.** `promptCacheMiddleware` (`claude/models.ts`, copiado do Mastra Code, Apache
+2.0, cabeçalho no arquivo) marca o modelo do Claude por escopo na fila (`queue.ts`), pela chave e pela assinatura
+(ambas em `claude/models.ts`); sai também de `model-accounts/
 public.ts`, porque T5 faz o teste do servidor entrar por uma porta pública. O corpo do pedido do dublê da
 Anthropic foi para `platform/test-anthropic-body.ts` (o arquivo passava do teto de 300 linhas) e `Sent`
 continua exportado de `test-anthropic.ts`. `scripts/record-provider.ts` passa o escopo `'conversation'` a

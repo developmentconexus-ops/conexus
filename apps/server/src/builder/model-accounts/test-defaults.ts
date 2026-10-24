@@ -4,7 +4,7 @@ import type { TestContext } from 'node:test'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
-import { conversing } from './test-conversation.ts'
+import { conversing } from '../conversation/test-conversation.ts'
 
 /** Empresa Teste with Ana's Anthropic key and its default `MODEL`; Carla is a member. */
 export async function company(t: TestContext) {

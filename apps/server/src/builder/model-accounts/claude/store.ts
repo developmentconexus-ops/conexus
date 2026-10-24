@@ -8,12 +8,12 @@ import type { SealKeys } from '../../../platform/seal.ts'
 import { Credential, seal } from '../../../platform/seal.ts'
 import { credentialOf, sealContext } from '../accounts.ts'
 import { modelAccount } from '../tables.ts'
-import type { SubscriptionTokens } from './anthropic-login.ts'
+import type { SubscriptionTokens } from './sign-in.ts'
 import {
   AnthropicRefusal,
   refreshAnthropicTokens,
   SubscriptionTokens as Tokens,
-} from './anthropic-login.ts'
+} from './sign-in.ts'
 
 // How long one refresh holds its account (data D25); a second caller waits for it, then reads.
 const LEASE_MS = 30_000

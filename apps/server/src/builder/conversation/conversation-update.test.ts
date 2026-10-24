@@ -6,6 +6,7 @@ import type { ConversationEvent } from '@conexus/hub-api'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
+import { connect } from '../model-accounts/test-defaults.ts'
 import {
   answeredOf,
   conversing,
@@ -15,7 +16,6 @@ import {
   started,
   streamOf,
 } from './test-conversation.ts'
-import { connect } from './test-defaults.ts'
 import { failuresOf } from './test-parts.ts'
 import {
   answerUrl,

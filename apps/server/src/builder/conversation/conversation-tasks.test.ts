@@ -6,6 +6,7 @@ import { applyUpdate } from '@conexus/hub-api'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import { connect } from '../model-accounts/test-defaults.ts'
 import {
   conversing,
   KEY,
@@ -16,7 +17,6 @@ import {
   streamOf,
   title,
 } from './test-conversation.ts'
-import { connect } from './test-defaults.ts'
 import { noticesOf } from './test-parts.ts'
 
 const OBSERVER = /^You are the memory consciousness/

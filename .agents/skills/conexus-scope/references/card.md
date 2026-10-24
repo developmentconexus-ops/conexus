@@ -5,9 +5,10 @@ L24](../../../../docs/guides/delivery.md). Its founder's page, in Portuguese, is
 founder approves and fits one page. The rest serves the builder
 and the reviewers and may be in Portuguese or English, one language per card.
 
-The card never carries the implementation: no function bodies and no full code, only names and
-signatures. Specifications that carried the code drifted from it and were approved without being
-read.
+The card never carries whole files. A unit's section is its build spec: what its builder reads,
+with the start of the code where a step is not obvious. It drifted before when approved unread;
+now the reader opens every cited line, the founder approves only his page, and the closing deletes
+the card, after which the code is the only source.
 
 ```markdown
 # Etapa <n>: <nome>
@@ -58,6 +59,11 @@ das capturas do produto antigo que o protótipo seguiu ([screens](screens.md)).
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 
+## O mapa do estudo
+
+| Achado ou decisão do estudo (relatório:linha) | Unidade dona, ou "fica de fora" e por quê |
+| --- | --- |
+
 ## O que nasce novo e o que é trazido
 
 | Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
@@ -69,6 +75,19 @@ das capturas do produto antigo que o protótipo seguiu ([screens](screens.md)).
 
 ## U<k> <nome>
 
+**Base e modelo.** Commit base; o modelo do builder e por quê (Sonnet; Opus para desenho entre
+módulos, concorrência ou algoritmo sutil).
+
+### Ler primeiro
+
+| Arquivo e símbolo | Linhas na base | Por quê |
+| --- | --- | --- |
+
+### A referência
+
+| Pacote@versão ou repositório@commit, arquivo | Linhas | O que copiar e o que adaptar |
+| --- | --- | --- |
+
 ### O raio da mudança
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
@@ -77,7 +96,8 @@ das capturas do produto antigo que o protótipo seguiu ([screens](screens.md)).
 
 ### Os contratos que a unidade cria
 
-Só assinaturas: rotas (método, caminho, acesso, entrada, saídas e falhas), colunas de tabela com
+Assinaturas em TypeScript, com o arquivo onde vivem (hub-api, server, web), e o que se apaga:
+rotas (método, caminho, acesso, entrada, saídas e falhas), colunas de tabela com
 tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhum corpo de função.
 
 Além delas, a forma de cada coisa (a conclusão da seção 5 do estudo desce para cá, porque quem
@@ -96,12 +116,17 @@ constrói não lê o estudo):
 
 ### A ordem do trabalho
 
-1. <passo>. Regras: <ids, por exemplo C27, D21>. Funções: <pacote@versão: função; as opções de que a
-   garantia depende, com o padrão>.
+1. <arquivo, símbolo, a mudança>. Regras: <ids>. Funções: <pacote@versão: função; opções e
+   padrão>. Para um passo não óbvio, o começo do código.
 
 ### Como se prova
 
-<para cada critério da unidade: o teste, o comando que o roda, e a recusa que ele mostra>
+<para cada critério da unidade: o teste, a gravação que ele toca (T26), o comando, a recusa que ele
+mostra, e o teste que falha hoje>
+
+### Parar se
+
+<o que o builder não decide: cada ponto que só o teste revela, e o que fazer>
 ```
 
 ## What makes a card good
@@ -149,3 +174,5 @@ The reader of step <n> answers each one with the card's line.
 7. Does each unit's section of contracts give every state its union, every id its brand, every
    shared fact its owner, every outside input its schema, and the model file its verdict on C21,
    C23 and C26?
+8. Does every cited reference line, opened at the installed version, say what the section claims?
+9. Does the study's map give every finding an owner unit or a reason to stay out?

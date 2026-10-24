@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomBytes, randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
+import { setTimeout } from 'node:timers/promises'
 import { ATTEMPT_KEY_HEADER } from '@conexus/hub-api'
 import { hashPassword } from 'better-auth/crypto'
 import { createEdgeHub, createHub, identityOf, subjectsOf } from '../../main.ts'
@@ -35,6 +36,9 @@ export const INVITEE = 'davi@example.test'
 
 type Change = (config: Config) => Config
 
+/** Production's shutdown deadline (`SHUTDOWN_DEADLINE_MS` in platform/lifecycle.ts). */
+const CLOSE_DEADLINE_MS = 15_000
+
 async function hubServing(
   t: TestContext,
   mailApiUrl?: string,
@@ -43,8 +47,14 @@ async function hubServing(
 ) {
   // Registered before the database's own cleanup, so it runs first (node:test runs them in order):
   // the Builder's turns drain and end their streams, as at shutdown, before the server closes.
-  const closing = { hub: (): Promise<unknown> => Promise.resolve() }
-  t.after(() => closing.hub())
+  // A turn parked on a card never drains, and production cuts the drain at its shutdown deadline,
+  // so this close gets a deadline too: past it the database's cleanup still runs, and the last
+  // hook fails the test (a hook that throws skips the hooks after it, and the file never exits).
+  const closing = { hub: (): Promise<unknown> => Promise.resolve(), late: false }
+  t.after(async () => {
+    const late = setTimeout(CLOSE_DEADLINE_MS, 'late', { ref: false })
+    closing.late = (await Promise.race([closing.hub(), late])) === 'late'
+  })
   const test = await createTestDatabase(t)
   const config = (change ?? ((same) => same))(testConfig(test.runtimeUrl, mailApiUrl))
   const status = createStatus({ version: config.version, database: test.database })
@@ -69,6 +79,9 @@ async function hubServing(
   closing.hub = close
   const edge = await createEdgeHub(config, { apps })
   t.after(() => edge.close())
+  t.after(() => {
+    if (closing.late) throw new Error(`the Hub did not close within ${CLOSE_DEADLINE_MS} ms`)
+  })
   return {
     app,
     edge,

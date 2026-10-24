@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call, codeOf } from '../../hub/identity/test-hub.ts'
-import { company, connect } from '../conversation/test-defaults.ts'
+import { company, connect } from './test-defaults.ts'
 
 const MODEL = 'openai/gpt-5'
 
