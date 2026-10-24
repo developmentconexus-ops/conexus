@@ -33,11 +33,11 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
 4. Bring old code only as the card's table says: into the named file, refactored as listed,
    carrying only the old decisions listed. Past the study rule's measure
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
-5. Test through the server's public door, negative cases included, with provider doubles per [testing T24](../../../docs/guides/testing.md). Write each screen text from the card's state
-   matrix.
+5. Test through the server's public door, negative cases included, with provider doubles per
+   [testing T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
-   changed screen looked at per [testing T23](../../../docs/guides/testing.md), through the
-   repository's verification skill when one exists ([screen](references/screen.md)). A fix
+   changed screen looked at per [testing T23](../../../docs/guides/testing.md), through a
+   verification skill when one exists ([screen](references/screen.md)). A fix
    that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
    states, and a new guard gets its removal row (T12). Answer [the
    checklist](../../../docs/reference/checklist.md) and fill its sweep table; a "nosso"
@@ -51,7 +51,7 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
 The commit and a report: what I ran, saw and did not prove; the line counts of each brought part;
 every criterion with its test, none red; each declared file outside the card's folders ([delivery
 L7](../../../docs/guides/delivery.md)); the screenshots looked at, by state, width and theme, or "no
-screen touched". A criterion known to fail is never a finding handed to the review: fix it, or
+screen touched". A criterion known to fail is never handed to the review: fix it, or
 stop.
 
 ## Stop and ask
@@ -60,12 +60,13 @@ stop.
   the card contradict each other.
 - The unit changes what a person sees, or the scope, beyond the card ([delivery
   L7](../../../docs/guides/delivery.md)).
-- The unit grows past what the card expects.
+- The unit outgrows the card's estimate.
 - The code needs a file, shape or behaviour the unit's section does not name, or a ruling arrives
   that the card does not carry: stop; the card takes it as a delta first.
-- A test needs a library shape no recording holds: stop; record it (T26), never type it.
+- A test needs a library shape no recording holds: stop; record it with `npm run record`, load it with
+  `nativeRecording` (T26), never type it.
 
-Stop means no more code: report the evidence and the question.
+Stop means no more code: report evidence and question.
 
 ## When it closes
 

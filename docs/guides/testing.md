@@ -64,11 +64,13 @@ choice of test tools.
   test asserts the two are equal. A double plays every tool the model is offered, not only
   those a card names, and the tests and QA read each tool's row on the screen. [review]
 - **T26.** A test that feeds our code a shape a library emits (Mastra's controller events, stored
-  messages, tool results; vibesdk's preview events) **must** load it from a recording made by
-  `npm run record` from the installed library, named with library, version and date beside it, and
-  carrying invented content only (security S40). A literal of such a shape in a test is refused.
-  Failure: every 14.2 screen Bloqueia passed on hand-made `suspended`, `result.action` and event
-  orders Mastra never produces. [GritQL `conexus-code.grit`: no-library-shape-literal; review]
+  messages, tool results; vibesdk's preview events) **must** load it with `nativeRecording(scenario)`
+  (`test-recordings.ts`) from a recording that `npm run record` (`scripts/record.ts`) made from the
+  installed library in `apps/server/src/platform/recordings/mastra/<scenario>.jsonl`, its first line
+  naming library, version, source and date, and carrying invented content only (security S40). A
+  literal of such a shape in a test is refused. Failure: every 14.2 screen Bloqueia passed on
+  hand-made `suspended`, `result.action` and event orders Mastra never produces. [GritQL
+  `scripts/library-shapes.grit`; review]
 - **T17.** Tests **should not** change authority to pass. Failure: a test-only header still accepted
   in production bypasses the session. [code C67](code.md) restricts `NODE_ENV`, not every possible
   bypass spelling. [review]
