@@ -7,6 +7,8 @@ type ToolInvocationState = Extract<
   { type: 'tool-invocation' }
 >['toolInvocation']['state']
 
+/** A message the person sent into the running turn, at the place Mastra read it. */
+type PersonItem = { kind: 'person'; id: string; text: string; createdAt: string }
 type TextItem = { kind: 'text'; id: string; text: string; cuts?: string[] }
 export type ReasoningItem = {
   kind: 'reasoning'
@@ -62,7 +64,13 @@ type ConexusItem = {
   data: unknown
   cuts?: string[]
 }
-export type TranscriptItem = TextItem | ReasoningItem | ToolItem | CardItem | ConexusItem
+export type TranscriptItem =
+  | PersonItem
+  | TextItem
+  | ReasoningItem
+  | ToolItem
+  | CardItem
+  | ConexusItem
 
 /** How long each thinking took, by the key the server gives it: its message and its place in it. */
 export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number> {

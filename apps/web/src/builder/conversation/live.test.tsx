@@ -2,7 +2,7 @@ import type { ConversationEvent, Message } from '@conexus/hub-api'
 import { MessageId, ModelId } from '@conexus/hub-api'
 import { afterEach, expect, test, vi } from 'vitest'
 import { fold } from './fold.ts'
-import type { Live } from './live.ts'
+import type { Live, Step } from './live.ts'
 import { IDLE, itemsOf, live, waitsOnPerson } from './live.ts'
 import { READ_DONE } from './tool-fixtures.ts'
 import { fromMessages } from './transcript.ts'
@@ -32,7 +32,7 @@ function message(
   } satisfies Message
 }
 
-function told(...events: ConversationEvent[]): Live {
+function told(...events: Step[]): Live {
   return events.reduce<Live>((state, event) => live(state, event), IDLE)
 }
 
@@ -236,4 +236,52 @@ test('uma chamada em grupo não volta a zero: cada linha guarda quando a tela a 
   ])
   const rows = fold(items)
   expect(rows).toMatchObject([{ kind: 'group' }])
+})
+
+const A = MessageId.parse('conversa:a')
+const B = MessageId.parse('conversa:b')
+
+function personSaid(id: MessageId, text: string): Message {
+  return { ...message(id, [{ type: 'text', text }]), role: 'person', model: null }
+}
+
+test('um quadro do turno depois de reconectar mantém só as mensagens que ele ainda não traz', () => {
+  const sent = told(opening)
+  const steered = [
+    { type: 'steer', steer: { id: A, content: 'primeira' } },
+    { type: 'steer', steer: { id: B, content: 'segunda' } },
+  ] as const
+  const pending = steered.reduce<Live>(live, sent)
+  const again: ConversationEvent = {
+    type: 'turn',
+    messages: [personSaid(A, 'primeira'), message(TURN)],
+    startedAt: STARTED,
+  }
+  const state = live(pending, again)
+  expect(state.kind === 'answering' && state.turn.steers).toEqual([{ id: B, content: 'segunda' }])
+})
+
+test('a mensagem lida entra na volta no lugar em que o Mastra a leu, sem se fundir ao texto do Builder', () => {
+  const state = told(
+    opening,
+    start(STEP_1, [{ type: 'text', text: 'Antes.' }]),
+    { type: 'steer', steer: { id: A, content: 'Só eu cadastro.' } },
+    { type: 'message_start', message: personSaid(A, 'Só eu cadastro.') },
+    start(STEP_2, [{ type: 'text', text: 'Depois.' }]),
+  )
+  expect(itemsOf(state).map((item) => item.kind)).toEqual(['text', 'person', 'text'])
+  expect(state.kind === 'answering' && state.turn.steers).toEqual([])
+})
+
+test('a mensagem que o Builder não leu volta quando a volta acaba, uma vez, e a que falhou sai', () => {
+  const state = told(
+    opening,
+    { type: 'steer', steer: { id: A, content: 'não lida' } },
+    { type: 'steer', steer: { id: B, content: 'falhou' } },
+    { type: 'unsteered', id: B },
+    { type: 'turnEnd', reason: 'aborted' },
+  )
+  expect(state.kind === 'ended' && state.returned).toEqual(['não lida'])
+  const shown = live(state, { type: 'returnedShown' })
+  expect(shown.kind === 'ended' && shown.returned).toEqual([])
 })

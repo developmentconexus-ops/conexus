@@ -1,6 +1,7 @@
 import type { ModelId } from '@conexus/hub-api'
 import { FailureData, MachineData, NoticeData, RestartedData, VersionData } from '@conexus/hub-api'
 import { ConexusMark } from '../../brand/mark.tsx'
+import { hourOf } from '../../platform/dates.ts'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
@@ -14,6 +15,7 @@ import {
   VersionLine,
 } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
+import { PersonBubble } from './person-turn.tsx'
 import { PlanCard } from './plan-card.tsx'
 import { QuestionCard } from './question-card.tsx'
 import { ThinkingLine } from './thinking-line.tsx'
@@ -47,6 +49,8 @@ function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conex
 
 function ItemRow({ item, streaming }: { item: TranscriptItem; streaming: boolean }) {
   switch (item.kind) {
+    case 'person':
+      return <PersonBubble text={item.text} footer={hourOf(item.createdAt)} />
     case 'text':
       return (
         <Bubble variant="ghost">

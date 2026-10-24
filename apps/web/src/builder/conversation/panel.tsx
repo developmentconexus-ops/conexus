@@ -1,9 +1,17 @@
-import type { CompanyId, Conversation, ConversationId, ProjectId, Provider } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  Conversation,
+  ConversationId,
+  MessageId,
+  ProjectId,
+  Provider,
+} from '@conexus/hub-api'
+import { questionIdOf } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ReactNode, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
+import { useAttemptKeys } from '../../platform/attempt-key.ts'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Empty, NotFound } from '../../ui/states.tsx'
 import { accountsQuery } from '../model-accounts/public.ts'
@@ -11,11 +19,13 @@ import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
+import type { Step } from './live.ts'
 import { shownAnswer, waitsOnPerson } from './live.ts'
 import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
 import { textOf } from './person-turn.tsx'
 import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } from './queries.ts'
+import { useReturnedSteers, withoutTold } from './steer-screen.ts'
 import { TaskPanel } from './task-panel.tsx'
 import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
 import { Transcript } from './transcript.tsx'
@@ -72,22 +82,31 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 function useSending(
   params: Params,
   field: RefObject<HTMLTextAreaElement | null>,
-  dispatch: (action: { type: 'sent' | 'unsent' }) => void,
+  dispatch: (action: Step) => void,
   onGone: () => void,
 ) {
   const queryClient = useQueryClient()
   const [error, setError] = useState<string>()
-  const attempt = useAttemptKey()
+  const attempt = useAttemptKeys()
   const post = useMutation({ ...sendMessage, meta: { keepCache: true } })
   const stop = useMutation({ ...sendStop, meta: { keepCache: true } })
 
-  async function send(content: string): Promise<boolean> {
+  /** A message sent while the Builder answers steers the running turn: its bubble shows first, then the POST goes. */
+  async function send(content: string, answering: boolean): Promise<boolean> {
     setError(undefined)
-    dispatch({ type: 'sent' })
+    if (!answering) dispatch({ type: 'sent' })
+    let steered: MessageId | undefined
     try {
-      await attempt((attemptKey) => post.mutateAsync({ params, body: { content }, attemptKey }))
+      await attempt(content, (attemptKey) => {
+        if (answering) {
+          steered = questionIdOf(params.conversationId, attemptKey)
+          dispatch({ type: 'steer', steer: { id: steered, content } })
+        }
+        return post.mutateAsync({ params, body: { content }, attemptKey })
+      })
     } catch (failure) {
-      dispatch({ type: 'unsent' })
+      if (steered !== undefined) dispatch({ type: 'unsteered', id: steered })
+      else dispatch({ type: 'unsent' })
       if (failure instanceof HubFailure && failure.code === 'CONVERSATION_NOT_FOUND') onGone()
       else setError(writeFailureText(failure, UNCONFIRMED_SEND))
       return false
@@ -96,6 +115,7 @@ function useSending(
       queryKey: conversationQuery(params.companyId, params.projectId, params.conversationId)
         .queryKey,
     })
+    field.current?.focus()
     return true
   }
 
@@ -164,6 +184,16 @@ function PanelComposer(props: {
   )
 }
 
+function Notices(props: { companyId: CompanyId; canAnswer: boolean; empty: boolean }) {
+  if (props.canAnswer && !props.empty) return null
+  return (
+    <div className="flex flex-col gap-md px-md py-md">
+      {!props.canAnswer && <NoAccount companyId={props.companyId} />}
+      {props.empty && <Empty>{EMPTY_CONVERSATION}</Empty>}
+    </div>
+  )
+}
+
 function Screen(params: Params) {
   const { companyId, projectId, conversationId } = params
   const queryClient = useQueryClient()
@@ -194,30 +224,33 @@ function Screen(params: Params) {
 
   useEffect(() => field.current?.focus(), [])
 
-  const answer = useMemo(
-    () => shownAnswer(state, conversation.messages),
-    [state, conversation.messages],
-  )
+  useReturnedSteers(state, draft, setError, dispatch)
+
+  const { saved, answer } = useMemo(() => {
+    const shown = shownAnswer(state, conversation.messages)
+    const saved = withoutTold(state, conversation.messages, shown !== null)
+    return { saved, answer: shown }
+  }, [state, conversation.messages])
   if (gone) return <NotFound />
+  const isTurnRunning = state.kind === 'answering' || state.kind === 'resuming'
   const empty = conversation.messages.length === 0 && state.kind === 'idle'
-  const notice = !canAnswer || empty
   return (
     <>
-      {notice && (
-        <div className="flex flex-col gap-md px-md py-md">
-          {!canAnswer && <NoAccount companyId={companyId} />}
-          {empty && <Empty>{EMPTY_CONVERSATION}</Empty>}
-        </div>
-      )}
+      <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
       <div className="min-h-0 flex-1">
-        <Transcript messages={conversation.messages} answer={answer} model={conversation.model} />
+        <Transcript
+          messages={saved}
+          answer={answer}
+          steers={isTurnRunning ? state.turn.steers : []}
+          model={conversation.model}
+        />
       </div>
       {error !== undefined && (
         <p role="alert" className="px-md">
           {error}
         </p>
       )}
-      {(state.kind === 'answering' || state.kind === 'resuming') && (
+      {isTurnRunning && (
         <WorkingLine
           startedAt={state.turn.startedAt}
           heard={state.turn.messages}
@@ -231,7 +264,7 @@ function Screen(params: Params) {
         state={state}
         draft={draft}
         field={field}
-        onSend={send}
+        onSend={(content) => send(content, isTurnRunning)}
         onStop={halt}
         onError={setError}
         canAnswer={canAnswer}

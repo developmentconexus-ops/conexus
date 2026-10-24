@@ -1,5 +1,5 @@
 import type { ConversationId, Kept, MastraPart, RestartedData, RunId } from '@conexus/hub-api'
-import { MachineData, MessageId, machinePhaseLasts } from '@conexus/hub-api'
+import { MachineData, MessageId, machinePhaseLasts, questionIdOf } from '@conexus/hub-api'
 import type { MastraDBMessage } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -15,7 +15,7 @@ export type Question = { key: string; content: string; at: string }
  * under it, so the question saved before the turn and the one the turn saves are one.
  */
 export function questionId(conversationId: ConversationId, key: string): MessageId {
-  return MessageId.parse(`${conversationId}:${key}`)
+  return questionIdOf(conversationId, key)
 }
 
 /** What writing to a conversation's thread needs: the memory, the owner, the log and the writes in flight. */

@@ -1,4 +1,5 @@
-import type { Message, Suspended } from '@conexus/hub-api'
+import type { MastraPart, Message, Suspended } from '@conexus/hub-api'
+import { textOf } from './person-turn.tsx'
 import type { TranscriptItem } from './transcript-items.ts'
 import { invocationToItem, thoughtSeconds } from './transcript-items.ts'
 
@@ -26,6 +27,10 @@ function fromParts(
   thoughts: ReadonlyMap<string, number>,
   view: View,
 ): TranscriptItem[] {
+  if (message.role === 'person') {
+    const text = textOf(message)
+    return [{ kind: 'person', id: message.id, text, createdAt: message.createdAt }]
+  }
   const suspended = { ...view.suspended, ...message.suspended }
   const items: TranscriptItem[] = []
   for (const [index, part] of message.parts.entries()) {
@@ -70,6 +75,21 @@ function withRunning(item: TranscriptItem, running: Running | undefined): Transc
     state: failed ? 'output-error' : item.state,
     isError: failed ? true : item.isError,
   }
+}
+
+/** The tool calls these parts name, each stamped the first time the screen hears it. */
+export function heardOf(
+  heard: Readonly<Record<string, number>>,
+  parts: readonly MastraPart[],
+): Readonly<Record<string, number>> {
+  const fresh = parts.flatMap((part) =>
+    part.type === 'tool-invocation' && !Object.hasOwn(heard, part.toolInvocation.toolCallId)
+      ? [part.toolInvocation.toolCallId]
+      : [],
+  )
+  if (fresh.length === 0) return heard
+  const now = Date.now()
+  return { ...heard, ...Object.fromEntries(fresh.map((id) => [id, now])) }
 }
 
 /** A tool's row counts its clock from when the screen first heard of the call. */

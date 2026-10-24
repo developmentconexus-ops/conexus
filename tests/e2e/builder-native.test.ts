@@ -12,6 +12,8 @@ import { liveHub, openProject } from './live-hub.ts'
 const REASONING = 'Vou conferir os arquivos fictícios e manter esta alteração segura.'
 const HOLD = 'Vou continuar a conferência fictícia.'
 const SAFE_PATH = 'src/router.tsx'
+const STEER = 'Só eu cadastro.'
+const PENDING = 'Vai ao Builder no próximo passo'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
 
@@ -115,6 +117,14 @@ async function openEveryLine(chat: Page) {
   await refused.getByText('outside.ts').waitFor()
 }
 
+/** The steer is read once, after the Builder's first message and before the tools of the next (criterion 46). */
+function assertSteerBetween(text: string) {
+  const at = text.indexOf(STEER)
+  assert.ok(text.indexOf('Conexus') < at, 'the steer comes after the first Builder message')
+  assert.ok(at < text.indexOf('Usou a skill'), 'the Builder goes on after the steer')
+  assert.equal(text.indexOf(STEER, at + 1), -1, 'the steer is in the conversation once')
+}
+
 test('percurso nativo em Chromium: ferramentas, pensamento, tarefas e transcrição relida', async (t) => {
   const held = Promise.withResolvers<void>()
   builderThatFollowsMastraExports(t, held.promise)
@@ -136,16 +146,25 @@ test('percurso nativo em Chromium: ferramentas, pensamento, tarefas e transcriç
     await transcript.getByText(REASONING).waitFor()
     const panel = chat.getByRole('region', { name: 'Painel de tarefas' })
     await panel.getByText(/Tarefas · 0 de 14/).waitFor()
+    // A message sent while the Builder works waits below the answer until Mastra reads it (criterion 45).
+    const field = chat.getByRole('textbox', { name: 'Mensagem para o Builder' })
+    await field.fill(STEER)
+    await field.press('Enter')
+    await transcript.getByText(PENDING).waitFor()
+    assert.equal(await transcript.getByText(STEER).count(), 1)
     held.resolve()
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
+    await transcript.getByText(PENDING).waitFor({ state: 'detached' })
     // The one live/reread difference: HOLD is a text step that ends with tasks open, so `checkGate`
     // aborts it with a retry and Mastra rolls the attempt back out of its store; the live fold shows
     // it, the reread cannot (Mastra 1.78.0 `llm-execution-step.ts:2916-2925`, `rollbackToStepBoundary`
     // at `message-list.ts:865`). Every other part is the same after the reload.
     const before = (await transcript.innerText()).replace(HOLD, '')
+    assertSteerBetween(before)
     await chat.reload()
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
     assert.equal((await transcriptOf(chat).innerText()).replace(HOLD, ''), before)
+    assertSteerBetween(await transcriptOf(chat).innerText())
     await openEveryLine(chat)
   } finally {
     held.resolve()
