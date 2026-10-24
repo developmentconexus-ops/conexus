@@ -9,7 +9,9 @@ import {
   MessageId,
   ModelAccount,
   ModelId,
+  questionIdOf,
   readConversation,
+  sendConversationMessage,
   setConversationModel,
 } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
@@ -182,12 +184,10 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       if (replaced) return replaced
       const conversation = view.conversations.find((one) => one.id === params.id)
       if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
-      const text =
-        typeof body === 'object' && body !== null && 'content' in body ? String(body.content) : ''
       conversation.messages.push({
-        id: MessageId.parse(`person-${conversation.messages.length}`),
+        id: questionIdOf(conversation.id, request.headers.get(ATTEMPT_KEY_HEADER) ?? ''),
         role: 'person',
-        parts: [{ type: 'text', text }],
+        parts: [{ type: 'text', text: sendConversationMessage.input.body.parse(body).content }],
         suspended: {},
         model: null,
         createdAt: '2026-10-19T12:01:00.000Z',

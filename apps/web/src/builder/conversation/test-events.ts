@@ -1,4 +1,4 @@
-import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
+import type { ConversationEvent, MastraPart, Message } from '@conexus/hub-api'
 import { MessageId } from '@conexus/hub-api'
 import { builderSaid } from './test-hub.tsx'
 
@@ -21,6 +21,16 @@ export function stepStarted(id = MSG_ID): ConversationEvent {
     type: 'message_start',
     message: { ...builderSaid(''), id: MessageId.parse(id), parts: [] },
   }
+}
+
+/** The step as Mastra saves it: under the id its `message_start` told. */
+export function savedStep(text: string): Message {
+  return { ...builderSaid(text), id: MessageId.parse(MSG_ID) }
+}
+
+/** Ours as the server saves it: under the run's id, as the stream told it. */
+export function savedOurs(parts: MastraPart[]): Message {
+  return { ...builderSaid(''), id: MessageId.parse(TURN_ID), parts }
 }
 
 /** A part of ours, told as an update of the turn's own message. */

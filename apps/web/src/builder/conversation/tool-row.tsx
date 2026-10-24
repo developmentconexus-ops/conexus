@@ -10,12 +10,12 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useSecondsSince } from './elapsed.ts'
+import type { ToolItem } from './parts.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
 import { editOf, shown } from './tool-args.ts'
 import type { ToolBody, ToolStatus } from './tool-registry.ts'
 import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
-import type { ToolItem } from './transcript.ts'
 
 const BLOCK =
   'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
