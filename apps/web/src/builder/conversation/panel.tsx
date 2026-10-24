@@ -243,7 +243,7 @@ function Screen(params: Params) {
         <WorkingLine
           startedAt={state.turn.startedAt}
           heard={state.turn.timeline.entries}
-          waiting={waitsOnPerson(turns.at(-1)?.items ?? [])}
+          waiting={waitsOnPerson(turns.findLast((turn) => turn.pending === undefined)?.items ?? [])}
         />
       )}
       <PanelComposer

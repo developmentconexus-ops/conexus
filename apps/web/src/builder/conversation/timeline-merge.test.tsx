@@ -94,6 +94,23 @@ test('a mensagem enviada durante o trabalho fica embaixo, pendente, e a leitura 
   ])
 })
 
+test('a mensagem pendente não toma o turno que transmite: a resposta do Builder continua ao vivo', () => {
+  const state = told({ type: 'sent', asked: ASKED }, opening, start(STEP_1, [text('Primeiro.')]), {
+    type: 'steer',
+    id: A,
+    text: 'No meio.',
+  })
+  expect(turns(state).map((turn) => [turn.key, turn.streaming])).toEqual([
+    [ASKED, true],
+    [A, false],
+  ])
+})
+
+test('um envio que falha depois de a mensagem sair da linha do tempo não cria balão', () => {
+  const state = told({ type: 'sent', asked: ASKED }, opening)
+  expect(live(state, { type: 'steerFailed', id: A })).toEqual(state)
+})
+
 test('a pergunta enviada que falha sai da linha do tempo', () => {
   expect(told({ type: 'sent', asked: ASKED }, { type: 'unsent' })).toEqual(IDLE)
 })

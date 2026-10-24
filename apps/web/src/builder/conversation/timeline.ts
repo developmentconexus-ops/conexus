@@ -260,6 +260,17 @@ function running(state: Live): state is Extract<Live, { kind: 'answering' | 'res
   return state.kind === 'answering' || state.kind === 'resuming'
 }
 
+/** The entries with the local one of `id` marked, as Factory `failLocalUser` maps an existing entry and adds none. */
+function delivered(
+  entries: readonly Entry[],
+  id: MessageId,
+  delivery: 'pending' | 'failed',
+): readonly Entry[] {
+  return entries.map((entry) =>
+    entry.kind === 'local' && entry.id === id ? { ...entry, delivery } : entry,
+  )
+}
+
 /** The question sent leaves the timeline when its send fails; with nothing else told, so does the turn. */
 function unsent(state: Live): Live {
   if (state.kind !== 'answering') return state
@@ -286,21 +297,23 @@ export function live(state: Live, step: Step): Live {
       return { kind: 'answering', turn: opened(step, running(state) ? state.turn : NO_TURN) }
     case 'turnEnd':
       return running(state) ? ended(state.turn) : state
-    case 'steer':
+    case 'steer': {
+      if (!running(state)) return state
+      const { timeline } = state.turn
+      // A retry is the same id: it makes a failed entry pending again; a message already told stays.
+      const held = timeline.entries.some((entry) => idOf(entry) === step.id)
+      const entries = held
+        ? delivered(timeline.entries, step.id, 'pending')
+        : [
+            ...timeline.entries,
+            { kind: 'local', id: step.id, text: step.text, delivery: 'pending' } as const,
+          ]
+      return { ...state, turn: { ...state.turn, timeline: { ...timeline, entries } } }
+    }
     case 'steerFailed': {
       if (!running(state)) return state
       const { timeline } = state.turn
-      const delivery = step.type === 'steer' ? 'pending' : 'failed'
-      const at = timeline.entries.findIndex((entry) => idOf(entry) === step.id)
-      const text = step.type === 'steer' ? step.text : ''
-      const was = timeline.entries[at]
-      // A retry is the same id: it makes a failed entry pending again; a message already told stays.
-      const entries =
-        was === undefined
-          ? [...timeline.entries, { kind: 'local', id: step.id, text, delivery } as const]
-          : was.kind === 'local'
-            ? timeline.entries.with(at, { ...was, delivery })
-            : timeline.entries
+      const entries = delivered(timeline.entries, step.id, 'failed')
       return { ...state, turn: { ...state.turn, timeline: { ...timeline, entries } } }
     }
     case 'returnedShown':

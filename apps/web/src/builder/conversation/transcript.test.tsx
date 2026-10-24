@@ -13,6 +13,7 @@ import { shownOf, Transcript } from './transcript.tsx'
 
 const { openConversation } = screens(hubServer())
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
+const SAID_AT = '2026-10-24T12:00:00.000Z'
 
 function turnOf(items: readonly TranscriptItem[], streaming: boolean): ShownTurn {
   return {
@@ -65,6 +66,31 @@ test('o turno do Builder leva a marca, "Conexus" e o modelo; o da pessoa, a bolh
   expect(within(builder ?? log).getByText('Conexus')).toBeTruthy()
   expect(within(builder ?? log).getByText('Claude Sonnet 4')).toBeTruthy()
   expect(builder?.querySelector('svg path')).toBeTruthy()
+})
+
+function entry(id: string, role: Message['role'], parts: Message['parts']): Message {
+  const model = role === 'person' ? null : MODEL
+  return { id: MessageId.parse(id), role, parts, suspended: {}, model, createdAt: SAID_AT }
+}
+
+test('uma mensagem pendente não abre um segundo turno "Conexus · Pensando…" e a resposta segue ao vivo', () => {
+  const timeline = {
+    entries: [
+      { kind: 'message', message: entry('p1', 'person', [{ type: 'text', text: 'Crie' }]) },
+      { kind: 'message', message: entry('s1', 'builder', [{ type: 'text', text: 'Vou começar' }]) },
+      { kind: 'local', id: MessageId.parse('p2'), text: 'Só eu cadastro.', delivery: 'pending' },
+    ],
+    ours: null,
+    suspended: {},
+    running: {},
+    heard: {},
+  } as const
+  const turns = shownOf(timeline, [], true)
+  render(<Transcript turns={turns} model={MODEL} />)
+  expect(screen.getAllByText('Conexus')).toHaveLength(1)
+  expect(screen.queryByText('Pensando…')).toBeNull()
+  expect(screen.getByText('Só eu cadastro.')).toBeTruthy()
+  expect(turns.map((turn) => turn.streaming)).toEqual([true, false])
 })
 
 test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, abre no texto Markdown (Critério 9)', async () => {

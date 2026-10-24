@@ -67,8 +67,10 @@ export function shownOf(
   running: boolean,
 ): ShownTurn[] {
   const turns = turnsOf(merge(timeline, read))
+  // A message sent into the turn never streams (Factory `localUser`): the Builder's last turn does.
+  const last = turns.findLastIndex((turn) => turn.pending === undefined)
   return turns.map((turn, index) => {
-    const streaming = running && index === turns.length - 1
+    const streaming = running && index === last
     return {
       key: turn.key,
       person: turn.person,
