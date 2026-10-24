@@ -28,8 +28,8 @@ Aprovações e usos: [aprovações](approvals.md).
     13.1 **O primeiro pedido.** Alterações, o passo 4 da primeira entrada e o compositor do Início criando Projeto.
 14. **O Builder constrói.** Pede um app, responde às perguntas, aprova o plano e vê a versão que monta.
     14.0 **Um registro da conversa.** Conversa como antes; depois de um reinício do Hub, vê o aviso direto.
-    14.2 **Correção de tudo.** Vê o Builder trabalhar como na Factory; o que o app aprende espera a bancada.
-    14.1 **A Prévia.** Abre na Prévia o app que ele escreveu.
+    14.2 **Correção de tudo.** Vê o Builder trabalhar como na Factory, agora feito sobre o Mastra; o que o app aprende espera a bancada.
+    14.1 **A Prévia.** Abre na Prévia o app que ele escreveu (o cartão será revisto contra o novo Builder).
 15. **Mudar o app.** Muda os dados sem perder nada.
 17. **Publicar.** Publica um app e o abre.
 18. **Entrar num app.** Convida alguém só para um app, e tira o acesso.
@@ -75,8 +75,8 @@ Login social. Arquivos enviados por pessoas. Medição de uso, segundo idioma. D
 | 13.1 O primeiro pedido | A 13 e a 12.2 | Nenhuma | — |
 | 14 O Builder constrói | A 13 | As capturas dos cartões do OS | O prompt, as skills e a casca do Conexus OS |
 | 14.0 Um registro da conversa | A 14 | Nenhuma | Dobrada na 14.2, U2 (fundador: "C"). A 0050 revista: as mensagens do Mastra com partes `data-conexus-*`; saem as listas nos metadados, e o diário `run_event` sai na 14.2, em migração própria depois do último código que o lê (D30) (fundador, 2026-10-22: "1. Sim … 2.B") |
-| 14.2 Correção de tudo | A 14 | Nenhuma | O fio e o agente de código do Mastra; V39, 0050 e 0055 emendadas; o que o app aprende espera a bancada (fundador, 2026-10-22: "A", "2 a", "tudo recomendado, Plano A, sem Pasta", "Aprovado tudo", "Pode seguir"); o Builder lê o que a pessoa escreve enquanto trabalha, guarda o prompt em cache, e o cartão aberto atravessa a atualização e a queda (fundador, 2026-10-24: "2. Sim") |
-| 14.1 A Prévia | A 10 e a 14.0 | Nenhuma | Lacunas de instrução do Builder |
+| 14.2 Correção de tudo | A 14 | Nenhuma | O fio e o agente de código do Mastra; V39, 0050 e 0055 emendadas; o que o app aprende espera a bancada; o Builder lê o que a pessoa escreve enquanto trabalha e guarda o prompt em cache (fundador, 2026-10-22 e 2026-10-24). **Hoje vale a quarta emenda (fundador, 2026-10-24: "Sim", [aprovações](approvals.md)):** a etapa 14 mostrou buracos que tiveram de ser consertados para dar base sólida; o Builder é refeito sobre o Mastra, com só o produto Conexus em código nosso. Regra: "se ... não tem no Mastra, não tem na Factory ... Não agora". Não agora, e não vale mais o que a emenda anterior dizia: o cartão aberto atravessar a atualização e a queda (depois do reinício o cartão some), o prazo de uma hora do turno, fechar sessões paradas e a nossa regra da mensagem pendente. Unidades ([cartão](steps/e142-a-conversa-nativa.md)): M1 conta, máquina e trava pela conversa (em construção); M2 rotas do Mastra atrás do guarda, tela pelo `@mastra/client-js` e remoções (não começou); M3 o Fim pelo `isTaskComplete` (não começou); M4 o arquivo nativo do E2B (não começou). Já na base: o turno é uma execução do Mastra 1.79 e as contas de modelo (tema 3 e tema M, #311); `builder.run` fora e a marca do bucket como ref do Git (tema 6, #313 e #314); a linha do tempo da tela (W1, #315); as migrações podem mudar até chegar à `main` (D7, #318); e a quarta emenda (#319). Depois dela: a 14.2 fecha, segue a 14.1 e volta o fluxo normal, da 15 em diante |
+| 14.1 A Prévia | A 10, a 14.0 e a 14.2 | Nenhuma | Lacunas de instrução do Builder. O cartão (PR #307) é revisto contra o novo Builder |
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
 | 17 Publicar | A 15 | Nenhuma | Pré-requisitos de Release e Publish. O estudo 04 |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
