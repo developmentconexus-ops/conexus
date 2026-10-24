@@ -44,94 +44,6 @@
     }
   },
   {
-    "id": "raw-output-in-process",
-    "file": "scripts/test-reporter.ts",
-    "find": "const lines = `${pending.get(key) ?? ''}${event.data.message}`.split('\\n')",
-    "replace": "const lines: string[] = []",
-    "test": {
-      "cwd": ".",
-      "file": "scripts/test-reporter.test.ts",
-      "name": "linha crua: recusa"
-    }
-  },
-  {
-    "id": "raw-output-spawned-hub",
-    "file": "apps/server/src/platform/test-hub-process.ts",
-    "find": "if (line === undefined) raw.push(text)",
-    "replace": "if (line === undefined) return",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/test-database.test.ts",
-      "name": "linha crua: um Hub iniciado que imprime"
-    }
-  },
-  {
-    "id": "read-deadline-is-the-database",
-    "file": "apps/server/src/platform/database.ts",
-    "find": "if (lostWith === undefined) throw databaseFailure(error)",
-    "replace": "throw databaseFailure(error)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/database.test.ts",
-      "name": "uma leitura parada além do prazo"
-    }
-  },
-  {
-    "id": "library-read-deadline",
-    "file": "apps/server/src/platform/database.ts",
-    "find": "deadlines.set(client, stalled.unref())",
-    "replace": "clearTimeout(stalled)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/database.test.ts",
-      "name": "uma consulta da biblioteca sem resposta"
-    }
-  },
-  {
-    "id": "refused-command-keeps-connection",
-    "file": "apps/server/src/platform/database.ts",
-    "find": "client.release()",
-    "replace": "client.release(true)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/invitation-link.test.ts",
-      "name": "connection reusable"
-    }
-  },
-  {
-    "id": "undeclared-failure-recorded",
-    "file": "apps/server/src/platform/test-database.ts",
-    "find": "undeclared.push(`${request.method} ${request.routeOptions.url} ${code}`)",
-    "replace": "void code",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/http.test.ts",
-      "name": "a porta de teste registra"
-    }
-  },
-  {
-    "id": "mail-reply-cap",
-    "file": "apps/server/src/platform/capped-text.ts",
-    "find": "if (size > capBytes) return undefined",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/mail.test.ts",
-      "name": "acima de 16 KiB"
-    }
-  },
-  {
-    "id": "mail-bounce-refused",
-    "file": "apps/server/src/platform/mail.ts",
-    "find": "if (permanent_bounces.length > 0) {",
-    "replace": "if (permanent_bounces.length < 0) {",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/mail.test.ts",
-      "name": "endereço que volta"
-    }
-  },
-  {
     "id": "company-creation-closed",
     "file": "apps/server/src/hub/identity/auth.ts",
     "find": "allowUserToCreateOrganization: false,",
@@ -220,17 +132,6 @@
     }
   },
   {
-    "id": "malformed-id-not-found",
-    "file": "apps/server/src/platform/request-parts.ts",
-    "find": "throw new Failure('NOT_FOUND', { details: { reason: 'MALFORMED' }, cause: parsedParams.error })",
-    "replace": "throw new Failure('REQUEST_MALFORMED', { cause: parsedParams.error })",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/companies.test.ts",
-      "name": "fora: o membro"
-    }
-  },
-  {
     "id": "invitation-attempt-replay",
     "file": "apps/server/src/hub/identity/invitations.ts",
     "find": "if (same !== undefined) {",
@@ -316,28 +217,6 @@
       "cwd": "apps/server",
       "file": "src/hub/identity/invitation-acceptance.test.ts",
       "name": "aceitar: com um re-convite ao mesmo tempo"
-    }
-  },
-  {
-    "id": "write-signal-follows-reply",
-    "file": "apps/server/src/platform/http.ts",
-    "find": "signal: untilClientLeaves(reply),",
-    "replace": "signal: request.signal,",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/invitation-journey.test.ts",
-      "name": "registro"
-    }
-  },
-  {
-    "id": "attempt-key-outcome-unknown",
-    "file": "apps/web/src/platform/hub.ts",
-    "find": "const settled = FAILURES[code].settles",
-    "replace": "const settled = true",
-    "test": {
-      "cwd": "apps/web",
-      "file": "hub.test.ts",
-      "name": "resposta que não decide"
     }
   },
   {
@@ -594,17 +473,6 @@
     }
   },
   {
-    "id": "client-delete-revision",
-    "file": "apps/server/src/hub/operations/clients.ts",
-    "find": "  if (row.revision !== input.revision) throw new Failure('CLIENT_STALE')\n  const { companyId } = input\n",
-    "replace": "  const { companyId } = input\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/operations/client-deletion.test.ts",
-      "name": "apagar: recusas"
-    }
-  },
-  {
     "id": "client-delete-operator-only",
     "file": "apps/server/src/hub/identity/auth.ts",
     "find": "  disableOrganizationDeletion: true,\n",
@@ -858,17 +726,6 @@
     }
   },
   {
-    "id": "reply-end-on-close",
-    "file": "apps/server/src/platform/reply-lifetime.ts",
-    "find": "  if (reply.raw.destroyed) work()\n  else reply.raw.once('close', work)\n",
-    "replace": "  reply.raw.once('finish', work)\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/identity/password-recovery-disconnect.test.ts",
-      "name": "desconexão"
-    }
-  },
-  {
     "id": "password-link-first",
     "file": "apps/server/src/hub/identity/routes.ts",
     "find": "    if (!(await deps.recovery.linkIsLive(body.token))) throw new Failure('PASSWORD_LINK_INVALID')\n",
@@ -913,17 +770,6 @@
     }
   },
   {
-    "id": "company-database-claim",
-    "file": "apps/server/src/hub/projects/company-database.ts",
-    "find": "  if (row?.held) throw new Failure('COMPANY_DATABASE_PREPARING')\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/projects/projects-database.test.ts",
-      "name": "banco: a reserva viva"
-    }
-  },
-  {
     "id": "neon-exact-suffix",
     "file": "apps/server/src/platform/neon.ts",
     "find": "const exact = projects.filter((project) => isCompanys(project.name, companyId))",
@@ -932,28 +778,6 @@
       "cwd": "apps/server",
       "file": "src/platform/neon.test.ts",
       "name": "find devolve só o final exato"
-    }
-  },
-  {
-    "id": "neon-no-answer-keeps-claim",
-    "file": "apps/server/src/hub/projects/projects.ts",
-    "find": "    if (prepared.kind === 'REFUSED')\n      await database.command(",
-    "replace": "    await database.command(",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/projects/projects-database.test.ts",
-      "name": "o prazo mantém a reserva"
-    }
-  },
-  {
-    "id": "create-company-lock",
-    "file": "apps/server/src/hub/projects/projects.ts",
-    "find": "  await deps.identity.lockCompany(tx, input.companyId)\n  await transactionLock(tx, `conexus.project",
-    "replace": "  await transactionLock(tx, `conexus.project",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/projects/projects-database.test.ts",
-      "name": "duas pessoas ao mesmo tempo"
     }
   },
   {
@@ -990,39 +814,6 @@
     }
   },
   {
-    "id": "deletion-live-claim",
-    "file": "apps/server/src/hub/projects/company-deletion.ts",
-    "find": "  if (row.held) throw new Failure('CLIENT_DELETION_PENDING')\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/operations/client-deletion-database.test.ts",
-      "name": "reserva viva"
-    }
-  },
-  {
-    "id": "deletion-neon-not-found",
-    "file": "apps/server/src/platform/neon.ts",
-    "find": "if (isNeonError(error) && error.kind === 'not_found') {\n          return { kind: 'DONE', value: 'deleted' }\n        }\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/neon.test.ts",
-      "name": "o id ausente conta como apagado"
-    }
-  },
-  {
-    "id": "deletion-mark-first",
-    "file": "apps/server/src/hub/operations/clients.ts",
-    "find": "    await identity.markCompanyDeleting(tx, { admitted, companyId })\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/operations/client-deletion-database.test.ts",
-      "name": "exclusão em andamento: o Neon fora"
-    }
-  },
-  {
     "id": "mark-deletes-invitations",
     "file": "apps/server/src/hub/identity/clients.ts",
     "find": "  await tx.delete(invitation).where(eq(invitation.organizationId, input.companyId))\n}",
@@ -1031,17 +822,6 @@
       "cwd": "apps/server",
       "file": "src/hub/operations/client-deletion-database.test.ts",
       "name": "exclusão em andamento: o Neon fora"
-    }
-  },
-  {
-    "id": "deletion-removes-projects",
-    "file": "apps/server/src/hub/projects/company-deletion.ts",
-    "find": "  await tx.delete(project).where(eq(project.companyId, input.companyId))\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/operations/client-deletion-database.test.ts",
-      "name": "com banco"
     }
   },
   {
@@ -1716,17 +1496,6 @@
     }
   },
   {
-    "id": "send-lock",
-    "file": "apps/server/src/hub/apps/versions.ts",
-    "find": "    if (held.held) throw new Failure('APP_VERSION_SENDING')\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/versions.test.ts",
-      "name": "envio: a mesma chave dá a mesma versão"
-    }
-  },
-  {
     "id": "login-not-superuser",
     "file": "apps/server/src/platform/company-postgres.ts",
     "find": "LOGIN PASSWORD '${password}'",
@@ -1771,28 +1540,6 @@
     }
   },
   {
-    "id": "prune-keeps-three",
-    "file": "apps/server/src/hub/apps/prune.ts",
-    "find": "const KEPT_OLD_VERSIONS = 3",
-    "replace": "const KEPT_OLD_VERSIONS = 4",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/prune.test.ts",
-      "name": "poda: com a 5 no ar"
-    }
-  },
-  {
-    "id": "delete-workers-first",
-    "file": "apps/server/src/hub/apps/removal.ts",
-    "find": "if (left > 0 || !(await dropAppDatabase(deps, input)))",
-    "replace": "if (!(await dropAppDatabase(deps, input)))",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/projects/projects-delete.test.ts",
-      "name": "apagar com app"
-    }
-  },
-  {
     "id": "publish-edge-key-before-dispatcher",
     "file": "infra/publish-edge.sh",
     "find": "printf '%s' \"$key_text\" | timeout --kill-after=10 120 \"$wrangler\" secret put APP_LOGIN_KEY --env-file \"$file\"\n",
@@ -1823,39 +1570,6 @@
       "cwd": ".",
       "file": "scripts/deploy.test.ts",
       "name": "sem hub_app_login_key recusa antes de migrate e não sobe o Hub"
-    }
-  },
-  {
-    "id": "cloudflare-reply-cap",
-    "file": "apps/server/src/platform/cloudflare.ts",
-    "find": "cappedText(response.body, REPLY_CAP_BYTES)",
-    "replace": "cappedText(response.body, Number.POSITIVE_INFINITY)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/cloudflare.test.ts",
-      "name": "cloudflare: uma resposta sem tamanho declarado"
-    }
-  },
-  {
-    "id": "migration-unnamed-kept",
-    "file": "apps/server/src/platform/company-postgres.ts",
-    "find": "digests.has(row.id) && digests.get(row.id) !== row.sha256",
-    "replace": "digests.get(row.id) !== row.sha256",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/company-postgres.test.ts",
-      "name": "banco do app: logins por SQL"
-    }
-  },
-  {
-    "id": "prune-budget",
-    "file": "apps/server/src/hub/apps/prune.ts",
-    "find": "    AbortSignal.timeout(PRUNE_BUDGET_MS),\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/prune.test.ts",
-      "name": "poda: um Cloudflare lento"
     }
   },
   {
@@ -2024,72 +1738,6 @@
     }
   },
   {
-    "id": "drop-app-before-rows",
-    "file": "apps/server/src/hub/apps/removal.ts",
-    "find": "if (left > 0 || !(await dropAppDatabase(deps, input))) {",
-    "replace": "if (left > 0 || !((await dropAppDatabase(deps, input)) || true)) {",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/projects/projects-delete.test.ts",
-      "name": "apagar com app"
-    }
-  },
-  {
-    "id": "live-ready-only",
-    "file": "apps/server/src/hub/apps/live.ts",
-    "find": "          eq(appVersion.state, 'ready'),\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/live-version.test.ts",
-      "name": "voltar: 200"
-    }
-  },
-  {
-    "id": "send-abandon-on-throw",
-    "file": "apps/server/src/hub/apps/send.ts",
-    "find": "    async (error: unknown) => {\n      await abandon(deps, sending)\n      throw error\n    },",
-    "replace": "    async (error: unknown) => {\n      throw error\n    },",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/send-guards.test.ts",
-      "name": "envio: um erro no meio"
-    }
-  },
-  {
-    "id": "send-takeover-fails-earlier",
-    "file": "apps/server/src/hub/apps/versions.ts",
-    "find": "    if (held.held) throw new Failure('APP_VERSION_SENDING')\n    await failVersion(tx, {\n      projectId: ids.projectId,\n      versionId: held.sendingVersionId,\n      failure: 'APP_VERSION_FAILED',\n    })\n",
-    "replace": "    if (held.held) throw new Failure('APP_VERSION_SENDING')\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/send-guards.test.ts",
-      "name": "envio: a trava vencida é tomada"
-    }
-  },
-  {
-    "id": "send-lost-after-upload",
-    "file": "apps/server/src/hub/apps/send.ts",
-    "find": "  const uploadedThen = await stopped()\n  if (uploadedThen !== undefined) return uploadedThen\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/send-guards.test.ts",
-      "name": "envio: a trava vencida é tomada"
-    }
-  },
-  {
-    "id": "send-lost-in-finish",
-    "file": "apps/server/src/hub/apps/send.ts",
-    "find": "    if (held.sendingVersionId !== sending.versionId) return { kind: 'LOST' } as const\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/send-guards.test.ts",
-      "name": "envio: a trava perdida depois das migrações"
-    }
-  },
-  {
     "id": "send-readmission",
     "file": "apps/server/src/hub/apps/send.ts",
     "find": "    await deps.identity.admitMember({\n      tx,\n      personId: person.id,\n      companyId,\n      action: 'manageAppVersions',\n    })\n",
@@ -2134,28 +1782,6 @@
     }
   },
   {
-    "id": "cloudflare-asset-hash",
-    "file": "apps/server/src/platform/cloudflare.ts",
-    "find": ".update(`${base64}${extension}`)",
-    "replace": ".update(base64)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/cloudflare.test.ts",
-      "name": "cloudflare: o envio com arquivos estáticos"
-    }
-  },
-  {
-    "id": "hub-app-login-key-format",
-    "file": "apps/server/src/platform/config.ts",
-    "find": "if (!/^[0-9a-f]{64}$/.test(value)) throw",
-    "replace": "if (value.length === 0) throw",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/config.test.ts",
-      "name": "configuração: a chave dos logins dos apps"
-    }
-  },
-  {
     "id": "migration-session-control",
     "file": "packages/app-contract/src/manifest.ts",
     "find": ".refine((statement) => !SESSION_CONTROL.test(statement))",
@@ -2167,94 +1793,6 @@
     }
   },
   {
-    "id": "version-sender-name",
-    "file": "apps/server/src/hub/apps/versions.ts",
-    "find": "sentByName: personNameColumn(appVersion.sentBy),",
-    "replace": "sentByName: sql<string | null>`null`,",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/versions.test.ts",
-      "name": "versões: cada uma diz quem a enviou"
-    }
-  },
-  {
-    "id": "prune-blobs-locked-first",
-    "file": "apps/server/src/hub/apps/prune.ts",
-    "find": "    .orderBy(blob.sha256)\n    .for('update')\n",
-    "replace": "    .orderBy(blob.sha256)\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/prune.test.ts",
-      "name": "poda: o arquivo que outro Projeto nomeia no mesmo instante fica"
-    }
-  },
-  {
-    "id": "prune-blobs-unnamed-only",
-    "file": "apps/server/src/hub/apps/prune.ts",
-    "find": "await tx.delete(blob).where(and(ofCandidates, notExists(named)))",
-    "replace": "await tx.delete(blob).where(ofCandidates)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/prune.test.ts",
-      "name": "poda: o arquivo que outro Projeto nomeia no mesmo instante fica"
-    }
-  },
-  {
-    "id": "send-company-mark",
-    "file": "apps/server/src/hub/apps/send.ts",
-    "find": "  if (await deps.identity.markedDeleting(tx, ids.companyId)) return false\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/send-guards.test.ts",
-      "name": "envio: a empresa marcada para apagar"
-    }
-  },
-  {
-    "id": "client-deletion-waits-for-send",
-    "file": "apps/server/src/hub/apps/removal.ts",
-    "find": "  if (sending.length > 0) {\n",
-    "replace": "  if (sending.length < 0) {\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/operations/client-deletion-database.test.ts",
-      "name": "com apps: um envio com a trava deixa DELETING"
-    }
-  },
-  {
-    "id": "repair-takes-back",
-    "file": "apps/server/src/hub/apps/repair.ts",
-    "find": "    if (!(await stillLive(deps, ids)))\n      await takeBackRepair(deps, { ...ids, versionId: live.versionId })\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/repair.test.ts",
-      "name": "reparo: o Projeto marcado para apagar enquanto"
-    }
-  },
-  {
-    "id": "neon-reply-cap",
-    "file": "apps/server/src/platform/company-postgres.ts",
-    "find": "neonConfig.fetchFunction = cappedFetch\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/company-postgres.test.ts",
-      "name": "transporte do Neon: a resposta sem tamanho declarado"
-    }
-  },
-  {
-    "id": "cloudflare-null-errors",
-    "file": "apps/server/src/platform/cloudflare.ts",
-    "find": "    .nullish()\n    .transform((errors) => errors ?? []),\n",
-    "replace": "    .default([]),\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/cloudflare.test.ts",
-      "name": "cloudflare: o envio com arquivos estáticos"
-    }
-  },
-  {
     "id": "edge-call-deadline",
     "file": "apps/edge/src/dispatch.ts",
     "find": "    if (response === 'PASSED') return failurePage('EDGE_APP_DEADLINE')\n",
@@ -2263,28 +1801,6 @@
       "cwd": "apps/edge",
       "file": "src/dispatcher-limits.test.ts",
       "name": "prazo: o app que não responde em 10 s"
-    }
-  },
-  {
-    "id": "upload-cpu-limit",
-    "file": "apps/server/src/hub/apps/send.ts",
-    "find": "    cpuMs: APP_CALL_LIMITS.cpuMs,\n",
-    "replace": "    cpuMs: 30_000,\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/hub/apps/versions.test.ts",
-      "name": "envio: dono e administrador 201"
-    }
-  },
-  {
-    "id": "upload-cpu-metadata",
-    "file": "apps/server/src/platform/cloudflare.ts",
-    "find": "    limits: { cpu_ms: input.cpuMs },\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/cloudflare.test.ts",
-      "name": "cloudflare: o envio com arquivos estáticos"
     }
   },
   {
@@ -2343,28 +1859,6 @@
     }
   },
   {
-    "id": "machine-read-cap",
-    "file": "apps/server/src/builder/machine/in-machine.ts",
-    "find": "  if (found.size > request.max) throw fail('TOO_LARGE')\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine-files.test.ts",
-      "name": "64 MiB"
-    }
-  },
-  {
-    "id": "machine-bundle-cap",
-    "file": "apps/server/src/builder/machine/kit.ts",
-    "find": "    if (length > READ_MAX) return 'too-large'\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine-files.test.ts",
-      "name": "64 MiB"
-    }
-  },
-  {
     "id": "machine-network-closed",
     "file": "apps/server/src/builder/machine/e2b.ts",
     "find": "denyOut: [ALL_TRAFFIC] },\n      metadata",
@@ -2373,17 +1867,6 @@
       "cwd": "apps/server",
       "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "lista de domínios"
-    }
-  },
-  {
-    "id": "machine-sweep-mark",
-    "file": "apps/server/src/builder/machine/e2b.ts",
-    "find": "query: { metadata: mark }",
-    "replace": "query: {}",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine-e2b.test.ts",
-      "name": "varredura"
     }
   },
   {
@@ -2398,28 +1881,6 @@
     }
   },
   {
-    "id": "sweep-skips-open-runs",
-    "file": "apps/server/src/builder/runs/daily.ts",
-    "find": "    if (context.writing(projectId)) continue\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs.test.ts",
-      "name": "varredura"
-    }
-  },
-  {
-    "id": "sweep-waits-seven-days",
-    "file": "apps/server/src/builder/runs/daily.ts",
-    "find": "    if (Date.now() - row.usedAt.getTime() < IDLE_MS) continue\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs.test.ts",
-      "name": "varredura"
-    }
-  },
-  {
     "id": "source-path-guard",
     "file": "apps/server/src/builder/git/tree.ts",
     "find": "unsafe || !(await inMain",
@@ -2431,28 +1892,6 @@
     }
   },
   {
-    "id": "switch-keeps-closed-set",
-    "file": "apps/server/src/builder/model-accounts/processors.ts",
-    "find": "      if (turn.switched && args.activeTools !== undefined) {\n        result.activeTools = args.activeTools.filter((name) => name !== WEB_SEARCH)",
-    "replace": "      if (turn.switched) {\n        result.activeTools = Object.keys(args.tools ?? {}).filter((name) => name !== WEB_SEARCH)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/permissions.test.ts",
-      "name": "a troca automática de modelo estreita o conjunto fechado"
-    }
-  },
-  {
-    "id": "gate-needs-instructions",
-    "file": "apps/server/src/builder/conversation/prompt/builder.md",
-    "find": "the app is the folder {app folder}.",
-    "replace": "the app is the folder.",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/builder.eval.test.ts",
-      "name": "o portão do Builder: o Builder de verdade"
-    }
-  },
-  {
     "id": "gate-needs-secrets-rule",
     "file": "apps/server/src/builder/conversation/prompt/builder.md",
     "find": "not even one the person pasted in the chat. If the person pastes one, do not use its value: say",
@@ -2461,160 +1900,6 @@
       "cwd": "apps/server",
       "file": "src/builder/conversation/builder.eval.test.ts",
       "name": "o portão do Builder: uma senha colada"
-    }
-  },
-  {
-    "id": "gate-needs-write-tool",
-    "file": "apps/server/src/builder/conversation/permissions.ts",
-    "find": "  availableTools: [...READ, ...EDIT, ...EXECUTE, ...TALK],",
-    "replace": "  availableTools: [...READ, ...EXECUTE, ...TALK],",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/builder.eval.test.ts",
-      "name": "o portão do Builder"
-    }
-  },
-  {
-    "id": "gate-needs-account-pick",
-    "file": "apps/server/src/builder/conversation/builder.ts",
-    "find": "    inputProcessors: [accountPick(deps.queue)],\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/builder.eval.test.ts",
-      "name": "o portão do Builder"
-    }
-  },
-  {
-    "id": "reattach-required",
-    "file": "apps/server/src/builder/machine/e2b.ts",
-    "find": ", reattach: 'required' as const",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine-e2b.test.ts",
-      "name": "máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausando ao vencer, com a marca"
-    }
-  },
-  {
-    "id": "machine-reconnect-keeps-files",
-    "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "if (session.starts === 1) return this.seed(session)",
-    "replace": "return this.seed(session)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine.test.ts",
-      "name": "o Mastra religa no meio dele"
-    }
-  },
-  {
-    "id": "machine-save-margin",
-    "file": "apps/server/src/builder/machine/e2b.ts",
-    "find": " - Date.now() + SAVE_MS,",
-    "replace": " - Date.now(),",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine-e2b.test.ts",
-      "name": "na hora do turno a máquina segue ligada para guardar"
-    }
-  },
-  {
-    "id": "save-stops-when-stopped",
-    "file": "apps/server/src/builder/runs/save.ts",
-    "find": "  if (mine.stopped) return 'gone'\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-removal.test.ts",
-      "name": "tirar a pessoa enquanto o turno dela guarda"
-    }
-  },
-  {
-    "id": "first-tool-boots-machine",
-    "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "        hooks: { beforeToolCall: () => this.ensure(session) },\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs.test.ts",
-      "name": "recusa ao guardar .2.000 arquivos.: o texto da recusa, o main como era"
-    }
-  },
-  {
-    "id": "sessions-start-in-yolo",
-    "file": "apps/server/src/builder/conversation/permissions.ts",
-    "find": "initialState: { yolo: true }",
-    "replace": "initialState: { yolo: false }",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/permissions.test.ts",
-      "name": "a sessão começa em yolo: nenhuma ferramenta da lista pede aprovação"
-    }
-  },
-  {
-    "id": "migrate-limits-in-options",
-    "file": "apps/server/src/platform/migrate.ts",
-    "find": "connected(deps.ownerUrl.reveal(), session, limitOptions(limits))",
-    "replace": "connected(deps.ownerUrl.reveal(), session)",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/migrate.test.ts",
-      "name": "limites do deploy em options"
-    }
-  },
-  {
-    "id": "migrate-lock-busy-named",
-    "file": "apps/server/src/platform/migrate.ts",
-    "find": "if (!busy && !session.lost) return undefined",
-    "replace": "if (!session.lost) return undefined",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/migrate.test.ts",
-      "name": "trava ocupada desiste"
-    }
-  },
-  {
-    "id": "migrate-late-lock-busy-too-long",
-    "file": "apps/server/src/platform/migrate.ts",
-    "find": " - (busy ? limits.lockTimeoutMs : 0)",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/migrate.test.ts",
-      "name": "última espera do limite da transação"
-    }
-  },
-  {
-    "id": "migrate-owner-url-options-refused",
-    "file": "apps/server/src/platform/migrate.ts",
-    "find": "searchParams.has('options')",
-    "replace": "searchParams.has('options-never')",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/platform/migrate.test.ts",
-      "name": "recusa a URL do dono com options"
-    }
-  },
-  {
-    "id": "cyber-refusal-in-error-lane",
-    "file": "apps/server/src/builder/model-accounts/processors.ts",
-    "find": "return [new CyberRefusalHandler(), ...defaults, accountQueue(deps)]",
-    "replace": "return [...defaults, accountQueue(deps)]",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-refusal.test.ts",
-      "name": "a recusa de cyber na trilha de erro"
-    }
-  },
-  {
-    "id": "memory-model-follows-conversation",
-    "file": "apps/server/src/builder/model-accounts/processors.ts",
-    "find": "const account = side ?? (await accountOf(deps, turn, { requestContext }))",
-    "replace": "const account = side",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/conversation-tasks.test.ts",
-      "name": "sem conta no modelo escolhido"
     }
   }
 ]

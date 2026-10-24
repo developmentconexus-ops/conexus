@@ -241,6 +241,10 @@
         "!**/test-*.tsx"
       ],
       "plugins": ["./scripts/conexus-code.grit"]
+    },
+    {
+      "includes": ["apps/server/**/*.test.ts", "apps/server/**/*.test.tsx"],
+      "plugins": ["./scripts/library-shapes.grit"]
     }
   ],
   "css": {

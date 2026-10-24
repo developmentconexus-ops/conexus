@@ -1,0 +1,26 @@
+// Defect: every 14.2 screen passed on Mastra controller events and stored rows typed by hand in the
+// shape the screen wanted, orders Mastra never produces (testing T24).
+// A test file refuses an object literal that is a controller event, by a `type` in the set of
+// AgentControllerEvent (@mastra/core 1.78.0, agent-controller/types.d.ts), or a stored row's key
+// (`suspendedTools`, `submittedPlan`, `toolInvocation`); the test loads the shape from a recording
+// that `npm run record` made (scripts/record.ts) through `nativeRecording`.
+// biome.json wires it to the server's *.test.ts and *.test.tsx, where a library shape is fed to our code;
+// the web's and hub-api's tests build the Hub's own wire events, our contract, and stay out; the helpers named test-*.ts stay out, as the
+// other rules leave them.
+// Known blind spots: `info` and `error`, two controller types too common in other objects to
+// refuse; a shape built by spreading or by a function; a literal in a test helper.
+// Revalidate by 2027-04-24, or when Mastra changes AgentControllerEvent, or when its stored message
+// keys change.
+or {
+  JsPropertyObjectMember() as $member where {
+    $member <: r"^[\"']?type[\"']?\s*:\s*[\"'](?:mode_changed|model_changed|thread_changed|thread_created|thread_deleted|thread_owner_changed|state_changed|agent_start|agent_end|message_start|message_update|message_end|tool_start|tool_approval_required|tool_suspended|tool_suspension_cancelled|tool_update|tool_end|tool_input_start|tool_input_delta|tool_input_end|shell_output|command_exit|usage_update|follow_up_queued|workspace_status_changed|workspace_ready|workspace_error|om_status|om_observation_start|om_observation_end|om_observation_failed|om_reflection_start|om_reflection_end|om_reflection_failed|om_model_changed|om_buffering_start|om_buffering_end|om_buffering_failed|om_activation|om_thread_title_updated|thread_title_updated|subagent_start|subagent_text_delta|subagent_tool_start|subagent_tool_end|subagent_end|subagent_model_changed|task_updated|goal_evaluation|task_complete_evaluation|display_state_changed)[\"']$",
+    register_diagnostic(span=$member, message="T24: do not type a Mastra controller event; load it with nativeRecording from a recording made by npm run record.")
+  },
+  or {
+    JsPropertyObjectMember(),
+    JsShorthandPropertyObjectMember()
+  } as $member where {
+    $member <: r"^[\"']?(?:suspendedTools|submittedPlan|toolInvocation)\b.*",
+    register_diagnostic(span=$member, message="T24: do not type a Mastra stored row; load it with nativeRecording from a recording made by npm run record.")
+  }
+}
