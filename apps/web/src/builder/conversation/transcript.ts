@@ -112,6 +112,23 @@ function withHeard(
  */
 export function fromMessages(messages: readonly Message[], view: View = {}): TranscriptItem[] {
   const thoughts = thoughtSeconds(messages.flatMap((message) => message.parts))
+  return itemsOf(messages, thoughts, view)
+}
+
+/**
+ * The rows of each saved message on its own, by its id. The seconds of a thought are in the
+ * message of ours the turn names, not in the step that thought, so they are read across all.
+ */
+export function fromEach(messages: readonly Message[]): Map<string, TranscriptItem[]> {
+  const thoughts = thoughtSeconds(messages.flatMap((message) => message.parts))
+  return new Map(messages.map((message) => [message.id, itemsOf([message], thoughts, {})]))
+}
+
+function itemsOf(
+  messages: readonly Message[],
+  thoughts: ReadonlyMap<string, number>,
+  view: View,
+): TranscriptItem[] {
   const items: TranscriptItem[] = []
   const placed = new Map<string, number>()
   for (const message of messages) {

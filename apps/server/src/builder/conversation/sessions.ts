@@ -248,7 +248,7 @@ export class Sessions {
       await this.#release(conversationId, live)
       return false
     }
-    const answered: Promise<void> = adoptTurn(live, this.#runs, run)
+    const answered: Promise<void> = adoptTurn(live, this.#runs, run, this.#builder.queue)
       .finally(() => this.#release(conversationId, live))
       .catch((cause: unknown) =>
         logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),

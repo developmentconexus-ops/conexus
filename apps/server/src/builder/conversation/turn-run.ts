@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto'
 import type { RunId } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { Turn, turnContext } from '../model-accounts/public.ts'
+import type { QueueDeps } from '../model-accounts/public.ts'
+import { memoryModelsFor, Turn, turnContext } from '../model-accounts/public.ts'
 import type { Run, Runs } from '../runs/public.ts'
 import { detach, expire, openCards } from './cards.ts'
 import { deliver } from './deliver.ts'
@@ -117,8 +118,10 @@ export async function answerTurn(
  * streams get it with the cards, parked from its start, and it waits for its end, as a message's
  * turn does (founder 2026-10-24, "4. B").
  */
-export async function adoptTurn(live: Live, runs: Runs, run: Run): Promise<void> {
-  const turn = new Turn({ companyId: run.companyId, personId: run.personId })
+export async function adoptTurn(live: Live, runs: Runs, run: Run, queue: QueueDeps): Promise<void> {
+  const owner = { companyId: run.companyId, personId: run.personId }
+  const memoryModels = await memoryModelsFor(queue, owner)
+  const turn = new Turn({ ...owner, memoryModels })
   const { writing, over } = bindRun(live, runs, turn, { runId: run.id, traceId: randomUUID() })
   beginTurn(live, writing)
   for (const parked of live.session.displayState.get().pendingSuspensions.values()) {
