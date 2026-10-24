@@ -19,12 +19,12 @@ import { NOTICE_PART } from '../model-accounts/public.ts'
 import type { Settled } from '../runs/public.ts'
 import type { Recorder } from './record.ts'
 import { saveExtras, settled } from './record.ts'
-import { ShellTail } from './shell.ts'
+import { SAID_EVERY_MS } from './shell.ts'
 import { settleThinking, startThinking, tell, tellExtra } from './tell.ts'
 import { FINISHES, TurnTally, turnLine } from './turn-line.ts'
 import type { Listener, TurnLog } from './turn-log.ts'
 import { messagesOf, say } from './turn-log.ts'
-import { modelOf, wireEvent, wireShell, wireSuspended } from './wire.ts'
+import { cutTail, modelOf, wireEvent, wireShell, wireSuspended } from './wire.ts'
 
 export type { Question } from './record.ts'
 export type { Listener } from './turn-log.ts'
@@ -225,13 +225,12 @@ function onShellEvent(
 ): void {
   const turn = live.turn
   if (turn === undefined || turn.ended) return
-  const tail = turn.shells.get(event.toolCallId) ?? new ShellTail()
-  turn.shells.set(event.toolCallId, tail)
-  if (event.type === 'shell_output') tail.add(event.output)
   const exited = event.type === 'command_exit'
+  if (!exited && Date.now() - (turn.shells.get(event.toolCallId) ?? 0) < SAID_EVERY_MS) return
   if (exited) turn.shells.delete(event.toolCallId)
-  const heard = exited ? tail.tail() : tail.running()
-  if (heard === undefined) return
+  else turn.shells.set(event.toolCallId, Date.now())
+  const output = live.session.displayState.get().activeTools.get(event.toolCallId)?.shellOutput
+  const heard = cutTail(output ?? '', false)
   const stream = event.type === 'shell_output' ? event.stream : 'stdout'
   tell(
     live,
