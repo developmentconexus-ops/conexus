@@ -9,8 +9,8 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { Markdown } from './markdown.tsx'
+import type { ReasoningItem } from './parts.ts'
 import { durationOf } from './text.ts'
-import type { ReasoningItem } from './transcript.ts'
 
 function thoughtOf(seconds: number | null | undefined, running: boolean): string {
   if (running) return 'Pensando…'

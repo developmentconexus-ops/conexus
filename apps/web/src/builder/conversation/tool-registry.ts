@@ -15,8 +15,8 @@ import {
   TrashIcon,
   WrenchIcon,
 } from 'lucide-react'
+import type { ToolItem } from './parts.ts'
 import { stringArg } from './tool-args.ts'
-import type { ToolItem } from './transcript-items.ts'
 
 /** What a row opens on (Factory `ToolBody`, `ToolCard.tsx:32-67`). */
 export type ToolBody = 'file' | 'list' | 'command' | 'edit' | 'write' | 'skill' | 'generic'

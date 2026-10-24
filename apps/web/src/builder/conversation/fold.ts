@@ -1,6 +1,6 @@
 import { MachineData, machinePhaseLasts } from '@conexus/hub-api'
+import type { ToolItem, TranscriptItem } from './parts.ts'
 import { specOf } from './tool-registry.ts'
-import type { ToolItem, TranscriptItem } from './transcript-items.ts'
 
 export type Row = { kind: 'item'; item: TranscriptItem } | { kind: 'group'; tools: ToolItem[] }
 

@@ -19,15 +19,16 @@ import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
-import type { Step } from './live.ts'
-import { shownAnswer, waitsOnPerson } from './live.ts'
 import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
+import { waitsOnPerson } from './parts.ts'
 import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } from './queries.ts'
-import { useReturnedSteers, withoutTold } from './steer-screen.ts'
+import { useReturnedSteers } from './steer-screen.ts'
 import { TaskPanel } from './task-panel.tsx'
 import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
-import { Transcript } from './transcript.tsx'
+import type { Step } from './timeline.ts'
+import { timelineOf } from './timeline.ts'
+import { shownOf, Transcript } from './transcript.tsx'
 import { useLive } from './use-live.ts'
 import { WorkingLine } from './working-line.tsx'
 
@@ -90,17 +91,20 @@ function useSending(
   const post = useMutation({ ...sendMessage, meta: { keepCache: true } })
   const stop = useMutation({ ...sendStop, meta: { keepCache: true } })
 
-  /** A message sent while the Builder answers steers the running turn: its bubble shows first, then the POST goes. */
+  /**
+   * A message sent while the Builder answers steers the running turn: its bubble shows first, then
+   * the POST goes. One sent otherwise opens its turn under the id the server saves it with.
+   */
   async function send(content: string, answering: boolean): Promise<boolean> {
     setError(undefined)
-    if (!answering) dispatch({ type: 'sent' })
     let steered: MessageId | undefined
     try {
       await attempt(content, (attemptKey) => {
+        const id = questionIdOf(params.conversationId, attemptKey)
         if (answering) {
-          steered = questionIdOf(params.conversationId, attemptKey)
-          dispatch({ type: 'steer', steer: { id: steered, content } })
-        }
+          steered = id
+          dispatch({ type: 'steer', steer: { id, content } })
+        } else dispatch({ type: 'sent', asked: id })
         return post.mutateAsync({ params, body: { content }, attemptKey })
       })
     } catch (failure) {
@@ -217,21 +221,19 @@ function Screen(params: Params) {
 
   useReturnedSteers(state, draft, setError, dispatch)
 
-  const { saved, answer } = useMemo(() => {
-    const shown = shownAnswer(state, conversation.messages)
-    const saved = withoutTold(state, conversation.messages, shown !== null)
-    return { saved, answer: shown }
-  }, [state, conversation.messages])
-  if (gone) return <NotFound />
   const isTurnRunning = state.kind === 'answering' || state.kind === 'resuming'
+  const turns = useMemo(
+    () => shownOf(timelineOf(state), conversation.messages, isTurnRunning),
+    [state, conversation.messages, isTurnRunning],
+  )
+  if (gone) return <NotFound />
   const empty = conversation.messages.length === 0 && state.kind === 'idle'
   return (
     <>
       <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
       <div className="min-h-40 flex-1">
         <Transcript
-          messages={saved}
-          answer={answer}
+          turns={turns}
           steers={isTurnRunning ? state.turn.steers : []}
           model={conversation.model}
         />
@@ -244,8 +246,8 @@ function Screen(params: Params) {
       {isTurnRunning && (
         <WorkingLine
           startedAt={state.turn.startedAt}
-          heard={state.turn.messages}
-          waiting={answer !== null && waitsOnPerson(answer.items)}
+          heard={state.turn.timeline.entries}
+          waiting={waitsOnPerson(turns.at(-1)?.items ?? [])}
         />
       )}
       <PanelComposer
