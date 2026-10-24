@@ -1,7 +1,7 @@
 import type { QuestionAnswer, ToolCallId } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import type { Card } from './cards.ts'
-import { claimCard, openCards } from './cards.ts'
+import { openCards } from './cards.ts'
 import type { Live } from './live.ts'
 
 /** What the tool resumes with for an answer, or the refusal of an answer that does not fit the card. */
@@ -25,14 +25,14 @@ function resumeOf(card: Card, body: QuestionAnswer): unknown {
  * The person's answer to a card: the answers to its questions, or the decision on its plan, checked
  * against the card, then Mastra's claim on the call, taken at once, as Mastra's own route does
  * (`agent-controller.ts`, the tool-suspension route), so a second answer is `QUESTION_CLOSED`. The
- * claim is held until `releaseCards`.
+ * caller gives the claim back with `releaseToolResponse(claimKey)` once the resume ends.
  */
 export function claimAnswer(live: Live, input: { toolCallId: ToolCallId; body: QuestionAnswer }) {
   const { toolCallId, body } = input
   const card = openCards(live).find((each) => each.toolCallId === toolCallId)
   if (card === undefined) throw new Failure('QUESTION_CLOSED')
   const resumeData = resumeOf(card, body)
-  const claim = claimCard(live, toolCallId)
+  const claim = live.session.claimToolSuspension(toolCallId)
   if (!claim.accepted) throw new Failure('QUESTION_CLOSED')
-  return { address: claim.address, resumeData }
+  return { address: claim.address, claimKey: claim.claimKey, resumeData }
 }
