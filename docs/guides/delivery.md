@@ -52,7 +52,10 @@ merge.
   split into fronts that share no file, built at once, one commit each; a Bloqueia that needs a
   contract the card lacks follows L7, then is one more front with its own delta. One reader checks each front's
   delta for closed Bloqueia and new defects, while QA reruns the screens it touched. No per-unit
-  review or review robot. Documents-only changes get check-docs and one reader once; a card gets
+  review or review robot; a unit merges into the step branch only with its own local tests and
+  proofs green, the commands its section names, heavy suites one at a time (conexus-build step 7),
+  and CI runs once, on the step's pull request. Founder, 2026-10-24: "CI é só quando for fazer o
+  PR". Documents-only changes get check-docs and one reader once; a card gets
   one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
   2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". Failure: rereading everything
   after each fix samples new rules forever. [review]

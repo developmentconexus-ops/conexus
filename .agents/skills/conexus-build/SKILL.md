@@ -7,45 +7,44 @@ description: "Builds one unit of an approved Conexus step card on the step's bra
 
 ## When to use
 
-To build one unit of the step in construction, from its approved card, or to fix a defect. The
-session that wrote the card does not build it.
+To build one unit of the step in construction from its approved card, or to fix a defect; never by
+the session that wrote the card.
 
 ## What it receives
 
-The card in `docs/steps/` and the unit's name. Nothing else is pasted in: the card is the contract.
+The card in `docs/steps/` and the unit's name. It reads the card's top tables and its unit's
+section, which is its spec. Nothing else is pasted in: a ruling not in the card is not built.
 
-It reads [`AGENTS.md`](../../../AGENTS.md), this skill, the card, [code](../../../docs/guides/code.md) and the
-unit's one named guide, and loads the card's maintainers' skills before writing code. It loads
-pstack `poteto-mode` and `typescript-best-practices`. [bring](references/bring.md)
-only when the unit brings code; [bug](references/bug.md) only for a defect.
+It reads [`AGENTS.md`](../../../AGENTS.md), this skill, [code](../../../docs/guides/code.md) and the
+unit's one named guide, and loads the card's maintainers' skills, pstack `poteto-mode` and
+`typescript-best-practices` before writing code; [bring](references/bring.md) for brought code,
+[bug](references/bug.md) for a defect.
 
 ## Steps
 
-1. Read the card's criteria for the unit, its table of parts, its blast radius, its contracts and
-   its order of work.
-2. Check that every type, contract and value the unit needs exists on the step branch or is
-   created by this unit; if not, stop.
+1. Read the unit's criteria, its parts and its section.
+2. Every type, contract and value the unit needs exists on the step branch or comes from this
+   unit; if not, stop.
 2a. Before writing a mechanism, look for it in the installed library (maintainers' skill,
-   Context7, `node_modules`); if the native one serves and the card says "nosso", stop: the card
-   goes back. Fix a defect at its root cause: name the first wrong state, fix there, sweep its class.
+   Context7, `node_modules`); if the native one serves where the card says "nosso", the card goes
+   back. Fix a defect at its root cause: name the first wrong state, fix there, sweep its class.
 3. Delete before adding: remove what the card removes and move every caller. No shim, no parallel
    old path, no temporary shape.
 4. Bring old code only as the card's table says: into the named file, refactored as listed,
-   carrying only the old decisions listed. A line the table does not justify is not brought. Keep
-   the study rule's measure ([`conexus-study`](../conexus-study/SKILL.md)) as you go; past its limit,
-   stop and report.
-5. Write the tests through the server's public door, with the negative cases, and provider doubles
-   per [testing T24](../../../docs/guides/testing.md). Write each screen text from the card's state
+   carrying only the old decisions listed. Past the study rule's measure
+   ([`conexus-study`](../conexus-study/SKILL.md)), stop.
+5. Test through the server's public door, negative cases included, with provider doubles per [testing T24](../../../docs/guides/testing.md). Write each screen text from the card's state
    matrix.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
-   changed screen looked at as [testing T23](../../../docs/guides/testing.md) says, through the
-   repository's verification skill when one exists (a screen: [screen](references/screen.md)). A fix
+   changed screen looked at per [testing T23](../../../docs/guides/testing.md), through the
+   repository's verification skill when one exists ([screen](references/screen.md)). A fix
    that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
-   states, and a new guard gets its removal row (T12). Then answer [the
-   checklist](../../../docs/reference/checklist.md) item by item and fill its sweep table; a "nosso"
+   states, and a new guard gets its removal row (T12). Answer [the
+   checklist](../../../docs/reference/checklist.md) and fill its sweep table; a "nosso"
    mechanism keeps the card's proof beside its [boundaries](../../../docs/reference/boundaries.md)
    entry. Run pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves.
-7. One commit for the unit on the step branch. The tests the unit touches are green.
+7. One commit for the unit on the step branch; the tests and proofs its section names are green
+   locally ([delivery L9](../../../docs/guides/delivery.md)).
 
 ## What it produces
 
@@ -57,16 +56,19 @@ stop.
 
 ## Stop and ask
 
-- A criterion cannot turn green without changing the card.
-- A decision is missing, or a guide and the card contradict each other.
+- A decision is missing, a criterion cannot turn green without changing the card, or a guide and
+  the card contradict each other.
 - The unit changes what a person sees, or the scope, beyond the card ([delivery
   L7](../../../docs/guides/delivery.md)).
-- The unit grows past what the card expects, or a brought part passes the third.
+- The unit grows past what the card expects.
+- The code needs a file, shape or behaviour the unit's section does not name, or a ruling arrives
+  that the card does not carry: stop; the card takes it as a delta first.
+- A test needs a library shape no recording holds: stop; record it (T26), never type it.
 
 Stop means no more code: report the evidence and the question.
 
 ## When it closes
 
-The unit's commit is on the step branch, its tests are green, and the report says what ran. In
-the fix round you build one front ([delivery L9](../../../docs/guides/delivery.md)): fix each
-finding's cause and its class (L11), and push one commit to the same branch.
+Step 7 holds and the report says what ran. In
+the fix round you build one front ([delivery L9](../../../docs/guides/delivery.md)): each finding's
+cause and its class (L11), one commit to the same branch.
