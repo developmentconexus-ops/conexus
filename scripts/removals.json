@@ -2431,17 +2431,6 @@
     }
   },
   {
-    "id": "write-needs-read",
-    "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "        [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/workspace.test.ts",
-      "name": "fora da pasta do app"
-    }
-  },
-  {
     "id": "source-path-guard",
     "file": "apps/server/src/builder/git/tree.ts",
     "find": "unsafe || !(await inMain",
@@ -2714,6 +2703,28 @@
       "cwd": "apps/server",
       "file": "src/platform/migrate.test.ts",
       "name": "recusa a URL do dono com options"
+    }
+  },
+  {
+    "id": "cyber-refusal-in-error-lane",
+    "file": "apps/server/src/builder/model-accounts/processors.ts",
+    "find": "return [new CyberRefusalHandler(), ...defaults, accountQueue(deps)]",
+    "replace": "return [...defaults, accountQueue(deps)]",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-refusal.test.ts",
+      "name": "a recusa de cyber na trilha de erro"
+    }
+  },
+  {
+    "id": "memory-model-follows-conversation",
+    "file": "apps/server/src/builder/model-accounts/processors.ts",
+    "find": "const account = side ?? (await accountOf(deps, turn, { requestContext }))",
+    "replace": "const account = side",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/conversation/conversation-tasks.test.ts",
+      "name": "sem conta no modelo escolhido"
     }
   }
 ]

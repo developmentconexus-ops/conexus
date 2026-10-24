@@ -1,27 +1,17 @@
+import type {
+  FailureData,
+  MachineData,
+  MachinePhase,
+  NoticeData,
+  RestartedData,
+  VersionData,
+} from '@conexus/hub-api'
+import { machinePhaseLasts } from '@conexus/hub-api'
 import { CheckIcon, CircleAlertIcon, CogIcon, InfoIcon, RotateCcwIcon } from 'lucide-react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { useSecondsShown } from './elapsed.ts'
 import { durationOf } from './text.ts'
-import type {
-  ConexusFailureData,
-  ConexusMachineData,
-  ConexusNoticeData,
-  ConexusRestartedData,
-  ConexusVersionData,
-  MachinePhase,
-} from './transcript-items.ts'
-import { isMachineLasting } from './transcript-items.ts'
-
-export type { MachinePhase } from './transcript-items.ts'
-export {
-  ConexusFailureData,
-  ConexusMachineData,
-  ConexusNoticeData,
-  ConexusRestartedData,
-  ConexusVersionData,
-  isMachineLasting,
-} from './transcript-items.ts'
 
 const PHASES: Record<MachinePhase, string> = {
   starting: 'Ligando a máquina…',
@@ -36,8 +26,8 @@ function Since() {
   return <span aria-hidden="true"> (há {durationOf(seconds)})</span>
 }
 
-export function MachineLine({ data }: { data: ConexusMachineData }) {
-  const lasts = isMachineLasting(data.phase)
+export function MachineLine({ data }: { data: MachineData }) {
+  const lasts = machinePhaseLasts(data.phase)
   return (
     <Marker className="text-text-2">
       <MarkerIcon>
@@ -62,7 +52,7 @@ const BUILT = {
   unfinished: ', pela metade',
 } as const
 
-function versionSentence(data: ConexusVersionData): string {
+function versionSentence(data: VersionData): string {
   if (!data.changed) return `A versão ${data.number} segue a mesma.`
   const count =
     data.number === 1
@@ -72,7 +62,7 @@ function versionSentence(data: ConexusVersionData): string {
   return `Versão ${data.number} guardada${built}: ${count}.`
 }
 
-export function VersionLine({ data }: { data: ConexusVersionData }) {
+export function VersionLine({ data }: { data: VersionData }) {
   const said =
     data.check?.state === 'failed' || data.check?.state === 'unchecked'
       ? data.check.code
@@ -89,7 +79,7 @@ export function VersionLine({ data }: { data: ConexusVersionData }) {
   )
 }
 
-export function RestartedLine({ data }: { data: ConexusRestartedData }) {
+export function RestartedLine({ data }: { data: RestartedData }) {
   return (
     <Marker className="text-text">
       <MarkerIcon>
@@ -115,7 +105,7 @@ export function RestartedLine({ data }: { data: ConexusRestartedData }) {
   )
 }
 
-export function FailureLine({ data }: { data: ConexusFailureData }) {
+export function FailureLine({ data }: { data: FailureData }) {
   return (
     <Marker role="alert" className="text-danger">
       <MarkerIcon>
@@ -126,7 +116,7 @@ export function FailureLine({ data }: { data: ConexusFailureData }) {
   )
 }
 
-export function NoticeLine({ data }: { data: ConexusNoticeData }) {
+export function NoticeLine({ data }: { data: NoticeData }) {
   return (
     <Marker className="text-text">
       <MarkerIcon>

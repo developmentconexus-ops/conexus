@@ -1,4 +1,3 @@
-import type { MastraPart } from '@conexus/hub-api'
 import { useState } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { useEverySecond } from './elapsed.ts'
@@ -6,22 +5,6 @@ import { durationOf, STILL_WORKING, WORKING } from './text.ts'
 
 /** The line while a question or a plan waits on the person (founder, 2026-10-22, "Aprovo"). */
 const WAITING = 'Builder esperando sua resposta.'
-
-/** Whether the turn waits on the person: a question or a plan is open. */
-function waitsOnPerson(parts: readonly MastraPart[]): boolean {
-  return parts.some((part) => {
-    if (part.type === 'tool-invocation') {
-      const { toolName, state } = part.toolInvocation
-      if (
-        (toolName === 'ask_user' || toolName === 'submit_plan') &&
-        (state === 'call' || state === 'approval-requested')
-      ) {
-        return true
-      }
-    }
-    return false
-  })
-}
 
 /** How long the Builder may go without saying anything before the line says it is still at work. */
 const QUIET_MS = 60_000
@@ -40,16 +23,18 @@ function secondsSince(instant: number): number {
 export function WorkingLine({
   startedAt,
   heard,
+  waiting,
 }: {
   startedAt: string | null
-  heard: readonly MastraPart[]
+  heard: unknown
+  waiting: boolean
 }) {
   useEverySecond()
   const [last, setLast] = useState({ heard, at: Date.now() })
   if (last.heard !== heard) setLast({ heard, at: Date.now() })
   const quiet = Date.now() - last.at >= QUIET_MS
   const seconds = startedAt === null ? null : secondsSince(Date.parse(startedAt))
-  if (waitsOnPerson(heard)) {
+  if (waiting) {
     return (
       <div role="status" className="flex items-center gap-sm px-md py-sm text-label text-text-2">
         <ConexusMark size={16} />

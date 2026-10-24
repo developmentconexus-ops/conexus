@@ -1,5 +1,5 @@
-import type { MastraPart, Message, ModelId } from '@conexus/hub-api'
-import { useEffect, useRef } from 'react'
+import type { Message, ModelId } from '@conexus/hub-api'
+import { useEffect, useMemo, useRef } from 'react'
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -10,26 +10,32 @@ import {
   useMessageScroller,
 } from '../../ui/message-scroller.tsx'
 import { BuilderTurn } from './builder-turn.tsx'
-import { PersonTurn } from './person-turn.tsx'
+import { PersonBubble, PersonTurn } from './person-turn.tsx'
+import type { Steer } from './steers.ts'
+import { STEER_PENDING } from './text.ts'
 import type { TranscriptItem } from './transcript.ts'
+import { fromMessages } from './transcript.ts'
 
 /**
  * The conversation as a log a screen reader follows: `aria-busy` holds its announcements while the
  * answer arrives, so the finished answer is read once and not word by word. The scroller follows
  * the end of the answer until the person scrolls up, and the button takes them back (design V54).
  * A message the person sends takes them to the end even from above (founder, 2026-10-20). The
- * answer in progress has no saved message yet, so it is told the conversation's model.
+ * answer in progress has no saved message yet, so it is told the conversation's model. A message
+ * sent into the running turn stays pinned below the answer, saying so, until the stream tells
+ * Mastra read it (design V54).
  */
 export function Transcript(props: {
   messages: readonly Message[]
-  answer: {
-    transcript?: readonly TranscriptItem[]
-    parts: readonly MastraPart[]
-    streaming: boolean
-  } | null
+  answer: { items: readonly TranscriptItem[]; streaming: boolean } | null
+  steers?: readonly Steer[]
   model: ModelId
 }) {
   const { answer } = props
+  const saved = useMemo(
+    () => new Map(props.messages.map((message) => [message.id, fromMessages([message])])),
+    [props.messages],
+  )
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
       <EndOnSent messages={props.messages} />
@@ -46,20 +52,28 @@ export function Transcript(props: {
                 {message.role === 'person' ? (
                   <PersonTurn message={message} />
                 ) : (
-                  <BuilderTurn parts={message.parts} model={message.model} streaming={false} />
+                  <BuilderTurn
+                    items={saved.get(message.id) ?? []}
+                    model={message.model}
+                    streaming={false}
+                  />
                 )}
               </MessageScrollerItem>
             ))}
             {answer !== null && (
               <MessageScrollerItem messageId="answer">
                 <BuilderTurn
-                  items={answer.transcript}
-                  parts={answer.parts}
+                  items={answer.items}
                   model={props.model}
                   streaming={answer.streaming}
                 />
               </MessageScrollerItem>
             )}
+            {(props.steers ?? []).map((steer) => (
+              <MessageScrollerItem key={steer.id} messageId={steer.id}>
+                <PersonBubble text={steer.content} footer={<span>{STEER_PENDING}</span>} />
+              </MessageScrollerItem>
+            ))}
           </MessageScrollerContent>
         </MessageScrollerViewport>
         <MessageScrollerButton />

@@ -5,12 +5,13 @@ import { hourOf } from '../../platform/dates.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { builderSaid, conversationOf, FIRST, screens } from './test-hub.tsx'
 import type { TranscriptItem } from './transcript.ts'
+import { invocationToItem } from './transcript.ts'
 import { Transcript } from './transcript.tsx'
 
 const { openConversation } = screens(hubServer())
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 
-function toolItem(id: string, toolName = 'read_file'): TranscriptItem {
+function toolItem(id: string, toolName = 'mastra_workspace_read_file'): TranscriptItem {
   return {
     kind: 'tool',
     id,
@@ -64,7 +65,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
   const { rerender } = render(
     <Transcript
       messages={[]}
-      answer={{ transcript: [reasoningItemRunning], parts: [], streaming: true }}
+      answer={{ items: [reasoningItemRunning], streaming: true }}
       model={MODEL}
     />,
   )
@@ -81,7 +82,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
   rerender(
     <Transcript
       messages={[]}
-      answer={{ transcript: [reasoningItemDone], parts: [], streaming: false }}
+      answer={{ items: [reasoningItemDone], streaming: false }}
       model={MODEL}
     />,
   )
@@ -108,7 +109,7 @@ test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', asy
   render(
     <Transcript
       messages={[]}
-      answer={{ transcript: [reasoningWithoutSeconds], parts: [], streaming: false }}
+      answer={{ items: [reasoningWithoutSeconds], streaming: false }}
       model={MODEL}
     />,
   )
@@ -119,32 +120,27 @@ test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', asy
 })
 
 test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado que abre (Critério 9)', async () => {
-  const twoTools: TranscriptItem[] = [toolItem('t-1', 'read_file'), toolItem('t-2', 'grep')]
+  const twoTools: TranscriptItem[] = [
+    toolItem('t-1', 'mastra_workspace_read_file'),
+    toolItem('t-2', 'mastra_workspace_grep'),
+  ]
 
   const { rerender } = render(
-    <Transcript
-      messages={[]}
-      answer={{ transcript: twoTools, parts: [], streaming: false }}
-      model={MODEL}
-    />,
+    <Transcript messages={[]} answer={{ items: twoTools, streaming: false }} model={MODEL} />,
   )
   expect(screen.getByText(/Leu um arquivo/)).toBeTruthy()
   expect(screen.getByText(/Buscou no código/)).toBeTruthy()
   expect(screen.queryByText(/ferramentas:/)).toBeNull()
 
   const fourTools: TranscriptItem[] = [
-    toolItem('t-1', 'list_files'),
-    toolItem('t-2', 'grep'),
-    toolItem('t-3', 'read_file'),
-    toolItem('t-4', 'edit_file'),
+    toolItem('t-1', 'mastra_workspace_list_files'),
+    toolItem('t-2', 'mastra_workspace_grep'),
+    toolItem('t-3', 'mastra_workspace_read_file'),
+    toolItem('t-4', 'mastra_workspace_edit_file'),
   ]
 
   rerender(
-    <Transcript
-      messages={[]}
-      answer={{ transcript: fourTools, parts: [], streaming: false }}
-      model={MODEL}
-    />,
+    <Transcript messages={[]} answer={{ items: fourTools, streaming: false }} model={MODEL} />,
   )
   const group = screen.getByRole('button', { name: /4 ferramentas/ })
   expect(group.getAttribute('aria-expanded')).toBe('false')
@@ -159,8 +155,8 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
 
 test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferramentas (Critério 9)', () => {
   const itemsWithUngroupables: TranscriptItem[] = [
-    toolItem('t-1', 'read_file'),
-    toolItem('t-2', 'read_file'),
+    toolItem('t-1', 'mastra_workspace_read_file'),
+    toolItem('t-2', 'mastra_workspace_read_file'),
     {
       kind: 'tool',
       id: 't-skill',
@@ -170,14 +166,14 @@ test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferrame
       args: { name: 'conexus-build' },
       result: 'Skill ok',
     },
-    toolItem('t-3', 'read_file'),
-    toolItem('t-4', 'read_file'),
+    toolItem('t-3', 'mastra_workspace_read_file'),
+    toolItem('t-4', 'mastra_workspace_read_file'),
   ]
 
   render(
     <Transcript
       messages={[]}
-      answer={{ transcript: itemsWithUngroupables, parts: [], streaming: false }}
+      answer={{ items: itemsWithUngroupables, streaming: false }}
       model={MODEL}
     />,
   )
@@ -187,19 +183,17 @@ test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferrame
 })
 
 test('task_* tools não têm linha na conversa (Critério 9)', () => {
-  const itemsWithTasks: TranscriptItem[] = [
-    toolItem('t-1', 'task_write'),
-    toolItem('t-2', 'task_update'),
-    toolItem('t-3', 'task_complete'),
-    toolItem('t-4', 'task_check'),
-  ]
+  const itemsWithTasks = ['task_write', 'task_update', 'task_complete', 'task_check'].flatMap(
+    (toolName, at) =>
+      invocationToItem(
+        { state: 'result', toolCallId: `t-${at}`, toolName, args: {}, result: 'ok' },
+        undefined,
+      ) ?? [],
+  )
+  expect(itemsWithTasks).toEqual([])
 
   render(
-    <Transcript
-      messages={[]}
-      answer={{ transcript: itemsWithTasks, parts: [], streaming: false }}
-      model={MODEL}
-    />,
+    <Transcript messages={[]} answer={{ items: itemsWithTasks, streaming: false }} model={MODEL} />,
   )
   expect(screen.queryByText(/tarefa/i)).toBeNull()
   expect(screen.queryByRole('button', { name: /ferramenta|tarefa/i })).toBeNull()

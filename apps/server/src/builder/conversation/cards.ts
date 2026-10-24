@@ -6,8 +6,9 @@ import { z } from 'zod'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { memoryOwner } from './builder.ts'
 import type { Live } from './live.ts'
-import { beforeAgentEnd, endRun } from './live.ts'
 import { ASK_USER_TOOL, questionsOf, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
+import { endWithout } from './turn-end.ts'
+import { cancelled, failing, writingOf } from './turn-state.ts'
 
 type Suspended = Extract<AgentControllerEvent, { type: 'tool_suspended' }>
 type Cancelled = Extract<AgentControllerEvent, { type: 'tool_suspension_cancelled' }>
@@ -54,11 +55,13 @@ export function openCards(live: Live): Card[] {
  * ends the turn, saying so (card, the failures table).
  */
 export function waitOn(live: Live, waiting: boolean): void {
-  live.run?.waiting(waiting).catch((cause: unknown) => {
-    logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-    live.saveFailure ??= 'INTERNAL_UNEXPECTED'
-    live.session.abort()
-  })
+  writingOf(live.state)
+    ?.waiting(waiting)
+    .catch((cause: unknown) => {
+      logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+      live.state = failing(live.state, 'INTERNAL_UNEXPECTED')
+      live.session.abort()
+    })
 }
 
 /** Until the resumed calls end, or the run does. */
@@ -71,6 +74,21 @@ export function resumed(live: Live, cards: Card[]): Promise<void> {
         event.type === 'agent_end' ||
         event.type === 'error'
       if (!ended) return
+      unsubscribe()
+      done()
+    })
+  })
+}
+
+/**
+ * Until the turn waits only on the person: a card open and no run in flight, as Mastra's
+ * `agent_end` `suspended` leaves it.
+ */
+export function parked(live: Live): Promise<void> {
+  return new Promise((done) => {
+    if (openCards(live).length > 0 && !live.session.run.isRunning()) return done()
+    const unsubscribe = live.session.subscribe((event) => {
+      if (event.type !== 'agent_end' || event.reason !== 'suspended') return
       unsubscribe()
       done()
     })
@@ -107,7 +125,7 @@ export async function takeCards(live: Live): Promise<string[]> {
 
 /** The wait ran out: the turn ends as Parar ends it, saying why. */
 export function expire(live: Live): void {
-  live.saveFailure = 'QUESTION_EXPIRED'
+  live.state = failing(live.state, 'QUESTION_EXPIRED')
   live.session.abort()
 }
 
@@ -117,35 +135,24 @@ function onSuspended(live: Live, event: Suspended) {
   waitOn(live, true)
 }
 
-/** Mastra ends no run it parked and then aborted: the turn ends here, as an aborted run's does. */
-async function endParked(live: Live, run: string | undefined): Promise<void> {
-  try {
-    await beforeAgentEnd(live, 'aborted')
-  } finally {
-    endRun(live, 'aborted', run)
-  }
-}
-
 /**
  * A call Mastra gave up on, because the person stopped the turn, wrote instead, or the wait ran
  * out: Mastra closes it denied, even when an answer had claimed it, so, once none waits, the turn
- * ends. A call of no turn here, as one a stopped copy left, says nothing.
+ * ends, as an aborted run's does, since Mastra ends no run it parked and then aborted. A call of
+ * no turn here, or of a turn a message carries on, says nothing more.
  */
 function onCancelled(live: Live, event: Cancelled) {
-  const turn = live.turn
-  if (turn === undefined || turn.ended || !turn.suspended.delete(event.toolCallId)) return
-  if (openCards(live).length > 0) return
-  waitOn(live, false)
-  const { runId } = event
-  if (live.steering === undefined) {
-    endParked(live, runId).catch((cause: unknown) =>
-      logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })),
-    )
+  const s = live.state
+  const next = cancelled(s, event.toolCallId)
+  if (next !== 'end-parked') {
+    live.state = next
     return
   }
-  // A message steers the run: its turn goes on in the run the message starts (`agent_start`).
-  live.steering.run = runId === undefined ? undefined : live.runs.get(runId)
-  if (runId !== undefined) live.runs.delete(runId)
+  if (s.kind !== 'parked') return
+  waitOn(live, false)
+  endWithout(live, s.writing, 'aborted').catch((cause: unknown) =>
+    logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })),
+  )
 }
 
 /** The questions and plans of the turn: asked by a suspension, closed by a cancellation. */
@@ -155,45 +162,38 @@ export function onCardEvent(live: Live, event: AgentControllerEvent): void {
 }
 
 /**
- * A message sent while a question waits closes it and goes on in the same turn: Mastra aborts the
- * run parked on the question and starts the next with the message (`steer`), and the turn follows
- * the new run (`agent_start`). False when no card waits, or an answer went on first: the message
- * is then a turn of its own. `steer` takes no id, so Mastra saves this message under one of its
- * own, with the turn, and unlike a turn's question it is not saved before.
+ * A parked turn left to the next copy: the watch of its run's exits and our listener go first,
+ * since Mastra's abort still says `tool_suspension_cancelled` for each parked call and tears the
+ * stream down, then Mastra keeps the run as it is (`detachFromCurrent`), without closing the card.
  */
-export async function steerCards(live: Live, content: string): Promise<boolean> {
-  const taken = await takeCards(live)
-  if (taken.length === 0) return false
-  releaseCards(live, taken)
-  live.steering = { run: undefined }
-  await live.session.steer({ content, requestContext: live.run?.context })
-  return true
+export function detach(live: Live): void {
+  writingOf(live.state)?.exits.abort()
+  live.unsubscribe()
+  live.session.thread.detachFromCurrent()
 }
 
 /**
- * The questions and plans a stopped copy left parked in Mastra's database are closed denied, and
- * their runs released, so nothing of them stays: the session takes them as its own parked
- * suspensions and aborts, which settles them (`settleSuspendedToolCallsAsDenied`) and releases
- * their runs.
+ * The cards a stopped copy left parked in Mastra's database, made this session's again, as Mastra's
+ * own resume registers a cold suspension (`resolveSuspensionAgent`); the Mastra runs they belong to.
  */
-export async function denyParked(
+export async function adoptCards(
   live: Live,
   agent: Pick<Agent, 'listSuspendedRuns'>,
-): Promise<void> {
+): Promise<string[]> {
   const threadId = live.conversationId
   const resourceId = memoryOwner(live.owner)
   const { runs } = await agent.listSuspendedRuns({ threadId, resourceId })
-  for (const run of runs) {
-    for (const { toolCallId, toolName } of run.toolCalls) {
+  const adopted: string[] = []
+  for (const { runId, toolCalls } of runs) {
+    for (const { toolCallId, toolName, args, suspendPayload } of toolCalls) {
       if (toolName === undefined || toolCallId === undefined) continue
-      live.session.suspensions.register({
-        toolCallId,
-        toolName,
-        runId: run.runId,
-        threadId,
-        resourceId,
-      })
+      const address = { toolCallId, toolName, runId, threadId, resourceId }
+      live.session.suspensions.register(address)
+      // Mastra's database keeps a tool's own suspension without its arguments: the card reads its payload.
+      const suspended = { ...address, args: args ?? null, suspendPayload }
+      live.session.displayState.apply({ type: 'tool_suspended', ...suspended })
+      if (!adopted.includes(runId)) adopted.push(runId)
     }
   }
-  if (runs.length > 0) live.session.abort()
+  return adopted
 }

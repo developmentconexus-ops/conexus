@@ -1,7 +1,28 @@
+import { CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
+import type { Invocation } from './tool-fixtures.ts'
+import {
+  EDIT_DONE,
+  EDIT_REFUSED_STORED,
+  WRITE_DONE,
+  WRITE_REFUSED_LIVE,
+  WRITE_REFUSED_STORED,
+} from './tool-fixtures.ts'
+import { presentTool, specOf, TOOLS } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
 import type { ToolItem } from './transcript.ts'
+import { invocationToItem } from './transcript.ts'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+function itemOf(inv: Invocation): ToolItem {
+  const item = invocationToItem(inv, undefined)
+  if (item?.kind !== 'tool') throw new Error(`${inv.toolName} is not a row`)
+  return item
+}
 
 function open(name: RegExp) {
   fireEvent.click(screen.getByRole('button', { name }))
@@ -12,7 +33,7 @@ test('leitura no começo: read_file abre no começo do arquivo e mostra cortes s
     kind: 'tool',
     id: 't-1',
     toolCallId: 'call-1',
-    toolName: 'read_file',
+    toolName: 'mastra_workspace_read_file',
     state: 'result',
     args: { path: 'src/router.tsx' },
     result:
@@ -32,7 +53,7 @@ test('list_files no resultado: abre no resultado retornado pela ferramenta (Crit
     kind: 'tool',
     id: 't-2',
     toolCallId: 'call-2',
-    toolName: 'list_files',
+    toolName: 'mastra_workspace_list_files',
     state: 'result',
     args: { path: 'src' },
     result: ['src/app.tsx', 'src/router.tsx', 'src/main.tsx'],
@@ -48,7 +69,7 @@ test('grep no resultado: abre no resultado retornado pela ferramenta (Critério 
     kind: 'tool',
     id: 't-3',
     toolCallId: 'call-3',
-    toolName: 'grep',
+    toolName: 'mastra_workspace_grep',
     state: 'result',
     args: { pattern: 'router' },
     result: 'src/main.tsx:5: import { router } from "./router"\nsrc/app.tsx:12: router.navigate()',
@@ -98,22 +119,88 @@ test('desconhecida no nome legível, argumentos e resultado (Critério 8)', asyn
   expect(screen.getByText(/count/)).toBeTruthy()
 })
 
-test('falha, vermelha, no erro: status de erro e abre no motivo da falha (Critério 8)', async () => {
-  const errorTool: ToolItem = {
-    kind: 'tool',
-    id: 't-6',
-    toolCallId: 'call-6',
-    toolName: 'write_file',
-    state: 'output-error',
-    args: { path: '../forbidden.ts' },
-    result: { error: 'Permissão negada fora do diretório do app.' },
-    isError: true,
-  }
-  render(<ToolRow tool={errorTool} />)
+test('uma falha abre no motivo, ao vivo e relida, e a edição mostra a mudança embaixo (Critério 8)', async () => {
+  const reread = render(<ToolRow tool={itemOf(WRITE_REFUSED_STORED)} />)
   const line = screen.getByText(/Não conseguiu escrever/).closest('[data-slot="trace-line"]')
   expect(line?.getAttribute('data-status')).toBe('error')
   open(/Não conseguiu escrever/)
-  expect(await screen.findByText('Permissão negada fora do diretório do app.')).toBeTruthy()
+  const reread_reason = (await screen.findByText(/Permission denied/)).textContent
+  reread.unmount()
+
+  const live = render(<ToolRow tool={itemOf(WRITE_REFUSED_LIVE)} />)
+  open(/Não conseguiu escrever/)
+  const live_reason = (await screen.findByText(/Permission denied/)).textContent
+  expect(live_reason).toBe(reread_reason)
+  expect(live_reason).toBe('Permission denied: stat on ../fora.ts')
+  live.unmount()
+
+  render(<ToolRow tool={itemOf(EDIT_REFUSED_STORED)} />)
+  open(/Não conseguiu editar/)
+  const reason = await screen.findByText('Permission denied: stat on ../fora.ts')
+  const change = screen.getByRole('group', { name: 'Mudança no arquivo' })
+  expect(reason.compareDocumentPosition(change) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+test('editar abre na mudança: o trecho que saiu e o que entrou, cada um cortado em 800 (Critério 8)', async () => {
+  const done = render(<ToolRow tool={itemOf(EDIT_DONE)} />)
+  expect(screen.queryByRole('group', { name: 'Mudança no arquivo' })).toBeNull()
+  open(/Editou um arquivo/)
+  const change = await screen.findByRole('group', { name: 'Mudança no arquivo' })
+  expect(change.textContent).toBe('-a = 1+a = 2')
+  expect(screen.queryByText(/Argumentos:/)).toBeNull()
+  done.unmount()
+
+  const long = {
+    ...EDIT_DONE,
+    args: { path: 'src/a.ts', old_string: 'x'.repeat(900), new_string: 'y' },
+  }
+  render(<ToolRow tool={itemOf(long)} />)
+  open(/Editou um arquivo/)
+  const cut = await screen.findByRole('group', { name: 'Mudança no arquivo' })
+  expect(cut.textContent).toBe(`-${'x'.repeat(800)}…+y`)
+})
+
+test('escrever abre no arquivo escrito, cortado em 800 (Critério 8)', async () => {
+  const done = render(<ToolRow tool={itemOf(WRITE_DONE)} />)
+  open(/Escreveu um arquivo/)
+  const written = await screen.findByRole('group', { name: 'Arquivo escrito' })
+  expect(written.textContent).toBe('export const a = 1\n')
+  done.unmount()
+
+  const long = { ...WRITE_DONE, args: { path: 'src/a.ts', content: 'z'.repeat(900) } }
+  render(<ToolRow tool={itemOf(long)} />)
+  open(/Escreveu um arquivo/)
+  expect((await screen.findByRole('group', { name: 'Arquivo escrito' })).textContent).toBe(
+    `${'z'.repeat(800)}…`,
+  )
+})
+
+test('cada ferramenta do conjunto fechado tem frase e abre no corpo da tabela (Critério 8)', () => {
+  const cards: readonly string[] = Object.values(CARD_TOOLS)
+  const tasks: readonly string[] = TASK_TOOLS
+  const drawn = CLOSED_TOOLS.filter((name) => !cards.includes(name) && !tasks.includes(name))
+  expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())
+  for (const name of drawn) {
+    const spec = specOf(name)
+    expect(spec, name).toBeDefined()
+    const done = presentTool({ toolName: name, args: {} }, 'done')
+    expect(done.sentence, name).toBe(spec?.done)
+    expect(presentTool({ toolName: name, args: {} }, 'running').sentence, name).toBe(spec?.running)
+  }
+  expect(specOf('github_create_issue')).toBeUndefined()
+  expect(presentTool({ toolName: 'github_create_issue', args: {} }, 'done').sentence).toBe(
+    'Usou Github create issue',
+  )
+})
+
+test('o relógio conta desde que a tela ouviu a chamada (Critério 8)', () => {
+  vi.useFakeTimers()
+  const running: ToolItem = {
+    ...itemOf({ ...EDIT_DONE, state: 'call', result: undefined }),
+    startedAt: Date.now() - 5000,
+  }
+  render(<ToolRow tool={running} />)
+  expect(screen.getByText('(5 s)')).toBeTruthy()
 })
 
 test('linha sem argumentos nem resultado: não abre nada (Critério 8, matriz de estados)', () => {

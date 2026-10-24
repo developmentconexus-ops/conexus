@@ -3,7 +3,7 @@
   ".github/workflows/ci.yml": 13,
   ".github/workflows/publish.yml": 2,
   ".github/workflows/rollback.yml": 1,
-  "apps/server/src/builder/conversation/kept.ts": 1,
+  "apps/server/src/builder/conversation/record.ts": 1,
   "apps/server/src/builder/conversation/sessions.ts": 1,
   "apps/server/src/builder/machine/in-machine.ts": 1,
   "apps/server/src/builder/model-accounts/google/calls.ts": 1,

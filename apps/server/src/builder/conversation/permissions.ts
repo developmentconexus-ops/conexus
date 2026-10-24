@@ -1,39 +1,47 @@
+import type { WORKSPACE_TOOL } from '@conexus/hub-api'
+import { BUILDER_TOOL, CARD_TOOLS, SKILL_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
-import { CHECK_TOOL } from './processors.ts'
 
 const { FILESYSTEM, SANDBOX } = WORKSPACE_TOOLS
+
+/** The names the screen keys its rows by are Mastra's own: a rename in Mastra fails here (code C27). */
+const SAME_NAMES = {
+  readFile: FILESYSTEM.READ_FILE,
+  writeFile: FILESYSTEM.WRITE_FILE,
+  editFile: FILESYSTEM.EDIT_FILE,
+  listFiles: FILESYSTEM.LIST_FILES,
+  delete: FILESYSTEM.DELETE,
+  fileStat: FILESYSTEM.FILE_STAT,
+  mkdir: FILESYSTEM.MKDIR,
+  grep: FILESYSTEM.GREP,
+  executeCommand: SANDBOX.EXECUTE_COMMAND,
+  getProcessOutput: SANDBOX.GET_PROCESS_OUTPUT,
+  killProcess: SANDBOX.KILL_PROCESS,
+} as const satisfies typeof WORKSPACE_TOOL
+
 const READ = new Set<string>([
-  FILESYSTEM.READ_FILE,
-  FILESYSTEM.LIST_FILES,
-  FILESYSTEM.GREP,
-  FILESYSTEM.FILE_STAT,
-  'web_search',
-  'web_fetch',
-  'recall',
-  'skill',
-  'skill_search',
-  'skill_read',
+  SAME_NAMES.readFile,
+  SAME_NAMES.listFiles,
+  SAME_NAMES.grep,
+  SAME_NAMES.fileStat,
+  BUILDER_TOOL.webSearch,
+  BUILDER_TOOL.webFetch,
+  BUILDER_TOOL.recall,
+  ...SKILL_TOOLS,
 ])
 // The controller's tools that talk to the person: the questions, the plan and the task list.
-const TALK = new Set<string>([
-  'ask_user',
-  'submit_plan',
-  'task_write',
-  'task_update',
-  'task_complete',
-  'task_check',
-])
+const TALK = new Set<string>([...Object.values(CARD_TOOLS), ...TASK_TOOLS])
 const EDIT = new Set<string>([
-  FILESYSTEM.WRITE_FILE,
-  FILESYSTEM.EDIT_FILE,
-  FILESYSTEM.MKDIR,
-  FILESYSTEM.DELETE,
+  SAME_NAMES.writeFile,
+  SAME_NAMES.editFile,
+  SAME_NAMES.mkdir,
+  SAME_NAMES.delete,
 ])
 const EXECUTE = new Set<string>([
-  SANDBOX.EXECUTE_COMMAND,
-  SANDBOX.GET_PROCESS_OUTPUT,
-  SANDBOX.KILL_PROCESS,
-  CHECK_TOOL,
+  SAME_NAMES.executeCommand,
+  SAME_NAMES.getProcessOutput,
+  SAME_NAMES.killProcess,
+  BUILDER_TOOL.check,
 ])
 
 /**

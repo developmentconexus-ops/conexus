@@ -1,9 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
+import type { Sent } from './test-anthropic-body.ts'
+import { sentOf } from './test-anthropic-body.ts'
 import type { Block } from './test-anthropic-stream.ts'
 import { events } from './test-anthropic-stream.ts'
 import { isModelList } from './test-model-lists.ts'
 import { replayed } from './test-recordings.ts'
+
+export type { Sent }
 
 type Lifetime = { after(cleanup: () => Promise<void> | void): void }
 
@@ -11,33 +15,22 @@ const MESSAGES_URL = 'https://api.anthropic.com/v1/messages'
 const CHAT_URL = 'https://api.groq.com/openai/v1/chat/completions'
 const TOKEN_URL = 'https://console.anthropic.com/v1/oauth/token'
 const MODEL = 'claude-sonnet-4-6'
+/** What a provider's cybersecurity safeguard answers with (Mastra's `CyberRefusalHandler` reads it). */
+const CYBER_REFUSAL = 'This content was flagged for possible cybersecurity risk.'
 /** The line the subscription's endpoint requires first in the system of a bearer call. */
 const SUBSCRIPTION_LINE = "You are Claude Code, Anthropic's official CLI for Claude."
 
-/** One call the Hub made to the Messages API, as the double read it. */
-export type Sent = {
-  key: string | null
-  bearer: string | null
-  stream: boolean
-  tools: string[]
-  system: string
-  /** The text of the conversation's messages, in order, so a test sees what the model was given. */
-  texts: string[]
-  /** The extended thinking the call asked for, as the Messages API body names it, or none. */
-  thinking: Thinking | null
-}
-
 /**
  * How the double answers one call: text, a `web_fetch` call, the blocks given, a provider's
- * refusal, a hang, a connection the provider resets in the middle of its stream, a recording of the
+ * refusal (`cyber`: its cybersecurity safeguard's message), a hang, a connection the provider resets in the middle of its stream, a recording of the
  * provider's own stream (`recordings/<name>.sse`), or (Chat Completions only) a stream that ends with
  * no content on Gemini's `MALFORMED_FUNCTION_CALL`, as CLIProxy relays it.
  */
 export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
-  | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' }
-  | { kind: 'refuse'; status: Refusal; headers?: Record<string, string> }
+  | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' | 'refusal' }
+  | { kind: 'refuse'; status: Refusal; headers?: Record<string, string>; cyber?: true }
   | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string }
   | { kind: 'reset' }
   | { kind: 'recorded'; name: string }
@@ -99,6 +92,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
     texts,
     thinking: null,
+    cached: [],
   }
 }
 
@@ -150,55 +144,6 @@ function chatReplied(sent: Sent, reply: Reply, signal: AbortSignal | null | unde
   }
   if (reply.kind === 'reset') return resetStream(lines.slice(0, 1))
   return new Response(lines.join(''), { headers: { 'content-type': 'text/event-stream' } })
-}
-
-const Thinking = z.object({ type: z.string(), budget_tokens: z.number().optional() })
-type Thinking = z.infer<typeof Thinking>
-
-const Body = z.object({
-  stream: z.boolean().optional(),
-  thinking: Thinking.optional(),
-  tools: z.array(z.object({ name: z.string() })).optional(),
-  system: z.union([z.string(), z.array(z.object({ text: z.string() }))]).optional(),
-  messages: z.array(z.object({ content: z.union([z.string(), z.array(z.unknown())]) })),
-})
-const TextPart = z.object({ text: z.string() })
-const ToolResult = z.object({
-  type: z.literal('tool_result'),
-  content: z.union([z.string(), z.array(TextPart)]),
-})
-
-/** A message part as the model reads it: its text, or a tool's result; none for the rest. */
-function textOf(part: unknown): string[] {
-  const result = ToolResult.safeParse(part)
-  if (result.success) {
-    const { content } = result.data
-    return [typeof content === 'string' ? content : content.map((each) => each.text).join('')]
-  }
-  const text = TextPart.safeParse(part)
-  return text.success ? [text.data.text] : []
-}
-
-function sentOf(init: RequestInit | undefined): Sent {
-  const headers = new Headers(init?.headers)
-  const body = Body.parse(JSON.parse(String(init?.body)))
-  const system =
-    typeof body.system === 'string'
-      ? body.system
-      : (body.system ?? []).map((part) => part.text).join('\n')
-  const texts = body.messages.flatMap((message) =>
-    typeof message.content === 'string' ? [message.content] : message.content.flatMap(textOf),
-  )
-  const bearer = headers.get('authorization')?.replace(/^Bearer /, '') ?? null
-  return {
-    key: headers.get('x-api-key'),
-    bearer,
-    stream: body.stream === true,
-    tools: (body.tools ?? []).map((tool) => tool.name),
-    system,
-    texts,
-    thinking: body.thinking ?? null,
-  }
 }
 
 /**
@@ -256,7 +201,7 @@ function replied(sent: Sent, reply: Reply, signal: AbortSignal | null | undefine
       type: 'error',
       error: {
         type: ERROR_TYPES[reply.status],
-        message: 'planted refusal SECRET-PLANTED-TEXT',
+        message: reply.cyber === true ? CYBER_REFUSAL : 'planted refusal SECRET-PLANTED-TEXT',
       },
     }
     const headers = { 'content-type': 'application/json', ...reply.headers }

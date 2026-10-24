@@ -54,6 +54,7 @@ export function conversationOf(fields: Partial<Conversation> & { id: Conversatio
       messages: [],
       tasks: [],
       memory: null,
+      inProgress: false,
       ...fields,
     },
   }).conversation

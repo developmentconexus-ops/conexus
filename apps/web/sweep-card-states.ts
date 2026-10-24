@@ -20,6 +20,16 @@ const PLAN = [
   '',
   'A tabela `encomenda` e as operações de listar e criar.',
 ].join('\n')
+const QUESTIONS = {
+  questions: [
+    {
+      question: 'Quem cadastra as encomendas?',
+      options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
+      multiSelect: false,
+    },
+  ],
+}
+const PLAN_ARGS = { title: 'App de encomendas', plan: PLAN }
 const COMMAND = 'npm test -- --reporter=dot src/encomendas/um-caminho-bem-comprido.test.ts'
 
 const CARDS = readConversation.success.body.parse({
@@ -34,81 +44,108 @@ const CARDS = readConversation.success.body.parse({
         id: 'm1',
         role: 'builder',
         parts: [
-          { type: 'reasoning', id: 'r1', state: 'completed', seconds: 9 },
+          { type: 'data-conexus-thought', data: { seconds: 9 } },
+          { type: 'reasoning', reasoning: 'Vou conferir as entregas da padaria.', details: [] },
           {
-            type: 'question',
-            toolCallId: 'q0',
-            state: 'answered',
-            questions: [
-              {
-                question: 'Quais dias a padaria entrega?',
-                options: [{ label: 'Sábado' }, { label: 'Domingo' }],
-                multiSelect: true,
+            type: 'tool-invocation',
+            toolInvocation: {
+              state: 'result',
+              toolCallId: 'q0',
+              toolName: 'ask_user',
+              args: {
+                questions: [
+                  {
+                    question: 'Quais dias a padaria entrega?',
+                    options: [{ label: 'Sábado' }, { label: 'Domingo' }],
+                    multiSelect: true,
+                  },
+                ],
               },
-            ],
-            answers: [['Sábado', 'Domingo']],
-          },
-          {
-            type: 'version',
-            number: 2,
-            changed: true,
-            files: 9,
-            changedFiles: 3,
-            check: { state: 'failed', code: 'APP_CHECK_FAILED' },
-          },
-          {
-            type: 'version',
-            number: 3,
-            changed: true,
-            files: 9,
-            changedFiles: 1,
-            check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' },
-          },
-          {
-            type: 'tool',
-            id: 'c1',
-            kind: 'run_command',
-            state: 'completed',
-            subject: { command: COMMAND },
-            detail: {
-              kind: 'command',
-              command: COMMAND,
-              output: ['18 passaram', `1 falhou: ${'x'.repeat(120)}`],
-              exitCode: 1,
-              cut: true,
+              result: { answers: [['Sábado', 'Domingo']] },
             },
           },
           {
-            type: 'tasks',
-            items: [
-              { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
-              {
-                id: '2',
-                content: 'Fazer a tela',
-                activeForm: 'Fazendo a tela',
-                status: 'in_progress',
-              },
-              { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
-            ],
+            type: 'data-conexus-version',
+            data: {
+              number: 2,
+              changed: true,
+              files: 9,
+              changedFiles: 3,
+              check: { state: 'failed', code: 'APP_CHECK_FAILED' },
+            },
           },
           {
-            type: 'question',
-            toolCallId: 'q1',
-            state: 'open',
-            questions: [
-              {
-                question: 'Quem cadastra as encomendas?',
-                options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
-                multiSelect: false,
-              },
-            ],
+            type: 'data-conexus-version',
+            data: {
+              number: 3,
+              changed: true,
+              files: 9,
+              changedFiles: 1,
+              check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' },
+            },
           },
-          { type: 'plan', toolCallId: 'p1', title: 'App de encomendas', plan: PLAN, state: 'open' },
+          {
+            type: 'tool-invocation',
+            toolInvocation: {
+              state: 'result',
+              toolCallId: 'c1',
+              toolName: 'mastra_workspace_execute_command',
+              args: { command: COMMAND },
+              result: `18 passaram\n1 falhou: ${'x'.repeat(120)}`,
+            },
+          },
+          {
+            type: 'tool-invocation',
+            toolInvocation: {
+              state: 'call',
+              toolCallId: 'q1',
+              toolName: 'ask_user',
+              args: {
+                questions: [
+                  {
+                    question: 'Quem cadastra as encomendas?',
+                    options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
+                    multiSelect: false,
+                  },
+                ],
+              },
+            },
+          },
+          {
+            type: 'tool-invocation',
+            toolInvocation: {
+              state: 'call',
+              toolCallId: 'p1',
+              toolName: 'submit_plan',
+              args: { title: 'App de encomendas', plan: PLAN },
+            },
+          },
         ],
+        suspended: {
+          q1: {
+            toolCallId: 'q1',
+            toolName: 'ask_user',
+            args: QUESTIONS,
+            suspendPayload: QUESTIONS,
+          },
+          p1: {
+            toolCallId: 'p1',
+            toolName: 'submit_plan',
+            args: PLAN_ARGS,
+            suspendPayload: PLAN_ARGS,
+          },
+        },
         model: 'anthropic/claude-sonnet-4',
         createdAt: '2026-10-22T12:01:00.000Z',
       },
     ],
+    tasks: [
+      { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
+      { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'in_progress' },
+      { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
+    ],
+    memory: null,
+    inProgress: false,
   },
 })
 
@@ -165,7 +202,7 @@ export const CARD_STATES: State[] = [
     settle: async (page) => {
       await inChat(page)
       await page.getByRole('button', { name: /Rodou um comando/ }).click()
-      await waitFor(page, 'O comando terminou com o código 1.')
+      await waitFor(page, '1 falhou')
     },
   },
 ]

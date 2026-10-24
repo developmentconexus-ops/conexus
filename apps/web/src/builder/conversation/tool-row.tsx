@@ -1,5 +1,5 @@
-import { CircleAlertIcon } from 'lucide-react'
 import { useState } from 'react'
+import { cn } from '../../ui/cn.ts'
 import {
   TraceCollapsible,
   TraceCollapsibleContent,
@@ -9,17 +9,20 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
-import { useSecondsShown } from './elapsed.ts'
+import { useSecondsSince } from './elapsed.ts'
 import { durationOf } from './text.ts'
-import { bareToolName, presentTool, prettifyToolName } from './tool-presentation.ts'
+import type { Edit } from './tool-args.ts'
+import { editOf, shown } from './tool-args.ts'
+import type { ToolBody, ToolStatus } from './tool-registry.ts'
+import { presentTool, readable, specOf, toolStatus } from './tool-registry.ts'
 import type { ToolItem } from './transcript.ts'
 
 const BLOCK =
   'max-h-64 overflow-auto rounded-control bg-surface-3 p-sm font-mono text-fact text-text-2 whitespace-pre-wrap wrap-break-word'
 
-function formatValue(value: unknown): string {
-  if (value === undefined || value === null) return ''
-  if (typeof value === 'string') return value
+function textOf(value: unknown): string | undefined {
+  if (value === undefined || value === null) return undefined
+  if (typeof value === 'string') return value === '' ? undefined : value
   try {
     return JSON.stringify(value, null, 2)
   } catch {
@@ -27,39 +30,7 @@ function formatValue(value: unknown): string {
   }
 }
 
-function Running() {
-  const seconds = useSecondsShown()
-  return (
-    <TraceDescription aria-hidden="true" className="shrink-0 text-fact">
-      ({durationOf(seconds)})
-    </TraceDescription>
-  )
-}
-
-function isRunning(state: ToolItem['state']): boolean {
-  return state === 'call' || state === 'partial-call'
-}
-
-function isFailed(tool: ToolItem): boolean {
-  return tool.isError === true || tool.state === 'output-error' || tool.state === 'output-denied'
-}
-
-function hasSomethingToOpen(tool: ToolItem): boolean {
-  if (isFailed(tool)) return true
-  if (tool.output !== undefined && tool.output.length > 0) return true
-  if (tool.result !== undefined && tool.result !== null) return true
-  if (
-    tool.args !== undefined &&
-    tool.args !== null &&
-    typeof tool.args === 'object' &&
-    Object.keys(tool.args).length > 0
-  ) {
-    return true
-  }
-  return false
-}
-
-function getStringProp(obj: unknown, key: string): string | undefined {
+function fieldOf(obj: unknown, key: string): string | undefined {
   if (obj && typeof obj === 'object' && key in obj) {
     const val = Reflect.get(obj, key)
     return typeof val === 'string' ? val : undefined
@@ -67,169 +38,191 @@ function getStringProp(obj: unknown, key: string): string | undefined {
   return undefined
 }
 
-export function ToolIcon({ tool }: { tool: ToolItem }) {
-  const failed = isFailed(tool)
-  const presentation = presentTool(tool.toolName, tool.args, {
-    isRunning: isRunning(tool.state),
-    isError: failed,
-    isDenied: tool.state === 'output-denied',
-  })
-  const Icon = failed ? CircleAlertIcon : presentation.icon
+/** The clock of a call that runs, from when the screen first heard of it. */
+function Since({ at }: { at: number | undefined }) {
+  const [mounted] = useState(Date.now)
+  const seconds = useSecondsSince(at ?? mounted)
   return (
-    <TraceIcon>
-      <Icon />
-    </TraceIcon>
+    <TraceDescription aria-hidden="true" className="shrink-0 text-fact">
+      ({durationOf(seconds)})
+    </TraceDescription>
   )
 }
 
-function ToolFileContent({ tool, hasCut }: { tool: ToolItem; hasCut?: boolean }) {
-  const content =
-    typeof tool.result === 'string' ? tool.result : getStringProp(tool.result, 'content')
-  const path = getStringProp(tool.args, 'path')
-  const display = content !== undefined ? content : path ? `$ cat ${path}` : ''
+function opens(tool: ToolItem, status: ToolStatus): boolean {
+  if (status === 'error' || status === 'denied') return true
+  if (tool.output !== undefined && tool.output.length > 0) return true
+  if (tool.result !== undefined && tool.result !== null) return true
   return (
-    <div className="flex min-w-0 flex-col gap-xs pt-xs">
-      <pre className={BLOCK}>
-        {display}
-        {hasCut ? '\n…' : ''}
-      </pre>
-    </div>
-  )
-}
-
-function ToolCommandContent({ tool, hasCut }: { tool: ToolItem; hasCut?: boolean }) {
-  const command = getStringProp(tool.args, 'command') ?? ''
-  const output = tool.output ?? formatValue(tool.result)
-  return (
-    <div className="flex min-w-0 flex-col gap-xs pt-xs">
-      <pre className={BLOCK}>
-        {[`$ ${command}`, ...(hasCut ? ['…'] : []), output].filter(Boolean).join('\n')}
-      </pre>
-      {tool.exitCode !== undefined && tool.exitCode !== 0 && (
-        <p className="text-fact text-text-2">O comando terminou com o código {tool.exitCode}.</p>
-      )}
-    </div>
-  )
-}
-
-function ToolGenericContent({ tool }: { tool: ToolItem }) {
-  const readable = prettifyToolName(tool.toolName)
-  const hasArgs =
     tool.args !== undefined &&
     tool.args !== null &&
     typeof tool.args === 'object' &&
     Object.keys(tool.args).length > 0
+  )
+}
 
+function Reason({ tool }: { tool: ToolItem }) {
+  const reason =
+    tool.errorText ?? textOf(tool.result) ?? 'Ocorreu um erro ao executar a ferramenta.'
+  return <pre className={cn(BLOCK, 'text-danger')}>{shown(reason)}</pre>
+}
+
+function Side(props: { sign: '-' | '+'; text: string; className: string }) {
+  const { sign, text, className } = props
+  if (text === '') return null
+  const lines = text.split('\n').map((line, at) => ({ line, at }))
   return (
-    <div className="flex min-w-0 flex-col gap-xs pt-xs font-mono text-fact text-text-2">
-      <div className="font-sans font-semibold text-text">{readable}</div>
-      {hasArgs && (
-        <div className="flex flex-col gap-xxs">
-          <span className="font-sans text-text-2">Argumentos:</span>
-          <pre className={BLOCK}>{formatValue(tool.args)}</pre>
+    <div className={className}>
+      {lines.map((row) => (
+        <div key={row.at} className="flex whitespace-pre-wrap">
+          <span aria-hidden="true" className="w-4 shrink-0 select-none">
+            {sign}
+          </span>
+          <span className="min-w-0 wrap-break-word">{row.line}</span>
         </div>
-      )}
-      {tool.result !== undefined && (
-        <div className="flex flex-col gap-xxs">
-          <span className="font-sans text-text-2">Resultado:</span>
-          <pre className={BLOCK}>{formatValue(tool.result)}</pre>
-        </div>
-      )}
+      ))}
     </div>
   )
 }
 
-function OpenedContent({ tool }: { tool: ToolItem }) {
-  const bare = bareToolName(tool.toolName)
-  const cuts = tool.cuts
-  const hasCut = cuts && cuts.length > 0
-
-  if (isFailed(tool)) {
-    const errorText =
-      getStringProp(tool.result, 'error') ??
-      getStringProp(tool.result, 'message') ??
-      (typeof tool.result === 'string' ? tool.result : undefined) ??
-      'Ocorreu um erro ao executar a ferramenta.'
+function Change({ edit }: { edit: Edit }) {
+  if ('content' in edit) {
     return (
-      <div className="flex min-w-0 flex-col gap-xs pt-xs">
-        <pre className={BLOCK}>{errorText}</pre>
-      </div>
+      <fieldset aria-label="Arquivo escrito" className="m-0 min-w-0 border-0 p-0">
+        <pre className={BLOCK}>{shown(edit.content)}</pre>
+      </fieldset>
     )
   }
+  return (
+    <fieldset
+      aria-label="Mudança no arquivo"
+      className={cn(BLOCK, 'm-0 flex min-w-0 flex-col border-0')}
+    >
+      <Side sign="-" text={shown(edit.before)} className="text-danger" />
+      <Side sign="+" text={shown(edit.after)} className="text-success" />
+    </fieldset>
+  )
+}
 
-  if (bare === 'read_file' || bare === 'view') {
-    return <ToolFileContent tool={tool} hasCut={hasCut} />
+function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
+  const detail = presentTool(tool, 'done').detail
+  const hasCut = tool.cuts !== undefined && tool.cuts.length > 0
+  switch (body) {
+    case 'command': {
+      const output = tool.output ?? textOf(tool.result)
+      return (
+        <>
+          <pre className={BLOCK}>
+            {[`$ ${shown(detail ?? '')}`, ...(hasCut ? ['…'] : []), output]
+              .filter(Boolean)
+              .join('\n')}
+          </pre>
+          {tool.exitCode !== undefined && tool.exitCode !== 0 && (
+            <p className="text-fact text-text-2">
+              O comando terminou com o código {tool.exitCode}.
+            </p>
+          )}
+        </>
+      )
+    }
+    case 'file': {
+      const result = textOf(tool.result)
+      const display = result !== undefined ? shown(result) : detail ? `$ cat ${detail}` : ''
+      return (
+        <pre className={BLOCK}>
+          {display}
+          {hasCut ? '\n…' : ''}
+        </pre>
+      )
+    }
+    case 'list': {
+      const result = textOf(tool.result)
+      return <pre className={BLOCK}>{result !== undefined ? shown(result) : (detail ?? '')}</pre>
+    }
+    case 'skill': {
+      const name = fieldOf(tool.args, 'name') ?? fieldOf(tool.result, 'name')
+      const instructions =
+        fieldOf(tool.args, 'instructions') ??
+        fieldOf(tool.result, 'instructions') ??
+        (typeof tool.result === 'string' ? tool.result : undefined)
+      return (
+        <>
+          {name && <div className="font-semibold text-text">{name}</div>}
+          {instructions && <pre className={BLOCK}>{shown(instructions)}</pre>}
+        </>
+      )
+    }
+    default: {
+      const args =
+        typeof tool.args === 'object' && tool.args !== null && Object.keys(tool.args).length > 0
+      const result = tool.result === undefined ? undefined : (textOf(tool.result) ?? '')
+      return (
+        <div className="flex min-w-0 flex-col gap-xs font-mono text-fact text-text-2">
+          <div className="font-sans font-semibold text-text">{readable(tool.toolName)}</div>
+          {args && (
+            <div className="flex flex-col gap-xxs">
+              <span className="font-sans text-text-2">Argumentos:</span>
+              <pre className={BLOCK}>{shown(textOf(tool.args) ?? '')}</pre>
+            </div>
+          )}
+          {result !== undefined && (
+            <div className="flex flex-col gap-xxs">
+              <span className="font-sans text-text-2">Resultado:</span>
+              <pre className={BLOCK}>{shown(result)}</pre>
+            </div>
+          )}
+        </div>
+      )
+    }
   }
+}
 
-  if (['list_files', 'find_files', 'grep', 'search_content', 'search'].includes(bare)) {
-    const display =
-      tool.result !== undefined
-        ? formatValue(tool.result)
-        : (getStringProp(tool.args, 'path') ?? getStringProp(tool.args, 'pattern') ?? '')
-    return (
-      <div className="flex min-w-0 flex-col gap-xs pt-xs">
-        <pre className={BLOCK}>{display}</pre>
-      </div>
-    )
-  }
-
-  if (bare === 'skill' || bare === 'skill_read') {
-    const name = getStringProp(tool.args, 'name') ?? getStringProp(tool.result, 'name')
-    const instructions =
-      getStringProp(tool.args, 'instructions') ??
-      getStringProp(tool.result, 'instructions') ??
-      (typeof tool.result === 'string' ? tool.result : undefined)
-    return (
-      <div className="flex min-w-0 flex-col gap-xs pt-xs">
-        {name && <div className="font-semibold text-text">{name}</div>}
-        {instructions && <pre className={BLOCK}>{instructions}</pre>}
-      </div>
-    )
-  }
-
-  if (bare === 'execute_command') {
-    return <ToolCommandContent tool={tool} hasCut={hasCut} />
-  }
-
-  return <ToolGenericContent tool={tool} />
+function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
+  const body = specOf(tool.toolName)?.body ?? 'generic'
+  const edit = editOf(body, tool.args)
+  const failed = status === 'error' || status === 'denied'
+  return (
+    <div className="flex min-w-0 flex-col gap-xs pt-xs">
+      {failed && <Reason tool={tool} />}
+      {edit !== undefined ? <Change edit={edit} /> : !failed && <Block tool={tool} body={body} />}
+    </div>
+  )
 }
 
 /**
  * A line of tool invocation (Criterion 8).
- * Opens on arguments and results per tool kind.
+ * Opens on the body its tool's row in the table names.
  */
 export function ToolRow({ tool }: { tool: ToolItem }) {
-  const running = isRunning(tool.state)
-  const failed = isFailed(tool)
-  const presentation = presentTool(tool.toolName, tool.args, {
-    isRunning: running,
-    isError: failed,
-    isDenied: tool.state === 'output-denied',
-  })
-  const opens = hasSomethingToOpen(tool)
-  const [open, setOpen] = useState(running)
+  const status = toolStatus(tool)
+  const shownTool = presentTool(tool, status)
+  const [open, setOpen] = useState(status === 'running')
+  const failed = status === 'error' || status === 'denied'
+  const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
+  const side = shownTool.beside ? (
+    <TraceDescription className="min-w-0 max-w-1/2 truncate">{shownTool.detail}</TraceDescription>
+  ) : status === 'running' ? (
+    <Since at={tool.startedAt} />
+  ) : null
+  const line = (
+    <TraceLine status={lineStatus}>
+      <TraceIcon>
+        <shownTool.icon />
+      </TraceIcon>
+      <TraceTitle className={shownTool.beside ? 'flex-1 whitespace-normal' : undefined}>
+        {shownTool.sentence}
+      </TraceTitle>
+      {side}
+    </TraceLine>
+  )
 
-  if (!opens) {
-    return (
-      <TraceLine status={presentation.status}>
-        <ToolIcon tool={tool} />
-        <TraceTitle>{presentation.sentence}</TraceTitle>
-        {running && <Running />}
-      </TraceLine>
-    )
-  }
+  if (!opens(tool, status)) return line
 
   return (
     <TraceCollapsible open={open} onOpenChange={setOpen}>
-      <TraceCollapsibleTrigger>
-        <TraceLine status={presentation.status}>
-          <ToolIcon tool={tool} />
-          <TraceTitle>{presentation.sentence}</TraceTitle>
-          {running && <Running />}
-        </TraceLine>
-      </TraceCollapsibleTrigger>
+      <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
       <TraceCollapsibleContent>
-        <OpenedContent tool={tool} />
+        <Body tool={tool} status={status} />
       </TraceCollapsibleContent>
     </TraceCollapsible>
   )

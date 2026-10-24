@@ -1,5 +1,5 @@
 import type { CheckReport } from '@conexus/app/check'
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, MachinePhase, ProjectId } from '@conexus/hub-api'
 import type { Workspace } from '@mastra/core/workspace'
 import type { InstallationId } from '../../platform/config-machine.ts'
 import type { Database } from '../../platform/database.ts'
@@ -11,7 +11,7 @@ import type { KitFactory, MachineApi, SandboxId } from './kit.ts'
 import type { PackRefused, VersionFolder } from './pack.ts'
 
 /** What Ana is told while the machine gets ready or saves (card, the stream's `machine` part). */
-export type Phase = 'starting' | 'waking' | 'copying' | 'replaced' | 'saving'
+export type Phase = MachinePhase
 
 export type Machines = {
   /**

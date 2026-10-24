@@ -25,3 +25,26 @@ export function useAttemptKey(): <T>(work: (key: string) => Promise<T>) => Promi
     }
   }
 }
+
+/**
+ * One attempt key per scope: a retry of the same content keeps its key, and two contents sent at
+ * once never share one.
+ */
+export function useAttemptKeys(): <T>(
+  scope: string,
+  work: (key: string) => Promise<T>,
+) => Promise<T> {
+  const keys = useRef(new Map<string, string>())
+  return async function attempt<T>(scope: string, work: (key: string) => Promise<T>): Promise<T> {
+    const key = keys.current.get(scope) ?? crypto.randomUUID()
+    keys.current.set(scope, key)
+    try {
+      const result = await work(key)
+      keys.current.delete(scope)
+      return result
+    } catch (error) {
+      if (!keepsAttemptKey(error)) keys.current.delete(scope)
+      throw error
+    }
+  }
+}

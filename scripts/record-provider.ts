@@ -156,7 +156,7 @@ type Asked = {
 async function openerOf(args: Args) {
   if (args.provider === 'anthropic') {
     const { CONEXUS_RECORD_CLAUDE_TOKEN: token } = Claude.parse(process.env)
-    const model = subscriptionModel(CLAUDE, token)
+    const model = subscriptionModel(CLAUDE, token, 'conversation')
     return {
       open: (asked: Asked) => model.doStream({ ...asked, tools: WEB_TOOLS }),
       secrets: [token],

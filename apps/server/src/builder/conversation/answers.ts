@@ -3,6 +3,7 @@ import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Card } from './cards.ts'
 import { openCards, resumed, waitOn } from './cards.ts'
 import type { Live } from './live.ts'
+import { writingOf } from './turn-state.ts'
 
 /** What the tool resumes with for an answer, or the refusal of an answer that does not fit the card. */
 function resumeOf(card: Card, body: QuestionAnswer): unknown {
@@ -43,7 +44,11 @@ export async function answerCard(
   const { address, claimKey } = claim
   const taken = resumed(live, [card])
   const responding = live.session
-    .respondToToolSuspension({ address, resumeData, requestContext: live.run?.context })
+    .respondToToolSuspension({
+      address,
+      resumeData,
+      requestContext: writingOf(live.state)?.context,
+    })
     .catch((cause: unknown) => logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause })))
     .finally(() => live.session.releaseToolResponse(claimKey))
   await taken

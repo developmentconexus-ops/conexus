@@ -231,10 +231,12 @@ async function questionsAndPlan(chat: Page) {
 async function firstVersion(chat: Page) {
   const transcript = transcriptOf(chat)
   await versionSaid(chat, /^Versão 1 guardada, montou: \d+ arquivos\.$/)
-  await transcriptShowed(chat, 'em andamento')
-  assert.equal(await transcript.getByText('concluída', { exact: true }).count(), 2)
+  // The tasks are the panel above the composer while the turn runs, never rows of the transcript.
+  await transcriptShowed(chat, 'Tarefas · 0 de 2')
+  await transcriptShowed(chat, 'Montando a tabela')
+  await chat.getByRole('region', { name: 'Painel de tarefas' }).waitFor({ state: 'hidden' })
   // The turn's tools in a row are one closed line that says what they did; it opens on each one.
-  await transcript.getByRole('button', { name: /rodou 1 comando/ }).click()
+  await transcript.getByRole('button', { name: /\d+ ferramentas: .*rodou/ }).click()
   await transcript.getByRole('button', { name: /Rodou um comando/ }).click()
   await transcript.locator('pre', { hasText: '$ ls shared server' }).waitFor()
   await outputWith(chat, 'operations.ts').waitFor()

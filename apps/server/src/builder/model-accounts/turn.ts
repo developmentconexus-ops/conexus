@@ -4,8 +4,17 @@ import type { LanguageModel } from '@mastra/core/llm'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import type { PromptCacheScope } from './claude/prompt-cache.ts'
 
 const TURN_KEY = 'conexus.turn'
+
+/**
+ * The models the company chose for Mastra's own memory calls, read once as the turn opens, as
+ * Factory hydrates them into the request (`memory-settings-hydration.ts:49-53`). `null` follows
+ * the conversation's model.
+ */
+export type MemoryModels = { observer: ModelId | null; reflector: ModelId | null }
+export const FOLLOW_CONVERSATION: MemoryModels = { observer: null, reflector: null }
 
 /** The data part a queue notice is kept as in the answer, and the shape of its data. */
 export const NOTICE_PART = 'data-conexus-notice'
@@ -21,7 +30,8 @@ export type Picked = {
   label: string
   kind: AccountKind
   modelId: ModelId
-  model: LanguageModel
+  /** The account's model per cache scope; the same object in both for a provider with no marks. */
+  models: Record<PromptCacheScope, LanguageModel>
 }
 
 /** How a turn ended for the queue: its accounts ran out, or the model's call failed. */
@@ -72,6 +82,7 @@ function chosenEffort(context: RequestContext | undefined): Effort {
 export class Turn {
   readonly companyId: CompanyId
   readonly personId: PersonId
+  readonly memoryModels: MemoryModels
   readonly tried = new Set<ModelAccountId>()
   readonly refreshed = new Set<ModelAccountId>()
   /** The names of accounts refused as they were opened, for the next notice. */
@@ -83,15 +94,35 @@ export class Turn {
   /** What the turn's accounts keep open while it runs, such as a CLIProxy process. */
   readonly held: Array<() => void> = []
   #stage: Stage = { name: 'unpicked' }
+  readonly #sidePicks = new Map<ModelId, Promise<Picked | undefined>>()
   /**
    * The model the turn calls now and the effort it asks, read from its run on first use, so a
    * change during the turn holds for the next (design V54).
    */
   #model: { id: ModelId; effort: Effort; switched: boolean } | undefined
 
-  constructor(owner: { companyId: CompanyId; personId: PersonId }) {
+  constructor(owner: { companyId: CompanyId; personId: PersonId; memoryModels?: MemoryModels }) {
     this.companyId = owner.companyId
     this.personId = owner.personId
+    this.memoryModels = owner.memoryModels ?? FOLLOW_CONVERSATION
+  }
+
+  /**
+   * The account of a memory call's own model, picked once per model for the turn by `choose`. It
+   * is not the turn's account: it never rotates, ends or tries the turn's queue.
+   */
+  sidePick(
+    modelId: ModelId,
+    choose: () => Promise<Picked | undefined>,
+  ): Promise<Picked | undefined> {
+    let pick = this.#sidePicks.get(modelId)
+    if (pick === undefined) {
+      pick = choose()
+      this.#sidePicks.set(modelId, pick)
+      // A pick that threw is asked again by the next call.
+      pick.catch(() => this.#sidePicks.delete(modelId))
+    }
+    return pick
   }
 
   /** How the queue ended the turn, if it did. */

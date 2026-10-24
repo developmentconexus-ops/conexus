@@ -1,45 +1,15 @@
-import type { Answer, FailureCode, MastraPart, Question } from '@conexus/hub-api'
-import { FAILURES, ToolCallId, VersionCheck } from '@conexus/hub-api'
+import type { Answer, MastraPart, Suspended } from '@conexus/hub-api'
+import { CARD_TOOLS, Question, TASK_TOOLS, ThoughtData, ToolCallId } from '@conexus/hub-api'
 import { z } from 'zod'
 
-export const MachinePhase = z.enum(['starting', 'waking', 'copying', 'replaced', 'saving'])
-export type MachinePhase = z.infer<typeof MachinePhase>
-
-export const ConexusMachineData = z.object({ phase: MachinePhase })
-export type ConexusMachineData = z.infer<typeof ConexusMachineData>
-
-export const ConexusVersionData = z.object({
-  number: z.number(),
-  files: z.number(),
-  changed: z.boolean(),
-  changedFiles: z.number(),
-  check: VersionCheck.optional(),
-})
-export type ConexusVersionData = z.infer<typeof ConexusVersionData>
-
-export const ConexusRestartedData = z.object({
-  kept: z.union([z.number(), z.literal('nothing'), z.literal('lost')]),
-})
-export type ConexusRestartedData = z.infer<typeof ConexusRestartedData>
-
-export const ConexusFailureData = z.object({
-  code: z.string().refine((c): c is FailureCode => Object.hasOwn(FAILURES, c)),
-})
-export type ConexusFailureData = z.infer<typeof ConexusFailureData>
-
-export const ConexusNoticeData = z.object({ text: z.string() })
-export type ConexusNoticeData = z.infer<typeof ConexusNoticeData>
-
-export function isMachineLasting(phase: MachinePhase): boolean {
-  return phase === 'replaced'
-}
-
-export type ToolInvocationState = Extract<
+type ToolInvocationState = Extract<
   MastraPart,
   { type: 'tool-invocation' }
 >['toolInvocation']['state']
 
-export type TextItem = { kind: 'text'; id: string; text: string; cuts?: string[] }
+/** A message the person sent into the running turn, at the place Mastra read it. */
+type PersonItem = { kind: 'person'; id: string; text: string; createdAt: string }
+type TextItem = { kind: 'text'; id: string; text: string; cuts?: string[] }
 export type ReasoningItem = {
   kind: 'reasoning'
   id: string
@@ -59,6 +29,10 @@ export type ToolItem = {
   output?: string
   exitCode?: number
   isError?: boolean
+  /** Why the call failed, as the store keeps it (`output-error`). */
+  errorText?: string
+  /** When the screen first heard of the call, epoch ms; none on a read (a read row never runs). */
+  startedAt?: number
   cuts?: string[]
 }
 export type QuestionCardItem = {
@@ -66,8 +40,8 @@ export type QuestionCardItem = {
   cardKind: 'question'
   id: string
   toolCallId: string
-  toolName: 'ask_user'
-  state: 'open' | 'answered' | 'closed' | 'expired'
+  toolName: typeof CARD_TOOLS.question
+  state: 'open' | 'answered' | 'closed'
   questions: readonly Question[]
   answers?: readonly Answer[]
 }
@@ -76,60 +50,42 @@ export type PlanCardItem = {
   cardKind: 'plan'
   id: string
   toolCallId: string
-  toolName: 'submit_plan'
-  state: 'open' | 'approved' | 'rejected' | 'closed' | 'expired'
+  toolName: typeof CARD_TOOLS.plan
+  state: 'open' | 'approved' | 'rejected' | 'closed'
   title: string
   plan: string
   path?: string
 }
-export type CardItem = QuestionCardItem | PlanCardItem
-export type ConexusItem = {
+type CardItem = QuestionCardItem | PlanCardItem
+type ConexusItem = {
   kind: 'conexus'
   id: string
   partType: string
   data: unknown
   cuts?: string[]
 }
-export type TranscriptItem = TextItem | ReasoningItem | ToolItem | CardItem | ConexusItem
+export type TranscriptItem =
+  | PersonItem
+  | TextItem
+  | ReasoningItem
+  | ToolItem
+  | CardItem
+  | ConexusItem
 
-const TASK_TOOLS = new Set(['task_write', 'task_update', 'task_complete', 'task_check'])
-
-export function isTaskTool(toolName: string): boolean {
-  const bare = toolName.replace(/^mastra_workspace_/, '')
-  return TASK_TOOLS.has(bare) || bare.startsWith('task_')
-}
-
-export const UNGROUPABLE_TOOLS = new Set([
-  'ask_user',
-  'submit_plan',
-  'skill',
-  'skill_read',
-  'skill_search',
-])
-
-export function extractThoughtSeconds(parts: readonly MastraPart[]): number | null {
+/** How long each thinking took, by the key the server gives it: its message and its place in it. */
+export function thoughtSeconds(parts: readonly MastraPart[]): Map<string, number> {
+  const seconds = new Map<string, number>()
   for (const part of parts) {
-    if (
-      part.type === 'data-conexus-thought' &&
-      part.data &&
-      typeof part.data === 'object' &&
-      'seconds' in part.data
-    ) {
-      const val = Reflect.get(part.data, 'seconds')
-      if (typeof val === 'number') return val
-    }
+    if (part.type !== 'data-conexus-thought') continue
+    const data = ThoughtData.safeParse(part.data)
+    if (data.success) seconds.set(data.data.id, data.data.seconds)
   }
-  return null
+  return seconds
 }
 
-const QuestionItemSchema = z.object({
-  question: z.string(),
-  header: z.string().optional(),
-  options: z.array(z.object({ label: z.string(), description: z.string().optional() })).optional(),
-  multiSelect: z.boolean().optional(),
-})
+const QuestionItemSchema = Question.partial({ options: true, multiSelect: true })
 
-export function parseQuestions(input: unknown): Question[] {
+function parseQuestions(input: unknown): Question[] {
   const parsed = z.object({ questions: z.array(QuestionItemSchema) }).safeParse(input)
   if (!parsed.success) return []
   return parsed.data.questions.map((q) => ({
@@ -140,14 +96,23 @@ export function parseQuestions(input: unknown): Question[] {
   }))
 }
 
-export function parseAnswers(input: unknown): Answer[] | undefined {
+function parseAnswers(input: unknown): Answer[] | undefined {
   const parsed = z
     .object({ answers: z.array(z.union([z.string(), z.array(z.string())])) })
     .safeParse(input)
   return parsed.success ? parsed.data.answers : undefined
 }
 
-export function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
+/** What Mastra's `submit_plan` returns once answered: the plan as submitted and the decision on it. */
+const SubmittedPlan = z.object({
+  submittedPlan: z.object({
+    action: z.string(),
+    title: z.string().optional(),
+    plan: z.string().optional(),
+  }),
+})
+
+function parsePlan(input: unknown): { title: string; plan: string; path?: string } {
   const parsed = z
     .object({
       title: z.string().optional(),
@@ -158,48 +123,70 @@ export function parsePlan(input: unknown): { title: string; plan: string; path?:
   return { title: parsed.data?.title ?? '', plan: parsed.data?.plan ?? '', path: parsed.data?.path }
 }
 
+type Invocation = Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation']
+
+/**
+ * A card from its call (Factory `awaitsPrompt`): open only while the call waits on the person, an
+ * answer once Mastra has one, closed once Mastra closed it without one; nothing while the call
+ * runs and has not yet said what it waits for.
+ */
+function cardState(inv: Invocation, waiting: boolean): 'open' | 'result' | 'closed' | 'none' {
+  if (inv.state === 'result') return 'result'
+  if (inv.state === 'output-error' || inv.state === 'output-denied') return 'closed'
+  return waiting ? 'open' : 'none'
+}
+
 export function invocationToItem(
-  inv: Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation'],
-  suspendedPayload: unknown,
+  inv: Invocation,
+  suspension: Suspended | undefined,
   cuts?: string[],
 ): TranscriptItem | null {
-  if (!ToolCallId.safeParse(inv.toolCallId).success || isTaskTool(inv.toolName)) return null
+  if (
+    !ToolCallId.safeParse(inv.toolCallId).success ||
+    TASK_TOOLS.some((name) => name === inv.toolName)
+  )
+    return null
 
-  if (inv.toolName === 'ask_user') {
-    const questions = parseQuestions(suspendedPayload ?? inv.args)
+  if (inv.toolName === CARD_TOOLS.question) {
+    const at = cardState(inv, suspension !== undefined)
+    if (at === 'none') return null
+    const questions = parseQuestions(
+      suspension === undefined ? inv.args : suspension.suspendPayload,
+    )
     const answers = parseAnswers(inv.result)
-    const isAnswered = inv.state === 'result' && answers !== undefined
-    const state = isAnswered ? 'answered' : inv.state === 'output-error' ? 'closed' : 'open'
+    const state = at === 'result' ? (answers !== undefined ? 'answered' : 'closed') : at
     return {
       kind: 'card',
       cardKind: 'question',
       id: inv.toolCallId,
       toolCallId: inv.toolCallId,
-      toolName: 'ask_user',
+      toolName: CARD_TOOLS.question,
       state,
       questions,
       answers,
     }
   }
 
-  if (inv.toolName === 'submit_plan') {
-    const planInfo = parsePlan(suspendedPayload ?? inv.args)
-    const action =
-      inv.result && typeof inv.result === 'object' ? Reflect.get(inv.result, 'action') : undefined
+  if (inv.toolName === CARD_TOOLS.plan) {
+    const at = cardState(inv, suspension !== undefined)
+    if (at === 'none') return null
+    const submitted = SubmittedPlan.safeParse(inv.result)
+    const planInfo = parsePlan(
+      submitted.data?.submittedPlan ??
+        (suspension === undefined ? inv.args : suspension.suspendPayload),
+    )
     const state =
-      inv.state === 'result' && action === 'rejected'
-        ? 'rejected'
-        : inv.state === 'result'
-          ? 'approved'
-          : inv.state === 'output-error'
-            ? 'closed'
-            : 'open'
+      at === 'result'
+        ? submitted.data?.submittedPlan.action === 'rejected'
+          ? 'rejected'
+          : 'approved'
+        : at
     return {
       kind: 'card',
       cardKind: 'plan',
       id: inv.toolCallId,
       toolCallId: inv.toolCallId,
-      toolName: 'submit_plan',
+      toolName: CARD_TOOLS.plan,
       state,
       title: planInfo.title,
       plan: planInfo.plan,
@@ -216,6 +203,7 @@ export function invocationToItem(
     args: inv.args,
     result: inv.result,
     isError: inv.isError ?? (inv.state === 'output-error' || inv.state === 'output-denied'),
+    errorText: inv.errorText,
     cuts,
   }
 }

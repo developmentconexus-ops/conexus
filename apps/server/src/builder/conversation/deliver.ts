@@ -5,7 +5,12 @@ function userMessage(id: string, contents: string) {
   return { type: 'user', id, contents } as const
 }
 
-type Options = { requestContext: RequestContext; requireDelivery: true; tracingOptions: object }
+type Options = {
+  requestContext: RequestContext | undefined
+  requireDelivery: true
+  tracingOptions?: object
+  ifIdle?: { behavior: 'discard' }
+}
 
 /** Puts a turn's question on the thread, as a message that wakes it. */
 export async function deliver(
