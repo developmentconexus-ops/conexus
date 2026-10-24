@@ -3,8 +3,13 @@
 // From @mastra/code-sdk 1.14.0, dist/auth/providers/anthropic.js with dist/auth/pkce.js and
 // dist/auth/authorization-input.js. Changed: TypeScript, node:crypto for PKCE, only the start, the
 // trade and the refresh, the reply checked, and a refusal that carries the vendor's status.
+
 import { createHash, randomBytes } from 'node:crypto'
+import { ProviderId } from '@conexus/hub-api'
 import { z } from 'zod'
+import { Failure } from '../../../platform/failure.ts'
+import { Credential } from '../../../platform/seal.ts'
+import type { SignInFlow } from '../sign-ins.ts'
 
 const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e'
 const AUTHORIZE_URL = 'https://claude.ai/oauth/authorize'
@@ -33,7 +38,7 @@ export class AnthropicRefusal extends Error {
   }
 }
 
-export function startAnthropicLogin(): { url: string; verifier: string } {
+function startAnthropicLogin(): { url: string; verifier: string } {
   const verifier = randomBytes(32).toString('base64url')
   const challenge = createHash('sha256').update(verifier).digest('base64url')
   const params = new URLSearchParams({
@@ -105,7 +110,7 @@ export async function refreshAnthropicTokens(refresh: string): Promise<Subscript
 }
 
 /** Trades the pasted code for the subscription's tokens with the verifier `start` gave. */
-export async function completeAnthropicLogin(input: string, verifier: string) {
+async function completeAnthropicLogin(input: string, verifier: string) {
   const { code, state } = parseAuthorizationInput(input)
   if (!code) throw new AnthropicRefusal('MISSING_CODE')
   if (!state || state !== verifier) throw new AnthropicRefusal('STATE_MISMATCH')
@@ -124,4 +129,41 @@ export async function completeAnthropicLogin(input: string, verifier: string) {
   })
   if (!response.ok) throw new AnthropicRefusal('EXCHANGE_REFUSED', response.status)
   return tokensOf(response)
+}
+
+// A wrong, used or late code is the person's to fix; a 5xx, no answer or a malformed reply is the
+// vendor down (502).
+// How long the Hub keeps a started Claude sign-in's verifier for its code (decision 0049).
+const CODE_SECONDS = 600
+
+function failureOf(error: unknown): Failure {
+  const refused =
+    error instanceof AnthropicRefusal && (error.status === undefined || error.status < 500)
+  const details = { provider: 'anthropic' }
+  return refused
+    ? new Failure('MODEL_ACCOUNT_REFUSED', { details, cause: error })
+    : new Failure('MODEL_ACCOUNT_UNAVAILABLE', { details, cause: error })
+}
+
+/**
+ * The Claude subscription's paste-code sign-in (decision 0049, criterion 2): the PKCE verifier is
+ * what waits, sealed; the trade gives `refresh`, `access` and `expires`, sealed whole.
+ */
+export function claudeSignIn(): SignInFlow {
+  return {
+    provider: ProviderId.parse('anthropic'),
+    seconds: CODE_SECONDS,
+    async start() {
+      const { url, verifier } = startAnthropicLogin()
+      return { url, pending: Credential.parse(verifier) }
+    },
+    async complete(pending, code) {
+      try {
+        const credentials = await completeAnthropicLogin(code, pending.reveal())
+        return Credential.parse(JSON.stringify(credentials))
+      } catch (error) {
+        throw failureOf(error)
+      }
+    },
+  }
 }
