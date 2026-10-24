@@ -14,6 +14,11 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Every test file is a new Node process that compiles the server's 1963 modules again: the cache
+# takes the import from 1.8 s to 1.3 s from the second process of a job on.
+env:
+  NODE_COMPILE_CACHE: /tmp/node-compile-cache
+
 jobs:
   check:
     runs-on: ubuntu-24.04
@@ -70,6 +75,19 @@ jobs:
           grep -ohE '^## U[0-9]+' docs/steps/*.md | grep -oE 'U[0-9]+' | while read -r unit; do
             npm run radius -- "$unit" "$SHA" < /dev/null
           done
+      # The workflows are code a pull request from inside the organization can change, so they are
+      # read by the two checkers that know them: actionlint for syntax and shell, zizmor for
+      # injection, permissions and unpinned actions. Each runs from an image fixed by digest (versions
+      # in the comments); a finding is fixed in the workflow, and a false positive carries zizmor's own
+      # inline ignore comment with the reason.
+      - name: actionlint
+        run: docker run --rm --volume "$PWD:/repo" --workdir /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color # v1.7.12
+      - name: zizmor
+        env:
+          ZIZMOR_GITHUB_TOKEN: ${{ github.token }}
+        run: docker run --rm --volume "$PWD:/repo" --workdir /repo --env ZIZMOR_GITHUB_TOKEN ghcr.io/zizmorcore/zizmor@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9 --no-progress --color always .github # v1.31.1
+      # Only a critical advisory fails the run: the lower ones are read in the step's output.
+      - run: npm audit --audit-level=critical
 
   # The suites run as parallel jobs, each on its own runner: one job took the sum of them (8 to 9
   # minutes), and these take the longest of them. Each writes its slowest tests to the run summary.
@@ -89,7 +107,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     services:
       postgres:
         image: postgres:18@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
@@ -116,7 +134,7 @@ jobs:
       # and migrate.test.ts changes the roles of the whole server. The shards are the parallelism.
       - run: npm test -w @conexus/server
         env:
-          TEST_SHARD: ${{ matrix.shard }}/4
+          TEST_SHARD: ${{ matrix.shard }}/6
 
   web:
     runs-on: ubuntu-24.04
@@ -126,7 +144,9 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/install # zizmor: ignore[self-repository] actionlint 1.7.12 rejects the $/ form
-      - run: npm test -w @conexus/web
+      - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
+      # The screens in a real Chromium; their vitest half runs in packages, beside this job.
+      - run: npm run test:browser -w @conexus/web
       - run: npm run build
 
   packages:
@@ -140,6 +160,7 @@ jobs:
       # The check program drives a real Chromium (decision 0055).
       - run: npm exec -w @conexus/web -- playwright-core install chromium-headless-shell
       - run: npm test -w @conexus/app -w @conexus/app-contract -w @conexus/hub-api
+      - run: npm run test:unit -w @conexus/web
 
   e2e:
     runs-on: ubuntu-24.04
@@ -289,43 +310,9 @@ jobs:
       - name: The final image sends rendered HTML and text through the real Hub
         run: npm run test:image
 
-  # The workflows are code a pull request from inside the organization can change, so they are read
-  # by the two checkers that know them: actionlint for syntax and shell, zizmor for injection,
-  # permissions and unpinned actions. Each runs from an image fixed by digest (versions in the
-  # comments); a finding is fixed in the workflow, and a false positive carries zizmor's own inline
-  # ignore comment with the reason.
-  workflows:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: actionlint
-        run: docker run --rm --volume "$PWD:/repo" --workdir /repo rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color # v1.7.12
-      - name: zizmor
-        env:
-          ZIZMOR_GITHUB_TOKEN: ${{ github.token }}
-        run: docker run --rm --volume "$PWD:/repo" --workdir /repo --env ZIZMOR_GITHUB_TOKEN ghcr.io/zizmorcore/zizmor@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9 --no-progress --color always .github # v1.31.1
-
-  # Only a critical advisory fails the run: the lower ones are read in the step's output.
-  audit:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-          cache-dependency-path: package-lock.json
-      - run: npm audit --audit-level=critical
-
   ci:
     if: always()
-    needs: [check, scripts, server, web, packages, e2e, removals-plan, removals, image, workflows, audit]
+    needs: [check, scripts, server, web, packages, e2e, removals-plan, removals, image]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -335,7 +322,7 @@ jobs:
       - name: Every job must have succeeded
         env:
           # No removal row to prove is a pass the plan job reported, never a job skipped for another reason.
-          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }} ${{ needs.workflows.result }} ${{ needs.audit.result }}
+          RESULTS: ${{ needs.check.result }} ${{ needs.scripts.result }} ${{ needs.server.result }} ${{ needs.web.result }} ${{ needs.packages.result }} ${{ needs.e2e.result }} ${{ needs.removals-plan.result }} ${{ needs.removals.result == 'skipped' && needs.removals-plan.result == 'success' && needs.removals-plan.outputs.selected == '0' && 'success' || needs.removals.result }} ${{ github.event_name == 'pull_request' && needs.image.result || 'success' }}
         run: |
           echo "results: $RESULTS"
           for result in $RESULTS; do
@@ -345,7 +332,9 @@ jobs:
             fi
           done
       # Where the time went: the run's own record of each job and step, read back from GitHub, so
-      # the slowest step of every run is one click away and no service holds the numbers.
+      # the job that held the run and the slowest step of every run are one click away and no
+      # service holds the numbers. "Ended" counts from the first job's creation: the top row is the
+      # end of the critical path, and a large "Queued" is runners, not tests.
       - name: The jobs and the slowest steps of this run
         if: always()
         continue-on-error: true
@@ -354,10 +343,11 @@ jobs:
         run: |
           # shellcheck disable=SC2016 # the jq program is single-quoted so the shell leaves its $variables alone
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}/jobs" --paginate \
-            --jq '.jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, seconds: (($job.completed_at | fromdate) - ($job.started_at | fromdate)), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}' \
+            --jq '.jobs[] | select(.completed_at != null and .name != "ci") | . as $job | {job: $job.name, created: ($job.created_at | fromdate), started: ($job.started_at | fromdate), ended: ($job.completed_at | fromdate), steps: [$job.steps[] | select(.completed_at != null and .started_at != null) | {step: .name, seconds: ((.completed_at | fromdate) - (.started_at | fromdate))}]}' \
             | jq -s -r '
-              "### Jobs, longest first", "", "| Seconds | Job |", "| ---: | --- |",
-              (sort_by(-.seconds)[] | "| \(.seconds) | \(.job) |"), "",
+              (map(.created) | min) as $start |
+              "### Jobs, last to end first", "", "| Ended | Queued | Ran | Job |", "| ---: | ---: | ---: | --- |",
+              (sort_by(-.ended)[] | "| \(.ended - $start) | \(.started - .created) | \(.ended - .started) | \(.job) |"), "",
               "### Slowest steps", "", "| Seconds | Job | Step |", "| ---: | --- | --- |",
               ([.[] | .job as $job | .steps[] | {job: $job, step, seconds}] | sort_by(-.seconds) | .[:15][] | "| \(.seconds) | \(.job) | \(.step) |")
             ' >> "$GITHUB_STEP_SUMMARY"
