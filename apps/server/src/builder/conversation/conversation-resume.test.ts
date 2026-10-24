@@ -161,7 +161,11 @@ test('depois de um reinício, uma reconexão com Last-Event-ID do aviso recebe o
   }
   await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
   const beside = await hubBeside(t, hub)
+  // The person's screen is connected to the new copy, which keeps the conversation open there.
+  const connected = await streamOf(beside, ana, url)
+  t.after(() => connected.close())
   await beside.restart()
+  assert.deepEqual((await connected.turn()).at(-1), { type: 'turnEnd', reason: 'aborted' })
   const reconnected = await streamOf(beside, ana, url, `${runId}.1`)
   t.after(() => reconnected.close())
   assert.deepEqual(await reconnected.next(), { type: 'turnEnd', reason: 'aborted' })
