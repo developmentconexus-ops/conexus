@@ -103,7 +103,7 @@ function useSending(
         const id = questionIdOf(params.conversationId, attemptKey)
         if (answering) {
           steered = id
-          dispatch({ type: 'steer', steer: { id, content } })
+          dispatch({ type: 'steer', id, text: content })
         } else dispatch({ type: 'sent', asked: id })
         return post.mutateAsync({ params, body: { content }, attemptKey })
       })
@@ -232,11 +232,7 @@ function Screen(params: Params) {
     <>
       <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
       <div className="min-h-40 flex-1">
-        <Transcript
-          turns={turns}
-          steers={isTurnRunning ? state.turn.steers : []}
-          model={conversation.model}
-        />
+        <Transcript turns={turns} model={conversation.model} />
       </div>
       {error !== undefined && (
         <p role="alert" className="px-md">

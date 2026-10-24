@@ -13,18 +13,25 @@ import { BuilderTurn } from './builder-turn.tsx'
 import type { TranscriptItem } from './parts.ts'
 import { itemsOf } from './parts.ts'
 import { PersonBubble, PersonTurn } from './person-turn.tsx'
-import type { Steer } from './steers.ts'
 import { STEER_PENDING } from './text.ts'
 import type { Entry, Timeline } from './timeline.ts'
 import { merge } from './timeline.ts'
 
-type Group = { key: MessageId; person: Message | undefined; builder: Message[] }
+type Group = {
+  key: MessageId
+  person: Message | undefined
+  pending?: string
+  builder: Message[]
+}
 
 /** The turns of the conversation (Factory `groupTurns`): each opens at the person's message. */
 function turnsOf(entries: readonly Entry[]): Group[] {
   const turns: Group[] = []
+  const pending: Group[] = []
   for (const entry of entries) {
-    if (entry.kind === 'asked') turns.push({ key: entry.id, person: undefined, builder: [] })
+    if (entry.kind === 'local')
+      pending.push({ key: entry.id, person: undefined, pending: entry.text, builder: [] })
+    else if (entry.kind === 'asked') turns.push({ key: entry.id, person: undefined, builder: [] })
     else if (entry.message.role === 'person')
       turns.push({ key: entry.message.id, person: entry.message, builder: [] })
     else {
@@ -34,13 +41,15 @@ function turnsOf(entries: readonly Entry[]): Group[] {
       else last.builder.push(entry.message)
     }
   }
-  return turns
+  return [...turns, ...pending]
 }
 
 /** A turn as the transcript draws it: the person's message and the Builder's rows, under one key. */
 export type ShownTurn = {
   key: MessageId
   person: Message | undefined
+  /** The text of a message sent into the running turn that Mastra has not read. */
+  pending: string | undefined
   items: readonly TranscriptItem[]
   model: ModelId | null
   streaming: boolean
@@ -58,6 +67,7 @@ export function shownOf(
     return {
       key: turn.key,
       person: turn.person,
+      pending: turn.pending,
       items: itemsOf(turn.builder, { ...timeline, live: streaming }),
       model: turn.builder.findLast((message) => message.model !== null)?.model ?? null,
       streaming,
@@ -75,11 +85,7 @@ export function shownOf(
  * message sent into the running turn stays pinned below the answer, saying so, until the stream
  * tells Mastra read it (design V54).
  */
-export function Transcript(props: {
-  turns: readonly ShownTurn[]
-  steers: readonly Steer[]
-  model: ModelId
-}) {
+export function Transcript(props: { turns: readonly ShownTurn[]; model: ModelId }) {
   const { turns } = props
   return (
     <MessageScrollerProvider autoScroll defaultScrollPosition="end">
@@ -95,6 +101,9 @@ export function Transcript(props: {
             {turns.map((turn) => (
               <MessageScrollerItem key={turn.key} messageId={turn.key}>
                 {turn.person !== undefined && <PersonTurn message={turn.person} />}
+                {turn.pending !== undefined && (
+                  <PersonBubble text={turn.pending} footer={<span>{STEER_PENDING}</span>} />
+                )}
                 {(turn.items.length > 0 || turn.streaming) && (
                   <BuilderTurn
                     items={turn.items}
@@ -102,11 +111,6 @@ export function Transcript(props: {
                     streaming={turn.streaming}
                   />
                 )}
-              </MessageScrollerItem>
-            ))}
-            {props.steers.map((steer) => (
-              <MessageScrollerItem key={steer.id} messageId={steer.id}>
-                <PersonBubble text={steer.content} footer={<span>{STEER_PENDING}</span>} />
               </MessageScrollerItem>
             ))}
           </MessageScrollerContent>

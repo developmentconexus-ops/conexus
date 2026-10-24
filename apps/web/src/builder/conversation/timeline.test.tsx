@@ -249,6 +249,12 @@ test('uma chamada em grupo não volta a zero: cada linha guarda quando a tela a 
   expect(rows).toMatchObject([{ kind: 'group' }])
 })
 
+function locals(state: Live) {
+  return state.kind === 'idle'
+    ? []
+    : state.turn.timeline.entries.filter((entry) => entry.kind === 'local')
+}
+
 const A = MessageId.parse('conversa:a')
 const B = MessageId.parse('conversa:b')
 
@@ -259,8 +265,8 @@ function personSaid(id: MessageId, text: string): Message {
 test('um quadro do turno depois de reconectar mantém só as mensagens que ele ainda não traz', () => {
   const sent = told(opening)
   const steered = [
-    { type: 'steer', steer: { id: A, content: 'primeira' } },
-    { type: 'steer', steer: { id: B, content: 'segunda' } },
+    { type: 'steer', id: A, text: 'primeira' },
+    { type: 'steer', id: B, text: 'segunda' },
   ] as const
   const pending = steered.reduce<Live>(live, sent)
   const again: ConversationEvent = {
@@ -269,14 +275,14 @@ test('um quadro do turno depois de reconectar mantém só as mensagens que ele a
     startedAt: STARTED,
   }
   const state = live(pending, again)
-  expect(state.kind === 'answering' && state.turn.steers).toEqual([{ id: B, content: 'segunda' }])
+  expect(locals(state)).toEqual([{ kind: 'local', id: B, text: 'segunda' }])
 })
 
 test('a mensagem lida abre a sua volta no lugar em que o Mastra a leu, sem se fundir ao texto do Builder', () => {
   const state = told(
     opening,
     start(STEP_1, [{ type: 'text', text: 'Antes.' }]),
-    { type: 'steer', steer: { id: A, content: 'Só eu cadastro.' } },
+    { type: 'steer', id: A, text: 'Só eu cadastro.' },
     { type: 'message_start', message: personSaid(A, 'Só eu cadastro.') },
     start(STEP_2, [{ type: 'text', text: 'Depois.' }]),
   )
@@ -286,14 +292,14 @@ test('a mensagem lida abre a sua volta no lugar em que o Mastra a leu, sem se fu
     [undefined, ['text']],
     [A, ['text']],
   ])
-  expect(state.kind === 'answering' && state.turn.steers).toEqual([])
+  expect(locals(state)).toEqual([])
 })
 
 test('a mensagem que o Builder não leu volta quando a volta acaba, uma vez, e a que falhou sai', () => {
   const state = told(
     opening,
-    { type: 'steer', steer: { id: A, content: 'não lida' } },
-    { type: 'steer', steer: { id: B, content: 'falhou' } },
+    { type: 'steer', id: A, text: 'não lida' },
+    { type: 'steer', id: B, text: 'falhou' },
     { type: 'unsteered', id: B },
     { type: 'turnEnd', reason: 'aborted' },
   )

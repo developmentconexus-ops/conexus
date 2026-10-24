@@ -75,6 +75,25 @@ test('uma leitura no meio da volta põe o que só o stream disse junto do que el
   ])
 })
 
+test('a mensagem enviada durante o trabalho fica embaixo, pendente, e a leitura que a traz a mostra uma vez só', () => {
+  const state = told(
+    { type: 'sent', asked: ASKED },
+    opening,
+    { type: 'steer', id: A, text: 'No meio.' },
+    start(STEP_1, [text('Primeiro.')]),
+  )
+  const pending = turns(state)
+  expect(pending.map((turn) => [turn.key, turn.pending])).toEqual([
+    [ASKED, undefined],
+    [A, 'No meio.'],
+  ])
+  const read = [personSaid(ASKED, 'pergunta'), personSaid(A, 'No meio.'), message(TURN)]
+  expect(turns(state, read).map((turn) => [turn.key, turn.pending, turn.person?.id])).toEqual([
+    [ASKED, undefined, ASKED],
+    [A, undefined, A],
+  ])
+})
+
 test('a pergunta enviada que falha sai da linha do tempo', () => {
   expect(told({ type: 'sent', asked: ASKED }, { type: 'unsent' })).toEqual(IDLE)
 })

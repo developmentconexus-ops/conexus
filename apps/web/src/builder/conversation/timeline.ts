@@ -9,8 +9,6 @@ import type {
 import { applyUpdate } from '@conexus/hub-api'
 import type { Running } from './parts.ts'
 import { heardOf } from './parts.ts'
-import type { Steer } from './steers.ts'
-import { steered } from './steers.ts'
 
 type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
 type MemoryFailure = 'observation' | 'reflection' | 'buffering'
@@ -18,9 +16,15 @@ type MemoryFailure = 'observation' | 'reflection' | 'buffering'
 /**
  * A line of the conversation: a message by its id, Mastra's or ours under the run's id; or the
  * question the screen sent, by the id the server saves it under (`questionIdOf`), until a read
- * holds it. It opens its turn, so the turn keeps one key before the read and after.
+ * holds it. It opens its turn, so the turn keeps one key before the read and after. A `local`
+ * entry is a message sent into the running turn (Factory `localUser`): it has the same id, so the
+ * person's `message_start`, or a read, takes its place by id, and it is pending until then. A send
+ * that fails removes it, and the text stays in the field.
  */
-export type Entry = { kind: 'message'; message: Message } | { kind: 'asked'; id: MessageId }
+export type Entry =
+  | { kind: 'message'; message: Message }
+  | { kind: 'asked'; id: MessageId }
+  | { kind: 'local'; id: MessageId; text: string }
 
 /**
  * The conversation as the stream told it, one entry per id (Factory `upsertMessage`), and what
@@ -38,8 +42,6 @@ export type Timeline = {
 
 type Turn = {
   timeline: Timeline
-  /** What the person sent into the turn that no `message_start` has confirmed Mastra read. */
-  steers: readonly Steer[]
   startedAt: string | null
   tasks: readonly Task[] | null
   memory: OMProgress | null
@@ -47,7 +49,7 @@ type Turn = {
   memoryFailed: MemoryFailure | null
 }
 
-/** `returned`: the steers no `message_start` confirmed before the turn ended, to go back in the field. */
+/** `returned`: the texts no `message_start` confirmed before the turn ended, to go back in the field. */
 export type Live =
   | { kind: 'idle' }
   | { kind: 'answering' | 'resuming'; turn: Turn }
@@ -60,7 +62,7 @@ export type Step =
   | { type: 'sent'; asked: MessageId }
   | { type: 'unsent' }
   | { type: 'reconnected'; inProgress: boolean }
-  | { type: 'steer'; steer: Steer }
+  | { type: 'steer'; id: MessageId; text: string }
   | { type: 'unsteered'; id: MessageId }
   | { type: 'returnedShown' }
 
@@ -68,7 +70,6 @@ const NO_TIMELINE: Timeline = { entries: [], ours: null, suspended: {}, running:
 
 const NO_TURN: Turn = {
   timeline: NO_TIMELINE,
-  steers: [],
   startedAt: null,
   tasks: null,
   memory: null,
@@ -132,11 +133,12 @@ function handleOmPhaseEvent(turn: Turn, step: OmPhaseEvent): Turn {
 /** The turn the stream opens with: the turn so far as its messages, ours the last. */
 function opened(step: Extract<ConversationEvent, { type: 'turn' }>, was: Turn): Turn {
   const held = new Set(step.messages.map((message) => message.id))
-  const asked = was.timeline.entries.filter((entry) => entry.kind === 'asked')
-  const entries = [...asked, ...step.messages.map(entryOf)]
+  const kept = was.timeline.entries.filter(
+    (entry) => entry.kind === 'asked' || (entry.kind === 'local' && !held.has(entry.id)),
+  )
+  const entries = [...kept, ...step.messages.map(entryOf)]
   return {
     ...NO_TURN,
-    steers: was.steers.filter((steer) => !held.has(steer.id)),
     startedAt: step.startedAt,
     timeline: { ...NO_TIMELINE, entries, ours: step.messages.at(-1)?.id ?? null },
   }
@@ -144,7 +146,9 @@ function opened(step: Extract<ConversationEvent, { type: 'turn' }>, was: Turn): 
 
 /** A message told again, as Mastra's `message_start` does, takes the place of its first telling. */
 function started(timeline: Timeline, message: Message): readonly Entry[] {
-  const { entries } = timeline
+  const entries = timeline.entries.filter(
+    (entry) => entry.kind !== 'local' || entry.id !== message.id,
+  )
   const at = entries.findIndex((entry) => idOf(entry) === message.id)
   if (at !== -1) return entries.with(at, entryOf(message))
   const ours = entries.findIndex((entry) => idOf(entry) === timeline.ours)
@@ -233,20 +237,20 @@ function nextTurn(
       return handleOmPhaseEvent(turn, step)
     case 'agent_end':
       return { ...turn, omPhase: 'idle' }
-    case 'message_start': {
-      const steers = turn.steers.filter((steer) => steer.id !== step.message.id)
-      return { ...turn, steers, timeline: event(turn.timeline, step) }
-    }
     default:
       return { ...turn, timeline: event(turn.timeline, step) }
   }
 }
 
 function ended(turn: Turn): Live {
+  const { entries } = turn.timeline
   return {
     kind: 'ended',
-    turn: { ...turn, steers: [] },
-    returned: turn.steers.map((each) => each.content),
+    turn: {
+      ...turn,
+      timeline: { ...turn.timeline, entries: entries.filter((entry) => entry.kind !== 'local') },
+    },
+    returned: entries.flatMap((entry) => (entry.kind === 'local' ? [entry.text] : [])),
   }
 }
 
@@ -257,8 +261,8 @@ function running(state: Live): state is Extract<Live, { kind: 'answering' | 'res
 /** The question sent leaves the timeline when its send fails; with nothing else told, so does the turn. */
 function unsent(state: Live): Live {
   if (state.kind !== 'answering') return state
-  const entries = state.turn.timeline.entries.filter((entry) => entry.kind === 'message')
-  if (entries.length === 0) return IDLE
+  const entries = state.turn.timeline.entries.filter((entry) => entry.kind !== 'asked')
+  if (!entries.some((entry) => entry.kind === 'message')) return IDLE
   return { ...state, turn: { ...state.turn, timeline: { ...state.turn.timeline, entries } } }
 }
 
@@ -281,9 +285,18 @@ export function live(state: Live, step: Step): Live {
     case 'turnEnd':
       return running(state) ? ended(state.turn) : state
     case 'steer':
-    case 'unsteered':
+    case 'unsteered': {
       if (!running(state)) return state
-      return { ...state, turn: { ...state.turn, steers: steered(state.turn.steers, step) } }
+      const { timeline } = state.turn
+      const held = timeline.entries.some((entry) => idOf(entry) === step.id)
+      const entries =
+        step.type === 'unsteered'
+          ? timeline.entries.filter((entry) => entry.kind !== 'local' || entry.id !== step.id)
+          : held
+            ? timeline.entries
+            : [...timeline.entries, { kind: 'local', id: step.id, text: step.text } as const]
+      return { ...state, turn: { ...state.turn, timeline: { ...timeline, entries } } }
+    }
     case 'returnedShown':
       return state.kind === 'ended' ? { ...state, returned: [] } : state
     default: {

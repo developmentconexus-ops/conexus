@@ -15,7 +15,14 @@ const { openConversation } = screens(hubServer())
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 
 function turnOf(items: readonly TranscriptItem[], streaming: boolean): ShownTurn {
-  return { key: MessageId.parse('p1'), person: undefined, items, model: null, streaming }
+  return {
+    key: MessageId.parse('p1'),
+    person: undefined,
+    pending: undefined,
+    items,
+    model: null,
+    streaming,
+  }
 }
 
 function toolItem(id: string, toolName = 'mastra_workspace_read_file'): TranscriptItem {
@@ -70,7 +77,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
   }
 
   const { rerender } = render(
-    <Transcript turns={[turnOf([reasoningItemRunning], true)]} steers={[]} model={MODEL} />,
+    <Transcript turns={[turnOf([reasoningItemRunning], true)]} model={MODEL} />,
   )
   expect(screen.getByText('Pensando…')).toBeTruthy()
 
@@ -82,7 +89,7 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
     streaming: false,
   }
 
-  rerender(<Transcript turns={[turnOf([reasoningItemDone], false)]} steers={[]} model={MODEL} />)
+  rerender(<Transcript turns={[turnOf([reasoningItemDone], false)]} model={MODEL} />)
   expect(screen.queryByText('Pensando…')).toBeNull()
   const trigger = screen.getByRole('button', { name: 'Pensou por 6 s' })
   expect(trigger.getAttribute('aria-expanded')).toBe('false')
@@ -113,7 +120,6 @@ test('relido, o raciocínio do passo diz "Pensou por N s" com o tempo guardado n
         ],
         false,
       )}
-      steers={[]}
       model={MODEL}
     />,
   )
@@ -129,9 +135,7 @@ test('raciocínio sem tempo diz só "Pensou" e abre no texto (Critério 9)', asy
     streaming: false,
   }
 
-  render(
-    <Transcript turns={[turnOf([reasoningWithoutSeconds], false)]} steers={[]} model={MODEL} />,
-  )
+  render(<Transcript turns={[turnOf([reasoningWithoutSeconds], false)]} model={MODEL} />)
   const trigger = screen.getByRole('button', { name: 'Pensou' })
   expect(trigger).toBeTruthy()
   fireEvent.click(trigger)
@@ -144,9 +148,7 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
     toolItem('t-2', 'mastra_workspace_grep'),
   ]
 
-  const { rerender } = render(
-    <Transcript turns={[turnOf(twoTools, false)]} steers={[]} model={MODEL} />,
-  )
+  const { rerender } = render(<Transcript turns={[turnOf(twoTools, false)]} model={MODEL} />)
   expect(screen.getByText(/Leu um arquivo/)).toBeTruthy()
   expect(screen.getByText(/Buscou no código/)).toBeTruthy()
   expect(screen.queryByText(/ferramentas:/)).toBeNull()
@@ -158,7 +160,7 @@ test('uma ou duas ferramentas são linhas; três ou mais viram um grupo fechado 
     toolItem('t-4', 'mastra_workspace_edit_file'),
   ]
 
-  rerender(<Transcript turns={[turnOf(fourTools, false)]} steers={[]} model={MODEL} />)
+  rerender(<Transcript turns={[turnOf(fourTools, false)]} model={MODEL} />)
   const group = screen.getByRole('button', { name: /4 ferramentas/ })
   expect(group.getAttribute('aria-expanded')).toBe('false')
 
@@ -187,7 +189,7 @@ test('skill, ask_user e submit_plan nunca se agrupam mesmo com 3 ou mais ferrame
     toolItem('t-4', 'mastra_workspace_read_file'),
   ]
 
-  render(<Transcript turns={[turnOf(itemsWithUngroupables, false)]} steers={[]} model={MODEL} />)
+  render(<Transcript turns={[turnOf(itemsWithUngroupables, false)]} model={MODEL} />)
   // None of the runs reaches length >= 3, so no group button exists:
   expect(screen.queryByText(/ferramentas:/)).toBeNull()
   expect(screen.getByText(/Usou a skill conexus-build/)).toBeTruthy()
@@ -203,7 +205,7 @@ test('task_* tools não têm linha na conversa (Critério 9)', () => {
   )
   expect(itemsWithTasks).toEqual([])
 
-  render(<Transcript turns={[turnOf(itemsWithTasks, false)]} steers={[]} model={MODEL} />)
+  render(<Transcript turns={[turnOf(itemsWithTasks, false)]} model={MODEL} />)
   expect(screen.queryByText(/tarefa/i)).toBeNull()
   expect(screen.queryByRole('button', { name: /ferramenta|tarefa/i })).toBeNull()
 })
