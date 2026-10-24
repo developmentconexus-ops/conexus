@@ -1,50 +1,31 @@
-import { WIRE_LIMITS } from '@conexus/hub-api'
+import { ToolCallId } from '@conexus/hub-api'
+import type { AgentControllerEvent } from '@mastra/core/agent-controller'
+import type { Live } from './live.ts'
+import { tell } from './tell.ts'
+import { cutTail, wireEvent, wireShell } from './wire.ts'
 
 /** A running command's lines are said at most this often; all of them once more when it exits. */
 const SAID_EVERY_MS = 1000
-const { outputLines, outputBytes } = WIRE_LIMITS
 
-/** The end of a command's output as its row shows it, and whether lines before it were left out. */
-export type Tail = { output: string[]; cut: boolean }
-
-/**
- * The end of a command's output: the last lines the row shows, at most `WIRE_LIMITS.outputLines`
- * and `outputBytes`, kept as they arrive so a long run holds no more than that.
- */
-export class ShellTail {
-  #tail = ''
-  #dropped = false
-  #saidAt = 0
-
-  add(output: string): void {
-    const joined = this.#tail + output
-    this.#tail = joined.slice(-outputBytes * 2)
-    this.#dropped ||= this.#tail.length < joined.length
-  }
-
-  /** The tail of the command still running, or none if one was said within `SAID_EVERY_MS`. */
-  running(): Tail | undefined {
-    if (Date.now() - this.#saidAt < SAID_EVERY_MS) return undefined
-    this.#saidAt = Date.now()
-    return this.tail()
-  }
-
-  /** The end of the output as it is, cut to our limits of lines and bytes. */
-  tail(): Tail {
-    const lines = this.#tail.split('\n')
-    if (lines.at(-1) === '') lines.pop()
-    const kept = lines.slice(-outputLines)
-    while (kept.length > 1 && Buffer.byteLength(kept.join('\n')) > outputBytes) kept.shift()
-    const [only] = kept
-    const long = kept.length === 1 && only !== undefined && only.length > outputBytes
-    if (long) kept[0] = only.slice(-outputBytes)
-    return { output: kept, cut: this.#dropped || long || kept.length < lines.length }
-  }
-}
-
-/** The end of a whole output, as a command's tail keeps it. */
-export function tailOf(output: string): Tail {
-  const tail = new ShellTail()
-  tail.add(output)
-  return tail.tail()
+/** A command's output, kept to its last lines: said while it runs, and once more when it exits. */
+export function onShellEvent(
+  live: Live,
+  event: Extract<AgentControllerEvent, { type: 'shell_output' | 'command_exit' }>,
+): void {
+  const turn = live.turn
+  if (turn === undefined || turn.ended) return
+  const exited = event.type === 'command_exit'
+  if (!exited && Date.now() - (turn.shells.get(event.toolCallId) ?? 0) < SAID_EVERY_MS) return
+  if (exited) turn.shells.delete(event.toolCallId)
+  else turn.shells.set(event.toolCallId, Date.now())
+  const output = live.session.displayState.get().activeTools.get(event.toolCallId)?.shellOutput
+  const heard = cutTail(output ?? '', false)
+  const stream = event.type === 'shell_output' ? event.stream : 'stdout'
+  tell(
+    live,
+    turn,
+    wireShell({ toolCallId: ToolCallId.parse(event.toolCallId), tail: heard, stream }),
+  )
+  const wired = wireEvent(event)
+  if (exited && wired !== undefined) tell(live, turn, wired)
 }

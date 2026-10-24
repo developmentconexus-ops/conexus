@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { asked, conversing, messagesOf, title } from './test-conversation.ts'
+import { failuresOf } from './test-parts.ts'
 
 const CPF = '123.456.789-09'
 const TEXT = 'cliente-de-verdade-da-padaria'
@@ -54,5 +55,28 @@ test('a linha do turno leva como o modelo terminou quando não foi normal: no li
   const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
   assert.equal(ended?.fields.end, 'error')
   assert.equal(ended?.fields.finishReason, 'length')
-  assert.equal(ended?.fields.errorCode, 'MODEL_CALL_FAILED')
+  assert.equal(ended?.fields.errorCode, 'MODEL_ANSWER_CUT')
+  assert.deepEqual(failuresOf(events), ['MODEL_ANSWER_CUT'])
+})
+
+test('uma recusa do modelo termina o turno com MODEL_REFUSED, sem o texto do fornecedor (14.2, critério 40)', async (t) => {
+  const { hub, ana, conversations, lines } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    return { kind: 'blocks', blocks: [{ type: 'text', text: 'Não posso' }], stop: 'refusal' }
+  })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
+  const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
+  assert.equal(ended?.fields.finishReason, 'content-filter')
+  assert.equal(ended?.fields.errorCode, 'MODEL_REFUSED')
+  assert.deepEqual(failuresOf(events), ['MODEL_REFUSED'])
+  const kept = await messagesOf(hub, ana, url)
+  assert.deepEqual(
+    failuresOf(kept.map((message) => ({ type: 'message_start' as const, message }))),
+    ['MODEL_REFUSED'],
+  )
+  assert.doesNotMatch(
+    JSON.stringify(lines) + JSON.stringify(events) + JSON.stringify(kept),
+    /content filter|stopped/i,
+  )
 })

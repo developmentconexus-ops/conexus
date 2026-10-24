@@ -7,8 +7,6 @@ import type {
 } from '@mastra/core/agent-controller'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
-import type { Tail } from './shell.ts'
-import { tailOf } from './shell.ts'
 
 /**
  * The only place that cuts what Mastra holds before it leaves for the screen (card of step 14.2,
@@ -18,6 +16,29 @@ import { tailOf } from './shell.ts'
  * a payload by tool and does not limit its size, so the limit is ours.
  */
 const DEEPEST = 8
+
+/** The end of a command's output as its row shows it, and whether lines before it were left out. */
+export type Tail = { output: string[]; cut: boolean }
+
+/**
+ * The last lines of a command's output the row shows, at most `WIRE_LIMITS.outputLines` and
+ * `outputBytes`; `dropped` says the output was already cut before it came here.
+ */
+export function cutTail(output: string, dropped: boolean): Tail {
+  const { outputLines, outputBytes } = WIRE_LIMITS
+  const end = output.slice(-outputBytes * 2)
+  const lines = end.split('\n')
+  if (lines.at(-1) === '') lines.pop()
+  const kept = lines.slice(-outputLines)
+  while (kept.length > 1 && Buffer.byteLength(kept.join('\n')) > outputBytes) kept.shift()
+  const [only] = kept
+  const long = kept.length === 1 && only !== undefined && only.length > outputBytes
+  if (long) kept[0] = only.slice(-outputBytes)
+  return {
+    output: kept,
+    cut: dropped || end.length < output.length || long || kept.length < lines.length,
+  }
+}
 
 /** A failed call's reason, cut as any text of a call. */
 function cutText(text: string, cuts: string[]): string {
@@ -76,7 +97,7 @@ function cutPart(part: MastraPart): MastraPart {
     const { toolInvocation } = part
     const { args, result, errorText } = toolInvocation
     const command = toolInvocation.toolName === WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND
-    const output = command && typeof result === 'string' ? tailOf(result) : undefined
+    const output = command && typeof result === 'string' ? cutTail(result, false) : undefined
     if (output?.cut) cuts.push('toolInvocation.result')
     const cutResult =
       output === undefined ? cutLeaves(result, 'toolInvocation.result', cuts) : outputText(output)
@@ -101,21 +122,9 @@ function cutPart(part: MastraPart): MastraPart {
   return cuts.length === 0 ? { ...part, data } : { ...part, data, cuts }
 }
 
-/** The parts Mastra keeps in a message that the screen reads: a step, a source or a file stay inside. */
-type Known = Extract<
-  MastraDBMessage['content']['parts'][number],
-  { type: 'text' | 'reasoning' | 'tool-invocation' }
->
-
-/** The proof that what Mastra keeps of these parts fits the schema of the Hub (code C27). */
-function fits(part: Known): z.input<typeof MastraPart> {
-  return part
-}
-
 /** What the screen gets of one of Mastra's parts, or none for the parts that stay inside. */
 function wirePart(part: MastraDBMessage['content']['parts'][number]): MastraPart | undefined {
-  const known = part.type === 'text' || part.type === 'reasoning' || part.type === 'tool-invocation'
-  const read = MastraPart.safeParse(known ? fits(part) : part)
+  const read = MastraPart.safeParse(part)
   return read.success ? cutPart(read.data) : undefined
 }
 

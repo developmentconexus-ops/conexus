@@ -50,8 +50,8 @@ function registerReads(app: FastifyInstance, deps: Deps) {
   serve(app, readConversation, async (input) => {
     const { person, params } = input
     const row = await store.owned({ person, ...params })
-    const inProgress = await sessions.inProgressAfter(params.conversationId)
-    const memory = await sessions.memoryOf(params.conversationId)
+    const inProgress = sessions.inProgressAfter(params.conversationId)
+    const memory = sessions.memoryOf(params.conversationId)
     const read = await historyOf(builder, ownerOf(input), params.conversationId, {
       inProgress,
       memory,

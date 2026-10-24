@@ -2,9 +2,9 @@ import type { ConversationEvent, MessageId } from '@conexus/hub-api'
 import { releaseCards, takeCards } from './cards.ts'
 import { deliver } from './deliver.ts'
 import type { Listener, Live, Question } from './live.ts'
-import { openTurn } from './live.ts'
 import { saveQuestion } from './record.ts'
 import { tell } from './tell.ts'
+import { openTurn } from './turn-parts.ts'
 
 type Input = { question: Question; id: MessageId }
 

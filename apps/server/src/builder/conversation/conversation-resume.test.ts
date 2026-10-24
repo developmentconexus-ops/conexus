@@ -1,17 +1,20 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { ConversationEvent } from '@conexus/hub-api'
 import {
   asked,
   conversing,
   holding,
+  hubBeside,
   PARTIAL,
   sent,
   started,
   streamOf,
   title,
 } from './test-conversation.ts'
+import { ask, conversingWith, untilCard, WHO } from './test-questions.ts'
 
 /** Whether the events say the text `PARTIAL` as a delta. */
 function saidText(events: ConversationEvent[]): boolean {
@@ -143,4 +146,27 @@ test('um evento já dito e ainda não lido, quando o stream abre, chega uma vez 
   assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
   assert.equal(saidText(rest), false)
   assert.equal(new Set(stream.seen.ids).size, stream.seen.ids.length, stream.seen.ids.join(' '))
+})
+
+test('depois de um reinício, uma reconexão com Last-Event-ID do aviso recebe o fim do turno', async (t) => {
+  const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
+  assert.equal((await send()).statusCode, 202)
+  await untilCard(stream, 'question')
+  const runId = stream.seen.ids.at(-1)?.split('.')[0]
+  assert.ok(runId !== undefined)
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const rows = await hub.test.asOwner('select state from builder.run')
+    if (JSON.stringify(rows) === JSON.stringify([{ state: 'waiting' }])) break
+    await sleep(100)
+  }
+  await hub.test.asOwner(`update builder.run set lease_until = now() - interval '1 second'`)
+  const beside = await hubBeside(t, hub)
+  // The person's screen is connected to the new copy, which keeps the conversation open there.
+  const connected = await streamOf(beside, ana, url)
+  t.after(() => connected.close())
+  await beside.restart()
+  assert.deepEqual((await connected.turn()).at(-1), { type: 'turnEnd', reason: 'aborted' })
+  const reconnected = await streamOf(beside, ana, url, `${runId}.1`)
+  t.after(() => reconnected.close())
+  assert.deepEqual(await reconnected.next(), { type: 'turnEnd', reason: 'aborted' })
 })
