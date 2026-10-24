@@ -5,7 +5,7 @@ import type {
   EventId,
   ProjectId,
 } from '@conexus/hub-api'
-import { CONVERSATION_HEARTBEAT_MS, streamConversation } from '@conexus/hub-api'
+import { CONVERSATION_HEARTBEAT_MS, RestartedData, streamConversation } from '@conexus/hub-api'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useEffectEvent, useReducer } from 'react'
@@ -14,7 +14,6 @@ import { sourceChanged } from '../source/public.ts'
 import type { Step } from './live.ts'
 import { IDLE, live } from './live.ts'
 import { conversationQuery } from './queries.ts'
-import { ConexusRestartedData } from './transcript-items.ts'
 
 type Ids = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
 
@@ -43,7 +42,7 @@ type Hooks = {
 }
 
 /** The conversation read again, which shows what the stream cannot (the Builder's saved message). */
-function reread(hooks: Hooks): Promise<unknown> {
+function reread(hooks: Hooks) {
   const { companyId, projectId, conversationId } = hooks.ids
   return hooks.queryClient.fetchQuery({
     ...conversationQuery(companyId, projectId, conversationId),
@@ -59,7 +58,7 @@ async function handle(event: ConversationEvent, hooks: Hooks): Promise<void> {
       await sourceChanged(hooks.queryClient, { companyId, projectId })
     }
     if (part.type === 'data-conexus-restarted') {
-      const data = ConexusRestartedData.safeParse(part.data)
+      const data = RestartedData.safeParse(part.data)
       if (data.success && typeof data.data.kept === 'number') {
         await sourceChanged(hooks.queryClient, { companyId, projectId })
       }
@@ -93,8 +92,8 @@ async function readOnce(
   }
   async function opened() {
     if (!options.again) return
-    await reread(hooks)
-    hooks.dispatch({ type: 'reconnected' })
+    const { conversation } = await reread(hooks)
+    hooks.dispatch({ type: 'reconnected', inProgress: conversation.inProgress })
   }
   watch()
   try {

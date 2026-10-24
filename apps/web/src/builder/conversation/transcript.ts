@@ -1,4 +1,5 @@
 import type { ConversationEvent, MastraPart, Message, MessageUpdate } from '@conexus/hub-api'
+import { CARD_TOOLS } from '@conexus/hub-api'
 import type { PlanCardItem, QuestionCardItem, TranscriptItem } from './transcript-items.ts'
 import {
   extractThoughtSeconds,
@@ -154,28 +155,28 @@ function applyToolSuspension(
   transcript: readonly TranscriptItem[],
   event: Extract<ConversationEvent, { type: 'tool_suspended' }>,
 ): readonly TranscriptItem[] {
-  if (event.toolName === 'ask_user') {
+  if (event.toolName === CARD_TOOLS.question) {
     const questions = parseQuestions(event.suspendPayload ?? event.args)
     const card: QuestionCardItem = {
       kind: 'card',
       cardKind: 'question',
       id: event.toolCallId,
       toolCallId: event.toolCallId,
-      toolName: 'ask_user',
+      toolName: CARD_TOOLS.question,
       state: 'open',
       questions,
     }
     const at = transcript.findIndex((item) => item.id === event.toolCallId)
     return at !== -1 ? transcript.with(at, card) : [...transcript, card]
   }
-  if (event.toolName === 'submit_plan') {
+  if (event.toolName === CARD_TOOLS.plan) {
     const planInfo = parsePlan(event.suspendPayload ?? event.args)
     const card: PlanCardItem = {
       kind: 'card',
       cardKind: 'plan',
       id: event.toolCallId,
       toolCallId: event.toolCallId,
-      toolName: 'submit_plan',
+      toolName: CARD_TOOLS.plan,
       state: 'open',
       title: planInfo.title,
       plan: planInfo.plan,
@@ -193,7 +194,7 @@ export function reduce(
 ): readonly TranscriptItem[] {
   switch (event.type) {
     case 'turn':
-      return fromMessages([event.message])
+      return fromMessages(event.messages)
     case 'message_start':
       return [...transcript, ...fromMessages([event.message])]
     case 'message_update':
@@ -238,6 +239,7 @@ export function reduce(
     case 'om_buffering_start':
     case 'om_buffering_end':
     case 'om_buffering_failed':
+    case 'om_progress':
       return transcript
     default:
       return event satisfies never

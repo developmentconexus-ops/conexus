@@ -1,12 +1,11 @@
+import type { OMProgress } from '@conexus/hub-api'
 import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 
-export type MemoryGauge = {
-  pendingTokens: number
-  threshold: number
-  observationTokens: number
-  reflectionThreshold: number
-}
+export type MemoryGauge = Pick<
+  OMProgress,
+  'pendingTokens' | 'threshold' | 'observationTokens' | 'reflectionThreshold'
+>
 
 function formatK(tokens: number): string {
   const k = tokens / 1000

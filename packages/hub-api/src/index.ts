@@ -88,7 +88,6 @@ export {
   streamConversation,
   THOUGHT_PART,
   TurnFailureCode,
-  VersionCheck,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export { getHealth, Health } from './health.ts'
@@ -106,7 +105,24 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
-export { applyUpdate, CONEXUS_PARTS, MastraPart, MessageUpdate } from './mastra-parts.ts'
+export {
+  applyUpdate,
+  CONEXUS_PARTS,
+  ConexusPart,
+  FailureData,
+  Kept,
+  MachineData,
+  MachinePhase,
+  MastraPart,
+  MessageUpdate,
+  machinePhaseLasts,
+  NoticeData,
+  RestartedData,
+  Suspended,
+  ThoughtData,
+  VersionCheck,
+  VersionData,
+} from './mastra-parts.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
   ACCOUNT_KINDS,
@@ -208,4 +224,5 @@ export {
   SourceFile,
 } from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
+export { CARD_TOOLS, SKILL_TOOLS, TASK_TOOLS } from './tools.ts'
 export { WIRE_LIMITS } from './wire-limits.ts'

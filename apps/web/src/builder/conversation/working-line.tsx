@@ -1,4 +1,5 @@
 import type { MastraPart } from '@conexus/hub-api'
+import { CARD_TOOLS } from '@conexus/hub-api'
 import { useState } from 'react'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { useEverySecond } from './elapsed.ts'
@@ -13,7 +14,7 @@ function waitsOnPerson(parts: readonly MastraPart[]): boolean {
     if (part.type === 'tool-invocation') {
       const { toolName, state } = part.toolInvocation
       if (
-        (toolName === 'ask_user' || toolName === 'submit_plan') &&
+        (toolName === CARD_TOOLS.question || toolName === CARD_TOOLS.plan) &&
         (state === 'call' || state === 'approval-requested')
       ) {
         return true

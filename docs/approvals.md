@@ -117,3 +117,5 @@ U6 e U7 da etapa 14.2 esperam a bancada da harness.
 Cartão da etapa 14.2 aprovado em 2026-10-22 (commit f76f4dce0a7a34a215e416767b4f51e9fed2509d): "C"
 
 Essa emenda põe a etapa 14.0, "Um registro da conversa", dentro da U2, com o desenho aprovado em "1. Sim … 2.B".
+
+Em 2026-10-24, sobre a etapa 14.2: "4. B" e "A". A pergunta ou o plano aberto atravessa a atualização do servidor e também uma queda, pelo mesmo código: a cópia nova adota a volta.

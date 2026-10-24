@@ -79,7 +79,7 @@ test('o fio carrega só os eventos da lista do cartão, na forma do Mastra', asy
   const { events } = await asked(t, { hub, person: ana, conversations })
   const allowed = new Set([
     ...['turn', 'turnEnd', 'message_start', 'message_update', 'message_end', 'shell_output'],
-    ...['command_exit', 'tool_suspended', 'task_updated', 'om_status', 'agent_end'],
+    ...['command_exit', 'tool_suspended', 'task_updated', 'om_status', 'om_progress', 'agent_end'],
     ...['om_observation_start', 'om_observation_end', 'om_observation_failed'],
     ...['om_reflection_start', 'om_reflection_end', 'om_reflection_failed'],
     ...['om_buffering_start', 'om_buffering_end', 'om_buffering_failed'],
@@ -90,6 +90,11 @@ test('o fio carrega só os eventos da lista do cartão, na forma do Mastra', asy
   )
   assert.equal(events[0]?.type, 'turn')
   assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  const statuses = events.flatMap((event, at) => (event.type === 'om_status' ? [at] : []))
+  assert.ok(statuses.length > 0)
+  for (const at of statuses) {
+    assert.equal(events[at + 1]?.type, 'om_progress', 'Mastra’s folded progress follows each om_*')
+  }
 })
 
 test('um turno pensa, pesquisa e lê três páginas: o raciocínio vem com o texto do modelo, cada ferramenta com nome, argumentos e resultado', async (t) => {

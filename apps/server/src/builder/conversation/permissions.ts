@@ -1,3 +1,4 @@
+import { CARD_TOOLS, SKILL_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { CHECK_TOOL } from './processors.ts'
 
@@ -10,19 +11,10 @@ const READ = new Set<string>([
   'web_search',
   'web_fetch',
   'recall',
-  'skill',
-  'skill_search',
-  'skill_read',
+  ...SKILL_TOOLS,
 ])
 // The controller's tools that talk to the person: the questions, the plan and the task list.
-const TALK = new Set<string>([
-  'ask_user',
-  'submit_plan',
-  'task_write',
-  'task_update',
-  'task_complete',
-  'task_check',
-])
+const TALK = new Set<string>([...Object.values(CARD_TOOLS), ...TASK_TOOLS])
 const EDIT = new Set<string>([
   FILESYSTEM.WRITE_FILE,
   FILESYSTEM.EDIT_FILE,

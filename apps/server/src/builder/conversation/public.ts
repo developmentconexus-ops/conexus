@@ -57,6 +57,7 @@ export function createConversations(deps: {
     log: deps.log,
   })
   deps.runs.onRestart((restart) => sessions.restarted(restart))
+  deps.runs.onAdopt((run) => sessions.adopt(run))
 
   const release: ReleaseConversations = async (scope) => {
     // The runs first: a turn the removal aborts then finds its run settled and writes nothing.

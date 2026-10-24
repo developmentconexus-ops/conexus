@@ -1,3 +1,4 @@
+import { CARD_TOOLS, SKILL_TOOLS } from '@conexus/hub-api'
 import type { LucideIcon } from 'lucide-react'
 import {
   BookOpenIcon,
@@ -178,34 +179,34 @@ const CLOSED_TOOLS: Record<string, ClosedTool> = {
     verb: 'conferiu',
     icon: ClipboardCheckIcon,
   },
-  skill: {
+  [SKILL_TOOLS[0]]: {
     running: 'Usando a skill',
     done: 'Usou a skill',
     verb: 'usou skill',
     icon: BookOpenIcon,
     detailKey: 'name',
   },
-  skill_read: {
+  [SKILL_TOOLS[1]]: {
     running: 'Lendo a skill',
     done: 'Leu a skill',
     verb: 'leu skill',
     icon: BookOpenIcon,
     detailKey: 'name',
   },
-  skill_search: {
+  [SKILL_TOOLS[2]]: {
     running: 'Procurando uma skill',
     done: 'Procurou uma skill',
     verb: 'procurou skill',
     icon: SearchIcon,
     detailKey: 'query',
   },
-  ask_user: {
+  [CARD_TOOLS.question]: {
     running: 'Perguntando a você',
     done: 'Perguntou a você',
     verb: 'perguntou',
     icon: WrenchIcon,
   },
-  submit_plan: {
+  [CARD_TOOLS.plan]: {
     running: 'Enviando o plano',
     done: 'Enviou o plano',
     verb: 'enviou plano',

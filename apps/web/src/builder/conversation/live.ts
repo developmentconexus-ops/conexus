@@ -53,7 +53,7 @@ export type Step =
   | ConversationEvent
   | { type: 'sent' }
   | { type: 'unsent' }
-  | { type: 'reconnected' }
+  | { type: 'reconnected'; inProgress: boolean }
 
 type ActiveState = Extract<Live, { kind: 'answering' }>
 
@@ -180,12 +180,14 @@ export function live(state: Live, step: Step): Live {
     case 'unsent':
       return state.kind === 'answering' && state.parts.length === 0 ? IDLE : state
     case 'reconnected':
-      return state.kind === 'answering' ? { ...inProgress(state), kind: 'resuming' } : state
+      // A turn that ended while the line was down sends no `turnEnd` to this line: the read says it is over.
+      if (state.kind !== 'answering') return state
+      return { ...inProgress(state), kind: step.inProgress ? 'resuming' : 'ended' }
     case 'turn':
       return {
         kind: 'answering',
-        transcript: fromMessages([step.message]),
-        parts: step.message.parts,
+        transcript: fromMessages(step.messages),
+        parts: step.messages.flatMap((message) => message.parts),
         startedAt: step.startedAt,
         tasks: null,
         memory: null,
@@ -196,6 +198,8 @@ export function live(state: Live, step: Step): Live {
       return { ...inProgress(state), tasks: step.tasks }
     case 'om_status':
       return handleOmStatus(inProgress(state), step)
+    case 'om_progress':
+      return { ...inProgress(state), memory: step.omProgress }
     case 'om_observation_start':
     case 'om_observation_end':
     case 'om_observation_failed':

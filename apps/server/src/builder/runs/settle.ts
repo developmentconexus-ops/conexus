@@ -1,5 +1,5 @@
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
-import type { Kept, Outcome, RunsContext } from './context.ts'
+import type { CompanyId, ConversationId, Kept, ProjectId } from '@conexus/hub-api'
+import type { Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
 import { holdLease } from './lease.ts'
 import { saveRun } from './save.ts'
@@ -21,9 +21,9 @@ async function toldRestart(context: RunsContext, run: Run, kept: Kept) {
 }
 
 /**
- * A turn whose copy of the program is gone ends here (card, the restart): what the machine holds is
- * saved as Parar saves it, kept as it stands since the machine is woken without the seed, and the
- * stream is told, with the version, so the person sends the message again.
+ * A turn whose copy of the program is gone, with no card parked, ends here (card, the restart): what
+ * the machine holds is saved as Parar saves it, kept as it stands since the machine is woken without
+ * the seed, and the stream is told, with the version, so the person sends the message again.
  */
 async function endTurn(context: RunsContext, orphan: Run): Promise<void> {
   const { companyId, projectId, id } = orphan
@@ -66,7 +66,11 @@ async function settledState(context: RunsContext, expired: Run): Promise<RunStat
 }
 
 async function settleOne(context: RunsContext, expired: Run): Promise<void> {
-  if (expired.state === 'open' || expired.state === 'waiting') return endTurn(context, expired)
+  if (expired.state === 'open' || expired.state === 'waiting') {
+    // A card Mastra still parks goes on here, open (founder 2026-10-24, "4. B").
+    if (await context.adopted(expired)) return
+    return endTurn(context, expired)
+  }
   const { companyId, projectId } = expired
   const to = await settledState(context, expired)
   if (!(await context.store.end(companyId, expired.id, to))) return
@@ -79,15 +83,16 @@ async function settleOne(context: RunsContext, expired: Run): Promise<void> {
 }
 
 /**
- * Settles the runs of a company whose lease ended, for one Projeto or for all (data D25), each on
- * its own: one that fails is logged, stays taken until its lease ends, and the next settle tries it
- * again.
+ * Settles the runs of a company whose lease ended, for one Projeto, one conversation or all (data
+ * D25), each on its own: one that fails is logged, stays taken until its lease ends, and the next
+ * settle tries it again.
  */
 export async function settleExpired(
   context: RunsContext,
-  input: { companyId: CompanyId; projectId?: ProjectId },
+  input: { companyId: CompanyId; projectId?: ProjectId; conversationId?: ConversationId },
 ): Promise<void> {
-  for (const expired of await context.store.takeExpired(input.companyId, input.projectId)) {
+  const { companyId, ...of } = input
+  for (const expired of await context.store.takeExpired(companyId, of)) {
     await settleOne(context, expired).catch((error: unknown) =>
       context.log.error(
         { companyId: input.companyId, runId: expired.id, error: String(error) },

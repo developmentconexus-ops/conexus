@@ -1,5 +1,6 @@
-export type { Outcome, Restart, Settled } from './context.ts'
+export type { Restart, Settled } from './context.ts'
 export type { MachinesOf, RepositoryOf } from './ports.ts'
 export { builderPortsOf } from './ports.ts'
 export type { Runs } from './runs.ts'
 export { createRuns } from './runs.ts'
+export type { Run } from './store.ts'

@@ -1,5 +1,5 @@
 import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
-import { z } from 'zod'
+import { FailureData, NoticeData } from '@conexus/hub-api'
 
 /** The model's text the events said, whole: the deltas and the text parts, in order. */
 export function textsOf(events: ConversationEvent[]): string[] {
@@ -24,20 +24,17 @@ export function dataOf(events: ConversationEvent[], type: `data-${string}`): unk
   return partsOf(events).flatMap((part) => (part.type === type ? [part.data] : []))
 }
 
-const Coded = z.object({ code: z.string() })
-const Worded = z.object({ text: z.string() })
-
 /** The failures a turn said, in order. */
 export function failuresOf(events: ConversationEvent[]): string[] {
   return dataOf(events, 'data-conexus-failure').flatMap((data) => {
-    const read = Coded.safeParse(data)
+    const read = FailureData.safeParse(data)
     return read.success ? [read.data.code] : []
   })
 }
 
 export function noticesIn(parts: MastraPart[]): string[] {
   return parts.flatMap((part) => {
-    const read = part.type === 'data-conexus-notice' ? Worded.safeParse(part.data) : undefined
+    const read = part.type === 'data-conexus-notice' ? NoticeData.safeParse(part.data) : undefined
     return read?.success ? [read.data.text] : []
   })
 }

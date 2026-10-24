@@ -1,6 +1,13 @@
-import type { RunId } from '@conexus/hub-api'
+import type { RunId, TurnFailureCode } from '@conexus/hub-api'
 import type { AgentControllerEvent } from '@mastra/core/agent-controller'
 import type { Scalar } from '../../platform/failure.ts'
+
+/** The code of a model's finish that is not a call failure: a refusal, or an answer cut at its limit. */
+export const FINISHES: Readonly<Record<string, TurnFailureCode>> = {
+  'content-filter': 'MODEL_REFUSED',
+  tripwire: 'MODEL_REFUSED',
+  length: 'MODEL_ANSWER_CUT',
+}
 
 /** What one turn cost, counted as the controller says it: a step and its tokens at a time. */
 export class TurnTally {

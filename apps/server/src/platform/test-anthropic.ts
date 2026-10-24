@@ -29,7 +29,7 @@ const SUBSCRIPTION_LINE = "You are Claude Code, Anthropic's official CLI for Cla
 export type Reply =
   | { kind: 'text'; text: string }
   | { kind: 'fetch'; url: string }
-  | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' }
+  | { kind: 'blocks'; blocks: Block[]; stop?: 'max_tokens' | 'refusal' }
   | { kind: 'refuse'; status: Refusal; headers?: Record<string, string>; cyber?: true }
   | { kind: 'hold'; until: Promise<void>; text?: string; rest?: string }
   | { kind: 'reset' }

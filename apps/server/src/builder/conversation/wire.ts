@@ -1,10 +1,12 @@
 import type { ConversationEvent, Message, ToolCallId } from '@conexus/hub-api'
 import { MastraPart, MessageId, ModelId, WIRE_LIMITS } from '@conexus/hub-api'
-import type { AgentControllerEvent, MastraDBMessage } from '@mastra/core/agent-controller'
+import type {
+  AgentControllerDisplayState,
+  AgentControllerEvent,
+  MastraDBMessage,
+} from '@mastra/core/agent-controller'
 import { WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import { z } from 'zod'
-import type { Tail } from './shell.ts'
-import { tailOf } from './shell.ts'
 
 /**
  * The only place that cuts what Mastra holds before it leaves for the screen (card of step 14.2,
@@ -14,6 +16,36 @@ import { tailOf } from './shell.ts'
  * a payload by tool and does not limit its size, so the limit is ours.
  */
 const DEEPEST = 8
+
+/** The end of a command's output as its row shows it, and whether lines before it were left out. */
+export type Tail = { output: string[]; cut: boolean }
+
+/**
+ * The last lines of a command's output the row shows, at most `WIRE_LIMITS.outputLines` and
+ * `outputBytes`; `dropped` says the output was already cut before it came here.
+ */
+export function cutTail(output: string, dropped: boolean): Tail {
+  const { outputLines, outputBytes } = WIRE_LIMITS
+  const end = output.slice(-outputBytes * 2)
+  const lines = end.split('\n')
+  if (lines.at(-1) === '') lines.pop()
+  const kept = lines.slice(-outputLines)
+  while (kept.length > 1 && Buffer.byteLength(kept.join('\n')) > outputBytes) kept.shift()
+  const [only] = kept
+  const long = kept.length === 1 && only !== undefined && only.length > outputBytes
+  if (long) kept[0] = only.slice(-outputBytes)
+  return {
+    output: kept,
+    cut: dropped || end.length < output.length || long || kept.length < lines.length,
+  }
+}
+
+/** A failed call's reason, cut as any text of a call. */
+function cutText(text: string, cuts: string[]): string {
+  if (text.length <= WIRE_LIMITS.text) return text
+  cuts.push('toolInvocation.errorText')
+  return `${text.slice(0, WIRE_LIMITS.text)}…`
+}
 
 function cutLeaves(value: unknown, path: string, cuts: string[], depth = 0): unknown {
   if (typeof value === 'string') {
@@ -63,16 +95,18 @@ function cutPart(part: MastraPart): MastraPart {
   const cuts: string[] = []
   if (part.type === 'tool-invocation') {
     const { toolInvocation } = part
-    const { args, result } = toolInvocation
+    const { args, result, errorText } = toolInvocation
     const command = toolInvocation.toolName === WORKSPACE_TOOLS.SANDBOX.EXECUTE_COMMAND
-    const output = command && typeof result === 'string' ? tailOf(result) : undefined
+    const output = command && typeof result === 'string' ? cutTail(result, false) : undefined
     if (output?.cut) cuts.push('toolInvocation.result')
     const cutResult =
       output === undefined ? cutLeaves(result, 'toolInvocation.result', cuts) : outputText(output)
     const cutArgs = cutLeaves(args, 'toolInvocation.args', cuts)
+    const cutError = errorText === undefined ? {} : { errorText: cutText(errorText, cuts) }
     // Mastra's stream says `isError: false` on a call that succeeded and its store leaves it out; the Hub says it only when true.
     const { isError, ...call } = toolInvocation
-    const shown = { ...call, ...(isError ? { isError } : {}), args: cutArgs, result: cutResult }
+    const failed = { ...(isError ? { isError } : {}), ...cutError }
+    const shown = { ...call, ...failed, args: cutArgs, result: cutResult }
     return cuts.length === 0
       ? { ...part, toolInvocation: shown }
       : { ...part, toolInvocation: shown, cuts }
@@ -88,28 +122,32 @@ function cutPart(part: MastraPart): MastraPart {
   return cuts.length === 0 ? { ...part, data } : { ...part, data, cuts }
 }
 
-/** The parts Mastra keeps in a message that the screen reads: a step, a source or a file stay inside. */
-type Known = Extract<
-  MastraDBMessage['content']['parts'][number],
-  { type: 'text' | 'reasoning' | 'tool-invocation' }
->
-
-/** The proof that what Mastra keeps of these parts fits the schema of the Hub (code C27). */
-function fits(part: Known): z.input<typeof MastraPart> {
-  return part
-}
-
 /** What the screen gets of one of Mastra's parts, or none for the parts that stay inside. */
 function wirePart(part: MastraDBMessage['content']['parts'][number]): MastraPart | undefined {
-  const known = part.type === 'text' || part.type === 'reasoning' || part.type === 'tool-invocation'
-  const read = MastraPart.safeParse(known ? fits(part) : part)
+  const read = MastraPart.safeParse(part)
   return read.success ? cutPart(read.data) : undefined
 }
 
 const Answered = z.object({ modelId: z.string().min(1), provider: z.string().min(1) })
 const PersonSignal = z.object({ signal: z.object({ type: z.literal('user') }) })
+const USER_MESSAGE_PART = 'data-user-message'
+/** What Mastra's controller puts in the part of a message the person sent into the running turn. */
+const UserMessageData = z.object({
+  contents: z.union([
+    z.string(),
+    z.array(z.object({ type: z.string(), text: z.string().optional() })),
+  ]),
+})
 const SuspendedTools = z.object({
-  suspendedTools: z.record(z.string(), z.object({ suspendPayload: z.unknown() })),
+  suspendedTools: z.record(
+    z.string(),
+    z.object({
+      toolCallId: z.string().min(1),
+      toolName: z.string(),
+      args: z.unknown(),
+      suspendPayload: z.unknown(),
+    }),
+  ),
 })
 
 /** The model that answered a message, `provider/model` as the router names it, or none. */
@@ -124,15 +162,49 @@ export function modelOf(message: { content: { metadata?: unknown } }): ModelId |
 function suspendedOf(metadata: unknown): Message['suspended'] {
   const read = SuspendedTools.safeParse(metadata)
   if (!read.success) return {}
+  return wireSuspended(Object.values(read.data.suspendedTools))
+}
+
+/** A call Mastra keeps waiting for the person, as its display state holds it. */
+type Parked = Pick<
+  Parameters<AgentControllerDisplayState['pendingSuspensions']['set']>[1],
+  'toolCallId' | 'toolName' | 'args' | 'suspendPayload'
+>
+
+/** The calls waiting for the person, by call, with what each suspended with, cut. */
+export function wireSuspended(calls: Iterable<Parked>): Message['suspended'] {
   return Object.fromEntries(
-    Object.entries(read.data.suspendedTools).map(([call, { suspendPayload }]) => {
+    [...calls].map(({ toolCallId, toolName, args, suspendPayload }) => {
       const cuts: string[] = []
-      const payload = cutLeaves(suspendPayload, 'suspendPayload', cuts)
-      return [
-        call,
-        cuts.length === 0 ? { suspendPayload: payload } : { suspendPayload: payload, cuts },
-      ]
+      const cut = {
+        toolCallId,
+        toolName,
+        args: cutLeaves(args, 'args', cuts),
+        suspendPayload: cutLeaves(suspendPayload, 'suspendPayload', cuts),
+      }
+      return [toolCallId, cuts.length === 0 ? cut : { ...cut, cuts }]
     }),
+  )
+}
+
+/** The words of the part a signal carries live (`data-user-message`), as a text part, or none. */
+function userTextOf(part: MastraDBMessage['content']['parts'][number]): MastraPart | undefined {
+  if (part.type !== USER_MESSAGE_PART || !('data' in part)) return undefined
+  const read = UserMessageData.safeParse(part.data)
+  if (!read.success) return undefined
+  const { contents } = read.data
+  const text =
+    typeof contents === 'string'
+      ? contents
+      : contents.flatMap((each) => (each.type === 'text' ? (each.text ?? []) : [])).join('\n')
+  return { type: 'text', text }
+}
+
+/** A signal is the person's when it was stored as theirs or carries the live part of their message. */
+function isPersonSignal(message: MastraDBMessage): boolean {
+  return (
+    PersonSignal.safeParse(message.content.metadata).success ||
+    message.content.parts.some((part) => part.type === USER_MESSAGE_PART)
   )
 }
 
@@ -141,15 +213,14 @@ export function wireMessage(message: MastraDBMessage): Message | undefined {
   const role =
     message.role === 'assistant'
       ? 'builder'
-      : message.role === 'user' ||
-          (message.role === 'signal' && PersonSignal.safeParse(message.content.metadata).success)
+      : message.role === 'user' || (message.role === 'signal' && isPersonSignal(message))
         ? 'person'
         : undefined
   if (role === undefined) return undefined
   return {
     id: MessageId.parse(message.id),
     role,
-    parts: message.content.parts.flatMap((part) => wirePart(part) ?? []),
+    parts: message.content.parts.flatMap((part) => userTextOf(part) ?? wirePart(part) ?? []),
     suspended: suspendedOf(message.content.metadata),
     model: role === 'builder' ? modelOf(message) : null,
     createdAt: new Date(message.createdAt).toISOString(),
@@ -176,7 +247,7 @@ export function wireEvent(event: AgentControllerEvent): ConversationEvent | unde
   switch (event.type) {
     case 'message_start': {
       const message = wireMessage(event.message)
-      return message?.role === 'builder' ? { type: 'message_start', message } : undefined
+      return message === undefined ? undefined : { type: 'message_start', message }
     }
     case 'message_update': {
       const id = MessageId.parse(event.id)

@@ -1,27 +1,13 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
-import { MastraPart, MessageUpdate } from './mastra-parts.ts'
+import { MastraPart, MessageUpdate, Suspended } from './mastra-parts.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
 import { ProjectId } from './projects.ts'
 import { Task } from './questions.ts'
 
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
-
-/**
- * Whether a saved version's app built (card of step 14): its check at the end of the turn passed,
- * failed the last time the turn could try, or could not run on the machine (founder, 2026-10-22,
- * the words of `CHECK_PLATFORM_FAILED`); or the turn ended with `open` tasks still open the last
- * time it could try, the version saved half done (card of step 14.2, criterion 15).
- */
-export const VersionCheck = z.discriminatedUnion('state', [
-  z.object({ state: z.literal('passed') }),
-  z.object({ state: z.literal('unfinished'), open: z.int().positive() }),
-  z.object({ state: z.literal('failed'), code: z.literal('APP_CHECK_FAILED') }),
-  z.object({ state: z.literal('unchecked'), code: z.literal('CHECK_PLATFORM_FAILED') }),
-])
-export type VersionCheck = z.infer<typeof VersionCheck>
 
 /** The longest message a person sends the Builder, in characters. */
 export const MESSAGE_MAX_LENGTH = 20_000
@@ -58,6 +44,8 @@ export function runningEffort(efforts: readonly [Effort, ...Effort[]], effort: E
 export const TurnFailureCode = z.enum([
   'MODEL_NO_ACCOUNT',
   'MODEL_CALL_FAILED',
+  'MODEL_REFUSED',
+  'MODEL_ANSWER_CUT',
   'SAVE_REFUSED',
   'GIT_RESTORE_NEEDED',
   'MACHINE_LOST',
@@ -81,7 +69,7 @@ export const Message = z.object({
   id: MessageId,
   role: z.enum(['person', 'builder']),
   parts: z.array(MastraPart),
-  suspended: z.record(z.string(), z.unknown()),
+  suspended: z.record(z.string(), Suspended),
   /** The model that answered the Builder's turn, as Mastra recorded it; `null` for the person. */
   model: ModelId.nullable(),
   createdAt: z.iso.datetime(),
@@ -117,6 +105,11 @@ export const Conversation = ConversationSummary.extend({
   tasks: z.array(Task),
   /** The memory's progress in this session, or `null` before it says. */
   memory: OMProgress.nullable(),
+  /**
+   * Whether a turn is in progress: its answer then comes on the stream, and a screen that
+   * reconnected waits for it only while this holds.
+   */
+  inProgress: z.boolean(),
 })
 export type Conversation = z.infer<typeof Conversation>
 
@@ -128,13 +121,17 @@ const OmFailed = OmCycle.extend({ durationMs: z.number() })
 
 /**
  * What the stream of a conversation says: `turn` opens each turn, and on a reconnect that cannot
- * resume it is the turn in progress so far; `turnEnd` closes it. The rest are the controller's own
+ * resume it is the turn in progress so far, as Mastra's messages by their ids and then ours; `turnEnd` closes it. The rest are the controller's own
  * events (`AgentControllerWireEvent`), cut by `wire.ts` and without the free text of an error or of
  * the observer (security S41). A part of ours goes as a `message_update` of a `data-conexus-*` part.
  */
 export const ConversationEvent = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('turn'), message: Message, startedAt: z.iso.datetime() }),
+  z.object({ type: z.literal('turn'), messages: z.array(Message), startedAt: z.iso.datetime() }),
   z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
+  /**
+   * A `message_start` whose message is the person's is a message they sent while the turn ran,
+   * said where Mastra put it before the model's next request.
+   */
   z.object({ type: z.literal('message_start'), message: Message }),
   z.object({ type: z.literal('message_update'), id: MessageId, event: MessageUpdate }),
   z.object({ type: z.literal('message_end'), id: MessageId }),
@@ -178,6 +175,13 @@ export const ConversationEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('om_buffering_start'), ...OmOperation.shape }),
   z.object({ type: z.literal('om_buffering_end'), ...OmOperation.shape }),
   z.object({ type: z.literal('om_buffering_failed'), ...OmOperation.shape }),
+  // The memory's progress once Mastra folded an `om_*` event (`displayState`), as Factory reads it.
+  z.object({
+    type: z.literal('om_progress'),
+    omProgress: OMProgress,
+    bufferingMessages: z.boolean(),
+    bufferingObservations: z.boolean(),
+  }),
   z.object({
     type: z.literal('agent_end'),
     reason: z.enum(['complete', 'aborted', 'error', 'suspended']).optional(),
@@ -243,7 +247,8 @@ export const readConversation = defineOperation({
 
 export const sendConversationMessage = defineOperation({
   id: 'sendConversationMessage',
-  summary: 'Sends the Builder a message; its answer comes on the conversation’s stream.',
+  summary:
+    'Sends the Builder a message: a turn of its own, or, while a turn of this conversation runs, into that turn; the answer comes on the conversation’s stream.',
   access: 'session',
   method: 'POST',
   path: `${BASE}/{conversationId}/messages`,
