@@ -112,7 +112,7 @@ Etapa 14 usada em 2026-10-22 em https://hub.conexus.fun (v0.14.0 e o conserto v0
 
 Cartão da etapa 14.2 aprovado em 2026-10-22 (commit 917b5e48613cb4e0a58562d780160c826fcd0fcb): "aprovado esse estudo, tá bom? Pode seguir."
 
-U6 e U7 da etapa 14.2 esperam a bancada da harness.
+U6 e U7 do cartão da etapa 14.2 ficam à espera da bancada da harness.
 
 Cartão da etapa 14.2 aprovado em 2026-10-22 (commit f76f4dce0a7a34a215e416767b4f51e9fed2509d): "C"
 

@@ -1,7 +1,7 @@
 // Defect: `node --test --test-shard=N/4` splits the server's test files by their order, not by their
 // time, so the four jobs took 181 to 437 s and the slowest held every pull request. Here the files go
-// to the lightest shard longest first, by the seconds in server-test-seconds.json; a file the record
-// lacks weighs the average of the others. `server-shards.ts 2/4` prints the files of the second shard
+// to the lightest shard longest first, by the seconds in server-test-seconds.json plus each file's
+// start; a file the record lacks weighs the average of the others. `server-shards.ts 2/4` prints the files of the second shard
 // of four, one per line and relative to apps/server, where `npm test` runs; `all` prints every file.
 // `server-shards.ts --record <log>...` rewrites the record from the "Test files" tables that
 // scripts/test-reporter.ts prints in the log of each shard's job: run it on the logs of one run of
@@ -15,6 +15,9 @@ import { z } from 'zod'
 const RECORD = join(import.meta.dirname, 'server-test-seconds.json')
 const USAGE = 'usage: server-shards.ts <index>/<total> | all | --record <log>...'
 const Seconds = z.record(z.string(), z.number().positive())
+// The record holds a file's tests; its process start and module load come on top, about 1.7 s a file
+// in CI with the compile cache (run 40091617511: 1321 s of steps for 1100 s of file time, 127 files).
+const FILE_START_SECONDS = 1.7
 
 /** Each file goes, heaviest first, to the shard with the least seconds so far. */
 export function shardsOf(
@@ -25,7 +28,7 @@ export function shardsOf(
   const known = files.flatMap((file) => seconds[file] ?? [])
   const average = known.length === 0 ? 1 : known.reduce((a, b) => a + b, 0) / known.length
   function weight(file: string): number {
-    return seconds[file] ?? average
+    return (seconds[file] ?? average) + FILE_START_SECONDS
   }
   const shards = Array.from({ length: total }, (): { files: string[]; load: number } => ({
     files: [],
