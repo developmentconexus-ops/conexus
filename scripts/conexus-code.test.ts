@@ -43,6 +43,18 @@ const BAD: Record<string, [string, string]> = {
     'export function f(companyId: string) {\n  return companyId\n}\n',
   ],
   'C23 id string | null': [`${SERVER}/c23b.ts`, 'export type T = { personId: string | null }\n'],
+  'T24 controller event': [
+    `${SERVER}/t26a.test.ts`,
+    "export const e = { type: 'message_update', event: { type: 'text-delta', delta: 'oi' } }\n",
+  ],
+  'T24 stored row': [
+    `${SERVER}/t26b.test.ts`,
+    "export const row = { role: 'assistant', content: { suspendedTools: {} } }\n",
+  ],
+  'T24 shorthand row key': [
+    `${SERVER}/t26c.test.ts`,
+    'const submittedPlan = {}\nexport const row = { submittedPlan }\n',
+  ],
   useThrowOnlyError: [`${SERVER}/t.ts`, "export function f() {\n  throw 'x'\n}\n"],
   useExhaustiveSwitchCases: [
     `${SERVER}/s.ts`,
@@ -82,6 +94,16 @@ const GOOD: Record<string, string> = {
   ].join('\n'),
   'apps/web/src/hub/ok3.ts': 'export function f(companyId: string) {\n  return companyId\n}\n',
   [`${SERVER}/ok5.test.ts`]: 'export const v = JSON.parse("1")\n',
+  'apps/web/src/builder/conversation/ok7.test.ts':
+    "export const wire = { type: 'message_update', id: 'a', event: { type: 'text-delta', delta: 'oi' } }\n",
+  [`${SERVER}/ok6.test.ts`]: [
+    "import { nativeRecording } from '../../platform/test-recordings.ts'",
+    "const { events } = nativeRecording('cited')",
+    "export const hub = { type: 'turnEnd', reason: 'complete' }",
+    "export const text = { type: 'text', delta: 'oi' }",
+    'export const first = events[0]',
+    '',
+  ].join('\n'),
 }
 
 let output = ''
@@ -92,7 +114,7 @@ before(() => {
   delete config.vcs
   writeFileSync(join(dir, 'biome.json'), JSON.stringify(config))
   mkdirSync(join(dir, 'scripts'))
-  for (const grit of ['w25.grit', 'conexus-code.grit']) {
+  for (const grit of ['w25.grit', 'conexus-code.grit', 'library-shapes.grit']) {
     cpSync(join(ROOT, 'scripts', grit), join(dir, 'scripts', grit))
   }
   const files = { ...Object.fromEntries(Object.values(BAD)), ...GOOD }
@@ -109,6 +131,7 @@ before(() => {
 })
 
 function marker(name: string): string {
+  if (name.startsWith('T24')) return '× T24:'
   if (!name.startsWith('C')) return name
   const rule = name.split(' ')[0]
   return `× ${rule === 'C48' ? 'C48, C49' : rule}:`
@@ -129,8 +152,8 @@ test('Biome aceita o código que as regras de conexus-code.grit deixam passar', 
   assert.deepEqual(flagged, [], output)
 })
 
-test('cada recusa de conexus-code.grit diz a regra do guia', () => {
-  for (const rule of ['C23', 'C27', 'C48, C49', 'C53']) {
+test('cada recusa de conexus-code.grit e de library-shapes.grit diz a regra do guia', () => {
+  for (const rule of ['C23', 'C27', 'C48, C49', 'C53', 'T24']) {
     assert.ok(output.includes(`× ${rule}: `), `${rule} has no message`)
   }
 })

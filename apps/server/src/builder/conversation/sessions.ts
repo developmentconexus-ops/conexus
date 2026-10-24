@@ -77,7 +77,7 @@ export class Sessions {
     try {
       const session = await this.#builder.controller.createSession({
         resourceId,
-        scope: conversationId,
+        id: conversationId,
         threadId: conversationId,
       })
       const found = this.#lives.get(conversationId)
@@ -128,8 +128,7 @@ export class Sessions {
     live.unsubscribe()
     // A closed session ends no run, so its message stops waiting here.
     writingOf(live.state)?.ended()
-    const resourceId = memoryOwner(live.owner)
-    await this.#builder.controller.deleteSession({ resourceId, scope: conversationId })
+    await this.#builder.controller.deleteSession({ sessionId: conversationId })
   }
 
   /**

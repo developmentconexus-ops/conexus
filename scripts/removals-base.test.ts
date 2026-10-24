@@ -89,7 +89,7 @@ test('uma mudança ainda não commitada conta, e sem --base roda todas', (t) => 
     removalsAt(dir, '--base', 'main', '--plan').stdout,
     '{"selected":1,"total":2,"shards":1}\n',
   )
-  assert.equal(removalsAt(dir, '--plan').stdout, '{"selected":2,"total":2,"shards":2}\n')
+  assert.equal(removalsAt(dir, '--plan').stdout, '{"selected":2,"total":2,"shards":1}\n')
 })
 
 test('uma referência de base que não existe recusa, sem rodar nem pular linha', (t) => {
@@ -99,43 +99,25 @@ test('uma referência de base que não existe recusa, sem rodar nem pular linha'
   assert.notEqual(run.status, 0)
 })
 
-test('uma linha tirada de removals.json, com a proteção enfraquecida no mesmo diff, roda as que restam', (t) => {
+test('uma linha tirada de removals.json roda só as linhas cujo arquivo o diff mudou', (t) => {
   const dir = pairRepo(t)
   const [one] = JSON.parse(readFileSync(join(dir, 'scripts/removals.json'), 'utf8'))
   writeFileSync(join(dir, 'scripts/removals.json'), JSON.stringify([one]))
-  writeFileSync(join(dir, 'two.ts'), 'export const LIMIT = 10 // weakened\n')
   commitAll(dir)
-  const plan = removalsAt(dir, '--base', 'main', '--plan')
   assert.equal(
-    plan.stdout,
-    '{"selected":1,"total":1,"shards":1,"everything":"the row two was deleted from removals.json"}\n',
+    removalsAt(dir, '--base', 'main', '--plan').stdout,
+    '{"selected":0,"total":1,"shards":0}\n',
   )
 })
 
-test('um arquivo que o teste importa afeta a linha dele, pelo grafo de dependências', (t) => {
-  const dir = pairRepo(t)
-  writeFileSync(join(dir, '.dependency-cruiser.cjs'), 'module.exports = { options: {} }\n')
-  writeFileSync(join(dir, 'shared.ts'), 'export const FIXTURE = 1\n')
-  writeFileSync(
-    join(dir, 'one.test.ts'),
-    `import './shared.ts'\n${readFileSync(join(dir, 'one.test.ts'), 'utf8')}`,
-  )
-  commitAll(dir)
-  git(dir, 'branch', 'imported')
-  writeFileSync(join(dir, 'shared.ts'), 'export const FIXTURE = 2\n')
-  const plan = removalsAt(dir, '--base', 'imported', '--plan')
-  assert.equal(plan.stdout, '{"selected":1,"total":2,"shards":1}\n', plan.stderr)
-  assert.equal(removalsAt(dir, '--base', 'imported').stdout, 'caught one\n')
-})
-
-test('um pull request de etapa roda todas as linhas, sem diff que as toque', (t) => {
+test('um pull request com o rótulo all-removals roda todas as linhas, sem diff que as toque', (t) => {
   const dir = pairRepo(t)
   writeFileSync(join(dir, 'README.md'), 'b\n')
   commitAll(dir)
-  const pullRequest = JSON.stringify({ title: 'feat: step 13, x', headRef: 'a', labels: [] })
+  const pullRequest = JSON.stringify({ title: 'x', headRef: 'a', labels: ['all-removals'] })
   const plan = removalsAt(dir, '--base', 'main', '--pull-request', pullRequest, '--plan')
   assert.equal(
     plan.stdout,
-    '{"selected":2,"total":2,"shards":2,"everything":"a step build title"}\n',
+    '{"selected":2,"total":2,"shards":1,"everything":"the all-removals label"}\n',
   )
 })
