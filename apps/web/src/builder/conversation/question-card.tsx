@@ -29,7 +29,6 @@ const route = getRouteApi(
 export const CARD_TEXT = {
   sending: 'Enviando…',
   unsent: 'Não foi possível enviar. Tente de novo.',
-  expired: 'Esta pergunta expirou.',
   other: 'outra resposta…',
 }
 
@@ -130,7 +129,6 @@ function answerText(answer: Answer | undefined): string {
 }
 
 function closedText(state: QuestionCardItem['state']): string | undefined {
-  if (state === 'expired') return CARD_TEXT.expired
   return state === 'closed' ? sentenceOfCode('QUESTION_CLOSED') : undefined
 }
 

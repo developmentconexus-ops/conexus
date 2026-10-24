@@ -1,9 +1,15 @@
 import type { ConversationEvent, Message } from '@conexus/hub-api'
 import { MessageId, ModelId } from '@conexus/hub-api'
-import { expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
+import { fold } from './fold.ts'
 import type { Live } from './live.ts'
 import { IDLE, itemsOf, live, waitsOnPerson } from './live.ts'
+import { READ_DONE } from './tool-fixtures.ts'
 import { fromMessages } from './transcript.ts'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 const TURN = MessageId.parse('run-1')
 const STEP_1 = MessageId.parse('step-1')
@@ -197,4 +203,37 @@ test('o plano recusado mostra o que o Mastra devolve: submittedPlan com a ação
   expect(fromMessages([message(STEP_1, [rejected])])).toMatchObject([
     { kind: 'card', state: 'rejected', title: 'Pedidos', plan: 'Um fluxo.' },
   ])
+})
+
+function calling(n: number): Message['parts'][number] {
+  return {
+    type: 'tool-invocation',
+    toolInvocation: {
+      ...READ_DONE,
+      state: 'call',
+      result: undefined,
+      toolCallId: `toolu_read_${n}`,
+    },
+  }
+}
+
+test('uma chamada em grupo não volta a zero: cada linha guarda quando a tela a ouviu pela primeira vez', () => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2026-10-24T12:00:00.000Z'))
+  let state = told(opening, start(STEP_1))
+  const first = Date.now()
+  for (const n of [1, 2, 3]) {
+    state = live(state, part(STEP_1, n - 1, calling(n)))
+    vi.advanceTimersByTime(2000)
+  }
+  // A later update of the first call does not restamp it.
+  state = live(state, part(STEP_1, 0, calling(1)))
+  const items = itemsOf(state)
+  expect(items.map((item) => item.kind === 'tool' && item.startedAt)).toEqual([
+    first,
+    first + 2000,
+    first + 4000,
+  ])
+  const rows = fold(items)
+  expect(rows).toMatchObject([{ kind: 'group' }])
 })

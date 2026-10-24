@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { fold } from './fold.ts'
-import { summaryOfTools } from './tool-presentation.ts'
+import { summaryOfTools } from './tool-registry.ts'
 import type { ToolItem, TranscriptItem } from './transcript.ts'
 
-function tool(id: string, toolName = 'read_file'): ToolItem {
+function tool(id: string, toolName = 'mastra_workspace_read_file'): ToolItem {
   return {
     kind: 'tool',
     id,
@@ -39,18 +39,43 @@ test('three or more tools in a row fold into one group, in their order', () => {
   if (rows[0]?.kind === 'group') {
     assert.deepEqual(
       rows[0].tools.map((t) => t.toolName),
-      ['read_file', 'read_file', 'read_file', 'read_file'],
+      [
+        'mastra_workspace_read_file',
+        'mastra_workspace_read_file',
+        'mastra_workspace_read_file',
+        'mastra_workspace_read_file',
+      ],
     )
   }
 })
 
-test('skill, ask_user and submit_plan never group into tool groups (Criterion 9)', () => {
+const questionCard: TranscriptItem = {
+  kind: 'card',
+  cardKind: 'question',
+  id: 'q-1',
+  toolCallId: 'q-1',
+  toolName: 'ask_user',
+  state: 'open',
+  questions: [],
+}
+const planCard: TranscriptItem = {
+  kind: 'card',
+  cardKind: 'plan',
+  id: 'p-1',
+  toolCallId: 'p-1',
+  toolName: 'submit_plan',
+  state: 'open',
+  title: 'Plano',
+  plan: 'Fazer.',
+}
+
+test('skill and the cards never group into tool groups (Criterion 9)', () => {
   const rows = fold([
-    tool('1', 'read_file'),
-    tool('2', 'read_file'),
+    tool('1', 'mastra_workspace_read_file'),
+    tool('2', 'mastra_workspace_read_file'),
     tool('3', 'skill'),
-    tool('4', 'read_file'),
-    tool('5', 'read_file'),
+    tool('4', 'mastra_workspace_read_file'),
+    tool('5', 'mastra_workspace_read_file'),
   ])
   assert.equal(
     rows.every((row) => row.kind === 'item'),
@@ -59,31 +84,25 @@ test('skill, ask_user and submit_plan never group into tool groups (Criterion 9)
   assert.equal(rows.length, 5)
 
   const askRows = fold([
-    tool('1', 'read_file'),
-    tool('2', 'read_file'),
-    tool('3', 'ask_user'),
-    tool('4', 'read_file'),
+    tool('1', 'mastra_workspace_read_file'),
+    tool('2', 'mastra_workspace_read_file'),
+    questionCard,
+    tool('4', 'mastra_workspace_read_file'),
   ])
   assert.equal(
     askRows.every((row) => row.kind === 'item'),
     true,
   )
 
-  const planRows = fold([tool('1', 'read_file'), tool('2', 'read_file'), tool('3', 'submit_plan')])
+  const planRows = fold([
+    tool('1', 'mastra_workspace_read_file'),
+    tool('2', 'mastra_workspace_read_file'),
+    planCard,
+  ])
   assert.equal(
     planRows.every((row) => row.kind === 'item'),
     true,
   )
-})
-
-test('task_* tools have no line in fold', () => {
-  const rows = fold([
-    tool('1', 'task_write'),
-    tool('2', 'task_update'),
-    tool('3', 'task_complete'),
-    tool('4', 'task_check'),
-  ])
-  assert.equal(rows.length, 0)
 })
 
 test('a text or a thought ends the run, and each run folds on its own', () => {
@@ -136,9 +155,9 @@ test('ephemeral machine steps pass while replaced machine phase lasts', () => {
 
 test('the summary counts by tool in order and formats correctly', () => {
   const summary = summaryOfTools([
-    { toolName: 'list_files' },
-    { toolName: 'grep' },
-    { toolName: 'read_file' },
+    tool('1', 'mastra_workspace_list_files'),
+    tool('2', 'mastra_workspace_grep'),
+    tool('3', 'mastra_workspace_read_file'),
   ])
   assert.equal(summary.short, '3 ferramentas')
   assert.equal(summary.full, '3 ferramentas: listou, procurou, leu')

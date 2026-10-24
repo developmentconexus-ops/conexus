@@ -9,8 +9,15 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { Markdown } from './markdown.tsx'
-import { thoughtOf } from './tool-presentation.ts'
+import { durationOf } from './text.ts'
 import type { ReasoningItem } from './transcript.ts'
+
+function thoughtOf(seconds: number | null | undefined, running: boolean): string {
+  if (running) return 'Pensando…'
+  return seconds === null || seconds === undefined || seconds < 1
+    ? 'Pensou'
+    : `Pensou por ${durationOf(seconds)}`
+}
 
 /**
  * The reasoning disclosure (Criterion 9, V39 amended):

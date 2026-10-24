@@ -1,5 +1,6 @@
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS } from '@conexus/app/check'
+import { BUILDER_TOOL } from '@conexus/hub-api'
 import type { MessageList } from '@mastra/core/agent'
 import type { OutputProcessor, ProcessOutputStepArgs } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
@@ -8,8 +9,6 @@ import type { TaskItemSnapshot } from '@mastra/core/tools'
 import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { Runs } from '../runs/public.ts'
-
-export const CHECK_TOOL = 'conexus_check'
 
 /** Conexus OS `e0353c36` `harness/tools.ts:28-33`, with the steps of this check (decision 0055). */
 const CHECK_DESCRIPTION = [
@@ -29,7 +28,7 @@ const PLATFORM_FAILED = {
 /** `conexus_check`: the same check as the end of the turn, by the same path (`Runs.check`). */
 export function checkTool(runs: Runs) {
   return createTool({
-    id: CHECK_TOOL,
+    id: BUILDER_TOOL.check,
     description: CHECK_DESCRIPTION,
     inputSchema: z.object({}),
     execute: async (_input, { requestContext }) => {
