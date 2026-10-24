@@ -8,8 +8,8 @@ import { settleThinking } from './tell.ts'
 import { turnLine } from './turn-line.ts'
 import { say } from './turn-log.ts'
 import { tellFailure, tellVersion } from './turn-parts.ts'
-import type { EndReason } from './turn-state.ts'
-import { closed, ended, failing } from './turn-state.ts'
+import type { EndReason, Writing } from './turn-state.ts'
+import { closed, ended, failing, isOpen, writingOf } from './turn-state.ts'
 
 type AgentEnd = Extract<AgentControllerEvent, { type: 'agent_end' }>['reason']
 
@@ -92,4 +92,62 @@ export async function endUnstarted(
   if (failure !== undefined) live.state = failing(live.state, failure)
   await closeTurn(live, reason, reason)
   endTurn(live)
+}
+
+type Exit = { reason: EndReason; failure?: TurnFailureCode }
+
+/**
+ * Starts the turn's run and waits for it to end, as Mastra's own wait for an accepted run does
+ * (`waitForAcceptedRunCompletion`, private in 1.79, so here on its public waiters, code C75): the
+ * turn's end, its run loop failing, its stream torn down, or an abort requested once it started.
+ * A way out without `agent_end` ends the turn there, through the same close. Whether a run began.
+ */
+export async function runTurn(
+  live: Live,
+  writing: Writing,
+  start: () => Promise<boolean>,
+): Promise<boolean> {
+  const { run, stream, thread } = live.session
+  const waiters = new AbortController()
+  const { signal } = waiters
+  const threadId = thread.getId()
+  let tornDown = false
+  const teardown = stream.waitForTeardown(signal).then(() => {
+    tornDown = true
+  })
+  try {
+    if (!(await start())) return false
+    const after = run.getAbortGeneration()
+    async function abortExit(): Promise<Exit> {
+      await run.waitForAbortRequest(signal, { after })
+      // A run Mastra runs here still says its end, once torn down.
+      if (run.getRunId() !== null) await run.waitForTeardown(signal)
+      return { reason: 'aborted' }
+    }
+    // Sending may bind the stream again: a teardown on the way counts only when it was not.
+    const away = !stream.isOpen() || (threadId !== null && thread.getId() !== threadId)
+    const exit: Exit | undefined =
+      tornDown && away
+        ? { reason: 'aborted' }
+        : await Promise.race([
+            writing.over.then(() => undefined),
+            stream.waitForConsumerFailure(signal).then(
+              () => undefined,
+              (cause: unknown): Exit => {
+                logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+                return { reason: 'error', failure: 'INTERNAL_UNEXPECTED' }
+              },
+            ),
+            (tornDown ? stream.waitForTeardown(signal) : teardown).then(
+              (): Exit => ({ reason: 'aborted' }),
+            ),
+            abortExit(),
+          ])
+    if (exit === undefined || writingOf(live.state) !== writing) return true
+    if (isOpen(live.state) && live.state.end !== undefined) await writing.over
+    else await endUnstarted(live, exit.reason, exit.failure)
+    return true
+  } finally {
+    waiters.abort()
+  }
 }

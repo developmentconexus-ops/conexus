@@ -26,7 +26,7 @@ import { cancelPending } from './live.ts'
 import type { Question } from './record.ts'
 import { questionId, saveQuestion, settled } from './record.ts'
 import { deliverInto, steerCards } from './steer.ts'
-import { beforeAgentEnd, endUnstarted } from './turn-end.ts'
+import { beforeAgentEnd, endUnstarted, runTurn } from './turn-end.ts'
 import { onEvent } from './turn-events.ts'
 import { beginTurn, tellMachine } from './turn-parts.ts'
 import type { Writing } from './turn-state.ts'
@@ -173,10 +173,10 @@ export class Sessions {
     const opened = beginTurn(live, writing)
     const turn: Promise<void> = (async () => {
       try {
-        const started = await start()
         opened.after ??= after
-        if (started) await writing.over
-        else await endUnstarted(live, 'error', 'INTERNAL_UNEXPECTED')
+        if (!(await runTurn(live, writing, start))) {
+          await endUnstarted(live, 'error', 'INTERNAL_UNEXPECTED')
+        }
       } catch (cause) {
         // Mastra cancels a start that a Parar came first to (`SessionStartupCancelledError`).
         const stopped = isSessionStartupCancelledError(cause)
@@ -335,10 +335,16 @@ export class Sessions {
   }
 
   /**
-   * Waits for every turn in progress to end, then ends the streams (code C62); the caller holds the
-   * deadline. A card waits on a person, not on this process: its turn ended when it asked.
+   * Stops every turn in progress as Parar does, so each saves what it wrote, waits for them to end,
+   * then ends the streams (code C62); the caller holds the deadline. A card waits on a person, not
+   * on this process: its turn ended when it asked.
    */
   async drain(): Promise<void> {
+    for (const live of this.#lives.values()) {
+      if (!isOpen(live.state)) continue
+      cancelPending(live)
+      live.session.abort()
+    }
     await Promise.all(this.#turns)
     this.#closing.abort()
   }

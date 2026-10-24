@@ -102,7 +102,8 @@ export async function takeCards(live: Live): Promise<ToolCallId[]> {
  * The cards waiting in Mastra's database for a session that never saw them asked (a new process):
  * made this session's, as Mastra's own resume registers a cold suspension
  * (`resolveSuspensionAgent`), so an answer resumes them by their address and Parar or a message
- * closes them.
+ * closes them. Our own (code C75): Mastra 1.79 rebuilds no parked suspension when a session binds a
+ * thread, and its claim (`claimToolSuspension`) and abort deny only registered ones.
  */
 export async function restoreCards(
   live: Live,

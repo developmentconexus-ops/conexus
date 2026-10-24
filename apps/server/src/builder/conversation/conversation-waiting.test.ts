@@ -76,7 +76,16 @@ test('Parar com uma pergunta aberta: a chamada fecha negada, sem turno a termina
   assert.equal((await send()).statusCode, 202)
   const { card } = await untilCard(stream, 'question')
   assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
-  const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
+  // Mastra writes the denial a moment after the abort, as it resumes the call with it.
+  let read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
+  for (
+    let attempt = 0;
+    attempt < 50 && stateOf(read, card.toolCallId).at(-1) === 'call';
+    attempt += 1
+  ) {
+    await sleep(100)
+    read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
+  }
   assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
   assert.equal(await within(500, stream.next()), undefined, 'no turn runs to say an end')
 })
@@ -168,6 +177,27 @@ for (const [type, steps] of [
     })
   })
 }
+
+test('a resposta no instante do fim do turno: o Mastra a retoma, ou a recusa e o cartão fica aberto (a janela do instantâneo, como na rota do Mastra)', {
+  timeout: 60_000,
+}, async (t) => {
+  const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
+  assert.equal((await send()).statusCode, 202)
+  const { card } = await untilCard(stream, 'question')
+  const answered = await post(hub, ana, `${url}/questions/${card.toolCallId}`, QUESTION)
+  assert.equal(answered.statusCode, 202, answered.body)
+  const events = await within(15_000, stream.turn())
+  assert.ok(events !== undefined, 'the answer’s turn ended')
+  const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
+  if (events.at(-1)?.type === 'turnEnd' && failuresOf(events).length === 0) {
+    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.equal(stateOf(read, card.toolCallId).at(-1), 'result')
+  } else {
+    assert.deepEqual(failuresOf(events), ['INTERNAL_UNEXPECTED'])
+    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
+    assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
+  }
+})
 
 /** Mastra keeps the parked run as it had not written it yet: its own resume refuses an answer then. */
 const NOT_PARKED_YET = `update mastra.mastra_workflow_snapshot set snapshot = jsonb_set(snapshot, '{status}', '"pending"') where workflow_name = 'agentic-loop'`
