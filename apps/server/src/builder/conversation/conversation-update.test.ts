@@ -4,7 +4,7 @@ import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { ConversationEvent } from '@conexus/hub-api'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
-import { post } from '../../hub/identity/test-hub.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
 import {
   answeredOf,
@@ -15,6 +15,7 @@ import {
   started,
   streamOf,
 } from './test-conversation.ts'
+import { connect } from './test-defaults.ts'
 import { failuresOf } from './test-parts.ts'
 import {
   answerUrl,
@@ -48,11 +49,16 @@ async function rowOf(hub: { test: { asOwner(sql: string): Promise<unknown[]> } }
  * A card asked on a copy that is then stopped as an update stops it: the turn writes `a.ts`, asks,
  * and the copy closes; `next` is the copy that takes over, its machine still there.
  */
-async function parkedThenUpdated(t: TestContext, type: 'question' | 'plan') {
+async function parkedThenUpdated(
+  t: TestContext,
+  type: 'question' | 'plan',
+  steps = type === 'question' ? [[WRITE_A], [ask(WHO)]] : [[WRITE_A, WRITE_PLAN], [SUBMIT]],
+  choose?: (world: Awaited<ReturnType<typeof conversing>>) => Promise<void>,
+) {
   const calls: Sent[] = []
-  const steps = type === 'question' ? [[WRITE_A], [ask(WHO)]] : [[WRITE_A, WRITE_PLAN], [SUBMIT]]
   const world = await conversing(t, stepping(steps, calls))
   const { hub, ana, conversations } = world
+  await choose?.(world)
   const closing = await hubBeside(t, hub)
   const url = `${conversations}/${await started(closing, ana, conversations)}`
   const stream = await streamOf(closing, ana, url)
@@ -264,4 +270,37 @@ test('o snapshot do Mastra fica até a resposta e sai depois', { timeout: 60_000
   assert.equal((await post(next, ana, answerUrl(url, card.toolCallId), QUESTION)).statusCode, 202)
   await within(15_000, stream.turn())
   assert.equal(await parkedRows(hub), 0)
+})
+
+const LONG = 'As encomendas da padaria chegam pelo telefone e pelo balcão. '.repeat(3000)
+const OBSERVED = [
+  '<observations>',
+  '* 🔴 (10:00) Ana quer um app de encomendas da padaria.',
+  '</observations>',
+  '<thread-title>Encomendas da padaria</thread-title>',
+].join('\n')
+
+test('a cópia que adota o turno lê a escolha da empresa: o Observador chama o dublê do Groq (14.2, 35)', {
+  timeout: 60_000,
+}, async (t) => {
+  const groq = 'groq/llama-3.3-70b-versatile'
+  const where = await parkedThenUpdated(
+    t,
+    'question',
+    [[WRITE_A], [ask(WHO)], [{ type: 'text', text: LONG }, WRITE_A]],
+    async ({ hub, ana, companyId, anthropic }) => {
+      anthropic.chat = () => ({ kind: 'text', text: OBSERVED })
+      await connect(hub, ana, `/api/companies/${companyId}/model-accounts`, 'groq')
+      const settings = `/api/companies/${companyId}/observational-memory-models`
+      const saved = await call(hub, ana, 'PUT', settings, { role: 'observer', model: groq })
+      assert.equal(saved.statusCode, 200, saved.body)
+    },
+  )
+  const { ana, url, card, next, anthropic } = where
+  await next.restart()
+  const { stream } = await adoptedStream(t, where)
+  assert.equal((await post(next, ana, answerUrl(url, card.toolCallId), QUESTION)).statusCode, 202)
+  const events = await within(30_000, stream.turn())
+  assert.deepEqual(events?.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.ok(anthropic.chats.length > 0, 'the adopted turn’s memory called the Groq double')
 })
