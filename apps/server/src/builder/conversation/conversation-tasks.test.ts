@@ -1,9 +1,13 @@
 import assert from 'node:assert/strict'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
+import type { ConversationEvent } from '@conexus/hub-api'
+import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { conversing, sent, started, streamOf, title } from './test-conversation.ts'
+import { conversing, KEY, MODEL, sent, started, streamOf, title } from './test-conversation.ts'
 import { connect } from './test-defaults.ts'
+import { noticesOf } from './test-parts.ts'
 
 const OBSERVER = /^You are the memory consciousness/
 const SNAPSHOT = '<current-task-list'
@@ -54,25 +58,104 @@ test('o Builder sai de createCodingAgent sem workspace próprio: as ferramentas 
   )
 })
 
-test('o Observer usa o modelo explícito da empresa pela fila de contas, sem mudar o modelo da conversa', async (t) => {
+const GROQ = 'groq/llama-3.3-70b-versatile'
+
+/** The memory's calls among a provider's: the observer's prompt opens with its identity. */
+function observed(calls: Sent[]): Sent[] {
+  return calls.filter((each) => OBSERVER.test(each.system))
+}
+
+/** Two long answers, each past half the observer's window, so the second turn blocks on observation. */
+async function twoLongTurns(
+  t: TestContext,
+  where: { hub: Hub; person: Person; url: string },
+): Promise<ConversationEvent[][]> {
+  const stream = await streamOf(where.hub, where.person, where.url)
+  t.after(() => stream.close())
+  const turns: ConversationEvent[][] = []
+  for (const question of ['Primeira encomenda', 'Segunda encomenda']) {
+    assert.equal((await sent(where.hub, where.person, where.url, question)).statusCode, 202)
+    turns.push(await stream.turn())
+  }
+  return turns
+}
+
+test('Observador no Groq: a chamada dele chega ao dublê do Groq, e o modelo do turno não muda (14.2, 35)', async (t) => {
   const { hub, ana, conversations, companyId, anthropic } = await conversing(
     t,
     (asked) => title(asked) ?? { kind: 'text', text: LONG },
   )
+  anthropic.chat = () => ({ kind: 'text', text: OBSERVED })
   await connect(hub, ana, `/api/companies/${companyId}/model-accounts`, 'groq')
   const settings = `/api/companies/${companyId}/observational-memory-models`
-  const chosen = 'groq/llama-3.3-70b-versatile'
-  const saved = await call(hub, ana, 'PUT', settings, { role: 'observer', model: chosen })
+  const saved = await call(hub, ana, 'PUT', settings, { role: 'observer', model: GROQ })
   assert.equal(saved.statusCode, 200, saved.body)
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const turns = await twoLongTurns(t, { hub, person: ana, url })
+  for (const events of turns) {
+    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  }
+  assert.ok(observed(anthropic.chats).length > 0, 'the Observer called the Groq double')
+  assert.equal(observed(anthropic.sent).length, 0, 'and none reached the conversation’s provider')
+  assert.ok(
+    anthropic.sent.some((each) => each.stream),
+    'the turns ran on the conversation’s model',
+  )
+  const read = await call(hub, ana, 'GET', url)
+  assert.equal(Object(read.json()).conversation.model, MODEL)
+})
+
+test('sem conta no modelo escolhido, o Observador segue a conversa, sem aviso, passando de blockAfter (14.2, 36)', async (t) => {
+  const { hub, ana, conversations, companyId, anthropic } = await conversing(t, (asked) => {
+    if (OBSERVER.test(asked.system)) return { kind: 'text', text: OBSERVED }
+    return title(asked) ?? { kind: 'text', text: LONG }
+  })
+  const accounts = `/api/companies/${companyId}/model-accounts`
+  const groq = await connect(hub, ana, accounts, 'groq')
+  const settings = `/api/companies/${companyId}/observational-memory-models`
+  assert.equal(
+    (await call(hub, ana, 'PUT', settings, { role: 'observer', model: GROQ })).statusCode,
+    200,
+  )
+  const removed = await call(hub, ana, 'DELETE', `${accounts}/${groq}`)
+  assert.equal(removed.statusCode, 204, removed.body)
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const turns = await twoLongTurns(t, { hub, person: ana, url })
+  for (const events of turns) {
+    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.deepEqual(noticesOf(events), [])
+  }
+  assert.equal(anthropic.chats.length, 0, 'no call reached Groq')
+  assert.ok(observed(anthropic.sent).length > 0, 'the Observer followed the conversation')
+})
+
+test('a conta do Observador falha e o modelo do turno bate no limite: o turno troca de conta como sem o Observador (14.2, 37)', async (t) => {
+  let limited = false
+  const { hub, ana, conversations, companyId, anthropic, link } = await conversing(t, (asked) => {
+    if (limited && asked.key === KEY) return { kind: 'refuse', status: 429 }
+    return title(asked) ?? { kind: 'text', text: LONG }
+  })
+  await link('Time 2', 'sk-ant-conversation-key-0002')
+  await connect(hub, ana, `/api/companies/${companyId}/model-accounts`, 'groq')
+  anthropic.chat = () => ({ kind: 'refuse', status: 401 })
+  const settings = `/api/companies/${companyId}/observational-memory-models`
+  assert.equal(
+    (await call(hub, ana, 'PUT', settings, { role: 'observer', model: GROQ })).statusCode,
+    200,
+  )
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  for (const question of ['Primeira encomenda', 'Segunda encomenda']) {
+  for (const question of ['Primeira encomenda', 'Segunda encomenda', 'Terceira encomenda']) {
+    limited = question.startsWith('Terceira')
     assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
-    assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+    const events = await stream.turn()
+    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+    const notices = noticesOf(events)
+    assert.deepEqual(notices.length, limited ? 1 : 0, notices.join(' | '))
+    if (limited) assert.match(notices[0] ?? '', /continuei pela Time 2/)
   }
-  await hub.close()
-  assert.ok(anthropic.chats.length > 0, 'the Observer called the selected Groq account')
+  assert.ok(anthropic.chats.length > 0, 'the Observer’s account was called, and failed')
 })
 
 test('a lista volta ao modelo depois que a chamada de task_write sai da janela pela memória (14.2, 14)', async (t) => {

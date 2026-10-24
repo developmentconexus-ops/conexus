@@ -2,11 +2,14 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.14.0, dist/providers/claude-max.js (`opencodeClaudeMaxProvider`,
 // `buildAnthropicOAuthFetch`, `claudeCodeMiddleware`). Changed: TypeScript; the token is the one the
-// queue opened for this call, not a file store; no prompt cache or thinking middleware.
+// queue opened for this call, not a file store; no thinking middleware (the
+// effort goes by the queue's processor).
 
 import { createAnthropic } from '@ai-sdk/anthropic'
 import type { LanguageModelMiddleware } from 'ai'
 import { wrapLanguageModel } from 'ai'
+import type { PromptCacheScope } from './prompt-cache.ts'
+import { promptCacheMiddleware } from './prompt-cache.ts'
 
 const OAUTH_REQUIRED_BETAS = [
   'oauth-2025-04-20',
@@ -47,7 +50,7 @@ function subscriptionHeaders(headers: Headers, accessToken: string): Headers {
 }
 
 /** The subscription's model for one call: the access token as a bearer, never as an API key. */
-export function subscriptionModel(modelName: string, accessToken: string) {
+export function subscriptionModel(modelName: string, accessToken: string, scope: PromptCacheScope) {
   const provider = createAnthropic({
     apiKey: 'oauth-placeholder',
     fetch: async (url, init) => {
@@ -56,5 +59,8 @@ export function subscriptionModel(modelName: string, accessToken: string) {
       return fetch(url, { ...init, headers: subscriptionHeaders(headers, accessToken) })
     },
   })
-  return wrapLanguageModel({ model: provider(modelName), middleware: identityMiddleware })
+  return wrapLanguageModel({
+    model: provider(modelName),
+    middleware: [identityMiddleware, promptCacheMiddleware(scope)],
+  })
 }
