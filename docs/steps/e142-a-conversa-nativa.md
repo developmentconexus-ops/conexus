@@ -31,8 +31,7 @@ harness inicial, ela tem que ser totalmente funcional".
 **A emenda de 2026-10-24.** Entram as suas decisões depois da aprovação: sem LSP; sem trava de leitura;
 nenhum processador nosso novo; a recusa do Mastra nas duas trilhas; a escolha do modelo do Observador e
 do Reflector, no formato da Factory, com critério e teste (U11), e sem conta para a pessoa ele segue a
-conversa; `run_event` sai nesta etapa, em migração própria depois que nenhum código o lê (D30), e o piso da volta entra na arquitetura; a permissão da tabela nova,
-em migração própria; o plano é a pasta, sem regra de falha.
+conversa; `run_event` sai nesta etapa, em migração própria depois que nenhum código o lê (D30), e o piso da volta entra na arquitetura; a permissão da tabela nova, em migração própria e em pull request próprio para a branch da etapa, com a sua palavra ("1. Aprovo 2. Aprovado", D11); o plano é a pasta, sem regra de falha.
 
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
 ficam como proposta.
@@ -104,7 +103,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 35 | U11 | Observador no Groq: a chamada dele chega ao dublê do Groq, não ao da conversa; o modelo do turno não muda | `conversation-tasks.test.ts` (lê o dublê do Groq) |
 | 36 | U11 | Pessoa sem conta no modelo escolhido, ou a leitura falha: o Observador segue a conversa, sem aviso, passando de `blockAfter`; a escolha é lida uma vez por turno | idem |
 | 37 | U11 | Conta do Observador falha e o modelo do turno bate no limite: o turno troca de conta como sem o Observador, sem aviso nascido da chamada lateral | idem |
-| 38 | U11 | As permissões `SELECT, INSERT, UPDATE (observer, reflector)` vão numa migração só delas, com a palavra do fundador (D11) | `catalog.test.ts` |
+| 38 | U11 | As permissões `SELECT, INSERT, UPDATE (observer, reflector)` vão numa migração só delas, em pull request próprio para a branch da etapa, com a palavra do fundador (D11) | `catalog.test.ts` |
 
 **Em espera** (a bancada): os critérios 21 a 26 (U6, U7) estão no cartão de `917b5e4` e voltam com a emenda.
 
@@ -302,7 +301,7 @@ com conteúdo inventado (S40, T24): a lista que sai da janela, o passo final vaz
 **Raio.** `builder/model-accounts/`: ganha `observational-memory-settings.ts` (hoje em `conversation/`),
 muda `processors.ts`, `turn.ts`; `conversation/{sessions,builder,tables}.ts`, `hub-api/observational-memory.ts`,
 `apps/web/src/builder/observational-memory/`: muda; o `GRANT` sai da migração da tabela para
-`…_observational_memory_models_grants` (D5, D11), com a palavra do fundador em `approvals.md`.
+`…_observational_memory_models_grants` (D5, D11), em pull request próprio para a branch da etapa, com a palavra do fundador em `approvals.md`.
 
 **Contratos.** `observational_memory_models(companyId, observer, reflector)`, `null` segue a conversa;
 `GET` e `PUT …/observational-memory-models` (`session`). **Forma da Factory:**

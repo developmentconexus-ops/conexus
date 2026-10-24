@@ -149,12 +149,11 @@ program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image. Every migration only adds, so
 an earlier image runs on the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's
-P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30): no earlier
-image runs after it. The edge goes back first.
+P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30): from the release shipping it, no earlier image runs. The edge goes back first.
 
-**Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
+**Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
 paid one. Both Hub databases return to one instant. It then sets every login password
-again and invalidates sessions; the Hub's start recreates app logins, and missing
+again, invalidates sessions; the Hub's start recreates app logins, and missing
 Workers from the built files it keeps [0043]. A company's project restores alone. Restoring is
 rehearsed where each thing is created: Hub in step 2, the Git in step 13, a company and
 its Workers in steps 7 and 9, everything together in step 22.
