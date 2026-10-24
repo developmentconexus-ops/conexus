@@ -144,7 +144,7 @@ async function endParked(live: Live, run: string | undefined): Promise<void> {
 /**
  * A call Mastra gave up on, because the person stopped the turn, wrote instead, or the wait ran
  * out: Mastra closes it denied, even when an answer had claimed it, so, once none waits, the turn
- * ends. A call of no turn here, as one a stopped copy left, says nothing.
+ * ends. A call of no turn here says nothing.
  */
 function onCancelled(live: Live, event: Cancelled) {
   const turn = live.turn
@@ -170,29 +170,37 @@ export function onCardEvent(live: Live, event: AgentControllerEvent): void {
 }
 
 /**
- * The questions and plans a stopped copy left parked in Mastra's database are closed denied, and
- * their runs released, so nothing of them stays: the session takes them as its own parked
- * suspensions and aborts, which settles them (`settleSuspendedToolCallsAsDenied`) and releases
- * their runs.
+ * A parked turn left to the next copy: our listener goes first, since Mastra's abort still says
+ * `tool_suspension_cancelled` for each parked call, then Mastra keeps the run as it is
+ * (`detachFromCurrent`), without closing the card.
  */
-export async function denyParked(
+export function detach(live: Live): void {
+  live.unsubscribe()
+  live.session.thread.detachFromCurrent()
+}
+
+/**
+ * The cards a stopped copy left parked in Mastra's database, made this session's again, as Mastra's
+ * own resume registers a cold suspension (`resolveSuspensionAgent`); the Mastra runs they belong to.
+ */
+export async function adoptCards(
   live: Live,
   agent: Pick<Agent, 'listSuspendedRuns'>,
-): Promise<void> {
+): Promise<string[]> {
   const threadId = live.conversationId
   const resourceId = memoryOwner(live.owner)
   const { runs } = await agent.listSuspendedRuns({ threadId, resourceId })
-  for (const run of runs) {
-    for (const { toolCallId, toolName } of run.toolCalls) {
+  const adopted: string[] = []
+  for (const { runId, toolCalls } of runs) {
+    for (const { toolCallId, toolName, args, suspendPayload } of toolCalls) {
       if (toolName === undefined || toolCallId === undefined) continue
-      live.session.suspensions.register({
-        toolCallId,
-        toolName,
-        runId: run.runId,
-        threadId,
-        resourceId,
-      })
+      const address = { toolCallId, toolName, runId, threadId, resourceId }
+      live.session.suspensions.register(address)
+      // Mastra's database keeps a tool's own suspension without its arguments: the card reads its payload.
+      const suspended = { ...address, args: args ?? null, suspendPayload }
+      live.session.displayState.apply({ type: 'tool_suspended', ...suspended })
+      if (!adopted.includes(runId)) adopted.push(runId)
     }
   }
-  if (runs.length > 0) live.session.abort()
+  return adopted
 }

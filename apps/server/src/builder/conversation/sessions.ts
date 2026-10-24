@@ -7,27 +7,34 @@ import type {
   OMProgress,
   ProjectId,
   QuestionAnswer,
-  RunId,
   ToolCallId,
 } from '@conexus/hub-api'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { Turn, turnContext } from '../model-accounts/public.ts'
-import type { Restart, Runs } from '../runs/public.ts'
+import { Turn } from '../model-accounts/public.ts'
+import type { Restart, Run, Runs } from '../runs/public.ts'
 import { answerCard } from './answers.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import { denyParked, expire, onCardEvent, parked, releaseCards, takeCards } from './cards.ts'
-import { deliver } from './deliver.ts'
+import {
+  adoptCards,
+  detach,
+  onCardEvent,
+  openCards,
+  parked,
+  releaseCards,
+  takeCards,
+} from './cards.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
 import { cancelPending } from './live.ts'
 import type { Question } from './record.ts'
-import { questionId, saveQuestion, saveRestarted, settled } from './record.ts'
+import { questionId, saveQuestion, saveRestarted } from './record.ts'
 import { deliverInto, nextRunOrEnd, steerCards, turnOver } from './steer.ts'
-import { beforeAgentEnd, endTurn } from './turn-end.ts'
+import { beforeAgentEnd } from './turn-end.ts'
 import { onEvent } from './turn-events.ts'
-import { openTurn, tellMachine, tellRestarted } from './turn-parts.ts'
+import { tellRestarted } from './turn-parts.ts'
+import { adoptTurn, answerTurn } from './turn-run.ts'
 
 type OfConversation = { owner: Owner; conversationId: ConversationId }
 
@@ -188,7 +195,8 @@ export class Sessions {
       .then(
         async (live) => {
           try {
-            await this.#answer(live, input.question, turn, { runId, traceId: input.traceId })
+            const run = { runId, traceId: input.traceId }
+            await answerTurn(live, { runs: this.#runs, log: this.#log }, input.question, turn, run)
           } finally {
             await this.#release(conversationId, live)
           }
@@ -216,6 +224,7 @@ export class Sessions {
       body: QuestionAnswer
     },
   ): Promise<void> {
+    await this.#settled(input)
     const live = await this.#hold(input)
     try {
       await answerCard(live, input)
@@ -227,72 +236,39 @@ export class Sessions {
   }
 
   /**
-   * Mastra decides where the message goes (`requireDelivery`): it wakes a run, which carries this
-   * message's turn to the queue until that run's `agent_end`, or it joins the run in progress,
-   * whose turn stays (criterion 12). `sendSignal` is `sendMessage`'s own call, which keeps that
-   * decision to itself; the turn of each run is the one of the message that woke it, by Mastra's
-   * run id, never the latest message's. A message Mastra could not route started no run: its
-   * failure is the turn's end when no other run is in progress. A turn Mastra ran keeps its
-   * failure after the message that opened it, the one it saves the turn after.
+   * A run another copy left on a card: this copy takes the turn on, with the card open, and its
+   * answer, Parar, expiry or a message go on here as on the copy that asked (founder 2026-10-24,
+   * "4. B"); false when Mastra parks no card of it.
    */
-  async #answer(
-    live: Live,
-    question: Question,
-    turn: Turn,
-    run: { runId: RunId; traceId: string },
-  ): Promise<void> {
-    const writing = run.runId
-    const fields = { companyId: live.owner.companyId, conversationId: live.conversationId }
-    this.#log.info(fields, 'CONVERSATION_TURN_STARTED')
-    const id = questionId(live.conversationId, question.key)
-    const requestContext = this.#runs.contextOf(turnContext(turn), writing)
-    live.run = {
-      id: writing,
-      traceId: run.traceId,
-      context: requestContext,
-      finish: (reason) => this.#runs.finish({ runId: writing, reason }),
-      waiting: (waiting) => this.#runs.waiting(writing, waiting, () => expire(live)),
+  async adopt(run: Run): Promise<boolean> {
+    const owner = { companyId: run.companyId, personId: run.personId }
+    const { conversationId } = run
+    const live = await this.#hold({ owner, conversationId })
+    const parkedRuns = await adoptCards(live, this.#builder.agent).catch(async (error: unknown) => {
+      await this.#release(conversationId, live)
+      throw error
+    })
+    if (parkedRuns.length === 0) {
+      await this.#release(conversationId, live)
+      return false
     }
-    const opened = openTurn(live)
-    this.#runs.attach(writing, () => live.session.abort())
-    this.#runs.onPhase(writing, (phase) => tellMachine(live, phase))
-    try {
-      // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
-      const tracingOptions = { traceId: run.traceId.replaceAll('-', '') }
-      const options = { requestContext, requireDelivery: true, tracingOptions } as const
-      const accepted = await deliver(live, { question, id }, options)
-      opened.after ??= id
-      const runId = accepted.action === 'wake' ? accepted.runId : undefined
-      if (runId !== undefined && live.unclaimed?.run === runId) {
-        const { reason } = live.unclaimed
-        live.unclaimed = undefined
-        endTurn(live, { reason, turn, finish: live.turn?.tally.finishReason })
-      } else if (runId !== undefined) {
-        await new Promise<void>((ended) => live.runs.set(runId, { turn, ended }))
-      }
-    } catch (cause) {
-      logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-      if (live.runs.size === 0 && !live.session.stream.isActive()) {
-        endTurn(live, {
-          reason: 'error',
-          turn,
-          finish: undefined,
-          unexpected: 'INTERNAL_UNEXPECTED',
-        })
-      }
-    } finally {
-      live.asked.delete(turn)
-      turn.end()
-      live.run = undefined
-      await this.#runs.finish({ runId: writing, reason: 'error' })
-      if (live.unclaimed !== undefined && live.asked.size === 0) {
-        const { reason } = live.unclaimed
-        live.unclaimed = undefined
-        endTurn(live, { reason, turn: undefined, finish: live.turn?.tally.finishReason })
-      }
-      // The turn is over once what it keeps on the thread is written: the drain waits for that.
-      await settled(live)
-    }
+    const answered: Promise<void> = adoptTurn(live, this.#runs, run, parkedRuns)
+      .finally(() => this.#release(conversationId, live))
+      .catch((cause: unknown) =>
+        logFailure(this.#log, new Failure('INTERNAL_UNEXPECTED', { cause })),
+      )
+      .finally(() => this.#turns.delete(answered))
+    this.#turns.set(answered, Promise.resolve(live))
+    return true
+  }
+
+  /**
+   * Settles the conversation's runs another copy left, when none is open here: an answer or a
+   * Parar can come before this copy's boot took them.
+   */
+  async #settled({ owner, conversationId }: OfConversation): Promise<void> {
+    if (this.#lives.get(conversationId)?.run !== undefined) return
+    await this.#runs.settleConversation({ companyId: owner.companyId, conversationId })
   }
 
   /**
@@ -307,15 +283,14 @@ export class Sessions {
   }
 
   /**
-   * Tells the conversation's open streams that a turn another copy of the program ran was ended by
-   * a restart, and keeps the restart on the thread after the person's question that turn answered
-   * (card, the restart).
+   * Tells the conversation's open streams that a turn another copy of the program ran, with no card
+   * parked, was ended by a restart, and keeps the restart on the thread after the person's question
+   * that turn answered (card, the restart).
    */
   async restarted(restart: Restart): Promise<void> {
     const { companyId, personId, conversationId, runId, kept } = restart
     const live = await this.#hold({ owner: { companyId, personId }, conversationId })
     try {
-      await denyParked(live, this.#builder.agent)
       await saveRestarted(live, { runId, kept })
       tellRestarted(live, runId, kept)
     } finally {
@@ -336,7 +311,9 @@ export class Sessions {
   }
 
   /** Stops the answer in progress; Mastra keeps the text so far (`agent_end` `aborted`). */
-  async stop(conversationId: ConversationId): Promise<void> {
+  async stop(input: OfConversation): Promise<void> {
+    const { conversationId } = input
+    await this.#settled(input)
     const live = this.#lives.get(conversationId)
     if (live === undefined) return
     const taken = await takeCards(live)
@@ -350,13 +327,24 @@ export class Sessions {
   /**
    * Waits for every message and turn in progress until it ends or parks, then ends the streams
    * (code C62); the caller holds the deadline. A parked turn waits on a person, not on this copy:
-   * Mastra keeps it on the thread, and the copy that takes its run settles it.
+   * it is detached with its card open, and the copy that takes its run adopts it.
    */
   async drain(): Promise<void> {
     const turns = [...this.#turns].map(([answered, kept]) =>
-      Promise.race([answered, kept.then(parked, () => answered)]),
+      Promise.race([
+        answered.then(() => undefined),
+        kept.then(
+          async (live) => {
+            await parked(live)
+            return live
+          },
+          () => answered.then(() => undefined),
+        ),
+      ]),
     )
-    await Promise.all(turns)
+    for (const live of new Set(await Promise.all(turns))) {
+      if (live !== undefined && openCards(live).length > 0) detach(live)
+    }
     this.#closing.abort()
   }
 

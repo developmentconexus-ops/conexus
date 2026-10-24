@@ -207,10 +207,13 @@ export class RunStore {
   }
 
   /**
-   * Takes the company's runs not over whose lease ended, for one Projeto or for all: their copy of
-   * the program is gone, and this one settles them now (data D25).
+   * Takes the company's runs not over whose lease ended, for one Projeto, one conversation or all:
+   * their copy of the program is gone, and this one settles them now (data D25).
    */
-  async takeExpired(companyId: CompanyId, projectId?: ProjectId): Promise<Run[]> {
+  async takeExpired(
+    companyId: CompanyId,
+    of: { projectId?: ProjectId; conversationId?: ConversationId } = {},
+  ): Promise<Run[]> {
     const rows = await this.#database.command(inCompany(companyId), (tx) =>
       tx
         .update(run)
@@ -219,7 +222,8 @@ export class RunStore {
           and(
             inArray(run.state, LIVE),
             lt(run.leaseUntil, sql`now()`),
-            projectId === undefined ? undefined : eq(run.projectId, projectId),
+            of.projectId === undefined ? undefined : eq(run.projectId, of.projectId),
+            of.conversationId === undefined ? undefined : eq(run.conversationId, of.conversationId),
           ),
         )
         .returning(columns),
