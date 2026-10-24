@@ -18,21 +18,14 @@ import type { Restart, Runs } from '../runs/public.ts'
 import { answerCard } from './answers.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import {
-  denyParked,
-  expire,
-  onCardEvent,
-  parked,
-  releaseCards,
-  steerCards,
-  takeCards,
-} from './cards.ts'
+import { denyParked, expire, onCardEvent, parked, releaseCards, takeCards } from './cards.ts'
 import { deliver } from './deliver.ts'
 import { listen } from './listen.ts'
 import type { Listener, Live, Owner } from './live.ts'
-import { beforeAgentEnd, endTurn, onEvent, openTurn, tellMachine } from './live.ts'
+import { beforeAgentEnd, cancelPending, endTurn, onEvent, openTurn, tellMachine } from './live.ts'
 import type { Question } from './record.ts'
 import { questionId, saveQuestion, saveRestarted, settled } from './record.ts'
+import { deliverInto, nextRunOrEnd, steerCards, turnOver } from './steer.ts'
 import { eventId } from './turn-log.ts'
 
 /**
@@ -89,7 +82,12 @@ export class Sessions {
           ...{ conversationId, owner, log: this.#log, session, listeners: new Set<Listener>() },
           ...{ memory: this.#builder.memory, kept: Promise.resolve() },
           ...{ turn: undefined, asked: new Set(), runs: new Map() },
-          ...{ steering: undefined, unclaimed: undefined },
+          ...{ pending: new Set(), carry: undefined, ending: false, unclaimed: undefined },
+          cancel: (signalIds) => {
+            if (signalIds.length === 0) return
+            const target = { resourceId, threadId: conversationId, signalIds }
+            this.#builder.agent.cancelQueuedMessages(target)
+          },
           ...{ run: undefined, saveFailure: undefined },
           unsubscribe: () => undefined,
         }
@@ -152,8 +150,22 @@ export class Sessions {
     input: OfConversation & { projectId: ProjectId; question: Question; traceId: string },
   ): Promise<void> {
     const { owner, conversationId } = input
-    const waiting = await opened(this.#open.get(conversationId))
-    if (waiting !== undefined && (await steerCards(waiting, input.question.content))) return
+    const id = questionId(conversationId, input.question.key)
+    for (let tries = 0; tries < 3; tries += 1) {
+      const live = await opened(this.#open.get(conversationId))
+      if (live === undefined || live.run === undefined) break // no turn of this conversation here
+      if (await steerCards(live, { question: input.question, id })) return
+      if (live.ending) {
+        await turnOver(live)
+        break // the turn ended: this message is a turn of its own
+      }
+      if ((await deliverInto(live, { question: input.question, id })) === 'delivered') {
+        this.#log.info({ companyId: owner.companyId, conversationId }, 'CONVERSATION_STEERED')
+        return
+      }
+      // Between two runs of the turn (a card closed, or leftover input): wait for the next to start.
+      await nextRunOrEnd(live)
+    }
     const admitted = await this.#runs.admit({
       ...owner,
       conversationId,
@@ -337,6 +349,7 @@ export class Sessions {
     const live = await opened(this.#open.get(conversationId))
     if (live === undefined) return
     const taken = await takeCards(live)
+    cancelPending(live)
     live.session.abort()
     releaseCards(live, taken)
     const fields = { companyId: live.owner.companyId, conversationId }

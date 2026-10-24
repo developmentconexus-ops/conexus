@@ -1,4 +1,5 @@
 import type { Message, Suspended } from '@conexus/hub-api'
+import { textOf } from './person-turn.tsx'
 import type { TranscriptItem } from './transcript-items.ts'
 import { invocationToItem, thoughtSeconds } from './transcript-items.ts'
 
@@ -24,6 +25,10 @@ function fromParts(
   thoughts: ReadonlyMap<string, number>,
   view: View,
 ): TranscriptItem[] {
+  if (message.role === 'person') {
+    const text = textOf(message)
+    return [{ kind: 'person', id: message.id, text, createdAt: message.createdAt }]
+  }
   const suspended = { ...view.suspended, ...message.suspended }
   const items: TranscriptItem[] = []
   for (const [index, part] of message.parts.entries()) {

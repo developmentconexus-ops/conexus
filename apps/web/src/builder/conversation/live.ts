@@ -7,6 +7,8 @@ import type {
   Task,
 } from '@conexus/hub-api'
 import { applyUpdate } from '@conexus/hub-api'
+import type { Steer } from './steers.ts'
+import { steered } from './steers.ts'
 import type { Running, TranscriptItem } from './transcript.ts'
 import { fromMessages } from './transcript.ts'
 
@@ -19,6 +21,8 @@ type MemoryFailure = 'observation' | 'reflection' | 'buffering'
  * are derived from these (`itemsOf`), never kept beside them.
  */
 type Turn = {
+  /** What the person sent into the turn that no `message_start` has confirmed Mastra read. */
+  steers: readonly Steer[]
   startedAt: string | null
   /** The id of the message of ours: the turn's, which the stream opens last. */
   answerId: MessageId | null
@@ -31,7 +35,11 @@ type Turn = {
   memoryFailed: MemoryFailure | null
 }
 
-export type Live = { kind: 'idle' } | { kind: 'answering' | 'resuming' | 'ended'; turn: Turn }
+/** `returned`: the steers no `message_start` confirmed before the turn ended, to go back in the field. */
+export type Live =
+  | { kind: 'idle' }
+  | { kind: 'answering' | 'resuming'; turn: Turn }
+  | { kind: 'ended'; turn: Turn; returned: readonly string[] }
 
 export const IDLE: Live = { kind: 'idle' }
 
@@ -40,8 +48,12 @@ export type Step =
   | { type: 'sent' }
   | { type: 'unsent' }
   | { type: 'reconnected'; inProgress: boolean }
+  | { type: 'steer'; steer: Steer }
+  | { type: 'unsteered'; id: MessageId }
+  | { type: 'returnedShown' }
 
 const NO_TURN: Turn = {
+  steers: [],
   startedAt: null,
   answerId: null,
   messages: [],
@@ -108,9 +120,14 @@ function handleOmPhaseEvent(
 }
 
 /** The turn the stream opens with: the turn so far as its messages, the one of ours the last. */
-function opened(step: Extract<ConversationEvent, { type: 'turn' }>): Turn {
+function opened(
+  step: Extract<ConversationEvent, { type: 'turn' }>,
+  steers: readonly Steer[],
+): Turn {
+  const held = new Set(step.messages.map((message) => message.id))
   return {
     ...NO_TURN,
+    steers: steers.filter((steer) => !held.has(steer.id)),
     startedAt: step.startedAt,
     answerId: step.messages.at(-1)?.id ?? null,
     messages: step.messages,
@@ -149,8 +166,14 @@ function handleMessageEvent(
   >,
 ): Turn {
   switch (step.type) {
-    case 'message_start':
-      return { ...turn, messages: started(turn.messages, step.message) }
+    case 'message_start': {
+      const { message } = step
+      const steers =
+        message.role === 'person'
+          ? turn.steers.filter((steer) => steer.id !== message.id)
+          : turn.steers
+      return { ...turn, steers, messages: started(turn.messages, message) }
+    }
     case 'message_update':
       return updated(turn, step)
     case 'message_end':
@@ -180,7 +203,7 @@ function handleMessageEvent(
   }
 }
 
-type Told = Exclude<Step, { type: 'sent' | 'unsent' | 'reconnected' | 'turn' | 'turnEnd' }>
+type Told = Exclude<ConversationEvent, { type: 'turn' | 'turnEnd' }>
 
 /** What the stream tells goes to the turn in progress; one told after the end begins another. */
 function inTurn(state: Live, step: Told): Live {
@@ -219,6 +242,14 @@ function nextTurn(turn: Turn, step: Told): Turn {
   }
 }
 
+function ended(turn: Turn): Live {
+  return {
+    kind: 'ended',
+    turn: { ...turn, steers: [] },
+    returned: turn.steers.map((each) => each.content),
+  }
+}
+
 export function live(state: Live, step: Step): Live {
   switch (step.type) {
     case 'sent':
@@ -230,13 +261,19 @@ export function live(state: Live, step: Step): Live {
     case 'reconnected':
       // A turn that ended while the line was down sends no `turnEnd` to this line: the read says it is over.
       if (state.kind !== 'answering') return state
-      return { kind: step.inProgress ? 'resuming' : 'ended', turn: state.turn }
-    case 'turn':
-      return { kind: 'answering', turn: opened(step) }
+      return step.inProgress ? { kind: 'resuming', turn: state.turn } : ended(state.turn)
+    case 'turn': {
+      const running = state.kind === 'answering' || state.kind === 'resuming'
+      return { kind: 'answering', turn: opened(step, running ? state.turn.steers : []) }
+    }
     case 'turnEnd':
-      return state.kind === 'answering' || state.kind === 'resuming'
-        ? { kind: 'ended', turn: state.turn }
-        : state
+      return state.kind === 'answering' || state.kind === 'resuming' ? ended(state.turn) : state
+    case 'steer':
+    case 'unsteered':
+      if (state.kind !== 'answering' && state.kind !== 'resuming') return state
+      return { ...state, turn: { ...state.turn, steers: steered(state.turn.steers, step) } }
+    case 'returnedShown':
+      return state.kind === 'ended' ? { ...state, returned: [] } : state
     default:
       return inTurn(state, step)
   }

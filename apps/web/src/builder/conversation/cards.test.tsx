@@ -79,6 +79,16 @@ function questionPart(
   }
 }
 
+/** The card's own send button: the field's stays beside it while the Builder waits. */
+function questionSend() {
+  const field = screen.getByRole('textbox', { name: 'Mensagem para o Builder' })
+  const found = screen
+    .getAllByRole('button', { name: 'Enviar' })
+    .find((one) => one.closest('form') !== field.closest('form'))
+  if (!found) throw new Error('the card has no send button')
+  return found
+}
+
 test('cartão de perguntas da tool-invocation ask_user: resposta livre em várias linhas (#272), envio e respostas (Critério 12)', async () => {
   const held = Promise.withResolvers<undefined>()
   const bodies = answering(() => held.promise)
@@ -94,7 +104,7 @@ test('cartão de perguntas da tool-invocation ask_user: resposta livre em vária
   // Multiline free response (#272)
   const multilineText = 'Linha 1: só quando for entrega\nLinha 2: após as 18h'
   fireEvent.change(other, { target: { value: multilineText } })
-  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+  fireEvent.click(questionSend())
 
   const sending = await screen.findByRole('button', { name: 'Enviando…' })
   expect(sending).toHaveProperty('disabled', true)
@@ -126,7 +136,7 @@ test('dois cliques em Enviar mandam a resposta uma única vez', async () => {
       args: { questions: [WHO] },
     },
   })
-  const send = await screen.findByRole('button', { name: 'Enviar' })
+  const send = await waitFor(questionSend)
   fireEvent.click(send)
   fireEvent.click(send)
   await screen.findByRole('button', { name: 'Enviando…' })
@@ -158,7 +168,7 @@ test('pergunta vencida ou fechada diz que foi fechada e não se responde', async
     },
   })
   await screen.findByText(/Esta pergunta já foi respondida ou não espera mais/)
-  expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull()
+  expect(screen.getAllByRole('button', { name: 'Enviar' })).toHaveLength(1)
 })
 
 test('o cartão da versão: montou, não montou, pela metade, sem conferência (Critério 12)', async () => {

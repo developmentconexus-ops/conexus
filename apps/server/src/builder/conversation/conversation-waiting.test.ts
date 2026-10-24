@@ -293,10 +293,10 @@ test('uma resposta e uma mensagem quase juntas: a volta termina uma vez e o Proj
     await sleep(delay)
     const steering = sent(hub, ana, url, 'Melhor: só eu cadastro.')
     const [answered, steered] = await Promise.all([answering, steering])
-    // The answer took the card first, and the message meets the turn it goes on in; or the
+    // The answer took the card first, and the message joins the turn the answer resumed; or the
     // message closed the card first, and the answer meets a closed one.
     assert.ok(
-      (answered.statusCode === 202 && steered.statusCode === 409) ||
+      (answered.statusCode === 202 && steered.statusCode === 202) ||
         ([409, 500].includes(answered.statusCode) && steered.statusCode === 202),
       `delay ${delay}: ${answered.statusCode} ${steered.statusCode} ${steered.body}`,
     )

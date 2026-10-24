@@ -80,6 +80,7 @@ export {
   ModelId,
   OMProgress,
   providerOfModel,
+  questionIdOf,
   readConversation,
   runningEffort,
   sendConversationMessage,

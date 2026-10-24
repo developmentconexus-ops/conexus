@@ -56,6 +56,11 @@ export type TurnFailureCode = z.infer<typeof TurnFailureCode>
 export const MessageId = z.string().min(1).brand('MessageId')
 export type MessageId = z.infer<typeof MessageId>
 
+/** The id of the person's message sent with the Idempotency-Key `key`: the server and the screen name it alike. */
+export function questionIdOf(conversationId: ConversationId, key: string): MessageId {
+  return MessageId.parse(`${conversationId}:${key}`)
+}
+
 /** The part of a message that says a thinking took `seconds`, by our clock (step 12.1). */
 export const THOUGHT_PART = 'data-conexus-thought'
 
@@ -126,6 +131,10 @@ const OmFailed = OmCycle.extend({ durationMs: z.number() })
 export const ConversationEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('turn'), messages: z.array(Message), startedAt: z.iso.datetime() }),
   z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
+  /**
+   * A `message_start` whose message is the person's is a message they sent while the turn ran,
+   * said where Mastra put it before the model's next request.
+   */
   z.object({ type: z.literal('message_start'), message: Message }),
   z.object({ type: z.literal('message_update'), id: MessageId, event: MessageUpdate }),
   z.object({ type: z.literal('message_end'), id: MessageId }),
@@ -241,7 +250,8 @@ export const readConversation = defineOperation({
 
 export const sendConversationMessage = defineOperation({
   id: 'sendConversationMessage',
-  summary: 'Sends the Builder a message; its answer comes on the conversation’s stream.',
+  summary:
+    'Sends the Builder a message: a turn of its own, or, while a turn of this conversation runs, into that turn; the answer comes on the conversation’s stream.',
   access: 'session',
   method: 'POST',
   path: `${BASE}/{conversationId}/messages`,
