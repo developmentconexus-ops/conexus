@@ -97,6 +97,17 @@ test('a falha do modelo diz a frase e a ação da tabela, e a resposta termina',
   expect(screen.queryByText('Pensando…')).toBeNull()
 })
 
+test('a recusa do modelo diz a frase e a ação da linha nova da tabela', async () => {
+  const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
+  say(field, 'Compare')
+  await screen.findByText('Pensando…')
+  lines[0]?.emit(updatePart({ type: 'data-conexus-failure', data: { code: 'MODEL_REFUSED' } }, 0))
+  lines[0]?.emit({ type: 'turnEnd', reason: 'error' })
+  expect((await screen.findByRole('alert')).textContent).toBe(
+    'O modelo recusou este pedido. Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder.',
+  )
+})
+
 test('sem conta no meio do turno, a falha diz a frase da conta e não a do modelo', async () => {
   const { field, lines } = await openConversation(conversationOf({ id: FIRST }))
   say(field, 'Compare')
