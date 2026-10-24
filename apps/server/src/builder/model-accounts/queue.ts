@@ -8,6 +8,8 @@ import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Credential, SealKeys } from '../../platform/seal.ts'
 import { AccountRow, columns, contextOf, credentialOf, usableInOrder } from './accounts.ts'
+import { apiKeyModel } from './claude/api-key-model.ts'
+import type { PromptCacheScope } from './claude/prompt-cache.ts'
 import { subscriptionAccess } from './claude/store.ts'
 import { subscriptionModel } from './claude/subscription-model.ts'
 import type { AccountFailure } from './errors.ts'
@@ -130,6 +132,15 @@ export async function conversationModel(
   })
 }
 
+/** A Claude account's model once per cache scope, each wrapped with its own marks. */
+async function byScope(build: (scope: PromptCacheScope) => MastraModelConfig) {
+  const [conversation, system] = await Promise.all([
+    callModel(build('conversation')),
+    callModel(build('system')),
+  ])
+  return { conversation, system }
+}
+
 async function pickedOf(
   deps: QueueDeps,
   turn: Turn,
@@ -143,8 +154,7 @@ async function pickedOf(
     const force = turn.refreshed.has(row.id)
     const account = { ...row, companyId: turn.companyId, credential }
     const access = await subscriptionAccess({ ...deps, scope: scopeOf(turn) }, account, force)
-    const model = await callModel(subscriptionModel(name, access))
-    return { ...base, model }
+    return { ...base, models: await byScope((scope) => subscriptionModel(name, access, scope)) }
   }
   const target = { providerId: row.provider, modelId: name }
   if (row.kind === 'google_cliproxy') {
@@ -153,9 +163,14 @@ async function pickedOf(
       scopeOf(turn),
     )
     turn.held.push(hold())
-    return { ...base, model: await callModel({ ...target, url, apiKey }) }
+    const model = await callModel({ ...target, url, apiKey })
+    return { ...base, models: { conversation: model, system: model } }
   }
-  return { ...base, model: await callModel({ ...target, apiKey: credential.reveal() }) }
+  const apiKey = credential.reveal()
+  if (row.provider === 'anthropic')
+    return { ...base, models: await byScope((scope) => apiKeyModel(name, apiKey, scope)) }
+  const model = await callModel({ ...target, apiKey })
+  return { ...base, models: { conversation: model, system: model } }
 }
 
 /**

@@ -4,6 +4,7 @@ import type { LanguageModel } from '@mastra/core/llm'
 import { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
+import type { PromptCacheScope } from './claude/prompt-cache.ts'
 
 const TURN_KEY = 'conexus.turn'
 
@@ -29,7 +30,8 @@ export type Picked = {
   label: string
   kind: AccountKind
   modelId: ModelId
-  model: LanguageModel
+  /** The account's model per cache scope; the same object in both for a provider with no marks. */
+  models: Record<PromptCacheScope, LanguageModel>
 }
 
 /** How a turn ended for the queue: its accounts ran out, or the model's call failed. */
