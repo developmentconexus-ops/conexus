@@ -26,4 +26,6 @@ Price, or a machine reaching another.
 
 ## State
 
-Brought. Kept from the old code.
+Brought. Kept from the old code. Note, 2026-10-24: one machine per conversation again, as the Result
+found, by name and with no id stored ([0051](0051-builder-machine-git-and-copy-in-r2.md), the fifth
+amendment of step 14.2).
