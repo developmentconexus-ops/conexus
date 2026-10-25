@@ -182,7 +182,7 @@ export function createBuilder(deps: {
     memory,
     agent,
     modes: [{ id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools }],
-    // The machine of the conversation's Projeto (Factory `session-sandbox.ts:29-36`); none outside one.
+    // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
     workspace: async ({ requestContext, mastra }) => {
       const ids = await projectOf(requestContext)
       return ids === undefined ? undefined : deps.runs.workspaceOf(ids, mastra)

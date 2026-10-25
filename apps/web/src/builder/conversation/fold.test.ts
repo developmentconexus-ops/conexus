@@ -122,35 +122,17 @@ test('a text or a thought ends the run, and each run folds on its own', () => {
   )
 })
 
-test('ephemeral machine steps pass while replaced machine phase lasts', () => {
-  const ephemeralMachine: TranscriptItem = {
+test('a machine step passes once anything follows it', () => {
+  const machine: TranscriptItem = {
     kind: 'conexus',
     id: 'm-1',
     partType: 'data-conexus-machine',
     data: { phase: 'starting' },
   }
-  const replacedMachine: TranscriptItem = {
-    kind: 'conexus',
-    id: 'm-2',
-    partType: 'data-conexus-machine',
-    data: { phase: 'replaced' },
-  }
-
-  // Ephemeral followed by tool: ephemeral is dropped
-  const dropped = fold([ephemeralMachine, tool('a')])
+  assert.equal(fold([machine]).length, 1)
+  const dropped = fold([machine, tool('a')])
   assert.equal(dropped.length, 1)
-  assert.equal(dropped[0]?.kind, 'item')
-  if (dropped[0]?.kind === 'item') {
-    assert.equal(dropped[0].item.kind, 'tool')
-  }
-
-  // Replaced followed by tool: replaced lasts
-  const kept = fold([replacedMachine, tool('a')])
-  assert.equal(kept.length, 2)
-  assert.equal(kept[0]?.kind, 'item')
-  if (kept[0]?.kind === 'item') {
-    assert.equal(kept[0].item.kind, 'conexus')
-  }
+  assert.equal(dropped[0]?.kind === 'item' && dropped[0].item.kind, 'tool')
 })
 
 test('the summary counts by tool in order and formats correctly', () => {

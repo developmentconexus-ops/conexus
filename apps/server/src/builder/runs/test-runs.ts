@@ -1,12 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import type { Config } from '../../platform/config.ts'
-import type { Database } from '../../platform/database.ts'
 import { silent } from '../../platform/test-database.ts'
 import type { GitCopy, Repository, Sha } from '../git/public.ts'
 import { openRepository, restoreGuarded } from '../git/public.ts'
-import type { MachineApi } from '../machine/public.ts'
 import { createMachines } from '../machine/public.ts'
 import { INSTALLATION, localKit, newControl } from '../machine/test-machine.ts'
 
@@ -48,14 +46,16 @@ export function memoryCopy() {
   return { copy, held, refuse }
 }
 
-/** What a test sets: where a save waits. */
+/** What a test sets: where a save waits, and how many kills fail. */
 type Knobs = {
   /** While set, a save waits before it checks the turn's commit in. */
   holdReceive: Promise<void> | undefined
+  /** The next kills that fail, as an E2B that is out. */
+  refuseKills: number
 }
 
 function newKnobs(): Knobs {
-  return { holdReceive: undefined }
+  return { holdReceive: undefined, refuseKills: 0 }
 }
 
 /** A repository whose save waits where a test says: before `receive`. */
@@ -80,23 +80,27 @@ export function testBuilderPorts(
   const folder = machineFolder
   const control = newControl()
   const bucket = memoryCopy()
-  const killed: string[] = []
-  const listed: Awaited<ReturnType<MachineApi['list']>> = []
+  // The conversations whose machines the provider was asked to kill.
+  const killed: ConversationId[] = []
   const knobs = newKnobs()
   function repository(ids: { companyId: CompanyId; projectId: ProjectId }) {
     const real = openRepository({ root: config.gitRoot, ...ids, log: silent })
     return restoreGuarded(withKnobs(real, knobs), bucket.copy, ids)
   }
-  function machinesOf(database: Database) {
+  function machinesOf() {
     return createMachines({
-      database,
       log: silent,
       kit: localKit(folder, control),
       api: {
-        list: async () => listed,
-        kill: async (id) => {
-          killed.push(id)
-          control.killed = true
+        kill: async (conversationId) => {
+          if (knobs.refuseKills > 0) {
+            knobs.refuseKills -= 1
+            throw new Error('E2B is out')
+          }
+          killed.push(conversationId)
+          const started = control.names.includes(`conexus-${INSTALLATION}-${conversationId}`)
+          if (started) control.killed = true
+          return started ? 1 : 0
         },
       },
       mark: { conexus_origin: INSTALLATION },
@@ -121,7 +125,6 @@ export function testBuilderPorts(
     control,
     knobs,
     killed,
-    listed,
     folder,
   }
 }

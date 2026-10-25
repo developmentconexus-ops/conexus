@@ -1,11 +1,5 @@
 import type { ConversationEvent, MastraPart, MessageId, ThoughtData } from '@conexus/hub-api'
-import {
-  applyUpdate,
-  MachineData,
-  machinePhaseLasts,
-  THOUGHT_PART,
-  ThoughtData as Thought,
-} from '@conexus/hub-api'
+import { applyUpdate, THOUGHT_PART, ThoughtData as Thought } from '@conexus/hub-api'
 import type { Speaker, TurnLog } from './turn-log.ts'
 import { say } from './turn-log.ts'
 
@@ -24,10 +18,7 @@ export function tell(live: Speaker, turn: TurnLog, event: ConversationEvent): vo
 
 /** What names a part of ours among the others, so a later one replaces it; none for the rest. */
 function extraKey(part: MastraPart): string | undefined {
-  if (part.type === 'data-conexus-machine') {
-    const machine = MachineData.safeParse(part.data)
-    return machine.success && machinePhaseLasts(machine.data.phase) ? undefined : 'machine'
-  }
+  if (part.type === 'data-conexus-machine') return 'machine'
   if (part.type === 'data-conexus-version') return 'version'
   if (part.type === THOUGHT_PART) return `thought:${Thought.safeParse(part.data).data?.id ?? ''}`
   return undefined

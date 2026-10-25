@@ -13,7 +13,7 @@ import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { VERSION_FOLDER } from '@conexus/app/check'
 import { APP_LIMITS, Manifest, versionFiles } from '@conexus/app-contract'
-import { PROJECT, world } from './test-machine.ts'
+import { CONVERSATION, world } from './test-machine.ts'
 
 const MANIFEST = {
   contract: 1,
@@ -42,7 +42,7 @@ const VALID = {
 
 test('Machines.pack: a pasta da versão passa no Manifest e leva cada arquivo com o seu tipo', async (t) => {
   const { machines } = await machineWith(t, VALID)
-  const packed = await machines.pack({ projectId: PROJECT })
+  const packed = await machines.pack({ conversationId: CONVERSATION })
   assert.ok(packed.ok)
   const manifest = Manifest.parse(packed.value.manifest)
   const paths = packed.value.files.map(({ path }) => path).sort()
@@ -55,13 +55,13 @@ test('Machines.pack: a pasta da versão passa no Manifest e leva cada arquivo co
 test('Machines.pack: um link ou um arquivo que não é regular é NOT_REGULAR', async (t) => {
   const linked = await machineWith(t, VALID)
   symlinkSync('/etc/hostname', join(linked.version, 'assets/assets/fora.js'))
-  assert.deepEqual(await linked.machines.pack({ projectId: PROJECT }), {
+  assert.deepEqual(await linked.machines.pack({ conversationId: CONVERSATION }), {
     ok: false,
     error: 'NOT_REGULAR',
   })
   const piped = await machineWith(t, VALID)
   assert.equal(spawnSync('mkfifo', [join(piped.version, 'assets/cano')]).status, 0)
-  assert.deepEqual(await piped.machines.pack({ projectId: PROJECT }), {
+  assert.deepEqual(await piped.machines.pack({ conversationId: CONVERSATION }), {
     ok: false,
     error: 'NOT_REGULAR',
   })
@@ -74,7 +74,7 @@ test('Machines.pack: a pasta da versão trocada por um link é NOT_REGULAR', asy
   mkdirSync(join(machine.folder, 'app/node_modules/.conexus'), { recursive: true })
   symlinkSync(elsewhere, join(machine.folder, 'app', VERSION_FOLDER))
   await machine.open()
-  assert.deepEqual(await machine.machines.pack({ projectId: PROJECT }), {
+  assert.deepEqual(await machine.machines.pack({ conversationId: CONVERSATION }), {
     ok: false,
     error: 'NOT_REGULAR',
   })
@@ -88,7 +88,7 @@ test('Machines.pack: acima de APP_LIMITS é TOO_LARGE, sem ler o resto', async (
   // Reading this file would fail; the count refuses the version before any file is read.
   writeFileSync(join(many.version, 'assets/fechado.js'), 'x')
   chmodSync(join(many.version, 'assets/fechado.js'), 0)
-  assert.deepEqual(await many.machines.pack({ projectId: PROJECT }), {
+  assert.deepEqual(await many.machines.pack({ conversationId: CONVERSATION }), {
     ok: false,
     error: 'TOO_LARGE',
   })
@@ -97,7 +97,7 @@ test('Machines.pack: acima de APP_LIMITS é TOO_LARGE, sem ler o resto', async (
   truncateSync(join(large.version, 'assets/grande.bin'), APP_LIMITS.bytes + 1)
   writeFileSync(join(large.version, 'assets/fechado.js'), 'x')
   chmodSync(join(large.version, 'assets/fechado.js'), 0)
-  assert.deepEqual(await large.machines.pack({ projectId: PROJECT }), {
+  assert.deepEqual(await large.machines.pack({ conversationId: CONVERSATION }), {
     ok: false,
     error: 'TOO_LARGE',
   })
@@ -105,13 +105,13 @@ test('Machines.pack: acima de APP_LIMITS é TOO_LARGE, sem ler o resto', async (
 
 test('Machines.pack: sem versão, ou com um arquivo que o manifesto não nomeia, é VERSION_INVALID', async (t) => {
   const extra = await machineWith(t, { ...VALID, 'assets/sobra.js': '' })
-  assert.deepEqual(await extra.machines.pack({ projectId: PROJECT }), {
+  assert.deepEqual(await extra.machines.pack({ conversationId: CONVERSATION }), {
     ok: false,
     error: 'VERSION_INVALID',
   })
   const none = await world(t)
   await none.open()
-  assert.deepEqual(await none.machines.pack({ projectId: PROJECT }), {
+  assert.deepEqual(await none.machines.pack({ conversationId: CONVERSATION }), {
     ok: false,
     error: 'VERSION_INVALID',
   })

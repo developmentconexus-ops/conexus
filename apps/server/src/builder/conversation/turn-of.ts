@@ -88,13 +88,17 @@ export function turnOf(deps: {
   }
 }
 
-/** The Projeto of the conversation a Mastra run is, whoever holds it. */
+/** The conversation a Mastra run is, with its company and Projeto, whoever holds the Projeto. */
 export function projectIn(index: ConversationIndex) {
   return async (requestContext: RequestContext) => {
     const found = await conversationOf(index, requestContext)
     return found === undefined
       ? undefined
-      : { companyId: found.companyId, projectId: found.projectId }
+      : {
+          companyId: found.companyId,
+          projectId: found.projectId,
+          conversationId: found.conversationId,
+        }
   }
 }
 

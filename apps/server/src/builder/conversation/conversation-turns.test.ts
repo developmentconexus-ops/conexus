@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ANA } from '../../hub/identity/test-hub.ts'
+import { INSTALLATION } from '../machine/test-machine.ts'
 import { conversing, holding, sent, started, streamOf, title } from './test-conversation.ts'
 import { dataOf, failuresOf, partsOf } from './test-parts.ts'
 import { answerTo, ask, invocations, untilCard, WHO } from './test-questions.ts'
@@ -34,6 +35,43 @@ test('duas conversas do mesmo Projeto ao mesmo tempo: a segunda é aceita e term
   assert.equal(modelCalls(), before, 'the refused run calls no model')
   held.release()
   assert.deepEqual(failuresOf(await working.turn()), [])
+})
+
+test('a execução recusada com RUN_BUSY não liga máquina nem deixa workspace aberta; depois que a outra termina, a conversa recusada liga a sua (41, 52)', async (t) => {
+  const held = holding(t)
+  const write = { type: 'tool_use', name: 'mastra_workspace_write_file' } as const
+  let step = 0
+  const { hub, ana, conversations } = await conversing(t, (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step === 1)
+      return { kind: 'blocks', blocks: [{ ...write, input: { path: 'a.ts', content: 'a\n' } }] }
+    if (step === 2) return held.reply
+    if (step === 3)
+      return { kind: 'blocks', blocks: [{ ...write, input: { path: 'b.ts', content: 'b\n' } }] }
+    return { kind: 'text', text: 'Pronto.' }
+  })
+  const ids = [await started(hub, ana, conversations), await started(hub, ana, conversations)]
+  const urls = ids.map((id) => `${conversations}/${id}`)
+  const names = ids.map((id) => `conexus-${INSTALLATION}-${id}`)
+  const [working, refused] = await Promise.all(urls.map((url) => streamOf(hub, ana, url)))
+  assert.ok(working && refused)
+  t.after(() => working.close())
+  t.after(() => refused.close())
+  assert.equal((await sent(hub, ana, urls[0] ?? '', 'Primeira')).statusCode, 202)
+  await working.text()
+  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Outra')).statusCode, 202)
+  assert.deepEqual(failuresOf(await refused.turn()), ['RUN_BUSY'])
+  assert.deepEqual(
+    hub.builder.control.names,
+    names.slice(0, 1),
+    'the refused run started no machine',
+  )
+  held.release()
+  assert.deepEqual(failuresOf(await working.turn()), [])
+  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Terceira')).statusCode, 202)
+  assert.deepEqual(failuresOf(await refused.turn()), [])
+  assert.deepEqual(hub.builder.control.names, names)
 })
 
 test('a resposta a um cartão com o Projeto ocupado por outra conversa fica guardada e termina RUN_BUSY com o nome; a próxima mensagem segue dela (14.2, fundador: A)', async (t) => {

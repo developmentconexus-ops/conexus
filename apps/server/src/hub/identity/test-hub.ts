@@ -98,7 +98,6 @@ async function hubServing(
       control: ports.control,
       knobs: ports.knobs,
       killed: ports.killed,
-      listed: ports.listed,
       folder: ports.folder,
     },
     repair: apps.repair,

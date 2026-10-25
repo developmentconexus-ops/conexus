@@ -138,7 +138,7 @@ export function subjectsOf(deps: {
   const sealKeys = config.sealKeys
   const google = openGoogleCalls({ cliProxy: config.cliProxy, log, database, sealKeys })
   const { repository, copy } = deps
-  const machines = deps.machinesOf(database)
+  const machines = deps.machinesOf()
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
     repositories: () => repositoriesIn(config.gitRoot),
