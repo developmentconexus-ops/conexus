@@ -67,7 +67,8 @@ export class Runs {
 
   /**
    * Lets go of the runs a removal reaches, before anything is deleted (card, criterion 24): their
-   * workspace is forgotten, and nothing of them is saved, so the turn's end finds them gone.
+   * workspace is forgotten, and nothing of them is saved, so the turn's end finds them gone; one
+   * already saved sends no version.
    */
   async stopWriting(scope: ReleaseScope): Promise<void> {
     for (const mine of [...this.#writing.values()]) {
@@ -229,8 +230,9 @@ export class Runs {
    * question, Parar, an error. `saved` hears the outcome as soon as it is saved; a version whose app
    * built is then taken from the machine, and sent to the Projeto's app once the machine is let go.
    * The Projeto stays held until the send is over. A conversation holding no run (one refused as
-   * busy, or whose end was said already), or a run a removal stopped, answers `gone` and writes
-   * nothing; the workspace Mastra resolved for it is let go, and its machine was never started.
+   * busy, or whose end was said already), or a run a removal stopped before its save, answers
+   * `gone` and writes nothing; the workspace Mastra resolved for it is let go, and its machine was
+   * never started. A run a removal stops after its save sends no version.
    */
   async finish(input: {
     conversationId: ConversationId
@@ -273,6 +275,7 @@ export class Runs {
       if (!passed(outcome)) return settled
       const packed = await this.#pack(mine)
       await letGo()
+      if (mine.stopped) return settled
       const { number } = outcome.version
       const preview: PreviewData | undefined = packed.ok
         ? await this.#send(mine, number, packed.value)

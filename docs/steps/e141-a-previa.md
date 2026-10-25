@@ -10,8 +10,8 @@ recarrega sozinha nela.
 
 1. Como **Ana**, "Encomendas" › **Conversa**: "Crie um app de encomendas com cliente, telefone,
    produto e data de entrega." No fim do turno aparece "**Versão 1 guardada**", logo "Subindo o
-   app…" e, uns 9 segundos depois, "Prévia pronta". A aba **Prévia** mostra o app. Ana cadastra
-   "Maria, bolo de cenoura, sexta".
+   app…" e, uns 10 a 20 segundos depois, "Prévia pronta". A aba **Prévia** mostra o app. Ana
+   cadastra "Maria, bolo de cenoura, sexta".
 2. Na barra da Prévia: **Computador** ou **Celular** (Celular põe o app numa moldura de celular) e
    **Recarregar**. **Abrir app** abre o mesmo app numa aba nova, e o Hub fica onde está.
 3. "Agora guarde também o endereço." Enquanto o Builder trabalha, a Prévia segue na versão 1; no fim
@@ -51,9 +51,9 @@ começo: aprova esta página. No fim: faz o roteiro, diz o que viu e aprova os t
   soma ~120.
 
 Nada mais é seu: a versão "pela metade" não sobe ("A", 2026-10-24); no iPhone, o aviso e a aba nova
-(sua palavra de 2026-10-21, e é o que a vibesdk faz); os ~9 s dentro do turno são o jeito da
-referência. O único remendo (`packIn`, tirar a pasta montada da máquina) já foi aprovado na 14
-("SIM", critério 14 do cartão da 14).
+(sua palavra de 2026-10-21, e é o que a vibesdk faz); os 12,5 a 20,5 s medidos dentro do turno
+são o jeito da referência. O único remendo (`packIn`, tirar a pasta montada da máquina) já foi
+aprovado na 14 ("SIM", critério 14 do cartão da 14).
 
 ## As unidades
 

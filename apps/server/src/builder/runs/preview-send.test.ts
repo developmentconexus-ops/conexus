@@ -144,6 +144,24 @@ test('admissão relida: quem sai da empresa durante o envio não põe a versão 
   assert.deepEqual(hub.cloudflare.workers(), [])
 })
 
+test('tirar a pessoa depois de guardada a versão: o turno dela não sobe nada e não diz Prévia (8)', async (t) => {
+  const subject = await previewing(t)
+  const { hub, companyId } = subject
+  const bruno = await memberOn(hub, companyId, BRUNO, 'member')
+  const arrived = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  hub.builder.knobs.holdPack = { arrived: arrived.resolve, released: released.promise }
+  const turned = turn(t, subject, bruno)
+  await arrived.promise
+  const member = `/api/companies/${companyId}/members/${bruno.id}`
+  assert.equal((await call(hub, subject.ana, 'DELETE', member)).statusCode, 204)
+  released.resolve()
+  const { previews } = await turned
+  assert.deepEqual(previews, [])
+  assert.deepEqual(await versionsOf(subject), [])
+  assert.deepEqual(hub.cloudflare.workers(), [])
+})
+
 test('não inicia: a Cloudflare recusa, a parte diz APP_VERSION_NOT_STARTING e o app segue na anterior (9)', async (t) => {
   const subject = await previewing(t)
   const { hub, ana, versions } = subject
