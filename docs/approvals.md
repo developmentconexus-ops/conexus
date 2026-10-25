@@ -128,3 +128,9 @@ Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 9947ff473c1f8d5513eb6eb2edb
 Em 2026-10-24, sobre a etapa 14.2: "4. B" e "A". A pergunta ou o plano aberto atravessa a atualização do servidor e também uma queda, pelo mesmo código: a cópia nova adota a volta.
 
 Migração `20261024171411_e142_drop_run` (apaga `builder.run`, `companies_with_runs()` e o papel `hub_runs`; D11), aprovada em 2026-10-24 sobre a migração de https://github.com/developmentconexus-ops/conexus/pull/314: "Pode"
+
+Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751dd072b8778e70): "1. Sim"
+
+Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751dd072b8778e70): "Cara, vamos tirar esse caso, sabe? Tipo assim, senão a gente vai ficar de novo criando remendo, patch, só pra buscar esses casos assim, sabe? Tipo, utilizar o que o master tem nativo, tipo, como que o master factor faria se acontecesse? Ele só pararia e a pessoa teria que mandar mensagem de novo, não? Eu não quero ficar pegando exceções e tentar criar casos ou código patch pra isso."
+
+Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751dd072b8778e70): "5.A"
