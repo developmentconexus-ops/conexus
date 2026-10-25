@@ -9,7 +9,7 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
-import type { ToolItem } from './parts.ts'
+import type { ToolItem } from './rows.ts'
 import { presentTool, summaryOfTools, toolStatus } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
 

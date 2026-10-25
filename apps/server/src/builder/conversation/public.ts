@@ -1,3 +1,4 @@
+import type { ServerResponse } from 'node:http'
 import type { FastifyInstance } from 'fastify'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
@@ -9,9 +10,10 @@ import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
+import { watchRuns } from './end.ts'
+import { registerBuilderRoutes } from './guard.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { registerConversationRoutes } from './routes.ts'
-import { Sessions } from './sessions.ts'
 import type { ReleaseScope } from './store.ts'
 import { createConversationStore } from './store.ts'
 
@@ -51,19 +53,16 @@ export function createConversations(deps: {
         return (await deps.projects.liveProjectOf(tx, ids))?.name
       }),
   })
-  const sessions = new Sessions({
-    builder,
-    runs: deps.runs,
-    log: deps.log,
-  })
+  const runs = watchRuns({ ...builder, runs: deps.runs, log: deps.log })
+  const streams = new Set<ServerResponse>()
 
   const release: ReleaseConversations = async (scope) => {
     const ids = await store.releasedIds(scope)
     // The runs first: a turn the removal aborts then finds its run gone and writes nothing. Its
-    // Mastra run is aborted before the kill, so no tool starts the machine again; a thread goes
-    // only once its machine is killed.
+    // Mastra run is aborted before the kill (`deleteSession` aborts it and denies its cards), so no
+    // tool starts the machine again; a thread goes only once its machine is killed.
     await deps.runs.stopWriting(scope)
-    for (const id of ids) await sessions.forget(id)
+    for (const id of ids) await builder.controller.deleteSession({ sessionId: id })
     await deps.runs.release(scope, ids)
     for (const id of ids) await builder.memory.deleteThread(id)
     deps.log.info({ companyId: scope.companyId, count: ids.length }, 'CONVERSATIONS_RELEASED')
@@ -71,7 +70,8 @@ export function createConversations(deps: {
 
   return Object.freeze({
     routes: (app: FastifyInstance) => {
-      registerConversationRoutes(app, { store, sessions, builder, queue })
+      registerConversationRoutes(app, { store, builder, queue })
+      registerBuilderRoutes(app, { store, builder, streams })
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),
@@ -88,12 +88,15 @@ export function createConversations(deps: {
       deps.log.info({}, 'MASTRA_STORAGE_READY')
     },
     /**
-     * Waits for the turns in progress and for the memory's work after them, such as a buffered
+     * Stops the runs in progress, as Parar does, and closes the open streams once each said its end;
+     * then waits for the memory's work after them, such as a buffered
      * observation, which still reads the pool `main.ts` ends next; then stops Mastra and Google's
      * calls (code C62).
      */
     async close() {
-      await sessions.drain()
+      await runs.drain()
+      // Mastra's adapter stops writing on the response's close (`@mastra/fastify` `stream`).
+      for (const stream of streams) stream.destroy()
       deps.runs.stop()
       await builder.memory.settled()
       await builder.mastra.shutdown()

@@ -65,29 +65,32 @@ export {
   renewInvitation,
 } from './companies.ts'
 export {
-  CONVERSATION_HEARTBEAT_MS,
+  CONEXUS_PARTS,
+  ConexusPart,
+  FailureData,
+  MachineData,
+  MachinePhase,
+  NoticeData,
+  THOUGHT_PART,
+  ThoughtData,
+  VersionCheck,
+  VersionData,
+} from './conexus-parts.ts'
+export {
+  BUILDER_CONTROLLER,
+  BUILDER_ROUTES,
   Conversation,
-  ConversationEvent,
   ConversationId,
   ConversationSummary,
   createConversation,
   EFFORTS,
   Effort,
   listConversations,
-  MESSAGE_MAX_LENGTH,
-  Message,
-  MessageId,
   ModelId,
-  OMProgress,
   providerOfModel,
-  questionIdOf,
   readConversation,
   runningEffort,
-  sendConversationMessage,
   setConversationModel,
-  stopConversation,
-  streamConversation,
-  THOUGHT_PART,
   TurnFailureCode,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
@@ -106,21 +109,6 @@ export {
   SessionState,
   setPassword,
 } from './identity.ts'
-export {
-  applyUpdate,
-  CONEXUS_PARTS,
-  ConexusPart,
-  FailureData,
-  MachineData,
-  MachinePhase,
-  MastraPart,
-  MessageUpdate,
-  NoticeData,
-  Suspended,
-  ThoughtData,
-  VersionCheck,
-  VersionData,
-} from './mastra-parts.ts'
 export {
   ACCOUNT_KEY_MAX_LENGTH,
   ACCOUNT_KINDS,
@@ -173,10 +161,8 @@ export {
   AttemptKey,
   type DeclaredOperation,
   defineOperation,
-  EventId,
   failuresOf,
   isDeclaredOperation,
-  LAST_EVENT_ID_HEADER,
   type Operation,
 } from './operation.ts'
 export {
@@ -203,12 +189,10 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
-export { answerQuestion } from './question-answer.ts'
 export {
   Answer,
   QUESTION_LIMITS,
   Question,
-  QuestionAnswer,
   Task,
   ToolCallId,
 } from './questions.ts'
@@ -231,4 +215,3 @@ export {
   TASK_TOOLS,
   WORKSPACE_TOOL,
 } from './tools.ts'
-export { WIRE_LIMITS } from './wire-limits.ts'

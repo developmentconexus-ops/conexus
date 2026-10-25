@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, KEY, title } from './test-conversation.ts'
-import { noticesOf } from './test-parts.ts'
+import { asked, conversing, endOf, KEY, title, turnNotices } from './test-conversation.ts'
 
 const OTHER = 'sk-ant-conversation-key-0002'
 const REFUSED: Reply = { kind: 'refuse', status: 400, cyber: true }
@@ -24,7 +23,7 @@ test('a recusa de cyber na trilha de erro é repetida uma vez com o aviso, na me
     answering((n) => (n === 1 ? REFUSED : { kind: 'text', text: 'Pronto.' })),
   )
   await link('Time 2', OTHER)
-  const { events } = await asked(t, { hub, person: ana, conversations })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
   const streamed = anthropic.sent.filter((each) => each.stream)
   assert.deepEqual(
     streamed.map((each) => each.key),
@@ -35,8 +34,8 @@ test('a recusa de cyber na trilha de erro é repetida uma vez com o aviso, na me
     streamed[1]?.texts.some((text) => text.includes('continue')),
     'the repeat carries the nudge',
   )
-  assert.deepEqual(noticesOf(events), [])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.deepEqual(await turnNotices(hub, ana, url), [])
+  assert.equal(endOf(events), 'complete')
 })
 
 test('uma segunda recusa de cyber é do modelo: o turno acaba e a conta não gira (14.2, 33)', async (t) => {
@@ -45,9 +44,9 @@ test('uma segunda recusa de cyber é do modelo: o turno acaba e a conta não gir
     answering(() => REFUSED),
   )
   await link('Time 2', OTHER)
-  const { events } = await asked(t, { hub, person: ana, conversations })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
   const keys = anthropic.sent.filter((each) => each.stream).map((each) => each.key)
   assert.deepEqual(keys, [KEY, KEY])
-  assert.deepEqual(noticesOf(events), [])
-  assert.notDeepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.deepEqual(await turnNotices(hub, ana, url), [])
+  assert.notEqual(endOf(events), 'complete')
 })

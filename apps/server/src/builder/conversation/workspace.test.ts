@@ -5,7 +5,7 @@ import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { asked, conversing, endOf, title } from './test-conversation.ts'
 import { partsOf } from './test-parts.ts'
 
 type Tool = { name: string; input: object }
@@ -65,7 +65,7 @@ test('fora da pasta do app e via link: recusado; regrava sem ler: aceita', async
   )
   const { hub, ana, conversations } = await conversing(t, model)
   const { events } = await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   const outside = join(hub.builder.folder, 'fora.ts')
   assert.equal(existsSync(outside), false)
   assert.equal(existsSync(join(hub.builder.folder, '..', 'fora.ts')), false)

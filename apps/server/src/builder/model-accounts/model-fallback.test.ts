@@ -9,8 +9,8 @@ import {
   memberOn,
   post,
 } from '../../hub/identity/test-hub.ts'
-import { asked, conversing, MODEL } from '../conversation/test-conversation.ts'
-import { failuresOf, noticesOf } from '../conversation/test-parts.ts'
+import { asked, conversing, endOf, MODEL, turnNotices } from '../conversation/test-conversation.ts'
+import { failuresOf } from '../conversation/test-parts.ts'
 import { GROQ_MODEL } from './test-defaults.ts'
 
 const FIRST = 'anthropic/claude-sonnet-4-6'
@@ -107,8 +107,9 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   const where = { hub, person: ana, conversations }
   const first = await asked(t, where)
   const switched = `Troquei para ${GROQ.slice('groq/'.length)} pela troca automática da empresa.`
-  assert.deepEqual(noticesOf(first.events), [switched])
-  assert.deepEqual(first.events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  // Mastra's stream leaves out the answer's data parts: the notice is read with the answer.
+  assert.deepEqual(await turnNotices(hub, ana, first.url), [switched])
+  assert.equal(endOf(first.events), 'complete')
   assert.deepEqual(
     anthropic.sent.filter((each) => each.stream).map((each) => each.tools.includes('web_search')),
     [true],
@@ -120,7 +121,7 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   limited.on = false
   await hub.test.asOwner(`update builder.model_account set limited_until = null`)
   const second = await asked(t, where)
-  assert.deepEqual(noticesOf(second.events), [])
+  assert.deepEqual(await turnNotices(hub, ana, second.url), [])
   assert.equal(streamedChats().length, 1)
   assert.deepEqual(
     anthropic.sent.filter((each) => each.stream).map((each) => each.tools.includes('web_search')),
@@ -135,9 +136,10 @@ test('troca ligada: a fila acabou, o próximo modelo responde com aviso e sem bu
   })
   assert.equal(off.statusCode, 200)
   const third = await asked(t, where)
-  assert.match(noticesOf(third.events).at(-1) ?? '', /^Time 1 no limite até \d{2}h\d{2}\.$/)
-  assert.ok(!noticesOf(third.events).some((text) => text.startsWith('Troquei')))
+  const notices = await turnNotices(hub, ana, third.url)
+  assert.match(notices.at(-1) ?? '', /^Time 1 no limite até \d{2}h\d{2}\.$/)
+  assert.ok(!notices.some((text) => text.startsWith('Troquei')))
   assert.deepEqual(failuresOf(third.events), ['MODEL_NO_ACCOUNT'])
-  assert.deepEqual(third.events.at(-1), { type: 'turnEnd', reason: 'error' })
+  assert.equal(endOf(third.events), 'error')
   assert.equal(streamedChats().length, 1)
 })

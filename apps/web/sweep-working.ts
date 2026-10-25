@@ -8,6 +8,8 @@ import {
 } from './src/builder/conversation/tool-fixtures.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
+import type { Said } from './sweep-session.ts'
+import { parkedOf, sessionReplies, storedOf } from './sweep-session.ts'
 
 const API = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations`
 export const WORKING = '33333333-3333-4333-8333-333333333333'
@@ -20,18 +22,14 @@ const BASE = {
   model: 'anthropic/claude-sonnet-4',
   effort: 'off',
   tasks: [],
-  memory: null,
-  inProgress: false,
 } as const
 
-const PERSON_SAID = {
+const PERSON_SAID: Said = {
   id: 'm1',
   role: 'person',
   parts: [{ type: 'text', text: 'Monte a tela de encomendas' }],
-  suspended: {},
-  model: null,
   createdAt: '2026-10-19T12:00:00.000Z',
-} as const
+}
 
 const QUESTION = {
   questions: [
@@ -48,12 +46,8 @@ const PLAN = {
   plan: '## Para a pessoa\n\nUma tela de encomendas com cliente, data e valor.',
 }
 
-function suspension(toolCallId: string, toolName: string, args: unknown) {
-  return { [toolCallId]: { toolCallId, toolName, args, suspendPayload: args } }
-}
-
 /** What the Builder is doing at 390px: edits, a write, a refusal, a group of reads and a question. */
-const BUILDER_WORKING = {
+const BUILDER_WORKING: Said = {
   id: 'm2',
   role: 'builder',
   parts: [
@@ -76,10 +70,9 @@ const BUILDER_WORKING = {
       },
     },
   ],
-  suspended: suspension('toolu_ask', 'ask_user', QUESTION),
   model: 'anthropic/claude-sonnet-4',
   createdAt: '2026-10-19T12:01:00.000Z',
-} as const
+}
 
 const TASKS = [
   { id: '1', content: 'Montar a tabela', activeForm: 'Montando a tabela', status: 'completed' },
@@ -95,55 +88,64 @@ const TASKS = [
 ] as const
 
 const READ_WORKING = readConversation.success.body.parse({
-  conversation: {
-    ...BASE,
-    id: WORKING,
-    messages: [PERSON_SAID],
-    inProgress: true,
-  },
+  conversation: { ...BASE, id: WORKING },
 })
+
+const PLAN_SAID: Said = {
+  id: 'm2',
+  role: 'builder',
+  parts: [
+    {
+      type: 'tool-invocation',
+      toolInvocation: {
+        state: 'call',
+        toolCallId: 'toolu_plan',
+        toolName: 'submit_plan',
+        args: PLAN,
+      },
+    },
+  ],
+  model: 'anthropic/claude-sonnet-4',
+  createdAt: '2026-10-19T12:01:00.000Z',
+}
 
 const READ_PLANNING = readConversation.success.body.parse({
-  conversation: {
-    ...BASE,
-    id: PLANNING,
-    messages: [
-      PERSON_SAID,
-      {
-        id: 'm2',
-        role: 'builder',
-        parts: [
-          {
-            type: 'tool-invocation',
-            toolInvocation: {
-              state: 'call',
-              toolCallId: 'toolu_plan',
-              toolName: 'submit_plan',
-              args: PLAN,
-            },
-          },
-        ],
-        suspended: suspension('toolu_plan', 'submit_plan', PLAN),
-        model: 'anthropic/claude-sonnet-4',
-        createdAt: '2026-10-19T12:01:00.000Z',
-      },
-    ],
-  },
+  conversation: { ...BASE, id: PLANNING },
 })
 
-/** The answer in progress: the turn as it stands, then the tasks, as the line says them. */
+/**
+ * The answer in progress, as the stream tells it to a screen that opens mid-run: the run going with
+ * the question waiting, the step as it stands, then the tasks.
+ */
 export const WORKING_REPLIES = {
   [`GET ${API}/${WORKING}`]: ok(readConversation, READ_WORKING),
-  [`GET ${API}/${WORKING}/events`]: {
-    status: 200,
+  ...sessionReplies(WORKING, {
+    messages: [PERSON_SAID],
+    display: {
+      isRunning: true,
+      pendingSuspensions: parkedOf({
+        toolCallId: 'toolu_ask',
+        toolName: 'ask_user',
+        args: QUESTION,
+      }),
+    },
     events: [
-      { type: 'turn', messages: [BUILDER_WORKING], startedAt: '2026-10-19T12:01:00.000Z' },
+      { type: 'message_start', message: storedOf(BUILDER_WORKING) },
       { type: 'task_updated', tasks: TASKS },
     ],
-  },
+  }),
 }
 
 export const PLANNING_REPLIES = {
   [`GET ${API}/${PLANNING}`]: ok(readConversation, READ_PLANNING),
-  [`GET ${API}/${PLANNING}/events`]: { status: 200 },
+  ...sessionReplies(PLANNING, {
+    messages: [PERSON_SAID, PLAN_SAID],
+    display: {
+      pendingSuspensions: parkedOf({
+        toolCallId: 'toolu_plan',
+        toolName: 'submit_plan',
+        args: PLAN,
+      }),
+    },
+  }),
 }

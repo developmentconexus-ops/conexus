@@ -35,19 +35,3 @@ export const Answer = z.union([
   z.array(z.string().min(1)),
 ])
 export type Answer = z.infer<typeof Answer>
-
-/** What a person answers a card with: one answer per question, or the decision on a plan. */
-export const QuestionAnswer = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('answers'), answers: z.array(Answer) }),
-  z
-    .object({
-      kind: z.literal('plan'),
-      action: z.enum(['approved', 'rejected']),
-      feedback: z.string().trim().min(1).max(ANSWER_MAX_LENGTH).optional(),
-    })
-    .refine((each) => each.action !== 'rejected' || each.feedback !== undefined, {
-      message: 'a rejection says why',
-      path: ['feedback'],
-    }),
-])
-export type QuestionAnswer = z.infer<typeof QuestionAnswer>

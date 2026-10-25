@@ -107,8 +107,8 @@ test('apagar o Projeto no meio de um turno que escreve: a execução para antes,
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Crie o app')).statusCode, 202)
-  await stream.said()
+  assert.equal((await sent(hub, ana, url, 'Crie o app')).statusCode, 200)
+  await stream.next()
   // The second call comes once the write is done, so the machine is up and seeded.
   for (let attempt = 0; attempt < 100 && step < 2; attempt += 1) {
     await new Promise((done) => setTimeout(done, 50))
@@ -165,8 +165,8 @@ test('tirar a pessoa no meio do turno dela: a execução dela solta o Projeto, e
   const his = `${conversations}/${await started(hub, bruno, conversations)}`
   const stream = await streamOf(hub, bruno, his)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, bruno, his, 'Crie o app')).statusCode, 202)
-  await stream.said()
+  assert.equal((await sent(hub, bruno, his, 'Crie o app')).statusCode, 200)
+  await stream.next()
   const member = `/api/companies/${companyId}/members/${bruno.id}`
   assert.equal((await call(hub, ana, 'DELETE', member)).statusCode, 204)
   held.release()

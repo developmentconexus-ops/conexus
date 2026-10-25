@@ -14,8 +14,8 @@ function secondsSince(instant: number): number {
 }
 
 /**
- * "Builder trabalhando · há 12 s", counted from the instant the server began the turn, so a screen
- * that opens or reconnects mid-turn still says how long it has run; after a minute in which the
+ * "Builder trabalhando · há 12 s", counted from the instant the screen heard the run start (a screen
+ * that opens mid-run shows no count, as Mastra's display state has no start); after a minute in which the
  * answer's parts did not change, "Ainda trabalhando… há 1 min 20 s". The count is for the eye: the
  * reader hears the line once, not every second. While a question or a plan waits on the person,
  * the line says so, with no clock: the time is hers.
@@ -25,7 +25,7 @@ export function WorkingLine({
   heard,
   waiting,
 }: {
-  startedAt: string | null
+  startedAt: number | null
   heard: unknown
   waiting: boolean
 }) {
@@ -33,7 +33,7 @@ export function WorkingLine({
   const [last, setLast] = useState({ heard, at: Date.now() })
   if (last.heard !== heard) setLast({ heard, at: Date.now() })
   const quiet = Date.now() - last.at >= QUIET_MS
-  const seconds = startedAt === null ? null : secondsSince(Date.parse(startedAt))
+  const seconds = startedAt === null ? null : secondsSince(startedAt)
   if (waiting) {
     return (
       <div role="status" className="flex items-center gap-sm px-md py-sm text-label text-text-2">

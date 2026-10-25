@@ -1,4 +1,4 @@
-import type { ToolItem, TranscriptItem } from './parts.ts'
+import type { ToolItem, TranscriptItem } from './rows.ts'
 import { specOf } from './tool-registry.ts'
 
 export type Row = { kind: 'item'; item: TranscriptItem } | { kind: 'group'; tools: ToolItem[] }

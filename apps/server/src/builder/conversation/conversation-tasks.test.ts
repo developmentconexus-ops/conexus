@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
-import { applyUpdate } from '@conexus/hub-api'
+import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { call } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { connect, GROQ_MODEL } from '../model-accounts/test-defaults.ts'
+import type { StreamEvent } from './test-conversation.ts'
 import {
+  answeredOf,
   conversing,
+  endOf,
   KEY,
   MODEL,
   messagesOf,
@@ -16,8 +18,9 @@ import {
   started,
   streamOf,
   title,
+  turnNotices,
 } from './test-conversation.ts'
-import { noticesOf } from './test-parts.ts'
+import { messagesIn, noticesIn } from './test-parts.ts'
 
 const OBSERVER = /^You are the memory consciousness/
 const SNAPSHOT = '<current-task-list'
@@ -54,7 +57,7 @@ test('o Builder sai de createCodingAgent sem workspace próprio: as ferramentas 
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Crie o app de encomendas')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Crie o app de encomendas')).statusCode, 200)
   await stream.turn()
   const [first, second] = calls
   for (const name of ['task_write', 'task_update', 'task_complete', 'task_check']) {
@@ -79,12 +82,12 @@ function observed(calls: Sent[]): Sent[] {
 async function twoLongTurns(
   t: TestContext,
   where: { hub: Hub; person: Person; url: string },
-): Promise<ConversationEvent[][]> {
+): Promise<StreamEvent[][]> {
   const stream = await streamOf(where.hub, where.person, where.url)
   t.after(() => stream.close())
-  const turns: ConversationEvent[][] = []
+  const turns: StreamEvent[][] = []
   for (const question of ['Primeira encomenda', 'Segunda encomenda']) {
-    assert.equal((await sent(where.hub, where.person, where.url, question)).statusCode, 202)
+    assert.equal((await sent(where.hub, where.person, where.url, question)).statusCode, 200)
     turns.push(await stream.turn())
   }
   return turns
@@ -103,7 +106,7 @@ test('Observador no Groq: a chamada dele chega ao dublê do Groq, e o modelo do 
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const turns = await twoLongTurns(t, { hub, person: ana, url })
   for (const events of turns) {
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.equal(endOf(events), 'complete')
   }
   assert.ok(observed(anthropic.chats).length > 0, 'the Observer called the Groq double')
   assert.equal(observed(anthropic.sent).length, 0, 'and none reached the conversation’s provider')
@@ -131,10 +134,9 @@ test('sem conta no modelo escolhido, o Observador segue a conversa, sem aviso, p
   assert.equal(removed.statusCode, 204, removed.body)
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const turns = await twoLongTurns(t, { hub, person: ana, url })
-  for (const events of turns) {
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-    assert.deepEqual(noticesOf(events), [])
-  }
+  for (const events of turns) assert.equal(endOf(events), 'complete')
+  const answers = (await answeredOf(hub, ana, url)).filter((message) => message.role === 'builder')
+  assert.deepEqual(noticesIn(answers.flatMap((message) => message.parts)), [])
   assert.equal(anthropic.chats.length, 0, 'no call reached Groq')
   assert.ok(observed(anthropic.sent).length > 0, 'the Observer followed the conversation')
 })
@@ -158,13 +160,14 @@ test('a conta do Observador falha e o modelo do turno bate no limite: o turno tr
   t.after(() => stream.close())
   for (const question of ['Primeira encomenda', 'Segunda encomenda', 'Terceira encomenda']) {
     limited = question.startsWith('Terceira')
-    assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
+    assert.equal((await sent(hub, ana, url, question)).statusCode, 200)
     const events = await stream.turn()
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-    const notices = noticesOf(events)
-    assert.deepEqual(notices.length, limited ? 1 : 0, notices.join(' | '))
-    if (limited) assert.match(notices[0] ?? '', /continuei pela Time 2/)
+    assert.equal(endOf(events), 'complete')
   }
+  // Mastra's stream leaves out the answer's data parts: the notice is read with the answer.
+  const notices = await turnNotices(hub, ana, url)
+  assert.equal(notices.length, 1, notices.join(' | '))
+  assert.match(notices[0] ?? '', /continuei pela Time 2/)
   assert.ok(anthropic.chats.length > 0, 'the Observer’s account was called, and failed')
 })
 
@@ -185,8 +188,8 @@ test('a lista volta ao modelo depois que a chamada de task_write sai da janela p
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
   for (const question of ['Crie o app de encomendas', 'Explique as encomendas', 'E agora?']) {
-    assert.equal((await sent(hub, ana, url, question)).statusCode, 202)
-    assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.equal((await sent(hub, ana, url, question)).statusCode, 200)
+    assert.equal(endOf(await stream.turn()), 'complete')
   }
   assert.ok(observed.length > 0, 'the conversation was observed')
   const last = calls.at(-1)
@@ -198,21 +201,14 @@ test('a lista volta ao modelo depois que a chamada de task_write sai da janela p
 })
 
 /** What a part says on the screen: its kind, or its tool's name. Mastra's own bookkeeping parts are left out. */
-function shown(part: MastraPart): string[] {
+function shown(part: MastraMessagePart): string[] {
   if (part.type === 'tool-invocation') return [part.toolInvocation.toolName]
-  return part.type.startsWith('data-') ? [] : [part.type]
+  return part.type.startsWith('data-') || part.type === 'step-start' ? [] : [part.type]
 }
 
 /** Each message the stream began, by id, folded as the screen folds it, in the order they began. */
-function liveMessages(events: ConversationEvent[]): Map<string, string[]> {
-  const parts = new Map<string, MastraPart[]>()
-  for (const event of events) {
-    if (event.type === 'message_start') parts.set(event.message.id, event.message.parts)
-    else if (event.type === 'message_update') {
-      parts.set(event.id, applyUpdate(parts.get(event.id) ?? [], event.event))
-    }
-  }
-  return new Map([...parts].map(([id, all]) => [id, all.flatMap(shown)]))
+function liveMessages(events: StreamEvent[]): Map<string, string[]> {
+  return new Map([...messagesIn(events)].map(([id, message]) => [id, message.parts.flatMap(shown)]))
 }
 
 function write(status: string) {
@@ -244,9 +240,9 @@ test('ao vivo e relido, a mesma parte: o raciocínio e a primeira task_write de 
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Liste')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Liste')).statusCode, 200)
   const events = await stream.turn()
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   const live = liveMessages(events)
   const reread = new Map<string, string[]>(
     (await messagesOf(hub, ana, url))

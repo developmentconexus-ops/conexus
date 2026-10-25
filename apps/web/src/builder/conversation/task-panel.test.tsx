@@ -1,10 +1,10 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { MessageId } from '@conexus/hub-api'
 import { render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { z } from 'zod'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { TaskPanel } from './task-panel.tsx'
+import { AGENT_START } from './test-events.ts'
 import { conversationOf, FIRST, screens } from './test-hub.tsx'
 
 type Task = z.infer<typeof HubTask>
@@ -63,25 +63,12 @@ test('ao recarregar, as tarefas são lidas de Conversation.tasks (Critério 10)'
     tasks: TASKS,
   })
 
-  const { lines } = await openConversation(conversation)
+  const { line } = await openConversation(conversation)
   // Initially not streaming, so task panel is hidden
   expect(screen.queryByRole('region', { name: 'Painel de tarefas' })).toBeNull()
 
-  // Line starts a turn: task panel reads tasks from conversation.tasks
-  lines[0]?.emit({
-    type: 'turn',
-    messages: [
-      {
-        id: MessageId.parse('builder-turn-1'),
-        role: 'builder',
-        parts: [],
-        suspended: {},
-        model: conversation.model,
-        createdAt: new Date().toISOString(),
-      },
-    ],
-    startedAt: new Date().toISOString(),
-  })
+  // A run starts before Mastra's display state names tasks: the panel reads conversation.tasks.
+  line().emit(AGENT_START)
 
   expect(await screen.findByRole('region', { name: 'Painel de tarefas' })).toBeTruthy()
   expect(screen.getByText('Tarefas · 1 de 3')).toBeTruthy()

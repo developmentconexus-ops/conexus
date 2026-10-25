@@ -1,4 +1,4 @@
-import type { Message, MessageId, ModelId } from '@conexus/hub-api'
+import type { ModelId } from '@conexus/hub-api'
 import { useEffect, useRef } from 'react'
 import {
   MessageScroller,
@@ -10,55 +10,51 @@ import {
   useMessageScroller,
 } from '../../ui/message-scroller.tsx'
 import { BuilderTurn } from './builder-turn.tsx'
-import type { TranscriptItem } from './parts.ts'
-import { itemsOf } from './parts.ts'
+import type { Message } from './messages.ts'
+import { messageOf } from './messages.ts'
 import { PersonBubble, PersonTurn } from './person-turn.tsx'
-import type { Steer } from './steers.ts'
+import type { TranscriptItem } from './rows.ts'
+import { itemsOf } from './rows.ts'
+import type { SessionState, Steer } from './session-state.ts'
 import { STEER_PENDING } from './text.ts'
-import type { Entry, Timeline } from './timeline.ts'
-import { merge } from './timeline.ts'
 
-type Group = { key: MessageId; person: Message | undefined; builder: Message[] }
+type Group = { key: string; person: Message | undefined; builder: Message[] }
 
 /** The turns of the conversation (Factory `groupTurns`): each opens at the person's message. */
-function turnsOf(entries: readonly Entry[]): Group[] {
+function turnsOf(messages: readonly Message[]): Group[] {
   const turns: Group[] = []
-  for (const entry of entries) {
-    if (entry.kind === 'asked') turns.push({ key: entry.id, person: undefined, builder: [] })
-    else if (entry.message.role === 'person')
-      turns.push({ key: entry.message.id, person: entry.message, builder: [] })
-    else {
-      const last = turns.at(-1)
-      if (last === undefined)
-        turns.push({ key: entry.message.id, person: undefined, builder: [entry.message] })
-      else last.builder.push(entry.message)
-    }
+  for (const message of messages) {
+    const last = turns.at(-1)
+    if (message.role === 'person' || last === undefined)
+      turns.push({
+        key: message.id,
+        person: message.role === 'person' ? message : undefined,
+        builder: message.role === 'person' ? [] : [message],
+      })
+    else last.builder.push(message)
   }
   return turns
 }
 
 /** A turn as the transcript draws it: the person's message and the Builder's rows, under one key. */
 export type ShownTurn = {
-  key: MessageId
+  key: string
   person: Message | undefined
   items: readonly TranscriptItem[]
   model: ModelId | null
   streaming: boolean
 }
 
-/** The conversation's one list, the read joined to the timeline, by turn; the last streams while the turn runs. */
-export function shownOf(
-  timeline: Timeline,
-  read: readonly Message[],
-  running: boolean,
-): ShownTurn[] {
-  const turns = turnsOf(merge(timeline, read))
+/** The conversation's one list, from the session's messages, by turn; the last streams while the run runs. */
+export function shownOf(state: SessionState): ShownTurn[] {
+  const turns = turnsOf(state.messages.flatMap((stored) => messageOf(stored) ?? []))
   return turns.map((turn, index) => {
-    const streaming = running && index === turns.length - 1
+    const streaming = state.running && index === turns.length - 1
+    const view = { suspended: state.suspended, running: state.commands, heard: state.heard }
     return {
       key: turn.key,
       person: turn.person,
-      items: itemsOf(turn.builder, { ...timeline, live: streaming }),
+      items: itemsOf(turn.builder, { ...view, live: streaming }),
       model: turn.builder.findLast((message) => message.model !== null)?.model ?? null,
       streaming,
     }
@@ -118,7 +114,7 @@ export function Transcript(props: {
 }
 
 /** Jumps to the end, and follows it again, when a message of the person's opens a turn. */
-function EndOnSent(props: { last: MessageId | undefined }) {
+function EndOnSent(props: { last: string | undefined }) {
   const { scrollToEnd } = useMessageScroller()
   const seen = useRef(props.last)
   useEffect(() => {

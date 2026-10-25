@@ -15,7 +15,7 @@ import {
   TrashIcon,
   WrenchIcon,
 } from 'lucide-react'
-import type { ToolItem } from './parts.ts'
+import type { ToolItem } from './rows.ts'
 import { stringArg } from './tool-args.ts'
 
 /** What a row opens on (Factory `ToolBody`, `ToolCard.tsx:32-67`). */

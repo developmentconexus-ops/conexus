@@ -1,9 +1,9 @@
-import type { Answer, Question, QuestionAnswer } from '@conexus/hub-api'
+import type { Answer, Question } from '@conexus/hub-api'
 import { ToolCallId } from '@conexus/hub-api'
-import { useMutation } from '@tanstack/react-query'
+import type { PlanResume } from '@mastra/client-js'
 import { getRouteApi } from '@tanstack/react-router'
 import type { SubmitEvent } from 'react'
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import {
   Questionnaire,
@@ -18,8 +18,8 @@ import {
   QuestionnaireSubmit,
   QuestionnaireTitle,
 } from '../../ui/questionnaire.tsx'
-import type { QuestionCardItem } from './parts.ts'
-import { sendAnswer } from './queries.ts'
+import type { QuestionCardItem } from './rows.ts'
+import { sessionOf } from './session.ts'
 
 const route = getRouteApi(
   '/_app/companies/$companyId/projects/$projectId/conversations/$conversationId',
@@ -33,27 +33,32 @@ export const CARD_TEXT = {
 }
 
 /**
- * Sends the person's answer to the card the turn waits on. A sent answer keeps the card busy until
- * the Hub says the card is answered (design V54); a refusal the Hub settled says its row's words,
- * any other the card's (code C37).
+ * Sends the person's answer to the call Mastra keeps waiting, on its own route. A sent answer keeps
+ * the card busy until the stream says the call is answered (design V54); one Mastra no longer waits
+ * on, or a refusal, says the card's words, or the Hub's row's (code C37).
  */
 export function useAnswer(toolCallId: ToolCallId) {
-  const params = route.useParams()
-  const send = useMutation({ ...sendAnswer, meta: { keepCache: true } })
+  const { conversationId } = route.useParams()
+  const builder = useMemo(() => sessionOf(conversationId), [conversationId])
+  const [sending, setSending] = useState(false)
   const [error, setError] = useState<string>()
   const sent = useRef(false)
-  async function answer(body: QuestionAnswer): Promise<void> {
+  async function answer(resumeData: readonly Answer[] | PlanResume): Promise<void> {
     if (sent.current) return
     sent.current = true
+    setSending(true)
     setError(undefined)
     try {
-      await send.mutateAsync({ params: { ...params, toolCallId }, body })
+      const { ok } = await builder.answer(toolCallId, resumeData)
+      if (ok) return
+      setError(CARD_TEXT.unsent)
     } catch (failure) {
-      sent.current = false
       setError(writeFailureText(failure, CARD_TEXT.unsent))
     }
+    sent.current = false
+    setSending(false)
   }
-  return { answer, sending: send.isPending || send.isSuccess, error }
+  return { answer, sending, error }
 }
 
 /** The answers a question offers: its options. */
@@ -66,15 +71,14 @@ function choicesOf(question: Question): { value: string; label: string; hint?: s
 }
 
 /** One answer per question, as the form holds it: the choices of a multiple one, or the one given. */
-function answersOf(form: FormData, questions: readonly Question[]): QuestionAnswer {
-  const answers = questions.map((question, at) => {
+function answersOf(form: FormData, questions: readonly Question[]): Answer[] {
+  return questions.map((question, at) => {
     const given = form
       .getAll(`q${at}`)
       .map(String)
       .filter((value) => value.trim() !== '')
     return question.multiSelect ? given : (given.at(-1) ?? '')
   })
-  return { kind: 'answers', answers }
 }
 
 function Ask({ question, at }: { question: Question; at: number }) {

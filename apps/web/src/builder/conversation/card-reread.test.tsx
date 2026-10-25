@@ -1,18 +1,18 @@
-import type { MastraPart, Message } from '@conexus/hub-api'
-import { MessageId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, BUILDER_ROUTES, ToolCallId } from '@conexus/hub-api'
+import type { MastraMessagePart as MastraPart } from '@mastra/client-js'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
-import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
-import { builderSaid, conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { hubServer } from '../../platform/test-hub.tsx'
+import { AGENT_START, agentEnd, RUNNING, stepStarted } from './test-events.ts'
+import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { builderSaid, displayOf, parkedOf } from './test-stream.tsx'
 
 const server = hubServer()
 const { openConversation } = screens(server)
 const CALL = ToolCallId.parse('call-1')
-const ANSWER = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations/${FIRST}/questions/${CALL}`
-const RUN = MessageId.parse('run-1')
-const STEP = MessageId.parse('step-1')
+const ANSWER = `*${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}/tool-suspension`
+const STEP = 'step-1'
 const READ = 'Preciso saber os preços.'
 
 const QUESTION = {
@@ -39,37 +39,36 @@ function answered() {
   const bodies: unknown[] = []
   server.use(
     http.post(ANSWER, async ({ request }) => {
-      bodies.push(QuestionAnswer.parse(await request.json()))
-      return new HttpResponse(null, { status: 202 })
+      bodies.push(await request.json())
+      return HttpResponse.json({ ok: true })
     }),
   )
   return bodies
 }
 
 /**
- * A turn that asks, told on the stream; then its end, with the read already holding the step as
- * Mastra saves it, its call parked (answer-lost: the card used to mount again here).
+ * A run that asks, told on the stream; then its end, with the read already holding the step as
+ * Mastra saves it (answer-lost: the card used to mount again here).
  */
 async function asking(call: Extract<MastraPart, { type: 'tool-invocation' }>) {
   const opened = await openConversation(conversationOf({ id: FIRST }))
   say(opened.field, 'Monte a tabela de preços')
   await waitFor(() => expect(opened.shown.conversations[0]?.messages).toHaveLength(1))
-  const line = opened.lines[0]
-  line?.emit({
-    type: 'turn',
-    messages: [{ ...builderSaid(''), id: RUN, parts: [] }],
-    startedAt: new Date().toISOString(),
-  })
-  line?.emit({ type: 'message_start', message: { ...builderSaid(''), id: STEP, parts: [call] } })
+  const line = opened.line()
+  line.emit(AGENT_START)
+  line.emit(RUNNING)
+  line.emit({ type: 'message_start', message: opened.shown.conversations[0]?.messages[0] })
+  line.emit(stepStarted(STEP, [call]))
   const { toolCallId, toolName, args } = call.toolInvocation
-  const parked = { toolCallId, toolName, args, suspendPayload: args }
-  line?.emit({ type: 'tool_suspended', ...parked })
+  const parked = parkedOf({ toolCallId, toolName, args })
+  line.emit(displayOf({ isRunning: true, pendingSuspensions: parked }))
   function end() {
     // The read says one more thing than the stream did, so the screen shows when it took the read.
-    const parts = [{ type: 'text', text: READ }, call] satisfies MastraPart[]
-    const saved: Message = { ...builderSaid(''), id: STEP, parts, suspended: { [CALL]: parked } }
+    const saved = builderSaid('', STEP)
+    saved.content = { ...saved.content, parts: [{ type: 'text', text: READ }, call] }
     opened.shown.conversations[0]?.messages.push(saved)
-    line?.emit({ type: 'turnEnd', reason: 'complete' })
+    line.emit(agentEnd('suspended'))
+    line.emit(displayOf({ pendingSuspensions: parked }))
     return screen.findByText(READ)
   }
   return { end, log: screen.getByRole('log', { name: 'Conversa com o Builder' }) }
@@ -84,7 +83,7 @@ test('o texto digitado na pergunta sobrevive ao fim do turno: "Enviar" manda o q
   await waitFor(() => expect(within(log).getAllByText('Quais produtos entram?')).toHaveLength(1))
   fireEvent.click(within(log).getByRole('button', { name: 'Enviar' }))
   await waitFor(() =>
-    expect(bodies).toEqual([{ kind: 'answers', answers: ['Pão francês R$ 1,00'] }]),
+    expect(bodies).toEqual([{ toolCallId: CALL, resumeData: ['Pão francês R$ 1,00'] }]),
   )
 })
 
@@ -99,6 +98,16 @@ test('o ajuste digitado no plano sobrevive ao fim do turno: "Pedir ajustes" mand
   const after = within(log).getByRole('region', { name: 'Plano: Encomendas' })
   fireEvent.click(within(after).getByRole('button', { name: 'Pedir ajustes' }))
   await waitFor(() =>
-    expect(bodies).toEqual([{ kind: 'plan', action: 'rejected', feedback: 'Filtre por data' }]),
+    expect(bodies).toEqual([
+      {
+        toolCallId: CALL,
+        resumeData: {
+          action: 'rejected',
+          feedback: 'Filtre por data',
+          title: 'Encomendas',
+          plan: 'Uma tela de encomendas.',
+        },
+      },
+    ]),
   )
 })

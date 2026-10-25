@@ -10,6 +10,7 @@ import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import {
   asked,
   conversing,
+  endOf,
   holding,
   PARTIAL,
   sent,
@@ -56,7 +57,7 @@ test('um turno que escreve: a versão 1 fica no main, a cópia no bucket, e o Pr
     working(writing('src/a.ts', 'export const a = 1\n')),
   )
   const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   const repository = repositoryOf({ hub, companyId, projectId })
   assert.equal(await repository.version(), 1)
   assert.equal(await repository.uncopied(), null, 'the bucket holds the version')
@@ -89,7 +90,7 @@ test('uma mensagem enquanto a versão é guardada espera o fim e faz mais uma ve
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 200)
   for (let attempt = 0; attempt < 100 && !settling(); attempt += 1) {
     await new Promise((done) => setTimeout(done, 50))
   }
@@ -101,7 +102,7 @@ test('uma mensagem enquanto a versão é guardada espera o fim e faz mais uma ve
   await new Promise((done) => setTimeout(done, 300))
   assert.equal(step, 2, 'the second message calls no model while the first version is saved')
   gate.resolve()
-  assert.equal((await second).statusCode, 202)
+  assert.equal((await second).statusCode, 200)
   assert.deepEqual(failuresOf(await stream.turn()), [])
   assert.deepEqual(failuresOf(await stream.turn()), [])
   const repository = repositoryOf({ hub, companyId, projectId })
@@ -167,12 +168,12 @@ test('execução aberta: a mensagem de outro no Projeto é RUN_BUSY; em outro Pr
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 202)
-  await stream.said()
+  assert.equal((await sent(hub, ana, url, 'Primeira')).statusCode, 200)
+  await stream.next()
   const second = `${conversations}/${await started(hub, ana, conversations)}`
   const busy = await streamOf(hub, ana, second)
   t.after(() => busy.close())
-  assert.equal((await sent(hub, ana, second, 'Outra')).statusCode, 202)
+  assert.equal((await sent(hub, ana, second, 'Outra')).statusCode, 200)
   assert.deepEqual(failuresOf(await busy.turn()), ['RUN_BUSY'])
   const projects = `/api/companies/${companyId}/projects`
   const other = await post(hub, ana, projects, { name: 'Estoque' })
@@ -180,7 +181,7 @@ test('execução aberta: a mensagem de outro no Projeto é RUN_BUSY; em outro Pr
   const elsewhere = `${inOther}/${await started(hub, ana, inOther)}`
   const beside = await streamOf(hub, ana, elsewhere)
   t.after(() => beside.close())
-  assert.equal((await sent(hub, ana, elsewhere, 'Outro projeto')).statusCode, 202)
+  assert.equal((await sent(hub, ana, elsewhere, 'Outro projeto')).statusCode, 200)
   assert.equal(await beside.text(), PARTIAL, 'the other Projeto runs')
 })
 
@@ -193,7 +194,7 @@ test('erro depois de escrever: a versão é guardada', async (t) => {
     return step === 1 ? first(call) : { kind: 'refuse', status: 401 }
   })
   const { events } = await asked(t, { hub, person: ana, conversations })
-  assert.equal(events.at(-1)?.type, 'turnEnd')
+  assert.equal(events.at(-1)?.type, 'agent_end')
   assert.equal(await repositoryOf({ hub, companyId, projectId }).version(), 1)
 })
 

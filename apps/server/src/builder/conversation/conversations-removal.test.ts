@@ -9,7 +9,7 @@ async function conversed(hub: Hub, person: Parameters<typeof started>[1], conver
   const id = await started(hub, person, conversations)
   const url = `${conversations}/${id}`
   const stream = await streamOf(hub, person, url)
-  assert.equal((await sent(hub, person, url, 'Oi')).statusCode, 202)
+  assert.equal((await sent(hub, person, url, 'Oi')).statusCode, 200)
   await stream.turn()
   stream.close()
   return id

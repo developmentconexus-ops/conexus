@@ -11,7 +11,7 @@ import { z } from 'zod'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { accountPick, callModel, Turn, turnContext } from '../model-accounts/public.ts'
 import { TOOL_CLOSURE } from './public.ts'
-import { asked, conversing, MODEL, title } from './test-conversation.ts'
+import { asked, conversing, endOf, MODEL, title } from './test-conversation.ts'
 import { partsOf } from './test-parts.ts'
 
 const CARD_TOOLS = [
@@ -78,7 +78,7 @@ test('escrever e rodar um comando não param à espera de aprovação: nenhuma e
     `)
   }
   const { events } = await asked(t, { hub, person: ana, conversations, between: recordSuspensions })
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   // A command's output comes on its tool part, said again while it runs.
   const states = new Map<string, string[]>()
   for (const part of partsOf(events)) {

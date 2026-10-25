@@ -4,11 +4,11 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS, STEP_NAMES } from '@conexus/app/check'
-import type { MastraPart } from '@conexus/hub-api'
 import { CompanyId, ProjectId, VersionCheck } from '@conexus/hub-api'
+import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, messagesOf, title } from './test-conversation.ts'
+import { asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
 import { partsOf } from './test-parts.ts'
 import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
@@ -100,7 +100,7 @@ const Version = z.object({
 })
 
 /** The versions the parts say, by number, files changed and what the check said; the starter's files vary. */
-function versionsOf(parts: MastraPart[]) {
+function versionsOf(parts: MastraMessagePart[]) {
   return parts.flatMap((part) => {
     const read = part.type === 'data-conexus-version' ? Version.safeParse(part.data) : undefined
     return read?.success
@@ -136,7 +136,7 @@ test('conexus_check e o fim do turno dão o mesmo relatório; o fim que passa gu
   const built = [{ number: 1, changedFiles: 1, check: { state: 'passed' } }]
   assert.deepEqual(versionsOf(partsOf(events)), built)
   assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), built)
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
 })
 
 test('a máquina que não confere (Chromium ausente, passo acima de 60 s) não conta como tentativa (12)', async (t) => {
@@ -178,7 +178,7 @@ test('quatro falhas no fim do turno: o código fica guardado, a versão não mon
   const saved = await repository.file({ sha, path: 'a.ts', maxBytes: 100 })
   const fixed = `x\n${'y\n'.repeat(CHECK_LIMITS.checks - 1)}`
   assert.deepEqual(saved, { kind: 'text', text: fixed }, 'the code is kept')
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
 })
 
 test('um turno que não muda arquivo não confere', async (t) => {
@@ -211,16 +211,19 @@ test('uma pergunta encerra o turno: a versão fica sem veredito, nem a conferên
   const write = tool(WRITE.name, WRITE.input)
   const { hub, stream, send } = await conversingWith(t, [[write, ask(WHO)]])
   const check = checking(hub.builder.folder, ['platform'])
-  assert.equal((await send()).statusCode, 202)
+  assert.equal((await send()).statusCode, 200)
   const { events } = await untilCard(stream, 'question')
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'suspended')
   assert.equal(check.calls(), 0)
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
 })
 
 /** The `conexus_check` calls of a turn, each as its last `tool-invocation` part says it. */
 function checkCalls(events: Parameters<typeof partsOf>[0]) {
-  const last = new Map<string, Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation']>()
+  const last = new Map<
+    string,
+    Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
+  >()
   for (const part of partsOf(events)) {
     if (part.type === 'tool-invocation' && part.toolInvocation.toolName === 'conexus_check') {
       last.set(part.toolInvocation.toolCallId, part.toolInvocation)
@@ -309,9 +312,9 @@ test('uma pergunta com tarefas abertas: nada volta ao modelo e a versão fica se
   const tasks = tool(TASKS.name, TASKS.input)
   const { hub, stream, send, calls } = await conversingWith(t, [[tasks, write, ask(WHO)]])
   const check = checking(hub.builder.folder, [])
-  assert.equal((await send()).statusCode, 202)
+  assert.equal((await send()).statusCode, 200)
   const { events } = await untilCard(stream, 'question')
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'suspended')
   assert.deepEqual(toldOpen(calls), [])
   assert.equal(check.calls(), 0)
   assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])

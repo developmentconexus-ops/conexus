@@ -21,15 +21,18 @@ export type ConversationIndex = {
   projectOf(input: Owner & { conversationId: ConversationId }): Promise<ProjectId | undefined>
 }
 
-const Resource = z.object({
-  resourceId: z.string().transform((resource) => MEMORY_OWNER.exec(resource)?.groups),
-})
-
-/** Whose conversation a Mastra run is: the owner Mastra keeps its thread under (`memoryOwner`). */
-function ownerIn(requestContext: RequestContext): Owner | undefined {
-  const found = Resource.safeParse(requestContext.get('controller'))
-  const owner = Owner.safeParse(found.data?.resourceId)
+/** Whose a thread is, from the resource Mastra keeps it under (`memoryOwner`), or none. */
+export function ownerOfResource(resourceId: unknown): Owner | undefined {
+  const groups = typeof resourceId === 'string' ? MEMORY_OWNER.exec(resourceId)?.groups : undefined
+  const owner = Owner.safeParse(groups)
   return owner.success ? owner.data : undefined
+}
+
+const Resource = z.object({ resourceId: z.string() })
+
+/** Whose conversation a Mastra run is: the owner Mastra keeps its thread under. */
+function ownerIn(requestContext: RequestContext): Owner | undefined {
+  return ownerOfResource(Resource.safeParse(requestContext.get('controller')).data?.resourceId)
 }
 
 async function conversationOf(
