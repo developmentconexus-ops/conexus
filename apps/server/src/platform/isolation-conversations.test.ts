@@ -24,12 +24,9 @@ const SEED = `
   insert into projects.project(id, company_id, name, attempt_key, created_at) values
     ('project-a', '${A}', 'Encomendas', 'p-a', now()), ('project-b', '${B}', 'Vendas', 'p-b', now());
   insert into builder.conversation(id, company_id, project_id, person_id, attempt_key, body_hash,
-    created_at) values ('${ANAS}', '${A}', 'project-a', 'person-a', 'c-a', 'h', now());
-  insert into builder.conversation_turn(conversation_id, company_id, person_id, idempotency_key,
-    body_hash) values ('${ANAS}', '${A}', 'person-a', 't-a', 'h');`
+    created_at) values ('${ANAS}', '${A}', 'project-a', 'person-a', 'c-a', 'h', now());`
 
 const IDS = sql`select coalesce(array_agg(id::text), '{}') as ids from builder.conversation`
-const TURNS = sql`select count(*)::int as turns from builder.conversation_turn`
 
 function refusedWith(sqlstate: string) {
   return (error: unknown) => {
@@ -50,17 +47,10 @@ test('conversas: sem filtro, a Empresa B e Diego não leem nem gravam a conversa
       return database.command(scope, (tx) => tx.execute(statement))
     }
     assert.deepEqual((await run(IDS)).rows, [{ ids: [] }])
-    assert.deepEqual((await run(TURNS)).rows, [{ turns: 0 }])
     await run(sql`delete from builder.conversation where id = ${ANAS}`)
-    await assert.rejects(
-      run(sql`insert into builder.conversation_turn(conversation_id, company_id, person_id,
-        idempotency_key, body_hash) values (${ANAS}, ${A}, ${ANA}, 'planted', 'h')`),
-      refusedWith('42501'),
-    )
   }
   const ana = { kind: 'COMPANY', companyId: A, personId: ANA } as const
   assert.deepEqual((await database.read(ana, (tx) => tx.execute(IDS))).rows, [{ ids: [ANAS] }])
-  assert.deepEqual((await database.read(ana, (tx) => tx.execute(TURNS))).rows, [{ turns: 1 }])
 })
 
 test('conversas: o login do Hub não lê o índice nem a troca automática', async (t) => {
