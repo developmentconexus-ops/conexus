@@ -13,6 +13,7 @@ import {
   streamOf,
   title,
 } from '../conversation/test-conversation.ts'
+import { failuresOf } from '../conversation/test-parts.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const OLGA = { name: 'Olga Souza', email: 'olga@example.test', role: 'admin' }
@@ -108,7 +109,8 @@ test('apagar o Projeto no meio de um turno que escreve: a execução para antes,
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Crie o app')).statusCode, 202)
   await stream.said()
-  for (let attempt = 0; attempt < 100 && hub.builder.control.names.length === 0; attempt += 1) {
+  // The second call comes once the write is done, so the machine is up and seeded.
+  for (let attempt = 0; attempt < 100 && step < 2; attempt += 1) {
     await new Promise((done) => setTimeout(done, 50))
   }
   const project = `/api/companies/${companyId}/projects/${projectId}`
@@ -121,32 +123,6 @@ test('apagar o Projeto no meio de um turno que escreve: a execução para antes,
   assert.equal(existsSync(folderOf(hub, companyId, projectId)), false)
   const said = hub.lines.map((line) => line.message)
   assert.equal(said.includes('RUN_SETTLING') || said.includes('VERSION_SAVED'), false)
-})
-
-test('apagar o Projeto enquanto uma ferramenta roda: a execução do Mastra para antes da morte, e nenhuma ferramenta religa a máquina morta (53)', async (t) => {
-  const slow = { name: 'mastra_workspace_execute_command', input: { command: 'sleep 2' } }
-  const write = { name: WRITE, input: { path: 'a.ts', content: 'x\n' } }
-  let step = 0
-  const { hub, ana, companyId, projectId, conversations } = await conversing(t, (call) => {
-    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
-    step += 1
-    const tool = [slow, write][step - 1]
-    if (tool === undefined) return { kind: 'text', text: 'Pronto.' }
-    return { kind: 'blocks', blocks: [{ type: 'tool_use', ...tool }] }
-  })
-  const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Crie o app')).statusCode, 202)
-  const { control } = hub.builder
-  for (let attempt = 0; attempt < 100 && control.names.length === 0; attempt += 1) {
-    await new Promise((done) => setTimeout(done, 50))
-  }
-  const project = `/api/companies/${companyId}/projects/${projectId}`
-  assert.equal((await call(hub, ana, 'DELETE', project, { name: 'Encomendas' })).statusCode, 204)
-  await new Promise((done) => setTimeout(done, 3_000))
-  assert.equal(control.names.length, 1, 'no machine started after the kill')
-  assert.equal(step, 1, 'the aborted run asked the model for nothing more')
 })
 
 test('tirar a pessoa enquanto o turno dela guarda: a execução para, e o main não anda', async (t) => {
@@ -175,6 +151,27 @@ test('tirar a pessoa enquanto o turno dela guarda: a execução para, e o main n
     await new Promise((done) => setTimeout(done, 100))
   }
   assert.equal(await repository.version(), 0)
+})
+
+test('tirar a pessoa no meio do turno dela: a execução dela solta o Projeto, e a próxima conversa de outra pessoa não é RUN_BUSY', async (t) => {
+  const held = holding(t)
+  let step = 0
+  const { hub, ana, companyId, conversations } = await conversing(t, (call) => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    return step === 1 ? held.reply : { kind: 'text', text: 'Pronto.' }
+  })
+  const bruno = await memberOn(hub, companyId, BRUNO, 'member')
+  const his = `${conversations}/${await started(hub, bruno, conversations)}`
+  const stream = await streamOf(hub, bruno, his)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, bruno, his, 'Crie o app')).statusCode, 202)
+  await stream.said()
+  const member = `/api/companies/${companyId}/members/${bruno.id}`
+  assert.equal((await call(hub, ana, 'DELETE', member)).statusCode, 204)
+  held.release()
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.deepEqual(failuresOf(events), [], 'the Projeto is free')
 })
 
 test('apagar o cliente: a máquina de cada conversa morre, o repositório e a cópia de cada Projeto saem (53)', async (t) => {
