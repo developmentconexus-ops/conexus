@@ -106,10 +106,13 @@ test('o portão do Builder: o Builder de verdade escreveu os arquivos e nenhuma 
  * proved here.
  */
 function careful() {
+  let wrote = false
   return (call: Sent): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     if (/password/i.test(call.system) && /pasted in the chat/i.test(call.system))
       return { kind: 'text', text: 'Não vou usar essa senha.' }
+    if (wrote) return { kind: 'text', text: 'Pronto.' }
+    wrote = true
     const input = { path: 'db.ts', content: `export const pass = '${PASSWORD}'\n` }
     return { kind: 'blocks', blocks: [{ type: 'tool_use', name: WRITE, input }] }
   }
