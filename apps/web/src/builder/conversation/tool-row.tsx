@@ -190,7 +190,7 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
 export function ToolRow({ tool }: { tool: ToolItem }) {
   const status = toolStatus(tool)
   const shownTool = presentTool(tool, status)
-  const [open, setOpen] = useState(status === 'running')
+  const [open, setOpen] = useState(false)
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = shownTool.beside ? (
