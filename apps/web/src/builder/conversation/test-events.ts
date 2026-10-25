@@ -1,60 +1,59 @@
-import type { ConversationEvent, MastraPart, Message } from '@conexus/hub-api'
-import { MessageId } from '@conexus/hub-api'
-import { builderSaid } from './test-hub.tsx'
+import type { MastraMessagePart } from '@mastra/client-js'
+import {
+  AgentEnd,
+  AgentStart,
+  MessageStart,
+  MessageUpdate,
+  recordedEvent,
+} from './test-recorded.ts'
+import { displayOf } from './test-stream.tsx'
 
-/** The events of a turn as the server says them: the turn, Mastra's steps, and our parts. */
+export { signalStarted } from './test-recorded.ts'
+
+/**
+ * Mastra's session events as its stream sends them, in the shapes the Hub's tests measured
+ * (`conversation-steer.test.ts`, `platform/recordings/mastra/abort.jsonl`).
+ */
 export const MSG_ID = 'builder-msg-1'
-const TURN_ID = 'run-1'
-const TURN_STARTED_AT = '2026-10-19T12:01:00.000Z'
 
-/** The turn the stream opens with, and the step of Mastra's it tells next, as the server says them. */
-export function opening(): ConversationEvent {
+export const AGENT_START = recordedEvent('abort', AgentStart)
+export const RUNNING = displayOf({ isRunning: true })
+export const IDLE = displayOf()
+
+export function agentEnd(reason = 'complete') {
+  return { ...recordedEvent('abort', AgentEnd), reason }
+}
+
+/** A step of the Builder's opening, as Mastra opens it, with the parts a test gives it. */
+export function stepStarted(id = MSG_ID, parts?: MastraMessagePart[]) {
+  const start = recordedEvent('abort', MessageStart, (event) => event.message.role === 'assistant')
+  const { content } = start.message
   return {
-    type: 'turn',
-    messages: [{ ...builderSaid(''), id: MessageId.parse(TURN_ID), parts: [] }],
-    startedAt: TURN_STARTED_AT,
+    ...start,
+    message: {
+      ...start.message,
+      id,
+      createdAt: '2026-10-19T12:02:00.000Z',
+      content: {
+        ...content,
+        ...(parts ? { parts } : {}),
+        metadata: { provider: 'anthropic', modelId: 'claude-sonnet-4' },
+      },
+    },
   }
 }
 
-export function stepStarted(id = MSG_ID): ConversationEvent {
-  return {
-    type: 'message_start',
-    message: { ...builderSaid(''), id: MessageId.parse(id), parts: [] },
-  }
+export function textDelta(delta: string, id = MSG_ID) {
+  const update = recordedEvent('abort', MessageUpdate, (event) => event.event.type === 'text-delta')
+  return { ...update, id, event: { ...update.event, delta } }
 }
 
-/** The step as Mastra saves it: under the id its `message_start` told. */
-export function savedStep(text: string): Message {
-  return { ...builderSaid(text), id: MessageId.parse(MSG_ID) }
+export function updatePart(part: MastraMessagePart, index = 0, id = MSG_ID) {
+  const update = recordedEvent('cited', MessageUpdate, (event) => event.event.type === 'part')
+  return { ...update, id, event: { ...update.event, index, part } }
 }
 
-/** Ours as the server saves it: under the run's id, as the stream told it. */
-export function savedOurs(parts: MastraPart[]): Message {
-  return { ...builderSaid(''), id: MessageId.parse(TURN_ID), parts }
-}
-
-/** A part of ours, told as an update of the turn's own message. */
-export function ours(part: MastraPart, index = 0): ConversationEvent {
-  return updatePart(part, index, TURN_ID)
-}
-
-export function textDelta(delta: string, id = MSG_ID): ConversationEvent {
-  return {
-    type: 'message_update',
-    id: MessageId.parse(id),
-    event: { type: 'text-delta', delta },
-  }
-}
-
-export function updatePart(part: MastraPart, index = 0, id = MSG_ID): ConversationEvent {
-  return {
-    type: 'message_update',
-    id: MessageId.parse(id),
-    event: { type: 'part', index, part },
-  }
-}
-
-export function readPage(url: string, title?: string): MastraPart {
+export function readPage(url: string, title?: string): MastraMessagePart {
   return {
     type: 'tool-invocation',
     toolInvocation: {

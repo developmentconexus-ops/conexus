@@ -20,7 +20,7 @@ export class TurnTally {
   finishReason: string | undefined
   /** The kind of the first tool that failed, never its arguments (security S41). */
   failedTool: string | undefined
-  /** How many times the end of the turn judged it (`checkGate`), once the run settled. */
+  /** How many times the end of the turn judged it (`conexusCheck`), once the run settled. */
   rounds: number | undefined
 
   heard(event: AgentControllerEvent): void {
@@ -42,13 +42,11 @@ export class TurnTally {
 /**
  * The line a turn leaves in the log (cards of steps 14, U10, and 14.2, criterion 17): how long, how
  * many steps and tokens, the fullest step and the cached input, how it ended and how the model
- * finished, the rounds of its end, and the tool and the code of its error, field by field. The
- * request's trace id ties it to the request that began the turn. Never a message, a command or a
- * file (security S41, S42).
+ * finished, the rounds of its end, and the tool and the code of its error, field by field. Never a
+ * message, a command or a file (security S41, S42).
  */
 export function turnLine(input: {
   runId: RunId | undefined
-  traceId: string | undefined
   startedAt: string
   tally: TurnTally
   end: string
@@ -57,7 +55,6 @@ export function turnLine(input: {
   const { tally } = input
   return {
     ...(input.runId && { runId: input.runId }),
-    ...(input.traceId && { traceId: input.traceId }),
     ms: Date.now() - Date.parse(input.startedAt),
     steps: tally.steps,
     tokens: tally.tokens,

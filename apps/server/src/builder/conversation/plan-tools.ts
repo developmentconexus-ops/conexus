@@ -1,5 +1,4 @@
 import { posix } from 'node:path'
-import type { Question as HubQuestion } from '@conexus/hub-api'
 import { Answer, QUESTION_LIMITS } from '@conexus/hub-api'
 import { askUserTool, submitPlanTool } from '@mastra/core/agent-controller'
 import type { MastraDBMessage } from '@mastra/core/memory'
@@ -33,23 +32,6 @@ const ASK_USER_DESCRIPTION = [
   'Set `multiSelect: true` when more than one option can be picked. Omit `options` for an open question.',
   "Write each question in the person's language. Returns one line per question with the answer.",
 ].join(' ')
-
-/**
- * The questions of an `ask_user` call as the card shows them, or none when its input is not a
- * card.
- */
-export function questionsOf(input: unknown): HubQuestion[] | undefined {
-  const asked = Questions.safeParse(input)
-  if (!asked.success) return undefined
-  return asked.data.questions.map(
-    ({ question, header, options = [], multiSelect = false }): HubQuestion => ({
-      question,
-      header,
-      options,
-      multiSelect,
-    }),
-  )
-}
 
 /** What `ask_user` returns once answered: the model's line per question, and the answers themselves. */
 const AskedResult = z.object({ content: z.string(), answers: z.array(Answer) })

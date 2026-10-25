@@ -1,11 +1,18 @@
-import { ConversationEvent, FAILURES, MessageId } from '@conexus/hub-api'
+import { FAILURES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
-import steerStart from './steer-events.json' with { type: 'json' }
-import { opening, stepStarted, textDelta } from './test-events.ts'
+import {
+  AGENT_START,
+  agentEnd,
+  RUNNING,
+  signalStarted,
+  stepStarted,
+  textDelta,
+} from './test-events.ts'
 import { conversationOf, FIRST, PROJECT, SECOND, say, screens, typed, view } from './test-hub.tsx'
+import { displayOf, parkedOf } from './test-stream.tsx'
 import { UNCONFIRMED_SEND } from './text.ts'
 
 const { open, openConversation } = screens(hubServer())
@@ -124,110 +131,105 @@ test('uma mensagem enviada cujo envio termina depois da troca de conversa não v
 })
 
 test('a conversa de outra pessoa abre como "não encontrado", sem rastro dela', async () => {
-  open(
+  const { conexus } = open(
     view({ conversations: [conversationOf({ id: FIRST, title: 'Primeira' })] }),
     `${PROJECT}/conversations/${SECOND}`,
   )
   expect(await screen.findByText(FAILURES.NOT_FOUND.phrase)).toBeTruthy()
   expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
+  // The company's frame around the page still reads its companies; the test ends once it has.
+  await waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
 })
 
 const STEER = 'Só eu cadastro.'
 const PENDING = 'Vai ao Builder no próximo passo'
 
-/** The person's `message_start` as unit 12's server tells it, with the id of the send that made it. */
-function readByMastra(key: string | null): ConversationEvent {
-  const start = ConversationEvent.parse(steerStart)
-  if (start.type !== 'message_start') throw new Error('the fixture is a message_start')
-  return { ...start, message: { ...start.message, id: MessageId.parse(`${FIRST}:${key}`) } }
-}
-
-/**
- * The Hub's answer to the sends after the first: Mastra saves a steer where it reads it, so the
- * conversation does not hold it yet.
- */
+/** The Hub's answer to the sends after the first, which enter the running run. */
 function afterFirst(reply: () => Response | Promise<Response>) {
   let sends = 0
   return () => (++sends > 1 ? reply() : undefined)
 }
 
-function accepted() {
-  return new HttpResponse(null, { status: 202 })
-}
-
-/** A turn running with the first message sent, the Builder's first words heard. */
-async function answering() {
-  const hub = await openConversation(conversationOf({ id: FIRST }), view(), {
-    message: afterFirst(accepted),
-  })
+/** A run going with the first message sent, the Builder's first words heard. */
+async function answering(answers: Parameters<typeof openConversation>[2] = {}) {
+  const hub = await openConversation(conversationOf({ id: FIRST }), view(), answers)
   say(hub.field, 'Crie um app de encomendas')
-  await screen.findByRole('button', { name: 'Parar' })
-  hub.lines[0]?.emit(opening())
-  hub.lines[0]?.emit(stepStarted())
-  hub.lines[0]?.emit(textDelta('Vou começar'))
+  await waitFor(() => expect(hub.sent).toHaveLength(1))
+  hub.line().emit(AGENT_START)
+  hub.line().emit(RUNNING)
+  hub.line().emit(stepStarted())
+  hub.line().emit(textDelta('Vou começar'))
   await screen.findByText('Vou começar')
+  await screen.findByRole('button', { name: 'Parar' })
   return hub
 }
 
-test('a mensagem enviada durante a resposta aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream a confirma', async () => {
-  const { field, lines, sent } = await answering()
+function messagesOf(sent: { path: string; body: unknown }[]) {
+  return sent.filter((one) => one.path.endsWith('/messages'))
+}
+
+test('a mensagem enviada durante a resposta aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream a confirma (45)', async () => {
+  const { field, line, sent } = await answering()
   say(field, STEER)
   const steer = await screen.findByText(STEER)
-  await waitFor(() => expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(2))
-  const [first, second] = sent.filter((one) => one.path.endsWith('/messages'))
-  expect(second?.body).toEqual({ content: STEER })
-  expect(second?.attemptKey).not.toBe(first?.attemptKey)
+  await waitFor(() => expect(messagesOf(sent)).toHaveLength(2))
+  expect(messagesOf(sent)[1]?.body).toEqual({ message: STEER })
   expect(screen.getByText(PENDING)).toBeTruthy()
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   expect(steer.compareDocumentPosition(screen.getByText('Vou começar'))).toBe(
     Node.DOCUMENT_POSITION_PRECEDING,
   )
-  lines[0]?.emit(readByMastra(second?.attemptKey ?? null))
+  line().emit(signalStarted('signal-1', STEER))
   await waitFor(() => expect(screen.queryByText(PENDING)).toBeNull())
   expect(within(log).getAllByText(STEER)).toHaveLength(1)
   expect(typed(field)).toBe('')
 })
 
-test('Parar com uma mensagem não lida: ela volta para o campo e a tela diz por quê', async () => {
-  const { field, lines } = await answering()
+test('Parar com uma mensagem não lida: ela fica pendente até a volta que o Mastra abre com ela (46)', async () => {
+  const { field, line } = await answering()
   say(field, STEER)
   await screen.findByText(PENDING)
-  await waitFor(() => expect(typed(field)).toBe(''))
-  lines[0]?.emit({ type: 'turnEnd', reason: 'aborted' })
-  await waitFor(() => expect(typed(field)).toBe(STEER))
-  expect((await screen.findByRole('alert')).textContent).toBe(
-    'O Builder parou antes de ler sua mensagem. Ela voltou para o campo.',
-  )
-  expect(screen.queryByText(PENDING)).toBeNull()
+  line().emit(agentEnd('aborted'))
+  expect(screen.getByText(PENDING)).toBeTruthy()
+  line().emit(AGENT_START)
+  line().emit(signalStarted('signal-1', STEER))
+  await waitFor(() => expect(screen.queryByText(PENDING)).toBeNull())
+  expect(typed(field)).toBe('')
 })
 
-test('duas mensagens seguidas durante a resposta vão com chaves diferentes', async () => {
-  const gate = Promise.withResolvers<void>()
-  const { field, sent } = await openConversation(conversationOf({ id: FIRST }), view(), {
-    message: afterFirst(async () => {
-      await gate.promise
-      return accepted()
-    }),
-  })
-  say(field, 'Crie um app de encomendas')
-  await screen.findByRole('button', { name: 'Parar' })
-  say(field, STEER)
-  say(field, 'E o estoque também.')
-  await waitFor(() => expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(3))
-  const keys = sent.filter((one) => one.path.endsWith('/messages')).map((one) => one.attemptKey)
-  expect(new Set(keys).size).toBe(3)
-  expect(screen.queryByText(FAILURES.IDEMPOTENCY_CONFLICT.phrase)).toBeNull()
-  gate.resolve()
+test('a mensagem que o stream não confirmou e a releitura traz sai da espera, uma vez (45)', async () => {
+  const hub = await answering()
+  say(hub.field, STEER)
+  await screen.findByText(PENDING)
+  hub.line().emit(agentEnd('complete'))
+  await waitFor(() => expect(screen.queryByText(PENDING)).toBeNull())
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  expect(within(log).getAllByText(STEER)).toHaveLength(1)
+})
+
+test('Esc durante a resposta para pelo abort do Mastra', async () => {
+  const { field, sent } = await answering()
+  fireEvent.keyDown(field, { key: 'Escape' })
+  await waitFor(() => expect(sent.some((one) => one.path.endsWith('/abort'))).toBe(true))
 })
 
 test('o envio que falha tira o balão e deixa o texto no campo', async () => {
-  const { field } = await openConversation(conversationOf({ id: FIRST }), view(), {
-    message: afterFirst(() => HttpResponse.error()),
-  })
-  say(field, 'Crie um app de encomendas')
-  await screen.findByRole('button', { name: 'Parar' })
+  const { field } = await answering({ message: afterFirst(() => HttpResponse.error()) })
   say(field, STEER)
   expect((await screen.findByRole('alert')).textContent).toBe(UNCONFIRMED_SEND)
   expect(screen.queryByText(PENDING)).toBeNull()
   expect(typed(field)).toBe(STEER)
+})
+
+test('com um cartão esperando a pessoa, Parar e Esc cancelam, e a mensagem digitada fica pendente (44, 45)', async () => {
+  const { field, line, sent } = await answering()
+  const parked = parkedOf({ toolCallId: 'call-1', toolName: 'ask_user', args: { questions: [] } })
+  line().emit(agentEnd('suspended'))
+  line().emit(displayOf({ pendingSuspensions: parked }))
+  const stop = await screen.findByRole('button', { name: 'Parar' })
+  say(field, STEER)
+  expect(await screen.findByText(PENDING)).toBeTruthy()
+  fireEvent.keyDown(field, { key: 'Escape' })
+  await waitFor(() => expect(sent.some((one) => one.path.endsWith('/abort'))).toBe(true))
+  fireEvent.click(stop)
 })

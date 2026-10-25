@@ -86,12 +86,11 @@ export async function anotherPage(context: BrowserContext, problems: string[]): 
 }
 
 /**
- * Opens a conversation and returns once its event stream is open and has had time to subscribe:
- * the Hub sends the stream's headers before it subscribes to the conversation, and an event
- * emitted between the two reaches no one (the answer in progress is replayed, a finished one is not).
+ * Opens a conversation and returns once Mastra's session stream is open and has had time to
+ * subscribe: the stream's headers come before the session's subscription.
  */
 export async function openConversation(page: Page, open: string | (() => Promise<void>)) {
-  const opened = page.waitForResponse((response) => response.url().endsWith('/events'))
+  const opened = page.waitForResponse((response) => response.url().endsWith('/stream'))
   if (typeof open === 'string') await page.goto(open)
   else await open()
   await opened

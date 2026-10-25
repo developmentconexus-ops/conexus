@@ -1,6 +1,6 @@
-import { MESSAGE_MAX_LENGTH } from '@conexus/hub-api'
 import { ArrowUpIcon, SquareIcon } from 'lucide-react'
 import type { KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
+import { useRef } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { InputGroup, InputGroupAddon, InputGroupTextarea } from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
@@ -34,9 +34,17 @@ export function Composer(props: {
   const content = draft.text
   const empty = content.trim() === ''
 
+  const sending = useRef(false)
+
+  /** One send at a time: a second Enter or click before the route answers would send it again (Factory clears its field before sending). */
   async function send() {
-    if (empty || !props.canSend) return
-    if (await props.onSend(content)) draft.clear(content)
+    if (empty || !props.canSend || sending.current) return
+    sending.current = true
+    try {
+      if (await props.onSend(content)) draft.clear(content)
+    } finally {
+      sending.current = false
+    }
   }
 
   function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -69,7 +77,6 @@ export function Composer(props: {
           id="message"
           ref={props.field}
           value={content}
-          maxLength={MESSAGE_MAX_LENGTH}
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}

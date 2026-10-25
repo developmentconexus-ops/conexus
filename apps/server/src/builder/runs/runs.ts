@@ -9,10 +9,9 @@ import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Result } from '../../platform/result.ts'
 import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
-import type { RunsContext, RunsDeps, Settled } from './context.ts'
+import type { Driven, Opened, Registry, RunsContext, RunsDeps, Settled } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
-import type { Driven, Opened, Registry } from './driven.ts'
 import { conversationIn } from './keys.ts'
 import type { ReleaseScope } from './removal.ts'
 import { releaseRuns } from './removal.ts'
@@ -187,10 +186,12 @@ export class Runs {
     if (mine !== undefined) mine.check = check
   }
 
-  /** Counts a round of the end of the turn (`checkGate`), for the turn's line. */
-  rounded(requestContext: RequestContext, rounds: number): void {
+  /** Counts a round of the end of the turn (`conexusCheck`), for the turn's line, and says which it is. */
+  round(requestContext: RequestContext): number {
     const mine = this.#mine(requestContext)
-    if (mine !== undefined) mine.rounds = rounds
+    if (mine === undefined) return 0
+    mine.rounds += 1
+    return mine.rounds
   }
 
   /** Takes the conversation's workspace out of Mastra once the run lets go of it: Mastra's shutdown would stop it again. */

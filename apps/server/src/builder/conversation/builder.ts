@@ -1,5 +1,5 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
@@ -31,12 +31,13 @@ import {
   createSubmitPlanTool,
   SUBMIT_PLAN_TOOL,
 } from './plan-tools.ts'
-import { checkGate, checkTool, workspaceMetadataLive } from './processors.ts'
+import { checkTool, conexusCheck, workspaceMetadataLive } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
 import type { ConversationIndex } from './turn-of.ts'
 import { projectIn, sideTurn, turnOf } from './turn-of.ts'
 
-const BUILDER_ID = 'builder'
+/** The Builder's controller, as Mastra's routes name it (`/agent-controller/builder/…`). */
+export const BUILDER_ID = BUILDER_CONTROLLER
 const CONVERSATION_MODE = 'conversa'
 
 const TITLE_INSTRUCTIONS =
@@ -165,15 +166,17 @@ export function createBuilder(deps: {
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
     inputProcessors: [turnOf(deps), accountPick(deps.queue)],
     workspace: undefined,
-    outputProcessors: [
-      new CyberRefusalHandler(),
-      workspaceMetadataLive,
-      checkGate({ runs: deps.runs, storage }),
-    ],
+    outputProcessors: [new CyberRefusalHandler(), workspaceMetadataLive],
     errorProcessors: accountErrorProcessors(deps.queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,
-    defaultOptions: { modelSettings },
+    defaultOptions: {
+      modelSettings,
+      isTaskComplete: {
+        scorers: [conexusCheck({ runs: deps.runs, storage })],
+        strategy: 'all',
+      },
+    },
     memory,
   })
   const controller = new AgentController({

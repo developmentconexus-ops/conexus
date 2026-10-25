@@ -2,8 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Person } from '../../hub/identity/test-hub.ts'
 import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
-import { asked, conversing, KEY } from '../conversation/test-conversation.ts'
-import { noticesOf } from '../conversation/test-parts.ts'
+import { asked, conversing, endOf, KEY, turnNotices } from '../conversation/test-conversation.ts'
 import { company, connect, created, GROQ_MODEL, pairOf, patch } from './test-defaults.ts'
 
 const SONNET_NEW = 'anthropic/claude-sonnet-5-5'
@@ -120,11 +119,13 @@ test('o fornecedor responde 404 ao modelo: a lista da conta é lida de novo e o 
   const body = { owner: 'company', provider: 'anthropic', label: 'Dois', key: other }
   const linked = await post(hub, ana, `/api/companies/${companyId}/model-accounts`, body)
   assert.equal(linked.statusCode, 201)
-  const { events } = await asked(t, { hub, person: ana, conversations })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
   const streamed = anthropic.sent.filter((each) => each.stream).map((each) => each.key)
   assert.deepEqual(streamed, [KEY, other])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.deepEqual(noticesOf(events), ['Time 1 não atende a este modelo; continuei pela Dois.'])
+  assert.equal(endOf(events), 'complete')
+  assert.deepEqual(await turnNotices(hub, ana, url), [
+    'Time 1 não atende a este modelo; continuei pela Dois.',
+  ])
   const rows = await hub.test.asOwner(
     `select label, served_models from builder.model_account order by position`,
   )

@@ -9,7 +9,7 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { Markdown } from './markdown.tsx'
-import type { ReasoningItem } from './parts.ts'
+import type { ReasoningItem } from './rows.ts'
 import { durationOf } from './text.ts'
 
 function thoughtOf(seconds: number | null | undefined, running: boolean): string {

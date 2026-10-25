@@ -1,7 +1,8 @@
-import { MessageId, ModelId } from '@conexus/hub-api'
+import { ModelId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
+import { AGENT_START, RUNNING, textDelta } from './test-events.ts'
 import { choose, conversationOf, FIRST, say, screens, typed, view } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
@@ -11,12 +12,15 @@ const PICKER = { name: 'Modelo e raciocínio' }
 const SLIDER = { hidden: true } as const
 
 test('o anel do compositor só gira enquanto o Builder trabalha; enquanto ele trabalha, Parar e Enviar ficam lado a lado; Enter envia e Esc para', async () => {
-  const { field, lines, sent } = await openConversation(conversationOf({ id: FIRST }))
+  const { field, line, sent } = await openConversation(conversationOf({ id: FIRST }))
   function ring() {
     return field.closest('.rounded-composer')
   }
   expect(ring()?.hasAttribute('data-busy')).toBe(false)
   say(field, 'Oi')
+  await waitFor(() => expect(sent).toHaveLength(1))
+  line().emit(AGENT_START)
+  line().emit(RUNNING)
   const stop = await screen.findByRole('button', { name: 'Parar' })
   expect(ring()?.hasAttribute('data-busy')).toBe(true)
   expect(screen.getByRole('button', { name: 'Enviar' })).toBeTruthy()
@@ -25,17 +29,13 @@ test('o anel do compositor só gira enquanto o Builder trabalha; enquanto ele tr
   say(field, 'Só eu cadastro.')
   await waitFor(() => expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(2))
   fireEvent.keyDown(field, { key: 'Escape', isComposing: true })
-  expect(sent.some((one) => one.path.endsWith('/stop'))).toBe(false)
+  expect(sent.some((one) => one.path.endsWith('/abort'))).toBe(false)
   fireEvent.keyDown(field, { key: 'Escape' })
-  await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/stop$/))
+  await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/abort$/))
   stop.focus()
   fireEvent.click(stop)
   expect(document.activeElement).toBe(field)
-  lines[0]?.emit({
-    type: 'message_update',
-    id: MessageId.parse('builder-1'),
-    event: { type: 'text-delta', delta: 'Olá' },
-  })
+  line().emit(textDelta('Olá'))
 })
 
 test('perto do campo uma linha pede para não colar senhas, chaves ou tokens na conversa', async () => {
@@ -136,18 +136,22 @@ test('a busca do seletor estreita os modelos', async () => {
 
 test('o que se digita enquanto o envio está no ar fica no campo; o texto enviado sai', async () => {
   const gate = Promise.withResolvers<void>()
-  const { field, sent, reads } = await openConversation(conversationOf({ id: FIRST }), view(), {
-    message: async () => {
-      await gate.promise
-      return undefined
+  const { field, sent, conversationReads } = await openConversation(
+    conversationOf({ id: FIRST }),
+    view(),
+    {
+      message: async () => {
+        await gate.promise
+        return undefined
+      },
     },
-  })
+  )
   say(field, 'primeira')
   await waitFor(() => expect(sent.length).toBe(1))
   fireEvent.change(field, { target: { value: 'primeira e mais' } })
-  const before = reads.length
+  const before = conversationReads.length
   gate.resolve()
-  await waitFor(() => expect(reads.length).toBeGreaterThan(before))
+  await waitFor(() => expect(conversationReads.length).toBeGreaterThan(before))
   expect(typed(field)).toBe('primeira e mais')
 })
 
@@ -171,4 +175,21 @@ test('a busca do seletor acha pelo nome e pelo id do modelo', async () => {
   await waitFor(() =>
     expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
   )
+})
+
+test('Enter duas vezes antes de o envio responder manda a mensagem uma única vez', async () => {
+  const gate = Promise.withResolvers<void>()
+  const { field, sent } = await openConversation(conversationOf({ id: FIRST }), view(), {
+    message: async () => {
+      await gate.promise
+      return undefined
+    },
+  })
+  say(field, 'uma só')
+  fireEvent.keyDown(field, { key: 'Enter' })
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+  await waitFor(() => expect(sent.length).toBe(1))
+  gate.resolve()
+  await waitFor(() => expect(typed(field)).toBe(''))
+  expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(1)
 })

@@ -15,27 +15,36 @@ import {
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import {
   conversing,
+  endOf,
   holding,
   hubBeside,
   MODEL,
   PARTIAL,
   sent,
+  sessionUrl,
   started,
+  stopped,
   streamOf,
 } from './test-conversation.ts'
 import { textsOf } from './test-parts.ts'
 
 const DIEGO = { name: 'Diego Melo', email: 'diego@example.test' }
 
-/** Every route of one conversation, as the person calls it. */
+/** Every route of one conversation, the Hub's and Mastra's, as the person calls it. */
 function routesOf(hub: Hub, person: Person, url: string) {
   const headers = { origin: TEST_ORIGIN, cookie: person.cookie }
+  const session = sessionUrl(url)
+  const id = url.slice(url.lastIndexOf('/') + 1)
   return [
     call(hub, person, 'GET', url),
-    sent(hub, person, url, 'Olá'),
-    hub.app.inject({ method: 'GET', url: `${url}/events`, headers }),
-    post(hub, person, `${url}/stop`, {}),
     call(hub, person, 'PUT', `${url}/model`, { model: MODEL, effort: 'off' }),
+    sent(hub, person, url, 'Olá'),
+    hub.app.inject({ method: 'GET', url: `${session}/stream`, headers }),
+    stopped(hub, person, url),
+    post(hub, person, `${session}/tool-suspension`, { toolCallId: 'x', resumeData: 'Sim' }),
+    post(hub, person, `${session}/steer`, { message: 'Olá' }),
+    post(hub, person, `${session}/follow-up`, { message: 'Olá' }),
+    call(hub, person, 'GET', `${session}/threads/${id}/messages`),
   ]
 }
 
@@ -75,12 +84,12 @@ test('a conversa de outra pessoa ou de outra empresa: o mesmo 404 em toda rota; 
   t.after(() => diegoStream.close())
   const anaStream = await streamOf(hub, ana, anas)
   t.after(() => anaStream.close())
-  assert.equal((await sent(hub, ana, anas, 'Pergunta de Ana')).statusCode, 202)
-  assert.deepEqual((await anaStream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.equal((await sent(hub, diego, diegos, 'Pergunta de Diego')).statusCode, 202)
+  assert.equal((await sent(hub, ana, anas, 'Pergunta de Ana')).statusCode, 200)
+  assert.equal(endOf(await anaStream.turn()), 'complete')
+  assert.equal((await sent(hub, diego, diegos, 'Pergunta de Diego')).statusCode, 200)
   const diegoEvents = await diegoStream.turn()
   assert.equal(textsOf(diegoEvents).join(''), 'Resposta a Pergunta de Diego')
-  assert.deepEqual(diegoEvents.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(diegoEvents), 'complete')
   assert.doesNotMatch(diegoStream.seen.raw, /Ana/)
 
   for (const path of ['/api/agents', '/api/agents/builder', '/api/memory/threads?resourceId=x']) {
@@ -112,8 +121,8 @@ test('toda thread tem sua linha no índice, com a empresa e a pessoa no dono do 
   )
 })
 
-test('a mesma chave: uma conversa, um modelo e um turno, também depois de reiniciar; outro corpo: IDEMPOTENCY_CONFLICT', async (t) => {
-  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => ({
+test('a mesma chave: uma conversa e um modelo, também depois de reiniciar; outro corpo: IDEMPOTENCY_CONFLICT', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, (asked) => ({
     kind: 'text',
     text: asked.stream ? 'Resposta' : 'Título',
   }))
@@ -138,29 +147,10 @@ test('a mesma chave: uma conversa, um modelo e um turno, também depois de reini
   assert.equal(conflict.statusCode, 409)
   assert.equal(codeOf(conflict), 'IDEMPOTENCY_CONFLICT')
 
-  const url = `${conversations}/${id}`
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  const message = randomUUID()
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta', message)).statusCode, 202)
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta', message)).statusCode, 202)
-  const otherBody = await sent(hub, ana, url, 'Outra pergunta', message)
-  assert.equal(otherBody.statusCode, 409)
-  assert.equal(codeOf(otherBody), 'IDEMPOTENCY_CONFLICT')
-
   const restarted = await hubBeside(t, hub)
   const created = await post(restarted, ana, conversations, {}, key)
   assert.equal(created.statusCode, 201)
   assert.equal(Object(created.json()).conversation.id, id)
-  assert.equal((await sent(restarted, ana, url, 'Uma pergunta', message)).statusCode, 202)
-  assert.equal(codeOf(await sent(restarted, ana, url, 'Outra', message)), 'IDEMPOTENCY_CONFLICT')
-  assert.equal(anthropic.sent.filter((each) => each.stream).length, 1, 'one turn in all')
-  const read = Object((await call(restarted, ana, 'GET', url)).json()).conversation
-  assert.deepEqual(
-    read.messages.map((each: { role: string }) => each.role),
-    ['person', 'builder'],
-  )
   const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
   assert.deepEqual(rows, [{ count: 1 }])
 })
@@ -182,26 +172,6 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
   const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
   assert.deepEqual(rows, [{ count: 1 }])
   assert.deepEqual(anthropic.sent, [])
-})
-
-test('o Mastra recusa no meio de uma mensagem: 500, e a mesma chave depois faz o turno, uma vez só', async (t) => {
-  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => ({
-    kind: 'text',
-    text: asked.stream ? 'Resposta' : 'Título',
-  }))
-  const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const key = randomUUID()
-  const mastra = hub.test.mastraPool
-  await mastra.query('alter table mastra.mastra_threads rename to mastra_threads_out')
-  const refused = await sent(hub, ana, url, 'Uma pergunta', key)
-  await mastra.query('alter table mastra.mastra_threads_out rename to mastra_threads')
-  assert.equal(refused.statusCode, 500, refused.body)
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta', key)).statusCode, 202)
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta', key)).statusCode, 202)
-  assert.equal(anthropic.sent.filter((each) => each.stream).length, 1, 'one turn in all')
 })
 
 test('a conversa cuja thread o Mastra não tem: 404 CONVERSATION_NOT_FOUND, e a linha sai do índice', async (t) => {
@@ -242,7 +212,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
 
   const high = await model('high')
   assert.deepEqual([high.statusCode, high.json()], [200, { model: MODEL, effort: 'high' }])
-  assert.equal((await sent(hub, ana, url, 'Pergunta')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Pergunta')).statusCode, 200)
   await stream.turn()
   assert.deepEqual(thinkings(), [HIGH])
 
@@ -250,16 +220,12 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
   assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'EFFORT_UNSUPPORTED'])
   assert.equal(await effortOn(hub), 'high')
 
-  assert.equal((await sent(hub, ana, url, 'Segura')).statusCode, 202)
-  let said = await stream.said()
-  while (!(said.type === 'message_update' && said.event.type === 'text-delta')) {
-    said = await stream.said()
-  }
-  assert.equal(said.event.delta, PARTIAL)
+  assert.equal((await sent(hub, ana, url, 'Segura')).statusCode, 200)
+  assert.equal(await stream.text(), PARTIAL)
   assert.equal((await model('off')).statusCode, 200)
   held.release()
   await stream.turn()
-  assert.equal((await sent(hub, ana, url, 'Depois')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Depois')).statusCode, 200)
   await stream.turn()
   assert.deepEqual(thinkings(), [HIGH, HIGH, OFF], 'the switch held for the next turn only')
 
@@ -268,7 +234,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
   assert.equal(await effortOn(restarted), 'high')
   const again = await streamOf(restarted, ana, url)
   t.after(() => again.close())
-  assert.equal((await sent(restarted, ana, url, 'Reiniciado')).statusCode, 202)
+  assert.equal((await sent(restarted, ana, url, 'Reiniciado')).statusCode, 200)
   await again.turn()
   assert.deepEqual(thinkings().at(-1), HIGH)
 })

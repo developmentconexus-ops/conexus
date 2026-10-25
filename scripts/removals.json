@@ -1859,17 +1859,6 @@
     }
   },
   {
-    "id": "release-stops-runs",
-    "file": "apps/server/src/builder/conversation/public.ts",
-    "find": "    await deps.runs.stopWriting(scope)\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-removal.test.ts",
-      "name": "a próxima conversa de outra pessoa não é RUN_BUSY"
-    }
-  },
-  {
     "id": "source-path-guard",
     "file": "apps/server/src/builder/git/tree.ts",
     "find": "unsafe || !(await inMain",

@@ -1,19 +1,10 @@
-import { MessageId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
-import {
-  builderSaid,
-  choose,
-  conversationOf,
-  FIRST,
-  PROJECT,
-  say,
-  screens,
-  typed,
-  view,
-} from './test-hub.tsx'
+import { AGENT_START, RUNNING, signalStarted, stepStarted, textDelta } from './test-events.ts'
+import { choose, conversationOf, FIRST, PROJECT, say, screens, typed, view } from './test-hub.tsx'
+import { builderSaid, personSaid } from './test-stream.tsx'
 
 const { open, openConversation } = screens(hubServer())
 
@@ -22,17 +13,7 @@ test('a conversa mostra o modelo, só dos fornecedores com conta, e as mensagens
     conversationOf({
       id: FIRST,
       title: 'Padarias',
-      messages: [
-        {
-          id: MessageId.parse('p1'),
-          role: 'person',
-          parts: [{ type: 'text', text: 'Oi' }],
-          suspended: {},
-          model: null,
-          createdAt: '2026-10-19T12:00:00.000Z',
-        },
-        builderSaid('Olá, **tudo bem**?'),
-      ],
+      messages: [personSaid('Oi', 'p1'), builderSaid('Olá, **tudo bem**?')],
     }),
   )
   expect(shown.conversations).toHaveLength(1)
@@ -57,25 +38,20 @@ test('o compositor lista os fornecedores conectados da pessoa, também o que o H
   expect(models).toEqual(['Claude Sonnet 4', 'Claude Opus 4', 'Gemini 2.5 Pro', 'Gemini 2.5 Flash'])
 })
 
-test('o Enter envia com a chave da tentativa; "Pensando…" e "Parar" até chegar o texto', async () => {
-  const { field, lines, sent } = await openConversation(conversationOf({ id: FIRST }))
-  say(field, 'Compare dois apps de encomenda de padaria')
-  expect(await screen.findByText('Pensando…')).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
-  expect(screen.getByRole('button', { name: 'Enviar' })).toHaveProperty('disabled', true)
+test('o Enter envia pelo sendMessage do Mastra; "Pensando…" e "Parar" até chegar o texto (30)', async () => {
+  const { field, line, sent } = await openConversation(conversationOf({ id: FIRST }))
+  const asked = 'Compare dois apps de encomenda de padaria'
+  say(field, asked)
   await waitFor(() => expect(typed(field)).toBe(''))
-  expect(sent[0]?.body).toEqual({ content: 'Compare dois apps de encomenda de padaria' })
-  expect(sent[0]?.attemptKey).toMatch(/^[0-9a-f-]{36}$/)
-  expect(await screen.findByText('Compare dois apps de encomenda de padaria')).toBeTruthy()
-  lines[0]?.emit({
-    type: 'message_start',
-    message: { ...builderSaid(''), parts: [] },
-  })
-  lines[0]?.emit({
-    type: 'message_update',
-    id: MessageId.parse('builder-1'),
-    event: { type: 'text-delta', delta: 'O primeiro é ' },
-  })
+  expect(sent[0]?.body).toEqual({ message: asked })
+  line().emit(AGENT_START)
+  line().emit(RUNNING)
+  line().emit(signalStarted(personSaid(asked).id, asked))
+  expect(await screen.findByText('Pensando…')).toBeTruthy()
+  expect(screen.getByText(asked)).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()
+  line().emit(stepStarted())
+  line().emit(textDelta('O primeiro é '))
   expect(await screen.findByText(/O primeiro é/)).toBeTruthy()
   expect(screen.queryByText('Pensando…')).toBeNull()
 })
@@ -130,7 +106,7 @@ test('uma troca de modelo sem resposta lida diz que não foi confirmada', async 
   )
 })
 
-test('um envio sem resposta lida mantém o texto e repete a mesma chave na nova tentativa', async () => {
+test('um envio sem resposta lida mantém o texto, e a nova tentativa envia de novo', async () => {
   let failing = true
   const { field, sent } = await openConversation(conversationOf({ id: FIRST }), view(), {
     message: () => (failing ? Response.error() : undefined),
@@ -144,7 +120,7 @@ test('um envio sem resposta lida mantém o texto e repete a mesma chave na nova 
   failing = false
   fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
   await waitFor(() => expect(sent).toHaveLength(2))
-  expect(sent[1]?.attemptKey).toBe(sent[0]?.attemptKey)
+  expect(sent[1]?.body).toEqual({ message: 'Compare' })
 })
 
 test('uma conversa que não existe mostra a página de "não encontrado"', async () => {

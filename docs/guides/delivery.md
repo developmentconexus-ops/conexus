@@ -124,19 +124,17 @@ merge.
   and other how-tos stay in English. Founder, 2026-10-15: "2. A". Failure: an English recovery
   instruction prevents the person following the use script without translation. [review]
 - **L24.** A file in `docs/` or `.agents/skills/` **must** have a line in `docs/index.md` and stay
-  under its ceiling below, when it has one; links **must** resolve; rule identifiers **must** be unique and every cited
+  under its ceiling below; links **must** resolve; rule identifiers **must** be unique and every cited
   one exist; a rule **must** live in one file; retired process names **must not** appear. They are:
   wave, N0 to N5, receipts, Factory as the old review robot, Codex review, `conexus-spec`,
-  `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step card and
-  `docs/approvals.md` have no word ceiling, and L21 guards them: keep only what changes what the next agent
-  does. Founder, 2026-10-24: "Pode seguir". [check-docs, review]
+  `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
 | `AGENTS.md` | 400 |
 | `docs/index.md` | 500 |
 | `docs/roadmap.md` | 1,600 |
-| `docs/approvals.md` | none (L21) |
+| `docs/approvals.md` | 1,500 |
 | `docs/architecture.md` | 2,500 |
 | `docs/guides/code.md` | 3,500 |
 | `docs/guides/security.md` | 3,000 |
@@ -144,7 +142,7 @@ merge.
 | `docs/guides/testing.md`, `web.md` | 2,000 |
 | `docs/guides/delivery.md` | 1,800 |
 | `docs/decisions/*.md` | 350 |
-| `docs/steps/*.md` | none (L21), nor on the founder's page |
+| `docs/steps/*.md` | 4,000, the founder's page about 600 |
 | `docs/how-to/*.md` | 800 |
 | `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |

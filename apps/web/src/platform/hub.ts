@@ -1,12 +1,5 @@
 import type { FailureCode, Operation } from '@conexus/hub-api'
-import {
-  ATTEMPT_KEY_HEADER,
-  EventId,
-  FAILURES,
-  LAST_EVENT_ID_HEADER,
-  Problem,
-  phraseOf,
-} from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, FAILURES, Problem, phraseOf } from '@conexus/hub-api'
 import type { QueryFunctionContext, QueryKey } from '@tanstack/react-query'
 import { mutationOptions } from '@tanstack/react-query'
 import { notFound } from '@tanstack/react-router'
@@ -49,7 +42,12 @@ async function bodyOf(response: Response): Promise<unknown> {
  * stands, such as an invitation whose e-mail failed; any other leaves the outcome unknown.
  */
 async function failureOf(response: Response): Promise<HubFailure> {
-  const problem = Problem.safeParse(await bodyOf(response))
+  return failureOfProblem(await bodyOf(response))
+}
+
+/** The failure a Problem body says, for a library client that read the Hub's answer itself. */
+export function failureOfProblem(body: unknown): HubFailure {
+  const problem = Problem.safeParse(body)
   if (!problem.success) return new HubFailure('INTERNAL_UNEXPECTED', { cause: problem.error })
   const { code } = problem.data
   const settled = FAILURES[code].settles
@@ -73,6 +71,14 @@ async function hubFetch(
   }).catch((cause: unknown) => {
     throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
   })
+}
+
+/**
+ * The fetch a library client that calls the Hub receives (web W9), Mastra's `MastraClient` for the
+ * Builder's session: same origin, with cookies, and no deadline, since its stream stays open.
+ */
+export function hubClientFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return fetch(input, { ...init, credentials: 'same-origin' })
 }
 
 type Part = 'params' | 'query' | 'body'
@@ -125,12 +131,11 @@ function addressOf(operation: Operation, sent: Sent): string {
 async function send(
   operation: Operation,
   sent: Sent = {},
-  options: { signal?: AbortSignal; deadlineMs?: number | null; lastEventId?: EventId } = {},
+  options: { signal?: AbortSignal; deadlineMs?: number | null } = {},
 ) {
   const headers = {
     ...(sent.body === undefined ? {} : { 'content-type': 'application/json' }),
     ...(sent.attemptKey === undefined ? {} : { [ATTEMPT_KEY_HEADER]: sent.attemptKey }),
-    ...(options.lastEventId === undefined ? {} : { [LAST_EVENT_ID_HEADER]: options.lastEventId }),
   }
   const { signal, deadlineMs } = options
   const response = await hubFetch(
@@ -179,89 +184,6 @@ export function hubQuery(operation: Operation, ...args: unknown[]) {
     queryKey: [operation.id, ...(Object.keys(sent).length === 0 ? [] : [sent])],
     queryFn: async ({ signal }: QueryFunctionContext) =>
       parsed(operation, await send(operation, sent, { signal })),
-  }
-}
-
-type Streaming = Operation & { success: { events: z.ZodType } }
-
-/** The values of a block's `field` lines, each without the one space after its colon. */
-function fieldOf(block: string, field: 'data' | 'id'): string[] {
-  return block
-    .split('\n')
-    .flatMap((line) =>
-      line.startsWith(`${field}:`) ? [line.slice(field.length + 1).replace(/^ /, '')] : [],
-    )
-}
-
-/** A `data:` payload as JSON, so a line that is not JSON fails the event's parse like a bad shape. */
-const JsonText = z.string().transform((text, context): unknown => {
-  try {
-    // biome-ignore lint/plugin: this transform is the schema step that parses the text; its caller pipes the result into the event schema
-    return JSON.parse(text)
-  } catch {
-    context.issues.push({ code: 'custom', message: 'The event is not JSON.', input: text })
-    return z.NEVER
-  }
-})
-
-type StreamOptions = {
-  signal: AbortSignal
-  onActivity: () => void
-  /** Awaited once the Hub accepted the stream, before its first event is read. */
-  opened?: () => Promise<void>
-  /** The id of the last event the screen read, so the Hub sends only those after it. */
-  lastEventId?: EventId
-}
-
-/**
- * The events of a stream the Hub keeps open, each parsed with the operation's schema and with its
- * id. No deadline ends it: `onActivity` is told of every chunk, heartbeats included, so the caller
- * can tell a quiet line from a dead one. A stream that ends or breaks ends the iteration or throws.
- */
-export function hubEvents<O extends Streaming>(
-  operation: O,
-  params: PartOf<O, 'params'>,
-  options: StreamOptions,
-): AsyncGenerator<{ id: EventId; event: z.output<O['success']['events']> }>
-export async function* hubEvents(
-  operation: Streaming,
-  params: unknown,
-  options: StreamOptions,
-): AsyncGenerator<{ id: EventId; event: unknown }> {
-  const response = await send(operation, Sent.parse({ params }), {
-    signal: options.signal,
-    deadlineMs: null,
-    ...(options.lastEventId === undefined ? {} : { lastEventId: options.lastEventId }),
-  })
-  if (response.body === null) throw new HubFailure('INTERNAL_UNEXPECTED')
-  const events = JsonText.pipe(operation.success.events)
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
-  let buffered = ''
-  try {
-    await options.opened?.()
-    for (;;) {
-      const { done, value } = await reader.read().catch((cause: unknown) => {
-        throw new HubFailure('INTERNAL_UNEXPECTED', { cause })
-      })
-      if (done) return
-      options.onActivity()
-      buffered = (buffered + value).replaceAll('\r\n', '\n')
-      const blocks = buffered.split('\n\n')
-      buffered = blocks.pop() ?? ''
-      for (const block of blocks) {
-        const data = fieldOf(block, 'data')
-        if (data.length === 0) continue
-        const id = EventId.safeParse(fieldOf(block, 'id').at(-1))
-        const event = events.safeParse(data.join('\n'))
-        if (!event.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: event.error })
-        if (!id.success) throw new HubFailure('INTERNAL_UNEXPECTED', { cause: id.error })
-        yield { id: id.data, event: event.data }
-      }
-    }
-  } finally {
-    // A line that broke rejects its cancel with the failure already thrown above.
-    // biome-ignore lint/plugin: the cancel rejects with the failure already thrown from the loop, which reaches the caller
-    await reader.cancel().catch(() => undefined)
   }
 }
 

@@ -1,9 +1,8 @@
 import type { ConversationId } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
-import type { Outcome, RunsContext } from './context.ts'
+import type { Driven, Outcome, RunsContext } from './context.ts'
 import { copyVersion } from './copy.ts'
-import type { Driven } from './driven.ts'
 
 /**
  * The turn's tree as a bundle. A machine that never came up for the turn (`MACHINE_UNAVAILABLE`) is

@@ -220,9 +220,8 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
 ## Voice
 
 - **V39.** Text **should** be calm, clear sentence case, with actions named by verbs rather than
-  bare "OK"; the model's reasoning is shown collapsed, in the model's own words, and each tool
-  row opens on what it received and returned. Founder, 2026-10-22: "14.2 e pra vir correcao de
-  tudo". Failure: two "OK" buttons do not identify which confirms deletion. Domain names follow
+  bare "OK"; technical tool activity becomes an understandable sentence, not exposed reasoning.
+  Failure: two "OK" buttons do not identify which confirms deletion. Domain names follow
   [code C69](code.md); punctuation and symbol blacklists cannot prove clarity. [review]
 
 Failure wording, allowed actions and the not-found navigation exception have one owner:

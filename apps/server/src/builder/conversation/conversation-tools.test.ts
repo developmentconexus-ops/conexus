@@ -1,19 +1,21 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
+import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { GROQ_MODEL } from '../model-accounts/test-defaults.ts'
+import type { StreamEvent } from './test-conversation.ts'
 import {
   answeredOf,
   asked,
   conversing,
-  plantGemini,
+  endOf,
   sent,
   started,
   streamOf,
 } from './test-conversation.ts'
+import { plantGemini } from './test-gemini.ts'
 import { partsOf } from './test-parts.ts'
 import { routedTo, served } from './test-research.ts'
 
@@ -33,8 +35,8 @@ test('um modelo fora dos três fornecedores de busca, como o Google: só `web_fe
     const url = `${conversations}/${await started(hub, ana, conversations, { model })}`
     const stream = await streamOf(hub, ana, url)
     t.after(() => stream.close())
-    assert.equal((await sent(hub, ana, url, 'Pesquise padarias')).statusCode, 202)
-    assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.equal((await sent(hub, ana, url, 'Pesquise padarias')).statusCode, 200)
+    assert.equal(endOf(await stream.turn()), 'complete')
   }
   function streamed(each: Sent) {
     return each.stream
@@ -75,7 +77,7 @@ const FETCH: Block = {
 const RECALL: Block = { type: 'tool_use', name: 'recall', input: { mode: 'messages' } }
 
 /** The tool name and state of each tool part the events said, in order. */
-function toolStates(events: ConversationEvent[]) {
+function toolStates(events: StreamEvent[]) {
   return partsOf(events).flatMap((part) =>
     part.type === 'tool-invocation'
       ? [[part.toolInvocation.toolName, part.toolInvocation.state]]
@@ -106,7 +108,7 @@ async function calling(t: TestContext, blocks: Block[]) {
   }
   const { events } = await asked(t, { hub, person: ana, conversations, between: recordSuspensions })
   const tools = toolStates(events)
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   const suspended = await hub.test.mastraPool.query('select run_id from mastra.suspended_runs')
   return { tools, suspended: suspended.rows }
 }
@@ -165,7 +167,7 @@ test('um turno que pede uma ferramenta fora das liberadas a vê recusada (erro),
     }
   })
   const { url, events } = await asked(t, { hub, person: ana, conversations })
-  function ended(parts: MastraPart[]) {
+  function ended(parts: MastraMessagePart[]) {
     return parts.flatMap((part) =>
       part.type === 'tool-invocation' && part.toolInvocation.state !== 'call'
         ? [[part.toolInvocation.toolName, part.toolInvocation.state, part.toolInvocation.isError]]

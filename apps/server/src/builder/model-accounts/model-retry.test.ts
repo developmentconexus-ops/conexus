@@ -2,8 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
-import { asked, conversing, KEY } from '../conversation/test-conversation.ts'
-import { noticesOf } from '../conversation/test-parts.ts'
+import { asked, conversing, endOf, KEY, turnNotices } from '../conversation/test-conversation.ts'
 import { GROQ_MODEL } from './test-defaults.ts'
 
 /** A reply that is `first` for the first `times` streamed calls, then text. */
@@ -24,11 +23,11 @@ test('conexão cortada duas vezes no meio da resposta: o Mastra repete na mesma 
   const body = { owner: 'company', provider: 'anthropic', label: 'Dois', key: other }
   const linked = await post(hub, ana, `/api/companies/${companyId}/model-accounts`, body)
   assert.equal(linked.statusCode, 201)
-  const { events } = await asked(t, { hub, person: ana, conversations })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
   const streamed = anthropic.sent.filter((each) => each.stream).map((each) => each.key)
   assert.deepEqual(streamed, [KEY, KEY, KEY])
-  assert.deepEqual(noticesOf(events), [])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.deepEqual(await turnNotices(hub, ana, url), [])
+  assert.equal(endOf(events), 'complete')
 })
 
 test('MALFORMED_FUNCTION_CALL do Gemini (pelo CLIProxy, em Chat Completions): repete na mesma conta antes de qualquer troca', async (t) => {
@@ -50,9 +49,9 @@ test('MALFORMED_FUNCTION_CALL do Gemini (pelo CLIProxy, em Chat Completions): re
   assert.equal(chosen.statusCode, 200)
   const reply = failingFirst({ kind: 'malformed' }, 1)
   anthropic.chat = (sent) => reply(sent.stream)
-  const { events } = await asked(t, { hub, person: ana, conversations })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
   const streamed = anthropic.chats.filter((each) => each.stream).map((each) => each.bearer)
   assert.deepEqual(streamed, [keys[0], keys[0]])
-  assert.deepEqual(noticesOf(events), [])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.deepEqual(await turnNotices(hub, ana, url), [])
+  assert.equal(endOf(events), 'complete')
 })

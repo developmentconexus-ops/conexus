@@ -149,7 +149,7 @@ program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image. Every migration only adds, so
 an earlier image runs on the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's
-P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30): from the release shipping it, no earlier image runs. The edge goes back first.
+P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30), `builder.run`, `companies_with_runs()`, `hub_runs`: no image before its release runs. The edge goes back first.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
 paid one. Both Hub databases return to one instant. It then sets every login password

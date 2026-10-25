@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { conversing, sent, started, streamOf, title } from './test-conversation.ts'
+import { conversing, endOf, sent, started, streamOf, title } from './test-conversation.ts'
 
 const LIST = 'mastra_workspace_list_files'
 
@@ -18,14 +18,14 @@ test('o modelo que sempre pede ferramenta: no passo 100 vai sem ferramenta (tool
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Liste sempre')).statusCode, 202)
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal((await sent(hub, ana, url, 'Liste sempre')).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
   assert.equal(steps.length, 100)
   assert.deepEqual(steps.filter((step) => step.toolless).length, 1)
   assert.equal(steps.at(-1)?.toolless, true)
   assert.match(steps.at(-1)?.system ?? '', /last step of this turn/)
   assert.doesNotMatch(steps[98]?.system ?? '', /last step of this turn/)
-  assert.equal((await sent(hub, ana, url, 'continue')).statusCode, 202)
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal((await sent(hub, ana, url, 'continue')).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
   assert.equal(steps.length, 200)
 })

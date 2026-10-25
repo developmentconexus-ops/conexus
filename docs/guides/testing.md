@@ -68,7 +68,7 @@ choice of test tools.
   (`test-recordings.ts`) from a recording that `npm run record` (`scripts/record.ts`) made from the
   installed library in `apps/server/src/platform/recordings/mastra/<scenario>.jsonl`, its first line
   naming library, version, source and date, and carrying invented content only (security S40). A
-  literal of such a shape in a server test is refused; the Hub's own wire events, in web and hub-api tests, are our contract and stay free. Failure: every 14.2 screen Bloqueia passed on
+  literal of such a shape in a test is refused. Failure: every 14.2 screen Bloqueia passed on
   hand-made `suspended`, `result.action` and event orders Mastra never produces. [GritQL
   `scripts/library-shapes.grit`; review]
 - **T17.** Tests **should not** change authority to pass. Failure: a test-only header still accepted

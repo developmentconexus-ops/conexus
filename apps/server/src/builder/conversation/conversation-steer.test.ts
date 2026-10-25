@@ -1,23 +1,24 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import type { ConversationEvent } from '@conexus/hub-api'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
-import { call, post } from '../../hub/identity/test-hub.ts'
+import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
+import type { StreamEvent } from './test-conversation.ts'
 import {
   conversing,
+  endOf,
   holding,
   KEY,
   PARTIAL,
   rolesAndParts,
   sent,
   started,
+  stopped,
   streamOf,
   title,
 } from './test-conversation.ts'
-import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
+import { answerTo, ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 const STEER = 'Só eu cadastro.'
 const ANSWER = 'Certo, só você.'
@@ -51,45 +52,41 @@ function lastOf(calls: Sent[]): Sent {
   return last
 }
 
-function personStarts(events: ConversationEvent[]) {
+function personStarts(events: StreamEvent[]) {
   return events.flatMap((event) =>
-    event.type === 'message_start' && event.message.role === 'person' ? [event.message] : [],
+    event.type === 'message_start' && event.message.role !== 'assistant' ? [event.message] : [],
   )
 }
 
-test('uma mensagem enquanto o Builder escreve entra na mesma volta: 202, um fim', async (t) => {
+/** What the person said into the run, as Mastra's live signal carries it (`data-user-message`). */
+function saidIn(parts: MastraMessagePart[]): unknown[] {
+  return parts.flatMap((part) =>
+    part.type === 'data-user-message' && 'data' in part ? [Object(part.data).contents] : [],
+  )
+}
+
+test('uma mensagem enquanto o Builder escreve entra na mesma volta: {ok: true}, um fim', async (t) => {
   const { hub, ana, companyId, held, calls, url, stream } = await holdingConversation(t)
-  assert.equal((await sent(hub, ana, url, 'Crie um app de encomendas')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Crie um app de encomendas')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
-  const key = randomUUID()
-  const steered = await sent(hub, ana, url, STEER, key)
-  assert.equal(steered.statusCode, 202, steered.body)
+  const steered = await sent(hub, ana, url, STEER)
+  assert.deepEqual([steered.statusCode, steered.json()], [200, { ok: true }])
   held.release()
   const events = await stream.turn()
-  const conversationId = url.split('/').at(-1)
   const [person, ...others] = personStarts(events)
   assert.deepEqual(others, [])
   assert.ok(person)
-  assert.equal(person.id, `${conversationId}:${key}`)
-  assert.deepEqual(person.parts, [{ type: 'text', text: STEER }])
-  const starts = events.flatMap((event, at) =>
-    event.type === 'message_start' ? [[at, event.message.role] as const] : [],
-  )
-  assert.deepEqual(
-    starts.map(([, role]) => role),
-    ['person', 'builder'],
-  )
-  assert.deepEqual(
-    events.filter((event) => event.type === 'turnEnd'),
-    [{ type: 'turnEnd', reason: 'complete' }],
-  )
+  assert.equal(person.role, 'signal', "the person's message, where Mastra put it (42)")
+  assert.deepEqual(saidIn(person.content.parts), [STEER])
+  assert.equal(endOf(events), 'complete')
+  assert.equal(events.filter((event) => event.type === 'agent_end').length, 1)
   assert.equal(steersIn(lastOf(calls)), 1)
   assert.ok(
     calls.every((each) => each.key === KEY),
     "the run took the message on the company's account",
   )
   assert.ok(companyId)
-  const read = rolesAndParts(await call(hub, ana, 'GET', url))
+  const read = await rolesAndParts(hub, ana, url)
   assert.deepEqual(read, [
     ['person', [{ type: 'text', text: 'Crie um app de encomendas' }]],
     ['builder', [{ type: 'text', text: PARTIAL }]],
@@ -98,106 +95,49 @@ test('uma mensagem enquanto o Builder escreve entra na mesma volta: 202, um fim'
   ])
 })
 
-test('Parar com uma mensagem que o Builder não leu: ela não chega ao modelo', async (t) => {
+test('Parar com uma mensagem que o Builder não leu: Mastra a leva à volta seguinte, uma vez (46)', async (t) => {
   const { hub, ana, held, calls, url, stream } = await holdingConversation(t)
-  assert.equal((await sent(hub, ana, url, 'Crie um app de encomendas')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Crie um app de encomendas')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
-  const key = randomUUID()
-  assert.equal((await sent(hub, ana, url, STEER, key)).statusCode, 202)
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  assert.equal((await sent(hub, ana, url, STEER)).statusCode, 200)
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   held.release()
-  const events = await stream.turn()
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'aborted' })
-  await sleep(1000)
-  assert.ok(calls.every((each) => steersIn(each) === 0))
-  assert.equal(calls.length, 1)
-  const read = JSON.stringify(rolesAndParts(await call(hub, ana, 'GET', url)))
-  assert.ok(!read.includes(STEER))
+  assert.equal(endOf(await stream.turn()), 'aborted')
+  assert.equal(endOf(await stream.turn()), 'complete')
+  assert.deepEqual(calls.map(steersIn), [0, 1])
+  const read = await rolesAndParts(hub, ana, url)
+  assert.deepEqual(read.slice(2), [
+    ['person', [{ type: 'text', text: STEER }]],
+    ['builder', [{ type: 'text', text: ANSWER }]],
+  ])
 })
 
-test('uma mensagem com pergunta aberta abre o turno seguinte e responde antes de ele acabar', async (t) => {
-  const held = holding(t)
-  const calls: Sent[] = []
-  const hub = await conversing(t, (asked) => {
-    if (!asked.stream) return { kind: 'text', text: 'Título' }
-    calls.push(asked)
-    if (calls.length === 1) return { kind: 'blocks', blocks: [ask(WHO)] }
-    return held.reply
-  })
-  const url = `${hub.conversations}/${await started(hub.hub, hub.ana, hub.conversations)}`
-  const stream = await streamOf(hub.hub, hub.ana, url)
-  t.after(() => stream.close())
-  assert.equal((await sent(hub.hub, hub.ana, url, 'Crie um app de encomendas')).statusCode, 202)
-  // The question ends the turn that asked it.
-  for (;;) {
-    const event = await stream.next()
-    if (event.type === 'turnEnd') break
-  }
-  const steering = sent(hub.hub, hub.ana, url, STEER)
-  // Mastra gives an aborted parked run up to 5 s to end (`ABORT_STREAM_GRACE_MS`) before it accepts
-  // the next; the answer comes then, with the next call still held, not when that call ends.
-  const raced = await Promise.race([steering, sleep(15_000, 'pending')])
-  assert.notEqual(raced, 'pending')
-  assert.equal(Object(raced).statusCode, 202)
-  held.release()
+const WHOEVER = { kind: 'answers', answers: ['Todos (recomendado)'] } as const
+
+test('uma mensagem com a pergunta aberta: {ok: true}, Mastra a guarda até a resposta e a leva à volta que ela abre (44)', {
+  timeout: 60_000,
+}, async (t) => {
+  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[ask(WHO)]])
+  assert.equal((await send()).statusCode, 200)
+  const { card } = await untilCard(stream, 'question')
+  const steered = await sent(hub, ana, url, STEER)
+  assert.deepEqual([steered.statusCode, steered.json()], [200, { ok: true }])
+  await sleep(1000)
+  assert.equal(calls.length, 1, 'Mastra holds the message while the card is open')
+  assert.equal((await answerTo(hub, ana, url, card.toolCallId, WHOEVER)).statusCode, 200)
   const events = await stream.turn()
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.equal(events.filter((event) => event.type === 'turnEnd').length, 1)
-  const read = rolesAndParts(await call(hub.hub, hub.ana, 'GET', url))
+  assert.equal(endOf(events), 'complete')
+  assert.equal(events.filter((event) => event.type === 'agent_end').length, 1)
+  assert.ok(calls.slice(1).some((each) => steersIn(each) > 0))
+  const read = await rolesAndParts(hub, ana, url)
   assert.equal(
-    read.filter(
-      ([role, parts]: [string, unknown]) =>
-        role === 'person' && JSON.stringify(parts).includes(STEER),
-    ).length,
+    read.filter(([role, parts]) => role === 'person' && JSON.stringify(parts).includes(STEER))
+      .length,
     1,
   )
 })
 
-test('a mensagem enviada durante a volta volta pelo Last-Event-ID e pelo quadro do turno', async (t) => {
-  const again = holding(t)
-  const { hub, ana, held, url, stream } = await holdingConversation(t, again.reply)
-  assert.equal((await sent(hub, ana, url, 'Crie um app de encomendas')).statusCode, 202)
-  assert.equal(await stream.text(), PARTIAL)
-  assert.equal((await sent(hub, ana, url, STEER)).statusCode, 202)
-  held.release()
-  for (;;) {
-    const event = await stream.next()
-    if (event.type === 'message_start' && event.message.role === 'person') break
-  }
-  // The turn goes on, held again after the steer: a stream that reopens meets it in progress.
-  const [opening] = stream.seen.ids
-  assert.ok(opening)
-  const resumed = await streamOf(hub, ana, url, opening)
-  t.after(() => resumed.close())
-  const replayed: ConversationEvent[] = []
-  while (personStarts(replayed).length === 0) replayed.push(await resumed.next())
-  assert.equal(personStarts(replayed).length, 1)
-  const fresh = await streamOf(hub, ana, url)
-  t.after(() => fresh.close())
-  const opened = await fresh.next()
-  assert.equal(opened.type, 'turn')
-  const persons = Object(opened).messages.filter(
-    (message: { role: string; parts: unknown }) =>
-      message.role === 'person' && JSON.stringify(message.parts).includes(STEER),
-  )
-  assert.equal(persons.length, 1)
-  again.release()
-  await stream.turn()
-})
-
-test('a mesma mensagem com a mesma chave duas vezes: uma vez no modelo', async (t) => {
-  const { hub, ana, held, calls, url, stream } = await holdingConversation(t)
-  assert.equal((await sent(hub, ana, url, 'Crie um app de encomendas')).statusCode, 202)
-  assert.equal(await stream.text(), PARTIAL)
-  const key = randomUUID()
-  assert.equal((await sent(hub, ana, url, STEER, key)).statusCode, 202)
-  assert.equal((await sent(hub, ana, url, STEER, key)).statusCode, 202)
-  held.release()
-  await stream.turn()
-  assert.equal(steersIn(lastOf(calls)), 1)
-})
-
-test('a volta que uma mensagem abre com a pergunta aberta vai pela conta da empresa e escreve na máquina do Projeto', {
+test('a volta que a resposta abre com a mensagem guardada vai pela conta da empresa e escreve na máquina do Projeto', {
   timeout: 60_000,
 }, async (t) => {
   const write = tool('mastra_workspace_write_file', { path: 'src/quem.ts', content: 'eu\n' })
@@ -205,12 +145,12 @@ test('a volta que uma mensagem abre com a pergunta aberta vai pela conta da empr
     [ask(WHO)],
     [write],
   ])
-  assert.equal((await send()).statusCode, 202)
-  await untilCard(stream, 'question')
+  assert.equal((await send()).statusCode, 200)
+  const { card } = await untilCard(stream, 'question')
   const asked = calls.length
-  assert.equal((await sent(hub, ana, url, 'Melhor: só eu cadastro.')).statusCode, 202)
-  const events = await stream.turn()
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal((await sent(hub, ana, url, STEER)).statusCode, 200)
+  assert.equal((await answerTo(hub, ana, url, card.toolCallId, WHOEVER)).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
   const steered = calls.slice(asked)
   assert.ok(steered.length > 0)
   assert.ok(

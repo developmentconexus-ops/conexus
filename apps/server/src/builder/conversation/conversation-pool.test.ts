@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { setTimeout } from 'node:timers/promises'
-import { conversing, sent, started, streamOf, title } from './test-conversation.ts'
+import { conversing, endOf, sent, started, streamOf, title } from './test-conversation.ts'
 
 // The pool's idle time (POOL_LIMITS) and a margin: what lets Neon put the branch to sleep (D27).
 const QUIET_MS = 15_000
@@ -13,7 +13,7 @@ test('depois de um turno, o login do Mastra não segura conexão: zero em 15 s',
   const id = await started(hub, ana, conversations)
   const url = `${conversations}/${id}`
   const stream = await streamOf(hub, ana, url)
-  assert.equal((await sent(hub, ana, url, 'Oi')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Oi')).statusCode, 200)
   await stream.turn()
   stream.close()
   const database = new URL(hub.test.mastraUrl.reveal()).pathname.slice(1)
@@ -45,9 +45,9 @@ test('quem segura a conversa enquanto a outra solta abre uma sessão nova', asyn
     // Opens while the first holder's release deletes the session: Mastra makes this one wait for it.
     const next = await streamOf(hub, ana, url)
     t.after(() => next.close())
-    assert.equal((await sent(hub, ana, url, `Oi ${round}`)).statusCode, 202)
+    assert.equal((await sent(hub, ana, url, `Oi ${round}`)).statusCode, 200)
     const events = await next.turn()
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.equal(endOf(events), 'complete')
     next.close()
   }
 })

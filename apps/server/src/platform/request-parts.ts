@@ -1,5 +1,5 @@
 import type { Operation } from '@conexus/hub-api'
-import { ATTEMPT_KEY_HEADER, AttemptKey, EventId, LAST_EVENT_ID_HEADER } from '@conexus/hub-api'
+import { ATTEMPT_KEY_HEADER, AttemptKey } from '@conexus/hub-api'
 import type { FastifyRequest } from 'fastify'
 import { Failure } from './failure.ts'
 
@@ -23,16 +23,10 @@ export function partsOf(operation: Operation, request: FastifyRequest) {
   const parsedBody = body?.safeParse(request.body)
   if (parsedBody?.success === false)
     throw new Failure('REQUEST_MALFORMED', { cause: parsedBody.error })
-  // Opaque to the platform: the operation that issued the id reads it (code C28).
-  const resumable = 'events' in operation.success && operation.success.resumable === true
-  const sentId = resumable
-    ? EventId.safeParse(request.headers[LAST_EVENT_ID_HEADER.toLowerCase()])
-    : undefined
   return {
     params: parsedParams?.data,
     query: parsedQuery?.data,
     body: parsedBody?.data,
     attemptKey: key?.data,
-    lastEventId: sentId && (sentId.success ? sentId.data : null),
   }
 }

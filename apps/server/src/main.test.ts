@@ -264,12 +264,25 @@ test('caminho com porcentagem malformada responde 400 em problem+json, com cabe�
 
 const HEALTH_PIPELINE = 'GET /api/health HTTP/1.1\r\nHost: x\r\n'
 
+/** Until the listener refuses a new connection: the Hub's close has begun. */
+async function refusesNew(port: number) {
+  for (;;) {
+    const probe = connect(port, '127.0.0.1')
+    try {
+      await once(probe, 'connect')
+    } catch {
+      return
+    }
+    probe.destroy()
+    await new Promise((done) => setTimeout(done, 10))
+  }
+}
+
 test('pedido que chega a uma conexão aberta durante o desligamento é atendido, não recusado', async () => {
   const app = await hub()
-  const closeStarted = Promise.withResolvers<void>()
-  app.addHook('preClose', async () => closeStarted.resolve())
   await app.listen({ host: '127.0.0.1', port: 0 })
-  const socket = connect(app.addresses()[0]?.port ?? 0, '127.0.0.1')
+  const port = app.addresses()[0]?.port ?? 0
+  const socket = connect(port, '127.0.0.1')
   const ended = once(socket, 'close')
   await once(socket, 'connect')
   socket.write(`${HEALTH_PIPELINE}\r\n${HEALTH_PIPELINE}`)
@@ -281,7 +294,7 @@ test('pedido que chega a uma conexão aberta durante o desligamento é atendido,
     if (received.includes('{"status":"LIVE"}')) break
   }
   const closing = app.close()
-  await closeStarted.promise
+  await refusesNew(port)
   socket.write('\r\n')
   await ended
   await closing

@@ -10,7 +10,7 @@ import {
   TraceTitle,
 } from '../../ui/trace.tsx'
 import { useSecondsSince } from './elapsed.ts'
-import type { ToolItem } from './parts.ts'
+import type { ToolItem } from './rows.ts'
 import { durationOf } from './text.ts'
 import type { Edit } from './tool-args.ts'
 import { editOf, shown } from './tool-args.ts'
@@ -106,14 +106,13 @@ function Change({ edit }: { edit: Edit }) {
 
 function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
   const detail = presentTool(tool, 'done').detail
-  const hasCut = tool.cuts !== undefined && tool.cuts.length > 0
   switch (body) {
     case 'command': {
       const output = tool.output ?? textOf(tool.result)
       return (
         <>
           <pre className={BLOCK}>
-            {[`$ ${shown(detail ?? '')}`, ...(hasCut ? ['…'] : []), output]
+            {[`$ ${shown(detail ?? '')}`, output === undefined ? undefined : shown(output)]
               .filter(Boolean)
               .join('\n')}
           </pre>
@@ -128,12 +127,7 @@ function Block({ tool, body }: { tool: ToolItem; body: ToolBody }) {
     case 'file': {
       const result = textOf(tool.result)
       const display = result !== undefined ? shown(result) : detail ? `$ cat ${detail}` : ''
-      return (
-        <pre className={BLOCK}>
-          {display}
-          {hasCut ? '\n…' : ''}
-        </pre>
-      )
+      return <pre className={BLOCK}>{display}</pre>
     }
     case 'list': {
       const result = textOf(tool.result)
