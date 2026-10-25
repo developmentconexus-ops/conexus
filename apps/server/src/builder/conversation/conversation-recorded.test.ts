@@ -246,10 +246,6 @@ test('mandar é o `sendMessage` do Mastra: nenhuma gravação nossa antes do tur
   t.after(() => stream.close())
   assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
-  const ours = await hub.test.asOwner(
-    'select count(*)::int as count from builder.conversation_turn',
-  )
-  assert.deepEqual(ours, [{ count: 0 }], 'the Hub keeps no question of its own')
   held.release()
   assert.equal(endOf(await stream.turn()), 'complete')
   assert.deepEqual(questions(await answeredOf(hub, ana, url)), [['Uma pergunta']])

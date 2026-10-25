@@ -1,13 +1,5 @@
 import { sql } from 'drizzle-orm'
-import {
-  foreignKey,
-  pgSchema,
-  primaryKey,
-  text,
-  timestamp,
-  unique,
-  uuid,
-} from 'drizzle-orm/pg-core'
+import { foreignKey, pgSchema, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { company, member, policy } from '../../hub/identity/public.ts'
 import { project } from '../../hub/projects/public.ts'
 import { SCOPE_ROLES, scoped } from '../../platform/database.ts'
@@ -55,27 +47,6 @@ export const conversation = builder.table(
       foreignColumns: [member.organizationId, member.userId],
     }).onDelete('cascade'),
     unique('conversation_attempt_key').on(table.companyId, table.personId, table.attemptKey),
-    policy(SCOPE_ROLES.COMPANY, 'all', OWN),
-  ],
-)
-
-/** A message sent to a conversation, by its Idempotency-Key, so a repeat starts no second turn. */
-export const conversationTurn = builder.table(
-  'conversation_turn',
-  {
-    conversationId: uuid('conversation_id').notNull(),
-    companyId: text('company_id').notNull(),
-    personId: text('person_id').notNull(),
-    idempotencyKey: text('idempotency_key').notNull(),
-    bodyHash: text('body_hash').notNull(),
-  },
-  (table) => [
-    primaryKey({ columns: [table.conversationId, table.idempotencyKey] }),
-    foreignKey({
-      name: 'conversation_turn_conversation_id_fkey',
-      columns: [table.conversationId],
-      foreignColumns: [conversation.id],
-    }).onDelete('cascade'),
     policy(SCOPE_ROLES.COMPANY, 'all', OWN),
   ],
 )
