@@ -1,7 +1,9 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { CheckIcon, CircleIcon, PlayIcon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, CircleIcon, PlayIcon } from 'lucide-react'
+import { useState } from 'react'
 import type { z } from 'zod'
 import { cn } from '../../ui/cn.ts'
+import { Collapsible, CollapsibleTrigger } from '../../ui/collapsible.tsx'
 
 type Task = z.infer<typeof HubTask>
 
@@ -20,29 +22,46 @@ function focusedTask(tasks: readonly Task[]): Task | undefined {
  */
 export function TaskPanel(props: { tasks: readonly Task[]; streaming: boolean }) {
   const { tasks, streaming } = props
-
   if (!streaming || tasks.length === 0) return null
+  if (tasks.every((t) => t.status === 'completed')) return null
+  return <OpenTasks tasks={tasks} />
+}
 
+/** Holds the fold: it unmounts with the panel, so the next turn's panel starts folded. */
+function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
+  const [open, setOpen] = useState(false)
   const total = tasks.length
   const completed = tasks.filter((t) => t.status === 'completed').length
-  if (completed === total) return null
   const focused = focusedTask(tasks)
 
   return (
-    <section
-      aria-label="Painel de tarefas"
+    <Collapsible
+      render={<section aria-label="Painel de tarefas" />}
+      open={open}
+      onOpenChange={setOpen}
       className="flex min-w-0 flex-col gap-xs rounded-control border border-line bg-surface p-sm text-fact"
     >
-      <div className="font-medium text-text-2">
+      <CollapsibleTrigger className="flex w-fit cursor-pointer items-center gap-xs font-medium text-text-2">
+        <ChevronRightIcon
+          className={cn('size-3.5 transition-transform', open && 'rotate-90')}
+          aria-hidden="true"
+        />
         Tarefas · {completed} de {total}
-      </div>
-      <ul className="flex min-w-0 items-center gap-sm overflow-hidden">
+      </CollapsibleTrigger>
+      <ul
+        className={cn(
+          'flex min-w-0 gap-sm',
+          open ? 'flex-col items-start' : 'items-center overflow-hidden',
+        )}
+      >
         {tasks.map((task) => (
           <li
             key={task.id}
             className={cn(
               'min-w-0 items-center gap-xs',
-              task.id === focused?.id ? 'flex flex-1 md:flex-none' : 'hidden md:flex md:shrink-0',
+              open || task.id === focused?.id
+                ? 'flex flex-1 md:flex-none'
+                : 'hidden md:flex md:shrink-0',
             )}
           >
             {task.status === 'completed' && (
@@ -68,6 +87,6 @@ export function TaskPanel(props: { tasks: readonly Task[]; streaming: boolean })
           </li>
         ))}
       </ul>
-    </section>
+    </Collapsible>
   )
 }

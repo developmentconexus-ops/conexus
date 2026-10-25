@@ -190,7 +190,9 @@ function Body({ tool, status }: { tool: ToolItem; status: ToolStatus }) {
 export function ToolRow({ tool }: { tool: ToolItem }) {
   const status = toolStatus(tool)
   const shownTool = presentTool(tool, status)
-  const [open, setOpen] = useState(status === 'running')
+  // Only a command that is still saying its output shows it as it comes; the person's click rules after.
+  const [chosen, setChosen] = useState<boolean>()
+  const open = chosen ?? (status === 'running' && tool.output !== undefined)
   const failed = status === 'error' || status === 'denied'
   const lineStatus = failed ? 'error' : status === 'running' ? 'running' : undefined
   const side = shownTool.beside ? (
@@ -213,7 +215,7 @@ export function ToolRow({ tool }: { tool: ToolItem }) {
   if (!opens(tool, status)) return line
 
   return (
-    <TraceCollapsible open={open} onOpenChange={setOpen}>
+    <TraceCollapsible open={open} onOpenChange={setChosen}>
       <TraceCollapsibleTrigger>{line}</TraceCollapsibleTrigger>
       <TraceCollapsibleContent>
         <Body tool={tool} status={status} />

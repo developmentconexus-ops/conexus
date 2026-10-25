@@ -30,6 +30,7 @@ export const CARD_TEXT = {
   sending: 'Enviando…',
   unsent: 'Não foi possível enviar. Tente de novo.',
   other: 'outra resposta…',
+  stopped: 'Você parou o Builder.',
 }
 
 /**
@@ -133,6 +134,7 @@ function answerText(answer: Answer | undefined): string {
 }
 
 function closedText(state: QuestionCardItem['state']): string | undefined {
+  if (state === 'stopped') return CARD_TEXT.stopped
   return state === 'closed' ? sentenceOfCode('QUESTION_CLOSED') : undefined
 }
 

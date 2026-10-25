@@ -214,3 +214,47 @@ test('linha sem argumentos nem resultado: não abre nada (Critério 8, matriz de
   expect(screen.getByText('Conferiu o app')).toBeTruthy()
   expect(screen.queryByRole('button')).toBeNull()
 })
+
+const READS = [
+  ['ler uma skill', { skill: 'conexus-build' }, 'mastra_skill'],
+  ['ler o arquivo do plano', { path: '.conexus/plans/plano.md' }, 'mastra_workspace_read_file'],
+  ['uma ferramenta do workspace', { path: 'src/a.ts' }, 'mastra_workspace_file_stat'],
+] as const
+
+test.each(READS)(
+  'a linha: %s nasce fechada, ao vivo e relida, e abre no clique (8)',
+  (_, args, toolName) => {
+    const done: Invocation = {
+      state: 'result',
+      toolCallId: 'toolu_r1',
+      toolName,
+      args,
+      result: 'ok',
+    }
+    const live = render(<ToolRow tool={itemOf({ ...done, state: 'call', result: undefined })} />)
+    expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+    live.rerender(<ToolRow tool={itemOf(done)} />)
+    expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+    live.unmount()
+    render(<ToolRow tool={itemOf(done)} />)
+    expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(screen.getByRole('button'))
+    expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('true')
+  },
+)
+
+test('o comando que ainda diz sua saída mostra a saída, e a linha fecha quando ele termina (8)', () => {
+  const command: ToolItem = {
+    kind: 'tool',
+    id: 't-9',
+    toolCallId: 'call-9',
+    toolName: 'mastra_workspace_execute_command',
+    state: 'call',
+    args: { command: 'echo começo' },
+    output: 'começo\n',
+  }
+  const view = render(<ToolRow tool={command} />)
+  expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('true')
+  view.rerender(<ToolRow tool={{ ...command, state: 'result', result: 'começo\n' }} />)
+  expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+})
