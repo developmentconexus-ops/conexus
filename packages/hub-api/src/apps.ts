@@ -32,6 +32,28 @@ const OnHost = z.object({ host: HostLabel })
 /** The search of `APP_OPEN_PATH`: the app's host, and the hash of its binding cookie's secret. */
 export const AppOpenQuery = OnHost.extend({ binding: DoorSecret })
 
+/** The message the app's entry page sends the Hub's Prévia, from a frame with no app session. */
+export const FRAME_ENTRY = 'conexus-entry'
+export const FrameEntry = z.object({
+  type: z.literal(FRAME_ENTRY),
+  host: HostLabel,
+  binding: z.string(),
+})
+export type FrameEntry = z.infer<typeof FrameEntry>
+
+export const createAppFrameHandoff = defineOperation({
+  id: 'createAppFrameHandoff',
+  summary:
+    'Gives the Prévia a pass to the app on the host, for the browser whose binding hash it names.',
+  access: 'session',
+  method: 'POST',
+  path: '/api/apps/frame-handoff',
+  bodyLimit: 1024,
+  input: { body: AppOpenQuery },
+  success: { status: 200, body: z.object({ location: z.url() }) },
+  failures: ['NOT_FOUND', 'SESSION_REQUIRED', 'DATABASE_UNAVAILABLE'],
+})
+
 export const createAppSession = defineOperation({
   id: 'createAppSession',
   summary: 'Trades a pass, once, for a session of the app on the host and browser it was made for.',

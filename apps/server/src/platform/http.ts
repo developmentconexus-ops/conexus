@@ -20,7 +20,7 @@ import helmet from 'helmet'
 import { z } from 'zod'
 import type { SessionReader } from './access.ts'
 import { enforceAccess, headersOf, optionalSessionOf, sessionOf } from './access.ts'
-import type { Config } from './config.ts'
+import type { AppsDomain, Config } from './config.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
@@ -34,27 +34,30 @@ export const CONNECTION_TIMEOUT_MS = VERSION_SEND_DEADLINE_MS + 10_000
 // Above the 90 s keep-alive of cloudflared's connection to its origin, so the Hub never closes first.
 const KEEP_ALIVE_TIMEOUT_MS = 95_000
 
-const HELMET_OPTIONS = {
-  contentSecurityPolicy: {
-    useDefaults: false,
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'"],
-      imgSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      manifestSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      baseUri: ["'self'"],
-      formAction: ["'self'"],
-      frameAncestors: ["'none'"],
+/** The Hub's headers: it frames only the apps, in the Prévia, and nothing frames it (security S24). */
+function helmetOptions(appsDomain: AppsDomain) {
+  return {
+    contentSecurityPolicy: {
+      useDefaults: false,
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'"],
+        imgSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        manifestSrc: ["'self'"],
+        connectSrc: ["'self'"],
+        frameSrc: [`https://*.${appsDomain}`],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+      },
     },
-  },
-  frameguard: { action: 'deny' },
-  referrerPolicy: { policy: 'no-referrer' },
-} as const
-const securityHeaders = helmet(HELMET_OPTIONS)
+    frameguard: { action: 'deny' },
+    referrerPolicy: { policy: 'no-referrer' },
+  } as const
+}
 
 const ErrorStatus = z.object({ statusCode: z.number().int() })
 
@@ -95,7 +98,14 @@ function failureOf(error: unknown): Failure {
   return new Failure('INTERNAL_UNEXPECTED', { cause: error })
 }
 
-function answerClientError(app: FastifyInstance, error: NodeJS.ErrnoException, socket: Socket) {
+type SecurityHeaders = ReturnType<typeof helmet>
+
+function answerClientError(
+  app: FastifyInstance,
+  securityHeaders: SecurityHeaders,
+  error: NodeJS.ErrnoException,
+  socket: Socket,
+) {
   if (error.code === 'ECONNRESET' || !socket.writable) return
   const traceId = randomUUID()
   logFailure(app.log, new Failure('REQUEST_MALFORMED', { details: { traceId }, cause: error }))
@@ -153,6 +163,8 @@ export function installErrorHandling(app: FastifyInstance, page: { built: boolea
 
 /** The Fastify instance both listeners share: its limits, its logs and its failure output. */
 export async function baseServer(config: Config): Promise<FastifyInstance> {
+  const options = helmetOptions(config.appsDomain)
+  const securityHeaders = helmet(options)
   const app: FastifyInstance = Fastify({
     logger: { level: config.logLevel },
     logController: new LogController({ disableRequestLogging: true, requestIdLogLabel: 'traceId' }),
@@ -169,11 +181,11 @@ export async function baseServer(config: Config): Promise<FastifyInstance> {
       return replyWithFailure(request, reply, new Failure('REQUEST_MALFORMED', { cause: error }))
     },
     return503OnClosing: false,
-    clientErrorHandler: (error, socket) => answerClientError(app, error, socket),
+    clientErrorHandler: (error, socket) => answerClientError(app, securityHeaders, error, socket),
   })
   // Fastify answers 415 for a body with no parser; JSON is left the only one (security S25).
   app.removeContentTypeParser('text/plain')
-  await app.register(fastifyHelmet, HELMET_OPTIONS)
+  await app.register(fastifyHelmet, options)
   return app
 }
 

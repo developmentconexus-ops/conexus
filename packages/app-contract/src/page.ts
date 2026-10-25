@@ -1,8 +1,10 @@
-// What an app's page may load on its own host: never framed, nothing submitted elsewhere, and
-// only its own origin for scripts, styles, images, fonts and calls (application-csp.ts:4,14). The
-// dispatcher sends it on every answer and the check opens the built screens under it (decision 0055).
-export const APP_CONTENT_SECURITY_POLICY =
-  "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'"
+// What an app's page may load on its own host: framed only by `frameAncestor`, nothing submitted
+// elsewhere, and only its own origin for scripts, styles, images, fonts and calls
+// (application-csp.ts:4,14). The dispatcher sends it on every answer with the Hub's origin, so the
+// Prévia can frame the app; the check opens the built screens under it with 'none' (decision 0055).
+export function appContentSecurityPolicy(frameAncestor: string): string {
+  return `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors ${frameAncestor}`
+}
 
 const MEDIA_TYPES: Readonly<Record<string, string>> = {
   js: 'text/javascript',

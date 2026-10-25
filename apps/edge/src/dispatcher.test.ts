@@ -3,8 +3,9 @@ import { createHash } from 'node:crypto'
 import { test } from 'node:test'
 import { BINDING, CODE, EXAMPLE_CALL, edge, HOST, pageText, problem, SESSION } from './test-edge.ts'
 
-const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=Lax'
-const HUB_OPEN = 'https://hub.conexus.fun/apps/open'
+const COOKIE_ATTRIBUTES = 'Path=/; Secure; HttpOnly; SameSite=None; Partitioned'
+const HUB = 'https://hub.conexus.fun'
+const HUB_OPEN = `${HUB}/apps/open`
 
 function hashOf(binding: string): string {
   return createHash('sha256').update(binding).digest('base64url')
@@ -188,7 +189,7 @@ test('uma página do despachante: sem script, um estilo pelo hash na CSP', async
   assert.equal(response.headers.get('Content-Type'), 'text/html; charset=utf-8')
   assert.equal(
     response.headers.get('Content-Security-Policy'),
-    `default-src 'none'; style-src 'sha256-${hash}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
+    `default-src 'none'; style-src 'sha256-${hash}'; base-uri 'none'; form-action 'none'; frame-ancestors ${HUB}`,
   )
   assert.ok(style.length > 0 && !html.includes('<script'))
   assert.match(html, /^<!doctype html>\n<html lang="pt-BR">/)
@@ -278,7 +279,7 @@ test('app: a CSP do app e os cabeçalhos de S24 substituem os dele', async () =>
   const response = await door.fetch('/', { headers: LIVE })
   assert.equal(
     response.headers.get('Content-Security-Policy'),
-    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+    `default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'none'; form-action 'none'; base-uri 'none'; frame-ancestors ${HUB}`,
   )
   assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer')
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff')

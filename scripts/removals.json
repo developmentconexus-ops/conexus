@@ -893,7 +893,7 @@
   {
     "id": "edge-strip-conexus-path",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "  if (url.pathname.startsWith(DISPATCHER_PATHS)) return failurePage('APP_NOT_FOUND')\n",
+    "find": "  if (url.pathname.startsWith(DISPATCHER_PATHS)) return failure(visit, 'APP_NOT_FOUND')\n",
     "replace": "",
     "test": {
       "cwd": "apps/edge",
@@ -915,7 +915,7 @@
   {
     "id": "edge-cross-site-write",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "  if (isForeignWrite(request, url)) return failurePage('REQUEST_ORIGIN_REFUSED')\n",
+    "find": "  if (isForeignWrite(request, url)) {\n    return failurePage('REQUEST_ORIGIN_REFUSED', env.HUB_PUBLIC_ORIGIN)\n  }\n",
     "replace": "",
     "test": {
       "cwd": "apps/edge",
@@ -1091,7 +1091,7 @@
   {
     "id": "edge-303-headers",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "headers: withSecurityHeaders(headers) })",
+    "find": "headers: withSecurityHeaders(headers, visit.policy) })",
     "replace": "headers })",
     "test": {
       "cwd": "apps/edge",
@@ -1795,7 +1795,7 @@
   {
     "id": "edge-call-deadline",
     "file": "apps/edge/src/dispatch.ts",
-    "find": "    if (response === 'PASSED') return failurePage('EDGE_APP_DEADLINE')\n",
+    "find": "    if (response === 'PASSED') return failure(visit, 'EDGE_APP_DEADLINE')\n",
     "replace": "",
     "test": {
       "cwd": "apps/edge",
