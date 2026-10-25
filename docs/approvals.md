@@ -134,3 +134,5 @@ Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751
 Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751dd072b8778e70): "Cara, vamos tirar esse caso, sabe? Tipo assim, senão a gente vai ficar de novo criando remendo, patch, só pra buscar esses casos assim, sabe? Tipo, utilizar o que o master tem nativo, tipo, como que o master factor faria se acontecesse? Ele só pararia e a pessoa teria que mandar mensagem de novo, não? Eu não quero ficar pegando exceções e tentar criar casos ou código patch pra isso."
 
 Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751dd072b8778e70): "5.A"
+
+Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 346c5e2ebb0907f836f0db04d19a51ca25930f7b): "Mas olha, no mobile ela tá mostrando, legal, só que eu não consigo clicar, por exemplo, nela e ela mostrar tudo que são as tarefas, por exemplo."
