@@ -85,6 +85,12 @@ export const QUESTION_DENIED: Invocation = {
   args: QUESTION_ARGS,
 }
 
+/** The question Parar closed: Mastra settles the parked call denied, with the reason it writes for a stop. */
+export const QUESTION_ABORTED: Invocation = {
+  ...QUESTION_DENIED,
+  approval: { id: 'toolu_denied_1', approved: false, reason: 'Aborted by the user' },
+}
+
 /** The same question asking and closed, as the parts of one step. */
 export const QUESTION_ASKING: MastraMessagePart = {
   type: 'tool-invocation',
@@ -92,7 +98,7 @@ export const QUESTION_ASKING: MastraMessagePart = {
 }
 export const QUESTION_CLOSED_PART: MastraMessagePart = {
   type: 'tool-invocation',
-  toolInvocation: QUESTION_DENIED,
+  toolInvocation: QUESTION_ABORTED,
 }
 
 /** The resumed run's message for the answered question: the result alone, as Mastra tells it, without the arguments. */

@@ -126,3 +126,13 @@ test('toque no painel abre a lista inteira e outro toque a dobra (Critério 10)'
   expect(toggle.getAttribute('aria-expanded')).toBe('false')
   expect(hidden()).toHaveLength(2)
 })
+
+test('o painel aberto dobra quando o turno termina e volta dobrado no seguinte (Critério 10)', () => {
+  const view = render(<TaskPanel tasks={TASKS} streaming={true} />)
+  fireEvent.click(screen.getByRole('button', { name: /Tarefas · 1 de 3/ }))
+  view.rerender(<TaskPanel tasks={TASKS} streaming={false} />)
+  view.rerender(<TaskPanel tasks={TASKS} streaming={true} />)
+  expect(
+    screen.getByRole('button', { name: /Tarefas · 1 de 3/ }).getAttribute('aria-expanded'),
+  ).toBe('false')
+})

@@ -22,13 +22,16 @@ function focusedTask(tasks: readonly Task[]): Task | undefined {
  */
 export function TaskPanel(props: { tasks: readonly Task[]; streaming: boolean }) {
   const { tasks, streaming } = props
-  const [open, setOpen] = useState(false)
-
   if (!streaming || tasks.length === 0) return null
+  if (tasks.every((t) => t.status === 'completed')) return null
+  return <OpenTasks tasks={tasks} />
+}
 
+/** Holds the fold: it unmounts with the panel, so the next turn's panel starts folded. */
+function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
+  const [open, setOpen] = useState(false)
   const total = tasks.length
   const completed = tasks.filter((t) => t.status === 'completed').length
-  if (completed === total) return null
   const focused = focusedTask(tasks)
 
   return (

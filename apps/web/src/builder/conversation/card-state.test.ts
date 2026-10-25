@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { TASK_TOOLS } from '@conexus/hub-api'
 import { invocationToItem, waitsOnPerson } from './rows.ts'
-import { PLAN_DENIED, QUESTION_DENIED } from './tool-fixtures.ts'
+import { PLAN_DENIED, QUESTION_ABORTED, QUESTION_DENIED } from './tool-fixtures.ts'
 
 test('pergunta ou plano fechado pelo Mastra fica fechado, nunca aberto', () => {
   for (const denied of [QUESTION_DENIED, PLAN_DENIED]) {
@@ -34,8 +34,8 @@ test('as ferramentas de tarefas não desenham linha: o painel as mostra', () => 
   }
 })
 
-test('pergunta fechada com a volta parada pela pessoa fica parada, não fechada', () => {
-  const stopped = invocationToItem(QUESTION_DENIED, undefined, true)
+test('pergunta que o Mastra fechou porque a pessoa parou fica parada, relida ou ao vivo; a vencida fica fechada', () => {
+  const stopped = invocationToItem(QUESTION_ABORTED, undefined)
   assert.equal(stopped?.kind, 'card')
   assert.equal(stopped.state, 'stopped')
   assert.equal(waitsOnPerson([stopped]), false)

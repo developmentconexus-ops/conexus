@@ -29,6 +29,12 @@ test('a pergunta que fecha porque a pessoa parou o Builder diz só que ela parou
   line.emit(displayOf({ isRunning: true }))
   line.emit(agentEnd('aborted'))
   line.emit(displayOf())
+  await screen.findByText('Você parou o Builder.')
+  // The next run starts: the card still says who closed it.
+  line.emit(AGENT_START)
+  line.emit(RUNNING)
+  line.emit(stepStarted('step-2', []))
+  line.emit(agentEnd('complete'))
   expect(await screen.findByText('Você parou o Builder.')).toBeTruthy()
   expect(screen.queryByText(/Veja a conversa/)).toBeNull()
   expect(screen.queryByText(/Esta pergunta já foi respondida/)).toBeNull()

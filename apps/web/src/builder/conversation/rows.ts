@@ -123,6 +123,13 @@ function cardState(inv: Invocation, waiting: boolean): 'open' | 'result' | 'clos
   return waiting ? 'open' : 'none'
 }
 
+/** What Mastra writes on a call it closed because the person stopped the run (agent-controller `ABORTED_BY_USER_REASON`). */
+const ABORTED_BY_USER = 'Aborted by the user'
+
+function stoppedBy(inv: Invocation): boolean {
+  return inv.approval?.reason === ABORTED_BY_USER || inv.result === ABORTED_BY_USER
+}
+
 function questionStateOf(
   at: 'open' | 'result' | 'closed',
   answered: boolean,
@@ -135,7 +142,6 @@ function questionStateOf(
 export function invocationToItem(
   inv: Invocation,
   suspension: Suspended | undefined,
-  stopped = false,
 ): TranscriptItem | null {
   if (
     !ToolCallId.safeParse(inv.toolCallId).success ||
@@ -150,7 +156,7 @@ export function invocationToItem(
       suspension === undefined ? inv.args : suspension.suspendPayload,
     )
     const answers = parseAnswers(inv.result)
-    const state = questionStateOf(at, answers !== undefined, stopped)
+    const state = questionStateOf(at, answers !== undefined, stoppedBy(inv))
     return {
       kind: 'card',
       cardKind: 'question',
@@ -211,8 +217,6 @@ export type View = {
   heard: Readonly<Record<string, number>>
   /** The answer is still arriving: its last thinking is in progress. */
   live: boolean
-  /** The last run was stopped by the person: a card Mastra closed then was closed by Parar. */
-  stopped: boolean
 }
 
 function fromParts(
@@ -238,7 +242,6 @@ function fromParts(
       const item = invocationToItem(
         part.toolInvocation,
         view.suspended[part.toolInvocation.toolCallId],
-        view.stopped,
       )
       if (item) items.push(item)
     } else if (
