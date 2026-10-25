@@ -1860,13 +1860,13 @@
   },
   {
     "id": "release-stops-runs",
-    "file": "apps/server/src/builder/conversation/public.ts",
-    "find": "    await deps.runs.stopWriting(scope)\n",
+    "file": "apps/server/src/builder/runs/removal.ts",
+    "find": "  for (const stopped of await store.stop({ companyId, projectId, personId })) {\n    await context.stopped(stopped)\n  }\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/runs/runs-removal.test.ts",
-      "name": "a próxima conversa de outra pessoa não é RUN_BUSY"
+      "name": "no meio de um turno"
     }
   },
   {
