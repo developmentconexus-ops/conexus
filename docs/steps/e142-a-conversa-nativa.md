@@ -82,6 +82,21 @@ rotas do Mastra entram atrás do guarda do Hub (0050), e o Fim passa ao `isTaskC
 o cartão depois do reinício (a U14 sai, 47), o prazo de uma hora do turno, fechar sessões paradas e a nossa
 regra da mensagem pendente no fim do turno. As unidades M1 a M4 fazem isso.
 
+**A quinta emenda de 2026-10-24.** A máquina passa a ser da conversa. As suas palavras: "eu acho que não
+faz sentido ser uma por projeto, é uma por conversa. Porque a gente vai estar rodando aquela conversa."
+Sobre onde guardar: "não faz sentido criar mais uma tabela para isso, né? ... isso daí tá dentro do escopo
+de uma sessão, da thread ... Não faz sentido querer criar uma lógica paralela de novo", e "3aproco". Quer
+dizer: sem tabela e sem coluna; a máquina tem o nome da conversa e o E2B a acha por ele, como no exemplo do
+Mastra de uma máquina por thread; `builder.machine` sai; como na Factory, sem a varredura de 7 dias, e a
+máquina é morta pelo nome quando a conversa, a pessoa, o Projeto ou a empresa saem (M5, 52 a 54). A trava
+do Projeto fica: "1. A por agora, pra manter" (41). Os arquivos: "B", o `SandboxFilesystem` do Mastra Code
+(`@mastra/code-sdk`), como a Factory o usa, preso à pasta do app; ele substitui o nativo do E2B que o "2.
+Okay" escolheu antes de se saber que o nativo resolve um caminho relativo a partir de `/` (16, 0051 Z2). O
+R2 montado na máquina: "1 A", não agora. Os arquivos ficam no disco da máquina da conversa, as versões no
+nosso Git no Hub e a cópia de cada versão no R2, como hoje, sem montagem. Para a Ana e o Diego: cada
+conversa liga a sua máquina; a frase "A máquina anterior sumiu; refiz a partir do que está guardado." sai,
+porque sem id guardado nada diz que havia outra máquina antes.
+
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
 ficam como proposta.
 
@@ -103,6 +118,18 @@ Escolhas que firstmate fez à noite e que ainda são suas:
 - **U2, os desvios do 6e e do 6f.** Um sétimo estado, `closing` ("fechando"); nenhum teste puro de
   `turn-state.ts` no repositório, porque T5 proíbe; a saída por Parar espera o desmonte só quando o
   Mastra roda uma volta aqui.
+- **M4, o peso do `@mastra/code-sdk`** (medido em 2026-10-24, sem chamada paga). O pacote pede o
+  `@mastra/core` 1.79.0 exato, e fica uma cópia só do core e do `zod`. Mas traz 506 pacotes ao
+  desenvolvimento e, na imagem do Hub (`infra/hub.Dockerfile:50`), leva de 332 a 805 pacotes e de 368 MB
+  a 967 MB; 1,3 GB quando roda o script do `onnxruntime-node`, que baixa bibliotecas de GPU. O arquivo do
+  `SandboxFilesystem` só importa `path` e `@mastra/core/workspace`. Recomendação: instalar, como a Factory
+  importa (`@mastra/code-sdk/agents/sandbox-filesystem`), e aceitar a imagem maior. A outra saída é trazer
+  só esse arquivo, 801 linhas com o cabeçalho Apache 2.0, como o cache de prompt foi trazido.
+- **M5, as máquinas por Projeto de hoje.** Têm linha em `builder.machine` e ficam pausadas no E2B. Depois
+  que a M5 entra em produção, firstmate as mata uma vez pela marca desta instalação (uma chamada paga, com
+  a sua palavra), antes da migração que apaga a tabela.
+- **M5, as máquinas pausadas crescem.** Uma por conversa usada, até a conversa sair. O limite de máquinas
+  pausadas do plano do E2B não foi lido.
 
 ## As unidades
 
@@ -125,7 +152,8 @@ Escolhas que firstmate fez à noite e que ainda são suas:
 | M1 | Conta, máquina e trava pela conversa | `builder/model-accounts/{processors,turn}.ts`, `builder/runs/`, `builder/conversation/{builder,sessions}.ts` | segurança | — |
 | M2 | As rotas do Mastra atrás do guarda, a tela pelo `@mastra/client-js`, o contrato e as remoções, numa unidade | `builder/conversation/`, `builder/runs/`, `apps/web/src/builder/conversation/`, `hub-api/` | segurança, web | M1 |
 | M3 | O Fim pelo `isTaskComplete` | `builder/conversation/{builder,processors}.ts` | testes | M1 |
-| M4 | O arquivo nativo do E2B | `builder/machine/` | testes | M1 |
+| M4 | O arquivo do Mastra Code, `SandboxFilesystem`, preso à pasta do app | `builder/machine/`, `apps/server/package.json` | testes | M5 |
+| M5 | A máquina da conversa: sem tabela, morta pelo nome ao sair, sem varredura | `builder/machine/`, `builder/runs/`, `builder/conversation/{builder,public}.ts`, `migrations/`, `hub-api/` (`MachinePhase`), `apps/web/src/builder/conversation/{machine-line.tsx,fold.ts}` | dados, segurança | M1 |
 
 `builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. A 14.0 é a primeira parte da U2
 ("C"; "1. Sim … 2.B"). Em paralelo: U2, U4, U5, U8, U9 (arquivos
@@ -135,7 +163,10 @@ defeito do envio com cartão aberto); depois as limpezas da sessão; depois a U1
 `steerCards` achando o cartão frio que ela adota; depois o turno como um estado só (U2); U13 depois da
 U12 e da U3. Na quarta emenda: M1 primeiro, pelas rotas de hoje; depois a M2; a M3 e a M4 depois da M1,
 em paralelo com a M2 (arquivos distintos). A M2 apaga o que a U2, a U12, a U13 e a U14 fizeram e o Mastra
-já faz; a tela da U3 passa a ler o stream do Mastra.
+já faz; a tela da U3 passa a ler o stream do Mastra. Na quinta emenda: a M5 depois da M1, em três partes
+que terminam funcionando (a máquina pela conversa; a morte pelo nome e o fim da varredura; a migração que
+apaga `builder.machine`, em pull request próprio, D11); a M4 depois da primeira parte da M5, porque então a
+máquina existe quando a workspace nasce e o `SandboxFilesystem` a recebe direto, na forma da Factory.
 
 **Orçamento de código alterado** (apagado conta; sem testes nem texto de skill). U2 1.600; U3 950;
 U4 150; U5 150; U8 80; U9 150; U10 60; U11 150. Total **3.290**, teto 4.000 (L2); U6 350 e U7 450 voltam com a
@@ -181,7 +212,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 
 | # | U | Critério, observável de fora, com a recusa | Teste |
 | --- | --- | --- | --- |
-| 1 | U1 | V39, 0050 e 0055 com a regra trocada e a frase do fundador; na quarta emenda, 0050 ("Mastra's routes") e 0051 Z2 | `check-docs` |
+| 1 | U1 | V39, 0050 e 0055 com a regra trocada e a frase do fundador; na quarta emenda, 0050 ("Mastra's routes") e 0051 Z2; na quinta, 0051 (a máquina da conversa, Z2 de novo) e a nota da 0028 | `check-docs` |
 | 2 | U2 | `readConversation` devolve as partes como o Mastra as guarda (`text`, `reasoning` com texto, `tool-invocation` com nome, `args`, `result`, `state`, `data-*`); o tipo do Mastra cabe no esquema | `conversation-wire.test.ts`, tipo |
 | 3 | M2 | O stream é a rota do Mastra como ele manda (fundador: "3. Aceito"): os eventos do `AgentController`, `display_state_changed` com o `omProgress`, e as partes `data-conexus-*` gravadas; sem lista nossa nem `turn` | `conversation-stream.test.ts` |
 | 4 | M2 | Ao vivo e relido (`threads/:threadId/messages`), a mesma parte, para cada ferramenta do conjunto fechado e uma desconhecida; um turno que define tarefas e depois usa uma ferramenta do espaço de trabalho não perde ao recarregar o raciocínio, o primeiro `task_write` nem o texto do começo (as partes por id de mensagem ao vivo são iguais depois do `turnEnd`) | idem, `conversation-tasks.test.ts`, `tests/e2e/builder-native.test.ts` |
@@ -196,7 +227,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 13 | U3, U9 | 1280 e 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo; a árvore com papéis ARIA, o `Sheet` a 390 px, o vazio | T23, `source.test.tsx` |
 | 14 | U4 | O Builder sai de `createCodingAgent` com `workspace: undefined`: não tem workspace próprio, a máquina E2B segue emprestada por volta; a lista volta ao modelo depois que a chamada sai da janela | `conversation-tasks.test.ts` (novo) |
 | 15 | M3 | Fim pelo `isTaskComplete` do Mastra: o avaliador `conexus-check` reprova o turno que acaba com tarefa aberta e o texto "N tarefas abertas: …" volta ao modelo, no limite de `CHECK_LIMITS`; no limite, "Versão N guardada, pela metade"; parado, nada disso; a tela recebe `task_complete_evaluation`; sai `checkGate` | `conversation-check.test.ts` |
-| 16 | M4 | Sem `requireReadBeforeWrite`: duas escritas seguidas no mesmo arquivo passam; as ferramentas de arquivo são o `E2BSandboxFilesystem` do Mastra (fundador: "2. Okay"), sem prender os caminhos à pasta do app; saem `MachineFilesystem` e `in-machine.ts` | `conversation-machine.test.ts`, prova ao vivo no E2B (firstmate) |
+| 16 | M4 | Sem `requireReadBeforeWrite`: duas escritas seguidas no mesmo arquivo passam; as ferramentas de arquivo são o `SandboxFilesystem` de `@mastra/code-sdk` (fundador, 2026-10-24: "B"), preso à pasta do app como a Factory o usa: `src/a.ts`, `/src/a.ts` e `/home/user/app/src/a.ts` são o mesmo arquivo da pasta do app; um caminho fora dela, recusado pela ferramenta ("Path escapes workspace root"); o comando segue livre; saem `MachineFilesystem` e `in-machine.ts`; uma cópia só do `@mastra/core` | `conversation-machine.test.ts`, `npm ls @mastra/core`, prova ao vivo no E2B (firstmate) |
 | 17 | U4 | A linha `CONVERSATION_TURN_ENDED` leva `finishReason`, a ferramenta que falhou, o código, o maior `inputTokens` de um passo, `cachedInputTokens` e as rodadas da conferência; nenhum texto livre (S41) | `turn-line.test.ts` |
 | 18 | U4 | **Fora**, por palavra do fundador (2026-10-23 13:02): sem LSP; a prova ao vivo falhou e a issue [#282](https://github.com/developmentconexus-ops/conexus/issues/282) a guarda | — |
 | 19 | U5 | Gemini é um modelo só, com **Raciocínio**; a escolha chega ao CLIProxy pelo pedido provado no 20, também para o padrão; Claude segue `summarized` | `thinking.test.ts`, `served-recordings.test.ts` |
@@ -226,6 +257,9 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 49 | M2 | Turno que roda quando o servidor cai fica parado (fundador: "6. Aprovado"): depois do reinício a sessão volta sem execução e sem cartão, e a reconexão relê a transcrição; sem retomada automática | `conversation-resume.test.ts` |
 | 50 | U3 | Uma tabela de ferramentas, chaveada pelos nomes do conjunto fechado do `hub-api`, iguais aos do Mastra e ao fecho do Builder; nenhum nome de ferramenta testado fora dela; sem apelidos | `permissions.test.ts`, tipos |
 | 51 | U3 | O relógio de uma ferramenta conta desde que a tela ouviu a chamada; não volta a zero quando ela entra num grupo | `tool-row.test.tsx`, `live.test.tsx` |
+| 52 | M5 | A máquina é da conversa (fundador: "é uma por conversa", "3aproco"): o nome é `conexus-<instalação>-<conversa>`, sem o Projeto; o E2B a acha por esse nome, sem id guardado (nenhuma tabela nem coluna); duas conversas do mesmo Projeto ligam duas máquinas, e a segunda começa do `main` com a versão que a primeira guardou; a execução recusada com `RUN_BUSY` não liga máquina; cada turno começa do `main`; a máquina que some entre turnos volta nova, do `main`, sem frase; a que some no meio do turno segue `MACHINE_LOST` | `runs.test.ts`, `machine.test.ts`, `conversation-turns.test.ts`, prova ao vivo no E2B (firstmate) |
+| 53 | M5 | Soltar a conversa, a pessoa, o Projeto ou a empresa mata pelo nome, com a marca da instalação, as máquinas das conversas soltas, também as que nenhum processo segura, antes de apagar a thread; um `kill` que falha não esconde os outros, e nada é apagado: a remoção fica pendente (`PERSON_REMOVAL_PENDING`, `PROJECT_DELETION_PENDING`, `CLIENT_DELETION_PENDING`) e pode ser repetida; uma conversa sem máquina passa; sem varredura: saem `daily.ts`, `Runs.sweep` e `MACHINE_SWEPT` | `runs-removal.test.ts`, remoção (CI) |
+| 54 | M5 | Nenhum código lê `builder.machine`; ela sai numa migração própria depois disso (D30), em pull request próprio, com a palavra do fundador (D11), depois que firstmate matou as máquinas por Projeto de hoje | `check-migrations`, `catalog.test.ts`, remoção (CI) |
 
 **Em espera** (a bancada): os critérios 21 a 26 (U6, U7) estão no cartão de `917b5e4` e voltam com a emenda.
 
@@ -259,6 +293,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | Os 30 min do cartão adotado, na memória da cópia que adota (sem coluna) | U14 | `turn-run.ts`, `runs/` |
 | `WORKSPACE_TOOL`, `BUILDER_TOOL`, `CLOSED_TOOLS`, `questionIdOf` (`hub-api`) | U3, U13 | `tool-registry.ts`, `permissions.ts`, `record.ts` |
 | `message_start` da pessoa (a mensagem que entrou no turno) | U12 | U13 |
+| `MachinePhase` sem `waking` e `replaced` | M5 | `machine-line.tsx`, `fold.ts` |
 
 **Os desenhos** (Factory `ToolCard.tsx`, `SessionChatSurface.tsx`; OS `construir.tsx`):
 
@@ -338,7 +373,8 @@ Enter orienta o Builder · Esc para               Enter orienta o Builder · Esc
 | Guarda da conversa | nosso: as rotas de agent-controller não usam o `resourceId` mapeado | `guard.ts` | — | 0050, S10 | Factory `routes/session-access.ts`; OS `mastra-session-routes.ts:279,311-323` |
 | Conta, máquina e trava pela conversa | nosso na forma da Factory; a trava, nossa (fundador: "1. C") | `model-accounts/processors.ts`, `runs/` | o `Turn` nasce na execução, não no pedido (M1) | 0049, 0051 | Factory `session/credential-policy.ts:37-39`, `sandbox/session-sandbox.ts:29-36`; Mastra Code `agents/memory.ts:101-140` |
 | Fim da execução | nativo: `onBeforeAgentEnd` | `end.ts` | de `turn-end.ts` | 0051 (a versão) | core `agent-controller-DO6rGsQm.js:4836-4859` |
-| Arquivo da máquina | nativo: `E2BSandboxFilesystem` (M4) | `machine/` | sai `MachineFilesystem` | 0051 Z2 | `@mastra/e2b` 0.15 `sandbox/filesystem.d.ts:5-13` |
+| Arquivo da máquina | nativo: `SandboxFilesystem` de `@mastra/code-sdk` 1.15.0, sobre a `E2BSandbox` (M4) | `machine/` | sai `MachineFilesystem` | 0051 Z2 | `@mastra/code-sdk` `dist/agents/sandbox-filesystem.d.ts:38-61`, `.js:154-161`; Factory `factory/src/workspace.ts:4,1482-1509` (Mastra `ceb2e7b0`); OS `sandbox.ts:3,205-215` |
+| Máquina da conversa | nativo: o nome lógico do `E2BSandbox` (`mastra-sandbox-id`), achado ou criado no `start()`; a morte pela marca e pela conversa, nossa (S36) | `machine/`, `runs/removal.ts` | sai `builder.machine` e a varredura | 0051 | `@mastra/e2b` 0.15 `dist/index.js:1757-1791,1836-1848`; core `workspace-BR4DJXoq.js:4055-4063`; Factory `sandbox/session-sandbox.ts:29-36`, `integrations/github/sandbox-release.ts:46-65`, `sandbox/session-retirement.ts:69-77`; docs `mastra.ai/docs/sandbox/overview.md` ("Sandboxes per user or thread") |
 | Releitura igual ao vivo | nativo | `history.ts`, `processors.ts` (`workspaceMetadataLive`) | de `turnsOf`, que colava os passos | C21 | `llm-execution-step.ts:2916-2925`, `message-list.ts:865`; issue do Mastra #21940 (o pedaço `data-workspace-metadata` não é salvo) |
 
 Citações em `.ts` do Mastra: a fonte em `6a465f9d`. Cada "nosso" entra em `boundaries.md`; do
@@ -666,11 +702,34 @@ T24. **Prova.** 3 a 5, 30, 31, 41 a 49.
 `conexus-check` (`createScorer`), que acha a máquina pela conversa em `customContext.controller`. Regras:
 C26, T24. **Prova.** 15.
 
-## M4 O arquivo nativo do E2B
+## M4 O arquivo do Mastra Code
+
+**Quinta emenda.** Era o `E2BSandboxFilesystem` nativo; passa ao `SandboxFilesystem` (fundador: "B").
 
 **Raio.** `machine/`: saem `MachineFilesystem` (`filesystem.ts`) e `in-machine.ts`; entra o
-`E2BSandboxFilesystem` de `@mastra/e2b` 0.15 na `Workspace` da máquina (0051 Z2). Regras: T24. **Prova.**
-16.
+`SandboxFilesystem` de `@mastra/code-sdk` 1.15.0 (versão exata, que pede o `@mastra/core` 1.79.0), importado
+de `@mastra/code-sdk/agents/sandbox-filesystem` como a Factory, com `workdir` a pasta do app, sobre a
+`E2BSandbox` da conversa que a M5 já cria com a workspace (0051 Z2). Na E2B ele usa o arquivo nativo da
+máquina; no dublê, o comando. `apps/server/package.json` ganha o pacote; `stack.md` ganha a linha dele.
+Regras: T24. **Prova.** 16.
+
+## M5 A máquina da conversa
+
+**Raio.** `machine/`: o nome e a marca pela conversa; saem `rows.ts`, `tables.ts` (`machine`),
+`reattach: 'required'`, `isGone`, a segunda partida que esquecia a linha, `list`, `rowOf`, `forget` e
+`projectsOf`; a API do E2B mata pela conversa. `runs/`: a workspace por conversa; saem `daily.ts`, `sweep` e
+`writing`; a remoção mata pela conversa. `conversation/builder.ts`: a conversa da execução chega ao
+resolvedor; `conversation/public.ts`: as conversas soltas antes da remoção. `hub-api/` e a tela: saem as
+fases `waking` e `replaced` (as partes velhas são `data` sem esquema na leitura, `mastra-parts.ts:133-137`).
+`architecture.md`, a linha "One E2B key", sem a varredura. Migração própria, em pull request próprio
+(D11): sai `builder.machine` e a sua permissão.
+
+**Contratos.** O nome da máquina é `conexus-<instalação>-<conversa>`; a marca leva a origem, a empresa, o
+Projeto e a conversa. A `E2BSandbox` nasce com a workspace da conversa, sem `sandboxId`: no `start()` o
+Mastra a acha pelo nome ou cria outra, e o `onStart` diz `connected` ou `created`. A trava do M1 fica por
+Projeto. Ao soltar, a remoção lista no E2B pela marca e pela conversa e mata cada uma, antes das threads.
+Os arquivos ficam no disco da máquina, as versões no nosso Git no Hub e a cópia de cada versão no R2,
+sem montagem (fundador: "1 A"). Regras: C26, D11, D30, S36, T24. **Prova.** 41, 52 a 54.
 
 ## Por que a 14 deixou passar
 
