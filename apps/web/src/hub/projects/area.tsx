@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
 import { buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
@@ -25,14 +25,17 @@ function VersionsSection() {
 
 function Sections() {
   const { section = Section.enum.about } = route.useSearch()
-  const navigate = route.useNavigate()
+  const navigate = useNavigate()
   return (
     <Tabs
       value={section}
       onValueChange={(next) => {
         const section = Section.safeParse(next)
         if (section.success)
-          void navigate({ search: (previous) => ({ ...previous, section: section.data }) })
+          void navigate({
+            to: '.',
+            search: (previous) => ({ ...previous, section: section.data }),
+          })
       }}
     >
       <TabsList aria-label="Seções do Projeto">
@@ -56,7 +59,7 @@ function Sections() {
 export function ProjectArea(props: { preview: ReactNode; code: ReactNode }) {
   const { companyId, projectId } = route.useParams()
   const { lens = Lens.enum.preview } = route.useSearch()
-  const navigate = route.useNavigate()
+  const navigate = useNavigate()
   const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   return (
     <Tabs
@@ -64,7 +67,7 @@ export function ProjectArea(props: { preview: ReactNode; code: ReactNode }) {
       onValueChange={(next) => {
         const chosen = Lens.safeParse(next)
         if (chosen.success)
-          void navigate({ search: (previous) => ({ ...previous, lens: chosen.data }) })
+          void navigate({ to: '.', search: (previous) => ({ ...previous, lens: chosen.data }) })
       }}
       className="h-full gap-0"
     >

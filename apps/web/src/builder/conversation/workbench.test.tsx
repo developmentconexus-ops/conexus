@@ -1,9 +1,9 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
 import { hubServer, PEDIDOS, PEDIDOS_ADDRESS, projectsRead } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
-import { conversationOf, FIRST, PROJECT, screens, typed, view } from './test-hub.tsx'
+import { conversationOf, FIRST, PROJECT, SECOND, screens, typed, view } from './test-hub.tsx'
 
 const server = hubServer()
 const { open } = screens(server)
@@ -64,6 +64,33 @@ test('a aba Projeto e a seção ficam no endereço, e o Sobre vem primeiro', asy
   })
   fireEvent.click(tab('Prévia'))
   expect(await screen.findByText(NO_PREVIEW)).toBeTruthy()
+})
+
+test('trocar a aba ou a seção mantém a conversa aberta', async () => {
+  const hub = open(
+    view({
+      conversations: [
+        conversationOf({ id: FIRST, title: 'Padarias' }),
+        conversationOf({ id: SECOND, title: 'Entregas' }),
+      ],
+    }),
+    `${PROJECT}/conversations/${SECOND}`,
+  )
+  server.use(
+    versionsRead({ versions: [] }),
+    ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }),
+  )
+  const { router } = hub.conexus
+  const here = `${PROJECT}/conversations/${SECOND}`
+  fireEvent.click(await screen.findByRole('tab', { name: 'Código' }))
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ lens: 'code' }))
+  expect(router.state.location.pathname).toBe(here)
+  fireEvent.click(screen.getByRole('tab', { name: 'Projeto' }))
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ lens: 'project' }))
+  expect(router.state.location.pathname).toBe(here)
+  fireEvent.click(await screen.findByRole('tab', { name: 'Versões' }))
+  await waitFor(() => expect(router.state.location.search).toMatchObject({ section: 'versions' }))
+  expect(router.state.location.pathname).toBe(here)
 })
 
 test('abrir pelo endereço da seção mostra as Versões; um valor que não é nosso volta à Prévia', async () => {
