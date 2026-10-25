@@ -22,10 +22,12 @@ import {
 } from './scripts.ts'
 
 type Session = {
-  kit: Kit
   companyId: CompanyId
   projectId: ProjectId
+  name: string
   onPhase: (phase: Phase) => void
+  /** Made when the machine starts, at the first tool, never when the workspace is built: opening a conversation touches no machine. */
+  kit: Kit | undefined
   /** Whether the Projeto had a machine recorded when the turn began: it wakes, or starts. */
   known: boolean
   /** The recorded machine is gone from the provider: the turn starts a new one from `main`. */
@@ -34,7 +36,7 @@ type Session = {
   starts: number
   /** The machine died mid-turn, and what the turn wrote on it is gone. */
   lost: boolean
-  ready: Promise<void> | undefined
+  ready: Promise<Kit> | undefined
 }
 
 function isGone(error: unknown): boolean {
@@ -91,30 +93,62 @@ class BuilderMachines implements Machines {
   projectsOf = (companyId: CompanyId) => this.rows.projectsOf(companyId)
 
   /** Wakes or creates the machine, once per workspace; the seed ran in `onStart` before this returns. */
-  private ensure(session: Session): Promise<void> {
+  private ensure(session: Session): Promise<Kit> {
     session.ready ??= this.boot(session)
     return session.ready
   }
 
-  private async boot(session: Session) {
+  /** The provider's kit for this Projeto, reattaching the recorded machine when there is one. */
+  private kitFor(session: Session, sandboxId: SandboxId | undefined): Kit {
+    const { companyId, projectId, name } = session
+    session.kit = this.deps.kit({
+      id: name,
+      sandboxId,
+      metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },
+      workingDirectory: this.workdir,
+      instructions: machineInstructions(this.workdir),
+      onStart: ({ outcome }) => this.onStart(session, outcome),
+    })
+    return session.kit
+  }
+
+  private async start(kit: Kit) {
+    await within(kit.sandbox.start?.() ?? Promise.resolve(), this.startMs)
+  }
+
+  /**
+   * Reattaches the recorded machine, or starts one. A recorded machine the provider no longer holds
+   * fails the start (`SANDBOX_REATTACH_FAILED`): its row goes and the turn starts a new one from `main`.
+   */
+  private async boot(session: Session): Promise<Kit> {
+    const { companyId, projectId } = session
+    const recorded = (await this.rows.of(companyId, projectId))?.sandboxId
+    session.known = recorded !== undefined
     session.onPhase(session.known ? 'waking' : 'starting')
+    let kit = this.kitFor(session, recorded)
     try {
-      await within(session.kit.sandbox.start?.() ?? Promise.resolve(), this.startMs)
+      await this.start(kit).catch(async (cause: unknown) => {
+        if (recorded === undefined || !isGone(cause)) throw cause
+        await this.rows.forget(companyId, projectId)
+        session.replaced = true
+        kit = this.kitFor(session, undefined)
+        await this.start(kit)
+      })
     } catch (cause) {
       const restore = restoreFailure(cause)
       if (restore !== undefined) throw restore
       this.deps.log.error({ reason: isGone(cause) ? 'GONE' : 'START' }, 'MACHINE_UNAVAILABLE')
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
-    const { companyId, projectId } = session
-    const sandboxId = session.kit.sandboxId()
+    const sandboxId = kit.sandboxId()
     if (sandboxId !== undefined) await this.rows.remember({ companyId, projectId, sandboxId })
     this.deps.log.info({ projectId }, 'MACHINE_STARTED')
+    return kit
   }
 
   /** The app folder holds `main` as the Hub has it: its bundle crosses, then the seed script runs. */
-  private async seed(session: Session) {
-    const { kit, onPhase, companyId, projectId } = session
+  private async seed(kit: Kit, session: Session) {
+    const { onPhase, companyId, projectId } = session
     onPhase('copying')
     await kit.transport.write(seedFile(this.tmp), await this.deps.seedOf({ companyId, projectId }))
     const seeded = await run(kit, seedScript(this.workdir, this.tmp))
@@ -128,11 +162,12 @@ class BuilderMachines implements Machines {
    * on it is gone.
    */
   private async onStart(session: Session, outcome: string | undefined) {
-    const { kit, onPhase, projectId } = session
+    const { onPhase, projectId, kit } = session
+    if (kit === undefined) throw new Error('a machine started before its kit')
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
-      if (session.starts === 1) return this.seed(session)
+      if (session.starts === 1) return this.seed(kit, session)
       const kept = await run(kit, keepScript(this.workdir))
       if (kept.exitCode !== 0) throw new Error(`the kept tree is gone: ${kept.stderr.slice(-500)}`)
       return
@@ -144,56 +179,33 @@ class BuilderMachines implements Machines {
       this.deps.log.info({ projectId }, 'MACHINE_REPLACED')
       onPhase('replaced')
     }
-    await this.seed(session)
-  }
-
-  /** Whether the provider still holds the recorded machine for this name; a provider that does not answer in time is `MACHINE_UNAVAILABLE`. */
-  private async alive(id: SandboxId, name: string): Promise<boolean> {
-    try {
-      return await within(this.deps.api.holds(id, name), this.startMs)
-    } catch (cause) {
-      this.deps.log.error({ reason: 'START' }, 'MACHINE_UNAVAILABLE')
-      throw new Failure('MACHINE_UNAVAILABLE', { cause })
-    }
+    await this.seed(kit, session)
   }
 
   async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
     const { companyId, projectId, onPhase } = input
-    const recorded = (await this.rows.of(companyId, projectId))?.sandboxId
     const name = `conexus-${this.deps.installation}-${companyId}-${projectId}`
-    const gone = recorded !== undefined && !(await this.alive(recorded, name))
-    const sandboxId = gone ? undefined : recorded
-    const holder: { session?: Session } = {}
-    const kit = this.deps.kit({
-      id: name,
-      sandboxId,
-      deadline: input.deadline,
-      metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },
-      workingDirectory: this.workdir,
-      instructions: machineInstructions(this.workdir),
-      onStart: async ({ outcome }) => {
-        if (holder.session !== undefined) await this.onStart(holder.session, outcome)
-      },
-    })
     const session: Session = {
-      ...{ kit, companyId, projectId, onPhase },
-      ...{ known: recorded !== undefined, replaced: gone },
+      ...{ companyId, projectId, name, onPhase },
+      ...{ kit: undefined, known: false, replaced: false },
       ...{ starts: 0, lost: false, ready: undefined },
     }
-    holder.session = session
     this.sessions.set(projectId, session)
     return new Workspace({
-      sandbox: kit.sandbox,
+      sandbox: async () => (await this.ensure(session)).sandbox,
+      sandboxCacheKey: () => name,
+      instructions: { dynamicSandbox: () => machineInstructions(this.workdir) },
       filesystem: new MachineFilesystem({
         id: `conexus-fs-${projectId}`,
         root: this.workdir,
-        exec: async (script) => {
-          await this.ensure(session)
-          return run(kit, script)
-        },
+        exec: async (script) => run(await this.ensure(session), script),
       }),
       tools: {
-        hooks: { beforeToolCall: () => this.ensure(session) },
+        hooks: {
+          beforeToolCall: async () => {
+            await this.ensure(session)
+          },
+        },
         [WORKSPACE_TOOLS.FILESYSTEM.AST_EDIT]: { enabled: false },
       },
     })
@@ -202,14 +214,14 @@ class BuilderMachines implements Machines {
   async collect({ projectId, base }: { projectId: ProjectId; base: Sha }) {
     const session = this.sessions.get(projectId)
     if (session?.ready === undefined) return 'unchanged'
-    await this.ensure(session)
+    const kit = await this.ensure(session)
     if (session.lost) throw new Error('the machine died in the turn')
     session.onPhase('saving')
-    const result = await run(session.kit, collectScript(this.workdir, this.tmp, base))
+    const result = await run(kit, collectScript(this.workdir, this.tmp, base))
     if (result.exitCode !== 0) throw new Error(`collect failed: ${result.stderr.slice(-500)}`)
     const found: Collected = collected(result.stdout)
     if (found.kind !== 'bundle') return found.kind
-    const bundle = await readCapped(session.kit.transport, outFile(this.tmp))
+    const bundle = await readCapped(kit.transport, outFile(this.tmp))
     if (bundle === 'too-large') return bundle
     return { bundle, files: found.files, changedFiles: found.changedFiles }
   }
@@ -217,9 +229,9 @@ class BuilderMachines implements Machines {
   async check({ projectId }: Parameters<Machines['check']>[0]) {
     const session = this.sessions.get(projectId)
     if (session === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' } as const
-    await this.ensure(session)
+    const kit = await this.ensure(session)
     const program = this.deps.checkProgram ?? CHECK_PROGRAM
-    const exec: TimedExec = (script, timeoutMs) => run(session.kit, script, timeoutMs)
+    const exec: TimedExec = (script, timeoutMs) => run(kit, script, timeoutMs)
     return checkIn({ exec, program, workdir: this.workdir, log: this.deps.log })
   }
 
@@ -227,16 +239,16 @@ class BuilderMachines implements Machines {
   async changed({ projectId }: { projectId: ProjectId }) {
     const session = this.sessions.get(projectId)
     if (session === undefined || !this.touched(projectId)) return false
-    await this.ensure(session)
-    const result = await run(session.kit, changedScript(this.workdir))
+    const kit = await this.ensure(session)
+    const result = await run(kit, changedScript(this.workdir))
     return result.exitCode !== 0 || result.stdout.trim() !== 'UNCHANGED'
   }
 
   async pack({ projectId }: { projectId: ProjectId }) {
     const session = this.sessions.get(projectId)
     if (session === undefined) throw new Error('no turn holds the machine to pack')
-    await this.ensure(session)
-    return packIn((script) => run(session.kit, script), this.workdir)
+    const kit = await this.ensure(session)
+    return packIn((script) => run(kit, script), this.workdir)
   }
 
   touched(projectId: ProjectId) {
@@ -246,9 +258,10 @@ class BuilderMachines implements Machines {
   async release(projectId: ProjectId) {
     const session = this.sessions.get(projectId)
     this.sessions.delete(projectId)
-    if (session?.ready === undefined) return
-    const id = session.kit.sandboxId()
-    await session.kit.sandbox.stop?.()
+    const kit = session?.kit
+    if (session?.ready === undefined || kit === undefined) return
+    const id = kit.sandboxId()
+    await kit.sandbox.stop?.()
     if (id !== undefined) {
       await this.rows.remember({ companyId: session.companyId, projectId, sandboxId: id })
     }

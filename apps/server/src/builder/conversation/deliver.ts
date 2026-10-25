@@ -1,4 +1,3 @@
-import type { RequestContext } from '@mastra/core/request-context'
 import type { Live, Question } from './live.ts'
 
 function userMessage(id: string, contents: string) {
@@ -6,7 +5,6 @@ function userMessage(id: string, contents: string) {
 }
 
 type Options = {
-  requestContext: RequestContext | undefined
   requireDelivery: true
   tracingOptions?: object
   ifIdle?: { behavior: 'discard' }

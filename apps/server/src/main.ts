@@ -122,7 +122,6 @@ export function subjectsOf(deps: {
   machinesOf: MachinesOf
   repository: RepositoryOf
   copy: GitCopy
-  turnMs?: () => number
   log: FailureLog
 }): {
   runs: Runs
@@ -143,7 +142,6 @@ export function subjectsOf(deps: {
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
     repositories: () => repositoriesIn(config.gitRoot),
-    turnMs: deps.turnMs,
   })
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },

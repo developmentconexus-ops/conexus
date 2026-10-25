@@ -19,13 +19,17 @@ type ProjectIds = { companyId: CompanyId; projectId: ProjectId }
  * with the Projeto's name, today, the model's cutoff and what `main` holds.
  */
 export function builderInstructions(deps: {
-  runs: Pick<Runs, 'projectOf' | 'repositoryOf'>
+  runs: Pick<Runs, 'repositoryOf'>
+  /** The Projeto of the conversation the run is, read before the run takes it (`turnOf`). */
+  projectOf: (requestContext: RequestContext) => Promise<ProjectIds | undefined>
   projectName: (ids: ProjectIds) => Promise<string | undefined>
 }) {
   return async ({ requestContext }: { requestContext: RequestContext }): Promise<string> => {
-    const ids = deps.runs.projectOf(requestContext)
+    const ids = await deps.projectOf(requestContext)
     if (ids === undefined) {
-      throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'PROMPT_WITHOUT_RUN' } })
+      throw new Failure('INTERNAL_UNEXPECTED', {
+        details: { reason: 'PROMPT_WITHOUT_CONVERSATION' },
+      })
     }
     const [projectName, context] = await Promise.all([
       deps.projectName(ids),

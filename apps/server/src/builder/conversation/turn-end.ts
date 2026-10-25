@@ -57,7 +57,7 @@ async function closeTurn(live: Live, reason: EndReason, finishing: string): Prom
   }
   live.state = closed(live.state, reason, outcome)
   if (live.state.kind === 'running' && live.state.failure !== undefined) {
-    tellFailure(live, turn, live.state.failure)
+    tellFailure(live, turn, live.state.failure, live.state.person)
   }
   // A write of nothing, queued last, settles once every write before it has.
   await saveExtras(live, turn)

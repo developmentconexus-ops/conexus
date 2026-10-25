@@ -46,12 +46,18 @@ function lastStep(args: ProcessInputStepArgs): ProcessInputStepResult {
 
 type Writer = ProcessAPIErrorArgs['writer']
 
-type InfoEvent = { type: 'info'; message: string }
+type QueueEvent = { type: 'info'; message: string } | { type: 'error'; error: Failure }
 const ControllerEvents = z.object({
-  emitEvent: z.custom<(event: InfoEvent) => void>((value) => typeof value === 'function'),
+  emitEvent: z.custom<(event: QueueEvent) => void>((value) => typeof value === 'function'),
 })
 
-type Notifier = { requestContext?: RequestContext }
+type Notifier = { requestContext?: RequestContext | undefined }
+
+/** Says `event` on the run's controller, as a tool forwards its events. */
+function emit(args: Notifier, event: QueueEvent) {
+  const controller = ControllerEvents.safeParse(args.requestContext?.get('controller'))
+  if (controller.success) controller.data.emitEvent(event)
+}
 
 /**
  * A notice the person reads, said live as the controller's `info` event, since a live `data-*`
@@ -60,8 +66,7 @@ type Notifier = { requestContext?: RequestContext }
  */
 function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) {
   turn.notices.push({ kind, text })
-  const controller = ControllerEvents.safeParse(args.requestContext?.get('controller'))
-  if (controller.success) controller.data.emitEvent({ type: 'info', message: text })
+  emit(args, { type: 'info', message: text })
 }
 
 /**
@@ -76,6 +81,8 @@ function exhaust(args: Notifier, turn: Turn, modelId: ModelId, reason: string | 
       ? `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`
       : `${reason}.`
   notify(args, turn, 'accounts-exhausted', text)
+  // The run's error says why it ends: the call that fails next is the provider's, or none at all.
+  emit(args, { type: 'error', error: new Failure('MODEL_NO_ACCOUNT') })
 }
 
 function refusedText(label: string) {
@@ -189,7 +196,8 @@ export function accountPick(deps: QueueDeps): InputProcessor {
     id: 'conexus-account-pick',
     async processInputStep(args: ProcessInputStepArgs): Promise<ProcessInputStepResult> {
       const turn = turnIn(args.requestContext)
-      if (turn === undefined) return {}
+      // `turnOf` reads every run's input first: a run without a turn is the Builder's defect.
+      if (turn === undefined) return args.abort('NO_TURN')
       const account = await accountOf(deps, turn, args)
       if (account !== undefined) sayRefused(args, turn, account)
       await keepNotices(args, turn)
@@ -311,23 +319,46 @@ function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): 
  * the reflector's are the company's choice, read when the turn opened (`Turn.memoryModels`), picked
  * once for the turn beside the queue and never through it: no rotation, no notice, a failure is
  * the memory's own (`failurePolicy: 'continue'`) and is logged by `watched`. A choice with no
- * account left follows the conversation's model.
+ * account left follows the conversation's model. A call before the run read its input (the
+ * observer runs first) has no turn yet: `turnFor` makes one from the conversation, its own, which
+ * says nothing on the run and holds nothing once its account is picked.
  */
-export function accountModel(deps: QueueDeps, call: SideCall) {
+export function accountModel(
+  deps: QueueDeps,
+  call: SideCall,
+  turnFor: (requestContext: RequestContext) => Promise<Turn | undefined>,
+) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
-    const turn = turnIn(requestContext)
+    const running = turnIn(requestContext)
+    if (running !== undefined) return modelOf(deps, call, running, requestContext)
+    const turn = await turnFor(requestContext)
     if (turn === undefined) return noAccountModel(chosenModel(requestContext))
-    const chosen =
-      call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
-    const side =
-      chosen === null || chosen === turn.modelId(requestContext)
-        ? undefined
-        : await turn.sidePick(chosen, () => pickAccount(deps, turn, chosen))
-    const account = side ?? (await accountOf(deps, turn, { requestContext }))
-    return account === undefined
-      ? noAccountModel(turn.modelId(requestContext))
-      : watched(deps, turn, account, call)
+    turn.modelId(requestContext)
+    try {
+      return await modelOf(deps, call, turn, undefined)
+    } finally {
+      turn.end()
+    }
   }
+}
+
+/** The account of a side call in `turn`; `requestContext` is where its notices are said, if anywhere. */
+async function modelOf(
+  deps: QueueDeps,
+  call: SideCall,
+  turn: Turn,
+  requestContext: RequestContext | undefined,
+) {
+  const chosen =
+    call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
+  const side =
+    chosen === null || chosen === turn.modelId(requestContext)
+      ? undefined
+      : await turn.sidePick(chosen, () => pickAccount(deps, turn, chosen))
+  const account = side ?? (await accountOf(deps, turn, { requestContext }))
+  return account === undefined
+    ? noAccountModel(turn.modelId(requestContext))
+    : watched(deps, turn, account, call)
 }
 
 /**

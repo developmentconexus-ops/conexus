@@ -10,9 +10,6 @@ export type SandboxId = z.infer<typeof SandboxId>
 /** The machine's app folder, which the template makes, the file tools root in and the Builder is told of. */
 export const APP_FOLDER = '/home/user/app'
 
-/** The tag Mastra's E2B sandbox puts on a machine it makes, and checks before it attaches one. */
-export const MASTRA_NAME = 'mastra-sandbox-id'
-
 /** The metadata keys every machine of this installation carries, written at its start and read by the sweep (security S36). */
 export const MARK = {
   origin: 'conexus_origin',
@@ -68,7 +65,6 @@ type KitOptions = {
   id: string
   /** The machine to wake; the provider refuses to make another if it is gone (decision 0051). */
   sandboxId: SandboxId | undefined
-  deadline: Date
   metadata: Record<string, string>
   onStart: SandboxStartHook
   /** Where a command starts when it names no folder: the app folder. */
@@ -95,12 +91,6 @@ export type KitFactory = (options: KitOptions) => Kit
 
 /** The machines of this installation the provider holds, found by the mark they carry. */
 export type MachineApi = {
-  /**
-   * Whether the provider still holds the machine, running or paused, and Mastra would attach it to
-   * `name`: it refuses one tagged with another name, as the machines of before the name carried the
-   * installation are.
-   */
-  holds(id: SandboxId, name: string): Promise<boolean>
   list(): Promise<{ id: SandboxId; companyId: CompanyId; projectId: ProjectId }[]>
   kill(id: SandboxId): Promise<void>
 }

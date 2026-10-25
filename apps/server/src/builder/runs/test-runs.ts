@@ -48,15 +48,14 @@ export function memoryCopy() {
   return { copy, held, refuse }
 }
 
-/** What a test sets: how long a turn may run, and where a save waits. */
+/** What a test sets: where a save waits. */
 type Knobs = {
-  turnMs: number
   /** While set, a save waits before it checks the turn's commit in. */
   holdReceive: Promise<void> | undefined
 }
 
 function newKnobs(): Knobs {
-  return { turnMs: 3_600_000, holdReceive: undefined }
+  return { holdReceive: undefined }
 }
 
 /** A repository whose save waits where a test says: before `receive`. */
@@ -94,7 +93,6 @@ export function testBuilderPorts(
       log: silent,
       kit: localKit(folder, control),
       api: {
-        holds: async (_id, name) => control.exists && [undefined, name].includes(control.owner),
         list: async () => listed,
         kill: async (id) => {
           killed.push(id)
@@ -115,14 +113,10 @@ export function testBuilderPorts(
       checkProgram: join(folder, 'check'),
     })
   }
-  function turnMs() {
-    return knobs.turnMs
-  }
   return {
     machinesOf,
     repository,
     copy: bucket.copy,
-    turnMs,
     bucket,
     control,
     knobs,

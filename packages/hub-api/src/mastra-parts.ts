@@ -54,6 +54,8 @@ export type VersionData = z.infer<typeof VersionData>
 
 export const FailureData = z.object({
   code: z.string().refine((code): code is FailureCode => Object.hasOwn(FAILURES, code)),
+  /** The person its phrase names, where the row has `{person}` (`RUN_BUSY`). */
+  person: z.string().optional(),
 })
 export type FailureData = z.infer<typeof FailureData>
 

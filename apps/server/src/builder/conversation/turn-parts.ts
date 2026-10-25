@@ -40,7 +40,7 @@ function newTurn(id: RunId, traceId?: string): TurnLog {
 /** The turn of a run of ours begins: the stream opens it with its `turn`, with the cards Mastra keeps. */
 export function beginTurn(live: Live, writing: Writing): TurnLog {
   if (isOpen(live.state)) {
-    // The Projeto's lock lets one turn run at a time: one open here is no longer anyone's to wait on.
+    // A conversation runs one turn at a time: one open here is no longer anyone's to wait on.
     logFailure(live.log, new Failure('INTERNAL_UNEXPECTED', { cause: 'a turn met an open turn' }))
     live.state.writing.ended()
   }
@@ -60,9 +60,15 @@ export function tellMachine(live: Live, phase: MachinePhase): void {
   if (machinePhaseLasts(phase)) void saveExtras(live, turn)
 }
 
-/** The turn's failure, told where it is decided (`deciding`). */
-export function tellFailure(live: Live, turn: TurnLog, code: TurnFailureCode): void {
-  tellExtra(live, turn, { type: 'data-conexus-failure', data: { code } satisfies FailureData })
+/** The turn's failure, told where it is decided (`deciding`), with whom it names, if anyone. */
+export function tellFailure(
+  live: Live,
+  turn: TurnLog,
+  code: TurnFailureCode,
+  person: string | undefined,
+): void {
+  const data: FailureData = person === undefined ? { code } : { code, person }
+  tellExtra(live, turn, { type: 'data-conexus-failure', data })
 }
 
 export function tellVersion(live: Live, turn: TurnLog, saved: VersionData): void {

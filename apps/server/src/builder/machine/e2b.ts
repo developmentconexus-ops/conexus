@@ -1,15 +1,12 @@
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { E2BSandbox } from '@mastra/e2b'
-import { ALL_TRAFFIC, Sandbox, SandboxNotFoundError } from 'e2b'
+import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
 import type { Kit, KitFactory, MachineApi } from './kit.ts'
-import { ALLOWED_HOSTS, MARK, MASTRA_NAME, SandboxId } from './kit.ts'
+import { ALLOWED_HOSTS, MARK, SandboxId } from './kit.ts'
 
-/** E2B's free plan keeps a machine up an hour at most; a reconnect resumes it for another. */
-const MAX_TIMEOUT_MS = 60 * 60 * 1000
-const MIN_TIMEOUT_MS = 60 * 1000
-/** How long past the turn's hour the machine stays up, for the save that follows it. */
-const SAVE_MS = 5 * 60 * 1000
+/** E2B's free plan keeps a machine up an hour at most; it pauses then, and the next start resumes it. */
+const TIMEOUT_MS = 60 * 60 * 1000
 const CALL_MS = 30_000
 
 type Credentials = Pick<Config, 'e2bApiKey' | 'machineTemplate'>
@@ -17,10 +14,6 @@ type Credentials = Pick<Config, 'e2bApiKey' | 'machineTemplate'>
 /** The one adapter to E2B for a machine (code C56): the SDK, and nothing of ours inside it. */
 export function createE2bKit(config: Credentials): KitFactory {
   return (options): Kit => {
-    const timeout = Math.min(
-      Math.max(options.deadline.getTime() - Date.now() + SAVE_MS, MIN_TIMEOUT_MS),
-      MAX_TIMEOUT_MS,
-    )
     const sandbox = new E2BSandbox({
       id: options.id,
       ...(options.sandboxId === undefined
@@ -28,7 +21,7 @@ export function createE2bKit(config: Credentials): KitFactory {
         : { sandboxId: options.sandboxId, reattach: 'required' as const }),
       template: config.machineTemplate,
       apiKey: config.e2bApiKey.reveal(),
-      timeout,
+      timeout: TIMEOUT_MS,
       lifecycle: { onTimeout: 'pause' },
       network: { allowOut: ALLOWED_HOSTS, denyOut: [ALL_TRAFFIC] },
       metadata: options.metadata,
@@ -59,15 +52,6 @@ export function createE2bApi(
   const apiKey = config.e2bApiKey.reveal()
   const where = apiUrl === undefined ? {} : { apiUrl }
   return {
-    async holds(id, name) {
-      return Sandbox.getInfo(id, { apiKey, ...where, requestTimeoutMs: CALL_MS }).then(
-        (info) => [undefined, name].includes(info.metadata?.[MASTRA_NAME]),
-        (error: unknown) => {
-          if (error instanceof SandboxNotFoundError) return false
-          throw error
-        },
-      )
-    },
     async list() {
       const found: { id: SandboxId; companyId: CompanyId; projectId: ProjectId }[] = []
       const pages = Sandbox.list({

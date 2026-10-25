@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { APP_FOLDER } from '../machine/public.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { asked, conversing, started, streamOf, title } from './test-conversation.ts'
 
 const PWD = {
   type: 'tool_use',
@@ -83,5 +83,27 @@ test('sem a trava de ler antes de escrever: duas escritas seguidas no mesmo arqu
     told,
     /Permission denied|EACCES|outside/i,
     'the write outside the app folder came back refused',
+  )
+})
+
+test('abrir uma conversa de um Projeto com máquina guardada não toca na máquina: nada é montado nem ligado', async (t) => {
+  let commands = 0
+  const { hub, ana, conversations } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    commands += 1
+    return commands === 1 ? { kind: 'blocks', blocks: [PWD] } : { kind: 'text', text: 'Pronto.' }
+  })
+  await asked(t, { hub, person: ana, conversations }, 'Onde você trabalha?')
+  const { control } = hub.builder
+  assert.equal(control.names.length, 1, 'the first turn made the machine')
+  const made = control.names.length
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const opened = await streamOf(hub, ana, url)
+  t.after(() => opened.close())
+  await new Promise((done) => setTimeout(done, 300))
+  assert.equal(
+    control.names.length,
+    made,
+    'opening builds no machine and asks the provider nothing',
   )
 })

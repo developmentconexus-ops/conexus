@@ -118,13 +118,7 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
       const conversationId = params.conversationId
       // The send runs outside the key's transaction (data D22); refused, it frees the key.
       await sessions
-        .send({
-          owner: ownerOf(input),
-          conversationId,
-          projectId: params.projectId,
-          question,
-          traceId,
-        })
+        .send({ owner: ownerOf(input), conversationId, question, traceId })
         .catch(async (error) => {
           await store.forgetTurn(turn)
           throw error
@@ -142,8 +136,8 @@ function registerWrites(app: FastifyInstance, deps: Deps) {
   serve(app, answerQuestion, async (input) => {
     const { person, params, body, traceId } = input
     await store.owned({ person, ...params })
-    const { conversationId, projectId, toolCallId } = params
-    const turn = { owner: ownerOf(input), conversationId, projectId, traceId }
+    const { conversationId, toolCallId } = params
+    const turn = { owner: ownerOf(input), conversationId, traceId }
     await sessions.answer({ ...turn, toolCallId, body })
     return answer(undefined)
   })

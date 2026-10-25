@@ -1,26 +1,80 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { codeOf } from '../../hub/identity/test-hub.ts'
-import { conversing, sent, started, streamOf, title } from './test-conversation.ts'
-import { failuresOf } from './test-parts.ts'
+import { ANA } from '../../hub/identity/test-hub.ts'
+import { conversing, holding, sent, started, streamOf, title } from './test-conversation.ts'
+import { dataOf, failuresOf, partsOf } from './test-parts.ts'
+import { answerTo, ask, invocations, untilCard, WHO } from './test-questions.ts'
 
-test('duas conversas do mesmo Projeto ao mesmo tempo: uma abre o turno, a outra é RUN_BUSY, e o fim diz a falha do turno', async (t) => {
-  const { hub, ana, conversations } = await conversing(
+const OBSERVER = /^You are the memory consciousness/
+
+test('duas conversas do mesmo Projeto ao mesmo tempo: a segunda é aceita e termina RUN_BUSY com o nome de quem trabalha, sem chamar o modelo', async (t) => {
+  const held = holding(t)
+  const { hub, ana, conversations, anthropic } = await conversing(
     t,
-    (asked) => title(asked) ?? { kind: 'refuse', status: 401 },
+    (asked) => title(asked) ?? held.reply,
   )
   const urls = [
     `${conversations}/${await started(hub, ana, conversations)}`,
     `${conversations}/${await started(hub, ana, conversations)}`,
   ]
-  const streams = await Promise.all(urls.map((url) => streamOf(hub, ana, url)))
-  for (const stream of streams) t.after(() => stream.close())
-  const both = await Promise.all(urls.map((url) => sent(hub, ana, url, 'Primeira')))
-  assert.deepEqual(both.map((response) => response.statusCode).sort(), [202, 409])
-  const refused = both.find((response) => response.statusCode === 409)
-  assert.ok(refused)
-  assert.equal(codeOf(refused), 'RUN_BUSY')
-  const opened = streams[both.findIndex((response) => response.statusCode === 202)]
-  assert.ok(opened)
-  assert.deepEqual(failuresOf(await opened.turn()), ['MODEL_NO_ACCOUNT'])
+  const [working, refused] = await Promise.all(urls.map((url) => streamOf(hub, ana, url)))
+  assert.ok(working && refused)
+  t.after(() => working.close())
+  t.after(() => refused.close())
+  assert.equal((await sent(hub, ana, urls[0] ?? '', 'Primeira')).statusCode, 202)
+  await working.text()
+  function modelCalls() {
+    return anthropic.sent.filter((each) => each.stream && !OBSERVER.test(each.system)).length
+  }
+  const before = modelCalls()
+  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Outra')).statusCode, 202)
+  const events = await refused.turn()
+  assert.deepEqual(dataOf(events, 'data-conexus-failure'), [{ code: 'RUN_BUSY', person: ANA.name }])
+  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
+  assert.equal(modelCalls(), before, 'the refused run calls no model')
+  held.release()
+  assert.deepEqual(failuresOf(await working.turn()), [])
+})
+
+test('a resposta a um cartão com o Projeto ocupado por outra conversa fica guardada e termina RUN_BUSY com o nome; a próxima mensagem segue dela (14.2, fundador: A)', async (t) => {
+  const held = holding(t)
+  let step = 0
+  const { hub, ana, conversations, anthropic } = await conversing(t, (asked) => {
+    if (!asked.stream) return { kind: 'text', text: 'Título' }
+    step += 1
+    if (step === 1) return { kind: 'blocks', blocks: [ask(WHO)] }
+    if (step === 2) return held.reply
+    return { kind: 'text', text: 'Pronto.' }
+  })
+  const asking = `${conversations}/${await started(hub, ana, conversations)}`
+  const holder = `${conversations}/${await started(hub, ana, conversations)}`
+  const [card, other] = await Promise.all([streamOf(hub, ana, asking), streamOf(hub, ana, holder)])
+  assert.ok(card && other)
+  t.after(() => card.close())
+  t.after(() => other.close())
+  assert.equal((await sent(hub, ana, asking, 'Crie')).statusCode, 202)
+  const { card: open } = await untilCard(card, 'question')
+  assert.equal((await sent(hub, ana, holder, 'Segura')).statusCode, 202)
+  await other.text()
+  const answer = { kind: 'answers', answers: ['Todos (recomendado)'] } as const
+  assert.equal((await answerTo(hub, ana, asking, open.toolCallId, answer)).statusCode, 202)
+  const refused = await card.turn()
+  assert.deepEqual(dataOf(refused, 'data-conexus-failure'), [
+    { code: 'RUN_BUSY', person: ANA.name },
+  ])
+  assert.deepEqual(refused.at(-1), { type: 'turnEnd', reason: 'error' })
+  assert.deepEqual(
+    invocations(partsOf(refused), open.toolCallId).map((call) => call.state),
+    ['result'],
+    'the card closes answered',
+  )
+  held.release()
+  assert.deepEqual(failuresOf(await other.turn()), [])
+  assert.equal((await sent(hub, ana, asking, 'Continue')).statusCode, 202)
+  assert.deepEqual(failuresOf(await card.turn()), [])
+  const last = anthropic.sent.filter((each) => each.stream && !OBSERVER.test(each.system)).at(-1)
+  assert.ok(
+    last?.texts.some((text) => text.includes('Todos (recomendado)')),
+    'the next message continues from the answer',
+  )
 })

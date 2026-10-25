@@ -1,11 +1,13 @@
-import { MessageId } from '@conexus/hub-api'
+import { MessageId, TurnFailureCode } from '@conexus/hub-api'
 import type { AgentControllerEvent } from '@mastra/core/agent-controller'
+import { Failure } from '../../platform/failure.ts'
 import { NOTICE_PART } from '../model-accounts/public.ts'
 import type { Live } from './live.ts'
 import { onShellEvent } from './shell.ts'
 import { settleThinking, startThinking, tell, tellExtra } from './tell.ts'
 import { endTurn } from './turn-end.ts'
-import { logOf } from './turn-state.ts'
+import { busyIn } from './turn-of.ts'
+import { failing, logOf } from './turn-state.ts'
 import { modelOf, wireEvent } from './wire.ts'
 
 function onMessageEvent(live: Live, event: AgentControllerEvent): void {
@@ -45,10 +47,26 @@ function onMessageEvent(live: Live, event: AgentControllerEvent): void {
   }
 }
 
+/**
+ * The failure a run's error is the turn's: the Projeto busy (`turnOf`), or one of ours the queue
+ * said (`MODEL_NO_ACCOUNT`); none for the model's own.
+ */
+function failureOf(
+  error: Error,
+): { code: TurnFailureCode; person?: string | undefined } | undefined {
+  const busy = busyIn(error)
+  if (busy !== undefined) return { code: 'RUN_BUSY', ...busy }
+  if (!(error instanceof Failure)) return undefined
+  const code = TurnFailureCode.safeParse(error.code)
+  return code.success ? { code: code.data } : undefined
+}
+
 /** The controller's events as the stream says them (`wireEvent`), and what the turn keeps of them. */
 export function onEvent(live: Live, event: AgentControllerEvent): void {
   const turn = logOf(live.state)
   turn?.tally.heard(event)
+  const failure = event.type === 'error' ? failureOf(event.error) : undefined
+  if (failure !== undefined) live.state = failing(live.state, failure.code, failure.person)
   if (event.type === 'agent_end') {
     // Any end, a question or a plan included: the answer opens the next turn.
     endTurn(live)

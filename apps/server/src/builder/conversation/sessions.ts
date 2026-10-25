@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type {
   ConversationId,
   Effort,
@@ -5,15 +6,13 @@ import type {
   MessageId,
   ModelId,
   OMProgress,
-  ProjectId,
   QuestionAnswer,
-  RunId,
   ToolCallId,
 } from '@conexus/hub-api'
+import { RunId } from '@conexus/hub-api'
 import { isSessionStartupCancelledError } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
-import { memoryModelsFor, Turn, turnContext } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { claimAnswer } from './answers.ts'
 import type { Builder } from './builder.ts'
@@ -33,7 +32,7 @@ import type { Writing } from './turn-state.ts'
 import { ended, isOpen, logOf, writingOf } from './turn-state.ts'
 
 type OfConversation = { owner: Owner; conversationId: ConversationId }
-type OfTurn = OfConversation & { projectId: ProjectId; traceId: string }
+type OfTurn = OfConversation & { traceId: string }
 
 /**
  * The conversations open in this process (decision 0050): one controller session per conversation,
@@ -89,9 +88,11 @@ export class Sessions {
       this.#lives.set(conversationId, opened)
       const unsubscribe = session.subscribe((event) => onEvent(opened, event))
       const unhook = session.onBeforeAgentEnd((event) => beforeAgentEnd(opened, event.reason))
+      const unphase = this.#runs.onPhase(conversationId, (phase) => tellMachine(opened, phase))
       opened.unsubscribe = () => {
         unsubscribe()
         unhook()
+        unphase()
       }
       await restoreCards(opened, this.#builder.agent)
       return opened
@@ -138,27 +139,15 @@ export class Sessions {
     }
   }
 
-  /** Opens the Projeto's run for a turn of the conversation, or refuses it with whose run holds it. */
-  async #admit(input: OfTurn): Promise<RunId> {
-    const admitted = await this.#runs.admit({
-      ...input.owner,
-      conversationId: input.conversationId,
-      projectId: input.projectId,
-    })
-    if (!admitted.ok) throw new Failure('RUN_BUSY', { person: admitted.person })
-    return admitted.value
-  }
-
-  /** What the turn of `runId` writes with on the conversation, and the hour that ends it. */
-  async #writing(live: Live, runId: RunId, traceId: string): Promise<Writing> {
-    const memoryModels = await memoryModelsFor(this.#builder.queue, live.owner)
-    const turn = new Turn({ ...live.owner, memoryModels })
+  /**
+   * What a turn of the conversation writes with: Mastra's run takes the Projeto as it reads its
+   * input (`turnOf`), and its end is saved by the conversation.
+   */
+  #writing(live: Live, traceId: string): Writing {
     const { promise: over, resolve } = Promise.withResolvers<void>()
-    this.#runs.onPhase(runId, (phase) => tellMachine(live, phase))
-    this.#runs.attach(runId, () => live.session.abort())
-    const context = this.#runs.contextOf(turnContext(turn), runId)
-    const finish = (reason: string) => this.#runs.finish({ runId, reason })
-    return { id: runId, traceId, context, turn, finish, ended: resolve, over }
+    const { conversationId } = live
+    const finish = (reason: string) => this.#runs.finish({ conversationId, reason })
+    return { id: RunId.parse(randomUUID()), traceId, finish, ended: resolve, over }
   }
 
   /**
@@ -189,9 +178,7 @@ export class Sessions {
           )
         }
       } finally {
-        writing.turn.end()
         if (writingOf(live.state) === writing) live.state = ended(live.state)
-        await this.#runs.finish({ runId: writing.id, reason: 'error' })
         // The turn is over once what it keeps on the thread is written: the drain waits for that.
         await settled(live)
         await this.#release(conversationId, live)
@@ -206,48 +193,43 @@ export class Sessions {
 
   /**
    * The person's message. While the Builder runs in this conversation, Mastra takes it into the run
-   * (`requireDelivery`, criterion 12); otherwise it opens a turn of its own: the Projeto's run is
-   * admitted, the question saved on the thread, and a card still open closed. Resolves once the
-   * question is saved; the answer comes on the stream.
+   * (`requireDelivery`, criterion 12); otherwise it opens a turn of its own: the question saved on
+   * the thread, and a card still open closed. Resolves once the question is saved; the answer, or
+   * the Projeto busy (`RUN_BUSY`), comes on the stream.
    */
   async send(input: OfTurn & { question: Question }): Promise<void> {
     const { owner, conversationId, question } = input
     const id = questionId(conversationId, question.key)
     const running = this.#lives.get(conversationId)
     if (running !== undefined && isOpen(running.state)) {
-      // A turn whose run is being finished takes no message: it is the next turn's.
-      if (running.state.end !== undefined) await running.state.writing.over
-      else if ((await deliverInto(running, { question, id })) === 'delivered') {
+      const { writing } = running.state
+      if (
+        running.state.end === undefined &&
+        (await deliverInto(running, { question, id })) === 'delivered'
+      ) {
         this.#log.info({ companyId: owner.companyId, conversationId }, 'CONVERSATION_STEERED')
         return
       }
+      // A turn whose run is being finished, its version saved, takes no message: it is the next turn's.
+      await writing.over
     }
-    const runId = await this.#admit(input)
-    const live = await this.#hold(input).catch(async (error: unknown) => {
-      await this.#runs.finish({ runId, reason: 'error' })
-      throw error
-    })
+    const live = await this.#hold(input)
     // A card still open: the message is Mastra's `steer`, which saves the message as its own run's.
     const steering = openCards(live).length > 0
-    let writing: Writing
+    const writing = this.#writing(live, input.traceId)
+    if (steering) {
+      this.#run(live, writing, () => steerCards(live, { content: question.content }))
+      return
+    }
     try {
-      writing = await this.#writing(live, runId, input.traceId)
-      if (!steering) await saveQuestion(live, question)
+      await saveQuestion(live, question)
     } catch (error) {
-      await this.#runs.finish({ runId, reason: 'error' })
       await this.#release(conversationId, live)
       throw error
     }
-    const requestContext = writing.context
-    if (steering) {
-      this.#run(live, writing, () =>
-        steerCards(live, { content: question.content, requestContext }),
-      )
-      return
-    }
     // Mastra takes a trace id without dashes; the request's is the turn's (card, U10).
     const tracingOptions = { traceId: input.traceId.replaceAll('-', '') }
-    const options = { requestContext, requireDelivery: true, tracingOptions } as const
+    const options = { requireDelivery: true, tracingOptions } as const
     this.#run(
       live,
       writing,
@@ -261,31 +243,28 @@ export class Sessions {
 
   /**
    * The person's answer to a card: the answers to its questions, or the decision on its plan, once
-   * the turn that asked it ended. The call is claimed first, so a second answer is `QUESTION_CLOSED`; then the Projeto's run is
-   * admitted and Mastra resumes the call by its address, as its own route does, from this session
-   * or from its database. A resume Mastra refuses keeps the card open and ends the turn, saying so.
+   * the turn that asked it ended. The call is claimed first, so a second answer is `QUESTION_CLOSED`;
+   * then Mastra resumes the call by its address, as its own route does, from this session or from
+   * its database. A resume Mastra refuses keeps the card open and ends the turn, saying so.
    */
   async answer(input: OfTurn & { toolCallId: ToolCallId; body: QuestionAnswer }): Promise<void> {
     const { conversationId, toolCallId } = input
     const live = await this.#hold(input)
     // The card is said before Mastra ends the run that asked it: the answer opens the next turn.
     if (isOpen(live.state)) await live.state.writing.over
-    let claimed: ReturnType<typeof claimAnswer> | undefined
-    let writing: Writing
+    let claimed: ReturnType<typeof claimAnswer>
     try {
       claimed = claimAnswer(live, input)
-      writing = await this.#writing(live, await this.#admit(input), input.traceId)
     } catch (error) {
-      if (claimed !== undefined) releaseCards(live, [toolCallId])
       await this.#release(conversationId, live)
       throw error
     }
+    const writing = this.#writing(live, input.traceId)
     const { address, resumeData } = claimed
     this.#log.info({ companyId: input.owner.companyId, conversationId }, 'QUESTION_ANSWERED')
     this.#run(live, writing, async () => {
       try {
-        const requestContext = writing.context
-        await live.session.respondToToolSuspension({ address, resumeData, requestContext })
+        await live.session.respondToToolSuspension({ address, resumeData })
       } finally {
         releaseCards(live, [toolCallId])
       }

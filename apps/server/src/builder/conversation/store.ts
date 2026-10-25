@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import type { CompanyId, Person, PersonId, ProjectId } from '@conexus/hub-api'
-import { ConversationId, PAGE_SIZE } from '@conexus/hub-api'
+import type { CompanyId, Person, PersonId } from '@conexus/hub-api'
+import { ConversationId, PAGE_SIZE, ProjectId } from '@conexus/hub-api'
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
@@ -228,6 +228,27 @@ async function remove(deps: Deps, input: OfConversation) {
   )
 }
 
+/** The Projeto of the person's conversation, or none: what a Mastra run of it writes in (`turnOf`). */
+async function projectOf(
+  deps: Deps,
+  input: { companyId: CompanyId; personId: PersonId; conversationId: ConversationId },
+): Promise<ProjectId | undefined> {
+  const { companyId, personId, conversationId } = input
+  const [row] = await deps.database.read({ kind: 'COMPANY', companyId, personId }, (tx) =>
+    tx
+      .select({ projectId: conversation.projectId })
+      .from(conversation)
+      .where(
+        and(
+          eq(conversation.id, conversationId),
+          eq(conversation.companyId, companyId),
+          eq(conversation.personId, personId),
+        ),
+      ),
+  )
+  return row === undefined ? undefined : ProjectId.parse(row.projectId)
+}
+
 /** What a release names: a company, and maybe one of its Projetos or one of its people. */
 export type ReleaseScope = { companyId: CompanyId; projectId?: ProjectId; personId?: PersonId }
 
@@ -260,6 +281,7 @@ export function createConversationStore(deps: Deps) {
     forgetTurn: (input: Parameters<typeof forgetTurn>[1]) => forgetTurn(deps, input),
     remove: (input: OfConversation) => remove(deps, input),
     releasedIds: (scope: ReleaseScope) => releasedIds(deps, scope),
+    projectOf: (input: Parameters<typeof projectOf>[1]) => projectOf(deps, input),
   })
 }
 

@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
+import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
 import { LocalSandbox } from '@mastra/core/workspace'
 import { InstallationId } from '../../platform/config-machine.ts'
 import { Failure } from '../../platform/failure.ts'
@@ -42,8 +44,8 @@ export type Control = {
   names: string[]
   /** The ids the machines asked the provider to reattach. */
   reattached: (string | undefined)[]
-  /** The deadline each machine was asked for. */
-  deadlines: Date[]
+  /** The latest machine made, to watch its status as a test needs. */
+  sandbox: WorkspaceSandbox | undefined
   /** How many times a machine was paused. */
   stops: number
   /** The provider killed the machine: pausing it fails as E2B's does, until a start makes a new one. */
@@ -67,7 +69,7 @@ export function newControl(): Control {
     restart: async () => undefined,
     names: [],
     reattached: [],
-    deadlines: [],
+    sandbox: undefined,
     stops: 0,
     killed: false,
     afterCommand: () => undefined,
@@ -79,7 +81,6 @@ export function newControl(): Control {
 export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
     mkdirSync(folder, { recursive: true })
-    control.deadlines.push(options.deadline)
     control.names.push(options.id)
     control.reattached.push(options.sandboxId)
     const sandbox = new LocalSandbox({
@@ -96,6 +97,7 @@ export function localKit(folder: string, control: Control): KitFactory {
         await options.onStart({ ...started, outcome })
       },
     })
+    control.sandbox = sandbox
     control.restart = () => Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
     const execute = sandbox.executeCommand?.bind(sandbox)
     if (execute !== undefined) {
@@ -111,6 +113,11 @@ export function localKit(folder: string, control: Control): KitFactory {
       if (control.start === 'gone')
         throw Object.assign(new Error('gone'), { code: 'SANDBOX_REATTACH_FAILED' })
       if (control.start === 'unreachable') throw new Error('502 Bad Gateway')
+      if (options.sandboxId !== undefined && !control.exists) {
+        throw Object.assign(new Error('could not be reattached (gone)'), {
+          code: 'SANDBOX_REATTACH_FAILED',
+        })
+      }
       control.killed = false
       return start(...args)
     }
@@ -178,7 +185,6 @@ export async function world(
     api: {
       list: async () => [],
       kill: async () => undefined,
-      holds: async (_id, name) => control.exists && [undefined, name].includes(control.owner),
     },
     seedOf: seedOf ?? (() => repository.bundleOfMain()),
     mark: { conexus_origin: installation },
@@ -194,9 +200,15 @@ export async function world(
     return machines.workspaceFor({
       companyId: COMPANY,
       projectId: PROJECT,
-      deadline: new Date(Date.now() + 3_600_000),
       onPhase: (phase) => phases.push(phase),
     })
   }
   return { asOwner, machines, repository, base, control, phases, open, folder }
+}
+
+/** The workspace's machine, started as a tool's first call starts it. */
+export async function sandboxOf(workspace: Workspace) {
+  const sandbox = await workspace.resolveSandbox({ requestContext: new RequestContext() })
+  if (sandbox?.executeCommand === undefined) throw new Error('the machine cannot run commands')
+  return { executeCommand: sandbox.executeCommand.bind(sandbox) }
 }

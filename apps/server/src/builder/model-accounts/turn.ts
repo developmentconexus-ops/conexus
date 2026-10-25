@@ -75,9 +75,9 @@ function chosenEffort(context: RequestContext | undefined): Effort {
 }
 
 /**
- * One turn of a conversation, as the server built it. The queue keeps in it the model, the accounts
- * it tried, the one each attempt goes through, and how it ended the turn, if it did. Each run copies
- * the request context shallowly, so this object is the one every processor of the turn sees.
+ * One turn of a conversation: one Mastra run, its `Turn` made as the run reads its input. The queue
+ * keeps in it the model, the accounts it tried, the one each attempt goes through, and how it ended
+ * the turn, if it did. Every step of the run sees the object set on its request context.
  */
 export class Turn {
   readonly companyId: CompanyId
@@ -211,10 +211,15 @@ export class Turn {
   }
 }
 
-/** The request context of one turn: the only way the queue learns whose turn it is. */
+/** Puts the run's turn on its request context: the only way the queue learns whose turn it is. */
+export function setTurn(context: RequestContext, turn: Turn): void {
+  context.set(TURN_KEY, turn)
+}
+
+/** A request context holding only `turn`. */
 export function turnContext(turn: Turn): RequestContext {
   const context = new RequestContext()
-  context.set(TURN_KEY, turn)
+  setTurn(context, turn)
   return context
 }
 
