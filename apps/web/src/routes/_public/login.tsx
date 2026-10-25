@@ -1,7 +1,13 @@
 import { InvitationId } from '@conexus/hub-api'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
-import { receivedInvitationQuery, SameOriginPath, SignInForm } from '../../hub/identity/public.ts'
+import {
+  goBack,
+  receivedInvitationQuery,
+  SameOriginPath,
+  SignInForm,
+  sessionQuery,
+} from '../../hub/identity/public.ts'
 
 const Search = z.object({
   redirect: SameOriginPath.optional().catch(undefined),
@@ -13,6 +19,14 @@ const Search = z.object({
 
 export const Route = createFileRoute('/_public/login')({
   validateSearch: Search,
+  // Someone already signed in has nothing to do here: an old link, or one that wrapped itself in
+  // its own redirect, takes them on to where it pointed (web W15).
+  beforeLoad: async ({ context, search }) => {
+    const session = await context.queryClient.ensureQueryData(sessionQuery)
+    if (session.state === 'SIGNED_IN') {
+      throw redirect(goBack(search.redirect ?? '/'))
+    }
+  },
   loaderDeps: ({ search }) => ({ redirect: search.redirect }),
   loader: async ({ context, deps }) => {
     const id = InvitationId.safeParse(

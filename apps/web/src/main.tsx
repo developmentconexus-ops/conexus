@@ -6,6 +6,7 @@ import type { RouterHistory } from '@tanstack/react-router'
 import { createRouter, RouterProvider, useRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { sessionQuery } from './hub/identity/public.ts'
 import { createCache } from './platform/cache.ts'
 import { HubFailure } from './platform/hub.ts'
 import { applyChosenTheme } from './platform/theme.ts'
@@ -46,8 +47,17 @@ function PageFailure({ error, reset }: { error: unknown; reset: () => void }) {
 /** The router and its cache; a session that ends on any call lands on sign-in (web W15). */
 export function createConexus(history?: RouterHistory) {
   const queryClient = createCache(async () => {
-    const back = router.state.location.href
-    await router.navigate({ to: '/login', search: { reason: 'session-ended', redirect: back } })
+    // Every open read gets its own 401: the cache holds the server's answer first, so sign-in
+    // does not read a "signed in" from before, and only the first 401 leaves the page; the ones
+    // after it find the router already going to /login.
+    queryClient.setQueryData(sessionQuery.queryKey, { state: 'SIGNED_OUT' })
+    const here = router.latestLocation
+    if (here.pathname !== '/login') {
+      await router.navigate({
+        to: '/login',
+        search: { reason: 'session-ended', redirect: here.href },
+      })
+    }
     queryClient.clear()
   })
   const router = createRouter({
