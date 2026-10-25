@@ -102,11 +102,13 @@ test.each([
     line().emit(agentEnd('error'))
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
     expect(screen.queryByText('Pensando…')).toBeNull()
-    expect(
-      within(log)
-        .getAllByRole('alert')
-        .map((alert) => alert.textContent),
-    ).toEqual([phrase])
+    await waitFor(() =>
+      expect(
+        within(log)
+          .getAllByRole('alert')
+          .map((alert) => alert.textContent),
+      ).toEqual([phrase]),
+    )
   },
 )
 
