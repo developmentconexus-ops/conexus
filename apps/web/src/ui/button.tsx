@@ -20,7 +20,7 @@ const buttonClasses = cva(
         // Icons follow their neighbour: 16px beside a label, 14px in a toolbar (design V34). A phone's
         // finger needs 44 px.
         default: 'h-[34px] px-[0.9rem] max-md:h-11 [&_svg]:size-4',
-        icon: 'size-8 max-md:size-11 [&_svg]:size-3.5 max-md:[&_svg]:size-4',
+        icon: 'size-8 max-md:size-11 [&_svg]:size-3.5',
       },
     },
     defaultVariants: { variant: 'default', size: 'default' },

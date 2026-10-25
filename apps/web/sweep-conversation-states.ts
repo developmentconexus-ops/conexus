@@ -181,6 +181,12 @@ export const CONVERSATION_STATES: State[] = [
     replies: WITH_CONVERSATIONS,
     settle: async (page) => {
       await inChat(page, 'Encontrei')
+      // Under `md` the list opens from the title in the top line; from `md` up, from the box.
+      if ((page.viewportSize()?.width ?? 0) < 768) {
+        await page.locator('[data-slot=drawer-trigger]').click()
+        await page.getByRole('dialog', { name: 'Conversas' }).waitFor()
+        return
+      }
       await page.getByRole('combobox', { name: 'Conversas' }).press('ArrowDown')
       await page.getByRole('option').first().waitFor()
     },

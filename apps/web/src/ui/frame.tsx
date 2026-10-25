@@ -83,12 +83,17 @@ function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
     },
   })
   return (
-    <header className="flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-surface px-md pt-[env(safe-area-inset-top)] md:hidden">
+    <header className="flex min-h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-surface px-md pt-[env(safe-area-inset-top)] md:hidden">
       <SidebarTrigger label="Abrir navegação">
         <MenuIcon aria-hidden="true" />
       </SidebarTrigger>
-      <ConexusWordmark word="md" />
-      <div ref={props.slot} className="peer flex min-w-0 flex-1 items-center gap-sm empty:hidden" />
+      <span className="max-[22rem]:hidden">
+        <ConexusWordmark word="md" />
+      </span>
+      <div
+        ref={props.slot}
+        className="peer flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-sm gap-y-xs py-xs empty:hidden"
+      />
       {place !== undefined && <p className="truncate text-text-2 peer-not-empty:hidden">{place}</p>}
     </header>
   )

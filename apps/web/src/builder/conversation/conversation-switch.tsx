@@ -170,7 +170,7 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
   return (
     <>
       <PhoneTopContent>
-        <div className="order-1 min-w-0 flex-1 md:hidden">
+        <div className="order-1 min-w-24 flex-1 md:hidden">
           <ConversationSheet
             items={items}
             current={current}

@@ -217,6 +217,7 @@ function Screen(params: Params) {
 
   const turns = useMemo(() => shownOf(state), [state])
   const waiting = Object.keys(state.suspended).length > 0
+  const phone = useIsMobile()
   if (gone) return <NotFound />
   const empty = state.messages.length === 0 && !state.running
   return (
@@ -230,8 +231,8 @@ function Screen(params: Params) {
           {error}
         </p>
       )}
-      {state.running && !waiting && (
-        <WorkingLine startedAt={state.startedAt} heard={state.messages} />
+      {(state.running || waiting) && !(phone && waiting) && (
+        <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
       )}
       <PanelComposer
         params={params}

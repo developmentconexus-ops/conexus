@@ -19,6 +19,7 @@ import {
   QuestionnaireSubmit,
   QuestionnaireTitle,
 } from '../../ui/questionnaire.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { QuestionCardItem } from './rows.ts'
 import { sessionOf } from './session.ts'
 
@@ -34,8 +35,9 @@ export const CARD_TEXT = {
   stopped: 'Você parou o Builder.',
 }
 
-/** The card says the Builder waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
+/** On a phone the card says the Builder waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
 export function WaitingCaption() {
+  if (!useIsMobile()) return null
   return (
     <p role="status" className="flex items-center gap-sm text-label text-accent">
       <ConexusMark size={16} />

@@ -293,7 +293,7 @@ export function SidebarTrigger(props: { label: string; children: ReactNode }) {
       data-sidebar="trigger"
       aria-label={props.label}
       onClick={toggleSidebar}
-      className="inline-flex size-8 shrink-0 items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text max-md:size-11 [&_svg]:size-3.5 max-md:[&_svg]:size-4"
+      className="inline-flex size-8 shrink-0 items-center justify-center rounded-control text-text-2 hover:bg-surface-3 hover:text-text max-md:size-11 [&_svg]:size-3.5"
     >
       {props.children}
     </button>

@@ -4,9 +4,13 @@ import { useRef } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { InputGroup, InputGroupAddon, InputGroupTextarea } from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
-import { useIsMobile } from '../../ui/use-mobile.ts'
+import { useIsMobile, useIsNarrow } from '../../ui/use-mobile.ts'
 import type { Draft } from './draft.ts'
 import { NO_SECRETS, STEER_KEYS, STEER_PLACEHOLDER } from './text.ts'
+
+/** The form sticks to the bottom and clears the home indicator. */
+const FORM =
+  'sticky bottom-0 flex flex-col gap-xs bg-canvas pb-[max(0.5rem,env(safe-area-inset-bottom))]'
 
 /** A finger's keyboard has a Return that means a new line; the button is what sends. */
 function isTouch(): boolean {
@@ -40,6 +44,8 @@ export function Composer(props: {
 }) {
   const { draft } = props
   const phone = useIsMobile()
+  const narrow = useIsNarrow()
+  const inRow = phone && !narrow
   const content = draft.text
   const empty = content.trim() === ''
 
@@ -74,10 +80,7 @@ export function Composer(props: {
   }
 
   return (
-    <form
-      onSubmit={submit}
-      className="sticky bottom-0 flex flex-col gap-xs bg-canvas pb-[max(0.5rem,env(safe-area-inset-bottom))]"
-    >
+    <form onSubmit={submit} className={FORM}>
       {props.taskPanel}
       <InputGroup
         data-busy={props.answering || undefined}
@@ -96,7 +99,7 @@ export function Composer(props: {
           className="pt-md max-md:min-h-11 max-md:pt-sm md:min-h-16"
         />
         <InputGroupAddon align="block-end" className="flex-nowrap justify-end gap-xs">
-          {phone && props.memory && <div className="me-auto">{props.memory(true)}</div>}
+          {inRow && props.memory && <div className="me-auto">{props.memory(true)}</div>}
           {props.picker}
           {props.answering && (
             <Button
@@ -122,7 +125,7 @@ export function Composer(props: {
           </Button>
         </InputGroupAddon>
       </InputGroup>
-      {!phone && props.memory && (
+      {!inRow && props.memory && (
         <div className="flex items-center px-xs">{props.memory(false)}</div>
       )}
       <p className="text-center text-fact text-text-2 pointer-coarse:hidden">

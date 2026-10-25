@@ -73,7 +73,8 @@ test('o divisor da conversa: 380px, arrastado vale de 320px a 60%, e a página l
 })
 
 test('no celular, "App | Conversa" troca de região sem perder o rascunho nem a rolagem', async () => {
-  const page = await open(PROJECT, PHONE)
+  // The chat is short enough that the transcript scrolls only in a low window.
+  const page = await open(PROJECT, { ...PHONE, height: 320 })
   await page.getByRole('button', { name: 'Conversa', exact: true }).click()
   const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
   await field.fill('meio da frase')

@@ -310,7 +310,7 @@ export function screens(server: ReturnType<typeof setupServer>) {
 export async function onPhone<T>(run: () => Promise<T>): Promise<T> {
   const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
     Object.assign(new EventTarget(), {
-      matches: media.includes('max-width') || media.includes('coarse'),
+      matches: media.includes('767') || media.includes('coarse'),
       media,
       onchange: null,
       addListener: () => undefined,
