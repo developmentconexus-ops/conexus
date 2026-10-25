@@ -15,6 +15,9 @@ test('o build emite o favicon sem hash e o resto com hash', async (t) => {
   })
   assert.ok(existsSync(join(outDir, 'favicon.svg')))
   assert.ok(existsSync(join(outDir, 'index.html')))
+  const manifest = JSON.parse(readFileSync(join(outDir, 'manifest.webmanifest'), 'utf8'))
+  for (const { src } of manifest.icons) assert.ok(existsSync(join(outDir, src)), src)
+  assert.ok(existsSync(join(outDir, 'apple-touch-icon.png')))
   const assets = readdirSync(join(outDir, 'assets'))
   assert.ok(assets.length > 0)
   assert.deepEqual(

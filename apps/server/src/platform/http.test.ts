@@ -166,6 +166,34 @@ test('páginas: cada endereço das telas, com seus parâmetros, abre a página d
   )
 })
 
+test('instalação: o manifesto e os ícones saem sem sessão, com o tipo certo; HEAD também', async (t) => {
+  const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
+  t.after(() => rmSync(dir, { recursive: true, force: true }))
+  writeFileSync(join(dir, 'index.html'), '<!doctype html><title>x</title>')
+  const files = {
+    'manifest.webmanifest': 'application/manifest+json',
+    'icon-192.png': 'image/png',
+    'icon-512.png': 'image/png',
+    'icon-maskable-512.png': 'image/png',
+    'apple-touch-icon.png': 'image/png',
+  }
+  for (const name of Object.keys(files)) writeFileSync(join(dir, name), name)
+  const app = await createServer(testConfig(await unreachableDatabaseUrl()), {
+    webRoot: dir,
+    readSession: async () => ({ kind: 'SIGNED_OUT' }),
+  })
+  t.after(() => app.close())
+  for (const [name, type] of Object.entries(files)) {
+    for (const method of ['GET', 'HEAD'] as const) {
+      const response = await app.inject({ method, url: `/${name}` })
+      assert.equal(response.statusCode, 200, `${method} ${name}`)
+      assert.ok(String(response.headers['content-type']).startsWith(type), name)
+      assert.match(String(response.headers['content-security-policy']), /manifest-src 'self'/)
+    }
+    assert.equal((await app.inject({ url: `/${name}` })).body, name)
+  }
+})
+
 test('endereço desconhecido: fora de /api/ e /assets/, a página das telas com 404; nelas, o JSON de 404', async (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'conexus-web-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))

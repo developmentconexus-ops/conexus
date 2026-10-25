@@ -43,6 +43,7 @@ const HELMET_OPTIONS = {
       styleSrc: ["'self'"],
       imgSrc: ["'self'"],
       fontSrc: ["'self'"],
+      manifestSrc: ["'self'"],
       connectSrc: ["'self'"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],

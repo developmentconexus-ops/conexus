@@ -188,6 +188,7 @@ test('cabeçalhos', async () => {
     const policy = String(headers['content-security-policy'])
     assert.match(policy, /(^|;)script-src 'self'(;|$)/)
     assert.match(policy, /(^|;)frame-ancestors 'none'(;|$)/)
+    assert.match(policy, /(^|;)manifest-src 'self'(;|$)/)
     assert.doesNotMatch(policy, /unsafe-inline/)
     assert.equal(headers['referrer-policy'], 'no-referrer')
     assert.deepEqual(
