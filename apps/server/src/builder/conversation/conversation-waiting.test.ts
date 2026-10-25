@@ -34,6 +34,32 @@ const QUESTION = { kind: 'answers', answers: ['Todos (recomendado)'] }
 const MASTRA_RACE =
   'Mastra 1.78.0 can recreate the parked snapshot after abort (report 6edddc96-17b5-4e31-a6df-986c1598d366)'
 
+/**
+ * The conversation read again once Mastra has written the denial of the call: it writes it a moment
+ * after the abort, as it resumes the call with it, so the read is polled, bounded.
+ */
+async function closedRead(
+  hub: Parameters<typeof answeredOf>[0],
+  ana: Parameters<typeof answeredOf>[1],
+  url: string,
+  toolCallId: string,
+) {
+  let messages = await answeredOf(hub, ana, url)
+  for (
+    let attempt = 0;
+    attempt < 50 &&
+    stateOf(
+      messages.flatMap((message) => message.parts),
+      toolCallId,
+    ).at(-1) === 'call';
+    attempt += 1
+  ) {
+    await sleep(100)
+    messages = await answeredOf(hub, ana, url)
+  }
+  return messages
+}
+
 test('uma pergunta encerra o turno: o fim é dito, o Projeto fica livre e o cartão espera sem prazo', {
   timeout: 60_000,
 }, async (t) => {
@@ -77,16 +103,7 @@ test('Parar com uma pergunta aberta: a chamada fecha negada, numa volta do Mastr
   assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   // Mastra resumes the parked call with its denial in a run of its own, which ends aborted.
   assert.equal(endOf(await within(15_000, stream.turn())), 'aborted')
-  // Mastra writes the denial a moment after the abort, as it resumes the call with it.
-  let read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
-  for (
-    let attempt = 0;
-    attempt < 50 && stateOf(read, card.toolCallId).at(-1) === 'call';
-    attempt += 1
-  ) {
-    await sleep(100)
-    read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
-  }
+  const read = (await closedRead(hub, ana, url, card.toolCallId)).flatMap((m) => m.parts)
   assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
   assert.equal(calls.length, asked, 'the denial reaches no model')
 })
@@ -99,7 +116,7 @@ test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao s
   const { card } = await untilCard(stream, 'plan')
   assert.ok(Planned.parse(card.suspendPayload).plan.length > 0)
   assert.equal((await stopped(hub, ana, url)).statusCode, 200)
-  const messages = await answeredOf(hub, ana, url)
+  const messages = await closedRead(hub, ana, url, card.toolCallId)
   const closed = messages.flatMap((message) => message.parts)
   assert.deepEqual(stateOf(closed, card.toolCallId), CLOSED)
   assert.deepEqual(

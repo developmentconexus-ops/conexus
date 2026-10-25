@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import type { KnownAgentControllerEvent } from '@mastra/client-js'
 import { z } from 'zod'
+import type { Stored } from './messages.ts'
 
 const RECORDINGS = join(import.meta.dirname, '../../../../server/src/platform/recordings/mastra')
 
@@ -71,4 +73,31 @@ export function signalStarted(
       },
     },
   }
+}
+
+const IsEvent = z.custom<KnownAgentControllerEvent>(
+  (value) => typeof value === 'object' && value !== null && 'type' in value,
+)
+const IsStored = z.custom<Stored>(
+  (value) => typeof value === 'object' && value !== null && 'id' in value && 'content' in value,
+)
+const RecordedRow = Row.extend({ table: z.string().optional(), row: z.unknown().optional() })
+
+/**
+ * Every event Mastra's controller emitted in a recording, in order, and the messages it stored as
+ * the transcript route reads them: what a screen is fed live and what it reads again.
+ */
+export function recordedRun(scenario: string): {
+  events: KnownAgentControllerEvent[]
+  read: Stored[]
+} {
+  const events: KnownAgentControllerEvent[] = []
+  const read: Stored[] = []
+  for (const line of readFileSync(join(RECORDINGS, `${scenario}.jsonl`), 'utf8').split('\n')) {
+    if (line === '') continue
+    const row = RecordedRow.parse(JSON.parse(line))
+    if (row.kind === 'event') events.push(IsEvent.parse(row.event))
+    else if (row.kind === 'row' && row.table === 'message') read.push(IsStored.parse(row.row))
+  }
+  return { events, read }
 }

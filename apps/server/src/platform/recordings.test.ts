@@ -45,8 +45,9 @@ test('cada gravação tem fornecedor, API, versão do SDK e data, e nenhum cabe�
   }
 })
 
-// The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays.
-const NATIVE = ['abort', 'cited', 'thinking']
+// The native flow's scenarios, as `scripts/record.ts` names them: one per provider recording it replays,
+// and `plan`, whose three model calls are streamed by the test double's Messages API stream.
+const NATIVE = ['abort', 'cited', 'plan', 'thinking']
 
 test('cada gravação do fluxo nativo diz a biblioteca, a versão e a gravação do fornecedor que tocou, e não guarda endereço nem credencial (T24, S40)', () => {
   assert.deepEqual(
@@ -58,7 +59,10 @@ test('cada gravação do fluxo nativo diz a biblioteca, a versão e a gravação
   for (const scenario of NATIVE) {
     const { header, events } = nativeRecording(scenario)
     assert.equal(header.library, '@mastra/core')
-    assert.equal(header.source, `anthropic-${scenario}.sse`)
+    assert.equal(
+      header.source,
+      scenario === 'plan' ? 'test-anthropic-stream.ts' : `anthropic-${scenario}.sse`,
+    )
     assert.equal(events[0]?.type, 'agent_start')
     assert.ok(events.some((event) => event.type === 'agent_end'))
     const text = readFileSync(join(NATIVE_RECORDINGS, `${scenario}.jsonl`), 'utf8')
