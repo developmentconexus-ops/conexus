@@ -15,11 +15,9 @@ export type RunsDeps = {
   log: FailureLog
 }
 
-/** What the runs share: the ports and the Projetos written now. */
+/** What the runs share: the ports, and how a removal stops the runs it reaches. */
 export type RunsContext = RunsDeps & {
   retry: { kick(): void }
-  /** Whether a run of this process writes in the Projeto now. */
-  writing(projectId: ProjectId): boolean
   /** Lets go of the runs a removal reaches: their workspace is forgotten, and nothing of them is saved. */
   stopWriting(scope: {
     companyId: CompanyId

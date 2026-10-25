@@ -6,10 +6,9 @@ import type {
   TurnFailureCode,
   VersionData,
 } from '@conexus/hub-api'
-import { MessageId, machinePhaseLasts } from '@conexus/hub-api'
+import { MessageId } from '@conexus/hub-api'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { Live } from './live.ts'
-import { saveExtras } from './record.ts'
 import { tellExtra } from './tell.ts'
 import { TurnTally } from './turn-line.ts'
 import type { TurnLog } from './turn-log.ts'
@@ -52,12 +51,11 @@ export function beginTurn(live: Live, writing: Writing): TurnLog {
   return turn
 }
 
-/** The machine's step, told as the part that says what the turn waits for; a replaced machine lasts. */
+/** The machine's step, told as the part that says what the turn waits for. */
 export function tellMachine(live: Live, phase: MachinePhase): void {
   const turn = logOf(live.state)
   if (turn === undefined) return
   tellExtra(live, turn, { type: 'data-conexus-machine', data: { phase } satisfies MachineData })
-  if (machinePhaseLasts(phase)) void saveExtras(live, turn)
 }
 
 /** The turn's failure, told where it is decided (`deciding`), with whom it names, if anyone. */

@@ -1,4 +1,4 @@
-import type { ProjectId } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
 import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { Outcome, RunsContext } from './context.ts'
@@ -11,10 +11,13 @@ import type { Driven } from './driven.ts'
  */
 async function collectOf(
   context: RunsContext,
-  input: { projectId: ProjectId; base: Sha; fields: Record<string, string> },
+  input: { conversationId: ConversationId; base: Sha; fields: Record<string, string> },
 ) {
   try {
-    return await context.machines.collect({ projectId: input.projectId, base: input.base })
+    return await context.machines.collect({
+      conversationId: input.conversationId,
+      base: input.base,
+    })
   } catch (error) {
     const unavailable = error instanceof Failure && error.code === 'MACHINE_UNAVAILABLE'
     context.log.error({ ...input.fields, error: String(error) }, 'MACHINE_LOST')
@@ -29,9 +32,9 @@ async function collectOf(
  * saves nothing. A run a removal stopped on the way is `gone` before `main` moves.
  */
 export async function saveRun(context: RunsContext, mine: Driven): Promise<Outcome | 'gone'> {
-  const { companyId, projectId, runId } = mine
+  const { companyId, projectId, conversationId, runId } = mine
   const fields = { companyId, projectId, runId }
-  if (!context.machines.touched(projectId)) return { kind: 'unchanged' }
+  if (!context.machines.touched(conversationId)) return { kind: 'unchanged' }
   // The base is `main` as the machine's seed took it: no other run moves it meanwhile (data D15).
   const repository = context.repository({ companyId, projectId })
   const base = await repository.ensure().catch((error: unknown) => {
@@ -42,7 +45,7 @@ export async function saveRun(context: RunsContext, mine: Driven): Promise<Outco
     context.log.error(fields, 'GIT_RESTORE_NEEDED')
     return { kind: 'failed', code: 'GIT_RESTORE_NEEDED' }
   }
-  const bundle = await collectOf(context, { projectId, base, fields })
+  const bundle = await collectOf(context, { conversationId, base, fields })
   if (typeof bundle === 'object' && 'failed' in bundle)
     return { kind: 'failed', code: bundle.failed }
   if (bundle === 'unchanged') return { kind: 'unchanged' }

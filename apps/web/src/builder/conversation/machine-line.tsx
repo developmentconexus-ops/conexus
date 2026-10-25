@@ -5,7 +5,6 @@ import type {
   NoticeData,
   VersionData,
 } from '@conexus/hub-api'
-import { machinePhaseLasts } from '@conexus/hub-api'
 import { CheckIcon, CircleAlertIcon, CogIcon, InfoIcon } from 'lucide-react'
 import { sentenceOfCode } from '../../platform/hub.ts'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
@@ -14,9 +13,7 @@ import { durationOf } from './text.ts'
 
 const PHASES: Record<MachinePhase, string> = {
   starting: 'Ligando a máquina…',
-  waking: 'Ligando a máquina…',
   copying: 'Copiando os arquivos do app…',
-  replaced: 'A máquina anterior sumiu; refiz a partir do que está guardado.',
   saving: 'Guardando a versão…',
 }
 
@@ -26,7 +23,6 @@ function Since() {
 }
 
 export function MachineLine({ data }: { data: MachineData }) {
-  const lasts = machinePhaseLasts(data.phase)
   return (
     <Marker className="text-text-2">
       <MarkerIcon>
@@ -34,7 +30,7 @@ export function MachineLine({ data }: { data: MachineData }) {
       </MarkerIcon>
       <MarkerContent>
         {PHASES[data.phase]}
-        {!lasts && <Since />}
+        <Since />
       </MarkerContent>
     </Marker>
   )

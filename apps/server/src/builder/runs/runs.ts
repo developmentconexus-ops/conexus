@@ -12,7 +12,6 @@ import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
 import type { RunsContext, RunsDeps, Settled } from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
-import { dailySweep, sweep } from './daily.ts'
 import type { Driven, Opened, Registry } from './driven.ts'
 import { conversationIn } from './keys.ts'
 import type { ReleaseScope } from './removal.ts'
@@ -22,12 +21,8 @@ import { saveRun } from './save.ts'
 /** The one row `#nameOf` reads: the person's name, null once they are gone. */
 const PersonName = z.object({ name: z.string().nullable() })
 
-type Taking = {
-  companyId: CompanyId
-  projectId: ProjectId
-  conversationId: ConversationId
-  personId: PersonId
-}
+type Conversation = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
+type Taking = Conversation & { personId: PersonId }
 
 /**
  * The Builder's runs (decision 0051): the one run that writes per Projeto, the workspace it works
@@ -40,19 +35,17 @@ export class Runs {
   readonly #context: RunsContext
   // The run writing in each Projeto (data D15): checked and set in the same tick.
   readonly #writing = new Map<ProjectId, Driven>()
-  // The workspace of each Projeto's machine, from the first run that asked for it to the save.
-  readonly #opened = new Map<ProjectId, Opened>()
+  // The workspace of each conversation's machine, from the first run that asked for it to the save.
+  readonly #opened = new Map<ConversationId, Opened>()
   // Where each open conversation hears its machine's phases.
   readonly #phases = new Map<ConversationId, (phase: Phase) => void>()
   readonly #retry = createCopyRetry(() => copyPending(this.#context))
-  readonly #sweepDaily: () => void
 
   constructor(deps: RunsDeps) {
     this.#deps = deps
     this.#context = {
       ...deps,
       retry: this.#retry,
-      writing: (projectId) => this.#writing.has(projectId),
       stopWriting: async (scope) => {
         for (const mine of [...this.#writing.values()]) {
           if (mine.companyId !== scope.companyId) continue
@@ -61,23 +54,17 @@ export class Runs {
           mine.stopped = true
           this.#writing.delete(mine.projectId)
           for (const end of mine.ends.splice(0)) end()
-          await this.#unregister(mine.projectId)
+          await this.#unregister(mine.conversationId)
         }
       },
     }
-    this.#sweepDaily = dailySweep(this.#context)
   }
 
-  /** The Projeto's machine, its phases told to the conversation whose run holds it. */
-  #openWorkspace(ids: { companyId: CompanyId; projectId: ProjectId }): Promise<Workspace> {
-    const { companyId, projectId } = ids
+  /** The conversation's machine, its phases told to the conversation. */
+  #openWorkspace(ids: Conversation): Promise<Workspace> {
     return this.#deps.machines.workspaceFor({
-      companyId,
-      projectId,
-      onPhase: (phase) => {
-        const holder = this.#writing.get(projectId)
-        if (holder !== undefined) this.#phases.get(holder.conversationId)?.(phase)
-      },
+      ...ids,
+      onPhase: (phase) => this.#phases.get(ids.conversationId)?.(phase),
     })
   }
 
@@ -112,7 +99,6 @@ export class Runs {
       ...{ check: undefined, rounds: 0 },
       ...{ stopped: false, ends: [input.onEnd], saving: undefined },
     })
-    this.#sweepDaily()
     this.#deps.log.info({ ...fields, runId }, 'RUN_ADMITTED')
     return { ok: true }
   }
@@ -149,23 +135,22 @@ export class Runs {
   }
 
   /**
-   * The workspace of the Projeto's machine, for every Mastra run of its conversations: Mastra
-   * resolves it before the run takes the Projeto (`turnOf`), so a run refused as busy is handed the
-   * one the holder works in, and never calls it. A save in progress is waited for: the next run
-   * works on a machine opened after it. `registry` is the Mastra that keeps it from here.
+   * The workspace of the conversation's machine, for every Mastra run of the conversation: Mastra
+   * resolves it before the run takes the Projeto (`turnOf`), so a run refused as busy is handed one
+   * that touches no machine, let go at its end. The conversation's own save in progress is waited
+   * for: the next run works on a machine opened after it. `registry` is the Mastra that keeps it
+   * from here.
    */
-  async workspaceOf(
-    ids: { companyId: CompanyId; projectId: ProjectId },
-    registry?: Registry,
-  ): Promise<Workspace> {
-    await this.#writing.get(ids.projectId)?.saving
-    let opened = this.#opened.get(ids.projectId)
+  async workspaceOf(ids: Conversation, registry?: Registry): Promise<Workspace> {
+    const { conversationId } = ids
+    await this.#writingFor(conversationId)?.saving
+    let opened = this.#opened.get(conversationId)
     if (opened === undefined) {
       const made: Opened = { workspace: this.#openWorkspace(ids), registry }
-      this.#opened.set(ids.projectId, made)
+      this.#opened.set(conversationId, made)
       // One that did not open is asked again by the next run.
       made.workspace.catch(() => {
-        if (this.#opened.get(ids.projectId) === made) this.#opened.delete(ids.projectId)
+        if (this.#opened.get(conversationId) === made) this.#opened.delete(conversationId)
       })
       opened = made
     }
@@ -181,14 +166,17 @@ export class Runs {
   /** Whether the turn changed its app folder; one that never woke the machine did not. */
   async changed(requestContext: RequestContext): Promise<boolean> {
     const mine = this.#mine(requestContext)
-    return mine !== undefined && (await this.#deps.machines.changed({ projectId: mine.projectId }))
+    return (
+      mine !== undefined &&
+      (await this.#deps.machines.changed({ conversationId: mine.conversationId }))
+    )
   }
 
   /** The check of the turn's app folder (decision 0055): the one path of `conexus_check` and of the turn's end. */
   async check(requestContext: RequestContext): Promise<Result<CheckReport, CheckPlatformFailed>> {
     const mine = this.#mine(requestContext)
     if (mine === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' }
-    return this.#deps.machines.check({ projectId: mine.projectId })
+    return this.#deps.machines.check({ conversationId: mine.conversationId })
   }
 
   /** Keeps what the end of the turn's check said, for the version the turn saves. */
@@ -203,10 +191,10 @@ export class Runs {
     if (mine !== undefined) mine.rounds = rounds
   }
 
-  /** Takes the Projeto's workspace out of Mastra once the run lets go of it: Mastra's shutdown would stop it again. */
-  async #unregister(projectId: ProjectId) {
-    const opened = this.#opened.get(projectId)
-    this.#opened.delete(projectId)
+  /** Takes the conversation's workspace out of Mastra once the run lets go of it: Mastra's shutdown would stop it again. */
+  async #unregister(conversationId: ConversationId) {
+    const opened = this.#opened.get(conversationId)
+    this.#opened.delete(conversationId)
     if (opened === undefined) return
     // One that did not open failed the run that asked for it: there is nothing to take out.
     const [made] = await Promise.allSettled([opened.workspace])
@@ -217,14 +205,19 @@ export class Runs {
    * Closes the conversation's run and saves what it wrote, whatever ended Mastra's run: the end, a
    * question, Parar, an error. The Projeto stays held until the save is over and the machine is let
    * go. A conversation holding no run (one refused as busy, or whose end was said already), or a run
-   * a removal stopped, answers `gone` and writes nothing.
+   * a removal stopped, answers `gone` and writes nothing; the workspace Mastra resolved for it is let
+   * go, and its machine was never started.
    */
   async finish(input: {
     conversationId: ConversationId
     reason: string
   }): Promise<Settled | 'gone'> {
     const mine = this.#writingFor(input.conversationId)
-    if (mine === undefined) return 'gone'
+    if (mine === undefined) {
+      await this.#unregister(input.conversationId)
+      await this.#deps.machines.release(input.conversationId)
+      return 'gone'
+    }
     if (mine.saving !== undefined) {
       await mine.saving
       return 'gone'
@@ -243,12 +236,12 @@ export class Runs {
       return outcome === 'gone' ? outcome : { ...outcome, rounds: mine.rounds }
     } finally {
       for (const end of mine.ends.splice(0)) end()
-      await this.#unregister(projectId)
+      await this.#unregister(conversationId)
       await this.#deps.machines
-        .release(projectId)
+        .release(conversationId)
         .catch((error: unknown) =>
           this.#deps.log.error(
-            { companyId, projectId, error: String(error) },
+            { companyId, conversationId, error: String(error) },
             'MACHINE_RELEASE_FAILED',
           ),
         )
@@ -267,13 +260,9 @@ export class Runs {
     if (await copyPending(this.#context)) this.#retry.kick()
   }
 
-  /** Kills the marked machines idle for seven days, now; the daily gate calls it too. */
-  sweep(): Promise<number> {
-    return sweep(this.#context)
-  }
-
-  release(scope: ReleaseScope): Promise<void> {
-    return releaseRuns(this.#context, scope)
+  /** Stops the runs the removal reaches and kills the machines of its conversations, before their threads go. */
+  release(scope: ReleaseScope, conversations: ConversationId[]): Promise<void> {
+    return releaseRuns(this.#context, scope, conversations)
   }
 
   /** The stop of this process: its timer ends (code C62). */

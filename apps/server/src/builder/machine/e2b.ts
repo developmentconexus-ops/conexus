@@ -1,9 +1,8 @@
-import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { E2BSandbox } from '@mastra/e2b'
 import { ALL_TRAFFIC, Sandbox } from 'e2b'
 import type { Config } from '../../platform/config.ts'
 import type { Kit, KitFactory, MachineApi } from './kit.ts'
-import { ALLOWED_HOSTS, MARK, SandboxId } from './kit.ts'
+import { ALLOWED_HOSTS, MARK } from './kit.ts'
 
 /** E2B's free plan keeps a machine up an hour at most; it pauses then, and the next start resumes it. */
 const TIMEOUT_MS = 60 * 60 * 1000
@@ -16,9 +15,6 @@ export function createE2bKit(config: Credentials): KitFactory {
   return (options): Kit => {
     const sandbox = new E2BSandbox({
       id: options.id,
-      ...(options.sandboxId === undefined
-        ? {}
-        : { sandboxId: options.sandboxId, reattach: 'required' as const }),
       template: config.machineTemplate,
       apiKey: config.e2bApiKey.reveal(),
       timeout: TIMEOUT_MS,
@@ -35,47 +31,37 @@ export function createE2bKit(config: Credentials): KitFactory {
         write: (path, bytes) => sandbox.writeFiles([{ path, content: Buffer.from(bytes) }]),
         read: (path) => sandbox.e2b.files.read(path, { format: 'stream' }),
       },
-      sandboxId: () =>
-        sandbox.sandboxId === undefined ? undefined : SandboxId.parse(sandbox.sandboxId),
       closeNetwork: () =>
         sandbox.e2b.updateNetwork({ allowOut: ALLOWED_HOSTS, denyOut: [ALL_TRAFFIC] }),
     }
   }
 }
 
-/** Lists and kills by the mark this installation puts on every machine (security S36). */
+/**
+ * Kills by the mark this installation puts on every machine and the conversation's id (security
+ * S36): every machine listed, running or paused, for a failed find can have made a second one of
+ * the same name. Never the sandbox's own `destroy()`, which swallows a failed list and kills one.
+ */
 export function createE2bApi(
   config: Credentials,
   mark: Record<string, string>,
   apiUrl?: string,
 ): MachineApi {
   const apiKey = config.e2bApiKey.reveal()
-  const where = apiUrl === undefined ? {} : { apiUrl }
+  const where = { apiKey, ...(apiUrl === undefined ? {} : { apiUrl }), requestTimeoutMs: CALL_MS }
   return {
-    async list() {
-      const found: { id: SandboxId; companyId: CompanyId; projectId: ProjectId }[] = []
+    async kill(conversationId) {
+      let killed = 0
       const pages = Sandbox.list({
-        apiKey,
         ...where,
-        query: { metadata: mark },
-        requestTimeoutMs: CALL_MS,
+        query: { metadata: { ...mark, [MARK.conversation]: conversationId } },
       })
       while (pages.hasNext) {
         for (const item of await pages.nextItems()) {
-          const project = ProjectId.safeParse(item.metadata[MARK.project])
-          const company = CompanyId.safeParse(item.metadata[MARK.company])
-          if (!project.success || !company.success) continue
-          found.push({
-            id: SandboxId.parse(item.sandboxId),
-            companyId: company.data,
-            projectId: project.data,
-          })
+          if (await Sandbox.kill(item.sandboxId, where)) killed += 1
         }
       }
-      return found
-    },
-    async kill(id) {
-      await Sandbox.kill(id, { apiKey, ...where, requestTimeoutMs: CALL_MS })
+      return killed
     },
   }
 }

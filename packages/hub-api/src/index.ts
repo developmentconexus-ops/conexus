@@ -115,7 +115,6 @@ export {
   MachinePhase,
   MastraPart,
   MessageUpdate,
-  machinePhaseLasts,
   NoticeData,
   Suspended,
   ThoughtData,

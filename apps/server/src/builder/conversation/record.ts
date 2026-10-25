@@ -1,5 +1,5 @@
 import type { ConversationId, MastraPart, MessageId } from '@conexus/hub-api'
-import { MachineData, machinePhaseLasts, questionIdOf } from '@conexus/hub-api'
+import { questionIdOf } from '@conexus/hub-api'
 import type { MastraDBMessage } from '@mastra/core/agent-controller'
 import type { FailureLog } from '../../platform/failure.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
@@ -77,12 +77,8 @@ export function settled(recorder: Recorder): Promise<void> {
   )
 }
 
-/** Whether a part of ours stays on the thread: a thinking's time, the version, the failure, a machine replaced. */
+/** Whether a part of ours stays on the thread: a thinking's time, the version, the failure. */
 function lasts(part: MastraPart): boolean {
-  if (part.type === 'data-conexus-machine') {
-    const machine = MachineData.safeParse(part.data)
-    return machine.success && machinePhaseLasts(machine.data.phase)
-  }
   return (
     part.type === 'data-conexus-thought' ||
     part.type === 'data-conexus-version' ||

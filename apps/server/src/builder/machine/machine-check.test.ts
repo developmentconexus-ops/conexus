@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { STEP_NAMES } from '@conexus/app/check'
-import { PROJECT, world } from './test-machine.ts'
+import { CONVERSATION, world } from './test-machine.ts'
 
 const REPORT = {
   ok: true,
@@ -26,7 +26,7 @@ async function machineChecking(t: TestContext, body: string) {
 
 test('Machines.check: roda o programa na pasta do app e lê o relatório', async (t) => {
   const { machines, args, folder } = await machineChecking(t, `echo '${JSON.stringify(REPORT)}'`)
-  assert.deepEqual(await machines.check({ projectId: PROJECT }), {
+  assert.deepEqual(await machines.check({ conversationId: CONVERSATION }), {
     ok: true,
     value: REPORT,
   })
@@ -36,7 +36,7 @@ test('Machines.check: roda o programa na pasta do app e lê o relatório', async
 test('Machines.check: o programa sem relatório, ou que diz que a máquina falhou, é CHECK_PLATFORM_FAILED', async (t) => {
   const failed = { ok: false, error: 'CHECK_PLATFORM_FAILED' }
   const platform = await machineChecking(t, "echo 'navegador: Chromium did not start' >&2; exit 2")
-  assert.deepEqual(await platform.machines.check({ projectId: PROJECT }), failed)
+  assert.deepEqual(await platform.machines.check({ conversationId: CONVERSATION }), failed)
   const garbled = await machineChecking(t, 'echo \'{"ok": true}\'')
-  assert.deepEqual(await garbled.machines.check({ projectId: PROJECT }), failed)
+  assert.deepEqual(await garbled.machines.check({ conversationId: CONVERSATION }), failed)
 })

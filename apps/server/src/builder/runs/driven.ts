@@ -12,7 +12,7 @@ import type { Workspace } from '@mastra/core/workspace'
 /** Where Mastra keeps each workspace it resolved, to stop them all at its shutdown. */
 export type Registry = Pick<Mastra, 'removeWorkspace'>
 
-/** A Projeto's machine as Mastra works in it, open until the run that holds the Projeto lets go. */
+/** A conversation's machine as Mastra works in it, open until the conversation's run lets go. */
 export type Opened = { workspace: Promise<Workspace>; registry: Registry | undefined }
 
 /**

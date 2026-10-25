@@ -1,4 +1,3 @@
-import { MachineData, machinePhaseLasts } from '@conexus/hub-api'
 import type { ToolItem, TranscriptItem } from './parts.ts'
 import { specOf } from './tool-registry.ts'
 
@@ -8,12 +7,6 @@ const TOOL_GROUP_MIN = 3
 
 function isMachine(item: TranscriptItem): boolean {
   return item.kind === 'conexus' && item.partType === 'data-conexus-machine'
-}
-
-function checkMachineLasts(item: TranscriptItem): boolean {
-  if (item.kind !== 'conexus' || !isMachine(item)) return true
-  const parsed = MachineData.safeParse(item.data)
-  return parsed.success && machinePhaseLasts(parsed.data.phase)
 }
 
 export function fold(items: readonly TranscriptItem[]): Row[] {
@@ -31,10 +24,10 @@ export function fold(items: readonly TranscriptItem[]): Row[] {
     run = []
   }
 
-  // A machine's step that does not last says what the turn waits for, until anything else comes.
+  // A machine's step says what the turn waits for, until anything else comes.
   const said = items.some((item) => !isMachine(item))
   for (const item of items) {
-    if (isMachine(item) && said && !checkMachineLasts(item)) {
+    if (isMachine(item) && said) {
       continue
     }
 

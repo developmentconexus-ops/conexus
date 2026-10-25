@@ -1,15 +1,14 @@
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { WORKSPACE_TOOLS, Workspace } from '@mastra/core/workspace'
 import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
 import { MachineFilesystem } from './filesystem.ts'
-import type { Kit, SandboxId } from './kit.ts'
+import type { Kit } from './kit.ts'
 import { APP_FOLDER, MARK, machineInstructions, OUTPUT_MAX, readCapped } from './kit.ts'
 import { packIn } from './pack.ts'
 import type { Machines, MachinesDeps, Phase } from './port.ts'
-import { MachineRows } from './rows.ts'
 import type { Collected } from './scripts.ts'
 import {
   changedScript,
@@ -24,23 +23,15 @@ import {
 type Session = {
   companyId: CompanyId
   projectId: ProjectId
-  name: string
+  conversationId: ConversationId
   onPhase: (phase: Phase) => void
-  /** Made when the machine starts, at the first tool, never when the workspace is built: opening a conversation touches no machine. */
-  kit: Kit | undefined
-  /** Whether the Projeto had a machine recorded when the turn began: it wakes, or starts. */
-  known: boolean
-  /** The recorded machine is gone from the provider: the turn starts a new one from `main`. */
-  replaced: boolean
+  /** Built with the workspace: building it asks the provider nothing, and only its start finds the machine. */
+  kit: Kit
   /** How many times the machine started in this turn: a second `created` is a machine that died. */
   starts: number
   /** The machine died mid-turn, and what the turn wrote on it is gone. */
   lost: boolean
   ready: Promise<Kit> | undefined
-}
-
-function isGone(error: unknown): boolean {
-  return error instanceof Error && Reflect.get(error, 'code') === 'SANDBOX_REATTACH_FAILED'
 }
 
 /** The Git's missing copy-backed repository, wherever Mastra's start wrapped it: it is no machine fault. */
@@ -72,25 +63,19 @@ async function run(kit: Kit, script: string, timeoutMs?: number) {
 
 class BuilderMachines implements Machines {
   private readonly deps: MachinesDeps
-  private readonly rows: MachineRows
   private readonly workdir: string
   private readonly tmp: string
   private readonly startMs: number
-  private readonly sessions = new Map<ProjectId, Session>()
+  private readonly sessions = new Map<ConversationId, Session>()
 
   constructor(deps: MachinesDeps) {
     this.deps = deps
-    this.rows = new MachineRows(deps.database)
     this.workdir = deps.workdir ?? APP_FOLDER
     this.tmp = deps.tmp ?? '/tmp'
     this.startMs = deps.startMs ?? 120_000
   }
 
-  list = () => this.deps.api.list()
-  kill = (id: SandboxId) => this.deps.api.kill(id)
-  rowOf = (companyId: CompanyId, projectId: ProjectId) => this.rows.of(companyId, projectId)
-  forget = (companyId: CompanyId, projectId: ProjectId) => this.rows.forget(companyId, projectId)
-  projectsOf = (companyId: CompanyId) => this.rows.projectsOf(companyId)
+  kill = (conversationId: ConversationId) => this.deps.api.kill(conversationId)
 
   /** Wakes or creates the machine, once per workspace; the seed ran in `onStart` before this returns. */
   private ensure(session: Session): Promise<Kit> {
@@ -98,52 +83,19 @@ class BuilderMachines implements Machines {
     return session.ready
   }
 
-  /** The provider's kit for this Projeto, reattaching the recorded machine when there is one. */
-  private kitFor(session: Session, sandboxId: SandboxId | undefined): Kit {
-    const { companyId, projectId, name } = session
-    session.kit = this.deps.kit({
-      id: name,
-      sandboxId,
-      metadata: { ...this.deps.mark, [MARK.company]: companyId, [MARK.project]: projectId },
-      workingDirectory: this.workdir,
-      instructions: machineInstructions(this.workdir),
-      onStart: ({ outcome }) => this.onStart(session, outcome),
-    })
-    return session.kit
-  }
-
-  private async start(kit: Kit) {
-    await within(kit.sandbox.start?.() ?? Promise.resolve(), this.startMs)
-  }
-
-  /**
-   * Reattaches the recorded machine, or starts one. A recorded machine the provider no longer holds
-   * fails the start (`SANDBOX_REATTACH_FAILED`): its row goes and the turn starts a new one from `main`.
-   */
+  /** Starts the conversation's machine: the provider finds it by name, or makes one (`onStart`). */
   private async boot(session: Session): Promise<Kit> {
-    const { companyId, projectId } = session
-    const recorded = (await this.rows.of(companyId, projectId))?.sandboxId
-    session.known = recorded !== undefined
-    session.onPhase(session.known ? 'waking' : 'starting')
-    let kit = this.kitFor(session, recorded)
+    session.onPhase('starting')
     try {
-      await this.start(kit).catch(async (cause: unknown) => {
-        if (recorded === undefined || !isGone(cause)) throw cause
-        await this.rows.forget(companyId, projectId)
-        session.replaced = true
-        kit = this.kitFor(session, undefined)
-        await this.start(kit)
-      })
+      await within(session.kit.sandbox.start?.() ?? Promise.resolve(), this.startMs)
     } catch (cause) {
       const restore = restoreFailure(cause)
       if (restore !== undefined) throw restore
-      this.deps.log.error({ reason: isGone(cause) ? 'GONE' : 'START' }, 'MACHINE_UNAVAILABLE')
+      this.deps.log.error({ reason: 'START' }, 'MACHINE_UNAVAILABLE')
       throw new Failure('MACHINE_UNAVAILABLE', { cause })
     }
-    const sandboxId = kit.sandboxId()
-    if (sandboxId !== undefined) await this.rows.remember({ companyId, projectId, sandboxId })
-    this.deps.log.info({ projectId }, 'MACHINE_STARTED')
-    return kit
+    this.deps.log.info({ conversationId: session.conversationId }, 'MACHINE_STARTED')
+    return session.kit
   }
 
   /** The app folder holds `main` as the Hub has it: its bundle crosses, then the seed script runs. */
@@ -156,14 +108,13 @@ class BuilderMachines implements Machines {
   }
 
   /**
-   * What the machine holds once it is up. A woken one goes back to the Hub's `main`. A later start in the same turn is Mastra
-   * reconnecting a machine that paused or dropped (`retryOnDead`): it keeps what the turn wrote. A new
-   * one is seeded; a second new one in the same turn is a machine that died, and what the turn wrote
-   * on it is gone.
+   * What the machine holds once it is up. One found by name goes back to the Hub's `main`. A later
+   * start in the same turn is Mastra reconnecting a machine that paused or dropped (`retryOnDead`):
+   * it keeps what the turn wrote. A new one is seeded; a second new one in the same turn is a
+   * machine that died, and what the turn wrote on it is gone.
    */
   private async onStart(session: Session, outcome: string | undefined) {
-    const { onPhase, projectId, kit } = session
-    if (kit === undefined) throw new Error('a machine started before its kit')
+    const { conversationId, kit } = session
     session.starts += 1
     if (outcome === 'connected') {
       await kit.closeNetwork()
@@ -174,29 +125,37 @@ class BuilderMachines implements Machines {
     }
     if (session.starts > 1) {
       session.lost = true
-      this.deps.log.error({ projectId }, 'MACHINE_DIED')
-    } else if (session.replaced) {
-      this.deps.log.info({ projectId }, 'MACHINE_REPLACED')
-      onPhase('replaced')
+      this.deps.log.error({ conversationId }, 'MACHINE_DIED')
     }
     await this.seed(kit, session)
   }
 
   async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
-    const { companyId, projectId, onPhase } = input
-    const name = `conexus-${this.deps.installation}-${companyId}-${projectId}`
+    const { companyId, projectId, conversationId, onPhase } = input
+    const name = `conexus-${this.deps.installation}-${conversationId}`
+    const kit = this.deps.kit({
+      id: name,
+      metadata: {
+        ...this.deps.mark,
+        [MARK.company]: companyId,
+        [MARK.project]: projectId,
+        [MARK.conversation]: conversationId,
+      },
+      workingDirectory: this.workdir,
+      instructions: machineInstructions(this.workdir),
+      onStart: ({ outcome }) => this.onStart(session, outcome),
+    })
     const session: Session = {
-      ...{ companyId, projectId, name, onPhase },
-      ...{ kit: undefined, known: false, replaced: false },
+      ...{ companyId, projectId, conversationId, onPhase, kit },
       ...{ starts: 0, lost: false, ready: undefined },
     }
-    this.sessions.set(projectId, session)
+    this.sessions.set(conversationId, session)
     return new Workspace({
       sandbox: async () => (await this.ensure(session)).sandbox,
       sandboxCacheKey: () => name,
       instructions: { dynamicSandbox: () => machineInstructions(this.workdir) },
       filesystem: new MachineFilesystem({
-        id: `conexus-fs-${projectId}`,
+        id: `conexus-fs-${conversationId}`,
         root: this.workdir,
         exec: async (script) => run(await this.ensure(session), script),
       }),
@@ -211,8 +170,8 @@ class BuilderMachines implements Machines {
     })
   }
 
-  async collect({ projectId, base }: { projectId: ProjectId; base: Sha }) {
-    const session = this.sessions.get(projectId)
+  async collect({ conversationId, base }: { conversationId: ConversationId; base: Sha }) {
+    const session = this.sessions.get(conversationId)
     if (session?.ready === undefined) return 'unchanged'
     const kit = await this.ensure(session)
     if (session.lost) throw new Error('the machine died in the turn')
@@ -226,8 +185,8 @@ class BuilderMachines implements Machines {
     return { bundle, files: found.files, changedFiles: found.changedFiles }
   }
 
-  async check({ projectId }: Parameters<Machines['check']>[0]) {
-    const session = this.sessions.get(projectId)
+  async check({ conversationId }: Parameters<Machines['check']>[0]) {
+    const session = this.sessions.get(conversationId)
     if (session === undefined) return { ok: false, error: 'CHECK_PLATFORM_FAILED' } as const
     const kit = await this.ensure(session)
     const program = this.deps.checkProgram ?? CHECK_PROGRAM
@@ -236,35 +195,29 @@ class BuilderMachines implements Machines {
   }
 
   /** A machine whose comparison fails is taken as changed: the check that follows says why it cannot run. */
-  async changed({ projectId }: { projectId: ProjectId }) {
-    const session = this.sessions.get(projectId)
-    if (session === undefined || !this.touched(projectId)) return false
+  async changed({ conversationId }: { conversationId: ConversationId }) {
+    const session = this.sessions.get(conversationId)
+    if (session === undefined || !this.touched(conversationId)) return false
     const kit = await this.ensure(session)
     const result = await run(kit, changedScript(this.workdir))
     return result.exitCode !== 0 || result.stdout.trim() !== 'UNCHANGED'
   }
 
-  async pack({ projectId }: { projectId: ProjectId }) {
-    const session = this.sessions.get(projectId)
+  async pack({ conversationId }: { conversationId: ConversationId }) {
+    const session = this.sessions.get(conversationId)
     if (session === undefined) throw new Error('no turn holds the machine to pack')
     const kit = await this.ensure(session)
     return packIn((script) => run(kit, script), this.workdir)
   }
 
-  touched(projectId: ProjectId) {
-    return this.sessions.get(projectId)?.ready !== undefined
+  touched(conversationId: ConversationId) {
+    return this.sessions.get(conversationId)?.ready !== undefined
   }
 
-  async release(projectId: ProjectId) {
-    const session = this.sessions.get(projectId)
-    this.sessions.delete(projectId)
-    const kit = session?.kit
-    if (session?.ready === undefined || kit === undefined) return
-    const id = kit.sandboxId()
-    await kit.sandbox.stop?.()
-    if (id !== undefined) {
-      await this.rows.remember({ companyId: session.companyId, projectId, sandboxId: id })
-    }
+  async release(conversationId: ConversationId) {
+    const session = this.sessions.get(conversationId)
+    this.sessions.delete(conversationId)
+    if (session?.ready !== undefined) await session.kit.sandbox.stop?.()
   }
 }
 

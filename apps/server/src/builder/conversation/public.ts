@@ -58,9 +58,10 @@ export function createConversations(deps: {
   })
 
   const release: ReleaseConversations = async (scope) => {
-    // The runs first: a turn the removal aborts then finds its run gone and writes nothing.
-    await deps.runs.release(scope)
     const ids = await store.releasedIds(scope)
+    // The runs and machines first: a turn the removal aborts then finds its run gone and writes
+    // nothing, and a thread goes only once its machine is killed.
+    await deps.runs.release(scope, ids)
     for (const id of ids) {
       await sessions.forget(id)
       await builder.memory.deleteThread(id)

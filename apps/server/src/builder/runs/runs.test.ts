@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -19,7 +19,7 @@ import {
 } from '../conversation/test-conversation.ts'
 import { failuresOf } from '../conversation/test-parts.ts'
 import { Sha } from '../git/public.ts'
-import { SandboxId } from '../machine/public.ts'
+import { INSTALLATION } from '../machine/test-machine.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const COMMAND = 'mastra_workspace_execute_command'
@@ -119,6 +119,34 @@ test('uma mensagem enquanto a versão é guardada espera o fim e faz mais uma ve
   assert.ok(pathsAt('main').includes('src/b.ts') && pathsAt('main').includes('src/a.ts'))
 })
 
+test('duas conversas do mesmo Projeto, uma depois da outra: cada uma liga a sua máquina, de nome da conversa, e a segunda começa do main com a versão da primeira (52)', async (t) => {
+  const turns = [writing('src/a.ts', 'um\n'), writing('src/b.ts', 'dois\n')]
+  let step = 0
+  const { hub, ana, conversations, companyId, projectId } = await conversing(t, (call) => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    const tool = step % 2 === 1 ? turns[(step - 1) / 2] : undefined
+    if (tool === undefined) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: [{ type: 'tool_use', ...tool }] }
+  })
+  const first = await asked(t, { hub, person: ana, conversations }, 'Primeira')
+  // The second machine is another: nothing of the first one's folder is left for it.
+  rmSync(join(hub.builder.folder, 'app'), { recursive: true, force: true })
+  const second = await asked(t, { hub, person: ana, conversations }, 'Segunda')
+  assert.deepEqual(failuresOf([...first.events, ...second.events]), [])
+  assert.deepEqual(
+    hub.builder.control.names,
+    [first.url, second.url].map((url) => `conexus-${INSTALLATION}-${url.split('/').at(-1)}`),
+  )
+  const repository = repositoryOf({ hub, companyId, projectId })
+  assert.equal(await repository.version(), 2)
+  const paths = ((await repository.tree(await repository.main())) ?? []).map((file) => file.path)
+  assert.ok(
+    paths.includes('src/a.ts') && paths.includes('src/b.ts'),
+    'version 2 stands on version 1',
+  )
+})
+
 test('só resposta: o turno fecha sem versão e sem tocar a máquina', async (t) => {
   const { hub, ana, conversations } = await conversing(t, (call) => ({
     kind: 'text',
@@ -126,7 +154,7 @@ test('só resposta: o turno fecha sem versão e sem tocar a máquina', async (t)
   }))
   await asked(t, { hub, person: ana, conversations })
   assert.equal(hub.builder.bucket.held.size, 0, 'no version, no copy')
-  assert.deepEqual(await hub.test.asOwner('select * from builder.machine'), [])
+  assert.deepEqual(hub.builder.control.names, [], 'no machine started')
   assert.equal(existsSync(join(hub.builder.folder, 'app')), false)
 })
 
@@ -261,43 +289,4 @@ test('R2 fora: a versão fica guardada no servidor e a cópia pendente é repeti
     key.startsWith(`${companyId}/${projectId}/`),
   )
   assert.equal(mine.length, 1, 'the retry reaches every Projeto on the volume, this one among them')
-})
-
-test('a varredura: só a máquina marcada, parada há 7 dias e sem turno escrevendo é morta', async (t) => {
-  const held = holding(t)
-  let step = 0
-  const first = working(writing('a.ts', 'x\n'))
-  const { hub, ana, companyId, projectId, conversations } = await conversing(t, (call) => {
-    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
-    step += 1
-    return step === 1 ? first(call) : step === 2 ? { kind: 'text', text: 'Pronto.' } : held.reply
-  })
-  await asked(t, { hub, person: ana, conversations })
-  const [machine] = await hub.test.asOwner('select sandbox_id from builder.machine')
-  const id = String(machine?.sandbox_id)
-  hub.builder.listed.push(
-    {
-      id: SandboxId.parse(id),
-      companyId: CompanyId.parse(companyId),
-      projectId: ProjectId.parse(projectId),
-    },
-    {
-      id: SandboxId.parse('stranger'),
-      companyId: CompanyId.parse(companyId),
-      projectId: ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA'),
-    },
-  )
-  assert.equal(await hub.runs.sweep(), 0)
-  await hub.test.asOwner(`update builder.machine set used_at = now() - interval '8 days'`)
-  const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Outra')).statusCode, 202)
-  await stream.said()
-  assert.equal(await hub.runs.sweep(), 0)
-  held.release()
-  await stream.turn()
-  assert.equal(await hub.runs.sweep(), 1)
-  assert.deepEqual(hub.builder.killed, [id])
-  assert.deepEqual(await hub.test.asOwner('select * from builder.machine'), [])
 })

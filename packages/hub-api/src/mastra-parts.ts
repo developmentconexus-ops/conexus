@@ -28,16 +28,8 @@ export const VersionCheck = z.discriminatedUnion('state', [
 export type VersionCheck = z.infer<typeof VersionCheck>
 
 /** The steps of the machine a turn waits on, each told as a `data-conexus-machine` part. */
-export const MachinePhase = z.enum(['starting', 'waking', 'copying', 'replaced', 'saving'])
+export const MachinePhase = z.enum(['starting', 'copying', 'saving'])
 export type MachinePhase = z.infer<typeof MachinePhase>
-
-/**
- * Whether a machine phase is a fact that stays said on the thread, without a clock: a replaced
- * machine. Every other phase is a step in progress, over once anything follows it.
- */
-export function machinePhaseLasts(phase: MachinePhase): boolean {
-  return phase === 'replaced'
-}
 
 /** What each part of ours carries in its `data`, one schema per name in `CONEXUS_PARTS`. */
 export const MachineData = z.object({ phase: MachinePhase })

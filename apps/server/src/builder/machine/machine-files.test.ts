@@ -12,7 +12,7 @@ import {
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { STARTER_DIR } from '@conexus/app/starter'
-import { PROJECT, sandboxOf, world } from './test-machine.ts'
+import { CONVERSATION, sandboxOf, world } from './test-machine.ts'
 
 const starter = new Set(readdirSync(STARTER_DIR))
 
@@ -145,6 +145,6 @@ test('máquina: um arquivo maior que 64 MiB não entra no Hub, nem pelas ferrame
   )
   rmSync(big)
   control.beforeRead = (path) => truncateSync(path, 65 * 1024 * 1024)
-  const collected = await machines.collect({ projectId: PROJECT, base })
+  const collected = await machines.collect({ conversationId: CONVERSATION, base })
   assert.equal(typeof collected === 'object' ? 'a bundle' : collected, 'too-large')
 })
