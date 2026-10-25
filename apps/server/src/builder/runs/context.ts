@@ -1,4 +1,4 @@
-import type { CompanyId, PersonId, ProjectId, VersionCheck } from '@conexus/hub-api'
+import type { CompanyId, ProjectId, VersionCheck } from '@conexus/hub-api'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
@@ -15,16 +15,8 @@ export type RunsDeps = {
   log: FailureLog
 }
 
-/** What the runs share: the ports, and how a removal stops the runs it reaches. */
-export type RunsContext = RunsDeps & {
-  retry: { kick(): void }
-  /** Lets go of the runs a removal reaches: their workspace is forgotten, and nothing of them is saved. */
-  stopWriting(scope: {
-    companyId: CompanyId
-    projectId?: ProjectId
-    personId?: PersonId
-  }): Promise<void>
-}
+/** What the runs share: the ports and the copies' retry. */
+export type RunsContext = RunsDeps & { retry: { kick(): void } }
 
 /**
  * A saved version: its number, the paths in its tree, the paths the turn changed against its base,

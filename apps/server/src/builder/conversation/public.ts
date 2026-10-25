@@ -59,13 +59,13 @@ export function createConversations(deps: {
 
   const release: ReleaseConversations = async (scope) => {
     const ids = await store.releasedIds(scope)
-    // The runs and machines first: a turn the removal aborts then finds its run gone and writes
-    // nothing, and a thread goes only once its machine is killed.
+    // The runs first: a turn the removal aborts then finds its run gone and writes nothing. Its
+    // Mastra run is aborted before the kill, so no tool starts the machine again; a thread goes
+    // only once its machine is killed.
+    await deps.runs.stopWriting(scope)
+    for (const id of ids) await sessions.forget(id)
     await deps.runs.release(scope, ids)
-    for (const id of ids) {
-      await sessions.forget(id)
-      await builder.memory.deleteThread(id)
-    }
+    for (const id of ids) await builder.memory.deleteThread(id)
     deps.log.info({ companyId: scope.companyId, count: ids.length }, 'CONVERSATIONS_RELEASED')
   }
 

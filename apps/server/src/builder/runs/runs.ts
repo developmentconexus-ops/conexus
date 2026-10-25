@@ -43,20 +43,22 @@ export class Runs {
 
   constructor(deps: RunsDeps) {
     this.#deps = deps
-    this.#context = {
-      ...deps,
-      retry: this.#retry,
-      stopWriting: async (scope) => {
-        for (const mine of [...this.#writing.values()]) {
-          if (mine.companyId !== scope.companyId) continue
-          if (scope.projectId !== undefined && mine.projectId !== scope.projectId) continue
-          if (scope.personId !== undefined && mine.personId !== scope.personId) continue
-          mine.stopped = true
-          this.#writing.delete(mine.projectId)
-          for (const end of mine.ends.splice(0)) end()
-          await this.#unregister(mine.conversationId)
-        }
-      },
+    this.#context = { ...deps, retry: this.#retry }
+  }
+
+  /**
+   * Lets go of the runs a removal reaches, before anything is deleted (card, criterion 24): their
+   * workspace is forgotten, and nothing of them is saved, so the turn's end finds them gone.
+   */
+  async stopWriting(scope: ReleaseScope): Promise<void> {
+    for (const mine of [...this.#writing.values()]) {
+      if (mine.companyId !== scope.companyId) continue
+      if (scope.projectId !== undefined && mine.projectId !== scope.projectId) continue
+      if (scope.personId !== undefined && mine.personId !== scope.personId) continue
+      mine.stopped = true
+      this.#writing.delete(mine.projectId)
+      for (const end of mine.ends.splice(0)) end()
+      await this.#unregister(mine.conversationId)
     }
   }
 
@@ -260,7 +262,7 @@ export class Runs {
     if (await copyPending(this.#context)) this.#retry.kick()
   }
 
-  /** Stops the runs the removal reaches and kills the machines of its conversations, before their threads go. */
+  /** Kills the machines of the removal's conversations, and takes its Projetos' source, before their threads go. */
   release(scope: ReleaseScope, conversations: ConversationId[]): Promise<void> {
     return releaseRuns(this.#context, scope, conversations)
   }

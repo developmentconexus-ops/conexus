@@ -61,9 +61,7 @@ async function releasedProjects(context: RunsContext, scope: ReleaseScope): Prom
 }
 
 /**
- * Stops what a removal reaches before anything is deleted (card, criterion 24): the runs writing in
- * the Projeto, the company or the person's are let go with nothing saved, so the turn's end finds
- * them gone and writes nothing; the released conversations' machines are killed by name. A
+ * Kills by name the released conversations' machines, once their runs are stopped and aborted. A
  * Projeto's or a company's removal takes copy and repository too, each Projeto on its own; a
  * failure is thrown after all were tried, and the release can be repeated.
  */
@@ -73,7 +71,6 @@ export async function releaseRuns(
   conversations: ConversationId[],
 ): Promise<void> {
   const { companyId } = scope
-  await context.stopWriting(scope)
   const failures = await killMachines(context, companyId, conversations)
   const projects = await releasedProjects(context, scope)
   for (const each of projects) {

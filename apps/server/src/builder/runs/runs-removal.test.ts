@@ -123,6 +123,32 @@ test('apagar o Projeto no meio de um turno que escreve: a execução para antes,
   assert.equal(said.includes('RUN_SETTLING') || said.includes('VERSION_SAVED'), false)
 })
 
+test('apagar o Projeto enquanto uma ferramenta roda: a execução do Mastra para antes da morte, e nenhuma ferramenta religa a máquina morta (53)', async (t) => {
+  const slow = { name: 'mastra_workspace_execute_command', input: { command: 'sleep 2' } }
+  const write = { name: WRITE, input: { path: 'a.ts', content: 'x\n' } }
+  let step = 0
+  const { hub, ana, companyId, projectId, conversations } = await conversing(t, (call) => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    step += 1
+    const tool = [slow, write][step - 1]
+    if (tool === undefined) return { kind: 'text', text: 'Pronto.' }
+    return { kind: 'blocks', blocks: [{ type: 'tool_use', ...tool }] }
+  })
+  const url = `${conversations}/${await started(hub, ana, conversations)}`
+  const stream = await streamOf(hub, ana, url)
+  t.after(() => stream.close())
+  assert.equal((await sent(hub, ana, url, 'Crie o app')).statusCode, 202)
+  const { control } = hub.builder
+  for (let attempt = 0; attempt < 100 && control.names.length === 0; attempt += 1) {
+    await new Promise((done) => setTimeout(done, 50))
+  }
+  const project = `/api/companies/${companyId}/projects/${projectId}`
+  assert.equal((await call(hub, ana, 'DELETE', project, { name: 'Encomendas' })).statusCode, 204)
+  await new Promise((done) => setTimeout(done, 3_000))
+  assert.equal(control.names.length, 1, 'no machine started after the kill')
+  assert.equal(step, 1, 'the aborted run asked the model for nothing more')
+})
+
 test('tirar a pessoa enquanto o turno dela guarda: a execução para, e o main não anda', async (t) => {
   const { hub, ana, companyId, projectId, conversations } = await conversing(t, writesOnce())
   const bruno = await memberOn(hub, companyId, BRUNO, 'member')

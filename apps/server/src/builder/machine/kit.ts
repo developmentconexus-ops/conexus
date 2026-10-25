@@ -73,7 +73,7 @@ type KitOptions = {
  */
 export function machineInstructions(workdir: string): string {
   return [
-    `The Projeto's own Linux machine, with Node 24, npm and git. Commands start in ${workdir},`,
+    `The conversation's own Linux machine, with Node 24, npm and git. Commands start in ${workdir},`,
     `the app folder: work there and nowhere else. Its network reaches only ${ALLOWED_HOSTS.join(', ')}.`,
     'Conexus keeps its check in /opt/conexus, read only: run it with the tool conexus_check, never by hand.',
   ].join(' ')
