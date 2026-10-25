@@ -137,4 +137,4 @@ Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751
 
 Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 6ca22d55cfa76bcd21e73cd56fc2c523fee9949b): "Mas olha, no mobile ela tá mostrando, legal, só que eu não consigo clicar, por exemplo, nela e ela mostrar tudo que são as tarefas, por exemplo."
 
-Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 60d2c9a16050c6d3277f7f5db9675fbbd6b16a29): "Bom, vamos tirar tudo então que é lógica paralela, e esse 4 vamos também tirar e fazer do jeito correto, que aí a gente finaliza tudo e deixa do jeito nativo. Qual que é a sua recomendação como especialista?"
+Cartão da etapa 14.2 aprovado em 2026-10-25 (commit a0d016917b802661d1b958971c793e4d7148ab03): "Bom, vamos tirar tudo então que é lógica paralela, e esse 4 vamos também tirar e fazer do jeito correto, que aí a gente finaliza tudo e deixa do jeito nativo. Qual que é a sua recomendação como especialista?"
