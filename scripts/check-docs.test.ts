@@ -108,6 +108,17 @@ test('recusa a linha remendo sem a versão da biblioteca na prova', () => {
   assert.match(run.stderr, /^card-remendo-version: .*Contas/m)
 })
 
+test('a linha remendo que nenhuma biblioteca faz cita o registro de decisão, e não uma versão', () => {
+  function git(proof: string) {
+    return `| Git | U1 | \`a.ts:f\` | nenhuma faz | uma linha | remendo | ${proof} | não precisa | \`b.ts\` |\n`
+  }
+  const cited = check({ 'docs/steps/e01-a.md': `${HEADER}${git('docs/decisions/0001-git.md')}` })
+  assert.equal(cited.status, 0, cited.stderr)
+  const bare = check({ 'docs/steps/e01-a.md': `${HEADER}${git('medição')}` })
+  assert.equal(bare.status, 1)
+  assert.match(bare.stderr, /^card-remendo-decision: .*Git/m)
+})
+
 test('recusa a linha sem veredito', () => {
   const run = check({ 'docs/steps/e01-a.md': `${HEADER}${row('Git', 'talvez', '—')}` })
   assert.equal(run.status, 1)

@@ -69,9 +69,29 @@ function referenceTable(text: string) {
   const header = cells(table[0] ?? '')
   const verdict = header.findIndex((cell) => /^Veredito$/i.test(cell))
   const proof = header.findIndex((cell) => /^Prova\b/i.test(cell))
+  const reference = header.findIndex((cell) => /^Refer[êe]ncia$/i.test(cell))
   if (verdict < 0 || proof < 0) return undefined
   const rows = table.slice(2).map(cells)
-  return { verdict, proof, rows }
+  return { verdict, proof, reference, rows }
+}
+
+const DECISION = /docs\/decisions\/\d{4}/
+
+/** A remendo row names its library version, or, when no library does the piece, its decision record. */
+function remendo(
+  piece: string,
+  row: string[],
+  table: { proof: number; reference: number },
+  file: string,
+  fail: Fail,
+) {
+  const proof = row[table.proof] ?? ''
+  if (/nenhuma faz/i.test(row[table.reference] ?? '')) {
+    if (!DECISION.test(proof))
+      fail('card-remendo-decision', file, `${piece}: the proof cites no docs/decisions record`)
+  } else if (!VERSION.test(proof)) {
+    fail('card-remendo-version', file, `${piece}: the proof names no library version`)
+  }
 }
 
 function referenceRows(file: string, text: string, fail: Fail) {
@@ -87,8 +107,7 @@ function referenceRows(file: string, text: string, fail: Fail) {
     const verdict = VERDICTS.exec(row[table.verdict] ?? '')?.[1]?.toLowerCase()
     if (verdict === undefined)
       fail('card-row-verdict', file, `${piece}: nativo, embrulhado or remendo`)
-    else if (verdict === 'remendo' && !VERSION.test(row[table.proof] ?? ''))
-      fail('card-remendo-version', file, `${piece}: the proof names no library version`)
+    else if (verdict === 'remendo') remendo(piece, row, table, file, fail)
   }
 }
 
