@@ -11,7 +11,7 @@ const REGISTRY = Object.entries(PROVIDER_REGISTRY)
 const URL_TEMPLATE = /\$\{[A-Z0-9_]+\}/
 // Only the models.dev gateway resolves a provider from its key alone: Netlify's needs a site too.
 const KEY_GATEWAY = 'models.dev'
-// Mastra 1.78.0 says nothing of what a model outputs: its capabilities are attachments,
+// Mastra 1.79.0 says nothing of what a model outputs: its capabilities are attachments,
 // temperature, structured output and reasoning. So a model that draws, films, speaks, hears,
 // embeds, ranks, guards, reads scans or talks live is left out by a word of its name, as the old Hub
 // did (Conexus OS `model-accounts.ts`, 729bdc5d); the words come from every key provider's list.

@@ -125,7 +125,7 @@ test('o seletor lista só os modelos que conversam: sem os aposentados pelo Mast
     assert.ok(!ids.has(absent), `${absent} is retired or cannot chat`)
 })
 
-// Mastra 1.78.0 has no field for what a model outputs, so every name of every key provider that
+// Mastra 1.79.0 has no field for what a model outputs, so every name of every key provider that
 // hints at media, speech, embeddings, ranking, guarding or live talk is either left out or one of
 // the chat families read here by hand; a new such name in a Mastra upgrade fails until it is read.
 const HINTS_NOT_CHAT =

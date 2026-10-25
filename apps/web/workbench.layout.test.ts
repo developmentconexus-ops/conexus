@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import type { Locator } from 'playwright-core'
-import { createHarness, DESKTOP, PHONE, ZOOMED_PHONE } from './layout-harness.ts'
+import { createHarness, DESKTOP, PHONE, SMALL_PHONE, ZOOMED_PHONE } from './layout-harness.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { CONVERSATION_STATES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
@@ -95,11 +95,11 @@ test('no celular, "App | Conversa" troca de região sem perder o rascunho nem a 
   await page.close()
 })
 
-// The conversation's screens at the widths a phone reads them: 390px, and 195px for a 200% zoom (design
+// The conversation's screens at the widths a phone reads them: 390px, 320px, and 195px for a 200% zoom (design
 // V18), in both themes, with no sideways scroll and no console error, which is where a refusal of
 // the Hub's policy shows (testing T23). The sweep adds the Tab stops at its own widths.
 for (const state of CONVERSATION_STATES) {
-  for (const viewport of [PHONE, ZOOMED_PHONE]) {
+  for (const viewport of [PHONE, SMALL_PHONE, ZOOMED_PHONE]) {
     for (const scheme of ['light', 'dark'] as const) {
       test(`${state.name}, ${viewport.width}px, tema ${scheme}: sem rolagem lateral nem erro no console`, async () => {
         const page = await harness.open(state.path, { viewport, replies: state.replies, scheme })

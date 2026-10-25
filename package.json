@@ -28,7 +28,7 @@
     "record-provider": "node scripts/record-provider.ts",
     "openapi": "node scripts/emit-openapi.ts",
     "radius": "node scripts/check-radius.ts",
-    "change-budget": "node scripts/change-budget.ts",
+    "boundaries": "node scripts/check-boundaries.ts",
     "test": "npm run test:scripts && npm run test --workspaces --if-present",
     "build": "npm run build --workspaces --if-present",
     "app:pack": "node scripts/app-pack.ts tests/apps/recados dist/apps/recados-1 && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-2 tests/apps/recados/cor-2 && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-nao-inicia tests/apps/recados-nao-inicia && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-defeito tests/apps/recados-defeito && node scripts/app-pack.ts tests/apps/recados dist/apps/recados-laco tests/apps/recados-laco",

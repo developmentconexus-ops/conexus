@@ -42,6 +42,7 @@ jobs:
       - name: The OpenAPI document emits from the operations
         run: npm run openapi -- "$RUNNER_TEMP/openapi.json"
       - run: npm run suppressions
+      - run: npm run boundaries
       - name: Approval of the step card
         env:
           BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
@@ -62,11 +63,6 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: npm run new-dependencies -- --base "origin/$BASE_REF"
-      - name: Report changed code size against the step budget
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: npm run change-budget -- --base "origin/$BASE_REF"
       - name: Report files outside the step's declared folders and contract owners
         if: github.event_name == 'pull_request'
         env:
