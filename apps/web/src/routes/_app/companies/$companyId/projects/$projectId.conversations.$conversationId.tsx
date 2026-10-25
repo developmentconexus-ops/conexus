@@ -1,6 +1,10 @@
 import { ConversationId } from '@conexus/hub-api'
 import { createFileRoute } from '@tanstack/react-router'
-import { conversationQuery, Panel } from '../../../../../builder/conversation/public.ts'
+import {
+  conversationQuery,
+  Panel,
+  sessionReadQuery,
+} from '../../../../../builder/conversation/public.ts'
 import { idOrNotFound, readOrNotFound } from '../../../../../platform/hub.ts'
 
 export const Route = createFileRoute(
@@ -13,9 +17,12 @@ export const Route = createFileRoute(
   },
   loader: ({ context, params }) =>
     readOrNotFound(
-      context.queryClient.ensureQueryData(
-        conversationQuery(params.companyId, params.projectId, params.conversationId),
-      ),
+      Promise.all([
+        context.queryClient.ensureQueryData(
+          conversationQuery(params.companyId, params.projectId, params.conversationId),
+        ),
+        context.queryClient.ensureQueryData(sessionReadQuery(params.conversationId)),
+      ]),
     ),
   component: Panel,
 })

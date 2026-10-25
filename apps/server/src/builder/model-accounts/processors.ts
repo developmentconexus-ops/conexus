@@ -361,13 +361,7 @@ async function modelOf(
     : watched(deps, turn, account, call)
 }
 
-/**
- * Mastra's default retry, told not to repeat a limit or a refusal so those reach the queue at
- * once: the default matchers (a reset connection, Gemini's `MALFORMED_FUNCTION_CALL`, a provider's
- * `isRetryable`) and its options stay as Mastra builds them (`stability-defaults.ts:114`). Mastra
- * exports neither its connection-reset matcher nor its options at 1.78.0, so this keeps the default
- * instance and answers before it only for an account's failure (code C75).
- */
+/** Mastra's retry, answering before it only for an account's failure, so a limit or a refusal reaches the queue at once (code C75). */
 function accountRetry(retry: StreamErrorRetryProcessor): ErrorProcessor {
   return {
     id: retry.id,
@@ -386,7 +380,10 @@ function accountRetry(retry: StreamErrorRetryProcessor): ErrorProcessor {
  * queue, last, as in Mastra Code (`index.ts:1345-1393`).
  */
 export function accountErrorProcessors(deps: QueueDeps): ErrorProcessor[] {
-  const defaults = defaultStabilityErrorProcessors().map((processor) =>
+  const defaults = defaultStabilityErrorProcessors({
+    retryUnknownErrors: true,
+    retryBadRequests: true,
+  }).map((processor) =>
     processor instanceof StreamErrorRetryProcessor ? accountRetry(processor) : processor,
   )
   return [new CyberRefusalHandler(), ...defaults, accountQueue(deps)]

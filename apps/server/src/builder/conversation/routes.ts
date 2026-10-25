@@ -14,7 +14,7 @@ import type { QueueDeps } from '../model-accounts/public.ts'
 import { conversationModel, conversationStart, effortsOf } from '../model-accounts/public.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import { historyOf, threadModel, titlesOf } from './history.ts'
+import { threadModel, titleOf, titlesOf } from './history.ts'
 import type { ConversationStore, InProject } from './store.ts'
 import { bodyHashOf } from './store.ts'
 
@@ -64,13 +64,13 @@ function registerReads(app: FastifyInstance, deps: Deps) {
   serve(app, readConversation, async (input) => {
     const { person, params } = input
     const row = await store.owned({ person, ...params })
-    const read = await historyOf(builder, ownerOf(input), params.conversationId)
+    const title = await titleOf(builder, ownerOf(input), params.conversationId)
     // An index row whose thread Mastra does not hold: the conversation is gone (the step's states).
-    if (read === undefined) {
+    if (title === undefined) {
       await store.remove({ person, ...params })
       throw new Failure('CONVERSATION_NOT_FOUND')
     }
-    const conversation = { id: row.id, createdAt: row.createdAt.toISOString(), ...read }
+    const conversation = { id: row.id, createdAt: row.createdAt.toISOString(), title }
     return answer({ conversation })
   })
 }

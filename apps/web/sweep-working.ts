@@ -19,9 +19,6 @@ const STARTED = '2026-10-19T12:00:00.000Z'
 const BASE = {
   title: 'Encomendas',
   createdAt: STARTED,
-  model: 'anthropic/claude-sonnet-4',
-  effort: 'off',
-  tasks: [],
 } as const
 
 const PERSON_SAID: Said = {

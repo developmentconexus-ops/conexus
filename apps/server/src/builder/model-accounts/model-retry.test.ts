@@ -55,3 +55,13 @@ test('MALFORMED_FUNCTION_CALL do Gemini (pelo CLIProxy, em Chat Completions): re
   assert.deepEqual(await turnNotices(hub, ana, url), [])
   assert.equal(endOf(events), 'complete')
 })
+
+test('um 400 simples do provedor: o Mastra repete uma vez na mesma conta, sem troca nem aviso', async (t) => {
+  const reply = failingFirst({ kind: 'refuse', status: 400 }, 1)
+  const { hub, ana, conversations, anthropic } = await conversing(t, (sent) => reply(sent.stream))
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  const streamed = anthropic.sent.filter((each) => each.stream).map((each) => each.key)
+  assert.deepEqual(streamed, [KEY, KEY])
+  assert.deepEqual(await turnNotices(hub, ana, url), [])
+  assert.equal(endOf(events), 'complete')
+})

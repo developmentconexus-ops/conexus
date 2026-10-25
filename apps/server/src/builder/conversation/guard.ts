@@ -17,16 +17,15 @@ const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
 
 /**
  * The only routes of Mastra's server the Hub exposes (security S39, decision 0050): a session's
- * stream, a message, Parar, a card's answer, steering, the queue and the transcript. Any other is
+ * state, stream, a message, Parar, a card's answer and the transcript. Any other is
  * not registered, so it is a 404.
  */
 const FIXED_LIST: ReadonlySet<string> = new Set([
+  `GET ${SESSION}`,
   `GET ${SESSION}/stream`,
   `POST ${SESSION}/messages`,
   `POST ${SESSION}/abort`,
   `POST ${SESSION}/tool-suspension`,
-  `POST ${SESSION}/steer`,
-  `POST ${SESSION}/follow-up`,
   `GET ${SESSION}/threads/:threadId/messages`,
 ])
 
@@ -35,6 +34,7 @@ const Params = z.object({
   sessionId: ConversationId,
   threadId: z.string().optional(),
 })
+const Query = z.object({ threadId: z.string().optional() })
 
 /** What the guard and the Hub's platform answer on these routes; Mastra's handlers answer their own. */
 const FAILURES = [
@@ -83,8 +83,11 @@ async function guard(
   const params = Params.safeParse(request.params)
   if (!params.success) throw new Failure('CONVERSATION_NOT_FOUND')
   const { sessionId: conversationId, threadId } = params.data
-  if (threadId !== undefined && threadId !== conversationId) {
-    throw new Failure('CONVERSATION_NOT_FOUND')
+  const asked = Query.safeParse(request.query)
+  const queried = asked.success ? asked.data.threadId : undefined
+  if (!asked.success) throw new Failure('REQUEST_MALFORMED')
+  for (const named of [threadId, queried]) {
+    if (named !== undefined && named !== conversationId) throw new Failure('CONVERSATION_NOT_FOUND')
   }
   const thread = await deps.builder.memory.getThreadById({ threadId: conversationId })
   const owner = ownerOfResource(thread?.resourceId)

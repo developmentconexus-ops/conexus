@@ -83,9 +83,6 @@ const CONVERSATION = readConversation.success.body.parse({
     id: ID,
     title: TITLE,
     createdAt: '2026-10-19T12:00:00.000Z',
-    model: 'anthropic/claude-sonnet-4',
-    effort: 'off',
-    tasks: [],
   },
 })
 

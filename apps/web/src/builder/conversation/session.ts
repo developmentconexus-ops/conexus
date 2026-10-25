@@ -23,6 +23,8 @@ export function sessionOf(conversationId: ConversationId) {
     session,
     send: (content: string) => said(session.sendMessage(content)),
     stop: () => said(session.abort()),
+    /** The model, effort and tasks the conversation is on, as Factory UI hydrates (`session.state`). */
+    state: () => said(session.state({ threadId: conversationId })),
     /** The transcript, oldest first, as Mastra's route serves it. */
     read: async () => {
       const { messages } = await said(
