@@ -12,19 +12,19 @@ it needs.
 2. For each screen the step touches that the old product had, capture every state a person
    reaches, each at 1440 and 390 px, in both themes. Keep the shots in a captures folder beside the
    report.
-3. In the report's section 8, give each visual piece its own row with **design brought: yes or no**,
-   apart from whether its code is brought. A piece whose code is new keeps its design unless the
-   founder says otherwise.
-4. Fill the report's section 10, "What a person saw": old and new side by side, per state.
+3. In the reference table, give each visual piece its own row and say in its "Como a referência faz"
+   cell **design brought: yes or no**, apart from whether its code is brought. A piece whose code is
+   new keeps its design unless the founder says otherwise.
+4. Fill the report's section 6, "What a person saw": old and new side by side, per state.
 5. A screen whose old design the step does not bring goes to the founder with the shot.
 6. A piece of today's `main` that the step keeps is compared with the reference's piece too, with
    `file:line`; "it already exists" is not a reason.
 
 ## Other apps
 
-- Study other apps only in a step that creates or changes a screen: the analogs of the study's step 2,
-  with screenshots at 1280 and 390 px, today's screen beside, because text alone did not change a
-  decision and a shot did.
+- Study other apps only in a step that creates or changes a screen: the analogs of the reference
+  table, with screenshots at 1280 and 390 px, today's screen beside, because text alone did not
+  change a decision and a shot did.
 - The order: screenshots, then Impeccable `critique`, then two or three box layouts of different
   organisation (vary the organisation, never the visual), then the card. Visual and animation have a
   phase of their own, later.

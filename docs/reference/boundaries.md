@@ -893,7 +893,7 @@ refused for its media type or its origin.
   secrets rule reaches the model and that the gate fails without it, not that a real model obeys.
   Revisit when `runEvals` takes tool mocks, or the Builder's agent can be a target.
 
-## The Builder's end of the turn: open tasks (step 14.2)
+## Mastra 1.79.0: the Builder's end of the turn, open tasks (step 14.2)
 
 - **The end of the turn is Mastra's `isTaskComplete`.** `conversation/builder.ts` gives the Builder's
   `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`conversation/processors.ts`
@@ -907,7 +907,7 @@ refused for its media type or its origin.
   Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
   it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
 
-## Mastra's session routes behind the Hub's guard (step 14.2)
+## Mastra 1.79.0 and @mastra/fastify 1.5.23: session routes behind the Hub's guard (step 14.2)
 
 - **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
   agent-controller routes (stream, message, Parar, a card's answer, steer, follow-up, transcript)

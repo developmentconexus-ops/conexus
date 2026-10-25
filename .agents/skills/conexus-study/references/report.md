@@ -1,9 +1,9 @@
 # The study report
 
-Kept outside the repository ([delivery L21](../../../../docs/guides/delivery.md)); the card copies from
-it, and a one-way door leaves a decision record. Short enough to be read: the founder's page one
-page, the rest evidence. Quote what you find: `file:line`, the version or commit, a short verbatim
-snippet.
+Kept outside the repository ([delivery L21](../../../../docs/guides/delivery.md)); the card copies
+its reference table, and a one-way door leaves a decision record. Short enough to be read: the
+founder's page one page, the rest evidence. Quote what you find: `file:line`, the version or
+commit, a short verbatim snippet.
 
 ## The template
 
@@ -15,88 +15,67 @@ snippet.
 ## 1. A página do fundador (Portuguese)
 
 What a person will do and see at the end, with an example; what the references do, in plain words;
-what we build; what is our own invention; decisions only where references diverge or none exists,
-lettered, with a recommendation, each option with its how in one plain line (what native piece does
-it and which vendor product does it the same way), never theory alone.
+what we build. Decisions only where they are really his: a product choice, references diverging on
+what a person sees, or a remendo row (code C75). Each one lettered, with a recommendation, its
+verdict, and the native how in one plain line, never theory alone.
 
 ## 2. The question and its premise
 
 Each question in one sentence; the premise as it arrived; whether it held, and the root cause if not.
 
-## 3. Who already does this
+## 3. The reference table
 
-| Analog | Why it is close | Where found | Read how (code / docs / run) | At |
-| --- | --- | --- | --- | --- |
+<the table below, one row per piece>
 
-Searched and set aside: <names, with why>.
+Searched: <where, with each analog's pin; set aside, with why>.
 
-## 4. Source register
+Options a guarantee rests on: <library and constructor, option, default at the installed version
+with `file:line`, value to use and why, documentation warning>. Errors the library handles itself,
+with the option that sends them to the central handler (code C50).
 
-Per [sources](sources.md), library options included:
+## 4. Recommendation
 
-| Library and constructor | Option a guarantee rests on | Default at the installed version | Set to, or kept, and why | Documentation warning, or none |
-| --- | --- | --- | --- | --- |
+What to build, written from zero, and what of `main` it deletes. Where references diverge, every
+option with its how: native primitives (`package@installed`: API, `file:line`), how the vendor's
+products do it (`file:line`), and what we write ourselves and why. Rejected options with their
+reason. Every number with its source. A one-way door: the decision record and its Result
+([proof](proof.md)).
 
-**Errors the library handles itself**: <where it catches, prints or answers an error on its own,
-with the line, and the option that sends it to the central handler (code C50)>.
+For each brought part: the old file at the frozen commit, lines today, the lines its refactor will
+change, the old decisions it carries with their basis, the small fixes left as debt, and whether it
+would be written this way from nothing. Then every claim the card rests on, with its label
+([sources](sources.md)), and every relay not reopened.
 
-## 5. The same questions
-
-| Question | Analog A | Analog B | Analog C | Native feature | Old product | Verdict |
-| --- | --- | --- | --- | --- | --- | --- |
-
-The verdict is consolidated, one product's choice, or nobody does it.
-
-## 6. What the repository decided, against the table
-
-| Decision or rule | Its premise, tested at the installed version | Agrees with the table? | If not: the founder's earlier word, quoted |
-| --- | --- | --- | --- |
-
-## 7. Recommendation
-
-What to build, written from zero, each piece tagged consolidated / one product's / **invenção**,
-with its basis, and what of `main` it deletes. For every option, its **how**:
-
-| Option | Native primitives (`package@installed`: API, `file:line`) | How the vendor's products do it (`file:line`) | What we write ourselves, and why |
-| --- | --- | --- | --- |
-
-Rejected options with their reason. Every number with its source. A one-way door: the decision
-record and its Result ([proof](proof.md)).
-
-## 8. Parts, proved and not
-
-| Part (a visual piece has its own row) | New or brought | Design brought: yes or no | File of the new tree | Refactored as it enters | Old decisions it carries, with basis in words |
-| --- | --- | --- | --- | --- | --- |
-
-For each brought part: lines today, the lines its refactor will change, the fixes done in it, the
-small ones left as debt, and whether it would be written this way from nothing. For each part
-written new that replaces an old mechanism: the old mechanism (file at the frozen commit), what it
-covered, and what the new part drops, and why.
-
-Then every claim the card will rest on, with its label ([sources](sources.md)), and every relay not
-reopened.
-
-## 9. Not read, not run
+## 5. Not read, not run
 
 What the coverage list leaves open, and why.
 
-## 10. What a person saw
+## 6. What a person saw
 
 Only for a step with a screen: old and new side by side, per state, with the captures folder
 ([screens](screens.md)).
 ```
 
+## The reference table
+
+The one artifact from study to review. The study fills every column but "Unidade" and "Arquivo
+novo", which the card adds; the verdicts are [code C75](../../../../docs/guides/code.md)'s.
+
+| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| What a person sees, or the mechanism | U&lt;k&gt;, or "fica de fora" and why | `file:symbol`, or "nenhum" | `package@installed` or `repo@commit`, `file:line`; "nenhuma faz" when none does | One line | nativo, embrulhado (and what ours adds) or remendo | Script output, test or measurement, and the boundaries entry | His words and date, or "não precisa" | Path |
+
+Never one row for "o resto". A product piece no library has (our Git, the accounts queue) is a
+remendo row that cites its decision record.
+
 ## The coverage list
 
-The study closes when each box holds, not when sections are full.
+What the table's shape cannot show. The study closes when each box holds.
 
-- [ ] Three to six analogs named, with where they were searched; each read at a recorded pin.
 - [ ] The old product run for what it did; one reference run where behaviour changes.
 - [ ] Every library claim from the installed version, the maintainers' skill loaded.
 - [ ] Every number and limit sourced, or dropped.
-- [ ] Every option, the founder's page included, carries its how at the installed version.
-- [ ] Every **invenção** proved or put to the founder.
-- [ ] Every reader line reopened, or marked relay in section 8.
+- [ ] Every reader line reopened, or marked relay in section 4.
 - [ ] Notes, clones, captures and run outputs beside the report.
 
 What each unit writes, in what order, its blast radius and its failure table are the card's work

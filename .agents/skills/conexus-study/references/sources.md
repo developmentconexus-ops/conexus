@@ -23,18 +23,18 @@ taken as a reference; a warning that sat on an option's reference page, never in
 - When the platform has a feature like the step's (environments, deploy, machine, alerts), read its
   page and public client code, and say what to take and what not.
 
-## The source register
+## What the reference table takes from here
 
-One row per source: name; version or commit read; Conexus's pin, and whether they match; how it was
-read (code, docs, run); what was read whole, by headings, or not at all. A "not found" counts only
-beside this row. For each library option a guarantee rests on: its default at the installed version
-(`file:line`), the value to use, and any documentation warning.
+Each row's "Referência" cell names the version or commit read, and says when it differs from
+Conexus's pin. The report's search line says how each source was read (code, docs, run) and what
+was read whole, by headings, or not at all; a "nenhuma faz" counts only beside it.
 
 ## Labels
 
-Every claim carries one: **provado** (run here), **lido** (code at a pin, `file:line`),
-**documentado** (vendor docs, dated), **herdado** (our own code or decision: it describes, never
-justifies), **hipótese**, **não verificado**.
+Every claim, and every cell of the reference table's "Como a referência faz", carries one:
+**provado** (run here), **lido** (code at a pin, `file:line`), **documentado** (vendor docs, dated),
+**herdado** (our own code or decision: it describes, never justifies), **hipótese**, **não
+verificado**.
 
 ## Readers
 

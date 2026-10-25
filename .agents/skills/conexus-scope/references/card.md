@@ -1,14 +1,12 @@
 # The card template
 
-The card is the whole map of the step short of the code itself, within the ceiling of [delivery
-L24](../../../../docs/guides/delivery.md). Its founder's page, in Portuguese, is the only part the
-founder approves and fits one page. The rest serves the builder
-and the reviewers and may be in Portuguese or English, one language per card.
+The card is the whole map of the step short of the code itself. Its founder's page, in Portuguese,
+is the only part the founder approves. The rest serves the builder and the reviewer and may be in
+Portuguese or English, one language per card.
 
 The card never carries whole files. A unit's section is its build spec: what its builder reads,
-with the start of the code where a step is not obvious. It drifted before when approved unread;
-now the reader opens every cited line, the founder approves only his page, and the closing deletes
-the card, after which the code is the only source.
+with the start of the code where a step is not obvious. The reader opens every cited line, the
+founder approves only his page, and the closing deletes the card; then the code is the only source.
 
 ```markdown
 # Etapa <n>: <nome>
@@ -26,7 +24,8 @@ roteiro, diz o que viu e aprova os textos das telas.
 
 **Fica de fora.** <o que não entra, e por quê>
 
-**A decisão sua pedida nesta etapa.** <uma, com letras e um exemplo, ou "nenhuma">
+**As decisões suas nesta etapa.** <cada uma com letras, um exemplo, a recomendação, o veredito
+(nativo ou remendo) e o como nativo numa linha; ou "nenhuma">
 
 ## As unidades
 
@@ -59,17 +58,13 @@ das capturas do produto antigo que o protótipo seguiu ([screens](screens.md)).
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
 
-## O mapa do estudo
+## A tabela de referência
 
-| Achado ou decisão do estudo (relatório:linha) | Unidade dona, ou "fica de fora" e por quê |
-| --- | --- |
+<a tabela do estudo ([report](../../conexus-study/references/report.md), "The reference table"),
+com a unidade e o arquivo novo de cada linha>
 
-## O que nasce novo e o que é trazido
-
-| Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |
-| --- | --- | --- | --- | --- | --- |
-
-**A medida do transplante.** <a medida da regra do estudo, por parte trazida (`conexus-study`, passo 5)>
+**A medida do transplante.** <por parte trazida: o arquivo antigo, o que se refatora na entrada,
+as decisões antigas que carrega com a base, e a medida da regra do estudo (`conexus-study`)>
 
 **A dívida.** <consertos pequenos deixados, um por linha, que vão para a seção 11 da arquitetura>
 
@@ -78,15 +73,10 @@ das capturas do produto antigo que o protótipo seguiu ([screens](screens.md)).
 **Base e modelo.** Commit base; o modelo do builder e por quê (Sonnet; Opus para desenho entre
 módulos, concorrência ou algoritmo sutil).
 
-### Ler primeiro
+### As linhas da tabela
 
-| Arquivo e símbolo | Linhas na base | Por quê |
-| --- | --- | --- |
-
-### A referência
-
-| Pacote@versão ou repositório@commit, arquivo | Linhas | O que copiar e o que adaptar |
-| --- | --- | --- |
+<cada linha da tabela de referência desta unidade: o que ler na base (arquivo, símbolo, linhas), as
+linhas da referência a copiar ou adaptar, e a API nativa com as opções e o padrão>
 
 ### O raio da mudança
 
@@ -100,7 +90,7 @@ Assinaturas em TypeScript, com o arquivo onde vivem (hub-api, server, web), e o 
 rotas (método, caminho, acesso, entrada, saídas e falhas), colunas de tabela com
 tipo e restrição, tipos exportados por nome e campos, códigos de falha. Nenhum corpo de função.
 
-Além delas, a forma de cada coisa (a conclusão da seção 5 do estudo desce para cá, porque quem
+Além delas, a forma de cada coisa (a conclusão do estudo desce para cá, porque quem
 constrói não lê o estudo):
 
 - **Cada estado** como união, com o campo que separa as variantes (C21, C22).
@@ -141,11 +131,14 @@ mostra, e o teste que falha hoje>
   in a pull request of its own ([delivery L20](../../../../docs/guides/delivery.md)).
 - A contract is a signature a reviewer can compare with the diff, not a design to re-derive.
 - A criterion about a provider's behaviour cites the installed provider's code.
-- The table of parts has one row per mechanism, never "o resto". The reference cell says "nenhuma
-  faz" when none does. A "nosso" row names the native candidate at the installed version and the
-  proof that it does not serve (a script's output or a test), and links its
-  [boundaries](../../../../docs/reference/boundaries.md) entry; a row without the proof goes back to
-  the study. "Embrulhado" says in one line what the wrapper adds.
+- The founder's page holds only his real decisions: a product choice, references diverging on what
+  a person sees, a remendo row new in the step ([code C75](../../../../docs/guides/code.md)), a
+  guide rule the study found resting only on "implemented so". Never a fact a run can show, a
+  technical choice where the references converge, the wording of a library's output, or a
+  near-hypothetical case.
+- Every piece the use script touches has its row in the reference table, and every file the units
+  change is explained by a row or a contract. A remendo row without its proof and its
+  [boundaries](../../../../docs/reference/boundaries.md) entry goes back to the study.
 - Each unit lists what it deletes from `main` before what it adds. A fact used by two units has one
   owner unit and one criterion whose test crosses both.
 - The order of the work names guide rules by identifier and never restates them.
@@ -174,5 +167,6 @@ The reader of step <n> answers each one with the card's line.
 7. Does each unit's section of contracts give every state its union, every id its brand, every
    shared fact its owner, every outside input its schema, and the model file its verdict on C21,
    C23 and C26?
-8. Does every cited reference line, opened at the installed version, say what the section claims?
-9. Does the study's map give every finding an owner unit or a reason to stay out?
+8. Opened at the installed version, does every cell of the reference table, and every reference
+   line a unit cites, say what the card claims? Has every row its unit or a reason to stay out, and
+   every remendo row its proof and the founder's word?

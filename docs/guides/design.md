@@ -202,9 +202,12 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
   Failure: a permanently disabled button leaves the person with no next step. [review]
 - **V30.** Every action **should** have a keyboard path and coherent focus return, including Tab
   order, Esc, drag alternatives and safe text composition. Failure: Tab reaches a control without
-  showing where focus is. In the conversation, Enter sends and Shift+Enter breaks the line, and the
-  hint below the field says so; a send takes the person to the end, even from higher up. Founder,
-  2026-10-20: "3. Okay", "4. Sim". [review]
+  showing where focus is. In the conversation, on a keyboard Enter sends and Shift+Enter breaks the
+  line, and the hint below the field says so; on touch Return breaks the line, the button sends,
+  and the key hint is hidden. A send takes the person to the end, even from higher up. On a phone
+  the line against pasting secrets sits in the empty conversation and the model sheet, not under
+  the field. Founder, 2026-10-20: "3. Okay", "4. Sim"; 2026-10-25: "1. A 2.quebra de linha diva
+  sumir 3. B". [review]
 - **V31.** Controls **should** have meaningful localized accessible names: labels for inputs and
   pt-BR labels for icon-only buttons. Failure: a screen reader announces only "button" with no
   purpose. Syntactic a11y lint does not prove name quality or language. [review]
@@ -220,8 +223,9 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
 ## Voice
 
 - **V39.** Text **should** be calm, clear sentence case, with actions named by verbs rather than
-  bare "OK"; technical tool activity becomes an understandable sentence, not exposed reasoning.
-  Failure: two "OK" buttons do not identify which confirms deletion. Domain names follow
+  bare "OK"; the model's reasoning is shown collapsed, in the model's own words, and each tool
+  row opens on what it received and returned. Founder, 2026-10-22: "14.2 e pra vir correcao de
+  tudo". Failure: two "OK" buttons do not identify which confirms deletion. Domain names follow
   [code C69](code.md); punctuation and symbol blacklists cannot prove clarity. [review]
 
 Failure wording, allowed actions and the not-found navigation exception have one owner:

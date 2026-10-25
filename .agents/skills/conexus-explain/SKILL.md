@@ -16,11 +16,9 @@ the depth to his question and to the knowledge he shows.
 2. Tell what is planned from what is built. For a proposal, explain the intended design; for an
    implementation, check the code. Point out divergences and what you could not verify. Do not
    invent decisions or historical reasons.
-3. Read the guides the step's card names for the target. The
-   [documentation map](../../../docs/index.md) names their owners. The questions come from those
-   guides' rules and from the real change. Use the repertoire in
-   [questions](references/questions.md) for owner, data flow, guarantees, alternatives and the
-   limits of the evidence. A demonstrated defect may be pointed out without citing a guide.
+3. Read the guides the step's card names for the target. The [documentation
+   map](../../../docs/index.md) names their owners. The questions come from those guides' rules and
+   from the real change. A demonstrated defect may be pointed out without citing a guide.
 4. When Mastra is involved, use the maintainers' `mastra` skill and check the documentation and
    types of the installed version. Say what the framework keeps and what Conexus adds. Without
    access to the installed version, state that limit; do not conclude that an API does not exist.
@@ -29,13 +27,12 @@ the depth to his question and to the knowledge he shows.
 
 Follow [outline](references/outline.md): moment A before the card's approval, moment B with the
 merge ask, an ad hoc question in proportion to it. Keep within the outline's word budget; evidence
-goes in an appendix outside it. Use the repertoire in [questions](references/questions.md) for
-parts 6 and 9.
+goes in an appendix outside it.
 
 ## Limits
 
 Answer the founder in Portuguese, and explain each technical term briefly the first time it
-appears. The reference offers a repertoire, not new rules: the repository's current sources win.
+appears. The outline makes no rule: the repository's current sources win.
 
 Read only. Do not change files, run mutations, implement, install or grant an approval. This skill
 supports understanding; it does not replace code review, tests or operational validation.

@@ -38,6 +38,7 @@ choice of test tools.
   protection or equivalent proof. Failure: a return-address guard has no case attempting a foreign
   origin, so its removal goes unnoticed. [review]
 - **T12.** Registered mandatory protections **must** be proved by removal with `npm run removals`.
+  The registry keeps only security protections. Founder, 2026-10-24 (`1a98660`).
   [`scripts/removals.ts`]
 - **T13.** Isolation boundaries **should** be proved by a direct attack on the real Worker, build
   machine or data path with other layers disabled, when authorized. Failure: an outer layer
@@ -88,16 +89,18 @@ choice of test tools.
   role without its password. A blind ban on timers would not prove reliable waiting. [review]
 - **T21.** Test files **must** obey the same size limits as code. [Biome]
 - **T23.** Screen changes and their transitions **should** be looked at in a real browser, including
-  narrow widths, both themes and a keyboard pass through focus stops. Reference widths remain
-  1366, 390 and 320 px. Look at captures and observe submit, redirect and refresh transitions;
-  record a trace when a still image misses the state. Stable measurements become tests in the
-  existing browser check. Failure: text and console inspection approve a login column only 8 px
-  wide. The full matrix of captures belongs to T25's QA report; a builder looks at the states its
-  unit changes, and a reviewer drives the browser where it doubts one. An expected refusal shown by
-  the screen is not an uncaught error. [review]
+  narrow widths, both themes and a keyboard pass through focus stops. Captures are taken at 1366 and
+  390 px; 320 px is the automated overflow check's. Look at captures and observe submit, redirect
+  and refresh transitions; record a trace when a still image misses the state. Stable measurements
+  become tests in the existing browser check. Failure: text and console inspection approve a login
+  column only 8 px wide. The full matrix of captures belongs to T25's QA report; a builder looks at
+  the states its unit changes, and a reviewer drives the browser where it doubts one. An expected
+  refusal shown by the screen is not an uncaught error. [review]
 - **T25.** A step that changes a screen **must** have a QA report at its candidate commit by an
   agent that did not build the step, following
-  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). [review]
+  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). Horizontal overflow and a phone field
+  under 16px are the browser checks' (`layout.test.ts`, `fields.layout.test.ts`), not captures to
+  read; a new screen state joins their sweep. [review]
 
 ## 6. From change to proof
 

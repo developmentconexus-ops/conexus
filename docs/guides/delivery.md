@@ -44,21 +44,21 @@ merge.
 ## 3. Build and review
 
 - **L9.** Review **should** follow the approved protocol. When CI turns green at the candidate
-  commit, QA ([testing T25](testing.md)) and two reviewers start together: Claude on Opus and
-  Codex at high reasoning, neither a builder of the step, each following
-  [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md); the Claude reviewer alone runs
-  the refusal criteria and reads the CI logs. Nobody waits for QA; a review left incomplete is
-  finished by its reviewer, not repeated by a third. QA and review findings form one fix round,
-  split into fronts that share no file, built at once, one commit each; a Bloqueia that needs a
-  contract the card lacks follows L7, then is one more front with its own delta. One reader checks each front's
-  delta for closed Bloqueia and new defects, while QA reruns the screens it touched. No per-unit
-  review or review robot; a unit merges into the step branch only with its own local tests and
-  proofs green, the commands its section names, heavy suites one at a time (conexus-build step 7),
-  and CI runs once, on the step's pull request. Founder, 2026-10-24: "CI é só quando for fazer o
-  PR". Documents-only changes get check-docs and one reader once; a card gets
-  one whole reading, then deltas. Founder, 2026-10-12, firstmate's uncontested reading;
-  2026-10-16: "Concordo"; 2026-10-21: "nao podemos adicionar gargalo". Failure: rereading everything
-  after each fix samples new rules forever. [review]
+  commit, QA ([testing T25](testing.md)) and one reviewer start together: Claude on Opus, no builder
+  of the step, following [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md). It walks
+  the reference table row by row ([code C75](code.md)), runs the refusal criteria, reads CI logs.
+  Nobody waits for QA; a review left incomplete is finished by its reviewer. QA and review findings
+  form one fix round, split into fronts that share no file, built at once, one commit each; a
+  Bloqueia that needs a contract the card lacks follows L7, then is one more front with its own
+  delta. One reader checks each front's delta for closed Bloqueia and new defects, while QA reruns
+  the screens it touched. No per-unit or per-topic review: the card's reader checks the reference
+  table before any build. A unit merges into the step branch only with its section's local tests and
+  proofs green (conexus-build step 7); CI runs once, on the step's pull request. Founder,
+  2026-10-24: "CI é só quando for fazer o PR", and one Opus review per step; 2026-10-25: "2. A".
+  Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
+  deltas. Founder, 2026-10-12, firstmate's uncontested reading; 2026-10-16: "Concordo"; 2026-10-21:
+  "nao podemos adicionar gargalo". Failure: rereading everything after each fix samples new rules
+  forever. [review]
 - **L11.** Findings **should** cite evidence, file, line and broken rule; fixes address the cause
   and sweep its class through the whole diff. A third delta check blocking on the same premise
   returns to the card and founder. Failure: fixing one logger key per round leads to six reviews
@@ -72,8 +72,10 @@ merge.
   scale with a written trigger, development tool) goes to a next-card or method issue. A trigger
   that the step's use script or its first live turn reaches is not future: that finding is Bloqueia
   unless the step proves it does not happen. With neither broken rule nor shown defect, start with
-  `Nit:`, as Fechamento. Founder, 2026-10-16: "Concordo". Failure: a stale line citation blocks like
-  a password leak. [review]
+  `Nit:`, as Fechamento. On the border, a loss in the use script or operation, or a wrong first file
+  of its kind, is Bloqueia; a loss only after a later code change is Fechamento unless two owners
+  can diverge. Founder, 2026-10-16: "Concordo". Failure: a stale line citation blocks like a
+  password leak. [review]
 
 ## 4. Merge and use
 
@@ -103,8 +105,9 @@ merge.
 
 - **L19.** Closing **should** follow use and settlement of pending items: write the use line, retain
   learned rules that change the next action, confirm acceptance tests, settle the Fechamento list,
-  remove taken items from next-card issues and delete the card. Failure: deleting the card also
-  erases an administrator decision nobody preserved. [review]
+  remove taken items from next-card issues, move each remendo row of the reference table into
+  [boundaries](../reference/boundaries.md) with its package version, and delete the card. Failure:
+  deleting the card also erases an administrator decision nobody preserved. [review]
 - **L20.** Skills and guides **must** change only in a closing pull request, when no step is in
   construction. A new check **must** land in a pull request of its own before the step that needs
   it, as native configuration first (Biome, TypeScript, knip, dependency-cruiser), a script only
@@ -115,26 +118,28 @@ merge.
 ## 6. What the repository keeps
 
 - **L21.** The repository **must** keep only what changes what the next agent does: the use line in
-  the approvals ledger, a proof's criterion and result in its decision record, a learned rule in its guide.
-  Studies and proofs stay outside it; what only proves a stage was done stays in the pull request.
-  Founder, 2026-10-12. [check-docs]
+  the approvals ledger, a proof's criterion and result in its decision record, a learned rule in its
+  guide, the study's reference table in the card. Study reports and proofs stay outside it; what
+  only proves a stage was done stays in the pull request. Founder, 2026-10-12. [check-docs]
 - **L23.** What a person uses or decides **should** be in Portuguese: README, roadmap, cards,
   founder's page, operational how-tos and all visible text, accessible names and placeholders,
   with Brazilian presentation of dates/numbers. AGENTS.md, guides, architecture, decisions, skills
   and other how-tos stay in English. Founder, 2026-10-15: "2. A". Failure: an English recovery
   instruction prevents the person following the use script without translation. [review]
 - **L24.** A file in `docs/` or `.agents/skills/` **must** have a line in `docs/index.md` and stay
-  under its ceiling below; links **must** resolve; rule identifiers **must** be unique and every cited
-  one exist; a rule **must** live in one file; retired process names **must not** appear. They are:
-  wave, N0 to N5, receipts, Factory as the old review robot, Codex review, `conexus-spec`,
-  `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. [check-docs, review]
+  under its ceiling below, when it has one; links **must** resolve; rule identifiers **must** be
+  unique and every cited one exist; a rule **must** live in one file; retired process names **must
+  not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
+  `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
+  card and `docs/approvals.md` have no word ceiling, and L21 guards them: keep only what changes
+  what the next agent does. Founder, 2026-10-24: "Pode seguir". [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
 | `AGENTS.md` | 400 |
 | `docs/index.md` | 500 |
 | `docs/roadmap.md` | 1,600 |
-| `docs/approvals.md` | 1,500 |
+| `docs/approvals.md` | none (L21) |
 | `docs/architecture.md` | 2,500 |
 | `docs/guides/code.md` | 3,500 |
 | `docs/guides/security.md` | 3,000 |
@@ -142,7 +147,7 @@ merge.
 | `docs/guides/testing.md`, `web.md` | 2,000 |
 | `docs/guides/delivery.md` | 1,800 |
 | `docs/decisions/*.md` | 350 |
-| `docs/steps/*.md` | 4,000, the founder's page about 600 |
+| `docs/steps/*.md` | none (L21), nor on the founder's page |
 | `docs/how-to/*.md` | 800 |
 | `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |
