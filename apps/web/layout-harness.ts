@@ -21,7 +21,14 @@ const TYPES: Record<string, string> = {
 
 // The policy the edge sends with an app's page, from its one owner: a piece that needs a style
 // element or a data: URI fails here, in the browser, and not after the Release (web W22, testing T23).
-const SECURITY_HEADERS = { 'Content-Security-Policy': appContentSecurityPolicy("'none'") }
+// The Hub's own policy adds `frame-src` for the apps' domain, which the Prévia frames.
+const APPS_DOMAIN = 'apps.example.test'
+const SECURITY_HEADERS = {
+  'Content-Security-Policy': `${appContentSecurityPolicy("'none'")}; frame-src https://*.${APPS_DOMAIN}`,
+}
+const APP_PAGE = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Encomendas</title><link rel="stylesheet" href="/app.css"></head><body><h1>Encomendas</h1><p>Maria, bolo de cenoura, sexta.</p></body></html>`
+const APP_STYLE =
+  'body{font:16px system-ui;margin:0;padding:24px;background:#fffdf8;color:#222}h1{margin:0 0 12px}'
 
 export const DESKTOP = { width: 1366, height: 900 }
 export const PHONE = { width: 390, height: 844 }
@@ -88,6 +95,7 @@ export type Harness = {
       viewport: Viewport
       replies: Replies
       scheme?: 'light' | 'dark'
+      userAgent?: string
     },
   ): Promise<Page & { seen: Seen[]; problems: string[] }>
   /** The requests no reply was given for, over the whole run. */
@@ -110,6 +118,18 @@ function watchProblems(page: Page): string[] {
   return problems
 }
 
+/** A Projeto's app, framed by the Prévia: one page under the policy the dispatcher sends. */
+async function routeApp(page: Page) {
+  await page.route(`https://*.${APPS_DOMAIN}/**`, (route) => {
+    const stylesheet = new URL(route.request().url()).pathname === '/app.css'
+    return route.fulfill({
+      body: stylesheet ? APP_STYLE : APP_PAGE,
+      contentType: stylesheet ? 'text/css' : 'text/html',
+      headers: { 'Content-Security-Policy': appContentSecurityPolicy(ORIGIN) },
+    })
+  })
+}
+
 export function createHarness(root: string): Harness {
   let outDir = ''
   let browser: Browser | undefined
@@ -117,12 +137,18 @@ export function createHarness(root: string): Harness {
 
   async function open(
     path: string,
-    options: { viewport: Viewport; replies: Replies; scheme?: 'light' | 'dark' },
+    options: {
+      viewport: Viewport
+      replies: Replies
+      scheme?: 'light' | 'dark'
+      userAgent?: string
+    },
   ) {
     if (!browser) throw new Error('the harness is not started')
     const page = await browser.newPage({
       viewport: options.viewport,
       colorScheme: options.scheme ?? 'light',
+      ...(options.userAgent === undefined ? {} : { userAgent: options.userAgent }),
     })
     const seen: Seen[] = []
     const problems = watchProblems(page)
@@ -152,6 +178,7 @@ export function createHarness(root: string): Harness {
         headers: SECURITY_HEADERS,
       })
     })
+    await routeApp(page)
     await page.goto(`${ORIGIN}${path}`)
     await page.evaluate(() => document.fonts.ready)
     return Object.assign(page, { seen, problems })
@@ -228,6 +255,8 @@ export function focusDrawn(page: Page): Promise<string> {
               const [ar = 0, ag = 0, ab = 0] = channels(accent)
               return Math.max(Math.abs(r - ar), Math.abs(g - ag), Math.abs(b - ab)) <= 2 ? a : 0
             }
+            // A frame holds focus for the page inside it, which draws its own (`:focus` is false on the frame).
+            if (focused instanceof HTMLIFrameElement) return settled(`${name} framed`)
             const own = getComputedStyle(focused)
             const frame = getComputedStyle(focused.closest('[data-focus-frame]') ?? focused)
             const shadow = frame.boxShadow.slice(0, frame.boxShadow.indexOf(')') + 1)

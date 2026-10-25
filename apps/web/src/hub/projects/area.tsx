@@ -1,3 +1,4 @@
+import type { Project } from '@conexus/hub-api'
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import type { ReactNode } from 'react'
@@ -56,7 +57,7 @@ function Sections() {
  * The big region of a Projeto: the top line with its name, its tabs and **Abrir app**, and below the Prévia
  * (the route hands it in) or the Projeto's sections. The tab and the section live in the address.
  */
-export function ProjectArea(props: { preview: ReactNode; code: ReactNode }) {
+export function ProjectArea(props: { preview: (project: Project) => ReactNode; code: ReactNode }) {
   const { companyId, projectId } = route.useParams()
   const { lens = Lens.enum.preview } = route.useSearch()
   const navigate = useNavigate()
@@ -83,6 +84,8 @@ export function ProjectArea(props: { preview: ReactNode; code: ReactNode }) {
         {project.address !== null && (
           <a
             href={`https://${project.address}/`}
+            target="_blank"
+            rel="noopener noreferrer"
             className={cn(buttonVariants({ variant: 'primary' }), 'ml-auto')}
           >
             Abrir app
@@ -90,7 +93,7 @@ export function ProjectArea(props: { preview: ReactNode; code: ReactNode }) {
         )}
       </div>
       <TabsContent value={Lens.enum.preview} className="min-h-0">
-        {props.preview}
+        {props.preview(project)}
       </TabsContent>
       <TabsContent value={Lens.enum.code} className="min-h-0 overflow-y-auto p-xl">
         {props.code}

@@ -96,6 +96,16 @@ for (const role of ['owner', 'admin', 'member'] as const) {
   })
 }
 
+test('Abrir app abre aba nova', async () => {
+  server.use(
+    ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, appVersion: 1 }),
+  )
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
+  const link = await screen.findByRole('link', { name: 'Abrir app' })
+  expect(link.getAttribute('target')).toBe('_blank')
+  expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+})
+
 test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', async () => {
   server.use(
     ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true, address: null }),

@@ -39,7 +39,12 @@ describe('varredura', { concurrency: 4 }, () => {
     for (const viewport of VIEWPORTS) {
       for (const scheme of ['light', 'dark'] as const) {
         test(`${state.name}, ${viewport.width}px, tema ${scheme}: sem rolagem lateral e foco visível em cada parada do Tab`, async () => {
-          const page = await harness.open(state.path, { viewport, replies: state.replies, scheme })
+          const page = await harness.open(state.path, {
+            viewport,
+            replies: state.replies,
+            scheme,
+            ...(state.userAgent === undefined ? {} : { userAgent: state.userAgent }),
+          })
           await state.settle(page)
           const { scroll, inner } = await page.evaluate(() => ({
             scroll: document.documentElement.scrollWidth,
@@ -47,7 +52,7 @@ describe('varredura', { concurrency: 4 }, () => {
           }))
           assert.ok(scroll <= inner, `the page scrolls sideways: ${scroll}px in ${inner}px`)
           const stops = await tabStops(page)
-          const flawed = stops.filter((stop) => !/ (solid 2px|halo)( inside)?$/.test(stop))
+          const flawed = stops.filter((stop) => !/ (solid 2px|halo|framed)( inside)?$/.test(stop))
           assert.deepEqual(flawed, [])
           await page.close()
         })
@@ -66,6 +71,7 @@ describe('pré-carga do trilho', { concurrency: 4 }, () => {
       const page = await harness.open(state.path, {
         viewport: DESKTOP,
         replies: state.replies,
+        ...(state.userAgent === undefined ? {} : { userAgent: state.userAgent }),
       })
       await state.settle(page)
       const link = page.locator('a[href$="/projects"]').first()

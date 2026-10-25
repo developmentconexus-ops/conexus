@@ -1,5 +1,5 @@
 import type { ModelId } from '@conexus/hub-api'
-import { FailureData, MachineData, NoticeData, VersionData } from '@conexus/hub-api'
+import { FailureData, MachineData, NoticeData, PreviewData, VersionData } from '@conexus/hub-api'
 import { ConexusMark } from '../../brand/mark.tsx'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
@@ -9,6 +9,7 @@ import { fold } from './fold.ts'
 import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
 import { PlanCard } from './plan-card.tsx'
+import { PreviewLine } from './preview-line.tsx'
 import { QuestionCard } from './question-card.tsx'
 import type { TranscriptItem } from './rows.ts'
 import { ThinkingLine } from './thinking-line.tsx'
@@ -31,6 +32,10 @@ function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conex
   if (item.partType === 'data-conexus-notice') {
     const parsed = NoticeData.safeParse(item.data)
     return parsed.success ? <NoticeLine data={parsed.data} /> : null
+  }
+  if (item.partType === 'data-conexus-preview') {
+    const parsed = PreviewData.safeParse(item.data)
+    return parsed.success ? <PreviewLine data={parsed.data} /> : null
   }
   return null
 }
