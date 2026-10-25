@@ -5,8 +5,8 @@ import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import { Label } from '../../ui/label.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { Markdown } from './markdown.tsx'
-import type { PlanCardItem } from './parts.ts'
 import { CARD_TEXT, useAnswer } from './question-card.tsx'
+import type { PlanCardItem } from './rows.ts'
 
 type Decision = 'approved' | 'rejected'
 
@@ -85,8 +85,8 @@ function Reply({ answering }: { answering: Answering }) {
   )
 }
 
-function useDecision(toolCallId: ToolCallId): Answering {
-  const { answer, sending, error } = useAnswer(toolCallId)
+function useDecision(part: PlanCardItem): Answering {
+  const { answer, sending, error } = useAnswer(ToolCallId.parse(part.toolCallId))
   const [chosen, setChosen] = useState<Decision>()
   const [reason, change] = useState('')
   const [asking, setAsking] = useState(false)
@@ -94,9 +94,9 @@ function useDecision(toolCallId: ToolCallId): Answering {
     const feedback = reason.trim()
     if (action === 'rejected' && feedback === '') return setAsking(true)
     setChosen(action)
-    void answer(
-      action === 'approved' ? { kind: 'plan', action } : { kind: 'plan', action, feedback },
-    )
+    // The plan as the card showed it goes back with the decision, so the history keeps it (`PlanResume`).
+    const shown = { title: part.title, plan: part.plan, path: part.path }
+    void answer(action === 'approved' ? { action, ...shown } : { action, feedback, ...shown })
   }
   return { sending, chosen, error, reason, asking, change, decide }
 }
@@ -109,8 +109,7 @@ function useDecision(toolCallId: ToolCallId): Answering {
  */
 export function PlanCard({ part }: { part: PlanCardItem }) {
   const { ref, clipped } = useClipped()
-  const toolCallId = ToolCallId.parse(part.toolCallId)
-  const answering = useDecision(toolCallId)
+  const answering = useDecision(part)
   const title = !part.title ? 'Plano' : `Plano: ${part.title}`
   const plan = part.plan
   const waiting = part.state === 'open'

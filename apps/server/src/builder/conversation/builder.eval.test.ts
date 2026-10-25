@@ -8,7 +8,7 @@ import { checks } from '@mastra/evals/checks'
 import type { Hub } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { APP_FOLDER } from '../machine/public.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { asked, conversing, endOf, title } from './test-conversation.ts'
 
 const WRITE = 'mastra_workspace_write_file'
 const PAGE = { path: 'pagina.html', content: '<h1>Padaria</h1>\n' }
@@ -92,7 +92,7 @@ async function gate(t: TestContext) {
 
 test('o portão do Builder: o Builder de verdade escreveu os arquivos e nenhuma ferramenta deu erro', async (t) => {
   const { events, scores, called, folder } = await gate(t)
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   assert.equal(readFileSync(join(folder, PAGE.path), 'utf8'), PAGE.content)
   assert.deepEqual(scores, [1, 1])
   assert.deepEqual(new Set(called), new Set([WRITE]))

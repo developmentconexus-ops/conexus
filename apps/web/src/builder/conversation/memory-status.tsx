@@ -1,6 +1,6 @@
-import type { OMProgress } from '@conexus/hub-api'
 import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
+import type { OMProgress } from './session-state.ts'
 
 export type MemoryGauge = Pick<
   OMProgress,

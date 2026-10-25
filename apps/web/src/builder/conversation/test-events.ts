@@ -1,60 +1,73 @@
-import type { ConversationEvent, MastraPart, Message } from '@conexus/hub-api'
-import { MessageId } from '@conexus/hub-api'
-import { builderSaid } from './test-hub.tsx'
+import type { MastraMessagePart } from '@mastra/client-js'
+import { displayOf } from './test-stream.tsx'
 
-/** The events of a turn as the server says them: the turn, Mastra's steps, and our parts. */
+/**
+ * Mastra's session events as its stream sends them, in the shapes the Hub's tests measured
+ * (`conversation-steer.test.ts`, `platform/recordings/mastra/abort.jsonl`).
+ */
 export const MSG_ID = 'builder-msg-1'
-const TURN_ID = 'run-1'
-const TURN_STARTED_AT = '2026-10-19T12:01:00.000Z'
 
-/** The turn the stream opens with, and the step of Mastra's it tells next, as the server says them. */
-export function opening(): ConversationEvent {
-  return {
-    type: 'turn',
-    messages: [{ ...builderSaid(''), id: MessageId.parse(TURN_ID), parts: [] }],
-    startedAt: TURN_STARTED_AT,
-  }
+export const AGENT_START = { type: 'agent_start' }
+export const RUNNING = displayOf({ isRunning: true })
+export const IDLE = displayOf()
+
+export function agentEnd(reason = 'complete') {
+  return { type: 'agent_end', reason }
 }
 
-export function stepStarted(id = MSG_ID): ConversationEvent {
+/** A step of the Builder's opening, with Mastra's empty text part. */
+export function stepStarted(
+  id = MSG_ID,
+  parts: MastraMessagePart[] = [{ type: 'text', text: '' }],
+) {
   return {
     type: 'message_start',
-    message: { ...builderSaid(''), id: MessageId.parse(id), parts: [] },
+    message: {
+      id,
+      role: 'assistant',
+      createdAt: '2026-10-19T12:02:00.000Z',
+      content: {
+        format: 2,
+        parts,
+        metadata: { provider: 'anthropic', modelId: 'claude-sonnet-4' },
+      },
+    },
   }
 }
 
-/** The step as Mastra saves it: under the id its `message_start` told. */
-export function savedStep(text: string): Message {
-  return { ...builderSaid(text), id: MessageId.parse(MSG_ID) }
-}
-
-/** Ours as the server saves it: under the run's id, as the stream told it. */
-export function savedOurs(parts: MastraPart[]): Message {
-  return { ...builderSaid(''), id: MessageId.parse(TURN_ID), parts }
-}
-
-/** A part of ours, told as an update of the turn's own message. */
-export function ours(part: MastraPart, index = 0): ConversationEvent {
-  return updatePart(part, index, TURN_ID)
-}
-
-export function textDelta(delta: string, id = MSG_ID): ConversationEvent {
+/** What the person sent into the running run, as Mastra tells it: a signal. */
+export function signalStarted(id: string, contents: string) {
+  const data = {
+    id,
+    type: 'user',
+    tagName: 'user',
+    contents,
+    attributes: { delivery: 'while-active' },
+  }
   return {
-    type: 'message_update',
-    id: MessageId.parse(id),
-    event: { type: 'text-delta', delta },
+    type: 'message_start',
+    message: {
+      id,
+      role: 'signal',
+      createdAt: '2026-10-19T12:02:30.000Z',
+      content: {
+        format: 2,
+        parts: [{ type: 'data-user-message', data }],
+        metadata: { signal: data },
+      },
+    },
   }
 }
 
-export function updatePart(part: MastraPart, index = 0, id = MSG_ID): ConversationEvent {
-  return {
-    type: 'message_update',
-    id: MessageId.parse(id),
-    event: { type: 'part', index, part },
-  }
+export function textDelta(delta: string, id = MSG_ID) {
+  return { type: 'message_update', id, event: { type: 'text-delta', delta } }
 }
 
-export function readPage(url: string, title?: string): MastraPart {
+export function updatePart(part: MastraMessagePart, index = 0, id = MSG_ID) {
+  return { type: 'message_update', id, event: { type: 'part', index, part } }
+}
+
+export function readPage(url: string, title?: string): MastraMessagePart {
   return {
     type: 'tool-invocation',
     toolInvocation: {

@@ -1,66 +1,68 @@
-import type { MastraPart, Question } from '@conexus/hub-api'
-import { CARD_TOOLS, MessageId, QuestionAnswer, ToolCallId } from '@conexus/hub-api'
+import type { Question } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, BUILDER_ROUTES, CARD_TOOLS, ToolCallId } from '@conexus/hub-api'
+import type { MastraMessagePart as MastraPart } from '@mastra/client-js'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
-import { COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
-import { builderSaid, conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { hubServer } from '../../platform/test-hub.tsx'
+import { AGENT_START, agentEnd, RUNNING, stepStarted, updatePart } from './test-events.ts'
+import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { displayOf, parkedOf } from './test-stream.tsx'
 
 const server = hubServer()
 const { openConversation } = screens(server)
 const CALL = ToolCallId.parse('call-1')
-const ANSWER = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations/${FIRST}/questions/${CALL}`
-const BUILDER_MSG_ID = MessageId.parse('builder-msg-1')
-const STEP_MSG_ID = MessageId.parse('builder-step-1')
+const ANSWER = `*${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}/tool-suspension`
+const STEP_MSG_ID = 'builder-step-1'
 
 function answering(reply: () => Promise<Response | undefined> = async () => undefined) {
   const bodies: unknown[] = []
   server.use(
     http.post(ANSWER, async ({ request }) => {
-      const parsed = QuestionAnswer.parse(await request.json())
-      bodies.push(parsed)
-      return (await reply()) ?? new HttpResponse(null, { status: 202 })
+      bodies.push(await request.json())
+      return (await reply()) ?? HttpResponse.json({ ok: true })
     }),
   )
   return bodies
 }
 
+function isCard(part: MastraPart) {
+  return (
+    part.type === 'tool-invocation' &&
+    (part.toolInvocation.toolName === CARD_TOOLS.question ||
+      part.toolInvocation.toolName === CARD_TOOLS.plan)
+  )
+}
+
+/**
+ * A run that tells its step's parts. A card's call left waiting parks the run, as Mastra does: its
+ * display state holds the call, and the run ends `suspended`; its result opens the resumed run.
+ */
 async function turn(...parts: MastraPart[]) {
   const opened = await openConversation(conversationOf({ id: FIRST }))
   say(opened.field, 'Crie um app de encomendas')
-  const line = opened.lines[0]
-  line?.emit({
-    type: 'turn',
-    messages: [{ ...builderSaid(''), id: BUILDER_MSG_ID, parts: [] }],
-    startedAt: new Date().toISOString(),
-  })
-  line?.emit({
-    type: 'message_start',
-    message: { ...builderSaid(''), id: STEP_MSG_ID, parts: [] },
-  })
+  const line = opened.line()
+  line.emit(AGENT_START)
+  line.emit(RUNNING)
+  line.emit(stepStarted(STEP_MSG_ID, []))
   function tell(...more: MastraPart[]) {
     for (const [index, part] of more.entries()) {
-      line?.emit({
-        type: 'message_update',
-        id: STEP_MSG_ID,
-        event: { type: 'part', index, part },
-      })
-      // A card waits on the person when the Hub says it parked the call.
-      const call = part.type === 'tool-invocation' ? part.toolInvocation : undefined
       if (
-        call !== undefined &&
-        (call.toolName === CARD_TOOLS.question || call.toolName === CARD_TOOLS.plan) &&
-        (call.state === 'call' || call.state === 'approval-requested')
+        part.type === 'tool-invocation' &&
+        isCard(part) &&
+        part.toolInvocation.state === 'result'
       ) {
-        line?.emit({
-          type: 'tool_suspended',
-          toolCallId: call.toolCallId,
-          toolName: call.toolName,
-          args: call.args,
-          suspendPayload: call.args,
-        })
+        line.emit(AGENT_START)
+        line.emit(RUNNING)
       }
+      line.emit(updatePart(part, index, STEP_MSG_ID))
+      if (part.type !== 'tool-invocation' || !isCard(part)) continue
+      const { toolCallId, toolName, args, state } = part.toolInvocation
+      if (state !== 'call' && state !== 'approval-requested') continue
+      const parked = parkedOf({ toolCallId, toolName, args })
+      line.emit(displayOf({ isRunning: true, pendingSuspensions: parked }))
+      line.emit(agentEnd('suspended'))
+      line.emit(displayOf({ pendingSuspensions: parked }))
     }
   }
   tell(...parts)
@@ -126,7 +128,7 @@ test('cartão de perguntas da tool-invocation ask_user: resposta livre em vária
   held.resolve(undefined)
 
   await waitFor(() => expect(bodies).toHaveLength(1))
-  expect(bodies[0]).toEqual({ kind: 'answers', answers: ['Só eu', multilineText] })
+  expect(bodies[0]).toEqual({ toolCallId: CALL, resumeData: ['Só eu', multilineText] })
 
   const answers = ['Só eu', multilineText]
   tell(questionPart('result', answers))
@@ -263,7 +265,10 @@ test('o plano lido da tool-invocation submit_plan: aprovação e pedido de ajust
 
   await waitFor(() =>
     expect(bodies).toEqual([
-      { kind: 'plan', action: 'rejected', feedback: 'Adicione filtro por data' },
+      {
+        toolCallId: CALL,
+        resumeData: { action: 'rejected', feedback: 'Adicione filtro por data', ...PLAN_ARGS },
+      },
     ]),
   )
 

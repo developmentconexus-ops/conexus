@@ -1,4 +1,4 @@
-import type { MastraPart } from '@conexus/hub-api'
+import type { MastraMessagePart } from '@mastra/client-js'
 
 /**
  * Tool calls as the Hub says them, with Mastra 1.78.0's own arguments and results.
@@ -10,7 +10,7 @@ import type { MastraPart } from '@conexus/hub-api'
  * (`conversation-machine.test.ts`), and the denied question the stored part of an expired one
  * (`conversation-waiting.test.ts`).
  */
-export type Invocation = Extract<MastraPart, { type: 'tool-invocation' }>['toolInvocation']
+export type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
 
 const WRITE_ARGS = { path: 'src/a.ts', content: 'export const a = 1\n' }
 const EDIT_ARGS = { path: 'src/a.ts', old_string: 'a = 1', new_string: 'a = 2' }

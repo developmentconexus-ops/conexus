@@ -1,4 +1,3 @@
-import { MESSAGE_MAX_LENGTH } from '@conexus/hub-api'
 import { ArrowUpIcon, SquareIcon } from 'lucide-react'
 import type { KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
 import { Button } from '../../ui/button.tsx'
@@ -69,7 +68,6 @@ export function Composer(props: {
           id="message"
           ref={props.field}
           value={content}
-          maxLength={MESSAGE_MAX_LENGTH}
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { ANA } from '../../hub/identity/test-hub.ts'
 import { INSTALLATION } from '../machine/test-machine.ts'
-import { conversing, holding, sent, started, streamOf, title } from './test-conversation.ts'
+import { conversing, endOf, holding, sent, started, streamOf, title } from './test-conversation.ts'
 import { dataOf, failuresOf, partsOf } from './test-parts.ts'
 import { answerTo, ask, invocations, untilCard, WHO } from './test-questions.ts'
 
@@ -22,16 +22,16 @@ test('duas conversas do mesmo Projeto ao mesmo tempo: a segunda é aceita e term
   assert.ok(working && refused)
   t.after(() => working.close())
   t.after(() => refused.close())
-  assert.equal((await sent(hub, ana, urls[0] ?? '', 'Primeira')).statusCode, 202)
+  assert.equal((await sent(hub, ana, urls[0] ?? '', 'Primeira')).statusCode, 200)
   await working.text()
   function modelCalls() {
     return anthropic.sent.filter((each) => each.stream && !OBSERVER.test(each.system)).length
   }
   const before = modelCalls()
-  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Outra')).statusCode, 202)
+  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Outra')).statusCode, 200)
   const events = await refused.turn()
   assert.deepEqual(dataOf(events, 'data-conexus-failure'), [{ code: 'RUN_BUSY', person: ANA.name }])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
+  assert.equal(endOf(events), 'error')
   assert.equal(modelCalls(), before, 'the refused run calls no model')
   held.release()
   assert.deepEqual(failuresOf(await working.turn()), [])
@@ -58,9 +58,9 @@ test('a execução recusada com RUN_BUSY não liga máquina nem deixa workspace 
   assert.ok(working && refused)
   t.after(() => working.close())
   t.after(() => refused.close())
-  assert.equal((await sent(hub, ana, urls[0] ?? '', 'Primeira')).statusCode, 202)
+  assert.equal((await sent(hub, ana, urls[0] ?? '', 'Primeira')).statusCode, 200)
   await working.text()
-  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Outra')).statusCode, 202)
+  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Outra')).statusCode, 200)
   assert.deepEqual(failuresOf(await refused.turn()), ['RUN_BUSY'])
   assert.deepEqual(
     hub.builder.control.names,
@@ -69,7 +69,7 @@ test('a execução recusada com RUN_BUSY não liga máquina nem deixa workspace 
   )
   held.release()
   assert.deepEqual(failuresOf(await working.turn()), [])
-  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Terceira')).statusCode, 202)
+  assert.equal((await sent(hub, ana, urls[1] ?? '', 'Terceira')).statusCode, 200)
   assert.deepEqual(failuresOf(await refused.turn()), [])
   assert.deepEqual(hub.builder.control.names, names)
 })
@@ -90,17 +90,17 @@ test('a resposta a um cartão com o Projeto ocupado por outra conversa fica guar
   assert.ok(card && other)
   t.after(() => card.close())
   t.after(() => other.close())
-  assert.equal((await sent(hub, ana, asking, 'Crie')).statusCode, 202)
+  assert.equal((await sent(hub, ana, asking, 'Crie')).statusCode, 200)
   const { card: open } = await untilCard(card, 'question')
-  assert.equal((await sent(hub, ana, holder, 'Segura')).statusCode, 202)
+  assert.equal((await sent(hub, ana, holder, 'Segura')).statusCode, 200)
   await other.text()
   const answer = { kind: 'answers', answers: ['Todos (recomendado)'] } as const
-  assert.equal((await answerTo(hub, ana, asking, open.toolCallId, answer)).statusCode, 202)
+  assert.equal((await answerTo(hub, ana, asking, open.toolCallId, answer)).statusCode, 200)
   const refused = await card.turn()
   assert.deepEqual(dataOf(refused, 'data-conexus-failure'), [
     { code: 'RUN_BUSY', person: ANA.name },
   ])
-  assert.deepEqual(refused.at(-1), { type: 'turnEnd', reason: 'error' })
+  assert.equal(endOf(refused), 'error')
   assert.deepEqual(
     invocations(partsOf(refused), open.toolCallId).map((call) => call.state),
     ['result'],
@@ -108,7 +108,7 @@ test('a resposta a um cartão com o Projeto ocupado por outra conversa fica guar
   )
   held.release()
   assert.deepEqual(failuresOf(await other.turn()), [])
-  assert.equal((await sent(hub, ana, asking, 'Continue')).statusCode, 202)
+  assert.equal((await sent(hub, ana, asking, 'Continue')).statusCode, 200)
   assert.deepEqual(failuresOf(await card.turn()), [])
   const last = anthropic.sent.filter((each) => each.stream && !OBSERVER.test(each.system)).at(-1)
   assert.ok(

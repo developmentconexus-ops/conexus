@@ -1,21 +1,22 @@
 import assert from 'node:assert/strict'
+import { randomUUID } from 'node:crypto'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
-import { answeredOf, messagesOf, sent, streamOf } from './test-conversation.ts'
-import { failuresOf, partsOf } from './test-parts.ts'
+
+import { answeredOf, endOf, messagesOf, sent, stopped, streamOf } from './test-conversation.ts'
+import { failuresOf } from './test-parts.ts'
 import {
+  answered,
   answerTo,
   ask,
   CLOSED,
-  cards,
   conversingWith,
   parkedRows,
   SUBMIT,
   stateOf,
   untilCard,
-  untilParked,
   WHO,
   WRITE_PLAN,
   within,
@@ -37,13 +38,13 @@ test('uma pergunta encerra o turno: o fim é dito, o Projeto fica livre e o cart
   timeout: 60_000,
 }, async (t) => {
   const { hub, ana, url, stream, send, conversations } = await conversingWith(t, [[ask(WHO)]])
-  assert.equal((await send()).statusCode, 202)
+  assert.equal((await send()).statusCode, 200)
   const { card, events } = await untilCard(stream, 'question')
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'suspended')
   assert.deepEqual(failuresOf(events), [])
-  const other = `${conversations}/${String(Object((await post(hub, ana, conversations, {})).json()).conversation.id)}`
+  const other = `${conversations}/${String(Object((await post(hub, ana, conversations, {}, randomUUID())).json()).conversation.id)}`
   const elsewhere = await sent(hub, ana, other, 'Outra coisa no mesmo Projeto')
-  assert.equal(elsewhere.statusCode, 202, 'a card waiting holds no Projeto')
+  assert.equal(elsewhere.statusCode, 200, 'a card waiting holds no Projeto')
   const read = (await messagesOf(hub, ana, url)).flatMap((message) => message.parts)
   assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
 })
@@ -52,7 +53,7 @@ test('fechar a última aba com a pergunta aberta: o cartão continua, e a respos
   timeout: 60_000,
 }, async (t) => {
   const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
-  assert.equal((await send()).statusCode, 202)
+  assert.equal((await send()).statusCode, 200)
   const { card } = await untilCard(stream, 'question')
   stream.close()
   // The last stream's close lets the session go (`deleteSession`), a moment after the socket ends.
@@ -62,20 +63,20 @@ test('fechar a última aba com a pergunta aberta: o cartão continua, e a respos
   const fresh = await streamOf(hub, ana, url)
   t.after(() => fresh.close())
   const answered = await answerTo(hub, ana, url, card.toolCallId, QUESTION)
-  assert.equal(answered.statusCode, 202, answered.body)
-  assert.deepEqual((await within(15_000, fresh.turn()))?.at(-1), {
-    type: 'turnEnd',
-    reason: 'complete',
-  })
+  assert.equal(answered.statusCode, 200, answered.body)
+  assert.equal(endOf(await within(15_000, fresh.turn())), 'complete')
 })
 
-test('Parar com uma pergunta aberta: a chamada fecha negada, sem turno a terminar', {
+test('Parar com uma pergunta aberta: a chamada fecha negada, numa volta do Mastra que termina parada, sem o modelo', {
   timeout: 60_000,
 }, async (t) => {
-  const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
-  assert.equal((await send()).statusCode, 202)
+  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[ask(WHO)]])
+  assert.equal((await send()).statusCode, 200)
   const { card } = await untilCard(stream, 'question')
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  const asked = calls.length
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
+  // Mastra resumes the parked call with its denial in a run of its own, which ends aborted.
+  assert.equal(endOf(await within(15_000, stream.turn())), 'aborted')
   // Mastra writes the denial a moment after the abort, as it resumes the call with it.
   let read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   for (
@@ -87,40 +88,17 @@ test('Parar com uma pergunta aberta: a chamada fecha negada, sem turno a termina
     read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   }
   assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
-  assert.equal(await within(500, stream.next()), undefined, 'no turn runs to say an end')
-})
-
-test('uma mensagem com pergunta aberta a fecha e abre o turno seguinte, sem RUN_BUSY', {
-  timeout: 60_000,
-}, async (t) => {
-  const { hub, ana, url, stream, send, calls } = await conversingWith(t, [[ask(WHO)]])
-  assert.equal((await send()).statusCode, 202)
-  const { card } = await untilCard(stream, 'question')
-  const steered = await sent(hub, ana, url, 'Melhor: só eu cadastro.')
-  assert.equal(steered.statusCode, 202, steered.body)
-  const events = await stream.turn()
-  assert.deepEqual(cards(events), [], 'the question is not asked again')
-  assert.deepEqual(stateOf(partsOf(events), card.toolCallId).at(-1), CLOSED[0])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.ok(calls.at(-1)?.texts.some((text) => text.includes('Melhor: só eu cadastro.')))
-  const said = (await answeredOf(hub, ana, url)).filter((message) =>
-    message.parts.some((part) => part.type === 'text' && part.text === 'Melhor: só eu cadastro.'),
-  )
-  assert.deepEqual(
-    said.map((message) => message.role),
-    ['person'],
-    'the steered message is on the thread once',
-  )
+  assert.equal(calls.length, asked, 'the denial reaches no model')
 })
 
 test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao suspender', {
   timeout: 60_000,
 }, async (t) => {
   const { hub, ana, url, stream, send } = await conversingWith(t, [[WRITE_PLAN], [SUBMIT]])
-  assert.equal((await send()).statusCode, 202)
+  assert.equal((await send()).statusCode, 200)
   const { card } = await untilCard(stream, 'plan')
   assert.ok(Planned.parse(card.suspendPayload).plan.length > 0)
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   const messages = await answeredOf(hub, ana, url)
   const closed = messages.flatMap((message) => message.parts)
   assert.deepEqual(stateOf(closed, card.toolCallId), CLOSED)
@@ -138,9 +116,9 @@ test('Parar com uma pergunta aberta: nada fica no banco do Mastra', {
   todo: MASTRA_RACE,
 }, async (t) => {
   const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
-  assert.equal((await send()).statusCode, 202)
+  assert.equal((await send()).statusCode, 200)
   await untilCard(stream, 'question')
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
   await answeredOf(hub, ana, url)
   assert.equal(await parkedRows(hub), 0)
 })
@@ -156,7 +134,7 @@ for (const [type, steps] of [
       t,
       steps.map((step) => [...step]),
     )
-    assert.equal((await send()).statusCode, 202)
+    assert.equal((await send()).statusCode, 200)
     const { card } = await untilCard(stream, type)
     const fresh = await streamOf(hub, ana, url)
     t.after(() => fresh.close())
@@ -170,11 +148,8 @@ for (const [type, steps] of [
     assert.deepEqual(stateOf(waiting?.parts ?? [], card.toolCallId), ['call'])
     const answer = type === 'question' ? QUESTION : { kind: 'plan', action: 'approved' }
     const answered = await answerTo(hub, ana, url, card.toolCallId, answer)
-    assert.equal(answered.statusCode, 202, answered.body)
-    assert.deepEqual((await within(15_000, fresh.turn()))?.at(-1), {
-      type: 'turnEnd',
-      reason: 'complete',
-    })
+    assert.equal(answered.statusCode, 200, answered.body)
+    assert.equal(endOf(await within(15_000, fresh.turn())), 'complete')
   })
 }
 
@@ -182,49 +157,25 @@ test('a resposta no instante do fim do turno: o Mastra a retoma, ou a recusa e o
   timeout: 60_000,
 }, async (t) => {
   const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
-  assert.equal((await send()).statusCode, 202)
+  assert.equal((await send()).statusCode, 200)
   const { card } = await untilCard(stream, 'question')
-  const answered = await post(hub, ana, `${url}/questions/${card.toolCallId}`, QUESTION)
-  assert.equal(answered.statusCode, 202, answered.body)
+  const answer = await answered(hub, ana, url, card.toolCallId, QUESTION)
+  assert.equal(answer.statusCode, 200, answer.body)
+  if (answer.json().ok === false) {
+    // Mastra's claim found no pending suspension yet (`claimToolSuspension`): nothing runs.
+    const read = (await messagesOf(hub, ana, url)).flatMap((message) => message.parts)
+    assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
+    return
+  }
   const events = await within(15_000, stream.turn())
   assert.ok(events !== undefined, 'the answer’s turn ended')
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
-  if (events.at(-1)?.type === 'turnEnd' && failuresOf(events).length === 0) {
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  if (events.at(-1)?.type === 'agent_end' && failuresOf(events).length === 0) {
+    assert.equal(endOf(events), 'complete')
     assert.equal(stateOf(read, card.toolCallId).at(-1), 'result')
   } else {
     assert.deepEqual(failuresOf(events), ['INTERNAL_UNEXPECTED'])
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
+    assert.equal(endOf(events), 'error')
     assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
   }
-})
-
-/** Mastra keeps the parked run as it had not written it yet: its own resume refuses an answer then. */
-const NOT_PARKED_YET = `update mastra.mastra_workflow_snapshot set snapshot = jsonb_set(snapshot, '{status}', '"pending"') where workflow_name = 'agentic-loop'`
-
-test('resume recusado: a resposta diz a falha, o cartão fica aberto, e Parar o fecha uma vez', {
-  timeout: 60_000,
-}, async (t) => {
-  const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
-  assert.equal((await send()).statusCode, 202)
-  const { card } = await untilCard(stream, 'question')
-  await untilParked(hub)
-  await hub.test.mastraPool.query(NOT_PARKED_YET)
-  const answered = await post(hub, ana, `${url}/questions/${card.toolCallId}`, QUESTION)
-  assert.equal(answered.statusCode, 202, answered.body)
-  const refused = await within(15_000, stream.turn())
-  assert.ok(refused !== undefined, 'the answer’s turn ended')
-  assert.deepEqual(failuresOf(refused), ['INTERNAL_UNEXPECTED'])
-  assert.deepEqual(refused.at(-1), { type: 'turnEnd', reason: 'error' })
-  const read = (await messagesOf(hub, ana, url)).flatMap((message) => message.parts)
-  assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
-  assert.equal((await post(hub, ana, `${url}/stop`, {})).statusCode, 204)
-  const closed = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
-  assert.deepEqual(stateOf(closed, card.toolCallId), CLOSED)
-  assert.equal(await within(500, stream.next()), undefined, 'Parar ends no second turn')
-  assert.equal((await sent(hub, ana, url, 'De novo')).statusCode, 202, 'the Projeto is free')
-  assert.deepEqual((await within(15_000, stream.turn()))?.at(-1), {
-    type: 'turnEnd',
-    reason: 'complete',
-  })
 })

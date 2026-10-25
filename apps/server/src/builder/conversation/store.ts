@@ -8,7 +8,7 @@ import type { Database, Scope } from '../../platform/database.ts'
 import { transactionLock } from '../../platform/database.ts'
 import { Failure } from '../../platform/failure.ts'
 import { pageOf } from '../../platform/pages.ts'
-import { conversation, conversationTurn } from './tables.ts'
+import { conversation } from './tables.ts'
 
 type Deps = {
   database: Database
@@ -167,50 +167,28 @@ async function list(deps: Deps, input: InProject & { after: ConversationId | und
 }
 
 /**
- * A message's Idempotency-Key, kept before its turn starts: `true` for a new one, `false` for the
- * same message again, which starts no second turn, also after a restart (code C37).
+ * The person's conversation of a company, whichever Projeto holds it, or `CONVERSATION_NOT_FOUND`:
+ * what Mastra's routes, which name no Projeto, are checked by (`guard.ts`, security S10).
  */
-async function recordTurn(deps: Deps, input: OfConversation & { key: string; bodyHash: string }) {
-  return deps.database.command(scopeOf(input), async (tx: Tx) => {
-    await ownedConversation(deps, tx, input)
-    const [written] = await tx
-      .insert(conversationTurn)
-      .values({
-        conversationId: input.conversationId,
-        companyId: input.companyId,
-        personId: input.person.id,
-        idempotencyKey: input.key,
-        bodyHash: input.bodyHash,
-      })
-      .onConflictDoNothing()
-      .returning({ key: conversationTurn.idempotencyKey })
-    if (written !== undefined) return true
-    const [found] = await tx
-      .select({ bodyHash: conversationTurn.bodyHash })
-      .from(conversationTurn)
+async function mine(
+  deps: Deps,
+  input: { person: Person; companyId: CompanyId; conversationId: ConversationId },
+) {
+  const scope: Scope = { kind: 'COMPANY', companyId: input.companyId, personId: input.person.id }
+  await deps.database.read(scope, async (tx) => {
+    const [row] = await tx
+      .select({ projectId: conversation.projectId })
+      .from(conversation)
       .where(
         and(
-          eq(conversationTurn.conversationId, input.conversationId),
-          eq(conversationTurn.idempotencyKey, input.key),
+          eq(conversation.id, input.conversationId),
+          eq(conversation.companyId, input.companyId),
+          eq(conversation.personId, input.person.id),
         ),
       )
-    if (found?.bodyHash !== input.bodyHash) throw new Failure('IDEMPOTENCY_CONFLICT')
-    return false
+    if (row === undefined) throw new Failure('CONVERSATION_NOT_FOUND')
+    await admitted(deps, tx, { ...input, projectId: ProjectId.parse(row.projectId) })
   })
-}
-
-/** Frees a message's key when its turn could not start, so the retry starts it (code C37). */
-async function forgetTurn(deps: Deps, input: OfConversation & { key: string }) {
-  await deps.database.command(scopeOf(input), (tx: Tx) =>
-    tx
-      .delete(conversationTurn)
-      .where(
-        and(
-          eq(conversationTurn.conversationId, input.conversationId),
-          eq(conversationTurn.idempotencyKey, input.key),
-        ),
-      ),
-  )
 }
 
 /** Drops the index row of a conversation whose thread Mastra does not hold (data D17). */
@@ -277,8 +255,7 @@ export function createConversationStore(deps: Deps) {
     list: (input: Parameters<typeof list>[1]) => list(deps, input),
     owned: (input: OfConversation) =>
       deps.database.read(scopeOf(input), (tx) => ownedConversation(deps, tx, input)),
-    recordTurn: (input: Parameters<typeof recordTurn>[1]) => recordTurn(deps, input),
-    forgetTurn: (input: Parameters<typeof forgetTurn>[1]) => forgetTurn(deps, input),
+    mine: (input: Parameters<typeof mine>[1]) => mine(deps, input),
     remove: (input: OfConversation) => remove(deps, input),
     releasedIds: (scope: ReleaseScope) => releasedIds(deps, scope),
     projectOf: (input: Parameters<typeof projectOf>[1]) => projectOf(deps, input),

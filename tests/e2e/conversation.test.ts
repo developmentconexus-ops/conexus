@@ -68,6 +68,14 @@ async function answered(chat: Page, hold: () => () => void, question: string, ex
   await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
 }
 
+/** Sends `question`; the notice `expected` shows once the turn ends, read with the answer. */
+async function noticed(chat: Page, hold: () => () => void, question: string, expected: string) {
+  hold()()
+  await ask(chat, question)
+  await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
+  await transcriptShowed(chat, expected)
+}
+
 /** Step 1: the selector offers the default and the providers with an account; the answer and its title. */
 async function firstQuestion(chat: Page, hold: () => () => void) {
   await openConversation(chat, () => chat.getByRole('button', { name: 'Nova conversa' }).click())
@@ -100,7 +108,7 @@ async function refusedThenPaused(
   await saving(owner, () => owner.getByRole('button', { name: 'Subir Time 3' }).click())
   await owner.getByRole('button', { name: 'Subir Time 3' }).waitFor({ state: 'detached' })
   const notice = 'Time 3 foi recusada. Ligue de novo; continuei pela Time 1.'
-  await answered(chat, hold, 'E o segundo app?', notice)
+  await noticed(chat, hold, 'E o segundo app?', notice)
   await chat.reload()
   await chat.getByRole('log', { name: 'Conversa com o Builder' }).getByText(notice).waitFor()
   await owner.reload()
@@ -109,7 +117,7 @@ async function refusedThenPaused(
   assert.match(top ?? '', /^Time 3.*chave …dE2f · recusada · Ligue de novo/)
   await saving(owner, () => owner.getByRole('button', { name: 'Pausar Time 1' }).click())
   await owner.getByRole('button', { name: 'Retomar Time 1' }).waitFor()
-  await answered(chat, hold, 'E o terceiro?', EXHAUSTED)
+  await noticed(chat, hold, 'E o terceiro?', EXHAUSTED)
 }
 
 /** Step 4: the switch goes on with the second model; with Time 1 back, the next asks Claude again. */
@@ -121,13 +129,14 @@ async function switched(
 ) {
   await turnOnSwitch(owner)
   const notice = `Troquei para ${SECOND_MODEL} pela troca automática da empresa.`
-  await answered(chat, hold, 'E o quarto?', notice)
+  await noticed(chat, hold, 'E o quarto?', notice)
   await transcriptShowed(chat, SECOND_ANSWER)
   await saving(owner, () => owner.getByRole('button', { name: 'Retomar Time 1' }).click())
   await owner.getByRole('button', { name: 'Pausar Time 1' }).waitFor()
   const before = claudeCalls()
   await answered(chat, hold, 'E o quinto?', ANSWER)
-  assert.ok(claudeCalls() > before, 'the next question asked Claude')
+  // ANSWER was shown by an earlier turn: the screen says it before this turn's call is made.
+  while (claudeCalls() === before) await chat.waitForTimeout(100)
 }
 
 /** Ana's box of conversations holds the one, by its title. */
@@ -210,12 +219,9 @@ async function researched(chat: Page, hold: () => () => void, sent: () => number
   return release
 }
 
-/** Step 3: the line cut between two deltas opens again from the last event; each tab then shows the answer once. */
+/** Step 3: the line cut, Mastra's client opens the stream and the transcript is read again (31). */
 async function reconnected(chat: Page, cut: () => void, release: () => void, problems: string[]) {
-  const resumed = chat.waitForResponse(
-    (response) =>
-      response.url().endsWith('/events') && 'last-event-id' in response.request().headers(),
-  )
+  const resumed = chat.waitForResponse((response) => response.url().endsWith('/stream'))
   cut()
   assert.ok((await resumed).ok())
   const again = await anotherPage(chat.context(), problems)

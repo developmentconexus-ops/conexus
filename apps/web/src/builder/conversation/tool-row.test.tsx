@@ -1,8 +1,8 @@
 import { CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
-import type { ToolItem } from './parts.ts'
-import { invocationToItem } from './parts.ts'
+import type { ToolItem } from './rows.ts'
+import { invocationToItem } from './rows.ts'
 import type { Invocation } from './tool-fixtures.ts'
 import {
   EDIT_DONE,
@@ -28,7 +28,8 @@ function open(name: RegExp) {
   fireEvent.click(screen.getByRole('button', { name }))
 }
 
-test('leitura no começo: read_file abre no começo do arquivo e mostra cortes se houver (Critério 8)', async () => {
+test('leitura: read_file mostra o arquivo como o Mastra o deu, cortado pela tela em 800 caracteres (5)', async () => {
+  const line = 'export const router = createRouter()\n'
   const tool: ToolItem = {
     kind: 'tool',
     id: 't-1',
@@ -36,16 +37,13 @@ test('leitura no começo: read_file abre no começo do arquivo e mostra cortes s
     toolName: 'mastra_workspace_read_file',
     state: 'result',
     args: { path: 'src/router.tsx' },
-    result:
-      'import { createRouter } from "@tanstack/react-router"\nexport const router = createRouter()',
-    cuts: ['content'],
+    result: line.repeat(30),
   }
   render(<ToolRow tool={tool} />)
   expect(screen.queryByText(/createRouter/)).toBeNull()
   open(/Leu um arquivo/)
   const block = await screen.findByText(/createRouter/)
-  expect(block.textContent).toContain('import { createRouter } from "@tanstack/react-router"')
-  expect(block.textContent).toContain('…')
+  expect(block.textContent).toBe(`${line.repeat(30).slice(0, 800)}…`)
 })
 
 test('list_files no resultado: abre no resultado retornado pela ferramenta (Critério 8)', async () => {

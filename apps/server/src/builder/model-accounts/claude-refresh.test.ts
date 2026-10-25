@@ -7,12 +7,14 @@ import {
   asked,
   beside,
   conversing,
+  endOf,
   KEY,
   sent,
   started,
   streamOf,
+  turnNotices,
 } from '../conversation/test-conversation.ts'
-import { failuresOf, noticesOf } from '../conversation/test-parts.ts'
+import { failuresOf } from '../conversation/test-parts.ts'
 
 const FIRST = { access: 'sk-ant-oat01-first-access', refresh: 'sk-ant-ort01-first-refresh' }
 const SECOND = { access: 'sk-ant-oat01-second-access', refresh: 'sk-ant-ort01-second-refresh' }
@@ -60,16 +62,16 @@ async function subscribed(t: TestContext, expiresIn: number) {
 
 test('token recusado: renova uma vez, e se ainda recusa marca recusada, avisa no turno e segue pela Time 1', async (t) => {
   const f = await subscribed(t, 3600)
-  const { events } = await asked(t, f.where)
+  const { url, events } = await asked(t, f.where)
   assert.deepEqual(
     f.anthropic.sent.filter((each) => each.stream).map((each) => each.bearer ?? each.key),
     [FIRST.access, SECOND.access, KEY],
   )
   assert.equal(f.anthropic.refreshed.filter((token) => token === FIRST.refresh).length, 1)
-  assert.deepEqual(noticesOf(events), [
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
     'Claude foi recusada. Ligue de novo; continuei pela Time 1.',
   ])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'ready' })
 })
 
@@ -80,7 +82,7 @@ test('token recusado e renovado: a chamada com o token novo passa e a conta segu
     call.bearer === FIRST.access
       ? { kind: 'refuse', status: 401 }
       : { kind: 'text', text: 'Pronto.' }
-  const { events } = await asked(t, f.where)
+  const { url } = await asked(t, f.where)
   assert.deepEqual(
     f.anthropic.sent.filter((each) => each.stream).map((each) => each.bearer),
     [FIRST.access, SECOND.access],
@@ -90,7 +92,7 @@ test('token recusado e renovado: a chamada com o token novo passa e a conta segu
       { at: 'system', ttl: '1h' },
       { at: 'message', ttl: '1h' },
     ])
-  assert.deepEqual(noticesOf(events), [])
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [])
   assert.deepEqual(await f.listed(), { Claude: 'ready', 'Time 1': 'ready' })
 })
 
@@ -102,8 +104,7 @@ test('duas perguntas com o token vencido: uma só chamada ao endpoint de renova�
     asked(t, f.where),
     asked(t, await beside(f.where, 'Estoque')),
   ])
-  for (const { events } of [one, two])
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  for (const { events } of [one, two]) assert.equal(endOf(events), 'complete')
   assert.equal(f.anthropic.refreshed.filter((token) => token === FIRST.refresh).length, 1)
   const bearers = f.anthropic.sent.filter((each) => each.stream).map((each) => each.bearer)
   assert.deepEqual(bearers, [SECOND.access, SECOND.access])
@@ -112,15 +113,15 @@ test('duas perguntas com o token vencido: uma só chamada ao endpoint de renova�
 test('renovação recusada pela Anthropic: a conta fica recusada, o turno avisa e a Time 1 responde', async (t) => {
   const f = await subscribed(t, 1)
   f.anthropic.refresh = () => ({ status: 400 })
-  const { events } = await asked(t, f.where)
+  const { url, events } = await asked(t, f.where)
   assert.deepEqual(
     f.anthropic.sent.filter((each) => each.stream).map((each) => each.bearer ?? each.key),
     [KEY],
   )
-  assert.deepEqual(noticesOf(events), [
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
     'Claude foi recusada. Ligue de novo; continuei pela Time 1.',
   ])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'ready' })
   // The queue says in the log why it skipped the account, with the failure's own fields.
   const skipped = f.lines.find(
@@ -136,10 +137,10 @@ test('renovação recusada e nenhuma outra conta: o turno acaba dizendo que a as
   await f.hub.test.asOwner(
     `update builder.model_account set state = 'paused' where label = 'Time 1'`,
   )
-  const { events } = await asked(t, f.where)
-  assert.deepEqual(noticesOf(events), ['Claude foi recusada. Ligue de novo.'])
+  const { url, events } = await asked(t, f.where)
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), ['Claude foi recusada. Ligue de novo.'])
   assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'error' })
+  assert.equal(endOf(events), 'error')
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'paused' })
 })
 
@@ -158,19 +159,19 @@ test('a observação pede a conta antes do passo: uma escolha só, e a assinatur
   const url = `${f.conversations}/${await started(f.hub, f.ana, f.conversations)}`
   const stream = await streamOf(f.hub, f.ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(f.hub, f.ana, url, 'Como organizo as encomendas?')).statusCode, 202)
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal((await sent(f.hub, f.ana, url, 'Como organizo as encomendas?')).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'complete')
   await claude('ready')
   f.anthropic.refresh = () => ({ status: 400 })
   const begun = Date.now()
-  assert.equal((await sent(f.hub, f.ana, url, 'E os pedidos do balcão?')).statusCode, 202)
+  assert.equal((await sent(f.hub, f.ana, url, 'E os pedidos do balcão?')).statusCode, 200)
   const events = await stream.turn()
   assert.ok(Date.now() - begun < 15_000, 'no wait on a lease')
   assert.equal(f.anthropic.refreshed.filter((token) => token === FIRST.refresh).length, 1)
-  assert.deepEqual(noticesOf(events), [
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
     'Claude foi recusada. Ligue de novo; continuei pela Time 1.',
   ])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'ready' })
 })
 
@@ -192,11 +193,11 @@ test('renovação recusada com outra pergunta à espera: as duas seguem pela Tim
   const turns = await Promise.all([asked(t, f.where), asked(t, await beside(f.where, 'Estoque'))])
   assert.ok(Date.now() - begun < 15_000, 'the waiting question stops with the refusal')
   assert.equal(f.anthropic.refreshed.filter((token) => token === FIRST.refresh).length, 1)
-  for (const { events } of turns) {
-    assert.deepEqual(noticesOf(events), [
+  for (const { url, events } of turns) {
+    assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
       'Claude foi recusada. Ligue de novo; continuei pela Time 1.',
     ])
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.equal(endOf(events), 'complete')
   }
   assert.deepEqual(await f.listed(), { Claude: 'refused', 'Time 1': 'ready' })
 })
@@ -220,7 +221,7 @@ test('assinatura: o título vem pela conta do turno, sem erro, e toda chamada ab
   f.refused.status = undefined
   f.anthropic.answer = (each) => ({ kind: 'text', text: each.stream ? 'Pronto.' : 'Padarias' })
   const { url, events } = await asked(t, f.where)
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   assert.equal(await titleOf(f, url), 'Padarias')
   const bearer = f.anthropic.sent.filter((each) => each.bearer !== null)
   assert.deepEqual(
@@ -244,9 +245,9 @@ test('assinatura: o observador também abre com a linha, e a falha dele diz a ch
   const stream = await streamOf(f.hub, f.ana, url)
   t.after(() => stream.close())
   for (const question of ['Como organizo as encomendas?', 'E os pedidos do balcão?']) {
-    assert.equal((await sent(f.hub, f.ana, url, question)).statusCode, 202)
+    assert.equal((await sent(f.hub, f.ana, url, question)).statusCode, 200)
     const events = await stream.turn()
-    assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+    assert.equal(endOf(events), 'complete')
   }
   const observed = f.anthropic.sent.filter((each) => OBSERVER.test(each.system))
   assert.ok(observed.length > 0, 'the observer was called')

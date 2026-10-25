@@ -1,0 +1,128 @@
+import type { ServerResponse } from 'node:http'
+import type { FailureCode } from '@conexus/hub-api'
+import { BUILDER_ROUTES, ConversationId } from '@conexus/hub-api'
+import { MASTRA_MESSAGE_AUTHOR_KEY } from '@mastra/core/request-context'
+import { MastraServer } from '@mastra/fastify'
+import { SERVER_ROUTES } from '@mastra/server/server-adapter'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { z } from 'zod'
+import { sessionOf } from '../../platform/access.ts'
+import { Failure } from '../../platform/failure.ts'
+import type { Builder } from './builder.ts'
+import { BUILDER_ID } from './builder.ts'
+import type { ConversationStore } from './store.ts'
+import { ownerOfResource } from './turn-of.ts'
+
+const SESSION = '/agent-controller/:controllerId/sessions/:sessionId'
+
+/**
+ * The only routes of Mastra's server the Hub exposes (security S39, decision 0050): a session's
+ * stream, a message, Parar, a card's answer, steering, the queue and the transcript. Any other is
+ * not registered, so it is a 404.
+ */
+const FIXED_LIST: ReadonlySet<string> = new Set([
+  `GET ${SESSION}/stream`,
+  `POST ${SESSION}/messages`,
+  `POST ${SESSION}/abort`,
+  `POST ${SESSION}/tool-suspension`,
+  `POST ${SESSION}/steer`,
+  `POST ${SESSION}/follow-up`,
+  `GET ${SESSION}/threads/:threadId/messages`,
+])
+
+const Params = z.object({
+  controllerId: z.literal(BUILDER_ID),
+  sessionId: ConversationId,
+  threadId: z.string().optional(),
+})
+
+/** What the guard and the Hub's platform answer on these routes; Mastra's handlers answer their own. */
+const FAILURES = [
+  'REQUEST_ORIGIN_REFUSED',
+  'REQUEST_MALFORMED',
+  'REQUEST_MEDIA_TYPE_REFUSED',
+  'REQUEST_TOO_LARGE',
+  'INTERNAL_UNEXPECTED',
+  'DATABASE_UNAVAILABLE',
+  'CONVERSATION_NOT_FOUND',
+] as const satisfies readonly FailureCode[]
+
+function carriesContext(input: unknown): boolean {
+  return typeof input === 'object' && input !== null && Object.hasOwn(input, 'requestContext')
+}
+
+/** Mastra's routes of the fixed list, each found in the installed server, or the Hub does not start. */
+function builderRoutes() {
+  const found = SERVER_ROUTES.filter((route) => FIXED_LIST.has(`${route.method} ${route.path}`))
+  if (found.length !== FIXED_LIST.size) {
+    throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'MASTRA_ROUTE_MISSING' } })
+  }
+  return found
+}
+
+/**
+ * The conversation a request to Mastra's routes names, if it is the person's: the thread's resource
+ * names its company and person (`memoryOwner`), and the Hub's index and membership decide (S10).
+ * A `requestContext` from the browser is refused: Mastra's server copies it into the run's context,
+ * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare).
+ */
+async function guard(
+  deps: { builder: Builder; store: ConversationStore },
+  request: FastifyRequest,
+): Promise<void> {
+  if (carriesContext(request.body) || carriesContext(request.query)) {
+    throw new Failure('REQUEST_MALFORMED')
+  }
+  const { person } = sessionOf(request)
+  const params = Params.safeParse(request.params)
+  if (!params.success) throw new Failure('CONVERSATION_NOT_FOUND')
+  const { sessionId: conversationId, threadId } = params.data
+  if (threadId !== undefined && threadId !== conversationId) {
+    throw new Failure('CONVERSATION_NOT_FOUND')
+  }
+  const thread = await deps.builder.memory.getThreadById({ threadId: conversationId })
+  const owner = ownerOfResource(thread?.resourceId)
+  if (owner === undefined || owner.personId !== person.id) {
+    throw new Failure('CONVERSATION_NOT_FOUND')
+  }
+  await deps.store.mine({ person, companyId: owner.companyId, conversationId })
+  request.requestContext.setRaw(MASTRA_MESSAGE_AUTHOR_KEY, { id: person.id, name: person.name })
+}
+
+/**
+ * Mastra's own session routes, from the fixed list, in a scope of their own behind the guard
+ * (decision 0050; Conexus OS `mastra-session-routes.ts:266-367`, measured in prove E4): the context
+ * Mastra's handlers read, and the guard after it. Each route declares the `session` access kind as
+ * it is registered, since the Hub's access check refuses at boot a route without one; Mastra's
+ * `server.auth` stays off, as the Hub already read the session. Mastra ends a stream only when its
+ * request leaves, so the open ones are kept in `streams` for the Hub's close to close.
+ */
+export function registerBuilderRoutes(
+  app: FastifyInstance,
+  deps: { builder: Builder; store: ConversationStore; streams: Set<ServerResponse> },
+): void {
+  const routes = builderRoutes()
+  app.register(async (scope) => {
+    const server = new MastraServer({ app: scope, mastra: deps.builder.mastra })
+    server.registerContextMiddleware()
+    scope.addHook('preHandler', async (request, reply) => {
+      await guard(deps, request)
+      if (!request.routeOptions.url?.endsWith('/stream')) return
+      deps.streams.add(reply.raw)
+      reply.raw.once('close', () => deps.streams.delete(reply.raw))
+    })
+    const declared = new Proxy(scope, {
+      get(target, key) {
+        if (key !== 'route') return Reflect.get(target, key)
+        return (options: Parameters<FastifyInstance['route']>[0]) =>
+          target.route({
+            ...options,
+            config: { ...options.config, access: 'session', failures: FAILURES },
+          })
+      },
+    })
+    for (const route of routes) {
+      await server.registerRoute(declared, route, { prefix: BUILDER_ROUTES })
+    }
+  })
+}

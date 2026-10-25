@@ -904,12 +904,19 @@ refused for its media type or its origin.
   the list (`agent/goal/scorer.ts:14-28`), so it does not serve. Proof: `conversation-check.test.ts`,
   criterion 15 of step 14.2. Revisit when Mastra ends a turn on its task list itself.
 
-## The Builder's turn across Mastra's runs (step 14.2)
+## Mastra's session routes behind the Hub's guard (step 14.2)
 
-- **One row and one lease per turn.** `conversation/steer.ts` and the `pending` and `carry` of
-  `conversation/live.ts` are ours because Mastra gives the leftover run, not the turn that spans it:
-  a message sent while a turn runs joins it (`sendSignal`, `deliver`), and input the ending run never
-  read starts a fresh Mastra run (`agent/thread-stream-runtime.ts:4204-4207` at `6a465f9d`). Without
-  the carry that run has no `builder.run` row and no lease (data D25). Proof:
-  `conversation-steer.test.ts`, criteria 41 to 44 of step 14.2. Revisit when Mastra names the turn
-  across the runs it starts for leftover input.
+- **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
+  agent-controller routes (stream, message, Parar, a card's answer, steer, follow-up, transcript)
+  through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
+  of `SERVER_ROUTES` is not registered, so it is a 404 (decision 0050, S39). Mastra's `server.auth`
+  stays off: the guard reads the Hub's session, finds the thread's owner in its `resourceId` and the
+  Hub's index (S10), refuses a browser `requestContext` with 400, and sets the message's author.
+  Proof: `conversation-routes.test.ts`, criteria 3, 30 and 31 of step 14.2.
+- **The Hub's close closes the open streams.** Mastra's stream route ends only when its request
+  leaves (`handlers/agent-controller.ts:581-647` at 1.79.0), so the guard keeps each open stream's
+  response and the close destroys them once the runs have said their end, which `@mastra/fastify`
+  reads as the request leaving; a session Mastra deletes
+  with its Projeto ends its run without an `agent_end`, so `end.ts` lets it go on
+  `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
+  streams on shutdown.

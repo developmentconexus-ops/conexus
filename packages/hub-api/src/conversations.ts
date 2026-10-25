@@ -1,16 +1,20 @@
 import { z } from 'zod'
 import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
-import { MastraPart, MessageUpdate, Suspended } from './mastra-parts.ts'
-import { ATTEMPT_KEY_HEADER, defineOperation, LAST_EVENT_ID_HEADER } from './operation.ts'
+import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import { ProjectId } from './projects.ts'
 import { Task } from './questions.ts'
+
+/**
+ * Where the Hub serves Mastra's own session routes of the Builder, behind its guard (decision
+ * 0050), as the screen's `MastraClient` asks them, and the controller they name.
+ */
+export const BUILDER_ROUTES = '/api/builder'
+export const BUILDER_CONTROLLER = 'builder'
 
 export const ConversationId = z.uuid().brand('ConversationId')
 export type ConversationId = z.infer<typeof ConversationId>
 
-/** The longest message a person sends the Builder, in characters. */
-export const MESSAGE_MAX_LENGTH = 20_000
 /** A model of the router's registry, such as `anthropic/claude-sonnet-4-5` (decision 0049). */
 export const ModelId = z.string().min(1).max(200).brand('ModelId')
 export type ModelId = z.infer<typeof ModelId>
@@ -55,32 +59,6 @@ export const TurnFailureCode = z.enum([
 ] as const satisfies readonly FailureCode[])
 export type TurnFailureCode = z.infer<typeof TurnFailureCode>
 
-export const MessageId = z.string().min(1).brand('MessageId')
-export type MessageId = z.infer<typeof MessageId>
-
-/** The id of the person's message sent with the Idempotency-Key `key`: the server and the screen name it alike. */
-export function questionIdOf(conversationId: ConversationId, key: string): MessageId {
-  return MessageId.parse(`${conversationId}:${key}`)
-}
-
-/** The part of a message that says a thinking took `seconds`, by our clock (step 12.1). */
-export const THOUGHT_PART = 'data-conexus-thought'
-
-/**
- * A message as Mastra keeps it: its parts by Mastra's names, `cuts` where the Hub kept less; and
- * `suspended`, the calls the message left waiting for the person, with what each suspended with.
- */
-export const Message = z.object({
-  id: MessageId,
-  role: z.enum(['person', 'builder']),
-  parts: z.array(MastraPart),
-  suspended: z.record(z.string(), Suspended),
-  /** The model that answered the Builder's turn, as Mastra recorded it; `null` for the person. */
-  model: ModelId.nullable(),
-  createdAt: z.iso.datetime(),
-})
-export type Message = z.infer<typeof Message>
-
 export const ConversationSummary = z.object({
   id: ConversationId,
   title: z.string().nullable(),
@@ -88,119 +66,21 @@ export const ConversationSummary = z.object({
 })
 export type ConversationSummary = z.infer<typeof ConversationSummary>
 
-/** The observational memory's progress, as the controller holds it (`OMProgressState`). */
-export const OMProgress = z.object({
-  status: z.enum(['idle', 'observing', 'reflecting']),
-  pendingTokens: z.number(),
-  threshold: z.number(),
-  thresholdPercent: z.number(),
-  observationTokens: z.number(),
-  reflectionThreshold: z.number(),
-  reflectionThresholdPercent: z.number(),
-  generationCount: z.number(),
-  stepNumber: z.number(),
-})
-export type OMProgress = z.infer<typeof OMProgress>
-
+/**
+ * A conversation beside its transcript, which is Mastra's own route (`threads/:threadId/messages`):
+ * its model, its effort and the Builder's task list, as Mastra's storage holds it.
+ */
 export const Conversation = ConversationSummary.extend({
   model: ModelId,
   effort: Effort,
-  messages: z.array(Message),
-  /** The Builder's task list, as Mastra's storage holds it. */
   tasks: z.array(Task),
-  /** The memory's progress in this session, or `null` before it says. */
-  memory: OMProgress.nullable(),
-  /**
-   * Whether a turn is in progress: its answer then comes on the stream, and a screen that
-   * reconnected waits for it only while this holds.
-   */
-  inProgress: z.boolean(),
 })
 export type Conversation = z.infer<typeof Conversation>
 
-const OmWindow = z.object({ tokens: z.number(), threshold: z.number() })
-const OmBuffer = z.object({ status: z.enum(['idle', 'running', 'complete']) })
-const OmCycle = z.object({ cycleId: z.string() })
-const OmOperation = OmCycle.extend({ operationType: z.enum(['observation', 'reflection']) })
-const OmFailed = OmCycle.extend({ durationMs: z.number() })
-
-/**
- * What the stream of a conversation says: `turn` opens each turn, and on a reconnect that cannot
- * resume it is the turn in progress so far, as Mastra's messages by their ids and then ours; `turnEnd` closes it. The rest are the controller's own
- * events (`AgentControllerWireEvent`), cut by `wire.ts` and without the free text of an error or of
- * the observer (security S41). A part of ours goes as a `message_update` of a `data-conexus-*` part.
- */
-export const ConversationEvent = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('turn'), messages: z.array(Message), startedAt: z.iso.datetime() }),
-  z.object({ type: z.literal('turnEnd'), reason: z.enum(['complete', 'aborted', 'error']) }),
-  /**
-   * A `message_start` whose message is the person's is a message they sent while the turn ran,
-   * said where Mastra put it before the model's next request.
-   */
-  z.object({ type: z.literal('message_start'), message: Message }),
-  z.object({ type: z.literal('message_update'), id: MessageId, event: MessageUpdate }),
-  z.object({ type: z.literal('message_end'), id: MessageId }),
-  z.object({
-    type: z.literal('shell_output'),
-    toolCallId: z.string().min(1),
-    output: z.string(),
-    stream: z.enum(['stdout', 'stderr']),
-    cuts: z.array(z.string()).optional(),
-  }),
-  z.object({
-    type: z.literal('command_exit'),
-    toolCallId: z.string().min(1),
-    exitCode: z.int(),
-    success: z.boolean(),
-  }),
-  z.object({
-    type: z.literal('tool_suspended'),
-    toolCallId: z.string().min(1),
-    toolName: z.string(),
-    args: z.unknown(),
-    suspendPayload: z.unknown(),
-    cuts: z.array(z.string()).optional(),
-  }),
-  z.object({ type: z.literal('task_updated'), tasks: z.array(Task) }),
-  z.object({
-    type: z.literal('om_status'),
-    windows: z.object({
-      active: z.object({ messages: OmWindow, observations: OmWindow }),
-      buffered: z.object({ observations: OmBuffer, reflection: OmBuffer }),
-    }),
-    stepNumber: z.number(),
-    generationCount: z.number(),
-  }),
-  z.object({ type: z.literal('om_observation_start'), ...OmOperation.shape }),
-  z.object({ type: z.literal('om_observation_end'), ...OmCycle.shape, durationMs: z.number() }),
-  z.object({ type: z.literal('om_observation_failed'), ...OmFailed.shape }),
-  z.object({ type: z.literal('om_reflection_start'), ...OmCycle.shape }),
-  z.object({ type: z.literal('om_reflection_end'), ...OmCycle.shape, durationMs: z.number() }),
-  z.object({ type: z.literal('om_reflection_failed'), ...OmFailed.shape }),
-  z.object({ type: z.literal('om_buffering_start'), ...OmOperation.shape }),
-  z.object({ type: z.literal('om_buffering_end'), ...OmOperation.shape }),
-  z.object({ type: z.literal('om_buffering_failed'), ...OmOperation.shape }),
-  // The memory's progress once Mastra folded an `om_*` event (`displayState`), as Factory reads it.
-  z.object({
-    type: z.literal('om_progress'),
-    omProgress: OMProgress,
-    bufferingMessages: z.boolean(),
-    bufferingObservations: z.boolean(),
-  }),
-  z.object({
-    type: z.literal('agent_end'),
-    reason: z.enum(['complete', 'aborted', 'error', 'suspended']).optional(),
-  }),
-])
-export type ConversationEvent = z.infer<typeof ConversationEvent>
-
-/** How often the stream says it is alive, so a proxy keeps it open. */
-export const CONVERSATION_HEARTBEAT_MS = 25_000
-
 const InProject = z.object({ companyId: CompanyId, projectId: ProjectId })
-export const OfConversation = InProject.extend({ conversationId: ConversationId })
-export const BASE = '/api/companies/{companyId}/projects/{projectId}/conversations'
-export const READ_FAILURES = [
+const OfConversation = InProject.extend({ conversationId: ConversationId })
+const BASE = '/api/companies/{companyId}/projects/{projectId}/conversations'
+const READ_FAILURES = [
   'NOT_FOUND',
   'SESSION_REQUIRED',
   'DATABASE_UNAVAILABLE',
@@ -240,59 +120,13 @@ export const createConversation = defineOperation({
 
 export const readConversation = defineOperation({
   id: 'readConversation',
-  summary: 'Reads one of the person’s conversations: its title, its model and its messages.',
+  summary: 'Reads one of the person’s conversations: its title, its model and its task list.',
   access: 'session',
   method: 'GET',
   path: `${BASE}/{conversationId}`,
   bodyLimit: 1024,
   input: { params: OfConversation },
   success: { status: 200, body: z.object({ conversation: Conversation }) },
-  failures: READ_FAILURES,
-})
-
-export const sendConversationMessage = defineOperation({
-  id: 'sendConversationMessage',
-  summary:
-    'Sends the Builder a message: a turn of its own, or, while a turn of this conversation runs, into that turn; the answer comes on the conversation’s stream.',
-  access: 'session',
-  method: 'POST',
-  path: `${BASE}/{conversationId}/messages`,
-  bodyLimit: 128 * 1024,
-  input: {
-    params: OfConversation,
-    body: z.object({ content: z.string().trim().min(1).max(MESSAGE_MAX_LENGTH) }),
-  },
-  attemptKey: true,
-  success: { status: 202 },
-  failures: [...READ_FAILURES, 'IDEMPOTENCY_CONFLICT'],
-})
-
-export const streamConversation = defineOperation({
-  id: 'streamConversation',
-  summary: `Streams a conversation: the events after ${LAST_EVENT_ID_HEADER}, or the turn in progress first, then each new event.`,
-  access: 'session',
-  method: 'GET',
-  path: `${BASE}/{conversationId}/events`,
-  bodyLimit: 1024,
-  input: { params: OfConversation },
-  success: {
-    status: 200,
-    events: ConversationEvent,
-    heartbeatMs: CONVERSATION_HEARTBEAT_MS,
-    resumable: true,
-  },
-  failures: READ_FAILURES,
-})
-
-export const stopConversation = defineOperation({
-  id: 'stopConversation',
-  summary: 'Stops the answer in progress; the text so far stays in the conversation.',
-  access: 'session',
-  method: 'POST',
-  path: `${BASE}/{conversationId}/stop`,
-  bodyLimit: 1024,
-  input: { params: OfConversation },
-  success: { status: 204 },
   failures: READ_FAILURES,
 })
 

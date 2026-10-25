@@ -1,13 +1,15 @@
-import type { Message } from '@conexus/hub-api'
-import { MessageId, ModelId } from '@conexus/hub-api'
+import { ModelId } from '@conexus/hub-api'
+import type { MastraMessagePart } from '@mastra/client-js'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hourOf } from '../../platform/dates.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
-import type { TranscriptItem } from './parts.ts'
-import { invocationToItem } from './parts.ts'
-import { builderSaid, conversationOf, FIRST, screens } from './test-hub.tsx'
-import { IDLE, timelineOf } from './timeline.ts'
+import type { Stored } from './messages.ts'
+import type { TranscriptItem } from './rows.ts'
+import { invocationToItem } from './rows.ts'
+import { OPENED } from './session-state.ts'
+import { conversationOf, FIRST, screens } from './test-hub.tsx'
+import { builderSaid, personSaid } from './test-stream.tsx'
 import type { ShownTurn } from './transcript.tsx'
 import { shownOf, Transcript } from './transcript.tsx'
 
@@ -15,7 +17,7 @@ const { openConversation } = screens(hubServer())
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 
 function turnOf(items: readonly TranscriptItem[], streaming: boolean): ShownTurn {
-  return { key: MessageId.parse('p1'), person: undefined, items, model: null, streaming }
+  return { key: 'p1', person: undefined, items, model: null, streaming }
 }
 
 function toolItem(id: string, toolName = 'mastra_workspace_read_file'): TranscriptItem {
@@ -31,23 +33,9 @@ function toolItem(id: string, toolName = 'mastra_workspace_read_file'): Transcri
 }
 
 test('o turno do Builder leva a marca, "Conexus" e o modelo; o da pessoa, a bolha e a hora', async () => {
-  const createdAt = '2026-10-19T12:01:00.000Z'
-  await openConversation(
-    conversationOf({
-      id: FIRST,
-      messages: [
-        {
-          id: MessageId.parse('p1'),
-          role: 'person',
-          parts: [{ type: 'text', text: 'Oi' }],
-          suspended: {},
-          model: null,
-          createdAt,
-        },
-        builderSaid('Olá'),
-      ],
-    }),
-  )
+  const said = personSaid('Oi', 'p1')
+  const createdAt = String(said.createdAt)
+  await openConversation(conversationOf({ id: FIRST, messages: [said, builderSaid('Olá')] }))
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   const [person, builder] = within(log)
     .getAllByText(/^(Oi|Olá)$/)
@@ -95,28 +83,16 @@ test('raciocínio: "Pensando…", depois "Pensou por N s", fechado por padrão, 
 })
 
 test('relido, o raciocínio do passo diz "Pensou por N s" com o tempo guardado na mensagem do turno', () => {
-  const at = '2026-10-19T12:02:00.000Z'
-  function saved(id: string, parts: Message['parts']): Message {
-    return {
-      ...{ id: MessageId.parse(id), role: 'builder', parts, suspended: {}, model: MODEL },
-      createdAt: at,
-    }
+  function saved(id: string, parts: MastraMessagePart[]): Stored {
+    const message = builderSaid('', id)
+    return { ...message, content: { ...message.content, parts } }
   }
-  render(
-    <Transcript
-      turns={shownOf(
-        timelineOf(IDLE),
-        [
-          saved('step-1', [{ type: 'reasoning', reasoning: 'Vou comparar.', details: [] }]),
-          saved('step-2', [{ type: 'text', text: 'Pronto.' }]),
-          saved('turn', [{ type: 'data-conexus-thought', data: { id: 'step-1.0', seconds: 6 } }]),
-        ],
-        false,
-      )}
-      steers={[]}
-      model={MODEL}
-    />,
-  )
+  const messages = [
+    saved('step-1', [{ type: 'reasoning', reasoning: 'Vou comparar.', details: [] }]),
+    saved('step-2', [{ type: 'text', text: 'Pronto.' }]),
+    saved('turn', [{ type: 'data-conexus-thought', data: { id: 'step-1.0', seconds: 6 } }]),
+  ]
+  render(<Transcript turns={shownOf({ ...OPENED, messages })} steers={[]} model={MODEL} />)
   expect(screen.getByRole('button', { name: 'Pensou por 6 s' })).toBeTruthy()
 })
 

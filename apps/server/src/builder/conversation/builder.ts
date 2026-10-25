@@ -1,5 +1,5 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
-import { BUILDER_TOOL } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
@@ -36,7 +36,8 @@ import { createMastraStorage } from './storage.ts'
 import type { ConversationIndex } from './turn-of.ts'
 import { projectIn, sideTurn, turnOf } from './turn-of.ts'
 
-const BUILDER_ID = 'builder'
+/** The Builder's controller, as Mastra's routes name it (`/agent-controller/builder/…`). */
+export const BUILDER_ID = BUILDER_CONTROLLER
 const CONVERSATION_MODE = 'conversa'
 
 const TITLE_INSTRUCTIONS =

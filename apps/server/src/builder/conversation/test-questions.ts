@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
-import type { ConversationEvent, MastraPart } from '@conexus/hub-api'
+import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { ASK_USER_TOOL, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
-import { conversing, sent, started, streamOf } from './test-conversation.ts'
+import type { StreamEvent } from './test-conversation.ts'
+import { conversing, sent, sessionUrl, started, streamOf } from './test-conversation.ts'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
-type Suspended = Extract<ConversationEvent, { type: 'tool_suspended' }>
+type Suspended = Extract<StreamEvent, { type: 'tool_suspended' }>
 
 /** The tool each kind of card is, as Mastra names the call it parks. */
 const CARD_TOOL = { question: ASK_USER_TOOL, plan: SUBMIT_PLAN_TOOL } as const
@@ -67,37 +68,56 @@ export async function conversingWith(t: TestContext, steps: Block[][]) {
 }
 
 /**
- * The events of the turn that asks the next card of `type` (its `tool_suspended`), up to its
- * `turnEnd`: a question ends the turn, and its answer opens the next one.
+ * The events of the run that asks the next card of `type` (its `tool_suspended`), up to its
+ * `agent_end`: a question ends the run, and its answer opens the next one.
  */
 export async function untilCard(
   stream: Awaited<ReturnType<typeof streamOf>>,
   type: keyof typeof CARD_TOOL,
 ) {
-  const events: ConversationEvent[] = []
+  const events: StreamEvent[] = []
   let card: Suspended | undefined
   for (;;) {
     const event = await stream.next()
     events.push(event)
     if (event.type === 'tool_suspended' && event.toolName === CARD_TOOL[type]) card ??= event
-    if (event.type === 'turnEnd' && card !== undefined) return { events, card }
+    if (event.type === 'agent_end' && card !== undefined) return { events, card }
   }
 }
 
 /** The questions and plans a turn parked, in order. */
-export function cards(events: ConversationEvent[]): Suspended[] {
+export function cards(events: StreamEvent[]): Suspended[] {
   const tools: string[] = Object.values(CARD_TOOL)
   return events.flatMap((event) =>
     event.type === 'tool_suspended' && tools.includes(event.toolName) ? [event] : [],
   )
 }
 
-export function answerUrl(url: string, toolCallId: string) {
-  return `${url}/questions/${toolCallId}`
+/**
+ * What Mastra resumes a card's call with, from a person's answer: one answer per question, or the
+ * decision on the plan (Mastra's `PlanResume`).
+ */
+function resumeDataOf(body: {
+  kind: string
+  answers?: unknown
+  action?: string
+  feedback?: string
+}) {
+  if (body.kind === 'answers') return body.answers
+  return {
+    action: body.action,
+    ...(body.feedback === undefined ? {} : { feedback: body.feedback }),
+  }
+}
+
+/** A card's answer through Mastra's own route, as the screen sends it. */
+export function answered(hub: Hub, person: Person, url: string, toolCallId: string, body: object) {
+  const resumeData = resumeDataOf(Object(body))
+  return post(hub, person, `${sessionUrl(url)}/tool-suspension`, { toolCallId, resumeData })
 }
 
 /** The states of a call as its `tool-invocation` parts say it (`result` once answered), in order. */
-export function invocations(parts: MastraPart[], toolCallId: string) {
+export function invocations(parts: MastraMessagePart[], toolCallId: string) {
   return parts.flatMap((part) =>
     part.type === 'tool-invocation' && part.toolInvocation.toolCallId === toolCallId
       ? [part.toolInvocation]
@@ -116,7 +136,7 @@ export async function within<T>(ms: number, said: Promise<T>): Promise<T | undef
 /** What a call that Mastra closed without an answer reads as: the states of its `tool-invocation` part. */
 export const CLOSED = ['output-denied']
 
-export function stateOf(parts: MastraPart[], toolCallId: string): string[] {
+export function stateOf(parts: MastraMessagePart[], toolCallId: string): string[] {
   return invocations(parts, toolCallId).map((each) => each.state)
 }
 
@@ -146,7 +166,7 @@ export async function answerTo(
   body: object,
 ) {
   await untilParked(hub)
-  return post(hub, person, answerUrl(url, toolCallId), body)
+  return answered(hub, person, url, toolCallId, body)
 }
 
 export async function parkedRows(hub: {

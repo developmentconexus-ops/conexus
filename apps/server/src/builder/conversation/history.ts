@@ -1,11 +1,11 @@
-import type { ConversationId, Message, MessageId, OMProgress } from '@conexus/hub-api'
+import type { ConversationId } from '@conexus/hub-api'
 import { Effort, ModelId, Task } from '@conexus/hub-api'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
 import type { Builder } from './builder.ts'
 import { memoryOwner } from './builder.ts'
-import type { Owner } from './live.ts'
-import { wireMessage } from './wire.ts'
+
+type Owner = Parameters<typeof memoryOwner>[0]
 
 // What the thread keeps beside its messages: Mastra's model and effort.
 const Metadata = z
@@ -35,12 +35,6 @@ export async function threadModel(builder: Builder, owner: Owner, conversationId
   return thread === null ? undefined : metadataOf(thread).currentModelId
 }
 
-/** The messages up to the one `id`, or all of them when it is not saved yet. */
-function untilMessage(messages: Message[], id: MessageId): Message[] {
-  const at = messages.findIndex((message) => message.id === id)
-  return at === -1 ? messages : messages.slice(0, at + 1)
-}
-
 /** The task list as Mastra's storage holds it for the thread: what `task_check` reads. */
 async function tasksOf(builder: Builder, conversationId: ConversationId) {
   const store = await builder.mastra.getStorage()?.getStore('threadState')
@@ -49,20 +43,12 @@ async function tasksOf(builder: Builder, conversationId: ConversationId) {
 }
 
 /**
- * A conversation as the person reads it: its title, model, messages, tasks and memory, from Mastra's
- * memory for the person's own resource, or `undefined` when Mastra holds no thread for it. The
- * messages are Mastra's own, as it saved them (the person's question before the turn, and the
- * message of ours that each turn keeps), cut as the stream cuts them. A thread with no model is a
- * defect of its creation (`createConversation` puts it on one). A turn in progress is left out after
- * the message it answers: the stream tells it whole, and a read that held both would show it twice.
- * `memory` is the session's progress when this process has the conversation open, else `null`.
+ * A conversation as the person reads it beside its transcript: its title, model, effort and task
+ * list, from Mastra's memory for the person's own resource, or `undefined` when Mastra holds no
+ * thread for it. Its messages are Mastra's own route (`threads/:threadId/messages`, `guard.ts`). A
+ * thread with no model is a defect of its creation (`createConversation` puts it on one).
  */
-export async function historyOf(
-  builder: Builder,
-  owner: Owner,
-  conversationId: ConversationId,
-  open: { inProgress?: MessageId; memory: OMProgress | null },
-) {
+export async function historyOf(builder: Builder, owner: Owner, conversationId: ConversationId) {
   const resourceId = memoryOwner(owner)
   const thread = await builder.memory.getThreadById({ threadId: conversationId, resourceId })
   if (thread === null) return undefined
@@ -71,18 +57,7 @@ export async function historyOf(
   if (model === undefined) {
     throw new Failure('INTERNAL_UNEXPECTED', { details: { reason: 'CONVERSATION_MODEL_MISSING' } })
   }
-  const recalled = await builder.memory.recall({
-    threadId: conversationId,
-    resourceId,
-    perPage: false,
-  })
-  const messages = recalled.messages.flatMap((message) => wireMessage(message) ?? [])
-  const { inProgress } = open
-  const read = inProgress === undefined ? messages : untilMessage(messages, inProgress)
   const effort = metadata.thinkingLevel ?? 'off'
   const tasks = await tasksOf(builder, conversationId)
-  return {
-    ...{ title: thread.title || null, model, effort, messages: read, tasks },
-    ...{ memory: open.memory, inProgress: inProgress !== undefined },
-  }
+  return { title: thread.title || null, model, effort, tasks }
 }

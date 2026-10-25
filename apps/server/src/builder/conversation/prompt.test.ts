@@ -8,7 +8,7 @@ import { readSkills } from '@conexus/app/skills'
 import { STARTER_DIR } from '@conexus/app/starter'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { APP_FOLDER } from '../machine/public.ts'
-import { asked, conversing, sent, streamOf, title } from './test-conversation.ts'
+import { asked, conversing, endOf, sent, streamOf, title } from './test-conversation.ts'
 import { dataOf } from './test-parts.ts'
 import type { Filled } from './test-prompt.ts'
 import { expectedText, PROMPT_TABLE } from './test-prompt.ts'
@@ -124,7 +124,7 @@ test('depois da primeira versão: sem a linha 51, e AGENTS.md e MEMORY.md lidos 
   )
   const { hub, ana, url, events } = await firstTurn(t, model)
   assert.ok(dataOf(events, 'data-conexus-version').length > 0, 'the first turn saved a version')
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   const app = join(hub.builder.folder, 'app')
   const starter = new Set([...readdirSync(STARTER_DIR), '.git', 'AGENTS.md', '.conexus'])
   assert.deepEqual(
@@ -136,7 +136,7 @@ test('depois da primeira versão: sem a linha 51, e AGENTS.md e MEMORY.md lidos 
   const before = model.calls.length
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Agora mostre as entregas')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Agora mostre as entregas')).statusCode, 200)
   await stream.turn()
   const second = model.calls[before]
   assert.ok(second)

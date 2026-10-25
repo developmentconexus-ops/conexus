@@ -24,7 +24,6 @@ import {
   FAILURES,
   failuresOf,
   isDeclaredOperation,
-  LAST_EVENT_ID_HEADER,
   PROBLEM_MEDIA_TYPE,
   Problem,
   SESSION_COOKIE,
@@ -54,13 +53,9 @@ function parameters(where: 'path' | 'query', type: z.ZodType | undefined) {
   }))
 }
 
-// An event stream is `text/event-stream`, each `data:` line one event of its schema.
 function contentOf(success: Operation['success']): Json {
   if ('body' in success) {
     return { content: { 'application/json': { schema: schema(success.body, 'output') } } }
-  }
-  if ('events' in success) {
-    return { content: { 'text/event-stream': { schema: schema(success.events, 'output') } } }
   }
   return {}
 }
@@ -102,16 +97,6 @@ function operationItem(operation: Operation): Json {
               in: 'header',
               required: true,
               schema: schema(AttemptKey, 'input'),
-            },
-          ]
-        : []),
-      ...('events' in operation.success && operation.success.resumable
-        ? [
-            {
-              name: LAST_EVENT_ID_HEADER,
-              in: 'header',
-              required: false,
-              schema: { type: 'string' },
             },
           ]
         : []),

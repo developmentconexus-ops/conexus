@@ -3,28 +3,30 @@ import { once } from 'node:events'
 import http from 'node:http'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
-import { CONVERSATION_HEARTBEAT_MS, streamConversation } from '@conexus/hub-api'
 import type { Hub } from '../../hub/identity/test-hub.ts'
-import { call, codeOf, post } from '../../hub/identity/test-hub.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import {
   conversing,
+  endOf,
   holding,
   hubBeside,
   PARTIAL,
   rolesAndParts,
   sent,
+  sessionUrl,
   stalling,
   started,
+  stopped,
   streamOf,
   title,
 } from './test-conversation.ts'
 import { textsOf } from './test-parts.ts'
 
 /** The conversation's messages once they are `count`, read again for at most five seconds. */
-async function readOnce(read: () => Promise<{ json(): unknown }>, count: number) {
+async function readOnce(read: () => Promise<unknown[]>, count: number) {
   for (let attempt = 0; ; attempt += 1) {
-    const messages = rolesAndParts(await read())
+    const messages = await read()
     if (messages.length >= count || attempt === 50) return messages
     await new Promise((done) => setTimeout(done, 100))
   }
@@ -56,81 +58,48 @@ async function stalled(t: TestContext, hub: Hub, table: string) {
   return { release, waited }
 }
 
-async function settles(promise: Promise<unknown>): Promise<boolean> {
-  let settled = false
-  promise.then(
-    () => (settled = true),
-    () => (settled = true),
-  )
-  for (let round = 0; round < 20; round += 1) await new Promise((done) => setImmediate(done))
-  return settled
-}
-
-test('o stream diz que está vivo de 25 em 25 segundos, e o primeiro sinal vem antes de qualquer evento', async (t) => {
-  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
-  assert.equal(CONVERSATION_HEARTBEAT_MS, 25_000)
-  assert.equal(streamConversation.success.heartbeatMs, CONVERSATION_HEARTBEAT_MS)
-  const url = `${conversations}/${await started(hub, ana, conversations)}`
-  t.mock.timers.enable({ apis: ['setInterval'] })
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  await stream.until(() => stream.seen.comments === 1)
-  assert.equal(stream.seen.raw, ': \n\n')
-  t.mock.timers.tick(CONVERSATION_HEARTBEAT_MS - 1)
-  assert.equal(await settles(stream.until(() => stream.seen.comments > 1)), false)
-  t.mock.timers.tick(1)
-  await stream.until(() => stream.seen.comments === 2)
-  t.mock.timers.reset()
-})
-
-test('reconectar no meio de um turno: primeiro a resposta até ali, depois o resto', async (t) => {
+test('o stream abre com a semente do estado da sessão; reconectar no meio de um turno relê a transcrição e segue o resto (31)', async (t) => {
   const held = holding(t)
   const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const first = await streamOf(hub, ana, url)
   t.after(() => first.close())
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  assert.equal((await first.seed()).isRunning, false)
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 200)
   assert.equal(await first.text(), PARTIAL)
   first.close()
   const again = await streamOf(hub, ana, url)
   t.after(() => again.close())
-  const snapshot = await again.next()
-  assert.ok(snapshot.type === 'turn')
-  assert.deepEqual(new Set(snapshot.messages.map((message) => message.role)), new Set(['builder']))
+  const seed = await again.seed()
+  assert.equal(seed.isRunning, true)
   assert.deepEqual(
-    snapshot.messages.flatMap((message) => message.parts),
-    [{ type: 'text', text: PARTIAL }],
+    seed.currentMessage?.content.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])),
+    [PARTIAL],
   )
-  assert.ok(Date.parse(snapshot.startedAt) <= Date.now())
-  assert.deepEqual(rolesAndParts(await call(hub, ana, 'GET', url)), [
-    ['person', [{ type: 'text', text: 'Uma pergunta' }]],
-  ])
   held.release()
   const rest = await again.turn()
-  assert.deepEqual(rest.at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.deepEqual(textsOf(rest), [])
+  assert.equal(endOf(rest), 'complete')
+  assert.deepEqual(await rolesAndParts(hub, ana, url), [
+    ['person', [{ type: 'text', text: 'Uma pergunta' }]],
+    ['builder', [{ type: 'text', text: PARTIAL }]],
+  ])
 })
 
-test('reconectar com o turno em curso e ainda mudo: o stream diz que ele trabalha', async (t) => {
+test('reconectar com o turno em curso e ainda mudo: a semente diz que ele trabalha', async (t) => {
   const stalled = stalling(t)
   const { hub, ana, conversations, anthropic } = await conversing(
     t,
     (asked) => title(asked) ?? stalled.reply,
   )
   const url = `${conversations}/${await started(hub, ana, conversations)}`
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 200)
   while (!anthropic.sent.some((each) => each.stream))
     await new Promise((done) => setTimeout(done, 20))
   const again = await streamOf(hub, ana, url)
   t.after(() => again.close())
-  const snapshot = await again.next()
-  assert.ok(snapshot.type === 'turn')
-  assert.deepEqual(
-    snapshot.messages.flatMap((message) => message.parts),
-    [],
-  )
+  assert.equal((await again.seed()).isRunning, true)
   stalled.release()
-  assert.deepEqual((await again.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(await again.turn()), 'complete')
 })
 
 test('Parar: o turno termina `aborted` e o texto até ali fica na conversa', async (t) => {
@@ -139,13 +108,12 @@ test('Parar: o turno termina `aborted` e o texto até ali fica na conversa', asy
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
-  const stopped = await post(hub, ana, `${url}/stop`, {})
-  assert.equal(stopped.statusCode, 204)
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'aborted' })
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
+  assert.equal(endOf(await stream.turn()), 'aborted')
   // Mastra saves the stopped answer just after its `agent_end`, so a read may come before it.
-  assert.deepEqual(await readOnce(() => call(hub, ana, 'GET', url), 2), [
+  assert.deepEqual(await readOnce(() => rolesAndParts(hub, ana, url), 2), [
     ['person', [{ type: 'text', text: 'Uma pergunta' }]],
     ['builder', [{ type: 'text', text: PARTIAL }]],
   ])
@@ -160,13 +128,13 @@ test('desligar para o turno em curso como Parar, guarda o texto e só então fec
   const url = `${conversations}/${await started(closing, ana, conversations)}`
   const stream = await streamOf(closing, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 202)
+  assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
   const closed = closing.close()
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'aborted' })
+  assert.equal(endOf(await stream.turn()), 'aborted')
   await closed
-  assert.equal(await stream.ended(), true)
-  assert.deepEqual(rolesAndParts(await call(hub, ana, 'GET', url)), [
+  await stream.until(() => stream.seen.ended)
+  assert.deepEqual(await rolesAndParts(hub, ana, url), [
     ['person', [{ type: 'text', text: 'Uma pergunta' }]],
     ['builder', [{ type: 'text', text: PARTIAL }]],
   ])
@@ -182,7 +150,7 @@ test('apagar o Projeto no meio de um turno: a sessão fecha, e desligar não esp
   const url = `${conversations}/${await started(closing, ana, conversations)}`
   const stream = await streamOf(closing, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 202)
+  assert.equal((await sent(closing, ana, url, 'Uma pergunta')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
   const project = `/api/companies/${companyId}/projects/${projectId}`
   assert.equal(
@@ -194,21 +162,21 @@ test('apagar o Projeto no meio de um turno: a sessão fecha, e desligar não esp
   assert.equal(await Promise.race([closed.then(() => 'closed'), late]), 'closed')
 })
 
-test('o processo para no meio de um turno: a pergunta não se perde, e aparece uma vez só depois', async (t) => {
+test('outro processo lê o turno em curso: nada do primeiro passo antes do fim, e a pergunta uma vez só depois', async (t) => {
   const held = holding(t)
   const { hub, ana, conversations } = await conversing(t, (asked) => title(asked) ?? held.reply)
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   const stream = await streamOf(hub, ana, url)
   t.after(() => stream.close())
-  assert.equal((await sent(hub, ana, url, 'Uma pergunta que não pode sumir')).statusCode, 202)
+  assert.equal((await sent(hub, ana, url, 'Uma pergunta que não pode sumir')).statusCode, 200)
   assert.equal(await stream.text(), PARTIAL)
   const other = await hubBeside(t, hub)
-  const asked = [['person', [{ type: 'text', text: 'Uma pergunta que não pode sumir' }]]]
-  assert.deepEqual(rolesAndParts(await call(other, ana, 'GET', url)), asked)
+  // Mastra saves a run's messages from its second step on (30).
+  assert.deepEqual(await rolesAndParts(other, ana, url), [])
   held.release()
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.deepEqual(rolesAndParts(await call(other, ana, 'GET', url)), [
-    ...asked,
+  assert.equal(endOf(await stream.turn()), 'complete')
+  assert.deepEqual(await rolesAndParts(other, ana, url), [
+    ['person', [{ type: 'text', text: 'Uma pergunta que não pode sumir' }]],
     ['builder', [{ type: 'text', text: PARTIAL }]],
   ])
 })
@@ -231,16 +199,16 @@ test('uma pessoa com duas conversas ao mesmo tempo: sessões separadas, eventos 
   t.after(() => onX.close())
   const onY = await streamOf(hub, ana, y)
   t.after(() => onY.close())
-  assert.equal((await sent(hub, ana, x, 'Pergunta X')).statusCode, 202)
+  assert.equal((await sent(hub, ana, x, 'Pergunta X')).statusCode, 200)
   assert.equal(await onX.text(), PARTIAL)
-  assert.equal((await sent(hub, ana, y, 'Pergunta Y')).statusCode, 202)
+  assert.equal((await sent(hub, ana, y, 'Pergunta Y')).statusCode, 200)
   const ofY = await onY.turn()
   assert.deepEqual(textsOf(ofY), ['Resposta Y'])
-  assert.deepEqual(ofY.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(ofY), 'complete')
   held.release()
   const ofX = await onX.turn()
   assert.deepEqual(textsOf(ofX), [])
-  assert.deepEqual(ofX.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(ofX), 'complete')
   assert.doesNotMatch(onX.seen.raw, /Resposta Y/)
   assert.doesNotMatch(onY.seen.raw, new RegExp(PARTIAL))
 })
@@ -254,7 +222,7 @@ test('o stream fecha enquanto a pergunta é guardada: a sessão fica, e o turno 
   const address = await hub.app.listen({ port: 0, host: '127.0.0.1' })
   const headers = { origin: TEST_ORIGIN, cookie: ana.cookie }
   const arrived = once(hub.app.server, 'request')
-  const first = http.get(`${address}${url}/events`, { headers })
+  const first = http.get(`${address}${sessionUrl(url)}/stream`, { headers })
   t.after(() => first.destroy())
   await once(first, 'response')
   const [, response] = await arrived
@@ -269,27 +237,8 @@ test('o stream fecha enquanto a pergunta é guardada: a sessão fica, e o turno 
   await threads.release()
   const second = await opening
   t.after(() => second.close())
-  assert.equal((await sending).statusCode, 202)
+  assert.equal((await sending).statusCode, 200)
   const events = await second.turn()
   assert.deepEqual(textsOf(events), ['Resposta'])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
-})
-
-test('o Mastra recusa guardar a pergunta: a mensagem é recusada com INTERNAL_UNEXPECTED, sem turno, e a seguinte tem o seu fim de turno', async (t) => {
-  const { hub, ana, conversations } = await conversing(
-    t,
-    (asked) => title(asked) ?? { kind: 'text', text: 'Resposta' },
-  )
-  const url = `${conversations}/${await started(hub, ana, conversations)}`
-  const stream = await streamOf(hub, ana, url)
-  t.after(() => stream.close())
-  await hub.test.mastraPool.query('alter table mastra.mastra_threads rename to mastra_threads_out')
-  // The question is saved before the turn (card, criterion 30): a refused write refuses the send.
-  const refused = await sent(hub, ana, url, 'Uma pergunta')
-  assert.equal(refused.statusCode, 500)
-  assert.equal(codeOf(refused), 'INTERNAL_UNEXPECTED')
-  await hub.test.mastraPool.query('alter table mastra.mastra_threads_out rename to mastra_threads')
-  assert.equal((await sent(hub, ana, url, 'Outra pergunta')).statusCode, 202)
-  assert.deepEqual((await stream.turn()).at(-1), { type: 'turnEnd', reason: 'complete' })
-  assert.equal(stream.seen.raw.match(/turnEnd/g)?.length, 1)
+  assert.equal(endOf(events), 'complete')
 })

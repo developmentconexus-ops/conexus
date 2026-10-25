@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
 import type { TestContext } from 'node:test'
-import type { ConversationEvent, Message } from '@conexus/hub-api'
-import { ConversationEvent as Event, LAST_EVENT_ID_HEADER } from '@conexus/hub-api'
+import type { AgentControllerWireEvent, MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import {
@@ -38,10 +37,7 @@ export function holding(t: TestContext) {
   return { reply, release: () => hold.resolve() }
 }
 
-/**
- * A provider answer that sends nothing until released, so the turn runs with no word said yet;
- * released at the test's end at the latest. Call it before `conversing`.
- */
+/** A provider answer that sends nothing until released, at the test's end at the latest. */
 export function stalling(t: TestContext) {
   const stall = Promise.withResolvers<void>()
   t.after(() => stall.resolve())
@@ -54,12 +50,19 @@ export function title(asked: Sent): Reply | undefined {
   return asked.stream ? undefined : { kind: 'text', text: 'Título' }
 }
 
-/** A read conversation's messages, as role and parts. */
-export function rolesAndParts(read: { json(): unknown }) {
-  const { messages } = Object(read.json()).conversation
-  return messages.map((message: { role: string; parts: unknown[] }) => [
+/**
+ * A conversation's messages read again, as role and parts, without what Mastra keeps beside each
+ * part for itself (`createdAt`, `providerMetadata`) and its `step-start` markers.
+ */
+export async function rolesAndParts(hub: Hub, person: Person, url: string) {
+  const messages = await messagesOf(hub, person, url)
+  return messages.map((message) => [
     message.role,
-    message.parts,
+    message.parts.flatMap((part) => {
+      if (part.type === 'step-start') return []
+      const { createdAt: _at, providerMetadata: _kept, ...drawn } = Object(part)
+      return [drawn]
+    }),
   ])
 }
 export const KEY = 'sk-ant-conversation-key-0001'
@@ -85,15 +88,8 @@ export async function conversing(
     return String(Object(linked.json()).account.id)
   }
   await link('Time 1', KEY)
-  assert.equal(
-    (
-      await call(hub, ana, 'PUT', `${company}/default-model`, {
-        model: MODEL,
-        effort: 'off',
-      })
-    ).statusCode,
-    200,
-  )
+  const model = { model: MODEL, effort: 'off' }
+  assert.equal((await call(hub, ana, 'PUT', `${company}/default-model`, model)).statusCode, 200)
   const made = await post(hub, ana, `${company}/projects`, { name: 'Encomendas' })
   assert.equal(made.statusCode, 201)
   const projectId = String(Object(made.json()).project.id)
@@ -142,28 +138,55 @@ export async function started(hub: Hub, person: Person, conversations: string, b
   return String(Object(made.json()).conversation.id)
 }
 
-export function sent(hub: Hub, person: Person, url: string, content: string, key = randomUUID()) {
-  return post(hub, person, `${url}/messages`, { content }, key)
+/** One event of Mastra's stream, as the screen receives it (`AgentControllerWireEvent`). */
+export type StreamEvent = AgentControllerWireEvent
+
+const Frame = z.looseObject({ type: z.string() })
+
+/** How the run of these events ended (`agent_end`'s reason), or `undefined` when the last is another. */
+export function endOf(events: readonly StreamEvent[] | undefined): string | undefined {
+  const last = events?.at(-1)
+  return last?.type === 'agent_end' ? (last.reason ?? 'complete') : undefined
+}
+
+/** The conversation's id at the end of its Hub URL. */
+function conversationIdOf(url: string): string {
+  return url.slice(url.lastIndexOf('/') + 1)
+}
+
+/** Where Mastra's routes serve the conversation's session (`guard.ts`). */
+export function sessionUrl(url: string): string {
+  return `/api/builder/agent-controller/builder/sessions/${conversationIdOf(url)}`
+}
+
+/** The person's message, through Mastra's own route, as the screen sends it. */
+export function sent(hub: Hub, person: Person, url: string, content: string) {
+  return post(hub, person, `${sessionUrl(url)}/messages`, { message: content })
+}
+
+/** Parar, through Mastra's own route. */
+export function stopped(hub: Hub, person: Person, url: string) {
+  return post(hub, person, `${sessionUrl(url)}/abort`, {})
 }
 
 /**
- * The conversation's stream, read event by event until the test closes it; `lastEventId` reopens
- * it as a browser does, and `seen.ids` holds each event's id.
+ * The conversation's stream, Mastra's own route, read event by event until the test closes it.
+ * `seed` is the display state it opens with; `next` skips the display states Mastra says after
+ * every event, which `seen.displays` keeps.
  */
-export async function streamOf(hub: Hub, person: Person, url: string, lastEventId?: string) {
-  const resumed = lastEventId === undefined ? {} : { [LAST_EVENT_ID_HEADER]: lastEventId }
+export async function streamOf(hub: Hub, person: Person, url: string) {
   const response = await hub.app.inject({
     method: 'GET',
-    url: `${url}/events`,
-    headers: { origin: TEST_ORIGIN, cookie: person.cookie, ...resumed },
+    url: `${sessionUrl(url)}/stream`,
+    headers: { origin: TEST_ORIGIN, cookie: person.cookie },
     payloadAsStream: true,
   })
   assert.equal(response.statusCode, 200)
   assert.match(String(response.headers['content-type']), /^text\/event-stream/)
   const stream = response.stream()
-  const waiting: ConversationEvent[] = []
-  const ids: string[] = []
-  const seen = { raw: '', comments: 0, ended: false, ids }
+  const waiting: StreamEvent[] = []
+  const displays: StreamEvent[] = []
+  const seen = { raw: '', comments: 0, ended: false, displays }
   let buffered = ''
   let wake: (() => void) | undefined
   stream.on('data', (chunk: Buffer) => {
@@ -173,31 +196,34 @@ export async function streamOf(hub: Hub, person: Person, url: string, lastEventI
     buffered = frames.pop() ?? ''
     for (const frame of frames) {
       if (frame.startsWith(':')) seen.comments += 1
-      const [id, data] = frame.split('\n')
-      if (id?.startsWith('id: ') && data?.startsWith('data: ')) {
-        seen.ids.push(id.slice(4))
-        waiting.push(Event.parse(JSON.parse(data.slice(6))))
-      }
+      if (!frame.startsWith('data: ')) continue
+      const event: StreamEvent = JSON.parse(frame.slice(6))
+      Frame.parse(event)
+      if (event.type === 'display_state_changed') displays.push(event)
+      else waiting.push(event)
     }
     wake?.()
   })
-  stream.on('end', () => {
+  // The Hub's close destroys an open stream: it ends without its last chunk.
+  stream.on('close', () => {
     seen.ended = true
     wake?.()
   })
   async function until(done: () => boolean): Promise<void> {
     while (!done()) await new Promise<void>((resolve) => (wake = resolve))
   }
-  async function next(): Promise<ConversationEvent> {
+  async function next(): Promise<StreamEvent> {
     await until(() => waiting.length > 0)
     const event = waiting.shift()
     assert.ok(event !== undefined)
     return event
   }
-  /** The next event that is not the `turn` that opens a turn. */
-  async function said(): Promise<ConversationEvent> {
-    const event = await next()
-    return event.type === 'turn' ? next() : event
+  /** The display state the stream opened with. */
+  async function seed() {
+    await until(() => displays.length > 0)
+    const [first] = displays
+    assert.ok(first?.type === 'display_state_changed')
+    return first.displayState
   }
   /** The next piece of the model's text (a `text-delta`), whatever events come before it. */
   async function text(): Promise<string> {
@@ -208,24 +234,19 @@ export async function streamOf(hub: Hub, person: Person, url: string, lastEventI
       }
     }
   }
-  /** Every event until the turn ends, the end included. */
-  async function turn(): Promise<ConversationEvent[]> {
-    const seen: ConversationEvent[] = []
+  /** Every event until the run ends (`agent_end`), the end included. */
+  async function turn(): Promise<StreamEvent[]> {
+    const said: StreamEvent[] = []
     for (;;) {
       const event = await next()
-      seen.push(event)
-      if (event.type === 'turnEnd') return seen
+      said.push(event)
+      if (event.type === 'agent_end') return said
     }
   }
   function close() {
     stream.destroy()
   }
-  /** Waits for the stream's own end, from the server: true once it came, with no event left. */
-  async function ended(): Promise<boolean> {
-    await until(() => seen.ended)
-    return waiting.length === 0
-  }
-  return { next, said, text, turn, close, ended, until, seen }
+  return { next, seed, text, turn, close, until, seen }
 }
 
 /**
@@ -256,82 +277,108 @@ export async function asked(
   const stream = await streamOf(hub, person, url)
   t.after(() => stream.close())
   await where.between?.()
-  assert.equal((await sent(hub, person, url, content)).statusCode, 202)
-  return { url, events: await stream.turn(), ids: stream.seen.ids }
+  assert.equal((await sent(hub, person, url, content)).statusCode, 200)
+  return { url, events: await stream.turn() }
 }
 
 /**
- * The conversation's messages once the last is the Builder's, read again for at most five seconds:
- * Mastra saves a turn just after its end.
+ * A message of the transcript as a test reads it: the person's or the Builder's, with Mastra's
+ * parts and the calls it left waiting, by call (`metadata.suspendedTools`, as the Factory UI reads it).
  */
-export async function answeredOf(hub: Hub, person: Person, url: string): Promise<Message[]> {
+export type Read = {
+  id: string
+  role: 'person' | 'builder'
+  parts: MastraMessagePart[]
+  suspended: Record<string, unknown>
+  createdAt: string
+}
+
+const Suspension = z.looseObject({ toolCallId: z.string() })
+const Metadata = z.looseObject({ suspendedTools: z.record(z.string(), z.unknown()).optional() })
+
+function suspendedOf(metadata: unknown): Record<string, unknown> {
+  const read = Metadata.safeParse(metadata ?? {})
+  const tools = read.success ? Object.values(read.data.suspendedTools ?? {}) : []
+  return Object.fromEntries(
+    tools.flatMap((each) => {
+      const call = Suspension.safeParse(each)
+      return call.success ? [[call.data.toolCallId, call.data]] : []
+    }),
+  )
+}
+
+const Listed = z.object({
+  messages: z.array(
+    z.object({
+      id: z.string(),
+      role: z.string(),
+      createdAt: z.string(),
+      content: z.looseObject({ parts: z.array(z.looseObject({ type: z.string() })) }),
+    }),
+  ),
+})
+
+/** The whole transcript, oldest first, as the screen asks it. */
+const OLDEST_FIRST = new URLSearchParams({
+  perPage: 'false',
+  orderBy: JSON.stringify({ field: 'createdAt', direction: 'ASC' }),
+})
+
+/**
+ * The conversation's transcript, Mastra's own route (`threads/:threadId/messages`) as the screen
+ * reads it: the person's messages (`user`, and `signal` for one sent to a run) and the Builder's.
+ */
+export async function messagesOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
+  const id = conversationIdOf(url)
+  const read = await call(
+    hub,
+    person,
+    'GET',
+    `${sessionUrl(url)}/threads/${id}/messages?${OLDEST_FIRST}`,
+  )
+  assert.equal(read.statusCode, 200, read.body)
+  return Listed.parse(read.json()).messages.flatMap((message): Read[] => {
+    const role =
+      message.role === 'assistant'
+        ? 'builder'
+        : message.role === 'user' || message.role === 'signal'
+          ? 'person'
+          : undefined
+    if (role === undefined) return []
+    const parts: MastraMessagePart[] = Object(message.content).parts
+    const suspended = suspendedOf(message.content.metadata)
+    return [{ id: message.id, role, parts, suspended, createdAt: message.createdAt }]
+  })
+}
+
+/**
+ * The transcript once its last message is the Builder's, read again for at most five seconds:
+ * Mastra saves an errored run's messages a moment after its end.
+ */
+export async function answeredOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
   for (let attempt = 0; ; attempt += 1) {
-    const read = await call(hub, person, 'GET', url)
-    assert.equal(read.statusCode, 200, read.body)
-    const messages: Message[] = Object(read.json()).conversation.messages
+    const messages = await messagesOf(hub, person, url)
     if (messages.at(-1)?.role === 'builder' || attempt === 50) return messages
     await new Promise((done) => setTimeout(done, 100))
   }
 }
 
 /**
- * The conversation's messages, read once: Mastra saves a completed turn before it passes on its
- * `finish`, so a read at `turnEnd` has it.
+ * The notices of the conversation's last turn, as the person reads them with its answer: Mastra's
+ * stream does not say the answer's data parts. A failed turn's answer lands a moment after its
+ * `agent_end` (Mastra 1.79 ends an errored run before its memory saves it), so the read goes on
+ * until two reads, a moment apart, agree.
  */
-export async function messagesOf(hub: Hub, person: Person, url: string): Promise<Message[]> {
-  const read = await call(hub, person, 'GET', url)
-  assert.equal(read.statusCode, 200, read.body)
-  return Object(read.json()).conversation.messages
-}
-
-/**
- * The notices the person reads again in the conversation's Builder messages, in order. A failed
- * turn's answer, notices included, lands a moment after its `turnEnd` (Mastra 1.79 ends an errored
- * run before its memory saves it), so the read goes on until it holds them, as the screen keeps the
- * live answer until its read does (`use-live.ts`).
- */
-export async function keptNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
-  for (let attempt = 0; ; attempt += 1) {
+export async function turnNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
+  async function read() {
     const messages = await answeredOf(hub, person, url)
-    const notices = noticesIn(
-      messages.filter((message) => message.role === 'builder').flatMap((message) => message.parts),
-    )
-    if (notices.length > 0 || attempt === 50) return notices
-    await new Promise((done) => setTimeout(done, 100))
+    const turn = messages.slice(messages.findLastIndex((message) => message.role === 'person') + 1)
+    return noticesIn(turn.flatMap((message) => message.parts))
   }
-}
-
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/'
-const GeminiAsked = z.object({
-  tools: z.array(z.object({ functionDeclarations: z.array(z.object({ name: z.string() })) })),
-})
-
-/**
- * Stands in for Gemini's API beside the Anthropic double: one text answer, in its stream or its
- * JSON form, and the tools each call offered. It puts back the `fetch` it found, if still its own.
- */
-export function plantGemini(t: TestContext): string[][] {
-  const offered: string[][] = []
-  const before = globalThis.fetch
-  async function gemini(input: string | URL | Request, init?: RequestInit) {
-    const url = input instanceof Request ? input.url : String(input)
-    if (!url.startsWith(GEMINI_URL)) return before(input, init)
-    const asked = GeminiAsked.safeParse(JSON.parse(String(init?.body)))
-    const names = asked.success ? asked.data.tools.flatMap((tool) => tool.functionDeclarations) : []
-    offered.push(names.map((tool) => tool.name).sort())
-    const chunk = {
-      candidates: [
-        { content: { role: 'model', parts: [{ text: 'Resposta' }] }, finishReason: 'STOP' },
-      ],
-      usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
-    }
-    if (!url.includes(':streamGenerateContent')) return Response.json(chunk)
-    const headers = { 'content-type': 'text/event-stream' }
-    return new Response(`data: ${JSON.stringify(chunk)}\n\n`, { headers })
+  for (let last = await read(), attempt = 0; ; attempt += 1) {
+    await new Promise((done) => setTimeout(done, 300))
+    const again = await read()
+    if (JSON.stringify(again) === JSON.stringify(last) || attempt === 15) return again
+    last = again
   }
-  globalThis.fetch = gemini
-  t.after(() => {
-    if (globalThis.fetch === gemini) globalThis.fetch = before
-  })
-  return offered
 }
