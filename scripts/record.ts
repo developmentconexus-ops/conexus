@@ -1,9 +1,12 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand in the shape
 // the screen wanted, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking or abort) runs the native flow once: Mastra's real
-// AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
+// `npm run record -- <scenario>` (cited, thinking, abort or plan) runs the native flow once: Mastra's
+// real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
-// a fake `fetch`, as `scripts/record-provider.ts` made it. It saves every event the session emitted
+// a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
+// three model calls (a plan, a tool, an answer), so its calls are streamed by the Messages API stream
+// the server tests' double uses (`test-anthropic-stream.ts`), and the run is approved and steered the
+// way a person does. It saves every event the session emitted
 // and every row Mastra stored, with the library, its version and the date in the first line, in
 // apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service is called and no
 // credential is read; every prompt is invented (security S40). `tool-error` is not a scenario: its
@@ -13,9 +16,11 @@ import { join } from 'node:path'
 import { Agent } from '@mastra/core/agent'
 import { AgentController } from '@mastra/core/agent-controller'
 import { InMemoryStore } from '@mastra/core/storage'
-import { webFetchTool, webSearchTool } from '@mastra/core/tools'
+import { createTool, webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
 import { z } from 'zod'
+import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
+import { events as streamed } from '../apps/server/src/platform/test-anthropic-stream.ts'
 import type { NativeHeader } from '../apps/server/src/platform/test-recordings.ts'
 import {
   LEAK,
@@ -39,7 +44,17 @@ const PROMPTS = {
     'Uma padaria inventada vende 120 pães por dia a R$ 0,80 cada. Quanto ela fatura em 30 dias? Pense antes de responder.',
   abort: 'Escreva uma lista de 60 nomes inventados de padarias, um por linha, sem comentários.',
 }
-const Scenario = z.enum(['cited', 'thinking', 'abort'])
+const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan'])
+
+const PLAN_FILE = '.conexus/plans/encomendas.md'
+const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
+const STEER = 'Só eu cadastro.'
+/** What the model does in the `plan` scenario: submit the plan, use a tool, and answer once the person's steer is in. */
+const PLAN_CALLS: Block[][] = [
+  [{ type: 'tool_use', name: 'submit_plan', input: { path: PLAN_FILE } }],
+  [{ type: 'tool_use', name: 'anotar', input: { nota: 'Plano aprovado, começando.' } }],
+  [{ type: 'text', text: 'Pronto, o cadastro será só seu.' }],
+]
 
 const Package = z.object({ version: z.string() })
 function versionOf(name: string): string {
@@ -47,8 +62,10 @@ function versionOf(name: string): string {
   return Package.parse(JSON.parse(readFileSync(path, 'utf8'))).version
 }
 
-/** Answers the one model call from the provider recording; a second call is an error, not a guess. */
-function replaying(name: string): () => void {
+type Answer = (signal: AbortSignal | null | undefined) => Response
+
+/** Answers the model calls in order; one more than the recording holds is an error, not a guess. */
+function replaying(answers: Answer[]): () => void {
   const real = globalThis.fetch
   let calls = 0
   globalThis.fetch = async (input, init) => {
@@ -56,18 +73,72 @@ function replaying(name: string): () => void {
     if (!url.startsWith(MESSAGES_URL))
       throw new Error(`The recording reaches no other address: ${url}`)
     calls += 1
-    if (calls > 1) throw new Error('A recording holds one model call; a second was asked.')
-    return replayed(name, init?.signal)
+    const answer = answers[calls - 1]
+    if (answer === undefined)
+      throw new Error(`A recording holds ${answers.length} model call(s); another was asked.`)
+    return answer(init?.signal)
   }
   return () => {
     globalThis.fetch = real
   }
 }
 
+type Session = Awaited<ReturnType<AgentController['createSession']>>
+
+/** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
+async function run(session: Session, scenario: z.infer<typeof Scenario>): Promise<unknown[]> {
+  const events: unknown[] = []
+  let deltas = 0
+  let suspended: string | undefined
+  const ended = Promise.withResolvers<void>()
+  let ends = 0
+  session.subscribe((event) => {
+    events.push(event)
+    if (event.type === 'message_update' && event.event.type === 'text-delta') deltas += 1
+    if (scenario === 'abort' && deltas === ABORT_AFTER) session.abort()
+    if (event.type === 'tool_suspended') suspended = event.toolCallId
+    // The person's steer goes in while the run uses its tool, as in a build.
+    if (scenario === 'plan' && event.type === 'tool_start' && event.toolName === 'anotar')
+      void session.sendMessage({ content: STEER })
+    if (scenario === 'plan' && event.type === 'agent_end') {
+      ends += 1
+      if (ends === 2) ended.resolve()
+    }
+  })
+  const answers: Answer[] =
+    scenario === 'plan'
+      ? PLAN_CALLS.map(
+          (blocks, at) => () =>
+            new Response(streamed(CLAUDE, blocks, at === 2 ? 'end_turn' : 'tool_use'), {
+              headers: { 'content-type': 'text/event-stream' },
+            }),
+        )
+      : [(signal) => replayed(`anthropic-${scenario}`, signal)]
+  const restore = replaying(answers)
+  try {
+    await session.sendMessage({ content: scenario === 'plan' ? PLAN_PROMPT : PROMPTS[scenario] })
+    if (scenario === 'plan') {
+      if (suspended === undefined) throw new Error('The plan was not parked on the person.')
+      await session.respondToToolSuspension({
+        toolCallId: suspended,
+        resumeData: { action: 'approved' },
+      })
+      await ended.promise
+    }
+  } finally {
+    restore()
+  }
+  return events
+}
+
 async function record(scenario: z.infer<typeof Scenario>) {
-  const source = `anthropic-${scenario}`
+  const planned = scenario === 'plan'
+  const source = planned ? 'test-anthropic-stream.ts' : `anthropic-${scenario}.sse`
+  // The plan's calls are not a provider's recording; the SDK that reads them is the one of any other.
   const provider = Recording.parse(
-    JSON.parse(readFileSync(join(RECORDINGS, `${source}.json`), 'utf8')),
+    JSON.parse(
+      readFileSync(join(RECORDINGS, `anthropic-${planned ? 'abort' : scenario}.json`), 'utf8'),
+    ),
   )
   // Mastra's router reads the key of the provider from the environment; this one is invented.
   process.env.ANTHROPIC_API_KEY = 'invented-key'
@@ -78,7 +149,16 @@ async function record(scenario: z.infer<typeof Scenario>) {
     name: 'Builder',
     instructions: 'Answer in Brazilian Portuguese.',
     model: `anthropic/${CLAUDE}`,
-    tools: { web_fetch: webFetchTool, web_search: webSearchTool },
+    tools: {
+      web_fetch: webFetchTool,
+      web_search: webSearchTool,
+      anotar: createTool({
+        id: 'anotar',
+        description: 'Anota uma nota.',
+        inputSchema: z.object({ nota: z.string() }),
+        execute: async () => 'Anotado.',
+      }),
+    },
     maxRetries: 0,
     memory,
   })
@@ -88,22 +168,12 @@ async function record(scenario: z.infer<typeof Scenario>) {
     memory,
     agent,
     modes: [{ id: 'conversa' }],
+    // As the Builder runs its tools (decision 0053): without asking.
+    initialState: { yolo: true },
   })
   await controller.init()
   const session = await controller.createSession({ resourceId: OWNER, id: scenario })
-  const events: unknown[] = []
-  let deltas = 0
-  session.subscribe((event) => {
-    events.push(event)
-    if (event.type === 'message_update' && event.event.type === 'text-delta') deltas += 1
-    if (scenario === 'abort' && deltas === ABORT_AFTER) session.abort()
-  })
-  const restore = replaying(source)
-  try {
-    await session.sendMessage({ content: PROMPTS[scenario] })
-  } finally {
-    restore()
-  }
+  const events = await run(session, scenario)
   const threadId = session.thread.getId()
   const memoryStore = await storage.getStore('memory')
   if (memoryStore === undefined || threadId === null) throw new Error('Mastra kept no thread.')
@@ -115,7 +185,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
     library: '@mastra/core',
     version: versionOf('@mastra/core'),
     sdk: provider.sdk,
-    source: `${source}.sse`,
+    source,
     recordedAt: new Date().toISOString().slice(0, 10),
   }
   const lines = [

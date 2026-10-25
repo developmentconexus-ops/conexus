@@ -181,16 +181,66 @@ function wordsOf(message: Stored): string | undefined {
   return read.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
 }
 
+type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']
+
+function isTerminal(state: Invocation['state']): boolean {
+  return state === 'result' || state === 'output-error' || state === 'output-denied'
+}
+
+/**
+ * Whether the read already draws what the stream told in a message: Mastra saves a step per message
+ * but the resumed run tells its tool call's result in a message of its own, which the store keeps
+ * inside the message that called (Factory `claimOnScreenEntries`, `windowCopyCovers`). Only a
+ * message with a tool call is judged; every call, text and thought it draws must be in the read, a
+ * call settled there if it is settled here.
+ */
+function drawnBy(read: readonly Stored[], message: Stored): boolean {
+  const readParts = read.flatMap((each) => each.content.parts)
+  const calls = new Map<string, Invocation>()
+  for (const part of readParts)
+    if (part.type === 'tool-invocation')
+      calls.set(part.toolInvocation.toolCallId, part.toolInvocation)
+  let called = false
+  for (const part of message.content.parts) {
+    if (part.type === 'tool-invocation') {
+      called = true
+      const there = calls.get(part.toolInvocation.toolCallId)
+      if (there === undefined) return false
+      if (isTerminal(part.toolInvocation.state) && !isTerminal(there.state)) return false
+    } else if (part.type === 'text') {
+      const said = part.text.trim()
+      if (
+        said !== '' &&
+        !readParts.some((each) => each.type === 'text' && each.text.startsWith(said))
+      )
+        return false
+    } else if (part.type === 'reasoning') {
+      const thought = part.reasoning.trim()
+      if (
+        thought !== '' &&
+        !readParts.some((each) => each.type === 'reasoning' && each.reasoning.startsWith(thought))
+      )
+        return false
+    } else if (part.type.startsWith('data-conexus-') && part.type !== 'data-conexus-thought') {
+      return false
+    }
+  }
+  return called
+}
+
 /**
  * The read takes the place of what the stream told, joined by id: a message the stream told and
- * the read does not hold yet stays after it, as Mastra may save it a moment later (Factory
- * `mergeServerWindow`). A person's message only the read brings, as after a gap in the stream,
- * confirms the pending steer with its words (Factory `confirmPendingUserMessages`).
+ * the read does not hold yet stays after it, as Mastra may save it a moment later, unless the read
+ * already draws all of it (Factory `mergeServerWindow`). A person's message only the read brings,
+ * as after a gap in the stream, confirms the pending steer with its words (Factory
+ * `confirmPendingUserMessages`).
  */
 function loaded(state: SessionState, read: readonly Stored[]): SessionState {
   const held = new Set(read.map((message) => message.id))
   const told = new Set(state.messages.map((message) => message.id))
-  const arriving = state.messages.filter((message) => !held.has(message.id))
+  const arriving = state.messages.filter(
+    (message) => !held.has(message.id) && !drawnBy(read, message),
+  )
   const brought = read.filter((message) => !told.has(message.id)).map(wordsOf)
   const steers = state.steers.filter((steer) => {
     const at = brought.indexOf(steer.content)
