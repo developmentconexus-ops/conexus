@@ -22,7 +22,7 @@ raciocínio, tarefas fixas, memória), e um turno com tarefa aberta não vira "m
 8. Enquanto o Builder trabalha, Ana escreve "Só eu cadastro." e aperta Enter: a mensagem aparece
    embaixo com "Vai ao Builder no próximo passo" e o Builder a lê no passo seguinte, sem parar a
    ferramenta em curso. Ana aperta Esc: o turno para, como em **Parar**, e a mensagem que o Builder
-   não leu fica pendente e vai, uma vez, à volta que o Mastra abre logo depois (critérios 43 e 46).
+   não leu volta para o campo.
 
 **O que você faz.** Aprova esta página; firstmate faz a prova ao vivo da U5 (raciocínio
 do Gemini pela sua conta Google); no fim, você faz o roteiro e aprova os textos.
@@ -47,7 +47,7 @@ queda, sem marca de saída limpa (U14); "6. B" recusa do modelo e resposta corta
 próprias (U2). Na "5.", o steering, as suas palavras: "Aqui tem que ter é o steering e isso é nativo do
 factory e do code que eu ja usei, tem no claude e etc é função que tem que ter. E muito bem estudada".
 Enquanto o Builder trabalha, você escreve e ele lê no próximo passo, como no Mastra Code, na Factory e no
-Claude ("1. A"); Esc faz o mesmo que **Parar** ("2. A"); o que ele ainda não leu vai à volta seguinte, como o Mastra faz (2026-10-25, critérios 43 e 46); o
+Claude ("1. A"); Esc faz o mesmo que **Parar** ("2. A"), que tira o que ele ainda não leu (U12, U13); o
 steering entra nesta etapa ("2. Sim"). E "A" (2026-10-23): os anéis da memória leem o `omProgress` do
 Mastra. Também entram dois defeitos que a revisão achou: a mensagem com cartão aberto não segura o envio
 (U12), e o turno do servidor vira um estado só (U2).
@@ -243,10 +243,10 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 40 | U2 | Recusa do modelo: "O modelo recusou este pedido. Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder."; resposta cortada: "A resposta do modelo ficou grande demais e foi cortada. Peça ao Builder uma parte de cada vez."; falha de chamada segue `MODEL_CALL_FAILED`; nenhum texto do fornecedor | `turn-line.test.ts`, `stream.test.tsx` |
 | 41 | M1, M2 | Mensagem durante a resposta: `{ok: true}` da rota do Mastra; entra no próximo passo da mesma execução, sem parar a ferramenta em curso; a conta e a máquina vêm da conversa em toda execução (mensagem, orientar, fila). A trava (fundador: "1. C sendo o mais simples possivel"): outra conversa do mesmo Projeto é recusada no começo da execução com `RUN_BUSY` e o nome de quem trabalha, que chega como `error` no stream e `agent_end`, sem chamada ao modelo e sem guardar a mensagem; a mesma conversa não é recusada | `conversation-steer.test.ts`, `conversation-turns.test.ts` |
 | 42 | M2 | A mensagem sai no stream como a da pessoa onde o Mastra a pôs (`message_start`, `role: 'user'`), e a releitura a mostra uma vez depois do fim | `conversation-steer.test.ts` |
-| 43 | U12 | **Parar** com uma mensagem que o Builder não leu: o Mastra a leva, uma vez, à volta que abre logo depois; nada nosso sobre a fila dele (regra do fundador, 2026-10-25: "se não tem no Mastra, não tem na Factory, a gente não vai ter. Não agora") | `conversation-steer.test.ts` |
+| 43 | U12 | **Parar** tira as mensagens que o Builder não leu: nenhuma chega ao modelo, nenhuma volta nova começa | `conversation-steer.test.ts` |
 | 44 | M2 | Mensagem com pergunta ou plano aberto (fundador: "5. Aprovado"): a rota responde `{ok: true}` e o Mastra a segura até a resposta ou o **Parar**; no **Parar**, o cartão é cancelado e a mensagem roda logo depois; a tela a mostra como na fila | `conversation-steer.test.ts`, `conversation-waiting.test.ts` |
 | 45 | M2 | Enquanto o Builder trabalha a caixa fica aberta: Enter manda, Esc para, **Parar** e **Enviar** lado a lado; a mensagem aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream traz o `message_start` dela, casada pela ordem, como a Factory UI | `composer.test.tsx`, `panel.test.tsx`, `live.test.tsx` |
-| 46 | M2 | Mensagem que o Builder não leu quando a volta acaba fica na tela como pendente, "Vai ao Builder no próximo passo", até a volta que o Mastra abre com ela, como a Factory UI (`factory-ui` `transcript.ts:174-206`); recarregar mostra a mensagem lida uma vez, no lugar dela (regra do fundador, 2026-10-25: nenhum mecanismo nosso paralelo à fila do Mastra) | `panel.test.tsx`, `conversation-steer.test.ts`, `tests/e2e/builder-native.test.ts` |
+| 46 | M2 | Mensagem que o Builder não leu quando a volta acaba (Parar sem cartão aberto, falha, reinício) volta para o campo com "O Builder parou antes de ler sua mensagem. Ela voltou para o campo."; recarregar mostra a mensagem lida uma vez, no lugar dela | `panel.test.tsx`, `tests/e2e/builder-native.test.ts` |
 | 47 | M2 | Não agora (quarta emenda): o cartão não atravessa a atualização nem a queda. Depois do reinício o cartão some e a próxima mensagem funciona, sem erro do fornecedor (o Mastra tira do pedido a chamada sem resposta); saem `restoreCards` e a adoção da U14 | `conversation-update.test.ts` |
 | 48 | M2 | O fim é o do Mastra: `onBeforeAgentEnd` chama `runs.finish` pela conversa uma vez por execução, também na recusada, e solta só a trava da sua conversa; saem o turno como estado nosso e o prazo de uma hora | `conversation-run-ends.test.ts` |
 | 49 | M2 | Turno que roda quando o servidor cai fica parado (fundador: "6. Aprovado"): depois do reinício a sessão volta sem execução e sem cartão, e a reconexão relê a transcrição; sem retomada automática | `conversation-resume.test.ts` |
