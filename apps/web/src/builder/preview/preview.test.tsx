@@ -1,10 +1,11 @@
 import { CompanyId } from '@conexus/hub-api'
 import { createMemoryHistory } from '@tanstack/react-router'
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
+import { sentenceOfCode } from '../../platform/hub.ts'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
 import {
   conversationsNone,
@@ -12,6 +13,7 @@ import {
   PEDIDOS,
   PEDIDOS_ADDRESS,
   projectsRead,
+  refusal,
 } from '../../platform/test-hub.tsx'
 import { previewChanged } from './public.ts'
 
@@ -21,9 +23,14 @@ const APP = `https://${PEDIDOS_ADDRESS}`
 const NO_PREVIEW = 'Ainda não há uma prévia disponível. Descreva o aplicativo para começar.'
 const WEBKIT = 'O app pode não abrir aqui dentro neste navegador.'
 const LOCATION = `${APP}/?pass=abc`
+const APPLE =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 26_6 like Mac OS X) AppleWebKit/605.1.15 Version/26.6 Mobile/15E148 Safari/604.1'
 const ENTRY = { type: 'conexus-entry', host: 'pedidos--empresa-teste', binding: 'b'.repeat(43) }
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  sessionStorage.clear()
+})
 
 /** Pedidos with the app at `appVersion`; `seen` changes what the Hub says, and `reads` counts its answers. */
 function openProject(seen: Partial<ProjectsView> = {}) {
@@ -73,6 +80,9 @@ test('barra: o app num iframe do endereço do Projeto, com Computador, Celular e
   openProject({ appVersion: 1 })
   const frame = await screen.findByTitle('Prévia')
   expect(frame.getAttribute('src')).toBe(`${APP}/`)
+  const sandbox = frame.getAttribute('sandbox') ?? ''
+  expect(sandbox).toContain('allow-scripts')
+  expect(sandbox).not.toContain('allow-top-navigation')
   const computer = screen.getByRole('button', { name: 'Computador' })
   expect(computer.getAttribute('aria-pressed')).toBe('true')
   expect(frame.className).not.toContain('390px')
@@ -136,6 +146,30 @@ test('aviso: no WebKit da Apple, acima do iframe, com Abrir app numa aba nova', 
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
   expect(notice.compareDocumentPosition(iframe()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   expect(iframe().getAttribute('src')).toBe(`${APP}/`)
+})
+
+test('aviso: Fechar aviso o esconde, e a aba lembra', async () => {
+  vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(APPLE)
+  openProject({ appVersion: 1 })
+  await screen.findByText(WEBKIT)
+  fireEvent.click(screen.getByRole('button', { name: 'Fechar aviso' }))
+  expect(screen.queryByText(WEBKIT)).toBeNull()
+  cleanup()
+  openProject({ appVersion: 1 })
+  await screen.findByTitle('Prévia')
+  expect(screen.queryByText(WEBKIT)).toBeNull()
+})
+
+test('entrada recusada: a frase da falha no lugar do iframe, e Recarregar tenta de novo', async () => {
+  openProject({ appVersion: 1 })
+  server.use(http.post('*/api/apps/frame-handoff', () => refusal('DATABASE_UNAVAILABLE')))
+  await screen.findByTitle('Prévia')
+  sent(iframe().contentWindow, APP)
+  const alert = await screen.findByRole('alert')
+  expect(alert.textContent).toBe(sentenceOfCode('DATABASE_UNAVAILABLE'))
+  expect(screen.queryByTitle('Prévia')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
+  expect((await screen.findByTitle('Prévia')).getAttribute('src')).toBe(`${APP}/`)
 })
 
 test('aviso: fora do WebKit da Apple, nada', async () => {

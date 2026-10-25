@@ -81,7 +81,7 @@ export function ProjectArea(props: { preview: (project: Project) => ReactNode; c
           <TabsTrigger value={Lens.enum.code}>Código</TabsTrigger>
           <TabsTrigger value={Lens.enum.project}>Projeto</TabsTrigger>
         </TabsList>
-        {project.address !== null && (
+        {project.address !== null && project.appVersion !== null && (
           <a
             href={`https://${project.address}/`}
             target="_blank"

@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { ProjectsView } from '../../platform/test-hub.tsx'
-import { hubServer, PEDIDOS, PEDIDOS_ADDRESS, projectsRead } from '../../platform/test-hub.tsx'
+import { hubServer, PEDIDOS, projectsRead } from '../../platform/test-hub.tsx'
 import { versionsRead } from '../../platform/test-hub-versions.tsx'
 import { conversationOf, FIRST, PROJECT, SECOND, screens, typed, view } from './test-hub.tsx'
 
@@ -34,13 +34,11 @@ function tab(name: string) {
   return within(screen.getByRole('tablist', { name: 'Projeto' })).getByRole('tab', { name })
 }
 
-test('o Projeto abre na Prévia vazia, com a conversa à direita e "Abrir app" no topo', async () => {
+test('o Projeto abre na Prévia vazia, com a conversa à direita e sem "Abrir app" no topo', async () => {
   openProject()
   expect(await screen.findByText(NO_PREVIEW)).toBeTruthy()
   expect(tab('Prévia').getAttribute('aria-selected')).toBe('true')
-  expect(screen.getByRole('link', { name: 'Abrir app' }).getAttribute('href')).toBe(
-    `https://${PEDIDOS_ADDRESS}/`,
-  )
+  expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
   expect(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })).toBeTruthy()
   expect(screen.getByRole('separator', { name: 'Redimensionar a conversa' })).toBeTruthy()
 })

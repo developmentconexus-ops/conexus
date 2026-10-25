@@ -43,7 +43,7 @@ describe('varredura', { concurrency: 4 }, () => {
             viewport,
             replies: state.replies,
             scheme,
-            ...(state.userAgent === undefined ? {} : { userAgent: state.userAgent }),
+            userAgent: state.userAgent,
           })
           await state.settle(page)
           const { scroll, inner } = await page.evaluate(() => ({
@@ -71,7 +71,7 @@ describe('pré-carga do trilho', { concurrency: 4 }, () => {
       const page = await harness.open(state.path, {
         viewport: DESKTOP,
         replies: state.replies,
-        ...(state.userAgent === undefined ? {} : { userAgent: state.userAgent }),
+        userAgent: state.userAgent,
       })
       await state.settle(page)
       const link = page.locator('a[href$="/projects"]').first()

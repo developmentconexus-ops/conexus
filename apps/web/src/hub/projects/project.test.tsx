@@ -86,7 +86,13 @@ test('o membro vê o Sobre sem "Apagar Projeto", e quem pode apagar', async () =
 for (const role of ['owner', 'admin', 'member'] as const) {
   test(`${role}: o endereço e "Abrir app", um link para https://<endereço>/`, async () => {
     server.use(
-      ...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: false, role }),
+      ...projectsRead({
+        projects: [PEDIDOS],
+        databaseReady: true,
+        mayDelete: false,
+        role,
+        appVersion: 1,
+      }),
     )
     render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
     expect(await screen.findByText(PEDIDOS_ADDRESS)).toBeTruthy()
@@ -104,6 +110,13 @@ test('Abrir app abre aba nova', async () => {
   const link = await screen.findByRole('link', { name: 'Abrir app' })
   expect(link.getAttribute('target')).toBe('_blank')
   expect(link.getAttribute('rel')).toBe('noopener noreferrer')
+})
+
+test('antes do primeiro app, o topo não mostra "Abrir app"', async () => {
+  server.use(...projectsRead({ projects: [PEDIDOS], databaseReady: true, mayDelete: true }))
+  render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [ABOUT] }))} />)
+  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
 })
 
 test('um Projeto sem endereço, feito na 7.x: nem o endereço nem "Abrir app"', async () => {

@@ -95,7 +95,7 @@ export type Harness = {
       viewport: Viewport
       replies: Replies
       scheme?: 'light' | 'dark'
-      userAgent?: string
+      userAgent?: string | undefined
     },
   ): Promise<Page & { seen: Seen[]; problems: string[] }>
   /** The requests no reply was given for, over the whole run. */
@@ -141,14 +141,14 @@ export function createHarness(root: string): Harness {
       viewport: Viewport
       replies: Replies
       scheme?: 'light' | 'dark'
-      userAgent?: string
+      userAgent?: string | undefined
     },
   ) {
     if (!browser) throw new Error('the harness is not started')
     const page = await browser.newPage({
       viewport: options.viewport,
       colorScheme: options.scheme ?? 'light',
-      ...(options.userAgent === undefined ? {} : { userAgent: options.userAgent }),
+      userAgent: options.userAgent,
     })
     const seen: Seen[] = []
     const problems = watchProblems(page)
