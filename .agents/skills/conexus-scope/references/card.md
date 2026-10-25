@@ -1,8 +1,7 @@
 # The card template
 
 The card is the whole map of the step short of the code itself. Its founder's page, in Portuguese,
-is the only part the founder approves, within the ceiling of [delivery
-L24](../../../../docs/guides/delivery.md). The rest serves the builder and the reviewer and may be in
+is the only part the founder approves. The rest serves the builder and the reviewer and may be in
 Portuguese or English, one language per card.
 
 The card never carries whole files. A unit's section is its build spec: what its builder reads,

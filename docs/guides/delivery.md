@@ -131,9 +131,8 @@ merge.
   unique and every cited one exist; a rule **must** live in one file; retired process names **must
   not** appear. They are: wave, N0 to N5, receipts, Factory as the old review robot, Codex review,
   `conexus-spec`, `conexus-prove`, `conexus-development`, dossier; they appear nowhere else. A step
-  card and `docs/approvals.md` have no word ceiling; L21 guards them. Founder, 2026-10-24: "Pode
-  seguir". The card's founder's page **must** stay under 600 words. [check-docs, rule to write for
-  the founder's page, review]
+  card and `docs/approvals.md` have no word ceiling, and L21 guards them: keep only what changes
+  what the next agent does. Founder, 2026-10-24: "Pode seguir". [check-docs, review]
 
 | File | Ceiling, in words |
 | --- | ---: |
@@ -148,7 +147,7 @@ merge.
 | `docs/guides/testing.md`, `web.md` | 2,000 |
 | `docs/guides/delivery.md` | 1,800 |
 | `docs/decisions/*.md` | 350 |
-| `docs/steps/*.md` | none (L21); the founder's page 600 |
+| `docs/steps/*.md` | none (L21), nor on the founder's page |
 | `docs/how-to/*.md` | 800 |
 | `docs/reference/*.md` | none: one short entry per piece or mechanism |
 | `.agents/skills/*/SKILL.md`, body | 600 |
