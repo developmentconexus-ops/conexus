@@ -103,19 +103,20 @@ export const VERSION_SEND_DEADLINE_MS = 100_000
 /** The ceiling of a send's body: the version's 10 MB in base64, with the JSON around it. */
 const VERSION_BODY_LIMIT = 14 * 1024 * 1024
 
+/** Why a failed version did not enter: its code is the failure's, read by the screen (C48). */
+export const AppVersionFailure = z.enum([
+  'APP_VERSION_FAILED',
+  'APP_VERSION_NOT_STARTING',
+  'APP_MIGRATION_FAILED',
+  'APP_MIGRATION_CHANGED',
+])
+export type AppVersionFailure = z.infer<typeof AppVersionFailure>
+
 export const AppVersion = z.object({
   id: AppVersionId,
   number: z.int().positive(),
   state: z.enum(['sending', 'ready', 'failed']),
-  /** Why a failed version did not enter: its code is the failure's, read by the screen (C48). */
-  failure: z
-    .enum([
-      'APP_VERSION_FAILED',
-      'APP_VERSION_NOT_STARTING',
-      'APP_MIGRATION_FAILED',
-      'APP_MIGRATION_CHANGED',
-    ])
-    .nullable(),
+  failure: AppVersionFailure.nullable(),
   sentBy: z.string().min(1),
   /** The sender's name; null once that person left the company. */
   sentByName: z.string().min(1).nullable(),

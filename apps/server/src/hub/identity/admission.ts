@@ -47,6 +47,8 @@ const ACTIONS = {
   // putting a version back hold it until they commit.
   readAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: false },
   manageAppVersions: { by: 'MEMBER', statement: MANAGE_VERSIONS, locks: true },
+  // Every member's Builder turn sends its version to the Projeto's one app (step 14.1, X1).
+  sendBuilderVersion: { by: 'MEMBER', statement: undefined, locks: true },
   // Every member reads the company's model accounts and links, orders and removes their own; only
   // an owner or an administrator changes the company's (step 11, D4).
   readModelAccounts: { by: 'MEMBER', statement: undefined, locks: false },

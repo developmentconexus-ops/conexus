@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import type { CheckReport } from '@conexus/app/check'
-import type { CompanyId, ConversationId, PersonId, ProjectId, VersionCheck } from '@conexus/hub-api'
+import type {
+  CompanyId,
+  ConversationId,
+  PersonId,
+  PreviewData,
+  ProjectId,
+  VersionCheck,
+} from '@conexus/hub-api'
 import { RunId as RunIdSchema } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
 import type { Workspace } from '@mastra/core/workspace'
@@ -8,8 +15,16 @@ import { sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { personNameColumn } from '../../hub/identity/public.ts'
 import type { Result } from '../../platform/result.ts'
-import type { CheckPlatformFailed, Phase } from '../machine/public.ts'
-import type { Driven, Opened, Registry, RunsContext, RunsDeps, Settled } from './context.ts'
+import type { CheckPlatformFailed, Phase, VersionFolder } from '../machine/public.ts'
+import type {
+  Driven,
+  Opened,
+  Outcome,
+  Registry,
+  RunsContext,
+  RunsDeps,
+  Settled,
+} from './context.ts'
 import { copyPending } from './copy.ts'
 import { createCopyRetry } from './copy-retry.ts'
 import { conversationIn } from './keys.ts'
@@ -22,6 +37,11 @@ const PersonName = z.object({ name: z.string().nullable() })
 
 type Conversation = { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
 type Taking = Conversation & { personId: PersonId }
+
+/** Only a version whose app built goes to the app (step 14, "A" of 2026-10-24). */
+function passed(outcome: Outcome): outcome is Extract<Outcome, { kind: 'saved' }> {
+  return outcome.kind === 'saved' && outcome.version.check?.state === 'passed'
+}
 
 /**
  * The Builder's runs (decision 0051): the one run that writes per Projeto, the workspace it works
@@ -206,14 +226,16 @@ export class Runs {
 
   /**
    * Closes the conversation's run and saves what it wrote, whatever ended Mastra's run: the end, a
-   * question, Parar, an error. The Projeto stays held until the save is over and the machine is let
-   * go. A conversation holding no run (one refused as busy, or whose end was said already), or a run
-   * a removal stopped, answers `gone` and writes nothing; the workspace Mastra resolved for it is let
-   * go, and its machine was never started.
+   * question, Parar, an error. `saved` hears the outcome as soon as it is saved; a version whose app
+   * built is then taken from the machine, and sent to the Projeto's app once the machine is let go.
+   * The Projeto stays held until the send is over. A conversation holding no run (one refused as
+   * busy, or whose end was said already), or a run a removal stopped, answers `gone` and writes
+   * nothing; the workspace Mastra resolved for it is let go, and its machine was never started.
    */
   async finish(input: {
     conversationId: ConversationId
     reason: string
+    saved: (settled: Settled) => void
   }): Promise<Settled | 'gone'> {
     const mine = this.#writingFor(input.conversationId)
     if (mine === undefined) {
@@ -225,32 +247,83 @@ export class Runs {
       await mine.saving
       return 'gone'
     }
-    const settling = this.#settle(mine, input.reason)
+    const settling = this.#settle(mine, input)
     // The save's failure goes to its own caller; who waits here waits only for its end.
     mine.saving = Promise.allSettled([settling])
     return settling
   }
 
-  async #settle(mine: Driven, reason: string): Promise<Settled | 'gone'> {
+  async #settle(
+    mine: Driven,
+    input: { reason: string; saved: (settled: Settled) => void },
+  ): Promise<Settled | 'gone'> {
     const { companyId, projectId, conversationId, runId } = mine
+    let machine: Promise<void> | undefined
+    const letGo = () => {
+      machine ??= this.#letGo(mine)
+      return machine
+    }
     try {
-      this.#deps.log.info({ companyId, projectId, conversationId, runId, reason }, 'RUN_SETTLING')
+      const fields = { companyId, projectId, conversationId, runId, reason: input.reason }
+      this.#deps.log.info(fields, 'RUN_SETTLING')
       const outcome = await saveRun(this.#context, mine)
-      return outcome === 'gone' ? outcome : { ...outcome, rounds: mine.rounds }
+      if (outcome === 'gone') return outcome
+      const settled = { ...outcome, rounds: mine.rounds }
+      input.saved(settled)
+      if (!passed(outcome)) return settled
+      const packed = await this.#pack(mine)
+      await letGo()
+      const { number } = outcome.version
+      const preview: PreviewData | undefined = packed.ok
+        ? await this.#send(mine, number, packed.value)
+        : { state: 'failed', number, code: 'APP_VERSION_FAILED' }
+      return preview === undefined ? settled : { ...settled, preview }
     } finally {
-      for (const end of mine.ends.splice(0)) end()
-      await this.#unregister(conversationId)
-      await this.#deps.machines
-        .release(conversationId)
-        .catch((error: unknown) =>
-          this.#deps.log.error(
-            { companyId, conversationId, error: String(error) },
-            'MACHINE_RELEASE_FAILED',
-          ),
-        )
-      // Held until the machine is let go: a run that asks for it meanwhile waits for `saving`.
+      await letGo()
+      // Held until the send is over: a run that asks for it meanwhile waits for `saving`.
       if (this.#writing.get(projectId) === mine) this.#writing.delete(projectId)
     }
+  }
+
+  /** The version the passing check left, read while the run still holds the machine. */
+  async #pack(mine: Driven): Promise<Result<VersionFolder, string>> {
+    const { companyId, projectId, conversationId, runId } = mine
+    const fields = { companyId, projectId, conversationId, runId }
+    try {
+      const packed = await this.#deps.machines.pack({ conversationId })
+      if (!packed.ok)
+        this.#deps.log.error({ ...fields, reason: packed.error }, 'PREVIEW_PACK_REFUSED')
+      return packed
+    } catch (error) {
+      // The machine died on the way: there is no version to send.
+      this.#deps.log.error(
+        { ...fields, reason: 'LOST', error: String(error) },
+        'PREVIEW_PACK_REFUSED',
+      )
+      return { ok: false, error: 'LOST' }
+    }
+  }
+
+  /** The version to the Projeto's app, told to the conversation as the machine's last phase. */
+  #send(mine: Driven, number: number, folder: VersionFolder) {
+    const { companyId, projectId, personId, conversationId, runId } = mine
+    this.#phases.get(conversationId)?.('sending')
+    return this.#deps.send({ companyId, projectId, personId, runId, number, folder })
+  }
+
+  /** The run lets go of what it keeps open and of its machine, which pauses. */
+  async #letGo(mine: Driven): Promise<void> {
+    const { companyId, conversationId } = mine
+    for (const end of mine.ends.splice(0)) end()
+    await this.#unregister(conversationId)
+    await this.#deps.machines
+      .release(conversationId)
+      .catch((error: unknown) =>
+        this.#deps.log.error(
+          { companyId, conversationId, error: String(error) },
+          'MACHINE_RELEASE_FAILED',
+        ),
+      )
   }
 
   /** Tries the copies the bucket did not take; true while any is left. */

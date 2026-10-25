@@ -18,7 +18,7 @@ import {
 import type { MachinesOf, RepositoryOf, Runs } from './builder/runs/public.ts'
 import { builderPortsOf, createRuns } from './builder/runs/public.ts'
 import type { Apps } from './hub/apps/public.ts'
-import { createAppRemoval, createApps } from './hub/apps/public.ts'
+import { createAppRemoval, createApps, liveNumberOf } from './hub/apps/public.ts'
 import type { Identity } from './hub/identity/public.ts'
 import { createIdentity, passwordLinkText } from './hub/identity/public.ts'
 import type { Operations } from './hub/operations/public.ts'
@@ -142,6 +142,8 @@ export function subjectsOf(deps: {
   const runs = createRuns({
     ...{ database, log, machines, repository, copy },
     repositories: () => repositoriesIn(config.gitRoot),
+    // The apps are made below, after the Projetos the turn's send needs; a turn ends long after.
+    send: (version) => apps.sendFromBuilder(version),
   })
   const conversations = createConversations({
     ...{ database, identity, projects: { liveProjectOf }, sealKeys, google, log, runs },
@@ -149,7 +151,7 @@ export function subjectsOf(deps: {
   })
   const releaseConversations = conversations.release
   const projects = createProjects({
-    ...{ database, identity, neon, log, appsDomain, appRemoval },
+    ...{ database, identity, neon, log, appsDomain, appRemoval, appVersionOf: liveNumberOf },
     releaseConversations,
   })
   const operations = createOperations({

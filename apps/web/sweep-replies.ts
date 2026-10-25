@@ -177,6 +177,7 @@ export function projectsPage(
         mayDelete: view.mayDelete ?? true,
         mayManageVersions: view.mayDelete ?? true,
         address: ADDRESS,
+        appVersion: null,
       },
     }),
     [`GET /api/companies/${id}/projects/${PROJECT.id}/conversations`]: ok(listConversations, {

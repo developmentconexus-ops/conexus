@@ -9,7 +9,7 @@ import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import { z } from 'zod'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
-import { partsOf } from './test-parts.ts'
+import { partsOf, shownPartsOf } from './test-parts.ts'
 import { ask, conversingWith, tool, untilCard, WHO } from './test-questions.ts'
 
 const WRITE = {
@@ -134,7 +134,7 @@ test('conexus_check e o fim do turno dão o mesmo relatório; o fim que passa gu
   assert.deepEqual(reportsIn(model.asked[2]).at(-1), FAILED, 'the end gave the same report')
   assert.equal(model.asked.length, 3)
   const built = [{ number: 1, changedFiles: 1, check: { state: 'passed' } }]
-  assert.deepEqual(versionsOf(partsOf(events)), built)
+  assert.deepEqual(versionsOf(shownPartsOf(events)), built)
   assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), built)
   assert.equal(endOf(events), 'complete')
 })
@@ -147,7 +147,7 @@ test('a máquina que não confere (Chromium ausente, passo acima de 60 s) não c
   const { events } = await asked(t, { hub, person: ana, conversations }, 'Crie o app')
   assert.ok(model.asked[1]?.texts.some((text) => text.includes('CHECK_PLATFORM_FAILED')))
   assert.equal(check.calls(), 1 + CHECK_LIMITS.checks, 'every failed end of the turn counted')
-  assert.deepEqual(versionsOf(partsOf(events)), [
+  assert.deepEqual(versionsOf(shownPartsOf(events)), [
     { number: 1, changedFiles: 1, check: { state: 'failed', code: 'APP_CHECK_FAILED' } },
   ])
 })
@@ -168,7 +168,7 @@ test('quatro falhas no fim do turno: o código fica guardado, a versão não mon
   const notBuilt = [
     { number: 1, changedFiles: 1, check: { state: 'failed', code: 'APP_CHECK_FAILED' } },
   ]
-  assert.deepEqual(versionsOf(partsOf(events)), notBuilt)
+  assert.deepEqual(versionsOf(shownPartsOf(events)), notBuilt)
   assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), notBuilt)
   const repository = hub.builder.repository({
     companyId: CompanyId.parse(companyId),
@@ -187,7 +187,7 @@ test('um turno que não muda arquivo não confere', async (t) => {
   const check = checking(hub.builder.folder, [FAILED])
   const { events } = await asked(t, { hub, person: ana, conversations }, 'Olá')
   assert.equal(check.calls(), 0)
-  assert.deepEqual(versionsOf(partsOf(events)), [])
+  assert.deepEqual(versionsOf(shownPartsOf(events)), [])
   assert.equal(model.asked.length, 1)
 })
 
@@ -201,7 +201,7 @@ test('a máquina que não confere no fim do turno: o turno termina e guarda a ve
   const unchecked = [
     { number: 1, changedFiles: 1, check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' } },
   ]
-  assert.deepEqual(versionsOf(partsOf(events)), unchecked)
+  assert.deepEqual(versionsOf(shownPartsOf(events)), unchecked)
   assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), unchecked)
 })
 
@@ -215,7 +215,9 @@ test('uma pergunta encerra o turno: a versão fica sem veredito, nem a conferên
   const { events } = await untilCard(stream, 'question')
   assert.equal(endOf(events), 'suspended')
   assert.equal(check.calls(), 0)
-  assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
+  assert.deepEqual(versionsOf(shownPartsOf(events)), [
+    { number: 1, changedFiles: 1, check: 'none' },
+  ])
 })
 
 /** The `conexus_check` calls of a turn, each as its last `tool-invocation` part says it. */
@@ -291,7 +293,7 @@ test('o passo final vazio com tarefas abertas volta ao modelo com elas; feitas, 
     [false, true],
     'the screen is told each evaluation',
   )
-  assert.deepEqual(versionsOf(partsOf(events)), [
+  assert.deepEqual(versionsOf(shownPartsOf(events)), [
     { number: 1, changedFiles: 1, check: { state: 'passed' } },
   ])
 })
@@ -305,7 +307,7 @@ test(`tarefas abertas em ${CHECK_LIMITS.checks} fins: a versão fica pela metade
   assert.equal(toldOpen(model.asked).length, CHECK_LIMITS.checks - 1)
   assert.equal(check.calls(), 0)
   const halfDone = [{ number: 1, changedFiles: 1, check: { state: 'unfinished', open: 2 } }]
-  assert.deepEqual(versionsOf(partsOf(events)), halfDone)
+  assert.deepEqual(versionsOf(shownPartsOf(events)), halfDone)
   assert.deepEqual(versionsOf((await messagesOf(hub, ana, url)).at(-1)?.parts ?? []), halfDone)
   const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
   assert.equal(ended?.fields.rounds, CHECK_LIMITS.checks)
@@ -323,5 +325,7 @@ test('uma pergunta com tarefas abertas: nada volta ao modelo e a versão fica se
   assert.equal(endOf(events), 'suspended')
   assert.deepEqual(toldOpen(calls), [])
   assert.equal(check.calls(), 0)
-  assert.deepEqual(versionsOf(partsOf(events)), [{ number: 1, changedFiles: 1, check: 'none' }])
+  assert.deepEqual(versionsOf(shownPartsOf(events)), [
+    { number: 1, changedFiles: 1, check: 'none' },
+  ])
 })

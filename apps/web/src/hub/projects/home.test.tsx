@@ -54,6 +54,7 @@ function hub(
               mayDelete: true,
               mayManageVersions: true,
               address: PEDIDOS_ADDRESS,
+              appVersion: null,
             },
           }),
           { status: 201 },

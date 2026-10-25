@@ -288,6 +288,7 @@ export function projectsRead(view: ProjectsView) {
                 // Owners and administrators delete a Project and manage its versions alike.
                 mayManageVersions: view.mayDelete,
                 address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
+                appVersion: null,
               },
             }),
           )

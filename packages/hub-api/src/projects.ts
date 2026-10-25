@@ -33,6 +33,8 @@ export const Project = ProjectSummary.extend({
   /** Whether the viewer sees the Projeto's settings: sends versions and puts one back (step 9). */
   mayManageVersions: z.boolean(),
   address: z.string().min(1).nullable(),
+  /** The number of the app's version on the air; null before its first. */
+  appVersion: z.int().positive().nullable(),
 })
 export type Project = z.infer<typeof Project>
 

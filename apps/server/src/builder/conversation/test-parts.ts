@@ -81,3 +81,8 @@ export function messagesIn(events: StreamEvent[]): Map<string, Said> {
   }
   return messages
 }
+
+/** Every part of the messages the events said, each message as its last telling left it, as the screen shows them. */
+export function shownPartsOf(events: StreamEvent[]): MastraMessagePart[] {
+  return [...messagesIn(events).values()].flatMap((message) => message.parts)
+}

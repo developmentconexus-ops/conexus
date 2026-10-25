@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { APP_LIMITS, Manifest, versionFiles } from '@conexus/app-contract'
 import type { AppVersion, CompanyId, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
-import { AppVersionId } from '@conexus/hub-api'
+import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
 import { and, desc, eq, inArray, max, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLOUDFLARE_DEADLINE_MS } from '../../platform/cloudflare.ts'
@@ -99,14 +99,7 @@ type VersionRow = Pick<
   typeof appVersion.$inferSelect,
   Exclude<keyof typeof VERSION_VIEW, 'sentByName'>
 > & { sentByName: string | null }
-const FAILURE_CODES = [
-  'APP_VERSION_FAILED',
-  'APP_VERSION_NOT_STARTING',
-  'APP_MIGRATION_FAILED',
-  'APP_MIGRATION_CHANGED',
-] as const
-export type VersionFailure = (typeof FAILURE_CODES)[number]
-const VersionFailure = z.enum(FAILURE_CODES)
+export type VersionFailure = AppVersionFailure
 
 const ShownState = z.enum(['sending', 'ready', 'failed'])
 
@@ -117,7 +110,7 @@ export function versionView(row: VersionRow, liveVersionId: string | null): AppV
     id: AppVersionId.parse(row.id),
     number: row.number,
     state: ShownState.parse(row.state),
-    failure: row.failure === null ? null : VersionFailure.parse(row.failure),
+    failure: row.failure === null ? null : AppVersionFailure.parse(row.failure),
     sentBy: row.sentBy,
     sentByName: row.sentByName,
     createdAt: row.createdAt.toISOString(),
@@ -175,7 +168,7 @@ async function replayOf(tx: CommandTx, input: OfProject & { attemptKey: string; 
   if (row.digest !== input.digest) throw new Failure('IDEMPOTENCY_CONFLICT')
   // A version being pruned still holds its key for the moment the prune takes.
   if (row.state === 'sending' || row.state === 'pruning') throw new Failure('APP_VERSION_SENDING')
-  if (row.state === 'failed') throw new Failure(VersionFailure.parse(row.failure))
+  if (row.state === 'failed') throw new Failure(AppVersionFailure.parse(row.failure))
   return row
 }
 
@@ -289,4 +282,14 @@ export async function listVersions(tx: ReadTx, ids: OfProject): Promise<AppVersi
     )
     .orderBy(desc(appVersion.number))
   return rows.map((row) => versionView(row, held?.liveVersionId ?? null))
+}
+
+/** The number of the version on the air of the Projeto's app; null before its first. */
+export async function liveNumberOf(tx: ReadTx, projectId: ProjectId): Promise<number | null> {
+  const [row] = await tx
+    .select({ number: appVersion.number })
+    .from(app)
+    .innerJoin(appVersion, eq(appVersion.id, app.liveVersionId))
+    .where(eq(app.projectId, projectId))
+  return row?.number ?? null
 }
