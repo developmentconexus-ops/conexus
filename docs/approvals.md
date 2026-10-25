@@ -163,6 +163,10 @@ Em 2026-10-25, sobre levar o tempo medido também à página do fundador no cart
 
 Cartão da etapa 14.1 aprovado em 2026-10-25 (commit ad8480d20bf09ea7e4bb7f1039865c5c725496a1): "A"
 
+Em 2026-10-25, sobre as três chamadas da revisão da U3 da 14.1: o aviso do WebKit da Apple ganha o × (**Fechar aviso**, lembrado na sessão da aba), a Prévia mostra a frase da falha no lugar do iframe quando o Hub recusa a passagem, e o **Abrir app** do topo some antes do primeiro app: "1. A 2. A 3. A". Sobre como construir os três estados: "Okay cria estados novos, mas nada remendo correto, bem planejado conforme metodologia e guias sem fazer ma implementação"
+
+Cartão da etapa 14.1 aprovado em 2026-10-25 (commit a0fa52b4778f328b31cd5f47b5a1dc4831ab3759): "1. A 2. A 3. A"
+
 ## Etapa 14.3
 
 Em 2026-10-25, sobre o estudo de arquivos e voz no compositor do Builder: "A1 sim B1 okay, e so uma duvida e o whispr da openai que e rapido e free C sim", e depois: "B1 por agora". Arquivos (PDF, `.md`, `.txt`, imagens) entram no lançamento só na conversa com o Builder, como a etapa 14.3 depois da 14.1; voz fica no ditado do navegador por ora; uma linha sobre o ditado do Chrome passar pelo Google vai ao aviso da etapa 23.
