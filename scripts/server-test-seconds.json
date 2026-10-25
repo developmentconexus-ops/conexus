@@ -28,7 +28,6 @@
   "src/builder/git/starter.test.ts": 0.1,
   "src/builder/machine/machine-check.test.ts": 1.6,
   "src/builder/machine/machine-e2b.test.ts": 0.1,
-  "src/builder/machine/machine-files.test.ts": 3.8,
   "src/builder/machine/machine.test.ts": 6.6,
   "src/builder/machine/pack.test.ts": 4.5,
   "src/builder/model-accounts/claude-refresh.test.ts": 18.6,

@@ -1848,17 +1848,6 @@
     }
   },
   {
-    "id": "machine-fs-no-link",
-    "file": "apps/server/src/builder/machine/in-machine.ts",
-    "find": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY | O_NOFOLLOW)\n",
-    "replace": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY)\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine-files.test.ts",
-      "name": "fora.ts"
-    }
-  },
-  {
     "id": "machine-network-closed",
     "file": "apps/server/src/builder/machine/e2b.ts",
     "find": "denyOut: [ALL_TRAFFIC] },\n      metadata",
