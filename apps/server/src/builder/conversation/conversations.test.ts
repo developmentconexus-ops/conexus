@@ -27,7 +27,7 @@ import {
   streamOf,
 } from './test-conversation.ts'
 import { textsOf } from './test-parts.ts'
-import { stateOf } from './test-state.ts'
+import { sessionStateOf } from './test-questions.ts'
 
 const DIEGO = { name: 'Diego Melo', email: 'diego@example.test' }
 
@@ -167,7 +167,7 @@ test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao cria
   const switched = await call(hub, ana, 'PUT', `${url}/model`, gpt)
   assert.equal(switched.statusCode, 422)
   assert.equal(codeOf(switched), 'MODEL_NO_ACCOUNT')
-  assert.equal((await stateOf(hub, ana, url)).model, MODEL)
+  assert.equal((await sessionStateOf(hub, ana, url)).model, MODEL)
   const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
   assert.deepEqual(rows, [{ count: 1 }])
   assert.deepEqual(anthropic.sent, [])
@@ -195,7 +195,7 @@ test('o raciocínio chega ao modelo: "Alto" leva thinking, "Desligado" leva `dis
   })
   const url = `${conversations}/${await started(hub, ana, conversations)}`
   async function effortOn(on: Hub) {
-    return (await stateOf(on, ana, url)).effort
+    return (await sessionStateOf(on, ana, url)).effort
   }
   function thinkings() {
     return anthropic.sent.filter((each) => each.stream).map((each) => each.thinking)

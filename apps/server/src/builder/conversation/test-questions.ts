@@ -3,7 +3,7 @@ import type { TestContext } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Hub, Person } from '../../hub/identity/test-hub.ts'
-import { post } from '../../hub/identity/test-hub.ts'
+import { call, post } from '../../hub/identity/test-hub.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { ASK_USER_TOOL, SUBMIT_PLAN_TOOL } from './plan-tools.ts'
 import type { StreamEvent } from './test-conversation.ts'
@@ -173,4 +173,12 @@ export async function parkedRows(hub: {
   test: { mastraPool: { query(sql: string): Promise<{ rowCount: number | null }> } }
 }) {
   return (await hub.test.mastraPool.query(PARKED)).rowCount
+}
+
+/** The conversation's model, effort and tasks, as Mastra's session-state route serves them (`guard.ts`). */
+export async function sessionStateOf(hub: Hub, person: Person, url: string) {
+  const read = await call(hub, person, 'GET', sessionUrl(url))
+  assert.equal(read.statusCode, 200, read.body)
+  const state = Object(read.json())
+  return { model: state.modelId, effort: state.settings.thinkingLevel ?? 'off', tasks: state.tasks }
 }

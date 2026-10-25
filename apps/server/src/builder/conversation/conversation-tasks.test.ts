@@ -21,7 +21,7 @@ import {
   turnNotices,
 } from './test-conversation.ts'
 import { messagesIn, noticesIn } from './test-parts.ts'
-import { stateOf } from './test-state.ts'
+import { sessionStateOf } from './test-questions.ts'
 
 const OBSERVER = /^You are the memory consciousness/
 const SNAPSHOT = '<current-task-list'
@@ -65,7 +65,7 @@ test('o Builder sai de createCodingAgent sem workspace próprio: as ferramentas 
   assert.equal((await sent(hub, ana, url, 'Crie o app de encomendas')).statusCode, 200)
   await stream.turn()
   const [first, second] = calls
-  assert.deepEqual((await stateOf(hub, ana, url)).tasks.map(taskOf), PLANNED)
+  assert.deepEqual((await sessionStateOf(hub, ana, url)).tasks.map(taskOf), PLANNED)
   for (const name of ['task_write', 'task_update', 'task_complete', 'task_check']) {
     assert.ok(first?.tools.includes(name), name)
   }
@@ -120,7 +120,7 @@ test('Observador no Groq: a chamada dele chega ao dublê do Groq, e o modelo do 
     anthropic.sent.some((each) => each.stream),
     'the turns ran on the conversation’s model',
   )
-  assert.equal((await stateOf(hub, ana, url)).model, MODEL)
+  assert.equal((await sessionStateOf(hub, ana, url)).model, MODEL)
 })
 
 test('sem conta no modelo escolhido, o Observador segue a conversa, sem aviso, passando de blockAfter (14.2, 36)', async (t) => {
