@@ -15,8 +15,8 @@ hosts, its filesystem and where a version is kept.
 - The Git is ours: a bare repository on the server, `main` moved by `update-ref` against the base
   read, one `git bundle` per changed turn checked by `transfer.fsckObjects` into a candidate ref
   first. Each version's bundle goes to a private R2 bucket, never mounted (founder: "1 A").
-- Z2, amended again 2026-10-24 (founder: "B"): the files are Factory's `SandboxFilesystem` from
-  `@mastra/code-sdk`, held to the app folder; `execute_command` still writes anywhere.
+- Z2, amended again 2026-10-24 (founder: "B", "2, A"): the files are Factory's `SandboxFilesystem`,
+  brought from `@mastra/code-sdk` 1.15.0 uninstalled, held to the app folder.
 - `beforeToolCall` waits for the machine's start, as `running` precedes `onStart` (live, two
   first-step tools saw the seed without it: `seed-nohook`, 2026-10-21).
 - The E2B key is the founder's free-account key, in a file (S31); a kill reaches only machines

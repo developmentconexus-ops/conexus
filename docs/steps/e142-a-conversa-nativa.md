@@ -95,7 +95,13 @@ Okay" escolheu antes de se saber que o nativo resolve um caminho relativo a part
 R2 montado na máquina: "1 A", não agora. Os arquivos ficam no disco da máquina da conversa, as versões no
 nosso Git no Hub e a cópia de cada versão no R2, como hoje, sem montagem. Para a Ana e o Diego: cada
 conversa liga a sua máquina; a frase "A máquina anterior sumiu; refiz a partir do que está guardado." sai,
-porque sem id guardado nada diz que havia outra máquina antes.
+porque sem id guardado nada diz que havia outra máquina antes. Depois de ler esta emenda, em 2026-10-24: "1,
+A, aprovo, 2, A, 3, pode matar, e 4, confirmo." Quer dizer: a emenda está aprovada; o `SandboxFilesystem` é
+trazido para o nosso código, sem instalar o `@mastra/code-sdk`, que levaria a imagem do Hub de 368 MB a 967
+MB (M4, medido); firstmate mata uma vez as máquinas por Projeto de hoje, pela marca desta instalação, depois
+que a M5 entra em produção; a migração que apaga `builder.machine` e a sua permissão vai em pull request
+próprio (54). Fica uma nota, não uma pergunta: o limite de máquinas pausadas do plano do E2B não foi lido, e
+sem varredura elas crescem, uma por conversa usada, até a conversa sair.
 
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
 ficam como proposta.
@@ -118,18 +124,6 @@ Escolhas que firstmate fez à noite e que ainda são suas:
 - **U2, os desvios do 6e e do 6f.** Um sétimo estado, `closing` ("fechando"); nenhum teste puro de
   `turn-state.ts` no repositório, porque T5 proíbe; a saída por Parar espera o desmonte só quando o
   Mastra roda uma volta aqui.
-- **M4, o peso do `@mastra/code-sdk`** (medido em 2026-10-24, sem chamada paga). O pacote pede o
-  `@mastra/core` 1.79.0 exato, e fica uma cópia só do core e do `zod`. Mas traz 506 pacotes ao
-  desenvolvimento e, na imagem do Hub (`infra/hub.Dockerfile:50`), leva de 332 a 805 pacotes e de 368 MB
-  a 967 MB; 1,3 GB quando roda o script do `onnxruntime-node`, que baixa bibliotecas de GPU. O arquivo do
-  `SandboxFilesystem` só importa `path` e `@mastra/core/workspace`. Recomendação: instalar, como a Factory
-  importa (`@mastra/code-sdk/agents/sandbox-filesystem`), e aceitar a imagem maior. A outra saída é trazer
-  só esse arquivo, 801 linhas com o cabeçalho Apache 2.0, como o cache de prompt foi trazido.
-- **M5, as máquinas por Projeto de hoje.** Têm linha em `builder.machine` e ficam pausadas no E2B. Depois
-  que a M5 entra em produção, firstmate as mata uma vez pela marca desta instalação (uma chamada paga, com
-  a sua palavra), antes da migração que apaga a tabela.
-- **M5, as máquinas pausadas crescem.** Uma por conversa usada, até a conversa sair. O limite de máquinas
-  pausadas do plano do E2B não foi lido.
 
 ## As unidades
 
@@ -152,7 +146,7 @@ Escolhas que firstmate fez à noite e que ainda são suas:
 | M1 | Conta, máquina e trava pela conversa | `builder/model-accounts/{processors,turn}.ts`, `builder/runs/`, `builder/conversation/{builder,sessions}.ts` | segurança | — |
 | M2 | As rotas do Mastra atrás do guarda, a tela pelo `@mastra/client-js`, o contrato e as remoções, numa unidade | `builder/conversation/`, `builder/runs/`, `apps/web/src/builder/conversation/`, `hub-api/` | segurança, web | M1 |
 | M3 | O Fim pelo `isTaskComplete` | `builder/conversation/{builder,processors}.ts` | testes | M1 |
-| M4 | O arquivo do Mastra Code, `SandboxFilesystem`, preso à pasta do app | `builder/machine/`, `apps/server/package.json` | testes | M5 |
+| M4 | O `SandboxFilesystem` do Mastra Code, trazido, preso à pasta do app | `builder/machine/`, `builder/machine/sandbox-filesystem/` | testes | M5 |
 | M5 | A máquina da conversa: sem tabela, morta pelo nome ao sair, sem varredura | `builder/machine/`, `builder/runs/`, `builder/conversation/{builder,turn-of,public,record}.ts`, `migrations/`, `hub-api/` (`MachinePhase`, `machinePhaseLasts`), `apps/web/src/builder/conversation/{machine-line.tsx,fold.ts}` | dados, segurança | M1 |
 
 `builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. A 14.0 é a primeira parte da U2
@@ -228,7 +222,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 13 | U3, U9 | 1280 e 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo; a árvore com papéis ARIA, o `Sheet` a 390 px, o vazio | T23, `source.test.tsx` |
 | 14 | U4 | O Builder sai de `createCodingAgent` com `workspace: undefined`: não tem workspace próprio, a máquina E2B segue emprestada por volta; a lista volta ao modelo depois que a chamada sai da janela | `conversation-tasks.test.ts` (novo) |
 | 15 | M3 | Fim pelo `isTaskComplete` do Mastra: o avaliador `conexus-check` reprova o turno que acaba com tarefa aberta e o texto "N tarefas abertas: …" volta ao modelo, no limite de `CHECK_LIMITS`; no limite, "Versão N guardada, pela metade"; parado, nada disso; a tela recebe `task_complete_evaluation`; sai `checkGate` | `conversation-check.test.ts` |
-| 16 | M4 | Sem `requireReadBeforeWrite`: duas escritas seguidas no mesmo arquivo passam; as ferramentas de arquivo são o `SandboxFilesystem` de `@mastra/code-sdk` (fundador, 2026-10-24: "B"), preso à pasta do app como a Factory o usa: `src/a.ts`, `/src/a.ts` e `/home/user/app/src/a.ts` são o mesmo arquivo da pasta do app; um caminho fora dela, recusado pela ferramenta ("Path escapes workspace root"); o comando segue livre; saem `MachineFilesystem` e `in-machine.ts`; uma cópia só do `@mastra/core` | `conversation-machine.test.ts`, `npm ls @mastra/core`, prova ao vivo no E2B (firstmate) |
+| 16 | M4 | Sem `requireReadBeforeWrite`: duas escritas seguidas no mesmo arquivo passam; as ferramentas de arquivo são o `SandboxFilesystem`, trazido de `@mastra/code-sdk` 1.15.0 sem instalar o pacote (fundador, 2026-10-24: "B", "2, A"), preso à pasta do app como a Factory o usa: `src/a.ts`, `/src/a.ts` e `/home/user/app/src/a.ts` são o mesmo arquivo da pasta do app; um caminho fora dela, recusado pela ferramenta ("Path escapes workspace root"); o comando segue livre; saem `MachineFilesystem` e `in-machine.ts`; `@mastra/code-sdk` fora de `package-lock.json` | `conversation-machine.test.ts` (pela rota, T5), prova ao vivo no E2B (firstmate) |
 | 17 | U4 | A linha `CONVERSATION_TURN_ENDED` leva `finishReason`, a ferramenta que falhou, o código, o maior `inputTokens` de um passo, `cachedInputTokens` e as rodadas da conferência; nenhum texto livre (S41) | `turn-line.test.ts` |
 | 18 | U4 | **Fora**, por palavra do fundador (2026-10-23 13:02): sem LSP; a prova ao vivo falhou e a issue [#282](https://github.com/developmentconexus-ops/conexus/issues/282) a guarda | — |
 | 19 | U5 | Gemini é um modelo só, com **Raciocínio**; a escolha chega ao CLIProxy pelo pedido provado no 20, também para o padrão; Claude segue `summarized` | `thinking.test.ts`, `served-recordings.test.ts` |
@@ -260,7 +254,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 51 | U3 | O relógio de uma ferramenta conta desde que a tela ouviu a chamada; não volta a zero quando ela entra num grupo | `tool-row.test.tsx`, `live.test.tsx` |
 | 52 | M5 | A máquina é da conversa (fundador: "é uma por conversa", "3aproco"): o nome é `conexus-<instalação>-<conversa>`, sem o Projeto; o E2B a acha por esse nome, sem id guardado (nenhuma tabela nem coluna); duas conversas do mesmo Projeto ligam duas máquinas, e a segunda começa do `main` com a versão que a primeira guardou; a execução recusada com `RUN_BUSY` não liga máquina; cada turno começa do `main`; a máquina que some entre turnos volta nova, do `main`, sem frase; a que some no meio do turno segue `MACHINE_LOST` | `runs.test.ts`, `machine.test.ts`, `conversation-turns.test.ts`, prova ao vivo no E2B (firstmate) |
 | 53 | M5 | Soltar a conversa, a pessoa, o Projeto ou a empresa mata pelo nome, com a marca da instalação, as máquinas das conversas soltas, também as que nenhum processo segura, antes de apagar a thread; um `kill` que falha não esconde os outros, e nada é apagado: a remoção fica pendente (`PERSON_REMOVAL_PENDING`, `PROJECT_DELETION_PENDING`, `CLIENT_DELETION_PENDING`) e pode ser repetida; uma conversa sem máquina passa; sem varredura: saem `daily.ts`, `Runs.sweep` e `MACHINE_SWEPT` | `runs-removal.test.ts`, remoção (CI) |
-| 54 | M5 | Nenhum código lê `builder.machine`; ela sai numa migração própria depois disso (D30), em pull request próprio, com a palavra do fundador (D11), depois que firstmate matou as máquinas por Projeto de hoje | `check-migrations`, `catalog.test.ts`, remoção (CI) |
+| 54 | M5 | Nenhum código lê `builder.machine`; ela sai numa migração própria depois disso (D30), em pull request próprio, com a palavra do fundador (D11: "4, confirmo"), depois que firstmate matou as máquinas por Projeto de hoje ("3, pode matar") | `check-migrations`, `catalog.test.ts`, remoção (CI) |
 
 **Em espera** (a bancada): os critérios 21 a 26 (U6, U7) estão no cartão de `917b5e4` e voltam com a emenda.
 
@@ -374,14 +368,14 @@ Enter orienta o Builder · Esc para               Enter orienta o Builder · Esc
 | Guarda da conversa | nosso: as rotas de agent-controller não usam o `resourceId` mapeado | `guard.ts` | — | 0050, S10 | Factory `routes/session-access.ts`; OS `mastra-session-routes.ts:279,311-323` |
 | Conta, máquina e trava pela conversa | nosso na forma da Factory; a trava, nossa (fundador: "1. C") | `model-accounts/processors.ts`, `runs/` | o `Turn` nasce na execução, não no pedido (M1) | 0049, 0051 | Factory `session/credential-policy.ts:37-39`, `sandbox/session-sandbox.ts:29-36`; Mastra Code `agents/memory.ts:101-140` |
 | Fim da execução | nativo: `onBeforeAgentEnd` | `end.ts` | de `turn-end.ts` | 0051 (a versão) | core `agent-controller-DO6rGsQm.js:4836-4859` |
-| Arquivo da máquina | nativo: `SandboxFilesystem` de `@mastra/code-sdk` 1.15.0, sobre a `E2BSandbox` (M4) | `machine/` | sai `MachineFilesystem` | 0051 Z2 | `@mastra/code-sdk` `dist/agents/sandbox-filesystem.d.ts:38-61`, `.js:154-161`; Factory `factory/src/workspace.ts:4,1482-1509` (Mastra `ceb2e7b0`); OS `sandbox.ts:3,205-215` |
+| Arquivo da máquina | trazido: `SandboxFilesystem` de `@mastra/code-sdk` 1.15.0 (fundador: "2, A"), sobre a `E2BSandbox` (M4) | `machine/` | sai `MachineFilesystem` | 0051 Z2 | `@mastra/code-sdk` `dist/agents/sandbox-filesystem.d.ts:38-61`, `.js:154-161`; Factory `factory/src/workspace.ts:4,1482-1509` (Mastra `ceb2e7b0`); OS `sandbox.ts:3,205-215` |
 | Máquina da conversa | nativo: o nome lógico do `E2BSandbox` (`mastra-sandbox-id`), achado ou criado no `start()`; a morte pela marca e pela conversa, nossa (S36) | `machine/`, `runs/removal.ts` | sai `builder.machine` e a varredura | 0051 | `@mastra/e2b` 0.15 `dist/index.js:1757-1791,1836-1848`; core `workspace-BR4DJXoq.js:4055-4063`; Factory `sandbox/session-sandbox.ts:29-36`, `integrations/github/sandbox-release.ts:46-65`, `sandbox/session-retirement.ts:69-77`; docs `mastra.ai/docs/sandbox/overview.md` ("Sandboxes per user or thread") |
 | Releitura igual ao vivo | nativo | `history.ts`, `processors.ts` (`workspaceMetadataLive`) | de `turnsOf`, que colava os passos | C21 | `llm-execution-step.ts:2916-2925`, `message-list.ts:865`; issue do Mastra #21940 (o pedaço `data-workspace-metadata` não é salvo) |
 
 Citações em `.ts` do Mastra: a fonte em `6a465f9d`. Cada "nosso" entra em `boundaries.md`; do
 steering, a parte nossa é o conjunto pendente e a passagem do turno por uma volta que sobrou (o Mastra
 dá a volta, não o turno que a cobre): `steer.ts`, uma linha em `boundaries.md`, pela razão de uma linha
-`builder.run` e um lease por turno (D25). Copiado: o cache de prompt (Apache 2.0, cabeçalho no arquivo).
+`builder.run` e um lease por turno (D25). Copiado: o cache de prompt e o `SandboxFilesystem` (Apache 2.0, cabeçalho no arquivo e `THIRD_PARTY_LICENSE.txt` ao lado).
 Dívida: nenhuma.
 
 ## U1 Regras
@@ -705,16 +699,22 @@ C26, T24. **Prova.** 15.
 
 ## M4 O arquivo do Mastra Code
 
-**Quinta emenda.** Era o `E2BSandboxFilesystem` nativo; passa ao `SandboxFilesystem` (fundador: "B").
+**Quinta emenda.** Era o `E2BSandboxFilesystem` nativo; passa ao `SandboxFilesystem` (fundador: "B"),
+trazido para o nosso código e sem instalar o pacote (fundador: "2, A").
 
-**Raio.** `machine/`: saem `MachineFilesystem` (`filesystem.ts`) e `in-machine.ts`; entra o
-`SandboxFilesystem` de `@mastra/code-sdk` 1.15.0 (versão exata, que pede o `@mastra/core` 1.79.0), importado
-de `@mastra/code-sdk/agents/sandbox-filesystem` como a Factory, com `workdir` a pasta do app, sobre a
-`E2BSandbox` da conversa que a M5 já cria com a workspace (0051 Z2). Na E2B ele usa o arquivo nativo da
-máquina; no dublê, o comando. `apps/server/package.json` ganha o pacote; `stack.md` ganha a linha dele.
-Sai o teto de 64 MiB das ferramentas de arquivo: o `read_file` do Mastra lê o arquivo inteiro e só então
-corta por tokens (core 1.79 `workspace-BR4DJXoq.js:10920-10990`), e a Factory o usa assim; C59 é "should"; o
-teto do pacote do turno (`readCapped`) fica. Regras: C59, T24. **Prova.** 16.
+**Raio.** `machine/`: saem `MachineFilesystem` (`filesystem.ts`) e `in-machine.ts`; entra
+`machine/sandbox-filesystem/`, o `SandboxFilesystem` de `@mastra/code-sdk` 1.15.0
+(`src/agents/sandbox-filesystem.ts`, 1.116 linhas, o mesmo texto que o mapa de fonte do pacote publicado
+guarda), com `workdir` a pasta do app, sobre a `E2BSandbox` da conversa que a M5 já cria com a workspace (0051
+Z2). Ele importa só `node:path` e `@mastra/core/workspace`, que o core 1.79.0 exporta inteiro. Repartido em
+arquivos de até 300 linhas (Biome), sem mudar o que faz; cada arquivo abre com o cabeçalho de licença e a
+origem, como `model-accounts/claude/models.ts`, e a pasta tem `THIRD_PARTY_LICENSE.txt` com o texto da Apache
+2.0. Muda só o que o Biome e C23 pedem (`type` no lugar de `interface`, sem `!` nem `any`), dito no cabeçalho;
+passado um terço das linhas trazidas mudado, ele é escrito de novo. Na E2B ele usa o arquivo nativo da
+máquina; no dublê, o comando. `stack.md` não ganha linha: nenhum pacote entra. Sai o teto de 64 MiB das
+ferramentas de arquivo: o `read_file` do Mastra lê o arquivo inteiro e só então corta por tokens (core 1.79
+`workspace-BR4DJXoq.js:10920-10990`), e a Factory o usa assim; C59 é "should"; o teto do pacote do turno
+(`readCapped`) fica. Regras: C23, C59, T24. **Prova.** 16.
 
 ## M5 A máquina da conversa
 
@@ -726,7 +726,8 @@ resolvedor (`turn-of.ts`); `conversation/public.ts`: as conversas soltas antes d
 e `record.ts`: saem as fases `waking` e `replaced` e `machinePhaseLasts`, porque nenhuma fase da máquina fica
 mais na conversa (as partes velhas são `data` sem esquema na leitura, `mastra-parts.ts:133-137`).
 `architecture.md`, a linha "One E2B key", sem a varredura. Migração própria, em pull request próprio
-(D11): sai `builder.machine` e a sua permissão.
+(D11, fundador: "4, confirmo"): sai `builder.machine` e a sua permissão, depois que firstmate matou uma vez,
+pela marca desta instalação, as máquinas por Projeto de hoje ("3, pode matar").
 
 **Contratos.** O nome da máquina é `conexus-<instalação>-<conversa>`; a marca leva a origem, a empresa, o
 Projeto e a conversa. A `E2BSandbox` nasce com a workspace da conversa, sem `sandboxId`: no `start()` o
