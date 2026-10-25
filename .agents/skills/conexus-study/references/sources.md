@@ -31,9 +31,10 @@ was read whole, by headings, or not at all; a "nenhuma faz" counts only beside i
 
 ## Labels
 
-Every claim, and every cell of the reference table's "Como a referência faz", carries one: **provado** (run here), **lido** (code at a pin, `file:line`),
-**documentado** (vendor docs, dated), **herdado** (our own code or decision: it describes, never
-justifies), **hipótese**, **não verificado**.
+Every claim, and every cell of the reference table's "Como a referência faz", carries one:
+**provado** (run here), **lido** (code at a pin, `file:line`), **documentado** (vendor docs, dated),
+**herdado** (our own code or decision: it describes, never justifies), **hipótese**, **não
+verificado**.
 
 ## Readers
 

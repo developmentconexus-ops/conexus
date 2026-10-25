@@ -26,12 +26,12 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
    names the step's route that reaches it. Fill the failure table for every write the step
    adds, with its ambiguous replies (a cut reply, a 502, a 503) and the client's response; each row
    yields criteria.
-4. Design from zero (pstack `poteto-mode`: first principles, subtract before adding). Split the
-   step into units that each end green on their own: a contract lands with its first implementer,
-   and a migration that changes the catalog snapshot lands with the unit that owns
-   `database-grants.sql`. Shape a contract that crosses a module with pstack `architect` (`arena`
-   for competing shapes); else compare two shapes in writing. Copy the study's reference table and give every row its unit, or "fica de fora" with its
-   reason, and its new file ([card](references/card.md)).
+4. Design from zero (pstack `poteto-mode`: first principles, subtract before adding). Split the step
+   into units that each end green on their own: a contract lands with its first implementer, and a
+   migration that changes the catalog snapshot lands with the unit that owns `database-grants.sql`.
+   Shape a contract that crosses a module with pstack `architect` (`arena` for competing shapes);
+   else compare two shapes in writing. Copy the study's reference table and give every row its unit,
+   or "fica de fora" with its reason, and its new file ([card](references/card.md)).
 5. Fill the state matrix: each screen's states, and for each contract field who writes and who
    reads it; for a screen, follow [screens](references/screens.md) and [Impeccable's
    rules](../../../docs/reference/impeccable.md). A brought part passes the study rule
@@ -53,7 +53,8 @@ table, [architecture](../../../docs/architecture.md), and the guide each unit wi
 ## What it produces
 
 The card in `docs/steps/` ([delivery L24](../../../docs/guides/delivery.md)), from [the
-template](references/card.md), in a pull request. Firstmate takes the founder's page to him; he approves only that.
+template](references/card.md), in a pull request. Firstmate takes the founder's page to him; he
+approves only that.
 
 ## Stop and ask
 

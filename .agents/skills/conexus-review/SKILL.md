@@ -26,12 +26,12 @@ The pull request, its head commit and the card; nothing from the builders' conve
    claim not run is "read"), and read every CI job's log; when the change touches the test
    selector, its inputs or a dependency, confirm the plan ran everything. Drive the browser where
    in doubt, and read QA's report if it is posted; never wait for it.
-5. Walk the card's reference table row by row against the diff
-   ([code C75](../../../docs/guides/code.md)): a nativo row uses the named API; an embrulhado row
-   adds only its line; a remendo row's native candidate runs at the installed version, listed in
-   the verdict's Ran, and one that serves is a Bloqueia. A changed file that no row or contract
-   explains is a finding; outside the card's folders it is one unless the build report declares it
-   (L7). When two findings fall on one mechanism, ask whether it should exist and whether a library
+5. Walk the card's reference table row by row against the diff ([code
+   C75](../../../docs/guides/code.md)): a nativo row uses the named API; an embrulhado row adds only
+   its line; a remendo row's native candidate runs at the installed version, listed in the verdict's
+   Ran, and one that serves is a Bloqueia. A changed file that no row or contract explains is a
+   Bloqueia (C75); outside the card's folders it is one unless the build report declares it (L7).
+   When two findings fall on one mechanism, ask whether it should exist and whether a library
    already holds that fact.
 6. Walk the checklist, sweeping each class across the whole diff, and fill its sweep table (a row
    per rule marked review: search made, result). A screen: [screen](references/screen.md).

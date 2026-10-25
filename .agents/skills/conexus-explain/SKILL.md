@@ -16,9 +16,9 @@ the depth to his question and to the knowledge he shows.
 2. Tell what is planned from what is built. For a proposal, explain the intended design; for an
    implementation, check the code. Point out divergences and what you could not verify. Do not
    invent decisions or historical reasons.
-3. Read the guides the step's card names for the target. The
-   [documentation map](../../../docs/index.md) names their owners. The questions come from those
-   guides' rules and from the real change. A demonstrated defect may be pointed out without citing a guide.
+3. Read the guides the step's card names for the target. The [documentation
+   map](../../../docs/index.md) names their owners. The questions come from those guides' rules and
+   from the real change. A demonstrated defect may be pointed out without citing a guide.
 4. When Mastra is involved, use the maintainers' `mastra` skill and check the documentation and
    types of the installed version. Say what the framework keeps and what Conexus adds. Without
    access to the installed version, state that limit; do not conclude that an API does not exist.

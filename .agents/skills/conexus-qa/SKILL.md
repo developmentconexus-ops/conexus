@@ -36,8 +36,8 @@ and [testing](../../../docs/guides/testing.md).
    database, and a turn that calls every tool the model is offered ([testing T24](../../../docs/guides/testing.md)).
 5. Capture each criterion's states at 1366 and 390 px, light and dark, and open every capture you
    make. Make a keyboard pass through the focus stops and a 200% zoom check. Horizontal overflow and
-   a phone field under 16px ([design V18](../../../docs/guides/design.md)) are the journeys'
-   assertions (T25); measure them by hand only while a journey lacks them. Record console errors and
+   a phone field under 16px ([design V18](../../../docs/guides/design.md)) are the browser
+   checks' (T25); measure them by hand only for a state their sweep lacks. Record console errors and
    CSP reports (T23).
 6. Open every capture beside its named design or wireframe in the card. Write one entry per
    defect: screen, state, width, theme, what is wrong, the design line or criterion it breaks, and

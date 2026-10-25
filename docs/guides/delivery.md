@@ -54,7 +54,7 @@ merge.
   the screens it touched. No per-unit or per-topic review: the card's reader checks the reference
   table before any build. A unit merges into the step branch only with its section's local tests and
   proofs green (conexus-build step 7); CI runs once, on the step's pull request. Founder,
-  2026-10-24: "CI é só quando for fazer o PR"; 2026-10-25, one Opus review per step: "2. A".
+  2026-10-24: "CI é só quando for fazer o PR", and one Opus review per step; 2026-10-25: "2. A".
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
   deltas. Founder, 2026-10-12, firstmate's uncontested reading; 2026-10-16: "Concordo"; 2026-10-21:
   "nao podemos adicionar gargalo". Failure: rereading everything after each fix samples new rules

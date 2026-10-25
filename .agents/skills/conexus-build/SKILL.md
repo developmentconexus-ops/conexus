@@ -31,17 +31,18 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    sweep its class.
 3. Delete before adding: remove what the card removes and move every caller. No shim, no parallel
    old path, no temporary shape.
-4. Bring old code only as the card's transplant measure says: into the named file, refactored as listed,
-   carrying only the old decisions listed. Past the study rule's measure
+4. Bring old code only as the card's transplant measure says: into the named file, refactored as
+   listed, carrying only the old decisions listed. Past the study rule's measure
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
 5. Test through the server's public door, negative cases included, with provider doubles per
    [testing T24](../../../docs/guides/testing.md). Screen texts come from the card's state matrix.
 6. Run the result for real: the server, the route, the migration on a disposable database, and a
    changed screen looked at per [testing T23](../../../docs/guides/testing.md), through a
-   verification skill when one exists ([screen](references/screen.md)). A fix
-   that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
-   states, and a new security guard gets its removal row (T12). A remendo row keeps the card's
-   proof beside its [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves.
+   verification skill when one exists ([screen](references/screen.md)). A fix that touches state
+   reruns the A→B→A case, a fix that moves a layout reruns the card's failure states, and a new
+   security guard gets its removal row (T12). A remendo row keeps the card's proof beside its
+   [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`;
+   code C70 and C73 decide what leaves.
 7. One commit for the unit on the step branch; the tests and proofs its section names are green
    locally ([delivery L9](../../../docs/guides/delivery.md)).
 
@@ -69,5 +70,6 @@ Stop means no more code: report evidence and question.
 
 ## When it closes
 
-Step 7 holds. In the fix round you build one front ([delivery L9](../../../docs/guides/delivery.md)):
-each finding's cause and its class (L11), one commit to the same branch.
+Step 7 holds. In the fix round you build one front ([delivery
+L9](../../../docs/guides/delivery.md)): each finding's cause and its class (L11), one commit to the
+same branch.
