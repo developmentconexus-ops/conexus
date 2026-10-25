@@ -161,6 +161,8 @@ Em 2026-10-25, sobre o tempo do fim do turno a "Prévia pronta" medido na U1 (12
 
 Em 2026-10-25, sobre levar o tempo medido também à página do fundador no cartão da 14.1 (passo 1 do roteiro, "uns 10 a 20 segundos"; "Nada mais é seu", "os 12,5 a 20,5 s medidos"), em lugar dos ~9 s da referência: "A"
 
+Cartão da etapa 14.1 aprovado em 2026-10-25 (commit ad8480d20bf09ea7e4bb7f1039865c5c725496a1): "A"
+
 ## Etapa 14.3
 
 Em 2026-10-25, sobre o estudo de arquivos e voz no compositor do Builder: "A1 sim B1 okay, e so uma duvida e o whispr da openai que e rapido e free C sim", e depois: "B1 por agora". Arquivos (PDF, `.md`, `.txt`, imagens) entram no lançamento só na conversa com o Builder, como a etapa 14.3 depois da 14.1; voz fica no ditado do navegador por ora; uma linha sobre o ditado do Chrome passar pelo Google vai ao aviso da etapa 23.
