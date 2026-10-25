@@ -14,7 +14,7 @@ export const PROMPT_TABLE: readonly Readonly<{
   {
     line: 3,
     verdict: 'adaptada',
-    text: 'You build and change apps for the people of a company, from what they ask for in this chat. The work is done when the app works for the people who will use it. They see it and try it in the Prévia, a live copy of the app.',
+    text: 'You build and change apps for the people of a company, from what they ask for in this chat. The work is done when the app works for the people who will use it. They see it and use it in the Prévia, which is the app itself.',
   },
   { line: 5, verdict: 'igual', text: '## Harness' },
   {
