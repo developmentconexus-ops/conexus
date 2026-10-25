@@ -47,8 +47,13 @@ const FAILURES = [
   'CONVERSATION_NOT_FOUND',
 ] as const satisfies readonly FailureCode[]
 
-function carriesContext(input: unknown): boolean {
-  return typeof input === 'object' && input !== null && Object.hasOwn(input, 'requestContext')
+/**
+ * A run's context, or another thread's messages by id (`include`, which Mastra's storage scopes by
+ * the person only), asked by the browser.
+ */
+function overreaches(input: unknown): boolean {
+  if (typeof input !== 'object' || input === null) return false
+  return Object.hasOwn(input, 'requestContext') || Object.hasOwn(input, 'include')
 }
 
 /** Mastra's routes of the fixed list, each found in the installed server, or the Hub does not start. */
@@ -64,13 +69,14 @@ function builderRoutes() {
  * The conversation a request to Mastra's routes names, if it is the person's: the thread's resource
  * names its company and person (`memoryOwner`), and the Hub's index and membership decide (S10).
  * A `requestContext` from the browser is refused: Mastra's server copies it into the run's context,
- * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare).
+ * and `mastra__messageAuthor` is not one of its reserved keys (measured, prove2 e21-bare). So is
+ * `include`, which would read messages of the person's other conversations.
  */
 async function guard(
   deps: { builder: Builder; store: ConversationStore },
   request: FastifyRequest,
 ): Promise<void> {
-  if (carriesContext(request.body) || carriesContext(request.query)) {
+  if (overreaches(request.body) || overreaches(request.query)) {
     throw new Failure('REQUEST_MALFORMED')
   }
   const { person } = sessionOf(request)
@@ -105,6 +111,8 @@ export function registerBuilderRoutes(
   app.register(async (scope) => {
     const server = new MastraServer({ app: scope, mastra: deps.builder.mastra })
     server.registerContextMiddleware()
+    // Mastra's multipart parser reads no body, so no limit holds it: JSON stays the only one (S25).
+    scope.removeContentTypeParser('multipart/form-data')
     scope.addHook('preHandler', async (request, reply) => {
       await guard(deps, request)
       if (!request.routeOptions.url?.endsWith('/stream')) return

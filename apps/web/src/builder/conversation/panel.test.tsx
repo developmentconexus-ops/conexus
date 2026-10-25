@@ -196,6 +196,16 @@ test('Parar com uma mensagem não lida: ela fica pendente até a volta que o Mas
   expect(typed(field)).toBe('')
 })
 
+test('a mensagem que o stream não confirmou e a releitura traz sai da espera, uma vez (45)', async () => {
+  const hub = await answering()
+  say(hub.field, STEER)
+  await screen.findByText(PENDING)
+  hub.line().emit(agentEnd('complete'))
+  await waitFor(() => expect(screen.queryByText(PENDING)).toBeNull())
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  expect(within(log).getAllByText(STEER)).toHaveLength(1)
+})
+
 test('Esc durante a resposta para pelo abort do Mastra', async () => {
   const { field, sent } = await answering()
   fireEvent.keyDown(field, { key: 'Escape' })

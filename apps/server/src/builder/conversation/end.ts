@@ -200,6 +200,7 @@ function tellPhase(session: Session, phase: Phase): void {
  */
 export function watchRuns(deps: Deps) {
   const running = new Map<string, { session: Session; run: Run }>()
+  const unheard = new Map<string, () => void>()
   deps.controller.onSessionCreated((session) => {
     const conversationId = ConversationIdSchema.parse(session.identity.getId())
     const owner = ownerOfResource(session.identity.getResourceId())
@@ -229,19 +230,27 @@ export function watchRuns(deps: Deps) {
     session.onBeforeAgentEnd(async ({ reason }) => {
       if (run !== undefined) await ended(deps, session, run, reason ?? 'complete')
     })
-    deps.runs.onPhase(conversationId, (phase) => tellPhase(session, phase))
+    unheard.set(
+      conversationId,
+      deps.runs.onPhase(conversationId, (phase) => tellPhase(session, phase)),
+    )
   })
   // A deleted session's run ends without an `agent_end` (Mastra's `deleteSession` aborts it locally).
   deps.controller.onSessionDeleted((session) => {
     const conversationId = session.identity.getId()
     running.get(conversationId)?.run.over.resolve()
     running.delete(conversationId)
+    unheard.get(conversationId)?.()
+    unheard.delete(conversationId)
   })
   return {
     async drain(): Promise<void> {
-      const inFlight = [...running.values()]
-      for (const { session } of inFlight) session.abort()
-      await Promise.all(inFlight.map(({ run }) => run.over.promise))
+      // Mastra starts a run of its own at an abort with a message still unread: it is stopped too.
+      while (running.size > 0) {
+        const inFlight = [...running.values()]
+        for (const { session } of inFlight) session.abort()
+        await Promise.all(inFlight.map(({ run }) => run.over.promise))
+      }
     },
   }
 }

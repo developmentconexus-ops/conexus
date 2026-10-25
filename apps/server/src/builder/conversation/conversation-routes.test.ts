@@ -6,7 +6,7 @@ import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { conversing, messagesOf, sent, sessionUrl, started, streamOf } from './test-conversation.ts'
 import { answered, ask, conversingWith, untilCard, untilParked, WHO } from './test-questions.ts'
 
-test('só a lista fixa do Mastra: o resto é 404, sem sessão 401, um requestContext do navegador 400, e outra thread 404', async (t) => {
+test('só a lista fixa do Mastra: o resto é 404, sem sessão 401, um requestContext ou include do navegador 400, multipart 415, e outra thread 404', async (t) => {
   const { hub, ana, conversations, anthropic } = await conversing(t, () => ({
     kind: 'text',
     text: 'ok',
@@ -56,6 +56,21 @@ test('só a lista fixa do Mastra: o resto é 404, sem sessão 401, um requestCon
     `${session}/threads/${url.slice(url.lastIndexOf('/') + 1)}/messages?requestContext=e30`,
   )
   assert.equal(codeOf(inQuery), 'REQUEST_MALFORMED')
+  const id = url.slice(url.lastIndexOf('/') + 1)
+  const included = `${session}/threads/${id}/messages?include=${encodeURIComponent('[{"id":"m","threadId":"t"}]')}`
+  assert.equal(codeOf(await call(hub, ana, 'GET', included)), 'REQUEST_MALFORMED')
+  const boundary = 'conexus'
+  const multipart = await hub.app.inject({
+    method: 'POST',
+    url: `${session}/messages`,
+    headers: {
+      origin: TEST_ORIGIN,
+      cookie: ana.cookie,
+      'content-type': `multipart/form-data; boundary=${boundary}`,
+    },
+    payload: `--${boundary}\r\nContent-Disposition: form-data; name="message"\r\n\r\nOi\r\n--${boundary}--\r\n`,
+  })
+  assert.equal(multipart.statusCode, 415)
   assert.deepEqual(anthropic.sent, [], 'no refused route reached the model')
 })
 

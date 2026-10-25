@@ -174,15 +174,30 @@ function heard(state: SessionState, event: KnownAgentControllerEvent): SessionSt
   }
 }
 
+/** The words of a person's message, as its text parts say them. */
+function wordsOf(message: Stored): string | undefined {
+  const read = messageOf(message)
+  if (read?.role !== 'person') return undefined
+  return read.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
+}
+
 /**
  * The read takes the place of what the stream told, joined by id: a message the stream told and
  * the read does not hold yet stays after it, as Mastra may save it a moment later (Factory
- * `mergeServerWindow`).
+ * `mergeServerWindow`). A person's message only the read brings, as after a gap in the stream,
+ * confirms the pending steer with its words (Factory `confirmPendingUserMessages`).
  */
 function loaded(state: SessionState, read: readonly Stored[]): SessionState {
   const held = new Set(read.map((message) => message.id))
+  const told = new Set(state.messages.map((message) => message.id))
   const arriving = state.messages.filter((message) => !held.has(message.id))
-  return { ...state, messages: [...read, ...arriving] }
+  const brought = read.filter((message) => !told.has(message.id)).map(wordsOf)
+  const steers = state.steers.filter((steer) => {
+    const at = brought.indexOf(steer.content)
+    if (at !== -1) brought.splice(at, 1)
+    return at === -1
+  })
+  return { ...state, messages: [...read, ...arriving], steers }
 }
 
 export function session(state: SessionState, action: Action): SessionState {

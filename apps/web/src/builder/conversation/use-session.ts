@@ -63,11 +63,26 @@ function heard(hooks: Hooks, event: AgentControllerEvent): void {
   if (event.type === 'agent_end') reread(hooks)
 }
 
+/** A refusal that ends the following: the conversation gone, or the person's session ended. */
+async function refused(hooks: Hooks, error: unknown): Promise<boolean> {
+  const failure = error instanceof MastraClientError ? failureOfProblem(error.body) : undefined
+  if (failure?.code === 'CONVERSATION_NOT_FOUND') {
+    hooks.onGone()
+    return true
+  }
+  if (failure?.code !== 'SESSION_REQUIRED') return false
+  const { companyId, projectId, conversationId } = hooks.ids
+  await hooks.queryClient.invalidateQueries({
+    queryKey: conversationQuery(companyId, projectId, conversationId).queryKey,
+  })
+  return true
+}
+
 /**
  * Follows the session's stream until the screen leaves, as the Factory UI does
  * (`useAgentControllerConnection.ts`): Mastra's client opens it again after a drop, and each open
  * reads the transcript again. Opening it is retried here, after a pause, except for a conversation
- * gone or a session ended.
+ * gone or a session ended; Mastra's client says the same refusals of a reopening to `onError`.
  */
 async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
   // React mounts a screen twice in development: the first is let go before this turn ends.
@@ -79,22 +94,14 @@ async function follow(hooks: Hooks, signal: AbortSignal): Promise<void> {
         onEvent: (event) => heard(hooks, event),
         reconnect: true,
         onReconnect: () => reread(hooks),
+        onError: (error) => void refused(hooks, error),
       })
       if (signal.aborted) return subscription.unsubscribe()
       signal.addEventListener('abort', () => subscription.unsubscribe(), { once: true })
       reread(hooks)
       return
     } catch (error) {
-      if (signal.aborted) return
-      const failure = error instanceof MastraClientError ? failureOfProblem(error.body) : undefined
-      if (failure?.code === 'CONVERSATION_NOT_FOUND') return hooks.onGone()
-      if (failure?.code === 'SESSION_REQUIRED') {
-        const { companyId, projectId, conversationId } = hooks.ids
-        await hooks.queryClient.invalidateQueries({
-          queryKey: conversationQuery(companyId, projectId, conversationId).queryKey,
-        })
-        return
-      }
+      if (signal.aborted || (await refused(hooks, error))) return
     }
     await sleep(pause, signal)
     pause = Math.min(pause * 2, LAST_RETRY_MS)
