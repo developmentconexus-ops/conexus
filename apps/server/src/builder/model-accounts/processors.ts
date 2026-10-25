@@ -361,13 +361,15 @@ async function modelOf(
     : watched(deps, turn, account, call)
 }
 
-/** Mastra's retry, answering before it only for an account's failure, so a limit or a refusal reaches the queue at once (code C75). */
+/** Mastra's retry, answering before it only for a provider's own or unknown error, so a limit, a refusal or our `Failure` reaches the queue at once (code C75). */
 function accountRetry(retry: StreamErrorRetryProcessor): ErrorProcessor {
   return {
     id: retry.id,
     name: retry.name,
     processAPIError(args: ProcessAPIErrorArgs) {
-      if (callFailureOf(args.error).kind !== 'unknown') return undefined
+      if (args.error instanceof Failure || callFailureOf(args.error).kind !== 'unknown') {
+        return undefined
+      }
       return retry.processAPIError(args)
     },
   }

@@ -17,6 +17,7 @@ import {
   streamOf,
 } from './test-conversation.ts'
 import { failuresOf, textsOf } from './test-parts.ts'
+import { sessionStateOf } from './test-questions.ts'
 import { printedOf, routedTo, served } from './test-research.ts'
 
 const PLANTED = /SECRET-PLANTED-TEXT/
@@ -53,12 +54,11 @@ test('um turno: a resposta vem aos poucos, a conversa ganha título e o Mastra g
     )
   for (const each of anthropic.sent.filter((one) => !one.stream))
     assert.deepEqual(each.cached, [{ at: 'system', ttl: '5m' }])
-  const read = Object((await call(hub, ana, 'GET', url)).json()).conversation
   assert.deepEqual(await rolesAndParts(hub, ana, url), [
     ['person', [{ type: 'text', text: 'Compare dois apps de encomenda de padaria' }]],
     ['builder', [{ type: 'text', text: 'Olá, Ana. Vamos comparar os apps.' }]],
   ])
-  assert.equal(read.model, 'anthropic/claude-sonnet-4-6')
+  assert.equal((await sessionStateOf(hub, ana, url)).model, 'anthropic/claude-sonnet-4-6')
   const threads = await hub.test.mastraPool.query(
     'select "resourceId" from mastra.mastra_threads where id = $1',
     [id],

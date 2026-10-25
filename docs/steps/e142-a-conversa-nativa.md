@@ -106,8 +106,8 @@ sem varredura elas crescem, uma por conversa usada, até a conversa sair.
 **A sexta emenda de 2026-10-25.** Sai o que era lógica nossa ao lado do Mastra nativo, depois da auditoria
 final. As suas palavras: "Bom, vamos tirar tudo então que é lógica paralela, e esse 4 vamos também tirar e
 fazer do jeito correto, que aí a gente finaliza tudo e deixa do jeito nativo." Quer dizer: as rotas `steer` e
-`follow-up` saem da lista da guarda; a trilha de erro passa as opções de `createCodingAgent` (repete o erro
-desconhecido e o 400 uma vez, e o 401, 403, 429, 402 e 404 seguem para a fila de contas); e a tela lê modelo,
+`follow-up` saem da lista da guarda; a trilha de erro passa as opções de `createCodingAgent` (repete o 400 uma vez
+e o erro desconhecido até duas vezes, como o Mastra 1.79, e o 401, 403, 429, 402 e 404 seguem para a fila de contas); e a tela lê modelo,
 raciocínio e tarefas da rota de estado da sessão do Mastra, como a Factory UI (critério 6), em vez de
 `history.ts` ler os metadados da thread à mão.
 
