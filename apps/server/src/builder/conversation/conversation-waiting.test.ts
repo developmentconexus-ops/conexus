@@ -5,6 +5,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 
+import type { StreamEvent } from './test-conversation.ts'
 import { answeredOf, endOf, messagesOf, sent, stopped, streamOf } from './test-conversation.ts'
 import { failuresOf } from './test-parts.ts'
 import {
@@ -35,8 +36,8 @@ const MASTRA_RACE =
   'Mastra 1.78.0 can recreate the parked snapshot after abort (report 6edddc96-17b5-4e31-a6df-986c1598d366)'
 
 /**
- * The conversation read again once Mastra has written the denial of the call: it writes it a moment
- * after the abort, as it resumes the call with it, so the read is polled, bounded.
+ * The conversation read again once Mastra has written the denial of the call: it writes the call and
+ * its denial a moment after the abort, as it resumes the call with it, so the read is polled, bounded.
  */
 async function closedRead(
   hub: Parameters<typeof answeredOf>[0],
@@ -51,13 +52,34 @@ async function closedRead(
     stateOf(
       messages.flatMap((message) => message.parts),
       toolCallId,
-    ).at(-1) === 'call';
+    ).at(-1) !== CLOSED.at(-1);
     attempt += 1
   ) {
     await sleep(100)
     messages = await answeredOf(hub, ana, url)
   }
   return messages
+}
+
+/**
+ * Mastra's refusal of a resume whose claim it lost (`AGENT_RESUME_ALREADY_CLAIMED`, core 1.79
+ * `alreadyClaimedResumeError`): an answer within milliseconds of the asking run's end can meet it.
+ */
+function lostClaim(event: StreamEvent | undefined) {
+  return (
+    event?.type === 'error' &&
+    event.error.message.includes('another resume of it already claimed it')
+  )
+}
+
+/** The events up to the run's end, or up to Mastra's refusal of a lost claim, which ends no run. */
+async function endOrLostClaim(stream: Awaited<ReturnType<typeof streamOf>>) {
+  const said: StreamEvent[] = []
+  for (;;) {
+    const event = await stream.next()
+    said.push(event)
+    if (event.type === 'agent_end' || lostClaim(event)) return said
+  }
 }
 
 test('uma pergunta encerra o turno: o fim é dito, o Projeto fica livre e o cartão espera sem prazo', {
@@ -184,8 +206,18 @@ test('a resposta no instante do fim do turno: o Mastra a retoma, ou a recusa e o
     assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
     return
   }
-  const events = await within(15_000, stream.turn())
+  const events = await within(15_000, endOrLostClaim(stream))
   assert.ok(events !== undefined, 'the answer’s turn ended')
+  if (lostClaim(events.at(-1))) {
+    // Mastra saw the run's snapshot move under its claim (`waitForSuspendedSnapshot`): it says the
+    // error, ends no run, and keeps the call waiting, so the same answer, sent again, resumes it.
+    const read = (await messagesOf(hub, ana, url)).flatMap((message) => message.parts)
+    assert.deepEqual(stateOf(read, card.toolCallId), ['call'], 'the card stays open')
+    const again = await answered(hub, ana, url, card.toolCallId, QUESTION)
+    assert.deepEqual(again.json(), { ok: true })
+    assert.equal(endOf(await within(15_000, stream.turn())), 'complete')
+    return
+  }
   const read = (await answeredOf(hub, ana, url)).flatMap((message) => message.parts)
   if (events.at(-1)?.type === 'agent_end' && failuresOf(events).length === 0) {
     assert.equal(endOf(events), 'complete')
