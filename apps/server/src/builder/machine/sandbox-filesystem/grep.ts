@@ -2,7 +2,8 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
 // concern: `grep` and its three engines (source :755-1044). Changed: functions that take the
-// filesystem (`Host`) in place of methods; no `any` (the ripgrep event is typed) and no `!`;
+// filesystem (`Host`) in place of methods; no `any` (a Zod schema reads the ripgrep event) and no `!`;
+// the `${` of a shell line is escaped in a template string;
 // `grepWithGnuGrep` split into its script and its reader.
 
 import { posix as posixPath } from 'node:path'
@@ -13,7 +14,6 @@ import type {
 } from '@mastra/core/workspace'
 import { UnsupportedGrepPatternError } from '@mastra/core/workspace'
 import { z } from 'zod'
-import { parsedWith } from '../pack.ts'
 import type { GrepFileLines, Host, SearchTools } from './shell.ts'
 import {
   describeGrepFailure,
@@ -35,6 +35,16 @@ const RipgrepEvent = z.object({
     })
     .optional(),
 })
+
+/** One line of ripgrep's output read as an event; a line that is not one is skipped. */
+function parseEvent(line: string): z.ZodSafeParseResult<z.infer<typeof RipgrepEvent>> {
+  try {
+    return RipgrepEvent.safeParse(JSON.parse(line))
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error
+    return RipgrepEvent.safeParse(undefined)
+  }
+}
 
 function applyTotalCap(results: FilesystemGrepResult[], maxTotal?: number): FilesystemGrepResult[] {
   if (maxTotal === undefined) return results
@@ -96,7 +106,7 @@ function parseRipgrepJson(
   const files = new Map<string, GrepFileLines>()
   for (const line of stdout.split('\n')) {
     if (!line) continue
-    const parsed = parsedWith(RipgrepEvent, line)
+    const parsed = parseEvent(line)
     if (!parsed.success) continue
     const event = parsed.data
     if (event.type !== 'match' && event.type !== 'context') continue

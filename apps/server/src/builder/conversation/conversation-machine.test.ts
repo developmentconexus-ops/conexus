@@ -66,10 +66,12 @@ test('sem a trava de ler antes de escrever: src/a.ts, /src/a.ts e o caminho da p
     input: { pattern: 'tres', path: '/' },
   } as const
   const calls: Sent[] = []
+  const seen: string[] = []
   const { hub, ana, conversations } = await conversing(t, (call): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     calls.push(call)
     const app = join(hub.builder.folder, 'app')
+    if (calls.length > 1 && calls.length < 5) seen.push(readFileSync(join(app, 'src/a.ts'), 'utf8'))
     const steps = [
       [write('src/a.ts', 'um\n')],
       [write('/src/a.ts', 'dois\n')],
@@ -87,6 +89,7 @@ test('sem a trava de ler antes de escrever: src/a.ts, /src/a.ts e o caminho da p
     (path) => basename(String(path)) === 'a.ts',
   )
   assert.deepEqual(found, [join('app', 'src', 'a.ts')], 'one file, not three')
+  assert.deepEqual(seen, ['um\n', 'dois\n', 'tres\n'], 'each write landed on the app file')
   assert.equal(existsSync(join(hub.builder.folder, 'fora.ts')), false)
   const told = calls.map((call) => call.texts.join('\n'))
   assert.doesNotMatch(told.join('\n'), /You must read a file before writing/)
@@ -95,7 +98,8 @@ test('sem a trava de ler antes de escrever: src/a.ts, /src/a.ts e o caminho da p
     /Path escapes workspace root/,
     'the write outside the app was refused',
   )
-  assert.match(told[5] ?? '', /src\/a\.ts/, 'the search found the line')
+  const searched = calls[5]?.texts.at(-1) ?? ''
+  assert.match(searched, /src\/a\.ts[\s\S]*tres/, 'the search found the line')
 })
 
 test('abrir uma conversa de um Projeto com máquina guardada não toca na máquina: nada é montado nem ligado', async (t) => {

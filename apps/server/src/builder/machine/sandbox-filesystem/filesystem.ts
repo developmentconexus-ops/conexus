@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Kepler Software, Inc. Licensed under the Apache License, Version 2.0; a copy is
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
-// concern: the class (source :1-45, 201-298, 391-482, 575-607, 1045-1116). Changed: `type` for
+// concern: the class (source :1-45, 201-298, 391-482, 575-614, 755-784, 1045-1116). Changed: `type` for
 // `interface`; no `!` and no assignment in an expression; the shell parts are in the files beside
 // this one and take the class as `Host`; `exec` and the symlink fields are public for them.
 

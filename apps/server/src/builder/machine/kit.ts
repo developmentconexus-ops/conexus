@@ -24,7 +24,7 @@ export const ALLOWED_HOSTS = ['registry.npmjs.org']
  * The most bytes the Hub takes from the machine in one read, by the file tools or as the turn's
  * bundle: a version's cap, for nothing larger can be saved (code C59).
  */
-export const READ_MAX = MAX_BYTES
+const READ_MAX = MAX_BYTES
 
 /** The most output the Hub keeps of a command it runs in the machine: a `READ_MAX` file as base64, and its reply around it. */
 export const OUTPUT_MAX = Math.ceil(READ_MAX / 3) * 4 + 4096

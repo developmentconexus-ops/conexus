@@ -2,8 +2,9 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
 // concern: the shell path of `readFile`, `writeFile`, `deleteFile` and `stat`, and the search-tool
-// probe (source :270-282, 391-482, 1000-1030). Changed: functions that take the filesystem
-// (`Host`) in place of the halves of methods; the probe is a function, its cache stays in the class.
+// probe (source :391-482, 764-784, 1053-1086). Changed: functions that take the filesystem
+// (`Host`) in place of the halves of methods; the probe is a function, its cache stays in the class;
+// `kind &&` is `kind?.`.
 
 import { posix as posixPath } from 'node:path'
 import type {

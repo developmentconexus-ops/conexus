@@ -2,7 +2,8 @@
 // in THIRD_PARTY_LICENSE.txt beside this file.
 // From @mastra/code-sdk 1.15.0, src/agents/sandbox-filesystem.ts (mastra-ai/mastra), split by
 // concern: the shell vocabulary (source :46-199). Changed: `type` for `interface`; no `!`; the
-// `Host` type is new, for the files that were class methods.
+// `Host` type is new, for the files that were class methods; `isFileContentString` is folded into
+// `toBuffer`.
 
 import { posix as posixPath } from 'node:path'
 import type {
