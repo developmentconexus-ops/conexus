@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, realpathSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs'
+import { basename, join } from 'node:path'
 import { test } from 'node:test'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
 import { APP_FOLDER } from '../machine/public.ts'
@@ -30,14 +30,17 @@ test('a máquina como o modelo a ouve: a pasta do app e o que ela tem, nenhum ou
   const app = join(hub.builder.folder, 'app')
   const system = calls[0]?.system ?? ''
   assert.ok(system.includes(`Commands start in ${app}`), 'the machine names its folder')
-  assert.ok(system.includes(`The file tools work in ${app}`), 'the file tools name their folder')
+  assert.ok(
+    system.includes(`Files are stored in a remote sandbox at ${app}`),
+    'the file tools name their folder',
+  )
   assert.equal(system.includes('Cloud sandbox'), false)
   assert.equal(system.includes('Local command execution'), false)
   const named = new Set(pathsIn(system).map((path) => path.replace(/[.]$/, '')))
   assert.deepEqual(
-    [...named].filter((path) => ![app, APP_FOLDER, '/opt/conexus'].includes(path)),
+    [...named].filter((path) => ![app, APP_FOLDER, '/opt/conexus', '/src/index.ts'].includes(path)),
     [],
-    'the model is told of no folder but the app (the machine is this test folder) and the check',
+    "the model is told of no folder but the app (the machine is this test folder), the check and the file tools' example path",
   )
   const output = events.flatMap((event) => (event.type === 'shell_output' ? [event.output] : []))
   const exit = events.find((event) => event.type === 'command_exit')
@@ -56,34 +59,43 @@ function write(path: string, content: string) {
   } as const
 }
 
-test('sem a trava de ler antes de escrever: duas escritas seguidas no mesmo arquivo passam; fora da pasta do app, a escrita volta como erro (14.2, 16)', async (t) => {
-  const steps = [[write('a.ts', 'um\n')], [write('a.ts', 'dois\n')], [write('../fora.ts', 'x\n')]]
+test('sem a trava de ler antes de escrever: src/a.ts, /src/a.ts e o caminho da pasta do app são o mesmo arquivo; fora da pasta, a escrita volta recusada; o grep acha a linha (14.2, 16)', async (t) => {
+  const grep = {
+    type: 'tool_use',
+    name: 'mastra_workspace_grep',
+    input: { pattern: 'tres', path: '/' },
+  } as const
   const calls: Sent[] = []
   const { hub, ana, conversations } = await conversing(t, (call): Reply => {
     if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
     calls.push(call)
+    const app = join(hub.builder.folder, 'app')
+    const steps = [
+      [write('src/a.ts', 'um\n')],
+      [write('/src/a.ts', 'dois\n')],
+      [write(join(app, 'src/a.ts'), 'tres\n')],
+      [write('../fora.ts', 'x\n')],
+      [grep],
+    ]
     const blocks = steps[calls.length - 1]
     return blocks === undefined ? { kind: 'text', text: 'Pronto.' } : { kind: 'blocks', blocks }
   })
-  await asked(t, { hub, person: ana, conversations }, 'Escreva a.ts duas vezes')
+  await asked(t, { hub, person: ana, conversations }, 'Escreva a.ts três vezes')
   const app = join(hub.builder.folder, 'app')
-  assert.equal(
-    readFileSync(join(app, 'a.ts'), 'utf8'),
-    'dois\n',
-    'the second write, unread, went through',
+  assert.equal(readFileSync(join(app, 'src/a.ts'), 'utf8'), 'tres\n')
+  const found = readdirSync(hub.builder.folder, { recursive: true }).filter(
+    (path) => basename(String(path)) === 'a.ts',
   )
+  assert.deepEqual(found, [join('app', 'src', 'a.ts')], 'one file, not three')
   assert.equal(existsSync(join(hub.builder.folder, 'fora.ts')), false)
-  const told = calls.at(-1)?.texts.join('\n') ?? ''
-  assert.doesNotMatch(
-    told,
-    /You must read a file before writing/,
-    'no write asked for a read first',
-  )
+  const told = calls.map((call) => call.texts.join('\n'))
+  assert.doesNotMatch(told.join('\n'), /You must read a file before writing/)
   assert.match(
-    told,
-    /Permission denied|EACCES|outside/i,
-    'the write outside the app folder came back refused',
+    told[4] ?? '',
+    /Path escapes workspace root/,
+    'the write outside the app was refused',
   )
+  assert.match(told[5] ?? '', /src\/a\.ts/, 'the search found the line')
 })
 
 test('abrir uma conversa de um Projeto com máquina guardada não toca na máquina: nada é montado nem ligado', async (t) => {

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { truncateSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
@@ -207,4 +208,13 @@ test('máquina: um turno que só mexeu nos planos não guarda versão; com o app
   const bundle = await machines.collect({ conversationId: CONVERSATION, base })
   assert.ok(typeof bundle === 'object')
   assert.equal(bundle.changedFiles, 1)
+})
+
+test('máquina: um pacote do turno maior que 64 MiB não entra no Hub', async (t) => {
+  const { open, machines, base, control } = await world(t)
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  control.beforeRead = (path) => truncateSync(path, 65 * 1024 * 1024)
+  const collected = await machines.collect({ conversationId: CONVERSATION, base })
+  assert.equal(typeof collected === 'object' ? 'a bundle' : collected, 'too-large')
 })

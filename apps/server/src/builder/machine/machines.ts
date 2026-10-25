@@ -4,11 +4,12 @@ import { Failure } from '../../platform/failure.ts'
 import type { Sha } from '../git/public.ts'
 import type { TimedExec } from './check.ts'
 import { CHECK_PROGRAM, checkIn } from './check.ts'
-import { MachineFilesystem } from './filesystem.ts'
 import type { Kit } from './kit.ts'
 import { APP_FOLDER, MARK, machineInstructions, OUTPUT_MAX, readCapped } from './kit.ts'
 import { packIn } from './pack.ts'
 import type { Machines, MachinesDeps, Phase } from './port.ts'
+import { SandboxFilesystem } from './sandbox-filesystem/filesystem.ts'
+import type { SandboxExec } from './sandbox-filesystem/shell.ts'
 import type { Collected } from './scripts.ts'
 import {
   changedScript,
@@ -130,6 +131,23 @@ class BuilderMachines implements Machines {
     await this.seed(kit, session)
   }
 
+  /** The file tools' view of the machine: its commands, which wake it first, and its own file API. */
+  private execIn(session: Session): SandboxExec {
+    const { sandbox } = session.kit
+    return {
+      id: sandbox.id,
+      get filesystem() {
+        return sandbox.filesystem
+      },
+      executeCommand: async (command, args, options) => {
+        await this.ensure(session)
+        const result = await sandbox.executeCommand?.(command, args, options)
+        if (result === undefined) throw new Error('the machine cannot run commands')
+        return result
+      },
+    }
+  }
+
   async workspaceFor(input: Parameters<Machines['workspaceFor']>[0]) {
     const { companyId, projectId, conversationId, onPhase } = input
     const name = `conexus-${this.deps.installation}-${conversationId}`
@@ -154,10 +172,10 @@ class BuilderMachines implements Machines {
       sandbox: async () => (await this.ensure(session)).sandbox,
       sandboxCacheKey: () => name,
       instructions: { dynamicSandbox: () => machineInstructions(this.workdir) },
-      filesystem: new MachineFilesystem({
+      filesystem: new SandboxFilesystem({
         id: `conexus-fs-${conversationId}`,
-        root: this.workdir,
-        exec: async (script) => run(await this.ensure(session), script),
+        sandbox: this.execIn(session),
+        workdir: this.workdir,
       }),
       tools: {
         hooks: {
