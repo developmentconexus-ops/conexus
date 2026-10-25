@@ -135,4 +135,4 @@ Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751
 
 Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 64a7dfde26262decc25e60ac751dd072b8778e70): "5.A"
 
-Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 346c5e2ebb0907f836f0db04d19a51ca25930f7b): "Mas olha, no mobile ela tá mostrando, legal, só que eu não consigo clicar, por exemplo, nela e ela mostrar tudo que são as tarefas, por exemplo."
+Cartão da etapa 14.2 aprovado em 2026-10-25 (commit 6ca22d55cfa76bcd21e73cd56fc2c523fee9949b): "Mas olha, no mobile ela tá mostrando, legal, só que eu não consigo clicar, por exemplo, nela e ela mostrar tudo que são as tarefas, por exemplo."
