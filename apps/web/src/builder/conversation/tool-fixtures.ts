@@ -85,6 +85,16 @@ export const QUESTION_DENIED: Invocation = {
   args: QUESTION_ARGS,
 }
 
+/** The same question asking and closed, as the parts of one step. */
+export const QUESTION_ASKING: MastraMessagePart = {
+  type: 'tool-invocation',
+  toolInvocation: { ...QUESTION_DENIED, state: 'call' },
+}
+export const QUESTION_CLOSED_PART: MastraMessagePart = {
+  type: 'tool-invocation',
+  toolInvocation: QUESTION_DENIED,
+}
+
 /** A plan closed the same way: the same state, `submit_plan`'s arguments. */
 export const PLAN_DENIED: Invocation = {
   state: 'output-denied',

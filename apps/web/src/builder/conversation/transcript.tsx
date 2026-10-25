@@ -54,7 +54,11 @@ export function shownOf(state: SessionState): ShownTurn[] {
     return {
       key: turn.key,
       person: turn.person,
-      items: itemsOf(turn.builder, { ...view, live: streaming }),
+      items: itemsOf(turn.builder, {
+        ...view,
+        live: streaming,
+        stopped: state.stopped && index === turns.length - 1,
+      }),
       model: turn.builder.findLast((message) => message.model !== null)?.model ?? null,
       streaming,
     }

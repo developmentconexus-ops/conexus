@@ -40,7 +40,7 @@ export type QuestionCardItem = {
   id: string
   toolCallId: string
   toolName: typeof CARD_TOOLS.question
-  state: 'open' | 'answered' | 'closed'
+  state: 'open' | 'answered' | 'closed' | 'stopped'
   questions: readonly Question[]
   answers?: readonly Answer[]
 }
@@ -123,9 +123,19 @@ function cardState(inv: Invocation, waiting: boolean): 'open' | 'result' | 'clos
   return waiting ? 'open' : 'none'
 }
 
+function questionStateOf(
+  at: 'open' | 'result' | 'closed',
+  answered: boolean,
+  stopped: boolean,
+): QuestionCardItem['state'] {
+  if (at === 'open' || (at === 'result' && answered)) return at === 'open' ? 'open' : 'answered'
+  return stopped ? 'stopped' : 'closed'
+}
+
 export function invocationToItem(
   inv: Invocation,
   suspension: Suspended | undefined,
+  stopped = false,
 ): TranscriptItem | null {
   if (
     !ToolCallId.safeParse(inv.toolCallId).success ||
@@ -140,7 +150,7 @@ export function invocationToItem(
       suspension === undefined ? inv.args : suspension.suspendPayload,
     )
     const answers = parseAnswers(inv.result)
-    const state = at === 'result' ? (answers !== undefined ? 'answered' : 'closed') : at
+    const state = questionStateOf(at, answers !== undefined, stopped)
     return {
       kind: 'card',
       cardKind: 'question',
@@ -201,6 +211,8 @@ export type View = {
   heard: Readonly<Record<string, number>>
   /** The answer is still arriving: its last thinking is in progress. */
   live: boolean
+  /** The last run was stopped by the person: a card Mastra closed then was closed by Parar. */
+  stopped: boolean
 }
 
 function fromParts(
@@ -226,6 +238,7 @@ function fromParts(
       const item = invocationToItem(
         part.toolInvocation,
         view.suspended[part.toolInvocation.toolCallId],
+        view.stopped,
       )
       if (item) items.push(item)
     } else if (

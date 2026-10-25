@@ -32,6 +32,8 @@ export type SessionState = {
   /** When the screen first heard of each tool call, by its id, epoch ms (Factory `tool_start`). */
   heard: Readonly<Record<string, number>>
   steers: readonly Steer[]
+  /** The last run ended `aborted`: the person stopped it (Parar or Esc). */
+  stopped: boolean
 }
 
 export const OPENED: SessionState = {
@@ -46,6 +48,7 @@ export const OPENED: SessionState = {
   commands: {},
   heard: {},
   steers: [],
+  stopped: false,
 }
 
 export type Action =
@@ -137,10 +140,15 @@ function heard(state: SessionState, event: KnownAgentControllerEvent): SessionSt
     case 'display_state_changed':
       return displayed(state, event.displayState)
     case 'agent_start':
-      return { ...state, running: true, startedAt: Date.now() }
+      return { ...state, running: true, startedAt: Date.now(), stopped: false }
     case 'agent_end':
       // A steer the run did not read stays pending: Mastra takes it to the run it opens next.
-      return { ...state, running: false, messages: state.messages.filter(lasts) }
+      return {
+        ...state,
+        running: false,
+        messages: state.messages.filter(lasts),
+        stopped: event.reason === 'aborted',
+      }
     case 'message_start': {
       // A person's message Mastra delivered takes the place of the first steer still pending, in order.
       const steers =

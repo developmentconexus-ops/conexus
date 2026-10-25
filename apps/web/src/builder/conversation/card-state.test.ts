@@ -33,3 +33,10 @@ test('as ferramentas de tarefas não desenham linha: o painel as mostra', () => 
     assert.equal(invocationToItem(call, undefined), null, toolName)
   }
 })
+
+test('pergunta fechada com a volta parada pela pessoa fica parada, não fechada', () => {
+  const stopped = invocationToItem(QUESTION_DENIED, undefined, true)
+  assert.equal(stopped?.kind, 'card')
+  assert.equal(stopped.state, 'stopped')
+  assert.equal(waitsOnPerson([stopped]), false)
+})
