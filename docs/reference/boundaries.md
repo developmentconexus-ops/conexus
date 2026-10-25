@@ -895,14 +895,17 @@ refused for its media type or its origin.
 
 ## The Builder's end of the turn: open tasks (step 14.2)
 
-- **Open tasks go back to the model.** `conversation/processors.ts` `checkGate`, the output
-  processor that checks the app at the end of the turn, first reads the thread's task list from
-  Mastra's `threadState` store, as `task_check` reads it (`tools/builtin/task-tools.ts:385-391` at
-  `6a465f9d`). A step that ends the turn with tasks open goes back to the model with them by
-  `abort(…, { retry: true })`, counted with the failed checks in `CHECK_LIMITS.checks`; at the
-  limit the version is saved `unfinished`. Mastra's own `goal` judges completion with a model, not
-  the list (`agent/goal/scorer.ts:14-28`), so it does not serve. Proof: `conversation-check.test.ts`,
-  criterion 15 of step 14.2. Revisit when Mastra ends a turn on its task list itself.
+- **The end of the turn is Mastra's `isTaskComplete`.** `conversation/builder.ts` gives the Builder's
+  `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`conversation/processors.ts`
+  `conexusCheck`), which finds the machine by the conversation in `customContext.controller`. It first
+  reads the thread's task list from Mastra's `threadState` store, as `task_check` reads it
+  (`tools/builtin/task-tools.ts:385-391` at `6a465f9d`); a turn that ends with tasks open, or with a
+  failed app check, scores 0 and Mastra gives the scorer's reason to the model and calls it again
+  (`formatCompletionFeedback`, the `task_complete_evaluation` event reaches the screen). Mastra's loop
+  has no cap of its own for this, so the rounds count in `CHECK_LIMITS.checks`, kept by the run
+  (`Runs.round`); at the limit the scorer passes and the version is saved `unfinished` or `failed`.
+  Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
+  it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
 
 ## Mastra's session routes behind the Hub's guard (step 14.2)
 

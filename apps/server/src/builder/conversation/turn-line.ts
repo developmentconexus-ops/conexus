@@ -20,7 +20,7 @@ export class TurnTally {
   finishReason: string | undefined
   /** The kind of the first tool that failed, never its arguments (security S41). */
   failedTool: string | undefined
-  /** How many times the end of the turn judged it (`checkGate`), once the run settled. */
+  /** How many times the end of the turn judged it (`conexusCheck`), once the run settled. */
   rounds: number | undefined
 
   heard(event: AgentControllerEvent): void {
