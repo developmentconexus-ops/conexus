@@ -11,10 +11,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import { ModelPicker } from '../model-accounts/public.ts'
 import type { SessionRead } from './queries.ts'
 import { sendModel, sessionReadQuery } from './queries.ts'
-import { UNCONFIRMED_MODEL } from './text.ts'
+import { NO_SECRETS, UNCONFIRMED_MODEL } from './text.ts'
 
 /** The step 11 notice for a person with no account to answer with, and the way to link one. */
 export function NoAccount({ companyId }: { companyId: CompanyId }) {
@@ -61,6 +62,7 @@ export function ModelChoice(props: {
         (read) => read && { ...read, ...kept },
       ),
   })
+  const phone = useIsMobile()
   const now = send.isPending ? send.variables.body : props.session
 
   function choose(model: ModelId, effort: Effort) {
@@ -89,7 +91,8 @@ export function ModelChoice(props: {
       value={now.model}
       name="Modelo e raciocínio"
       heading="Modelo desta conversa"
-      className="h-8 rounded-pill px-sm text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
+      note={phone ? NO_SECRETS : undefined}
+      className="h-8 rounded-pill px-sm max-md:h-11 text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
       onChange={pickModel}
       effort={{ value: now.effort, onChange: (effort) => choose(now.model, effort) }}
     />

@@ -17,7 +17,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
-import { afterEach, expect } from 'vitest'
+import { afterEach, expect, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
@@ -304,4 +304,23 @@ export function screens(server: ReturnType<typeof setupServer>) {
   }
 
   return { open, openConversation }
+}
+
+/** A phone: narrow, and a finger for a pointer, for the length of one test. */
+export async function onPhone<T>(run: () => Promise<T>): Promise<T> {
+  const phone = vi.spyOn(globalThis, 'matchMedia').mockImplementation((media: string) =>
+    Object.assign(new EventTarget(), {
+      matches: media.includes('767') || media.includes('coarse'),
+      media,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    }),
+  )
+  try {
+    return await run()
+  } finally {
+    phone.mockRestore()
+  }
 }

@@ -31,7 +31,9 @@ export function SheetContent({
         )}
         {...props}
       >
-        <SheetPrimitive.Title className="font-display text-title">{title}</SheetPrimitive.Title>
+        <SheetPrimitive.Title className="pt-[env(safe-area-inset-top)] font-display text-title">
+          {title}
+        </SheetPrimitive.Title>
         {children}
         <SheetPrimitive.Close
           data-slot="sheet-close"

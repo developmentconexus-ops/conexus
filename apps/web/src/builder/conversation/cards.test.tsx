@@ -6,7 +6,7 @@ import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { AGENT_START, agentEnd, RUNNING, stepStarted, updatePart } from './test-events.ts'
-import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { conversationOf, FIRST, onPhone, say, screens } from './test-hub.tsx'
 import { displayOf, parkedOf } from './test-stream.tsx'
 
 const server = hubServer()
@@ -123,8 +123,7 @@ test('cartão de perguntas da tool-invocation ask_user: resposta livre em vária
   fireEvent.change(other, { target: { value: multilineText } })
   fireEvent.click(questionSend())
 
-  const sending = await screen.findByRole('button', { name: 'Enviando…' })
-  expect(sending).toHaveProperty('disabled', true)
+  expect(await screen.findByRole('button', { name: 'Enviando…' })).toHaveProperty('disabled', true)
   held.resolve(undefined)
 
   await waitFor(() => expect(bodies).toHaveLength(1))
@@ -330,3 +329,8 @@ test('o plano aprovado diz que foi aprovado (Critério 12)', async () => {
   await within(card).findByText('Plano aprovado.')
   expect(within(card).queryByRole('button', { name: 'Aprovar e construir' })).toBeNull()
 })
+test('no celular, o cartão aberto diz que o Builder espera a pessoa, e a linha de trabalho some', () =>
+  onPhone(async () => {
+    await turn(questionPart('approval-requested'))
+    expect((await screen.findByRole('status')).textContent).toBe('Builder esperando sua resposta')
+  }))

@@ -21,7 +21,7 @@ export function WelcomeFrame(props: {
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
-      <header className="flex h-14 items-center gap-md border-b border-line bg-surface px-lg">
+      <header className="flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-md border-b border-line bg-surface px-lg pt-[env(safe-area-inset-top)]">
         <ConexusWordmark word="md" />
         <p className="ml-auto text-label text-text-2">Passo {props.step} de 4</p>
         {props.exit}

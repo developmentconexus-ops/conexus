@@ -111,6 +111,17 @@ e o erro desconhecido até duas vezes, como o Mastra 1.79, e o 401, 403, 429, 40
 raciocínio e tarefas da rota de estado da sessão do Mastra, como a Factory UI (critério 6), em vez de
 `history.ts` ler os metadados da thread à mão.
 
+**A sétima emenda de 2026-10-25.** A conversa no celular. O fundador olhou a tela no iPhone: "a caixa onde tem a
+conversa é muito pequena" e "o jeito que a gente abre o app e conversa, selecionando lá em cima, tá muito grande".
+O estudo mediu 43% da altura do Safari para a conversa e ofereceu A, B e C. As suas palavras: "1. A 2.quebra de linha
+diva sumir 3. B". Quer dizer, só abaixo de `md`: uma barra só no topo, com o título da conversa (um botão que abre a
+lista por baixo, com "Nova conversa" primeiro) e "App | Conversa"; a caixa começa com uma linha e os anéis de memória
+vão para a linha de ações dela, com os números no nome e no quadro; no toque o Return quebra a linha, só o botão manda
+e a dica das teclas some; "Builder esperando sua resposta" passa para o cartão da pergunta e do plano, e a linha de
+trabalho não aparece enquanto um cartão espera; "Não cole senhas, chaves ou tokens na conversa." sai do rodapé e vai
+para a conversa vazia e para o quadro do modelo; alvos de toque de 44 px, área segura do iPhone e instalação na tela
+inicial (manifesto, ícones, tela cheia). O computador não muda. O desenho de 390 e o critério 45 acima já dizem isso.
+
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
 ficam como proposta.
 
@@ -253,7 +264,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 42 | M2 | A mensagem sai no stream como a da pessoa onde o Mastra a pôs (`message_start`, `role: 'user'`), e a releitura a mostra uma vez depois do fim | `conversation-steer.test.ts` |
 | 43 | U12 | **Parar** com uma mensagem que o Builder não leu: o Mastra a leva, uma vez, à volta que abre logo depois; nada nosso sobre a fila dele (regra do fundador, 2026-10-25: "se não tem no Mastra, não tem na Factory, a gente não vai ter. Não agora") | `conversation-steer.test.ts` |
 | 44 | M2 | Mensagem com pergunta ou plano aberto (fundador: "5. Aprovado"): a rota responde `{ok: true}` e o Mastra a segura até a resposta ou o **Parar**; no **Parar**, o cartão é cancelado e a mensagem roda logo depois; a tela a mostra como na fila | `conversation-steer.test.ts`, `conversation-waiting.test.ts` |
-| 45 | M2 | Enquanto o Builder trabalha a caixa fica aberta: Enter manda, Esc para, **Parar** e **Enviar** lado a lado; a mensagem aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream traz o `message_start` dela, casada pela ordem, como a Factory UI | `composer.test.tsx`, `panel.test.tsx`, `live.test.tsx` |
+| 45 | M2 | Enquanto o Builder trabalha a caixa fica aberta: Enter manda (no toque, Return quebra a linha e só o botão manda, e a dica das teclas some), Esc para, **Parar** e **Enviar** lado a lado; a mensagem aparece embaixo com "Vai ao Builder no próximo passo" e entra na volta quando o stream traz o `message_start` dela, casada pela ordem, como a Factory UI | `composer.test.tsx`, `panel.test.tsx`, `live.test.tsx` |
 | 46 | M2 | Mensagem que o Builder não leu quando a volta acaba fica na tela como pendente, "Vai ao Builder no próximo passo", até a volta que o Mastra abre com ela, como a Factory UI (`factory-ui` `transcript.ts:174-206`); recarregar mostra a mensagem lida uma vez, no lugar dela (regra do fundador, 2026-10-25: nenhum mecanismo nosso paralelo à fila do Mastra) | `panel.test.tsx`, `conversation-steer.test.ts`, `tests/e2e/builder-native.test.ts` |
 | 47 | M2 | Não agora (quarta emenda): o cartão não atravessa a atualização nem a queda. Depois do reinício o cartão some e a próxima mensagem funciona, sem erro do fornecedor (o Mastra tira do pedido a chamada sem resposta); saem `restoreCards` e a adoção da U14 | `conversation-update.test.ts` |
 | 48 | M2 | O fim é o do Mastra: `onBeforeAgentEnd` chama `runs.finish` pela conversa uma vez por execução, também na recusada, e solta só a trava da sua conversa; saem o turno como estado nosso e o prazo de uma hora | `conversation-run-ends.test.ts` |
@@ -312,8 +323,8 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 ┌ Tarefas · 2 de 5 ───────────────────┐         ┌ Tarefas · 2 de 5 ─┐
 │ ✓ Tabela  ▸ Tela de encomendas  ○ … │         │ ▸ Tela de encom… │
 └─────────────────────────────────────┘         └──────────────────┘
-[mensagem…]                                      [mensagem…]
-◔ 14,9/30k ◔ 2,1/40k 🧠 Guardando a memória…    ◔ 14,9/30k ◔ 2,1/40k
+[mensagem…]                                      [mensagem…]  ◔ ◔   Modelo ↑
+◔ 14,9/30k ◔ 2,1/40k 🧠 Guardando a memória…    (os números dos anéis: no nome e no quadro)
 Código: árvore | arquivo                         Código: arquivo; [Arquivos] abre o Sheet
 ```
 
@@ -324,7 +335,7 @@ Com o Builder trabalhando, a caixa fica aberta (Factory `Composer.tsx:154-165,22
                          Só eu cadastro. ┐       Só eu cadastro. ┐
               Vai ao Builder no próximo passo     Vai ao Builder no…
 [Escreva para orientar o Builder]  ■ ↑           [Escreva para orientar…] ■ ↑
-Enter orienta o Builder · Esc para               Enter orienta o Builder · Esc para
+Enter orienta o Builder · Esc para               (sem dica: no toque, Return quebra a linha)
 ```
 
 ## A tabela de falhas

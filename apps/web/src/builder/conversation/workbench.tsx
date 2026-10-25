@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 import { pageStorage } from '../../platform/storage.ts'
 import { cn } from '../../ui/cn.ts'
+import { PhoneTopContent } from '../../ui/frame.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
 
@@ -18,26 +19,28 @@ const PHONE_REGIONS =
 /**
  * The two regions of a Projeto: the area on the left and the conversation on the right, with a
  * divider the person drags (320 px to 60 %) and the browser remembers. Under the `md` width, "App |
- * Conversa" shows one at a time, both mounted.
+ * Conversa" sits in the top line of the frame and shows one at a time, both mounted.
  */
 export function Workbench(props: { area: ReactNode; panel: ReactNode }) {
   const [view, setView] = useState<'app' | 'chat'>('app')
   const layout = useDefaultLayout({ id: LAYOUT_ID, storage: layoutMemory })
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-line p-sm md:hidden">
-        <ToggleGroup
-          aria-label="Parte do Projeto"
-          value={[view]}
-          onValueChange={(next) => {
-            const [chosen] = next
-            if (chosen === 'app' || chosen === 'chat') setView(chosen)
-          }}
-        >
-          <ToggleGroupItem value="app">App</ToggleGroupItem>
-          <ToggleGroupItem value="chat">Conversa</ToggleGroupItem>
-        </ToggleGroup>
-      </div>
+      <PhoneTopContent>
+        <div className="order-2 shrink-0 md:hidden">
+          <ToggleGroup
+            aria-label="Parte do Projeto"
+            value={[view]}
+            onValueChange={(next) => {
+              const [chosen] = next
+              if (chosen === 'app' || chosen === 'chat') setView(chosen)
+            }}
+          >
+            <ToggleGroupItem value="app">App</ToggleGroupItem>
+            <ToggleGroupItem value="chat">Conversa</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      </PhoneTopContent>
       <ResizablePanelGroup
         id={LAYOUT_ID}
         defaultLayout={layout.defaultLayout}

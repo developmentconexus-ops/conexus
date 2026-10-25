@@ -42,6 +42,8 @@ export function ModelPicker(props: {
   value: ModelId | null
   name: string
   heading?: string
+  /** A line at the foot of the popup, for what the person should know when choosing. */
+  note?: string
   id?: string
   className?: string
   onChange: (model: ModelId) => void
@@ -127,6 +129,9 @@ export function ModelPicker(props: {
           </p>
         )}
         {choice !== null && <EffortLevels levels={choice.levels} effort={choice.effort} />}
+        {props.note !== undefined && (
+          <p className="px-md py-xs text-fact text-text-2">{props.note}</p>
+        )}
       </ComboboxContent>
     </Combobox>
   )

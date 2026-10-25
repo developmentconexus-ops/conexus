@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
 import { Label } from '../../ui/label.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { Markdown } from './markdown.tsx'
-import { CARD_TEXT, useAnswer } from './question-card.tsx'
+import { CARD_TEXT, useAnswer, WaitingCaption } from './question-card.tsx'
 import type { PlanCardItem } from './rows.ts'
 
 type Decision = 'approved' | 'rejected'
@@ -118,6 +118,7 @@ export function PlanCard({ part }: { part: PlanCardItem }) {
       aria-label={title}
       className="flex min-w-0 flex-col gap-md rounded-card border border-line bg-surface p-md"
     >
+      {waiting && <WaitingCaption />}
       <h3 className="font-semibold text-text">{title}</h3>
       <div
         ref={ref}

@@ -15,7 +15,11 @@ function Centred({ children }: { children: ReactNode }) {
     <div className="flex max-w-message flex-col items-center gap-lg text-center">{children}</div>
   )
   if (useInFrame()) return <div className="grid flex-1 place-items-center">{inner}</div>
-  return <main className="grid min-h-dvh place-items-center bg-canvas p-lg">{inner}</main>
+  return (
+    <main className="grid min-h-dvh place-items-center bg-canvas p-lg pt-[max(1rem,env(safe-area-inset-top))]">
+      {inner}
+    </main>
+  )
 }
 
 /**
