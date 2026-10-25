@@ -4,6 +4,7 @@ import { appLogin, ProjectId } from '@conexus/hub-api'
 import pg from 'pg'
 import type { Page } from 'playwright-core'
 import type { DatabaseUrl } from '../../apps/server/src/platform/database.ts'
+import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { visitApp } from './apps-edge.ts'
 import {
   GREEN,
@@ -15,6 +16,17 @@ import {
   scenario,
   sendFolder,
 } from './apps-journey.ts'
+import {
+  ANA,
+  chooseDefaultModel,
+  KEYS,
+  plantJourney,
+  plantTwoCompanies,
+  publicPage,
+} from './conversation-journey.ts'
+import { hubWindow, openConversation } from './hub-window.ts'
+import { createProject, liveHub, PASSWORD, signIn, waitForHome } from './live-hub.ts'
+import { enter, linkKey } from './model-accounts-journey.ts'
 
 // Step 10's journey: in Pedidos's Versões, Ana sends a version that does not start, one that
 // writes in `db.query` and one whose Travar never ends, and the version on the air, its data and the
@@ -100,4 +112,36 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   await putVersionTwoBack(page, settings)
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
   assert.deepEqual(s.problems, [])
+})
+
+test('o roteiro da sessão que termina: a conversa aberta, a volta à aba, um Entrar e a conversa de novo', async (t) => {
+  plantJourney(t, await publicPage(t))
+  const { port, database } = await liveHub(t, 'http://127.0.0.1:9/unused')
+  const ids = await plantTwoCompanies(database)
+  const problems: string[] = []
+  const closers: (() => Promise<void>)[] = []
+  try {
+    const page = await hubWindow(closers, port, '198.51.100.10', problems)
+    await enter(page, ANA.email, `/companies/${ids.companyA}/settings/model-accounts`)
+    await linkKey(page, 'Time 1', KEYS.first)
+    await page.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
+    await chooseDefaultModel(page, ids.companyA)
+    await page.goto(`${TEST_ORIGIN}/companies/${ids.companyA}`)
+    await waitForHome(page)
+    await createProject(page, 'Encomendas')
+    await page.getByRole('heading', { name: 'Encomendas', exact: true }).waitFor()
+    await openConversation(page, () => page.getByRole('button', { name: 'Nova conversa' }).click())
+    const conversation = new URL(page.url())
+    // The session ends on the server; the tab comes back to the front and every open read gets a 401.
+    await database.asOwner('delete from auth.session')
+    await page.evaluate(() =>
+      document.dispatchEvent(new Event('visibilitychange', { bubbles: true })),
+    )
+    await page.getByText('Sua sessão terminou. Entre de novo para continuar.').waitFor()
+    await signIn(page, ANA.email, PASSWORD)
+    await page.waitForURL((url) => url.pathname === conversation.pathname)
+    assert.equal(new URL(page.url()).pathname, conversation.pathname)
+  } finally {
+    for (const close of closers) await close()
+  }
 })

@@ -43,7 +43,7 @@ test('a passagem ao app é uma navegação, não uma operação: o documento nã
   )
   assert.equal(ids.includes('createAppHandoff'), false)
   assert.deepEqual(
-    Object.keys(document.paths).filter((path) => /handoff|\/apps\/open/.test(path)),
+    Object.keys(document.paths).filter((path) => /^\/apps\/open|\/passagem/.test(path)),
     [],
   )
 })

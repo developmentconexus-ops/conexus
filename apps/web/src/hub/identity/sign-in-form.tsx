@@ -28,6 +28,16 @@ export const SameOriginPath = z
       new URL(path, ANY_ORIGIN).origin === ANY_ORIGIN,
   )
 
+/**
+ * Where a signed-in person goes on: the Hub answers the app-open handoff itself and sends the
+ * browser on to the app, so that one is loaded, not routed.
+ */
+export function goBack(back: string) {
+  return new URL(back, ANY_ORIGIN).pathname === APP_OPEN_PATH
+    ? { href: back, reloadDocument: true }
+    : { href: back }
+}
+
 type SignInReason = 'signed-out' | 'session-ended' | 'password-set' | 'password-changed'
 
 const NOTICES: Record<SignInReason, string> = {
@@ -74,16 +84,15 @@ export function SignInForm(props: {
     // The guard reads the session with ensureQueryData, which would return the cached "nobody"
     // (web W28).
     queryClient.removeQueries({ queryKey: sessionQuery.queryKey })
-    const back = props.redirect ?? '/'
-    // The Hub answers the handoff itself and sends the browser on to the app, so it is loaded.
-    if (new URL(back, ANY_ORIGIN).pathname === APP_OPEN_PATH) {
-      await router.navigate({ href: back, reloadDocument: true })
+    const back = goBack(props.redirect ?? '/')
+    if (back.reloadDocument) {
+      await router.navigate(back)
       return
     }
     await router.invalidate()
     const stop = focusTitleWhenRendered(router)
     try {
-      await router.navigate({ href: back })
+      await router.navigate(back)
     } catch (error) {
       stop()
       throw error

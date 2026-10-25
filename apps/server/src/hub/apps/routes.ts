@@ -2,6 +2,7 @@ import {
   APP_OPEN_PATH,
   AppOpenQuery,
   checkAppCall,
+  createAppFrameHandoff,
   createAppSession,
   createAppVersion,
   FAILURES,
@@ -56,6 +57,13 @@ export function registerHandoffRoute(app: FastifyInstance, door: AppDoor): void 
       request.log.info({ companyId, projectId }, 'APP_HANDOFF_CREATED')
       return reply.redirect(made.location, 303)
     },
+  })
+  // The same pass for the Prévia, whose frame cannot reach `/apps/open` with the Hub's cookie: the
+  // Hub's own page asks, by its session and the binding hash the frame's entry page sent it.
+  serve(app, createAppFrameHandoff, async ({ person, sessionToken, body, log }) => {
+    const made = await door.createHandoff({ person, sessionToken, ...body })
+    log.info({ companyId: made.companyId, projectId: made.projectId }, 'APP_HANDOFF_CREATED')
+    return answer({ location: made.location })
   })
 }
 

@@ -61,3 +61,40 @@ test('401: uma leitura que acha a sessão terminada leva a /login com "Sua sess�
     server.close()
   }
 })
+
+test('401: duas leituras que acham a sessão terminada em momentos diferentes levam a um só /login, com a página de origem', async () => {
+  const { ANA } = await import('./fixtures.ts')
+  const { refusal } = await import('./test-hub.tsx')
+  const here = `/companies/${'a'.repeat(32)}/projects`
+  const server = setupServer(
+    http.get('*/api/sessions/current', () =>
+      HttpResponse.json({ state: 'SIGNED_IN', person: ANA }),
+    ),
+    http.get('*/api/companies', () =>
+      HttpResponse.json({ companies: [], mayOperate: false, next: { kind: 'END' } }),
+    ),
+    http.get('*/api/companies/:companyId', () => refusal('SESSION_REQUIRED')),
+  )
+  server.listen({ onUnhandledFrame: 'error' })
+  try {
+    const { Conexus, createConexus } = await import('../main.tsx')
+    const conexus = createConexus(createMemoryHistory({ initialEntries: [here] }))
+    const page = within(render(<Conexus conexus={conexus} />).container)
+    expect(await page.findByText('Sua sessão terminou. Entre de novo para continuar.')).toBeTruthy()
+    const { CompanyId, getCompany } = await import('@conexus/hub-api')
+    const { hubQuery } = await import('./hub.ts')
+    // Another read, already in flight when the first 401 landed, answers later: on /login now.
+    await conexus.queryClient
+      .fetchQuery(hubQuery(getCompany, { params: { companyId: CompanyId.parse('a'.repeat(32)) } }))
+      .catch(() => undefined)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(conexus.router.state.location.pathname).toBe('/login')
+    expect(conexus.router.state.location.search).toEqual({
+      reason: 'session-ended',
+      redirect: here,
+    })
+    expect(conexus.router.history.length).toBe(2)
+  } finally {
+    server.close()
+  }
+})

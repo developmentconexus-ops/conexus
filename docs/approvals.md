@@ -158,3 +158,11 @@ Em 2026-10-25, sobre o **Abrir app** da Prévia, que abre o app numa aba nova e 
 Cartão da etapa 14.1 aprovado em 2026-10-25 (commit 692b6ecab87730ba73ede1ff5458c716a8422d59): "Aprovo"
 
 Em 2026-10-25, sobre o tempo do fim do turno a "Prévia pronta" medido na U1 (12,5, 16,3 e 20,5 s em três turnos reais; o envio à Cloudflare de ~1 MB leva ~10 s, dos quais ~0,3 s são os bytes e ~9,7 s o processamento da Cloudflare em cinco chamadas; piso de 5,1 s numa versão mínima), acima dos ~13 s do cartão; aceitar o tempo como está, o critério 13 mantido: "A"
+
+## Etapa 14.3
+
+Em 2026-10-25, sobre o estudo de arquivos e voz no compositor do Builder: "A1 sim B1 okay, e so uma duvida e o whispr da openai que e rapido e free C sim", e depois: "B1 por agora". Arquivos (PDF, `.md`, `.txt`, imagens) entram no lançamento só na conversa com o Builder, como a etapa 14.3 depois da 14.1; voz fica no ditado do navegador por ora; uma linha sobre o ditado do Chrome passar pelo Google vai ao aviso da etapa 23.
+
+## Etapa 13.1
+
+Em 2026-10-25, olhando o Início de hoje: "Eu não sei em que etapa que a gente tem que vai mudar a página inicial, é depois da prévia? Porque essa não é a página inicial que a gente realmente quer ter ... E também, como você pode ver, ela tá até com o subliado lá em cima. Então, não que eu quero mudar isso agora, mas mudar quando a gente for mudar a página inicial, para deixar ela conforme a gente já vem planejando há um tempo. Mas acredito que a gente precisa esperar a prévia primeiro." À ordem proposta (14.1, depois arquivos e voz, depois a 13.1, com o compositor do Início sendo o mesmo com **+** e microfone e o contorno do título consertado na 13.1): "Concordo documente tudo isso para ser registrado"
