@@ -19,7 +19,9 @@ Every roadmap step passes through these stages. Load the skill before any work.
 | Review the whole step | [`conexus-review`](.agents/skills/conexus-review/SKILL.md) |
 | Explain a design to the founder, read only | [`conexus-explain`](.agents/skills/conexus-explain/SKILL.md) |
 
-The founder closes each step by using it; that stage has no skill.
+One artifact crosses the stages: the reference table ([code C75](docs/guides/code.md)). The study
+writes it, the card carries it, the build follows its rows and the review walks them. The founder
+closes each step by using it; that stage has no skill.
 
 ## Commands
 
@@ -29,8 +31,8 @@ The root `package.json` lists every command. Run the tests a change touches befo
 
 - Read only what your skill and your card name. A guide owns its subject; cite its rules by
   identifier and never restate them.
-- How to use a library is its maintainers' skill, checked against the installed version. The
-  guides decide only what those skills leave open.
+- How to use a library is its maintainers' skill at the installed version; the guides decide only
+  what it leaves open, and native before custom is code C75.
 - Only the step in [docs/steps/](docs/steps/) is in construction. Work outside it needs a card.
 - A missing decision stops the work: report it with evidence. Never invent a product rule, a
   boundary or a value to make a test pass.

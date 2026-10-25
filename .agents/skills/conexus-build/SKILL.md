@@ -1,6 +1,6 @@
 ---
 name: conexus-build
-description: "Builds one unit of an approved Conexus step card on the step's branch: deletes before adding, brings old code only as the card's table of parts says, tests through the server's public door, runs the result and reports what ran and what was not proved. Also fixes a defect. Use when instructions name a step card and a unit, or a defect to fix."
+description: "Builds one unit of an approved Conexus step card on the step's branch: deletes before adding, brings old code only as the card's transplant measure says, builds each reference table row as its verdict says, tests through the server's public door, runs the result and reports what ran and what was not proved. Also fixes a defect. Use when instructions name a step card and a unit, or a defect to fix."
 ---
 
 # Build
@@ -22,15 +22,16 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
 
 ## Steps
 
-1. Read the unit's criteria, its parts and its section.
+1. Read the unit's criteria, its reference table rows and its section.
 2. Every type, contract and value the unit needs exists on the step branch or comes from this
    unit; if not, stop.
-2a. Before writing a mechanism, look for it in the installed library (maintainers' skill,
-   Context7, `node_modules`); if the native one serves where the card says "nosso", the card goes
-   back. Fix a defect at its root cause: name the first wrong state, fix there, sweep its class.
+2a. Build each of the unit's reference table rows as its verdict says
+   ([code C75](../../../docs/guides/code.md)): a nativo row uses the named API, an embrulhado row
+   adds only its line. Fix a defect at its root cause: name the first wrong state, fix there,
+   sweep its class.
 3. Delete before adding: remove what the card removes and move every caller. No shim, no parallel
    old path, no temporary shape.
-4. Bring old code only as the card's table says: into the named file, refactored as listed,
+4. Bring old code only as the card's transplant measure says: into the named file, refactored as listed,
    carrying only the old decisions listed. Past the study rule's measure
    ([`conexus-study`](../conexus-study/SKILL.md)), stop.
 5. Test through the server's public door, negative cases included, with provider doubles per
@@ -39,20 +40,18 @@ unit's one named guide, and loads the card's maintainers' skills, pstack `poteto
    changed screen looked at per [testing T23](../../../docs/guides/testing.md), through a
    verification skill when one exists ([screen](references/screen.md)). A fix
    that touches state reruns the A→B→A case, a fix that moves a layout reruns the card's failure
-   states, and a new guard gets its removal row (T12). Answer [the
-   checklist](../../../docs/reference/checklist.md) and fill its sweep table; a "nosso"
-   mechanism keeps the card's proof beside its [boundaries](../../../docs/reference/boundaries.md)
-   entry. Run pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves.
+   states, and a new security guard gets its removal row (T12). A remendo row keeps the card's
+   proof beside its [boundaries](../../../docs/reference/boundaries.md) entry. Run pstack `deslop` and `no-comments`; code C70 and C73 decide what leaves.
 7. One commit for the unit on the step branch; the tests and proofs its section names are green
    locally ([delivery L9](../../../docs/guides/delivery.md)).
 
 ## What it produces
 
-The commit and a report: what I ran, saw and did not prove; the line counts of each brought part;
-every criterion with its test, none red; each declared file outside the card's folders ([delivery
-L7](../../../docs/guides/delivery.md)); the screenshots looked at, by state, width and theme, or "no
-screen touched". A criterion known to fail is never handed to the review: fix it, or
-stop.
+The commit and a report: what I ran, saw and did not prove; each table row with the file that
+builds it; the line counts of each brought part; every criterion with its test, none red; each
+declared file outside the card's folders ([delivery L7](../../../docs/guides/delivery.md)); the
+screenshots looked at, by state, width and theme, or "no screen touched". A criterion known to fail
+is never handed to the review: fix it, or stop.
 
 ## Stop and ask
 
@@ -61,8 +60,8 @@ stop.
 - The unit changes what a person sees, or the scope, beyond the card ([delivery
   L7](../../../docs/guides/delivery.md)).
 - The unit outgrows the card's estimate.
-- The code needs a file, shape or behaviour the unit's section does not name, or a ruling arrives
-  that the card does not carry: stop; the card takes it as a delta first.
+- The code needs a file, shape, behaviour or table row the unit's section does not name, or a
+  ruling arrives that the card does not carry: stop; the card takes it as a delta first.
 - A test needs a library shape no recording holds: stop; record it with `npm run record`, load it with
   `nativeRecording` (T26), never type it.
 
@@ -70,6 +69,5 @@ Stop means no more code: report evidence and question.
 
 ## When it closes
 
-Step 7 holds and the report says what ran. In
-the fix round you build one front ([delivery L9](../../../docs/guides/delivery.md)): each finding's
-cause and its class (L11), one commit to the same branch.
+Step 7 holds. In the fix round you build one front ([delivery L9](../../../docs/guides/delivery.md)):
+each finding's cause and its class (L11), one commit to the same branch.

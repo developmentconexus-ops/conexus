@@ -1,6 +1,6 @@
 ---
 name: conexus-qa
-description: "Tests a Conexus step's screens as a person would, at the candidate commit, as an agent that built none of it: runs the local Hub with provider doubles, walks the card's use script and state matrix in a real browser at three widths and both themes, opens every capture beside its named design, explores off the script as a first-time user, and posts one report of what it saw, read and did not prove. Reports, never fixes. Use when instructions name a step with a screen to test."
+description: "Tests a Conexus step's screens as a person would, at the candidate commit, as an agent that built none of it: runs the local Hub with provider doubles, walks the card's use script and state matrix in a real browser at 1366 and 390 px and both themes, opens every capture beside its named design, explores off the script as a first-time user, and posts one report of what it saw, read and did not prove. Reports, never fixes. Use when instructions name a step with a screen to test."
 ---
 
 # QA
@@ -34,10 +34,11 @@ and [testing](../../../docs/guides/testing.md).
 4. Walk every action of the card's use script. Then every row of its state matrix, including
    loading, server error, not found and expired, forcing each state through the doubles or the
    database, and a turn that calls every tool the model is offered ([testing T24](../../../docs/guides/testing.md)).
-5. Capture each state at 1366, 390 and 320 px, light and dark. Make a keyboard pass through the
-   focus stops and a 200% zoom check. At a phone width, read the computed `font-size` of every
-   focusable field: below 16px is a finding ([design V18](../../../docs/guides/design.md)). Record
-   console errors and CSP reports (T23).
+5. Capture each criterion's states at 1366 and 390 px, light and dark, and open every capture you
+   make. Make a keyboard pass through the focus stops and a 200% zoom check. Horizontal overflow and
+   a phone field under 16px ([design V18](../../../docs/guides/design.md)) are the journeys'
+   assertions (T25); measure them by hand only while a journey lacks them. Record console errors and
+   CSP reports (T23).
 6. Open every capture beside its named design or wireframe in the card. Write one entry per
    defect: screen, state, width, theme, what is wrong, the design line or criterion it breaks, and
    the capture's file. Label it as [delivery L12](../../../docs/guides/delivery.md) says.

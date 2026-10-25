@@ -38,6 +38,7 @@ choice of test tools.
   protection or equivalent proof. Failure: a return-address guard has no case attempting a foreign
   origin, so its removal goes unnoticed. [review]
 - **T12.** Registered mandatory protections **must** be proved by removal with `npm run removals`.
+  The registry keeps only security protections. Founder, 2026-10-24 (`1a98660`).
   [`scripts/removals.ts`]
 - **T13.** Isolation boundaries **should** be proved by a direct attack on the real Worker, build
   machine or data path with other layers disabled, when authorized. Failure: an outer layer
@@ -97,7 +98,9 @@ choice of test tools.
   the screen is not an uncaught error. [review]
 - **T25.** A step that changes a screen **must** have a QA report at its candidate commit by an
   agent that did not build the step, following
-  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). [review]
+  [`conexus-qa`](../../.agents/skills/conexus-qa/SKILL.md). Horizontal overflow and a phone field
+  under 16px are assertions of the end-to-end journeys, not captures to read. [review, rule to
+  write in the journeys]
 
 ## 6. From change to proof
 

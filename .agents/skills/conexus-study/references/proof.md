@@ -7,7 +7,9 @@ third-party code.
 ## The four steps
 
 1. Write a decision record in `docs/decisions/` with state "proposed" and a **Criterion** section:
-   the question, the pass rule of each check, and what is held fixed. It enters `main` before any
+   the question, the pass rule of each check, and what is held fixed. Check 1 is always the native
+   candidate: the reference table's row for the piece, run at the installed version against the
+   same pass rule; our own mechanism is a check only after it. It enters `main` before any
    proof code runs. The record, Result included, stays within its ceiling ([delivery
    L24](../../../../docs/guides/delivery.md)); the set-up detail stays with the proof's code.
 2. Run the proof on the real service, outside this repository.
@@ -26,7 +28,8 @@ third-party code.
 
 | # | Check | Passes when |
 | --- | --- | --- |
-| 1 | <what is run> | <observable result> |
+| 1 | <the native candidate, `package@version`: API> | <observable result> |
+| 2 | <what else is run> | <observable result> |
 
 **Not covered.** <what a pass would not show>
 ```
