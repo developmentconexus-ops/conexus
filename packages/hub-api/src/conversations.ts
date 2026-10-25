@@ -3,7 +3,6 @@ import { CompanyId, Next, Page } from './companies.ts'
 import type { FailureCode } from './failures.ts'
 import { ATTEMPT_KEY_HEADER, defineOperation } from './operation.ts'
 import { ProjectId } from './projects.ts'
-import { Task } from './questions.ts'
 
 /**
  * Where the Hub serves Mastra's own session routes of the Builder, behind its guard (decision
@@ -66,17 +65,6 @@ export const ConversationSummary = z.object({
 })
 export type ConversationSummary = z.infer<typeof ConversationSummary>
 
-/**
- * A conversation beside its transcript, which is Mastra's own route (`threads/:threadId/messages`):
- * its model, its effort and the Builder's task list, as Mastra's storage holds it.
- */
-export const Conversation = ConversationSummary.extend({
-  model: ModelId,
-  effort: Effort,
-  tasks: z.array(Task),
-})
-export type Conversation = z.infer<typeof Conversation>
-
 const InProject = z.object({ companyId: CompanyId, projectId: ProjectId })
 const OfConversation = InProject.extend({ conversationId: ConversationId })
 const BASE = '/api/companies/{companyId}/projects/{projectId}/conversations'
@@ -120,13 +108,14 @@ export const createConversation = defineOperation({
 
 export const readConversation = defineOperation({
   id: 'readConversation',
-  summary: 'Reads one of the person’s conversations: its title, its model and its task list.',
+  summary:
+    'Reads one of the person’s conversations: its title. Its model, effort and tasks are Mastra’s session-state route.',
   access: 'session',
   method: 'GET',
   path: `${BASE}/{conversationId}`,
   bodyLimit: 1024,
   input: { params: OfConversation },
-  success: { status: 200, body: z.object({ conversation: Conversation }) },
+  success: { status: 200, body: z.object({ conversation: ConversationSummary }) },
   failures: READ_FAILURES,
 })
 

@@ -1,4 +1,4 @@
-import type { CompanyId, Conversation, ConversationId, ProjectId, Provider } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, ProjectId, Provider } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ReactNode, RefObject } from 'react'
@@ -12,7 +12,8 @@ import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
 import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
-import { allConversationsQueryKey, conversationQuery } from './queries.ts'
+import type { SessionRead } from './queries.ts'
+import { allConversationsQueryKey, conversationQuery, sessionReadQuery } from './queries.ts'
 import type { BuilderSession } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
@@ -98,6 +99,9 @@ function useSending(
       queryKey: conversationQuery(params.companyId, params.projectId, params.conversationId)
         .queryKey,
     })
+    void queryClient.invalidateQueries({
+      queryKey: sessionReadQuery(params.conversationId).queryKey,
+    })
     field.current?.focus()
     return true
   }
@@ -114,7 +118,7 @@ function useSending(
 
 function PanelComposer(props: {
   params: Params
-  conversation: Conversation
+  session: SessionRead
   accounts: { choices: { mine: readonly Provider[] } }
   state: SessionState
   draft: ReturnType<typeof useDraft>
@@ -127,7 +131,7 @@ function PanelComposer(props: {
 }) {
   const {
     params,
-    conversation,
+    session,
     accounts,
     state,
     draft,
@@ -147,9 +151,7 @@ function PanelComposer(props: {
         field={field}
         onSend={onSend}
         onStop={onStop}
-        taskPanel={
-          <TaskPanel tasks={state.tasks ?? conversation.tasks} streaming={state.running} />
-        }
+        taskPanel={<TaskPanel tasks={state.tasks ?? session.tasks} streaming={state.running} />}
         memory={
           <MemoryStatus memory={state.memory} omPhase={state.omPhase} failed={state.memoryFailed} />
         }
@@ -157,7 +159,8 @@ function PanelComposer(props: {
           canAnswer && (
             <ModelChoice
               ids={params}
-              conversation={conversation}
+              conversationId={params.conversationId}
+              session={session}
               providers={accounts.choices.mine}
               onError={onError}
             />
@@ -181,9 +184,7 @@ function Notices(props: { companyId: CompanyId; canAnswer: boolean; empty: boole
 function Screen(params: Params) {
   const { companyId, projectId, conversationId } = params
   const queryClient = useQueryClient()
-  const { conversation } = useSuspenseQuery(
-    conversationQuery(companyId, projectId, conversationId),
-  ).data
+  const session = useSuspenseQuery(sessionReadQuery(conversationId)).data
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
   const usable = useMemo(() => new Set(accounts.usableProviders), [accounts.usableProviders])
   const canAnswer = usable.size > 0
@@ -210,7 +211,7 @@ function Screen(params: Params) {
     <>
       <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
       <div className="min-h-40 flex-1">
-        <Transcript turns={turns} steers={state.steers} model={conversation.model} />
+        <Transcript turns={turns} steers={state.steers} model={session.model} />
       </div>
       {error !== undefined && (
         <p role="alert" className="px-md">
@@ -222,7 +223,7 @@ function Screen(params: Params) {
       )}
       <PanelComposer
         params={params}
-        conversation={conversation}
+        session={session}
         accounts={accounts}
         state={state}
         draft={draft}

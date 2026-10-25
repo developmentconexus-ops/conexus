@@ -79,7 +79,6 @@ export {
 export {
   BUILDER_CONTROLLER,
   BUILDER_ROUTES,
-  Conversation,
   ConversationId,
   ConversationSummary,
   createConversation,

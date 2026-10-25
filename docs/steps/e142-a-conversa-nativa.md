@@ -103,6 +103,14 @@ que a M5 entra em produção; a migração que apaga `builder.machine` e a sua p
 próprio (54). Fica uma nota, não uma pergunta: o limite de máquinas pausadas do plano do E2B não foi lido, e
 sem varredura elas crescem, uma por conversa usada, até a conversa sair.
 
+**A sexta emenda de 2026-10-25.** Sai o que era lógica nossa ao lado do Mastra nativo, depois da auditoria
+final. As suas palavras: "Bom, vamos tirar tudo então que é lógica paralela, e esse 4 vamos também tirar e
+fazer do jeito correto, que aí a gente finaliza tudo e deixa do jeito nativo." Quer dizer: as rotas `steer` e
+`follow-up` saem da lista da guarda; a trilha de erro passa as opções de `createCodingAgent` (repete o 400 uma vez
+e o erro desconhecido até duas vezes, como o Mastra 1.79, e o 401, 403, 429, 402 e 404 seguem para a fila de contas); e a tela lê modelo,
+raciocínio e tarefas da rota de estado da sessão do Mastra, como a Factory UI (critério 6), em vez de
+`history.ts` ler os metadados da thread à mão.
+
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
 ficam como proposta.
 
@@ -212,11 +220,11 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 3 | M2 | O stream é a rota do Mastra como ele manda (fundador: "3. Aceito"): os eventos do `AgentController`, `display_state_changed` com o `omProgress`, e as partes `data-conexus-*` gravadas; sem lista nossa nem `turn` | `conversation-stream.test.ts` |
 | 4 | M2 | Ao vivo e relido (`threads/:threadId/messages`), a mesma parte, para cada ferramenta do conjunto fechado e uma desconhecida; um turno que define tarefas e depois usa uma ferramenta do espaço de trabalho não perde ao recarregar o raciocínio, o primeiro `task_write` nem o texto do começo (as partes por id de mensagem ao vivo são iguais depois do `turnEnd`) | idem, `conversation-tasks.test.ts`, `tests/e2e/builder-native.test.ts` |
 | 5 | M2 | Nenhum corte no servidor: o texto vai como o Mastra manda e a tela corta em 800 (8); saem `wire.ts`, `wire.check.ts` e `WIRE_LIMITS` | remoção (CI) |
-| 6 | U2 | `Conversation.tasks` é a lista do armazenamento do Mastra; `Conversation.memory`, o `omProgress` da sessão ou `null` | idem |
+| 6 | U2 | A leitura de modelo, raciocínio e tarefas é a rota de estado da sessão do Mastra (`GET …/sessions/:sessionId`, como a Factory UI em `useAgentControllerSessionSync.ts:62`), atrás da mesma guarda; `readConversation` devolve só `id`, `title` e `createdAt`; as tarefas são a lista do armazenamento do Mastra; o `omProgress` vem do stream | `conversations.test.ts`, `conversation-tasks.test.ts` |
 | 7 | U2 | Saem `ToolDetail`, `KINDS`, `subjectOf`, `detailOf`, `toolOf`, `cardOf`, `fileOf`, `partOf`, `eventOf`, `withHeard`, `exitHeard`, `toldTool` e os testes que os afirmam | remoção (CI) |
 | 8 | U3 | Toda linha com argumentos ou resultado abre, pelo corpo da tabela de ferramentas: leitura no começo, `list_files` e `grep` no resultado, `skill` no nome e nas instruções, a edição (`edit_file`) na mudança, o que saiu e o que entrou, e a escrita (`write_file`) no arquivo escrito, no antes e depois como a Factory, cada texto cortado em 800 (fundador, 2026-10-24: "2. A"), desconhecida no nome legível, argumentos e resultado; falha, vermelha, no motivo, ao vivo e relida (a edição e a escrita que falham mostram também a mudança) | `tool-row.test.tsx` |
 | 9 | U3 | Raciocínio: "Pensando…", depois "Pensou por N s", fechado, abre no texto; grupo de 3 ou mais, sem `skill`, `ask_user`, `submit_plan`; `task_*` sem linha | `transcript.test.tsx` |
-| 10 | U3 | Painel "Tarefas · N de M" acima da caixa enquanto o turno roda; some com tudo feito ou com o turno no fim; nenhum "em andamento" girando depois (#271); relido, do `Conversation.tasks`; a 390 px uma linha, a tarefa em andamento, cortada; tocar ou clicar no painel abre a lista inteira, cada tarefa com a marca de feita, em andamento ou pendente, e outro toque a dobra, em qualquer largura (fundador, 2026-10-25) | `task-panel.test.tsx` |
+| 10 | U3 | Painel "Tarefas · N de M" acima da caixa enquanto o turno roda; some com tudo feito ou com o turno no fim; nenhum "em andamento" girando depois (#271); relido, do `tasks` da rota de estado da sessão; a 390 px uma linha, a tarefa em andamento, cortada; tocar ou clicar no painel abre a lista inteira, cada tarefa com a marca de feita, em andamento ou pendente, e outro toque a dobra, em qualquer largura (fundador, 2026-10-25) | `task-panel.test.tsx` |
 | 11 | U3 | Anéis da memória do `om_progress` (fundador, 2026-10-23: "A"), o quadro ao abrir, "Guardando a memória…" ou "Reorganizando a memória…" enquanto segura o turno, a marca de falha sem o texto do fornecedor (C48, C51) | `memory-status.test.tsx` |
 | 12 | U3 | Cartões de pergunta (de 1 a 4 perguntas, ferramenta nossa), plano e tarefas lidos da `tool-invocation` pelo nome, num decodificador por ferramenta; aberto é estar em `suspended` (as suspensões do Mastra), não um palpite pelo estado; o plano recusado lê "recusado" e o pedido; resposta livre em várias linhas (#272); o cartão da versão: montou, não montou, pela metade; aberto só enquanto a chamada espera a pessoa; parado ou expirado: fechado, e a expiração na linha de falha; o cartão fechado porque a pessoa parou o Builder (Parar ou Esc: a volta termina `aborted`) lê "Você parou o Builder." e nada mais, o respondido ou expirado mantém a frase de `QUESTION_CLOSED` (fundador, 2026-10-25: "5.A"); a chamada sem resultado depois de um reinício, pergunta que ficou sem resposta | `cards.test.tsx` |
 | 13 | U3, U9 | 1280 e 390 px, 200 %, dois temas, teclado (V30, V31), CSP limpo; a árvore com papéis ARIA, o `Sheet` a 390 px, o vazio | T23, `source.test.tsx` |
@@ -241,7 +249,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | 38 | U11 | As permissões `SELECT, INSERT, UPDATE (observer, reflector)` vão numa migração só delas, em pull request próprio para a branch da etapa, com a palavra do fundador (D11) | `catalog.test.ts` |
 | 39 | U4 | Cada passo do turno no Claude manda `cache_control` 1 h no último sistema e na última mensagem; título e Observador, só no sistema, 5 min; pela chave e pela assinatura; outro provedor, nada | `conversation.test.ts`, `claude-refresh.test.ts`, `prompt-cache.test.ts` |
 | 40 | U2 | Recusa do modelo: "O modelo recusou este pedido. Reescreva a mensagem de outro jeito ou peça outra coisa ao Builder."; resposta cortada: "A resposta do modelo ficou grande demais e foi cortada. Peça ao Builder uma parte de cada vez."; falha de chamada segue `MODEL_CALL_FAILED`; nenhum texto do fornecedor | `turn-line.test.ts`, `stream.test.tsx` |
-| 41 | M1, M2 | Mensagem durante a resposta: `{ok: true}` da rota do Mastra; entra no próximo passo da mesma execução, sem parar a ferramenta em curso; a conta e a máquina vêm da conversa em toda execução (mensagem, orientar, fila). A trava (fundador: "1. C sendo o mais simples possivel"): outra conversa do mesmo Projeto é recusada no começo da execução com `RUN_BUSY` e o nome de quem trabalha, que chega como `error` no stream e `agent_end`, sem chamada ao modelo e sem guardar a mensagem; a mesma conversa não é recusada | `conversation-steer.test.ts`, `conversation-turns.test.ts` |
+| 41 | M1, M2 | Mensagem durante a resposta: `{ok: true}` da rota do Mastra; entra no próximo passo da mesma execução, sem parar a ferramenta em curso (as rotas `steer` e `follow-up` do Mastra não estão na lista da guarda: 404, porque o `steer` aborta a ferramenta); a conta e a máquina vêm da conversa em toda execução (mensagem, orientar, fila). A trava (fundador: "1. C sendo o mais simples possivel"): outra conversa do mesmo Projeto é recusada no começo da execução com `RUN_BUSY` e o nome de quem trabalha, que chega como `error` no stream e `agent_end`, sem chamada ao modelo e sem guardar a mensagem; a mesma conversa não é recusada | `conversation-steer.test.ts`, `conversation-turns.test.ts` |
 | 42 | M2 | A mensagem sai no stream como a da pessoa onde o Mastra a pôs (`message_start`, `role: 'user'`), e a releitura a mostra uma vez depois do fim | `conversation-steer.test.ts` |
 | 43 | U12 | **Parar** com uma mensagem que o Builder não leu: o Mastra a leva, uma vez, à volta que abre logo depois; nada nosso sobre a fila dele (regra do fundador, 2026-10-25: "se não tem no Mastra, não tem na Factory, a gente não vai ter. Não agora") | `conversation-steer.test.ts` |
 | 44 | M2 | Mensagem com pergunta ou plano aberto (fundador: "5. Aprovado"): a rota responde `{ok: true}` e o Mastra a segura até a resposta ou o **Parar**; no **Parar**, o cartão é cancelado e a mensagem roda logo depois; a tela a mostra como na fila | `conversation-steer.test.ts`, `conversation-waiting.test.ts` |
@@ -277,7 +285,7 @@ Pelas rotas e a tela; `Machines` dublê, modelo gravado (T24). Todos must.
 | `Message.parts: MastraPart[]`, `cuts` | U2 | U3 |
 | `Message.suspended` (o plano aberto) | U2 | U3 (cartão do plano) |
 | `ConversationEvent` (a lista do 3) | U2 | U3 |
-| `Conversation.tasks`, `Conversation.memory` | U2 | U3 |
+| `tasks`, `modelId` e `settings.thinkingLevel` da rota de estado da sessão do Mastra | U2 | U3 |
 | `VersionCheck` ganha `{state: 'unfinished', open}` | U4 | U3, 14.1 |
 | `WIRE_LIMITS` (`hub-api/src/wire-limits.ts`) | U2 | `wire.ts` |
 | campos da linha de fim de turno | U4 | quem lê o registro |
@@ -461,7 +469,7 @@ muda; `tool-text.ts`, `task-list.tsx`: apaga. Chama: `panel.tsx`, `workbench.tsx
 **Contratos.** `reduce(transcript, event)` e `fromMessages(messages)`, um redutor, como a Factory;
 item por `kind` (C21): `text`, `reasoning`, `tool`, `card`, `conexus`. `presentTool(toolName)`: dono
 das frases (C26), uma por ferramenta do conjunto fechado e a volta (nome legível, argumentos,
-resultado). `TaskPanel` lê `task_updated` e `Conversation.tasks`. `MemoryStatus`: fase `idle |
+resultado). `TaskPanel` lê `task_updated` e `tasks` da rota de estado da sessão. `MemoryStatus`: fase `idle |
 buffering | observing | reflecting` pela regra da Factory (`runtime.ts:194-207`), anéis de `om_status`,
 marca de falha do OS. Frases em português (L23). **Forma do zero** (fundador, 2026-10-24: "3. A"): um
 estado `{messages por id, tools, prompts, tasks, memory}`, como o `TranscriptState` da Factory

@@ -1,4 +1,4 @@
-import type { Conversation } from '@conexus/hub-api'
+import type { ConversationSummary, Effort, Task } from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   BUILDER_CONTROLLER,
@@ -48,24 +48,20 @@ const PROVIDERS = [
   models: p.models.map((name) => ({ id: `${p.id}/${name}`, efforts: EFFORTS[name] ?? ['off'] })),
 }))
 
-/** A conversation as the fake Hub keeps it: the Hub's read, and the transcript Mastra's route serves. */
-export type Opened = Conversation & { messages: Stored[] }
+/** A conversation as the fake Hub keeps it: the Hub's read, Mastra's session state and its transcript. */
+export type Opened = ConversationSummary & {
+  model: ModelId
+  effort: Effort
+  tasks: Task[]
+  messages: Stored[]
+}
 
-export function conversationOf(
-  fields: Partial<Conversation> & { id: ConversationId; messages?: Stored[] },
-): Opened {
-  const { messages = [], ...read } = fields
+export function conversationOf(fields: Partial<Opened> & { id: ConversationId }): Opened {
+  const { messages = [], model = MODEL, effort = 'off', tasks = [], ...read } = fields
   const { conversation } = readConversation.success.body.parse({
-    conversation: {
-      title: null,
-      createdAt: '2026-10-19T12:00:00.000Z',
-      model: MODEL,
-      effort: 'off',
-      tasks: [],
-      ...read,
-    },
+    conversation: { title: null, createdAt: '2026-10-19T12:00:00.000Z', ...read },
   })
-  return { ...conversation, messages }
+  return { ...conversation, model, effort, tasks, messages }
 }
 
 export type View = {
@@ -222,6 +218,21 @@ function conversationHub(view: View, answers: Answers = {}) {
         lines.push(line)
         return response
       }),
+      http.get(SESSION, ({ params }) => {
+        const conversation = view.conversations.find((one) => one.id === params.id)
+        if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
+        return HttpResponse.json({
+          controllerId: BUILDER_CONTROLLER,
+          sessionId: conversation.id,
+          resourceId: 'company:c1:person:p1',
+          threadId: conversation.id,
+          modeId: 'build',
+          modelId: conversation.model,
+          running: false,
+          tasks: conversation.tasks,
+          settings: { thinkingLevel: conversation.effort },
+        })
+      }),
       http.get(`${SESSION}/threads/:threadId/messages`, ({ params }) => {
         const conversation = view.conversations.find((one) => one.id === params.threadId)
         if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
@@ -232,7 +243,10 @@ function conversationHub(view: View, answers: Answers = {}) {
         const conversation = view.conversations.find((one) => one.id === params.id)
         if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
         conversationReads.push(Date.now())
-        return HttpResponse.json(readConversation.success.body.parse({ conversation }))
+        const { id, title, createdAt } = conversation
+        return HttpResponse.json(
+          readConversation.success.body.parse({ conversation: { id, title, createdAt } }),
+        )
       }),
       ...writesOf(view, sent, answers),
     ],

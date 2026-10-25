@@ -125,18 +125,16 @@ const PARKED = parkedOf(
   { toolCallId: 'q1', toolName: 'ask_user', args: QUESTIONS },
   { toolCallId: 'p1', toolName: 'submit_plan', args: PLAN_ARGS },
 )
+const CARD_TASKS = [
+  { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
+  { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'in_progress' },
+  { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
+]
 const CARDS = readConversation.success.body.parse({
   conversation: {
     id: ID,
     title: 'Encomendas',
     createdAt: '2026-10-22T12:00:00.000Z',
-    model: 'anthropic/claude-sonnet-4',
-    effort: 'off',
-    tasks: [
-      { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
-      { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'in_progress' },
-      { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
-    ],
   },
 })
 
@@ -144,7 +142,11 @@ const REPLIES = {
   ...WITH_CONVERSATIONS,
   [`GET ${API}`]: ok(readConversation, CARDS),
   // The cards wait on the person: Mastra's display state holds their calls.
-  ...sessionReplies(ID, { messages: MESSAGES, display: { pendingSuspensions: PARKED } }),
+  ...sessionReplies(ID, {
+    messages: MESSAGES,
+    display: { pendingSuspensions: PARKED },
+    tasks: CARD_TASKS,
+  }),
 }
 
 /** On a phone the conversation is the other region of "App | Conversa". */

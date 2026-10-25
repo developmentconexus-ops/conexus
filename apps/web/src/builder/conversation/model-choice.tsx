@@ -1,6 +1,5 @@
 import type {
   CompanyId,
-  Conversation,
   ConversationId,
   Effort,
   ModelId,
@@ -13,7 +12,8 @@ import { Link } from '@tanstack/react-router'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import { Notice } from '../../ui/notice.tsx'
 import { ModelPicker } from '../model-accounts/public.ts'
-import { conversationQuery, sendModel } from './queries.ts'
+import type { SessionRead } from './queries.ts'
+import { sendModel, sessionReadQuery } from './queries.ts'
 import { UNCONFIRMED_MODEL } from './text.ts'
 
 /** The step 11 notice for a person with no account to answer with, and the way to link one. */
@@ -32,7 +32,7 @@ export function NoAccount({ companyId }: { companyId: CompanyId }) {
   )
 }
 
-type Choice = Pick<Conversation, 'model' | 'effort'>
+type Choice = Pick<SessionRead, 'model' | 'effort'>
 /** What the screen asks: typed with the brand the wire's input parse leaves out. */
 type Asked = {
   params: { companyId: CompanyId; projectId: ProjectId; conversationId: ConversationId }
@@ -46,7 +46,8 @@ type Asked = {
  */
 export function ModelChoice(props: {
   ids: { companyId: CompanyId; projectId: ProjectId }
-  conversation: Conversation
+  conversationId: ConversationId
+  session: SessionRead
   /** What the Hub offers this person: their connected providers, with the models served. */
   providers: readonly Provider[]
   onError: (text: string | undefined) => void
@@ -55,18 +56,18 @@ export function ModelChoice(props: {
   const send = useMutation<Choice, Error, Asked>({
     ...sendModel,
     onSuccess: (kept) =>
-      queryClient.setQueryData<{ conversation: Conversation }>(
-        conversationQuery(props.ids.companyId, props.ids.projectId, props.conversation.id).queryKey,
-        (read) => read && { conversation: { ...read.conversation, ...kept } },
+      queryClient.setQueryData<SessionRead>(
+        sessionReadQuery(props.conversationId).queryKey,
+        (read) => read && { ...read, ...kept },
       ),
   })
-  const now = send.isPending ? send.variables.body : props.conversation
+  const now = send.isPending ? send.variables.body : props.session
 
   function choose(model: ModelId, effort: Effort) {
     props.onError(undefined)
     send.mutate(
       {
-        params: { ...props.ids, conversationId: props.conversation.id },
+        params: { ...props.ids, conversationId: props.conversationId },
         body: { model, effort },
       },
       { onError: (failure) => props.onError(writeFailureText(failure, UNCONFIRMED_MODEL)) },

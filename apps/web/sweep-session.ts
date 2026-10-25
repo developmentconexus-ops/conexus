@@ -58,10 +58,31 @@ export function parkedOf(...calls: { toolCallId: string; toolName: string; args:
  */
 export function sessionReplies(
   conversationId: string,
-  options: { messages?: readonly Said[]; display?: Record<string, unknown>; events?: unknown[] },
+  options: {
+    messages?: readonly Said[]
+    display?: Record<string, unknown>
+    events?: unknown[]
+    /** The session state's tasks, which the screen paints before the stream says its own. */
+    tasks?: readonly unknown[]
+  },
 ): Replies {
   const session = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${conversationId}`
   return {
+    [`GET ${session}`]: {
+      status: 200,
+      json: {
+        controllerId: BUILDER_CONTROLLER,
+        sessionId: conversationId,
+        resourceId: 'company:c1:person:p1',
+        threadId: conversationId,
+        modeId: 'build',
+        modelId: 'anthropic/claude-sonnet-4',
+        running: false,
+        tasks: options.tasks ?? [],
+        tokenUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        settings: { yolo: false, thinkingLevel: 'off', notifications: 'off', smartEditing: true },
+      },
+    },
     [`GET ${session}/threads/${conversationId}/messages`]: {
       status: 200,
       json: { messages: (options.messages ?? []).map(storedOf) },

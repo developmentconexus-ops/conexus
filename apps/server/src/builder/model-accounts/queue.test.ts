@@ -18,6 +18,8 @@ import { failuresOf } from '../conversation/test-parts.ts'
 const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
 const MINUTE = 60_000
+/** Mastra's wait before the retry of an unknown error (`StreamErrorRetryProcessor`, 1.79). */
+const RETRY_DELAY_MS = 3000
 
 function keyOf(label: string): string {
   return label === 'Time 1' ? KEY : `sk-ant-queue-${label.replaceAll(' ', '-')}-key-0001`
@@ -147,7 +149,9 @@ test('sem conta: nenhuma chamada ao fornecedor, nem com chave no ambiente', asyn
   async function pause() {
     await f.hub.test.asOwner(`update builder.model_account set state = 'paused'`)
   }
+  const started = Date.now()
   const stream = await f.ask(pause)
+  assert.ok(Date.now() - started < RETRY_DELAY_MS, 'our own failure is not retried')
   assert.deepEqual(await turnNotices(f.hub, f.ana, stream.url), [EXHAUSTED])
   assert.deepEqual(failuresOf(stream.events), ['MODEL_NO_ACCOUNT'])
   assert.equal(endOf(stream.events), 'error')

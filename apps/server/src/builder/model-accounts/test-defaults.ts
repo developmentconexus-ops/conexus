@@ -5,6 +5,7 @@ import type { Hub, Person } from '../../hub/identity/test-hub.ts'
 import { CARLA, call, memberOn, post } from '../../hub/identity/test-hub.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import { conversing } from '../conversation/test-conversation.ts'
+import { sessionStateOf } from '../conversation/test-questions.ts'
 import { listKeyProviders } from './providers.ts'
 
 /** A Groq chat model the installed registry lists and has not retired, read from it. */
@@ -65,8 +66,7 @@ export async function pairOf(
   conversations: string,
   id: string | undefined,
 ) {
-  const read = await call(hub, person, 'GET', `${conversations}/${id}`)
-  const { model, effort } = Object(read.json()).conversation
+  const { model, effort } = await sessionStateOf(hub, person, `${conversations}/${id}`)
   return { model, effort }
 }
 
