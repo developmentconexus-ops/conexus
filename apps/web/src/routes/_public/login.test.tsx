@@ -1,7 +1,7 @@
 import { createMemoryHistory } from '@tanstack/react-router'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { HttpResponse, http } from 'msw'
-import { expect, test } from 'vitest'
+import { http } from 'msw'
+import { afterEach, expect, test, vi } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA } from '../../platform/fixtures.ts'
 import { homeHub, hubServer, refusal } from '../../platform/test-hub.tsx'
@@ -62,4 +62,34 @@ test('quem não está dentro vê o formulário de entrada', async () => {
   render(<Conexus conexus={conexus} />)
   expect(await screen.findByLabelText('Senha')).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe('/login')
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
+test('quem já está dentro e abre /login a caminho da passagem a um app carrega o documento', async () => {
+  const loaded: string[] = []
+  const origin = globalThis.location.origin
+  vi.stubGlobal('location', {
+    origin,
+    get href() {
+      return `${origin}/login`
+    },
+    set href(href: string) {
+      loaded.push(href)
+    },
+    replace: (href: string) => loaded.push(href),
+  })
+  server.use(...homeHub({ signedIn: true }))
+  const open = `/apps/open?host=pedidos--empresa-teste&binding=${'b'.repeat(43)}`
+  const conexus = createConexus(
+    createMemoryHistory({
+      initialEntries: [`/login?${new URLSearchParams({ redirect: open })}`],
+    }),
+  )
+  render(<Conexus conexus={conexus} />)
+  await waitFor(() => expect(loaded).toEqual([open]))
+  expect(screen.queryByLabelText('Senha')).toBeNull()
+  expect(screen.queryByText('Este app não existe ou você não tem acesso a ele.')).toBeNull()
 })

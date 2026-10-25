@@ -81,11 +81,11 @@ test('401: duas leituras que acham a sessão terminada em momentos diferentes le
     const conexus = createConexus(createMemoryHistory({ initialEntries: [here] }))
     const page = within(render(<Conexus conexus={conexus} />).container)
     expect(await page.findByText('Sua sessão terminou. Entre de novo para continuar.')).toBeTruthy()
-    const { companyQuery } = await import('../hub/identity/queries.ts')
-    const { CompanyId } = await import('@conexus/hub-api')
+    const { CompanyId, getCompany } = await import('@conexus/hub-api')
+    const { hubQuery } = await import('./hub.ts')
     // Another read, already in flight when the first 401 landed, answers later: on /login now.
     await conexus.queryClient
-      .fetchQuery(companyQuery(CompanyId.parse('a'.repeat(32))))
+      .fetchQuery(hubQuery(getCompany, { params: { companyId: CompanyId.parse('a'.repeat(32)) } }))
       .catch(() => undefined)
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(conexus.router.state.location.pathname).toBe('/login')
