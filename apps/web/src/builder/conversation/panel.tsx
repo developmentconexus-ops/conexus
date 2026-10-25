@@ -5,6 +5,7 @@ import type { ReactNode, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Empty, NotFound } from '../../ui/states.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import { accountsQuery } from '../model-accounts/public.ts'
 import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
@@ -17,7 +18,7 @@ import { allConversationsQueryKey, conversationQuery, sessionReadQuery } from '.
 import type { BuilderSession } from './session.ts'
 import type { Action, SessionState } from './session-state.ts'
 import { TaskPanel } from './task-panel.tsx'
-import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
+import { EMPTY_CONVERSATION, NO_SECRETS, titleOf, UNCONFIRMED_SEND } from './text.ts'
 import { shownOf, Transcript } from './transcript.tsx'
 import { useSession } from './use-session.ts'
 import { WorkingLine } from './working-line.tsx'
@@ -152,9 +153,14 @@ function PanelComposer(props: {
         onSend={onSend}
         onStop={onStop}
         taskPanel={<TaskPanel tasks={state.tasks ?? session.tasks} streaming={state.running} />}
-        memory={
-          <MemoryStatus memory={state.memory} omPhase={state.omPhase} failed={state.memoryFailed} />
-        }
+        memory={(compact) => (
+          <MemoryStatus
+            memory={state.memory}
+            omPhase={state.omPhase}
+            failed={state.memoryFailed}
+            compact={compact}
+          />
+        )}
         picker={
           canAnswer && (
             <ModelChoice
@@ -172,11 +178,17 @@ function PanelComposer(props: {
 }
 
 function Notices(props: { companyId: CompanyId; canAnswer: boolean; empty: boolean }) {
+  const phone = useIsMobile()
   if (props.canAnswer && !props.empty) return null
   return (
     <div className="flex flex-col gap-md px-md py-md">
       {!props.canAnswer && <NoAccount companyId={props.companyId} />}
-      {props.empty && <Empty>{EMPTY_CONVERSATION}</Empty>}
+      {props.empty && (
+        <Empty>
+          {EMPTY_CONVERSATION}
+          {phone && <span className="mt-sm block text-fact text-text-2">{NO_SECRETS}</span>}
+        </Empty>
+      )}
     </div>
   )
 }
@@ -210,7 +222,7 @@ function Screen(params: Params) {
   return (
     <>
       <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
-      <div className="min-h-40 flex-1">
+      <div className="min-h-24 flex-1 md:min-h-40">
         <Transcript turns={turns} steers={state.steers} model={session.model} />
       </div>
       {error !== undefined && (
@@ -218,8 +230,8 @@ function Screen(params: Params) {
           {error}
         </p>
       )}
-      {(state.running || waiting) && (
-        <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
+      {state.running && !waiting && (
+        <WorkingLine startedAt={state.startedAt} heard={state.messages} />
       )}
       <PanelComposer
         params={params}

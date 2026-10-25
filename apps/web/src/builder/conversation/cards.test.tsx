@@ -163,11 +163,12 @@ test('dois cliques em Enviar mandam a resposta uma única vez', async () => {
   expect(bodies).toHaveLength(1)
 })
 
-test('com pergunta aberta de tool-invocation, a linha diz que o Builder espera a pessoa, sem relógio', async () => {
+test('com pergunta aberta de tool-invocation, o cartão diz que o Builder espera a pessoa e a linha de trabalho some', async () => {
   const { tell } = await turn(questionPart('approval-requested'))
   await waitFor(() =>
-    expect(screen.getByRole('status').textContent).toBe('Builder esperando sua resposta.'),
+    expect(screen.getByRole('status').textContent).toBe('Builder esperando sua resposta'),
   )
+  expect(screen.getByRole('status').closest('.rounded-card')).toBeTruthy()
   tell(questionPart('result', ['Só eu', 'Sim']))
   await waitFor(() =>
     expect(screen.getByRole('status').textContent).toMatch(/^Builder trabalhando · há /),

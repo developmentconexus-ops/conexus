@@ -7,6 +7,8 @@ export const EMPTY_CONVERSATION = 'Descreva o aplicativo que você quer criar.'
 export const UNCONFIRMED_SEND = 'Não confirmamos o envio. Envie de novo.'
 export const STEER_PENDING = 'Vai ao Builder no próximo passo'
 export const STEER_PLACEHOLDER = 'Escreva para orientar o Builder'
+/** Where a person may put a secret by habit: said under the field on a computer, and on a phone in the first-time state and the model sheet. */
+export const NO_SECRETS = 'Não cole senhas, chaves ou tokens na conversa.'
 export const STEER_KEYS = 'Enter orienta o Builder · Esc para'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
 export const UNCONFIRMED_MODEL =

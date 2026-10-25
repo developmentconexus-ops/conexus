@@ -1,4 +1,5 @@
 import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
+import { cn } from '../../ui/cn.ts'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 import type { OMProgress } from './session-state.ts'
 
@@ -59,13 +60,16 @@ function TokenRing({
 /**
  * Memory rings and status under the composer (Criterion 11).
  * Displays observational memory windows, holding text, and failure marks without vendor text (C48, C51).
+ * `compact`, for the composer's action row on a phone, keeps the rings and marks; the numbers and the
+ * holding words stay in the button's name and in the popover.
  */
 export function MemoryStatus(props: {
   memory: MemoryGauge | null
   omPhase?: 'idle' | 'buffering' | 'observing' | 'reflecting'
   failed?: 'observation' | 'reflection' | 'buffering' | null
+  compact?: boolean
 }) {
-  const { memory, omPhase = 'idle', failed = null } = props
+  const { memory, omPhase = 'idle', failed = null, compact = false } = props
 
   // Initial / empty state:
   const pending = memory?.pendingTokens ?? 0
@@ -89,14 +93,17 @@ export function MemoryStatus(props: {
   return (
     <Popover>
       <PopoverTrigger
-        className="flex items-center gap-sm text-fact text-text-2 hover:text-text"
+        className={cn(
+          'flex items-center gap-sm text-fact text-text-2 hover:text-text',
+          compact && 'min-h-11 min-w-11 justify-center',
+        )}
         aria-label={`Memória da conversa: Mensagens ${msgReading}, Observações ${obsReading}${
           failed ? ' · Falha na memória' : ''
         }`}
       >
         <span className="flex items-center gap-xs">
           <TokenRing tokens={pending} threshold={threshold} spinning={isObserving || isBuffering} />
-          <span className="tabular-nums">{msgReading}</span>
+          {!compact && <span className="tabular-nums">{msgReading}</span>}
         </span>
 
         {reflectionThreshold > 0 && (
@@ -106,14 +113,14 @@ export function MemoryStatus(props: {
               threshold={reflectionThreshold}
               spinning={isReflecting}
             />
-            <span className="tabular-nums">{obsReading}</span>
+            {!compact && <span className="tabular-nums">{obsReading}</span>}
           </span>
         )}
 
         {holdingText && (
           <span className="flex items-center gap-xs font-medium text-text">
             <BrainIcon className="size-3.5" aria-hidden="true" />
-            <span>{holdingText}</span>
+            {!compact && <span>{holdingText}</span>}
           </span>
         )}
 

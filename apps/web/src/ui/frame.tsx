@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { MenuIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { createContext, useContext, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ConexusWordmark } from '../brand/mark.tsx'
 import { cn } from './cn.ts'
 import {
@@ -23,7 +24,7 @@ import {
 /** The centred column under the arriving wordmark, for the pages without a session. */
 export function Column({ children }: { children: ReactNode }) {
   return (
-    <main className="grid min-h-dvh place-items-center bg-canvas p-lg">
+    <main className="grid min-h-dvh place-items-center bg-canvas p-lg pt-[max(1rem,env(safe-area-inset-top))]">
       <div className="flex w-full max-w-column flex-col items-center gap-xl">
         <ConexusWordmark arrive />
         {children}
@@ -37,6 +38,19 @@ const InFrame = createContext(false)
 /** Whether a page is drawn inside a frame, so its waits and failures stay in the content area. */
 export function useInFrame(): boolean {
   return useContext(InFrame)
+}
+
+const PhoneSlot = createContext<HTMLElement | null | undefined>(undefined)
+
+/**
+ * What a page puts in the phone's top line, after the mark: the page names its own controls and the
+ * frame lends the room (`ui/` imports no subject). Without a frame it draws in place. Lay out the
+ * content with `order-*`: several pieces share the line.
+ */
+export function PhoneTopContent({ children }: { children: ReactNode }) {
+  const slot = useContext(PhoneSlot)
+  if (slot === undefined) return children
+  return slot === null ? null : createPortal(children, slot)
 }
 
 /** A place in the sidebar; the router marks the current one (design `nav-item`). */
@@ -61,7 +75,7 @@ export function FrameLink(
  * The phone's top line: the button that opens the drawer, the mark and the current place (V56), its
  * route's `staticData.place`, or the section's label for a section of Configurações.
  */
-function PhoneTop() {
+function PhoneTop(props: { slot: (element: HTMLElement | null) => void }) {
   const place = useMatches({
     select: (matches) => {
       const shown = matches.at(-1)?.staticData
@@ -69,12 +83,13 @@ function PhoneTop() {
     },
   })
   return (
-    <header className="flex h-14 items-center gap-sm border-b border-line bg-surface px-lg md:hidden">
+    <header className="flex h-[calc(3.5rem+env(safe-area-inset-top))] items-center gap-sm border-b border-line bg-surface px-md pt-[env(safe-area-inset-top)] md:hidden">
       <SidebarTrigger label="Abrir navegação">
         <MenuIcon aria-hidden="true" />
       </SidebarTrigger>
       <ConexusWordmark word="md" />
-      {place !== undefined && <p className="truncate text-text-2">{place}</p>}
+      <div ref={props.slot} className="peer flex min-w-0 flex-1 items-center gap-sm empty:hidden" />
+      {place !== undefined && <p className="truncate text-text-2 peer-not-empty:hidden">{place}</p>}
     </header>
   )
 }
@@ -112,6 +127,7 @@ export function Frame(props: {
   // Ctrl+B or the rail may open it in a Project; leaving the Project opens it again.
   const [open, setOpen] = useState(!props.compact)
   const [compact, setCompact] = useState(props.compact)
+  const [slot, setSlot] = useState<HTMLElement | null>(null)
   if (compact !== props.compact) {
     setCompact(props.compact)
     setOpen(!props.compact)
@@ -126,12 +142,14 @@ export function Frame(props: {
       </Sidebar>
       <CloseOnNavigation />
       <SidebarInset>
-        <PhoneTop />
-        <InFrame.Provider value={true}>
-          <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-xl')}>
-            {props.children}
-          </div>
-        </InFrame.Provider>
+        <PhoneTop slot={setSlot} />
+        <PhoneSlot.Provider value={slot}>
+          <InFrame.Provider value={true}>
+            <div className={cn('flex min-w-0 flex-1 flex-col', compact ? 'min-h-0' : 'p-xl')}>
+              {props.children}
+            </div>
+          </InFrame.Provider>
+        </PhoneSlot.Provider>
       </SidebarInset>
     </SidebarProvider>
   )

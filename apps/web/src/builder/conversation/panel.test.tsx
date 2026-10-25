@@ -11,7 +11,17 @@ import {
   stepStarted,
   textDelta,
 } from './test-events.ts'
-import { conversationOf, FIRST, PROJECT, SECOND, say, screens, typed, view } from './test-hub.tsx'
+import {
+  conversationOf,
+  FIRST,
+  onPhone,
+  PROJECT,
+  SECOND,
+  say,
+  screens,
+  typed,
+  view,
+} from './test-hub.tsx'
 import { displayOf, parkedOf } from './test-stream.tsx'
 import { UNCONFIRMED_SEND } from './text.ts'
 
@@ -232,4 +242,30 @@ test('com um cartão esperando a pessoa, Parar e Esc cancelam, e a mensagem digi
   fireEvent.keyDown(field, { key: 'Escape' })
   await waitFor(() => expect(sent.some((one) => one.path.endsWith('/abort'))).toBe(true))
   fireEvent.click(stop)
+})
+
+test('no celular, o título da conversa é um botão que abre a lista por baixo, com "Nova conversa" primeiro', async () => {
+  await onPhone(async () => {
+    const { conexus } = open(
+      view({
+        conversations: [
+          conversationOf({ id: FIRST, title: 'Padarias' }),
+          conversationOf({ id: SECOND, title: 'Entregas' }),
+        ],
+      }),
+      `${PROJECT}/conversations/${FIRST}`,
+    )
+    const title = await screen.findByRole('button', { name: 'Padarias' })
+    fireEvent.click(title)
+    const sheet = await screen.findByRole('dialog', { name: 'Conversas' })
+    await waitFor(() => {
+      const rows = within(sheet)
+        .getAllByRole('button')
+        .map((one) => one.textContent)
+      expect(rows.slice(0, 3)).toEqual(['Nova conversa', 'Padarias', 'Entregas'])
+    })
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Entregas' }))
+    await waitFor(() => expect(conexus.router.state.location.pathname).toMatch(new RegExp(SECOND)))
+    expect(await screen.findByRole('button', { name: 'Entregas' })).toBeTruthy()
+  })
 })

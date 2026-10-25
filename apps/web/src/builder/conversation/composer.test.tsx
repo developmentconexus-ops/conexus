@@ -3,9 +3,10 @@ import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { AGENT_START, RUNNING, textDelta } from './test-events.ts'
-import { choose, conversationOf, FIRST, say, screens, typed, view } from './test-hub.tsx'
+import { choose, conversationOf, FIRST, onPhone, say, screens, typed, view } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
+const SECRETS = 'Não cole senhas, chaves ou tokens na conversa.'
 const PICKER = { name: 'Modelo e raciocínio' }
 // Base UI keeps the thumb hidden until it measures the track, which jsdom cannot; the browser
 // suites name it (keyboard.test.ts).
@@ -38,10 +39,44 @@ test('o anel do compositor só gira enquanto o Builder trabalha; enquanto ele tr
   line().emit(textDelta('Olá'))
 })
 
-test('perto do campo uma linha pede para não colar senhas, chaves ou tokens na conversa', async () => {
+test('no computador, perto do campo uma linha pede para não colar senhas, chaves ou tokens na conversa', async () => {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
-  const line = screen.getByText('Não cole senhas, chaves ou tokens na conversa.')
+  const line = screen.getByText(SECRETS)
   expect(field.closest('form')?.contains(line)).toBe(true)
+})
+
+test('no celular, a linha das senhas sai do rodapé: fica na conversa vazia e na folha do modelo', async () => {
+  await onPhone(async () => {
+    const { field } = await openConversation(conversationOf({ id: FIRST }))
+    const line = screen.getByText(SECRETS)
+    expect(field.closest('form')?.contains(line)).toBe(false)
+    fireEvent.click(screen.getByRole('combobox', PICKER))
+    await screen.findByText('Raciocínio')
+    expect(screen.getAllByText(SECRETS)).toHaveLength(2)
+  })
+})
+
+test('no toque, Enter quebra a linha e só o botão envia; a dica das teclas não é dita pelo toque', async () => {
+  await onPhone(async () => {
+    const { field, sent } = await openConversation(conversationOf({ id: FIRST }))
+    fireEvent.change(field, { target: { value: 'Oi' } })
+    expect(fireEvent.keyDown(field, { key: 'Enter' })).toBe(true)
+    await new Promise((settled) => setTimeout(settled, 50))
+    expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+    await waitFor(() =>
+      expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(1),
+    )
+  })
+})
+
+test('no celular, os anéis de memória ficam na linha de ações do compositor, com os números no nome', async () => {
+  await onPhone(async () => {
+    const { field } = await openConversation(conversationOf({ id: FIRST }))
+    const rings = screen.getByRole('button', { name: /Memória da conversa: Mensagens/ })
+    expect(rings.closest('[data-slot="input-group-addon"]')).toBeTruthy()
+    expect(field.closest('form')?.contains(rings)).toBe(true)
+  })
 })
 
 test('o seletor mostra o controle deslizante dos níveis do modelo, o nome do nível, e a troca leva o modelo e o nível', async () => {

@@ -4,6 +4,7 @@ import type { PlanResume } from '@mastra/client-js'
 import { getRouteApi } from '@tanstack/react-router'
 import type { SubmitEvent } from 'react'
 import { useMemo, useRef, useState } from 'react'
+import { ConexusMark } from '../../brand/mark.tsx'
 import { sentenceOfCode, writeFailureText } from '../../platform/hub.ts'
 import {
   Questionnaire,
@@ -31,6 +32,16 @@ export const CARD_TEXT = {
   unsent: 'Não foi possível enviar. Tente de novo.',
   other: 'outra resposta…',
   stopped: 'Você parou o Builder.',
+}
+
+/** The card says the Builder waits on the person, in place of the working line (founder, 2026-10-22, "Aprovo"). */
+export function WaitingCaption() {
+  return (
+    <p role="status" className="flex items-center gap-sm text-label text-accent">
+      <ConexusMark size={16} />
+      Builder esperando sua resposta
+    </p>
+  )
 }
 
 /**
@@ -153,6 +164,7 @@ export function QuestionCard({ part }: { part: QuestionCardItem }) {
   const said = closedText(part.state)
   return (
     <div className="flex min-w-0 flex-col gap-sm rounded-card border border-line bg-surface p-md">
+      {part.state === 'open' && <WaitingCaption />}
       {part.state === 'open' ? (
         <Questionnaire onSubmit={submit}>
           {part.questions.map((question, at) => (

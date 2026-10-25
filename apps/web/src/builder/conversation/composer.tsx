@@ -4,8 +4,14 @@ import { useRef } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { InputGroup, InputGroupAddon, InputGroupTextarea } from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { Draft } from './draft.ts'
-import { STEER_KEYS, STEER_PLACEHOLDER } from './text.ts'
+import { NO_SECRETS, STEER_KEYS, STEER_PLACEHOLDER } from './text.ts'
+
+/** A finger's keyboard has a Return that means a new line; the button is what sends. */
+function isTouch(): boolean {
+  return globalThis.matchMedia('(pointer: coarse)').matches
+}
 
 /** The round button at the end of the field: ink at rest, ipê under the pointer (design V5). */
 const ROUND =
@@ -14,7 +20,8 @@ const ROUND =
 /**
  * The field and its buttons, drawn as the old composer: the model's button and a round send arrow
  * at the end, and the keys below. Enter sends and Shift+Enter breaks the line, except while an
- * input method is composing a character (design V30). While the Builder answers the field stays
+ * input method is composing a character (design V30); on touch Return breaks the line and only
+ * the button sends, and the key hints are not drawn (founder, 2026-10-25). While the Builder answers the field stays
  * open: Enter steers the running turn, the round **Parar** stands beside **Enviar**, and Esc stops
  * as it does; focus goes back to the field (design V31). What is typed is kept per conversation,
  * by the draft the screen holds.
@@ -28,9 +35,11 @@ export function Composer(props: {
   onStop: () => void
   picker: ReactNode
   taskPanel?: ReactNode
-  memory?: ReactNode
+  /** The memory rings: drawn under the field, and in the action row on a phone. */
+  memory?: (compact: boolean) => ReactNode
 }) {
   const { draft } = props
+  const phone = useIsMobile()
   const content = draft.text
   const empty = content.trim() === ''
 
@@ -58,13 +67,17 @@ export function Composer(props: {
       props.onStop()
       return
     }
-    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return
+    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing || isTouch())
+      return
     event.preventDefault()
     void send()
   }
 
   return (
-    <form onSubmit={submit} className="sticky bottom-0 flex flex-col gap-xs bg-canvas pb-sm">
+    <form
+      onSubmit={submit}
+      className="sticky bottom-0 flex flex-col gap-xs bg-canvas pb-[max(0.5rem,env(safe-area-inset-bottom))]"
+    >
       {props.taskPanel}
       <InputGroup
         data-busy={props.answering || undefined}
@@ -80,9 +93,10 @@ export function Composer(props: {
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}
-          className="min-h-16 pt-md"
+          className="pt-md max-md:min-h-11 max-md:pt-sm md:min-h-16"
         />
         <InputGroupAddon align="block-end" className="flex-nowrap justify-end gap-xs">
+          {phone && props.memory && <div className="me-auto">{props.memory(true)}</div>}
           {props.picker}
           {props.answering && (
             <Button
@@ -108,13 +122,13 @@ export function Composer(props: {
           </Button>
         </InputGroupAddon>
       </InputGroup>
-      {props.memory && <div className="flex items-center px-xs">{props.memory}</div>}
-      <p className="text-center text-fact text-text-2">
+      {!phone && props.memory && (
+        <div className="flex items-center px-xs">{props.memory(false)}</div>
+      )}
+      <p className="text-center text-fact text-text-2 pointer-coarse:hidden">
         {props.answering ? STEER_KEYS : 'Enter envia · Shift+Enter quebra a linha'}
       </p>
-      <p className="text-center text-fact text-text-2">
-        Não cole senhas, chaves ou tokens na conversa.
-      </p>
+      {!phone && <p className="text-center text-fact text-text-2">{NO_SECRETS}</p>}
     </form>
   )
 }
