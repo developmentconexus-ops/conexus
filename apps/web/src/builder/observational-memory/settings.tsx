@@ -3,7 +3,7 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { writeFailureText } from '../../platform/hub.ts'
 import { Field, FieldError, FieldLabel } from '../../ui/field.tsx'
-import { accountsQuery } from '../model-accounts/public.ts'
+import { accountsQuery, modelLabel } from '../model-accounts/public.ts'
 import { observationalMemoryModelsQuery, setObservationalMemoryModelMutation } from './queries.ts'
 
 const route = getRouteApi('/_app/companies/$companyId_/settings/observational-memory')
@@ -30,7 +30,7 @@ export function ObservationalMemorySettings() {
         <select
           id={`om-${role}`}
           aria-label={label}
-          className="h-9 w-full max-w-column rounded-control border border-line bg-surface px-md text-text disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-9 w-full max-w-column rounded-control border border-line bg-surface px-md text-base md:text-body text-text disabled:cursor-not-allowed disabled:opacity-50"
           value={value ?? ''}
           disabled={!accounts.mayManage || save.isPending}
           onChange={(event) => select(role, event.currentTarget.value)}
@@ -38,7 +38,7 @@ export function ObservationalMemorySettings() {
           <option value="">Segue o modelo da conversa</option>
           {models.map((model) => (
             <option key={model.id} value={model.id}>
-              {model.id}
+              {modelLabel(model.id)}
             </option>
           ))}
         </select>

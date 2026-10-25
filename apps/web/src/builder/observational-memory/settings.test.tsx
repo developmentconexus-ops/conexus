@@ -68,6 +68,7 @@ test('o dono configura cada papel, salva e retorna um deles a seguir a conversa'
 
   expect(await screen.findByRole('heading', { name: 'Memória observacional' })).toBeTruthy()
   expect(screen.getAllByRole('option', { name: 'Segue o modelo da conversa' })).toHaveLength(2)
+  expect(screen.getAllByRole('option', { name: 'GPT 5' })).toHaveLength(2)
   const observer = screen.getByRole('combobox', { name: 'Modelo do observador' })
   const reflector = screen.getByRole('combobox', { name: 'Modelo do refletor' })
   fireEvent.change(observer, { target: { value: MODEL } })
