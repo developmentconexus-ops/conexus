@@ -1487,7 +1487,7 @@
   {
     "id": "send-admission",
     "file": "apps/server/src/hub/apps/send.ts",
-    "find": "  await deps.identity.admitMember({ tx, personId: person.id, companyId, action })\n",
+    "find": "  await deps.identity.admitMember({ tx, personId, companyId, action })\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
@@ -1740,12 +1740,23 @@
   {
     "id": "send-readmission",
     "file": "apps/server/src/hub/apps/send.ts",
-    "find": "    await deps.identity.admitMember({\n      tx,\n      personId: person.id,\n      companyId,\n      action: 'manageAppVersions',\n    })\n",
+    "find": "    await deps.identity.admitMember({ tx, personId, companyId, action: SENDERS[by] })\n",
     "replace": "",
     "test": {
       "cwd": "apps/server",
       "file": "src/hub/apps/send-guards.test.ts",
       "name": "envio: quem deixou de ser administrador"
+    }
+  },
+  {
+    "id": "stopped-run-sends-nothing",
+    "file": "apps/server/src/builder/runs/runs.ts",
+    "find": "      if (mine.stopped) return settled\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/preview-send.test.ts",
+      "name": "tirar a pessoa depois de guardada a versão"
     }
   },
   {

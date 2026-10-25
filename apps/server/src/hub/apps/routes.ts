@@ -73,7 +73,8 @@ export function registerVersionRoutes(app: FastifyInstance, versions: AppVersion
     answer({ versions: await versions.list({ person, ...params }) }),
   )
   serve(app, createAppVersion, async ({ person, params, body, attemptKey }) => {
-    const sent = await versions.send({ person, ...params, ...body, attemptKey })
+    const by = 'versions'
+    const sent = await versions.send({ personId: person.id, by, ...params, ...body, attemptKey })
     return answer({ version: sent.version })
   })
   serve(app, setLiveVersion, async ({ person, params, body }) =>

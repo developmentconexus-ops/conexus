@@ -12,37 +12,14 @@ import type { NeonProjects } from '../../platform/neon.ts'
 import { after, pageKey, pageOf } from '../../platform/pages.ts'
 import type { IdentityPorts } from '../identity/public.ts'
 import { claimDatabase, markReady, prepareDatabase, releaseClaim } from './company-database.ts'
+import type { AppRemoval, AppVersionOf, ProjectConversationRelease } from './ports.ts'
 import { companyDatabase, project } from './tables.ts'
-
-/**
- * What deleting a Projeto asks of its app (code C4): Projects names the port, and `main.ts` hands
- * it the apps' own, made before either subject exists.
- */
-export type AppRemoval = {
-  claimForDeletion(
-    tx: CommandTx,
-    ids: { companyId: CompanyId; projectId: ProjectId },
-  ): Promise<void>
-  removeProjectApp(input: {
-    scope: Scope
-    companyId: CompanyId
-    projectId: ProjectId
-  }): Promise<'DONE' | 'LEFT'>
-}
-
-/**
- * What deleting a Projeto asks of the Builder (code C4): its conversations' threads and memory go
- * before its row, which takes their index with it (data D17).
- */
-export type ProjectConversationRelease = (scope: {
-  companyId: CompanyId
-  projectId: ProjectId
-}) => Promise<void>
 
 type Deps = {
   database: Database
   identity: IdentityPorts
   appRemoval: AppRemoval
+  appVersionOf: AppVersionOf
   releaseConversations: ProjectConversationRelease
   neon: NeonProjects
   log: FailureLog
@@ -84,12 +61,18 @@ function rightsOf(deps: Deps, role: Role): Rights {
   }
 }
 
-/** The Project as a viewer with these rights sees it, its app's address under the apps' domain. */
-function viewOf(deps: Deps, input: { row: ProjectRow; rights: Rights }): Project {
+/**
+ * The Project as a viewer with these rights sees it, its app's address under the apps' domain and
+ * the version on the air there; a Project just made has none.
+ */
+function viewOf(
+  deps: Deps,
+  input: { row: ProjectRow; rights: Rights; appVersion: number | null },
+): Project {
   const { hostLabel } = input.row
   const address =
     hostLabel === null ? null : appHostOf({ label: hostLabel, appsDomain: deps.appsDomain })
-  return { ...summaryOf(input.row), ...input.rights, address }
+  return { ...summaryOf(input.row), ...input.rights, address, appVersion: input.appVersion }
 }
 
 /**
@@ -176,17 +159,18 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
     const entered = await enterCreation(deps, tx, input)
     const { rights } = entered
     if (entered.kind === 'REPLAY') {
-      return { kind: 'DONE', created: false, row: entered.row, rights } as const
+      const appVersion = await deps.appVersionOf(tx, entered.row.id)
+      return { kind: 'DONE', created: false, row: entered.row, rights, appVersion } as const
     }
     if ((await claimDatabase(tx, input.companyId)) === 'CLAIMED') {
       return { kind: 'CLAIMED', rights, nickname: entered.nickname } as const
     }
     const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
-    return { kind: 'DONE', created: true, row, rights } as const
+    return { kind: 'DONE', created: true, row, rights, appVersion: null } as const
   })
   if (started.kind === 'DONE') {
-    const { row, rights, created } = started
-    return { project: viewOf(deps, { row, rights }), created, databaseCreated: false }
+    const { row, rights, created, appVersion } = started
+    return { project: viewOf(deps, { row, rights, appVersion }), created, databaseCreated: false }
   }
   const { nickname } = started
   const prepared = await prepareDatabase(deps.neon, { companyId: input.companyId, nickname })
@@ -202,7 +186,11 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
       const { rights } = entered
       if (entered.kind === 'REPLAY') {
         return {
-          project: viewOf(deps, { row: entered.row, rights }),
+          project: viewOf(deps, {
+            row: entered.row,
+            rights,
+            appVersion: await deps.appVersionOf(tx, entered.row.id),
+          }),
           created: false,
           databaseCreated: false,
         }
@@ -212,7 +200,11 @@ async function create(deps: Deps, input: Creation): Promise<Created> {
         neonProjectId: prepared.id,
       })
       const row = await insertProject(tx, { ...input, hostLabel: entered.hostLabel })
-      return { project: viewOf(deps, { row, rights }), created: true, databaseCreated }
+      return {
+        project: viewOf(deps, { row, rights, appVersion: null }),
+        created: true,
+        databaseCreated,
+      }
     })
   } catch (error) {
     // The project in Neon stays, and the next attempt finds it by its key instead of waiting out the claim.
@@ -306,7 +298,8 @@ function get(deps: Deps, input: OfProject) {
       .where(and(ofProject(input), isNull(project.deletingSince)))
     if (row === undefined) throw new Failure('NOT_FOUND')
     const rights = rightsOf(deps, admitted.role)
-    return { project: viewOf(deps, { row: ProjectRow.parse(row), rights }) }
+    const appVersion = await deps.appVersionOf(tx, input.projectId)
+    return { project: viewOf(deps, { row: ProjectRow.parse(row), rights, appVersion }) }
   })
 }
 

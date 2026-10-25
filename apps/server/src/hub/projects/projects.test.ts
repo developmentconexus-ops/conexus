@@ -34,6 +34,7 @@ test('criar: o membro cria, só o primeiro Projeto chama o Neon e o banco da emp
     mayDelete: false,
     mayManageVersions: false,
     address: `pedidos--empresa-${companyId.slice(0, 8)}.${TEST_APPS_DOMAIN}`,
+    appVersion: null,
   })
   assert.match(project.id, /^[0-9a-f]{32}$/)
   const second = await post(hub, bruno, projects, { name: 'Estoque' })

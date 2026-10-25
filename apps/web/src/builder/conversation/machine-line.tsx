@@ -15,6 +15,7 @@ const PHASES: Record<MachinePhase, string> = {
   starting: 'Ligando a máquina…',
   copying: 'Copiando os arquivos do app…',
   saving: 'Guardando a versão…',
+  sending: 'Subindo o app…',
 }
 
 function Since() {

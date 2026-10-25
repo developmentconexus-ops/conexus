@@ -2,6 +2,7 @@ import type {
   CompanyId,
   ConversationId,
   PersonId,
+  PreviewData,
   ProjectId,
   RunId,
   VersionCheck,
@@ -11,7 +12,20 @@ import type { Workspace } from '@mastra/core/workspace'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { GitCopy, Repository } from '../git/public.ts'
-import type { Machines } from '../machine/public.ts'
+import type { Machines, VersionFolder } from '../machine/public.ts'
+
+/**
+ * Sends a turn's version to the Projeto's app as the person of the turn (step 14.1): whether it
+ * reached the app, or nothing once the Projeto is gone.
+ */
+type BuilderSend = (input: {
+  companyId: CompanyId
+  projectId: ProjectId
+  personId: PersonId
+  runId: RunId
+  number: number
+  folder: VersionFolder
+}) => Promise<PreviewData | undefined>
 
 export type RunsDeps = {
   database: Database
@@ -22,6 +36,7 @@ export type RunsDeps = {
   /** Every Projeto with a repository on the volume: where the bucket may be behind. */
   repositories: () => Promise<{ companyId: CompanyId; projectId: ProjectId }[]>
   log: FailureLog
+  send: BuilderSend
 }
 
 /** What the runs share: the ports and the copies' retry. */
@@ -48,8 +63,11 @@ export type Outcome =
       code: 'SAVE_REFUSED' | 'GIT_RESTORE_NEEDED' | 'MACHINE_LOST' | 'MACHINE_UNAVAILABLE'
     }
 
-/** A settled turn: its outcome, and how many times the end of the turn judged it. */
-export type Settled = Outcome & { rounds: number }
+/**
+ * A settled turn: its outcome, how many times the end of the turn judged it, and whether its
+ * version reached the app, when it was sent.
+ */
+export type Settled = Outcome & { rounds: number; preview?: PreviewData }
 
 /** Where Mastra keeps each workspace it resolved, to stop them all at its shutdown. */
 export type Registry = Pick<Mastra, 'removeWorkspace'>

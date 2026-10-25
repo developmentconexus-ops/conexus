@@ -10,8 +10,8 @@ recarrega sozinha nela.
 
 1. Como **Ana**, "Encomendas" › **Conversa**: "Crie um app de encomendas com cliente, telefone,
    produto e data de entrega." No fim do turno aparece "**Versão 1 guardada**", logo "Subindo o
-   app…" e, uns 9 segundos depois, "Prévia pronta". A aba **Prévia** mostra o app. Ana cadastra
-   "Maria, bolo de cenoura, sexta".
+   app…" e, uns 10 a 20 segundos depois, "Prévia pronta". A aba **Prévia** mostra o app. Ana
+   cadastra "Maria, bolo de cenoura, sexta".
 2. Na barra da Prévia: **Computador** ou **Celular** (Celular põe o app numa moldura de celular) e
    **Recarregar**. **Abrir app** abre o mesmo app numa aba nova, e o Hub fica onde está.
 3. "Agora guarde também o endereço." Enquanto o Builder trabalha, a Prévia segue na versão 1; no fim
@@ -51,9 +51,9 @@ começo: aprova esta página. No fim: faz o roteiro, diz o que viu e aprova os t
   soma ~120.
 
 Nada mais é seu: a versão "pela metade" não sobe ("A", 2026-10-24); no iPhone, o aviso e a aba nova
-(sua palavra de 2026-10-21, e é o que a vibesdk faz); os ~9 s dentro do turno são o jeito da
-referência. O único remendo (`packIn`, tirar a pasta montada da máquina) já foi aprovado na 14
-("SIM", critério 14 do cartão da 14).
+(sua palavra de 2026-10-21, e é o que a vibesdk faz); os 12,5 a 20,5 s medidos dentro do turno
+são o jeito da referência. O único remendo (`packIn`, tirar a pasta montada da máquina) já foi
+aprovado na 14 ("SIM", critério 14 do cartão da 14).
 
 ## As unidades
 
@@ -90,7 +90,7 @@ O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3, ~100) e `app
 | 10 | U1 | Um envio da aba Versões em andamento: o do Builder termina `failed` com `APP_VERSION_SENDING` e o outro segue | `preview-send.test.ts` "um envio de cada vez" | must |
 | 11 | U1 | A pasta da versão trocada por um link na máquina: `failed` com `APP_VERSION_FAILED`, linha `PREVIEW_PACK_REFUSED` com `reason: 'NOT_REGULAR'` | `pack.test.ts` caso existente; `preview-send.test.ts` "pasta recusada" | must |
 | 12 | U1 | O Projeto apagado durante o turno: nenhuma versão no ar e nenhuma parte `data-conexus-preview` | `preview-send.test.ts` "Projeto apagado" | must |
-| 13 | U1 | O Hub fechando durante o envio: o envio termina dentro de `SHUTDOWN_DEADLINE_MS` (15 s, `platform/lifecycle.ts:7`), ou `failExpiredSends` (inalterado) o falha no início seguinte e o app segue na versão anterior | `conversation-preview.test.ts` "o desligamento espera o envio" | must |
+| 13 | U1 | O Hub fechando durante o envio: o desligamento espera o envio até `SHUTDOWN_DEADLINE_MS` (15 s, `platform/lifecycle.ts:7`); o envio medido leva de 9,5 a 17,1 s (critério 15), então pode passar do prazo, e o envio cortado por ele `failExpiredSends` (inalterado) falha no início seguinte e o app segue na versão anterior | `conversation-preview.test.ts` "o desligamento espera o envio" | must |
 | 14 | U1 | `GET` do Projeto dá `appVersion: null` antes do primeiro app e o número da versão no ar depois, para dono e membro | `hub/projects/project-app-version.test.ts` | must |
 | 15 | U1 | Prova real, com o Hub local do ramo e o E2B e a Cloudflare reais da instalação de teste: `packIn` num E2B de verdade, o envio a uma Cloudflare de verdade e o tempo do turno até "Prévia pronta", registrados como provado na entrada de `boundaries.md` | o relatório da U1, com as linhas medidas | must |
 | 16 | U2 | Os cookies do despachante saem `Secure; HttpOnly; SameSite=None; Partitioned`, com o prefixo `__Host-` | `apps/edge/src/dispatcher.test.ts` "cookies particionados" | must |
@@ -351,9 +351,12 @@ Falha hoje: nenhuma versão vai ao ar depois do turno (critério 1).
 
 ### Parar se
 
-- O tempo medido do fim do turno a "Prévia pronta" passar de ~13 s (o estudo mediu, por relay,
-  pack até 2,84 s, envio até 9,04 s e primeira resposta até 0,75 s, ~12,6 s): voltar ao fundador com
-  o número. Perto de 15 s o envio já não cabe em `SHUTDOWN_DEADLINE_MS` (critério 13).
+- O tempo medido do fim do turno a "Prévia pronta" passar do maior medido em 2026-10-25 (aceito
+  pelo fundador: "A"): 12,5, 16,3 e 20,5 s em três turnos reais, dos quais o envio à Cloudflare levou
+  9,5 a 17,1 s. Do envio de ~1 MB, ~0,3 s são os bytes e ~9,7 s o processamento da Cloudflare em cinco
+  chamadas seguidas; uma versão mínima custa 5,1 s. Passando de 20,5 s, voltar ao fundador com o
+  número. Um envio cortado por `SHUTDOWN_DEADLINE_MS` falha e o app segue na versão anterior
+  (critério 13).
 - O fecho entre `runs` e `apps` pedir mudar a ordem de `main.ts` além do fecho.
 
 ## U2 A borda

@@ -152,37 +152,59 @@ function oursOf(
   }
 }
 
-/**
- * The run ends, for any reason, a question or a plan included (`suspended`): its version is saved
- * by the conversation, its failure decided once, and our parts kept on the thread as one message
- * and told on the stream, before Mastra says `agent_end`, never sent to the model (criteria 30, 48).
- */
-async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): Promise<void> {
-  const conversationId = ConversationIdSchema.parse(session.identity.getId())
-  // A save that throws is this run's failure, said and logged here: Mastra would print the
-  // listener's error raw, and the run would end without saying why.
-  const outcome = await deps.runs.finish({ conversationId, reason }).catch((cause: unknown) => {
-    logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-    return 'threw' as const
-  })
+/** Our parts of the run as it settled, its failure decided once (`run.failed`, for its line). */
+function partsOf(run: Run, reason: AgentEnd, outcome: Settled | 'gone' | 'threw') {
   settleThinking(run)
   const parts = [...run.parts]
   if (outcome !== 'threw' && outcome !== 'gone') {
     run.tally.rounds = outcome.rounds
     if (outcome.kind === 'saved')
       parts.push({ type: 'data-conexus-version', data: outcome.version })
+    if (outcome.preview !== undefined)
+      parts.push({ type: 'data-conexus-preview', data: outcome.preview })
   }
   const failure = decided(run, reason, outcome)
   run.failed = failure?.code
   if (failure !== undefined) parts.push({ type: 'data-conexus-failure', data: failure })
+  return parts
+}
+
+/**
+ * The run ends, for any reason, a question or a plan included (`suspended`): its version is saved
+ * by the conversation and told at once, its failure decided once, and our parts kept on the thread
+ * as one message, told again once the version went to the app, before Mastra says `agent_end`,
+ * never sent to the model (criteria 30, 48; step 14.1, criteria 2 to 4).
+ */
+async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): Promise<void> {
+  const conversationId = ConversationIdSchema.parse(session.identity.getId())
+  let message = oursOf(session, conversationId, [])
+  let told = false
+  function saved(settled: Settled): void {
+    const parts = partsOf(run, reason, settled)
+    if (parts.length === 0) return
+    message = { ...message, content: { format: 2, parts } }
+    tell(session, message)
+    told = true
+  }
+  // A save that throws is this run's failure, said and logged here: Mastra would print the
+  // listener's error raw, and the run would end without saying why.
+  const outcome = await deps.runs
+    .finish({ conversationId, reason, saved })
+    .catch((cause: unknown) => {
+      logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+      return 'threw' as const
+    })
+  const parts = partsOf(run, reason, outcome)
   if (parts.length === 0) return
-  const message = oursOf(session, conversationId, parts)
+  message = { ...message, content: { format: 2, parts } }
   try {
     await deps.memory.saveMessages({ messages: [message] })
   } catch (cause) {
     logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
   }
-  tell(session, message)
+  // Told again only with what the end added since: the version's send, or a save that threw.
+  const added = outcome === 'threw' || (outcome !== 'gone' && outcome.preview !== undefined)
+  if (!told || added) tell(session, message)
 }
 
 /** The machine's step, told live as a message of ours that is not kept. */

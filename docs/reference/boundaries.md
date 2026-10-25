@@ -923,3 +923,25 @@ refused for its media type or its origin.
   with its Projeto ends its run without an `agent_end`, so `end.ts` lets it go on
   `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
   streams on shutdown.
+
+## e2b 2.56.0: the version folder read without following a link (step 14.1)
+
+- **Library line.** `e2b@2.56.0` `files.read(path)` (`index.d.ts:5135-5148`) reads by path and
+  follows a link: `FilesystemReadOpts` has no `nofollow`. `files.list` (`index.d.ts:5037-5065`)
+  shows a link's `symlinkTarget`, but a link swapped in between the list and the read still passes.
+  Mastra 1.79.0 `WorkspaceFilesystem.readFile` has the same shape.
+- **Hand-made piece.** `packIn` in `apps/server/src/builder/machine/pack.ts` runs one Node program
+  on the machine, while the run still holds it. The program opens every folder and file of
+  `node_modules/.conexus/version` with `O_NOFOLLOW` through `/proc/self/fd`, refuses a link or a
+  file that is not regular with `NOT_REGULAR`, counts every file against `APP_LIMITS` before reading
+  any, and answers the folder in one reply.
+- **Why.** The machine runs what the model wrote, so the version folder can hold a link out of it
+  (S2, C59). Step 14 approved this patch (criterion 14 at `05b006ba`).
+- **Proof.** `pack.test.ts` "Machines.pack: um link ou um arquivo que não é regular é NOT_REGULAR";
+  `preview-send.test.ts` "pasta recusada", step 14.1 criterion 11. Live on 2026-10-25: three turns
+  of the branch's Hub on real E2B machines (template `conexus-builder:0b2d667`) packed the starter's
+  ~1 MB build in about 2 s with the release, and sent it to a real Cloudflare namespace. From the
+  end of the turn to "Prévia pronta": 12.5, 16.3 and 20.5 s, of which the Cloudflare upload took 9.5
+  to 17.1 s (about 0.3 s of bytes and about 9.7 s of Cloudflare's processing over five sequential
+  calls).
+  Revisit when e2b's read takes a no-follow option.

@@ -52,10 +52,12 @@ type Knobs = {
   holdReceive: Promise<void> | undefined
   /** The next kills that fail, as an E2B that is out. */
   refuseKills: number
+  /** While set, taking the version from the machine says it `arrived` and waits for `released`. */
+  holdPack: { arrived: () => void; released: Promise<void> } | undefined
 }
 
 function newKnobs(): Knobs {
-  return { holdReceive: undefined, refuseKills: 0 }
+  return { holdReceive: undefined, refuseKills: 0, holdPack: undefined }
 }
 
 /** A repository whose save waits where a test says: before `receive`. */
@@ -88,7 +90,7 @@ export function testBuilderPorts(
     return restoreGuarded(withKnobs(real, knobs), bucket.copy, ids)
   }
   function machinesOf() {
-    return createMachines({
+    const machines = createMachines({
       log: silent,
       kit: localKit(folder, control),
       api: {
@@ -116,6 +118,14 @@ export function testBuilderPorts(
       // None until a test writes one there (`conversation-check.test.ts`): the check cannot run.
       checkProgram: join(folder, 'check'),
     })
+    const pack = machines.pack.bind(machines)
+    machines.pack = async (input) => {
+      const held = knobs.holdPack
+      held?.arrived()
+      await held?.released
+      return pack(input)
+    }
+    return machines
   }
   return {
     machinesOf,

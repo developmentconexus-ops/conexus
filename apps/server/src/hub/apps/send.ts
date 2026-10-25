@@ -5,6 +5,7 @@ import type {
   AppVersionId,
   CompanyId,
   Person,
+  PersonId,
   ProjectId,
   VersionFileInput,
 } from '@conexus/hub-api'
@@ -29,26 +30,35 @@ type Sending = Ids & { scope: Scope; versionId: AppVersionId; received: Received
 
 type Admitting = Pick<SendDeps, 'identity' | 'projects'>
 
+type VersionAction = 'manageAppVersions' | 'readAppVersions' | 'sendBuilderVersion'
+
 async function admitTo(
   deps: Admitting,
   tx: ReadTx,
-  input: Ids & { person: Person; action: 'manageAppVersions' | 'readAppVersions' },
+  input: Ids & { personId: PersonId; action: VersionAction },
 ) {
-  const { person, companyId, action } = input
-  await deps.identity.admitMember({ tx, personId: person.id, companyId, action })
+  const { personId, companyId, action } = input
+  await deps.identity.admitMember({ tx, personId, companyId, action })
   const found = await deps.projects.liveProjectOf(tx, input)
   if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
 }
 
 /** Admits an owner or administrator to send or put back a version, holding their membership (S8). */
 export function admitManager(deps: Admitting, tx: CommandTx, input: Ids & { person: Person }) {
-  return admitTo(deps, tx, { ...input, action: 'manageAppVersions' })
+  return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'manageAppVersions' })
 }
 
 /** Admits an owner or administrator to read the versions of a Projeto not marked for deletion. */
 export function admitReader(deps: Admitting, tx: ReadTx, input: Ids & { person: Person }) {
-  return admitTo(deps, tx, { ...input, action: 'readAppVersions' })
+  return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'readAppVersions' })
 }
+
+/**
+ * Who sends: an owner or administrator from the Versões tab, or every member's Builder turn (step
+ * 14.1, X1); each holds the membership until the send's write commits (S8).
+ */
+const SENDERS = { versions: 'manageAppVersions', builder: 'sendBuilderVersion' } as const
+export type Sender = keyof typeof SENDERS
 
 /**
  * A version's Worker in the namespace, tagged with its company and Projeto (decision 0043), with the
@@ -154,15 +164,10 @@ async function stop(deps: SendDeps, sending: Sending, why: 'LOST' | 'GONE'): Pro
  * Puts the version on the air if the send still holds the claim and the Projeto is not marked for
  * deletion, under the admission read again (security S8).
  */
-function finish(deps: SendDeps, sending: Sending & { person: Person }) {
+function finish(deps: SendDeps, sending: Sending & { personId: PersonId; by: Sender }) {
   return deps.database.command(sending.scope, async (tx) => {
-    const { person, companyId } = sending
-    await deps.identity.admitMember({
-      tx,
-      personId: person.id,
-      companyId,
-      action: 'manageAppVersions',
-    })
+    const { personId, companyId, by } = sending
+    await deps.identity.admitMember({ tx, personId, companyId, action: SENDERS[by] })
     if ((await deps.projects.liveProjectOf(tx, sending)) === undefined)
       return { kind: 'GONE' } as const
     const held = await lockApp(tx, sending)
@@ -192,21 +197,22 @@ export type Sent = { version: AppVersion; created: boolean }
 export async function sendVersion(
   deps: SendDeps,
   input: Ids & {
-    person: Person
+    personId: PersonId
+    by: Sender
     manifest: unknown
     files: readonly VersionFileInput[]
     attemptKey: string
   },
 ): Promise<Sent> {
   const received = receiveVersion(input)
-  const { person, companyId, projectId } = input
-  const scope: Scope = { kind: 'COMPANY', companyId, personId: person.id }
+  const { personId, by, companyId, projectId } = input
+  const scope: Scope = { kind: 'COMPANY', companyId, personId }
   const stored = await deps.database.command(scope, async (tx) => {
-    await admitManager(deps, tx, input)
+    await admitTo(deps, tx, { ...input, action: SENDERS[by] })
     return storeAppVersion({
       tx,
       ids: { companyId, projectId },
-      sentBy: person.id,
+      sentBy: personId,
       received,
       attemptKey: input.attemptKey,
     })
@@ -214,7 +220,7 @@ export async function sendVersion(
   if (stored.kind === 'REPLAY') return { version: stored.version, created: false }
   const versionId = stored.version.id
   const sending: Sending = { scope, companyId, projectId, versionId, received }
-  deps.log.info({ by: person.id, companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')
+  deps.log.info({ by: personId, companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')
   // A throw on the way (the Hub's database, Neon refusing its key) abandons the send as well.
   const prepared = await prepare(deps, { ...sending, databaseReady: stored.databaseReady }).catch(
     async (error: unknown) => {
@@ -229,13 +235,13 @@ export async function sendVersion(
   if (prepared.kind === 'STOPPED') return stop(deps, sending, prepared.why)
   let finished: Awaited<ReturnType<typeof finish>>
   try {
-    finished = await finish(deps, { ...sending, person })
+    finished = await finish(deps, { ...sending, personId, by })
   } catch (error) {
     await abandon(deps, sending)
     throw error
   }
   if (finished.kind !== 'LIVE') return stop(deps, sending, finished.kind)
-  deps.log.info({ by: person.id, companyId, projectId, versionId }, 'APP_VERSION_LIVE')
+  deps.log.info({ by: personId, companyId, projectId, versionId }, 'APP_VERSION_LIVE')
   // The version is on the air: a prune that cannot finish now is retried by the next one.
   await prune(deps, sending).catch((error: unknown) => logFailure(deps.log, databaseFailure(error)))
   return { version: { ...stored.version, state: 'ready', live: true }, created: true }
