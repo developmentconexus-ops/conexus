@@ -242,3 +242,19 @@ test.each(READS)(
     expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('true')
   },
 )
+
+test('o comando que ainda diz sua saída mostra a saída, e a linha fecha quando ele termina (8)', () => {
+  const command: ToolItem = {
+    kind: 'tool',
+    id: 't-9',
+    toolCallId: 'call-9',
+    toolName: 'mastra_workspace_execute_command',
+    state: 'call',
+    args: { command: 'echo começo' },
+    output: 'começo\n',
+  }
+  const view = render(<ToolRow tool={command} />)
+  expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('true')
+  view.rerender(<ToolRow tool={{ ...command, state: 'result', result: 'começo\n' }} />)
+  expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+})
