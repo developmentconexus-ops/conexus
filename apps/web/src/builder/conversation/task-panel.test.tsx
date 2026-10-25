@@ -1,5 +1,5 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { z } from 'zod'
 import { hubServer } from '../../platform/test-hub.tsx'
@@ -107,4 +107,22 @@ test('a 390 px só a tarefa em andamento fica visível; sem nenhuma, a primeira 
     />,
   )
   expect(visible(waiting.container)).toEqual(['Conferir o app'])
+})
+
+test('toque no painel abre a lista inteira e outro toque a dobra (Critério 10)', () => {
+  render(<TaskPanel tasks={TASKS} streaming={true} />)
+  const toggle = screen.getByRole('button', { name: /Tarefas · 1 de 3/ })
+  function hidden() {
+    return screen
+      .getAllByRole('listitem')
+      .filter((item) => item.className.split(' ').includes('hidden'))
+  }
+  expect(toggle.getAttribute('aria-expanded')).toBe('false')
+  expect(hidden()).toHaveLength(2)
+  fireEvent.click(toggle)
+  expect(toggle.getAttribute('aria-expanded')).toBe('true')
+  expect(hidden()).toHaveLength(0)
+  fireEvent.click(toggle)
+  expect(toggle.getAttribute('aria-expanded')).toBe('false')
+  expect(hidden()).toHaveLength(2)
 })
