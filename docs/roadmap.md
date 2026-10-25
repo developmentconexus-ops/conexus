@@ -30,7 +30,7 @@ Aprovações e usos: [aprovações](approvals.md).
     14.2 **Correção de tudo.** Vê o Builder trabalhar como na Factory, agora feito sobre o Mastra; o que o app aprende espera a bancada.
     14.1 **A Prévia.** Abre na Prévia o app que ele escreveu (cartão fundido, #343; em construção).
     14.3 **Arquivos e voz.** Anexa um PDF, `.md`, `.txt` ou imagem na conversa com o Builder e dita a mensagem pelo microfone do navegador.
-    13.1 **O primeiro pedido.** O compositor do Início criando Projeto, o passo 4 da primeira entrada; o Início que você planeja deixa de ser o de hoje.
+    13.1 **O primeiro pedido.** Pede o primeiro app no compositor do Início, com **+** e microfone, e vê o Projeto criado; o passo 4 da primeira entrada. É o Início que você planeja.
 15. **Mudar o app.** Muda os dados sem perder nada.
 17. **Publicar.** Publica um app e o abre.
 18. **Entrar num app.** Convida alguém só para um app, e tira o acesso.
@@ -60,13 +60,15 @@ Aprovações e usos: [aprovações](approvals.md).
 
 ### O que fica fora do lançamento
 
-Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina (na conversa com o Builder eles entram, na 14.3). Transcrição de voz no servidor. Medição de uso, segundo idioma. Domínio de empresa.
+Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina (na conversa com o Builder eles entram, na 14.3). Medição de uso, segundo idioma. Domínio de empresa.
 
 ### As suas respostas de 2026-10-13
 
 1. **Código antigo só entra com os consertos médios e grandes feitos.** "2. A": "ele não manter decisões antigas só porque elas já foram
    feitas." Vive na regra do estudo, no `conexus-study`.
 2. **A 16 vai para depois da 21.1, antes da 22, com o número que tem.** Em 2026-10-22: "Cara, então vamos mudar esse roadmap aí, velho. Porque essa 16 pra mim não faz sentido entrar agora ... Deixarei ela mais pro final mesmo." e, à posição antes da 22, "Sim". Nenhuma etapa depende dela; os consertos de execução da auditoria e os testes 9 e 10 vão com ela.
+3. **Arquivos e voz entram como a 14.3, depois da 14.1.** "A1 sim B1 okay ... C sim", "B1 por agora".
+4. **O Início que você planeja vem depois da Prévia e da 14.3.** A ordem é 14.1, 14.3, 13.1: "Concordo documente tudo isso para ser registrado".
 
 ## 2. As etapas
 
@@ -90,8 +92,3 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 22 Ensaio geral | A 21.1 | O lugar da cópia fora do Neon | Ensaios das etapas 2, 7, 9, 12 e 13. Teste de carga |
 | 23 Primeira empresa | A 22 | Os riscos aceitos. O plano pago | A seção 11 da arquitetura |
 | 24 Conectores de serviços | A 23 | Quem faz o OAuth | O estudo do Mastra Platform e Connect (referência) |
-
-### As suas respostas de 2026-10-25
-
-3. **Arquivos e voz entram como a 14.3, depois da 14.1.** "A1 sim B1 okay ... C sim", "B1 por agora".
-4. **O Início que você planeja vem depois da Prévia e da 14.3.** A ordem é 14.1, 14.3, 13.1: "Concordo documente tudo isso para ser registrado".
