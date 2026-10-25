@@ -285,6 +285,12 @@ test('o passo final vazio com tarefas abertas volta ao modelo com elas; feitas, 
   assert.deepEqual(toldOpen(calls), calls.slice(2), 'the empty end went back with the open tasks')
   assert.equal(calls.length, 4)
   assert.equal(check.calls(), 1, 'the check ran once the tasks were done')
+  const evaluations = events.filter((event) => event.type === 'task_complete_evaluation')
+  assert.deepEqual(
+    evaluations.map((event) => Object(event.payload).passed),
+    [false, true],
+    'the screen is told each evaluation',
+  )
   assert.deepEqual(versionsOf(partsOf(events)), [
     { number: 1, changedFiles: 1, check: { state: 'passed' } },
   ])

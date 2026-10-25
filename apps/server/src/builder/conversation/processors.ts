@@ -1,9 +1,9 @@
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS } from '@conexus/app/check'
 import { BUILDER_TOOL } from '@conexus/hub-api'
-import type { MessageList } from '@mastra/core/agent'
-import type { OutputProcessor, ProcessOutputStepArgs } from '@mastra/core/processors'
-import type { RequestContext } from '@mastra/core/request-context'
+import { createScorer } from '@mastra/core/evals'
+import type { OutputProcessor } from '@mastra/core/processors'
+import { RequestContext } from '@mastra/core/request-context'
 import type { MastraCompositeStore } from '@mastra/core/storage'
 import type { TaskItemSnapshot } from '@mastra/core/tools'
 import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
@@ -38,7 +38,6 @@ export function checkTool(runs: Runs) {
   })
 }
 
-const FailedEnds = z.int().nonnegative().catch(0)
 const ControllerThread = z.object({ threadId: z.string() })
 
 /** The words of a failed check at the end of the turn, which Mastra gives the model before it answers again. */
@@ -70,51 +69,64 @@ async function openTasks(
   return summarizeTaskCheck(Array.isArray(tasks) ? tasks : []).incompleteTasks
 }
 
+type Verdict = { score: 0 | 1; reason: string }
+const FINISHED: Verdict = { score: 1, reason: 'Conexus has nothing more to ask of this turn.' }
+
 /**
- * The end of the turn (cards of steps 14, U4, and 14.2, U4): a step that ends the turn (no tool
- * call, an empty one included) with tasks open goes back to the model with them; one in a turn that
- * changed the app folder is checked, and a failure goes back with the report (`abort` with `retry`).
- * Both count in `CHECK_LIMITS.checks`, and the last lets the turn end, its version kept as
- * unfinished or not built. A machine that could not check costs no attempt; the turn ends, its
- * version kept as unchecked. Each round is told to the run, for the turn's line.
- * The failures are counted in the processor's state, not by `retryCount`, which Mastra 1.78.0 sets
- * back to 0 after any step it did not retry (`agent-*.js`, `nextProcessorRetryCount`), as each step
- * that fixes the app with a tool is.
+ * What the end of the turn is worth (cards of steps 14, U4, and 14.2, U3): a turn that ends (no
+ * tool call, an empty one included) with tasks open scores 0 with them; one that changed the app
+ * folder is checked, and a failure scores 0 with the report. Mastra gives the reason to the model
+ * and calls it again (`isTaskComplete`). Both count in `CHECK_LIMITS.checks`, and the last lets the
+ * turn end, its version kept as unfinished or not built. A machine that could not check costs no
+ * attempt; the turn ends, its version kept as unchecked. Each round is told to the run, for the
+ * turn's line. The rounds are the run's, not Mastra's iteration, which counts every step.
  */
-export function checkGate(deps: { runs: Runs; storage: MastraCompositeStore }): OutputProcessor {
+async function judge(
+  deps: { runs: Runs; storage: MastraCompositeStore },
+  requestContext: RequestContext,
+): Promise<Verdict> {
   const { runs } = deps
-  return {
-    id: 'conexus-check-gate',
-    async processOutputStep(args: ProcessOutputStepArgs): Promise<MessageList> {
-      const { requestContext, messageList, state } = args
-      if (requestContext === undefined || (args.toolCalls?.length ?? 0) > 0) return messageList
-      const open = await openTasks(deps.storage, requestContext)
-      if (open.length === 0 && !(await runs.changed(requestContext))) return messageList
-      const round = FailedEnds.parse(state.rounds) + 1
-      state.rounds = round
-      runs.rounded(requestContext, round)
-      const failed = FailedEnds.parse(state.failed) + 1
-      if (open.length > 0) {
-        state.failed = failed
-        if (failed < CHECK_LIMITS.checks) args.abort(unfinished(open), { retry: true })
-        runs.judged(requestContext, { state: 'unfinished', open: open.length })
-        return messageList
-      }
-      const checked = await runs.check(requestContext)
-      if (!checked.ok) {
-        runs.judged(requestContext, { state: 'unchecked', code: checked.error })
-        return messageList
-      }
-      if (checked.value.ok) {
-        runs.judged(requestContext, { state: 'passed' })
-        return messageList
-      }
-      state.failed = failed
-      if (failed < CHECK_LIMITS.checks) args.abort(feedback(checked.value, failed), { retry: true })
-      runs.judged(requestContext, { state: 'failed', code: 'APP_CHECK_FAILED' })
-      return messageList
-    },
+  const open = await openTasks(deps.storage, requestContext)
+  if (open.length === 0 && !(await runs.changed(requestContext))) return FINISHED
+  const round = runs.round(requestContext)
+  if (round === 0) return FINISHED
+  const last = round >= CHECK_LIMITS.checks
+  if (open.length > 0) {
+    if (!last) return { score: 0, reason: unfinished(open) }
+    runs.judged(requestContext, { state: 'unfinished', open: open.length })
+    return FINISHED
   }
+  const checked = await runs.check(requestContext)
+  if (!checked.ok) {
+    runs.judged(requestContext, { state: 'unchecked', code: checked.error })
+    return FINISHED
+  }
+  if (checked.value.ok) {
+    runs.judged(requestContext, { state: 'passed' })
+    return FINISHED
+  }
+  if (!last) return { score: 0, reason: feedback(checked.value, round) }
+  runs.judged(requestContext, { state: 'failed', code: 'APP_CHECK_FAILED' })
+  return FINISHED
+}
+
+/** The end of the turn as Mastra's `isTaskComplete` scores it, by code (Mastra Code `agent/goal` is a model's judge). */
+export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore }) {
+  return createScorer({
+    id: 'conexus-check',
+    name: 'Conferência do app',
+    description: "Open tasks and Conexus's check of the app at the end of the turn.",
+  })
+    .preprocess(async ({ run }) => {
+      const requestContext = new RequestContext<unknown>(Object.entries(run.requestContext ?? {}))
+      // Mastra scores a throw 0 and calls the model again, with no cap; a machine that fails here is one that could not check.
+      return judge(deps, requestContext).catch(() => {
+        deps.runs.judged(requestContext, { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' })
+        return FINISHED
+      })
+    })
+    .generateScore(({ results }) => results.preprocessStepResult.score)
+    .generateReason(({ results }) => results.preprocessStepResult.reason)
 }
 
 /**
