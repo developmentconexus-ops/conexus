@@ -12,6 +12,7 @@ import {
   textDelta,
 } from './test-events.ts'
 import { conversationOf, FIRST, PROJECT, SECOND, say, screens, typed, view } from './test-hub.tsx'
+import { displayOf, parkedOf } from './test-stream.tsx'
 import { UNCONFIRMED_SEND } from './text.ts'
 
 const { open, openConversation } = screens(hubServer())
@@ -218,4 +219,17 @@ test('o envio que falha tira o balão e deixa o texto no campo', async () => {
   expect((await screen.findByRole('alert')).textContent).toBe(UNCONFIRMED_SEND)
   expect(screen.queryByText(PENDING)).toBeNull()
   expect(typed(field)).toBe(STEER)
+})
+
+test('com um cartão esperando a pessoa, Parar e Esc cancelam, e a mensagem digitada fica pendente (44, 45)', async () => {
+  const { field, line, sent } = await answering()
+  const parked = parkedOf({ toolCallId: 'call-1', toolName: 'ask_user', args: { questions: [] } })
+  line().emit(agentEnd('suspended'))
+  line().emit(displayOf({ pendingSuspensions: parked }))
+  const stop = await screen.findByRole('button', { name: 'Parar' })
+  say(field, STEER)
+  expect(await screen.findByText(PENDING)).toBeTruthy()
+  fireEvent.keyDown(field, { key: 'Escape' })
+  await waitFor(() => expect(sent.some((one) => one.path.endsWith('/abort'))).toBe(true))
+  fireEvent.click(stop)
 })

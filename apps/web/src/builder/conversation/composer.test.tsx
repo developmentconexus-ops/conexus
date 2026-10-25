@@ -176,3 +176,20 @@ test('a busca do seletor acha pelo nome e pelo id do modelo', async () => {
     expect(screen.getAllByRole('option').map((one) => one.textContent)).toEqual(['Gemini 2.5 Pro']),
   )
 })
+
+test('Enter duas vezes antes de o envio responder manda a mensagem uma única vez', async () => {
+  const gate = Promise.withResolvers<void>()
+  const { field, sent } = await openConversation(conversationOf({ id: FIRST }), view(), {
+    message: async () => {
+      await gate.promise
+      return undefined
+    },
+  })
+  say(field, 'uma só')
+  fireEvent.keyDown(field, { key: 'Enter' })
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+  await waitFor(() => expect(sent.length).toBe(1))
+  gate.resolve()
+  await waitFor(() => expect(typed(field)).toBe(''))
+  expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(1)
+})
