@@ -3,7 +3,6 @@ import { APP_LIMITS, Manifest, mediaTypeOf, versionFiles } from '@conexus/app-co
 import type { VersionFileInput } from '@conexus/hub-api'
 import { z } from 'zod'
 import type { Result } from '../../platform/result.ts'
-import type { Exec } from './filesystem.ts'
 import { quoted } from './scripts.ts'
 
 /** The version a passing check left, as the send takes it (`receiveVersion` checks it again, security S2). */
@@ -78,6 +77,9 @@ const Packed = z.union([
   z.strictObject({ files: z.array(z.strictObject({ path: z.string(), base64: z.base64() })) }),
   z.strictObject({ error: z.enum(['TOO_LARGE', 'NOT_REGULAR', 'MISSING']) }),
 ])
+
+/** Runs a shell script in the machine. */
+export type Exec = (script: string) => Promise<{ exitCode: number; stdout: string; stderr: string }>
 
 /** `text` as JSON read by `schema`; text that is not JSON is the same refusal as a wrong shape. */
 export function parsedWith<T>(schema: z.ZodType<T>, text: string): z.ZodSafeParseResult<T> {

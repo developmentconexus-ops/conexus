@@ -1,5 +1,9 @@
 import type { ConversationId } from '@conexus/hub-api'
-import type { SandboxStartHook, WorkspaceSandbox } from '@mastra/core/workspace'
+import type {
+  SandboxStartHook,
+  WorkspaceFilesystem,
+  WorkspaceSandbox,
+} from '@mastra/core/workspace'
 import { MAX_BYTES } from '../git/public.ts'
 
 /** The machine's app folder, which the template makes, the file tools root in and the Builder is told of. */
@@ -20,7 +24,7 @@ export const ALLOWED_HOSTS = ['registry.npmjs.org']
  * The most bytes the Hub takes from the machine in one read, by the file tools or as the turn's
  * bundle: a version's cap, for nothing larger can be saved (code C59).
  */
-export const READ_MAX = MAX_BYTES
+const READ_MAX = MAX_BYTES
 
 /** The most output the Hub keeps of a command it runs in the machine: a `READ_MAX` file as base64, and its reply around it. */
 export const OUTPUT_MAX = Math.ceil(READ_MAX / 3) * 4 + 4096
@@ -48,7 +52,8 @@ export async function readCapped(
 
 /** What the machine's provider gives the Builder: a Mastra sandbox, how bytes cross, and the network. */
 export type Kit = {
-  sandbox: WorkspaceSandbox
+  /** The provider's own file API, when it has one, is what the file tools use. */
+  sandbox: WorkspaceSandbox & { readonly filesystem?: WorkspaceFilesystem }
   transport: Transport
   /** Narrows a running machine to the allowed hosts again. */
   closeNetwork(): Promise<void>
