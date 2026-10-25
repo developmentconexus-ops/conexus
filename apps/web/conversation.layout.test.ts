@@ -199,6 +199,7 @@ test('quem envia lendo mais acima vai para o fim da conversa, e o campo mostra o
   await field.fill('E o terceiro app?')
   await field.press('Enter')
   await page.getByText('E o terceiro app?', { exact: true }).waitFor()
+  await page.locator('[data-slot=input-group][data-busy]').waitFor()
   await atEnd(page)
   assert.equal(await page.locator('[data-slot=input-group][data-busy]').count(), 1)
   assert.equal(await focusDrawn(page), 'Mensagem para o Builder halo')
