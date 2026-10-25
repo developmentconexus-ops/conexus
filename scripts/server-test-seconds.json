@@ -113,7 +113,6 @@
   "src/platform/isolation-conversations.test.ts": 0.8,
   "src/platform/isolation-model-accounts.test.ts": 1.4,
   "src/platform/isolation-projects.test.ts": 0.7,
-  "src/platform/isolation-runs.test.ts": 1.1,
   "src/platform/isolation-versions.test.ts": 2.1,
   "src/platform/isolation.test.ts": 2.5,
   "src/platform/mail.test.ts": 10.1,
