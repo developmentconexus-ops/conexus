@@ -76,30 +76,59 @@ const REFUSALS: [string, Record<string, string>][] = [
   ['second-card', { 'docs/steps/e01-a.md': 'a\n', 'docs/steps/e02-b.md': 'b\n' }],
 ]
 
-const MECHANISMS =
-  '| Mecanismo | Nativo, nosso ou trazido | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |\n| --- | --- | --- | --- | --- | --- |\n| Git | trazido | `builder/git/` | — | nenhuma | nenhuma faz |\n'
+const HEADER =
+  '## A tabela de referência\n\n| Peça | Unidade | Hoje no main | Referência | Como a referência faz | Veredito | Prova, se não for nativo | Palavra do fundador | Arquivo novo |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n'
+function row(piece: string, verdict: string, proof: string) {
+  return `| ${piece} | U1 | \`a.ts:f\` | \`mastra@1.79.0\`, \`x.ts:1\` | uma linha | ${verdict} | ${proof} | não precisa | \`b.ts\` |\n`
+}
 
-/** The table of step 13's card, deleted at its closing (a583393^:docs/steps/e13-o-builder-escreve.md). */
-const STEP_13_TABLE =
-  '| Parte | Nova ou trazida | Arquivo da árvore nova | Refatorado na entrada | Decisões antigas que carrega, com a base |\n| --- | --- | --- | --- | --- |\n| Git (613 linhas) | trazida | `builder/git/` | prazo e sinal | pacote e avanço |\n| O resto | novo | `builder/` | — | candidata antes do `main` |\n'
-
-test('aceita o card com a tabela de mecanismos e a coluna de referência', () => {
-  const run = check({ 'docs/steps/e01-a.md': MECHANISMS })
+test('aceita o card com a tabela de referência', () => {
+  const table = `${HEADER}${row('Git', 'nativo', '—')}${row('Fila', 'embrulhado, soma o prazo', '—')}${row('Contas', 'remendo', 'medição, boundaries: pg 8.16.3')}\n## As unidades\n`
+  const run = check({ 'docs/steps/e01-a.md': `# Etapa\n\n${table}` })
   assert.equal(run.status, 0, run.stderr)
 })
 
-test('recusa a tabela do card da etapa 13: sem a coluna de referência e com "O resto"', () => {
-  const run = check({ 'docs/steps/e13-o-builder-escreve.md': STEP_13_TABLE })
+test('recusa o card sem a tabela de referência', () => {
+  const run = check({ 'docs/steps/e01-a.md': '# Etapa\n\n## As unidades\n' })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /^card-without-references: /m)
-  assert.match(run.stderr, /^card-rest-row: .*\| O resto \|/m)
 })
 
-test('recusa card-rest-row também com a coluna de referência', () => {
-  const run = check({ 'docs/steps/e01-a.md': `${MECHANISMS}| o resto | nosso | x | — | — | — |\n` })
+test('recusa a tabela com o cabeçalho antigo de mecanismos', () => {
+  const old =
+    '| Mecanismo | Nativo, nosso ou trazido | Arquivo | Como Mastra, vibesdk e Conexus OS fazem, `file:line` |\n| --- | --- | --- | --- |\n| Git | trazido | `git/` | nenhuma faz |\n'
+  const run = check({ 'docs/steps/e01-a.md': `## A tabela de referência\n\n${old}` })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^card-without-references: /m)
+})
+
+test('recusa a linha remendo sem a versão da biblioteca na prova', () => {
+  const run = check({ 'docs/steps/e01-a.md': `${HEADER}${row('Contas', 'remendo', 'medição')}` })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^card-remendo-version: .*Contas/m)
+})
+
+test('a linha remendo que nenhuma biblioteca faz cita o registro de decisão, e não uma versão', () => {
+  function git(proof: string) {
+    return `| Git | U1 | \`a.ts:f\` | nenhuma faz | uma linha | remendo | ${proof} | não precisa | \`b.ts\` |\n`
+  }
+  const cited = check({ 'docs/steps/e01-a.md': `${HEADER}${git('docs/decisions/0001-git.md')}` })
+  assert.equal(cited.status, 0, cited.stderr)
+  const bare = check({ 'docs/steps/e01-a.md': `${HEADER}${git('medição')}` })
+  assert.equal(bare.status, 1)
+  assert.match(bare.stderr, /^card-remendo-decision: .*Git/m)
+})
+
+test('recusa a linha sem veredito', () => {
+  const run = check({ 'docs/steps/e01-a.md': `${HEADER}${row('Git', 'talvez', '—')}` })
+  assert.equal(run.status, 1)
+  assert.match(run.stderr, /^card-row-verdict: .*Git/m)
+})
+
+test('recusa card-rest-row', () => {
+  const run = check({ 'docs/steps/e01-a.md': `${HEADER}${row('O resto', 'nativo', '—')}` })
   assert.equal(run.status, 1)
   assert.match(run.stderr, /^card-rest-row: /m)
-  assert.doesNotMatch(run.stderr, /card-without-references/)
 })
 
 for (const [name, changes] of REFUSALS) {

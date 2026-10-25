@@ -199,7 +199,7 @@ export function createBuilder(deps: {
     storage,
     agentControllers: { [BUILDER_ID]: controller },
   })
-  // Mastra 1.78.0 gives its logger to the store but not to the store's domains, which log their own
+  // Mastra 1.79.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
   for (const domain of Object.values(storage.stores)) domain?.__setLogger(mastra.getLogger())
   return { controller, memory, mastra, agent, queue: deps.queue }

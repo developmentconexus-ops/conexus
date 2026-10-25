@@ -13,9 +13,9 @@ refused for its media type or its origin.
 
 ## GitHub Actions and git
 
-- **Native candidates.** GitHub Actions' `$GITHUB_STEP_SUMMARY` and `git diff --numstat` can display a total, but neither interprets the card's per-unit folders, budgets, test exclusions and generated-file exclusions.
-- **Hand-made piece.** `scripts/change-budget.ts` reads the step card and numstat, groups changed source lines by unit folder, excludes tests/generated output and prints the total and each unit against its budget. `scripts/check-radius.ts` reads the declared radius and reports departures without failing.
-- **Why.** Delivery L2 says CI prints the size; L7 says radius departures are reported rather than stopped. The native candidates cannot resolve card-specific unit boundaries or budget text without this parser. Both checks append to the native step summary; neither is a gate.
+- **Native candidates.** GitHub Actions' `$GITHUB_STEP_SUMMARY` and `git diff --numstat` can display a changed file list, but neither resolves the card's per-unit folders and contract owners.
+- **Hand-made piece.** `scripts/check-radius.ts` reads the declared radius and reports departures without failing.
+- **Why.** Delivery L7 says radius departures are reported rather than stopped. The native candidates cannot resolve card-specific unit boundaries without this parser. The check appends to the native step summary; it is not a gate.
 
 ## Better Auth 1.7.8
 
@@ -886,7 +886,7 @@ refused for its media type or its origin.
   a scripted model and the test machine, then scores what Mastra saved with `checks.calledTool` and
   `checks.noToolErrors` from `@mastra/evals/checks`, and requires the only tool called to be the
   write tool. It does not use `runEvals`: the Builder's `Agent` is private to its controller, and
-  `runEvals` takes no tool mocks nor `unmockedToolPolicy` at 1.78.0 (`evals/run/index.d.ts`;
+  `runEvals` takes no tool mocks nor `unmockedToolPolicy` at 1.79.0 (`evals/run/index.d.ts`;
   `ItemToolMock` and `unmockedToolPolicy` live on dataset items, `datasets/experiment/types.d.ts:60-62`).
   The scripted model keys on facts the setup must give it (the app folder, the skill, the tools),
   not on the instructions' sentences. A second case has a person paste a password: it proves the

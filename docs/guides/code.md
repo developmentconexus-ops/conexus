@@ -217,7 +217,7 @@ Owners next door: [architecture](../architecture.md) for concepts and compositio
   without its proof, is a Bloqueia in review. A correct native solution stays when a guide
   conflicts: record the conflict for closing; ask the founder when behavior or scope changes
   ([delivery L7](delivery.md)). Failure: using `internalAdapter` when `auth.api` already serves
-  creates an unnecessary private dependency. [review, rule to write for the table's shape and the
+  creates an unnecessary private dependency. [review, check-docs-method for the table's shape, check-boundaries for the
   pinned versions]
 - **C76.** A lint suppression **must** name its cause, and the count of suppressions **must** live
   in a committed file that CI compares. [CI]
