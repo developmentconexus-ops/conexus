@@ -120,7 +120,7 @@ vão para a linha de ações dela, com os números no nome e no quadro; no toque
 e a dica das teclas some; "Builder esperando sua resposta" passa para o cartão da pergunta e do plano, e a linha de
 trabalho não aparece enquanto um cartão espera; "Não cole senhas, chaves ou tokens na conversa." sai do rodapé e vai
 para a conversa vazia e para o quadro do modelo; alvos de toque de 44 px, área segura do iPhone e instalação na tela
-inicial (manifesto, ícones, tela cheia). O computador não muda. O desenho de 390 e o critério 45, mais abaixo, já dizem isso.
+inicial (manifesto, ícones, tela cheia). O computador não muda. O desenho de 390 e o critério 45 acima já dizem isso.
 
 **Em espera.** U6 e U7 esperam a bancada e voltam numa emenda com a sua palavra; os critérios 21 a 26
 ficam como proposta.
