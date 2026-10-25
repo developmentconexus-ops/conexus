@@ -2,7 +2,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs'
 import type { Server } from 'node:http'
 import { createServer } from 'node:http'
 import { join, normalize } from 'node:path'
-import { APP_CONTENT_SECURITY_POLICY, mediaTypeOf } from '@conexus/app-contract'
+import { appContentSecurityPolicy, mediaTypeOf } from '@conexus/app-contract'
 import type { Page, Browser as PlaywrightBrowser } from 'playwright-core'
 import { chromium, errors } from 'playwright-core'
 import { z } from 'zod'
@@ -126,7 +126,7 @@ export async function browseInChromium({
 export async function navegador(ctx: CheckContext): Promise<Outcome> {
   const seen = await ctx.browse({
     folder: workOf(ctx, 'dist'),
-    policy: APP_CONTENT_SECURITY_POLICY,
+    policy: appContentSecurityPolicy("'none'"),
     timeoutMs: CHECK_LIMITS.stepMs,
   })
   if ('unavailable' in seen) return { state: 'platform', reason: seen.unavailable }

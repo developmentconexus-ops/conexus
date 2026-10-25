@@ -37,9 +37,14 @@ const STYLE = [
 /**
  * The page of a failure, in Portuguese and without script. Its log line has the Hub's shape, a pino
  * level and a code (scripts/log-line.ts), and nothing the person sent (security S41);
- * a `reason` is one of the fixed words of a no-answer from the Hub.
+ * a `reason` is one of the fixed words of a no-answer from the Hub. Only the Hub may frame it, so a
+ * failure inside the Prévia reads as on the app's own tab.
  */
-export async function failurePage(code: PageCode, reason?: NoAnswerReason): Promise<Response> {
+export async function failurePage(
+  code: PageCode,
+  hubOrigin: string,
+  reason?: NoAnswerReason,
+): Promise<Response> {
   const { status, phrase, action } = PAGES[code]
   const line = { msg: code, status, reason }
   if (status >= 500) console.error(JSON.stringify({ level: 50, ...line }))
@@ -55,7 +60,7 @@ export async function failurePage(code: PageCode, reason?: NoAnswerReason): Prom
   ].join('\n')
   const headers = withSecurityHeaders(
     new Headers({ 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }),
-    `default-src 'none'; style-src 'sha256-${styleHash}'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`,
+    `default-src 'none'; style-src 'sha256-${styleHash}'; base-uri 'none'; form-action 'none'; frame-ancestors ${hubOrigin}`,
   )
   return new Response(html, { status, headers })
 }

@@ -273,3 +273,15 @@ export function bareBodyIsNotAnAnswer(app: Parameters<typeof serve>[0]): void {
   // @ts-expect-error: a handler gives back answer(body), never the body alone (code C22).
   serve(app, echo, ({ body }) => ({ note: body.note }))
 }
+
+test('cabeçalhos: o Hub emoldura só os apps, na Prévia, e nada emoldura o Hub', async (t) => {
+  const app = await hub()
+  t.after(() => app.close())
+  for (const url of ['/api/health', '/api/nope', '/nope', '/apps/open']) {
+    const { headers } = await app.inject({ method: 'GET', url })
+    const policy = String(headers['content-security-policy']).split(';')
+    assert.ok(policy.includes('frame-src https://*.apps.example.test'), url)
+    assert.ok(policy.includes("frame-ancestors 'none'"), url)
+    assert.equal(headers['x-frame-options'], 'DENY')
+  }
+})

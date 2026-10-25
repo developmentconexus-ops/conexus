@@ -51,7 +51,10 @@ test('os 303 também levam os cabeçalhos de S24', async () => {
   assert.equal(response.status, 303)
   assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer')
   assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff')
-  assert.match(response.headers.get('Content-Security-Policy') ?? '', /frame-ancestors 'none'/)
+  assert.match(
+    response.headers.get('Content-Security-Policy') ?? '',
+    /frame-ancestors https:\/\/hub\.conexus\.fun$/,
+  )
   assert.equal(response.headers.get('Cache-Control'), 'no-store')
 })
 
