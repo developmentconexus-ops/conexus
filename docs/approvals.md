@@ -156,3 +156,5 @@ Em 2026-10-25, sobre o estudo refeito da etapa 14.1 (um app só até Publicar; A
 Em 2026-10-25, sobre o **Abrir app** da Prévia, que abre o app numa aba nova e deixa o Hub onde está: "Ah, isso pode mudar sim. Abrir app, abrir uma aba nova. Não tirar onde a gente tá no hub, tá? Porque isso é até chato."
 
 Cartão da etapa 14.1 aprovado em 2026-10-25 (commit 692b6ecab87730ba73ede1ff5458c716a8422d59): "Aprovo"
+
+Em 2026-10-25, sobre o tempo do fim do turno a "Prévia pronta" medido na U1 (12,5, 16,3 e 20,5 s em três turnos reais; o envio à Cloudflare de ~1 MB leva ~10 s, dos quais ~0,3 s são os bytes e ~9,7 s o processamento da Cloudflare em cinco chamadas; piso de 5,1 s numa versão mínima), acima dos ~13 s do cartão; aceitar o tempo como está, o critério 13 mantido: "A"
