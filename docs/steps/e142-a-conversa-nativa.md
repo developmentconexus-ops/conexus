@@ -712,7 +712,9 @@ C26, T24. **Prova.** 15.
 de `@mastra/code-sdk/agents/sandbox-filesystem` como a Factory, com `workdir` a pasta do app, sobre a
 `E2BSandbox` da conversa que a M5 já cria com a workspace (0051 Z2). Na E2B ele usa o arquivo nativo da
 máquina; no dublê, o comando. `apps/server/package.json` ganha o pacote; `stack.md` ganha a linha dele.
-Regras: T24. **Prova.** 16.
+Sai o teto de 64 MiB das ferramentas de arquivo: o `read_file` do Mastra lê o arquivo inteiro e só então
+corta por tokens (core 1.79 `workspace-BR4DJXoq.js:10920-10990`), e a Factory o usa assim; C59 é "should"; o
+teto do pacote do turno (`readCapped`) fica. Regras: C59, T24. **Prova.** 16.
 
 ## M5 A máquina da conversa
 
