@@ -154,3 +154,5 @@ Defeito da tela instalável (#337), corrigido fora de etapa: o `black-translucen
 Em 2026-10-25, sobre o estudo refeito da etapa 14.1 (um app só até Publicar; Alterações e "Pedir ao Builder para corrigir" fora): "Ok, pode ser então A1 e B1". Antes da construção, sobre como a Prévia funciona: "eu não quero que seja igual a 14.2". Se "Autorizo provas reais" (2026-10-21) vale para as provas da U1 (Cloudflare, E2B e iPhone): "Sim". Quem põe no app a versão do Builder, emenda à P3 A da etapa 9 só para o envio do Builder (todo membro que conversa; a aba Versões segue de dono e administrador): "X1".
 
 Em 2026-10-25, sobre o **Abrir app** da Prévia, que abre o app numa aba nova e deixa o Hub onde está: "Ah, isso pode mudar sim. Abrir app, abrir uma aba nova. Não tirar onde a gente tá no hub, tá? Porque isso é até chato."
+
+Cartão da etapa 14.1 aprovado em 2026-10-25 (commit 692b6ecab87730ba73ede1ff5458c716a8422d59): "Aprovo"
