@@ -95,6 +95,18 @@ export const QUESTION_CLOSED_PART: MastraMessagePart = {
   toolInvocation: QUESTION_DENIED,
 }
 
+/** The resumed run's message for the answered question: the result alone, as Mastra tells it, without the arguments. */
+export const QUESTION_ANSWERED_PART: MastraMessagePart = {
+  type: 'tool-invocation',
+  toolInvocation: {
+    state: 'result',
+    toolCallId: QUESTION_DENIED.toolCallId,
+    toolName: QUESTION_DENIED.toolName,
+    args: {},
+    result: { content: 'Answered', answers: ['Só eu'] },
+  },
+}
+
 /** A plan closed the same way: the same state, `submit_plan`'s arguments. */
 export const PLAN_DENIED: Invocation = {
   state: 'output-denied',

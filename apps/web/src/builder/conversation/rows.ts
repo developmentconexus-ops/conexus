@@ -286,6 +286,21 @@ function joined(first: TranscriptItem | undefined, later: TranscriptItem): Trans
 }
 
 /**
+ * What each question call asked, from the arguments of its call in any message: the resumed run
+ * tells the result alone, so the card must not wait for the call to be drawn to know its questions.
+ */
+function questionsAsked(messages: readonly Message[]): Map<string, Question[]> {
+  const asked = new Map<string, Question[]>()
+  for (const part of messages.flatMap((message) => message.parts)) {
+    if (part.type !== 'tool-invocation' || part.toolInvocation.toolName !== CARD_TOOLS.question)
+      continue
+    const questions = parseQuestions(part.toolInvocation.args)
+    if (questions.length > 0) asked.set(part.toolInvocation.toolCallId, questions)
+  }
+  return asked
+}
+
+/**
  * The one derivation of a turn's rows from the Builder's messages, live and read alike. Mastra
  * gives a tool's call and its result in different messages, so a row of the same call keeps the
  * place of the first and the state of the last. The seconds of a thought are in the message of
@@ -302,6 +317,12 @@ export function itemsOf(messages: readonly Message[], view: View): TranscriptIte
       if (at === undefined) placed.set(item.id, items.push(item) - 1)
       else items[at] = joined(items[at], item)
     }
+  }
+  const asked = questionsAsked(messages)
+  for (const [at, item] of items.entries()) {
+    if (item.kind !== 'card' || item.cardKind !== 'question' || item.questions.length > 0) continue
+    const questions = asked.get(item.toolCallId)
+    if (questions) items[at] = { ...item, questions }
   }
   const last = items.at(-1)
   if (view.live && last?.kind === 'reasoning') {
