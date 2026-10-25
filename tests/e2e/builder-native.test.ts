@@ -155,15 +155,12 @@ test('percurso nativo em Chromium: ferramentas, pensamento, tarefas e transcriç
     held.resolve()
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
     await transcript.getByText(PENDING).waitFor({ state: 'detached' })
-    // The one live/reread difference: HOLD is a text step that ends with tasks open, so `checkGate`
-    // aborts it with a retry and Mastra rolls the attempt back out of its store; the live fold shows
-    // it, the reread cannot (Mastra 1.78.0 `llm-execution-step.ts:2916-2925`, `rollbackToStepBoundary`
-    // at `message-list.ts:865`); the screen keeps what it showed, and drops it with its paragraph
-    // break here. Every other part is the same after the reload. A line keeps the
-    // open or closed it had while the turn ran, and a reload starts them closed, so both sides are
-    // read with every line open.
+    // Live and reread are the same: `isTaskComplete` keeps the text step that ended with tasks open
+    // (HOLD) and the screen drops the feedback it gives the model. A line keeps the open or closed it
+    // had while the turn ran, and a reload starts them closed, so both sides are read with every
+    // line open.
     await openEveryLine(chat)
-    const before = (await transcript.innerText()).replace(`\n\n${HOLD}`, '')
+    const before = await transcript.innerText()
     assertSteerBetween(before)
     await chat.reload()
     await chat.getByRole('button', { name: 'Parar' }).waitFor({ state: 'detached' })
