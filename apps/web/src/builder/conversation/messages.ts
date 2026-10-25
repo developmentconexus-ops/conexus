@@ -64,8 +64,13 @@ function isPersonSignal(message: Stored): boolean {
   )
 }
 
+const CompletionFeedback = z.object({ completionResult: z.unknown() })
+
 /** Mastra's message as the person reads it: theirs, or the Builder's; none of Mastra's others. */
 export function messageOf(message: Stored): Message | undefined {
+  // The words `isTaskComplete` gives the model (`filterMessagesForSubAgent` drops them the same way).
+  if (CompletionFeedback.safeParse(message.content.metadata).data?.completionResult)
+    return undefined
   const role =
     message.role === 'assistant'
       ? 'builder'

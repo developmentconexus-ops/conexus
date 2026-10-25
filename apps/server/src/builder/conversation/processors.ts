@@ -89,6 +89,7 @@ async function judge(
   const open = await openTasks(deps.storage, requestContext)
   if (open.length === 0 && !(await runs.changed(requestContext))) return FINISHED
   const round = runs.round(requestContext)
+  if (round === 0) return FINISHED
   const last = round >= CHECK_LIMITS.checks
   if (open.length > 0) {
     if (!last) return { score: 0, reason: unfinished(open) }
@@ -116,9 +117,14 @@ export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore }
     name: 'Conferência do app',
     description: "Open tasks and Conexus's check of the app at the end of the turn.",
   })
-    .preprocess(({ run }) =>
-      judge(deps, new RequestContext(Object.entries(run.requestContext ?? {}))),
-    )
+    .preprocess(async ({ run }) => {
+      const requestContext = new RequestContext<unknown>(Object.entries(run.requestContext ?? {}))
+      // Mastra scores a throw 0 and calls the model again, with no cap; a machine that fails here is one that could not check.
+      return judge(deps, requestContext).catch(() => {
+        deps.runs.judged(requestContext, { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' })
+        return FINISHED
+      })
+    })
     .generateScore(({ results }) => results.preprocessStepResult.score)
     .generateReason(({ results }) => results.preprocessStepResult.reason)
 }
