@@ -4,7 +4,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { expect, test } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { AGENT_START, agentEnd, RUNNING, stepStarted } from './test-events.ts'
+import { AGENT_START, agentEnd, RUNNING, signalStarted, stepStarted } from './test-events.ts'
 import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
 import { builderSaid, displayOf, parkedOf } from './test-stream.tsx'
 
@@ -57,7 +57,9 @@ async function asking(call: Extract<MastraPart, { type: 'tool-invocation' }>) {
   const line = opened.line()
   line.emit(AGENT_START)
   line.emit(RUNNING)
-  line.emit({ type: 'message_start', message: opened.shown.conversations[0]?.messages[0] })
+  line.emit(
+    signalStarted(opened.shown.conversations[0]?.messages[0]?.id ?? '', 'Monte a tabela de preços'),
+  )
   line.emit(stepStarted(STEP, [call]))
   const { toolCallId, toolName, args } = call.toolInvocation
   const parked = parkedOf({ toolCallId, toolName, args })

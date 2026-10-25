@@ -8,6 +8,7 @@ import {
   MSG_ID,
   RUNNING,
   readPage,
+  signalStarted,
   stepStarted,
   textDelta,
   updatePart,
@@ -24,7 +25,7 @@ async function running(text = 'Compare') {
   await waitFor(() => expect(opened.sent).toHaveLength(1))
   opened.line().emit(AGENT_START)
   opened.line().emit(RUNNING)
-  opened.line().emit({ type: 'message_start', message: opened.shown.conversations[0]?.messages[0] })
+  opened.line().emit(signalStarted(opened.shown.conversations[0]?.messages[0]?.id ?? '', text))
   await screen.findByText('Pensando…')
   return { ...opened, log: screen.getByRole('log', { name: 'Conversa com o Builder' }) }
 }
@@ -98,7 +99,6 @@ test.each([
     const { line, shown, log } = await running()
     const failure = ours({ type: 'data-conexus-failure', data: { code } })
     shown.conversations[0]?.messages.push(failure)
-    line().emit({ type: 'message_start', message: failure })
     line().emit(agentEnd('error'))
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull())
     expect(screen.queryByText('Pensando…')).toBeNull()

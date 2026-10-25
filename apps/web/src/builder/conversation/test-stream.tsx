@@ -1,20 +1,13 @@
 import { HttpResponse } from 'msw'
 import type { Stored } from './messages.ts'
+import { Display, recordedEvent } from './test-recorded.ts'
 
 /** Mastra's display state as its stream sends it, the fields the screen reads given. */
 export function displayOf(fields: Record<string, unknown> = {}) {
+  const idle = recordedEvent('abort', Display)
   return {
-    type: 'display_state_changed',
-    displayState: {
-      isRunning: false,
-      currentMessage: null,
-      pendingSuspensions: {},
-      tasks: [],
-      omProgress: null,
-      bufferingMessages: false,
-      bufferingObservations: false,
-      ...fields,
-    },
+    ...idle,
+    displayState: { ...idle.displayState, currentMessage: null, ...fields },
   }
 }
 

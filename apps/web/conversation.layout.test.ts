@@ -4,11 +4,16 @@ import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
 import { createHarness, DESKTOP, focusDrawn } from './layout-harness.ts'
+import {
+  AgentStart,
+  recordedEvent,
+  signalStarted,
+} from './src/builder/conversation/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
 import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
 import type { Said } from './sweep-session.ts'
-import { sessionReplies, storedOf } from './sweep-session.ts'
+import { sessionReplies } from './sweep-session.ts'
 
 // The conversation's scroll, composer and selector, measured in the browser: jsdom lays nothing out
 // and scrolls nothing (testing T23).
@@ -182,13 +187,12 @@ test('quem envia lendo mais acima vai para o fim da conversa, e o campo mostra o
     parts: [{ type: 'text', text: 'E o terceiro app?' }],
     createdAt: '2026-10-19T12:02:00.000Z',
   }
-  const said = storedOf(sent)
   Object.assign(
     replies,
     sessionReplies(FIRST, {
       messages: [...MESSAGES, sent],
       display: { isRunning: true },
-      events: [{ type: 'agent_start' }, { type: 'message_start', message: said }],
+      events: [recordedEvent('abort', AgentStart), signalStarted(sent.id, 'E o terceiro app?')],
     }),
   )
   const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })

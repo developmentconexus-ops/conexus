@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer } from '../../platform/test-hub.tsx'
-import { AGENT_START, RUNNING, stepStarted, textDelta } from './test-events.ts'
+import { AGENT_START, RUNNING, signalStarted, stepStarted, textDelta } from './test-events.ts'
 import { choose, conversationOf, FIRST, PROJECT, say, screens, typed, view } from './test-hub.tsx'
 import { builderSaid, personSaid } from './test-stream.tsx'
 
@@ -46,7 +46,7 @@ test('o Enter envia pelo sendMessage do Mastra; "Pensando…" e "Parar" até che
   expect(sent[0]?.body).toEqual({ message: asked })
   line().emit(AGENT_START)
   line().emit(RUNNING)
-  line().emit({ type: 'message_start', message: personSaid(asked) })
+  line().emit(signalStarted(personSaid(asked).id, asked))
   expect(await screen.findByText('Pensando…')).toBeTruthy()
   expect(screen.getByText(asked)).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Parar' })).toBeTruthy()

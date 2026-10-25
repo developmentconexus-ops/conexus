@@ -126,3 +126,5 @@ Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 7ee7b27f2853f9a918f277d36c5
 Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 9947ff473c1f8d5513eb6eb2edb6df640f7ce08e): "Essa mensagem responde de uma a outra, olhando essa daí, 1, A, aprovo, 2, A, 3, pode matar, e 4, confirmo."
 
 Em 2026-10-24, sobre a etapa 14.2: "4. B" e "A". A pergunta ou o plano aberto atravessa a atualização do servidor e também uma queda, pelo mesmo código: a cópia nova adota a volta.
+
+Migração `20261024171411_e142_drop_run` (apaga `builder.run`, `companies_with_runs()` e o papel `hub_runs`; D11), aprovada em 2026-10-24 sobre a migração de https://github.com/developmentconexus-ops/conexus/pull/314: "Pode"
