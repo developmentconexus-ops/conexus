@@ -1,91 +1,80 @@
-import type { MessagePart, ModelId } from '@conexus/hub-api'
-import { CircleAlertIcon, InfoIcon } from 'lucide-react'
+import type { ModelId } from '@conexus/hub-api'
+import { FailureData, MachineData, NoticeData, VersionData } from '@conexus/hub-api'
 import { ConexusMark } from '../../brand/mark.tsx'
-import { sentenceOfCode } from '../../platform/hub.ts'
 import { Bubble, BubbleContent } from '../../ui/bubble.tsx'
-import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { Message, MessageContent, MessageHeader } from '../../ui/message.tsx'
 import { modelLabel } from '../model-accounts/public.ts'
 import type { Row } from './fold.ts'
 import { fold } from './fold.ts'
-import { MachineLine, RestartedLine, VersionLine } from './machine-line.tsx'
+import { FailureLine, MachineLine, NoticeLine, VersionLine } from './machine-line.tsx'
 import { Markdown } from './markdown.tsx'
 import { PlanCard } from './plan-card.tsx'
 import { QuestionCard } from './question-card.tsx'
-import { TaskList } from './task-list.tsx'
+import type { TranscriptItem } from './rows.ts'
 import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
 
-function PartRow(props: { part: MessagePart; streaming: boolean }) {
-  const { part } = props
-  switch (part.type) {
+function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conexus' }> }) {
+  if (item.partType === 'data-conexus-machine') {
+    const parsed = MachineData.safeParse(item.data)
+    return parsed.success ? <MachineLine data={parsed.data} /> : null
+  }
+  if (item.partType === 'data-conexus-version') {
+    const parsed = VersionData.safeParse(item.data)
+    return parsed.success ? <VersionLine data={parsed.data} /> : null
+  }
+  if (item.partType === 'data-conexus-failure') {
+    const parsed = FailureData.safeParse(item.data)
+    return parsed.success ? <FailureLine data={parsed.data} /> : null
+  }
+  if (item.partType === 'data-conexus-notice') {
+    const parsed = NoticeData.safeParse(item.data)
+    return parsed.success ? <NoticeLine data={parsed.data} /> : null
+  }
+  return null
+}
+
+function ItemRow({ item, streaming }: { item: TranscriptItem; streaming: boolean }) {
+  switch (item.kind) {
     case 'text':
       return (
         <Bubble variant="ghost">
           <BubbleContent>
-            <Markdown text={part.text} streaming={props.streaming} />
+            <Markdown text={item.text} streaming={streaming} />
           </BubbleContent>
         </Bubble>
       )
     case 'reasoning':
-      return <ThinkingLine part={part} />
+      return <ThinkingLine part={item} />
     case 'tool':
-      return <ToolRow tool={part} />
-    case 'machine':
-      return <MachineLine key={part.phase} part={part} />
-    case 'version':
-      return <VersionLine part={part} />
-    case 'restarted':
-      return <RestartedLine part={part} />
-    case 'question':
-      return <QuestionCard part={part} />
-    case 'plan':
-      return <PlanCard part={part} />
-    case 'tasks':
-      return <TaskList part={part} />
-    case 'file':
-      return null
-    case 'notice':
-      return (
-        <Marker className="text-text">
-          <MarkerIcon>
-            <InfoIcon />
-          </MarkerIcon>
-          <MarkerContent>{part.text}</MarkerContent>
-        </Marker>
-      )
-    case 'failure':
-      return (
-        <Marker role="alert" className="text-danger">
-          <MarkerIcon>
-            <CircleAlertIcon />
-          </MarkerIcon>
-          <MarkerContent>{sentenceOfCode(part.code)}</MarkerContent>
-        </Marker>
-      )
+      return <ToolRow tool={item} />
+    case 'card':
+      return item.cardKind === 'question' ? <QuestionCard part={item} /> : <PlanCard part={item} />
+    case 'conexus':
+      return <ConexusPartRow item={item} />
     default:
-      return part satisfies never
+      return item satisfies never
   }
 }
 
-function keyOf(row: Row, at: number): string {
-  if (row.kind === 'group') return `group:${row.tools[0]?.id}`
-  if ('id' in row.part) return row.part.id
-  if ('toolCallId' in row.part) return `${row.part.type}:${row.part.toolCallId}`
-  return 'toolId' in row.part ? `${row.part.type}:${row.part.toolId}` : `${row.part.type}:${at}`
+function rowKey(row: Row, index: number): string {
+  if (row.kind === 'group') {
+    return `group-${row.tools[0]?.id ?? index}`
+  }
+  return row.item.id
 }
 
 /**
- * The Builder's turn: its mark, name and model, then its rows in the order they came. The last
- * row of an answer still arriving is the one at work.
+ * The Builder's turn (Criteria 8-12): mark, name, model badge, and its rows in arrival order.
  */
 export function BuilderTurn(props: {
-  parts: readonly MessagePart[]
+  items: readonly TranscriptItem[]
   model: ModelId | null
   streaming: boolean
 }) {
-  const rows = fold(props.parts)
+  const rows = fold(props.items)
+
   return (
     <Message>
       <MessageContent>
@@ -100,18 +89,24 @@ export function BuilderTurn(props: {
         </MessageHeader>
         {rows.length === 0 && props.streaming && (
           <ThinkingLine
-            part={{ type: 'reasoning', id: 'waiting', state: 'running', seconds: null }}
+            part={{
+              kind: 'reasoning',
+              id: 'waiting',
+              reasoning: '',
+              seconds: null,
+              streaming: true,
+            }}
           />
         )}
-        {rows.map((row, at) =>
+        {rows.map((row, index) =>
           row.kind === 'group' ? (
             <ToolGroup
-              key={keyOf(row, at)}
+              key={rowKey(row, index)}
               tools={row.tools}
-              working={props.streaming && at === rows.length - 1}
+              working={props.streaming && index === rows.length - 1}
             />
           ) : (
-            <PartRow key={keyOf(row, at)} part={row.part} streaming={props.streaming} />
+            <ItemRow key={rowKey(row, index)} item={row.item} streaming={props.streaming} />
           ),
         )}
       </MessageContent>

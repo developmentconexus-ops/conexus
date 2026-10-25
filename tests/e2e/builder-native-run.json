@@ -1,0 +1,117 @@
+{
+  "source": "Mastra export, run b6fc4af7",
+  "steps": [
+    {
+      "tools": ["skill"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_list_files"],
+      "text": false
+    },
+    {
+      "tools": ["skill_read"],
+      "text": false
+    },
+    {
+      "tools": ["skill_read", "ask_user"],
+      "text": false
+    },
+    {
+      "tools": ["ask_user"],
+      "text": false
+    },
+    {
+      "tools": ["ask_user"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_file_stat"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_write_file"],
+      "text": false
+    },
+    {
+      "tools": ["submit_plan"],
+      "text": false
+    },
+    {
+      "tools": ["skill"],
+      "text": false
+    },
+    {
+      "tools": ["task_write"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_read_file"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_list_files"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_write_file"],
+      "text": true
+    },
+    {
+      "tools": ["task_complete"],
+      "text": false
+    },
+    {
+      "tools": ["task_update"],
+      "text": false
+    },
+    {
+      "tools": ["conexus_check"],
+      "text": true
+    },
+    {
+      "tools": ["task_complete"],
+      "text": false
+    },
+    {
+      "tools": ["task_check"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_file_stat"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_mkdir"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_write_file"],
+      "text": false
+    },
+    {
+      "tools": ["mastra_workspace_write_file"],
+      "text": false
+    },
+    {
+      "tools": [],
+      "text": true
+    },
+    {
+      "tools": [],
+      "text": false
+    },
+    {
+      "tools": [],
+      "text": false
+    },
+    {
+      "tools": [],
+      "text": false
+    },
+    {
+      "tools": [],
+      "text": false
+    }
+  ]
+}

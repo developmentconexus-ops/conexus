@@ -9,35 +9,54 @@ import {
   TraceLine,
   TraceTitle,
 } from '../../ui/trace.tsx'
-import type { ToolPart } from './fold.ts'
-import { ToolIcon, ToolRow } from './tool-row.tsx'
-import { sentenceOf, summaryOf } from './tool-text.ts'
+import type { ToolItem } from './rows.ts'
+import { presentTool, summaryOfTools, toolStatus } from './tool-registry.ts'
+import { ToolRow } from './tool-row.tsx'
 
 /**
- * Three tools or more in a row, as one line. While the answer still works it names the tool in
+ * Three tools or more in a row, as one line (Criterion 9). While the answer still works it names the tool in
  * progress and how many are done, open; once it moves on it says what they did, closed. A person's
  * own opening or closing wins over both.
  */
-export function ToolGroup(props: { tools: ToolPart[]; working: boolean }) {
+export function ToolGroup(props: { tools: ToolItem[]; working: boolean }) {
   const { tools, working } = props
   const [chosen, setChosen] = useState<boolean>()
-  const active = tools.findLast((tool) => tool.state === 'running') ?? tools.at(-1)
-  const failed = tools.some((tool) => tool.state === 'error' || tool.state === 'denied')
+  const active = tools.findLast((t) => toolStatus(t) === 'running') ?? tools.at(-1)
+  const failed = tools.some((t) => {
+    const status = toolStatus(t)
+    return status === 'error' || status === 'denied'
+  })
+
+  const activePresentation = active ? presentTool(active, toolStatus(active)) : undefined
+
+  const summary = summaryOfTools(tools)
+
+  const completedCount = tools.filter((t) => toolStatus(t) !== 'running').length
+
   return (
     <TraceCollapsible open={chosen ?? working} onOpenChange={setChosen}>
       <TraceCollapsibleTrigger>
         <TraceLine status={working ? 'running' : failed ? 'error' : undefined}>
-          {working && active !== undefined ? (
-            <ToolIcon tool={active} />
+          {working && activePresentation ? (
+            <TraceIcon>
+              <activePresentation.icon />
+            </TraceIcon>
           ) : (
             <TraceIcon>{failed ? <CircleAlertIcon /> : <CheckIcon />}</TraceIcon>
           )}
           <TraceTitle>
-            {working && active !== undefined ? sentenceOf(active) : summaryOf(tools)}
+            {working && activePresentation ? (
+              activePresentation.sentence
+            ) : (
+              <>
+                <span className="md:hidden">{summary.short}</span>
+                <span className="hidden md:inline">{summary.full}</span>
+              </>
+            )}
           </TraceTitle>
           {working && (
             <TraceDescription>
-              {tools.filter((tool) => tool.state !== 'running').length}/{tools.length}
+              {completedCount}/{tools.length}
             </TraceDescription>
           )}
         </TraceLine>

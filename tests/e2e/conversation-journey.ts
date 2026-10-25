@@ -17,7 +17,7 @@ export const KEYS = {
 }
 export const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 export const DIEGO = { name: 'Diego Reis', email: 'diego@example.test' }
-export const SECOND_MODEL = 'llama-3.3-70b-versatile'
+export const SECOND_MODEL = 'openai/gpt-oss-120b'
 export const ANSWER_HEAD = 'Comparei os dois apps'
 const ANSWER_TAIL = ' pelo cardápio.'
 export const ANSWER = `${ANSWER_HEAD}${ANSWER_TAIL}`
@@ -186,8 +186,9 @@ export async function pickLevel(page: Page, choice: Locator, level: string) {
 }
 
 /**
- * Keeps every text the transcript shows, from the first load on: a notice is shown only while the
- * turn runs, and the double ends a turn in milliseconds, too soon for a poll to see it.
+ * Keeps every text the transcript and the task panel above the composer show, from the first load
+ * on: a notice is shown only while the turn runs, and the double ends a turn in milliseconds, too
+ * soon for a poll to see it.
  */
 export async function recordTranscript(page: Page) {
   await page.addInitScript(() => {
@@ -196,6 +197,8 @@ export async function recordTranscript(page: Page) {
     new MutationObserver(() => {
       const log = document.querySelector('[role=log]')
       if (log instanceof HTMLElement) shown.add(log.innerText)
+      const tasks = document.querySelector('[aria-label="Painel de tarefas"]')
+      if (tasks instanceof HTMLElement) shown.add(tasks.innerText)
     }).observe(document, { subtree: true, childList: true, characterData: true, attributes: true })
   })
 }

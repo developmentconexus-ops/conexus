@@ -26,7 +26,7 @@ import { createProject, liveHub, openHome, openProject } from './live-hub.ts'
 // new Projeto gets a screen-only version. The machine's check program is the one thing faked
 // beyond the providers: it prints a passing report.
 const WORKING = 'Builder trabalhando'
-const PLAN = '.conexus/plan.md'
+const PLAN = '.conexus/plans/encomendas.md'
 
 type Block = Extract<Reply, { kind: 'blocks' }>['blocks'][number]
 
@@ -231,17 +231,19 @@ async function questionsAndPlan(chat: Page) {
 async function firstVersion(chat: Page) {
   const transcript = transcriptOf(chat)
   await versionSaid(chat, /^Versão 1 guardada, montou: \d+ arquivos\.$/)
-  await transcriptShowed(chat, 'em andamento')
-  assert.equal(await transcript.getByText('concluída', { exact: true }).count(), 2)
+  // The tasks are the panel above the composer while the turn runs, never rows of the transcript.
+  await transcriptShowed(chat, 'Tarefas · 0 de 2')
+  await transcriptShowed(chat, 'Montando a tabela')
+  await chat.getByRole('region', { name: 'Painel de tarefas' }).waitFor({ state: 'hidden' })
   // The turn's tools in a row are one closed line that says what they did; it opens on each one.
-  await transcript.getByRole('button', { name: /rodou 1 comando/ }).click()
+  await transcript.getByRole('button', { name: /\d+ ferramentas: .*rodou/ }).click()
   await transcript.getByRole('button', { name: /Rodou um comando/ }).click()
   await transcript.locator('pre', { hasText: '$ ls shared server' }).waitFor()
   await outputWith(chat, 'operations.ts').waitFor()
   await chat.getByText(/Versão 1, guardada em/).waitFor()
-  for (const path of ['shared/operations.ts', 'server/handlers.ts', 'src/main.tsx'])
-    await chat.getByRole('button', { name: path, exact: true }).waitFor()
-  await chat.getByRole('button', { name: 'src/routes/home.tsx', exact: true }).click()
+  for (const name of ['operations.ts', 'handlers.ts', 'main.tsx'])
+    await chat.getByRole('treeitem', { name, exact: true }).waitFor()
+  await chat.getByRole('treeitem', { name: 'home.tsx', exact: true }).click()
   await chat
     .getByRole('region', { name: 'Conteúdo de src/routes/home.tsx' })
     .getByText('Encomendas da Padaria Sol')
@@ -253,7 +255,7 @@ async function libraryAdded(chat: Page) {
   const transcript = transcriptOf(chat)
   await ask(chat, 'Agora mostre as entregas num calendário.')
   await versionSaid(chat, 'Versão 2 guardada, montou: 2 arquivos mudados.')
-  await chat.getByRole('button', { name: 'src/routes/entregas.tsx', exact: true }).waitFor()
+  await chat.getByRole('treeitem', { name: 'entregas.tsx', exact: true }).waitFor()
 }
 
 /** Step 6: a new Projeto; the prices asked and typed; a version of screens alone that builds. */
@@ -270,9 +272,9 @@ async function screenOnly(chat: Page) {
   await transcript.getByRole('button', { name: 'Enviar' }).click()
   await versionSaid(chat, /^Versão 1 guardada, montou: \d+ arquivos\.$/)
   await chat.getByText(/Versão 1, guardada em/).waitFor()
-  await chat.getByRole('button', { name: 'src/routes/home.tsx', exact: true }).waitFor()
-  const files = chat.getByRole('list', { name: 'Arquivos do app' })
-  assert.equal(await files.getByRole('button', { name: /^(shared|server)\// }).count(), 0)
+  await chat.getByRole('treeitem', { name: 'home.tsx', exact: true }).waitFor()
+  const files = chat.getByRole('tree', { name: 'Arquivos do app' })
+  assert.equal(await files.getByRole('treeitem', { name: /^(shared|server)$/ }).count(), 0)
 }
 
 test('o roteiro do Builder que constrói: perguntas, plano ajustado e aprovado, tarefas, a versão que monta, uma biblioteca nova sem pergunta e um Projeto só de tela', async (t) => {

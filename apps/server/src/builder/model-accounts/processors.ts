@@ -9,7 +9,11 @@ import type {
   ProcessInputStepArgs,
   ProcessInputStepResult,
 } from '@mastra/core/processors'
-import { defaultStabilityErrorProcessors, StreamErrorRetryProcessor } from '@mastra/core/processors'
+import {
+  CyberRefusalHandler,
+  defaultStabilityErrorProcessors,
+  StreamErrorRetryProcessor,
+} from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { z } from 'zod'
 import { Failure } from '../../platform/failure.ts'
@@ -42,12 +46,18 @@ function lastStep(args: ProcessInputStepArgs): ProcessInputStepResult {
 
 type Writer = ProcessAPIErrorArgs['writer']
 
-type InfoEvent = { type: 'info'; message: string }
+type QueueEvent = { type: 'info'; message: string } | { type: 'error'; error: Failure }
 const ControllerEvents = z.object({
-  emitEvent: z.custom<(event: InfoEvent) => void>((value) => typeof value === 'function'),
+  emitEvent: z.custom<(event: QueueEvent) => void>((value) => typeof value === 'function'),
 })
 
-type Notifier = { requestContext?: RequestContext }
+type Notifier = { requestContext?: RequestContext | undefined }
+
+/** Says `event` on the run's controller, as a tool forwards its events. */
+function emit(args: Notifier, event: QueueEvent) {
+  const controller = ControllerEvents.safeParse(args.requestContext?.get('controller'))
+  if (controller.success) controller.data.emitEvent(event)
+}
 
 /**
  * A notice the person reads, said live as the controller's `info` event, since a live `data-*`
@@ -56,8 +66,7 @@ type Notifier = { requestContext?: RequestContext }
  */
 function notify(args: Notifier, turn: Turn, kind: Notice['kind'], text: string) {
   turn.notices.push({ kind, text })
-  const controller = ControllerEvents.safeParse(args.requestContext?.get('controller'))
-  if (controller.success) controller.data.emitEvent({ type: 'info', message: text })
+  emit(args, { type: 'info', message: text })
 }
 
 /**
@@ -72,6 +81,8 @@ function exhaust(args: Notifier, turn: Turn, modelId: ModelId, reason: string | 
       ? `As contas ${provider} que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.`
       : `${reason}.`
   notify(args, turn, 'accounts-exhausted', text)
+  // The run's error says why it ends: the call that fails next is the provider's, or none at all.
+  emit(args, { type: 'error', error: new Failure('MODEL_NO_ACCOUNT') })
 }
 
 function refusedText(label: string) {
@@ -185,14 +196,17 @@ export function accountPick(deps: QueueDeps): InputProcessor {
     id: 'conexus-account-pick',
     async processInputStep(args: ProcessInputStepArgs): Promise<ProcessInputStepResult> {
       const turn = turnIn(args.requestContext)
-      if (turn === undefined) return {}
+      // `turnOf` reads every run's input first: a run without a turn is the Builder's defect.
+      if (turn === undefined) return args.abort('NO_TURN')
       const account = await accountOf(deps, turn, args)
       if (account !== undefined) sayRefused(args, turn, account)
       await keepNotices(args, turn)
-      if (account === undefined) {
+      if (account === undefined)
         return { model: await noAccountModel(turn.modelId(args.requestContext)) }
+      const result: ProcessInputStepResult = {
+        ...lastStep(args),
+        model: account.models.conversation,
       }
-      const result: ProcessInputStepResult = { ...lastStep(args), model: account.model }
       const thinking = providerOptionsOf(account.modelId, turn.effort(args.requestContext))
       if (thinking !== undefined)
         result.providerOptions = withOptions(args.providerOptions, thinking)
@@ -273,14 +287,14 @@ async function afterFailure(deps: QueueDeps, args: ProcessAPIErrorArgs, turn: Tu
 }
 
 /** Mastra's own calls in a turn that are not the agent's: what the log names a failed one by. */
-export type SideCall = 'title' | 'observer' | 'reflection'
+type SideCall = 'title' | 'observer' | 'reflection'
 
 /**
  * The model with its failures logged by call and account, since Mastra's own log line carries
  * neither and its message is not ours to keep (security S41). The error is thrown on, to Mastra.
  */
 function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): LanguageModel {
-  const { model } = account
+  const model = account.models.system
   if (typeof model === 'string' || model.specificationVersion !== 'v3') return model
   function report(error: unknown): never {
     const fields = { companyId: turn.companyId, accountId: account.id, call }
@@ -301,19 +315,50 @@ function watched(deps: QueueDeps, turn: Turn, account: Picked, call: SideCall): 
 }
 
 /**
- * The model of Mastra's own calls in a turn, the title's, the observer's and the reflector's: the
- * turn's account, the pick in flight, or the queue's next one when the observer runs before the
- * queue (`agent.ts:2392-2404`).
+ * The model of Mastra's own calls in a turn: the title's is the turn's account. The observer's and
+ * the reflector's are the company's choice, read when the turn opened (`Turn.memoryModels`), picked
+ * once for the turn beside the queue and never through it: no rotation, no notice, a failure is
+ * the memory's own (`failurePolicy: 'continue'`) and is logged by `watched`. A choice with no
+ * account left follows the conversation's model. A call before the run read its input (the
+ * observer runs first) has no turn yet: `turnFor` makes one from the conversation, its own, which
+ * says nothing on the run and holds nothing once its account is picked.
  */
-export function accountModel(deps: QueueDeps, call: SideCall) {
+export function accountModel(
+  deps: QueueDeps,
+  call: SideCall,
+  turnFor: (requestContext: RequestContext) => Promise<Turn | undefined>,
+) {
   return async ({ requestContext }: { requestContext: RequestContext }) => {
-    const turn = turnIn(requestContext)
+    const running = turnIn(requestContext)
+    if (running !== undefined) return modelOf(deps, call, running, requestContext)
+    const turn = await turnFor(requestContext)
     if (turn === undefined) return noAccountModel(chosenModel(requestContext))
-    const account = await accountOf(deps, turn, { requestContext })
-    return account === undefined
-      ? noAccountModel(turn.modelId(requestContext))
-      : watched(deps, turn, account, call)
+    turn.modelId(requestContext)
+    try {
+      return await modelOf(deps, call, turn, undefined)
+    } finally {
+      turn.end()
+    }
   }
+}
+
+/** The account of a side call in `turn`; `requestContext` is where its notices are said, if anywhere. */
+async function modelOf(
+  deps: QueueDeps,
+  call: SideCall,
+  turn: Turn,
+  requestContext: RequestContext | undefined,
+) {
+  const chosen =
+    call === 'title' ? null : turn.memoryModels[call === 'observer' ? 'observer' : 'reflector']
+  const side =
+    chosen === null || chosen === turn.modelId(requestContext)
+      ? undefined
+      : await turn.sidePick(chosen, () => pickAccount(deps, turn, chosen))
+  const account = side ?? (await accountOf(deps, turn, { requestContext }))
+  return account === undefined
+    ? noAccountModel(turn.modelId(requestContext))
+    : watched(deps, turn, account, call)
 }
 
 /**
@@ -335,12 +380,14 @@ function accountRetry(retry: StreamErrorRetryProcessor): ErrorProcessor {
 }
 
 /**
- * The agent's error lane: Mastra's stability defaults in their order, its retry not repeating an
- * account's failure, then the queue, last, as in Mastra Code (`index.ts:1345-1393`).
+ * The agent's error lane: the refusal handler first, as `createCodingAgent` has it, so a cyber
+ * refusal is retried once before the retry or the queue sees it (`coding-agent/index.ts:113-129`);
+ * Mastra's stability defaults in their order, its retry not repeating an account's failure, then the
+ * queue, last, as in Mastra Code (`index.ts:1345-1393`).
  */
 export function accountErrorProcessors(deps: QueueDeps): ErrorProcessor[] {
   const defaults = defaultStabilityErrorProcessors().map((processor) =>
     processor instanceof StreamErrorRetryProcessor ? accountRetry(processor) : processor,
   )
-  return [...defaults, accountQueue(deps)]
+  return [new CyberRefusalHandler(), ...defaults, accountQueue(deps)]
 }

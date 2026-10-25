@@ -261,8 +261,6 @@ test('git: o histórico passa de 64 MiB e a semente e a cópia seguem', async (t
   }
   const seed = await repository.bundleOfMain()
   assert.ok(seed.byteLength > 64 * 1024 * 1024)
-  const copy = await repository.bundleOfRun(RunId.parse('00000000-0000-4000-8000-000000000013'))
-  assert.ok(copy.byteLength > 64 * 1024 * 1024)
   const fresh = await machine(t, seed)
   assert.equal(fresh.head(), parent)
 })

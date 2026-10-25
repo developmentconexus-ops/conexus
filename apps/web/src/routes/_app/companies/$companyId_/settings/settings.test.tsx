@@ -71,8 +71,9 @@ test('Configurações: Voltar, a busca, Você e a empresa, cada seção na sua o
     'Pessoas e convites',
     'Contas de modelo',
     'Padrões da empresa',
+    'Memória observacional',
   ])
-  expect(sections(nav)).toHaveLength(8)
+  expect(sections(nav)).toHaveLength(9)
 })
 
 test('a busca acha pelo nome e pelas palavras, sem acento: "convite" leva a Pessoas e convites', async () => {
@@ -106,7 +107,7 @@ test('a busca sem resultado diz "Nenhuma seção encontrada." e volta com o camp
   expect(sections(nav)).toHaveLength(0)
   fireEvent.change(search, { target: { value: '' } })
   expect(nav.queryByText('Nenhuma seção encontrada.')).toBeNull()
-  expect(sections(nav)).toHaveLength(8)
+  expect(sections(nav)).toHaveLength(9)
 })
 
 test('uma filha de settings com staticData.section aparece na sua ordem, sem mudar o índice', async () => {
@@ -127,6 +128,7 @@ test('uma filha de settings com staticData.section aparece na sua ordem, sem mud
     'Pessoas e convites',
     'Contas de modelo',
     'Padrões da empresa',
+    'Memória observacional',
   ])
   fireEvent.change(nav.getByRole('searchbox', { name: 'Buscar nas configurações' }), {
     target: { value: 'fatura' },

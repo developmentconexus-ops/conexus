@@ -1,4 +1,4 @@
-import type { MessagePart } from '@conexus/hub-api'
+import { ToolCallId } from '@conexus/hub-api'
 import { useId, useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { Dialog, DialogContent, DialogTrigger } from '../../ui/dialog.tsx'
@@ -6,19 +6,16 @@ import { Label } from '../../ui/label.tsx'
 import { Textarea } from '../../ui/textarea.tsx'
 import { Markdown } from './markdown.tsx'
 import { CARD_TEXT, useAnswer } from './question-card.tsx'
+import type { PlanCardItem } from './rows.ts'
 
-type PlanPart = Extract<MessagePart, { type: 'plan' }>
 type Decision = 'approved' | 'rejected'
 
-/** The words of a plan no longer open (card of step 14; founder, 2026-10-22, "Aprovo"). */
-const STATE_TEXT: Partial<Record<PlanPart['state'], string>> = {
+const STATE_TEXT: Record<string, string> = {
   approved: 'Plano aprovado.',
   rejected: 'Este plano foi substituído.',
   closed: 'Este plano foi fechado.',
-  expired: 'Este plano expirou.',
 }
 
-/** Whether the element's content is taller than the element shows, measured as it changes. */
 function useClipped() {
   const ref = useRef<HTMLDivElement>(null)
   const [clipped, setClipped] = useState(false)
@@ -30,7 +27,6 @@ function useClipped() {
       setClipped(box.scrollHeight > box.clientHeight)
     }
     measure()
-    // The box stops at its height; the text inside grows on, and both are measured.
     const observer = new ResizeObserver(measure)
     observer.observe(element)
     if (element.firstElementChild !== null) observer.observe(element.firstElementChild)
@@ -39,7 +35,6 @@ function useClipped() {
   return { ref, clipped }
 }
 
-/** A field that opens on a click takes focus once, as it appears (design V30). */
 function focusOnce(element: HTMLTextAreaElement | null) {
   element?.focus()
 }
@@ -54,7 +49,6 @@ type Answering = {
   decide: (action: Decision) => void
 }
 
-/** The two answers to a plan, the same on the card and in the whole plan's dialog. */
 function Reply({ answering }: { answering: Answering }) {
   const field = useId()
   const { sending, chosen } = answering
@@ -91,9 +85,8 @@ function Reply({ answering }: { answering: Answering }) {
   )
 }
 
-/** The person's answer to a plan: approve, or say what to change, the field opening first. */
-function useDecision(toolCallId: PlanPart['toolCallId']): Answering {
-  const { answer, sending, error } = useAnswer(toolCallId)
+function useDecision(part: PlanCardItem): Answering {
+  const { answer, sending, error } = useAnswer(ToolCallId.parse(part.toolCallId))
   const [chosen, setChosen] = useState<Decision>()
   const [reason, change] = useState('')
   const [asking, setAsking] = useState(false)
@@ -101,9 +94,9 @@ function useDecision(toolCallId: PlanPart['toolCallId']): Answering {
     const feedback = reason.trim()
     if (action === 'rejected' && feedback === '') return setAsking(true)
     setChosen(action)
-    void answer(
-      action === 'approved' ? { kind: 'plan', action } : { kind: 'plan', action, feedback },
-    )
+    // The plan as the card showed it goes back with the decision, so the history keeps it (`PlanResume`).
+    const shown = { title: part.title, plan: part.plan, path: part.path }
+    void answer(action === 'approved' ? { action, ...shown } : { action, feedback, ...shown })
   }
   return { sending, chosen, error, reason, asking, change, decide }
 }
@@ -114,10 +107,11 @@ function useDecision(toolCallId: PlanPart['toolCallId']): Answering {
  * Mastra playground-ui `plan.tsx:259` at ce7e9c30c1, Conexus OS `plan-pt.tsx:58-70` at e0353c36).
  * **Pedir ajustes** first opens the field for the reason, then sends it.
  */
-export function PlanCard({ part }: { part: PlanPart }) {
+export function PlanCard({ part }: { part: PlanCardItem }) {
   const { ref, clipped } = useClipped()
-  const answering = useDecision(part.toolCallId)
-  const title = part.title === '' ? 'Plano' : `Plano: ${part.title}`
+  const answering = useDecision(part)
+  const title = !part.title ? 'Plano' : `Plano: ${part.title}`
+  const plan = part.plan
   const waiting = part.state === 'open'
   return (
     <section
@@ -131,7 +125,7 @@ export function PlanCard({ part }: { part: PlanPart }) {
         data-clipped={clipped || undefined}
         className="max-h-80 overflow-hidden data-clipped:mask-b-from-60% data-clipped:mask-b-to-100%"
       >
-        <Markdown text={part.plan} />
+        <Markdown text={plan} />
       </div>
       {clipped && (
         <Dialog>
@@ -140,14 +134,15 @@ export function PlanCard({ part }: { part: PlanPart }) {
           </DialogTrigger>
           <DialogContent title={title}>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <Markdown text={part.plan} />
+              <Markdown text={plan} />
             </div>
             {waiting && <Reply answering={answering} />}
           </DialogContent>
         </Dialog>
       )}
-      {waiting && <Reply answering={answering} />}
-      {STATE_TEXT[part.state] !== undefined && (
+      {waiting ? (
+        <Reply answering={answering} />
+      ) : (
         <p className="text-text-2">{STATE_TEXT[part.state]}</p>
       )}
     </section>

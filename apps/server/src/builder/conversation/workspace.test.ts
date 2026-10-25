@@ -5,7 +5,8 @@ import { test } from 'node:test'
 import { CompanyId, ProjectId } from '@conexus/hub-api'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { asked, conversing, endOf, title } from './test-conversation.ts'
+import { partsOf } from './test-parts.ts'
 
 type Tool = { name: string; input: object }
 
@@ -51,7 +52,7 @@ test('pela rota, a escrita vai para o Projeto da conversa e não para o vizinho'
   assert.deepEqual(await written(second), ['b.ts'])
 })
 
-test('fora da pasta do app, por link ou escrevendo sem ler: recusado, e nada fora muda', async (t) => {
+test('fora da pasta do app e via link: recusado; regrava sem ler: aceita', async (t) => {
   const link = {
     name: 'mastra_workspace_execute_command',
     input: { command: 'ln -s .. saida' },
@@ -64,14 +65,16 @@ test('fora da pasta do app, por link ou escrevendo sem ler: recusado, e nada for
   )
   const { hub, ana, conversations } = await conversing(t, model)
   const { events } = await asked(t, { hub, person: ana, conversations })
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   const outside = join(hub.builder.folder, 'fora.ts')
   assert.equal(existsSync(outside), false)
   assert.equal(existsSync(join(hub.builder.folder, '..', 'fora.ts')), false)
-  const states = events.flatMap((event) =>
-    event.type === 'part' && event.part.type === 'tool' && event.part.state !== 'running'
-      ? [event.part.state]
-      : [],
-  )
-  assert.deepEqual(states, ['completed', 'error', 'completed', 'error', 'error'])
+  const ended = new Map<string, boolean>()
+  for (const part of partsOf(events)) {
+    if (part.type === 'tool-invocation' && part.toolInvocation.state === 'result') {
+      ended.set(part.toolInvocation.toolCallId, part.toolInvocation.isError === true)
+    }
+  }
+  // The outside write and the write through the symlink fail; a second write needs no prior read.
+  assert.deepEqual([...ended.values()], [false, true, false, true, false])
 })

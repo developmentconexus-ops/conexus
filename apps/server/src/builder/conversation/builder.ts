@@ -1,9 +1,11 @@
 import type { CompanyId, ModelId, PersonId } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, BUILDER_TOOL } from '@conexus/hub-api'
 import type { ToolsInput } from '@mastra/core/agent'
-import { Agent } from '@mastra/core/agent'
 import type { BuiltinToolId } from '@mastra/core/agent-controller'
 import { AgentController } from '@mastra/core/agent-controller'
+import { createCodingAgent } from '@mastra/core/coding-agent'
 import { Mastra } from '@mastra/core/mastra'
+import { CyberRefusalHandler } from '@mastra/core/processors'
 import type { RequestContext } from '@mastra/core/request-context'
 import { webFetchTool, webSearchTool } from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
@@ -29,14 +31,20 @@ import {
   createSubmitPlanTool,
   SUBMIT_PLAN_TOOL,
 } from './plan-tools.ts'
-import { CHECK_TOOL, checkGate, checkTool } from './processors.ts'
+import { checkTool, conexusCheck, workspaceMetadataLive } from './processors.ts'
 import { createMastraStorage } from './storage.ts'
+import type { ConversationIndex } from './turn-of.ts'
+import { projectIn, sideTurn, turnOf } from './turn-of.ts'
 
-const BUILDER_ID = 'builder'
+/** The Builder's controller, as Mastra's routes name it (`/agent-controller/builder/…`). */
+export const BUILDER_ID = BUILDER_CONTROLLER
 const CONVERSATION_MODE = 'conversa'
 
 const TITLE_INSTRUCTIONS =
   'Dê à conversa um título curto em português, de até seis palavras, sem aspas nem ponto final.'
+/** The observer's title guidance names no language (Conexus OS `e0353c36` `builder/memory.ts:28`). */
+const OBSERVER_INSTRUCTION =
+  'Escreva o título da conversa em português do Brasil, sobre o que a pessoa quer construir ou mudar no app.'
 // The providers whose native search Mastra resolves (`webSearchTool`); Google through CLIProxy
 // stays out until the live proof of criterion 3 passes.
 const SEARCH_PROVIDERS = new Set(['anthropic', 'openai', 'xai'])
@@ -60,7 +68,7 @@ function sessionModel(requestContext: RequestContext): ModelId & `${string}/${st
 
 /** `web_fetch` and the check always; `web_search` only where Mastra resolves the provider's own search. */
 function toolsOf(modelId: ModelId, check: ToolsInput[string]): ToolsInput {
-  const tools: ToolsInput = { web_fetch: webFetchTool, [CHECK_TOOL]: check }
+  const tools: ToolsInput = { web_fetch: webFetchTool, [BUILDER_TOOL.check]: check }
   if (SEARCH_PROVIDERS.has(providerOf(modelId))) tools.web_search = webSearchTool
   return tools
 }
@@ -77,42 +85,45 @@ export function memoryOwner(owner: { companyId: CompanyId; personId: PersonId })
 }
 
 /**
- * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
- * from the session and given its account by the queue's processors, its memory, its title and its
- * observation through the same account, in Mastra's own database.
+ * The Builder's memory: its title and its observation through the turn's account, failing soft,
+ * in Mastra's own database, with Mastra Code's idle activation, observer context and titles
+ * (`agents/memory.ts:355-417`).
  */
-export function createBuilder(deps: {
-  pool: MastraPool
-  queue: QueueDeps
-  runs: Runs
-  log: FailureLog
-  projectName: Parameters<typeof builderInstructions>[0]['projectName']
-}) {
-  const storage = createMastraStorage(deps.pool)
-  const check = checkTool(deps.runs)
-  const modelSettings = { timeout: MODEL_TIMEOUT }
+function builderMemory(
+  storage: ReturnType<typeof createMastraStorage>,
+  queue: QueueDeps,
+  modelSettings: { timeout: typeof MODEL_TIMEOUT },
+): Memory {
   const failSoft = { modelSettings, maxRetries: 0, failurePolicy: 'continue' as const }
-  const memory = new Memory({
+  const turnFor = sideTurn(queue)
+  return new Memory({
     storage,
     options: {
-      generateTitle: { model: accountModel(deps.queue, 'title'), instructions: TITLE_INSTRUCTIONS },
+      generateTitle: {
+        model: accountModel(queue, 'title', turnFor),
+        instructions: TITLE_INSTRUCTIONS,
+      },
       observationalMemory: {
         enabled: true,
         scope: 'thread',
-        retrieval: true,
+        retrieval: { scope: 'thread' },
+        activateAfterIdle: { default: 'auto', anthropic: '1h' },
         activateOnProviderChange: true,
         temporalMarkers: true,
         observation: {
           ...failSoft,
-          model: accountModel(deps.queue, 'observer'),
+          model: accountModel(queue, 'observer', turnFor),
           messageTokens: 30_000,
           bufferTokens: 1 / 5,
           bufferActivation: 2000,
           blockAfter: 2,
+          previousObserverTokens: 1000,
+          threadTitle: true,
+          instruction: OBSERVER_INSTRUCTION,
         },
         reflection: {
           ...failSoft,
-          model: accountModel(deps.queue, 'reflection'),
+          model: accountModel(queue, 'reflection', turnFor),
           observationTokens: 40_000,
           bufferActivation: 1 / 2,
           blockAfter: 1.1,
@@ -120,19 +131,52 @@ export function createBuilder(deps: {
       },
     },
   })
-  const agent = new Agent({
+}
+
+/**
+ * The Builder (decision 0050): one agent shared by every conversation, its keyless model taken
+ * from the session and given its account by the queue's processors, its memory, its title and its
+ * observation through the same account, in Mastra's own database. It is Mastra Code's agent
+ * (`sdk/src/index.ts:1216-1223`): no workspace of its own, since the controller lends the turn's
+ * machine, and the task list's signal with `memory`.
+ */
+export function createBuilder(deps: {
+  pool: MastraPool
+  queue: QueueDeps
+  runs: Runs
+  index: ConversationIndex
+  log: FailureLog
+  projectName: Parameters<typeof builderInstructions>[0]['projectName']
+}) {
+  const storage = createMastraStorage(deps.pool)
+  const check = checkTool(deps.runs)
+  const projectOf = projectIn(deps.index)
+  const modelSettings = { timeout: MODEL_TIMEOUT }
+  const memory = builderMemory(storage, deps.queue, modelSettings)
+  const agent = createCodingAgent({
     id: BUILDER_ID,
     name: 'Builder',
-    instructions: builderInstructions({ runs: deps.runs, projectName: deps.projectName }),
+    instructions: builderInstructions({
+      runs: deps.runs,
+      projectOf,
+      projectName: deps.projectName,
+    }),
     skills: APP_SKILLS,
     model: ({ requestContext }) => sessionModel(requestContext),
     tools: ({ requestContext }) => toolsOf(sessionModel(requestContext), check),
-    inputProcessors: [accountPick(deps.queue)],
-    outputProcessors: [checkGate(deps.runs)],
+    inputProcessors: [turnOf(deps), accountPick(deps.queue)],
+    workspace: undefined,
+    outputProcessors: [new CyberRefusalHandler(), workspaceMetadataLive],
     errorProcessors: accountErrorProcessors(deps.queue),
     maxRetries: 0,
     maxProcessorRetries: MAX_PROCESSOR_RETRIES,
-    defaultOptions: { modelSettings },
+    defaultOptions: {
+      modelSettings,
+      isTaskComplete: {
+        scorers: [conexusCheck({ runs: deps.runs, storage })],
+        strategy: 'all',
+      },
+    },
     memory,
   })
   const controller = new AgentController({
@@ -141,8 +185,11 @@ export function createBuilder(deps: {
     memory,
     agent,
     modes: [{ id: CONVERSATION_MODE, availableTools: TOOL_CLOSURE.availableTools }],
-    // The turn's run owns its workspace; a session made outside a turn has none.
-    workspace: ({ requestContext, mastra }) => deps.runs.workspaceOf(requestContext, mastra),
+    // The conversation's machine (Factory `session-sandbox.ts:29-36`); none outside a conversation.
+    workspace: async ({ requestContext, mastra }) => {
+      const ids = await projectOf(requestContext)
+      return ids === undefined ? undefined : deps.runs.workspaceOf(ids, mastra)
+    },
     disableBuiltinTools: BUILTIN_TOOLS,
     tools: { [ASK_USER_TOOL]: createAskUserTool(), [SUBMIT_PLAN_TOOL]: createSubmitPlanTool() },
     initialState: TOOL_CLOSURE.initialState,
@@ -155,7 +202,7 @@ export function createBuilder(deps: {
   // Mastra 1.78.0 gives its logger to the store but not to the store's domains, which log their own
   // failures; each domain takes it by the same `__setLogger` (code C50). Revisit on an upgrade.
   for (const domain of Object.values(storage.stores)) domain?.__setLogger(mastra.getLogger())
-  return { controller, memory, mastra, agent }
+  return { controller, memory, mastra, agent, queue: deps.queue }
 }
 
 export type Builder = ReturnType<typeof createBuilder>

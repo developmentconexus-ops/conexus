@@ -1848,17 +1848,6 @@
     }
   },
   {
-    "id": "machine-fs-no-link",
-    "file": "apps/server/src/builder/machine/in-machine.ts",
-    "find": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY | O_NOFOLLOW)\n",
-    "replace": "      next = fs.openSync(at(dir, step), O_RDONLY | O_DIRECTORY)\n",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/machine/machine-files.test.ts",
-      "name": "fora.ts"
-    }
-  },
-  {
     "id": "machine-network-closed",
     "file": "apps/server/src/builder/machine/e2b.ts",
     "find": "denyOut: [ALL_TRAFFIC] },\n      metadata",
@@ -1867,39 +1856,6 @@
       "cwd": "apps/server",
       "file": "src/builder/machine/machine-e2b.test.ts",
       "name": "lista de domínios"
-    }
-  },
-  {
-    "id": "release-stops-runs",
-    "file": "apps/server/src/builder/runs/removal.ts",
-    "find": "  for (const stopped of await store.stop({ companyId, projectId, personId })) {\n    await context.stopped(stopped)\n  }\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-removal.test.ts",
-      "name": "no meio de um turno"
-    }
-  },
-  {
-    "id": "write-needs-read",
-    "file": "apps/server/src/builder/machine/machines.ts",
-    "find": "        [WORKSPACE_TOOLS.FILESYSTEM.WRITE_FILE]: { requireReadBeforeWrite: true },\n",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/conversation/workspace.test.ts",
-      "name": "fora da pasta do app"
-    }
-  },
-  {
-    "id": "journal-checks-owner",
-    "file": "apps/server/src/builder/runs/store.ts",
-    "find": " and r.owner = ${this.#owner}::uuid",
-    "replace": "",
-    "test": {
-      "cwd": "apps/server",
-      "file": "src/builder/runs/runs-lease.test.ts",
-      "name": "dois processos"
     }
   },
   {

@@ -6,6 +6,8 @@ import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
+import type { Said } from './sweep-session.ts'
+import { parkedOf, sessionReplies } from './sweep-session.ts'
 
 const ID = '33333333-3333-4333-8333-333333333333'
 const PATH = `/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations/${ID}`
@@ -20,25 +22,32 @@ const PLAN = [
   '',
   'A tabela `encomenda` e as operações de listar e criar.',
 ].join('\n')
+const QUESTIONS = {
+  questions: [
+    {
+      question: 'Quem cadastra as encomendas?',
+      options: [{ label: 'Todos (recomendado)' }, { label: 'Só eu' }],
+      multiSelect: false,
+    },
+  ],
+}
+const PLAN_ARGS = { title: 'App de encomendas', plan: PLAN }
 const COMMAND = 'npm test -- --reporter=dot src/encomendas/um-caminho-bem-comprido.test.ts'
 
-const CARDS = readConversation.success.body.parse({
-  conversation: {
-    id: ID,
-    title: 'Encomendas',
-    createdAt: '2026-10-22T12:00:00.000Z',
-    model: 'anthropic/claude-sonnet-4',
-    effort: 'off',
-    messages: [
+const MESSAGES: Said[] = [
+  {
+    id: 'm1',
+    role: 'builder',
+    parts: [
+      { type: 'data-conexus-thought', data: { seconds: 9 } },
+      { type: 'reasoning', reasoning: 'Vou conferir as entregas da padaria.', details: [] },
       {
-        id: 'm1',
-        role: 'builder',
-        parts: [
-          { type: 'reasoning', id: 'r1', state: 'completed', seconds: 9 },
-          {
-            type: 'question',
-            toolCallId: 'q0',
-            state: 'answered',
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'result',
+          toolCallId: 'q0',
+          toolName: 'ask_user',
+          args: {
             questions: [
               {
                 question: 'Quais dias a padaria entrega?',
@@ -46,55 +55,47 @@ const CARDS = readConversation.success.body.parse({
                 multiSelect: true,
               },
             ],
-            answers: [['Sábado', 'Domingo']],
           },
-          {
-            type: 'version',
-            number: 2,
-            changed: true,
-            files: 9,
-            changedFiles: 3,
-            check: { state: 'failed', code: 'APP_CHECK_FAILED' },
-          },
-          {
-            type: 'version',
-            number: 3,
-            changed: true,
-            files: 9,
-            changedFiles: 1,
-            check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' },
-          },
-          {
-            type: 'tool',
-            id: 'c1',
-            kind: 'run_command',
-            state: 'completed',
-            subject: { command: COMMAND },
-            detail: {
-              kind: 'command',
-              command: COMMAND,
-              output: ['18 passaram', `1 falhou: ${'x'.repeat(120)}`],
-              exitCode: 1,
-              cut: true,
-            },
-          },
-          {
-            type: 'tasks',
-            items: [
-              { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
-              {
-                id: '2',
-                content: 'Fazer a tela',
-                activeForm: 'Fazendo a tela',
-                status: 'in_progress',
-              },
-              { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
-            ],
-          },
-          {
-            type: 'question',
-            toolCallId: 'q1',
-            state: 'open',
+          result: { answers: [['Sábado', 'Domingo']] },
+        },
+      },
+      {
+        type: 'data-conexus-version',
+        data: {
+          number: 2,
+          changed: true,
+          files: 9,
+          changedFiles: 3,
+          check: { state: 'failed', code: 'APP_CHECK_FAILED' },
+        },
+      },
+      {
+        type: 'data-conexus-version',
+        data: {
+          number: 3,
+          changed: true,
+          files: 9,
+          changedFiles: 1,
+          check: { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' },
+        },
+      },
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'result',
+          toolCallId: 'c1',
+          toolName: 'mastra_workspace_execute_command',
+          args: { command: COMMAND },
+          result: `18 passaram\n1 falhou: ${'x'.repeat(120)}`,
+        },
+      },
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'call',
+          toolCallId: 'q1',
+          toolName: 'ask_user',
+          args: {
             questions: [
               {
                 question: 'Quem cadastra as encomendas?',
@@ -103,11 +104,38 @@ const CARDS = readConversation.success.body.parse({
               },
             ],
           },
-          { type: 'plan', toolCallId: 'p1', title: 'App de encomendas', plan: PLAN, state: 'open' },
-        ],
-        model: 'anthropic/claude-sonnet-4',
-        createdAt: '2026-10-22T12:01:00.000Z',
+        },
       },
+      {
+        type: 'tool-invocation',
+        toolInvocation: {
+          state: 'call',
+          toolCallId: 'p1',
+          toolName: 'submit_plan',
+          args: { title: 'App de encomendas', plan: PLAN },
+        },
+      },
+    ],
+    model: 'anthropic/claude-sonnet-4',
+    createdAt: '2026-10-22T12:01:00.000Z',
+  },
+]
+
+const PARKED = parkedOf(
+  { toolCallId: 'q1', toolName: 'ask_user', args: QUESTIONS },
+  { toolCallId: 'p1', toolName: 'submit_plan', args: PLAN_ARGS },
+)
+const CARDS = readConversation.success.body.parse({
+  conversation: {
+    id: ID,
+    title: 'Encomendas',
+    createdAt: '2026-10-22T12:00:00.000Z',
+    model: 'anthropic/claude-sonnet-4',
+    effort: 'off',
+    tasks: [
+      { id: '1', content: 'Montar a tabela', activeForm: 'Montando', status: 'completed' },
+      { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'in_progress' },
+      { id: '3', content: 'Conferir', activeForm: 'Conferindo', status: 'pending' },
     ],
   },
 })
@@ -115,7 +143,8 @@ const CARDS = readConversation.success.body.parse({
 const REPLIES = {
   ...WITH_CONVERSATIONS,
   [`GET ${API}`]: ok(readConversation, CARDS),
-  [`GET ${API}/events`]: { status: 200 },
+  // The cards wait on the person: Mastra's display state holds their calls.
+  ...sessionReplies(ID, { messages: MESSAGES, display: { pendingSuspensions: PARKED } }),
 }
 
 /** On a phone the conversation is the other region of "App | Conversa". */
@@ -165,7 +194,7 @@ export const CARD_STATES: State[] = [
     settle: async (page) => {
       await inChat(page)
       await page.getByRole('button', { name: /Rodou um comando/ }).click()
-      await waitFor(page, 'O comando terminou com o código 1.')
+      await waitFor(page, '1 falhou')
     },
   },
 ]

@@ -1,12 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import type { Config } from '../../platform/config.ts'
-import type { Database } from '../../platform/database.ts'
 import { silent } from '../../platform/test-database.ts'
 import type { GitCopy, Repository, Sha } from '../git/public.ts'
 import { openRepository, restoreGuarded } from '../git/public.ts'
-import type { MachineApi } from '../machine/public.ts'
 import { createMachines } from '../machine/public.ts'
 import { INSTALLATION, localKit, newControl } from '../machine/test-machine.ts'
 
@@ -48,50 +46,25 @@ export function memoryCopy() {
   return { copy, held, refuse }
 }
 
-/** What a test sets: how long a turn may run, how often its lease is renewed, and how a save is cut. */
+/** What a test sets: where a save waits, and how many kills fail. */
 type Knobs = {
-  turnMs: number
-  renewMs: number
-  yieldMs: number
-  /** How long a question waits for its answer. */
-  questionMs: number
-  dies: { receive: number; advance: number }
   /** While set, a save waits before it checks the turn's commit in. */
   holdReceive: Promise<void> | undefined
-  /** While set, a save waits before it moves `main`. */
-  holdAdvance: Promise<void> | undefined
+  /** The next kills that fail, as an E2B that is out. */
+  refuseKills: number
 }
 
 function newKnobs(): Knobs {
-  return {
-    turnMs: 3_600_000,
-    renewMs: 30_000,
-    yieldMs: 8_000,
-    questionMs: 1_800_000,
-    dies: { receive: 0, advance: 0 },
-    holdReceive: undefined,
-    holdAdvance: undefined,
-  }
+  return { holdReceive: undefined, refuseKills: 0 }
 }
 
-/** A repository whose save stops where a test says: held before `receive` or `advance`, or dying there. */
+/** A repository whose save waits where a test says: before `receive`. */
 function withKnobs(real: Repository, knobs: Knobs): Repository {
-  function dies(step: 'receive' | 'advance') {
-    if (knobs.dies[step] === 0) return
-    knobs.dies[step] -= 1
-    throw new Error('the process died')
-  }
   return {
     ...real,
     async receive(input) {
       await knobs.holdReceive
-      dies('receive')
       return real.receive(input)
-    },
-    async advance(input) {
-      await knobs.holdAdvance
-      dies('advance')
-      return real.advance(input)
     },
   }
 }
@@ -107,24 +80,27 @@ export function testBuilderPorts(
   const folder = machineFolder
   const control = newControl()
   const bucket = memoryCopy()
-  const killed: string[] = []
-  const listed: Awaited<ReturnType<MachineApi['list']>> = []
+  // The conversations whose machines the provider was asked to kill.
+  const killed: ConversationId[] = []
   const knobs = newKnobs()
   function repository(ids: { companyId: CompanyId; projectId: ProjectId }) {
     const real = openRepository({ root: config.gitRoot, ...ids, log: silent })
     return restoreGuarded(withKnobs(real, knobs), bucket.copy, ids)
   }
-  function machinesOf(database: Database) {
+  function machinesOf() {
     return createMachines({
-      database,
       log: silent,
       kit: localKit(folder, control),
       api: {
-        holds: async (_id, name) => control.exists && [undefined, name].includes(control.owner),
-        list: async () => listed,
-        kill: async (id) => {
-          killed.push(id)
-          control.killed = true
+        kill: async (conversationId) => {
+          if (knobs.refuseKills > 0) {
+            knobs.refuseKills -= 1
+            throw new Error('E2B is out')
+          }
+          killed.push(conversationId)
+          const started = control.names.includes(`conexus-${INSTALLATION}-${conversationId}`)
+          if (started) control.killed = true
+          return started ? 1 : 0
         },
       },
       mark: { conexus_origin: INSTALLATION },
@@ -141,31 +117,14 @@ export function testBuilderPorts(
       checkProgram: join(folder, 'check'),
     })
   }
-  function turnMs() {
-    return knobs.turnMs
-  }
-  function renewMs() {
-    return knobs.renewMs
-  }
-  function yieldMs() {
-    return knobs.yieldMs
-  }
-  function questionMs() {
-    return knobs.questionMs
-  }
   return {
     machinesOf,
     repository,
     copy: bucket.copy,
-    turnMs,
-    renewMs,
-    yieldMs,
-    questionMs,
     bucket,
     control,
     knobs,
     killed,
-    listed,
     folder,
   }
 }

@@ -1,3 +1,4 @@
+import type { ServerResponse } from 'node:http'
 import type { FastifyInstance } from 'fastify'
 import type { IdentityPorts } from '../../hub/identity/public.ts'
 import type { ProjectPorts } from '../../hub/projects/public.ts'
@@ -9,9 +10,10 @@ import { registerSourceRoutes } from '../git/public.ts'
 import type { openGoogleCalls } from '../model-accounts/public.ts'
 import type { Runs } from '../runs/public.ts'
 import { createBuilder } from './builder.ts'
+import { watchRuns } from './end.ts'
+import { registerBuilderRoutes } from './guard.ts'
 import { TOOL_CLOSURE } from './permissions.ts'
 import { registerConversationRoutes } from './routes.ts'
-import { Sessions } from './sessions.ts'
 import type { ReleaseScope } from './store.ts'
 import { createConversationStore } from './store.ts'
 
@@ -43,35 +45,33 @@ export function createConversations(deps: {
     googleCalls: deps.google.googleCalls,
     log: deps.log,
   }
+  const store = createConversationStore(deps)
   const builder = createBuilder({
-    ...{ pool: deps.pool, queue, runs: deps.runs, log: deps.log },
+    ...{ pool: deps.pool, queue, runs: deps.runs, index: store, log: deps.log },
     projectName: (ids) =>
       database.read({ kind: 'COMPANY', companyId: ids.companyId, personId: null }, async (tx) => {
         return (await deps.projects.liveProjectOf(tx, ids))?.name
       }),
   })
-  const store = createConversationStore(deps)
-  const sessions = new Sessions({
-    builder,
-    runs: deps.runs,
-    log: deps.log,
-  })
-  deps.runs.onRestart((restart) => sessions.restarted(restart))
+  const runs = watchRuns({ ...builder, runs: deps.runs, log: deps.log })
+  const streams = new Set<ServerResponse>()
 
   const release: ReleaseConversations = async (scope) => {
-    // The runs first: a turn the removal aborts then finds its run settled and writes nothing.
-    await deps.runs.release(scope)
     const ids = await store.releasedIds(scope)
-    for (const id of ids) {
-      await sessions.forget(id)
-      await builder.memory.deleteThread(id)
-    }
+    // The runs first: a turn the removal aborts then finds its run gone and writes nothing. Its
+    // Mastra run is aborted before the kill (`deleteSession` aborts it and denies its cards), so no
+    // tool starts the machine again; a thread goes only once its machine is killed.
+    await deps.runs.stopWriting(scope)
+    for (const id of ids) await builder.controller.deleteSession({ sessionId: id })
+    await deps.runs.release(scope, ids)
+    for (const id of ids) await builder.memory.deleteThread(id)
     deps.log.info({ companyId: scope.companyId, count: ids.length }, 'CONVERSATIONS_RELEASED')
   }
 
   return Object.freeze({
     routes: (app: FastifyInstance) => {
-      registerConversationRoutes(app, { store, sessions, builder, queue })
+      registerConversationRoutes(app, { store, builder, queue })
+      registerBuilderRoutes(app, { store, builder, streams })
       registerSourceRoutes(app, {
         ...{ database, identity, projects: deps.projects },
         repository: (ids) => deps.runs.repositoryOf(ids),
@@ -88,14 +88,16 @@ export function createConversations(deps: {
       deps.log.info({}, 'MASTRA_STORAGE_READY')
     },
     /**
-     * Waits for the turns in progress and for the memory's work after them, such as a buffered
+     * Stops the runs in progress, as Parar does, and closes the open streams once each said its end;
+     * then waits for the memory's work after them, such as a buffered
      * observation, which still reads the pool `main.ts` ends next; then stops Mastra and Google's
      * calls (code C62).
      */
     async close() {
-      const drained = sessions.drain()
-      await deps.runs.yieldAfter(drained)
-      await drained
+      await runs.drain()
+      // Mastra's adapter stops writing on the response's close (`@mastra/fastify` `stream`).
+      for (const stream of streams) stream.destroy()
+      deps.runs.stop()
       await builder.memory.settled()
       await builder.mastra.shutdown()
       await deps.google.stop()

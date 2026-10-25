@@ -4,14 +4,6 @@ import type { FailureCode } from './failures.ts'
 /** The header of an attempt-keyed write, and its UUID format (code C37). */
 export const ATTEMPT_KEY_HEADER = 'Idempotency-Key'
 export const AttemptKey = z.uuid()
-/** The header a browser reopens an event stream with: the id of the last event it read. */
-export const LAST_EVENT_ID_HEADER = 'Last-Event-ID'
-/** An event's id on a stream, one `id:` line, opaque to all but the operation that issued it. */
-export const EventId = z
-  .string()
-  .regex(/^[^\r\n]+$/)
-  .brand('EventId')
-export type EventId = z.infer<typeof EventId>
 
 /**
  * `entry` is a write made without a session; `session` reads the session first; `edge` exists only
@@ -36,11 +28,6 @@ export type Operation = {
     | { status: 200; body: z.ZodType }
     | { status: 201; body: z.ZodType }
     | { status: 202 | 204 }
-    /**
-     * A `text/event-stream` of these events, each with its `id:`, and a comment line every
-     * `heartbeatMs`; a `resumable` one takes the `LAST_EVENT_ID_HEADER` header.
-     */
-    | { status: 200; events: z.ZodType; heartbeatMs: number; resumable?: true }
   failures: readonly FailureCode[]
 }
 

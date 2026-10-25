@@ -1,31 +1,36 @@
+import type { CompanyId, ProjectId } from '@conexus/hub-api'
 import type { RunsContext } from './context.ts'
-import type { Run } from './store.ts'
 
-/** Puts a saved version's bundle in the bucket; false, logged, when the bucket did not take it. */
-export async function copyVersion(context: RunsContext, saved: Run): Promise<boolean> {
-  const { companyId, projectId, candidateSha } = saved
-  if (candidateSha === null) return true
-  const repository = context.repository({ companyId, projectId })
+/**
+ * Puts the Projeto's newest version in the bucket when the bucket is behind (`refs/conexus/copied`,
+ * our own mark, kept in the Projeto's repository); false, logged, when the bucket did not take it.
+ * The bundle holds the whole history, so a version an earlier failed copy left out goes with it.
+ */
+export async function copyVersion(
+  context: RunsContext,
+  ids: { companyId: CompanyId; projectId: ProjectId },
+): Promise<boolean> {
+  const repository = context.repository(ids)
   try {
-    const version = await repository.versionAt(candidateSha)
-    const bundle = await repository.bundleOfRun(saved.id)
-    await context.copy.put({ companyId, projectId, version, sha: candidateSha, bundle })
-    await context.store.markCopied(companyId, saved.id)
-    context.log.info({ companyId, projectId, version }, 'GIT_COPY_DONE')
+    const sha = await repository.uncopied()
+    if (sha === null) return true
+    const version = await repository.versionAt(sha)
+    const bundle = await repository.bundleOfMain()
+    await context.copy.put({ ...ids, version, sha, bundle })
+    await repository.markCopied(sha)
+    context.log.info({ ...ids, version }, 'GIT_COPY_DONE')
     return true
   } catch (error) {
-    context.log.error({ companyId, projectId, error: String(error) }, 'GIT_COPY_PENDING')
+    context.log.error({ ...ids, error: String(error) }, 'GIT_COPY_PENDING')
     return false
   }
 }
 
-/** Tries the copies still pending in every company; true while any is left. */
+/** Tries the copies still pending in every Projeto; true while any is left. */
 export async function copyPending(context: RunsContext): Promise<boolean> {
   let left = false
-  for (const companyId of await context.store.companiesWithRuns()) {
-    for (const saved of await context.store.uncopied(companyId)) {
-      if (!(await copyVersion(context, saved))) left = true
-    }
+  for (const ids of await context.repositories()) {
+    if (!(await copyVersion(context, ids))) left = true
   }
   return left
 }

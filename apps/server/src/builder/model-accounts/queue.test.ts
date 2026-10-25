@@ -6,12 +6,14 @@ import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply } from '../../platform/test-anthropic.ts'
 import { TEST_ORIGIN } from '../../platform/test-database.ts'
 import {
+  answeredOf,
   asked,
   conversing,
+  endOf,
   KEY,
-  keptNotices,
-  noticesOf,
+  turnNotices,
 } from '../conversation/test-conversation.ts'
+import { failuresOf } from '../conversation/test-parts.ts'
 
 const EXHAUSTED =
   'As contas Anthropic que você pode usar estão indisponíveis. Escolha outro modelo ou fale com quem administra a empresa.'
@@ -96,14 +98,14 @@ test('a ordem: a própria, a dada à pessoa, a da empresa; a dada a outro não e
   }
   assert.equal((await give(dada.id, f.ana.id)).statusCode, 200)
   assert.equal((await give(alheia.id, bruno.id)).statusCode, 200)
-  const { events } = await f.ask()
+  const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), ['Minha', 'Dada', 'Time 1', 'Empresa'])
-  assert.deepEqual(noticesOf(events), [
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [
     'Minha foi recusada. Ligue de novo; continuei pela Dada.',
     'Dada foi recusada. Ligue de novo; continuei pela Time 1.',
     'Time 1 foi recusada. Ligue de novo; continuei pela Empresa.',
   ])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
 })
 
 test('pausada, recusada, de tipo desligado e em limite são puladas', async (t) => {
@@ -127,10 +129,10 @@ test('pausada, recusada, de tipo desligado e em limite são puladas', async (t) 
   await sql(`kind = 'claude_subscription', hint = null`, 'Desligada')
   await sql(`limited_until = now() + interval '1 hour'`, 'Limitada')
   await sql(`state = 'paused'`, 'Time 1')
-  const { events } = await f.ask()
+  const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), ['Livre'])
-  assert.deepEqual(noticesOf(events), [])
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), [])
+  assert.equal(endOf(events), 'complete')
 })
 
 test('sem conta: nenhuma chamada ao fornecedor, nem com chave no ambiente', async (t) => {
@@ -146,11 +148,9 @@ test('sem conta: nenhuma chamada ao fornecedor, nem com chave no ambiente', asyn
     await f.hub.test.asOwner(`update builder.model_account set state = 'paused'`)
   }
   const stream = await f.ask(pause)
-  assert.deepEqual(noticesOf(stream.events), [EXHAUSTED])
-  assert.deepEqual(stream.events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(await turnNotices(f.hub, f.ana, stream.url), [EXHAUSTED])
+  assert.deepEqual(failuresOf(stream.events), ['MODEL_NO_ACCOUNT'])
+  assert.equal(endOf(stream.events), 'error')
   assert.equal(f.anthropic.sent.length, 0)
   assert.equal(f.anthropic.chats.length, 0)
 })
@@ -165,9 +165,9 @@ test('429 com horário, 429 sem e 402: a conta ganha o limite, a próxima assume
   await f.add('Tres')
   await f.add('Quatro')
   const before = Date.now()
-  const { events } = await f.ask()
+  const { url } = await f.ask()
   assert.deepEqual(f.calls(), ['Time 1', 'Dois', 'Tres', 'Quatro'])
-  const notices = noticesOf(events)
+  const notices = await turnNotices(f.hub, f.ana, url)
   assert.match(notices[0] ?? '', /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/)
   assert.match(notices[2] ?? '', /^Tres no limite até \d{2}h\d{2}; continuei pela Quatro\.$/)
   assert.equal(notices.length, 3)
@@ -183,7 +183,7 @@ test('429 com horário, 429 sem e 402: a conta ganha o limite, a próxima assume
   assert.equal(states.Quatro?.limitedUntil, null)
   const next = await f.ask()
   assert.deepEqual(f.calls().slice(4), ['Quatro'])
-  assert.deepEqual(noticesOf(next.events), [])
+  assert.deepEqual(await turnNotices(f.hub, f.ana, next.url), [])
 })
 
 test('401 e 403: a conta fica recusada, a lista a mostra e a próxima assume', async (t) => {
@@ -193,15 +193,14 @@ test('401 e 403: a conta fica recusada, a lista a mostra e a próxima assume', a
   })
   await f.add('Dois')
   await f.add('Tres')
-  const { url, events } = await f.ask()
+  const { url } = await f.ask()
   assert.deepEqual(f.calls(), ['Time 1', 'Dois', 'Tres'])
   const notices = [
     'Time 1 foi recusada. Ligue de novo; continuei pela Dois.',
     'Dois foi recusada. Ligue de novo; continuei pela Tres.',
   ]
-  assert.deepEqual(noticesOf(events), notices)
   // Kept in the answer read again, once each though each was said in an attempt Mastra retried.
-  assert.deepEqual(await keptNotices(f.hub, f.ana, url), notices)
+  assert.deepEqual(await turnNotices(f.hub, f.ana, url), notices)
   assert.deepEqual(await f.listed(), { 'Time 1': 'refused', Dois: 'refused', Tres: 'ready' })
   assert.equal((await f.states())['Time 1']?.limitedUntil, null)
 })
@@ -210,14 +209,15 @@ test('400, 500 e 529: o turno falha como MODEL_CALL_FAILED, sem troca e sem o te
   for (const status of [400, 500, 529] as const) {
     const f = await fleet(t, { 'Time 1': { kind: 'refuse', status } })
     await f.add('Dois')
-    const { events } = await f.ask()
-    assert.deepEqual(events.slice(-2), [
-      { type: 'part', part: { type: 'failure', code: 'MODEL_CALL_FAILED' } },
-      { type: 'turnEnd', reason: 'error' },
-    ])
+    const { url, events } = await f.ask()
+    assert.deepEqual(failuresOf(events), ['MODEL_CALL_FAILED'])
+    assert.equal(endOf(events), 'error')
     assert.ok(!f.calls().includes('Dois'), `${status}`)
-    assert.deepEqual(noticesOf(events), [])
-    assert.ok(!JSON.stringify(events).includes('SECRET-PLANTED-TEXT'))
+    assert.deepEqual(await turnNotices(f.hub, f.ana, url), [])
+    // Mastra's `error` part carries the provider's message, which the screen does not draw.
+    const parts = (await answeredOf(f.hub, f.ana, url)).flatMap((message) => message.parts)
+    const kept = JSON.stringify(parts.filter((part) => part.type !== 'error'))
+    assert.ok(!kept.includes('SECRET-PLANTED-TEXT'))
     assert.deepEqual(await f.listed(), { 'Time 1': 'ready', Dois: 'ready' })
     assert.equal((await f.states())['Time 1']?.limitedUntil, null)
     const logged = f.lines.map((line) => line.message)
@@ -232,17 +232,15 @@ test('todas fora: o aviso de que as contas acabaram, MODEL_NO_ACCOUNT e o fim co
     Dois: { kind: 'refuse', status: 429 },
   })
   await f.add('Dois')
-  const { events } = await f.ask()
+  const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
-  const notices = noticesOf(events)
+  const notices = await turnNotices(f.hub, f.ana, url)
   assert.match(notices[0] ?? '', /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/)
   // The end says why the last account was lost, not that none is left.
   assert.match(notices[1] ?? '', /^Dois no limite até \d{2}h\d{2}\.$/)
   assert.equal(notices.length, 2)
-  assert.deepEqual(events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.equal(endOf(events), 'error')
 })
 
 test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async (t) => {
@@ -253,14 +251,11 @@ test('dez contas recusando: no máximo 10 chamadas, e o aviso na décima', async
   for (const label of labels.slice(1)) await f.add(label)
   const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), labels.slice(0, 10))
-  const notices = noticesOf(events)
+  const notices = await turnNotices(f.hub, f.ana, url)
   assert.equal(notices.length, 10)
   assert.equal(notices.at(-1), 'Conta 10 foi recusada. Ligue de novo.')
-  assert.deepEqual(await keptNotices(f.hub, f.ana, url), notices)
-  assert.deepEqual(events.slice(-2), [
-    { type: 'part', part: { type: 'failure', code: 'MODEL_NO_ACCOUNT' } },
-    { type: 'turnEnd', reason: 'error' },
-  ])
+  assert.deepEqual(failuresOf(events), ['MODEL_NO_ACCOUNT'])
+  assert.equal(endOf(events), 'error')
   const states = await f.states()
   assert.equal(states['Conta 11']?.state, 'ready')
 })
@@ -274,13 +269,13 @@ test('banco fora ao marcar o limite: a conta fica sem marca, o código vai ao lo
     create trigger refuse_mark before update on builder.model_account for each row
       when (new.limited_until is distinct from old.limited_until or new.state = 'refused')
       execute function builder.refuse_mark()`)
-  const { events } = await f.ask()
+  const { url, events } = await f.ask()
   assert.deepEqual(f.calls(), ['Time 1', 'Dois'])
   assert.match(
-    noticesOf(events)[0] ?? '',
+    (await turnNotices(f.hub, f.ana, url))[0] ?? '',
     /^Time 1 no limite até \d{2}h\d{2}; continuei pela Dois\.$/,
   )
-  assert.deepEqual(events.at(-1), { type: 'turnEnd', reason: 'complete' })
+  assert.equal(endOf(events), 'complete')
   assert.equal((await f.states())['Time 1']?.limitedUntil, null)
   const logged = f.lines.filter((line) => line.message === 'DATABASE_UNAVAILABLE')
   assert.equal(logged.length, 1, JSON.stringify(f.lines.map((line) => line.message)))

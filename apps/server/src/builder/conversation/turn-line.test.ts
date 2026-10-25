@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, conversing, title } from './test-conversation.ts'
+import { asked, conversing, endOf, messagesOf, title } from './test-conversation.ts'
+import { failuresIn, failuresOf } from './test-parts.ts'
 
 const CPF = '123.456.789-09'
 const TEXT = 'cliente-de-verdade-da-padaria'
@@ -21,21 +22,55 @@ function ranWithPlanted() {
   }
 }
 
-test('a linha do turno: duração, passos, tokens, fim e o id do pedido; texto e CPF de um comando, fora do log', async (t) => {
+test('a linha do turno: duração, passos, tokens e fim; texto e CPF de um comando, fora do log', async (t) => {
   const { hub, ana, conversations, lines } = await conversing(t, ranWithPlanted())
   await asked(t, { hub, person: ana, conversations })
   const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
   assert.ok(ended)
   const { fields } = ended
   assert.match(String(fields.runId), /^[0-9a-f-]{36}$/)
-  assert.match(String(fields.traceId), /^[0-9a-f-]{36}$/)
   assert.equal(typeof fields.ms, 'number')
   assert.ok(Number(fields.steps) >= 2)
   assert.ok(Number(fields.tokens) > 0)
+  assert.equal(fields.maxInputTokens, 14, 'the fullest step: 10 new and 4 read from the cache')
+  assert.equal(fields.cachedInputTokens, 4 * Number(fields.steps))
+  assert.equal(fields.rounds, 0, 'a turn that changed nothing is not judged at its end')
+  assert.equal(fields.finishReason, undefined, 'a normal finish says nothing more than its end')
   assert.equal(fields.end, 'complete')
   assert.equal(fields.failedTool, undefined)
   assert.equal(fields.errorCode, undefined)
   const everything = JSON.stringify(lines)
   assert.equal(everything.includes(CPF), false)
   assert.equal(everything.includes(TEXT), false)
+})
+
+test('a linha do turno leva como o modelo terminou quando não foi normal: no limite de saída, length (14.2, 17)', async (t) => {
+  const { hub, ana, conversations, lines } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    return { kind: 'blocks', blocks: [{ type: 'text', text: 'Começo' }], stop: 'max_tokens' }
+  })
+  const { events } = await asked(t, { hub, person: ana, conversations })
+  assert.equal(endOf(events), 'error')
+  const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
+  assert.equal(ended?.fields.end, 'error')
+  assert.equal(ended?.fields.finishReason, 'length')
+  assert.equal(ended?.fields.errorCode, 'MODEL_ANSWER_CUT')
+  assert.deepEqual(failuresOf(events), ['MODEL_ANSWER_CUT'])
+})
+
+test('uma recusa do modelo termina o turno com MODEL_REFUSED, sem o texto do fornecedor (14.2, critério 40)', async (t) => {
+  const { hub, ana, conversations, lines } = await conversing(t, (call): Reply => {
+    if (title(call) !== undefined) return { kind: 'text', text: 'Título' }
+    return { kind: 'blocks', blocks: [{ type: 'text', text: 'Não posso' }], stop: 'refusal' }
+  })
+  const { url, events } = await asked(t, { hub, person: ana, conversations })
+  assert.equal(endOf(events), 'error')
+  const [ended] = lines.filter((line) => line.message === 'CONVERSATION_TURN_ENDED')
+  assert.equal(ended?.fields.finishReason, 'content-filter')
+  assert.equal(ended?.fields.errorCode, 'MODEL_REFUSED')
+  assert.deepEqual(failuresOf(events), ['MODEL_REFUSED'])
+  const kept = await messagesOf(hub, ana, url)
+  assert.deepEqual(failuresIn(kept.flatMap((message) => message.parts)), ['MODEL_REFUSED'])
+  // Mastra's `error` event carries the provider's message to the browser, which does not draw it.
+  assert.doesNotMatch(JSON.stringify(lines) + JSON.stringify(kept), /content filter|stopped/i)
 })

@@ -1,15 +1,13 @@
 import { posix } from 'node:path'
-import type { Question as HubQuestion } from '@conexus/hub-api'
 import { Answer, QUESTION_LIMITS } from '@conexus/hub-api'
 import { askUserTool, submitPlanTool } from '@mastra/core/agent-controller'
+import type { MastraDBMessage } from '@mastra/core/memory'
 import { createTool, formatQuestionAnswer } from '@mastra/core/tools'
 import { z } from 'zod'
-import { APP_FOLDER } from '../machine/public.ts'
+import { APP_FOLDER, PLAN_DIR } from '../machine/public.ts'
 
 export const ASK_USER_TOOL = askUserTool.id
 export const SUBMIT_PLAN_TOOL = submitPlanTool.id
-/** The one file a plan lives in, in the app folder. */
-export const PLAN_PATH = '.conexus/plan.md'
 
 const Option = z.object({ label: z.string().min(1), description: z.string().optional() })
 const Choice = z
@@ -35,25 +33,8 @@ const ASK_USER_DESCRIPTION = [
   "Write each question in the person's language. Returns one line per question with the answer.",
 ].join(' ')
 
-/**
- * The questions of an `ask_user` call as the card shows them, or none when its input is not a
- * card.
- */
-export function questionsOf(input: unknown): HubQuestion[] | undefined {
-  const asked = Questions.safeParse(input)
-  if (!asked.success) return undefined
-  return asked.data.questions.map(
-    ({ question, header, options = [], multiSelect = false }): HubQuestion => ({
-      question,
-      header,
-      options,
-      multiSelect,
-    }),
-  )
-}
-
 /** What `ask_user` returns once answered: the model's line per question, and the answers themselves. */
-export const AskedResult = z.object({ content: z.string(), answers: z.array(Answer) })
+const AskedResult = z.object({ content: z.string(), answers: z.array(Answer) })
 
 /**
  * `ask_user` for 1 to 4 questions, on Mastra's own suspend and resume (`askUserTool`): it suspends
@@ -87,10 +68,41 @@ export function createAskUserTool() {
   })
 }
 
-/** Whether `path` is the plan file, read as the machine's filesystem reads it. */
-function isPlanPath(path: string): boolean {
+/** The plan file `path` names, as the machine's filesystem reads it: a `.md` directly in `PLAN_DIR`. */
+function planFileOf(path: string): string | undefined {
   const inside = path.startsWith(`${APP_FOLDER}/`) ? posix.relative(APP_FOLDER, path) : path
-  return posix.normalize(inside.replace(/^\/+/, '')) === PLAN_PATH
+  const file = posix.normalize(inside.replace(/^\/+/, ''))
+  return posix.dirname(file) === PLAN_DIR && posix.extname(file) === '.md' ? file : undefined
+}
+
+const PlanCall = z.object({
+  type: z.literal('tool-invocation'),
+  toolInvocation: z.object({
+    toolName: z.string(),
+    args: z.object({ path: z.string() }),
+    result: z.unknown().optional(),
+  }),
+})
+const Submitted = z.looseObject({ submittedPlan: z.object({ action: z.string() }) })
+
+/** The plan files the person approved, from Mastra's committed calls (`getMessages`). */
+function approvedPlans(messages: readonly MastraDBMessage[]) {
+  const approved = new Set<string>()
+  for (const { content } of messages) {
+    for (const part of content.parts) {
+      const call = PlanCall.safeParse(part)
+      const file = call.success ? planFileOf(call.data.toolInvocation.args.path) : undefined
+      if (!call.success || file === undefined) continue
+      const { toolName, result } = call.data.toolInvocation
+      if (
+        toolName === SUBMIT_PLAN_TOOL &&
+        Submitted.safeParse(result).data?.submittedPlan.action === 'approved'
+      ) {
+        approved.add(file)
+      }
+    }
+  }
+  return approved
 }
 
 /** A plan file's text as the card shows it: a leading `# title` is the title, the rest the plan. */
@@ -108,19 +120,20 @@ function splitPlan(raw: string): { title: string; plan: string } {
 }
 
 const SUBMIT_PLAN_DESCRIPTION = [
-  `Submit the plan you wrote to \`${PLAN_PATH}\` for the person to review.`,
-  `Pass \`path\` as \`${PLAN_PATH}\`, the only file a plan lives in; write the file first and do not paste the plan text here.`,
-  'Reuse the same file across revisions. The person approves it or asks for changes with a reason;',
+  `Submit the plan you wrote to a \`.md\` file directly in \`${PLAN_DIR}\` for the person to review.`,
+  'Pass its `path`; write the file first and do not paste the plan text here.',
+  'Reuse the same file across revisions of one plan and give each new change its own file; an approved plan is never rewritten. The person approves it or asks for changes with a reason;',
   'after a refusal, read the file, edit it, read it again to be sure the change is there, and call this tool again.',
 ].join(' ')
 
 type SubmitPlanExecute = NonNullable<typeof submitPlanTool.execute>
 
 /**
- * Mastra's `submit_plan`, with the plan's home checked at the boundary: only `.conexus/plan.md`. The
- * server reads the plan from the machine and suspends with its title and text beside the path, so the
- * browser, which has no filesystem, shows it. A resumed call is the person's decision and goes
- * straight to the native tool, which gives the model "User feedback: …" on a rejection.
+ * Mastra's `submit_plan`, with the plan's home checked at the boundary: a `.md` directly in
+ * `.conexus/plans`, not one the person approved. The server reads
+ * the plan from the machine and suspends with its title and text beside the path, so the browser,
+ * which has no filesystem, shows it. A resumed call is the person's decision and goes straight to
+ * the native tool, which gives the model "User feedback: …" on a rejection.
  */
 export function createSubmitPlanTool(): typeof submitPlanTool {
   return {
@@ -129,13 +142,16 @@ export function createSubmitPlanTool(): typeof submitPlanTool {
     execute: async (...[input, context]: Parameters<SubmitPlanExecute>) => {
       const agent = context?.agent
       if (agent?.resumeData === undefined) {
-        if (!isPlanPath(input.path)) {
-          return `Refused: the plan lives in ${PLAN_PATH}. Write it there and submit that path.`
+        const file = planFileOf(input.path)
+        if (file === undefined) {
+          return `Refused: a plan is a .md file directly in ${PLAN_DIR}. Write it there and submit that path.`
         }
-        const filesystem = context?.workspace?.filesystem
-        const raw = await filesystem?.readFile(PLAN_PATH, { encoding: 'utf-8' })
+        if (approvedPlans(agent?.getMessages?.() ?? []).has(file)) {
+          return `Refused: ${file} is an approved plan and stays as it was. Write the new plan in a file of its own in ${PLAN_DIR} and submit that path.`
+        }
+        const raw = await context?.workspace?.filesystem?.readFile(file, { encoding: 'utf-8' })
         if (typeof raw === 'string' && agent?.suspend) {
-          await agent.suspend({ toolId: SUBMIT_PLAN_TOOL, path: PLAN_PATH, ...splitPlan(raw) })
+          await agent.suspend({ toolId: SUBMIT_PLAN_TOOL, path: file, ...splitPlan(raw) })
           return undefined
         }
       }

@@ -11,8 +11,11 @@
 // provider gives the credential (CONEXUS_RECORD_CLAUDE_TOKEN, CONEXUS_RECORD_OPENAI_KEY or
 // CONEXUS_RECORD_GOOGLE_KEY); with `--via cliproxy` (google only) the list of the local CLIProxy
 // (CONEXUS_RECORD_CLIPROXY_URL, CONEXUS_RECORD_CLIPROXY_KEY): one GET, authorized by the founder's "A" of 2026-10-21 (step 12.3).
-// Gemini records only `abort`: its thinking waits for #172, its search for #150. Authorized once,
-// by the founder's "2A" of 2026-10-20.
+// Gemini records `abort` and `thinking`: its search waits for #150. Authorized once, by the founder's
+// "2A" of 2026-10-20. Gemini's `thinking` is the 14.2 proof of criterion 20: `--model` names what
+// CLIProxy is asked for (`gemini-3.8-flash-high` carries the level in the name, `gemini-3.8-flash`
+// takes it as `reasoning_effort`) and `--effort low|medium|high` sends that field; the run prints
+// the model and `reasoning_effort` the request carried and whether `reasoning_content` came back.
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { parseArgs } from 'node:util'
@@ -49,7 +52,12 @@ const Args = z.discriminatedUnion('provider', [
     provider: z.literal('anthropic'),
     case: z.enum(['cited', 'thinking', 'tool-error', 'abort']),
   }),
-  z.object({ provider: z.literal('google'), case: z.literal('abort') }),
+  z.object({
+    provider: z.literal('google'),
+    case: z.enum(['abort', 'thinking']),
+    model: z.string().min(1).default(GEMINI),
+    effort: z.enum(['low', 'medium', 'high']).optional(),
+  }),
 ])
 type Args = z.infer<typeof Args>
 type ModelsArgs = z.infer<typeof ModelsArgs>
@@ -148,7 +156,7 @@ type Asked = {
 async function openerOf(args: Args) {
   if (args.provider === 'anthropic') {
     const { CONEXUS_RECORD_CLAUDE_TOKEN: token } = Claude.parse(process.env)
-    const model = subscriptionModel(CLAUDE, token)
+    const model = subscriptionModel(CLAUDE, token, 'conversation')
     return {
       open: (asked: Asked) => model.doStream({ ...asked, tools: WEB_TOOLS }),
       secrets: [token],
@@ -159,11 +167,11 @@ async function openerOf(args: Args) {
   const env = Gemini.parse(process.env)
   const apiKey = env.CONEXUS_RECORD_CLIPROXY_KEY
   const url = env.CONEXUS_RECORD_CLIPROXY_URL
-  const model = await callModel({ providerId: 'google', modelId: GEMINI, url, apiKey })
+  const model = await callModel({ providerId: 'google', modelId: args.model, url, apiKey })
   return {
     open: (asked: Asked) => model.doStream(asked),
     secrets: [apiKey],
-    modelId: ModelId.parse(`google/${GEMINI}`),
+    modelId: ModelId.parse(`google/${args.model}`),
     meta: {
       api: 'Chat Completions through CLIProxyAPI, streamed',
       sdk: `${versionOf('@mastra/core')} (its OpenAI-compatible model)`,
@@ -188,11 +196,13 @@ async function copied(body: ReadableStream<Uint8Array>): Promise<Buffer> {
 }
 
 /** Copies the one streamed body the SDK receives, and only its body: no header is kept (S40). */
-function recordFetch(): { body: () => Promise<Buffer> } {
+function recordFetch(): { body: () => Promise<Buffer>; sent: () => string | undefined } {
   const real = globalThis.fetch
   let saved: Promise<Buffer> | undefined
+  let sent: string | undefined
   globalThis.fetch = async (input, init) => {
     if (saved !== undefined) throw new Error('A recording holds one call; a second was asked.')
+    sent = typeof init?.body === 'string' ? init.body : undefined
     const response = await real(input, init)
     if (!response.ok || response.body === null) {
       throw new Error(`The provider refused the call with ${response.status}; nothing is saved.`)
@@ -202,6 +212,7 @@ function recordFetch(): { body: () => Promise<Buffer> } {
     return new Response(forSdk, { status: response.status, headers: response.headers })
   }
   return {
+    sent: () => sent,
     body: () => {
       globalThis.fetch = real
       if (saved === undefined) throw new Error('The model made no call; nothing is saved.')
@@ -210,10 +221,28 @@ function recordFetch(): { body: () => Promise<Buffer> } {
   }
 }
 
+const Chunk = z.object({
+  choices: z.array(z.object({ delta: z.object({ reasoning_content: z.string().nullish() }) })),
+})
+
+/** The characters of `reasoning_content` the Chat Completions stream carried, in all its deltas. */
+function reasoningCharsOf(sse: string): number {
+  return sse
+    .split('\n')
+    .filter((line) => line.startsWith('data: {'))
+    .flatMap((line) => Chunk.safeParse(JSON.parse(line.slice('data: '.length))).data?.choices ?? [])
+    .reduce((sum, choice) => sum + (choice.delta.reasoning_content?.length ?? 0), 0)
+}
+
 async function record(args: Args) {
   const { open, secrets, modelId, meta } = await openerOf(args)
   const effort = args.case === 'thinking' ? 'low' : 'off'
-  const providerOptions = Options.optional().parse(providerOptionsOf(modelId, effort))
+  // The Gemini proof asks CLIProxy's OpenAI-compatible model for the level itself, as the wire's
+  // `reasoning_effort`, to see what the proxy does with it (card 14.2, criterion 20).
+  const providerOptions =
+    args.provider === 'google' && args.effort !== undefined
+      ? { google: { reasoningEffort: args.effort } }
+      : Options.optional().parse(providerOptionsOf(modelId, effort))
   const cut = new AbortController()
   const recording = recordFetch()
   const { stream } = await open({
@@ -236,6 +265,16 @@ async function record(args: Args) {
   }
   const body = await recording.body()
   const text = body.toString('utf8')
+  if (args.provider === 'google' && args.case === 'thinking') {
+    const request = z
+      .object({ model: z.string(), reasoning_effort: z.string().optional() })
+      .parse(JSON.parse(recording.sent() ?? 'null'))
+    const reasoned = reasoningCharsOf(text)
+    console.log(
+      `PROOF request model=${request.model} reasoning_effort=${request.reasoning_effort ?? 'absent'} reasoning_content_chars=${reasoned}`,
+    )
+    if (reasoned === 0) throw new Error('No reasoning_content came back; nothing is saved.')
+  }
   if (secrets.some((secret) => text.includes(secret)) || LEAK.test(text)) {
     throw new Error('The body carries a credential, an address or a bearer; nothing is saved.')
   }
@@ -296,7 +335,13 @@ async function recordModels(args: ModelsArgs) {
 }
 
 const { values } = parseArgs({
-  options: { provider: { type: 'string' }, case: { type: 'string' }, via: { type: 'string' } },
+  options: {
+    provider: { type: 'string' },
+    case: { type: 'string' },
+    via: { type: 'string' },
+    model: { type: 'string' },
+    effort: { type: 'string' },
+  },
 })
 if (values.case === 'models') await recordModels(ModelsArgs.parse(values))
 else await record(Args.parse(values))

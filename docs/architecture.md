@@ -149,21 +149,19 @@ program starts ([data D9](guides/data.md)).
 
 **Roll back.** One button restores an earlier release's image. Every migration only adds, so
 an earlier image runs on the migrated database ([data D6](guides/data.md)). Exceptions: step 4.2's
-P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. The edge goes
-back first.
+P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30), `builder.run`, `companies_with_runs()`, `hub_runs`: no image before its release runs. The edge goes back first.
 
-**Restore.** Neon restores a branch to a moment: 6 hours back on the free plan, up to 7 days on the
-paid one. Both Hub databases return to the same instant. A restore then sets every login password
-again and invalidates sessions; the Hub's start recreates app logins, and missing
+**Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
+paid one. Both Hub databases return to one instant. It then sets every login password
+again, invalidates sessions; the Hub's start recreates app logins, and missing
 Workers from the built files it keeps [0043]. A company's project restores alone. Restoring is
-rehearsed in the step that creates each thing: the Hub in step 2, the Git in step 13, a company and
+rehearsed where each thing is created: Hub in step 2, the Git in step 13, a company and
 its Workers in steps 7 and 9, everything together in step 22.
 
-**The Hub reaches its database** by the direct address, because a long-lived server keeps its own
-connections. Basis: only tested so; accepted because the pooled address serves callers that do not.
+**The Hub reaches its database** by the direct address, because a long-lived server keeps connections. Basis: only tested so; the pooled address serves callers that do not.
 
 **Down alerts.** Cloudflare's Tunnel health notification and a free external monitor of the health
-route both e-mail the founder; the route does not touch the database, so a hung program is seen too
+route both e-mail the founder; the route skips the database, so a hung program is seen too
 [0035].
 
 ## 8. Crosscutting concepts
@@ -226,7 +224,7 @@ with it.
 | Six hours of history on the free plan | A mistake seen the next day cannot be undone | Paid plan with the first company [0009] |
 | The server stops | Hub and published apps stop [0025] | Revisited in step 18 |
 | Betas: Cloudflare e-mail, Workers VPC, Mastra's agent controller, Drizzle 1.0 | An update breaks a path | Versions pinned; fallback named in each record |
-| One E2B key for the founder's account | A sweep deletes another's machine | It kills only marked machines [0051] |
+| One E2B key for the founder's account | A release kills another's machine | It kills only this installation's machines [0051] |
 | The publish runner runs as root on the server | Any writer of the repository can command the server [0035] | Accepted by the founder; forks never reach the runner |
 | The runner registration token passes through one call's environment, not a file (S31) | A token readable by root for one call on the server | Accepted by the founder [0036] |
 | The owner login's key, the app key and the Workers token rest on the server | Root there reads them and changes the edge | Accepted with the runner row [0035] |

@@ -2,14 +2,14 @@ import { createReadStream, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { TestContext } from 'node:test'
-import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import { RequestContext } from '@mastra/core/request-context'
+import type { Workspace, WorkspaceSandbox } from '@mastra/core/workspace'
 import { LocalSandbox } from '@mastra/core/workspace'
 import { InstallationId } from '../../platform/config-machine.ts'
 import { Failure } from '../../platform/failure.ts'
-import { createTestDatabase } from '../../platform/test-database.ts'
 import { openRepository } from '../git/public.ts'
 import type { Kit, KitFactory } from './kit.ts'
-import { SandboxId } from './kit.ts'
 import type { Phase } from './public.ts'
 import { createMachines } from './public.ts'
 
@@ -24,26 +24,22 @@ export const OTHER_INSTALLATION = InstallationId.parse('otherinstallation0')
 /** What the provider does, for a test to choose: the outcome of a start, and how the start goes. */
 export type Control = {
   outcome: 'created' | 'connected'
-  start: 'ok' | 'gone' | 'hang' | 'unreachable'
-  /** Whether the provider still holds the recorded machine. */
-  exists: boolean
-  /** The name tag of the recorded machine, as Mastra's E2B sandbox checks it; none is an untagged machine. */
-  owner: string | undefined
-  /** The names of the machines the provider holds, which Mastra finds by name when no id is recorded. */
+  start: 'ok' | 'hang' | 'unreachable'
+  /** The names of the machines the provider holds, which Mastra finds by name. */
   discoverable: string[]
-  /** The names the Hub's machines attached, by recorded id or by discovery. */
+  /** The names the Hub's machines found and attached. */
   attached: string[]
   networkClosed: number
   /** How long the machine takes to come up after it says it runs, as E2B's start does. */
   upMs: number
   /** Starts the latest machine again as the provider does after it died: its `onStart` runs once more. */
   restart: () => Promise<void>
-  /** The logical name each machine was asked for: the provider finds an existing one by it alone. */
+  /** The name of each machine started: the provider finds an existing one by it alone. */
   names: string[]
-  /** The ids the machines asked the provider to reattach. */
-  reattached: (string | undefined)[]
-  /** The deadline each machine was asked for. */
-  deadlines: Date[]
+  /** The mark each machine started carries. */
+  marks: Record<string, string>[]
+  /** The latest machine started, to watch its status as a test needs. */
+  sandbox: WorkspaceSandbox | undefined
   /** How many times a machine was paused. */
   stops: number
   /** The provider killed the machine: pausing it fails as E2B's does, until a start makes a new one. */
@@ -58,16 +54,14 @@ export function newControl(): Control {
   return {
     outcome: 'created',
     start: 'ok',
-    exists: true,
-    owner: undefined,
     discoverable: [],
     attached: [],
     networkClosed: 0,
     upMs: 0,
     restart: async () => undefined,
     names: [],
-    reattached: [],
-    deadlines: [],
+    marks: [],
+    sandbox: undefined,
     stops: 0,
     killed: false,
     afterCommand: () => undefined,
@@ -75,28 +69,22 @@ export function newControl(): Control {
   }
 }
 
-/** A machine that is a folder of this computer: E2B's start, its outcome and its failures made by hand. */
+/**
+ * A machine that is a folder of this computer: E2B's start, its outcome and its failures made by
+ * hand. Building it asks the provider nothing, as E2B's does not; its start finds it by name.
+ */
 export function localKit(folder: string, control: Control): KitFactory {
   return (options): Kit => {
-    mkdirSync(folder, { recursive: true })
-    control.deadlines.push(options.deadline)
-    control.names.push(options.id)
-    control.reattached.push(options.sandboxId)
     const sandbox = new LocalSandbox({
       workingDirectory: options.workingDirectory,
       instructions: options.instructions,
       onStart: async (started) => {
         await new Promise((up) => setTimeout(up, control.upMs))
-        const byName = options.sandboxId === undefined && control.discoverable.includes(options.id)
-        if (options.sandboxId !== undefined && ![undefined, options.id].includes(control.owner)) {
-          throw new Error(`Provider sandbox belongs to logical sandbox id "${control.owner}"`)
-        }
-        const outcome = byName ? 'connected' : control.outcome
+        const outcome = control.discoverable.includes(options.id) ? 'connected' : control.outcome
         if (outcome === 'connected') control.attached.push(options.id)
         await options.onStart({ ...started, outcome })
       },
     })
-    control.restart = () => Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
     const execute = sandbox.executeCommand?.bind(sandbox)
     if (execute !== undefined) {
       sandbox.executeCommand = async (...args) => {
@@ -107,9 +95,13 @@ export function localKit(folder: string, control: Control): KitFactory {
     }
     const start = sandbox.start.bind(sandbox)
     sandbox.start = async (...args) => {
+      mkdirSync(folder, { recursive: true })
+      control.names.push(options.id)
+      control.marks.push(options.metadata)
+      control.sandbox = sandbox
+      control.restart = () =>
+        Promise.resolve(options.onStart({ sandbox, outcome: control.outcome }))
       if (control.start === 'hang') return new Promise<never>(() => undefined)
-      if (control.start === 'gone')
-        throw Object.assign(new Error('gone'), { code: 'SANDBOX_REATTACH_FAILED' })
       if (control.start === 'unreachable') throw new Error('502 Bad Gateway')
       control.killed = false
       return start(...args)
@@ -132,7 +124,6 @@ export function localKit(folder: string, control: Control): KitFactory {
           return createReadStream(path)
         },
       },
-      sandboxId: () => SandboxId.parse('local-machine'),
       closeNetwork: async () => {
         control.networkClosed += 1
       },
@@ -142,17 +133,11 @@ export function localKit(folder: string, control: Control): KitFactory {
 
 export const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 export const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
+export const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a')
+export const OTHER_CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000b')
 const LOG = { info: () => undefined, error: () => undefined }
-const SEED = `
-  insert into auth."user"(id, name, email) values ('person-a', 'Ana', 'ana@example.test');
-  insert into auth.company(id, name, slug, created_at, attempt_key) values
-    ('${COMPANY}', 'Empresa A', 'key-a', now(), 'key-a');
-  insert into auth.member(id, company_id, user_id, role, created_at) values
-    ('member-a', '${COMPANY}', 'person-a', 'member', now());
-  insert into projects.project(id, company_id, name, attempt_key, created_at) values
-    ('${PROJECT}', '${COMPANY}', 'Encomendas', 'a', now());`
 
-/** A company with one Projeto, its Git, and the machines of a local machine the test steers. */
+/** A Projeto's Git, and the machines of a local machine the test steers. */
 export async function world(
   t: TestContext,
   startMs = 5_000,
@@ -160,8 +145,6 @@ export async function world(
   seedOf?: () => Promise<Buffer>,
   options: Readonly<{ checkProgram?: string }> = {},
 ) {
-  const { database, asOwner } = await createTestDatabase(t)
-  await asOwner(SEED)
   const folder = mkdtempSync(join(tmpdir(), 'conexus-machine-'))
   t.after(() => rmSync(folder, { recursive: true, force: true }))
   const repository = openRepository({
@@ -173,13 +156,8 @@ export async function world(
   const base = await repository.ensure()
   const control = newControl()
   const machines = createMachines({
-    database,
     kit: localKit(folder, control),
-    api: {
-      list: async () => [],
-      kill: async () => undefined,
-      holds: async (_id, name) => control.exists && [undefined, name].includes(control.owner),
-    },
+    api: { kill: async () => 0 },
     seedOf: seedOf ?? (() => repository.bundleOfMain()),
     mark: { conexus_origin: installation },
     installation,
@@ -190,13 +168,20 @@ export async function world(
     ...options,
   })
   const phases: Phase[] = []
-  function open() {
+  function open(conversationId = CONVERSATION) {
     return machines.workspaceFor({
       companyId: COMPANY,
       projectId: PROJECT,
-      deadline: new Date(Date.now() + 3_600_000),
+      conversationId,
       onPhase: (phase) => phases.push(phase),
     })
   }
-  return { asOwner, machines, repository, base, control, phases, open, folder }
+  return { machines, repository, base, control, phases, open, folder }
+}
+
+/** The workspace's machine, started as a tool's first call starts it. */
+export async function sandboxOf(workspace: Workspace) {
+  const sandbox = await workspace.resolveSandbox({ requestContext: new RequestContext() })
+  if (sandbox?.executeCommand === undefined) throw new Error('the machine cannot run commands')
+  return { executeCommand: sandbox.executeCommand.bind(sandbox) }
 }

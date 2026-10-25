@@ -9,7 +9,7 @@ table in the same pull request.
 | OS lines | Verdict | Reason |
 | --- | --- | --- |
 | 1, 2, 5, 7 to 11, 19, 21, 23 to 27, 29 to 42, 44 to 47, 49, 50, 56 to 59, 63, 68 to 75 | `igual` | 0051 (19); `ask_user` and `task_*` on since step 14 U5; observational memory (`builder.ts:97`); `AGENTS.md` and `.conexus/memory/` read from `main` |
-| 3, 6, 22 | `adaptada` | no Prévia until step 14.1, which brings the sentences back; no Integrações until step 19 |
+| 3, 6, 22 | `adaptada` | no Prévia until step 14.1, which brings the sentences back; no Integrações until step 19; line 6 says the person sees the reasoning and every tool row, since step 14.2 (V39) |
 | 13 | `adaptada` | "The packages, the way screens call the server and the visual system are fixed" becomes "the platform contract is fixed; the starter is yours to change; prefer the starter's libraries" (0055; founder 2026-10-22, no library gate); `conexus-server` becomes `conexus-data` |
 | 15 | `adaptada` | no Conexões until step 19: keeps "never invent data"; "Integrações" becomes "connectors, later" |
 | 17 | `adaptada` | "Conexões" becomes "connectors"; plus step 13's security sentences (`instructions.ts:16-20`) |

@@ -1,9 +1,8 @@
-import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import type { CompanyId, Conversation, ConversationId, ProjectId, Provider } from '@conexus/hub-api'
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import type { ReactNode, RefObject } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useAttemptKey } from '../../platform/attempt-key.ts'
 import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Empty, NotFound } from '../../ui/states.tsx'
 import { accountsQuery } from '../model-accounts/public.ts'
@@ -11,13 +10,15 @@ import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
 import { useDraft } from './draft.ts'
-import { shownAnswer } from './live.ts'
+import { MemoryStatus } from './memory-status.tsx'
 import { ModelChoice, NoAccount } from './model-choice.tsx'
-import { textOf } from './person-turn.tsx'
-import { allConversationsQueryKey, conversationQuery, sendMessage, sendStop } from './queries.ts'
+import { allConversationsQueryKey, conversationQuery } from './queries.ts'
+import type { BuilderSession } from './session.ts'
+import type { Action, SessionState } from './session-state.ts'
+import { TaskPanel } from './task-panel.tsx'
 import { EMPTY_CONVERSATION, titleOf, UNCONFIRMED_SEND } from './text.ts'
-import { Transcript } from './transcript.tsx'
-import { useLive } from './use-live.ts'
+import { shownOf, Transcript } from './transcript.tsx'
+import { useSession } from './use-session.ts'
 import { WorkingLine } from './working-line.tsx'
 
 const route = getRouteApi(
@@ -35,7 +36,7 @@ function PanelFrame(props: { current: Item | undefined; children: ReactNode }) {
 
 /**
  * One conversation of the panel: the model, the transcript with the answer arriving, and the field.
- * The stream is ours (security S39: the Hub has no Mastra route), read by `use-live.ts`. A switch
+ * The session is Mastra's, on its own routes behind the Hub's guard, read by `use-session.ts`. A switch
  * of conversation starts the screen over, and what was typed comes back from its draft.
  */
 export function Panel() {
@@ -69,23 +70,26 @@ type Params = { companyId: CompanyId; projectId: ProjectId; conversationId: Conv
 
 function useSending(
   params: Params,
+  builder: BuilderSession,
   field: RefObject<HTMLTextAreaElement | null>,
-  dispatch: (action: { type: 'sent' | 'unsent' }) => void,
+  dispatch: (action: Action) => void,
   onGone: () => void,
 ) {
   const queryClient = useQueryClient()
   const [error, setError] = useState<string>()
-  const attempt = useAttemptKey()
-  const post = useMutation({ ...sendMessage, meta: { keepCache: true } })
-  const stop = useMutation({ ...sendStop, meta: { keepCache: true } })
 
-  async function send(content: string): Promise<boolean> {
+  /**
+   * Mastra's `sendMessage` opens a run, or enters the running one, or waits on the open card: a
+   * message sent while the Builder works shows pinned first, until the stream says Mastra took it.
+   */
+  async function send(content: string, running: boolean): Promise<boolean> {
     setError(undefined)
-    dispatch({ type: 'sent' })
+    const steer = running ? { id: crypto.randomUUID(), content } : undefined
+    if (steer !== undefined) dispatch({ type: 'steer', steer })
     try {
-      await attempt((attemptKey) => post.mutateAsync({ params, body: { content }, attemptKey }))
+      await builder.send(content)
     } catch (failure) {
-      dispatch({ type: 'unsent' })
+      if (steer !== undefined) dispatch({ type: 'unsteered', id: steer.id })
       if (failure instanceof HubFailure && failure.code === 'CONVERSATION_NOT_FOUND') onGone()
       else setError(writeFailureText(failure, UNCONFIRMED_SEND))
       return false
@@ -94,15 +98,84 @@ function useSending(
       queryKey: conversationQuery(params.companyId, params.projectId, params.conversationId)
         .queryKey,
     })
+    field.current?.focus()
     return true
   }
 
+  const stop = useMutation({ mutationFn: builder.stop, meta: { keepCache: true } })
+
   function halt() {
     field.current?.focus()
-    stop.mutate({ params })
+    stop.mutate()
   }
 
   return { error, setError, send, halt }
+}
+
+function PanelComposer(props: {
+  params: Params
+  conversation: Conversation
+  accounts: { choices: { mine: readonly Provider[] } }
+  state: SessionState
+  draft: ReturnType<typeof useDraft>
+  field: RefObject<HTMLTextAreaElement | null>
+  onSend: (content: string) => Promise<boolean>
+  onStop: () => void
+  onError: (error: string | undefined) => void
+  canAnswer: boolean
+  waiting: boolean
+}) {
+  const {
+    params,
+    conversation,
+    accounts,
+    state,
+    draft,
+    field,
+    onSend,
+    onStop,
+    onError,
+    canAnswer,
+    waiting,
+  } = props
+  return (
+    <div className="px-md">
+      <Composer
+        answering={state.running || waiting}
+        canSend={canAnswer}
+        draft={draft}
+        field={field}
+        onSend={onSend}
+        onStop={onStop}
+        taskPanel={
+          <TaskPanel tasks={state.tasks ?? conversation.tasks} streaming={state.running} />
+        }
+        memory={
+          <MemoryStatus memory={state.memory} omPhase={state.omPhase} failed={state.memoryFailed} />
+        }
+        picker={
+          canAnswer && (
+            <ModelChoice
+              ids={params}
+              conversation={conversation}
+              providers={accounts.choices.mine}
+              onError={onError}
+            />
+          )
+        }
+      />
+    </div>
+  )
+}
+
+function Notices(props: { companyId: CompanyId; canAnswer: boolean; empty: boolean }) {
+  if (props.canAnswer && !props.empty) return null
+  return (
+    <div className="flex flex-col gap-md px-md py-md">
+      {!props.canAnswer && <NoAccount companyId={props.companyId} />}
+      {props.empty && <Empty>{EMPTY_CONVERSATION}</Empty>}
+    </div>
+  )
 }
 
 function Screen(params: Params) {
@@ -117,70 +190,49 @@ function Screen(params: Params) {
   const [gone, setGone] = useState(false)
   const field = useRef<HTMLTextAreaElement>(null)
   const draft = useDraft(conversationId)
-  const { state, dispatch } = useLive(
-    params,
-    () => {
-      void queryClient.invalidateQueries({
-        queryKey: allConversationsQueryKey(companyId, projectId),
-      })
-      setGone(true)
-    },
-    // The restart ended the turn: the last message goes back in the field, to be sent again.
-    () => {
-      const last = conversation.messages.findLast((message) => message.role === 'person')
-      if (last && draft.text.trim() === '') draft.change(textOf(last))
-    },
+  const { state, dispatch, builder } = useSession(params, () => {
+    void queryClient.invalidateQueries({
+      queryKey: allConversationsQueryKey(companyId, projectId),
+    })
+    setGone(true)
+  })
+  const { error, setError, send, halt } = useSending(params, builder, field, dispatch, () =>
+    setGone(true),
   )
-  const { error, setError, send, halt } = useSending(params, field, dispatch, () => setGone(true))
 
   useEffect(() => field.current?.focus(), [])
 
+  const turns = useMemo(() => shownOf(state), [state])
+  const waiting = Object.keys(state.suspended).length > 0
   if (gone) return <NotFound />
-  const empty = conversation.messages.length === 0 && state.kind === 'idle'
-  const notice = !canAnswer || empty
+  const empty = state.messages.length === 0 && !state.running
   return (
     <>
-      {notice && (
-        <div className="flex flex-col gap-md px-md py-md">
-          {!canAnswer && <NoAccount companyId={companyId} />}
-          {empty && <Empty>{EMPTY_CONVERSATION}</Empty>}
-        </div>
-      )}
-      <div className="min-h-0 flex-1">
-        <Transcript
-          messages={conversation.messages}
-          answer={shownAnswer(state, conversation.messages)}
-          model={conversation.model}
-        />
+      <Notices companyId={companyId} canAnswer={canAnswer} empty={empty} />
+      <div className="min-h-40 flex-1">
+        <Transcript turns={turns} steers={state.steers} model={conversation.model} />
       </div>
       {error !== undefined && (
         <p role="alert" className="px-md">
           {error}
         </p>
       )}
-      {(state.kind === 'answering' || state.kind === 'resuming') && (
-        <WorkingLine startedAt={state.startedAt} heard={state.parts} />
+      {(state.running || waiting) && (
+        <WorkingLine startedAt={state.startedAt} heard={state.messages} waiting={waiting} />
       )}
-      <div className="px-md">
-        <Composer
-          answering={state.kind === 'answering'}
-          canSend={canAnswer}
-          draft={draft}
-          field={field}
-          onSend={send}
-          onStop={halt}
-          picker={
-            canAnswer && (
-              <ModelChoice
-                ids={params}
-                conversation={conversation}
-                providers={accounts.choices.mine}
-                onError={setError}
-              />
-            )
-          }
-        />
-      </div>
+      <PanelComposer
+        params={params}
+        conversation={conversation}
+        accounts={accounts}
+        state={state}
+        draft={draft}
+        field={field}
+        onSend={(content) => send(content, state.running || waiting)}
+        onStop={halt}
+        onError={setError}
+        canAnswer={canAnswer}
+        waiting={waiting}
+      />
     </>
   )
 }

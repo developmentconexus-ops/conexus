@@ -892,3 +892,34 @@ refused for its media type or its origin.
   not on the instructions' sentences. A second case has a person paste a password: it proves the
   secrets rule reaches the model and that the gate fails without it, not that a real model obeys.
   Revisit when `runEvals` takes tool mocks, or the Builder's agent can be a target.
+
+## The Builder's end of the turn: open tasks (step 14.2)
+
+- **The end of the turn is Mastra's `isTaskComplete`.** `conversation/builder.ts` gives the Builder's
+  `defaultOptions.isTaskComplete` one code scorer, `conexus-check` (`conversation/processors.ts`
+  `conexusCheck`), which finds the machine by the conversation in `customContext.controller`. It first
+  reads the thread's task list from Mastra's `threadState` store, as `task_check` reads it
+  (`tools/builtin/task-tools.ts:385-391` at `6a465f9d`); a turn that ends with tasks open, or with a
+  failed app check, scores 0 and Mastra gives the scorer's reason to the model and calls it again
+  (`formatCompletionFeedback`, the `task_complete_evaluation` event reaches the screen). Mastra's loop
+  has no cap of its own for this, so the rounds count in `CHECK_LIMITS.checks`, kept by the run
+  (`Runs.round`); at the limit the scorer passes and the version is saved `unfinished` or `failed`.
+  Mastra's own `goal` judges completion with a model, not the list (`agent/goal/scorer.ts:14-28`), so
+  it does not serve. Proof: `conversation-check.test.ts`, criterion 15 of step 14.2.
+
+## Mastra's session routes behind the Hub's guard (step 14.2)
+
+- **A fixed list, one guard.** `conversation/guard.ts` registers seven of Mastra's own
+  agent-controller routes (stream, message, Parar, a card's answer, steer, follow-up, transcript)
+  through `@mastra/fastify`'s `registerRoute`, each declared `access: 'session'`; every other route
+  of `SERVER_ROUTES` is not registered, so it is a 404 (decision 0050, S39). Mastra's `server.auth`
+  stays off: the guard reads the Hub's session, finds the thread's owner in its `resourceId` and the
+  Hub's index (S10), refuses a browser `requestContext` with 400, and sets the message's author.
+  Proof: `conversation-routes.test.ts`, criteria 3, 30 and 31 of step 14.2.
+- **The Hub's close closes the open streams.** Mastra's stream route ends only when its request
+  leaves (`handlers/agent-controller.ts:581-647` at 1.79.0), so the guard keeps each open stream's
+  response and the close destroys them once the runs have said their end, which `@mastra/fastify`
+  reads as the request leaving; a session Mastra deletes
+  with its Projeto ends its run without an `agent_end`, so `end.ts` lets it go on
+  `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
+  streams on shutdown.

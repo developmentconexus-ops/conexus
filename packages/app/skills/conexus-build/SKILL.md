@@ -9,7 +9,7 @@ Build in small steps and prove each one before the next. A step is done when you
 
 ## Start
 - First, decide whether this needs a plan. Do not judge it by whether the request feels clear: list what the change needs (each screen, what each record holds, its kinds and statuses, who sees what, each rule). If the app is new, or any of these is named by neither the request nor the app, and the person has not approved a plan for this request in this conversation, load `conexus-plan-new` for a new app or `conexus-plan-change` for a change to an existing app, including an unfinished or broken one and a new feature inside it, and build nothing yet.
-- With an approved plan: read `.conexus/plan.md` and turn "Ordem" into your task list, one task per step. If the list already has proven steps from an earlier run, continue from the first open one; never redo a proven step.
+- With an approved plan: read the approved plan, the file in `.conexus/plans/` you submitted, and turn "Ordem" into your task list, one task per step. If the list already has proven steps from an earlier run, continue from the first open one; never redo a proven step.
 - Without a plan, for a small change with nothing left to decide: before you edit, decide how you will prove the change works, then make it.
 
 ## Prove each step
@@ -30,8 +30,8 @@ Build in small steps and prove each one before the next. A step is done when you
 
 ## When the work leaves the plan
 
-- A technical difference, such as a name, a structure or a component: decide, update the plan, and list it in your final message.
-- A difference the person would notice or has to decide, such as a source without the data, a rule the data contradicts, or work bigger than planned: finish the parts that do not depend on it, then update the plan and ask with `ask_user`. Never make the work smaller on your own.
+- A technical difference, such as a name, a structure or a component: decide, and list it in your final message. The approved plan file stays as it was approved.
+- A difference the person would notice or has to decide, such as a source without the data, a rule the data contradicts, or work bigger than planned: finish the parts that do not depend on it, then write the change as a new plan in its own file in `.conexus/plans/`, ask what only the person can decide with `ask_user`, and get it approved with `submit_plan`. Never make the work smaller on your own.
 - Without a plan, split the request the same way.
 
 ## Keep the code clean
@@ -45,6 +45,6 @@ Build in small steps and prove each one before the next. A step is done when you
 
 1. Read the plan again, or the request without one, and check each item against what you proved. Mark done only what you proved.
 2. Read the app as the person will meet it, screen by screen, from the first one, against the plan's part for the person. If a screen would read as a bare form or an empty table to someone opening it for the first time, or a suggestion the person approved is missing, fix it before you finish.
-3. Make the plan match what you built.
+3. Leave each approved plan file as it was approved: what you built differently goes in the final message.
 4. Save what lasts to the app's memory: decisions with why, rules the person confirmed, and where each piece of data lives.
 5. Write the final message in a few short sentences: first what failed or was not proven, then what is ready and what to try, then the decisions you made and the assumptions for the person to confirm. Say what ran as facts, such as "a conferência passou; as 3 operações foram lidas, não executadas". Do not end by offering more help.

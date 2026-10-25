@@ -95,8 +95,12 @@ function searchFrames(block: Extract<Block, { type: 'search' }>, index: number) 
 }
 
 /** A whole answer of `model` as the Messages API streams it: its blocks, then its stop. */
-export function events(model: string, blocks: Block[], stop: 'end_turn' | 'tool_use'): string {
-  const usage = { input_tokens: 10, output_tokens: 1 }
+export function events(
+  model: string,
+  blocks: Block[],
+  stop: 'end_turn' | 'tool_use' | 'max_tokens' | 'refusal',
+): string {
+  const usage = { input_tokens: 10, cache_read_input_tokens: 4, output_tokens: 1 }
   const message = { id: 'msg_test', type: 'message', role: 'assistant', model, content: [] }
   let index = 0
   const content = blocks.flatMap((block) => {

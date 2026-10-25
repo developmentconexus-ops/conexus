@@ -22,10 +22,6 @@ ALTER FUNCTION auth.is_installation_administrator(person text) OWNER TO hub_admi
 -- Step 11, founder 2026-10-19 ("2. a", Grant A): a model account's sealed credential, and the
 -- companies that hold one, two SECURITY DEFINER functions owned by a role that cannot log in and
 -- reads five columns of the accounts; hub_company executes the first, hub_runtime the second.
--- Step 13, founder 2026-10-20 ("Aprovo"): the companies with a turn or a copy left, for the takeover
--- at start, one SECURITY DEFINER function owned by a role that cannot log in and reads four columns
--- of the runs; only hub_runtime executes it.
-ALTER FUNCTION builder.companies_with_runs() OWNER TO hub_runs;
 ALTER FUNCTION builder.companies_with_seals() OWNER TO hub_model_seals;
 ALTER FUNCTION builder.sealed_of(account uuid) OWNER TO hub_model_seals;
 -- Step 8, founder 2026-10-17 ("Grant A"): a host's Project and company, one SECURITY DEFINER function
@@ -55,9 +51,8 @@ ALTER TABLE builder.machine OWNER TO test_owner;
 ALTER TABLE builder.model_account OWNER TO test_owner;
 ALTER TABLE builder.model_account_assignee OWNER TO test_owner;
 ALTER TABLE builder.model_account_sign_in OWNER TO test_owner;
+ALTER TABLE builder.observational_memory_models OWNER TO test_owner;
 ALTER TABLE builder.person_model_default OWNER TO test_owner;
-ALTER TABLE builder.run OWNER TO test_owner;
-ALTER TABLE builder.run_event OWNER TO test_owner;
 ALTER TABLE drizzle.__drizzle_migrations OWNER TO test_owner;
 ALTER SEQUENCE drizzle.__drizzle_migrations_id_seq OWNER TO test_owner;
 ALTER TABLE hub.starts OWNER TO test_owner;
@@ -86,7 +81,6 @@ GRANT USAGE ON SCHEMA builder TO hub_company;
 GRANT USAGE ON SCHEMA builder TO hub_operator;
 GRANT USAGE ON SCHEMA builder TO hub_model_seals;
 GRANT USAGE ON SCHEMA builder TO hub_runtime;
-GRANT USAGE ON SCHEMA builder TO hub_runs;
 GRANT USAGE ON SCHEMA drizzle TO hub_runtime;
 GRANT USAGE ON SCHEMA hub TO hub_runtime;
 GRANT USAGE ON SCHEMA operations TO hub_runtime;
@@ -99,8 +93,6 @@ REVOKE ALL ON FUNCTION apps.companies_with_apps() FROM PUBLIC;
 GRANT ALL ON FUNCTION apps.companies_with_apps() TO hub_runtime;
 REVOKE ALL ON FUNCTION auth.is_installation_administrator(person text) FROM PUBLIC;
 GRANT ALL ON FUNCTION auth.is_installation_administrator(person text) TO hub_operator;
-REVOKE ALL ON FUNCTION builder.companies_with_runs() FROM PUBLIC;
-GRANT ALL ON FUNCTION builder.companies_with_runs() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.companies_with_seals() FROM PUBLIC;
 GRANT ALL ON FUNCTION builder.companies_with_seals() TO hub_runtime;
 REVOKE ALL ON FUNCTION builder.sealed_of(account uuid) FROM PUBLIC;
@@ -216,6 +208,11 @@ GRANT SELECT(served_at),UPDATE(served_at) ON TABLE builder.model_account TO hub_
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_assignee TO hub_company;
 GRANT SELECT,INSERT,DELETE ON TABLE builder.model_account_sign_in TO hub_company;
 GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_seals;
+-- Step 14.2, founder 2026-10-23 ("1. Aprovo", D11): a company's people read the Observer and
+-- Reflector choice; an owner or an administrator saves it.
+GRANT SELECT,INSERT ON TABLE builder.observational_memory_models TO hub_company;
+GRANT UPDATE(observer) ON TABLE builder.observational_memory_models TO hub_company;
+GRANT UPDATE(reflector) ON TABLE builder.observational_memory_models TO hub_company;
 -- Step 14, founder 2026-10-21 ("SIM", the card): a company's routes record the libraries a Projeto's
 -- owner allowed, at an exact version, and read them for each check.
 -- Step 12.3, founder 2026-10-20 ("Tudo A", P1, P4): a person reads, writes and clears their own
@@ -223,18 +220,6 @@ GRANT SELECT(company_id) ON TABLE builder.model_account_sign_in TO hub_model_sea
 GRANT SELECT,INSERT,DELETE ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(model) ON TABLE builder.person_model_default TO hub_company;
 GRANT UPDATE(effort) ON TABLE builder.person_model_default TO hub_company;
-GRANT SELECT,INSERT,DELETE ON TABLE builder.run TO hub_company;
-GRANT SELECT(company_id) ON TABLE builder.run TO hub_runs;
-GRANT UPDATE(state) ON TABLE builder.run TO hub_company;
-GRANT SELECT(state) ON TABLE builder.run TO hub_runs;
-GRANT UPDATE(base_sha) ON TABLE builder.run TO hub_company;
-GRANT UPDATE(candidate_sha) ON TABLE builder.run TO hub_company;
-GRANT SELECT(candidate_sha) ON TABLE builder.run TO hub_runs;
-GRANT UPDATE(lease_until) ON TABLE builder.run TO hub_company;
-GRANT UPDATE(owner) ON TABLE builder.run TO hub_company;
-GRANT UPDATE(copied_at) ON TABLE builder.run TO hub_company;
-GRANT SELECT(copied_at) ON TABLE builder.run TO hub_runs;
-GRANT SELECT,INSERT ON TABLE builder.run_event TO hub_company;
 GRANT SELECT ON TABLE drizzle.__drizzle_migrations TO hub_runtime;
 GRANT SELECT,INSERT ON TABLE hub.starts TO hub_runtime;
 -- Step 4.2, founder 2026-10-16 ("Aprovo", option A): the Hub never deletes a client.
@@ -281,8 +266,6 @@ CREATE ROLE hub_operator;
 ALTER ROLE hub_operator WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_person;
 ALTER ROLE hub_person WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
-CREATE ROLE hub_runs;
-ALTER ROLE hub_runs WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB NOLOGIN NOREPLICATION NOBYPASSRLS;
 CREATE ROLE hub_runtime;
 ALTER ROLE hub_runtime WITH NOSUPERUSER NOINHERIT NOCREATEROLE NOCREATEDB LOGIN NOREPLICATION NOBYPASSRLS;
 -- Step 12: Mastra's login, which enters only Mastra's database.
@@ -306,6 +289,5 @@ GRANT hub_operator TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
 GRANT hub_person TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_person TO hub_runtime WITH INHERIT FALSE GRANTED BY test_owner;
 -- PostgreSQL grants the role that creates hub_runtime (the migration owner) the right to administer it. Neon does the same.
-GRANT hub_runs TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT hub_runtime TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;
 GRANT mastra_runtime TO test_owner WITH ADMIN OPTION, INHERIT FALSE, SET FALSE GRANTED BY test_superuser;

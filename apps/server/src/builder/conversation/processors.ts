@@ -1,12 +1,14 @@
 import type { CheckReport } from '@conexus/app/check'
 import { CHECK_LIMITS } from '@conexus/app/check'
-import type { MessageList } from '@mastra/core/agent'
-import type { OutputProcessor, ProcessOutputStepArgs } from '@mastra/core/processors'
-import { createTool } from '@mastra/core/tools'
+import { BUILDER_TOOL } from '@conexus/hub-api'
+import { createScorer } from '@mastra/core/evals'
+import type { OutputProcessor } from '@mastra/core/processors'
+import { RequestContext } from '@mastra/core/request-context'
+import type { MastraCompositeStore } from '@mastra/core/storage'
+import type { TaskItemSnapshot } from '@mastra/core/tools'
+import { createTool, summarizeTaskCheck, TASK_STATE_TYPE } from '@mastra/core/tools'
 import { z } from 'zod'
 import type { Runs } from '../runs/public.ts'
-
-export const CHECK_TOOL = 'conexus_check'
 
 /** Conexus OS `e0353c36` `harness/tools.ts:28-33`, with the steps of this check (decision 0055). */
 const CHECK_DESCRIPTION = [
@@ -26,7 +28,7 @@ const PLATFORM_FAILED = {
 /** `conexus_check`: the same check as the end of the turn, by the same path (`Runs.check`). */
 export function checkTool(runs: Runs) {
   return createTool({
-    id: CHECK_TOOL,
+    id: BUILDER_TOOL.check,
     description: CHECK_DESCRIPTION,
     inputSchema: z.object({}),
     execute: async (_input, { requestContext }) => {
@@ -36,7 +38,7 @@ export function checkTool(runs: Runs) {
   })
 }
 
-const FailedChecks = z.int().nonnegative().catch(0)
+const ControllerThread = z.object({ threadId: z.string() })
 
 /** The words of a failed check at the end of the turn, which Mastra gives the model before it answers again. */
 function feedback(report: CheckReport, failed: number): string {
@@ -47,37 +49,95 @@ function feedback(report: CheckReport, failed: number): string {
   ].join(' ')
 }
 
+/** The words of a turn that ended with tasks open (card of step 14.2, criterion 15). */
+function unfinished(open: TaskItemSnapshot[]): string {
+  const count = open.length === 1 ? '1 tarefa aberta' : `${open.length} tarefas abertas`
+  const names = open.map((task) => task.content).join('; ')
+  return `${count}: ${names}. Termine cada uma, ou marque-a como feita com task_complete, antes de encerrar.`
+}
+
+/** The thread's open tasks, from the store `task_check` reads (Mastra's `threadState`, `task-tools.ts:385-391`). */
+async function openTasks(
+  storage: MastraCompositeStore,
+  requestContext: RequestContext,
+): Promise<TaskItemSnapshot[]> {
+  const controller = ControllerThread.safeParse(requestContext.get('controller'))
+  if (!controller.success) return []
+  const store = await storage.getStore('threadState')
+  const { threadId } = controller.data
+  const tasks = await store?.getState<TaskItemSnapshot[]>({ threadId, type: TASK_STATE_TYPE })
+  return summarizeTaskCheck(Array.isArray(tasks) ? tasks : []).incompleteTasks
+}
+
+type Verdict = { score: 0 | 1; reason: string }
+const FINISHED: Verdict = { score: 1, reason: 'Conexus has nothing more to ask of this turn.' }
+
 /**
- * The check at the end of the turn (card of step 14, U4): a step that ends the turn (no tool call)
- * in a turn that changed the app folder is checked; a failure goes back to the model with the
- * report (`abort` with `retry`), and the last failure of `CHECK_LIMITS.checks` lets the turn end,
- * the code kept as not built. A machine that could not check costs no attempt; the turn ends, its
- * version kept as unchecked.
- * The failures are counted in the processor's state, not by `retryCount`, which Mastra 1.78.0 sets
- * back to 0 after any step it did not retry (`agent-*.js`, `nextProcessorRetryCount`), as each step
- * that fixes the app with a tool is.
+ * What the end of the turn is worth (cards of steps 14, U4, and 14.2, U3): a turn that ends (no
+ * tool call, an empty one included) with tasks open scores 0 with them; one that changed the app
+ * folder is checked, and a failure scores 0 with the report. Mastra gives the reason to the model
+ * and calls it again (`isTaskComplete`). Both count in `CHECK_LIMITS.checks`, and the last lets the
+ * turn end, its version kept as unfinished or not built. A machine that could not check costs no
+ * attempt; the turn ends, its version kept as unchecked. Each round is told to the run, for the
+ * turn's line. The rounds are the run's, not Mastra's iteration, which counts every step.
  */
-export function checkGate(runs: Runs): OutputProcessor {
-  return {
-    id: 'conexus-check-gate',
-    async processOutputStep(args: ProcessOutputStepArgs): Promise<MessageList> {
-      const { requestContext, messageList, state } = args
-      if (requestContext === undefined || (args.toolCalls?.length ?? 0) > 0) return messageList
-      if (!(await runs.changed(requestContext))) return messageList
-      const checked = await runs.check(requestContext)
-      if (!checked.ok) {
-        runs.judged(requestContext, { state: 'unchecked', code: checked.error })
-        return messageList
-      }
-      if (checked.value.ok) {
-        runs.judged(requestContext, { state: 'passed' })
-        return messageList
-      }
-      const failed = FailedChecks.parse(state.failed) + 1
-      state.failed = failed
-      if (failed < CHECK_LIMITS.checks) args.abort(feedback(checked.value, failed), { retry: true })
-      runs.judged(requestContext, { state: 'failed', code: 'APP_CHECK_FAILED' })
-      return messageList
-    },
+async function judge(
+  deps: { runs: Runs; storage: MastraCompositeStore },
+  requestContext: RequestContext,
+): Promise<Verdict> {
+  const { runs } = deps
+  const open = await openTasks(deps.storage, requestContext)
+  if (open.length === 0 && !(await runs.changed(requestContext))) return FINISHED
+  const round = runs.round(requestContext)
+  if (round === 0) return FINISHED
+  const last = round >= CHECK_LIMITS.checks
+  if (open.length > 0) {
+    if (!last) return { score: 0, reason: unfinished(open) }
+    runs.judged(requestContext, { state: 'unfinished', open: open.length })
+    return FINISHED
   }
+  const checked = await runs.check(requestContext)
+  if (!checked.ok) {
+    runs.judged(requestContext, { state: 'unchecked', code: checked.error })
+    return FINISHED
+  }
+  if (checked.value.ok) {
+    runs.judged(requestContext, { state: 'passed' })
+    return FINISHED
+  }
+  if (!last) return { score: 0, reason: feedback(checked.value, round) }
+  runs.judged(requestContext, { state: 'failed', code: 'APP_CHECK_FAILED' })
+  return FINISHED
+}
+
+/** The end of the turn as Mastra's `isTaskComplete` scores it, by code (Mastra Code `agent/goal` is a model's judge). */
+export function conexusCheck(deps: { runs: Runs; storage: MastraCompositeStore }) {
+  return createScorer({
+    id: 'conexus-check',
+    name: 'Conferência do app',
+    description: "Open tasks and Conexus's check of the app at the end of the turn.",
+  })
+    .preprocess(async ({ run }) => {
+      const requestContext = new RequestContext<unknown>(Object.entries(run.requestContext ?? {}))
+      // Mastra scores a throw 0 and calls the model again, with no cap; a machine that fails here is one that could not check.
+      return judge(deps, requestContext).catch(() => {
+        deps.runs.judged(requestContext, { state: 'unchecked', code: 'CHECK_PLATFORM_FAILED' })
+        return FINISHED
+      })
+    })
+    .generateScore(({ results }) => results.preprocessStepResult.score)
+    .generateReason(({ results }) => results.preprocessStepResult.reason)
+}
+
+/**
+ * Mastra saves a workspace tool's `data-workspace-metadata` chunk under the run's first message id,
+ * over the sealed row a task signal left behind (Mastra issue #21940), and the row loses its
+ * reasoning, text and tool parts. Nothing reads the chunk, so it is only streamed.
+ */
+export const workspaceMetadataLive: OutputProcessor = {
+  id: 'conexus-workspace-metadata-live',
+  processDataParts: true,
+  async processOutputStream({ part }) {
+    return part.type === 'data-workspace-metadata' ? { ...part, transient: true } : part
+  },
 }

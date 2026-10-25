@@ -19,6 +19,7 @@ import type { FastifyInstance } from 'fastify'
 import { answer, serve } from '../../platform/http.ts'
 import type { Deps } from './accounts.ts'
 import { readKinds, setKinds } from './kinds.ts'
+import { registerObservationalMemoryModelRoutes } from './observational-memory-settings.ts'
 import { listKeyProviders } from './providers.ts'
 import type { SignInDeps } from './sign-ins.ts'
 import { completeSignIn, startSignIn } from './sign-ins.ts'
@@ -33,6 +34,7 @@ export function registerModelAccountRoutes(
   const { store } = deps
 
   serve(app, listModelProviders, () => answer(PROVIDERS))
+  registerObservationalMemoryModelRoutes(app, deps)
 
   serve(app, listModelAccounts, async ({ person, params }) =>
     answer(await store.list({ person, ...params })),

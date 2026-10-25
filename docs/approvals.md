@@ -1,6 +1,6 @@
 # Aprovações e usos das etapas
 
-O registro de cada etapa: as palavras do fundador ao aprovar o cartão, com a data e o commit, e ao usar a etapa, com a data e o endereço (delivery L6, L17). A linha de cada etapa está no [roteiro](roadmap.md).
+O registro da etapa: as palavras do fundador ao aprovar o cartão, com a data e o commit, e ao usar a etapa, com a data e o endereço (delivery L6, L17). A linha de cada etapa está no [roteiro](roadmap.md).
 
 ## Etapa 1
 
@@ -113,3 +113,18 @@ Etapa 14 usada em 2026-10-22 em https://hub.conexus.fun (v0.14.0 e o conserto v0
 Cartão da etapa 14.2 aprovado em 2026-10-22 (commit 917b5e48613cb4e0a58562d780160c826fcd0fcb): "aprovado esse estudo, tá bom? Pode seguir."
 
 U6 e U7 do cartão da etapa 14.2 ficam à espera da bancada da harness.
+
+Cartão da etapa 14.2 aprovado em 2026-10-22 (commit f76f4dce0a7a34a215e416767b4f51e9fed2509d): "C"
+
+Essa emenda põe a etapa 14.0, "Um registro da conversa", dentro da U2, com o desenho aprovado em "1. Sim … 2.B".
+
+Cartão da etapa 14.2 aprovado em 2026-10-23 (commit 27681cac9b96fe3b945c1a1ee26f20517936ffbe): "Aprovado"
+Permissões de `builder.observational_memory_models` (a migração própria, D11), aprovadas em 2026-10-23: "1. Aprovo"
+Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 588f2c4a7e3cf5230fc337ef6a5c4bddc2ab8ded): "2. Sim"
+Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 4563d3f9f5c408dad7d427438a97aa660bef7927): "5. Aprovo"
+Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 7ee7b27f2853f9a918f277d36c53b05e93ecf5b2): "Sim"
+Cartão da etapa 14.2 aprovado em 2026-10-24 (commit 9947ff473c1f8d5513eb6eb2edb6df640f7ce08e): "Essa mensagem responde de uma a outra, olhando essa daí, 1, A, aprovo, 2, A, 3, pode matar, e 4, confirmo."
+
+Em 2026-10-24, sobre a etapa 14.2: "4. B" e "A". A pergunta ou o plano aberto atravessa a atualização do servidor e também uma queda, pelo mesmo código: a cópia nova adota a volta.
+
+Migração `20261024171411_e142_drop_run` (apaga `builder.run`, `companies_with_runs()` e o papel `hub_runs`; D11), aprovada em 2026-10-24 sobre a migração de https://github.com/developmentconexus-ops/conexus/pull/314: "Pode"

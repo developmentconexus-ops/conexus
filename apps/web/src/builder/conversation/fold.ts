@@ -1,32 +1,49 @@
-import type { MessagePart } from '@conexus/hub-api'
-import { machinePhaseLasts } from '@conexus/hub-api'
+import type { ToolItem, TranscriptItem } from './rows.ts'
+import { specOf } from './tool-registry.ts'
 
-export type ToolPart = Extract<MessagePart, { type: 'tool' }>
+export type Row = { kind: 'item'; item: TranscriptItem } | { kind: 'group'; tools: ToolItem[] }
 
-export type Row = { kind: 'part'; part: MessagePart } | { kind: 'group'; tools: ToolPart[] }
-
-/** Mirrors `playground-ui` `group-consecutive.ts`. */
 const TOOL_GROUP_MIN = 3
 
-export function fold(parts: readonly MessagePart[]): Row[] {
+function isMachine(item: TranscriptItem): boolean {
+  return item.kind === 'conexus' && item.partType === 'data-conexus-machine'
+}
+
+export function fold(items: readonly TranscriptItem[]): Row[] {
   const rows: Row[] = []
-  let run: ToolPart[] = []
+  let run: ToolItem[] = []
+
   function close() {
-    if (run.length >= TOOL_GROUP_MIN) rows.push({ kind: 'group', tools: run })
-    else for (const tool of run) rows.push({ kind: 'part', part: tool })
+    if (run.length >= TOOL_GROUP_MIN) {
+      rows.push({ kind: 'group', tools: run })
+    } else {
+      for (const t of run) {
+        rows.push({ kind: 'item', item: t })
+      }
+    }
     run = []
   }
-  for (const [at, part] of parts.entries()) {
-    // A file the turn wrote is for the Código tab: the tool row already says it in words.
-    if (part.type === 'file') continue
-    // A step of the machine is over once anything comes after it; a phase that lasts stays said.
-    if (part.type === 'machine' && !machinePhaseLasts(part.phase) && at < parts.length - 1) continue
-    if (part.type === 'tool') run.push(part)
-    else {
+
+  // A machine's step says what the turn waits for, until anything else comes.
+  const said = items.some((item) => !isMachine(item))
+  for (const item of items) {
+    if (isMachine(item) && said) {
+      continue
+    }
+
+    if (item.kind === 'tool') {
+      if (specOf(item.toolName)?.groups ?? true) {
+        run.push(item)
+      } else {
+        close()
+        rows.push({ kind: 'item', item })
+      }
+    } else {
       close()
-      rows.push({ kind: 'part', part })
+      rows.push({ kind: 'item', item })
     }
   }
+
   close()
   return rows
 }

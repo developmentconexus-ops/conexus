@@ -1,16 +1,14 @@
-import type { RunId } from '@conexus/hub-api'
-import { RunId as RunIdSchema } from '@conexus/hub-api'
+import { ConversationId } from '@conexus/hub-api'
 import type { RequestContext } from '@mastra/core/request-context'
+import { z } from 'zod'
 
-const RUN_KEY = 'conexus.run'
+const Controller = z.object({ sessionId: ConversationId })
 
-/** The request context of a turn, with the run it drives: how the controller's workspace learns whose it is. */
-export function withRun(context: RequestContext, runId: RunId): RequestContext {
-  context.set(RUN_KEY, runId)
-  return context
-}
-
-export function runIn(context: RequestContext | undefined): RunId | undefined {
-  const found = RunIdSchema.safeParse(context?.get(RUN_KEY))
-  return found.success ? found.data : undefined
+/**
+ * The conversation a Mastra run is: the controller names the run's session, whose id is the
+ * conversation's (decision 0050), as Factory reads it (`credential-policy.ts:37-39`).
+ */
+export function conversationIn(context: RequestContext | undefined): ConversationId | undefined {
+  const found = Controller.safeParse(context?.get('controller'))
+  return found.success ? found.data.sessionId : undefined
 }

@@ -4,18 +4,19 @@ import type { CliProxy } from '../../platform/config.ts'
 import type { Database } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { SealKeys } from '../../platform/seal.ts'
-import { claudeSignIn } from './claude/claude.ts'
+import { claudeSignIn } from './claude/sign-in.ts'
 import { googleCalls } from './google/calls.ts'
 import { googleSignIn } from './google/google.ts'
 import { reseal } from './reseal.ts'
 import { registerModelAccountRoutes } from './routes.ts'
-import type { ReadingDeps } from './served-reads.ts'
-import { readUnserved } from './served-reads.ts'
+import type { ReadingDeps } from './served.ts'
+import { readUnserved } from './served.ts'
 import type { SignInFlows } from './sign-ins.ts'
 import { createModelAccountStore } from './store.ts'
 
-export { subscriptionModel } from './claude/subscription-model.ts'
+export { promptCacheMiddleware, subscriptionModel } from './claude/models.ts'
 export { conversationStart } from './defaults.ts'
+export { memoryModelsFor } from './observational-memory-settings.ts'
 export {
   accountErrorProcessors,
   accountModel,
@@ -26,7 +27,7 @@ export type { QueueDeps } from './queue.ts'
 export { callModel, conversationModel, providerOf } from './queue.ts'
 export { AnthropicPage, GooglePage, listRequest, OpenAiList } from './served.ts'
 export { effortFor, effortsOf, providerOptionsOf } from './thinking.ts'
-export { chosenModel, NOTICE_PART, Notice, Turn, turnContext } from './turn.ts'
+export { chosenModel, setTurn, Turn, turnContext, turnIn } from './turn.ts'
 
 export type ModelAccounts = ReturnType<typeof createModelAccounts>
 

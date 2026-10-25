@@ -1,55 +1,57 @@
 import assert from 'node:assert/strict'
+import { truncateSync } from 'node:fs'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { RunId } from '@conexus/hub-api'
 import { createWorkspaceTools, WORKSPACE_TOOLS } from '@mastra/core/workspace'
 import {
   COMPANY,
+  CONVERSATION,
   INSTALLATION,
+  OTHER_CONVERSATION,
   OTHER_INSTALLATION,
   PROJECT,
   restoreRefused,
+  sandboxOf,
   world,
 } from './test-machine.ts'
 
-test('máquina: o primeiro uso liga, copia o main, grava o id; religar volta ao main; sumida é refeita com o aviso, sem criar outra', async (t) => {
-  const { open, phases, control, asOwner, machines, base } = await world(t)
+const OWN = `conexus-${INSTALLATION}-${CONVERSATION}`
+
+test('máquina: a conversa sem máquina liga e copia o main; a achada pelo nome volta ao main com a rede fechada; a que sumiu entre turnos volta nova, do main, sem frase', async (t) => {
+  const { open, phases, control, machines, base } = await world(t)
   const first = await open()
-  assert.deepEqual(phases, [])
+  assert.deepEqual(phases, [], 'building the workspace touches no machine')
   await first.filesystem?.writeFile('a.ts', 'um\n')
   assert.deepEqual(phases, ['starting', 'copying'])
-  assert.deepEqual(await asOwner(`select sandbox_id from builder.machine`), [
-    { sandbox_id: 'local-machine' },
-  ])
+  await machines.release(CONVERSATION)
   phases.length = 0
-  control.outcome = 'connected'
-  const woken = await open()
-  assert.equal(await woken.filesystem?.exists('a.ts'), false, 'a fresh turn starts from main')
-  assert.deepEqual(phases, ['waking', 'copying'])
+  control.discoverable = [OWN]
+  const found = await open()
+  assert.equal(await found.filesystem?.exists('a.ts'), false, 'a fresh turn starts from main')
+  assert.deepEqual(phases, ['starting', 'copying'])
+  assert.deepEqual(control.attached, [OWN])
   assert.equal(control.networkClosed, 1)
+  await machines.release(CONVERSATION)
   phases.length = 0
-  control.outcome = 'created'
-  control.exists = false
-  const rebuilt = await open()
-  await rebuilt.filesystem?.exists('a.ts')
-  assert.deepEqual(phases, ['waking', 'replaced', 'copying'])
-  assert.equal(control.reattached.at(-1), undefined, 'a gone machine is not asked for by id')
-  assert.equal(await rebuilt.filesystem?.exists('a.ts'), false)
-  const bundle = await machines.collect({ projectId: PROJECT, base })
-  assert.equal(bundle, 'unchanged')
+  control.discoverable = []
+  const fresh = await open()
+  assert.equal(await fresh.filesystem?.exists('a.ts'), false)
+  assert.deepEqual(phases, ['starting', 'copying'], 'no phase says a machine was there before')
+  assert.equal(await machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
 })
 
-test('máquina: um turno retomado guarda os arquivos que a máquina tem; o outro volta ao main, e um commit em outro ramo não apaga a versão anterior', async (t) => {
+test('máquina: o turno seguinte volta ao main, e um commit em outro ramo não apaga a versão anterior', async (t) => {
   const { open, machines, repository, base, control, folder } = await world(t)
   const first = await open()
   const git = `git -c user.name=B -c user.email=b@x.test`
   await first.filesystem?.writeFile('a.ts', 'um\n')
-  const committed = await first.sandbox?.executeCommand?.('sh', [
+  const committed = await (await sandboxOf(first)).executeCommand('sh', [
     '-c',
     `cd ${join(folder, 'app')} && git checkout -qb outro && git add -A && ${git} commit -qm um`,
   ])
-  assert.equal(committed?.exitCode, 0, committed?.stderr)
-  const bundle = await machines.collect({ projectId: PROJECT, base })
+  assert.equal(committed.exitCode, 0, committed.stderr)
+  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
   assert.ok(typeof bundle === 'object')
   assert.equal(bundle.changedFiles, 1)
   assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
@@ -60,25 +62,15 @@ test('máquina: um turno retomado guarda os arquivos que a máquina tem; o outro
   })
   assert.ok(received.ok)
   assert.equal(await repository.advance({ candidate: received.value, base }), 'advanced')
-  await machines.release(PROJECT)
+  await machines.release(CONVERSATION)
   control.outcome = 'connected'
-  const resumed = await machines.workspaceFor({
-    companyId: COMPANY,
-    projectId: PROJECT,
-    deadline: new Date(Date.now() + 3_600_000),
-    resumed: true,
-    onPhase: () => undefined,
-  })
-  assert.equal(machines.touched(PROJECT), true)
-  assert.equal(await resumed.filesystem?.exists('a.ts'), true, 'a resumed turn keeps its files')
-  await machines.release(PROJECT)
   const next = await open()
   assert.equal(
     await next.filesystem?.exists('a.ts'),
     true,
     'the next turn starts from main, which holds a.ts',
   )
-  const second = await machines.collect({ projectId: PROJECT, base: received.value })
+  const second = await machines.collect({ conversationId: CONVERSATION, base: received.value })
   assert.equal(second, 'unchanged')
 })
 
@@ -88,7 +80,7 @@ test('máquina: a máquina que cai no meio do turno é refeita, e o turno não g
   await workspace.filesystem?.writeFile('a.ts', 'um\n')
   control.outcome = 'created'
   await control.restart()
-  await assert.rejects(machines.collect({ projectId: PROJECT, base }), /died/)
+  await assert.rejects(machines.collect({ conversationId: CONVERSATION, base }), /died/)
 })
 
 test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa no meio dele, guarda o que o turno escreveu', async (t) => {
@@ -98,7 +90,7 @@ test('máquina: a máquina que pausou na hora do turno, ou que o Mastra religa n
   control.outcome = 'connected'
   await control.restart()
   assert.equal(await workspace.filesystem?.exists('a.ts'), true, 'a reconnect is not a new turn')
-  const bundle = await machines.collect({ projectId: PROJECT, base })
+  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
   assert.ok(typeof bundle === 'object', `the turn's work is saved, not ${String(bundle)}`)
   assert.equal(bundle.changedFiles, 1)
   assert.ok(bundle.files > 1, 'the version holds the starter beside the turn')
@@ -114,14 +106,14 @@ test('máquina: duas ferramentas do Workspace no primeiro passo esperam a sement
   const head = { command: `cat ${join(folder, 'app')}/.git/HEAD` }
   const first = command.execute(head, { workspace })
   // The second arrives while the machine already says `running` and the seed is still coming.
-  while (workspace.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))
+  while (control.sandbox?.status !== 'running') await new Promise((later) => setTimeout(later, 5))
   const seen = [await first, await command.execute(head, { workspace })]
   for (const each of seen) assert.match(JSON.stringify(each), /ref: refs\/heads\/main/)
 })
 
-test('máquina: E2B calado passa do prazo externo e um 502 também, ambos MACHINE_UNAVAILABLE, sem gravar id', async (t) => {
-  const { open, control, asOwner } = await world(t, 100)
-  for (const start of ['hang', 'unreachable', 'gone'] as const) {
+test('máquina: E2B calado passa do prazo externo e um 502 também, ambos MACHINE_UNAVAILABLE', async (t) => {
+  const { open, control } = await world(t, 100)
+  for (const start of ['hang', 'unreachable'] as const) {
     control.start = start
     const workspace = await open()
     await assert.rejects(
@@ -130,24 +122,23 @@ test('máquina: E2B calado passa do prazo externo e um 502 também, ambos MACHIN
         error instanceof Error && Reflect.get(error, 'code') === 'MACHINE_UNAVAILABLE',
     )
   }
-  assert.deepEqual(await asOwner(`select * from builder.machine`), [])
 })
 
 test('máquina: duas ferramentas no primeiro passo veem a semente, e um git commit do Builder vira uma versão, a mesma árvore', async (t) => {
   const { open, machines, repository, base, folder } = await world(t)
   const workspace = await open()
   const fs = workspace.filesystem
-  assert.ok(fs && workspace.sandbox?.executeCommand)
+  assert.ok(fs)
   const [first, second] = await Promise.all([fs.exists('.git/HEAD'), fs.exists('.git/HEAD')])
   assert.deepEqual([first, second], [true, true])
   await fs.writeFile('src/a.ts', 'export const a = 1\n')
   const git = `git -c user.name=B -c user.email=b@x.test`
-  const committed = await workspace.sandbox.executeCommand('sh', [
+  const committed = await (await sandboxOf(workspace)).executeCommand('sh', [
     '-c',
     `cd ${join(folder, 'app')} && git checkout -qb outro && git add -A && ${git} commit -qm um && echo dois > b.ts && git add -A && ${git} commit -qm dois`,
   ])
   assert.equal(committed.exitCode, 0, committed.stderr)
-  const bundle = await machines.collect({ projectId: PROJECT, base })
+  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
   assert.ok(typeof bundle === 'object')
   const received = await repository.receive({
     runId: RunId.parse('00000000-0000-4000-8000-000000000001'),
@@ -168,48 +159,32 @@ test('máquina: duas ferramentas no primeiro passo veem a semente, e um git comm
   )
 })
 
-test('máquina: o nome da máquina leva a instalação e a empresa, então a de outra instalação ou empresa nunca é a achada pelo nome', async (t) => {
+test('máquina: o nome leva a instalação e a conversa, sem o Projeto, e a marca a conversa; duas conversas do Projeto, duas máquinas', async (t) => {
   const here = await world(t)
-  await here.open()
+  await (await here.open()).filesystem?.exists('a.ts')
+  await (await here.open(OTHER_CONVERSATION)).filesystem?.exists('a.ts')
   const other = await world(t, 5_000, OTHER_INSTALLATION)
-  await other.open()
-  assert.deepEqual(here.control.names, [`conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`])
-  assert.deepEqual(other.control.names, [`conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`])
-  assert.notEqual(here.control.names[0], other.control.names[0])
+  await (await other.open()).filesystem?.exists('a.ts')
+  assert.deepEqual(here.control.names, [OWN, `conexus-${INSTALLATION}-${OTHER_CONVERSATION}`])
+  assert.deepEqual(other.control.names, [`conexus-${OTHER_INSTALLATION}-${CONVERSATION}`])
+  assert.deepEqual(here.control.marks[0], {
+    conexus_origin: INSTALLATION,
+    conexus_company: COMPANY,
+    conexus_project: PROJECT,
+    conexus_conversation: CONVERSATION,
+  })
 })
 
-const OWN = `conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`
-
-test('máquina: a gravada com o nome antigo, de outra instalação ou de outra empresa nunca é ligada pelo id: vai para a trilha da refeita, sem matar a velha', async (t) => {
-  const { open, phases, control, asOwner } = await world(t)
-  await (await open()).filesystem?.exists('a.ts')
-  for (const owner of [
-    `conexus-${PROJECT}`,
-    `conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`,
-    `conexus-${INSTALLATION}-companyBBBBBBBBBBBBBBBBBBBBBBBBB-${PROJECT}`,
-  ]) {
-    control.owner = owner
-    phases.length = 0
-    const rebuilt = await open()
-    await rebuilt.filesystem?.exists('a.ts')
-    assert.deepEqual(phases, ['waking', 'replaced', 'copying'])
-    assert.equal(control.reattached.at(-1), undefined, 'no id is asked for')
-    assert.deepEqual(control.attached, [])
-  }
-  assert.equal(control.killed, false, 'the old machine is left alone')
-  assert.equal((await asOwner(`select sandbox_id from builder.machine`)).length, 1)
-})
-
-test('máquina: sem id gravado, só a máquina de nome igual ao deste Projeto é achada; as de outra instalação ou empresa não', async (t) => {
-  const { open, control, asOwner } = await world(t)
+test('máquina: só a máquina de nome igual ao desta conversa é achada; a do Projeto, a de outra instalação e a de outra conversa não', async (t) => {
+  const { open, control, machines } = await world(t)
   control.discoverable = [
-    `conexus-${PROJECT}`,
-    `conexus-${OTHER_INSTALLATION}-${COMPANY}-${PROJECT}`,
-    `conexus-${INSTALLATION}-companyBBBBBBBBBBBBBBBBBBBBBBBBB-${PROJECT}`,
+    `conexus-${INSTALLATION}-${COMPANY}-${PROJECT}`,
+    `conexus-${OTHER_INSTALLATION}-${CONVERSATION}`,
+    `conexus-${INSTALLATION}-${OTHER_CONVERSATION}`,
   ]
   await (await open()).filesystem?.exists('a.ts')
   assert.deepEqual(control.attached, [], 'a created machine, none of the others')
-  await asOwner('delete from builder.machine')
+  await machines.release(CONVERSATION)
   control.discoverable = [OWN]
   await (await open()).filesystem?.exists('a.ts')
   assert.deepEqual(control.attached, [OWN], 'its own name is found')
@@ -220,4 +195,26 @@ test('máquina: o Git a restaurar passa pelo início da máquina sem virar MACHI
   await assert.rejects((await open()).filesystem?.exists('a.ts') ?? Promise.reject(), {
     code: 'GIT_RESTORE_NEEDED',
   })
+})
+
+test('máquina: um turno que só mexeu nos planos não guarda versão; com o app, os planos vão e não contam', async (t) => {
+  const { open, machines, base } = await world(t)
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('.conexus/plans/um.md', '# Um\n')
+  assert.equal(await machines.changed({ conversationId: CONVERSATION }), false)
+  assert.equal(await machines.collect({ conversationId: CONVERSATION, base }), 'unchanged')
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  assert.equal(await machines.changed({ conversationId: CONVERSATION }), true)
+  const bundle = await machines.collect({ conversationId: CONVERSATION, base })
+  assert.ok(typeof bundle === 'object')
+  assert.equal(bundle.changedFiles, 1)
+})
+
+test('máquina: um pacote do turno maior que 64 MiB não entra no Hub', async (t) => {
+  const { open, machines, base, control } = await world(t)
+  const workspace = await open()
+  await workspace.filesystem?.writeFile('a.ts', 'um\n')
+  control.beforeRead = (path) => truncateSync(path, 65 * 1024 * 1024)
+  const collected = await machines.collect({ conversationId: CONVERSATION, base })
+  assert.equal(typeof collected === 'object' ? 'a bundle' : collected, 'too-large')
 })

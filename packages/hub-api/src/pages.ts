@@ -21,6 +21,7 @@ export const PAGES = [
   '/companies/$companyId/settings/general',
   '/companies/$companyId/settings/people',
   '/companies/$companyId/settings/model-accounts',
+  '/companies/$companyId/settings/observational-memory',
   '/companies/$companyId/settings/defaults',
   '/companies/$companyId/welcome',
   '/companies/$companyId/welcome/company',

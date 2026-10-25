@@ -1,12 +1,19 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { readConversation } from '@conexus/hub-api'
+import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { Locator, Page } from 'playwright-core'
 import type { Replies } from './layout-harness.ts'
-import { createHarness, DESKTOP, focusDrawn, ok } from './layout-harness.ts'
+import { createHarness, DESKTOP, focusDrawn } from './layout-harness.ts'
+import {
+  AgentStart,
+  recordedEvent,
+  signalStarted,
+} from './src/builder/conversation/test-recorded.ts'
 import { COMPANY } from './src/platform/fixtures.ts'
-import { WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
+import { MESSAGES, WITH_CONVERSATIONS } from './sweep-conversation-states.ts'
 import { PROJECT_ID } from './sweep-replies.ts'
+import type { Said } from './sweep-session.ts'
+import { sessionReplies } from './sweep-session.ts'
 
 // The conversation's scroll, composer and selector, measured in the browser: jsdom lays nothing out
 // and scrolls nothing (testing T23).
@@ -23,7 +30,7 @@ function open(path: string, viewport: typeof DESKTOP) {
 
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const FIRST = '11111111-1111-4111-8111-111111111111'
-const CONVERSATION = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations/${FIRST}`
+const SESSION = `${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/${FIRST}`
 
 /** Waits until the conversation shows its end. */
 function atEnd(page: Page) {
@@ -157,7 +164,7 @@ test('quem gira a roda para baixo enquanto a resposta cresce, a poucos pixels do
 test('quem envia lendo mais acima vai para o fim da conversa, e o campo mostra o foco ipê enquanto o Builder responde', async () => {
   const replies: Replies = {
     ...WITH_CONVERSATIONS,
-    [`POST ${CONVERSATION}/messages`]: { status: 202 },
+    [`POST ${SESSION}/messages`]: { status: 200, json: { ok: true } },
   }
   const page = await harness.open(`${PROJECT}/conversations/${FIRST}`, {
     viewport: DESKTOP,
@@ -173,23 +180,21 @@ test('quem envia lendo mais acima vai para o fim da conversa, e o campo mostra o
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
   await page.mouse.wheel(0, -400)
   await page.waitForTimeout(300)
-  const read = replies[`GET ${CONVERSATION}`]?.json
-  const { conversation } = readConversation.success.body.parse(read)
-  replies[`GET ${CONVERSATION}`] = ok(readConversation, {
-    conversation: {
-      ...conversation,
-      messages: [
-        ...conversation.messages,
-        {
-          id: 'm3',
-          role: 'person',
-          parts: [{ type: 'text', text: 'E o terceiro app?' }],
-          model: null,
-          createdAt: '2026-10-19T12:02:00.000Z',
-        },
-      ],
-    },
-  })
+  // Mastra takes the message and the stream says it, the run going: the screen opens it again.
+  const sent: Said = {
+    id: 'm3',
+    role: 'person',
+    parts: [{ type: 'text', text: 'E o terceiro app?' }],
+    createdAt: '2026-10-19T12:02:00.000Z',
+  }
+  Object.assign(
+    replies,
+    sessionReplies(FIRST, {
+      messages: [...MESSAGES, sent],
+      display: { isRunning: true },
+      events: [recordedEvent('abort', AgentStart), signalStarted(sent.id, 'E o terceiro app?')],
+    }),
+  )
   const field = page.getByRole('textbox', { name: 'Mensagem para o Builder' })
   await field.fill('E o terceiro app?')
   await field.press('Enter')

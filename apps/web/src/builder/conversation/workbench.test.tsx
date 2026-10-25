@@ -56,7 +56,7 @@ test('a aba Projeto e a seção ficam no endereço, e o Sobre vem primeiro', asy
   fireEvent.click(await screen.findByRole('tab', { name: 'Projeto' }))
   expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
   expect(conexus.router.state.location.search).toMatchObject({ lens: 'project' })
-  fireEvent.click(screen.getByRole('tab', { name: 'Versões' }))
+  fireEvent.click(await screen.findByRole('tab', { name: 'Versões' }))
   expect(await screen.findByRole('button', { name: 'Enviar versão' })).toBeTruthy()
   expect(conexus.router.state.location.search).toMatchObject({
     lens: 'project',

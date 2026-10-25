@@ -10,13 +10,21 @@ export function outFile(tmp: string): string {
   return `${tmp}/conexus-out.bundle`
 }
 
+/** The folder of the plans, in the app folder: they travel with the app but make no version on their own. */
+export const PLAN_DIR = '.conexus/plans'
+const PLANS_OUT = `':(exclude)${PLAN_DIR}'`
+
 const CANDIDATE_REF = 'refs/conexus/candidate'
 
 export function quoted(value: string): string {
   return `'${value.replaceAll("'", "'\\''")}'`
 }
 
-/** The app folder holds exactly `main` as the Hub has it: fetched from the seed bundle and checked out. */
+/**
+ * The app folder holds `main` as the Hub has it: fetched from the seed bundle and checked out. The
+ * plans make no version on their own, so a plan the person has still to approve stays for the turn
+ * their answer opens.
+ */
 export function seedScript(workdir: string, tmp: string): string {
   const seed = seedFile(tmp)
   return [
@@ -26,7 +34,7 @@ export function seedScript(workdir: string, tmp: string): string {
     'test -d .git || git init --quiet -b main',
     `git fetch --quiet --no-tags ${quoted(seed)} '+refs/heads/main:refs/conexus/base'`,
     'git checkout --quiet --force -B main refs/conexus/base',
-    'git clean -fdq -e node_modules',
+    `git clean -fdq -e node_modules -e ${PLAN_DIR}`,
     `rm -f ${quoted(seed)}`,
   ].join('\n')
 }
@@ -38,7 +46,8 @@ export function keepScript(workdir: string): string {
 
 /**
  * The whole tree as `tree`, whatever `HEAD` is (the Builder may have committed or switched branch),
- * in an index of its own; prints UNCHANGED and ends when it is `base`'s. `node_modules` is left out.
+ * in an index of its own; prints UNCHANGED and ends when it is `base`'s apart from the plans.
+ * `node_modules` is left out.
  */
 function treeOf(workdir: string, base: string, index: string): string[] {
   return [
@@ -49,7 +58,7 @@ function treeOf(workdir: string, base: string, index: string): string[] {
     `git read-tree ${base}`,
     `git add --all -- . ':(exclude,glob)**/node_modules/**'`,
     'tree=$(git write-tree)',
-    `if [ "$tree" = "$(git rev-parse ${base}^{tree})" ]; then echo UNCHANGED; exit 0; fi`,
+    `if git diff-tree -r --quiet ${base} "$tree" -- . ${PLANS_OUT}; then echo UNCHANGED; exit 0; fi`,
   ]
 }
 
@@ -70,7 +79,7 @@ export function collectScript(workdir: string, tmp: string, base: Sha): string {
   return [
     ...treeOf(workdir, base, 'conexus-index'),
     `echo "files=$(git ls-tree -r --name-only "$tree" | wc -l)"`,
-    `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" | wc -l)"`,
+    `echo "changed=$(git diff-tree -r --name-only --no-commit-id ${base} "$tree" -- . ${PLANS_OUT} | wc -l)"`,
     `commit=$(git ${identity} commit-tree "$tree" -p ${base} -m 'Conexus Builder')`,
     `git update-ref ${CANDIDATE_REF} "$commit"`,
     `rm -f ${quoted(out)}`,

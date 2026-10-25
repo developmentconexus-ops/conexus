@@ -65,32 +65,33 @@ export {
   renewInvitation,
 } from './companies.ts'
 export {
-  applyEvent,
-  CONVERSATION_HEARTBEAT_MS,
+  CONEXUS_PARTS,
+  ConexusPart,
+  FailureData,
+  MachineData,
+  MachinePhase,
+  NoticeData,
+  THOUGHT_PART,
+  ThoughtData,
+  VersionCheck,
+  VersionData,
+} from './conexus-parts.ts'
+export {
+  BUILDER_CONTROLLER,
+  BUILDER_ROUTES,
   Conversation,
-  ConversationEvent,
   ConversationId,
   ConversationSummary,
   createConversation,
   EFFORTS,
   Effort,
   listConversations,
-  MESSAGE_MAX_LENGTH,
-  Message,
-  MessageId,
-  MessagePart,
   ModelId,
-  machinePhaseLasts,
-  type PartEvent,
   providerOfModel,
   readConversation,
   runningEffort,
-  sendConversationMessage,
   setConversationModel,
-  stopConversation,
-  streamConversation,
   TurnFailureCode,
-  VersionCheck,
 } from './conversations.ts'
 export { FAILURES, type FailureCode, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from './failures.ts'
 export { getHealth, Health } from './health.ts'
@@ -149,15 +150,19 @@ export {
 } from './model-defaults.ts'
 export { setCompanyNickname } from './nickname.ts'
 export {
+  ObservationalMemoryModels,
+  ObservationalMemoryRole,
+  readObservationalMemoryModels,
+  setObservationalMemoryModel,
+} from './observational-memory.ts'
+export {
   type AccessKind,
   ATTEMPT_KEY_HEADER,
   AttemptKey,
   type DeclaredOperation,
   defineOperation,
-  EventId,
   failuresOf,
   isDeclaredOperation,
-  LAST_EVENT_ID_HEADER,
   type Operation,
 } from './operation.ts'
 export {
@@ -184,12 +189,10 @@ export {
   ProjectName,
   ProjectSummary,
 } from './projects.ts'
-export { answerQuestion } from './question-answer.ts'
 export {
   Answer,
   QUESTION_LIMITS,
   Question,
-  QuestionAnswer,
   Task,
   ToolCallId,
 } from './questions.ts'
@@ -203,4 +206,12 @@ export {
   SourceFile,
 } from './source.ts'
 export { getStatus, HubStatus, Start, Version } from './status.ts'
-export { DETAIL_LIMITS, SUBJECT_MAX_LENGTH, ToolDetail } from './tool-detail.ts'
+export type { ClosedTool } from './tools.ts'
+export {
+  BUILDER_TOOL,
+  CARD_TOOLS,
+  CLOSED_TOOLS,
+  SKILL_TOOLS,
+  TASK_TOOLS,
+  WORKSPACE_TOOL,
+} from './tools.ts'

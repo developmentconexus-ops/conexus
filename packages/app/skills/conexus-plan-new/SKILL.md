@@ -1,6 +1,6 @@
 ---
 name: conexus-plan-new
-description: Plans a new app with the person before any code. Explores the Project, finds where each value comes from, designs the screens and what people will save, interviews the person on the decisions only they can make, writes the plan to `.conexus/plan.md` and gets approval with `submit_plan`. Use when the app is new, with only the starter screen, whatever verb the request uses.
+description: Plans a new app with the person before any code. Explores the Project, finds where each value comes from, designs the screens and what people will save, interviews the person on the decisions only they can make, writes the plan to its own file in `.conexus/plans/` and gets approval with `submit_plan`. Use when the app is new, with only the starter screen, whatever verb the request uses.
 ---
 
 # Planning a new app
@@ -65,12 +65,12 @@ Done when each of the person's decisions is answered, handed to you and recorded
 
 ## 5. Write the plan
 
-Read `references/plan-template.md` and write `.conexus/plan.md` in its shape, replacing any earlier plan (read the file first: the workspace refuses to overwrite one you have not read), with no code in it.
+Read `references/plan-template.md` and write the plan in its shape to `.conexus/plans/<name>.md`, a short name for this app in lowercase with hyphens, with no code in it. Never write over a plan the person approved.
 
 Done when every requested item, screen, saved thing, rule and check is in the plan, each assumption and suggestion is marked, and the person's part has no technical word.
 
 ## 6. Approval
 
-Show the person's part of the plan in your message, in their words, with the suggestions marked. Then call `submit_plan` with `.conexus/plan.md`. The person sees the plan in a card, with "Aprovar e construir" and "Pedir ajustes". Change nothing in the app before they approve. When they ask for changes, edit the parts of the plan their feedback touches, show the person's part again, and call `submit_plan` again; editing the file alone does not resubmit it.
+Show the person's part of the plan in your message, in their words, with the suggestions marked. Then call `submit_plan` with that file. The person sees the plan in a card, with "Aprovar e construir" and "Pedir ajustes". Change nothing in the app before they approve. When they ask for changes, edit the parts of the plan their feedback touches, show the person's part again, and call `submit_plan` again; editing the file alone does not resubmit it.
 
 Done when the person approved. Then build from the plan.

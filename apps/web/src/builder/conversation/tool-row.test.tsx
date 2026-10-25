@@ -1,134 +1,216 @@
-import type { MessagePart } from '@conexus/hub-api'
+import { CARD_TOOLS, CLOSED_TOOLS, TASK_TOOLS } from '@conexus/hub-api'
 import { fireEvent, render, screen } from '@testing-library/react'
-import { expect, test } from 'vitest'
-import { ThinkingLine } from './thinking-line.tsx'
+import { afterEach, expect, test, vi } from 'vitest'
+import type { ToolItem } from './rows.ts'
+import { invocationToItem } from './rows.ts'
+import type { Invocation } from './tool-fixtures.ts'
+import {
+  EDIT_DONE,
+  EDIT_REFUSED_STORED,
+  WRITE_DONE,
+  WRITE_REFUSED_LIVE,
+  WRITE_REFUSED_STORED,
+} from './tool-fixtures.ts'
+import { presentTool, specOf, TOOLS } from './tool-registry.ts'
 import { ToolRow } from './tool-row.tsx'
 
-type ToolPart = Extract<MessagePart, { type: 'tool' }>
+afterEach(() => {
+  vi.useRealTimers()
+})
 
-function tool(fields: Partial<ToolPart> & Pick<ToolPart, 'kind'>): ToolPart {
-  return { type: 'tool', id: 't', state: 'completed', subject: null, ...fields }
+function itemOf(inv: Invocation): ToolItem {
+  const item = invocationToItem(inv, undefined)
+  if (item?.kind !== 'tool') throw new Error(`${inv.toolName} is not a row`)
+  return item
 }
 
 function open(name: RegExp) {
   fireEvent.click(screen.getByRole('button', { name }))
 }
 
-test('a linha do comando abre no comando e na cauda; cortada, começa com "…"; saída não zero, o código (33)', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'run_command',
-        subject: { command: 'npm test' },
-        detail: {
-          kind: 'command',
-          command: 'npm test',
-          output: ['18 passaram', '1 teste falhou'],
-          exitCode: 1,
-          cut: true,
-        },
-      })}
-    />,
-  )
-  expect(screen.queryByText(/1 teste falhou/)).toBeNull()
-  open(/Rodou um comando/)
-  const block = await screen.findByText(/1 teste falhou/)
-  expect(block.textContent).toBe('$ npm test\n…\n18 passaram\n1 teste falhou')
-  expect(screen.getByText('O comando terminou com o código 1.')).toBeTruthy()
-})
-
-test('um comando que roda está aberto e a saída cresce; o código zero não se diz', () => {
-  function running(output: string[]) {
-    const detail = {
-      kind: 'command',
-      command: 'npm i',
-      output,
-      exitCode: null,
-      cut: false,
-    } as const
-    const subject = { command: 'npm i' }
-    return tool({ kind: 'run_command', state: 'running', subject, detail })
+test('leitura: read_file mostra o arquivo como o Mastra o deu, cortado pela tela em 800 caracteres (5)', async () => {
+  const line = 'export const router = createRouter()\n'
+  const tool: ToolItem = {
+    kind: 'tool',
+    id: 't-1',
+    toolCallId: 'call-1',
+    toolName: 'mastra_workspace_read_file',
+    state: 'result',
+    args: { path: 'src/router.tsx' },
+    result: line.repeat(30),
   }
-  const { rerender } = render(<ToolRow tool={running(['added 1'])} />)
-  expect(screen.getByText(/added 1/)).toBeTruthy()
-  rerender(<ToolRow tool={running(['added 1', 'added 2'])} />)
-  expect(screen.getByText(/added 2/)).toBeTruthy()
-  expect(screen.queryByText(/terminou com o código/)).toBeNull()
+  render(<ToolRow tool={tool} />)
+  expect(screen.queryByText(/createRouter/)).toBeNull()
+  open(/Leu um arquivo/)
+  const block = await screen.findByText(/createRouter/)
+  expect(block.textContent).toBe(`${line.repeat(30).slice(0, 800)}…`)
 })
 
-test('a linha do arquivo escrito abre no começo do arquivo, com "…" no corte', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'write_file',
-        subject: { path: 'src/app.tsx' },
-        detail: { kind: 'file', path: 'src/app.tsx', content: 'const a = 1', cut: true },
-      })}
-    />,
-  )
-  open(/Escreveu um arquivo/)
-  expect((await screen.findByText(/const a = 1/)).textContent).toBe('const a = 1\n…')
+test('list_files no resultado: abre no resultado retornado pela ferramenta (Critério 8)', async () => {
+  const listTool: ToolItem = {
+    kind: 'tool',
+    id: 't-2',
+    toolCallId: 'call-2',
+    toolName: 'mastra_workspace_list_files',
+    state: 'result',
+    args: { path: 'src' },
+    result: ['src/app.tsx', 'src/router.tsx', 'src/main.tsx'],
+  }
+  render(<ToolRow tool={listTool} />)
+  expect(screen.queryByText(/src\/router\.tsx/)).toBeNull()
+  open(/Listou arquivos/)
+  expect(await screen.findByText(/src\/router\.tsx/)).toBeTruthy()
 })
 
-test('a linha da edição abre na diferença, linha a linha, calculada no navegador', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'edit_file',
-        subject: { path: 'a.ts' },
-        detail: {
-          kind: 'edit',
-          path: 'a.ts',
-          before: 'um\ndois\ntrês',
-          after: 'um\nDOIS\ntrês',
-          cut: false,
-        },
-      })}
-    />,
-  )
+test('grep no resultado: abre no resultado retornado pela ferramenta (Critério 8)', async () => {
+  const grepTool: ToolItem = {
+    kind: 'tool',
+    id: 't-3',
+    toolCallId: 'call-3',
+    toolName: 'mastra_workspace_grep',
+    state: 'result',
+    args: { pattern: 'router' },
+    result: 'src/main.tsx:5: import { router } from "./router"\nsrc/app.tsx:12: router.navigate()',
+  }
+  render(<ToolRow tool={grepTool} />)
+  expect(screen.queryByText(/router\.navigate/)).toBeNull()
+  open(/Buscou no código/)
+  expect(await screen.findByText(/router\.navigate/)).toBeTruthy()
+})
+
+test('skill no nome e nas instruções: abre no nome legível e no conteúdo das instruções (Critério 8)', async () => {
+  const skillTool: ToolItem = {
+    kind: 'tool',
+    id: 't-4',
+    toolCallId: 'call-4',
+    toolName: 'skill',
+    state: 'result',
+    args: {
+      name: 'conexus-build',
+      instructions: 'Construa uma tela de encomendas com cliente, data e valor.',
+    },
+    result: 'Skill aplicada com sucesso.',
+  }
+  render(<ToolRow tool={skillTool} />)
+  expect(screen.queryByText('conexus-build')).toBeNull()
+  open(/Usou a skill/)
+  expect(await screen.findByText('conexus-build')).toBeTruthy()
+  expect(await screen.findByText(/Construa uma tela de encomendas/)).toBeTruthy()
+})
+
+test('desconhecida no nome legível, argumentos e resultado (Critério 8)', async () => {
+  const unknownTool: ToolItem = {
+    kind: 'tool',
+    id: 't-5',
+    toolCallId: 'call-5',
+    toolName: 'custom_data_fetcher',
+    state: 'result',
+    args: { endpoint: '/pedidos', timeout: 5000 },
+    result: { count: 42, status: 'ok' },
+  }
+  render(<ToolRow tool={unknownTool} />)
+  expect(screen.getByText('Usou Custom data fetcher')).toBeTruthy()
+  open(/Usou Custom data fetcher/)
+  expect(await screen.findByText(/Argumentos:/)).toBeTruthy()
+  expect(screen.getByText(/endpoint/)).toBeTruthy()
+  expect(screen.getByText(/Resultado:/)).toBeTruthy()
+  expect(screen.getByText(/count/)).toBeTruthy()
+})
+
+test('uma falha abre no motivo, ao vivo e relida, e a edição mostra a mudança embaixo (Critério 8)', async () => {
+  const reread = render(<ToolRow tool={itemOf(WRITE_REFUSED_STORED)} />)
+  const line = screen.getByText(/Não conseguiu escrever/).closest('[data-slot="trace-line"]')
+  expect(line?.getAttribute('data-status')).toBe('error')
+  open(/Não conseguiu escrever/)
+  const reread_reason = (await screen.findByText(/Permission denied/)).textContent
+  reread.unmount()
+
+  const live = render(<ToolRow tool={itemOf(WRITE_REFUSED_LIVE)} />)
+  open(/Não conseguiu escrever/)
+  const live_reason = (await screen.findByText(/Permission denied/)).textContent
+  expect(live_reason).toBe(reread_reason)
+  expect(live_reason).toBe('Permission denied: stat on ../fora.ts')
+  live.unmount()
+
+  render(<ToolRow tool={itemOf(EDIT_REFUSED_STORED)} />)
+  open(/Não conseguiu editar/)
+  const reason = await screen.findByText('Permission denied: stat on ../fora.ts')
+  const change = screen.getByRole('group', { name: 'Mudança no arquivo' })
+  expect(reason.compareDocumentPosition(change) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
+test('editar abre na mudança: o trecho que saiu e o que entrou, cada um cortado em 800 (Critério 8)', async () => {
+  const done = render(<ToolRow tool={itemOf(EDIT_DONE)} />)
+  expect(screen.queryByRole('group', { name: 'Mudança no arquivo' })).toBeNull()
   open(/Editou um arquivo/)
-  const lines = (await screen.findByText('- dois')).parentElement?.children ?? []
-  expect([...lines].map((line) => line.textContent)).toEqual(['  um', '- dois', '+ DOIS', '  três'])
+  const change = await screen.findByRole('group', { name: 'Mudança no arquivo' })
+  expect(change.textContent).toBe('-a = 1+a = 2')
+  expect(screen.queryByText(/Argumentos:/)).toBeNull()
+  done.unmount()
+
+  const long = {
+    ...EDIT_DONE,
+    args: { path: 'src/a.ts', old_string: 'x'.repeat(900), new_string: 'y' },
+  }
+  render(<ToolRow tool={itemOf(long)} />)
+  open(/Editou um arquivo/)
+  const cut = await screen.findByRole('group', { name: 'Mudança no arquivo' })
+  expect(cut.textContent).toBe(`-${'x'.repeat(800)}…+y`)
 })
 
-test('sem detalhe, a linha não abre: a leitura diz só o assunto; "Pensou" diz só o tempo', () => {
-  render(
-    <>
-      <ToolRow tool={tool({ kind: 'read_file', subject: { path: 'a.ts' } })} />
-      <ThinkingLine part={{ type: 'reasoning', id: 'r', state: 'completed', seconds: 9 }} />
-    </>,
+test('escrever abre no arquivo escrito, cortado em 800 (Critério 8)', async () => {
+  const done = render(<ToolRow tool={itemOf(WRITE_DONE)} />)
+  open(/Escreveu um arquivo/)
+  const written = await screen.findByRole('group', { name: 'Arquivo escrito' })
+  expect(written.textContent).toBe('export const a = 1\n')
+  done.unmount()
+
+  const long = { ...WRITE_DONE, args: { path: 'src/a.ts', content: 'z'.repeat(900) } }
+  render(<ToolRow tool={itemOf(long)} />)
+  open(/Escreveu um arquivo/)
+  expect((await screen.findByRole('group', { name: 'Arquivo escrito' })).textContent).toBe(
+    `${'z'.repeat(800)}…`,
   )
-  expect(screen.getByText('Leu um arquivo')).toBeTruthy()
-  expect(screen.getByText('Pensou por 9 s')).toBeTruthy()
+})
+
+test('cada ferramenta do conjunto fechado tem frase e abre no corpo da tabela (Critério 8)', () => {
+  const cards: readonly string[] = Object.values(CARD_TOOLS)
+  const tasks: readonly string[] = TASK_TOOLS
+  const drawn = CLOSED_TOOLS.filter((name) => !cards.includes(name) && !tasks.includes(name))
+  expect(Object.keys(TOOLS).sort()).toEqual([...drawn].sort())
+  for (const name of drawn) {
+    const spec = specOf(name)
+    expect(spec, name).toBeDefined()
+    const done = presentTool({ toolName: name, args: {} }, 'done')
+    expect(done.sentence, name).toBe(spec?.done)
+    expect(presentTool({ toolName: name, args: {} }, 'running').sentence, name).toBe(spec?.running)
+  }
+  expect(specOf('github_create_issue')).toBeUndefined()
+  expect(presentTool({ toolName: 'github_create_issue', args: {} }, 'done').sentence).toBe(
+    'Usou Github create issue',
+  )
+})
+
+test('o relógio conta desde que a tela ouviu a chamada (Critério 8)', () => {
+  vi.useFakeTimers()
+  const running: ToolItem = {
+    ...itemOf({ ...EDIT_DONE, state: 'call', result: undefined }),
+    startedAt: Date.now() - 5000,
+  }
+  render(<ToolRow tool={running} />)
+  expect(screen.getByText('(5 s)')).toBeTruthy()
+})
+
+test('linha sem argumentos nem resultado: não abre nada (Critério 8, matriz de estados)', () => {
+  const bareTool: ToolItem = {
+    kind: 'tool',
+    id: 't-7',
+    toolCallId: 'call-7',
+    toolName: 'conexus_check',
+    state: 'result',
+    args: {},
+  }
+  render(<ToolRow tool={bareTool} />)
+  expect(screen.getByText('Conferiu o app')).toBeTruthy()
   expect(screen.queryByRole('button')).toBeNull()
-})
-
-test('a linha da conferência diz o assunto e abre no relatório, passo a passo (33)', async () => {
-  render(
-    <ToolRow
-      tool={tool({
-        kind: 'check',
-        subject: { check: 'tipos: server/handlers.ts:13 Type mismatch.' },
-        detail: {
-          kind: 'check',
-          cut: false,
-          steps: [
-            { name: 'dependências', state: 'passed', problems: [] },
-            {
-              name: 'tipos',
-              state: 'failed',
-              problems: [{ file: 'server/handlers.ts', line: 13, message: 'Type mismatch.' }],
-            },
-            { name: 'telas', state: 'skipped', problems: [] },
-          ],
-        },
-      })}
-    />,
-  )
-  screen.getByText('tipos: server/handlers.ts:13 Type mismatch.')
-  open(/Conferiu o app/)
-  const block = await screen.findByText(/telas: não rodou/)
-  expect(block.textContent).toBe(
-    'dependências: passou\ntipos: falhou\n  server/handlers.ts:13 Type mismatch.\ntelas: não rodou',
-  )
 })

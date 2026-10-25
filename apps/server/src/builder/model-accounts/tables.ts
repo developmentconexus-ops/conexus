@@ -243,3 +243,17 @@ export const companyModelFallback = builder.table(
     policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
   ],
 )
+
+/** One company-wide Observer and Reflector selection; null follows the conversation's model. */
+export const observationalMemoryModels = builder.table(
+  'observational_memory_models',
+  {
+    companyId: text('company_id').primaryKey(),
+    observer: text('observer'),
+    reflector: text('reflector'),
+  },
+  (table) => [
+    companyKey('observational_memory_models_company_id_fkey', table),
+    policy(SCOPE_ROLES.COMPANY, 'all', OWN_COMPANY),
+  ],
+)

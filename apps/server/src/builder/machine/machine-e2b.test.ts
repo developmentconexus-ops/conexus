@@ -3,62 +3,47 @@ import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { CompanyId, ProjectId } from '@conexus/hub-api'
+import { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
 import { testConfig, unreachableDatabaseUrl } from '../../platform/test-database.ts'
-import {
-  APP_FOLDER,
-  createE2bApi,
-  createE2bKit,
-  MARK,
-  machineInstructions,
-  SandboxId,
-} from './public.ts'
+import { APP_FOLDER, createE2bApi, createE2bKit, MARK, machineInstructions } from './public.ts'
 
 const COMPANY = CompanyId.parse('companyAAAAAAAAAAAAAAAAAAAAAAAAA')
 const PROJECT = ProjectId.parse('projectAAAAAAAAAAAAAAAAAAAAAAAAA')
+const CONVERSATION = ConversationId.parse('00000000-0000-4000-8000-00000000000a')
 const IN_APP = { workingDirectory: APP_FOLDER, instructions: machineInstructions(APP_FOLDER) }
 
-test('máquina: o kit do E2B nasce sem env, atrás da lista de domínios, pausando ao vencer, com a marca, na pasta do app e dizendo ao modelo o que a máquina tem', async () => {
+test('máquina: o kit do E2B nasce sem env e sem id gravado, achado pelo nome, atrás da lista de domínios, pausando ao vencer, com a marca da conversa, na pasta do app e dizendo ao modelo o que a máquina tem', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
-    id: `conexus-${PROJECT}`,
-    sandboxId: undefined,
-    deadline: new Date(Date.now() + 3_600_000),
-    metadata: { conexus_origin: 'hub.example.test', conexus_project: PROJECT },
+    id: `conexus-hub-${CONVERSATION}`,
+    metadata: { conexus_origin: 'hub.example.test', conexus_conversation: CONVERSATION },
     onStart: () => undefined,
     ...IN_APP,
   })
   const options = Reflect.get(kit.sandbox, '_constructorOptions')
   assert.equal('env' in options, false)
+  assert.equal(options.id, `conexus-hub-${CONVERSATION}`)
+  assert.equal('sandboxId' in options, false)
+  assert.equal('reattach' in options, false)
   assert.deepEqual(options.network, { allowOut: ['registry.npmjs.org'], denyOut: ['0.0.0.0/0'] })
   assert.deepEqual(options.lifecycle, { onTimeout: 'pause' })
   assert.equal(options.metadata.conexus_origin, 'hub.example.test')
+  assert.equal(options.metadata.conexus_conversation, CONVERSATION)
   assert.equal(options.workingDirectory, APP_FOLDER)
   const told = kit.sandbox.getInstructions?.() ?? ''
   assert.ok(told.includes(`Commands start in ${APP_FOLDER}`), told)
   assert.equal(told.includes('Cloud sandbox'), false)
-  const woken = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
-    id: `conexus-${PROJECT}`,
-    sandboxId: SandboxId.parse('sb-1'),
-    deadline: new Date(Date.now() + 3_600_000),
-    metadata: {},
-    onStart: () => undefined,
-    ...IN_APP,
-  })
-  assert.equal(Reflect.get(woken.sandbox, '_constructorOptions').reattach, 'required')
 })
 
-test('máquina: na hora do turno a máquina segue ligada para guardar', async () => {
-  const deadline = new Date(Date.now() + 30 * 60_000)
+test('máquina: o E2B a mantém uma hora, a mais longa do plano, e então a pausa; o turno não tem prazo próprio', async () => {
   const kit = createE2bKit(testConfig(await unreachableDatabaseUrl()))({
-    id: `conexus-${PROJECT}`,
-    sandboxId: undefined,
-    deadline,
+    id: `conexus-hub-${CONVERSATION}`,
     metadata: {},
     onStart: () => undefined,
     ...IN_APP,
   })
-  const timeout: number = Reflect.get(kit.sandbox, '_constructorOptions').timeout
-  assert.ok(timeout > deadline.getTime() - Date.now() + 60_000, 'the machine outlives the hour')
+  const options = Reflect.get(kit.sandbox, '_constructorOptions')
+  assert.equal(options.timeout, 60 * 60 * 1000)
+  assert.deepEqual(options.lifecycle, { onTimeout: 'pause' })
 })
 
 test('máquina: o template trabalha na pasta do app em que as ferramentas trabalham', () => {
@@ -72,7 +57,7 @@ test('máquina: o template trabalha na pasta do app em que as ferramentas trabal
   )
 })
 
-test('máquina: a varredura lista só as máquinas com a marca desta instalação e mata a que se mandou', async (t) => {
+test('máquina: a morte lista pela marca desta instalação e pela conversa, e mata cada uma, também a segunda de mesmo nome', async (t) => {
   const seen: string[] = []
   const server = createServer((request, response) => {
     seen.push(`${request.method} ${request.url}`)
@@ -80,9 +65,9 @@ test('máquina: a varredura lista só as máquinas com a marca desta instalaçã
     const listed = request.method === 'GET'
     response.end(
       listed
-        ? JSON.stringify([
-            {
-              sandboxID: 'sb-1',
+        ? JSON.stringify(
+            ['sb-1', 'sb-2'].map((sandboxID) => ({
+              sandboxID,
               templateID: 't',
               alias: 'a',
               clientID: 'c',
@@ -97,9 +82,10 @@ test('máquina: a varredura lista só as máquinas com a marca desta instalaçã
                 [MARK.origin]: 'hub.example.test',
                 [MARK.company]: COMPANY,
                 [MARK.project]: PROJECT,
+                [MARK.conversation]: CONVERSATION,
               },
-            },
-          ])
+            })),
+          )
         : '',
     )
   })
@@ -112,12 +98,29 @@ test('máquina: a varredura lista só as máquinas com a marca desta instalaçã
     { conexus_origin: 'hub.example.test' },
     `http://127.0.0.1:${address.port}`,
   )
-  const found = await api.list()
+  assert.equal(await api.kill(CONVERSATION), 2)
+  const listed = decodeURIComponent(seen[0] ?? '')
+  assert.match(listed, /^GET .*metadata=conexus_origin=hub\.example\.test/)
+  assert.match(listed, new RegExp(`conexus_conversation=${CONVERSATION}`))
   assert.deepEqual(
-    found.map((item) => [item.id, item.projectId]),
-    [['sb-1', PROJECT]],
+    seen.slice(1).map((line) => line.split('?')[0]),
+    ['DELETE /sandboxes/sb-1', 'DELETE /sandboxes/sb-2'],
   )
-  assert.match(decodeURIComponent(seen[0] ?? ''), /metadata=conexus_origin=hub\.example\.test/)
-  await api.kill(found[0]?.id ?? assert.fail('no machine listed'))
-  assert.match(seen.at(-1) ?? '', /^DELETE \/sandboxes\/sb-1/)
+})
+
+test('máquina: um E2B que falha na lista faz a morte falhar, sem dizer pronto', async (t) => {
+  const server = createServer((_request, response) => {
+    response.statusCode = 500
+    response.end('{"message":"down"}')
+  })
+  await new Promise<void>((done) => server.listen(0, '127.0.0.1', done))
+  t.after(() => server.close())
+  const address = server.address()
+  assert.ok(address !== null && typeof address === 'object')
+  const api = createE2bApi(
+    testConfig(await unreachableDatabaseUrl()),
+    { conexus_origin: 'hub.example.test' },
+    `http://127.0.0.1:${address.port}`,
+  )
+  await assert.rejects(api.kill(CONVERSATION))
 })

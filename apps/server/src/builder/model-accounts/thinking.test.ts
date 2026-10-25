@@ -4,6 +4,7 @@ import { createAnthropic } from '@ai-sdk/anthropic'
 import { Effort, ModelId } from '@conexus/hub-api'
 import { getModelReasoningOptions, PROVIDER_REGISTRY } from '@mastra/core/llm'
 import { effortFor, effortsOf, providerOptionsOf } from './public.ts'
+import { GROQ_MODEL } from './test-defaults.ts'
 
 function asked(model: string, effort: Effort) {
   return providerOptionsOf(ModelId.parse(model), effort)
@@ -190,5 +191,20 @@ test('o nível com que a conversa começa é o guardado, o mais alto aceito abai
   assert.equal(effortFor(model('anthropic/claude-sonnet-4-5'), 'high'), 'high')
   assert.equal(effortFor(model('openai/gpt-5'), 'max'), 'high')
   assert.equal(effortFor(model('openai/gpt-5'), 'off'), 'low')
-  assert.equal(effortFor(model('groq/llama-3.3-70b-versatile'), 'high'), 'off')
+  assert.equal(effortFor(model(GROQ_MODEL), 'high'), 'off')
+})
+
+test('Gemini sob o nome do CLIProxy é um modelo só: oferece os níveis que o pedido provado liga, e o nível vai em reasoning_effort (14.2, critério 20)', () => {
+  assert.deepEqual(levels('google/gemini-3.8-flash-high'), ['off', 'low', 'medium', 'high'])
+  assert.deepEqual(levels('google/gemini-3-flash'), ['off'], 'a name with no level asks none')
+  for (const level of ['low', 'medium', 'high'] as const) {
+    assert.deepEqual(asked('google/gemini-3.8-flash-high', level), {
+      google: { reasoningEffort: level },
+    })
+  }
+  assert.equal(asked('google/gemini-3.8-flash-high', 'off'), undefined, 'no level, no reasoning')
+  assert.deepEqual(asked('google/gemini-3.8-flash-high', 'max'), {
+    google: { reasoningEffort: 'high' },
+  })
+  assert.equal(effortFor(ModelId.parse('google/gemini-3.8-flash-high'), 'medium'), 'medium')
 })

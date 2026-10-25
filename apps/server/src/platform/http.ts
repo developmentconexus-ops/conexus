@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
-import type { DeclaredOperation, EventId, FailureCode, Operation, Person } from '@conexus/hub-api'
+import type { DeclaredOperation, FailureCode, Operation, Person } from '@conexus/hub-api'
 import {
   FAILURES,
   failuresOf,
@@ -21,7 +21,6 @@ import { z } from 'zod'
 import type { SessionReader } from './access.ts'
 import { enforceAccess, headersOf, optionalSessionOf, sessionOf } from './access.ts'
 import type { Config } from './config.ts'
-import { sendEvents } from './event-stream.ts'
 import type { FailureLog } from './failure.ts'
 import { Failure, logFailure } from './failure.ts'
 import { untilClientLeaves, whenReplyEnds } from './reply-lifetime.ts'
@@ -216,9 +215,7 @@ type Body<O extends Operation> = O['success'] extends {
   body: infer S extends z.ZodType
 }
   ? z.input<S>
-  : O['success'] extends { events: infer S extends z.ZodType }
-    ? AsyncIterable<{ id: EventId; event: z.input<S> }>
-    : undefined
+  : undefined
 type Parsed<O extends Operation, K extends 'params' | 'query' | 'body'> = NonNullable<
   O['input']
 >[K] extends infer S extends z.ZodType
@@ -234,7 +231,6 @@ type Input<O extends Operation> = {
   Parsed<O, 'query'> &
   Parsed<O, 'body'> &
   (O['attemptKey'] extends true ? { attemptKey: string } : unknown) &
-  (O['success'] extends { resumable: true } ? { lastEventId: EventId | null } : unknown) &
   (O['access'] extends 'session'
     ? { person: Person; sessionToken: string }
     : O['id'] extends 'getInvitation' | 'createInvitationPassword' | 'declineInvitation'
@@ -260,7 +256,6 @@ export function serve(
     query: unknown
     body: unknown
     attemptKey: string | undefined
-    lastEventId: EventId | null | undefined
     person: Person | undefined
     sessionToken: string | undefined
   }) => Answer<unknown> | Promise<Answer<unknown>>,
@@ -287,7 +282,6 @@ export function serve(
         afterReply?.().catch((error: unknown) => logFailure(request.log, failureOf(error)))
       })
       const { success } = operation
-      if ('events' in success) return sendEvents(reply, success, body, request.log)
       if ('body' in success) return reply.code(success.status).send(success.body.parse(body))
       return reply.code(success.status).send()
     },
