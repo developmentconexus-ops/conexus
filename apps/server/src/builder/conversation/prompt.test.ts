@@ -86,7 +86,7 @@ test('o prompt tem cada linha "igual" e "adaptada" da tabela, nenhuma "tirada"; 
   const first = model.calls[0]
   assert.ok(first)
   assert.deepEqual(broken(first.system, filled(MISSING), true), [])
-  for (const word of ['Prévia', 'Integrações', 'Conexão', 'Conexões'])
+  for (const word of ['Integrações', 'Conexão', 'Conexões'])
     assert.ok(!first.system.includes(word), word)
   const skills = readSkills().flatMap(({ content, references }) => [
     content,

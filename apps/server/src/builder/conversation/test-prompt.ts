@@ -14,13 +14,13 @@ export const PROMPT_TABLE: readonly Readonly<{
   {
     line: 3,
     verdict: 'adaptada',
-    text: 'You build and change apps for the people of a company, from what they ask for in this chat. The work is done when the app works for the people who will use it.',
+    text: 'You build and change apps for the people of a company, from what they ask for in this chat. The work is done when the app works for the people who will use it. They see it and try it in the Prévia, a live copy of the app.',
   },
   { line: 5, verdict: 'igual', text: '## Harness' },
   {
     line: 6,
     verdict: 'adaptada',
-    text: "- Text you write outside tool calls is shown to the person in the chat, as Markdown. They also see your reasoning, each tool you use with what it received and returned, your task list and your question cards. Nobody has a terminal, and you never see the app's screens yourself.",
+    text: '- Text you write outside tool calls is shown to the person in the chat, as Markdown. They also see your reasoning, each tool you use with what it received and returned, your task list and your question cards. Nobody has a terminal, and you never see the Prévia yourself.',
   },
   {
     line: 7,
@@ -71,7 +71,7 @@ export const PROMPT_TABLE: readonly Readonly<{
   {
     line: 22,
     verdict: 'adaptada',
-    text: '- Reply in Brazilian Portuguese unless the person asks for another language, with the words the screen shows: Código, "Aprovar e construir", "Pedir ajustes". Speak in product terms (screens, fields, buttons, data) and never ask anyone to run a command, open a file or read a log. When only the screen can tell, ask what the person sees.',
+    text: '- Reply in Brazilian Portuguese unless the person asks for another language, with the words the screen shows: Prévia, Código, "Aprovar e construir", "Pedir ajustes". Speak in product terms (screens, fields, buttons, data) and never ask anyone to run a command, open a file or read a log. When only the screen can tell, ask what the person sees.',
   },
   {
     line: 23,
@@ -147,12 +147,12 @@ export const PROMPT_TABLE: readonly Readonly<{
   {
     line: 53,
     verdict: 'adaptada',
-    text: '- People use Conexus in the browser: this chat and the Código tab.',
+    text: '- People use Conexus in the browser: this chat, the Prévia and the Código tab.',
   },
   {
     line: 54,
     verdict: 'adaptada',
-    text: '- When you finish, Conexus runs the same check as `conexus_check`. A failed check comes back to you in this run: fix what it lists and finish again. After {checks} failed checks, Conexus saves the code as not built. When the check passes, Conexus saves that version of the app. A message the person sends while a question is open closes the question and continues this run.',
+    text: '- When you finish, Conexus runs the same check as `conexus_check`. A failed check comes back to you in this run: fix what it lists and finish again. After {checks} failed checks, Conexus saves the code as not built. When the check passes, Conexus saves that version of the app and updates the Prévia. A message the person sends while a question is open closes the question and continues this run.',
   },
   { line: 56, verdict: 'igual', text: '## Context management' },
   {
