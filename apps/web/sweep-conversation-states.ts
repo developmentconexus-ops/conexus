@@ -12,7 +12,7 @@ import { PLANNING, PLANNING_REPLIES, WORKING, WORKING_REPLIES } from './sweep-wo
 const PROJECT = `/companies/${COMPANY.id}/projects/${PROJECT_ID}`
 const CONVERSATIONS = `${PROJECT}/conversations`
 const API = `/api/companies/${COMPANY.id}/projects/${PROJECT_ID}/conversations`
-const ID = '11111111-1111-4111-8111-111111111111'
+export const ID = '11111111-1111-4111-8111-111111111111'
 const UNTITLED = '22222222-2222-4222-8222-222222222222'
 const TITLE = 'Comparação de dois apps de encomenda de padaria com um título bem comprido mesmo'
 const LONG_WORD =

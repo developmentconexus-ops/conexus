@@ -13,7 +13,11 @@ describe('campos de texto no celular', { concurrency: 4 }, () => {
   for (const state of STATES) {
     for (const viewport of [PHONE, SMALL_PHONE]) {
       test(`${state.name}, ${viewport.width}px: nenhum campo de texto abaixo de 16px`, async () => {
-        const page = await harness.open(state.path, { viewport, replies: state.replies })
+        const page = await harness.open(state.path, {
+          viewport,
+          replies: state.replies,
+          userAgent: state.userAgent,
+        })
         await state.settle(page)
         const small = await page.evaluate(() =>
           [

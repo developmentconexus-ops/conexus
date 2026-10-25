@@ -1,10 +1,12 @@
 import type { CompanyId, ConversationId, ProjectId } from '@conexus/hub-api'
+import { PreviewData } from '@conexus/hub-api'
 import type { AgentControllerEvent, KnownAgentControllerEvent } from '@mastra/client-js'
 import { isKnownAgentControllerEvent, MastraClientError } from '@mastra/client-js'
 import type { QueryClient } from '@tanstack/react-query'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useEffectEvent, useMemo, useReducer } from 'react'
 import { failureOfProblem } from '../../platform/hub.ts'
+import { previewChanged } from '../preview/public.ts'
 import { sourceChanged } from '../source/public.ts'
 import { conversationQuery } from './queries.ts'
 import type { BuilderSession } from './session.ts'
@@ -54,11 +56,24 @@ function savesVersion(event: KnownAgentControllerEvent): boolean {
   )
 }
 
+/** The run put its version on the app: the Prévia loads it. */
+function readiesPreview(event: KnownAgentControllerEvent): boolean {
+  return (
+    event.type === 'message_start' &&
+    event.message.content.parts.some(
+      (part) =>
+        part.type === 'data-conexus-preview' &&
+        PreviewData.safeParse(part.data).data?.state === 'ready',
+    )
+  )
+}
+
 function heard(hooks: Hooks, event: AgentControllerEvent): void {
   if (!isKnownAgentControllerEvent(event)) return
   hooks.dispatch({ type: 'event', event })
   const { companyId, projectId } = hooks.ids
   if (savesVersion(event)) void sourceChanged(hooks.queryClient, { companyId, projectId })
+  if (readiesPreview(event)) void previewChanged(hooks.queryClient, { companyId, projectId })
   // Mastra saves an errored run's messages a moment after its end: the read catches them up.
   if (event.type === 'agent_end') reread(hooks)
 }

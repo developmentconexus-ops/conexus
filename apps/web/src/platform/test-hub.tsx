@@ -260,6 +260,8 @@ export type ProjectsView = {
   mayDelete: boolean
   /** The Projects' address, `null` for those made by step 7's image; Pedidos' own by default. */
   address?: string | null
+  /** The number of the app's version on the air, `null` before its first app; `null` by default. */
+  appVersion?: number | null
   role?: string
 }
 
@@ -288,7 +290,7 @@ export function projectsRead(view: ProjectsView) {
                 // Owners and administrators delete a Project and manage its versions alike.
                 mayManageVersions: view.mayDelete,
                 address: view.address === undefined ? PEDIDOS_ADDRESS : view.address,
-                appVersion: null,
+                appVersion: view.appVersion ?? null,
               },
             }),
           )

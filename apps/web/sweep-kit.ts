@@ -5,6 +5,8 @@ export type State = {
   name: string
   path: string
   replies: Replies
+  /** The browser's user agent, where the screen differs by browser. */
+  userAgent?: string
   /** Waits for the screen and brings it to the state: a form refused, a field filled. */
   settle(page: Page): Promise<void>
 }

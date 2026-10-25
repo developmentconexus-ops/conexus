@@ -1,3 +1,4 @@
+import { MachineData } from '@conexus/hub-api'
 import type { ToolItem, TranscriptItem } from './rows.ts'
 import { specOf } from './tool-registry.ts'
 
@@ -9,7 +10,31 @@ function isMachine(item: TranscriptItem): boolean {
   return item.kind === 'conexus' && item.partType === 'data-conexus-machine'
 }
 
-export function fold(items: readonly TranscriptItem[]): Row[] {
+function isSending(item: TranscriptItem): boolean {
+  return (
+    item.kind === 'conexus' &&
+    item.partType === 'data-conexus-machine' &&
+    MachineData.safeParse(item.data).data?.phase === 'sending'
+  )
+}
+
+function isPreview(item: TranscriptItem): boolean {
+  return item.kind === 'conexus' && item.partType === 'data-conexus-preview'
+}
+
+/**
+ * The rows of a turn. The send's step is told in the machine's one line, which sits at the turn's
+ * head, but it follows the version the turn saved: it closes the turn until the Prévia says how it went.
+ */
+export function fold(all: readonly TranscriptItem[]): Row[] {
+  const sending = all.some(isPreview) ? [] : all.filter(isSending)
+  const items = sending.length > 0 ? all.filter((item) => !isSending(item)) : all
+  const rows = foldSteps(items)
+  for (const item of sending) rows.push({ kind: 'item', item })
+  return rows
+}
+
+function foldSteps(items: readonly TranscriptItem[]): Row[] {
   const rows: Row[] = []
   let run: ToolItem[] = []
 

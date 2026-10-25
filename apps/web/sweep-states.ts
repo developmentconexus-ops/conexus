@@ -9,6 +9,7 @@ import { DEFAULT_STATES } from './sweep-defaults-states.ts'
 import { HOUSE_STATES } from './sweep-house-states.ts'
 import type { State } from './sweep-kit.ts'
 import { waitFor } from './sweep-kit.ts'
+import { PREVIEW_STATES } from './sweep-preview-states.ts'
 import { PROJECT_STATES } from './sweep-project-states.ts'
 import { RECOVERY_STATES } from './sweep-recovery-states.ts'
 import {
@@ -40,6 +41,7 @@ const NEVER = new Promise<never>(() => undefined)
 export const STATES: State[] = [
   ...RECOVERY_STATES,
   ...PROJECT_STATES,
+  ...PREVIEW_STATES,
   ...CONVERSATION_STATES,
   ...CARD_STATES,
   ...APP_STATES,

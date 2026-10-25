@@ -13,7 +13,7 @@ recarrega sozinha nela.
    app…" e, uns 10 a 20 segundos depois, "Prévia pronta". A aba **Prévia** mostra o app. Ana
    cadastra "Maria, bolo de cenoura, sexta".
 2. Na barra da Prévia: **Computador** ou **Celular** (Celular põe o app numa moldura de celular) e
-   **Recarregar**. **Abrir app** abre o mesmo app numa aba nova, e o Hub fica onde está.
+   **Recarregar**. **Abrir app**, que só aparece depois do primeiro app, abre o mesmo app numa aba nova, e o Hub fica onde está.
 3. "Agora guarde também o endereço." Enquanto o Builder trabalha, a Prévia segue na versão 1; no fim
    do turno recarrega sozinha na versão 2, com a Maria lá.
 4. Como **Diego**, no mesmo Projeto: a Prévia abre o mesmo app. Diego pede uma mudança ao Builder; a
@@ -100,13 +100,13 @@ O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3, ~100) e `app
 | 20 | U2 | `POST /api/apps/frame-handoff` com sessão e `{host, binding}` responde `{location}` no host do app; outra empresa, Projeto apagado ou host desconhecido: 404; sem sessão: 401; `Origin` de fora: `REQUEST_ORIGIN_REFUSED` | `hub/apps/frame-handoff.test.ts` | must |
 | 21 | U2 | A passagem do iframe vale uma vez e só no navegador do vínculo: trocada com outro `binding` ou de novo, `APP_HANDOFF_INVALID` | `frame-handoff.test.ts` "uma vez, um navegador" | must |
 | 22 | U2 | Um site de fora que emoldura o app não entra: o navegador recusa pela `frame-ancestors`, e a página de entrada não manda a mensagem a outra origem | `dispatcher.test.ts` "só o Hub"; prova no navegador da U2 | must |
-| 23 | U3 | Antes do primeiro app, a Prévia mostra "Ainda não há uma prévia disponível. Descreva o aplicativo para começar." | `builder/preview/preview.test.tsx` "vazio" | must |
+| 23 | U3 | Antes do primeiro app, a Prévia mostra "Ainda não há uma prévia disponível. Descreva o aplicativo para começar." e o topo da área não mostra **Abrir app** | `builder/preview/preview.test.tsx` "vazio"; `hub/projects/project.test.tsx` "antes do primeiro app" | must |
 | 24 | U3 | Com app no ar, a Prévia mostra o app num iframe do endereço do Projeto, com **Computador** ou **Celular** e **Recarregar**; Celular põe o iframe em 390 px | `preview.test.tsx` "barra"; captura T23 | must |
 | 25 | U3 | Uma parte `data-conexus-preview` `ready` recarrega o iframe na versão nova; uma `failed` não recarrega e a conversa diz o motivo pela frase do código | `preview.test.tsx` "recarga"; `conversation/preview-line.test.tsx` | must |
 | 26 | U3 | **Recarregar** recarrega o iframe sem ler o Projeto de novo | `preview.test.tsx` "Recarregar" | should |
-| 27 | U3 | A entrada no iframe: a mensagem `conexus-entry` do iframe (origem e janela conferidas) leva a `createAppFrameHandoff` e o iframe vai ao `location`; uma mensagem de outra origem ou de outra janela é ignorada | `preview.test.tsx` "entrada" | must |
+| 27 | U3 | A entrada no iframe: a mensagem `conexus-entry` do iframe (origem e janela conferidas) leva a `createAppFrameHandoff` e o iframe vai ao `location`; uma mensagem de outra origem ou de outra janela é ignorada; se o Hub recusa a passagem (o banco fora, o Projeto apagado, qualquer falha), a Prévia mostra a frase da falha (`sentenceOf`) no lugar do iframe, e **Recarregar** tenta de novo | `preview.test.tsx` "entrada", "entrada recusada" | must |
 | 28 | U3 | **Abrir app**, o da área e o do aviso, abre o app numa aba nova e o Hub fica onde estava: o link leva `target="_blank"` e `rel="noopener noreferrer"` | `hub/projects/project.test.tsx` "Abrir app abre aba nova"; `preview.test.tsx` "aviso" | must |
-| 29 | U3 | Num navegador WebKit da Apple (iPhone, iPad, Safari do Mac), a Prévia mostra acima do iframe, que segue carregando, "O app pode não abrir aqui dentro neste navegador." com **Abrir app**, como a vibesdk; se a prova no iPhone da U1 mostrar que o Safari não carrega o app, o iframe não carrega e o aviso, "Este navegador não abre o app aqui dentro.", fica no lugar dele | `preview.test.tsx` "WebKit da Apple"; prova no iPhone da U1 | must |
+| 29 | U3 | Num navegador WebKit da Apple (iPhone, iPad, Safari do Mac), a Prévia mostra acima do iframe, que segue carregando, "O app pode não abrir aqui dentro neste navegador." com **Abrir app** e **Fechar aviso** (o ×), que o esconde enquanto durar a sessão da aba (`sessionStorage`), como a vibesdk; se a prova no iPhone da U1 mostrar que o Safari não carrega o app, o iframe não carrega e o aviso, "Este navegador não abre o app aqui dentro.", fica no lugar dele | `preview.test.tsx` "WebKit da Apple", "Fechar aviso"; prova no iPhone da U1 | must |
 | 30 | U3 | Abaixo de `md`, em **App**, a Prévia ocupa a área e a barra perde **Computador** ou **Celular** | captura T23 a 390 px | must |
 | 31 | U3 | "Subindo o app…" e "Prévia pronta" na conversa; a fase `sending` fica na linha da máquina como as outras | `conversation/preview-line.test.tsx` | must |
 | 32 | U4 | As instruções do Builder têm de volta as frases da Prévia das linhas 3, 6, 22, 53 e 54 do OS, a 53 sem a aba Diff (Alterações) nem Integrações; `builder-prompt.md` diz o novo veredito | `builder/conversation/prompt.test.ts` com `test-prompt.ts` | must |
@@ -115,7 +115,7 @@ O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3, ~100) e `app
 
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Prévia | `Stage`: "Ainda não há uma prévia disponível. Descreva o aplicativo para começar." | igual a primeira vez (`appVersion: null`) | o iframe carrega com o fundo da área; a barra já aparece | a página de falha do despachante dentro do iframe (as frases dele, inalteradas), também quando o navegador recusa o cookie: sem o cookie do vínculo, `redeem` dá `APP_HANDOFF_INVALID` (`dispatch.ts:71-77`) | o Projeto apagado: a rota do Projeto dá o 404 de hoje | todo membro vê a Prévia (X1); fora da empresa, o 404 de hoje | WebKit da Apple: "O app pode não abrir aqui dentro neste navegador." com **Abrir app**, acima do iframe (no lugar dele, com "Este navegador não abre o app aqui dentro.", se a prova da U1 mostrar que o Safari não o carrega) |
+| Prévia | `Stage`: "Ainda não há uma prévia disponível. Descreva o aplicativo para começar." | igual a primeira vez (`appVersion: null`) | o iframe carrega com o fundo da área; a barra já aparece | a página de falha do despachante dentro do iframe (as frases dele, inalteradas), também quando o navegador recusa o cookie: sem o cookie do vínculo, `redeem` dá `APP_HANDOFF_INVALID` (`dispatch.ts:71-77`); a passagem recusada pelo Hub: a frase da falha (`sentenceOf`) no lugar do iframe, com **Recarregar** para tentar de novo | o Projeto apagado: a rota do Projeto dá o 404 de hoje | todo membro vê a Prévia (X1); fora da empresa, o 404 de hoje | WebKit da Apple: "O app pode não abrir aqui dentro neste navegador." com **Abrir app** e **Fechar aviso**, acima do iframe (no lugar dele, com "Este navegador não abre o app aqui dentro.", se a prova da U1 mostrar que o Safari não o carrega) |
 | Linha da máquina na conversa | — | — | "Subindo o app…" (`sending`) | "Prévia não atualizada: " e a frase do código (`data-conexus-preview` `failed`) | — | — | — |
 | Cartão da versão | — | — | — | — | — | — | — |
 
@@ -165,7 +165,7 @@ WebKit da Apple (iPhone, iPad, Safari do Mac), acima do iframe:
 | `sendVersion` pelo Builder (`by: 'builder'`) | um envio da aba Versões em andamento: `APP_VERSION_SENDING`, o do Builder falha (C65); o mesmo turno de novo: o `attemptKey` é o `runId`, `REPLAY` | a morte entre a subida e o ponteiro deixa o ponteiro como estava; o envio vencido falha no início seguinte (`failExpiredSends`) | a Cloudflare sem resposta ou recusando: `APP_VERSION_FAILED`, o app segue na anterior; o banco fora: `failed` `APP_VERSION_FAILED` e `logFailure` | `APP_VERSION_RECEIVED`, `APP_VERSION_UPLOADED`, `APP_VERSION_LIVE` com `by` a pessoa; `PREVIEW_SEND_FAILED` com o código | 1, 8, 9, 10, 12, 13 |
 | `Machines.pack` (`packIn`) | um por turno: o `Runs` segura o Projeto (D15) | a máquina morta no meio: `failed` `APP_VERSION_FAILED`, `PREVIEW_PACK_REFUSED` `reason: 'LOST'` | o E2B fora: o mesmo | `PREVIEW_PACK_REFUSED` com `reason` | 11, 15 |
 | `saveMessages` da mensagem com as duas partes (`@mastra/pg` 1.32.0) | uma por turno | uma falha é logada e a mensagem segue contada no fluxo (como hoje em `end.ts:179-182`) | o banco fora: o mesmo | `INTERNAL_UNEXPECTED` | 4 |
-| `createAppFrameHandoff` | duas passagens para o mesmo vínculo: cada uma vale uma vez (S22, `DELETE ... RETURNING`) | uma resposta cortada: a Prévia pede outra no próximo `conexus-entry` | o banco fora: `DATABASE_UNAVAILABLE`, a Prévia mostra a página de falha no iframe ao recarregar | a linha de pedido de hoje | 20, 21 |
+| `createAppFrameHandoff` | duas passagens para o mesmo vínculo: cada uma vale uma vez (S22, `DELETE ... RETURNING`) | uma resposta cortada: a Prévia pede outra no próximo `conexus-entry` | o banco fora: `DATABASE_UNAVAILABLE`, a Prévia mostra a frase da falha no lugar do iframe, e **Recarregar** tenta de novo | a linha de pedido de hoje | 20, 21 |
 | A troca da passagem no despachante (`redeem`, inalterada) | já coberta (S22) | já coberta | o Hub fora: `EDGE_HUB_UNAVAILABLE` dentro do iframe | a de hoje | 19, 21 |
 
 ## A tabela de referência
@@ -460,8 +460,8 @@ type FrameView = 'computer' | 'phone'
 type FrameState =
   | { kind: 'empty' }                // appVersion null: Stage
   | { kind: 'framed'; src: string }  // https://<address>/ e, depois da entrada, o location
-// o aviso do WebKit da Apple vem de `isAppleWebKitBrowser()`, acima do iframe; se a prova da U1
-// mostrar que o Safari não carrega o app, `{ kind: 'refused' }` no lugar do iframe (critério 29)
+  | { kind: 'refused'; error: unknown } // o Hub recusou a passagem: a frase de `sentenceOf(error)` no lugar do iframe
+// o aviso do WebKit da Apple vem de `isAppleWebKitBrowser()`, acima do iframe; o × o fecha na sessão da aba
 
 // apps/web/src/hub/projects/area.tsx: Abrir app
 <a href={`https://${project.address}/`} target="_blank" rel="noopener noreferrer">Abrir app</a>
@@ -471,7 +471,7 @@ A `key` do iframe é `appVersion` mais o contador de **Recarregar**. `use-sessio
 do Projeto quando chega `data-conexus-preview` `ready`, como `savesVersion` faz com o código. A
 mensagem de entrada só vale com `event.origin === https://<address>` e `event.source ===
 iframe.contentWindow`, parseada por `FrameEntry`. WebKit da Apple: a função de vibesdk
-`isAppleWebKitBrowser`, escrita aqui. Frases: "Subindo o app…", "Prévia pronta.", "Prévia não
+`isAppleWebKitBrowser`, escrita aqui. Frases: "Fechar aviso" (o nome do ×), "Subindo o app…", "Prévia pronta.", "Prévia não
 atualizada: " e a frase do código, "O app pode não abrir aqui dentro neste navegador." (ou, se o Safari não carregar, "Este navegador não abre o app aqui dentro."), "Computador",
 "Celular", "Recarregar".
 
