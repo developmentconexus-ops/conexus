@@ -18,7 +18,7 @@ import type { Machines, VersionFolder } from '../machine/public.ts'
  * Sends a turn's version to the Projeto's app as the person of the turn (step 14.1): whether it
  * reached the app, or nothing once the Projeto is gone.
  */
-export type BuilderSend = (input: {
+type BuilderSend = (input: {
   companyId: CompanyId
   projectId: ProjectId
   personId: PersonId
