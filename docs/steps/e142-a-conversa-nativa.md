@@ -153,7 +153,7 @@ Escolhas que firstmate fez à noite e que ainda são suas:
 | M2 | As rotas do Mastra atrás do guarda, a tela pelo `@mastra/client-js`, o contrato e as remoções, numa unidade | `builder/conversation/`, `builder/runs/`, `apps/web/src/builder/conversation/`, `hub-api/` | segurança, web | M1 |
 | M3 | O Fim pelo `isTaskComplete` | `builder/conversation/{builder,processors}.ts` | testes | M1 |
 | M4 | O arquivo do Mastra Code, `SandboxFilesystem`, preso à pasta do app | `builder/machine/`, `apps/server/package.json` | testes | M5 |
-| M5 | A máquina da conversa: sem tabela, morta pelo nome ao sair, sem varredura | `builder/machine/`, `builder/runs/`, `builder/conversation/{builder,public}.ts`, `migrations/`, `hub-api/` (`MachinePhase`), `apps/web/src/builder/conversation/{machine-line.tsx,fold.ts}` | dados, segurança | M1 |
+| M5 | A máquina da conversa: sem tabela, morta pelo nome ao sair, sem varredura | `builder/machine/`, `builder/runs/`, `builder/conversation/{builder,turn-of,public,record}.ts`, `migrations/`, `hub-api/` (`MachinePhase`, `machinePhaseLasts`), `apps/web/src/builder/conversation/{machine-line.tsx,fold.ts}` | dados, segurança | M1 |
 
 `builder/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. A 14.0 é a primeira parte da U2
 ("C"; "1. Sim … 2.B"). Em paralelo: U2, U4, U5, U8, U9 (arquivos
@@ -163,10 +163,11 @@ defeito do envio com cartão aberto); depois as limpezas da sessão; depois a U1
 `steerCards` achando o cartão frio que ela adota; depois o turno como um estado só (U2); U13 depois da
 U12 e da U3. Na quarta emenda: M1 primeiro, pelas rotas de hoje; depois a M2; a M3 e a M4 depois da M1,
 em paralelo com a M2 (arquivos distintos). A M2 apaga o que a U2, a U12, a U13 e a U14 fizeram e o Mastra
-já faz; a tela da U3 passa a ler o stream do Mastra. Na quinta emenda: a M5 depois da M1, em três partes
-que terminam funcionando (a máquina pela conversa; a morte pelo nome e o fim da varredura; a migração que
-apaga `builder.machine`, em pull request próprio, D11); a M4 depois da primeira parte da M5, porque então a
-máquina existe quando a workspace nasce e o `SandboxFilesystem` a recebe direto, na forma da Factory.
+já faz; a tela da U3 passa a ler o stream do Mastra. Na quinta emenda: a M5 depois da M1, em duas partes
+que terminam funcionando (a máquina pela conversa, com a morte pelo nome e sem a varredura, porque uma
+máquina que ninguém mata ao soltar não pode existir nem entre as partes; depois a migração que apaga
+`builder.machine`, em pull request próprio, D11); a M4 entre as duas, porque então a máquina existe quando a
+workspace nasce e o `SandboxFilesystem` a recebe direto, na forma da Factory.
 
 **Orçamento de código alterado** (apagado conta; sem testes nem texto de skill). U2 1.600; U3 950;
 U4 150; U5 150; U8 80; U9 150; U10 60; U11 150. Total **3.290**, teto 4.000 (L2); U6 350 e U7 450 voltam com a
@@ -719,8 +720,9 @@ Regras: T24. **Prova.** 16.
 `reattach: 'required'`, `isGone`, a segunda partida que esquecia a linha, `list`, `rowOf`, `forget` e
 `projectsOf`; a API do E2B mata pela conversa. `runs/`: a workspace por conversa; saem `daily.ts`, `sweep` e
 `writing`; a remoção mata pela conversa. `conversation/builder.ts`: a conversa da execução chega ao
-resolvedor; `conversation/public.ts`: as conversas soltas antes da remoção. `hub-api/` e a tela: saem as
-fases `waking` e `replaced` (as partes velhas são `data` sem esquema na leitura, `mastra-parts.ts:133-137`).
+resolvedor (`turn-of.ts`); `conversation/public.ts`: as conversas soltas antes da remoção. `hub-api/`, a tela
+e `record.ts`: saem as fases `waking` e `replaced` e `machinePhaseLasts`, porque nenhuma fase da máquina fica
+mais na conversa (as partes velhas são `data` sem esquema na leitura, `mastra-parts.ts:133-137`).
 `architecture.md`, a linha "One E2B key", sem a varredura. Migração própria, em pull request próprio
 (D11): sai `builder.machine` e a sua permissão.
 
