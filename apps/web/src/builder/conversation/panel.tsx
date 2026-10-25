@@ -123,6 +123,7 @@ function PanelComposer(props: {
   onStop: () => void
   onError: (error: string | undefined) => void
   canAnswer: boolean
+  waiting: boolean
 }) {
   const {
     params,
@@ -135,11 +136,12 @@ function PanelComposer(props: {
     onStop,
     onError,
     canAnswer,
+    waiting,
   } = props
   return (
     <div className="px-md">
       <Composer
-        answering={state.running}
+        answering={state.running || waiting}
         canSend={canAnswer}
         draft={draft}
         field={field}
@@ -225,10 +227,11 @@ function Screen(params: Params) {
         state={state}
         draft={draft}
         field={field}
-        onSend={(content) => send(content, state.running)}
+        onSend={(content) => send(content, state.running || waiting)}
         onStop={halt}
         onError={setError}
         canAnswer={canAnswer}
+        waiting={waiting}
       />
     </>
   )
