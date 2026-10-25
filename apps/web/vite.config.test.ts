@@ -18,6 +18,10 @@ test('o build emite o favicon sem hash e o resto com hash', async (t) => {
   const manifest = JSON.parse(readFileSync(join(outDir, 'manifest.webmanifest'), 'utf8'))
   for (const { src } of manifest.icons) assert.ok(existsSync(join(outDir, src)), src)
   assert.ok(existsSync(join(outDir, 'apple-touch-icon.png')))
+  assert.equal(manifest.background_color, '#ffffff')
+  const page = readFileSync(join(outDir, 'index.html'), 'utf8')
+  assert.match(page, /rel="apple-touch-icon" sizes="180x180"/)
+  assert.doesNotMatch(page, /apple-mobile-web-app-(capable|status-bar-style)/)
   const assets = readdirSync(join(outDir, 'assets'))
   assert.ok(assets.length > 0)
   assert.deepEqual(
