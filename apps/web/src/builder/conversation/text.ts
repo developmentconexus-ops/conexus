@@ -1,5 +1,6 @@
 import type { ConversationSummary } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
+import type { DictationError } from '../../ui/speech-input.tsx'
 import type { Refusal } from './attachments.ts'
 import { LIMITS } from './attachments.ts'
 
@@ -26,6 +27,22 @@ export const REFUSALS: Record<Refusal, string> = {
   'too-large': `Este arquivo passa de ${megabytesOf(LIMITS.data)} MB.`,
   'too-large-together': `Os arquivos passam de ${megabytesOf(LIMITS.total)} MB juntos.`,
   type: 'Este tipo de arquivo não é aceito.',
+}
+
+const DICTATION_STOPPED = 'O ditado parou. Tente de novo.'
+/** Why the microphone stopped, said by the code the browser gave (`aborted` is the person's own stop and says nothing). */
+export function dictationText(error: DictationError): string {
+  switch (error) {
+    case 'not-allowed':
+    case 'service-not-allowed':
+      return 'Permita o microfone no navegador para ditar.'
+    case 'language-not-supported':
+      return 'Este navegador não dita em português.'
+    case 'no-speech':
+      return 'Não ouvimos nada. Tente de novo.'
+    default:
+      return DICTATION_STOPPED
+  }
 }
 
 /** What a conversation is called until the Builder titles it: the moment it began. */

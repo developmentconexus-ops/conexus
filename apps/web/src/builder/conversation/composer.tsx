@@ -1,6 +1,6 @@
 import { ArrowUpIcon, PlusIcon, SquareIcon, XIcon } from 'lucide-react'
 import type { ClipboardEvent, DragEvent, KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { AttachmentAction, AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
@@ -10,13 +10,14 @@ import {
   InputGroupTextarea,
 } from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
+import { SpeechInput } from '../../ui/speech-input.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import type { Outgoing, Refusal } from './attachments.ts'
+import type { Outgoing } from './attachments.ts'
 import { ACCEPT, useAttachments } from './attachments.ts'
 import type { Draft } from './draft.ts'
 import { chipOf } from './messages.ts'
 import { FileChip } from './person-turn.tsx'
-import { NO_SECRETS, REFUSALS, STEER_PLACEHOLDER } from './text.ts'
+import { dictationText, NO_SECRETS, REFUSALS, STEER_PLACEHOLDER } from './text.ts'
 
 /** The form sticks to the bottom and clears the home indicator. */
 const FORM =
@@ -74,14 +75,20 @@ function droppedOn(attachments: Attachments) {
   }
 }
 
-/** Why a file was left out, above the box, until the next file added or taken out. */
-function Refused({ refusal }: { refusal: Refusal | null }) {
-  if (refusal === null) return null
+/** Why a file was left out, or why the microphone stopped, above the box until the next of either. */
+function Refused({ phrase }: { phrase: string | null }) {
+  if (phrase === null) return null
   return (
     <p role="alert" className="text-fact text-danger">
-      {REFUSALS[refusal]}
+      {phrase}
     </p>
   )
+}
+
+/** The words joined to what is in the box, a space between them unless the box ends in one. */
+function joined(text: string, added: string): string {
+  if (added === '') return text
+  return text === '' || /\s$/.test(text) ? text + added.trimStart() : `${text} ${added.trimStart()}`
 }
 
 /** **+**: the browser's file picker, limited to the types the Builder reads. */
@@ -106,6 +113,32 @@ function Attach({ attachments }: { attachments: Attachments }) {
       />
     </>
   )
+}
+
+/**
+ * The microphone and what it adds to the box: the phrase in progress shown after the draft until it
+ * is final, then joined to the draft; and why it stopped, when it did.
+ */
+function useDictation(draft: Draft) {
+  const [interim, setInterim] = useState('')
+  const [phrase, setPhrase] = useState<string | null>(null)
+  return {
+    shown: joined(draft.text, interim),
+    phrase,
+    /** Typing in the box makes what was heard part of it. */
+    typed: () => setInterim(''),
+    mic: (
+      <SpeechInput
+        lang="pt-BR"
+        onFinal={(text) => {
+          setPhrase(null)
+          draft.change(joined(draft.text, text))
+        }}
+        onInterim={setInterim}
+        onError={(error) => setPhrase(dictationText(error))}
+      />
+    ),
+  }
 }
 
 /**
@@ -139,6 +172,7 @@ export function Composer(props: {
   const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
 
   const sending = useRef(false)
+  const dictation = useDictation(draft)
 
   /** One send at a time: a second Enter or click before the route answers would send it again (Factory clears its field before sending). */
   async function send() {
@@ -173,7 +207,11 @@ export function Composer(props: {
   return (
     <form onSubmit={submit} {...droppedOn(attachments)} className={FORM}>
       {props.taskPanel}
-      <Refused refusal={attachments.refusal} />
+      <Refused
+        phrase={
+          dictation.phrase ?? (attachments.refusal === null ? null : REFUSALS[attachments.refusal])
+        }
+      />
       <InputGroup
         data-busy={props.answering || undefined}
         className="rounded-composer data-busy:working-ring"
@@ -185,15 +223,19 @@ export function Composer(props: {
         <InputGroupTextarea
           id="message"
           ref={props.field}
-          value={draft.text}
+          value={dictation.shown}
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
-          onChange={(event) => draft.change(event.target.value)}
+          onChange={(event) => {
+            dictation.typed()
+            draft.change(event.target.value)
+          }}
           onKeyDown={onKeyDown}
         />
         <InputGroupAddon align="block-end" className="flex-nowrap justify-end gap-xs">
           {props.memory && <div className="me-auto">{props.memory}</div>}
           {props.picker}
           <Attach attachments={attachments} />
+          {dictation.mic}
           <Button
             type={action === 'stop' ? 'button' : 'submit'}
             variant="primary"
