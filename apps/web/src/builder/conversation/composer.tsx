@@ -1,6 +1,6 @@
 import { ArrowUpIcon, PlusIcon, SquareIcon, XIcon } from 'lucide-react'
 import type { ClipboardEvent, DragEvent, KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { AttachmentAction, AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
 import {
@@ -10,13 +10,14 @@ import {
   InputGroupTextarea,
 } from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
+import { SpeechInput } from '../../ui/speech-input.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
-import type { Outgoing, Refusal } from './attachments.ts'
+import type { Outgoing } from './attachments.ts'
 import { ACCEPT, useAttachments } from './attachments.ts'
 import type { Draft } from './draft.ts'
 import { chipOf } from './messages.ts'
 import { FileChip } from './person-turn.tsx'
-import { NO_SECRETS, REFUSALS, STEER_PLACEHOLDER } from './text.ts'
+import { dictationText, NO_SECRETS, REFUSALS, STEER_PLACEHOLDER } from './text.ts'
 
 /** The form sticks to the bottom and clears the home indicator. */
 const FORM =
@@ -74,14 +75,20 @@ function droppedOn(attachments: Attachments) {
   }
 }
 
-/** Why a file was left out, above the box, until the next file added or taken out. */
-function Refused({ refusal }: { refusal: Refusal | null }) {
-  if (refusal === null) return null
+/** Why a file was left out, or why the microphone stopped, above the box. */
+function Refused({ phrase }: { phrase: string | null }) {
+  if (phrase === null) return null
   return (
     <p role="alert" className="text-fact text-danger">
-      {REFUSALS[refusal]}
+      {phrase}
     </p>
   )
+}
+
+/** The words joined to what is in the box, a space between them unless the box ends in one. */
+function joined(text: string, added: string): string {
+  if (added === '') return text
+  return text === '' || /\s$/.test(text) ? text + added.trimStart() : `${text} ${added.trimStart()}`
 }
 
 /** **+**: the browser's file picker, limited to the types the Builder reads. */
@@ -106,6 +113,51 @@ function Attach({ attachments }: { attachments: Attachments }) {
       />
     </>
   )
+}
+
+/**
+ * The one phrase above the box, the one of whatever happened last: a file left out or the
+ * microphone stopping. A dictation error takes the refusal's place, and a new refusal takes the error's.
+ */
+function useNotice(attachments: Attachments) {
+  const [phrase, setPhrase] = useState<string | null>(null)
+  const [refusal, setRefusal] = useState(attachments.refusal)
+  if (refusal !== attachments.refusal) {
+    setRefusal(attachments.refusal)
+    setPhrase(attachments.refusal === null ? null : REFUSALS[attachments.refusal])
+  }
+  return {
+    phrase,
+    clear: () => setPhrase(null),
+    say: (said: string) => {
+      setPhrase(said)
+      setRefusal(null)
+      attachments.clearRefusal()
+    },
+  }
+}
+
+/**
+ * The microphone and what it adds to the box: the phrase in progress shown after the draft, which
+ * reads only until it is final, and then joined to the draft once.
+ */
+function useDictation(draft: Draft, notice: ReturnType<typeof useNotice>) {
+  const [interim, setInterim] = useState('')
+  return {
+    shown: joined(draft.text, interim),
+    listening: interim !== '',
+    mic: (
+      <SpeechInput
+        lang="pt-BR"
+        onFinal={(text) => {
+          notice.clear()
+          draft.change(joined(draft.text, text))
+        }}
+        onInterim={setInterim}
+        onError={(error) => notice.say(dictationText(error))}
+      />
+    ),
+  }
 }
 
 /**
@@ -139,6 +191,8 @@ export function Composer(props: {
   const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
 
   const sending = useRef(false)
+  const notice = useNotice(attachments)
+  const dictation = useDictation(draft, notice)
 
   /** One send at a time: a second Enter or click before the route answers would send it again (Factory clears its field before sending). */
   async function send() {
@@ -173,7 +227,7 @@ export function Composer(props: {
   return (
     <form onSubmit={submit} {...droppedOn(attachments)} className={FORM}>
       {props.taskPanel}
-      <Refused refusal={attachments.refusal} />
+      <Refused phrase={notice.phrase} />
       <InputGroup
         data-busy={props.answering || undefined}
         className="rounded-composer data-busy:working-ring"
@@ -185,8 +239,9 @@ export function Composer(props: {
         <InputGroupTextarea
           id="message"
           ref={props.field}
-          value={draft.text}
+          value={dictation.shown}
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
+          readOnly={dictation.listening}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}
         />
@@ -194,6 +249,7 @@ export function Composer(props: {
           {props.memory && <div className="me-auto">{props.memory}</div>}
           {props.picker}
           <Attach attachments={attachments} />
+          {dictation.mic}
           <Button
             type={action === 'stop' ? 'button' : 'submit'}
             variant="primary"
