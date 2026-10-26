@@ -74,11 +74,10 @@ export function MemoryStatus(props: {
     <Popover>
       <PopoverTrigger
         className="flex min-h-11 min-w-11 items-center justify-center gap-xs text-fact text-text-2 hover:text-text md:min-h-0 md:min-w-0"
-        aria-label={`Memória da conversa: Mensagens ${formatK(pending)}/${formatK(threshold)}k, Observações ${formatK(observations)}/${formatK(reflectionThreshold)}k${
+        aria-label={`Memória da conversa: Mensagens ${percent}%, ${formatK(pending)}/${formatK(threshold)}k, Observações ${formatK(observations)}/${formatK(reflectionThreshold)}k${
           failed ? ' · Falha na memória' : ''
         }`}
       >
-        <meter className="sr-only" min={0} max={100} value={percent} />
         <Ring percent={percent} spinning={working} />
         <span className="tabular-nums max-md:hidden">{percent}%</span>
         {failed && (

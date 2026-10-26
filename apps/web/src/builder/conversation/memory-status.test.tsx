@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { MemoryGauge } from './memory-status.tsx'
 import { MemoryStatus } from './memory-status.tsx'
@@ -13,16 +13,15 @@ const MEMORY: MemoryGauge = {
 test('um anel com o percentual de pendingTokens/threshold (Critério 15)', () => {
   render(<MemoryStatus memory={MEMORY} />)
   const trigger = screen.getByRole('button', {
-    name: /Mensagens 3,6\/30k, Observações 2,1\/40k/,
+    name: 'Memória da conversa: Mensagens 12%, 3,6/30k, Observações 2,1/40k',
   })
-  expect(within(trigger).getByRole('meter')).toHaveProperty('value', 12)
   expect(trigger.querySelectorAll('svg')).toHaveLength(1)
   expect(screen.getByText('12%').className).toContain('max-md:hidden')
 })
 
 test('sem memória o anel está vazio e diz 0% (Critério 15, matriz de estados)', () => {
   render(<MemoryStatus memory={null} />)
-  expect(screen.getByRole('meter')).toHaveProperty('value', 0)
+  expect(screen.getByRole('button').getAttribute('aria-label')).toContain('Mensagens 0%')
   expect(screen.getByText('0%')).toBeTruthy()
 })
 
