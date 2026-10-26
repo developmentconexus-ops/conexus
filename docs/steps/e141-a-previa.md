@@ -18,7 +18,9 @@ recarrega sozinha nela.
    do turno recarrega sozinha na versão 2, com a Maria lá.
 4. Como **Diego**, no mesmo Projeto: a Prévia abre o mesmo app. Diego pede uma mudança ao Builder; a
    versão dele também vai ao app.
-5. No celular, em **App**, a mesma Prévia. No iPhone e no Safari do Mac aparece, acima do app,
+5. Em **Projeto › Versões**, Ana vê as versões que foram ao app com os números da conversa e volta
+   para a 1.
+6. No celular, em **App**, a mesma Prévia. No iPhone e no Safari do Mac aparece, acima do app,
    "O app pode não abrir aqui dentro neste navegador." com **Abrir app**, que abre o app numa aba
    nova. Se a prova da U1 mostrar que o Safari não abre o app dentro do Hub, o aviso fica no lugar
    do app: "Este navegador não abre o app aqui dentro."
@@ -33,6 +35,9 @@ começo: aprova esta página. No fim: faz o roteiro, diz o que viu e aprova os t
 - A aba **Alterações** e o botão "Pedir ao Builder para corrigir" (sua palavra "B1"). O código
   segue na aba **Código**.
 - O servidor de desenvolvimento na máquina (sua recusa, P1 A, 2026-10-21).
+- Tags ou releases do Git para as versões (a sua pergunta "deveria ser um release ou tag não?" tem
+  resposta à parte e não muda a U5). E o **Voltar para esta** seguido de um turno do Builder, que põe
+  a versão nova por cima da volta: o Git do Builder segue na última versão; vai a uma issue.
 - Das issues `next-card`: nenhuma entra. A #237 era de Alterações e sai com ela. A #339 mexe no fim do
   turno, mas trata do texto salvo depois do `agent_end`, não do envio; espera a fila de defeitos (L4).
   As outras não tocam estas pastas.
@@ -46,6 +51,13 @@ começo: aprova esta página. No fim: faz o roteiro, diz o que viu e aprova os t
   emenda a P3 A da etapa 9 só para o envio do Builder. "X1".
 - **Abrir app** abre uma aba nova, e o Hub fica onde está: "Ah, isso pode mudar sim. Abrir app,
   abrir uma aba nova. Não tirar onde a gente tá no hub, tá? Porque isso é até chato." (critério 28)
+- **Um número por versão** (A): o número do Builder em todo lugar; a aba **Versões** lista as
+  versões que foram ao app com o número que a conversa deu, e uma que não montou não aparece lá. O
+  **Enviar versão** (a pasta montada enviada à mão, da etapa 9) sai: não é código do Builder, não
+  tem número dele, e o próximo turno de qualquer membro a substitui. As versões enviadas à mão que
+  já estão no hub.conexus.fun (os testes das etapas 9 e 10) são apagadas, e nesses Projetos o
+  endereço volta ao app de exemplo até o próximo turno do Builder (critérios 33 a 36). "A sim mas
+  deveria ser um release ou tag não? Dcisão 2 Apaga tudo"
 - Sobre o desenho: "eu não quero que seja igual a 14.2"; a resposta é esta etapa com cerca de 900
   linhas, não 2.340: o estudo dizia 780; a entrada do app dentro do iframe, que o estudo não contou,
   soma ~120.
@@ -63,16 +75,20 @@ aprovado na 14 ("SIM", critério 14 do cartão da 14).
 | U2 | A borda: cookies particionados, `frame-ancestors` do Hub, a página de entrada no iframe, `createAppFrameHandoff`, `frame-src` | `apps/edge/src/`, `packages/app-contract/src/`, `packages/app/src/check/`, `hub/apps/{handoff,routes}.ts`, `platform/http.ts`, `hub-api/src/apps.ts` | segurança | — |
 | U3 | A tela Prévia: iframe, barra, recarga na versão nova, entrada, aviso do navegador | `apps/web/src/builder/preview/`, `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/`, `apps/web/src/routes/` | web | U1, U2 |
 | U4 | As frases da Prévia voltam às instruções do Builder | `builder/conversation/` (instruções e `test-prompt.ts`), `docs/reference/builder-prompt.md` | testes | — |
+| U5 | Um número por versão: o envio guarda o número do Builder; o Enviar versão sai; a migração apaga as versões enviadas à mão | `hub/apps/`, `hub/projects/` (testes), `hub/operations/` (teste), `builder/runs/` e `builder/conversation/` (testes), `platform/http.ts`, `hub-api/src/`, `apps/web/src/hub/apps/`, `apps/web/src/hub/projects/area.tsx`, `apps/web/src/platform/test-hub-versions.tsx`, `apps/server/migrations/`, `tests/e2e/`, `scripts/` | dados | U1 a U4 |
 
 `builder/`, `hub/`, `platform/`: `apps/server/src/`; `hub-api/`: `packages/hub-api/src/`. U1, U2 e
 U4 correm em paralelo: não dividem arquivo, exceto `hub-api/src/index.ts` e `hub-api/src/apps.ts`
 (U1 dá nome a `AppVersionFailure`; U2 põe `FrameEntry` e `createAppFrameHandoff`), de quem chegar
-primeiro (o outro faz o merge). U3 depois de U1 e U2. QA antes da revisão (L9). Nenhum pacote novo; nenhuma
-migração. Em toda unidade, `typescript-magician` e `node`.
+primeiro (o outro faz o merge). U3 depois de U1 e U2; U5 depois das quatro, do achado 1 da QA. QA
+antes da revisão (L9). Nenhum pacote novo; uma migração, a da U5. Em toda unidade,
+`typescript-magician` e `node`.
 
-**Orçamento de código alterado.** U1 240; U2 210; U3 390; U4 60. Total **900**, teto 4.000 (L2).
-O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3, ~100) e `appVersion` no Projeto
-(~20), que a tabela do estudo dava como "segue" e este cartão escreve.
+**Orçamento de código alterado.** U1 240; U2 210; U3 390; U4 60; U5 1.300 (sai ~700 de produto e
+teste, entra ~600, quase tudo nos testes que trocam o envio à mão por um turno do Builder). Total
+**2.200**, teto 4.000 (L2). O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3,
+~100), `appVersion` no Projeto (~20), que a tabela do estudo dava como "segue" e este cartão
+escreve, e a U5, que o estudo dos números estimou em −550 e +250.
 
 ## Os critérios de aceite
 
@@ -84,10 +100,10 @@ O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3, ~100) e `app
 | 4 | U1 | Recarregar a conversa depois do turno traz uma mensagem só com `data-conexus-version` e `data-conexus-preview` (um `saveMessages`) | `conversation-preview.test.ts` "a mensagem guardada" | must |
 | 5 | U1 | Uma versão `unfinished`, `failed` ou `unchecked` não sobe: nenhuma versão nova do app e nenhuma parte `data-conexus-preview` | `preview-send.test.ts` "só `passed` sobe", um caso por estado | must |
 | 6 | U1 | Um turno sem mudança (`unchanged`) e um turno que falhou ao guardar não sobem nada | `preview-send.test.ts` "nada guardado, nada sobe" | must |
-| 7 | U1 | Um **membro** (papel `member`) que conversa no Projeto põe a sua versão no ar (X1); o mesmo membro recebe 404 em `POST` de versão pela aba Versões (`manageAppVersions`, inalterado) | `preview-send.test.ts` "o membro envia pelo Builder"; `send-guards.test.ts` caso existente do membro | must |
+| 7 | U1, U5 | Um **membro** (papel `member`) que conversa no Projeto põe a sua versão no ar (X1). A segunda metade, o 404 do membro no `POST` de versão da aba Versões, sai na U5 com a rota | `preview-send.test.ts` "o membro envia pelo Builder" | must |
 | 8 | U1 | Uma pessoa tirada da empresa durante o turno não põe a versão no ar: nenhuma versão `live` nova e nenhuma parte `data-conexus-preview` | `preview-send.test.ts` "admissão relida" | must |
 | 9 | U1 | A Cloudflare recusa a versão que não inicia: `data-conexus-preview` `{state: 'failed', code: 'APP_VERSION_NOT_STARTING'}`, o app segue na versão anterior | `preview-send.test.ts` "não inicia" | must |
-| 10 | U1 | Um envio da aba Versões em andamento: o do Builder termina `failed` com `APP_VERSION_SENDING` e o outro segue | `preview-send.test.ts` "um envio de cada vez" | must |
+| 10 | U1, U5 | Sai na U5: não há mais envio pela aba Versões que corra com o do Builder. Um envio de cada vez segue pela trava do Projeto (critério 34) | — | — |
 | 11 | U1 | A pasta da versão trocada por um link na máquina: `failed` com `APP_VERSION_FAILED`, linha `PREVIEW_PACK_REFUSED` com `reason: 'NOT_REGULAR'` | `pack.test.ts` caso existente; `preview-send.test.ts` "pasta recusada" | must |
 | 12 | U1 | O Projeto apagado durante o turno: nenhuma versão no ar e nenhuma parte `data-conexus-preview` | `preview-send.test.ts` "Projeto apagado" | must |
 | 13 | U1 | O Hub fechando durante o envio: o desligamento espera o envio até `SHUTDOWN_DEADLINE_MS` (15 s, `platform/lifecycle.ts:7`); o envio medido leva de 9,5 a 17,1 s (critério 15), então pode passar do prazo, e o envio cortado por ele `failExpiredSends` (inalterado) falha no início seguinte e o app segue na versão anterior | `conversation-preview.test.ts` "o desligamento espera o envio" | must |
@@ -110,6 +126,10 @@ O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3, ~100) e `app
 | 30 | U3 | Abaixo de `md`, em **App**, a Prévia ocupa a área e a barra perde **Computador** ou **Celular** | captura T23 a 390 px | must |
 | 31 | U3 | "Subindo o app…" e "Prévia pronta" na conversa; a fase `sending` fica na linha da máquina como as outras | `conversation/preview-line.test.tsx` | must |
 | 32 | U4 | As instruções do Builder têm de volta as frases da Prévia das linhas 3, 6, 22, 53 e 54 do OS, a 53 sem a aba Diff (Alterações) nem Integrações; `builder-prompt.md` diz o novo veredito | `builder/conversation/prompt.test.ts` com `test-prompt.ts` | must |
+| 33 | U5 | Versões mostra o número que a conversa deu; uma versão que não montou não aparece; Voltar para a Versão N põe no ar a N da conversa: com as versões 1 e 3 do Builder montadas e a 2 não, `GET` das versões lista 3 (no ar) e 1, e `PUT` da versão no ar com a 1 dá `appVersion: 1` no Projeto | `builder/runs/preview-send.test.ts` "o número da conversa" | must |
+| 34 | U5 | Um número do Builder já usado no Projeto (o Git voltou um commit depois de um disco perdido, decisão 0051) é recusado por `unique (project_id, number)`: `data-conexus-preview` `{state: 'failed', code: 'APP_VERSION_FAILED'}`, nenhuma linha nova e a outra versão N segue com o seu número; uma trava viva de outro envio dá `APP_VERSION_SENDING` | `preview-send.test.ts` "número já usado", "um envio de cada vez" | must |
+| 35 | U5 | `POST /api/companies/{companyId}/projects/{projectId}/versions` não existe mais: 404 para o dono; a aba Versões não tem **Enviar versão**; vazia, diz "Nenhuma versão foi ao app ainda. Cada versão do Builder que monta aparece aqui; até lá, o endereço mostra o app de exemplo."; para o membro, "Só o dono ou quem administra a empresa vê as versões e volta para uma delas." | `hub/apps/versions.test.ts` "a rota de envio saiu"; `apps/web/src/hub/apps/versions.test.tsx` "vazio"; `builder/conversation/workbench.test.tsx` "o membro" | must |
+| 36 | U5 | A migração apaga as versões enviadas à mão: num banco descartável semeado com versões `ready`, `failed` e uma `sending` com trava, depois de `migrate` nenhum app aponta para uma versão (`live_version_id` e `sending_version_id` nulos) e todas ficam `pruning`; o reparo do início tira os Workers delas e as linhas, arquivos e bytes; a Prévia volta ao vazio (`appVersion: null`) | `hub/apps/repair.test.ts` "o reparo poda as versões marcadas"; a prova da migração no relatório da U5 | must |
 
 ## A matriz de estados
 
@@ -118,9 +138,11 @@ O estudo estimou 780; a diferença é a entrada no iframe (U2 e U3, ~100) e `app
 | Prévia | `Stage`: "Ainda não há uma prévia disponível. Descreva o aplicativo para começar." | igual a primeira vez (`appVersion: null`) | o iframe carrega com o fundo da área; a barra já aparece | a página de falha do despachante dentro do iframe (as frases dele, inalteradas), também quando o navegador recusa o cookie: sem o cookie do vínculo, `redeem` dá `APP_HANDOFF_INVALID` (`dispatch.ts:71-77`); a passagem recusada pelo Hub: a frase da falha (`sentenceOf`) no lugar do iframe, com **Recarregar** para tentar de novo | o Projeto apagado: a rota do Projeto dá o 404 de hoje | todo membro vê a Prévia (X1); fora da empresa, o 404 de hoje | WebKit da Apple: "O app pode não abrir aqui dentro neste navegador." com **Abrir app** e **Fechar aviso**, acima do iframe (no lugar dele, com "Este navegador não abre o app aqui dentro.", se a prova da U1 mostrar que o Safari não o carrega) |
 | Linha da máquina na conversa | — | — | "Subindo o app…" (`sending`) | "Prévia não atualizada: " e a frase do código (`data-conexus-preview` `failed`) | — | — | — |
 | Cartão da versão | — | — | — | — | — | — | — |
+| Projeto › Versões (U5) | "Nenhuma versão foi ao app ainda. Cada versão do Builder que monta aparece aqui; até lá, o endereço mostra o app de exemplo." | igual a primeira vez | "Carregando as versões…" (o de hoje) | a frase da falha com "Tentar de novo" (a de hoje) | a página de não encontrado (a de hoje) | o membro: "Só o dono ou quem administra a empresa vê as versões e volta para uma delas." | — |
 
 O cartão da versão não muda: "Versão N guardada…" (`machine-line.tsx:57`). Depois dele vem a linha
-"Prévia pronta." ou a falha.
+"Prévia pronta." ou a falha. Na aba Versões, cada linha diz "Versão N" com o N do cartão da versão
+(U5); "· no ar", "· Enviando…", "· Falhou: " e **Voltar para esta** seguem como hoje.
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -162,7 +184,9 @@ WebKit da Apple (iPhone, iPad, Safari do Mac), acima do iframe:
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `sendVersion` pelo Builder (`by: 'builder'`) | um envio da aba Versões em andamento: `APP_VERSION_SENDING`, o do Builder falha (C65); o mesmo turno de novo: o `attemptKey` é o `runId`, `REPLAY` | a morte entre a subida e o ponteiro deixa o ponteiro como estava; o envio vencido falha no início seguinte (`failExpiredSends`) | a Cloudflare sem resposta ou recusando: `APP_VERSION_FAILED`, o app segue na anterior; o banco fora: `failed` `APP_VERSION_FAILED` e `logFailure` | `APP_VERSION_RECEIVED`, `APP_VERSION_UPLOADED`, `APP_VERSION_LIVE` com `by` a pessoa; `PREVIEW_SEND_FAILED` com o código | 1, 8, 9, 10, 12, 13 |
+| `sendVersion` pelo Builder, com o número dele (U5) | um Hub segura um turno por Projeto (D15); a trava viva de outro envio (outro Hub, num deploy): `APP_VERSION_SENDING`, o do Builder falha (C65); o mesmo turno de novo: o `attemptKey` é o `runId`, `REPLAY`; o mesmo número de outro turno: `unique (project_id, number)` recusa, `APP_VERSION_FAILED` | a morte entre a subida e o ponteiro deixa o ponteiro como estava; o envio vencido falha no início seguinte (`failExpiredSends`) | a Cloudflare sem resposta ou recusando: `APP_VERSION_FAILED`, o app segue na anterior; o banco fora: `failed` `APP_VERSION_FAILED` e `logFailure` | `APP_VERSION_RECEIVED`, `APP_VERSION_UPLOADED`, `APP_VERSION_LIVE` com `by` a pessoa; `PREVIEW_SEND_FAILED` com o código | 1, 8, 9, 12, 13, 34 |
+| A migração da U5 (as versões enviadas à mão) | roda uma vez, antes do Hub (D9) | uma transação: tudo ou nada | o banco fora: o `migrate` falha e o Hub não sobe (D9) | a linha de `migrate` de hoje; no início, `APP_VERSION_PRUNED` por Projeto | 36 |
+| A poda no reparo do início (U5) | o reparo corre sozinho no início | um Worker que a Cloudflare não confirmou fica marcado para a próxima poda | a Cloudflare fora: a empresa fica para o próximo início (`APP_REPAIR_FAILED`), como hoje | `APP_VERSION_PRUNED` | 36 |
 | `Machines.pack` (`packIn`) | um por turno: o `Runs` segura o Projeto (D15) | a máquina morta no meio: `failed` `APP_VERSION_FAILED`, `PREVIEW_PACK_REFUSED` `reason: 'LOST'` | o E2B fora: o mesmo | `PREVIEW_PACK_REFUSED` com `reason` | 11, 15 |
 | `saveMessages` da mensagem com as duas partes (`@mastra/pg` 1.32.0) | uma por turno | uma falha é logada e a mensagem segue contada no fluxo (como hoje em `end.ts:179-182`) | o banco fora: o mesmo | `INTERNAL_UNEXPECTED` | 4 |
 | `createAppFrameHandoff` | duas passagens para o mesmo vínculo: cada uma vale uma vez (S22, `DELETE ... RETURNING`) | uma resposta cortada: a Prévia pede outra no próximo `conexus-entry` | o banco fora: `DATABASE_UNAVAILABLE`, a Prévia mostra a frase da falha no lugar do iframe, e **Recarregar** tenta de novo | a linha de pedido de hoje | 20, 21 |
@@ -174,7 +198,10 @@ WebKit da Apple (iPhone, iPad, Safari do Mac), acima do iframe:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | A versão montada pela conferência | U1 | `packages/app/src/check/build.ts:worker` (46-78) | `wrangler@4.151.1` `deploy --dry-run --outdir`; vibesdk `9da158d` `@cloudflare/worker-bundler` em `space/src/space/deploy-engine.ts` | lido: o bundler da plataforma monta Worker e telas; não há servidor de desenvolvimento | nativo | — | 0055, "SIM" no cartão da 14 | |
 | Tirar a pasta montada da máquina no fim do turno | U1 | `apps/server/src/builder/machine/pack.ts:packIn` (97-124), `machines.ts:224-229` (sem chamador) | `e2b@2.56.0` `files.list` (`index.d.ts:5037-5065`, `symlinkTarget`) e `files.read(path)` (`index.d.ts:5135-5148`); `@mastra/core@1.79.0` `WorkspaceFilesystem.readFile` | lido: lê por caminho, sem opção de não seguir link; uma troca por link entre listar e ler passa | remendo | `pack.test.ts:55` "Machines.pack: um link ou um arquivo que não é regular é NOT_REGULAR"; estudo `proofs/pack-send.ts` (provado: `packIn` e `receiveVersion` aceita, 4 arquivos, 34 ms local); e2b 2.56.0 sem `nofollow` em `FilesystemReadOpts`; a U1 prova num E2B real e escreve a entrada em `boundaries.md` (S2, C59) | "SIM" ao cartão da 14, critério 14 em `05b006ba` ("link ou não regular: `NOT_REGULAR`"); volta só se o e2b mudar | |
-| Onde o app roda | U1 | `apps/server/src/hub/apps/send.ts:sendVersion` (192-242), `uploadVersion` (57-71), só pela tela Versões | vibesdk `9da158d`: prévia por Worker Loader (`space/src/space/durable-object.ts:752`), publicação no WfP (`worker/agents/core/behaviors/think.ts:990-1030`, `deployThinkAppToPlatform`, `dispatchNamespace` 1005-1021); `@mastra/core@1.79.0` `SandboxNetworking.getPortUrl` (`workspace/sandbox/sandbox.d.ts:44-51`, `getPortUrl` 50); Factory `6a465f9d`: nenhuma | lido: vibesdk roda o artefato montado; Mastra, open-lovable e fragments expõem a porta de um servidor de desenvolvimento | embrulhado: o envio da etapa 9 com o Builder como quem envia (`by: 'builder'`) | — | P1 A, 2026-10-21; o servidor de desenvolvimento recusado | |
+| Onde o app roda | U1 | `apps/server/src/hub/apps/send.ts:sendVersion` (192-242), `uploadVersion` (57-71), só pela tela Versões | vibesdk `9da158d`: prévia por Worker Loader (`space/src/space/durable-object.ts:752`), publicação no WfP (`worker/agents/core/behaviors/think.ts:990-1030`, `deployThinkAppToPlatform`, `dispatchNamespace` 1005-1021); `@mastra/core@1.79.0` `SandboxNetworking.getPortUrl` (`workspace/sandbox/sandbox.d.ts:44-51`, `getPortUrl` 50); Factory `6a465f9d`: nenhuma | lido: vibesdk roda o artefato montado; Mastra, open-lovable e fragments expõem a porta de um servidor de desenvolvimento | embrulhado: o envio da etapa 9 com o Builder como quem envia (`by: 'builder'`); na U5, o Builder é o único que envia, com o número dele, e a tela Versões só lista e volta | — | P1 A, 2026-10-21; o servidor de desenvolvimento recusado; "A sim" (2026-10-25, U5) | |
+| O número de uma versão no app | U5 | `hub/apps/versions.ts:storeAppVersion` (218-227, `max + 1`); `tables.ts:149` `unique (project_id, number)` | vibesdk `9da158d` `worker/services/deployer/think-user-deploy.ts:124` (o deploy leva `bundle.commitHash`); Dyad `902829f` `src/ipc/handlers/vercel_handlers.ts:379-391` (o deploy segue `ref: githubBranch`); Lovable, o selo "Published" numa versão; o OS `e0353c36` `lens-preview.tsx:17-21` ("Versão N · em uso" com o número do Builder) | lido: nenhuma referência dá ao deploy um contador próprio; o deploy aponta para a versão | nativo: o número do Builder (`builder/git/repository.ts:271`, `versionAt`) passado ao envio; a coluna e a chave única ficam | — | "A sim" (2026-10-25) | |
+| O envio à mão (Enviar versão) | U5 (sai) | `hub-api/src/apps.ts:160-186` (`createAppVersion`), `hub/apps/routes.ts:75-79`, `send.ts:56-61` (`SENDERS`), `web/hub/apps/send-version.tsx`, `read-folder.ts`, `queries.ts:14-16` | vibesdk, Dyad, bolt.diy, open-lovable, Lovable: nenhuma põe uma pasta montada enviada à mão ao lado das versões do agente | lido: tudo o que vai ao ar vem do histórico do build | nativo: sai, e o que vai ao ar vem só do Builder; era um caminho paralelo que o Builder não vê (estudo dos números, §3.5) | — | "A sim"; emenda a P3 A da etapa 9: dono e administrador seguem com a lista e o Voltar | |
+| As versões enviadas à mão no hub.conexus.fun | U5 | as linhas de `apps.app_version` das etapas 9 e 10 (`docs/approvals.md`, etapas 9 e 10, usadas por firstmate) | — | — | nativo: a poda de hoje as tira; a migração as marca para a poda e solta o ponteiro; o reparo do início (`repair.ts:repairApps`) passa a podar as versões marcadas, com a poda de hoje (`prune.ts:prune`) | — | "Dcisão 2 Apaga tudo" (2026-10-25) | `apps/server/migrations/<data>_e141_hand_sent_versions/` |
 | Um app só até a 17 | U1 | `apps.app.live_version_id` (`hub/apps/tables.ts:94`) | vibesdk `9da158d` `think.ts:960-961` (a conta do usuário) e `990-1030` (WfP) | lido: a separação prévia e publicado nasce no ato de publicar; cada caminho chama `gitCommit` e `getDeploymentBundle`, e remonta | nativo | — | "Ok, pode ser então A1 e B1" (2026-10-25) | |
 | Quem muda o app pelo Builder | U1 | `useConversations` sem exigência (`hub/identity/admission.ts:55-56`); `manageAppVersions` só dono e administrador (`roles.ts:18-39`; `send.ts:43-46`, chamado em 205 e 160-166) | nenhuma faz; vibesdk: o dono da sessão (`worker/utils/spacePreviewToken.ts`, claims `userId`) | lido: quem conversa com o agente é quem implanta | embrulhado: a ação nova `sendBuilderVersion` (todo membro, segura a linha, S8) no envio do Builder | — | "X1" (2026-10-25), emenda a P3 A da etapa 9 para o envio do Builder | |
 | Quando sobe: no fim do turno, depois de soltar a máquina e antes de soltar o Projeto | U1 | `builder/conversation/end.ts:ended` (160-186), `runs.ts:#settle` (234-260) | `@mastra/core@1.79.0` `agent-controller-DO6rGsQm.js:4841-4857` (`finishAgentRun` 4841, os ganchos 4847-4851, `agent_end` 4857); vibesdk `think.ts:489-491` | provado (estudo): o gancho segura `agent_end`; uma mensagem contada dentro dele chega antes (99 ms contra 2101 ms) | nativo | — | não precisa | |
@@ -536,3 +563,110 @@ Critério 32: o teste das instruções com `test-prompt.ts`. Falha hoje: as linh
 
 Uma frase do OS que fale de algo que não existe na 14.1 (Alterações, Versões do Builder,
 Integrações): fica fora e o veredito diz por quê.
+
+## U5 Um número por versão
+
+**Base e modelo.** `main` com U1 a U4. Opus: tira um caminho que cruza servidor, contrato, web, e2e e
+uma migração de produção. Do achado 1 da QA da 14.1 ("Versão 5 guardada… Prévia pronta" na conversa,
+"Versão 4 · no ar" na aba Versões) e do estudo dos números (opção A).
+
+### As linhas da tabela
+
+- **O número de uma versão no app**: `storeAppVersion` (`versions.ts:185-262`) recebe `number`, o do
+  Builder, no lugar do `max + 1` (218-227). A chave `unique (project_id, number)` fica: um envio por
+  turno (o `attemptKey` é o `runId`) a mantém; um número usado de novo é recusado.
+- **O envio à mão**: sai inteiro. `createAppVersion` e `VERSION_BODY_LIMIT` (`apps.ts:123-186`), a
+  rota (`routes.ts:75-79`), `SENDERS` e `Sender` (`send.ts:56-61`, o Builder é o único que envia),
+  `send` em `app-versions.ts:60`, `send-version.tsx`, `read-folder.ts`, os testes deles e
+  `test-folder.ts`, `sendVersion` de `queries.ts`. `VERSION_SEND_DEADLINE_MS` sai com a rota:
+  `CONNECTION_TIMEOUT_MS` (`platform/http.ts:33`) passa a dizer o seu motivo próprio, acima dos 100 s
+  com que a Cloudflare corta qualquer resposta, com o mesmo valor. `manageAppVersions` fica para o
+  **Voltar** (`live.ts`), `readAppVersions` para a lista.
+- **Onde o app roda**: `sendVersion` só pelo Builder; `sendFromBuilder` passa o `number`.
+- **As versões enviadas à mão**: a migração; o reparo do início poda.
+- **Versão N · no ar e Voltar para esta**: nada muda na tela além do texto vazio e do texto do
+  membro; o número que ela mostra passa a ser o do Builder.
+
+### O raio da mudança
+
+| Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
+| --- | --- | --- |
+| `apps/server/src/hub/apps/{versions,send,app-versions,routes,repair}.ts` | muda | `main.ts`, as rotas |
+| `apps/server/src/platform/http.ts` | muda (o motivo de `CONNECTION_TIMEOUT_MS`) | toda resposta do Hub |
+| `packages/hub-api/src/{apps,index}.ts` | apaga `createAppVersion`, `VERSION_SEND_DEADLINE_MS`, `VERSION_BODY_LIMIT` | web, servidor |
+| `apps/web/src/hub/apps/{send-version.tsx,send-version.test.tsx,read-folder.ts,test-folder.ts}` | apaga | `versions.tsx` |
+| `apps/web/src/hub/apps/{versions.tsx,queries.ts}`, `hub/projects/area.tsx`, `platform/test-hub-versions.tsx` | muda | a área do Projeto |
+| `apps/server/migrations/` | cria a migração | `migrate` |
+| `apps/server/src/hub/apps/test-versions.ts`, `builder/conversation/test-preview.ts` | muda: `send` vira um turno do Builder cuja conferência deixa a pasta pedida | os testes de `hub/apps/`, `hub/projects/`, `hub/operations/`, `builder/runs/` |
+| `tests/e2e/apps-journey.ts`, `versions.test.ts`, `refusals.test.ts` | muda: `sendFolder` vira um turno do Builder | e2e |
+| `scripts/removals.json`, `scripts/suppressions.json` | muda (as linhas que os arquivos apagados levam) | `npm run removals`, `npm run suppressions` |
+
+### Os contratos que a unidade muda
+
+```ts
+// apps/server/src/hub/apps/versions.ts
+export async function storeAppVersion(input: {
+  tx: CommandTx; ids: OfProject; sentBy: PersonId; received: ReceivedVersion
+  attemptKey: string
+  number: number // o do Builder (`BuilderVersion.number`)
+}): Promise<Stored>
+
+// apps/server/src/hub/apps/send.ts: `by` sai; a ação é sempre `sendBuilderVersion`
+export async function sendVersion(deps: SendDeps, input: Ids & {
+  personId: PersonId; number: number
+  manifest: unknown; files: readonly VersionFileInput[]; attemptKey: string
+}): Promise<Sent>
+
+// apps/server/src/hub/apps/app-versions.ts: createAppVersions sem `send`
+// packages/hub-api/src/apps.ts: sem createAppVersion, VERSION_SEND_DEADLINE_MS, VERSION_BODY_LIMIT
+```
+
+- **Cada estado**: `AppVersion` inalterado; `PreviewData` inalterado (o `number` já era o do Builder).
+- **Donos**: o número, o Builder (`versionAt`); a chave única, `tables.ts`; quem envia, `admission.ts`
+  (`sendBuilderVersion`); quem volta, `manageAppVersions`.
+- **A recusa do número usado**: a violação de `unique` no `insert` de `storeAppVersion` sai como erro
+  do banco; `sendFromBuilder` a dá como `failed` `APP_VERSION_FAILED` e `logFailure`, como qualquer
+  outro erro (U1).
+
+**A migração.** SQL próprio (Drizzle não gera mudança de dados; `drizzle-kit generate --custom` dá o
+arquivo e o retrato), no modelo de `20261017014712_p6b_test_companies`: solta o ponteiro de todo app
+(`live_version_id`, `sending_version_id` e `claimed_until` nulos) e marca toda versão `pruning`. Todas
+as versões de hoje são enviadas à mão: a 14.1 não foi publicada (última tag `v0.14.9`), então nenhuma
+do Builder está em produção. A coluna `number` e a chave ficam; nada é apagado da forma (D6). O
+reparo do início (`repairApps`) ganha a poda das versões marcadas de cada Projeto, com `prune` de
+hoje: o Worker sai primeiro, depois as linhas, os arquivos e os bytes; o que a Cloudflare não
+confirmou fica para o próximo início. Os Projetos de teste voltam ao app de exemplo.
+
+### As skills e a leitura
+
+`drizzle` (o `generate --custom` da versão de 0005), `fastify-best-practices`, `mastra` (só o turno
+de teste, nada muda nele). Ler primeiro: o estudo dos números (fora do repositório), `send.ts`,
+`versions.ts:150-262`, `prune.ts`, `repair.ts:repairApps`, `test-preview.ts`, `preview-send.test.ts`.
+
+### A ordem do trabalho
+
+1. Subtrair: a rota, o contrato, `SENDERS`, a tela e os testes dela. Regras: C70, C73.
+2. `storeAppVersion` e `sendVersion` com `number`; `sendFromBuilder` o passa. Regras: C26, D15.
+3. Os testes: `send` de `test-versions.ts` vira um turno do Builder (o modelo de teste escreve, a
+   conferência de teste deixa a pasta pedida, como `checking` de `test-preview.ts`); cada teste muda o
+   seu começo, não o que afirma. O que só a rota tinha (401, 413, a chave HTTP, o `..` no caminho)
+   sai com ela; o que a pasta da máquina ainda pode trazer (o manifesto, os arquivos a mais ou a menos,
+   o teto) segue provado pelo turno. O e2e faz o mesmo com os pacotes de `npm run app:pack`.
+4. A migração e a poda no reparo; a prova num banco descartável semeado com versões enviadas à mão.
+5. Os critérios 33 a 36.
+
+### Como se prova
+
+Critérios 33 a 36 pela porta pública (as rotas de conversa do Mastra atrás do guarda, T5), com o
+modelo, a máquina e a Cloudflare de teste de `preview-send.test.ts`; os testes de `hub/apps/` e o e2e
+seguem verdes com o novo começo. A migração: `migrate` num banco descartável com versões `ready`,
+`failed` e `sending` semeadas, lido antes e depois, e o reparo do início que tira os Workers.
+Falha hoje: a conversa diz Versão 5 e a aba Versões diz Versão 4 (achado 1 da QA).
+
+### Parar se
+
+- Um teste que só passa mudando o que afirma, ou um caso que precise de um envio que não seja um
+  turno do Builder.
+- A migração precisar apagar forma (coluna, chave) ou tocar outra tabela além de `apps.app` e
+  `apps.app_version`.
+- O orçamento da U5 passar de 1.300 linhas.
