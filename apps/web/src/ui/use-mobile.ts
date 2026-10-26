@@ -18,16 +18,3 @@ export function isMobile(): boolean {
 export function useIsMobile(): boolean {
   return useSyncExternalStore(subscribe, isMobile)
 }
-
-// Under 22rem (a 200% zoom of a phone) a row of controls has no room for one more.
-const NARROW = '(max-width: 351px)'
-
-function subscribeNarrow(changed: () => void): () => void {
-  const query = globalThis.matchMedia(NARROW)
-  query.addEventListener('change', changed)
-  return () => query.removeEventListener('change', changed)
-}
-
-export function useIsNarrow(): boolean {
-  return useSyncExternalStore(subscribeNarrow, () => globalThis.matchMedia(NARROW).matches)
-}

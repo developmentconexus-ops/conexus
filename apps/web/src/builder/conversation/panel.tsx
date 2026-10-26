@@ -143,6 +143,7 @@ function PanelComposer(props: {
     canAnswer,
     waiting,
   } = props
+  const phone = useIsMobile()
   return (
     <div className="px-md">
       <Composer
@@ -153,14 +154,14 @@ function PanelComposer(props: {
         onSend={onSend}
         onStop={onStop}
         taskPanel={<TaskPanel tasks={state.tasks ?? session.tasks} streaming={state.running} />}
-        memory={(compact) => (
+        memory={
           <MemoryStatus
             memory={state.memory}
             omPhase={state.omPhase}
             failed={state.memoryFailed}
-            compact={compact}
+            compact={phone}
           />
-        )}
+        }
         picker={
           canAnswer && (
             <ModelChoice
