@@ -877,9 +877,9 @@ refused for its media type or its origin.
 ## The Builder's clocks and its eval gate (step 13)
 
 - **Clocks.** `setTimeout` and `setInterval` are refused in `apps/server/src/builder/` except in the
-  owners `runs/{deadline,lease,copy-retry}.ts`, and `node:timers` and `node:timers/promises` are
-  refused except in `conversation/turn-log.ts`, which waits 250 ms for short text (decision 0051;
-  `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
+  owners `runs/{deadline,lease,copy-retry}.ts` and `conversation/parked.ts`, and `node:timers` and
+  `node:timers/promises` are refused except in `conversation/turn-log.ts`, which waits 250 ms for
+  short text, and `conversation/parked.ts`, Parar's wait (decision 0051; `biome.json`). Three step 11 files keep their timers out of the rule, with the reason that they
   were written before it: `model-accounts/google/{calls,google}.ts` and `claude/store.ts`. A change
   that touches their timers moves each to a named owner.
 - **Eval gate.** `conversation/builder.eval.test.ts` drives the real Builder through the Hub with
@@ -923,6 +923,33 @@ refused for its media type or its origin.
   with its Projeto ends its run without an `agent_end`, so `end.ts` lets it go on
   `onSessionDeleted`. Proof: `conversation-stream.test.ts`. Revisit when Mastra's server ends its
   streams on shutdown.
+
+## Mastra 1.79.0: Parar waits until Mastra keeps an open card's run
+
+- **Library line.** `@mastra/core` 1.79.0, default engine. The controller ends a run at its
+  `tool-call-suspended` chunk (`agent-controller-DO6rGsQm.js:1660-1680`) before the agent's output
+  processors save the call and, last, the run's `agentic-loop` snapshot. Parar is Mastra's
+  `abortRun` (`:5005-5060`): it denies the open call through `settleSuspendedToolCallsAsDenied`
+  (`:1434-1490`), which rewrites only the call as memory already holds it. A Parar in between
+  denies nothing: Mastra's late save writes the call `call`, and the card reads open after Parar.
+- **Hand-made piece.** `untilCardsKept` in `apps/server/src/builder/conversation/parked.ts`, called
+  by the guard on `POST …/abort` (`guard.ts`). When the session's display state holds an open card,
+  it reads `Agent.listSuspendedRuns` (the native storage view of parked runs, which Mastra's own
+  answer route reads, `:5859-5893`) until every open card is listed, every 20 ms for at most 2 s,
+  then lets Mastra's handler run. Past the bound, Parar goes to Mastra as before.
+- **Why.** The screen shows Parar while a card waits (`apps/web/src/builder/conversation/panel.tsx`),
+  and the CI flake of step 14.1 was this window (about 5 runs in 301, `main` included). The bound is
+  measured: the window from the card on the stream to its run listed was 14 to 30 ms idle and 59 ms
+  at most under three CPU hogs (10 runs each); 2 s is about 30 times that, for a remote database
+  (code C57). Founder, 2026-10-25: "A1".
+- **Proof.** `conversation-waiting.test.ts` "Parar no instante em que o cartão chega, antes de o
+  Mastra guardar a chamada": Mastra's save of the open call slowed by 300 ms, Parar as the card
+  arrives. Without the wait it reads `call`, 3 runs of 3; with it, `output-denied`, 3 of 3. The
+  two Parar tests that flaked in CI failed 2 of 2 with the same slowed save before, and passed 6 of 6
+  after.
+- **Revisit when** Mastra saves the suspension before publishing its chunk on the default engine, as
+  1.80.0-alpha.3 does for the durable and evented engines (PR #27352), or Conexus runs the Builder
+  on such an engine. Then `parked.ts` and its call leave.
 
 ## e2b 2.56.0: the version folder read without following a link (step 14.1)
 
