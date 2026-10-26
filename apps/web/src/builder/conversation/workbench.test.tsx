@@ -55,7 +55,7 @@ test('a aba Projeto e a seção ficam no endereço, e o Sobre vem primeiro', asy
   expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
   expect(conexus.router.state.location.search).toMatchObject({ lens: 'project' })
   fireEvent.click(await screen.findByRole('tab', { name: 'Versões' }))
-  expect(await screen.findByRole('button', { name: 'Enviar versão' })).toBeTruthy()
+  expect(await screen.findByRole('heading', { name: 'Versões' })).toBeTruthy()
   expect(conexus.router.state.location.search).toMatchObject({
     lens: 'project',
     section: 'versions',
@@ -101,12 +101,14 @@ test('um valor de aba que não existe cai na Prévia', async () => {
   expect(await screen.findByText(NO_PREVIEW)).toBeTruthy()
 })
 
-test('o membro lê quem envia as versões, e não vê "Enviar versão"', async () => {
+test('o membro lê quem vê as versões, e não as vê (35)', async () => {
   openProject(`${PROJECT}?lens=project&section=versions`, { mayDelete: false, role: 'member' })
   expect(
-    await screen.findByText('Só o dono ou quem administra a empresa vê e envia as versões.'),
+    await screen.findByText(
+      'Só o dono ou quem administra a empresa vê as versões e volta para uma delas.',
+    ),
   ).toBeTruthy()
-  expect(screen.queryByRole('button', { name: 'Enviar versão' })).toBeNull()
+  expect(screen.queryByRole('heading', { name: 'Versões' })).toBeNull()
 })
 
 test('o endereço /settings acabou: "não encontrado"', async () => {

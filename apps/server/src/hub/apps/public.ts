@@ -37,9 +37,9 @@ export function createAppRemoval(deps: RemovalDeps) {
 
 /**
  * The app of a Projeto: the pass the Hub gives a person, what the apps' dispatcher asks on each
- * call (decision 0041), and the versions an owner or administrator sends (decision 0043) or every
- * member's Builder turn sends (step 14.1). It reaches identity and Projects only through their
- * ports (code C4), Neon and Cloudflare only through the ports `main.ts` hands it (C56).
+ * call (decision 0041), and the versions every member's Builder turn sends (decision 0043, step
+ * 14.1), which an owner or administrator lists and puts back. It reaches identity and Projects only
+ * through their ports (code C4), Neon and Cloudflare only through the ports `main.ts` hands it (C56).
  */
 export function createApps(deps: AppDeps & RepairDeps) {
   const door = createAppDoor(deps)

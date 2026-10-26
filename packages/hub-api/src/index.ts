@@ -26,14 +26,12 @@ export {
   checkAppCall,
   createAppFrameHandoff,
   createAppSession,
-  createAppVersion,
   FRAME_ENTRY,
   FrameEntry,
   HANDOFF_PATH,
   HANDOFF_SECONDS,
   listAppVersions,
   setLiveVersion,
-  VERSION_SEND_DEADLINE_MS,
   VersionFileInput,
 } from './apps.ts'
 export { CAPACITY } from './capacity.ts'

@@ -13,6 +13,7 @@ import { databaseFailure } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import type { AppDatabaseDeps } from './app-database.ts'
 import { migrateApp, openAppDatabase } from './app-database.ts'
+import { prune } from './prune.ts'
 import type { RemovalDeps } from './removal.ts'
 import { removeProjectApp, takeBackRepair } from './removal.ts'
 import type { SendDeps } from './send.ts'
@@ -64,6 +65,27 @@ async function finishDeletions(deps: RepairDeps, scope: Scope, companyId: Compan
     }
   }
   return { deleted: marked.length - left.size, left }
+}
+
+/**
+ * The versions still marked for the prune of each Projeto not being deleted: one a send's prune
+ * left, or every hand-sent version the migration of step 14.1 marked (founder, 2026-10-25).
+ */
+async function pruneMarked(
+  deps: RepairDeps,
+  scope: Scope,
+  input: { companyId: CompanyId; marked: Set<ProjectId> },
+) {
+  const rows = await deps.database.read(scope, (tx) =>
+    tx
+      .selectDistinct({ projectId: appVersion.projectId })
+      .from(appVersion)
+      .where(eq(appVersion.state, 'pruning')),
+  )
+  const projects = rows.map((row) => ProjectId.parse(row.projectId))
+  for (const projectId of projects.filter((id) => !input.marked.has(id))) {
+    await prune(deps, { scope, companyId: input.companyId, projectId })
+  }
 }
 
 /** The version on the air of each Projeto, with the manifest it was sent with. */
@@ -147,8 +169,9 @@ const Listed = z.object({ company_id: CompanyIdSchema })
 
 /**
  * One pass at start over every company with an app (architecture §8): sends past their claim fail,
- * stopped deletions finish, and live apps come back. A company that fails is logged and left for
- * the next start; the Hub starts all the same, Cloudflare or Neon out.
+ * stopped deletions finish, versions marked for the prune go, and live apps come back. A company
+ * that fails is logged and left for the next start; the Hub starts all the same, Cloudflare or
+ * Neon out.
  */
 export async function repairApps(deps: RepairDeps): Promise<void> {
   const listed = await deps.database.installation((tx) =>
@@ -161,6 +184,7 @@ export async function repairApps(deps: RepairDeps): Promise<void> {
       const failed = await failExpiredSends(deps, scope)
       const { deleted, left } = await finishDeletions(deps, scope, companyId)
       const workers = await restoreLive(deps, scope, { companyId, marked: left })
+      await pruneMarked(deps, scope, { companyId, marked: left })
       deps.log.info({ companyId, failed, deleted, workers }, 'APP_REPAIRED')
     } catch (error) {
       const failure = error instanceof Failure ? error : databaseFailure(error)

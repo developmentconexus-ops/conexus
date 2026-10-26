@@ -4,7 +4,6 @@ import {
   checkAppCall,
   createAppFrameHandoff,
   createAppSession,
-  createAppVersion,
   FAILURES,
   listAppVersions,
   setLiveVersion,
@@ -72,11 +71,6 @@ export function registerVersionRoutes(app: FastifyInstance, versions: AppVersion
   serve(app, listAppVersions, async ({ person, params }) =>
     answer({ versions: await versions.list({ person, ...params }) }),
   )
-  serve(app, createAppVersion, async ({ person, params, body, attemptKey }) => {
-    const by = 'versions'
-    const sent = await versions.send({ personId: person.id, by, ...params, ...body, attemptKey })
-    return answer({ version: sent.version })
-  })
   serve(app, setLiveVersion, async ({ person, params, body }) =>
     answer({ version: await versions.setLive({ person, ...params, versionId: body.versionId }) }),
   )

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { test } from 'node:test'
 import { appLogin, ProjectId } from '@conexus/hub-api'
 import {
@@ -9,12 +11,20 @@ import {
   pgTransport,
 } from '../../platform/test-company-postgres.ts'
 import { whenIdle } from '../../platform/test-database.ts'
-import { post } from '../identity/test-hub.ts'
-import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
+import { call, post } from '../identity/test-hub.ts'
+import {
+  companyForVersions,
+  folder,
+  listed,
+  MIGRATION,
+  send,
+  versionNumbered,
+} from './test-versions.ts'
 
 test('reparo: Worker que falta e esquema, logins e migrações da versão no ar voltam; "enviando" vencida falha', async (t) => {
-  const { hub, ana, owner, projectId, versions, projects } = await companyForVersions(t)
-  const live = Object(Object((await send(hub, ana, versions)).json()).version)
+  const subject = await companyForVersions(t)
+  const { hub, ana, owner, projectId, projects } = subject
+  const live = await versionNumbered(subject, (await send(subject, ana)).number)
   // Cloudflare lost the Worker, and a restore of the company's database took the app's schema.
   await hub.cloudflare.cloudflare.remove(`v-${live.id}`)
   const id = ProjectId.parse(projectId)
@@ -63,8 +73,9 @@ test('reparo: Worker que falta e esquema, logins e migrações da versão no ar 
 })
 
 test('reparo: os logins da etapa 9 ganham os prazos da chamada só no login de execução', async (t) => {
-  const { hub, ana, owner, projectId, versions } = await companyForVersions(t)
-  assert.equal((await send(hub, ana, versions)).statusCode, 201)
+  const subject = await companyForVersions(t)
+  const { hub, ana, owner, projectId } = subject
+  assert.equal((await send(subject, ana)).preview?.state, 'ready')
   const id = ProjectId.parse(projectId)
   const { runLogin, migrateLogin } = appLogin(id)
   const [run, migrate] = [runLogin, migrateLogin].map((login) => `"${login}"`)
@@ -86,17 +97,19 @@ test('reparo: os logins da etapa 9 ganham os prazos da chamada só no login de e
 })
 
 test('reparo: Cloudflare fora, a empresa fica para a próxima e o Hub segue', async (t) => {
-  const { hub, ana, versions } = await companyForVersions(t)
-  await send(hub, ana, versions)
+  const subject = await companyForVersions(t)
+  const { hub, ana } = subject
+  await send(subject, ana)
   hub.cloudflare.script('exists', 'NO_ANSWER')
   await hub.repair()
-  const sent = await send(hub, ana, versions, folder({}, '#6b2fa3'))
-  assert.equal(sent.statusCode, 201)
+  const sent = await send(subject, ana, folder({}, '#6b2fa3'))
+  assert.deepEqual(sent.preview, { state: 'ready', number: 2 })
 })
 
 test('reparo: o Projeto marcado para apagar enquanto o reparo o refaz perde o que ele refez', async (t) => {
-  const { hub, ana, owner, projectId, versions } = await companyForVersions(t)
-  await send(hub, ana, versions)
+  const subject = await companyForVersions(t)
+  const { hub, ana, owner, projectId } = subject
+  await send(subject, ana)
   const id = ProjectId.parse(projectId)
   assert.equal(await forgetApp(owner, id, hub.config.appLoginKey), 'DONE')
   const held = hub.postgres.holdMigrate()
@@ -109,4 +122,43 @@ test('reparo: o Projeto marcado para apagar enquanto o reparo o refaz perde o qu
   assert.deepEqual(hub.cloudflare.workers(), [])
   assert.deepEqual(await appLoginsOf(owner, id), [])
   assert.deepEqual((await appTablesOf(owner, id)).tables, [])
+})
+
+test('reparo: o reparo poda as versões marcadas, as enviadas à mão que a migração da 14.1 marca (36)', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, projects, projectId } = subject
+  await send(subject, ana)
+  await send(subject, ana, folder({}, '#6b2fa3'))
+  // The migration's own statements, as `migrate` runs them on the installation's database.
+  const migration = readFileSync(
+    join(
+      import.meta.dirname,
+      '../../../migrations/20261026004659_e141_hand_sent_versions/migration.sql',
+    ),
+    'utf8',
+  )
+  for (const statement of migration.split('--> statement-breakpoint')) {
+    await hub.test.asOwner(statement)
+  }
+  async function appVersion() {
+    return Object((await call(hub, ana, 'GET', `${projects}/${projectId}`)).json()).project
+      .appVersion
+  }
+  assert.equal(await appVersion(), null)
+  assert.deepEqual(await listed(subject), [])
+  assert.equal(hub.cloudflare.workers().length, 2, 'the Workers wait for the repair')
+  await hub.repair()
+  assert.deepEqual(hub.cloudflare.workers(), [])
+  const left = await hub.test.asOwner(
+    `select (select count(*)::int from apps.app_version) as versions,
+            (select count(*)::int from apps.version_file) as files,
+            (select count(*)::int from apps.blob) as blobs`,
+  )
+  assert.deepEqual(left, [{ versions: 0, files: 0, blobs: 0 }])
+  // The Builder's next version goes on the air under its own number.
+  assert.deepEqual((await send(subject, ana, folder({}, '#111111'))).preview, {
+    state: 'ready',
+    number: 3,
+  })
+  assert.equal(await appVersion(), 3)
 })

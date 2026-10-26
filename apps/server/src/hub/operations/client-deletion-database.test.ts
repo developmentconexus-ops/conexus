@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
-import { send } from '../apps/test-versions.ts'
+import { readyForVersions, send } from '../apps/test-versions.ts'
 import type { Hub, Person } from '../identity/test-hub.ts'
 import {
   ANA,
@@ -220,8 +220,10 @@ test('com apps: os Workers saem antes do banco no Neon; Cloudflare fora deixa DE
     'select id from projects.project where company_id = $1',
     [a.companyId],
   )
-  const versions = `/api/companies/${a.companyId}/projects/${project?.id}/versions`
-  assert.equal((await send(hub, davi, versions)).statusCode, 201)
+  await readyForVersions(t, hub, davi, a.companyId)
+  const pedidos = { t, hub, projects: `/api/companies/${a.companyId}/projects` }
+  const sent = await send({ ...pedidos, projectId: String(project?.id) }, davi)
+  assert.equal(sent.preview?.state, 'ready')
   hub.cloudflare.script('remove', 'NO_ANSWER')
   const pending = await call(hub, ana, 'DELETE', a.url, a.body)
   assert.deepEqual([pending.statusCode, codeOf(pending)], [503, 'CLIENT_DELETION_PENDING'])
@@ -246,13 +248,15 @@ test('com apps: um envio com a trava deixa DELETING; ele vê a marca e para, e a
     'select id from projects.project where company_id = $1',
     [a.companyId],
   )
+  await readyForVersions(t, hub, davi, a.companyId)
+  const pedidos = { t, hub, projects: `/api/companies/${a.companyId}/projects` }
   const held = hub.cloudflare.holdUpload()
-  const sending = send(hub, davi, `/api/companies/${a.companyId}/projects/${project?.id}/versions`)
+  const sending = send({ ...pedidos, projectId: String(project?.id) }, davi)
   await held.arrived
   const pending = await call(hub, ana, 'DELETE', a.url, a.body)
   assert.deepEqual([pending.statusCode, codeOf(pending)], [503, 'CLIENT_DELETION_PENDING'])
   held.release()
-  assert.equal((await sending).statusCode, 404)
+  assert.equal((await sending).preview, undefined)
   assert.equal((await call(hub, ana, 'DELETE', a.url, a.body)).statusCode, 204)
   assert.deepEqual(hub.cloudflare.workers(), [])
   assert.deepEqual(await rows(hub, a.companyId), GONE)

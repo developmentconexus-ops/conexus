@@ -13,14 +13,16 @@ import { Lens, Section } from './search.ts'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
 
-/** Versões are read and sent by those the Hub lets manage them; the others are told who can. */
+/** Versões are read and put back by those the Hub lets manage them; the others are told who can. */
 function VersionsSection() {
   const { companyId, projectId } = route.useParams()
   const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   return project.mayManageVersions ? (
     <Versions companyId={companyId} projectId={projectId} />
   ) : (
-    <p className="text-text-2">Só o dono ou quem administra a empresa vê e envia as versões.</p>
+    <p className="text-text-2">
+      Só o dono ou quem administra a empresa vê as versões e volta para uma delas.
+    </p>
   )
 }
 

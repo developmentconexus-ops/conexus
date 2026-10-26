@@ -6,7 +6,7 @@ import { queued, TEST_ORIGIN, withOwnerLock } from '../../platform/test-database
 import type { Hub, Person } from '../identity/test-hub.ts'
 import { call, codeOf, personOn, post } from '../identity/test-hub.ts'
 import { browser, companyWithApps, ESTOQUE, handoff, openPath, PEDIDOS } from './test-handoff.ts'
-import { companyForVersions, send } from './test-versions.ts'
+import { companyForVersions, send, versionNumbered } from './test-versions.ts'
 
 function redeem(hub: Hub, body: { host: string; code: string; binding: string }) {
   return hub.edge.inject({
@@ -222,12 +222,13 @@ test('borda: as rotas do despachante só na porta de borda, as do Hub só na pú
 })
 
 test('checagem com versão no ar: o Worker dela e o banco do login de execução; sem versão, o exemplo', async (t) => {
-  const { hub, ana, bruno, projectId, versions, owner } = await companyForVersions(t)
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, projectId, owner } = subject
   const session = await sessionOf(hub, bruno, PEDIDOS)
   assert.deepEqual(Object(Object(await check(hub, PEDIDOS, session)).json()).version, {
     example: true,
   })
-  const version = Object(Object(await send(hub, ana, versions)).json()).version
+  const version = await versionNumbered(subject, (await send(subject, ana)).number)
   const checked = Object(Object(await check(hub, PEDIDOS, session)).json())
   assert.deepEqual(checked.version, { worker: `v-${version.id}` })
   assert.deepEqual(checked.database, {

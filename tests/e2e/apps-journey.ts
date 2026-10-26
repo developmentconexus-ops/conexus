@@ -1,11 +1,17 @@
 // The apps' journeys of steps 9 and 10 share their scenario: the real Hub, Empresa A with Ana its
-// owner and Carla a member, Pedidos with its company database on the test server, and the steps
-// of sending a folder and opening the app (testing T5, T6, T14).
+// owner and Carla a member, its Builder ready, Pedidos with its company database on the test
+// server, and the steps of a Builder turn that sends a packed app and of opening the app (testing
+// T5, T6, T14). Anthropic is a double that writes what it is asked, and the machine's check program
+// is the one thing faked beyond the providers: it passes and leaves the packed app as the version.
 import assert from 'node:assert/strict'
+import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
-import type { BrowserContext, Page } from 'playwright-core'
-import { chromium } from 'playwright-core'
+import type { CheckReport } from '@conexus/app/check'
+import { STEP_NAMES } from '@conexus/app/check'
+import type { BrowserContext } from 'playwright-core'
+import { ASK, versionWriting } from '../../apps/server/src/hub/apps/test-versions.ts'
+import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../apps/server/src/platform/test-company-postgres.ts'
 import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import {
@@ -17,8 +23,9 @@ import {
   namespace,
   visitApp,
 } from './apps-edge.ts'
+import { ask, chooseDefaultModel, KEYS, transcriptOf } from './conversation-journey.ts'
+import { hubWindow, openConversation } from './hub-window.ts'
 import {
-  closeBrowser,
   createProject,
   firstEntry,
   liveHub,
@@ -26,10 +33,9 @@ import {
   PASSWORD,
   personWithPassword,
   plantCompany,
-  reachHub,
   signIn,
-  watchConsole,
 } from './live-hub.ts'
+import { linkKey } from './model-accounts-journey.ts'
 
 const ANA = { name: 'Ana Lima', email: 'ana@example.test' }
 export const CARLA = { name: 'Carla Dias', email: 'carla@example.test' }
@@ -41,37 +47,45 @@ export const RECADO = 'Ligar para o fornecedor'
 
 /** The real Hub, Empresa A with Ana its owner and Carla a member, and a browser window for each. */
 export async function scenario(t: TestContext) {
+  plantAnthropic(t, versionWriting())
   const cloudflare = await cloudflareServer(t)
   const hub = await liveHub(t, 'http://127.0.0.1:9/unused', cloudflare.url)
-  await plantCompany(
+  const companyId = await plantCompany(
     hub.database,
     await personWithPassword(hub.database, ANA),
     await personWithPassword(hub.database, CARLA),
   )
-  const browser = await chromium.launch()
-  t.after(() => closeBrowser(browser))
   const problems: string[] = []
+  const closers: (() => Promise<void>)[] = []
+  t.after(async () => {
+    for (const close of closers) await close()
+  })
   async function window(ip: string) {
-    const context = await browser.newContext()
-    await reachHub(context, hub.port, ip)
-    const page = await context.newPage()
-    watchConsole(page, problems)
-    return { context, page }
+    const page = await hubWindow(closers, hub.port, ip, problems)
+    return { context: page.context(), page }
   }
   const owner = await window(OWNER_IP)
   const member = await window('203.0.113.10')
-  return { t, hub, cloudflare, owner, member, problems }
+  return { t, hub, cloudflare, companyId, owner, member, problems }
 }
 
 export type Scenario = Awaited<ReturnType<typeof scenario>>
 export type Door = Parameters<typeof visitApp>[0]
 
-/** Ana creates Pedidos; its company database is then one on the test server, which `db` reaches. */
+/**
+ * Ana links Anthropic and picks the default model, then creates Pedidos; its company database is
+ * then one on the test server, which `db` reaches.
+ */
 export async function pedidosOf(s: Scenario) {
   const { page } = s.owner
   await page.goto(`${TEST_ORIGIN}/`)
   await signIn(page, ANA.email, PASSWORD)
   await firstEntry(page)
+  await page.goto(`${TEST_ORIGIN}/companies/${s.companyId}/settings/model-accounts`)
+  await linkKey(page, 'Time 1', KEYS.first)
+  await page.getByText('Time 1 · chave …aB1c · ligada').first().waitFor()
+  await chooseDefaultModel(page, s.companyId)
+  await page.goto(`${TEST_ORIGIN}/companies/${s.companyId}`)
   await createProject(page, 'Pedidos')
   await page.getByRole('heading', { name: 'Pedidos', exact: true }).waitFor()
   await page.getByRole('tab', { name: 'Prévia' }).waitFor()
@@ -92,11 +106,41 @@ export async function pedidosOf(s: Scenario) {
   return { url, door, companyDatabase }
 }
 
-export async function sendFolder(page: Page, settings: string, folder: string) {
-  await page.goto(settings)
-  const chooser = page.waitForEvent('filechooser')
-  await page.getByRole('button', { name: 'Enviar versão' }).click()
-  await (await chooser).setFiles(join(FOLDERS, folder))
+const PASSED: CheckReport = {
+  ok: true,
+  steps: STEP_NAMES.map((name) => ({ name, state: 'passed', problems: [] })),
+}
+
+/**
+ * Ana asks the Builder for a version on a new conversation of Pedidos; the machine's check passes
+ * and leaves the packed `folder` where the template's check leaves the version, and the end of the
+ * turn sends it. Returns once the conversation says whether it reached the app.
+ */
+export async function builderSends(s: Scenario, pedidos: string, folder: string) {
+  const machine = s.hub.machineFolder
+  mkdirSync(machine, { recursive: true })
+  writeFileSync(join(machine, 'check-passed.json'), JSON.stringify(PASSED))
+  const program = join(machine, 'check')
+  writeFileSync(
+    program,
+    [
+      '#!/bin/sh',
+      // Called as `check --root <app folder>`.
+      'out="$2/node_modules/.conexus/version"',
+      'rm -rf "$out" && mkdir -p "$(dirname "$out")"',
+      `cp -r '${join(FOLDERS, folder)}' "$out"`,
+      `cat '${machine}/check-passed.json'`,
+    ].join('\n'),
+  )
+  chmodSync(program, 0o755)
+  const { page } = s.owner
+  await page.goto(pedidos)
+  await page.getByRole('combobox', { name: 'Conversas' }).waitFor()
+  await openConversation(page, () => page.getByRole('button', { name: 'Nova conversa' }).click())
+  await ask(page, `${ASK}${folder} ${Date.now()}`)
+  await transcriptOf(page)
+    .getByText(/^Prévia (pronta\.|não atualizada: )/)
+    .waitFor()
 }
 
 /** The Hub's handoff, asked as the browser that holds Ana's Hub session would ask it. */

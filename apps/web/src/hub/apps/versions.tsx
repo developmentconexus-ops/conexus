@@ -9,7 +9,6 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { Empty, NotFound, ReadFailure } from '../../ui/states.tsx'
 import { PutBack } from './put-back.tsx'
 import { versionsQuery } from './queries.ts'
-import { SendVersion } from './send-version.tsx'
 
 type Scope = { companyId: CompanyId; projectId: ProjectId }
 
@@ -58,18 +57,17 @@ function Loading() {
 }
 
 /**
- * The Versões of a Projeto's app, newest first, and "Enviar versão". A read that fails shows its
- * sentence and "Tentar de novo"; a Projeto the Hub does not find is the not-found page.
+ * The Versões of a Projeto's app, newest first, each under the number the Builder saved it as. A
+ * read that fails shows its sentence and "Tentar de novo"; a Projeto the Hub does not find is the
+ * not-found page.
  */
 export function Versions(scope: Scope) {
   const read = useQuery(versionsQuery(scope.companyId, scope.projectId))
   const [stale, setStale] = useState<string>()
-  const [picking, setPicking] = useState(false)
   if (read.error instanceof HubFailure && read.error.code === 'NOT_FOUND') return <NotFound />
   return (
     <section className="flex w-full max-w-column flex-col gap-lg">
       <SectionTitle>Versões</SectionTitle>
-      <SendVersion {...scope} onPicking={setPicking} />
       {stale !== undefined && (
         <p role="alert" className="text-danger">
           {stale}
@@ -79,8 +77,11 @@ export function Versions(scope: Scope) {
       {read.isError && (
         <ReadFailure text={sentenceOf(read.error)} onRetry={() => void read.refetch()} />
       )}
-      {read.data?.versions.length === 0 && !picking && (
-        <Empty>Nenhuma versão enviada. O endereço mostra o app de exemplo.</Empty>
+      {read.data?.versions.length === 0 && (
+        <Empty>
+          Nenhuma versão foi ao app ainda. Cada versão do Builder que monta aparece aqui; até lá, o
+          endereço mostra o app de exemplo.
+        </Empty>
       )}
       {read.data !== undefined && read.data.versions.length > 0 && (
         <List>

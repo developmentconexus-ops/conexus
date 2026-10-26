@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { APP_LIMITS, Manifest, versionFiles } from '@conexus/app-contract'
 import type { AppVersion, CompanyId, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
 import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
-import { and, desc, eq, inArray, max, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLOUDFLARE_DEADLINE_MS } from '../../platform/cloudflare.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
@@ -153,34 +153,14 @@ export async function failVersion(
     .where(and(eq(app.projectId, input.projectId), eq(app.sendingVersionId, input.versionId)))
 }
 
-/**
- * The version this attempt already sent: the same folder answers as it did, another folder under
- * the same key is another request (code C37). One pruned since is gone, so the key sends anew.
- */
-async function replayOf(tx: CommandTx, input: OfProject & { attemptKey: string; digest: string }) {
-  const [row] = await tx
-    .select({ ...VERSION_VIEW, digest: appVersion.digest })
-    .from(appVersion)
-    .where(
-      and(eq(appVersion.projectId, input.projectId), eq(appVersion.attemptKey, input.attemptKey)),
-    )
-  if (row === undefined) return undefined
-  if (row.digest !== input.digest) throw new Failure('IDEMPOTENCY_CONFLICT')
-  // A version being pruned still holds its key for the moment the prune takes.
-  if (row.state === 'sending' || row.state === 'pruning') throw new Failure('APP_VERSION_SENDING')
-  if (row.state === 'failed') throw new Failure(AppVersionFailure.parse(row.failure))
-  return row
-}
-
-export type Stored =
-  | { kind: 'REPLAY'; version: AppVersion }
-  | { kind: 'NEW'; version: AppVersion; databaseReady: boolean }
+export type Stored = { version: AppVersion; databaseReady: boolean }
 
 /**
- * Stores a version as being sent and takes the Projeto's claim, in the caller's transaction, for
- * the screen now and the Builder in step 14. A live claim refuses; one past its time fails the send
- * that held it. Each file's bytes are kept once per company, and the upsert holds an existing blob
- * against a prune (decision 0012).
+ * Stores a version as being sent, under the number the Builder saved it as, and takes the
+ * Projeto's claim, in the caller's transaction. A live claim refuses; one past its time fails the
+ * send that held it. A number or a run the Projeto already has is refused by its key, never
+ * relabelled or replayed. Each file's bytes are kept once per company, and the upsert holds an
+ * existing blob against a prune (decision 0012).
  */
 export async function storeAppVersion(input: {
   tx: CommandTx
@@ -188,17 +168,10 @@ export async function storeAppVersion(input: {
   sentBy: PersonId
   received: ReceivedVersion
   attemptKey: string
+  number: number
 }): Promise<Stored> {
   const { tx, ids, received } = input
   const held = await lockApp(tx, ids)
-  const replay = await replayOf(tx, {
-    ...ids,
-    attemptKey: input.attemptKey,
-    digest: received.digest,
-  })
-  if (replay !== undefined) {
-    return { kind: 'REPLAY', version: versionView(replay, held.liveVersionId) }
-  }
   if (held.sendingVersionId !== null) {
     if (held.held) throw new Failure('APP_VERSION_SENDING')
     await failVersion(tx, {
@@ -215,16 +188,12 @@ export async function storeAppVersion(input: {
       .values({ companyId: ids.companyId, sha256, bytes })
       .onConflictDoUpdate({ target: [blob.companyId, blob.sha256], set: { sha256 } })
   }
-  const [last] = await tx
-    .select({ number: max(appVersion.number) })
-    .from(appVersion)
-    .where(eq(appVersion.projectId, ids.projectId))
   const [row] = await tx
     .insert(appVersion)
     .values({
       id: AppVersionId.parse(randomBytes(16).toString('hex')),
       ...ids,
-      number: (last?.number ?? 0) + 1,
+      number: input.number,
       state: 'sending',
       manifest: received.manifest,
       digest: received.digest,
@@ -249,7 +218,6 @@ export async function storeAppVersion(input: {
     .set({ sendingVersionId: row.id, claimedUntil: CLAIM_UNTIL })
     .where(eq(app.projectId, ids.projectId))
   return {
-    kind: 'NEW',
     version: versionView(row, held.liveVersionId),
     databaseReady: held.databaseReady,
   }

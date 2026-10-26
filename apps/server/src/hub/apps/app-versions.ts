@@ -23,7 +23,7 @@ export type BuilderVersion = {
   projectId: ProjectId
   personId: PersonId
   runId: RunId
-  /** The number the turn saved it as, which the conversation names it by. */
+  /** The number the turn saved it as, which the conversation and the Versões tab name it by. */
   number: number
   folder: { manifest: unknown; files: readonly VersionFileInput[] }
 }
@@ -40,7 +40,7 @@ async function sendFromBuilder(
   const { companyId, projectId, personId, number, folder } = input
   try {
     await sendVersion(deps, {
-      ...{ companyId, projectId, personId, by: 'builder', ...folder },
+      ...{ companyId, projectId, personId, number, ...folder },
       attemptKey: input.runId,
     })
     return { state: 'ready', number }
@@ -57,7 +57,6 @@ async function sendFromBuilder(
 /** What the routes reach a Projeto's versions through, each act bound to its dependencies. */
 export function createAppVersions(deps: SendDeps) {
   return Object.freeze({
-    send: (input: Parameters<typeof sendVersion>[1]) => sendVersion(deps, input),
     sendFromBuilder: (input: BuilderVersion) => sendFromBuilder(deps, input),
     setLive: (input: Parameters<typeof setLiveVersion>[1]) => setLiveVersion(deps, input),
     list: (input: OfProject) =>
