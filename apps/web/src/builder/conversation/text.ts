@@ -1,5 +1,7 @@
 import type { ConversationSummary } from '@conexus/hub-api'
 import { dayAndHour } from '../../platform/dates.ts'
+import type { Refusal } from './attachments.ts'
+import { LIMITS } from './attachments.ts'
 
 export const WORKING = 'Builder trabalhando'
 export const STILL_WORKING = 'Ainda trabalhando…'
@@ -12,6 +14,19 @@ export const NO_SECRETS = 'Não cole senhas ou chaves na conversa.'
 export const UNCONFIRMED_CREATION = 'Não confirmamos a criação da conversa. Tente de novo.'
 export const UNCONFIRMED_MODEL =
   'Não confirmamos a troca do modelo. Confira o modelo e tente de novo.'
+
+/** Megabytes of file the route takes for a data URL's characters: base64 spends 4 for every 3 bytes. */
+function megabytesOf(characters: number): string {
+  return new Intl.NumberFormat('pt-BR').format((characters * 3) / 4 / 1024 / 1024)
+}
+
+/** Why the composer left a file out, said with the ceiling the hook applies. */
+export const REFUSALS: Record<Refusal, string> = {
+  'too-many': `Até ${LIMITS.files} arquivos por mensagem.`,
+  'too-large': `Este arquivo passa de ${megabytesOf(LIMITS.data)} MB.`,
+  'too-large-together': `Os arquivos passam de ${megabytesOf(LIMITS.total)} MB juntos.`,
+  type: 'Este tipo de arquivo não é aceito.',
+}
 
 /** What a conversation is called until the Builder titles it: the moment it began. */
 export function titleOf(conversation: Pick<ConversationSummary, 'title' | 'createdAt'>): string {

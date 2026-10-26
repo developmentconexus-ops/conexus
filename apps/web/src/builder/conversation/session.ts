@@ -3,6 +3,7 @@ import { BUILDER_CONTROLLER, BUILDER_ROUTES } from '@conexus/hub-api'
 import type { PlanResume } from '@mastra/client-js'
 import { MastraClient, MastraClientError } from '@mastra/client-js'
 import { failureOfProblem, HubFailure, hubClientFetch } from '../../platform/hub.ts'
+import type { Outgoing } from './attachments.ts'
 
 /**
  * The conversation's session on Mastra's own routes, behind the Hub's guard (decision 0050), as the
@@ -21,7 +22,8 @@ export function sessionOf(conversationId: ConversationId) {
   const path = `/agent-controller/${BUILDER_CONTROLLER}/sessions/${conversationId}`
   return {
     session,
-    send: (content: string) => said(session.sendMessage(content)),
+    send: (outgoing: Outgoing) =>
+      said(session.sendMessage({ content: outgoing.content, files: [...outgoing.files] })),
     stop: () => said(session.abort()),
     /** The model, effort and tasks the conversation is on, as Factory UI hydrates (`session.state`). */
     state: () => said(session.state({ threadId: conversationId })),

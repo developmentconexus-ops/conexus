@@ -1,7 +1,8 @@
 import type { Task } from '@conexus/hub-api'
 import type { KnownAgentControllerEvent, MastraMessagePart } from '@mastra/client-js'
+import type { MessageFile } from './attachments.ts'
 import type { Stored, Suspended } from './messages.ts'
-import { messageOf } from './messages.ts'
+import { messageOf, sentOf } from './messages.ts'
 
 type Display = Extract<KnownAgentControllerEvent, { type: 'display_state_changed' }>['displayState']
 export type OMProgress = Display['omProgress']
@@ -9,7 +10,7 @@ type OMPhase = 'idle' | 'buffering' | 'observing' | 'reflecting'
 type MemoryFailure = 'observation' | 'reflection' | 'buffering'
 
 /** A message the person sent while the Builder worked, until the stream says Mastra read it. */
-export type Steer = { id: string; content: string }
+export type Steer = { id: string; content: string; files: readonly MessageFile[] }
 
 /** What a command in progress has said, piece by piece as Mastra sends it, and how it ended. */
 export type Running = { output: string; exit?: { code: number; success: boolean } }
@@ -174,11 +175,11 @@ function heard(state: SessionState, event: KnownAgentControllerEvent): SessionSt
   }
 }
 
-/** The words of a person's message, as its text parts say them. */
+/** The words of a person's message, without its files. */
 function wordsOf(message: Stored): string | undefined {
   const read = messageOf(message)
   if (read?.role !== 'person') return undefined
-  return read.parts.flatMap((part) => (part.type === 'text' ? [part.text] : [])).join('\n')
+  return sentOf(read).text
 }
 
 type Invocation = Extract<MastraMessagePart, { type: 'tool-invocation' }>['toolInvocation']

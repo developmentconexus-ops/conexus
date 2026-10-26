@@ -1,12 +1,22 @@
-import { ArrowUpIcon, SquareIcon } from 'lucide-react'
-import type { KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
+import { ArrowUpIcon, PlusIcon, SquareIcon, XIcon } from 'lucide-react'
+import type { ClipboardEvent, DragEvent, KeyboardEvent, ReactNode, Ref, SubmitEvent } from 'react'
 import { useRef } from 'react'
+import { AttachmentAction, AttachmentGroup } from '../../ui/attachment.tsx'
 import { Button } from '../../ui/button.tsx'
-import { InputGroup, InputGroupAddon, InputGroupTextarea } from '../../ui/input-group.tsx'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupTextarea,
+} from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+import type { Outgoing, Refusal } from './attachments.ts'
+import { ACCEPT, useAttachments } from './attachments.ts'
 import type { Draft } from './draft.ts'
-import { NO_SECRETS, STEER_PLACEHOLDER } from './text.ts'
+import { chipOf } from './messages.ts'
+import { FileChip } from './person-turn.tsx'
+import { NO_SECRETS, REFUSALS, STEER_PLACEHOLDER } from './text.ts'
 
 /** The form sticks to the bottom and clears the home indicator. */
 const FORM =
@@ -21,6 +31,83 @@ function isTouch(): boolean {
 const ROUND =
   'rounded-pill hover:bg-accent disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
 
+type Attachments = ReturnType<typeof useAttachments>
+
+/** The draft's files, each a chip with an **x** that takes it out. */
+function Attached({ attachments }: { attachments: Attachments }) {
+  if (attachments.files.length === 0) return null
+  return (
+    <InputGroupAddon align="block-start">
+      <AttachmentGroup role="group" aria-label="Arquivos anexados">
+        {attachments.files.map((file, index) => (
+          <FileChip
+            key={file.data}
+            file={chipOf(file)}
+            action={
+              <AttachmentAction
+                aria-label={`Tirar ${file.filename}`}
+                onClick={() => attachments.remove(index)}
+              >
+                <XIcon aria-hidden="true" />
+              </AttachmentAction>
+            }
+          />
+        ))}
+      </AttachmentGroup>
+    </InputGroupAddon>
+  )
+}
+
+/** The form takes files pasted or dropped on it (AI Elements `prompt-input`); pasted words stay words. */
+function droppedOn(attachments: Attachments) {
+  return {
+    onPaste: (event: ClipboardEvent<HTMLFormElement>) => {
+      if (event.clipboardData.files.length === 0) return
+      event.preventDefault()
+      void attachments.add(Array.from(event.clipboardData.files))
+    },
+    onDragOver: (event: DragEvent<HTMLFormElement>) => event.preventDefault(),
+    onDrop: (event: DragEvent<HTMLFormElement>) => {
+      event.preventDefault()
+      void attachments.add(Array.from(event.dataTransfer.files))
+    },
+  }
+}
+
+/** Why a file was left out, above the box, until the next file added or taken out. */
+function Refused({ refusal }: { refusal: Refusal | null }) {
+  if (refusal === null) return null
+  return (
+    <p role="alert" className="text-fact text-danger">
+      {REFUSALS[refusal]}
+    </p>
+  )
+}
+
+/** **+**: the browser's file picker, limited to the types the Builder reads. */
+function Attach({ attachments }: { attachments: Attachments }) {
+  const picker = useRef<HTMLInputElement>(null)
+  return (
+    <>
+      <InputGroupButton aria-label="Anexar arquivos" onClick={() => picker.current?.click()}>
+        <PlusIcon aria-hidden="true" />
+      </InputGroupButton>
+      <input
+        ref={picker}
+        type="file"
+        multiple
+        accept={ACCEPT}
+        hidden
+        onChange={(event) => {
+          const picked = Array.from(event.currentTarget.files ?? [])
+          event.currentTarget.value = ''
+          void attachments.add(picked)
+        }}
+      />
+    </>
+  )
+}
+
 /**
  * The field and its one button, in a single row of actions at every width: the memory ring, the
  * model's button and the round button at the end, which is **Parar** while the Builder answers and
@@ -28,15 +115,17 @@ const ROUND =
  * while an input method is composing a character (design V30); on touch Return breaks the line and
  * only the button sends. While the Builder answers the field stays open: Enter steers the running
  * turn, Esc stops, and focus goes back to the field (design V31). What is typed is kept per
- * conversation, by the draft the screen holds. Under the box, on a computer, one small line says not
- * to paste secrets (founder, 2026-10-26).
+ * conversation, by the draft the screen holds, with the files: picked by **+**, pasted or dropped on
+ * the form, each a chip above the text. A send takes text and files out of the box at its start and
+ * gives them back if refused. Under the box, on a computer, one small line says not to paste secrets
+ * (founder, 2026-10-26).
  */
 export function Composer(props: {
   answering: boolean
   canSend: boolean
   draft: Draft
   field: Ref<HTMLTextAreaElement>
-  onSend: (content: string) => Promise<boolean>
+  onSend: (outgoing: Outgoing) => Promise<boolean>
   onStop: () => void
   picker: ReactNode
   taskPanel?: ReactNode
@@ -45,8 +134,8 @@ export function Composer(props: {
 }) {
   const { draft } = props
   const phone = useIsMobile()
-  const content = draft.text
-  const empty = content.trim() === ''
+  const attachments = useAttachments(draft)
+  const empty = draft.text.trim() === '' && attachments.files.length === 0
   const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
 
   const sending = useRef(false)
@@ -55,8 +144,9 @@ export function Composer(props: {
   async function send() {
     if (empty || !props.canSend || sending.current) return
     sending.current = true
+    const outgoing = draft.take()
     try {
-      if (await props.onSend(content)) draft.clear(content)
+      if (!(await props.onSend(outgoing))) draft.restore(outgoing)
     } finally {
       sending.current = false
     }
@@ -80,8 +170,9 @@ export function Composer(props: {
   }
 
   return (
-    <form onSubmit={submit} className={FORM}>
+    <form onSubmit={submit} {...droppedOn(attachments)} className={FORM}>
       {props.taskPanel}
+      <Refused refusal={attachments.refusal} />
       <InputGroup
         data-busy={props.answering || undefined}
         className="rounded-composer data-busy:working-ring"
@@ -89,10 +180,11 @@ export function Composer(props: {
         <Label htmlFor="message" className="sr-only">
           Mensagem para o Builder
         </Label>
+        <Attached attachments={attachments} />
         <InputGroupTextarea
           id="message"
           ref={props.field}
-          value={content}
+          value={draft.text}
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}
@@ -100,6 +192,7 @@ export function Composer(props: {
         <InputGroupAddon align="block-end" className="flex-nowrap justify-end gap-xs">
           {props.memory && <div className="me-auto">{props.memory}</div>}
           {props.picker}
+          <Attach attachments={attachments} />
           <Button
             type={action === 'stop' ? 'button' : 'submit'}
             variant="primary"

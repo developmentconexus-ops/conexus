@@ -1,7 +1,8 @@
 import { FAILURES } from '@conexus/hub-api'
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { createMemoryHistory } from '@tanstack/react-router'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse } from 'msw'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import {
   AGENT_START,
@@ -28,6 +29,14 @@ import { UNCONFIRMED_SEND } from './text.ts'
 const { open, openConversation } = screens(hubServer())
 
 afterEach(() => sessionStorage.clear())
+
+const PDF = new File(['%PDF-1.4'], 'tabela.pdf', { type: 'application/pdf' })
+
+function attach(file: File) {
+  const picker = document.querySelector('input[type=file]')
+  if (picker === null) throw new Error('no file picker')
+  fireEvent.change(picker, { target: { files: [file] } })
+}
 
 function box() {
   return screen.getByRole('combobox', { name: 'Conversas' })
@@ -111,9 +120,9 @@ test('trocar de conversa e voltar guarda o rascunho de cada uma', async () => {
   )
 })
 
-test('uma mensagem enviada cujo envio termina depois da troca de conversa não volta ao campo', async () => {
+test('A→B→A não repete a mensagem: o envio tira texto e arquivos da caixa no começo (#167, 12)', async () => {
   const gate = Promise.withResolvers<void>()
-  const { sent } = open(
+  const { sent, conexus } = open(
     view({
       conversations: [
         conversationOf({ id: FIRST, title: 'Primeira' }),
@@ -128,16 +137,43 @@ test('uma mensagem enviada cujo envio termina depois da troca de conversa não v
       },
     },
   )
-  say(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }), 'já enviada')
+  const field = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  attach(PDF)
+  await screen.findByRole('button', { name: 'Tirar tabela.pdf' })
+  say(field, 'já enviada')
   await waitFor(() => expect(sent.length).toBe(1))
   await pick('Segunda')
   await waitFor(() => expect(box()).toHaveProperty('value', 'Segunda'))
-  gate.resolve()
-  await waitFor(() => expect(sessionStorage.getItem(`conexus-draft:${FIRST}`)).toBe(''))
   await pick('Primeira')
   await waitFor(() => expect(box()).toHaveProperty('value', 'Primeira'))
   expect(typed(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe('')
-  expect(sessionStorage.getItem(`conexus-draft:${FIRST}`)).toBe('')
+  expect(screen.queryByRole('button', { name: 'Tirar tabela.pdf' })).toBeNull()
+  gate.resolve()
+  await waitFor(() => expect(conexus.queryClient.isFetching()).toBe(0))
+  expect(typed(screen.getByRole('textbox', { name: 'Mensagem para o Builder' }))).toBe('')
+  expect(screen.queryByRole('button', { name: 'Tirar tabela.pdf' })).toBeNull()
+})
+
+test('recarregar guarda o texto e tira os arquivos (12)', async () => {
+  const conversation = conversationOf({ id: FIRST })
+  const { field } = await openConversation(conversation)
+  fireEvent.change(field, { target: { value: 'meio da frase' } })
+  attach(PDF)
+  await screen.findByRole('button', { name: 'Tirar tabela.pdf' })
+  cleanup()
+  // A reload starts the page's modules over; the tab's session storage stays.
+  vi.resetModules()
+  const page = await import('../../main.tsx')
+  render(
+    <page.Conexus
+      conexus={page.createConexus(
+        createMemoryHistory({ initialEntries: [`${PROJECT}/conversations/${FIRST}`] }),
+      )}
+    />,
+  )
+  const again = await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })
+  expect(typed(again)).toBe('meio da frase')
+  expect(screen.queryByRole('button', { name: 'Tirar tabela.pdf' })).toBeNull()
 })
 
 test('a conversa de outra pessoa abre como "não encontrado", sem rastro dela', async () => {
@@ -223,12 +259,15 @@ test('Esc durante a resposta para pelo abort do Mastra', async () => {
   await waitFor(() => expect(sent.some((one) => one.path.endsWith('/abort'))).toBe(true))
 })
 
-test('o envio que falha tira o balão e deixa o texto no campo', async () => {
+test('o envio que falha tira o balão e devolve texto e arquivos (12)', async () => {
   const { field } = await answering({ message: afterFirst(() => HttpResponse.error()) })
+  attach(PDF)
+  await screen.findByRole('button', { name: 'Tirar tabela.pdf' })
   say(field, STEER)
   expect((await screen.findByRole('alert')).textContent).toBe(UNCONFIRMED_SEND)
   expect(screen.queryByText(PENDING)).toBeNull()
   expect(typed(field)).toBe(STEER)
+  expect(screen.getByRole('button', { name: 'Tirar tabela.pdf' })).toBeTruthy()
 })
 
 test('com um cartão esperando a pessoa, Parar e Esc cancelam, e a mensagem digitada fica pendente (44, 45)', async () => {
