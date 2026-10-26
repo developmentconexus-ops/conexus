@@ -359,7 +359,7 @@ export function Home(props: { companyId: CompanyId; aside?: ReactNode; start: Re
   arquivos, grava a cópia do texto no `sessionStorage` (`pageStorage('session')`, chave
   `conexus-handoff:<conversa>`), tira o estado com `navigate({ replace: true, state: {} })` e chama
   `send`. A cópia sai quando o Hub decide (aceito, ou recusado com código e devolvido à caixa pela
-  14.3); `UNCONFIRMED` a deixa. Sem `HistoryState.handoff` e com `recovered` falso: marca
+  14.3); `UNCONFIRMED` a deixa. Sem `HistoryState.handoff`, com `handedOff` falso e `recovered` falso: marca
   `recovered`; havendo cópia, `recover(texto)` põe o texto no rascunho e a frase, e a cópia sai.
   Nunca reenvia sozinho. Um dono do texto do recarregar: `text.ts` (C26).
 - `EmptyPanel` com `HistoryState.refused`: a frase do Projeto criado sem pedido e a do código
