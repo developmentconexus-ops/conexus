@@ -7,6 +7,7 @@ import { HubFailure, writeFailureText } from '../../platform/hub.ts'
 import { Empty, NotFound } from '../../ui/states.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
 import { accountsQuery } from '../model-accounts/public.ts'
+import type { Outgoing } from './attachments.ts'
 import { Composer } from './composer.tsx'
 import type { Item } from './conversation-switch.tsx'
 import { ConversationSwitch } from './conversation-switch.tsx'
@@ -84,12 +85,12 @@ function useSending(
    * Mastra's `sendMessage` opens a run, or enters the running one, or waits on the open card: a
    * message sent while the Builder works shows pinned first, until the stream says Mastra took it.
    */
-  async function send(content: string, running: boolean): Promise<boolean> {
+  async function send(outgoing: Outgoing, running: boolean): Promise<boolean> {
     setError(undefined)
-    const steer = running ? { id: crypto.randomUUID(), content } : undefined
+    const steer = running ? { id: crypto.randomUUID(), ...outgoing } : undefined
     if (steer !== undefined) dispatch({ type: 'steer', steer })
     try {
-      await builder.send(content)
+      await builder.send(outgoing)
     } catch (failure) {
       if (steer !== undefined) dispatch({ type: 'unsteered', id: steer.id })
       if (failure instanceof HubFailure && failure.code === 'CONVERSATION_NOT_FOUND') onGone()
@@ -124,7 +125,7 @@ function PanelComposer(props: {
   state: SessionState
   draft: ReturnType<typeof useDraft>
   field: RefObject<HTMLTextAreaElement | null>
-  onSend: (content: string) => Promise<boolean>
+  onSend: (outgoing: Outgoing) => Promise<boolean>
   onStop: () => void
   onError: (error: string | undefined) => void
   canAnswer: boolean
@@ -242,7 +243,7 @@ function Screen(params: Params) {
         state={state}
         draft={draft}
         field={field}
-        onSend={(content) => send(content, state.running || waiting)}
+        onSend={(outgoing) => send(outgoing, state.running || waiting)}
         onStop={halt}
         onError={setError}
         canAnswer={canAnswer}

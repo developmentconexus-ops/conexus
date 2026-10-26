@@ -1,30 +1,59 @@
 import type { ConversationId } from '@conexus/hub-api'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { pageStorage } from '../../platform/storage.ts'
+import type { MessageFile, Outgoing } from './attachments.ts'
 
-const drafts = pageStorage('session')
+const texts = pageStorage('session')
+/** Files stay in the page's memory: storage holds ~5 MB, and a reload drops them, as in Factory. */
+const files = new Map<ConversationId, readonly MessageFile[]>()
+
+const NONE: readonly MessageFile[] = []
 
 function keyOf(conversationId: ConversationId) {
   return `conexus-draft:${conversationId}`
 }
 
+function heldOf(conversationId: ConversationId): Outgoing {
+  return {
+    content: texts.getItem(keyOf(conversationId)) ?? '',
+    files: files.get(conversationId) ?? NONE,
+  }
+}
+
 /**
- * The unsent text of a conversation, kept for this browser tab so a switch of conversation loses
- * nothing. `clear` empties it only when it still holds `sent`, the text a send took.
+ * The unsent text and files of a conversation, kept for this browser tab so a switch of
+ * conversation loses nothing. A send takes them out at its start, so the message sent never comes
+ * back to the box after a switch (#167), and a refused send gives them back.
  */
 export function useDraft(conversationId: ConversationId) {
-  const key = keyOf(conversationId)
-  const [held, setHeld] = useState({ key, text: drafts.getItem(key) ?? '' })
-  const text = held.key === key ? held.text : (drafts.getItem(key) ?? '')
-  useEffect(() => drafts.setItem(key, text), [key, text])
+  const [held, setHeld] = useState(() => ({ conversationId, ...heldOf(conversationId) }))
+  const now =
+    held.conversationId === conversationId ? held : { conversationId, ...heldOf(conversationId) }
+
+  // Written at once and not by an effect: a send can end after the composer unmounted.
+  function hold(next: Outgoing) {
+    texts.setItem(keyOf(conversationId), next.content)
+    files.set(conversationId, next.files)
+    setHeld({ conversationId, ...next })
+  }
+
   return {
-    text,
-    change: (next: string) => setHeld({ key, text: next }),
-    clear: (sent: string) => {
-      // Storage is written here too: a send can end after the composer unmounted, and the effect
-      // above no longer runs then.
-      if (drafts.getItem(key) === sent) drafts.setItem(key, '')
-      setHeld((now) => (now.key === key && now.text === sent ? { key, text: '' } : now))
+    text: now.content,
+    files: now.files,
+    change: (text: string) => hold({ content: text, files: heldOf(conversationId).files }),
+    /** Evaluated on the draft as it is when written: a file's read can end after the box changed. */
+    setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => {
+      const box = heldOf(conversationId)
+      hold({ content: box.content, files: update(box.files) })
+    },
+    take: (): Outgoing => {
+      const taken = heldOf(conversationId)
+      hold({ content: '', files: NONE })
+      return taken
+    },
+    restore: (outgoing: Outgoing) => {
+      const box = heldOf(conversationId)
+      if (box.content === '' && box.files.length === 0) hold(outgoing)
     },
   }
 }

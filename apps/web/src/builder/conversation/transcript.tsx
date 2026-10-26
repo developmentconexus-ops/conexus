@@ -11,7 +11,7 @@ import {
 } from '../../ui/message-scroller.tsx'
 import { BuilderTurn } from './builder-turn.tsx'
 import type { Message } from './messages.ts'
-import { messageOf } from './messages.ts'
+import { chipOf, messageOf } from './messages.ts'
 import { PersonBubble, PersonTurn } from './person-turn.tsx'
 import type { TranscriptItem } from './rows.ts'
 import { itemsOf } from './rows.ts'
@@ -102,7 +102,11 @@ export function Transcript(props: {
             ))}
             {props.steers.map((steer) => (
               <MessageScrollerItem key={steer.id} messageId={steer.id}>
-                <PersonBubble text={steer.content} footer={<span>{STEER_PENDING}</span>} />
+                <PersonBubble
+                  text={steer.content}
+                  files={steer.files.map(chipOf)}
+                  footer={<span>{STEER_PENDING}</span>}
+                />
               </MessageScrollerItem>
             ))}
           </MessageScrollerContent>
