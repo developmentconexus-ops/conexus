@@ -8,8 +8,8 @@ founder's words and what reopens it. The rules that follow from this design live
 ## 1. Introduction and goals
 
 A person in a company asks Conexus, in Portuguese, for a business app. An agent, the Builder,
-writes it. The app runs for the people of that company, on that company's data. One founder
-operates the whole installation, for a handful of invited companies at launch.
+writes it. The app runs for the people of that company, on its data. One founder
+operates the installation, for a handful of invited companies at launch.
 
 **Quality goals, in order.**
 
@@ -17,21 +17,21 @@ operates the whole installation, for a handful of invited companies at launch.
    data. Generated code holds no secret and reaches no network.
 2. **Recoverable by one person.** Every part can be published, rolled back and restored by the
    founder, without a terminal.
-3. **Cheap at rest.** With nobody using it, Conexus leaves its databases asleep [0009].
+3. **Cheap at rest.** Idle, Conexus leaves its databases asleep [0009].
 4. **Native first.** A platform or library feature comes before Conexus code. Each exception names
    the line where the library does less.
-5. **Readable.** One language, one tree, and walls checked by a machine, so one person and an agent
-   can find the owner of any fact [0002] [0003].
+5. **Readable.** One language, one tree, and walls checked by a machine, so a person or an agent
+   finds any fact's owner [0002] [0003].
 
 **What the product never does.** It never invents a value or simulates progress: a figure shown as
-coming from a system came from a real read, and an unknown is shown as unavailable, never as zero.
+from a system came from a real read, and an unknown is shown as unavailable, never as zero.
 It never lets the model declare work done; Conexus owns the run's state. It never overwrites someone
 else's newer work. It never shows a credential. It never publishes on its own. Conexus is not an ERP
 replacement, a database console or a drag-and-drop tool: people create by conversation, the result
 is real code, and the official data stays in the company's systems.
 
 **Who has a stake.** The founder: product owner, operator, and the person who closes each step by
-using it. Company administrators and members, who use the Hub and the apps. The agents that build
+using it. Company administrators and members, who use the Hub and apps. The agents that build
 Conexus, which read [`AGENTS.md`](../AGENTS.md), the skills and the guides.
 
 ## 3. Context and scope
@@ -59,7 +59,7 @@ flowchart LR
 | Company system | Read-only queries through a connector [0031] | Depends on the company |
 | R2 bucket | Each app's Git bundle [0051] | Request path only |
 
-Each company is told in writing, before it enters, what leaves Brazil [0032].
+Each company is told in writing, before entering, what leaves Brazil [0032].
 
 ## 5. Building blocks
 
@@ -105,7 +105,7 @@ flowchart TB
 | Company project | One schema and two logins per app and environment: one runs the app, one applies its migrations [0021] | The company's app data |
 | E2B machine | Compiles and tests the app the agent writes [0028] | Nothing after the run |
 
-**The Hub and the Builder.** One program, two modules, with written boundaries [0006]. The Builder
+**The Hub and the Builder.** One program, two modules, written boundaries [0006]. The Builder
 calls the Hub through named ports: admit, read a connector, store an app version,
 delete what belongs to a Project, a company or a person. A port may run inside the caller's
 transaction, so creating a run and delivering the app stay one step. The Hub never imports the
@@ -152,7 +152,7 @@ an earlier image runs on the migrated database ([data D6](guides/data.md)). Exce
 P6 B deleted old test companies, unrecoverably; from v0.5.1 none before v0.5.0 runs [0039]. Step 14.2 drops `run_event` (D30), `builder.run`, `companies_with_runs()`, `hub_runs`: no image before its release runs. The edge goes back first.
 
 **Restore.** Neon restores a branch to a moment: 6 hours on the free plan, 7 days on the
-paid one. Both Hub databases return to one instant. It then sets every login password
+paid. Both Hub databases return to one instant. It then sets every login password
 again, invalidates sessions; the Hub's start recreates app logins, and missing
 Workers from the built files it keeps [0043]. A company's project restores alone. Restoring is
 rehearsed where each thing is created: Hub in step 2, the Git in step 13, a company and
@@ -161,7 +161,7 @@ its Workers in steps 7 and 9, everything together in step 22.
 **The Hub reaches its database** by the direct address, because a long-lived server keeps connections. Basis: only tested so; the pooled address serves callers that do not.
 
 **Down alerts.** Cloudflare's Tunnel health notification and a free external monitor of the health
-route both e-mail the founder; the route skips the database, so a hung program is seen too
+route e-mail the founder; the route skips the database, so a hung program shows
 [0035].
 
 ## 8. Crosscutting concepts
@@ -169,7 +169,7 @@ route both e-mail the founder; the route skips the database, so a hung program i
 **The data path of an app** [0045]. The capability, inside the dispatcher, picks that app's login
 and talks to Neon's HTTP driver. `db.query(text, values)` runs one statement in a read-only
 transaction, so PostgreSQL refuses a write; `db.batch` runs every write of a call in one transaction.
-Nothing carries from one call to the next; the rule for apps is [data D28](guides/data.md). A
+Nothing carries between calls; the rule for apps is [data D28](guides/data.md). A
 call's numbers are `APP_CALL_LIMITS` [0047]: the platform cuts its CPU at 50 ms (`cpu_ms` at the
 version's upload, also set on each call) and its 51st `db` call (the call's `subRequests`, which
 counts the capability's calls). Pieces still made by hand here:
@@ -183,9 +183,11 @@ counts the capability's calls). Pieces still made by hand here:
 **Who may enter** [0013] [0014] [0015] [0016]. The Hub's session has three guarantees: no stored
 row works alone to sign in, the cookie is valid for one exact host, and the session has an idle and
 a total deadline. Who holds it, and where companies, members and invitations live, are reopened
-[0013] [0015]. Better Auth handles password, reset and the attempt limit. App sessions, the one-use
-handoff to an app and the Preview session are Conexus's own. An app session lives inside the
-Hub's, with no sign-out of its own [0041].
+[0013] [0015]. Better Auth handles password, reset and the attempt limit. App sessions and the
+one-use handoff to an app, taken at `/apps/open` in a tab or by `createAppFrameHandoff` inside the
+Prévia's frame, are Conexus's own. The Prévia has no session of its own: until Publicar it frames
+the Projeto's one app under that app's session (step 14.1). An app session lives inside the Hub's,
+with no sign-out of its own [0041].
 
 **Isolation, in layers.** Hub admission on every read and write, with the company column on every
 table and the company carried in every transaction [0012]; row policies bound each transaction's
@@ -199,8 +201,8 @@ each person; the credential is sealed with the installation key and opened only 
 program, for one attempt, by Mastra's processors.
 
 **Work that runs alone.** Scheduled jobs run on timers in the program, with a lease row naming the
-copy of the program that owns them. Basis: implemented so; accepted because queues and Redis serve
-a scale that does not exist. Every job is shaped to let the database sleep:
+copy that owns them. Basis: implemented so; accepted because queues and Redis serve
+a scale that does not exist. Every job lets the database sleep:
 
 | Job | Shape that lets the database sleep |
 | --- | --- |
@@ -209,8 +211,8 @@ a scale that does not exist. Every job is shaped to let the database sleep:
 | Idle conversations, idle machines, traces | Touch nothing when there is nothing; daily otherwise |
 | The lease | Renewed by activity, not by clock |
 
-**Shutdown.** The program waits for live Builder turns to end before it exits; an update waits
-with it.
+**Shutdown.** The program waits for live Builder turns before exiting; an update waits
+too.
 
 ## 11. Risks and technical debt
 
@@ -232,7 +234,7 @@ with it.
 | A page the Builder reads hides instructions | It strays, or leaks conversation text in an address | Accepted, founder 2026-10-19 [0050] |
 | A company's Neon project outlives its company | Company data nobody sees | Phased deletion keeps the company until its project leaves [0040] |
 
-**Debt.** Small fixes left on a brought part are listed here, one line each, with the step that
+**Debt.** Small fixes left on a brought part, one line each, with the step that
 removes them.
 
 - Until the first scheduled job, expired `auth.session` and `auth.verification` rows leave only

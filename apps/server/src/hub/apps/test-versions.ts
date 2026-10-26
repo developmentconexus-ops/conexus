@@ -181,15 +181,6 @@ type Subject = { t: TestContext; hub: Hub; projects: string; projectId: string }
 const Frame = z.looseObject({ type: z.string() })
 const Part = z.looseObject({ type: z.string(), data: z.unknown().optional() })
 
-/** The parts the stream's events said, as `test-parts.ts` reads them for the Builder's tests. */
-function partsIn(event: z.infer<typeof Frame>): z.infer<typeof Part>[] {
-  if (event.type === 'message_start') {
-    return z.array(Part).parse(Object(Object(event.message).content).parts)
-  }
-  const update = Object(event.event)
-  return event.type === 'message_update' && update.type === 'part' ? [Part.parse(update.part)] : []
-}
-
 /** The conversation's stream, Mastra's own route, until its run ends (`agent_end`). */
 async function turnOn(hub: Hub, person: Person, conversationId: string) {
   const response = await hub.app.inject({
@@ -200,8 +191,9 @@ async function turnOn(hub: Hub, person: Person, conversationId: string) {
   })
   assert.equal(response.statusCode, 200)
   const stream = response.stream()
-  const ended = Promise.withResolvers<z.infer<typeof Part>[]>()
-  const parts: z.infer<typeof Part>[] = []
+  // The messages it started, each whole: ours is told again with the same id as the end adds to it.
+  const ended = Promise.withResolvers<z.infer<typeof Part>[][]>()
+  const told: z.infer<typeof Part>[][] = []
   let buffered = ''
   stream.on('data', (chunk: Buffer) => {
     buffered += chunk.toString('utf8')
@@ -209,8 +201,10 @@ async function turnOn(hub: Hub, person: Person, conversationId: string) {
     buffered = frames.pop() ?? ''
     for (const frame of frames.filter((each) => each.startsWith('data: '))) {
       const event = Frame.parse(JSON.parse(frame.slice(6)))
-      parts.push(...partsIn(event))
-      if (event.type === 'agent_end') ended.resolve(parts)
+      if (event.type === 'message_start') {
+        told.push(z.array(Part).parse(Object(Object(event.message).content).parts))
+      }
+      if (event.type === 'agent_end') ended.resolve(told)
     }
   })
   stream.on('close', () => ended.reject(new Error('the stream closed before agent_end')))
@@ -241,7 +235,11 @@ export async function send(
   const messages = `/api/builder/agent-controller/builder/sessions/${conversationId}/messages`
   const asked = await post(hub, person, messages, { message: `${ASK}${randomUUID()}` })
   assert.equal(asked.statusCode, 200, asked.body)
-  const parts = await turn.ended
+  // The version's message as last told: the Prévia `sending` at the save, replaced by the end.
+  const parts =
+    (await turn.ended).findLast((each) =>
+      each.some((part) => part.type === 'data-conexus-version'),
+    ) ?? []
   function data(type: string) {
     return parts.flatMap((part) => (part.type === type ? [part.data] : []))
   }

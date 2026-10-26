@@ -43,18 +43,18 @@ merge.
 
 ## 3. Build and review
 
-- **L9.** Review **should** follow the approved protocol. When CI turns green at the candidate
-  commit, QA ([testing T25](testing.md)) and one reviewer start together: Claude on Opus, no builder
+- **L9.** Review **should** follow the approved protocol. Each unit goes as its own pull request;
+  with CI green, one Opus reviewer reads it and firstmate merges it. After the last unit, QA
+  ([testing T25](testing.md)) and one whole-step reviewer start together: Claude on Opus, no builder
   of the step, following [`conexus-review`](../../.agents/skills/conexus-review/SKILL.md). It walks
   the reference table row by row ([code C75](code.md)), runs the refusal criteria, reads CI logs.
   Nobody waits for QA; a review left incomplete is finished by its reviewer. QA and review findings
-  form one fix round, split into fronts that share no file, built at once, one commit each; a
-  Bloqueia that needs a contract the card lacks follows L7, then is one more front with its own
-  delta. One reader checks each front's delta for closed Bloqueia and new defects, while QA reruns
-  the screens it touched. No per-unit or per-topic review: the card's reader checks the reference
-  table before any build. A unit merges into the step branch only with its section's local tests and
-  proofs green (conexus-build step 7); CI runs once, on the step's pull request. Founder,
-  2026-10-24: "CI é só quando for fazer o PR", and one Opus review per step; 2026-10-25: "2. A".
+  form one fix round, split into fronts that share no file, built at once, one commit each, as one
+  pull request into `main`; a Bloqueia that needs a contract the card lacks follows L7, then is one
+  more front with its own delta. One reader checks each front's delta for closed Bloqueia and new
+  defects, while QA reruns the screens it touched. The card's reader checks the reference table
+  before any build. Founder, 2026-10-24: "CI é só quando for fazer o PR";
+  2026-10-25: "2. A", "3. A".
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
   deltas. Founder, 2026-10-12, firstmate's uncontested reading; 2026-10-16: "Concordo"; 2026-10-21:
   "nao podemos adicionar gargalo". Failure: rereading everything after each fix samples new rules
@@ -79,10 +79,11 @@ merge.
 
 ## 4. Merge and use
 
-- **L13.** The step's code **must** enter `main` in one merge, by firstmate, after the tests pass and
-  the review approves the same commit. Founder, 2026-10-13: "1 ok". The card's pull request, a
-  proof's decision record and the closing pull request carry documents only. The merge **must** keep
-  the commits, so a cited commit exists on `main`. [firstmate's merge script]
+- **L13.** Each unit **must** enter `main` as its own merge, by firstmate, after the tests pass and
+  its review approves the same commit. Founder, 2026-10-13: "1 ok"; 2026-10-25: "3. A". The card's
+  pull request and a proof's decision record carry documents only; the closing pull request adds
+  the founder's text review and the reviews' follow-ups, as 14.1 and 14.2 did.
+  The merge **must** keep the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the CI job reported green on that
   exact commit. After the opening commit nobody **may** push to `main` directly. Risk: nothing on

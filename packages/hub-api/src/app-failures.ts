@@ -38,45 +38,28 @@ export const APP_FAILURES = {
 
 /** The failures of sending a version and putting one back on the air (step 9). */
 export const APP_VERSION_FAILURES = {
-  APP_VERSION_INVALID: {
-    category: 'USER',
-    settles: true,
-    status: 422,
-    phrase: 'A pasta não é uma versão do Conexus.',
-    action: 'Escolha a pasta montada pelo app.',
-    actionKind: 'NONE',
-  },
-  APP_VERSION_TOO_LARGE: {
-    category: 'USER',
-    settles: true,
-    status: 413,
-    phrase: 'A versão passa de 10 MB ou de 1.000 arquivos.',
-    action: '',
-    actionKind: 'NONE',
-  },
   APP_VERSION_SENDING: {
     category: 'USER',
     settles: true,
     status: 409,
     phrase: 'Já tem uma versão sendo enviada neste Projeto.',
-    action: 'Espere ela terminar.',
+    action: 'A próxima versão do Builder sobe quando o envio terminar.',
     actionKind: 'NONE',
   },
-  // A failed version is final: "Tentar de novo" is a new send, with a new key.
   APP_VERSION_FAILED: {
     category: 'THIRD_PARTY',
     settles: true,
     status: 502,
     phrase: 'A versão não entrou.',
-    action: 'Tente de novo.',
-    actionKind: 'RETRY',
+    action: 'A próxima versão do Builder tenta de novo.',
+    actionKind: 'NONE',
   },
   APP_MIGRATION_FAILED: {
     category: 'USER',
     settles: true,
     status: 422,
     phrase: 'Uma migração do app falhou no banco.',
-    action: 'Corrija e envie de novo.',
+    action: 'Peça ao Builder para corrigir a migração.',
     actionKind: 'NONE',
   },
   // Decision 0046: Cloudflare refuses code that does not start before any migration runs.
@@ -85,7 +68,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'O app não inicia.',
-    action: 'Corrija o código e envie de novo.',
+    action: 'Peça ao Builder para corrigir; a próxima versão que montar sobe sozinha.',
     actionKind: 'NONE',
   },
   APP_MIGRATION_CHANGED: {
@@ -93,7 +76,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'Uma migração já aplicada mudou.',
-    action: 'Crie uma migração nova.',
+    action: 'Peça ao Builder uma migração nova, sem mudar a que já foi aplicada.',
     actionKind: 'NONE',
   },
   APP_VERSION_NOT_FOUND: {

@@ -227,12 +227,12 @@ export class Runs {
 
   /**
    * Closes the conversation's run and saves what it wrote, whatever ended Mastra's run: the end, a
-   * question, Parar, an error. `saved` hears the outcome as soon as it is saved; a version whose app
-   * built is then taken from the machine, and sent to the Projeto's app once the machine is let go.
-   * The Projeto stays held until the send is over. A conversation holding no run (one refused as
-   * busy, or whose end was said already), or a run a removal stopped before its save, answers
-   * `gone` and writes nothing; the workspace Mastra resolved for it is let go, and its machine was
-   * never started. A run a removal stops after its save sends no version.
+   * question, Parar, an error. `saved` hears the outcome as soon as it is saved, a version whose app
+   * built as `sending`; that one is then taken from the machine, and sent to the Projeto's app once
+   * the machine is let go. The Projeto stays held until the send is over. A conversation holding no
+   * run (one refused as busy, or whose end was said already), or a run a removal stopped before its
+   * save, answers `gone` and writes nothing; the workspace Mastra resolved for it is let go, and
+   * its machine was never started. A run a removal stops after its save sends no version.
    */
   async finish(input: {
     conversationId: ConversationId
@@ -271,12 +271,15 @@ export class Runs {
       const outcome = await saveRun(this.#context, mine)
       if (outcome === 'gone') return outcome
       const settled = { ...outcome, rounds: mine.rounds }
-      input.saved(settled)
-      if (!passed(outcome)) return settled
+      if (!passed(outcome)) {
+        input.saved(settled)
+        return settled
+      }
+      const { number } = outcome.version
+      input.saved({ ...settled, preview: { state: 'sending', number } })
       const packed = await this.#pack(mine)
       await letGo()
       if (mine.stopped) return settled
-      const { number } = outcome.version
       const preview: PreviewData | undefined = packed.ok
         ? await this.#send(mine, number, packed.value)
         : { state: 'failed', number, code: 'APP_VERSION_FAILED' }
@@ -307,10 +310,9 @@ export class Runs {
     }
   }
 
-  /** The version to the Projeto's app, told to the conversation as the machine's last phase. */
+  /** The version to the Projeto's app. */
   #send(mine: Driven, number: number, folder: VersionFolder) {
-    const { companyId, projectId, personId, conversationId, runId } = mine
-    this.#phases.get(conversationId)?.('sending')
+    const { companyId, projectId, personId, runId } = mine
     return this.#deps.send({ companyId, projectId, personId, runId, number, folder })
   }
 

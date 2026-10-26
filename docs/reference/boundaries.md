@@ -930,8 +930,9 @@ refused for its media type or its origin.
   `tool-call-suspended` chunk (`agent-controller-DO6rGsQm.js:1660-1680`) before the agent's output
   processors save the call and, last, the run's `agentic-loop` snapshot. Parar is Mastra's
   `abortRun` (`:5005-5060`): it denies the open call through `settleSuspendedToolCallsAsDenied`
-  (`:1434-1490`), which rewrites only the call as memory already holds it. A Parar in between
-  denies nothing: Mastra's late save writes the call `call`, and the card reads open after Parar.
+  (`:1434-1490`), which denies the call in the message it holds and saves it. The agent's output
+  processors save their own copy of the call afterwards (`:4220-4222` keeps the held message after
+  a suspended end), so memory reads `call` again and the card reads open after Parar.
 - **Hand-made piece.** `untilCardsKept` in `apps/server/src/builder/conversation/parked.ts`, called
   by the guard on `POST …/abort` (`guard.ts`). When the session's display state holds an open card,
   it reads `Agent.listSuspendedRuns` (the native storage view of parked runs, which Mastra's own
@@ -946,7 +947,9 @@ refused for its media type or its origin.
   Mastra guardar a chamada": Mastra's save of the open call slowed by 300 ms, Parar as the card
   arrives. Without the wait it reads `call`, 3 runs of 3; with it, `output-denied`, 3 of 3. The
   two Parar tests that flaked in CI failed 2 of 2 with the same slowed save before, and passed 6 of 6
-  after.
+  after. Past the bound, with the save slowed by 5 s, "Parar com o Mastra guardando a chamada
+  além do prazo" proves Parar answers within the bound and the turn ends aborted;
+  the card's state there is Mastra's old window.
 - **Revisit when** Mastra saves the suspension before publishing its chunk on the default engine, as
   1.80.0-alpha.3 does for the durable and evented engines (PR #27352), or Conexus runs the Builder
   on such an engine. Then `parked.ts` and its call leave.
