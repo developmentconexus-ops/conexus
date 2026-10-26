@@ -70,14 +70,20 @@ choice, including the guarantee that a database copy alone opens no Hub session.
 ## 4. Browser boundary (ASVS `V3`)
 
 - **S24.** The Hub **should** enforce its same-origin boundary in `onRequest`, before reading the
-  body or running a handler: no CORS or credentialed cross-origin API; the browser leaves only for
-  app handoff, whose one door is the `handoff` kind of S48, the single exception to same-origin.
-  Writes carry the exact `Origin` their access kind names, and API requests accept
+  body or running a handler: no CORS or credentialed cross-origin API. The browser leaves the Hub's
+  origin only for an app: at the top level through the `handoff` kind of S48, the single cross-site
+  door, and inside the Prévia's frame, whose entry page posts `{type: 'conexus-entry', host,
+  binding}` to the Hub's origin only; the Hub's page hears it only from that frame's window and the
+  app's origin, and asks for the same pass with `createAppFrameHandoff`, a `session` write on its
+  own origin. Writes carry the exact `Origin` their access kind names, and API requests accept
   `Sec-Fetch-Site` only as `same-origin` or absent, without a CSRF token. Writes refuse form-encoded
-  and multipart bodies; routes have body limits. Responses keep CSP `script-src 'self'` without
-  `unsafe-inline`, strict `Referrer-Policy` and `frame-ancestors 'none'`. Failure: a cross-site
-  authenticated GET discloses the person, or a form post bypasses admission. Existing configuration
-  and header tests stay; Fastify does not supply this policy automatically. [review]
+  and multipart bodies; routes have body limits. The Hub's responses keep CSP `script-src 'self'`
+  without `unsafe-inline`, strict `Referrer-Policy`, `frame-src` only `https://*.<apps domain>` and
+  `frame-ancestors 'none'`; an app's answers, the dispatcher's own pages included, allow only the
+  Hub's origin in `frame-ancestors`, and the dispatcher's cookies are `__Host-`, `Secure`,
+  `HttpOnly`, `SameSite=None; Partitioned` (step 14.1). Failure: a cross-site authenticated GET
+  discloses the person, or a form post bypasses admission. Existing configuration and header tests
+  stay; Fastify does not supply this policy automatically. [review]
 - **S48.** The six access kinds of [code C33](code.md) mean: `page`, a read of any address outside
   `/api/` but `/apps/open`, where an unknown one gets the screens' page with 404, shown in
   Portuguese (founder, 2026-10-15: "1 A 2. A"); `public`, an API `GET` with no session; `entry`, a write with no
