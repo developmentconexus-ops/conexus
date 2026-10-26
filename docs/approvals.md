@@ -171,6 +171,10 @@ Em 2026-10-25, sobre o achado 1 da QA da 14.1 (a conversa diz "Versão 5 guardad
 
 Cartão da etapa 14.1 aprovado em 2026-10-25 (commit 9adf9d20e2bd692db46048f1940cd691b66f772b): "A sim mas deveria ser um release ou tag não? Dcisão 2 Apaga tudo"
 
+Em 2026-10-25, sobre o achado 2 da revisão da U5 da 14.1: apagar agora o caminho do envio repetido, que ninguém chama depois da U5 (o mesmo turno de novo passa a ser recusado por `unique (project_id, attempt_key)`, sem `REPLAY`): "A"
+
+Cartão da etapa 14.1 aprovado em 2026-10-25 (commit 297a3a14a383e40c25914890043549b1e45d5100): "A"
+
 ## Etapa 14.3
 
 Em 2026-10-25, sobre o estudo de arquivos e voz no compositor do Builder: "A1 sim B1 okay, e so uma duvida e o whispr da openai que e rapido e free C sim", e depois: "B1 por agora". Arquivos (PDF, `.md`, `.txt`, imagens) entram no lançamento só na conversa com o Builder, como a etapa 14.3 depois da 14.1; voz fica no ditado do navegador por ora; uma linha sobre o ditado do Chrome passar pelo Google vai ao aviso da etapa 23.
