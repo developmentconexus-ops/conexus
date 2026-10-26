@@ -43,7 +43,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 409,
     phrase: 'Já tem uma versão sendo enviada neste Projeto.',
-    action: 'Espere ela terminar.',
+    action: 'A próxima versão do Builder sobe quando o envio terminar.',
     actionKind: 'NONE',
   },
   // A failed version is final: "Tentar de novo" is a new send, with a new key.
@@ -52,15 +52,15 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 502,
     phrase: 'A versão não entrou.',
-    action: 'Tente de novo.',
-    actionKind: 'RETRY',
+    action: 'A próxima versão do Builder tenta de novo.',
+    actionKind: 'NONE',
   },
   APP_MIGRATION_FAILED: {
     category: 'USER',
     settles: true,
     status: 422,
     phrase: 'Uma migração do app falhou no banco.',
-    action: 'Corrija e envie de novo.',
+    action: 'Peça ao Builder para corrigir a migração.',
     actionKind: 'NONE',
   },
   // Decision 0046: Cloudflare refuses code that does not start before any migration runs.
@@ -69,7 +69,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'O app não inicia.',
-    action: 'Corrija o código e envie de novo.',
+    action: 'Peça ao Builder para corrigir; a próxima versão que montar sobe sozinha.',
     actionKind: 'NONE',
   },
   APP_MIGRATION_CHANGED: {
@@ -77,7 +77,7 @@ export const APP_VERSION_FAILURES = {
     settles: true,
     status: 422,
     phrase: 'Uma migração já aplicada mudou.',
-    action: 'Crie uma migração nova.',
+    action: 'Peça ao Builder uma migração nova, sem mudar a que já foi aplicada.',
     actionKind: 'NONE',
   },
   APP_VERSION_NOT_FOUND: {
