@@ -51,6 +51,14 @@ fica igual à da conversa e ao desenho `wf-h1` que você aprovou; o nome só apa
 com o endereço ao lado. A outra forma, um campo de nome acima da caixa o tempo todo, não aparece em
 nenhuma referência nem no desenho aprovado.
 
+**Se o Projeto nasce e a conversa não.** O nome fica travado, porque o Projeto já existe. Numa falha
+de rede ou do banco, **Tentar de novo** cria só a conversa. Se o Hub recusa o modelo (sem conta, ou
+um modelo que ele não conhece), tentar de novo daria a mesma recusa: o Projeto abre sem conversa,
+com a frase "O Projeto foi criado, mas o seu pedido não saiu", a do motivo e "Comece uma Nova
+conversa e escreva de novo", como fazia o seu Conexus OS. Nesse meio, **Voltar** vira **Abrir o
+Projeto**. Quem fecha a página nesse meio também deixa o Projeto criado, sem conversa, nos cartões;
+digitar o mesmo nome de novo no Início dá "Já existe um Projeto com esse nome nesta empresa."
+
 Nenhuma linha remendo.
 
 ## As unidades
@@ -83,10 +91,10 @@ os arquivos e o rascunho são os dela.
 | 5 | U2 | Sem conta de modelo (`Defaults.start` nulo), o aviso de hoje (`NoAccount`) fica no lugar da caixa e dos exemplos | `start.test.tsx`, "sem conta, o aviso no lugar da caixa" | must |
 | 6 | U2 | **Enviar** com texto ou arquivo troca a caixa pelo pedido (texto e etiquetas) e o campo **Nome do projeto** vazio, com o foco; o endereço do app se monta enquanto se digita; nenhum pedido ao Hub sai até **Criar e começar**. **Voltar** devolve texto e arquivos à caixa | `start.test.tsx`, "enviar pede o nome, vazio, e nada sai" e "Voltar devolve o pedido à caixa" | must |
 | 7 | U2 | **Criar e começar** com nome vazio não sai: a frase no campo. Com nome: `createProject` com `{ name }` e uma chave, depois `createConversation` com `{ model, effort }` e outra chave, e a tela abre `…/projects/<p>/conversations/<c>` | `start.test.tsx`, "o nome vazio fica no campo" e "criar leva o nome, o modelo e as chaves, e abre a conversa" | must |
-| 8 | U2 | Na conversa aberta, o pedido sai **uma vez** pela rota do Mastra, com `{ content, files }` como a 14.3 manda, e a bolha da pessoa mostra texto e etiqueta | `apps/web/src/builder/conversation/panel.test.tsx`, "o pedido do Início sai uma vez ao abrir" | must |
+| 8 | U2 | Na conversa aberta, o pedido sai **uma vez** pela rota do Mastra, com `{ content, files }` como a 14.3 manda, e a bolha da pessoa mostra texto e etiqueta; renderizada dentro de `StrictMode`, como `main.tsx:79`, sai uma vez e nenhuma frase de não confirmado aparece; o endereço fica sem o estado da passagem | `apps/web/src/builder/conversation/panel.test.tsx`, "o pedido do Início sai uma vez ao abrir" e "em modo estrito, uma vez e sem aviso" | must |
 | 9 | U2 | `PROJECT_NAME_TAKEN`, `PROJECT_ADDRESS_TAKEN`, `PROJECT_NAME_NO_ADDRESS`: a frase no campo do nome, o pedido fica. `COMPANY_DATABASE_PREPARING`, `COMPANY_DATABASE_UNAVAILABLE`: a frase e **Tentar de novo**. Resposta cortada, 502 ou 503: "Não confirmamos a criação. Tente de novo.", e a nova tentativa leva as mesmas chaves | `start.test.tsx`, um caso por grupo, como os de hoje em `home.test.tsx` | must |
-| 10 | U2 | O Projeto criado e a conversa recusada (`MODEL_NO_ACCOUNT`, `MODEL_UNKNOWN`, ou resposta cortada): a frase fica no passo do nome, o nome fica travado, e **Tentar de novo** cria só a conversa; o Projeto não nasce duas vezes | `start.test.tsx`, "a conversa recusada depois do Projeto: tentar de novo não cria outro Projeto" | must |
-| 11 | U2 | O envio na conversa recusado (a frase `UNCONFIRMED_SEND` ou a do código): texto e arquivos voltam à caixa da conversa, como na 14.3; recarregar a conversa antes de o envio terminar põe o texto na caixa com "Não confirmamos o envio do seu pedido. Confira a conversa antes de enviar de novo." e não reenvia sozinho | `panel.test.tsx`, "o pedido recusado volta à caixa" e "recarregar não reenvia" | must |
+| 10 | U2 | O Projeto criado e a conversa não. Resposta cortada, 502, 503 ou `DATABASE_UNAVAILABLE`: a frase fica no passo do nome, o nome travado, e **Tentar de novo** cria só a conversa, com a mesma chave; o Projeto não nasce duas vezes; **Voltar** dá lugar a **Abrir o Projeto**, que abre a página do Projeto sem conversa. `MODEL_NO_ACCOUNT`, `MODEL_UNKNOWN` ou `EFFORT_UNSUPPORTED`: nenhuma nova tentativa; a tela abre `…/projects/<p>` e a página sem conversa mostra a frase do Projeto criado sem pedido, com a do código | `start.test.tsx`, "a conversa cortada depois do Projeto: tentar de novo não cria outro Projeto" e "o modelo recusado depois do Projeto abre o Projeto com a frase" | must |
+| 11 | U2 | O envio na conversa recusado (a frase `UNCONFIRMED_SEND` ou a do código): texto e arquivos voltam à caixa da conversa, como na 14.3; recarregar a conversa antes de o envio terminar (a página aberta sem o estado da passagem e com a cópia no `sessionStorage`) põe o texto na caixa com "Não confirmamos o envio do seu pedido. Confira a conversa antes de enviar de novo." e não reenvia sozinho; a cópia some depois de lida | `panel.test.tsx`, "o pedido recusado volta à caixa" e "recarregar não reenvia" | must |
 | 12 | U2 | O rascunho do Início guarda o texto na aba por empresa; sair e voltar ao Início o devolve; um envio que abriu a conversa o esvazia | `start.test.tsx`, "o rascunho do Início volta e some depois de criar" | must |
 | 13 | U2 | A empresa que o Hub não acha ao criar: a página de "não encontrado", como hoje | `start.test.tsx`, "Criar numa empresa que o Hub já não acha" | must |
 | 14 | U3 | O passo 4 de 4 mostra "O que vamos construir primeiro?", a mesma caixa, os exemplos e **Ir para o início sem pedir nada**; criar abre a conversa como no Início; o link abre o Início | `apps/web/src/hub/identity/welcome-steps.test.tsx`, "Passo 4: a caixa cria e abre a conversa" e "Passo 4: Ir para o início sem pedir nada" | must |
@@ -98,7 +106,7 @@ os arquivos e o rascunho são os dela.
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Início, caixa (U2) | a caixa com o foco, "Descreva o app que você quer", três exemplos | **Enviar** desabilitado, como na 14.3 | a página espera os Projetos, como hoje; a caixa espera `accountsQuery` | a leitura das contas falha: a página de falha da área, com **Tentar de novo** (W34) | a empresa: a página de "não encontrado" | o membro vê a mesma caixa e cria (`createProject` é de membro, `admission.ts:43`); sem o cartão de preparo | sem conta de modelo: o aviso `NoAccount` no lugar da caixa e dos exemplos |
-| Início, passo do nome (U2) | o pedido, o campo vazio com o foco, **Criar e começar**, **Voltar** | nome vazio: a frase no campo, nada sai | "Criando…"; sem banco da empresa: "Preparando o banco da empresa…" | a frase do código no campo do nome ou no alerta; resposta cortada: "Não confirmamos a criação. Tente de novo." | a empresa: a página de "não encontrado" | — | conversa recusada depois do Projeto: a frase, o nome travado, **Tentar de novo** |
+| Início, passo do nome (U2) | o pedido, o campo vazio com o foco, **Criar e começar**, **Voltar** | nome vazio: a frase no campo, nada sai | "Criando…"; sem banco da empresa: "Preparando o banco da empresa…" | a frase do código no campo do nome ou no alerta; resposta cortada: "Não confirmamos a criação. Tente de novo." | a empresa: a página de "não encontrado" | — | a conversa cortada depois do Projeto: a frase, o nome travado, **Tentar de novo** e **Abrir o Projeto**; o modelo recusado: a página do Projeto sem conversa, com a frase |
 | Passo 4 (U3) | o título, a caixa, os exemplos, **Ir para o início sem pedir nada** | igual ao Início | igual | igual | — | só o dono vê a primeira entrada (W33) | sem conta (o passo 2 pulado): o aviso no lugar da caixa, e o link para o Início fica |
 | Conversa aberta com o pedido (U2) | a bolha pendente e o Builder trabalhando | — | o envio em curso, como na 14.3 | o envio recusado: texto e arquivos na caixa e a frase | `CONVERSATION_NOT_FOUND`: como hoje | — | recarregar no meio: o texto na caixa e a frase de não confirmado; os arquivos saem, como na 14.3 |
 | Cartões dos Projetos | "Nenhum projeto ainda." | igual | como hoje | como hoje | — | — | — |
@@ -107,7 +115,10 @@ os arquivos e o rascunho são os dela.
 | --- | --- | --- |
 | `createConversation` `body.effort` (U1) | web, `start.tsx`, do seletor do Início | server, `created` em `routes.ts`, que o passa ao `switchModel` |
 | `createProject` `body.name` | web, o passo do nome (`NameStep`) | server, `projects.create`, como hoje |
-| `Handoff` `{ outgoing, pending }` (U2) | web, `start.tsx`, antes de navegar | web, `Screen` da conversa, ao abrir; o recarregar lê só a cópia `pending` |
+| `HistoryState.handoff` `{ content }` (U2) | web, `start.tsx`, no `navigate({ state })` para a conversa | web, `useHandoff` no `Screen` da conversa, ao abrir; tira-o com `replace` |
+| Arquivos da passagem (U2) | web, `start.tsx`, `stashHandoffFiles` antes de navegar | web, `useHandoff`, `takeHandoffFiles` |
+| Cópia `conexus-handoff:<conversa>` no `sessionStorage` (U2) | web, `useHandoff`, ao tomar a passagem | web, `useHandoff`, só quando a página abre sem `HistoryState.handoff` |
+| `HistoryState.refused` (U2) | web, `start.tsx`, no `navigate({ state })` para o Projeto | web, `EmptyPanel` |
 | `DraftKey` (U2) | web, `start.tsx` (`start:<empresa>`) e `panel.tsx` (a conversa) | web, `useDraft` |
 | `Defaults.start` | server, como hoje | web, `start.tsx`: o valor inicial do seletor, ou o aviso quando nulo |
 
@@ -165,8 +176,8 @@ encomendas--padaria-sol.<domínio>
 | --- | --- | --- | --- | --- | --- |
 | `createProject` (de hoje, sem mudança) | a chave de tentativa (W24, C37): o mesmo Projeto; dois cliques, um pedido | resposta cortada, 502 ou 503: a frase de não confirmado e a mesma chave na nova tentativa; a preparação do banco da empresa como hoje (data D22) | o banco do Hub: `DATABASE_UNAVAILABLE`; o Neon: `COMPANY_DATABASE_UNAVAILABLE` com **Tentar de novo** | `PROJECT_CREATED`, `COMPANY_DATABASE_CREATED`, como hoje | 7, 9, 13 |
 | `createConversation` com `effort` (U1) | a chave: a mesma conversa; outra `effort` com a mesma chave, 409 | o índice gravado antes do fio (data D17); a repetição põe o modelo e o raciocínio que faltam (`created`, `routes.ts:84-101`) | o banco: `DATABASE_UNAVAILABLE`; o armazenamento do Mastra: a falha de hoje, e a repetição conserta | `CONVERSATION_CREATED`, como hoje | 1, 2, 10 |
-| Projeto criado e conversa não (U2, a sequência no navegador) | — | o Projeto fica, sem conversa, e o passo do nome tenta só a conversa; quem sai da página deixa um Projeto vazio, que abre em "Nenhuma conversa" com **Nova conversa**, como hoje | as do `createConversation` | nada novo | 10 |
-| O envio do pedido na conversa (rota do Mastra, a da 14.3) | sai uma vez: a passagem é lida e apagada ao abrir | resposta cortada, 502 ou 503: `UNCONFIRMED_SEND`, texto e arquivos voltam à caixa (14.3); recarregar no meio: o texto da cópia `pending` volta à caixa com a frase, sem reenviar | o banco e a Anthropic: como na 14.3 | como na 14.3 | 8, 11 |
+| Projeto criado e conversa não (U2, a sequência no navegador) | — | o Projeto fica, sem conversa. Resposta cortada, 502, 503 ou `DATABASE_UNAVAILABLE`: o passo do nome tenta só a conversa, com a mesma chave. `MODEL_NO_ACCOUNT`, `MODEL_UNKNOWN`, `EFFORT_UNSUPPORTED`: a mesma recusa voltaria, e a tela abre o Projeto com a frase (OS `start-project.ts:22-34`). Quem sai da página deixa o Projeto, que abre em "Nenhuma conversa" com **Nova conversa**, como hoje; o mesmo nome no Início dá `PROJECT_NAME_TAKEN` | as do `createConversation` | nada novo | 9, 10 |
+| O envio do pedido na conversa (rota do Mastra, a da 14.3) | sai uma vez: o `ref` do `useHandoff` segura a segunda volta do efeito em modo estrito, e a navegação com `replace` tira o estado | resposta cortada, 502 ou 503: `UNCONFIRMED_SEND`, texto e arquivos voltam à caixa (14.3), e a cópia fica; recarregar no meio: a página abre sem o estado, o texto da cópia volta à caixa com a frase, sem reenviar | o banco e a Anthropic: como na 14.3 | como na 14.3 | 8, 11 |
 
 ## A tabela de referência
 
@@ -177,10 +188,11 @@ encomendas--padaria-sol.<domínio>
 | Onde a pessoa digita o nome | U2 | `hub/projects/create-project-form.tsx:66-93` (campo sozinho, endereço enquanto digita) | Conexus OS `e0353c36` `prompt-box.tsx:81-97, 129-144` (enviar abre "Nome do Projeto" com **Criar e começar** e **Voltar**, a caixa parada); Factory `NewPage.tsx:144-158` (só a caixa, sem nome); `wf-h1`, `wf-o4` (só a caixa) | Lido | nativo: a forma do OS, o nome depois do **Enviar** e antes de criar, sem o nome sugerido (A); a caixa fica como no `wf-h1`. O campo acima da caixa o tempo todo não tem referência | | "A. O cliente tem que colocar o nome do projeto", 2026-10-26 | |
 | O passo do nome: campo, endereço, recusas | U2 | `create-project-form.tsx:29-96` (o formulário, `hostLabelOf`, `ON_THE_NAME`, `RETRYING`, chave W24) | o mesmo arquivo; OS `prompt-box.tsx:86-97` | Lido | nativo: o formulário de hoje vira o passo do nome (`NameStep`), devolvendo o Projeto em vez de navegar | | "B. B1", 2026-10-26 | |
 | O nome do Projeto vindo do pedido | fica de fora (A) | nenhum | `@mastra/core@1.79.0` `generateTitleFromUserMessage`; vibesdk `worker/agents/schemas.ts:85-87`; Dyad `generateCuteAppName`; OS `project-name.ts` | Lido | nativo, fora: a pessoa digita o nome | | "A. O cliente tem que colocar o nome do projeto" | |
-| Criar o Projeto e a conversa | U2 | `createProject` (`hub-api/src/projects.ts:80-103`) e `createConversation` (`conversations.ts:93-107`), cada um com sua chave | Factory `useCreateUserSessionFromDraft.ts:38-41` (cria a sessão, depois navega e envia); Dyad `902829f` `src/first_prompt/FirstPromptProvider.tsx:135-157` (`createApp` → `createChat` → `submit`); OS `start-project.ts:13-33` (chamadas em sequência, chave por entrada) | Lido | nativo: as duas operações de hoje, em sequência no navegador, cada uma com sua chave guardada até o Hub decidir (W24). O estudo propunha uma operação nova numa transação: com o nome digitado (A) ela não tem mais o que fazer além das duas, e a conversa nasce em duas casas (o índice do Hub e o fio do Mastra, `routes.ts:84-101`), que nenhuma transação junta; o Hub também não importa o Builder (C4) | | não precisa | |
+| Criar o Projeto e a conversa | U2 | `createProject` (`hub-api/src/projects.ts:80-103`) e `createConversation` (`conversations.ts:93-107`), cada um com sua chave | Factory `useCreateUserSessionFromDraft.ts:38-41` (cria a sessão, depois navega e envia); Dyad `902829f` `src/first_prompt/FirstPromptProvider.tsx:135-157` (`createApp` cria o app e o chat numa chamada e devolve o `chatId`; `createChat` é o caminho de um app já escolhido e da nova tentativa, `commands.ts:142-166`); OS `start-project.ts:13-33` (chamadas em sequência, chave por entrada) | Lido | nativo: as duas operações de hoje, em sequência no navegador, cada uma com sua chave guardada até o Hub decidir (W24). O estudo propunha uma operação nova numa transação: com o nome digitado (A) ela não tem mais o que fazer além das duas, e a conversa nasce em duas casas (o índice do Hub e o fio do Mastra, `routes.ts:84-101`), que nenhuma transação junta; o Hub também não importa o Builder (C4) | | não precisa | |
 | Modelo e raciocínio escolhidos antes da conversa | U1, U2 | `createConversation` aceita `model` (`conversations.ts:100`); o raciocínio só pela `setConversationModel` | Factory `useHandoffPrompt.ts` (`handoffModelId`, `switchModel` antes do envio); OS `start-project.ts:26-28` | Lido | nativo: `effort` opcional no corpo de `createConversation`, conferido com `effortsOf` como `setConversationModel` (`routes.ts:116-129`) | | não precisa | |
+| A conversa recusada depois do Projeto | U2 | nenhum (hoje o Projeto nasce sozinho) | OS `e0353c36` `start-project.ts:22-34` (o Projeto fica, o primeiro pedido `REFUSED`) e `prompt-box.tsx:37-44` (abre o Projeto com o aviso "escreva de novo"); Dyad `commands.ts:142-166` (a falha do chat confirma o app e tenta só o chat) | Lido | nativo: uma falha que pode passar (resposta cortada, 502, 503, `DATABASE_UNAVAILABLE`) tenta só a conversa, como a Dyad; uma recusa do modelo abre o Projeto com a frase, como o OS | | não precisa | |
 | O valor inicial do seletor | U2 | `Defaults.start` em `listModelAccounts` (`model-accounts.ts:115`), lido por `my-defaults.tsx` | decisão 0054 | Lido | nativo | | não precisa | |
-| A mensagem passada à conversa | U2 | nenhum | Factory `useHandoffPrompt.ts` (`promptHandoffState`, `storePendingHandoff` no `sessionStorage`), `services/handoffFiles.ts:3-17` (`takeHandoffFiles`, um `Map` em memória) | Lido: os arquivos ficam em memória ("can exceed browsers' history state size limits, and a reload never auto-resends"); depois de recarregar, devolve o texto à caixa e avisa | nativo: o mesmo padrão | | não precisa | `apps/web/src/builder/conversation/handoff.ts` |
+| A mensagem passada à conversa | U2 | nenhum | Factory `mastra-1.78@6a465f9d` `domains/chat/hooks/useHandoffPrompt.ts:21-30, 91-133` e `useCreateUserSessionFromDraft.ts:63`; `services/handoffFiles.ts:3-17`; TanStack Router 1.170.44 `navigate({ state })` (`@tanstack/router-core` `link.d.ts:126`, `HistoryState` de `@tanstack/history` 1.162.5 `index.d.ts:43`) | Lido: o "envie agora" vai no estado da navegação (`:93`); ao tomá-lo, grava a cópia no `sessionStorage` e tira o estado com `replace` (`:111-116`); recupera só quando não há estado (`:101-109`); dois `ref` seguram a segunda volta do efeito (`:91-92, 100-103`); os arquivos cruzam num `Map` em memória ("base64 images can exceed browsers' history state size limits", `handoffFiles.ts:3-5`) | nativo: o mesmo mecanismo, com o estado do TanStack Router no lugar do `react-router`; a cópia sai quando o Hub decide, e depois de lida no recarregar | | não precisa | `apps/web/src/builder/conversation/handoff.ts` |
 | Rascunho do Início | U2 | `builder/conversation/draft.ts` (por conversa; a 14.3 o muda para `take`/`restore` com arquivos) | Factory `ComposerImagesContext` e o rascunho por rota | Lido | embrulhado: a chave do rascunho é a conversa ou `start:<empresa>` | Teste de tela (critério 12) | não precisa | |
 | Sem conta de modelo | U2 | `NoAccount` (`model-choice.tsx:21`) na conversa | Factory `NewPage.tsx:126-142` (`MissingCredentialState` no lugar do compositor) | Lido | nativo | | "Sem conta de modelo, um aviso no lugar do compositor", 2026-10-19 | |
 | Três exemplos | U2 | nenhum | OS `prompt-box.tsx:16-21, 99, 147-155`; Dyad e Lovable (sugestões) | Lido: tocar põe o texto na caixa, não envia | nativo | | `wf-h1`, 2026-10-19; os textos no fim | |
@@ -265,7 +277,7 @@ formulário do Hub e a rota) e entrega a mensagem de uma tela à outra sem reenv
 ### As linhas da tabela
 
 **Início com a caixa**, **O compositor no Início**, **Onde a pessoa digita o nome**, **O passo do
-nome**, **Criar o Projeto e a conversa**, **Modelo e raciocínio** (a parte da web), **O valor
+nome**, **Criar o Projeto e a conversa**, **A conversa recusada depois do Projeto**, **Modelo e raciocínio** (a parte da web), **O valor
 inicial do seletor**, **A mensagem passada à conversa**, **Rascunho do Início**, **Sem conta de
 modelo**, **Três exemplos**, **"+ Novo projeto" e o campo Nome sozinho**. As linhas citadas estão
 na tabela; a passagem copia o jeito da Factory (`useHandoffPrompt.ts`, `handoffFiles.ts:3-17`).
@@ -281,7 +293,7 @@ na tabela; a passagem copia o jeito da Factory (`useHandoffPrompt.ts`, `handoffF
 | `apps/web/src/builder/conversation/start.tsx` | Cria: a caixa, os exemplos, o passo do nome, a sequência de criação | a rota do Início; a U3 |
 | `apps/web/src/builder/conversation/handoff.ts` | Cria | `start.tsx`, `panel.tsx` |
 | `apps/web/src/builder/conversation/draft.ts` | Muda: a chave | `panel.tsx`, `start.tsx` |
-| `apps/web/src/builder/conversation/panel.tsx` | Muda: `Screen` lê a passagem ao abrir | — |
+| `apps/web/src/builder/conversation/panel.tsx` | Muda: `Screen` chama `useHandoff`; `EmptyPanel` mostra `HistoryState.refused` | — |
 | `apps/web/src/builder/conversation/text.ts` | Muda: os exemplos, o texto do campo, a frase do recarregar | `start.tsx`, `panel.tsx` |
 | `apps/web/src/builder/conversation/public.ts` | Muda: exporta `Start` | a rota; a U3 |
 | `apps/web/src/routes/_app/companies/$companyId/index.tsx` | Muda: passa `<Start companyId />` ao `Home` | — |
@@ -291,16 +303,21 @@ na tabela; a passagem copia o jeito da Factory (`useHandoffPrompt.ts`, `handoffF
 
 ```ts
 // builder/conversation/handoff.ts
-/** O pedido do Início, de uma tela à outra; os arquivos só em memória (Factory `handoffFiles.ts`). */
-export type Handoff = { outgoing: Outgoing }
-export function putHandoff(conversationId: ConversationId, outgoing: Outgoing): void
-/** O pedido para enviar agora, uma vez; ou só o texto, quando a página recarregou antes de enviar. */
-export function takeHandoff(conversationId: ConversationId):
-  | { kind: 'SEND'; outgoing: Outgoing }
-  | { kind: 'UNCONFIRMED'; text: string }
-  | { kind: 'NONE' }
-/** O envio decidiu (aceito, ou devolvido à caixa): some a cópia do sessionStorage. */
-export function settleHandoff(conversationId: ConversationId): void
+/** O que a navegação leva (TanStack Router `navigate({ state })`), pela fusão de `HistoryState` que a biblioteca documenta. */
+interface HistoryState {
+  /** "Envie agora", só o texto (Factory `promptHandoffState`). */
+  handoff?: { content: string }
+  /** O Projeto nasceu e o Hub recusou o modelo da conversa. */
+  refused?: 'MODEL_NO_ACCOUNT' | 'MODEL_UNKNOWN' | 'EFFORT_UNSUPPORTED'
+}
+/** Os arquivos cruzam em memória: 14.3 aceita até 30 MiB de data URLs (Factory `handoffFiles.ts`). */
+export function stashHandoffFiles(conversationId: ConversationId, files: readonly MessageFile[]): void
+export function takeHandoffFiles(conversationId: ConversationId): readonly MessageFile[]
+/** No `Screen` da conversa: envia o pedido do Início uma vez, ou recupera o texto depois de recarregar. */
+export function useHandoff(
+  conversationId: ConversationId,
+  on: { send: (outgoing: Outgoing) => Promise<'DECIDED' | 'UNCONFIRMED'>; recover: (text: string) => void },
+): void
 
 // builder/conversation/draft.ts
 export type DraftKey = ConversationId | `start:${CompanyId}`
@@ -317,10 +334,11 @@ type Phase =
 export function NameStep(props: {
   company: CompanyDetail
   databaseReady: boolean
-  /** Travado quando o Projeto já nasceu e falta a conversa. */
+  /** Travado quando o Projeto já nasceu e falta a conversa; **Voltar** vira **Abrir o Projeto**. */
   locked: string | null
   onCreated: (project: Project) => Promise<void>
   onBack: () => void
+  onOpenProject: () => void
 }): ReactNode
 
 // hub/projects/home.tsx
@@ -328,17 +346,24 @@ export function Home(props: { companyId: CompanyId; aside?: ReactNode; start: Re
 ```
 
 - `Phase` é a união do Início (C21); `kind` separa. `STARTING` guarda o Projeto para que **Tentar de
-  novo** crie só a conversa (critério 10).
+  novo** crie só a conversa (critério 10). Em `STARTING` o `NameStep` troca **Voltar** por **Abrir
+  o Projeto**: o nome não muda mais (decisão 0024), e o Projeto já está nos cartões.
 - As chaves: `useAttemptKey` de hoje, uma para o Projeto, outra para a conversa, cada uma guardada
   até o Hub decidir (W24, `keepsAttemptKey`).
-- `handoff.ts`: um `Map` de módulo com o `Outgoing` por conversa e, no `sessionStorage`
-  (`pageStorage('session')`), só o texto, com a chave `conexus-handoff:<conversa>`. `SEND` quando o
-  `Map` tem a entrada; `UNCONFIRMED` quando só a cópia existe (a página recarregou); a leitura apaga
-  a entrada do `Map`. Um dono do texto do recarregar: `text.ts` (C26).
-- O `Screen` da conversa, ao montar: `SEND` chama o `send` da 14.3 com o `Outgoing` e, ao decidir,
-  `settleHandoff`; numa recusa a 14.3 já devolve à caixa. `UNCONFIRMED` põe o texto no rascunho da
-  conversa, mostra a frase e chama `settleHandoff`. Em modo estrito o efeito roda duas vezes: a
-  leitura que apaga garante um envio.
+- `start.tsx`, depois de a conversa nascer: `stashHandoffFiles` e
+  `navigate({ to: …/conversations/<c>, state: { handoff: { content } } })`. Numa recusa do modelo:
+  `navigate({ to: …/projects/<p>, state: { refused: code } })`.
+- `useHandoff` segue `useHandoffPrompt.ts:91-133` da Factory, na mesma ordem: dois `useRef`,
+  `handedOff` e `recovered`, que sobrevivem à segunda volta do efeito em modo estrito
+  (`main.tsx:79`). Com `HistoryState.handoff` e `handedOff` falso: marca `handedOff`, toma os
+  arquivos, grava a cópia do texto no `sessionStorage` (`pageStorage('session')`, chave
+  `conexus-handoff:<conversa>`), tira o estado com `navigate({ replace: true, state: {} })` e chama
+  `send`. A cópia sai quando o Hub decide (aceito, ou recusado com código e devolvido à caixa pela
+  14.3); `UNCONFIRMED` a deixa. Sem `HistoryState.handoff` e com `recovered` falso: marca
+  `recovered`; havendo cópia, `recover(texto)` põe o texto no rascunho e a frase, e a cópia sai.
+  Nunca reenvia sozinho. Um dono do texto do recarregar: `text.ts` (C26).
+- `EmptyPanel` com `HistoryState.refused`: a frase do Projeto criado sem pedido e a do código
+  (`sentenceOfCode`), acima de "Nenhuma conversa".
 - O seletor: `ModelPicker` (`builder/model-accounts/model-picker.tsx:40`) com estado local, começando
   em `accountsQuery(companyId).data.defaults.start`; nulo mostra `NoAccount`.
 - `NameStep` mantém `ON_THE_NAME`, `RETRYING`, `UNCONFIRMED`, o endereço por `hostLabelOf` e os
@@ -360,12 +385,14 @@ lidos inteiros antes de escrever `handoff.ts`.
    sozinho (`:85-291`, os que viram casos de `start.test.tsx` trocam de arquivo, não somem); a frase
    de `project-cards.tsx:10`.
 2. `create-project-form.tsx` → `name-step.tsx`, com `onCreated`, `onBack`, `locked`.
-3. `draft.ts`: `DraftKey`. `handoff.ts` com os três casos.
+3. `draft.ts`: `DraftKey`. `handoff.ts`: `HistoryState`, os arquivos e `useHandoff`, com o teste
+   de modo estrito do critério 8 primeiro.
 4. `start.tsx`: a caixa da 14.3 (`answering=false`, sem `memory` nem `taskPanel`), o seletor, os
    exemplos; `onSend` passa a `NAMING`; `NameStep` com o pedido acima (texto e as etiquetas de
-   `ui/attachment.tsx`, da 14.3); `onCreated` cria a conversa com `{ model, effort }`, chama
-   `putHandoff` e navega. Regras: W24, C21, C26, C48.
-5. `panel.tsx`: a passagem no `Screen`. Regras: V30 para o foco (a caixa da conversa, como hoje).
+   `ui/attachment.tsx`, da 14.3); `onCreated` cria a conversa com `{ model, effort }`, guarda os
+   arquivos e navega com o estado. Regras: W24, C21, C26, C48.
+5. `panel.tsx`: `useHandoff` no `Screen`; `refused` no `EmptyPanel`. Regras: V30 para o foco (a
+   caixa da conversa, como hoje).
 6. A rota do Início e `Home`.
 
 ### Como se prova
