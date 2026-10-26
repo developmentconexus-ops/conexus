@@ -25,7 +25,7 @@ e embaixo dela uma linha pequena.
    Recarrega a página: a bolha com as etiquetas continua lá.
 6. No celular: a mesma linha, o anel sem o número ao lado. Se o navegador não deixar usar o
    microfone, aparece uma frase dizendo isso. No iPhone com o Hub na tela de início, onde o
-   navegador não ouve, o microfone não aparece.
+   navegador não ouve, o microfone não aparece, ou diz que ali não dita.
 
 **O que você faz, e quando.** Antes: nada. No começo: aprova esta página. No fim: faz o roteiro
 no computador e no celular, diz o que viu e aprova os textos das telas.
@@ -43,7 +43,7 @@ no computador e no celular, diz o que viu e aprova os textos das telas.
   2026-10-21; a U3 muda o rascunho para levar os arquivos e corrige isso junto). A #171 espera: as
   quatro peças que ela cita não mudam aqui. As outras não tocam estas pastas.
 
-**As decisões suas nesta etapa.** Dadas, menos a D1a, aberta no fim da lista:
+**As decisões suas nesta etapa.** Todas dadas:
 - **A1**, nativo: os arquivos entram só na conversa com o Builder. "A1 sim", 2026-10-25.
 - **B1**, nativo: a voz é o ditado do navegador, sem transcrição no servidor. "B1 okay",
   "B1 por agora", 2026-10-25.
@@ -54,14 +54,10 @@ no computador e no celular, diz o que viu e aprova os textos das telas.
 - **E1**, nativo: um anel só, dentro da linha da caixa, à esquerda; no computador o percentual da
   janela de mensagens ao lado ("12%"), no celular só o anel; o clique abre as duas memórias.
   "E. E1", 2026-10-26.
-- **D1a, o tamanho da linha (aberta).** O estudo escreveu D1 com "menor (11 px)", mas a regra de
-  design V13 pede no mínimo 12 px para texto corrido (11 px só para carimbos em mono e rótulos de
-  grupo), e a linha de hoje já tem 12 px. *Exemplo:* "Não cole senhas ou chaves na conversa." em
-  12 px ou em 11 px, embaixo da caixa.
-  - **D1a-A (recomendo)**, nativo: 12 px, o tamanho de fato que já existe; a linha fica menor
-    porque passa de duas para uma e o texto encurta. V13 fica.
-  - **D1a-B**, nativo: 11 px, com um tamanho novo na marca para essa linha; V13 ganha a exceção
-    com a sua palavra.
+- **D1a**, nativo: a linha embaixo da caixa fica em 12 px (`text-fact`), o tamanho que já existe;
+  fica menor porque passa de duas linhas para uma e o texto encurta. A regra de design V13 não
+  muda e não há tamanho novo na marca (o estudo escreveu "menor (11 px)", e V13 pede no mínimo
+  12 px para texto corrido). "D1A", 2026-10-26.
 - Os pedidos do compositor de 2026-10-25, que esta etapa cumpre: "podemos ter apenas um igual
   codex"; "poderia ser menor só tendo, tipo, uma linha de escrever"; "ela tá embaixo da box";
   "Deixar uma coisa bem menor. Mais simples"; "só uma barra de girar ... quando clica, que abriria
@@ -81,7 +77,9 @@ vieram as peças da conversa (decisão 0033).
 | U5 | O anel único (E1) | `apps/web/src/builder/conversation/` | design | U2 |
 
 **A entrega.** As unidades entram no `main` uma de cada vez, cada uma depois da sua revisão (sua
-palavra "3. A", 2026-10-26, que o PR de fechamento da 14.1 escreve no método). A ordem é U1, U2,
+palavra "3. A", 2026-10-25, que o PR de fechamento da 14.1 escreve no método). Hoje a regra L13 no
+`main` manda o código da etapa entrar numa só junção; por isso a aprovação deste cartão espera a
+mudança de L13 estar no `main`, e cada unidade só tem base legal depois dela. A ordem é U1, U2,
 U3, U4, U5: a U3 lê a gravação da U1 e a linha da U2; U3, U4 e U5 mudam `builder/conversation/` e
 não correm em paralelo. Cada unidade parte do `main` com a anterior já dentro.
 
@@ -93,19 +91,19 @@ Total da etapa: ~420 linhas sem testes, teto 4.000 (L2). O estudo estimou ~600 c
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | `POST …/sessions/:id/messages` com um PDF de 2 MiB é aceito e chega ao modelo; um corpo acima de 30 MiB responde 413 `REQUEST_TOO_LARGE` e o modelo não é chamado | `apps/server/src/builder/conversation/conversation-files.test.ts`, "um PDF de 2 MiB passa; 30 MiB e um byte é 413" | must |
-| 2 | U1 | O pedido ao modelo leva o `.md` como texto `[File: observacoes.md]`, o PDF como `document` e o PNG como `image`; um PDF enviado com o Builder trabalhando chega ao modelo na mesma volta | `conversation-files.test.ts`, "cada tipo chega ao modelo na sua forma" e "o arquivo enviado no meio do trabalho entra na volta" | must |
-| 3 | U1 | A página do Hub responde com `img-src 'self' blob: data:` e nada mais muda no CSP | `apps/server/src/platform/http.test.ts`, o caso do cabeçalho CSP | must |
+| 2 | U1 | O pedido ao modelo leva o `.md` como texto `[File: observacoes.md]`, o PDF como `document` e o PNG como `image`; um PDF enviado com o Builder trabalhando chega ao modelo na mesma volta | `conversation-files.test.ts`, "cada tipo chega ao modelo na sua forma" e "o arquivo enviado no meio do trabalho entra na volta"; um envio só com o arquivo, sem texto, chega ao modelo, e o teste "só o arquivo, sem texto" o prova | must |
+| 3 | U1 | A página do Hub responde com `img-src 'self' data:` e nada mais muda no CSP | `apps/server/src/platform/http.test.ts`, o caso do cabeçalho CSP | must |
 | 4 | U2 | Vazia, a caixa tem uma linha; cresce com o texto até a altura máxima e então rola | `apps/web/src/builder/conversation/composer.test.tsx`, "a caixa começa com uma linha" (as classes do campo) e a captura da QA | must |
 | 5 | U2 | Uma linha de ações dentro da caixa em todo tamanho, na ordem memória, modelo, +, microfone, botão; nada da memória embaixo da caixa | `composer.test.tsx`, "uma linha de ações em todo tamanho", a 1280 e a 390 px | must |
 | 6 | U2 | Builder trabalhando e caixa vazia (sem texto e sem arquivo): um botão, **Parar**, e Esc para. Com texto ou arquivo: **Enviar**, que orienta. Parado: **Enviar**, desabilitado com a caixa vazia. Nunca os dois juntos | `composer.test.tsx`, "um botão só: Parar com a caixa vazia, Enviar com texto" | must |
-| 7 | U2 | Embaixo da caixa, no computador, uma linha só: "Não cole senhas ou chaves na conversa.", no tamanho da D1a. Nenhuma dica de teclado. No celular, nada embaixo da caixa; a frase segue na conversa vazia e na folha do modelo | `composer.test.tsx`, "embaixo da caixa só a linha das senhas" | must |
+| 7 | U2 | Embaixo da caixa, no computador, uma linha só: "Não cole senhas ou chaves na conversa.", em 12 px (`text-fact`, D1a). Nenhuma dica de teclado. No celular, nada embaixo da caixa; a frase segue na conversa vazia e na folha do modelo | `composer.test.tsx`, "embaixo da caixa só a linha das senhas" | must |
 | 8 | U3 | **+**, colar e arrastar adicionam PDF, `.md`, `.txt` e imagem como etiquetas com **x**; o **x** tira | `apps/web/src/builder/conversation/attachments.test.tsx`, "escolher, colar e soltar viram etiquetas" | must |
-| 9 | U3 | Um 21º arquivo, um arquivo cuja data URL passa de 14 680 064 caracteres, ou uma soma acima de 29 360 128, é recusado no compositor com uma frase, e nada é enviado | `attachments.test.tsx`, "os tetos da rota recusam com frase" | must |
+| 9 | U3 | Um 21º arquivo, um arquivo cuja data URL passa de 14 680 064 caracteres, ou uma soma acima de 29 360 128, é recusado no compositor com uma frase, e nada é enviado; cada frase diz o teto que o código aplica, calculado dos mesmos `LIMITS` | `attachments.test.tsx`, "os tetos da rota recusam com frase" (a frase lê o número de `LIMITS`) | must |
 | 10 | U3 | O envio leva `{ content, files }` à rota do Mastra, com data URL inteira (`data:text/markdown;base64,…` para um `.md` que o navegador deu sem tipo) | `attachments.test.tsx`, "o envio leva os arquivos como data URL" | must |
 | 11 | U3 | A bolha da pessoa mostra o texto e uma etiqueta por arquivo, ao vivo, pendente e depois de recarregar; a imagem em miniatura; nenhum erro de CSP no console | `apps/web/src/builder/conversation/person-turn.test.tsx`, sobre a gravação `files` (T26); a QA lê o console | must |
-| 12 | U3 | Um envio recusado devolve texto e arquivos à caixa; trocar de conversa A→B→A antes da resposta não mostra de novo o que foi enviado (#167) | `panel.test.tsx`, "o envio que falha devolve texto e arquivos" e "A→B→A não repete a mensagem" | must |
+| 12 | U3 | Um envio recusado devolve texto e arquivos à caixa; recarregar a página guarda o texto da caixa e tira os arquivos anexados, como nas referências; trocar de conversa A→B→A antes da resposta não mostra de novo o que foi enviado (#167) | `apps/web/src/builder/conversation/panel.test.tsx`, "o envio que falha devolve texto e arquivos", "A→B→A não repete a mensagem" e "recarregar guarda o texto e tira os arquivos" | must |
 | 13 | U4 | O microfone escreve em português na caixa, com a frase em andamento à vista, e para no segundo toque | `apps/web/src/builder/conversation/dictation.test.tsx`, com o reconhecimento dublado | must |
-| 14 | U4 | Microfone recusado (`not-allowed`, `service-not-allowed`), idioma indisponível ou silêncio: uma frase em português por código; sem `SpeechRecognition` no navegador, o microfone não é desenhado | `dictation.test.tsx`, "cada erro tem sua frase" e "sem reconhecimento não há microfone" | must |
+| 14 | U4 | Microfone recusado (`not-allowed`, `service-not-allowed`), idioma indisponível ou silêncio: uma frase em português por código; o segundo toque para sem frase de erro (`aborted` não mostra frase); sem `SpeechRecognition` no navegador, o microfone não é desenhado. No iPhone com o Hub na tela de início, o microfone não é desenhado ou mostra a frase do código, e a QA da U4 registra qual dos dois acontece | `dictation.test.tsx`, "cada erro tem sua frase", "o segundo toque para sem frase" e "sem reconhecimento não há microfone"; o iPhone, a QA | must |
 | 15 | U5 | Um anel com o percentual de `pendingTokens/threshold`; no computador o número ao lado ("12%"), no celular só o anel; o nome lido diz as duas memórias | `apps/web/src/builder/conversation/memory-status.test.tsx`, "um anel com o percentual" | must |
 | 16 | U5 | O clique no anel abre a janela com Mensagens e Memória e seus números, como hoje | `memory-status.test.tsx`, "o clique abre as duas memórias" | must |
 
@@ -114,9 +112,9 @@ Total da etapa: ~420 linhas sem testes, teto 4.000 (L2). O estudo estimou ~600 c
 | Tela | Primeira vez | Vazio | Carregando | Erro | Não encontrado | Sem permissão | Vencido ou recusado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Compositor (U2) | caixa de uma linha, "Escreva sua mensagem"; no celular a frase das senhas fica na conversa vazia (V30) | **Enviar** desabilitado | o botão desabilitado durante o envio (`sending`) | a frase do envio (`UNCONFIRMED_SEND` ou a do código), texto e arquivos ficam | `CONVERSATION_NOT_FOUND`: a conversa sai, como hoje | sem conta de modelo: o aviso de hoje, sem modelo na linha | trabalhando com a caixa vazia: **Parar** |
-| Etiquetas no compositor (U3) | nenhuma | nenhuma | — (a leitura é local e curta) | a frase do teto: "Até 20 arquivos por mensagem.", "Este arquivo passa de 10 MB.", "Os arquivos passam de 20 MB juntos." | — | — | um tipo fora do `accept` não aparece no seletor; colado ou solto: "Este tipo de arquivo não é aceito." |
+| Etiquetas no compositor (U3) | nenhuma; recarregar a página guarda o texto da caixa e tira os arquivos anexados | nenhuma | — (a leitura é local e curta) | a frase do teto: "Até 20 arquivos por mensagem.", "Este arquivo passa de 10,5 MB.", "Os arquivos passam de 21 MB juntos." (os números saem de `LIMITS`) | — | — | um tipo fora do `accept` não aparece no seletor; colado ou solto: "Este tipo de arquivo não é aceito." |
 | Bolha da pessoa (U3) | — | só texto, como hoje | pendente com "Vai ao Builder no próximo passo" | — | — | — | — |
-| Microfone (U4) | o botão, parado | — | ouvindo: o botão marcado (`aria-pressed`), o texto em andamento na caixa | "Permita o microfone no navegador para ditar." (`not-allowed`, `service-not-allowed`); "Este navegador não dita em português." (`language-not-supported`); "Não ouvimos nada. Tente de novo." (`no-speech`); outro código: "O ditado parou. Tente de novo." | — | sem `SpeechRecognition`: o botão não é desenhado | — |
+| Microfone (U4) | o botão, parado | — | ouvindo: o botão marcado (`aria-pressed`), o texto em andamento na caixa | "Permita o microfone no navegador para ditar." (`not-allowed`, `service-not-allowed`); "Este navegador não dita em português." (`language-not-supported`); "Não ouvimos nada. Tente de novo." (`no-speech`); outro código: "O ditado parou. Tente de novo."; `aborted` (o segundo toque, `stop()`): nenhuma frase | — | sem `SpeechRecognition`: o botão não é desenhado | — |
 | Anel da memória (U5) | anel vazio, "0%" no computador | igual | o anel gira enquanto observa (`omPhase`) | a marca de falha de hoje, e a frase na janela | — | — | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
@@ -174,18 +172,18 @@ direita, dentro da caixa) e as linhas do fundador.
 | Memória observacional com anexos | fica como está | `observational-memory-settings.ts` sem opção | `@mastra/memory@1.39.0` `dist/src-DxZ7N8nO.js:26266` (`observeAttachments: ["image/*","application/pdf"]`), `:30677-30692` | Lido: PDF conta `max(1500, bytes/3)` tokens para Anthropic; 1 MB ≈ 350 mil, acima da janela de 30 mil, então observa e tira o arquivo da janela | nativo, padrão mantido | | não precisa | |
 | Tipo que o modelo recusa | fica como está | nenhum | `@mastra/core@1.79.0` `dist/agent-tuAMgHe3.js` (`UnsupportedFileHandler`, padrão) | Lido: troca o arquivo recusado por `[Attachment unavailable: nome]` e tenta uma vez | nativo; o `accept` do seletor já limita aos tipos que o Claude lê | | não precisa | |
 | Etiquetas no compositor | U3 | nenhum (`composer.tsx:85-127`) | shadcn base `attachment` (registro público, lido em 2026-10-26: "Use it for files and images in chat composers, message threads"); Factory `ComposerImageAttachments.tsx`; AI Elements `attachments` | Documentado: `Attachment`, `AttachmentMedia` (ícone ou imagem), `AttachmentTitle`, `AttachmentAction`, `AttachmentGroup` | nativo: copiado para `ui/attachment.tsx` e pintado (decisão 0033) | | não precisa | `apps/web/src/ui/attachment.tsx` |
-| **+**, colar, arrastar, tetos | U3 | nenhum | Factory `useComposerImages.ts:25-81`, `Composer.tsx:242, 257-277`; AI Elements `prompt-input` (`accept`, `maxFiles`, `maxFileSize`, `onError`, colar `:1016`); playground `attachment-kind.ts:5-33` (tipo pela extensão, "Browsers can omit these types"); vibesdk `use-image-upload.ts:38-56` | Lido: `<input type=file multiple accept>`, `readAsDataURL`, colar e soltar no form, recusa com frase | embrulhado: o nosso hook mede o data URL com os tetos da rota (20, 14 680 064, 29 360 128) e dá `text/markdown` a um `.md` sem tipo | Teste de tela do hook (critérios 8 a 10) | não precisa | `apps/web/src/builder/conversation/attachments.ts` |
-| Arquivos no rascunho | U3 | `draft.ts:15-34` guarda o texto no `sessionStorage` por conversa | Factory `ComposerImagesContext.ts:6-15` (estado React) | Lido: imagens no estado da tela; saem ao enviar e voltam se falhar (`Composer.tsx:142-152`) | nativo: arquivos na memória da tela por conversa, ao lado do texto; não no `sessionStorage` (cota de ~5 MB) | | não precisa | |
-| A bolha da pessoa com as etiquetas | U3 | `person-turn.tsx:21-27` desenha só `text`; `transcript.tsx:103-105` pendente só com texto | playground `split-message-attachments.ts:6-21`; Factory `MessageBubble.tsx:223` (`UserFilePartRenderer`) | Lido: separa as partes de anexo do conteúdo e desenha cada uma | embrulhado: além das partes `file`, a parte de texto que começa com `[File: nome]` e um bloco cercado (o formato do Mastra, `agent-controller-DO6rGsQm.js:5241`) vira etiqueta | Teste da bolha sobre a gravação nativa (T26, critério 11) | não precisa | |
-| Miniatura da imagem | U1 | CSP `imgSrc: ["'self'"]` (`http.ts:39`) | AI Elements `prompt-input` usa `URL.createObjectURL` (`:277, 620`); a linha guardada volta como `data:` | Lido | embrulhado: `imgSrc` ganha `blob:` e `data:` | Teste de cabeçalho em `http.test.ts` (critério 3) e captura sem erro de CSP | não precisa | |
+| **+**, colar, arrastar, tetos | U3 | nenhum | Factory `useComposerImages.ts:25-81`, `Composer.tsx:242, 257-277`; AI Elements `prompt-input` (`accept`, `maxFiles`, `maxFileSize`, `onError`, colar `:1016`); playground `attachment-kind.ts:5-33` (tipo pela extensão, "Browsers can omit these types"); vibesdk `use-image-upload.ts:38-56` | Lido: `<input type=file multiple accept>`, `readAsDataURL`, colar e soltar no form, recusa com frase | embrulhado: o nosso hook mede o data URL com os tetos da rota (20, 14 680 064, 29 360 128), as frases de recusa saem dos mesmos números, e dá `text/markdown` a um `.md` sem tipo | Teste de tela do hook (critérios 8 a 10) | não precisa | `apps/web/src/builder/conversation/attachments.ts` |
+| Arquivos no rascunho | U3 | `draft.ts:15-34` guarda o texto no `sessionStorage` por conversa | Factory `ComposerImagesContext.ts:6-15` (estado React) | Lido: imagens no estado da tela; saem ao enviar e voltam se falhar (`Composer.tsx:142-152`) | nativo: arquivos na memória da tela por conversa, ao lado do texto; não no `sessionStorage` (cota de ~5 MB); recarregar guarda o texto e tira os arquivos, como as referências | | não precisa | |
+| A bolha da pessoa com as etiquetas | U3 | `person-turn.tsx:21-27` desenha só `text`; `transcript.tsx:103-105` pendente só com texto | playground `split-message-attachments.ts:6-21` (`:6-11` trata como anexo a parte de texto que casa com `<attachment name="…">…</attachment>`); Factory `MessageBubble.tsx:223` (`UserFilePartRenderer`) | Lido: separa as partes de anexo do conteúdo e desenha cada uma | embrulhado: além das partes `file`, a parte de texto que começa com `[File: nome]` e um bloco cercado (o formato do Mastra, `agent-controller-DO6rGsQm.js:5241`) vira etiqueta | Teste da bolha sobre a gravação nativa (T26, critério 11) | não precisa | |
+| Miniatura da imagem | U1 | CSP `imgSrc: ["'self'"]` (`http.ts:39`) | AI Elements `prompt-input` usa `URL.createObjectURL` (`:277, 620`); a U3 não o usa: lê com `readAsDataURL`, e a linha guardada volta como `data:` | Lido | embrulhado: `imgSrc` ganha `data:` | Teste de cabeçalho em `http.test.ts` (critério 3) e captura sem erro de CSP | não precisa | |
 | Caixa de uma linha que cresce | U2 | `textarea.tsx:12` já `field-sizing-content max-h-48 min-h-9`; `composer.tsx:99` põe `md:min-h-16 pt-md` | Mastra `packages/playground-ui/src/ds/components/Composer/composer.tsx:110-111` (`field-sizing-content`, `min-h-10`); vibesdk `prompt-box.tsx:183-184` (`rows={1}`, `max-h-[120px]`) | Lido | nativo: sai a classe de `composer.tsx:99` | | 2026-10-25 "poderia ser menor só tendo, tipo, uma linha" | |
 | Uma linha de ações em todo tamanho | U2 | `composer.tsx:46-49, 101-130`: memória dentro da linha só no celular largo (`inRow`), embaixo no resto | Factory `Composer.tsx:266-300` (`StatusLine` com modelo e memória à esquerda, botões à direita, dentro da caixa) | Lido | nativo: uma linha só; saem `inRow`, `useIsNarrow` e as duas posições da memória | | 2026-10-25 "ela tá embaixo da box" | |
 | Um botão Enviar/Parar | U2 | `composer.tsx:104-125` Parar e Enviar lado a lado | AI Elements `PromptInputSubmit` (`ai-elements-prompt-input.tsx:1216-1263`: Parar enquanto `streaming`, `type="button"`); Factory `Composer.tsx:279-298` (os dois) | Lido | embrulhado: Parar quando trabalhando **e** sem texto nem arquivo; senão Enviar. Esc continua parando | Teste de tela (critério 6) | 2026-10-25 "podemos ter apenas um igual codex" | |
-| Linha embaixo da caixa | U2 | `composer.tsx:131-134` duas linhas `text-fact` (12 px): a dica de teclado (`STEER_KEYS` trabalhando) e `NO_SECRETS`; V30 pede a dica de teclado | Factory: nenhuma; Claude e ChatGPT: um aviso pequeno (capturas do fundador) | — | nativo: uma linha, "Não cole senhas ou chaves na conversa.", no tamanho da D1a (12 px pela V13, ou 11 px com a palavra do fundador); a dica de teclado sai; V30 muda | | D1, 2026-10-26: "D. D1"; D1a aberta | |
+| Linha embaixo da caixa | U2 | `composer.tsx:131-134` duas linhas `text-fact` (12 px): a dica de teclado (`STEER_KEYS` trabalhando) e `NO_SECRETS`; V30 pede a dica de teclado | Factory: nenhuma; Claude e ChatGPT: um aviso pequeno (capturas do fundador) | — | nativo: uma linha, "Não cole senhas ou chaves na conversa.", em `text-fact` (12 px, D1a); a dica de teclado sai; V30 muda | | D1, 2026-10-26: "D. D1"; D1a, 2026-10-26: "D1A" | |
 | Anel único da memória | U5 | `memory-status.tsx:16-58, 66-167` dois `TokenRing` e o `compact` | Factory `OperationalMemoryStatus.tsx:27-92` sobre `TokenBudget` (`packages/playground-ui/src/ds/components/TokenBudget/token-budget.tsx:25-90`, `role="meter"`); números do Mastra em `session-state.ts:7` (`Display['omProgress']`) | Lido: anel com `aria-valuenow`, o número ao lado, a janela com as duas memórias | nativo: um anel de `pendingTokens/threshold`, à esquerda na linha da caixa; no computador o percentual ao lado, no celular só o anel; a janela fica | | 2026-10-25 "só uma barra de girar ... quando clica, que abriria os dois"; E1, 2026-10-26: "E. E1" | |
 | Microfone: ditado | U4 | nenhum | AI Elements `speech-input` (`ai-elements-speech-input.tsx:75-178, 260-330`); Mastra `client-sdks/react/src/voice/use-speech-recognition.ts:76-130`; Conexus OS `apps/web/src/features/builder/composer/use-dictation.ts:36-83` | Lido: `SpeechRecognition ?? webkitSpeechRecognition`, `continuous`, `interimResults`, `lang`; o AI Elements cai para `MediaRecorder` com `onAudioRecorded` | embrulhado: copiado para `ui/`, `lang='pt-BR'`, frase em andamento na caixa, frase por código de erro (`not-allowed`, `service-not-allowed`, `language-not-supported`, `no-speech`); sem `onAudioRecorded`, o botão some onde não há reconhecimento | Teste com o reconhecimento dublado (critérios 13 e 14) | A1 B1 C, 2026-10-25 | `apps/web/src/ui/speech-input.tsx` |
 | `processLocally` | U4 | — | MDN, on-device speech recognition (lido em 2026-10-26) | Documentado: `true` exige o pacote no aparelho, senão `start()` falha com `language-not-supported` | nativo: não ligar (padrão `false`) | | "C sim", 2026-10-25 | |
-| Tipos do Web Speech | U4 | — | `typescript@6.0.3` `lib/lib.dom.d.ts:35515-35627` tem os eventos e resultados, não o construtor `SpeechRecognition` | Lido | embrulhado: uma declaração do construtor na peça (o Conexus OS fazia `use-dictation.ts:3-23`) | `npm run typecheck` | não precisa | |
+| Tipos do Web Speech | U4 | — | `typescript@6.0.3` `lib/lib.dom.d.ts:35515-35627` tem os eventos e resultados, e `:44456` o tipo `SpeechRecognitionErrorCode`; não tem a interface `SpeechRecognition` nem o construtor | Lido | embrulhado: uma declaração da interface (`continuous`, `interimResults`, `lang`, `start`, `stop`, `onresult`, `onerror`, `onend`) e do construtor na peça, com o código de erro do `lib.dom` (o Conexus OS fazia `use-dictation.ts:3-23`) | `npm run typecheck` | não precisa | |
 | Microfone no CSP e cabeçalhos | fica como está | `http.ts` sem `Permissions-Policy` (helmet não define) | — | Lido | nativo | | não precisa | |
 | Gravação nativa com arquivos (T26) | U1 | `scripts/record.ts` cenários `cited`, `thinking`, `abort`, `plan`; o dublê recusa qualquer endereço fora da Anthropic (`record.ts:71-74`) | o mesmo fluxo | Provado: com esse dublê o PDF e a imagem viram `[Attachment unavailable]`, porque o Mastra busca o data URL pelo `fetch` | embrulhado: cenário `files` no `record.ts`, deixando `data:` ir ao `fetch` real | `runs/native-files.json` do estudo (primeira rodada, antes do ajuste) | não precisa | `apps/server/src/platform/recordings/mastra/files.jsonl` |
 | Arquivo dentro do app ou da máquina | fica de fora (A1) | nenhum | Dyad `902829f` `src/ipc/types/chat.ts:110` (`upload-to-codebase` e `chat-context`), `chat_attachment_utils.ts:100-114`; `@mastra/core` `FileUploadProcessor` | Lido | nativo: a 14.3 é só `chat-context` | | "A1 sim", 2026-10-25 | |
@@ -239,7 +237,7 @@ const BODY_LIMIT = 31_457_280
 new MastraServer({ app: scope, mastra, bodyLimitOptions: { maxSize: BODY_LIMIT, onError: (error) => error } })
 
 // http.ts
-imgSrc: ["'self'", 'blob:', 'data:']
+imgSrc: ["'self'", 'data:']
 
 // test-anthropic-body.ts: o que não é texto nas mensagens, em ordem.
 type Media = { type: 'document' | 'image'; mediaType: string }
@@ -266,7 +264,7 @@ type Sent = { /* os campos de hoje */ media: Media[] }
    30 MiB + 1 byte → 413 `REQUEST_TOO_LARGE`, sem chamada ao modelo.
 3. `test-anthropic-body.ts`: `media`, lido das partes `document` e `image` do corpo. Os casos do
    critério 2: `.md` em `texts` com `[File: observacoes.md]`; PDF e PNG em `media`; o PDF enviado
-   durante a volta aparece no pedido seguinte da mesma volta. A data URL vai inteira
+   durante a volta aparece no pedido seguinte da mesma volta; um envio só com o arquivo e `message` vazio chega com o arquivo e sem parte de texto vazia ("só o arquivo, sem texto"). A data URL vai inteira
    (`data:text/markdown;base64,…`), como a U3 vai mandar.
 4. `http.ts`: `imgSrc`; `http.test.ts` confere o cabeçalho inteiro.
 5. `record.ts`: `files` no `Scenario`; no `replaying`, um endereço `data:` vai ao `fetch` real; as
@@ -310,7 +308,6 @@ versão e a data; as linhas `row` guardam a parte `file` com a data URL.
 | `apps/web/src/builder/conversation/composer.test.tsx` | Muda (e a #170) | — |
 | `panel.test.tsx`, `stream.test.tsx`, `card-stopped.test.tsx`, `conversation.test.tsx` | Mudam onde esperam Parar ao lado de Enviar | — |
 | `docs/guides/design.md` V30 | Muda (abaixo) | — |
-| `apps/web/src/brand/tokens.css`, `docs/guides/design.md` V13 | Mudam só com D1a-B | todo o web lê os tamanhos |
 
 ### Os contratos que a unidade cria
 
@@ -337,10 +334,8 @@ const action: Action = props.answering && empty ? 'stop' : 'send'
 - `empty` é a caixa sem texto; a U3 soma "e sem arquivo".
 - `text.ts`: `NO_SECRETS = 'Não cole senhas ou chaves na conversa.'`, um dono, lido pelo
   compositor no computador, pela conversa vazia e pela folha do modelo no celular (C26).
-- A linha de baixo: um `<p>` no computador (o `!phone` que o compositor já usa). Tamanho pela D1a:
-  D1a-A, `text-fact` (12 px, o de hoje); D1a-B, um tamanho novo `--text-note: 0.6875rem` em
-  `apps/web/src/brand/tokens.css` com a altura de linha do `text-fact`, e a exceção na V13. O
-  `--text-eyebrow` não serve: leva peso 700 e espaçamento de rótulo.
+- A linha de baixo: um `<p>` no computador (o `!phone` que o compositor já usa), em `text-fact`
+  (12 px, o de hoje). Sem tamanho novo e sem mudança na V13: sua palavra "D1A", 2026-10-26.
 - O texto novo da V30, que esta unidade escreve no guia, na frase da dica: "In the conversation, on
   a keyboard Enter sends and Shift+Enter breaks the line, with no hint under the field; on touch
   Return breaks the line and the button sends. Under the field on a computer sits one small line
@@ -364,7 +359,7 @@ React e Tailwind pelas linhas de `stack.md`.
 3. A linha de ações: `memory` primeiro (`me-auto`), depois `picker`, depois o botão; a U3 e a U4
    põem **+** e microfone antes do botão.
 4. `panel.tsx`: passa `<MemoryStatus … compact={phone} />` como nó; a U5 tira o `compact`.
-5. `NO_SECRETS` novo e a linha no tamanho da D1a; V30 no guia (e V13, se D1a-B).
+5. `NO_SECRETS` novo e a linha em `text-fact`; V30 no guia.
 
 ### Como se prova
 
@@ -446,7 +441,10 @@ export type Steer = { id: string; content: string; files: readonly MessageFile[]
 // messages.ts: `userText(part): MastraMessagePart[]`, as partes `text` e `file` do `data-user-message`.
 ```
 
-- Estados: `Refusal` é a união da recusa, uma frase por variante, dona `text.ts` (C26, C48).
+- Estados: `Refusal` é a união da recusa, uma frase por variante, dona `text.ts` (C26, C48). O hook
+  confere os tetos de `LIMITS` (caracteres da data URL, como a rota), e `text.ts` calcula os MB das
+  frases de `LIMITS.data` e `LIMITS.total` (× 3/4, em MiB: 10,5 e 21), então uma frase nunca diz um
+  teto que o código não aplica; não há um segundo teto, mais baixo.
 - A bolha: uma parte `file` vira etiqueta; uma parte de texto que começa com `[File: nome]` seguida
   de um bloco cercado (o formato do Mastra, `agent-controller-DO6rGsQm.js:5241`) vira etiqueta com
   esse nome. É a única leitura do texto do Mastra, e a gravação `files` a prova (T26).
@@ -476,7 +474,7 @@ Tailwind.
 
 Critérios 8 a 10 em `attachments.test.tsx` (o envio visto pelo MSW, como os testes do painel);
 critério 11 em `person-turn.test.tsx` com `recordedEvent('files', …)` e as linhas guardadas
-(T26); critério 12 em `panel.test.tsx`. A QA lê o console sem erro de CSP.
+(T26); critério 12 em `apps/web/src/builder/conversation/panel.test.tsx`. A QA lê o console sem erro de CSP.
 
 ### Parar se
 
@@ -507,7 +505,8 @@ só como leitura.
 
 ```ts
 // ui/speech-input.tsx
-type DictationError = 'not-allowed' | 'service-not-allowed' | 'language-not-supported' | 'no-speech' | 'other'
+// O código vem do `lib.dom` (`lib.dom.d.ts:44456`); a peça só lê o que declara abaixo.
+type DictationError = SpeechRecognitionErrorCode
 export function SpeechInput(props: {
   lang: 'pt-BR'
   /** O texto final de cada resultado, para juntar à caixa. */
@@ -516,11 +515,25 @@ export function SpeechInput(props: {
   onInterim: (text: string) => void
   onError: (error: DictationError) => void
 }): ReactNode | null // null onde não há SpeechRecognition
-declare global { interface Window { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition } }
+declare global {
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean
+    interimResults: boolean
+    lang: string
+    start(): void
+    stop(): void
+    onresult: ((event: SpeechRecognitionEvent) => void) | null
+    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
+    onend: (() => void) | null
+  }
+  interface Window { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }
+}
 ```
 
 - `continuous = true`, `interimResults = true`, `lang = 'pt-BR'`; `processLocally` não é tocado.
-- Cada `DictationError` tem uma frase, dona `text.ts` (C26, C48); a lista na matriz de estados.
+- O segundo toque chama `stop()`: o texto já final fica e `aborted` não mostra frase. Os códigos
+  `not-allowed`, `service-not-allowed`, `language-not-supported` e `no-speech` têm cada um a sua
+  frase e os outros a do "ditado parou", dona `text.ts` (C26, C48); a lista na matriz de estados.
 
 ### As skills e a leitura
 
@@ -528,20 +541,21 @@ declare global { interface Window { SpeechRecognition?: new () => SpeechRecognit
 
 ### A ordem do trabalho
 
-1. Copiar `speech-input` sem o ramo `MediaRecorder`; a declaração do construtor.
+1. Copiar `speech-input` sem o ramo `MediaRecorder`; a declaração da interface e do construtor.
 2. No compositor: o microfone antes do botão; `onInterim` mostra o texto em andamento depois do
    rascunho, `onFinal` o junta ao rascunho; a frase do erro no lugar da frase de envio.
 3. `dictation.test.tsx` com um `SpeechRecognition` dublado em `window`.
 
 ### Como se prova
 
-Critérios 13 e 14 em `dictation.test.tsx`. A QA dita no Chrome do computador e no celular; o iPhone
-na tela de início não tem o microfone.
+Critérios 13 e 14 em `dictation.test.tsx`. A QA dita no Chrome do computador e no celular e, no iPhone com o Hub
+na tela de início, registra se o microfone não é desenhado ou mostra a frase do código (critério 14).
 
 ### Parar se
 
 - No iPhone da QA, o Safari na tela de início tem `webkitSpeechRecognition` mas falha ao começar:
-  relatar o código; a frase é a do código, e esconder o botão ali volta ao cartão.
+  é o segundo caso do critério 14; relatar o código; a frase é a do código, e esconder o botão ali
+  volta ao cartão.
 
 ## U5 O anel único
 
