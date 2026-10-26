@@ -38,22 +38,6 @@ export const APP_FAILURES = {
 
 /** The failures of sending a version and putting one back on the air (step 9). */
 export const APP_VERSION_FAILURES = {
-  APP_VERSION_INVALID: {
-    category: 'USER',
-    settles: true,
-    status: 422,
-    phrase: 'A pasta não é uma versão do Conexus.',
-    action: 'Escolha a pasta montada pelo app.',
-    actionKind: 'NONE',
-  },
-  APP_VERSION_TOO_LARGE: {
-    category: 'USER',
-    settles: true,
-    status: 413,
-    phrase: 'A versão passa de 10 MB ou de 1.000 arquivos.',
-    action: '',
-    actionKind: 'NONE',
-  },
   APP_VERSION_SENDING: {
     category: 'USER',
     settles: true,

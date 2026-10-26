@@ -51,10 +51,10 @@ merge.
   form one fix round, split into fronts that share no file, built at once, one commit each; a
   Bloqueia that needs a contract the card lacks follows L7, then is one more front with its own
   delta. One reader checks each front's delta for closed Bloqueia and new defects, while QA reruns
-  the screens it touched. No per-unit or per-topic review: the card's reader checks the reference
-  table before any build. A unit merges into the step branch only with its section's local tests and
-  proofs green (conexus-build step 7); CI runs once, on the step's pull request. Founder,
-  2026-10-24: "CI é só quando for fazer o PR", and one Opus review per step; 2026-10-25: "2. A".
+  the screens it touched. The card's reader checks the reference table before any build. Each unit
+  goes as its own pull request, CI green and one Opus review of it, and merges into `main`, by
+  firstmate; the whole-step review and QA run once, after the last unit. Founder, 2026-10-24: "CI é só quando for
+  fazer o PR"; 2026-10-25: "2. A", "3. A".
   Documents-only changes get check-docs and one reader once; a card gets one whole reading, then
   deltas. Founder, 2026-10-12, firstmate's uncontested reading; 2026-10-16: "Concordo"; 2026-10-21:
   "nao podemos adicionar gargalo". Failure: rereading everything after each fix samples new rules
@@ -79,9 +79,9 @@ merge.
 
 ## 4. Merge and use
 
-- **L13.** The step's code **must** enter `main` in one merge, by firstmate, after the tests pass and
-  the review approves the same commit. Founder, 2026-10-13: "1 ok". The card's pull request, a
-  proof's decision record and the closing pull request carry documents only. The merge **must** keep
+- **L13.** Each unit **must** enter `main` as its own merge, by firstmate, after the tests pass and
+  its review approves the same commit. Founder, 2026-10-13: "1 ok"; 2026-10-25: "3. A". The card's
+  pull request, a proof's decision record and the closing pull request carry documents only. The merge **must** keep
   the commits, so a cited commit exists on `main`. [firstmate's merge script]
 - **L14.** GitHub does not protect `main` in this repository. Nobody but firstmate **may** merge into
   `main`, always through firstmate's merge script, and only after the CI job reported green on that

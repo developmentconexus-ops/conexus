@@ -198,6 +198,22 @@ test('Parar no instante em que o cartão chega, antes de o Mastra guardar a cham
   assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
 })
 
+test('Parar com o Mastra guardando a chamada além do prazo: a resposta volta dentro dele, sem esperar para sempre', {
+  timeout: 60_000,
+}, async (t) => {
+  const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
+  slowedSaveOfOpenCalls(t, 3_000)
+  assert.equal((await send()).statusCode, 200)
+  await untilCard(stream, 'question')
+  const started = Date.now()
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
+  assert.ok(
+    Date.now() - started < 3_500,
+    'Parar waits for the bound at most, then Mastra answers as before',
+  )
+  assert.equal(endOf(await within(15_000, stream.turn())), 'aborted')
+})
+
 test('Parar com uma pergunta aberta: nada fica no banco do Mastra', {
   timeout: 60_000,
   todo: MASTRA_RACE,

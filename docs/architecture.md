@@ -9,7 +9,7 @@ founder's words and what reopens it. The rules that follow from this design live
 
 A person in a company asks Conexus, in Portuguese, for a business app. An agent, the Builder,
 writes it. The app runs for the people of that company, on that company's data. One founder
-operates the whole installation, for a handful of invited companies at launch.
+operates the installation, for a handful of invited companies at launch.
 
 **Quality goals, in order.**
 
@@ -17,11 +17,11 @@ operates the whole installation, for a handful of invited companies at launch.
    data. Generated code holds no secret and reaches no network.
 2. **Recoverable by one person.** Every part can be published, rolled back and restored by the
    founder, without a terminal.
-3. **Cheap at rest.** With nobody using it, Conexus leaves its databases asleep [0009].
+3. **Cheap at rest.** Idle, Conexus leaves its databases asleep [0009].
 4. **Native first.** A platform or library feature comes before Conexus code. Each exception names
    the line where the library does less.
-5. **Readable.** One language, one tree, and walls checked by a machine, so one person and an agent
-   can find the owner of any fact [0002] [0003].
+5. **Readable.** One language, one tree, and walls checked by a machine, so one person or agent
+   finds any fact's owner [0002] [0003].
 
 **What the product never does.** It never invents a value or simulates progress: a figure shown as
 coming from a system came from a real read, and an unknown is shown as unavailable, never as zero.
@@ -161,7 +161,7 @@ its Workers in steps 7 and 9, everything together in step 22.
 **The Hub reaches its database** by the direct address, because a long-lived server keeps connections. Basis: only tested so; the pooled address serves callers that do not.
 
 **Down alerts.** Cloudflare's Tunnel health notification and a free external monitor of the health
-route both e-mail the founder; the route skips the database, so a hung program is seen too
+route e-mail the founder; the route skips the database, so a hung program shows
 [0035].
 
 ## 8. Crosscutting concepts
@@ -183,9 +183,9 @@ counts the capability's calls). Pieces still made by hand here:
 **Who may enter** [0013] [0014] [0015] [0016]. The Hub's session has three guarantees: no stored
 row works alone to sign in, the cookie is valid for one exact host, and the session has an idle and
 a total deadline. Who holds it, and where companies, members and invitations live, are reopened
-[0013] [0015]. Better Auth handles password, reset and the attempt limit. App sessions, the one-use
-handoff to an app and the Preview session are Conexus's own. An app session lives inside the
-Hub's, with no sign-out of its own [0041].
+[0013] [0015]. Better Auth handles password, reset and the attempt limit. App sessions and the one-use
+handoff to an app are Conexus's own; the Prévia has none, and frames the app under its app session (step 14.1). An app
+session lives inside the Hub's, with no sign-out of its own [0041].
 
 **Isolation, in layers.** Hub admission on every read and write, with the company column on every
 table and the company carried in every transaction [0012]; row policies bound each transaction's
