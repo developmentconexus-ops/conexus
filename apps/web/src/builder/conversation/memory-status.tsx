@@ -49,8 +49,9 @@ function Ring({ percent, spinning }: { percent: number; spinning: boolean }) {
 }
 
 /**
- * One memory ring in the composer's action row (Criterion 15): the share of the message window that is
- * full, with the number beside it on a computer. The popover keeps both memories (Criterion 16).
+ * One memory ring in the status line of the composer's action row (Criterion 15): the share of the
+ * message window that is full, with the number beside it on a computer. The popover keeps both
+ * memories (Criterion 16).
  * Failure marks carry no vendor text (C48, C51).
  */
 export function MemoryStatus(props: {
