@@ -169,22 +169,34 @@ function partsOf(run: Run, reason: AgentEnd, outcome: Settled | 'gone' | 'threw'
   return parts
 }
 
+/** Our message kept on the thread, a failure to keep it logged: it is told all the same. */
+async function keep(deps: Deps, message: MastraDBMessage): Promise<void> {
+  try {
+    await deps.memory.saveMessages({ messages: [message] })
+  } catch (cause) {
+    logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
+  }
+}
+
 /**
  * The run ends, for any reason, a question or a plan included (`suspended`): its version is saved
- * by the conversation and told at once, its failure decided once, and our parts kept on the thread
- * as one message, told again once the version went to the app, before Mastra says `agent_end`,
- * never sent to the model (criteria 30, 48; step 14.1, criteria 2 to 4).
+ * by the conversation, kept on the thread and told at once as one message of our parts, its
+ * failure decided once; once the version went to the app, the same message is kept and told again,
+ * before Mastra says `agent_end`, never sent to the model (criteria 30, 48; step 14.1, criteria 2
+ * to 4, 31).
  */
 async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): Promise<void> {
   const conversationId = ConversationIdSchema.parse(session.identity.getId())
   let message = oursOf(session, conversationId, [])
-  let told = false
+  let kept: Promise<void> | undefined
+  let sending = false
   function saved(settled: Settled): void {
     const parts = partsOf(run, reason, settled)
     if (parts.length === 0) return
     message = { ...message, content: { format: 2, parts } }
+    kept = keep(deps, message)
+    sending = settled.preview?.state === 'sending'
     tell(session, message)
-    told = true
   }
   // A save that throws is this run's failure, said and logged here: Mastra would print the
   // listener's error raw, and the run would end without saying why.
@@ -194,17 +206,14 @@ async function ended(deps: Deps, session: Session, run: Run, reason: AgentEnd): 
       logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
       return 'threw' as const
     })
+  await kept
+  // Kept and told again only with what the end added: how the send went, or a save that threw.
+  if (kept !== undefined && !sending && outcome !== 'threw') return
   const parts = partsOf(run, reason, outcome)
   if (parts.length === 0) return
   message = { ...message, content: { format: 2, parts } }
-  try {
-    await deps.memory.saveMessages({ messages: [message] })
-  } catch (cause) {
-    logFailure(deps.log, new Failure('INTERNAL_UNEXPECTED', { cause }))
-  }
-  // Told again only with what the end added since: the version's send, or a save that threw.
-  const added = outcome === 'threw' || (outcome !== 'gone' && outcome.preview !== undefined)
-  if (!told || added) tell(session, message)
+  await keep(deps, message)
+  tell(session, message)
 }
 
 /** The machine's step, told live as a message of ours that is not kept. */

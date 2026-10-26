@@ -135,32 +135,6 @@ test('a machine step passes once anything follows it', () => {
   assert.equal(dropped[0]?.kind === 'item' && dropped[0].item.kind, 'tool')
 })
 
-test('the send step closes the turn, and goes once the Prévia is told', () => {
-  const sending: TranscriptItem = {
-    kind: 'conexus',
-    id: 'm-1',
-    partType: 'data-conexus-machine',
-    data: { phase: 'sending' },
-  }
-  const version: TranscriptItem = {
-    kind: 'conexus',
-    id: 'v-1',
-    partType: 'data-conexus-version',
-    data: {},
-  }
-  const preview: TranscriptItem = {
-    kind: 'conexus',
-    id: 'p-1',
-    partType: 'data-conexus-preview',
-    data: {},
-  }
-  function ids(items: TranscriptItem[]) {
-    return fold(items).map((row) => (row.kind === 'item' ? row.item.id : 'group'))
-  }
-  assert.deepEqual(ids([sending, tool('a'), version]), ['a', 'v-1', 'm-1'])
-  assert.deepEqual(ids([sending, tool('a'), version, preview]), ['a', 'v-1', 'p-1'])
-})
-
 test('the summary counts by tool in order and formats correctly', () => {
   const summary = summaryOfTools([
     tool('1', 'mastra_workspace_list_files'),

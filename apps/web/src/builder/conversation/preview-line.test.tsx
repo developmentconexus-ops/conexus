@@ -1,3 +1,4 @@
+import type { MastraMessagePart } from '@mastra/client-js'
 import { screen, waitFor, within } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
@@ -5,8 +6,18 @@ import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, PEDIDOS } from '../../platform/test-hub.tsx'
 import { AGENT_START, RUNNING, stepStarted } from './test-events.ts'
 import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
+import { builderSaid, personSaid } from './test-stream.tsx'
 
 const server = hubServer()
+
+const VERSION: MastraMessagePart = {
+  type: 'data-conexus-version',
+  data: { number: 1, changed: true, files: 3, changedFiles: 3, check: { state: 'passed' } },
+}
+
+function preview(data: object): MastraMessagePart {
+  return { type: 'data-conexus-preview', data }
+}
 const { openConversation } = screens(server)
 
 async function turn() {
@@ -19,18 +30,16 @@ async function turn() {
   return { line, log: screen.getByRole('log', { name: 'Conversa com o Builder' }) }
 }
 
-test('a fase sending diz "Subindo o app…", e a Prévia pronta diz "Prévia pronta."', async () => {
+test('a Prévia sending diz "Subindo o app…", e a mesma mensagem pronta diz "Prévia pronta."', async () => {
   const { line, log } = await turn()
-  line.emit(
-    stepStarted('m-machine', [{ type: 'data-conexus-machine', data: { phase: 'sending' } }]),
+  line.emit(stepStarted('ours', [VERSION, preview({ state: 'sending', number: 1 })]))
+  const said = await within(log).findByText(/^Subindo o app…/)
+  expect(said.compareDocumentPosition(within(log).getByText(/^Versão 1 guardada/))).toBe(
+    Node.DOCUMENT_POSITION_PRECEDING,
   )
-  await within(log).findByText(/^Subindo o app…/)
-  line.emit(
-    stepStarted('m-preview', [
-      { type: 'data-conexus-preview', data: { state: 'ready', number: 1 } },
-    ]),
-  )
+  line.emit(stepStarted('ours', [VERSION, preview({ state: 'ready', number: 1 })]))
   await within(log).findByText('Prévia pronta.')
+  expect(within(log).queryByText(/^Subindo o app…/)).toBeNull()
 })
 
 test('a Prévia que falhou diz o motivo pela frase do código', async () => {
@@ -74,30 +83,23 @@ test('a Prévia pronta faz o Projeto ser lido de novo; a que falhou, não', asyn
   await waitFor(() => expect(reads).toBeGreaterThan(before))
 })
 
-test('o envio vem depois da versão, como o servidor o conta, e sai quando a Prévia diz como foi', async () => {
-  const { line, log } = await turn()
-  line.emit(
-    stepStarted('c:machine', [{ type: 'data-conexus-machine', data: { phase: 'starting' } }]),
+test('recarregar no meio do envio mostra a versão e "Subindo o app…", até a Prévia pronta (31)', async () => {
+  const ours = {
+    id: 'ours',
+    role: 'assistant',
+    createdAt: '2026-10-19T12:03:00.000Z',
+    content: { parts: [VERSION, preview({ state: 'sending', number: 1 })] },
+  } as const
+  const opened = await openConversation(
+    conversationOf({
+      id: FIRST,
+      messages: [personSaid('Crie um app de encomendas'), builderSaid('Pronto.'), ours],
+    }),
   )
-  line.emit(stepStarted('b1', [{ type: 'text', text: 'Pronto.' }]))
-  line.emit(
-    stepStarted('b2', [
-      {
-        type: 'data-conexus-version',
-        data: { number: 1, changed: true, files: 3, changedFiles: 3, check: { state: 'passed' } },
-      },
-    ]),
-  )
-  line.emit(
-    stepStarted('c:machine', [{ type: 'data-conexus-machine', data: { phase: 'sending' } }]),
-  )
-  const said = await within(log).findByText(/^Subindo o app…/)
-  expect(said.compareDocumentPosition(within(log).getByText(/^Versão 1 guardada/))).toBe(
-    Node.DOCUMENT_POSITION_PRECEDING,
-  )
-  line.emit(
-    stepStarted('b3', [{ type: 'data-conexus-preview', data: { state: 'ready', number: 1 } }]),
-  )
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  await within(log).findByText(/^Versão 1 guardada/)
+  await within(log).findByText(/^Subindo o app…/)
+  opened.line().emit(stepStarted('ours', [VERSION, preview({ state: 'ready', number: 1 })]))
   await within(log).findByText('Prévia pronta.')
   expect(within(log).queryByText(/^Subindo o app…/)).toBeNull()
 })

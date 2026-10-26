@@ -15,7 +15,6 @@ const PHASES: Record<MachinePhase, string> = {
   starting: 'Ligando a máquina…',
   copying: 'Copiando os arquivos do app…',
   saving: 'Guardando a versão…',
-  sending: 'Subindo o app…',
 }
 
 function Since() {
@@ -23,18 +22,23 @@ function Since() {
   return <span aria-hidden="true"> (há {durationOf(seconds)})</span>
 }
 
-export function MachineLine({ data }: { data: MachineData }) {
+/** A step the turn waits on, with how long it has shown. */
+export function WaitLine({ text }: { text: string }) {
   return (
     <Marker className="text-text-2">
       <MarkerIcon>
         <CogIcon />
       </MarkerIcon>
       <MarkerContent>
-        {PHASES[data.phase]}
+        {text}
         <Since />
       </MarkerContent>
     </Marker>
   )
+}
+
+export function MachineLine({ data }: { data: MachineData }) {
+  return <WaitLine text={PHASES[data.phase]} />
 }
 
 function files(count: number, changed: string): string {

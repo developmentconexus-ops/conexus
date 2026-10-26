@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Page } from 'playwright-core'
-import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
+import { TEST_APPS_DOMAIN, TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { visitApp } from './apps-edge.ts'
 import type { Scenario } from './apps-journey.ts'
 import {
@@ -47,6 +47,26 @@ async function firstVersion(s: Scenario, pedidos: string) {
     .waitFor()
 }
 
+/**
+ * Abrir app, once a version is on the air, opens the app's address in a new tab and leaves the Hub
+ * where it was (step 14.1, criterion 28). This browser reaches only the Hub, so the tab's first
+ * request is answered here; the app's own pages are the dispatcher's, visited by hand below.
+ */
+async function opensAppTab(page: Page, pedidos: string, label: string) {
+  await page.goto(pedidos)
+  const address = `https://${label}.${TEST_APPS_DOMAIN}/`
+  await page
+    .context()
+    .route(address, (route) => route.fulfill({ contentType: 'text/html', body: '' }))
+  const link = page.getByRole('link', { name: 'Abrir app' })
+  assert.equal(await link.getAttribute('href'), address)
+  const at = page.url()
+  const [tab] = await Promise.all([page.context().waitForEvent('page'), link.click()])
+  await tab.waitForURL(address)
+  assert.equal(page.url(), at)
+  await tab.close()
+}
+
 /** 4. Voltar para esta, on Versão 1: the warning says the data stay as they are. */
 async function putVersionOneBack(page: Page, pedidos: string) {
   await page.goto(`${pedidos}?lens=project&section=versions`)
@@ -73,6 +93,7 @@ test('o roteiro de Enviar um app: o Builder envia, gravar, segunda versão, volt
   const { page } = s.owner
   const pedidos = await pedidosOf(s)
   await firstVersion(s, pedidos.url)
+  await opensAppTab(page, pedidos.url, pedidos.door.label)
   // 2. Abrir app: Recados; a recado written stays for the next visit.
   const app = await openApp(s, pedidos.door, GREEN)
   const written = await visitApp(pedidos.door, app, '/api/escreverRecado', { texto: RECADO })

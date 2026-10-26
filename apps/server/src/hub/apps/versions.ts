@@ -99,7 +99,6 @@ type VersionRow = Pick<
   typeof appVersion.$inferSelect,
   Exclude<keyof typeof VERSION_VIEW, 'sentByName'>
 > & { sentByName: string | null }
-export type VersionFailure = AppVersionFailure
 
 const ShownState = z.enum(['sending', 'ready', 'failed'])
 
@@ -141,7 +140,7 @@ export async function lockApp(tx: CommandTx, ids: OfProject) {
 export async function failVersion(
   tx: CommandTx,
   // biome-ignore lint/plugin: the version rows hold strings and live.ts, removal.ts and repair.ts pass them on; the brand lands when those rows parse AppVersionId (C23)
-  input: { projectId: ProjectId; versionId: string; failure: VersionFailure },
+  input: { projectId: ProjectId; versionId: string; failure: AppVersionFailure },
 ): Promise<void> {
   await tx
     .update(appVersion)

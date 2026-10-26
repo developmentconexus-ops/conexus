@@ -30,11 +30,8 @@ export const VersionCheck = z.discriminatedUnion('state', [
 ])
 export type VersionCheck = z.infer<typeof VersionCheck>
 
-/**
- * The steps of the machine a turn waits on, each told as a `data-conexus-machine` part; `sending`
- * is the turn's version going to the Projeto's app (step 14.1).
- */
-export const MachinePhase = z.enum(['starting', 'copying', 'saving', 'sending'])
+/** The steps of the machine a turn waits on, each told as a `data-conexus-machine` part. */
+export const MachinePhase = z.enum(['starting', 'copying', 'saving'])
 export type MachinePhase = z.infer<typeof MachinePhase>
 
 /** What each part of ours carries in its `data`, one schema per name in `CONEXUS_PARTS`. */
@@ -67,8 +64,12 @@ export type ThoughtData = z.infer<typeof ThoughtData>
 export const PreviewFailure = z.enum([...AppVersionFailure.options, 'APP_VERSION_SENDING'])
 export type PreviewFailure = z.infer<typeof PreviewFailure>
 
-/** Whether the turn's version reached the Projeto's app (step 14.1), by its number. */
+/**
+ * Whether the turn's version reached the Projeto's app (step 14.1), by its number: `sending` from
+ * the moment it is saved, kept in its message until the send says `ready` or `failed`.
+ */
 export const PreviewData = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('sending'), number: z.int().positive() }),
   z.object({ state: z.literal('ready'), number: z.int().positive() }),
   z.object({ state: z.literal('failed'), number: z.int().positive(), code: PreviewFailure }),
 ])

@@ -18,7 +18,6 @@ import { AppsDomain, PublicOrigin } from '../../apps/server/src/platform/config.
 import {
   closeBrowser,
   liveHub,
-  openProject,
   PASSWORD,
   personWithPassword,
   plantCompany,
@@ -240,43 +239,19 @@ test('passagem: o endereço do app sem sessão do Hub leva a Entrar e, logo depo
   assert.deepEqual(s.problems, [])
 })
 
-test('passagem: Abrir app no Projeto vai direto ao app, numa navegação vinda do app; um fetch do app é recusado', async (t) => {
+test('passagem: com a sessão do Hub, o endereço do app vai direto ao app, numa navegação vinda do app; um fetch do app é recusado', async (t) => {
   const s = await scenario(t, { bypassCSP: true })
   const { page } = s
   await page.goto(`${HUB}/login`)
   await signIn(page, CARLA.email, PASSWORD)
   await waitForHome(page)
   await createPedidos(s, page)
-  // The Projeto has an app on the air only once a version was sent; the screen shows Abrir app from then on.
-  await s.hub.database.asOwner(
-    `insert into apps.app(project_id, company_id)
-       select id, company_id from projects.project where company_id = $1`,
-    [s.companyId],
-  )
-  await s.hub.database.asOwner(
-    `insert into apps.app_version(id, company_id, project_id, number, state, manifest, digest,
-       sent_by, attempt_key, created_at)
-     select repeat('d', 32), company_id, project_id, 1, 'ready', '{}', repeat('0', 64), 'x', 'k', now()
-       from apps.app where company_id = $1`,
-    [s.companyId],
-  )
-  await s.hub.database.asOwner(
-    `update apps.app set live_version_id = repeat('d', 32) where company_id = $1`,
-    [s.companyId],
-  )
-  await page.goto(`${HUB}/companies/${s.companyId}`)
-  await openProject(page, 'Pedidos')
+  // No version is on the air, so the dispatcher answers with the example app. Abrir app opening a
+  // tab on a Builder version is the apps journey's (`versions.test.ts`).
   const before = s.seen.length
-  const link = page.getByRole('link', { name: 'Abrir app' })
-  await link.waitFor()
-  // The screen has read the version; the dispatcher answers with the example app, which this journey opens.
-  await s.hub.database.asOwner(`update apps.app set live_version_id = null where company_id = $1`, [
-    s.companyId,
-  ])
-  const projectAddress = page.url()
-  const [app] = await Promise.all([page.context().waitForEvent('page'), link.click()])
+  const app = await page.context().newPage()
+  await app.goto(`${APP}/`)
   await app.getByText(GREETING).waitFor()
-  assert.equal(page.url(), projectAddress)
   const opened = s.seen.slice(before).filter((one) => one.dest === 'document')
   assert.deepEqual(
     opened.map((one) => ({ ...one, path: new URL(one.path, HUB).pathname })),

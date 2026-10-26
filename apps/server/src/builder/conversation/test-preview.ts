@@ -1,11 +1,14 @@
+import assert from 'node:assert/strict'
 import type { TestContext } from 'node:test'
 import { PreviewData } from '@conexus/hub-api'
 import type { MastraMessagePart } from '@mastra/core/agent-controller'
 import type { Checked } from '../../hub/apps/test-versions.ts'
 import { checking, folder } from '../../hub/apps/test-versions.ts'
+import type { Person } from '../../hub/identity/test-hub.ts'
+import { call } from '../../hub/identity/test-hub.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../platform/test-company-postgres.ts'
-import { conversing, title } from './test-conversation.ts'
+import { asked, conversing, title } from './test-conversation.ts'
 
 const WRITE = {
   type: 'tool_use',
@@ -49,4 +52,35 @@ export function previewsIn(parts: MastraMessagePart[]): PreviewData[] {
   return parts.flatMap((part) =>
     part.type === 'data-conexus-preview' ? [PreviewData.parse(part.data)] : [],
   )
+}
+
+export type Previewing = Awaited<ReturnType<typeof previewing>>
+
+/** The Projeto's versions as its owner lists them on the Versões tab. */
+export async function versionsOf(subject: Previewing, person: Person = subject.ana) {
+  const listed = await call(subject.hub, person, 'GET', subject.versions)
+  assert.equal(listed.statusCode, 200)
+  return Object(listed.json()).versions.map((version: Record<string, unknown>) => ({
+    number: version.number,
+    state: version.state,
+    live: version.live,
+    failure: version.failure,
+    sentBy: version.sentBy,
+  }))
+}
+
+/**
+ * One turn of `person` on a new conversation of the Projeto: its events, and what its version's
+ * message says of the Prévia when last told, the `sending` told at the save replaced by the end.
+ */
+export async function turn(t: TestContext, subject: Previewing, person?: Person) {
+  const { hub, conversations } = subject
+  const { url, events } = await asked(t, { hub, person: person ?? subject.ana, conversations })
+  const told = events.flatMap((event) =>
+    event.type === 'message_start' &&
+    event.message.content.parts.some((part) => part.type === 'data-conexus-version')
+      ? [event.message.content.parts]
+      : [],
+  )
+  return { url, events, previews: previewsIn(told.at(-1) ?? []) }
 }

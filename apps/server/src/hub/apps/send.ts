@@ -1,6 +1,7 @@
 import type { Manifest } from '@conexus/app-contract'
 import { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
 import type {
+  AppVersionFailure,
   AppVersionId,
   CompanyId,
   Person,
@@ -19,7 +20,7 @@ import type { AppDatabaseDeps } from './app-database.ts'
 import { migrateApp, openAppDatabase } from './app-database.ts'
 import { markPrune, prune } from './prune.ts'
 import { app, appVersion } from './tables.ts'
-import type { ReceivedVersion, VersionFailure } from './versions.ts'
+import type { ReceivedVersion } from './versions.ts'
 import { failVersion, holdsClaim, lockApp, receiveVersion, storeAppVersion } from './versions.ts'
 
 export type SendDeps = AppDatabaseDeps & { identity: IdentityPorts; cloudflare: CloudflareApps }
@@ -94,7 +95,7 @@ function standing(deps: SendDeps, sending: Sending): Promise<Standing> {
 
 type Prepared =
   | { kind: 'READY' }
-  | { kind: 'FAILED'; failure: VersionFailure }
+  | { kind: 'FAILED'; failure: AppVersionFailure }
   | { kind: 'STOPPED'; why: Exclude<Standing, 'GO'> }
 
 /**
@@ -131,7 +132,7 @@ async function prepare(
 }
 
 /** A send that cannot finish leaves its version failed; the next send fails it if this cannot. */
-async function fail(deps: SendDeps, sending: Sending, failure: VersionFailure): Promise<void> {
+async function fail(deps: SendDeps, sending: Sending, failure: AppVersionFailure): Promise<void> {
   await deps.database
     .command(sending.scope, (tx) =>
       failVersion(tx, { projectId: sending.projectId, versionId: sending.versionId, failure }),

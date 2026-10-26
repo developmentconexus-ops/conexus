@@ -1749,6 +1749,17 @@
     }
   },
   {
+    "id": "pack-files-match-manifest",
+    "file": "apps/server/src/builder/machine/pack.ts",
+    "find": "  if (files.length !== expected.size || !files.every(({ path }) => expected.has(path)))\n    return invalid\n",
+    "replace": "",
+    "test": {
+      "cwd": "apps/server",
+      "file": "src/builder/runs/preview-send.test.ts",
+      "name": "pasta que não bate com o manifesto"
+    }
+  },
+  {
     "id": "stopped-run-sends-nothing",
     "file": "apps/server/src/builder/runs/runs.ts",
     "find": "      if (mine.stopped) return settled\n",

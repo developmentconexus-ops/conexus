@@ -94,7 +94,7 @@ export const PREVIEW_STATES: State[] = [
     path: `${PROJECT}/conversations/${ID}`,
     replies: turnOf(
       { type: 'data-conexus-version', data: VERSION },
-      { type: 'data-conexus-machine', data: { phase: 'sending' } },
+      { type: 'data-conexus-preview', data: { state: 'sending', number: 2 } },
     ),
     settle: (p) => inChat(p, 'Subindo o app…'),
   },
