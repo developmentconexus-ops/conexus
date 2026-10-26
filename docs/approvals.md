@@ -175,6 +175,10 @@ Em 2026-10-25, sobre o achado 2 da revisão da U5 da 14.1: apagar agora o caminh
 
 Cartão da etapa 14.1 aprovado em 2026-10-25 (commit 297a3a14a383e40c25914890043549b1e45d5100): "A"
 
+Em 2026-10-25, sobre as três chamadas da revisão da etapa 14.1 inteira: 1, o estado "subindo" da Prévia fica na mensagem da versão, guardada desde que a versão é salva e trocada no fim por "pronta" ou pela falha, a fase `sending` da máquina e a regra especial de `fold.ts` saem, e quem recarrega no meio do envio vê "Versão N guardada" e "Subindo o app…" (opção a); 2, se "Apaga tudo" cobre apagar os Projetos de teste das etapas 9 e 10 depois do deploy; 3, a mudança do método para as unidades que entram no main: "1. A 2. Sim pode apagar tudo 3. A"
+
+Cartão da etapa 14.1 aprovado em 2026-10-25 (commit f7496ff1a8d4ca1571f4bd2e49c00ec0c81e7a59): "1. A 2. Sim pode apagar tudo 3. A"
+
 ## Etapa 14.3
 
 Em 2026-10-25, sobre o estudo de arquivos e voz no compositor do Builder: "A1 sim B1 okay, e so uma duvida e o whispr da openai que e rapido e free C sim", e depois: "B1 por agora". Arquivos (PDF, `.md`, `.txt`, imagens) entram no lançamento só na conversa com o Builder, como a etapa 14.3 depois da 14.1; voz fica no ditado do navegador por ora; uma linha sobre o ditado do Chrome passar pelo Google vai ao aviso da etapa 23.
