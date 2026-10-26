@@ -8,10 +8,9 @@
 // the server tests' double uses (`test-anthropic-stream.ts`), and the run is approved and steered the
 // way a person does. `files` is scripted the same way (a tool call, then an answer): a message with
 // a markdown file, a PDF and a PNG, and a second one with a PDF while the run works. It saves
-// every event the session emitted
-// and every row Mastra stored, with the library, its version and the date in the first line, in
-// apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service is called and no
-// credential is read; every prompt is invented (security S40). `tool-error` is not a scenario: its
+// every event the session emitted and every row Mastra stored, with the library, its version and the
+// date in the first line, in apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service
+// is called and no credential is read; every prompt is invented (security S40). `tool-error` is not a scenario: its
 // recording holds one model call and the turn asks a second.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
