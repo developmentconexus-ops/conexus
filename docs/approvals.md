@@ -194,6 +194,8 @@ Em 2026-10-26, sobre as duas telas do compositor: "D. D1 / E. E1" (a linha peque
 
 Cartão da etapa 14.3 aprovado em 2026-10-26 (commit 36fb5dca068c5f468e1a78dcd04f28ec5d07a53b): "1. Sim"
 
+Em 2026-10-26, sobre a V30 na unidade U2 (PR 362), que a L20 recusa no meio da etapa: "B". O texto novo da V30 sai da U2 e entra no pull request de fechamento da etapa 14.3, como na 14.2.
+
 ## Etapa 13.1
 
 Em 2026-10-25, olhando o Início de hoje: "Eu não sei em que etapa que a gente tem que vai mudar a página inicial, é depois da prévia? Porque essa não é a página inicial que a gente realmente quer ter ... E também, como você pode ver, ela tá até com o subliado lá em cima. Então, não que eu quero mudar isso agora, mas mudar quando a gente for mudar a página inicial, para deixar ela conforme a gente já vem planejando há um tempo. Mas acredito que a gente precisa esperar a prévia primeiro." À ordem proposta (14.1, depois arquivos e voz, depois a 13.1, com o compositor do Início sendo o mesmo com **+** e microfone e o contorno do título consertado na 13.1): "Concordo documente tudo isso para ser registrado"

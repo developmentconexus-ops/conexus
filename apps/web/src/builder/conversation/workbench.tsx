@@ -20,7 +20,9 @@ const PHONE_REGIONS =
 /**
  * The two regions of a Projeto: the area on the left and the conversation on the right, with a
  * divider the person drags (320 px to 60 %) and the browser remembers. Under the `md` width, "App |
- * Conversa" sits in the top line of the frame and shows one at a time, both mounted.
+ * Conversa" sits in the top line of the frame and shows one at a time, both mounted. The divider is
+ * `disabled` there although hidden: the library hit-tests by geometry, and `max-md:hidden` hides
+ * only paint.
  */
 export function Workbench(props: { area: ReactNode; panel: ReactNode }) {
   const [view, setView] = useState<'app' | 'chat'>('app')

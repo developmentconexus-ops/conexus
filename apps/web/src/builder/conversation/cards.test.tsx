@@ -174,7 +174,7 @@ test('com pergunta aberta de tool-invocation, a linha diz que o Builder espera a
 })
 
 test('pergunta vencida ou fechada diz que foi fechada e não se responde', async () => {
-  await turn({
+  const { log } = await turn({
     type: 'tool-invocation',
     toolInvocation: {
       toolCallId: CALL,
@@ -184,7 +184,7 @@ test('pergunta vencida ou fechada diz que foi fechada e não se responde', async
     },
   })
   await screen.findByText(/Esta pergunta já foi respondida ou não espera mais/)
-  expect(screen.getAllByRole('button', { name: 'Enviar' })).toHaveLength(1)
+  expect(within(log).queryByRole('button', { name: 'Enviar' })).toBeNull()
 })
 
 test('o cartão da versão: montou, não montou, pela metade, sem conferência (Critério 12)', async () => {

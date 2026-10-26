@@ -58,21 +58,18 @@ test('um botão só: Parar com a caixa vazia, Enviar com texto, e o foco volta a
 })
 
 async function expectOneRow() {
-  {
-    const { field } = await openConversation(conversationOf({ id: FIRST }))
-    const row = field.closest('form')?.querySelector('[data-slot="input-group-addon"]')
-    const names = [...(row?.querySelectorAll('button, [role="combobox"]') ?? [])].map(
-      (one) => one.getAttribute('aria-label') ?? one.getAttribute('name') ?? one.textContent,
-    )
-    expect(row?.contains(screen.getByRole('button', { name: /Memória da conversa/ }))).toBe(true)
-    expect(row?.contains(screen.getByRole('combobox', PICKER))).toBe(true)
-    expect(row?.contains(screen.getByRole('button', { name: 'Enviar' }))).toBe(true)
-    expect(names.at(0)).toMatch(/Memória da conversa/)
-    expect(names.at(-1)).toBe('Enviar')
-    expect(field.closest('form')?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(
-      1,
-    )
-  }
+  const { field } = await openConversation(conversationOf({ id: FIRST }))
+  const form = field.closest('form')
+  const row = form?.querySelector('[data-slot="input-group-addon"]')
+  const names = [...(row?.querySelectorAll('button, [role="combobox"]') ?? [])].map((one) =>
+    one.getAttribute('aria-label'),
+  )
+  expect(row?.contains(screen.getByRole('button', { name: /Memória da conversa/ }))).toBe(true)
+  expect(row?.contains(screen.getByRole('combobox', PICKER))).toBe(true)
+  expect(row?.contains(screen.getByRole('button', { name: 'Enviar' }))).toBe(true)
+  expect(names.at(0)).toMatch(/Memória da conversa/)
+  expect(names.at(-1)).toBe('Enviar')
+  expect(form?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(1)
 }
 
 test(
