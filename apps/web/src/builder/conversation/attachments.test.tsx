@@ -28,9 +28,9 @@ function chips(): (string | null)[] {
     .map((remove) => remove.getAttribute('aria-label'))
 }
 
-/** A file of `bytes` bytes: its data URL is about 4/3 of that, plus the type. */
+/** A file of its name and `bytes` more bytes: its data URL is about 4/3 of that, plus the type. */
 function sized(name: string, bytes: number, type = 'application/pdf') {
-  return new File([new Uint8Array(bytes)], name, { type })
+  return new File([name, new Uint8Array(bytes)], name, { type })
 }
 
 const PDF = new File(['%PDF-1.4'], 'tabela-de-precos.pdf', { type: 'application/pdf' })
@@ -117,4 +117,47 @@ test('o envio leva os arquivos como data URL, o .md sem tipo como text/markdown 
     ],
   })
   expect(chips()).toEqual([])
+})
+
+test('o texto digitado e o arquivo solto durante uma leitura ficam na caixa (8)', async () => {
+  const { field } = await openConversation(fresh())
+  pick([sized('grande.pdf', 4_000_000)])
+  fireEvent.change(field, { target: { value: 'Monte um app' } })
+  fireEvent.drop(field, { dataTransfer: { files: [PDF] } })
+  await waitFor(() => expect(chips()).toHaveLength(2))
+  expect(chips().toSorted()).toEqual(['Tirar grande.pdf', 'Tirar tabela-de-precos.pdf'])
+  expect(field).toHaveProperty('value', 'Monte um app')
+})
+
+test('um envio durante a leitura não volta à caixa; o arquivo lido fica nela (8, 12)', async () => {
+  const { field, sent } = await openConversation(fresh())
+  fireEvent.change(field, { target: { value: 'Monte um app' } })
+  pick([sized('grande.pdf', 4_000_000)])
+  fireEvent.keyDown(field, { key: 'Enter' })
+  await waitFor(() => expect(sent).toHaveLength(1))
+  expect(sent[0]?.body).toEqual({ message: 'Monte um app' })
+  await waitFor(() => expect(chips()).toEqual(['Tirar grande.pdf']))
+  expect(field).toHaveProperty('value', '')
+})
+
+test('o envio apaga a frase de recusa (9)', async () => {
+  const { field, sent } = await openConversation(fresh())
+  fireEvent.paste(field, {
+    clipboardData: { files: [new File(['x'], 'pacote.zip', { type: 'application/zip' })] },
+  })
+  await screen.findByRole('alert')
+  say(field, 'Monte um app')
+  await waitFor(() => expect(sent).toHaveLength(1))
+  expect(screen.queryByRole('alert')).toBeNull()
+})
+
+test('o mesmo arquivo anexado duas vezes fica uma vez, sem frase (8)', async () => {
+  const { field } = await openConversation(fresh())
+  pick([PDF, PDF])
+  await waitFor(() => expect(chips()).toEqual(['Tirar tabela-de-precos.pdf']))
+  fireEvent.paste(field, { clipboardData: { files: [PDF] } })
+  pick([MD])
+  await waitFor(() => expect(chips()).toHaveLength(2))
+  expect(chips()).toEqual(['Tirar tabela-de-precos.pdf', 'Tirar observacoes.md'])
+  expect(screen.queryByRole('alert')).toBeNull()
 })

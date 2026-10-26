@@ -38,37 +38,56 @@ function dataUrlOf(file: File, mediaType: string): Promise<DataUrl> {
   })
 }
 
+type Read = { data: DataUrl; mediaType: string; filename: string }
+
 /**
- * The files of the draft: picked, pasted or dropped, read whole as data URLs, and held to the
- * route's ceilings, measured on the data URL as the route measures it. What passes joins the draft;
- * what does not is left out and said (AI Elements `prompt-input`).
+ * The draft's files with the read ones that pass the route's ceilings, measured on the data URL as
+ * the route measures it, and why the others were left out. A file already in the draft is left out
+ * without a word.
+ */
+function admitted(held: readonly MessageFile[], read: readonly Read[], refused: Refusal | null) {
+  const files = [...held]
+  let total = files.reduce((sum, each) => sum + each.data.length, 0)
+  for (const file of read) {
+    if (files.some((each) => each.data === file.data)) continue
+    if (files.length === LIMITS.files) refused = 'too-many'
+    else if (file.data.length > LIMITS.data) refused = 'too-large'
+    else if (total + file.data.length > LIMITS.total) refused = 'too-large-together'
+    else {
+      files.push(file)
+      total += file.data.length
+    }
+  }
+  return { files, refused }
+}
+
+/**
+ * The files of the draft: picked, pasted or dropped, read whole as data URLs, then joined to the
+ * draft as it is when the read ends (Factory `useComposerImages.ts`), so what was typed or added
+ * meanwhile stays. What does not pass is left out and said (AI Elements `prompt-input`).
  */
 export function useAttachments(draft: {
   files: readonly MessageFile[]
-  setFiles: (files: readonly MessageFile[]) => void
+  setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => void
 }) {
   const [refusal, setRefusal] = useState<Refusal | null>(null)
 
   async function add(picked: FileList | readonly File[]) {
     const typed = Array.from(picked, (file) => ({ file, mediaType: mediaTypeOf(file) }))
     const accepted = typed.filter((each) => TYPES.has(each.mediaType))
+    const read = await Promise.all(
+      accepted.map(async ({ file, mediaType }) => ({
+        data: await dataUrlOf(file, mediaType),
+        mediaType,
+        filename: file.name,
+      })),
+    )
     let refused: Refusal | null = accepted.length < typed.length ? 'type' : null
-    const files = [...draft.files]
-    let total = files.reduce((sum, each) => sum + each.data.length, 0)
-    for (const { file, mediaType } of accepted) {
-      if (files.length === LIMITS.files) {
-        refused = 'too-many'
-        continue
-      }
-      const data = await dataUrlOf(file, mediaType)
-      if (data.length > LIMITS.data) refused = 'too-large'
-      else if (total + data.length > LIMITS.total) refused = 'too-large-together'
-      else {
-        files.push({ data, mediaType, filename: file.name })
-        total += data.length
-      }
-    }
-    draft.setFiles(files)
+    draft.setFiles((held) => {
+      const next = admitted(held, read, refused)
+      refused = next.refused
+      return next.files
+    })
     setRefusal(refused)
   }
 
@@ -76,9 +95,11 @@ export function useAttachments(draft: {
     files: draft.files,
     add,
     remove: (index: number) => {
-      draft.setFiles(draft.files.filter((_, at) => at !== index))
+      draft.setFiles((held) => held.filter((_, at) => at !== index))
       setRefusal(null)
     },
+    /** A send takes the draft, and the phrase about its files goes with it. */
+    clearRefusal: () => setRefusal(null),
     refusal,
   }
 }

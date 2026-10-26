@@ -40,8 +40,12 @@ export function useDraft(conversationId: ConversationId) {
   return {
     text: now.content,
     files: now.files,
-    change: (text: string) => hold({ content: text, files: now.files }),
-    setFiles: (next: readonly MessageFile[]) => hold({ content: now.content, files: next }),
+    change: (text: string) => hold({ content: text, files: heldOf(conversationId).files }),
+    /** Evaluated on the draft as it is when written: a file's read can end after the box changed. */
+    setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => {
+      const box = heldOf(conversationId)
+      hold({ content: box.content, files: update(box.files) })
+    },
     take: (): Outgoing => {
       const taken = heldOf(conversationId)
       hold({ content: '', files: NONE })

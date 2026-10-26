@@ -145,6 +145,7 @@ export function Composer(props: {
     if (empty || !props.canSend || sending.current) return
     sending.current = true
     const outgoing = draft.take()
+    attachments.clearRefusal()
     try {
       if (!(await props.onSend(outgoing))) draft.restore(outgoing)
     } finally {
