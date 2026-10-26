@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 /** A file the person sends, as Mastra's route takes it (`@mastra/client-js@1.56.0` `agent-controller.d.ts:196-203`). */
 export type MessageFile = { data: DataUrl; mediaType: string; filename: string }
 /** A whole `readAsDataURL` result: Mastra reads a text file's words only behind its `data:` prefix. */
@@ -70,9 +68,8 @@ export function useAttachments(draft: {
   files: readonly MessageFile[]
   setFiles: (update: (files: readonly MessageFile[]) => readonly MessageFile[]) => void
 }) {
-  const [refusal, setRefusal] = useState<Refusal | null>(null)
-
-  async function add(picked: FileList | readonly File[]) {
+  /** Why a file was left out, or `null` when all were taken. */
+  async function add(picked: FileList | readonly File[]): Promise<Refusal | null> {
     const typed = Array.from(picked, (file) => ({ file, mediaType: mediaTypeOf(file) }))
     const accepted = typed.filter((each) => TYPES.has(each.mediaType))
     const read = await Promise.all(
@@ -88,18 +85,12 @@ export function useAttachments(draft: {
       refused = next.refused
       return next.files
     })
-    setRefusal(refused)
+    return refused
   }
 
   return {
     files: draft.files,
     add,
-    remove: (index: number) => {
-      draft.setFiles((held) => held.filter((_, at) => at !== index))
-      setRefusal(null)
-    },
-    /** A send takes the draft, and the phrase about its files goes with it. */
-    clearRefusal: () => setRefusal(null),
-    refusal,
+    remove: (index: number) => draft.setFiles((held) => held.filter((_, at) => at !== index)),
   }
 }

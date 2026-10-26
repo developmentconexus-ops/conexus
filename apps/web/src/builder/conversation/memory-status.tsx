@@ -73,17 +73,22 @@ export function MemoryStatus(props: {
   return (
     <Popover>
       <PopoverTrigger
-        role="meter"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
         className="flex min-h-11 min-w-11 items-center justify-center gap-xs text-fact text-text-2 hover:text-text md:min-h-0 md:min-w-0"
         aria-label={`Memória da conversa: Mensagens ${formatK(pending)}/${formatK(threshold)}k, Observações ${formatK(observations)}/${formatK(reflectionThreshold)}k${
           failed ? ' · Falha na memória' : ''
         }`}
       >
-        <Ring percent={percent} spinning={working} />
-        <span className="tabular-nums max-md:hidden">{percent}%</span>
+        {/* biome-ignore lint/a11y/useSemanticElements: Factory's TokenBudget is a span with role=meter around the ring; <meter> draws its own bar */}
+        <span
+          role="meter"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={percent}
+          className="flex items-center gap-xs"
+        >
+          <Ring percent={percent} spinning={working} />
+          <span className="tabular-nums max-md:hidden">{percent}%</span>
+        </span>
         {failed && (
           <span className="flex items-center text-danger" title="Falha na memória">
             <CircleAlertIcon className="size-3.5" aria-label="Falha na memória" />

@@ -1,6 +1,6 @@
 import { ConversationId } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
 import { LIMITS } from './attachments.ts'
 import { conversationOf, say, screens } from './test-hub.tsx'
@@ -160,4 +160,23 @@ test('o mesmo arquivo anexado duas vezes fica uma vez, sem frase (8)', async () 
   await waitFor(() => expect(chips()).toHaveLength(2))
   expect(chips()).toEqual(['Tirar tabela-de-precos.pdf', 'Tirar observacoes.md'])
   expect(screen.queryByRole('alert')).toBeNull()
+})
+
+test('sem armazenamento da aba, o texto digitado fica e um arquivo não o apaga (8, W19)', async () => {
+  const { field } = await openConversation(fresh())
+  const refuse = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new DOMException('blocked', 'SecurityError')
+  })
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    throw new DOMException('blocked', 'SecurityError')
+  })
+  try {
+    fireEvent.change(field, { target: { value: 'Monte um app' } })
+    pick([PDF])
+    await waitFor(() => expect(chips()).toHaveLength(1))
+    expect(field).toHaveProperty('value', 'Monte um app')
+  } finally {
+    refuse.mockRestore()
+    vi.restoreAllMocks()
+  }
 })

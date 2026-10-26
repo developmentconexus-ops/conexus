@@ -43,8 +43,9 @@ export function PersonBubble(props: { text: string; files: readonly Chip[]; foot
             aria-label="Arquivos"
             className="flex-wrap justify-end self-end"
           >
-            {props.files.map((file) => (
-              <FileChip key={file.image ?? file.filename} file={file} />
+            {props.files.map((file, index) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: chips never reorder, and two files can share a name
+              <FileChip key={`${index}:${file.filename}`} file={file} />
             ))}
           </AttachmentGroup>
         )}
