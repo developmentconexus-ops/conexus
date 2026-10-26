@@ -30,6 +30,12 @@ const FIXED_LIST: ReadonlySet<string> = new Set([
   `GET ${SESSION}/threads/:threadId/messages`,
 ])
 
+/**
+ * 30 MiB: the route's sum of files (29 360 128 characters), the message, the JSON's keys and room.
+ * Without it Fastify's 1 MiB holds.
+ */
+const BODY_LIMIT = 31_457_280
+
 const Params = z.object({
   controllerId: z.literal(BUILDER_ID),
   sessionId: ConversationId,
@@ -114,7 +120,13 @@ export function registerBuilderRoutes(
 ): void {
   const routes = builderRoutes()
   app.register(async (scope) => {
-    const server = new MastraServer({ app: scope, mastra: deps.builder.mastra })
+    // `onError` is required by the type; the Fastify adapter never calls it, and a body over the
+    // limit goes to the Hub's error handler as a 413 (`@mastra/fastify@1.5.23` `dist/index.js:542-571`).
+    const server = new MastraServer({
+      app: scope,
+      mastra: deps.builder.mastra,
+      bodyLimitOptions: { maxSize: BODY_LIMIT, onError: (error) => error },
+    })
     server.registerContextMiddleware()
     // Mastra's multipart parser reads no body, so no limit holds it: JSON stays the only one (S25).
     scope.removeContentTypeParser('multipart/form-data')

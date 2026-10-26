@@ -2,6 +2,9 @@ import { z } from 'zod'
 
 type Cached = { at: 'system' | 'message'; ttl: string }
 
+/** A file the model was given as a block of its own, not as text. */
+export type Media = { type: 'document' | 'image'; mediaType: string }
+
 /** One call the Hub made to the Messages API, as the double read it. */
 export type Sent = {
   key: string | null
@@ -11,6 +14,8 @@ export type Sent = {
   system: string
   /** The text of the conversation's messages, in order, so a test sees what the model was given. */
   texts: string[]
+  /** The documents and images of the conversation's messages, in order. */
+  media: Media[]
   /** The extended thinking the call asked for, as the Messages API body names it, or none. */
   thinking: Thinking | null
   /** The prompt-cache marks the call asked for, in body order: where each sits and its TTL. */
@@ -35,6 +40,10 @@ const Body = z.object({
     .optional(),
   messages: z.array(z.object({ content: z.union([z.string(), z.array(z.unknown())]) })),
 })
+const MediaPart = z.object({
+  type: z.enum(['document', 'image']),
+  source: z.object({ media_type: z.string() }),
+})
 const TextPart = z.object({ text: z.string() })
 const ToolResult = z.object({
   type: z.literal('tool_result'),
@@ -50,6 +59,12 @@ function textOf(part: unknown): string[] {
   }
   const text = TextPart.safeParse(part)
   return text.success ? [text.data.text] : []
+}
+
+/** A message part that is a document or an image; none for the rest. */
+function mediaOf(part: unknown): Media[] {
+  const media = MediaPart.safeParse(part)
+  return media.success ? [{ type: media.data.type, mediaType: media.data.source.media_type }] : []
 }
 
 /** The cache marks of a body, the system's first, then the messages' parts; no ttl is Anthropic's 5 minutes. */
@@ -79,6 +94,9 @@ export function sentOf(init: RequestInit | undefined): Sent {
   const texts = body.messages.flatMap((message) =>
     typeof message.content === 'string' ? [message.content] : message.content.flatMap(textOf),
   )
+  const media = body.messages.flatMap((message) =>
+    typeof message.content === 'string' ? [] : message.content.flatMap(mediaOf),
+  )
   const bearer = headers.get('authorization')?.replace(/^Bearer /, '') ?? null
   return {
     key: headers.get('x-api-key'),
@@ -88,6 +106,7 @@ export function sentOf(init: RequestInit | undefined): Sent {
     tools: body.tool_choice?.type === 'none' ? [] : (body.tools ?? []).map((tool) => tool.name),
     system,
     texts,
+    media,
     thinking: body.thinking ?? null,
     cached: cachedOf(body),
   }

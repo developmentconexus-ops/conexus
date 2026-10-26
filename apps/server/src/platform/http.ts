@@ -36,7 +36,7 @@ function helmetOptions(appsDomain: AppsDomain) {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'"],
-        imgSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:'],
         fontSrc: ["'self'"],
         manifestSrc: ["'self'"],
         connectSrc: ["'self'"],

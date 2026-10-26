@@ -285,3 +285,23 @@ test('cabeçalhos: o Hub emoldura só os apps, na Prévia, e nada emoldura o Hub
     assert.equal(headers['x-frame-options'], 'DENY')
   }
 })
+
+test('o CSP da página: as miniaturas do compositor vêm de data:, e nada mais muda', async (t) => {
+  const app = await hub()
+  t.after(() => app.close())
+  const { headers } = await app.inject({ method: 'GET', url: '/nope' })
+  assert.deepEqual(String(headers['content-security-policy']).split(';'), [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self'",
+    "img-src 'self' data:",
+    "font-src 'self'",
+    "manifest-src 'self'",
+    "connect-src 'self'",
+    'frame-src https://*.apps.example.test',
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ])
+})

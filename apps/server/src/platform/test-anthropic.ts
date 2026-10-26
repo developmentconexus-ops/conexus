@@ -91,6 +91,7 @@ function chatSentOf(init: RequestInit | undefined): Sent {
     tools: (body.tools ?? []).map((tool) => tool.function.name),
     system: body.messages.find((message) => message.role === 'system')?.content?.toString() ?? '',
     texts,
+    media: [],
     thinking: null,
     cached: [],
   }
