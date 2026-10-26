@@ -364,21 +364,25 @@ export async function answeredOf(hub: Hub, person: Person, url: string): Promise
 }
 
 /**
- * The notices of the conversation's last turn, as the person reads them with its answer: Mastra's
- * stream does not say the answer's data parts. A failed turn's answer lands a moment after its
- * `agent_end` (Mastra 1.79 ends an errored run before its memory saves it), so the read goes on
- * until two reads, a moment apart, agree.
+ * The transcript once two reads, a moment apart, agree: a failed turn's answer lands a moment after
+ * its `agent_end` (Mastra 1.79 ends an errored run before its memory saves it), after the failure
+ * the conversation saved before that end.
  */
-export async function turnNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
-  async function read() {
-    const messages = await answeredOf(hub, person, url)
-    const turn = messages.slice(messages.findLastIndex((message) => message.role === 'person') + 1)
-    return noticesIn(turn.flatMap((message) => message.parts))
-  }
-  for (let last = await read(), attempt = 0; ; attempt += 1) {
+export async function settledOf(hub: Hub, person: Person, url: string): Promise<Read[]> {
+  for (let last = await answeredOf(hub, person, url), attempt = 0; ; attempt += 1) {
     await new Promise((done) => setTimeout(done, 300))
-    const again = await read()
+    const again = await answeredOf(hub, person, url)
     if (JSON.stringify(again) === JSON.stringify(last) || attempt === 15) return again
     last = again
   }
+}
+
+/**
+ * The notices of the conversation's last turn, as the person reads them with its answer: Mastra's
+ * stream does not say the answer's data parts, so the transcript is read once it settles.
+ */
+export async function turnNotices(hub: Hub, person: Person, url: string): Promise<string[]> {
+  const messages = await settledOf(hub, person, url)
+  const turn = messages.slice(messages.findLastIndex((message) => message.role === 'person') + 1)
+  return noticesIn(turn.flatMap((message) => message.parts))
 }

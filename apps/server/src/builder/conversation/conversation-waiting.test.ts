@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
 import { randomUUID } from 'node:crypto'
+import type { TestContext } from 'node:test'
 import { test } from 'node:test'
 import { setTimeout as sleep } from 'node:timers/promises'
+import pg from 'pg'
 import { z } from 'zod'
 import { post } from '../../hub/identity/test-hub.ts'
 
@@ -82,6 +84,40 @@ async function endOrLostClaim(stream: Awaited<ReturnType<typeof streamOf>>) {
   }
 }
 
+/**
+ * Mastra's save of a call still open, slowed by `ms`: Mastra 1.79.0 ends the run at the card before
+ * its output processors save the call, then its snapshot, so this widens that moment as a loaded
+ * database does (step 14.2's CI flake, `parked.ts`).
+ */
+function slowedSaveOfOpenCalls(t: TestContext, ms: number) {
+  const query = pg.Client.prototype.query
+  function slowed(this: pg.Client, ...args: unknown[]): unknown {
+    const [text, values] = args
+    const sql = typeof text === 'string' ? text : String(Object(text).text)
+    const row: unknown[] = Array.isArray(values) ? values : (Object(text).values ?? [])
+    const call = row.some((each) => typeof each === 'string' && each.includes('"state":"call"'))
+    if (!/^\s*INSERT INTO "mastra"\."mastra_messages"/.test(sql) || !call) {
+      return Reflect.apply(query, this, args)
+    }
+    const done = args.at(-1)
+    if (typeof done !== 'function') {
+      return sleep(ms).then(() => Reflect.apply(query, this, args))
+    }
+    const rest = args.slice(0, -1)
+    void sleep(ms).then(() =>
+      Reflect.apply(query, this, [
+        ...rest,
+        (...reply: unknown[]) => Reflect.apply(done, this, reply),
+      ]),
+    )
+    return undefined
+  }
+  Reflect.set(pg.Client.prototype, 'query', slowed)
+  t.after(() => {
+    pg.Client.prototype.query = query
+  })
+}
+
 test('uma pergunta encerra o turno: o fim é dito, o Projeto fica livre e o cartão espera sem prazo', {
   timeout: 60_000,
 }, async (t) => {
@@ -148,6 +184,18 @@ test('um plano fechado por Parar, relido, traz o texto que o Mastra guardou ao s
     card.suspendPayload,
     'read again, the plan keeps the text Mastra saved when it suspended',
   )
+})
+
+test('Parar no instante em que o cartão chega, antes de o Mastra guardar a chamada: ela fecha negada', {
+  timeout: 60_000,
+}, async (t) => {
+  const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
+  slowedSaveOfOpenCalls(t, 300)
+  assert.equal((await send()).statusCode, 200)
+  const { card } = await untilCard(stream, 'question')
+  assert.equal((await stopped(hub, ana, url)).statusCode, 200)
+  const read = (await closedRead(hub, ana, url, card.toolCallId)).flatMap((m) => m.parts)
+  assert.deepEqual(stateOf(read, card.toolCallId), CLOSED)
 })
 
 test('Parar com uma pergunta aberta: nada fica no banco do Mastra', {
