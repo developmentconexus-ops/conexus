@@ -57,28 +57,35 @@ test('um botão só: Parar com a caixa vazia, Enviar com texto, e o foco volta a
   await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/abort$/))
 })
 
-async function expectOneRow() {
+async function expectRowAndStatusLine() {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
   const form = field.closest('form')
   const row = form?.querySelector('[data-slot="input-group-addon"]')
-  const names = [...(row?.querySelectorAll('button, [role="combobox"]') ?? [])].map((one) =>
+  const names = [...(row?.querySelectorAll('button') ?? [])].map((one) =>
     one.getAttribute('aria-label'),
   )
-  expect(row?.contains(screen.getByRole('button', { name: /Memória da conversa/ }))).toBe(true)
-  expect(row?.contains(screen.getByRole('combobox', PICKER))).toBe(true)
-  expect(row?.contains(screen.getByRole('button', { name: 'Enviar' }))).toBe(true)
-  expect(names.at(0)).toMatch(/Memória da conversa/)
+  expect(names.at(0)).toBe('Anexar arquivos')
   expect(names.at(-1)).toBe('Enviar')
+  expect(names).not.toContain('Modelo e raciocínio')
   expect(form?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(1)
+  const ring = screen.getByRole('meter', { name: /Memória da conversa/ })
+  const picker = screen.getByRole('combobox', PICKER)
+  expect(row?.contains(ring)).toBe(false)
+  expect(row?.contains(picker)).toBe(false)
+  const status = ring.parentElement
+  expect(status?.contains(picker)).toBe(true)
+  expect(field.closest('[data-slot="input-group"]')?.nextElementSibling?.contains(status)).toBe(
+    true,
+  )
 }
 
 test(
-  'uma linha de ações no computador: a memória, o modelo e o botão, dentro da caixa',
-  expectOneRow,
+  'no computador, a caixa tem +, microfone e enviar, e a linha de status embaixo tem a memória e o modelo',
+  expectRowAndStatusLine,
 )
 
-test('uma linha de ações no celular: a memória, o modelo e o botão, dentro da caixa', () =>
-  onPhone(expectOneRow))
+test('no celular, a caixa tem +, microfone e enviar, e a linha de status embaixo tem a memória e o modelo', () =>
+  onPhone(expectRowAndStatusLine))
 
 test('a caixa começa com uma linha e cresce com o texto', async () => {
   const { field } = await openConversation(conversationOf({ id: FIRST }))

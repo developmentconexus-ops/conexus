@@ -161,16 +161,16 @@ function useDictation(draft: Draft, notice: ReturnType<typeof useNotice>) {
 }
 
 /**
- * The field and its one button, in a single row of actions at every width: the memory ring, the
- * model's button and the round button at the end, which is **Parar** while the Builder answers and
- * the box is empty, and **Enviar** otherwise. Enter sends and Shift+Enter breaks the line, except
+ * The field and its one button, in a single row of actions at every width: **+**, the microphone and
+ * the round button at the end, which is **Parar** while the Builder answers and the box is empty,
+ * and **Enviar** otherwise. Under the box, one strip: the status line with the memory ring and the
+ * model's button, wrapping when narrow (Factory's `StatusLine`), and on a computer the secrets line. Enter sends and Shift+Enter breaks the line, except
  * while an input method is composing a character (design V30); on touch Return breaks the line and
  * only the button sends. While the Builder answers the field stays open: Enter steers the running
  * turn, Esc stops, and focus goes back to the field (design V31). What is typed is kept per
  * conversation, by the draft the screen holds, with the files: picked by **+**, pasted or dropped on
  * the form, each a chip above the text. A send takes text and files out of the box at its start and
- * gives them back if refused. Under the box, on a computer, one small line says not to paste secrets
- * (founder, 2026-10-26).
+ * gives them back if refused. The small line says not to paste secrets (founder, 2026-10-26).
  */
 export function Composer(props: {
   answering: boolean
@@ -181,7 +181,7 @@ export function Composer(props: {
   onStop: () => void
   picker: ReactNode
   taskPanel?: ReactNode
-  /** The memory ring, the first of the action row. */
+  /** The memory ring, the first of the status line under the box. */
   memory?: ReactNode
 }) {
   const { draft } = props
@@ -246,8 +246,6 @@ export function Composer(props: {
           onKeyDown={onKeyDown}
         />
         <InputGroupAddon align="block-end" className="flex-nowrap justify-end gap-xs">
-          {props.memory && <div className="me-auto">{props.memory}</div>}
-          {props.picker}
           <Attach attachments={attachments} />
           {dictation.mic}
           <Button
@@ -267,7 +265,13 @@ export function Composer(props: {
           </Button>
         </InputGroupAddon>
       </InputGroup>
-      {!phone && <p className="text-center text-fact text-text-2">{NO_SECRETS}</p>}
+      <div className="flex flex-col gap-xs">
+        <div className="flex flex-wrap items-center gap-x-sm gap-y-xs">
+          {props.memory}
+          {props.picker}
+        </div>
+        {!phone && <p className="text-center text-fact text-text-2">{NO_SECRETS}</p>}
+      </div>
     </form>
   )
 }
