@@ -1,12 +1,14 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand in the shape
 // the screen wanted, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort or plan) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan or files) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
 // three model calls (a plan, a tool, an answer), so its calls are streamed by the Messages API stream
 // the server tests' double uses (`test-anthropic-stream.ts`), and the run is approved and steered the
-// way a person does. It saves every event the session emitted
+// way a person does. `files` is scripted the same way (a tool call, then an answer): a message with
+// a markdown file, a PDF and a PNG, and a second one with a PDF while the run works. It saves
+// every event the session emitted
 // and every row Mastra stored, with the library, its version and the date in the first line, in
 // apps/server/src/platform/recordings/mastra/<scenario>.jsonl. No service is called and no
 // credential is read; every prompt is invented (security S40). `tool-error` is not a scenario: its
@@ -44,7 +46,7 @@ const PROMPTS = {
     'Uma padaria inventada vende 120 pães por dia a R$ 0,80 cada. Quanto ela fatura em 30 dias? Pense antes de responder.',
   abort: 'Escreva uma lista de 60 nomes inventados de padarias, um por linha, sem comentários.',
 }
-const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan'])
+const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan', 'files'])
 
 const PLAN_FILE = '.conexus/plans/encomendas.md'
 const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
@@ -54,6 +56,43 @@ const PLAN_CALLS: Block[][] = [
   [{ type: 'tool_use', name: 'submit_plan', input: { path: PLAN_FILE } }],
   [{ type: 'tool_use', name: 'anotar', input: { nota: 'Plano aprovado, começando.' } }],
   [{ type: 'text', text: 'Pronto, o cadastro será só seu.' }],
+]
+
+const FILES_PROMPT = 'Leia os arquivos e diga, em uma frase, o que a padaria inventada precisa.'
+const MORE_FILES_PROMPT = 'Este PDF também vale.'
+/** Invented and tiny (security S40): a markdown note, a PDF and a 1×1 PNG, as the browser reads them. */
+const MARKDOWN = '# Observações\n\nSem glúten.\n'
+const PDF = '%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n'
+const PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+function dataUrl(mediaType: string, base64: string): string {
+  return `data:${mediaType};base64,${base64}`
+}
+function text64(text: string): string {
+  return Buffer.from(text).toString('base64')
+}
+const FILES = [
+  {
+    filename: 'observacoes.md',
+    mediaType: 'text/markdown',
+    data: dataUrl('text/markdown', text64(MARKDOWN)),
+  },
+  {
+    filename: 'precos.pdf',
+    mediaType: 'application/pdf',
+    data: dataUrl('application/pdf', text64(PDF)),
+  },
+  { filename: 'logo.png', mediaType: 'image/png', data: dataUrl('image/png', PNG) },
+]
+const MORE_FILE = {
+  filename: 'cardapio.pdf',
+  mediaType: 'application/pdf',
+  data: dataUrl('application/pdf', text64(PDF)),
+}
+/** What the model does in the `files` scenario: use its tool, and answer once the second message is in. */
+const FILES_CALLS: Block[][] = [
+  [{ type: 'tool_use', name: 'anotar', input: { nota: 'Arquivos lidos.' } }],
+  [{ type: 'text', text: 'Ela precisa de pães sem glúten.' }],
 ]
 
 const Package = z.object({ version: z.string() })
@@ -70,6 +109,8 @@ function replaying(answers: Answer[]): () => void {
   let calls = 0
   globalThis.fetch = async (input, init) => {
     const url = input instanceof Request ? input.url : String(input)
+    // Mastra downloads a file's data URL through `fetch` before each call; it reaches no address.
+    if (url.startsWith('data:')) return real(input, init)
     if (!url.startsWith(MESSAGES_URL))
       throw new Error(`The recording reaches no other address: ${url}`)
     calls += 1
@@ -100,23 +141,32 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
     // The person's steer goes in while the run uses its tool, as in a build.
     if (scenario === 'plan' && event.type === 'tool_start' && event.toolName === 'anotar')
       void session.sendMessage({ content: STEER })
+    if (scenario === 'files' && event.type === 'tool_start' && event.toolName === 'anotar')
+      void session.sendMessage({ content: MORE_FILES_PROMPT, files: [MORE_FILE] })
+    if (scenario === 'files' && event.type === 'agent_end') ended.resolve()
     if (scenario === 'plan' && event.type === 'agent_end') {
       ends += 1
       if (ends === 2) ended.resolve()
     }
   })
   const answers: Answer[] =
-    scenario === 'plan'
-      ? PLAN_CALLS.map(
-          (blocks, at) => () =>
-            new Response(streamed(CLAUDE, blocks, at === 2 ? 'end_turn' : 'tool_use'), {
-              headers: { 'content-type': 'text/event-stream' },
-            }),
+    scenario === 'plan' || scenario === 'files'
+      ? (scenario === 'plan' ? PLAN_CALLS : FILES_CALLS).map(
+          (blocks, at, calls) => () =>
+            new Response(
+              streamed(CLAUDE, blocks, at === calls.length - 1 ? 'end_turn' : 'tool_use'),
+              { headers: { 'content-type': 'text/event-stream' } },
+            ),
         )
       : [(signal) => replayed(`anthropic-${scenario}`, signal)]
   const restore = replaying(answers)
   try {
-    await session.sendMessage({ content: scenario === 'plan' ? PLAN_PROMPT : PROMPTS[scenario] })
+    if (scenario === 'files') {
+      await session.sendMessage({ content: FILES_PROMPT, files: FILES })
+      await ended.promise
+    } else {
+      await session.sendMessage({ content: scenario === 'plan' ? PLAN_PROMPT : PROMPTS[scenario] })
+    }
     if (scenario === 'plan') {
       if (suspended === undefined) throw new Error('The plan was not parked on the person.')
       await session.respondToToolSuspension({
@@ -132,7 +182,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
 }
 
 async function record(scenario: z.infer<typeof Scenario>) {
-  const planned = scenario === 'plan'
+  const planned = scenario === 'plan' || scenario === 'files'
   const source = planned ? 'test-anthropic-stream.ts' : `anthropic-${scenario}.sse`
   // The plan's calls are not a provider's recording; the SDK that reads them is the one of any other.
   const provider = Recording.parse(
