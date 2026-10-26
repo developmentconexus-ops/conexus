@@ -239,19 +239,24 @@ test('passagem: o endereço do app sem sessão do Hub leva a Entrar e, logo depo
   assert.deepEqual(s.problems, [])
 })
 
-test('passagem: com a sessão do Hub, o endereço do app vai direto ao app, numa navegação vinda do app; um fetch do app é recusado', async (t) => {
+test('passagem: o Hub abre o app numa aba nova e ele vai direto ao app, numa navegação vinda do app; um fetch do app é recusado', async (t) => {
   const s = await scenario(t, { bypassCSP: true })
   const { page } = s
   await page.goto(`${HUB}/login`)
   await signIn(page, CARLA.email, PASSWORD)
   await waitForHome(page)
   await createPedidos(s, page)
-  // No version is on the air, so the dispatcher answers with the example app. Abrir app opening a
-  // tab on a Builder version is the apps journey's (`versions.test.ts`).
+  // The Hub's page opens the app's address in a new tab as Abrir app does; the link itself shows
+  // only once a Builder version is on the air, and the apps journey clicks it (`versions.test.ts`).
+  // No version is on the air here, so the dispatcher answers with the example app.
   const before = s.seen.length
-  const app = await page.context().newPage()
-  await app.goto(`${APP}/`)
+  const projectAddress = page.url()
+  const [app] = await Promise.all([
+    page.context().waitForEvent('page'),
+    page.evaluate((url) => window.open(url, '_blank', 'noopener,noreferrer'), `${APP}/`),
+  ])
   await app.getByText(GREETING).waitFor()
+  assert.equal(page.url(), projectAddress)
   const opened = s.seen.slice(before).filter((one) => one.dest === 'document')
   assert.deepEqual(
     opened.map((one) => ({ ...one, path: new URL(one.path, HUB).pathname })),
