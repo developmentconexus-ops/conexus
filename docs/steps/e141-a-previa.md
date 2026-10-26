@@ -591,14 +591,15 @@ uma migração de produção. Do achado 1 da QA da 14.1 ("Versão 5 guardada… 
 
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
-| `apps/server/src/hub/apps/{versions,send,app-versions,routes,repair}.ts` | muda | `main.ts`, as rotas |
-| `apps/server/src/platform/http.ts` | muda (o motivo de `CONNECTION_TIMEOUT_MS`) | toda resposta do Hub |
+| `apps/server/src/hub/apps/{versions,send,app-versions,routes,repair,public}.ts` | muda | `main.ts`, as rotas |
+| `apps/server/src/platform/{http,http.test}.ts` | muda (o motivo de `CONNECTION_TIMEOUT_MS`) | toda resposta do Hub |
 | `packages/hub-api/src/{apps,index}.ts` | apaga `createAppVersion`, `VERSION_SEND_DEADLINE_MS`, `VERSION_BODY_LIMIT` | web, servidor |
 | `apps/web/src/hub/apps/{send-version.tsx,send-version.test.tsx,read-folder.ts,test-folder.ts}` | apaga | `versions.tsx` |
-| `apps/web/src/hub/apps/{versions.tsx,queries.ts}`, `hub/projects/area.tsx`, `platform/test-hub-versions.tsx` | muda | a área do Projeto |
+| `apps/web/src/hub/apps/{versions.tsx,versions.test.tsx,queries.ts}`, `apps/web/src/hub/projects/area.tsx`, `apps/web/src/platform/test-hub-versions.tsx`, `apps/web/src/builder/conversation/workbench.test.tsx`, `apps/web/sweep-project-states.ts` | muda (o texto vazio e o do membro) | a área do Projeto |
 | `apps/server/migrations/` | cria a migração | `migrate` |
-| `apps/server/src/hub/apps/test-versions.ts`, `builder/conversation/test-preview.ts` | muda: `send` vira um turno do Builder cuja conferência deixa a pasta pedida | os testes de `hub/apps/`, `hub/projects/`, `hub/operations/`, `builder/runs/` |
-| `tests/e2e/apps-journey.ts`, `versions.test.ts`, `refusals.test.ts` | muda: `sendFolder` vira um turno do Builder | e2e |
+| `apps/server/src/hub/apps/test-versions.ts`, `apps/server/src/builder/conversation/test-preview.ts` | muda: `send` vira um turno do Builder cuja conferência deixa a pasta pedida | os testes de `hub/apps/`, `hub/projects/`, `hub/operations/`, `builder/runs/` |
+| `apps/server/src/hub/apps/*.test.ts`, `apps/server/src/hub/projects/*.test.ts`, `apps/server/src/hub/operations/client-deletion-database.test.ts`, `apps/server/src/builder/runs/preview-send.test.ts` | muda: cada envio passa a ser um turno do Builder, e o que se afirma fica | `node --test` |
+| `tests/e2e/{apps-journey,versions.test,refusals.test}.ts` | muda: `sendFolder` vira um turno do Builder, pela frente que transmite a conversa (`hubWindow`) | e2e |
 | `scripts/removals.json`, `scripts/suppressions.json` | muda (as linhas que os arquivos apagados levam) | `npm run removals`, `npm run suppressions` |
 
 ### Os contratos que a unidade muda
@@ -615,7 +616,7 @@ export async function storeAppVersion(input: {
 export async function sendVersion(deps: SendDeps, input: Ids & {
   personId: PersonId; number: number
   manifest: unknown; files: readonly VersionFileInput[]; attemptKey: string
-}): Promise<Sent>
+}): Promise<void>
 
 // apps/server/src/hub/apps/app-versions.ts: createAppVersions sem `send`
 // packages/hub-api/src/apps.ts: sem createAppVersion, VERSION_SEND_DEADLINE_MS, VERSION_BODY_LIMIT
