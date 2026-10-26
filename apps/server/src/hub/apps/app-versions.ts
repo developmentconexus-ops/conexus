@@ -1,18 +1,11 @@
-import type {
-  CompanyId,
-  Person,
-  PersonId,
-  PreviewData,
-  ProjectId,
-  RunId,
-  VersionFileInput,
-} from '@conexus/hub-api'
+import type { CompanyId, Person, PersonId, PreviewData, ProjectId, RunId } from '@conexus/hub-api'
 import { PreviewFailure } from '@conexus/hub-api'
 import { databaseFailure } from '../../platform/database.ts'
 import { Failure, logFailure } from '../../platform/failure.ts'
 import { setLiveVersion } from './live.ts'
 import type { SendDeps } from './send.ts'
 import { admitReader, sendVersion } from './send.ts'
+import type { VersionFolder } from './versions.ts'
 import { listVersions } from './versions.ts'
 
 type OfProject = { person: Person; companyId: CompanyId; projectId: ProjectId }
@@ -25,7 +18,7 @@ export type BuilderVersion = {
   runId: RunId
   /** The number the turn saved it as, which the conversation and the Versões tab name it by. */
   number: number
-  folder: { manifest: unknown; files: readonly VersionFileInput[] }
+  folder: VersionFolder
 }
 
 /**

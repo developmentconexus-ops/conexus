@@ -168,6 +168,7 @@ test('entrada recusada: a frase da falha no lugar do iframe, e Recarregar tenta 
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe(sentenceOfCode('DATABASE_UNAVAILABLE'))
   expect(screen.queryByTitle('Prévia')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Recarregar' }))
   expect((await screen.findByTitle('Prévia')).getAttribute('src')).toBe(`${APP}/`)
 })

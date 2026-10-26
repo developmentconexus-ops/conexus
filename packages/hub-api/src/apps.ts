@@ -34,11 +34,7 @@ export const AppOpenQuery = OnHost.extend({ binding: DoorSecret })
 
 /** The message the app's entry page sends the Hub's Prévia, from a frame with no app session. */
 export const FRAME_ENTRY = 'conexus-entry'
-export const FrameEntry = z.object({
-  type: z.literal(FRAME_ENTRY),
-  host: HostLabel,
-  binding: z.string(),
-})
+export const FrameEntry = AppOpenQuery.extend({ type: z.literal(FRAME_ENTRY) })
 export type FrameEntry = z.infer<typeof FrameEntry>
 
 export const createAppFrameHandoff = defineOperation({

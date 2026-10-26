@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import { CHECK_LIMITS } from '@conexus/app/check'
 import type { Checked } from '../../hub/apps/test-versions.ts'
 import {
+  checking,
   companyForVersions,
   folder,
   listed,
@@ -10,36 +11,13 @@ import {
   send,
   versionNumbered,
 } from '../../hub/apps/test-versions.ts'
-import type { Person } from '../../hub/identity/test-hub.ts'
 import { BRUNO, call, memberOn } from '../../hub/identity/test-hub.ts'
 import type { Reply, Sent } from '../../platform/test-anthropic.ts'
-import { asked, title } from '../conversation/test-conversation.ts'
+import { title } from '../conversation/test-conversation.ts'
 import { partsOf } from '../conversation/test-parts.ts'
-import { previewing, previewsIn } from '../conversation/test-preview.ts'
+import { previewing, turn, versionsOf } from '../conversation/test-preview.ts'
 
 // The end of a turn sends the version whose app built to the Projeto's one app (step 14.1, U1).
-
-type Previewing = Awaited<ReturnType<typeof previewing>>
-
-/** The Projeto's versions as its owner lists them on the Versões tab. */
-async function versionsOf(subject: Previewing, person: Person = subject.ana) {
-  const listed = await call(subject.hub, person, 'GET', subject.versions)
-  assert.equal(listed.statusCode, 200)
-  return Object(listed.json()).versions.map((version: Record<string, unknown>) => ({
-    number: version.number,
-    state: version.state,
-    live: version.live,
-    failure: version.failure,
-    sentBy: version.sentBy,
-  }))
-}
-
-/** One turn of `person` on a new conversation of the Projeto: its previews and its events. */
-async function turn(t: Parameters<typeof previewing>[0], subject: Previewing, person?: Person) {
-  const { hub, conversations } = subject
-  const { url, events } = await asked(t, { hub, person: person ?? subject.ana, conversations })
-  return { url, events, previews: previewsIn(partsOf(events)) }
-}
 
 test('a versão que montou vai ao ar: pronta, no ar, enviada pela pessoa do turno (1)', async (t) => {
   const subject = await previewing(t)
@@ -309,6 +287,29 @@ test('pasta recusada: a versão trocada por um link na máquina falha APP_VERSIO
     ['NOT_REGULAR'],
   )
   assert.deepEqual(await versionsOf(subject), [])
+})
+
+test('pasta que não bate com o manifesto: um arquivo que falta ou um a mais não sobe, APP_VERSION_FAILED, VERSION_INVALID', async (t) => {
+  const cases = {
+    falta: folder({ assets: ['index.html', 'style.css', 'logo.svg'] }),
+    'a mais': folder({ assets: ['index.html'] }),
+  }
+  for (const [name, mismatched] of Object.entries(cases)) {
+    await t.test(name, async (t) => {
+      const subject = await previewing(t)
+      checking(subject.hub.builder.folder, ['passed'], mismatched)
+      const { previews } = await turn(t, subject)
+      assert.deepEqual(previews, [{ state: 'failed', number: 1, code: 'APP_VERSION_FAILED' }])
+      const refused = subject.lines.filter((line) => line.message === 'PREVIEW_PACK_REFUSED')
+      assert.deepEqual(
+        refused.map((line) => line.fields.reason),
+        ['VERSION_INVALID'],
+      )
+      assert.deepEqual(await versionsOf(subject), [])
+      assert.deepEqual(await subject.hub.test.asOwner('select id from apps.app_version'), [])
+      assert.deepEqual(subject.hub.cloudflare.workers(), [])
+    })
+  }
 })
 
 test('Projeto apagado durante o envio: nada no ar e nenhuma parte da Prévia (12)', async (t) => {

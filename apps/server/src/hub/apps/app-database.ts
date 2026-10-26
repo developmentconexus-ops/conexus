@@ -1,11 +1,10 @@
 import type { Manifest } from '@conexus/app-contract'
-import type { CompanyId, ProjectId } from '@conexus/hub-api'
+import type { AppVersionFailure, CompanyId, ProjectId } from '@conexus/hub-api'
 import type { CompanyPostgres } from '../../platform/company-postgres.ts'
 import type { Database, DatabaseUrl, Scope } from '../../platform/database.ts'
 import type { FailureLog } from '../../platform/failure.ts'
 import type { NeonProjects } from '../../platform/neon.ts'
 import type { ProjectPorts } from '../projects/public.ts'
-import type { VersionFailure } from './versions.ts'
 
 export type AppDatabaseDeps = {
   database: Database
@@ -15,7 +14,7 @@ export type AppDatabaseDeps = {
   log: FailureLog
 }
 
-type Opened = { kind: 'OPEN'; owner: DatabaseUrl } | { kind: 'FAILED'; failure: VersionFailure }
+type Opened = { kind: 'OPEN'; owner: DatabaseUrl } | { kind: 'FAILED'; failure: AppVersionFailure }
 
 /**
  * The company's database for a Projeto's app, with no transaction open (data D22): the owner's
@@ -59,7 +58,7 @@ export async function openAppDatabase(
 export async function migrateApp(
   deps: AppDatabaseDeps,
   input: { owner: DatabaseUrl; companyId: CompanyId; projectId: ProjectId; manifest: Manifest },
-): Promise<VersionFailure | undefined> {
+): Promise<AppVersionFailure | undefined> {
   const { companyId, projectId } = input
   const ran = await deps.companyPostgres.migrate(input.owner, projectId, input.manifest.migrations)
   switch (ran.kind) {

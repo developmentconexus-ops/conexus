@@ -30,7 +30,10 @@ export type ProjectSummary = z.infer<typeof ProjectSummary>
  */
 export const Project = ProjectSummary.extend({
   mayDelete: z.boolean(),
-  /** Whether the viewer sees the Projeto's settings: sends versions and puts one back (step 9). */
+  /**
+   * Whether the viewer sees the Projeto's Versões and puts one back (step 9; since step 14.1 only
+   * the Builder sends).
+   */
   mayManageVersions: z.boolean(),
   address: z.string().min(1).nullable(),
   /** The number of the app's version on the air; null before its first. */

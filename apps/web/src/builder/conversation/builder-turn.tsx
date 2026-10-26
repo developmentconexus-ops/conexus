@@ -16,7 +16,13 @@ import { ThinkingLine } from './thinking-line.tsx'
 import { ToolGroup } from './tool-group.tsx'
 import { ToolRow } from './tool-row.tsx'
 
-function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conexus' }> }) {
+function ConexusPartRow({
+  item,
+  live,
+}: {
+  item: Extract<TranscriptItem, { kind: 'conexus' }>
+  live: boolean
+}) {
   if (item.partType === 'data-conexus-machine') {
     const parsed = MachineData.safeParse(item.data)
     return parsed.success ? <MachineLine data={parsed.data} /> : null
@@ -35,7 +41,7 @@ function ConexusPartRow({ item }: { item: Extract<TranscriptItem, { kind: 'conex
   }
   if (item.partType === 'data-conexus-preview') {
     const parsed = PreviewData.safeParse(item.data)
-    return parsed.success ? <PreviewLine data={parsed.data} /> : null
+    return parsed.success ? <PreviewLine data={parsed.data} live={live} /> : null
   }
   return null
 }
@@ -57,7 +63,7 @@ function ItemRow({ item, streaming }: { item: TranscriptItem; streaming: boolean
     case 'card':
       return item.cardKind === 'question' ? <QuestionCard part={item} /> : <PlanCard part={item} />
     case 'conexus':
-      return <ConexusPartRow item={item} />
+      return <ConexusPartRow item={item} live={streaming} />
     default:
       return item satisfies never
   }

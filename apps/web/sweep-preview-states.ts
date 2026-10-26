@@ -39,11 +39,11 @@ const VERSION = {
   check: { state: 'passed' },
 } as const
 
-function turnOf(...parts: Said['parts']) {
+function turnOf(parts: Said['parts'], display?: Record<string, unknown>) {
   return {
     ...WITH_CONVERSATIONS,
     ...projectsPage(COMPANY.id, { appVersion: 2 }),
-    ...sessionReplies(ID, { messages: [ASKED, answered(...parts)] }),
+    ...sessionReplies(ID, { messages: [ASKED, answered(...parts)], display }),
   }
 }
 
@@ -92,28 +92,34 @@ export const PREVIEW_STATES: State[] = [
   {
     name: 'Conversa, subindo o app',
     path: `${PROJECT}/conversations/${ID}`,
+    // Opened mid-send: the wait shows only while the turn runs.
     replies: turnOf(
-      { type: 'data-conexus-version', data: VERSION },
-      { type: 'data-conexus-machine', data: { phase: 'sending' } },
+      [
+        { type: 'data-conexus-version', data: VERSION },
+        { type: 'data-conexus-preview', data: { state: 'sending', number: 2 } },
+      ],
+      { isRunning: true },
     ),
     settle: (p) => inChat(p, 'Subindo o app…'),
   },
   {
     name: 'Conversa, com a Prévia pronta',
     path: `${PROJECT}/conversations/${ID}`,
-    replies: turnOf(
+    replies: turnOf([
       { type: 'data-conexus-version', data: VERSION },
       { type: 'data-conexus-preview', data: { state: 'ready', number: 2 } },
-    ),
+    ]),
     settle: (p) => inChat(p, 'Prévia pronta.'),
   },
   {
     name: 'Conversa, com a Prévia que não subiu',
     path: `${PROJECT}/conversations/${ID}`,
-    replies: turnOf({
-      type: 'data-conexus-preview',
-      data: { state: 'failed', number: 2, code: 'APP_VERSION_NOT_STARTING' },
-    }),
+    replies: turnOf([
+      {
+        type: 'data-conexus-preview',
+        data: { state: 'failed', number: 2, code: 'APP_VERSION_NOT_STARTING' },
+      },
+    ]),
     settle: (p) => inChat(p, 'Prévia não atualizada:'),
   },
 ]

@@ -1,5 +1,5 @@
 import type { Project } from '@conexus/hub-api'
-import { AppOpenQuery, FrameEntry } from '@conexus/hub-api'
+import { FrameEntry } from '@conexus/hub-api'
 import { useMutation } from '@tanstack/react-query'
 import { TriangleAlertIcon, XIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -7,7 +7,6 @@ import { sentenceOf } from '../../platform/hub.ts'
 import { pageStorage } from '../../platform/storage.ts'
 import { Button, buttonVariants } from '../../ui/button.tsx'
 import { cn } from '../../ui/cn.ts'
-import { ReadFailure } from '../../ui/states.tsx'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
 import { sendFrameHandoff } from './queries.ts'
 import { Stage } from './stage.tsx'
@@ -39,11 +38,10 @@ function AppLink({ address }: { address: string }) {
  * the Hub's pass takes the frame to the app, signed in; a message from another origin or window is
  * not heard.
  */
-function Frame(props: { address: string; view: FrameView; onRetry: () => void }) {
+function Frame(props: { address: string; view: FrameView }) {
   const { address } = props
   const [state, setState] = useState<FrameState>({ kind: 'framed', src: `https://${address}/` })
   const frame = useRef<HTMLIFrameElement>(null)
-  const entered = useRef<string | null>(null)
   const { mutate } = useMutation(sendFrameHandoff)
   useEffect(() => {
     function heard(event: MessageEvent) {
@@ -51,16 +49,12 @@ function Frame(props: { address: string; view: FrameView; onRetry: () => void })
         return
       }
       const entry = FrameEntry.safeParse(event.data)
-      if (!entry.success || entered.current === entry.data.binding) return
-      const body = AppOpenQuery.safeParse(entry.data)
-      if (!body.success) return
+      if (!entry.success) return
+      const { host, binding } = entry.data
       mutate(
-        { body: body.data },
+        { body: { host, binding } },
         {
-          onSuccess: ({ location }) => {
-            entered.current = entry.data.binding
-            setState({ kind: 'framed', src: location })
-          },
+          onSuccess: ({ location }) => setState({ kind: 'framed', src: location }),
           onError: (error) => setState({ kind: 'refused', error }),
         },
       )
@@ -71,7 +65,9 @@ function Frame(props: { address: string; view: FrameView; onRetry: () => void })
   if (state.kind === 'refused') {
     return (
       <div className="min-h-0 flex-1 overflow-auto p-xl">
-        <ReadFailure text={sentenceOf(state.error)} onRetry={props.onRetry} />
+        <p role="alert" className="text-danger">
+          {sentenceOf(state.error)}
+        </p>
       </div>
     )
   }
@@ -142,7 +138,7 @@ export function Preview({ project }: { project: Project }) {
           </Button>
         </div>
       )}
-      <Frame key={`${appVersion}-${reloads}`} address={address} view={view} onRetry={reload} />
+      <Frame key={`${appVersion}-${reloads}`} address={address} view={view} />
     </div>
   )
 }
