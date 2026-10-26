@@ -63,7 +63,7 @@ async function expectStatusLineAndButtonsInTheBox() {
   const row = form?.querySelector('[data-slot="input-group-addon"]')
   expect(form?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(1)
   expect(row?.className).toContain('flex-wrap')
-  const ring = screen.getByRole('meter', { name: /Memória da conversa/ })
+  const ring = screen.getByRole('button', { name: /Memória da conversa/ })
   const picker = screen.getByRole('combobox', PICKER)
   const status = ring.parentElement
   expect(row?.contains(status)).toBe(true)

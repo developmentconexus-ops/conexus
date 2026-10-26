@@ -33,9 +33,12 @@ const ROUND =
   'rounded-pill hover:bg-accent disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
 
 type Attachments = ReturnType<typeof useAttachments>
+/** Takes the files and says why any was left out. */
+type AddFiles = (picked: readonly File[]) => void
 
 /** The draft's files, each a chip with an **x** that takes it out. */
-function Attached({ attachments }: { attachments: Attachments }) {
+function Attached(props: { attachments: Attachments; onRemove: (index: number) => void }) {
+  const { attachments } = props
   if (attachments.files.length === 0) return null
   return (
     <InputGroupAddon align="block-start">
@@ -47,7 +50,7 @@ function Attached({ attachments }: { attachments: Attachments }) {
             action={
               <AttachmentAction
                 aria-label={`Tirar ${file.filename}`}
-                onClick={() => attachments.remove(index)}
+                onClick={() => props.onRemove(index)}
               >
                 <XIcon aria-hidden="true" />
               </AttachmentAction>
@@ -60,17 +63,17 @@ function Attached({ attachments }: { attachments: Attachments }) {
 }
 
 /** The form takes files pasted or dropped on it (AI Elements `prompt-input`); pasted words stay words. */
-function droppedOn(attachments: Attachments) {
+function droppedOn(add: AddFiles) {
   return {
     onPaste: (event: ClipboardEvent<HTMLFormElement>) => {
       if (event.clipboardData.files.length === 0) return
       event.preventDefault()
-      void attachments.add(Array.from(event.clipboardData.files))
+      add(Array.from(event.clipboardData.files))
     },
     onDragOver: (event: DragEvent<HTMLFormElement>) => event.preventDefault(),
     onDrop: (event: DragEvent<HTMLFormElement>) => {
       event.preventDefault()
-      void attachments.add(Array.from(event.dataTransfer.files))
+      add(Array.from(event.dataTransfer.files))
     },
   }
 }
@@ -92,7 +95,7 @@ function joined(text: string, added: string): string {
 }
 
 /** **+**: the browser's file picker, limited to the types the Builder reads. */
-function Attach({ attachments }: { attachments: Attachments }) {
+function Attach({ add }: { add: AddFiles }) {
   const picker = useRef<HTMLInputElement>(null)
   return (
     <>
@@ -108,7 +111,7 @@ function Attach({ attachments }: { attachments: Attachments }) {
         onChange={(event) => {
           const picked = Array.from(event.currentTarget.files ?? [])
           event.currentTarget.value = ''
-          void attachments.add(picked)
+          add(picked)
         }}
       />
     </>
@@ -116,24 +119,20 @@ function Attach({ attachments }: { attachments: Attachments }) {
 }
 
 /**
- * The one phrase above the box, the one of whatever happened last: a file left out or the
- * microphone stopping. A dictation error takes the refusal's place, and a new refusal takes the error's.
+ * The one phrase above the box, of whatever happened last: a file left out or the microphone
+ * stopping. A new one takes the place of the one before.
  */
-function useNotice(attachments: Attachments) {
+function usePhrase(attachments: Attachments) {
   const [phrase, setPhrase] = useState<string | null>(null)
-  const [refusal, setRefusal] = useState(attachments.refusal)
-  if (refusal !== attachments.refusal) {
-    setRefusal(attachments.refusal)
-    setPhrase(attachments.refusal === null ? null : REFUSALS[attachments.refusal])
-  }
   return {
     phrase,
-    clear: () => setPhrase(null),
-    say: (said: string) => {
-      setPhrase(said)
-      setRefusal(null)
-      attachments.clearRefusal()
+    setPhrase,
+    removeFile: (index: number) => {
+      attachments.remove(index)
+      setPhrase(null)
     },
+    addFiles: (picked: readonly File[]) =>
+      void attachments.add(picked).then((refused) => setPhrase(refused && REFUSALS[refused])),
   }
 }
 
@@ -141,7 +140,7 @@ function useNotice(attachments: Attachments) {
  * The microphone and what it adds to the box: the phrase in progress shown after the draft, which
  * reads only until it is final, and then joined to the draft once.
  */
-function useDictation(draft: Draft, notice: ReturnType<typeof useNotice>) {
+function useDictation(draft: Draft, setPhrase: (phrase: string | null) => void) {
   const [interim, setInterim] = useState('')
   return {
     shown: joined(draft.text, interim),
@@ -150,11 +149,11 @@ function useDictation(draft: Draft, notice: ReturnType<typeof useNotice>) {
       <SpeechInput
         lang="pt-BR"
         onFinal={(text) => {
-          notice.clear()
+          setPhrase(null)
           draft.change(joined(draft.text, text))
         }}
         onInterim={setInterim}
-        onError={(error) => notice.say(dictationText(error))}
+        onError={(error) => setPhrase(dictationText(error))}
       />
     ),
   }
@@ -192,15 +191,15 @@ export function Composer(props: {
   const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
 
   const sending = useRef(false)
-  const notice = useNotice(attachments)
-  const dictation = useDictation(draft, notice)
+  const { phrase, setPhrase, addFiles, removeFile } = usePhrase(attachments)
+  const dictation = useDictation(draft, setPhrase)
 
   /** One send at a time: a second Enter or click before the route answers would send it again (Factory clears its field before sending). */
   async function send() {
     if (empty || !props.canSend || sending.current) return
     sending.current = true
     const outgoing = draft.take()
-    attachments.clearRefusal()
+    setPhrase(null)
     try {
       if (!(await props.onSend(outgoing))) draft.restore(outgoing)
     } finally {
@@ -226,9 +225,9 @@ export function Composer(props: {
   }
 
   return (
-    <form onSubmit={submit} {...droppedOn(attachments)} className={FORM}>
+    <form onSubmit={submit} {...droppedOn(addFiles)} className={FORM}>
       {props.taskPanel}
-      <Refused phrase={notice.phrase} />
+      <Refused phrase={phrase} />
       <InputGroup
         data-busy={props.answering || undefined}
         className="rounded-composer data-busy:working-ring"
@@ -236,7 +235,7 @@ export function Composer(props: {
         <Label htmlFor="message" className="sr-only">
           Mensagem para o Builder
         </Label>
-        <Attached attachments={attachments} />
+        <Attached attachments={attachments} onRemove={removeFile} />
         <InputGroupTextarea
           id="message"
           ref={props.field}
@@ -255,7 +254,7 @@ export function Composer(props: {
             {props.picker}
           </div>
           <div className="ms-auto flex items-center gap-xs">
-            <Attach attachments={attachments} />
+            <Attach add={addFiles} />
             {dictation.mic}
             <Button
               type={action === 'stop' ? 'button' : 'submit'}
