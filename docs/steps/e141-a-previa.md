@@ -95,9 +95,9 @@ escreve, e a U5, que o estudo dos números estimou em −550 e +250.
 | # | Unidade | Critério, observável de fora, com a recusa | Teste que o prova | Nível |
 | --- | --- | --- | --- | --- |
 | 1 | U1 | Um turno cuja versão sai guardada com `check.state` `passed` põe essa versão no ar: depois do turno, `GET` das versões do Projeto (como dono) lista a versão `ready` e `live`, com `sentBy` a pessoa do turno | `builder/runs/preview-send.test.ts` "a versão que montou vai ao ar" | must |
-| 2 | U1 | A conversa mostra, nesta ordem, a parte `data-conexus-version`, a fase `sending` e a parte `data-conexus-preview` `{number, state: 'ready'}`; o `agent_end` vem depois da última | `builder/conversation/conversation-preview.test.ts` "ordem das partes" | must |
+| 2 | U1 | A conversa mostra, nesta ordem, a mensagem da versão com `data-conexus-version` e `data-conexus-preview` `{number, state: 'sending'}`, e a mesma mensagem (o mesmo `id`) com `data-conexus-preview` `{number, state: 'ready'}`; o `agent_end` vem depois da última | `builder/conversation/conversation-preview.test.ts` "ordem das partes" | must |
 | 3 | U1 | A parte da versão chega ao fluxo antes do envio terminar: com o envio de teste parado, o fluxo já tem `data-conexus-version` e ainda não tem `agent_end` | `conversation-preview.test.ts` "a versão não espera o envio" | must |
-| 4 | U1 | Recarregar a conversa depois do turno traz uma mensagem só com `data-conexus-version` e `data-conexus-preview` (um `saveMessages`) | `conversation-preview.test.ts` "a mensagem guardada" | must |
+| 4 | U1 | Recarregar a conversa depois do turno traz uma mensagem só com `data-conexus-version` e `data-conexus-preview` (uma mensagem só, o mesmo `id` desde o `saved()`) | `conversation-preview.test.ts` "a mensagem guardada" | must |
 | 5 | U1 | Uma versão `unfinished`, `failed` ou `unchecked` não sobe: nenhuma versão nova do app e nenhuma parte `data-conexus-preview` | `preview-send.test.ts` "só `passed` sobe", um caso por estado | must |
 | 6 | U1 | Um turno sem mudança (`unchanged`) e um turno que falhou ao guardar não sobem nada | `preview-send.test.ts` "nada guardado, nada sobe" | must |
 | 7 | U1, U5 | Um **membro** (papel `member`) que conversa no Projeto põe a sua versão no ar (X1). A segunda metade, o 404 do membro no `POST` de versão da aba Versões, sai na U5 com a rota | `preview-send.test.ts` "o membro envia pelo Builder" | must |
@@ -124,7 +124,7 @@ escreve, e a U5, que o estudo dos números estimou em −550 e +250.
 | 28 | U3 | **Abrir app**, o da área e o do aviso, abre o app numa aba nova e o Hub fica onde estava: o link leva `target="_blank"` e `rel="noopener noreferrer"` | `hub/projects/project.test.tsx` "Abrir app abre aba nova"; `preview.test.tsx` "aviso" | must |
 | 29 | U3 | Num navegador WebKit da Apple (iPhone, iPad, Safari do Mac), a Prévia mostra acima do iframe, que segue carregando, "O app pode não abrir aqui dentro neste navegador." com **Abrir app** e **Fechar aviso** (o ×), que o esconde enquanto durar a sessão da aba (`sessionStorage`), como a vibesdk; se a prova no iPhone da U1 mostrar que o Safari não carrega o app, o iframe não carrega e o aviso, "Este navegador não abre o app aqui dentro.", fica no lugar dele | `preview.test.tsx` "WebKit da Apple", "Fechar aviso"; prova no iPhone da U1 | must |
 | 30 | U3 | Abaixo de `md`, em **App**, a Prévia ocupa a área e a barra perde **Computador** ou **Celular** | captura T23 a 390 px | must |
-| 31 | U3 | "Subindo o app…" e "Prévia pronta" na conversa; a fase `sending` fica na linha da máquina como as outras | `conversation/preview-line.test.tsx` | must |
+| 31 | U3 | "Subindo o app…" e "Prévia pronta" na conversa: o estado `sending` da Prévia fica na mensagem da versão, guardada desde que a versão é salva e trocada no fim por `ready` ou `failed`; recarregar a página no meio do envio mostra "Versão N guardada" e "Subindo o app…" | `conversation/preview-line.test.tsx` | must |
 | 32 | U4 | As instruções do Builder têm de volta as frases da Prévia das linhas 3, 6, 22, 53 e 54 do OS, a 53 sem a aba Diff (Alterações) nem Integrações; `builder-prompt.md` diz o novo veredito | `builder/conversation/prompt.test.ts` com `test-prompt.ts` | must |
 | 33 | U5 | Versões mostra o número que a conversa deu; uma versão que não montou não aparece; Voltar para a Versão N põe no ar a N da conversa: com as versões 1 e 3 do Builder montadas e a 2 não, `GET` das versões lista 3 (no ar) e 1, e `PUT` da versão no ar com a 1 dá `appVersion: 1` no Projeto | `builder/runs/preview-send.test.ts` "o número da conversa" | must |
 | 34 | U5 | Um número do Builder já usado no Projeto (o Git voltou um commit depois de um disco perdido, decisão 0051) é recusado por `unique (project_id, number)`: `data-conexus-preview` `{state: 'failed', code: 'APP_VERSION_FAILED'}`, nenhuma linha nova e a outra versão N segue com o seu número; uma trava viva de outro envio dá `APP_VERSION_SENDING` | `preview-send.test.ts` "número já usado", "um envio de cada vez" | must |
@@ -149,7 +149,7 @@ O cartão da versão não muda: "Versão N guardada…" (`machine-line.tsx:57`).
 | `data-conexus-preview.number` | `builder/conversation/end.ts` | web, a linha da Prévia na conversa |
 | `data-conexus-preview.state` | `end.ts` | web: `use-session.ts` (recarga), a linha da conversa |
 | `data-conexus-preview.code` | `end.ts`, de `Runs` | web, a frase do código (C48) |
-| `MachinePhase` `sending` | `Runs.#settle` por `onPhase` | web, `machine-line.tsx` |
+| `data-conexus-preview.state` `sending` | `Runs.#settle` no `saved()`, guardado por `end.ts` na mensagem da versão | web, `preview-line.tsx` |
 | `Project.appVersion` | `hub/projects/projects.ts` | web: a Prévia (vazio ou iframe, e a chave do iframe) |
 | `createAppFrameHandoff` `{location}` | `hub/apps/handoff.ts` | web, a Prévia |
 | A mensagem `conexus-entry` `{host, binding}` | a página de entrada do despachante | web, a Prévia |
