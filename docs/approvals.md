@@ -196,6 +196,10 @@ Cartão da etapa 14.3 aprovado em 2026-10-26 (commit 36fb5dca068c5f468e1a78dcd04
 
 Em 2026-10-26, sobre a V30 na unidade U2 (PR 362), que a L20 recusa no meio da etapa: "B". O texto novo da V30 sai da U2 e entra no pull request de fechamento da etapa 14.3, como na 14.2.
 
+Em 2026-10-26, sobre o nome do modelo que não cabia na linha da caixa com o anel, o +, o microfone e o enviar: "A". O anel e o seletor de modelo descem para uma linha de status sob a caixa; a caixa fica com +, microfone e enviar.
+
+Em 2026-10-26, ao saber que na Factory a linha de status fica dentro da caixa, à esquerda dos botões, e não embaixo: "F". O anel e o seletor de modelo ficam dentro da caixa, à esquerda de +, microfone e enviar, e descem para uma segunda linha dentro da caixa quando falta espaço, como na Factory.
+
 ## Etapa 13.1
 
 Em 2026-10-25, olhando o Início de hoje: "Eu não sei em que etapa que a gente tem que vai mudar a página inicial, é depois da prévia? Porque essa não é a página inicial que a gente realmente quer ter ... E também, como você pode ver, ela tá até com o subliado lá em cima. Então, não que eu quero mudar isso agora, mas mudar quando a gente for mudar a página inicial, para deixar ela conforme a gente já vem planejando há um tempo. Mas acredito que a gente precisa esperar a prévia primeiro." À ordem proposta (14.1, depois arquivos e voz, depois a 13.1, com o compositor do Início sendo o mesmo com **+** e microfone e o contorno do título consertado na 13.1): "Concordo documente tudo isso para ser registrado"

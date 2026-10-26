@@ -13,23 +13,14 @@ function formatK(tokens: number): string {
   return k.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })
 }
 
-function TokenRing({
-  tokens,
-  threshold,
-  spinning = false,
-}: {
-  tokens: number
-  threshold: number
-  spinning?: boolean
-}) {
-  const percent = threshold > 0 ? Math.min(100, Math.max(0, (tokens / threshold) * 100)) : 0
+function Ring({ percent, spinning }: { percent: number; spinning: boolean }) {
   const circumference = 2 * Math.PI * 6
   const offset = circumference - (percent / 100) * circumference
 
   return (
     <svg
       viewBox="0 0 16 16"
-      className={`size-3.5 shrink-0 ${spinning ? 'animate-spin' : ''}`}
+      className={cn('size-3.5 shrink-0', spinning && 'animate-spin')}
       aria-hidden="true"
     >
       <circle
@@ -58,72 +49,41 @@ function TokenRing({
 }
 
 /**
- * Memory rings and status under the composer (Criterion 11).
- * Displays observational memory windows, holding text, and failure marks without vendor text (C48, C51).
- * `compact`, for the composer's action row on a phone, keeps the rings and marks; the numbers and the
- * holding words stay in the button's name and in the popover.
+ * One memory ring in the status line of the composer's action row (Criterion 15): the share of the
+ * message window that is full, with the number beside it on a computer. The popover keeps both
+ * memories (Criterion 16).
+ * Failure marks carry no vendor text (C48, C51).
  */
 export function MemoryStatus(props: {
   memory: MemoryGauge | null
   omPhase?: 'idle' | 'buffering' | 'observing' | 'reflecting'
   failed?: 'observation' | 'reflection' | 'buffering' | null
-  compact?: boolean
 }) {
-  const { memory, omPhase = 'idle', failed = null, compact = false } = props
+  const { memory, omPhase = 'idle', failed = null } = props
 
-  // Initial / empty state:
   const pending = memory?.pendingTokens ?? 0
   const threshold = memory?.threshold ?? 30_000
   const observations = memory?.observationTokens ?? 0
   const reflectionThreshold = memory?.reflectionThreshold ?? 40_000
 
-  const isObserving = omPhase === 'observing'
-  const isReflecting = omPhase === 'reflecting'
-  const isBuffering = omPhase === 'buffering'
-
-  const holdingText = isObserving
-    ? 'Guardando a memória…'
-    : isReflecting
-      ? 'Reorganizando a memória…'
-      : undefined
-
-  const msgReading = `${formatK(pending)}/${formatK(threshold)}k`
-  const obsReading = `${formatK(observations)}/${formatK(reflectionThreshold)}k`
+  const percent =
+    threshold > 0 ? Math.round(Math.min(100, Math.max(0, (pending / threshold) * 100))) : 0
+  const working = omPhase !== 'idle'
 
   return (
     <Popover>
       <PopoverTrigger
-        className={cn(
-          'flex items-center gap-sm text-fact text-text-2 hover:text-text',
-          compact && 'min-h-11 min-w-11 justify-center',
-        )}
-        aria-label={`Memória da conversa: Mensagens ${msgReading}, Observações ${obsReading}${
+        role="meter"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+        className="flex min-h-11 min-w-11 items-center justify-center gap-xs text-fact text-text-2 hover:text-text md:min-h-0 md:min-w-0"
+        aria-label={`Memória da conversa: Mensagens ${formatK(pending)}/${formatK(threshold)}k, Observações ${formatK(observations)}/${formatK(reflectionThreshold)}k${
           failed ? ' · Falha na memória' : ''
         }`}
       >
-        <span className="flex items-center gap-xs">
-          <TokenRing tokens={pending} threshold={threshold} spinning={isObserving || isBuffering} />
-          {!compact && <span className="tabular-nums">{msgReading}</span>}
-        </span>
-
-        {reflectionThreshold > 0 && (
-          <span className="flex items-center gap-xs">
-            <TokenRing
-              tokens={observations}
-              threshold={reflectionThreshold}
-              spinning={isReflecting}
-            />
-            {!compact && <span className="tabular-nums">{obsReading}</span>}
-          </span>
-        )}
-
-        {holdingText && (
-          <span className="flex items-center gap-xs font-medium text-text">
-            <BrainIcon className="size-3.5" aria-hidden="true" />
-            {!compact && <span>{holdingText}</span>}
-          </span>
-        )}
-
+        <Ring percent={percent} spinning={working} />
+        <span className="tabular-nums max-md:hidden">{percent}%</span>
         {failed && (
           <span className="flex items-center text-danger" title="Falha na memória">
             <CircleAlertIcon className="size-3.5" aria-label="Falha na memória" />

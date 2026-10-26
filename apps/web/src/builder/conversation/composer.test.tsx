@@ -57,28 +57,34 @@ test('um botão só: Parar com a caixa vazia, Enviar com texto, e o foco volta a
   await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/abort$/))
 })
 
-async function expectOneRow() {
+async function expectStatusLineAndButtonsInTheBox() {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
   const form = field.closest('form')
   const row = form?.querySelector('[data-slot="input-group-addon"]')
-  const names = [...(row?.querySelectorAll('button, [role="combobox"]') ?? [])].map((one) =>
-    one.getAttribute('aria-label'),
-  )
-  expect(row?.contains(screen.getByRole('button', { name: /Memória da conversa/ }))).toBe(true)
-  expect(row?.contains(screen.getByRole('combobox', PICKER))).toBe(true)
-  expect(row?.contains(screen.getByRole('button', { name: 'Enviar' }))).toBe(true)
-  expect(names.at(0)).toMatch(/Memória da conversa/)
-  expect(names.at(-1)).toBe('Enviar')
   expect(form?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(1)
+  expect(row?.className).toContain('flex-wrap')
+  const ring = screen.getByRole('meter', { name: /Memória da conversa/ })
+  const picker = screen.getByRole('combobox', PICKER)
+  const status = ring.parentElement
+  expect(row?.contains(status)).toBe(true)
+  expect(status?.contains(picker)).toBe(true)
+  const buttons = screen.getByRole('button', { name: 'Enviar' }).parentElement
+  expect(row?.contains(buttons)).toBe(true)
+  expect(buttons?.contains(status)).toBe(false)
+  expect(buttons?.className).toContain('ms-auto')
+  expect(
+    [...(buttons?.querySelectorAll('button') ?? [])].map((one) => one.getAttribute('aria-label')),
+  ).not.toContain('Modelo e raciocínio')
+  expect(status?.nextElementSibling).toBe(buttons)
 }
 
 test(
-  'uma linha de ações no computador: a memória, o modelo e o botão, dentro da caixa',
-  expectOneRow,
+  'no computador, a linha de ações da caixa tem a memória e o modelo à esquerda e +, microfone e enviar à direita',
+  expectStatusLineAndButtonsInTheBox,
 )
 
-test('uma linha de ações no celular: a memória, o modelo e o botão, dentro da caixa', () =>
-  onPhone(expectOneRow))
+test('no celular, a linha de ações da caixa tem a memória e o modelo à esquerda e +, microfone e enviar à direita', () =>
+  onPhone(expectStatusLineAndButtonsInTheBox))
 
 test('a caixa começa com uma linha e cresce com o texto', async () => {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
