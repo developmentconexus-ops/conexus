@@ -78,17 +78,9 @@ export function MemoryStatus(props: {
           failed ? ' · Falha na memória' : ''
         }`}
       >
-        {/* biome-ignore lint/a11y/useSemanticElements: Factory's TokenBudget is a span with role=meter around the ring; <meter> draws its own bar */}
-        <span
-          role="meter"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={percent}
-          className="flex items-center gap-xs"
-        >
-          <Ring percent={percent} spinning={working} />
-          <span className="tabular-nums max-md:hidden">{percent}%</span>
-        </span>
+        <meter className="sr-only" min={0} max={100} value={percent} />
+        <Ring percent={percent} spinning={working} />
+        <span className="tabular-nums max-md:hidden">{percent}%</span>
         {failed && (
           <span className="flex items-center text-danger" title="Falha na memória">
             <CircleAlertIcon className="size-3.5" aria-label="Falha na memória" />
