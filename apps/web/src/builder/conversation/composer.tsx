@@ -4,9 +4,9 @@ import { useRef } from 'react'
 import { Button } from '../../ui/button.tsx'
 import { InputGroup, InputGroupAddon, InputGroupTextarea } from '../../ui/input-group.tsx'
 import { Label } from '../../ui/label.tsx'
-import { useIsMobile, useIsNarrow } from '../../ui/use-mobile.ts'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 import type { Draft } from './draft.ts'
-import { NO_SECRETS, STEER_KEYS, STEER_PLACEHOLDER } from './text.ts'
+import { NO_SECRETS, STEER_PLACEHOLDER } from './text.ts'
 
 /** The form sticks to the bottom and clears the home indicator. */
 const FORM =
@@ -22,13 +22,14 @@ const ROUND =
   'rounded-pill hover:bg-accent disabled:bg-surface-4 disabled:text-text-2 disabled:opacity-100'
 
 /**
- * The field and its buttons, drawn as the old composer: the model's button and a round send arrow
- * at the end, and the keys below. Enter sends and Shift+Enter breaks the line, except while an
- * input method is composing a character (design V30); on touch Return breaks the line and only
- * the button sends, and the key hints are not drawn (founder, 2026-10-25). While the Builder answers the field stays
- * open: Enter steers the running turn, the round **Parar** stands beside **Enviar**, and Esc stops
- * as it does; focus goes back to the field (design V31). What is typed is kept per conversation,
- * by the draft the screen holds.
+ * The field and its one button, in a single row of actions at every width: the memory ring, the
+ * model's button and the round button at the end, which is **Parar** while the Builder answers and
+ * the box is empty, and **Enviar** otherwise. Enter sends and Shift+Enter breaks the line, except
+ * while an input method is composing a character (design V30); on touch Return breaks the line and
+ * only the button sends. While the Builder answers the field stays open: Enter steers the running
+ * turn, Esc stops, and focus goes back to the field (design V31). What is typed is kept per
+ * conversation, by the draft the screen holds. Under the box, on a computer, one small line says not
+ * to paste secrets (founder, 2026-10-26).
  */
 export function Composer(props: {
   answering: boolean
@@ -39,15 +40,14 @@ export function Composer(props: {
   onStop: () => void
   picker: ReactNode
   taskPanel?: ReactNode
-  /** The memory rings: drawn under the field, and in the action row on a phone. */
-  memory?: (compact: boolean) => ReactNode
+  /** The memory ring, the first of the action row. */
+  memory?: ReactNode
 }) {
   const { draft } = props
   const phone = useIsMobile()
-  const narrow = useIsNarrow()
-  const inRow = phone && !narrow
   const content = draft.text
   const empty = content.trim() === ''
+  const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
 
   const sending = useRef(false)
 
@@ -96,41 +96,27 @@ export function Composer(props: {
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
           onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}
-          className="pt-md max-md:min-h-11 max-md:pt-sm md:min-h-16"
         />
         <InputGroupAddon align="block-end" className="flex-nowrap justify-end gap-xs">
-          {inRow && props.memory && <div className="me-auto">{props.memory(true)}</div>}
+          {props.memory && <div className="me-auto">{props.memory}</div>}
           {props.picker}
-          {props.answering && (
-            <Button
-              type="button"
-              variant="primary"
-              size="icon"
-              aria-label="Parar"
-              className={ROUND}
-              onClick={props.onStop}
-            >
-              <SquareIcon aria-hidden="true" className="fill-current" />
-            </Button>
-          )}
           <Button
-            type="submit"
+            type={action === 'stop' ? 'button' : 'submit'}
             variant="primary"
             size="icon"
-            aria-label="Enviar"
+            aria-label={action === 'stop' ? 'Parar' : 'Enviar'}
             className={ROUND}
-            disabled={empty || !props.canSend}
+            disabled={action === 'send' && (empty || !props.canSend)}
+            onClick={action === 'stop' ? props.onStop : undefined}
           >
-            <ArrowUpIcon aria-hidden="true" />
+            {action === 'stop' ? (
+              <SquareIcon aria-hidden="true" className="fill-current" />
+            ) : (
+              <ArrowUpIcon aria-hidden="true" />
+            )}
           </Button>
         </InputGroupAddon>
       </InputGroup>
-      {!inRow && props.memory && (
-        <div className="flex items-center px-xs">{props.memory(false)}</div>
-      )}
-      <p className="text-center text-fact text-text-2 pointer-coarse:hidden">
-        {props.answering ? STEER_KEYS : 'Enter envia · Shift+Enter quebra a linha'}
-      </p>
       {!phone && <p className="text-center text-fact text-text-2">{NO_SECRETS}</p>}
     </form>
   )

@@ -6,6 +6,7 @@ import { cn } from '../../ui/cn.ts'
 import { PhoneTopContent } from '../../ui/frame.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
+import { useIsMobile } from '../../ui/use-mobile.ts'
 
 const LAYOUT_ID = 'conexus-workbench'
 const layoutMemory = pageStorage('local')
@@ -23,6 +24,7 @@ const PHONE_REGIONS =
  */
 export function Workbench(props: { area: ReactNode; panel: ReactNode }) {
   const [view, setView] = useState<'app' | 'chat'>('app')
+  const phone = useIsMobile()
   const layout = useDefaultLayout({ id: LAYOUT_ID, storage: layoutMemory })
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -50,7 +52,11 @@ export function Workbench(props: { area: ReactNode; panel: ReactNode }) {
         <ResizablePanel id="area" minSize="40%" data-active={view === 'app'}>
           {props.area}
         </ResizablePanel>
-        <ResizableHandle aria-label="Redimensionar a conversa" className="max-md:hidden" />
+        <ResizableHandle
+          aria-label="Redimensionar a conversa"
+          disabled={phone}
+          className="max-md:hidden"
+        />
         <ResizablePanel
           id="conversation"
           defaultSize="380px"

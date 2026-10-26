@@ -6,13 +6,13 @@ import { AGENT_START, RUNNING, textDelta } from './test-events.ts'
 import { choose, conversationOf, FIRST, onPhone, say, screens, typed, view } from './test-hub.tsx'
 
 const { openConversation } = screens(hubServer())
-const SECRETS = 'Não cole senhas, chaves ou tokens na conversa.'
+const SECRETS = 'Não cole senhas ou chaves na conversa.'
 const PICKER = { name: 'Modelo e raciocínio' }
 // Base UI keeps the thumb hidden until it measures the track, which jsdom cannot; the browser
 // suites name it (keyboard.test.ts).
 const SLIDER = { hidden: true } as const
 
-test('o anel do compositor só gira enquanto o Builder trabalha; enquanto ele trabalha, Parar e Enviar ficam lado a lado; Enter envia e Esc para', async () => {
+test('o anel do compositor só gira enquanto o Builder trabalha; Enter envia e Esc para', async () => {
   const { field, line, sent } = await openConversation(conversationOf({ id: FIRST }))
   function ring() {
     return field.closest('.rounded-composer')
@@ -22,27 +22,83 @@ test('o anel do compositor só gira enquanto o Builder trabalha; enquanto ele tr
   await waitFor(() => expect(sent).toHaveLength(1))
   line().emit(AGENT_START)
   line().emit(RUNNING)
-  const stop = await screen.findByRole('button', { name: 'Parar' })
+  await screen.findByRole('button', { name: 'Parar' })
   expect(ring()?.hasAttribute('data-busy')).toBe(true)
-  expect(screen.getByRole('button', { name: 'Enviar' })).toBeTruthy()
   expect(field.getAttribute('placeholder')).toBe('Escreva para orientar o Builder')
-  expect(screen.getByText('Enter orienta o Builder · Esc para')).toBeTruthy()
   say(field, 'Só eu cadastro.')
   await waitFor(() => expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(2))
   fireEvent.keyDown(field, { key: 'Escape', isComposing: true })
   expect(sent.some((one) => one.path.endsWith('/abort'))).toBe(false)
   fireEvent.keyDown(field, { key: 'Escape' })
   await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/abort$/))
-  stop.focus()
-  fireEvent.click(stop)
-  expect(document.activeElement).toBe(field)
   line().emit(textDelta('Olá'))
 })
 
-test('no computador, perto do campo uma linha pede para não colar senhas, chaves ou tokens na conversa', async () => {
+test('um botão só: Parar com a caixa vazia, Enviar com texto, e o foco volta ao campo', async () => {
+  const { field, line, sent } = await openConversation(conversationOf({ id: FIRST }))
+  const idle = screen.getByRole('button', { name: 'Enviar' })
+  expect(idle.hasAttribute('disabled')).toBe(true)
+  expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull()
+  say(field, 'Oi')
+  await waitFor(() => expect(sent).toHaveLength(1))
+  line().emit(AGENT_START)
+  line().emit(RUNNING)
+  const stop = await screen.findByRole('button', { name: 'Parar' })
+  expect(screen.queryByRole('button', { name: 'Enviar' })).toBeNull()
+  fireEvent.change(field, { target: { value: 'Só eu cadastro.' } })
+  const send = await screen.findByRole('button', { name: 'Enviar' })
+  expect(send.hasAttribute('disabled')).toBe(false)
+  expect(screen.queryByRole('button', { name: 'Parar' })).toBeNull()
+  fireEvent.change(field, { target: { value: '' } })
+  expect(await screen.findByRole('button', { name: 'Parar' })).toBe(stop)
+  stop.focus()
+  fireEvent.click(stop)
+  expect(document.activeElement).toBe(field)
+  await waitFor(() => expect(sent.at(-1)?.path).toMatch(/\/abort$/))
+})
+
+async function expectOneRow() {
+  {
+    const { field } = await openConversation(conversationOf({ id: FIRST }))
+    const row = field.closest('form')?.querySelector('[data-slot="input-group-addon"]')
+    const names = [...(row?.querySelectorAll('button, [role="combobox"]') ?? [])].map(
+      (one) => one.getAttribute('aria-label') ?? one.getAttribute('name') ?? one.textContent,
+    )
+    expect(row?.contains(screen.getByRole('button', { name: /Memória da conversa/ }))).toBe(true)
+    expect(row?.contains(screen.getByRole('combobox', PICKER))).toBe(true)
+    expect(row?.contains(screen.getByRole('button', { name: 'Enviar' }))).toBe(true)
+    expect(names.at(0)).toMatch(/Memória da conversa/)
+    expect(names.at(-1)).toBe('Enviar')
+    expect(field.closest('form')?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(
+      1,
+    )
+  }
+}
+
+test(
+  'uma linha de ações no computador: a memória, o modelo e o botão, dentro da caixa',
+  expectOneRow,
+)
+
+test('uma linha de ações no celular: a memória, o modelo e o botão, dentro da caixa', () =>
+  onPhone(expectOneRow))
+
+test('a caixa começa com uma linha e cresce com o texto', async () => {
+  const { field } = await openConversation(conversationOf({ id: FIRST }))
+  expect(field.className).toContain('field-sizing-content')
+  expect(field.className).toContain('min-h-9')
+  expect(field.className).toContain('max-h-48')
+  expect(field.className).not.toMatch(/(^|\s)(md:|max-md:)?min-h-(11|16)/)
+})
+
+test('embaixo da caixa só a linha das senhas, sem dica de teclado', async () => {
   const { field } = await openConversation(conversationOf({ id: FIRST }))
   const line = screen.getByText(SECRETS)
   expect(field.closest('form')?.contains(line)).toBe(true)
+  expect(line.className).toContain('text-fact')
+  expect(screen.queryByText(/Shift\+Enter/)).toBeNull()
+  expect(screen.queryByText(/Enter orienta/)).toBeNull()
+  expect(field.closest('form')?.querySelectorAll('p')).toHaveLength(1)
 })
 
 test('no celular, a linha das senhas sai do rodapé: fica na conversa vazia e na folha do modelo', async () => {
@@ -56,7 +112,7 @@ test('no celular, a linha das senhas sai do rodapé: fica na conversa vazia e na
   })
 })
 
-test('no toque, Enter quebra a linha e só o botão envia; a dica das teclas não é dita pelo toque', async () => {
+test('no toque, Enter quebra a linha e só o botão envia', async () => {
   await onPhone(async () => {
     const { field, sent } = await openConversation(conversationOf({ id: FIRST }))
     fireEvent.change(field, { target: { value: 'Oi' } })
@@ -67,15 +123,6 @@ test('no toque, Enter quebra a linha e só o botão envia; a dica das teclas nã
     await waitFor(() =>
       expect(sent.filter((one) => one.path.endsWith('/messages'))).toHaveLength(1),
     )
-  })
-})
-
-test('no celular, os anéis de memória ficam na linha de ações do compositor, com os números no nome', async () => {
-  await onPhone(async () => {
-    const { field } = await openConversation(conversationOf({ id: FIRST }))
-    const rings = screen.getByRole('button', { name: /Memória da conversa: Mensagens/ })
-    expect(rings.closest('[data-slot="input-group-addon"]')).toBeTruthy()
-    expect(field.closest('form')?.contains(rings)).toBe(true)
   })
 })
 
