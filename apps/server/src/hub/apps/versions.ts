@@ -153,35 +153,14 @@ export async function failVersion(
     .where(and(eq(app.projectId, input.projectId), eq(app.sendingVersionId, input.versionId)))
 }
 
-/**
- * The version this attempt already sent: the same folder answers as it did, another folder under
- * the same key is another request (code C37). One pruned since is gone, so the key sends anew.
- */
-async function replayOf(tx: CommandTx, input: OfProject & { attemptKey: string; digest: string }) {
-  const [row] = await tx
-    .select({ ...VERSION_VIEW, digest: appVersion.digest })
-    .from(appVersion)
-    .where(
-      and(eq(appVersion.projectId, input.projectId), eq(appVersion.attemptKey, input.attemptKey)),
-    )
-  if (row === undefined) return undefined
-  if (row.digest !== input.digest) throw new Failure('IDEMPOTENCY_CONFLICT')
-  // A version being pruned still holds its key for the moment the prune takes.
-  if (row.state === 'sending' || row.state === 'pruning') throw new Failure('APP_VERSION_SENDING')
-  if (row.state === 'failed') throw new Failure(AppVersionFailure.parse(row.failure))
-  return row
-}
-
-export type Stored =
-  | { kind: 'REPLAY'; version: AppVersion }
-  | { kind: 'NEW'; version: AppVersion; databaseReady: boolean }
+export type Stored = { version: AppVersion; databaseReady: boolean }
 
 /**
  * Stores a version as being sent, under the number the Builder saved it as, and takes the
  * Projeto's claim, in the caller's transaction. A live claim refuses; one past its time fails the
- * send that held it. A number the Projeto already has is refused by its key, never relabelled.
- * Each file's bytes are kept once per company, and the upsert holds an existing blob against a
- * prune (decision 0012).
+ * send that held it. A number or a run the Projeto already has is refused by its key, never
+ * relabelled or replayed. Each file's bytes are kept once per company, and the upsert holds an
+ * existing blob against a prune (decision 0012).
  */
 export async function storeAppVersion(input: {
   tx: CommandTx
@@ -193,14 +172,6 @@ export async function storeAppVersion(input: {
 }): Promise<Stored> {
   const { tx, ids, received } = input
   const held = await lockApp(tx, ids)
-  const replay = await replayOf(tx, {
-    ...ids,
-    attemptKey: input.attemptKey,
-    digest: received.digest,
-  })
-  if (replay !== undefined) {
-    return { kind: 'REPLAY', version: versionView(replay, held.liveVersionId) }
-  }
   if (held.sendingVersionId !== null) {
     if (held.held) throw new Failure('APP_VERSION_SENDING')
     await failVersion(tx, {
@@ -247,7 +218,6 @@ export async function storeAppVersion(input: {
     .set({ sendingVersionId: row.id, claimedUntil: CLAIM_UNTIL })
     .where(eq(app.projectId, ids.projectId))
   return {
-    kind: 'NEW',
     version: versionView(row, held.liveVersionId),
     databaseReady: held.databaseReady,
   }

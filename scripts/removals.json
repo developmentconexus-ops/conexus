@@ -1492,7 +1492,7 @@
     "test": {
       "cwd": "apps/server",
       "file": "src/builder/runs/preview-send.test.ts",
-      "name": "tirar a pessoa depois de guardada a versão"
+      "name": "admissão no envio: a empresa marcada para apagar"
     }
   },
   {

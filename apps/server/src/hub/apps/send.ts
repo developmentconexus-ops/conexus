@@ -215,7 +215,6 @@ export async function sendVersion(
       number: input.number,
     })
   })
-  if (stored.kind === 'REPLAY') return
   const versionId = stored.version.id
   const sending: Sending = { scope, companyId, projectId, versionId, received }
   deps.log.info({ by: personId, companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')

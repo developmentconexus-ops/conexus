@@ -183,8 +183,8 @@ export async function repairApps(deps: RepairDeps): Promise<void> {
     try {
       const failed = await failExpiredSends(deps, scope)
       const { deleted, left } = await finishDeletions(deps, scope, companyId)
-      await pruneMarked(deps, scope, { companyId, marked: left })
       const workers = await restoreLive(deps, scope, { companyId, marked: left })
+      await pruneMarked(deps, scope, { companyId, marked: left })
       deps.log.info({ companyId, failed, deleted, workers }, 'APP_REPAIRED')
     } catch (error) {
       const failure = error instanceof Failure ? error : databaseFailure(error)

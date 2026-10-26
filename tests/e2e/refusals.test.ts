@@ -29,11 +29,12 @@ import { hubWindow, openConversation } from './hub-window.ts'
 import { createProject, liveHub, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 import { enter, linkKey } from './model-accounts-journey.ts'
 
-// Step 10's journey, with the Builder as the one who sends since step 14.1: Ana's Builder turns send
-// a version that does not start, one that writes in `db.query` and one whose Travar never ends, and
-// Pedidos's Versões show the version on the air, its data and the Hub stay as they were. Cloudflare's API and its namespace are doubles: the API runs a script's top
-// level on upload and the namespace cuts a Worker past its CPU, as record 0047 saw; the app's `db`
-// runs on the test server with the login the Hub made (testing T5, T6, T14).
+// Step 10's journey, with the Builder as the one who sends since step 14.1: Ana's Builder turns
+// send a version that does not start, one that writes in `db.query` and one whose Travar never
+// ends, and Pedidos's Versões show the version on the air, its data and the Hub stay as they were.
+// Cloudflare's API and its namespace are doubles: the API runs a script's top level on upload and
+// the namespace cuts a Worker past its CPU, as record 0047 saw; the app's `db` runs on the test
+// server with the login the Hub made (testing T5, T6, T14).
 
 const FAILED_PAGE = /<h1>O app não conseguiu responder agora\.<\/h1>/
 

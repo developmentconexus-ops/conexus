@@ -167,6 +167,25 @@ test('tirar a pessoa depois de guardada a versão: o turno dela não sobe nada e
   assert.deepEqual(hub.cloudflare.workers(), [])
 })
 
+test('admissão no envio: a empresa marcada para apagar com o turno no ar não guarda nem sobe a versão (8)', async (t) => {
+  const subject = await previewing(t)
+  const { hub, companyId } = subject
+  const arrived = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  hub.builder.knobs.holdPack = { arrived: arrived.resolve, released: released.promise }
+  const turned = turn(t, subject)
+  await arrived.promise
+  // Straight to the row: the run is not stopped, so only the send's admission can refuse it.
+  await hub.test.asOwner('update auth.company set deleting_since = now() where id = $1', [
+    companyId,
+  ])
+  released.resolve()
+  const { previews } = await turned
+  assert.deepEqual(previews, [])
+  assert.deepEqual(await hub.test.asOwner('select id from apps.app_version'), [])
+  assert.deepEqual(hub.cloudflare.workers(), [])
+})
+
 test('não inicia: a Cloudflare recusa, a parte diz APP_VERSION_NOT_STARTING e o app segue na anterior (9)', async (t) => {
   const subject = await companyForVersions(t)
   const { hub, ana } = subject
@@ -228,6 +247,37 @@ test('número já usado: o Git que voltou um commit dá um número que o Projeto
   assert.deepEqual(
     (await listed(subject)).map(({ id, number, state }) => [id, number, state]),
     [['e'.repeat(32), 1, 'ready']],
+  )
+  assert.deepEqual(hub.cloudflare.workers(), [])
+})
+
+test('o mesmo turno de novo: uma versão que já tem a chave do turno faz a chave recusar o envio, sem repetir (34)', async (t) => {
+  const subject = await previewing(t)
+  const { hub, companyId, projectId, ana } = subject
+  const arrived = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  hub.builder.knobs.holdPack = { arrived: arrived.resolve, released: released.promise }
+  const turned = turn(t, subject)
+  await arrived.promise
+  const runId = hub.lines.find((line) => line.message === 'RUN_ADMITTED')?.fields.runId
+  await hub.test.asOwner(
+    'insert into apps.app (project_id, company_id) values ($1, $2) on conflict do nothing',
+    [projectId, companyId],
+  )
+  // The run's send as if it had gone before, under another number: only its key is shared.
+  await hub.test.asOwner(
+    `insert into apps.app_version (id, company_id, project_id, number, state, manifest, digest,
+       sent_by, attempt_key, created_at)
+     values ($1, $2, $3, 7, 'ready', '{}', repeat('0', 64), $4, $5, now())`,
+    ['f'.repeat(32), companyId, projectId, ana.id, runId],
+  )
+  released.resolve()
+  const { previews } = await turned
+  assert.deepEqual(previews, [{ state: 'failed', number: 1, code: 'APP_VERSION_FAILED' }])
+  assert.ok(hub.lines.some((line) => line.fields.code === '23505'))
+  assert.deepEqual(
+    (await versionsOf(subject)).map(({ number, state }) => [number, state]),
+    [[7, 'ready']],
   )
   assert.deepEqual(hub.cloudflare.workers(), [])
 })

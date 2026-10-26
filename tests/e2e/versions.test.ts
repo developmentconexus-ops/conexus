@@ -20,9 +20,10 @@ import { openProject, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 // Step 9's journey, with the Builder as the one who sends since step 14.1: the owner's Builder
 // turns send Recados, the Projeto's Versões in Chromium list them under the conversation's numbers,
 // a recado is written through the real dispatcher, a second version goes, the first is put back and
-// the Projeto is deleted. Cloudflare's API and Neon's are faked at their HTTP doors; the app's `db` runs on the
-// test server with the login the Hub made. The app's visits carry their cookies by hand, as step 8's
-// journey does: a browser route is never called for a redirect's next request (testing T5, T6, T14).
+// the Projeto is deleted. Cloudflare's API and Neon's are faked at their HTTP doors; the app's `db`
+// runs on the test server with the login the Hub made. The app's visits carry their cookies by
+// hand, as step 8's journey does: a browser route is never called for a redirect's next request
+// (testing T5, T6, T14).
 /** 1. Versões: nothing on the app yet; Recados 1 goes on the air. The member reads who may see. */
 async function firstVersion(s: Scenario, pedidos: string) {
   const { page } = s.owner
