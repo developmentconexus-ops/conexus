@@ -190,6 +190,10 @@ Etapa 14.1 usada em 2026-10-26 em https://hub.conexus.fun (v0.14.10): "Foi passo
 
 Em 2026-10-25, sobre o estudo de arquivos e voz no compositor do Builder: "A1 sim B1 okay, e so uma duvida e o whispr da openai que e rapido e free C sim", e depois: "B1 por agora". Arquivos (PDF, `.md`, `.txt`, imagens) entram no lançamento só na conversa com o Builder, como a etapa 14.3 depois da 14.1; voz fica no ditado do navegador por ora; uma linha sobre o ditado do Chrome passar pelo Google vai ao aviso da etapa 23.
 
+Em 2026-10-26, sobre as duas telas do compositor: "D. D1 / E. E1" (a linha pequena sob a caixa e o anel único) e, sobre o tamanho da linha: "D1A" (12 px, sem exceção à V13).
+
+Cartão da etapa 14.3 aprovado em 2026-10-26 (commit 36fb5dca068c5f468e1a78dcd04f28ec5d07a53b): "1. Sim"
+
 ## Etapa 13.1
 
 Em 2026-10-25, olhando o Início de hoje: "Eu não sei em que etapa que a gente tem que vai mudar a página inicial, é depois da prévia? Porque essa não é a página inicial que a gente realmente quer ter ... E também, como você pode ver, ela tá até com o subliado lá em cima. Então, não que eu quero mudar isso agora, mas mudar quando a gente for mudar a página inicial, para deixar ela conforme a gente já vem planejando há um tempo. Mas acredito que a gente precisa esperar a prévia primeiro." À ordem proposta (14.1, depois arquivos e voz, depois a 13.1, com o compositor do Início sendo o mesmo com **+** e microfone e o contorno do título consertado na 13.1): "Concordo documente tudo isso para ser registrado"
