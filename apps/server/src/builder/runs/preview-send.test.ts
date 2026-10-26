@@ -275,10 +275,9 @@ test('o mesmo turno de novo: uma versão que já tem a chave do turno faz a chav
   const { previews } = await turned
   assert.deepEqual(previews, [{ state: 'failed', number: 1, code: 'APP_VERSION_FAILED' }])
   assert.ok(hub.lines.some((line) => line.fields.code === '23505'))
-  assert.deepEqual(
-    (await versionsOf(subject)).map(({ number, state }) => [number, state]),
-    [[7, 'ready']],
-  )
+  assert.deepEqual(await versionsOf(subject), [
+    { number: 7, state: 'ready', live: false, failure: null, sentBy: ana.id },
+  ])
   assert.deepEqual(hub.cloudflare.workers(), [])
 })
 
