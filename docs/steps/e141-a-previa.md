@@ -184,7 +184,7 @@ WebKit da Apple (iPhone, iPad, Safari do Mac), acima do iframe:
 
 | Gravação ou comando, da etapa ou da biblioteca | Duas vezes ao mesmo tempo | Recusada no meio, depois de uma instrução ou de uma chamada | Uma dependência fora (o banco, ou um terceiro) | O que o processo imprime | Critérios |
 | --- | --- | --- | --- | --- | --- |
-| `sendVersion` pelo Builder, com o número dele (U5) | um Hub segura um turno por Projeto (D15); a trava viva de outro envio (outro Hub, num deploy): `APP_VERSION_SENDING`, o do Builder falha (C65); o mesmo turno de novo: o `attemptKey` é o `runId`, `REPLAY`; o mesmo número de outro turno: `unique (project_id, number)` recusa, `APP_VERSION_FAILED` | a morte entre a subida e o ponteiro deixa o ponteiro como estava; o envio vencido falha no início seguinte (`failExpiredSends`) | a Cloudflare sem resposta ou recusando: `APP_VERSION_FAILED`, o app segue na anterior; o banco fora: `failed` `APP_VERSION_FAILED` e `logFailure` | `APP_VERSION_RECEIVED`, `APP_VERSION_UPLOADED`, `APP_VERSION_LIVE` com `by` a pessoa; `PREVIEW_SEND_FAILED` com o código | 1, 8, 9, 12, 13, 34 |
+| `sendVersion` pelo Builder, com o número dele (U5) | um Hub segura um turno por Projeto (D15); a trava viva de outro envio (outro Hub, num deploy): `APP_VERSION_SENDING`, o do Builder falha (C65); o mesmo turno de novo: o `attemptKey` é o `runId`, `unique (project_id, attempt_key)` recusa, `APP_VERSION_FAILED`; o mesmo número de outro turno: `unique (project_id, number)` recusa, `APP_VERSION_FAILED` | a morte entre a subida e o ponteiro deixa o ponteiro como estava; o envio vencido falha no início seguinte (`failExpiredSends`) | a Cloudflare sem resposta ou recusando: `APP_VERSION_FAILED`, o app segue na anterior; o banco fora: `failed` `APP_VERSION_FAILED` e `logFailure` | `APP_VERSION_RECEIVED`, `APP_VERSION_UPLOADED`, `APP_VERSION_LIVE` com `by` a pessoa; `PREVIEW_SEND_FAILED` com o código | 1, 8, 9, 12, 13, 34 |
 | A migração da U5 (as versões enviadas à mão) | roda uma vez, antes do Hub (D9) | uma transação: tudo ou nada | o banco fora: o `migrate` falha e o Hub não sobe (D9) | a linha de `migrate` de hoje; no início, `APP_VERSION_PRUNED` por Projeto | 36 |
 | A poda no reparo do início (U5) | o reparo corre sozinho no início | um Worker que a Cloudflare não confirmou fica marcado para a próxima poda | a Cloudflare fora: a empresa fica para o próximo início (`APP_REPAIR_FAILED`), como hoje | `APP_VERSION_PRUNED` | 36 |
 | `Machines.pack` (`packIn`) | um por turno: o `Runs` segura o Projeto (D15) | a máquina morta no meio: `failed` `APP_VERSION_FAILED`, `PREVIEW_PACK_REFUSED` `reason: 'LOST'` | o E2B fora: o mesmo | `PREVIEW_PACK_REFUSED` com `reason` | 11, 15 |
@@ -318,7 +318,8 @@ finish(input: { conversationId; reason; saved: (settled: Settled) => void }): Pr
 ```
 
 - **Cada estado**: `PreviewData` por `state` (C21); `Outcome` inalterado.
-- **Cada id**: `RunId` vira `attemptKey` (o mesmo turno de novo é `REPLAY`); `PersonId` do `Driven`.
+- **Cada id**: `RunId` vira `attemptKey` (o mesmo turno de novo é recusado pela chave);
+  `PersonId` do `Driven`.
 - **Donos**: `PreviewFailure` e `AppVersionFailure` em `hub-api` (C26); a frase de cada código em
   `failures.ts` (C48); quem pode enviar em `admission.ts` e `roles.ts`.
 - **Zod**: `PreviewData` na parte (lida pelo web com `ConexusPart`).
