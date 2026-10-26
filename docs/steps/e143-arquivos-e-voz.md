@@ -76,10 +76,10 @@ vieram as peças da conversa (decisão 0033).
 | U4 | O ditado: `ui/speech-input.tsx`, `pt-BR`, a frase em andamento na caixa, a frase por erro | `apps/web/src/ui/`, `apps/web/src/builder/conversation/` | web | U2 |
 | U5 | O anel único (E1) | `apps/web/src/builder/conversation/` | design | U2 |
 
-**A entrega.** As unidades entram no `main` uma de cada vez, cada uma depois da sua revisão (sua
-palavra "3. A", 2026-10-25, que o PR de fechamento da 14.1 escreve no método). Hoje a regra L13 no
-`main` manda o código da etapa entrar numa só junção; por isso a aprovação deste cartão espera a
-mudança de L13 estar no `main`, e cada unidade só tem base legal depois dela. A ordem é U1, U2,
+**A entrega.** Cada unidade é o seu próprio pull request, sobre o `main` com as anteriores já dentro
+([entrega L9](../guides/delivery.md)): o CI verde, uma revisão por um revisor Opus e então o
+firstmate a junta ao `main`, uma de cada vez ([L13](../guides/delivery.md); sua palavra "3. A",
+2026-10-25). A ordem é U1, U2,
 U3, U4, U5: a U3 lê a gravação da U1 e a linha da U2; U3, U4 e U5 mudam `builder/conversation/` e
 não correm em paralelo. Cada unidade parte do `main` com a anterior já dentro.
 
