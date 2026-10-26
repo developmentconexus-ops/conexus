@@ -8,7 +8,8 @@ description: "Reviews a whole Conexus roadmap step at its exact commit, as the o
 ## When to use
 
 Pass 1, once per step, by [delivery L9](../../../docs/guides/delivery.md)'s one reviewer, beside
-QA, at the commit where CI turned green. Later passes are a delta check (step 9).
+QA, at `main` once the last unit is merged and CI is green there. The same skill reviews each unit
+on its pull request's diff, before that unit merges. Later passes are a delta check (step 9).
 
 ## What it receives
 
@@ -20,7 +21,9 @@ The pull request, its head commit and the card; nothing from the builders' conve
    checklist](../../../docs/reference/checklist.md), the card, [code](../../../docs/guides/code.md)
    and the card's guides. Record the files and skills read and the commit; a skill that did not
    load is read from its `stack.md` docs column, and said so.
-2. Read the step's whole diff against `main` and against each unit's section, at the exact commit.
+2. Read the step's whole diff, `main` at the last unit's merge against the step's first commit, and
+   against each unit's section, at the exact commit. For a unit review, read the unit's pull
+   request diff.
 3. Try a counterexample to every acceptance criterion.
 4. Run the refusal criteria against the published step or a real database, saying what you ran (a
    claim not run is "read"), and read every CI job's log; when the change touches the test

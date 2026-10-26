@@ -947,9 +947,9 @@ refused for its media type or its origin.
   Mastra guardar a chamada": Mastra's save of the open call slowed by 300 ms, Parar as the card
   arrives. Without the wait it reads `call`, 3 runs of 3; with it, `output-denied`, 3 of 3. The
   two Parar tests that flaked in CI failed 2 of 2 with the same slowed save before, and passed 6 of 6
-  after. Past the bound, with the save slowed by `KEPT_WITHIN_MS` plus 1 s, "Parar com o Mastra
-  guardando a chamada além do prazo" proves Parar answers within the bound and the turn ends
-  aborted; the card's state there is Mastra's old window.
+  after. Past the bound, with the save slowed by 5 s, "Parar com o Mastra guardando a chamada
+  além do prazo" proves Parar answers within the bound and the turn ends aborted;
+  the card's state there is Mastra's old window.
 - **Revisit when** Mastra saves the suspension before publishing its chunk on the default engine, as
   1.80.0-alpha.3 does for the durable and evented engines (PR #27352), or Conexus runs the Builder
   on such an engine. Then `parked.ts` and its call leave.

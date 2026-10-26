@@ -2,7 +2,7 @@
 
 ## Context
 
-The founder requires three guarantees of the Hub's session: no stored row works alone to sign in; the cookie is valid for one exact host; there is an idle and a total deadline. On 2026-10-13 he asked why Conexus keeps a session when Better Auth manages one; it was reopened.
+The founder requires three guarantees of the Hub's session: no stored row works alone to sign in; the cookie is valid for one exact host; there is an idle and a total deadline. On 2026-10-13 he asked why Conexus should keep a session of its own when Better Auth already manages one, and the decision was reopened.
 
 ## Decision
 
@@ -14,18 +14,18 @@ The step 3 study starts from Better Auth's native session at the installed versi
 
 ## Result
 
-Local run, 2026-10-14, step 3 study, gate written before it: better-auth 1.7.8
-with its Drizzle adapter on PostgreSQL 18, no browser, no Tunnel. Passed natively: the `__Host-` cookie by configuration (LT3, LT7 on the Hub host), a deleted row
+Local run, 2026-10-14, by the step 3 study, against a gate written before it: better-auth 1.7.8
+with its Drizzle adapter on PostgreSQL 18, one machine, no browser, no Tunnel. Passed with the
+native session: the `__Host-` cookie by configuration (LT3, LT7 on the Hub host), a deleted row
 refused on the next call (LT14), no stored row opens a session without the secret (LT15), no
 undeclared library path (LT17), every sign-up path closed. Missing natively, so Conexus code: a
-total deadline, and a sign-out that fails when the row cannot be deleted. Not run: LT16 (see Notes). The other tests belong to steps 4, 8 and 18.
+total deadline, and a sign-out that fails when the row cannot be deleted. Not run: LT16, through the
+Tunnel, after publish (see Notes). The other tests belong to steps 4, 8 and 18.
 
 ## Notes
 
 LT16, 2026-10-15, through the Tunnel: on v0.3.0 one address got ten 401s, then 429; another got
 401. On v0.3.1 the founder read `__Host-conexus_session`: "HttpOnly ✓, SameSite Lax".
-
-Step 14.1, 2026-10-25: no separate Preview session: the Prévia frames the app under its app session ("A1"), entered by `createAppFrameHandoff`.
 
 ## Consequences
 

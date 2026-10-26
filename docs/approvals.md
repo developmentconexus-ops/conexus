@@ -179,7 +179,10 @@ Em 2026-10-25, sobre as três chamadas da revisão da etapa 14.1 inteira: 1, o e
 
 Cartão da etapa 14.1 aprovado em 2026-10-25 (commit f7496ff1a8d4ca1571f4bd2e49c00ec0c81e7a59): "1. A 2. Sim pode apagar tudo 3. A"
 
-Em 2026-10-26, sobre as frases de falha da Prévia propostas no fechamento da 14.1 (`APP_VERSION_NOT_STARTING`, `APP_MIGRATION_FAILED`, `APP_MIGRATION_CHANGED`, `APP_VERSION_FAILED` sem botão e `APP_VERSION_SENDING`) e o rótulo "App" da aba a 390 px: aprovados com as palavras de seu uso, abaixo.
+Em 2026-10-26, sobre as frases de falha da Prévia propostas no fechamento da 14.1
+(`APP_VERSION_NOT_STARTING`, `APP_MIGRATION_FAILED`, `APP_MIGRATION_CHANGED`, `APP_VERSION_FAILED`
+sem botão e `APP_VERSION_SENDING`) e o rótulo "App" da aba a 390 px: aprovados com as palavras de
+seu uso, abaixo.
 
 Etapa 14.1 usada em 2026-10-26 em https://hub.conexus.fun (v0.14.10): "Foi passou, aprovado"
 

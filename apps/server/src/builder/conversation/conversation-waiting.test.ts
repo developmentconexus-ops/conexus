@@ -202,7 +202,7 @@ test('Parar com o Mastra guardando a chamada além do prazo: a resposta volta de
   timeout: 60_000,
 }, async (t) => {
   const { hub, ana, url, stream, send } = await conversingWith(t, [[ask(WHO)]])
-  slowedSaveOfOpenCalls(t, 3_000)
+  slowedSaveOfOpenCalls(t, 5_000)
   assert.equal((await send()).statusCode, 200)
   await untilCard(stream, 'question')
   const started = Date.now()

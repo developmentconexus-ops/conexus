@@ -46,7 +46,6 @@ export const APP_VERSION_FAILURES = {
     action: 'A próxima versão do Builder sobe quando o envio terminar.',
     actionKind: 'NONE',
   },
-  // A failed version is final: "Tentar de novo" is a new send, with a new key.
   APP_VERSION_FAILED: {
     category: 'THIRD_PARTY',
     settles: true,
