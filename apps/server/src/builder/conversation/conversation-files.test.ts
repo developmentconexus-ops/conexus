@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createServer } from 'node:http'
 import { test } from 'node:test'
 import { post } from '../../hub/identity/test-hub.ts'
 import type { Sent } from '../../platform/test-anthropic.ts'
@@ -115,4 +116,24 @@ test('o arquivo enviado no meio do trabalho entra na volta', async (t) => {
   held.release()
   assert.equal(endOf(await stream.turn()), 'complete')
   assert.deepEqual(calls.at(-1)?.media, [{ type: 'document', mediaType: PDF_TYPE }])
+})
+
+test('um arquivo que é uma URL é recusado e nada é buscado', async (t) => {
+  let hits = 0
+  const target = createServer((_, response) => {
+    hits += 1
+    response.end(PNG)
+  })
+  await new Promise<void>((resolve) => target.listen(0, '127.0.0.1', resolve))
+  t.after(() => target.close())
+  const { calls, send } = await conversation(t)
+  const address = target.address()
+  assert.ok(address !== null && typeof address === 'object')
+  const refused = await send('Veja', [
+    { ...png, data: `http://127.0.0.1:${address.port}/logo.png` },
+  ])
+  assert.equal(refused.statusCode, 400)
+  assert.equal(Object(refused.json()).code, 'REQUEST_MALFORMED')
+  assert.equal(calls.length, 0, 'the model is not called')
+  assert.equal(hits, 0, 'the Hub fetched nothing')
 })
