@@ -5,7 +5,8 @@ import { Button } from './button.tsx'
 
 // Copied from AI Elements' `speech-input` (registry read with shadcn 4.22.1, 2026-10-26), painted
 // with brand tokens and cut to the browser's recognition: no `MediaRecorder`, no `onAudioRecorded`.
-// `lib.dom` has the events and the error code but not the recognizer, so it is declared here.
+// Added: the phrase in progress and the error code, and the hidden button where there is no
+// recognizer. `lib.dom` has the events and the error code but not the recognizer, so it is declared.
 declare global {
   interface SpeechRecognition extends EventTarget {
     continuous: boolean
@@ -13,9 +14,9 @@ declare global {
     lang: string
     start(): void
     stop(): void
-    onresult: ((event: SpeechRecognitionEvent) => void) | null
-    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
-    onend: (() => void) | null
+    addEventListener(type: 'start' | 'end', listener: () => void): void
+    addEventListener(type: 'result', listener: (event: SpeechRecognitionEvent) => void): void
+    addEventListener(type: 'error', listener: (event: SpeechRecognitionErrorEvent) => void): void
   }
   // As `lib.dom` declares its own recognizers: a browser without one lacks the name.
   var SpeechRecognition: (new () => SpeechRecognition) | undefined
@@ -51,54 +52,54 @@ export function SpeechInput(props: {
   onInterim: (text: string) => void
   onError: (error: DictationError) => void
 }): ReactNode | null {
+  const [Recognition] = useState(
+    () => globalThis.SpeechRecognition ?? globalThis.webkitSpeechRecognition,
+  )
   const [listening, setListening] = useState(false)
+  const [ready, setReady] = useState(false)
   const recognition = useRef<SpeechRecognition | null>(null)
   const latest = useRef(props)
   latest.current = props
+  const { lang } = props
 
-  useEffect(
-    () => () => {
-      recognition.current?.stop()
-    },
-    [],
-  )
-
-  const Recognition = globalThis.SpeechRecognition ?? globalThis.webkitSpeechRecognition
-  if (Recognition === undefined) return null
-
-  function listen(Recognition: new () => SpeechRecognition) {
+  useEffect(() => {
+    if (Recognition === undefined) return
     const next = new Recognition()
     next.continuous = true
     next.interimResults = true
-    next.lang = latest.current.lang
-    next.onresult = (event) => {
+    next.lang = lang
+    next.addEventListener('start', () => setListening(true))
+    next.addEventListener('end', () => {
+      setListening(false)
+      latest.current.onInterim('')
+    })
+    next.addEventListener('result', (event) => {
       const { final, interim } = heard(event)
       if (final !== '') latest.current.onFinal(final)
       latest.current.onInterim(interim)
-    }
-    next.onerror = (event) => {
+    })
+    next.addEventListener('error', (event) => {
       if (event.error !== 'aborted') latest.current.onError(event.error)
-    }
-    next.onend = () => {
-      recognition.current = null
-      setListening(false)
-      latest.current.onInterim('')
-    }
+    })
     recognition.current = next
-    setListening(true)
-    next.start()
-  }
+    setReady(true)
+    return () => {
+      next.stop()
+      recognition.current = null
+      setReady(false)
+    }
+  }, [Recognition, lang])
 
+  if (Recognition === undefined) return null
   return (
     <Button
       variant="ghost"
       size="icon"
       aria-label="Ditar"
       aria-pressed={listening}
+      disabled={!ready}
       className="aria-pressed:bg-surface-3 aria-pressed:text-danger"
-      onClick={() =>
-        recognition.current === null ? listen(Recognition) : recognition.current.stop()
-      }
+      onClick={() => (listening ? recognition.current?.stop() : recognition.current?.start())}
     >
       <MicIcon aria-hidden="true" />
     </Button>

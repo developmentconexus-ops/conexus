@@ -75,7 +75,7 @@ function droppedOn(attachments: Attachments) {
   }
 }
 
-/** Why a file was left out, or why the microphone stopped, above the box until the next of either. */
+/** Why a file was left out, or why the microphone stopped, above the box. */
 function Refused({ phrase }: { phrase: string | null }) {
   if (phrase === null) return null
   return (
@@ -116,26 +116,45 @@ function Attach({ attachments }: { attachments: Attachments }) {
 }
 
 /**
- * The microphone and what it adds to the box: the phrase in progress shown after the draft until it
- * is final, then joined to the draft; and why it stopped, when it did.
+ * The one phrase above the box, the one of whatever happened last: a file left out or the
+ * microphone stopping. A dictation error takes the refusal's place, and a new refusal takes the error's.
  */
-function useDictation(draft: Draft) {
-  const [interim, setInterim] = useState('')
+function useNotice(attachments: Attachments) {
   const [phrase, setPhrase] = useState<string | null>(null)
+  const [refusal, setRefusal] = useState(attachments.refusal)
+  if (refusal !== attachments.refusal) {
+    setRefusal(attachments.refusal)
+    setPhrase(attachments.refusal === null ? null : REFUSALS[attachments.refusal])
+  }
+  return {
+    phrase,
+    clear: () => setPhrase(null),
+    say: (said: string) => {
+      setPhrase(said)
+      setRefusal(null)
+      attachments.clearRefusal()
+    },
+  }
+}
+
+/**
+ * The microphone and what it adds to the box: the phrase in progress shown after the draft, which
+ * reads only until it is final, and then joined to the draft once.
+ */
+function useDictation(draft: Draft, notice: ReturnType<typeof useNotice>) {
+  const [interim, setInterim] = useState('')
   return {
     shown: joined(draft.text, interim),
-    phrase,
-    /** Typing in the box makes what was heard part of it. */
-    typed: () => setInterim(''),
+    listening: interim !== '',
     mic: (
       <SpeechInput
         lang="pt-BR"
         onFinal={(text) => {
-          setPhrase(null)
+          notice.clear()
           draft.change(joined(draft.text, text))
         }}
         onInterim={setInterim}
-        onError={(error) => setPhrase(dictationText(error))}
+        onError={(error) => notice.say(dictationText(error))}
       />
     ),
   }
@@ -172,7 +191,8 @@ export function Composer(props: {
   const action: 'stop' | 'send' = props.answering && empty ? 'stop' : 'send'
 
   const sending = useRef(false)
-  const dictation = useDictation(draft)
+  const notice = useNotice(attachments)
+  const dictation = useDictation(draft, notice)
 
   /** One send at a time: a second Enter or click before the route answers would send it again (Factory clears its field before sending). */
   async function send() {
@@ -207,11 +227,7 @@ export function Composer(props: {
   return (
     <form onSubmit={submit} {...droppedOn(attachments)} className={FORM}>
       {props.taskPanel}
-      <Refused
-        phrase={
-          dictation.phrase ?? (attachments.refusal === null ? null : REFUSALS[attachments.refusal])
-        }
-      />
+      <Refused phrase={notice.phrase} />
       <InputGroup
         data-busy={props.answering || undefined}
         className="rounded-composer data-busy:working-ring"
@@ -225,10 +241,8 @@ export function Composer(props: {
           ref={props.field}
           value={dictation.shown}
           placeholder={props.answering ? STEER_PLACEHOLDER : 'Escreva sua mensagem'}
-          onChange={(event) => {
-            dictation.typed()
-            draft.change(event.target.value)
-          }}
+          readOnly={dictation.listening}
+          onChange={(event) => draft.change(event.target.value)}
           onKeyDown={onKeyDown}
         />
         <InputGroupAddon align="block-end" className="flex-nowrap justify-end gap-xs">
