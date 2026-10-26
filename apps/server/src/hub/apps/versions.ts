@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { APP_LIMITS, Manifest, versionFiles } from '@conexus/app-contract'
 import type { AppVersion, CompanyId, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
 import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
-import { and, desc, eq, inArray, max, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { CLOUDFLARE_DEADLINE_MS } from '../../platform/cloudflare.ts'
 import type { CommandTx, ReadTx } from '../../platform/database.ts'
@@ -177,10 +177,11 @@ export type Stored =
   | { kind: 'NEW'; version: AppVersion; databaseReady: boolean }
 
 /**
- * Stores a version as being sent and takes the Projeto's claim, in the caller's transaction, for
- * the screen now and the Builder in step 14. A live claim refuses; one past its time fails the send
- * that held it. Each file's bytes are kept once per company, and the upsert holds an existing blob
- * against a prune (decision 0012).
+ * Stores a version as being sent, under the number the Builder saved it as, and takes the
+ * Projeto's claim, in the caller's transaction. A live claim refuses; one past its time fails the
+ * send that held it. A number the Projeto already has is refused by its key, never relabelled.
+ * Each file's bytes are kept once per company, and the upsert holds an existing blob against a
+ * prune (decision 0012).
  */
 export async function storeAppVersion(input: {
   tx: CommandTx
@@ -188,6 +189,7 @@ export async function storeAppVersion(input: {
   sentBy: PersonId
   received: ReceivedVersion
   attemptKey: string
+  number: number
 }): Promise<Stored> {
   const { tx, ids, received } = input
   const held = await lockApp(tx, ids)
@@ -215,16 +217,12 @@ export async function storeAppVersion(input: {
       .values({ companyId: ids.companyId, sha256, bytes })
       .onConflictDoUpdate({ target: [blob.companyId, blob.sha256], set: { sha256 } })
   }
-  const [last] = await tx
-    .select({ number: max(appVersion.number) })
-    .from(appVersion)
-    .where(eq(appVersion.projectId, ids.projectId))
   const [row] = await tx
     .insert(appVersion)
     .values({
       id: AppVersionId.parse(randomBytes(16).toString('hex')),
       ...ids,
-      number: (last?.number ?? 0) + 1,
+      number: input.number,
       state: 'sending',
       manifest: received.manifest,
       digest: received.digest,

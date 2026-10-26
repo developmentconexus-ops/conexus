@@ -3,175 +3,100 @@ import { test } from 'node:test'
 import { APP_CALL_LIMITS } from '@conexus/app-contract'
 import { ProjectId } from '@conexus/hub-api'
 import { appTablesOf } from '../../platform/test-company-postgres.ts'
-import { queued, WRITE_HEADERS, withOwnerLock } from '../../platform/test-database.ts'
-import {
-  ANA_OWNER,
-  BRUNO,
-  CARLA,
-  call,
-  codeOf,
-  personOn,
-  plantCompany,
-} from '../identity/test-hub.ts'
-import { companyForVersions, folder, MIGRATION, send } from './test-versions.ts'
+import { ANA_OWNER, BRUNO, codeOf, post } from '../identity/test-hub.ts'
+import { companyForVersions, folder, listed, MIGRATION, send } from './test-versions.ts'
 
-const KEY = '6f1c2a4e-0b7d-4c1e-9a3f-2d5b8e7c1a90'
-
-function versionOf(response: { json(): unknown }) {
-  return Object(Object(response.json()).version)
-}
-
-test('envio: dono e administrador 201, no ar; membro, outra empresa, Projeto marcado 404; sem sessão 401', async (t) => {
-  const { hub, ana, bruno, companyId, projectId, versions } = await companyForVersions(t)
-  const sent = await send(hub, ana, versions)
-  assert.equal(sent.statusCode, 201)
-  const version = versionOf(sent)
+test('envio: a versão do Builder vai ao ar com o número dele, enviada por dono ou membro; a rota de envio saiu (35)', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, companyId, projectId, versions } = subject
+  assert.deepEqual((await send(subject, ana)).preview, { state: 'ready', number: 1 })
+  const [version] = await listed(subject)
   assert.deepEqual(
-    [version.number, version.state, version.live, version.failure, version.sentBy],
+    [version?.number, version?.state, version?.live, version?.failure, version?.sentBy],
     [1, 'ready', true, null, ana.id],
   )
-  assert.deepEqual(hub.cloudflare.workers(), [`v-${version.id}`])
-  const upload = hub.cloudflare.upload(`v-${version.id}`)
+  assert.deepEqual(hub.cloudflare.workers(), [`v-${version?.id}`])
+  const upload = hub.cloudflare.upload(`v-${version?.id}`)
   assert.deepEqual(upload?.tags, [`company-${companyId}`, `project-${projectId}`])
   assert.equal(upload?.cpuMs, APP_CALL_LIMITS.cpuMs)
   const [app] = await hub.test.asOwner(
     'select live_version_id, sending_version_id, database_ready from apps.app',
   )
   assert.deepEqual(app, {
-    live_version_id: version.id,
+    live_version_id: version?.id,
     sending_version_id: null,
     database_ready: true,
   })
-  await hub.test.asOwner(
-    `update auth.member set role = 'admin' where user_id = $1 and company_id = $2`,
-    [bruno.id, companyId],
-  )
-  assert.equal((await send(hub, bruno, versions, folder({}, '#6b2fa3'))).statusCode, 201)
-  await hub.test.asOwner(
-    `update auth.member set role = 'member' where user_id = $1 and company_id = $2`,
-    [bruno.id, companyId],
-  )
-  const carla = await personOn(hub, CARLA)
-  await plantCompany(hub.test, carla.id, 'Empresa C', 'empresa-c')
-  const refused = [await send(hub, bruno, versions), await send(hub, carla, versions)]
-  await hub.test.asOwner('update projects.project set deleting_since = now()')
-  refused.push(await send(hub, ana, versions))
-  assert.deepEqual(
-    refused.map((answer) => [answer.statusCode, codeOf(answer)]),
-    Array(3).fill([404, 'NOT_FOUND']),
-  )
-  const anonymous = await hub.app.inject({
-    method: 'POST',
-    url: versions,
-    headers: WRITE_HEADERS,
-    payload: JSON.stringify(folder()),
+  assert.deepEqual((await send(subject, bruno, folder({}, '#6b2fa3'))).preview, {
+    state: 'ready',
+    number: 2,
   })
-  assert.equal(anonymous.statusCode, 401)
+  const gone = await post(hub, ana, versions, folder())
+  assert.deepEqual([gone.statusCode, codeOf(gone)], [404, 'NOT_FOUND'])
   assert.equal((await hub.test.asOwner('select count(*)::int as n from apps.app_version'))[0]?.n, 2)
 })
 
-test('envio: a mesma chave dá a mesma versão; outra pasta na chave 409; dois juntos 201 e 409', async (t) => {
-  const { hub, ana, versions } = await companyForVersions(t)
-  const first = await send(hub, ana, versions, folder(), KEY)
-  const again = await send(hub, ana, versions, folder(), KEY)
-  assert.deepEqual([first.statusCode, again.statusCode], [201, 201])
-  assert.equal(versionOf(again).id, versionOf(first).id)
-  assert.equal(hub.cloudflare.calls.filter(({ call }) => call === 'upload').length, 1)
-  const other = await send(hub, ana, versions, folder({}, '#6b2fa3'), KEY)
-  assert.deepEqual([other.statusCode, codeOf(other)], [409, 'IDEMPOTENCY_CONFLICT'])
-  // A pruned version is gone, so its key sends anew.
-  const later = versionOf(await send(hub, ana, versions, folder({}, '#333333')))
-  await hub.test.asOwner('delete from apps.app_version where attempt_key = $1', [KEY])
-  assert.equal(later.live, true)
-  const anew = await send(hub, ana, versions, folder(), KEY)
-  assert.equal(anew.statusCode, 201)
-  assert.notEqual(versionOf(anew).id, versionOf(first).id)
-  const answers = await withOwnerLock(hub.test, 'lock table apps.app', [], async (release) => {
-    const both = [
-      send(hub, ana, versions, folder({}, '#111111')),
-      send(hub, ana, versions, folder({}, '#222222')),
-    ]
-    await queued(hub.test, 2)
-    await release()
-    return Promise.all(both)
-  })
-  assert.deepEqual(answers.map((answer) => answer.statusCode).sort(), [201, 409])
-  assert.ok(answers.some((answer) => codeOf(answer) === 'APP_VERSION_SENDING'))
-})
-
-test('envio: 422 para caminho com .. ou absoluto, repetido, ausente ou a mais; 413 acima do teto', async (t) => {
-  const { hub, ana, versions } = await companyForVersions(t)
+test('envio: a pasta que a máquina deixa fora do contrato ou acima do teto não guarda nada', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana } = subject
   const base = folder()
-  const [worker, index, style] = base.files
-  if (worker === undefined || index === undefined || style === undefined) throw new Error('folder')
-  const bodies = [
-    { ...base, files: [worker, index, { ...style, path: 'assets/../style.css' }] },
-    { ...base, manifest: { ...base.manifest, assets: ['/etc/style.css', 'index.html'] } },
-    { ...base, files: [worker, index, style, style] },
-    { ...base, files: [worker, index] },
-    { ...base, files: [...base.files, { ...style, path: 'assets/extra.css' }] },
+  const [, , style] = base.files
+  if (style === undefined) throw new Error('folder')
+  const many = Array.from({ length: 1001 }, (_, at) => ({ ...style, path: `assets/${at}.css` }))
+  const refused = [
     { ...base, manifest: { ...base.manifest, contract: 2 } },
+    { ...base, files: [...base.files, { ...style, path: 'assets/extra.css' }] },
+    {
+      ...base,
+      manifest: { ...base.manifest, assets: many.map(({ path }) => path.slice(7)) },
+      files: [...base.files.slice(0, 1), ...many],
+    },
   ]
-  for (const body of bodies) {
-    const answer = await send(hub, ana, versions, body)
-    assert.deepEqual([answer.statusCode, codeOf(answer)], [422, 'APP_VERSION_INVALID'])
+  for (const version of refused) {
+    const { number, preview } = await send(subject, ana, version)
+    assert.deepEqual(preview, { state: 'failed', number, code: 'APP_VERSION_FAILED' })
   }
-  const big = Buffer.alloc(10 * 1024 * 1024 + 1).toString('base64')
-  const tooBig = await send(hub, ana, versions, {
-    ...base,
-    files: [worker, index, { ...style, base64: big }],
-  })
-  assert.deepEqual([tooBig.statusCode, codeOf(tooBig)], [413, 'APP_VERSION_TOO_LARGE'])
-  // The ceiling counts the files the Hub keeps, as the screen does: 1,000 pass it, 1,001 do not.
-  function many(count: number) {
-    return Array.from({ length: count }, (_, at) => ({ ...style, path: `assets/${at}.css` }))
-  }
-  const atCeiling = await send(hub, ana, versions, { ...base, files: many(1000) })
-  assert.deepEqual([atCeiling.statusCode, codeOf(atCeiling)], [422, 'APP_VERSION_INVALID'])
-  const overCeiling = await send(hub, ana, versions, { ...base, files: many(1001) })
-  assert.deepEqual([overCeiling.statusCode, codeOf(overCeiling)], [413, 'APP_VERSION_TOO_LARGE'])
-  const huge = await send(hub, ana, versions, { ...base, padding: 'x'.repeat(15 * 1024 * 1024) })
-  assert.equal(huge.statusCode, 413)
   assert.deepEqual(await hub.test.asOwner('select id from apps.app_version'), [])
   assert.deepEqual(hub.cloudflare.calls, [])
 })
 
-test('envio: Neon ou Cloudflare fora 502 e "falhou"; código que não inicia e migração que falha 422, nada aplicado', async (t) => {
-  const { hub, ana, owner, projectId, versions } = await companyForVersions(t)
-  const live = versionOf(await send(hub, ana, versions))
+test('envio: Neon ou Cloudflare fora "falhou"; código que não inicia e migração que falha, nada aplicado', async (t) => {
+  const subject = await companyForVersions(t)
+  const { hub, ana, owner, projectId } = subject
+  await send(subject, ana)
+  const [live] = await listed(subject)
   hub.cloudflare.script('upload', 'NO_ANSWER')
-  const noCloudflare = await send(hub, ana, versions, folder({}, '#111111'))
+  const noCloudflare = await send(subject, ana, folder({}, '#111111'))
   hub.neon.script('ownerConnection', 'NO_ANSWER')
-  const noNeon = await send(hub, ana, versions, folder({}, '#222222'))
-  assert.deepEqual(
-    [noCloudflare, noNeon].map((answer) => [answer.statusCode, codeOf(answer)]),
-    Array(2).fill([502, 'APP_VERSION_FAILED']),
-  )
+  const noNeon = await send(subject, ana, folder({}, '#222222'))
   hub.cloudflare.script('upload', 'NOT_STARTING')
   const second = { id: '002_extra', statements: ['CREATE TABLE extra (v text)'] }
-  const notStarting = await send(hub, ana, versions, folder({ migrations: [MIGRATION, second] }))
-  assert.deepEqual([notStarting.statusCode, codeOf(notStarting)], [422, 'APP_VERSION_NOT_STARTING'])
+  const notStarting = await send(subject, ana, folder({ migrations: [MIGRATION, second] }))
   const broken = {
     id: '003_quebrada',
     statements: ['CREATE TABLE outra (v text)', 'INSERT INTO nada VALUES (1)'],
   }
-  const failing = await send(
-    hub,
-    ana,
-    versions,
-    folder({ migrations: [MIGRATION, second, broken] }),
-  )
-  assert.deepEqual([failing.statusCode, codeOf(failing)], [422, 'APP_MIGRATION_FAILED'])
-  assert.ok(!JSON.stringify(failing.json()).includes('INSERT'), 'the answer carries no SQL')
+  const failing = await send(subject, ana, folder({ migrations: [MIGRATION, second, broken] }))
   const changed = { id: MIGRATION.id, statements: ['CREATE TABLE recado (texto text)'] }
-  const rewritten = await send(hub, ana, versions, folder({ migrations: [changed] }))
-  assert.deepEqual([rewritten.statusCode, codeOf(rewritten)], [422, 'APP_MIGRATION_CHANGED'])
+  const rewritten = await send(subject, ana, folder({ migrations: [changed] }))
+  assert.deepEqual(
+    [noCloudflare, noNeon, notStarting, failing, rewritten].map(({ preview }) => preview),
+    [
+      { state: 'failed', number: 2, code: 'APP_VERSION_FAILED' },
+      { state: 'failed', number: 3, code: 'APP_VERSION_FAILED' },
+      { state: 'failed', number: 4, code: 'APP_VERSION_NOT_STARTING' },
+      { state: 'failed', number: 5, code: 'APP_MIGRATION_FAILED' },
+      { state: 'failed', number: 6, code: 'APP_MIGRATION_CHANGED' },
+    ],
+  )
+  const said = hub.lines.filter((line) => line.message === 'PREVIEW_SEND_FAILED')
+  assert.ok(!JSON.stringify(said).includes('INSERT'), 'the failure carries no SQL')
   const tables = await appTablesOf(owner, ProjectId.parse(projectId))
   assert.deepEqual(tables, { tables: ['conexus_migration', 'recado'], ledger: [MIGRATION.id] })
   const rows = await hub.test.asOwner(
     `select v.number, v.state, v.failure, a.live_version_id = $1 as kept
        from apps.app_version v, apps.app a order by v.number`,
-    [live.id],
+    [live?.id],
   )
   assert.deepEqual(
     rows.map((row) => [row.number, row.state, row.failure, row.kept]),
@@ -184,12 +109,8 @@ test('envio: Neon ou Cloudflare fora 502 e "falhou"; código que não inicia e m
       [6, 'failed', 'APP_MIGRATION_CHANGED', true],
     ],
   )
-  const listed = await call(hub, ana, 'GET', versions)
   assert.deepEqual(
-    Object(listed.json()).versions.map((one: { number: number; live: boolean }) => [
-      one.number,
-      one.live,
-    ]),
+    (await listed(subject)).map((one) => [one.number, one.live]),
     [
       [6, false],
       [5, false],
@@ -202,13 +123,12 @@ test('envio: Neon ou Cloudflare fora 502 e "falhou"; código que não inicia e m
 })
 
 test('versões: cada uma diz quem a enviou; quem saiu da empresa fica sem nome', async (t) => {
-  const { hub, ana, bruno, companyId, versions } = await companyForVersions(t)
-  await hub.test.asOwner(`update auth.member set role = 'admin' where user_id = $1`, [bruno.id])
-  assert.equal(versionOf(await send(hub, ana, versions)).sentByName, ANA_OWNER.name)
-  assert.equal((await send(hub, bruno, versions, folder({}, '#6b2fa3'))).statusCode, 201)
+  const subject = await companyForVersions(t)
+  const { hub, ana, bruno, companyId } = subject
+  await send(subject, ana)
+  await send(subject, bruno, folder({}, '#6b2fa3'))
   async function names() {
-    const listed = Object((await call(hub, ana, 'GET', versions)).json()).versions
-    return listed.map((version: { sentByName: string | null }) => version.sentByName)
+    return (await listed(subject)).map((version) => version.sentByName)
   }
   assert.deepEqual(await names(), [BRUNO.name, ANA_OWNER.name])
   await hub.test.asOwner('delete from auth.member where user_id = $1 and company_id = $2', [

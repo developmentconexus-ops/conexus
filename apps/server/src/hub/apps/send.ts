@@ -1,7 +1,6 @@
 import type { Manifest } from '@conexus/app-contract'
 import { APP_CALL_LIMITS, APP_COMPATIBILITY_DATE } from '@conexus/app-contract'
 import type {
-  AppVersion,
   AppVersionId,
   CompanyId,
   Person,
@@ -32,6 +31,12 @@ type Admitting = Pick<SendDeps, 'identity' | 'projects'>
 
 type VersionAction = 'manageAppVersions' | 'readAppVersions' | 'sendBuilderVersion'
 
+/**
+ * Every member's Builder turn sends its version (step 14.1, X1), holding the membership until the
+ * send's write commits (S8); no one else sends.
+ */
+const SEND_ACTION = 'sendBuilderVersion'
+
 async function admitTo(
   deps: Admitting,
   tx: ReadTx,
@@ -43,7 +48,7 @@ async function admitTo(
   if (found === undefined) throw new Failure('NOT_FOUND', { details: { reason: 'NO_PROJECT' } })
 }
 
-/** Admits an owner or administrator to send or put back a version, holding their membership (S8). */
+/** Admits an owner or administrator to put back a version, holding their membership (S8). */
 export function admitManager(deps: Admitting, tx: CommandTx, input: Ids & { person: Person }) {
   return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'manageAppVersions' })
 }
@@ -52,13 +57,6 @@ export function admitManager(deps: Admitting, tx: CommandTx, input: Ids & { pers
 export function admitReader(deps: Admitting, tx: ReadTx, input: Ids & { person: Person }) {
   return admitTo(deps, tx, { ...input, personId: input.person.id, action: 'readAppVersions' })
 }
-
-/**
- * Who sends: an owner or administrator from the Versões tab, or every member's Builder turn (step
- * 14.1, X1); each holds the membership until the send's write commits (S8).
- */
-const SENDERS = { versions: 'manageAppVersions', builder: 'sendBuilderVersion' } as const
-export type Sender = keyof typeof SENDERS
 
 /**
  * A version's Worker in the namespace, tagged with its company and Projeto (decision 0043), with the
@@ -164,10 +162,10 @@ async function stop(deps: SendDeps, sending: Sending, why: 'LOST' | 'GONE'): Pro
  * Puts the version on the air if the send still holds the claim and the Projeto is not marked for
  * deletion, under the admission read again (security S8).
  */
-function finish(deps: SendDeps, sending: Sending & { personId: PersonId; by: Sender }) {
+function finish(deps: SendDeps, sending: Sending & { personId: PersonId }) {
   return deps.database.command(sending.scope, async (tx) => {
-    const { personId, companyId, by } = sending
-    await deps.identity.admitMember({ tx, personId, companyId, action: SENDERS[by] })
+    const { personId, companyId } = sending
+    await deps.identity.admitMember({ tx, personId, companyId, action: SEND_ACTION })
     if ((await deps.projects.liveProjectOf(tx, sending)) === undefined)
       return { kind: 'GONE' } as const
     const held = await lockApp(tx, sending)
@@ -187,37 +185,37 @@ function finish(deps: SendDeps, sending: Sending & { personId: PersonId; by: Sen
   })
 }
 
-export type Sent = { version: AppVersion; created: boolean }
-
 /**
- * Sends a version of a Projeto's app: a first transaction stores it and takes the claim, the
- * Worker and the database are prepared with none open, and a second puts it on the air (data D22).
- * A death in the middle leaves the pointer as it was (code C65).
+ * Sends a Builder turn's version of a Projeto's app under the number the turn saved it as: a first
+ * transaction stores it and takes the claim, the Worker and the database are prepared with none
+ * open, and a second puts it on the air (data D22). A death in the middle leaves the pointer as it
+ * was (code C65).
  */
 export async function sendVersion(
   deps: SendDeps,
   input: Ids & {
     personId: PersonId
-    by: Sender
+    number: number
     manifest: unknown
     files: readonly VersionFileInput[]
     attemptKey: string
   },
-): Promise<Sent> {
+): Promise<void> {
   const received = receiveVersion(input)
-  const { personId, by, companyId, projectId } = input
+  const { personId, companyId, projectId } = input
   const scope: Scope = { kind: 'COMPANY', companyId, personId }
   const stored = await deps.database.command(scope, async (tx) => {
-    await admitTo(deps, tx, { ...input, action: SENDERS[by] })
+    await admitTo(deps, tx, { ...input, action: SEND_ACTION })
     return storeAppVersion({
       tx,
       ids: { companyId, projectId },
       sentBy: personId,
       received,
       attemptKey: input.attemptKey,
+      number: input.number,
     })
   })
-  if (stored.kind === 'REPLAY') return { version: stored.version, created: false }
+  if (stored.kind === 'REPLAY') return
   const versionId = stored.version.id
   const sending: Sending = { scope, companyId, projectId, versionId, received }
   deps.log.info({ by: personId, companyId, projectId, versionId }, 'APP_VERSION_RECEIVED')
@@ -235,7 +233,7 @@ export async function sendVersion(
   if (prepared.kind === 'STOPPED') return stop(deps, sending, prepared.why)
   let finished: Awaited<ReturnType<typeof finish>>
   try {
-    finished = await finish(deps, { ...sending, personId, by })
+    finished = await finish(deps, { ...sending, personId })
   } catch (error) {
     await abandon(deps, sending)
     throw error
@@ -244,5 +242,4 @@ export async function sendVersion(
   deps.log.info({ by: personId, companyId, projectId, versionId }, 'APP_VERSION_LIVE')
   // The version is on the air: a prune that cannot finish now is retried by the next one.
   await prune(deps, sending).catch((error: unknown) => logFailure(deps.log, databaseFailure(error)))
-  return { version: { ...stored.version, state: 'ready', live: true }, created: true }
 }

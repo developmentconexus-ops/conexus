@@ -1,10 +1,10 @@
-import { AppVersion, createAppVersion, listAppVersions, setLiveVersion } from '@conexus/hub-api'
+import { AppVersion, listAppVersions, setLiveVersion } from '@conexus/hub-api'
 import { HttpResponse, http } from 'msw'
 import { COMPANY } from './fixtures.ts'
 import { PEDIDOS } from './test-hub.tsx'
 
 // The Hub's answers for Pedidos' app versions, parsed through the contract as test-hub.tsx does.
-export const VERSIONS_PATH = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/versions`
+const VERSIONS_PATH = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/versions`
 export const LIVE_PATH = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/live-version`
 
 /** A version of Pedidos' app as the Hub lists it: ready and kept, unless the test says otherwise. */
@@ -29,10 +29,7 @@ export function versionsRead(view: { versions: AppVersion[] }) {
   )
 }
 
-/** The Hub's 201 for a send, and its 200 for putting a version back. */
-export function sentVersion(version: AppVersion) {
-  return HttpResponse.json(createAppVersion.success.body.parse({ version }), { status: 201 })
-}
+/** The Hub's 200 for putting a version back. */
 export function livedVersion(version: AppVersion) {
   return HttpResponse.json(setLiveVersion.success.body.parse({ version }))
 }

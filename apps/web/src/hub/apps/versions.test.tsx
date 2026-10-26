@@ -32,11 +32,13 @@ async function open(view: { versions: ReturnType<typeof versionView>[] }, mayDel
   await screen.findByRole('heading', { name: 'Versões' })
 }
 
-test('vazio: o texto do endereço com o app de exemplo', async () => {
+const EMPTY =
+  'Nenhuma versão foi ao app ainda. Cada versão do Builder que monta aparece aqui; até lá, o endereço mostra o app de exemplo.'
+
+test('vazio: de onde vêm as versões e o app de exemplo no endereço, sem "Enviar versão" (35)', async () => {
   await open({ versions: [] })
-  expect(
-    await screen.findByText('Nenhuma versão enviada. O endereço mostra o app de exemplo.'),
-  ).toBeTruthy()
+  expect(await screen.findByText(EMPTY)).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Enviar versão' })).toBeNull()
 })
 
 test('carregando: o Skeleton até a lista chegar', async () => {
@@ -51,7 +53,7 @@ test('carregando: o Skeleton até a lista chegar', async () => {
   render(<Conexus conexus={createConexus(createMemoryHistory({ initialEntries: [SETTINGS] }))} />)
   expect(await screen.findByText('Carregando as versões…')).toBeTruthy()
   held.resolve()
-  await screen.findByText('Nenhuma versão enviada. O endereço mostra o app de exemplo.')
+  await screen.findByText(EMPTY)
   expect(screen.queryByText('Carregando as versões…')).toBeNull()
 })
 

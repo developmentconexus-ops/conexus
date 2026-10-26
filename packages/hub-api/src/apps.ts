@@ -116,15 +116,6 @@ export const checkAppCall = defineOperation({
 export const AppSessionToken = DoorSecret.brand('AppSessionToken')
 export type AppSessionToken = z.infer<typeof AppSessionToken>
 
-/**
- * How long the screen waits for a send's answer: the Worker's upload and the database's migrations
- * take seconds, so the Hub's usual deadline is too short; Cloudflare's edge cuts any answer at 100 s.
- */
-export const VERSION_SEND_DEADLINE_MS = 100_000
-
-/** The ceiling of a send's body: the version's 10 MB in base64, with the JSON around it. */
-const VERSION_BODY_LIMIT = 14 * 1024 * 1024
-
 /** Why a failed version did not enter: its code is the failure's, read by the screen (C48). */
 export const AppVersionFailure = z.enum([
   'APP_VERSION_FAILED',
@@ -149,42 +140,16 @@ export type AppVersion = z.infer<typeof AppVersion>
 
 const OfProject = z.object({ companyId: CompanyId, projectId: ProjectId })
 
-/** One file of the folder, as the screen read it; the Hub checks it against the manifest. */
+/**
+ * One file of a version's folder, as the end of a Builder turn read it from the machine; the Hub
+ * checks it against the manifest.
+ */
 export const VersionFileInput = z.object({
   path: z.string(),
   mediaType: z.string(),
   base64: z.base64(),
 })
 export type VersionFileInput = z.infer<typeof VersionFileInput>
-
-export const createAppVersion = defineOperation({
-  id: 'createAppVersion',
-  summary:
-    'Sends a version of a Projeto’s app, for an owner or administrator, and puts it on the air.',
-  access: 'session',
-  method: 'POST',
-  path: '/api/companies/{companyId}/projects/{projectId}/versions',
-  bodyLimit: VERSION_BODY_LIMIT,
-  input: {
-    params: OfProject,
-    body: z.object({ manifest: z.unknown(), files: z.array(VersionFileInput) }),
-  },
-  attemptKey: true,
-  success: { status: 201, body: z.object({ version: AppVersion }) },
-  failures: [
-    'NOT_FOUND',
-    'APP_VERSION_INVALID',
-    'APP_VERSION_TOO_LARGE',
-    'APP_VERSION_SENDING',
-    'APP_VERSION_FAILED',
-    'APP_VERSION_NOT_STARTING',
-    'APP_MIGRATION_FAILED',
-    'APP_MIGRATION_CHANGED',
-    'IDEMPOTENCY_CONFLICT',
-    'SESSION_REQUIRED',
-    'DATABASE_UNAVAILABLE',
-  ],
-})
 
 export const listAppVersions = defineOperation({
   id: 'listAppVersions',

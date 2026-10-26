@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
-import { defineOperation, Person, VERSION_SEND_DEADLINE_MS } from '@conexus/hub-api'
+import { defineOperation, Person } from '@conexus/hub-api'
 import { z } from 'zod'
 import { answer, CONNECTION_TIMEOUT_MS, createServer, serve } from './http.ts'
 import {
@@ -71,9 +71,9 @@ test('o corpo lido pelo esquema da operação volta, com cada cookie no seu cabe
   assert.deepEqual(response.headers['set-cookie'], ['a=1; Path=/', 'b=2; Path=/'])
 })
 
-test('um socket calado não cai antes da resposta mais longa que uma tela espera, o envio de uma versão', async () => {
+test('um socket calado não cai antes dos 100 s com que a borda da Cloudflare corta uma resposta', async () => {
   const app = await hub()
-  assert.ok(CONNECTION_TIMEOUT_MS > VERSION_SEND_DEADLINE_MS)
+  assert.ok(CONNECTION_TIMEOUT_MS > 100_000)
   assert.equal(app.server.timeout, CONNECTION_TIMEOUT_MS)
 })
 

@@ -6,7 +6,9 @@ import type { Page } from 'playwright-core'
 import type { DatabaseUrl } from '../../apps/server/src/platform/database.ts'
 import { TEST_ORIGIN } from '../../apps/server/src/platform/test-database.ts'
 import { visitApp } from './apps-edge.ts'
+import type { Scenario } from './apps-journey.ts'
 import {
+  builderSends,
   GREEN,
   openApp,
   PURPLE,
@@ -14,7 +16,6 @@ import {
   RECADO,
   recados,
   scenario,
-  sendFolder,
 } from './apps-journey.ts'
 import {
   ANA,
@@ -28,9 +29,9 @@ import { hubWindow, openConversation } from './hub-window.ts'
 import { createProject, liveHub, PASSWORD, signIn, waitForHome } from './live-hub.ts'
 import { enter, linkKey } from './model-accounts-journey.ts'
 
-// Step 10's journey: in Pedidos's Versões, Ana sends a version that does not start, one that
-// writes in `db.query` and one whose Travar never ends, and the version on the air, its data and the
-// Hub stay as they were. Cloudflare's API and its namespace are doubles: the API runs a script's top
+// Step 10's journey, with the Builder as the one who sends since step 14.1: Ana's Builder turns send
+// a version that does not start, one that writes in `db.query` and one whose Travar never ends, and
+// Pedidos's Versões show the version on the air, its data and the Hub stay as they were. Cloudflare's API and its namespace are doubles: the API runs a script's top
 // level on upload and the namespace cuts a Worker past its CPU, as record 0047 saw; the app's `db`
 // runs on the test server with the login the Hub made (testing T5, T6, T14).
 
@@ -54,9 +55,10 @@ async function storedRecados(database: DatabaseUrl, pedidos: string): Promise<st
   }
 }
 
-async function sent(page: Page, settings: string, folder: string, state: string) {
-  await sendFolder(page, settings, folder)
-  await page.getByText(state, { exact: true }).waitFor()
+async function sent(s: Scenario, pedidos: string, folder: string, state: string) {
+  await builderSends(s, pedidos, folder)
+  await s.owner.page.goto(`${pedidos}?lens=project&section=versions`)
+  await s.owner.page.getByText(state, { exact: true }).waitFor()
 }
 
 /** 5. Voltar para esta, on Versão 2. */
@@ -80,16 +82,16 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   const pedidos = await pedidosOf(s)
   const settings = `${pedidos.url}?lens=project&section=versions`
   // 1. Recados 1 and 2; a recado written on Versão 2.
-  await sent(page, settings, 'recados-1', 'Versão 1 · no ar')
-  await sent(page, settings, 'recados-2', 'Versão 2 · no ar')
+  await sent(s, pedidos.url, 'recados-1', 'Versão 1 · no ar')
+  await sent(s, pedidos.url, 'recados-2', 'Versão 2 · no ar')
   const written = await openApp(s, pedidos.door, PURPLE)
   const kept = await visitApp(pedidos.door, written, '/api/escreverRecado', { texto: RECADO })
   assert.equal(kept.status, 200)
   // 2. The version that does not start fails, and Abrir app is still Versão 2 with its recado.
-  await sent(page, settings, 'recados-nao-inicia', 'Versão 3 · Falhou: O app não inicia.')
+  await sent(s, pedidos.url, 'recados-nao-inicia', 'Versão 3 · Falhou: O app não inicia.')
   assert.deepEqual(await recados(pedidos.door, await openApp(s, pedidos.door, PURPLE)), [RECADO])
   // 3. The write in `db.query` is on the air and refused; nothing reaches the company's database.
-  await sent(page, settings, 'recados-defeito', 'Versão 4 · no ar')
+  await sent(s, pedidos.url, 'recados-defeito', 'Versão 4 · no ar')
   assert.equal(await page.getByText('Versão 3', { exact: false }).count(), 0)
   const defeito = await openApp(s, pedidos.door, GREEN)
   const refused = await visitApp(pedidos.door, defeito, '/api/escreverRecado', { texto: 'Perdido' })
@@ -98,7 +100,7 @@ test('o roteiro de Recusar um app: não inicia, grava errado, trava, e a versão
   assert.deepEqual(await recados(pedidos.door, defeito), [RECADO])
   assert.deepEqual(await storedRecados(pedidos.companyDatabase, pedidos.url), [RECADO])
   // 4. Travar: the CPU limit cuts it well before the call's deadline, and the Hub goes on.
-  await sent(page, settings, 'recados-laco', 'Versão 5 · no ar')
+  await sent(s, pedidos.url, 'recados-laco', 'Versão 5 · no ar')
   const laco = await openApp(s, pedidos.door, GREEN)
   const started = Date.now()
   const cut = await visitApp(pedidos.door, laco, '/api/travar', {})

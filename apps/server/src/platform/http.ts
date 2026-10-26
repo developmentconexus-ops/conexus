@@ -4,14 +4,7 @@ import { IncomingMessage, ServerResponse } from 'node:http'
 import type { Socket } from 'node:net'
 import { join } from 'node:path'
 import type { DeclaredOperation, FailureCode, Operation, Person } from '@conexus/hub-api'
-import {
-  FAILURES,
-  failuresOf,
-  PROBLEM_MEDIA_TYPE,
-  Problem,
-  phraseOf,
-  VERSION_SEND_DEADLINE_MS,
-} from '@conexus/hub-api'
+import { FAILURES, failuresOf, PROBLEM_MEDIA_TYPE, Problem, phraseOf } from '@conexus/hub-api'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyStatic from '@fastify/static'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
@@ -28,9 +21,9 @@ import { partsOf } from './request-parts.ts'
 import { installPages, sendPage } from './screens.ts'
 
 const REQUEST_TIMEOUT_MS = 30_000
-// How long a socket may stay silent, the wait for an answer included: above the longest answer a
-// screen waits for, a version's send.
-export const CONNECTION_TIMEOUT_MS = VERSION_SEND_DEADLINE_MS + 10_000
+// How long a socket may stay silent, the wait for an answer included: above the 100 s at which
+// Cloudflare's edge cuts any answer, so the Hub never cuts one the edge would still carry.
+export const CONNECTION_TIMEOUT_MS = 110_000
 // Above the 90 s keep-alive of cloudflared's connection to its origin, so the Hub never closes first.
 const KEEP_ALIVE_TIMEOUT_MS = 95_000
 

@@ -6,7 +6,7 @@ import { appLoginsOf, appTablesOf } from '../../platform/test-company-postgres.t
 import { serveEnvironment, TEST_ORIGIN } from '../../platform/test-database.ts'
 import { spawnHub } from '../../platform/test-hub-process.ts'
 import { neonServer } from '../../platform/test-neon.ts'
-import { companyForVersions, send } from '../apps/test-versions.ts'
+import { companyForVersions, send, versionNumbered } from '../apps/test-versions.ts'
 import {
   ANA_OWNER,
   BRUNO,
@@ -181,9 +181,10 @@ test('empresa marcada: nenhuma rota da empresa admite quem é dela, de Projeto o
 })
 
 test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 404 já; trava viva 409', async (t) => {
-  const { hub, ana, companyId, projectId, owner, versions, projects } = await companyForVersions(t)
+  const subject = await companyForVersions(t)
+  const { hub, ana, companyId, projectId, owner, versions, projects } = subject
   const url = `${projects}/${projectId}`
-  const version = Object(Object((await send(hub, ana, versions)).json()).version)
+  const version = await versionNumbered(subject, (await send(subject, ana)).number)
   await hub.test.asOwner(
     `update apps.app set sending_version_id = $1, claimed_until = now() + interval '1 minute'`,
     [version.id],
@@ -239,15 +240,15 @@ test('apagar com app: Workers, esquema e logins antes das linhas; a marca dá 40
 })
 
 test('apagar: o envio vencido vê a marca, falha e tira o próprio Worker', async (t) => {
-  const { hub, ana, projectId, versions, projects } = await companyForVersions(t)
+  const subject = await companyForVersions(t)
+  const { hub, ana, projectId, projects } = subject
   const held = hub.cloudflare.holdUpload()
-  const sent = send(hub, ana, versions)
+  const sent = send(subject, ana)
   await held.arrived
   await hub.test.asOwner(`update apps.app set claimed_until = now() - interval '1 second'`)
   const deleted = await call(hub, ana, 'DELETE', `${projects}/${projectId}`, { name: 'Pedidos' })
   assert.equal(deleted.statusCode, 204)
   held.release()
-  const answer = await sent
-  assert.equal(answer.statusCode, 404)
+  assert.equal((await sent).preview, undefined)
   assert.deepEqual(hub.cloudflare.workers(), [])
 })
