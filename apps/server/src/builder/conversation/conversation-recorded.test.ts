@@ -18,6 +18,7 @@ import {
   holding,
   PARTIAL,
   sent,
+  settledOf,
   started,
   stopped,
   streamOf,
@@ -271,7 +272,7 @@ test('a versão e a falha voltam como partes da mensagem do Builder, e nenhuma v
   assert.equal((await sent(hub, ana, first.url, 'Mude a cor')).statusCode, 200)
   const failed = await stream.turn()
   assert.deepEqual(failuresOf(failed), ['MODEL_NO_ACCOUNT'])
-  const kinds = (await answeredOf(hub, ana, first.url))
+  const kinds = (await settledOf(hub, ana, first.url))
     .filter((each) => each.role === 'builder')
     .map((each) =>
       each.parts.map((part) => part.type).filter((type) => type.startsWith('data-conexus-')),
