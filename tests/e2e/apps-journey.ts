@@ -4,13 +4,12 @@
 // T5, T6, T14). Anthropic is a double that writes what it is asked, and the machine's check program
 // is the one thing faked beyond the providers: it passes and leaves the packed app as the version.
 import assert from 'node:assert/strict'
-import { chmodSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { TestContext } from 'node:test'
 import type { CheckReport } from '@conexus/app/check'
 import { STEP_NAMES } from '@conexus/app/check'
 import type { BrowserContext } from 'playwright-core'
-import { chromium } from 'playwright-core'
 import { ASK, versionWriting } from '../../apps/server/src/hub/apps/test-versions.ts'
 import { plantAnthropic } from '../../apps/server/src/platform/test-anthropic.ts'
 import { createCompanyDatabase } from '../../apps/server/src/platform/test-company-postgres.ts'
@@ -25,9 +24,8 @@ import {
   visitApp,
 } from './apps-edge.ts'
 import { ask, chooseDefaultModel, KEYS, transcriptOf } from './conversation-journey.ts'
-import { openConversation } from './hub-window.ts'
+import { hubWindow, openConversation } from './hub-window.ts'
 import {
-  closeBrowser,
   createProject,
   firstEntry,
   liveHub,
@@ -35,9 +33,7 @@ import {
   PASSWORD,
   personWithPassword,
   plantCompany,
-  reachHub,
   signIn,
-  watchConsole,
 } from './live-hub.ts'
 import { linkKey } from './model-accounts-journey.ts'
 
@@ -59,15 +55,14 @@ export async function scenario(t: TestContext) {
     await personWithPassword(hub.database, ANA),
     await personWithPassword(hub.database, CARLA),
   )
-  const browser = await chromium.launch()
-  t.after(() => closeBrowser(browser))
   const problems: string[] = []
+  const closers: (() => Promise<void>)[] = []
+  t.after(async () => {
+    for (const close of closers) await close()
+  })
   async function window(ip: string) {
-    const context = await browser.newContext()
-    await reachHub(context, hub.port, ip)
-    const page = await context.newPage()
-    watchConsole(page, problems)
-    return { context, page }
+    const page = await hubWindow(closers, hub.port, ip, problems)
+    return { context: page.context(), page }
   }
   const owner = await window(OWNER_IP)
   const member = await window('203.0.113.10')
@@ -123,6 +118,7 @@ const PASSED: CheckReport = {
  */
 export async function builderSends(s: Scenario, pedidos: string, folder: string) {
   const machine = s.hub.machineFolder
+  mkdirSync(machine, { recursive: true })
   writeFileSync(join(machine, 'check-passed.json'), JSON.stringify(PASSED))
   const program = join(machine, 'check')
   writeFileSync(
@@ -139,6 +135,7 @@ export async function builderSends(s: Scenario, pedidos: string, folder: string)
   chmodSync(program, 0o755)
   const { page } = s.owner
   await page.goto(pedidos)
+  await page.getByRole('combobox', { name: 'Conversas' }).waitFor()
   await openConversation(page, () => page.getByRole('button', { name: 'Nova conversa' }).click())
   await ask(page, `${ASK}${folder} ${Date.now()}`)
   await transcriptOf(page)
