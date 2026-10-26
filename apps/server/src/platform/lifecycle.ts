@@ -5,6 +5,8 @@ import type { Config } from './config.ts'
 import { Failure, logFailure } from './failure.ts'
 
 const SHUTDOWN_DEADLINE_MS = 15_000
+/** The Mastra deployer's default `drainTimeout` (`deployer/src/server/index.ts:590`, 1.78). */
+const DRAIN_MS = 5_000
 
 /**
  * The first-person command logs to stderr: its stdout is the terminal of infra/first-person.sh,
@@ -51,9 +53,7 @@ export function shutDownOnSignal(
       if (err) unexpected(err)
       app.log.info(signal === undefined ? {} : { signal }, 'SHUTTING_DOWN')
       try {
-        const closed = Promise.all([app.close(), edge.close()])
-        await steps.drain()
-        await closed
+        await closeListeners([app, edge], steps.drain)
         await steps.release()
       } catch (error) {
         unexpected(error)
@@ -61,4 +61,22 @@ export function shutDownOnSignal(
       }
     },
   )
+}
+
+/**
+ * The listeners close as Mastra's deployer closes its server (`deployer/src/server/index.ts`
+ * shutdown): they stop accepting while `drain` ends the Hub's own work and streams, the requests
+ * in flight then get `DRAIN_MS` to finish, and the connections left after it are cut.
+ */
+export async function closeListeners(listeners: FastifyInstance[], drain: () => Promise<void>) {
+  const closed = Promise.all(listeners.map((listener) => listener.close()))
+  await drain()
+  const cut = setTimeout(() => {
+    for (const listener of listeners) listener.server.closeAllConnections()
+  }, DRAIN_MS)
+  try {
+    await closed
+  } finally {
+    clearTimeout(cut)
+  }
 }

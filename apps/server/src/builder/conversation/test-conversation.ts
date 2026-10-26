@@ -14,6 +14,7 @@ import {
 } from '../../hub/identity/test-hub.ts'
 import { createStatus } from '../../hub/status/public.ts'
 import { createHub, identityOf, subjectsOf } from '../../main.ts'
+import { closeListeners } from '../../platform/lifecycle.ts'
 import type { Anthropic, Reply, Sent } from '../../platform/test-anthropic.ts'
 import { plantAnthropic } from '../../platform/test-anthropic.ts'
 import { heldCompanyPostgres, testAppPorts } from '../../platform/test-app-ports.ts'
@@ -115,11 +116,10 @@ export async function hubBeside(t: TestContext, hub: Hub) {
     ...{ ...ports, log: silent },
   })
   const status = createStatus({ version: config.version, database: test.database })
-  const webRoot = testWebRoot(t)
-  const app = await createHub(config, { status, identity, ...subjects, webRoot })
+  const app = await createHub(config, { status, identity, ...subjects, webRoot: testWebRoot(t) })
   let closed: Promise<void> | undefined
   function close() {
-    closed ??= subjects.conversations.close().then(() => app.close())
+    closed ??= closeListeners([app], () => subjects.conversations.close())
     return closed
   }
   t.after(close)
