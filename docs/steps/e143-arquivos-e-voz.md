@@ -85,6 +85,8 @@ não correm em paralelo. Cada unidade parte do `main` com a anterior já dentro.
 
 **Orçamento de código alterado.** U1 60; U2 70 (sai mais do que entra); U3 230; U4 100; U5 −40.
 Total da etapa: ~420 linhas sem testes, teto 4.000 (L2). O estudo estimou ~600 com testes.
+Medido no fechamento, sem testes, gravações e documentos (entra/sai): U1 +97/−16; U2 +38/−57;
+U3 +476/−65; U4 +189/−9; U5 +58/−96. O teto de 4.000 linhas (L2) vale.
 
 ## Os critérios de aceite
 
@@ -94,7 +96,7 @@ Total da etapa: ~420 linhas sem testes, teto 4.000 (L2). O estudo estimou ~600 c
 | 2 | U1 | O pedido ao modelo leva o `.md` como texto `[File: observacoes.md]`, o PDF como `document` e o PNG como `image`; um PDF enviado com o Builder trabalhando chega ao modelo na mesma volta | `conversation-files.test.ts`, "cada tipo chega ao modelo na sua forma" e "o arquivo enviado no meio do trabalho entra na volta"; um envio só com o arquivo, sem texto, chega ao modelo, e o teste "só o arquivo, sem texto" o prova | must |
 | 3 | U1 | A página do Hub responde com `img-src 'self' data:` e nada mais muda no CSP | `apps/server/src/platform/http.test.ts`, o caso do cabeçalho CSP | must |
 | 4 | U2 | Vazia, a caixa tem uma linha; cresce com o texto até a altura máxima e então rola | `apps/web/src/builder/conversation/composer.test.tsx`, "a caixa começa com uma linha" (as classes do campo) e a captura da QA | must |
-| 5 | U2 | Uma linha de ações dentro da caixa em todo tamanho, na ordem memória, modelo, +, microfone, botão; nada da memória embaixo da caixa | `composer.test.tsx`, "uma linha de ações em todo tamanho", a 1280 e a 390 px | must |
+| 5 | U2 | A linha de ações dentro da caixa em todo tamanho: à esquerda o anel e o modelo, à direita +, microfone e botão; quando falta espaço, o anel e o modelo descem para uma segunda linha dentro da caixa (fundador, "A" e depois "F", 2026-10-26); nada da memória embaixo da caixa | `composer.test.tsx`, "uma linha de ações em todo tamanho", a 1280 e a 390 px | must |
 | 6 | U2 | Builder trabalhando e caixa vazia (sem texto e sem arquivo): um botão, **Parar**, e Esc para. Com texto ou arquivo: **Enviar**, que orienta. Parado: **Enviar**, desabilitado com a caixa vazia. Nunca os dois juntos | `composer.test.tsx`, "um botão só: Parar com a caixa vazia, Enviar com texto" | must |
 | 7 | U2 | Embaixo da caixa, no computador, uma linha só: "Não cole senhas ou chaves na conversa.", em 12 px (`text-fact`, D1a). Nenhuma dica de teclado. No celular, nada embaixo da caixa; a frase segue na conversa vazia e na folha do modelo | `composer.test.tsx`, "embaixo da caixa só a linha das senhas" | must |
 | 8 | U3 | **+**, colar e arrastar adicionam PDF, `.md`, `.txt` e imagem como etiquetas com **x**; o **x** tira | `apps/web/src/builder/conversation/attachments.test.tsx`, "escolher, colar e soltar viram etiquetas" | must |
@@ -143,9 +145,10 @@ direita, dentro da caixa) e as linhas do fundador.
 390 px, Builder trabalhando, caixa vazia
 ┌─────────────────────────────────┐
 │ Escreva para orientar o Builder │
-│ ◔  Sonnet ▾        [+] [mic] [■] │
+│ ◔  Claude Sonnet ▾              │
+│                  [+] [mic] [■] │
 └─────────────────────────────────┘
-(nada embaixo; a frase das senhas fica na conversa vazia e na folha do modelo)
+(a linha de status desce para uma segunda linha dentro da caixa quando falta espaço; nada embaixo da caixa; a frase das senhas fica na conversa vazia e na folha do modelo)
 ```
 
 ## A tabela de falhas
@@ -305,6 +308,7 @@ versão e a data; as linhas `row` guardam a parte `file` com a data URL.
 | `apps/web/src/builder/conversation/panel.tsx` | Muda: `memory` vira um nó | — |
 | `apps/web/src/builder/conversation/text.ts` | Muda: `NO_SECRETS`; apaga `STEER_KEYS` | `composer.tsx`, `panel.tsx`, `model-choice.tsx` |
 | `apps/web/src/ui/use-mobile.ts` | Apaga `useIsNarrow` (só o compositor o usava) | — |
+| `apps/web/src/builder/conversation/workbench.tsx` | Muda: o divisor fica `disabled` no celular, onde só está escondido (achado F3a da revisão da U2) | `panel.tsx` |
 | `apps/web/src/builder/conversation/composer.test.tsx` | Muda (e a #170) | — |
 | `panel.test.tsx`, `stream.test.tsx`, `card-stopped.test.tsx`, `conversation.test.tsx` | Mudam onde esperam Parar ao lado de Enviar | — |
 | `docs/guides/design.md` V30 | Muda (abaixo) | — |
@@ -392,6 +396,7 @@ Factory (`useComposerImages.ts:25-81`).
 | `apps/web/src/ui/attachment.tsx` | Cria (shadcn base `attachment`, pintado; "Shaped after" se mudar, C70) | `composer.tsx`, `person-turn.tsx` |
 | `apps/web/src/builder/conversation/attachments.ts` | Cria: o hook | `composer.tsx` |
 | `composer.tsx` | Muda: etiquetas, **+**, colar e soltar, `empty` com arquivos | `panel.tsx` |
+| `apps/web/src/builder/conversation/text.ts` | Muda: `REFUSALS` e `megabytesOf` | `composer.tsx` |
 | `draft.ts` | Muda: `files`; a #167 | `panel.tsx`, `composer.tsx` |
 | `session.ts` | Muda: `send(outgoing)` | `panel.tsx` |
 | `panel.tsx` | Muda: `useSending.send(outgoing, running)` | — |
@@ -522,11 +527,13 @@ declare global {
     lang: string
     start(): void
     stop(): void
-    onresult: ((event: SpeechRecognitionEvent) => void) | null
-    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null
-    onend: (() => void) | null
+    addEventListener(type: 'start' | 'end', listener: () => void): void
+    addEventListener(type: 'result', listener: (event: SpeechRecognitionEvent) => void): void
+    addEventListener(type: 'error', listener: (event: SpeechRecognitionErrorEvent) => void): void
   }
-  interface Window { SpeechRecognition?: new () => SpeechRecognition; webkitSpeechRecognition?: new () => SpeechRecognition }
+  // Como o `lib.dom` declara os seus: um navegador sem reconhecedor não tem o nome.
+  var SpeechRecognition: (new () => SpeechRecognition) | undefined
+  var webkitSpeechRecognition: (new () => SpeechRecognition) | undefined
 }
 ```
 
@@ -584,8 +591,9 @@ export function MemoryStatus(props: {
 })
 ```
 
-- O gatilho: `role="meter"` com `aria-valuenow` (o percentual de `pendingTokens/threshold`), o
-  anel, e o percentual ao lado com `max-md:hidden`; o nome lido diz Mensagens e Memória com os
+- O gatilho, um botão, leva dentro dele um `<span role="meter">` com `aria-valuenow` (o percentual
+  de `pendingTokens/threshold`) em volta do anel e do percentual ao lado com `max-md:hidden`, como
+  a Factory (`OperationalMemoryStatus.tsx:27-49`, `token-budget.tsx:45`); o nome lido diz Mensagens e Memória com os
   números, como hoje. A janela fica como está.
 - O anel gira enquanto observa, guarda ou reorganiza; a marca de falha fica.
 
