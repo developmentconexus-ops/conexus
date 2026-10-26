@@ -146,9 +146,10 @@ direita, dentro da caixa) e as linhas do fundador.
 ┌─────────────────────────────────┐
 │ Escreva para orientar o Builder │
 │ ◔  Claude Sonnet ▾              │
-│                  [+] [mic] [■] │
+│                  [+] [mic] [■]  │
 └─────────────────────────────────┘
-(a linha de status desce para uma segunda linha dentro da caixa quando falta espaço; nada embaixo da caixa; a frase das senhas fica na conversa vazia e na folha do modelo)
+(a linha de status desce para uma segunda linha dentro da caixa quando falta espaço; nada
+embaixo da caixa; a frase das senhas fica na conversa vazia e na folha do modelo)
 ```
 
 ## A tabela de falhas
@@ -591,10 +592,11 @@ export function MemoryStatus(props: {
 })
 ```
 
-- O gatilho, um botão, leva dentro dele um `<span role="meter">` com `aria-valuenow` (o percentual
-  de `pendingTokens/threshold`) em volta do anel e do percentual ao lado com `max-md:hidden`, como
-  a Factory (`OperationalMemoryStatus.tsx:27-49`, `token-budget.tsx:45`); o nome lido diz Mensagens e Memória com os
-  números, como hoje. A janela fica como está.
+- O gatilho, um botão, leva dentro dele um `<meter>` nativo, só para leitores de tela (`sr-only`,
+  `value` o percentual de `pendingTokens/threshold`), ao lado do anel e do percentual com
+  `max-md:hidden`. A Factory põe `role="meter"` num `span` (`OperationalMemoryStatus.tsx:27-49`,
+  `token-budget.tsx:45`); o lint do repositório pede o elemento nativo. O nome lido diz Mensagens e
+  Memória com os números, como hoje. A janela fica como está.
 - O anel gira enquanto observa, guarda ou reorganiza; a marca de falha fica.
 
 ### As skills e a leitura
