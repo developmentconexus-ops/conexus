@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { APP_LIMITS, Manifest, versionFiles } from '@conexus/app-contract'
+import type { Manifest } from '@conexus/app-contract'
 import type { AppVersion, CompanyId, PersonId, ProjectId, VersionFileInput } from '@conexus/hub-api'
 import { AppVersionFailure, AppVersionId } from '@conexus/hub-api'
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
@@ -19,8 +19,6 @@ const CLAIM_UNTIL = sql`statement_timestamp() + ${SEND_CLAIM_MS} * interval '1 m
 /** Whether the Projeto's claim is still alive, read by the database's clock. */
 export const CLAIM_HELD = sql<boolean>`${app.claimedUntil} > statement_timestamp()`
 
-const MediaType = z.string().regex(/^[a-z]+\/[a-z0-9.+-]+(;\s?charset=[a-z0-9-]+)?$/)
-
 /** One file of a version, decoded and named by its content. */
 type VersionFile = Readonly<{
   path: string
@@ -36,40 +34,11 @@ function sha256Of(bytes: Buffer | string): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
 
-/** The bytes a base64 text holds, counted without decoding it. */
-function decodedSize(base64: string): number {
-  const padding = base64.endsWith('==') ? 2 : base64.endsWith('=') ? 1 : 0
-  return (base64.length / 4) * 3 - padding
-}
+/** A version folder as the Builder's machine handed it over, checked against its manifest there. */
+export type VersionFolder = Readonly<{ manifest: Manifest; files: readonly VersionFileInput[] }>
 
-function invalid(reason: string): Failure {
-  return new Failure('APP_VERSION_INVALID', { details: { reason } })
-}
-
-/**
- * Checks a folder against its manifest: the files it names, each once, and nothing else, within
- * the send's ceiling counted before any byte is decoded (code C26, C59).
- */
-export function receiveVersion(input: {
-  manifest: unknown
-  files: readonly VersionFileInput[]
-}): ReceivedVersion {
-  const manifest = Manifest.safeParse(input.manifest)
-  if (!manifest.success) throw invalid('MANIFEST')
-  const expected = new Set(versionFiles(manifest.data))
-  const sizes = input.files.map((file) => decodedSize(file.base64))
-  const total = sizes.reduce((sum, size) => sum + size, 0)
-  if (input.files.length > APP_LIMITS.files || total > APP_LIMITS.bytes) {
-    throw new Failure('APP_VERSION_TOO_LARGE', { details: { files: input.files.length, total } })
-  }
-  const paths = new Set(input.files.map((file) => file.path))
-  if (paths.size !== input.files.length) throw invalid('REPEATED')
-  if (paths.size !== expected.size || ![...paths].every((path) => expected.has(path))) {
-    throw invalid('FILES')
-  }
-  if (!input.files.every((file) => MediaType.safeParse(file.mediaType).success)) {
-    throw invalid('MEDIA_TYPE')
-  }
+/** A folder decoded and named by its content (code C37). */
+export function receiveVersion(input: VersionFolder): ReceivedVersion {
   const files = input.files
     .map((file) => {
       const bytes = Buffer.from(file.base64, 'base64')
@@ -78,11 +47,11 @@ export function receiveVersion(input: {
     .sort((a, b) => (a.path < b.path ? -1 : 1))
   const digest = sha256Of(
     JSON.stringify({
-      manifest: manifest.data,
+      manifest: input.manifest,
       files: files.map(({ path, mediaType, sha256 }) => [path, mediaType, sha256]),
     }),
   )
-  return { manifest: manifest.data, files, digest }
+  return { manifest: input.manifest, files, digest }
 }
 
 /** The columns a version is shown from; the manifest and the files stay unread. */

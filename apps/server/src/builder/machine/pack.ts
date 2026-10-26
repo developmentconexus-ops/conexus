@@ -5,7 +5,7 @@ import { z } from 'zod'
 import type { Result } from '../../platform/result.ts'
 import { quoted } from './scripts.ts'
 
-/** The version a passing check left, as the send takes it (`receiveVersion` checks it again, security S2). */
+/** The version a passing check left, as the send takes it (security S2). */
 export type VersionFolder = { manifest: Manifest; files: VersionFileInput[] }
 
 /** Why there is no version to send: past `APP_LIMITS`, a link or other non-regular file, or no valid version. */
@@ -38,7 +38,7 @@ function packMain(): void {
       else if (!entry.isFile()) stop('NOT_REGULAR')
       else {
         const size = fs.lstatSync(`/proc/self/fd/${dir}/${entry.name}`).size
-        // The send counts the files beside the manifest (receiveVersion); the manifest has the same byte cap.
+        // APP_LIMITS counts the files beside the manifest; the manifest has the same byte cap.
         if (at !== 'manifest.json') {
           count += 1
           bytes += size

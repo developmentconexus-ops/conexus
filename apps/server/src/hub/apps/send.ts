@@ -7,7 +7,6 @@ import type {
   Person,
   PersonId,
   ProjectId,
-  VersionFileInput,
 } from '@conexus/hub-api'
 import { appWorkerOf } from '@conexus/hub-api'
 import { eq } from 'drizzle-orm'
@@ -20,7 +19,7 @@ import type { AppDatabaseDeps } from './app-database.ts'
 import { migrateApp, openAppDatabase } from './app-database.ts'
 import { markPrune, prune } from './prune.ts'
 import { app, appVersion } from './tables.ts'
-import type { ReceivedVersion } from './versions.ts'
+import type { ReceivedVersion, VersionFolder } from './versions.ts'
 import { failVersion, holdsClaim, lockApp, receiveVersion, storeAppVersion } from './versions.ts'
 
 export type SendDeps = AppDatabaseDeps & { identity: IdentityPorts; cloudflare: CloudflareApps }
@@ -197,10 +196,8 @@ export async function sendVersion(
   input: Ids & {
     personId: PersonId
     number: number
-    manifest: unknown
-    files: readonly VersionFileInput[]
     attemptKey: string
-  },
+  } & VersionFolder,
 ): Promise<void> {
   const received = receiveVersion(input)
   const { personId, companyId, projectId } = input
