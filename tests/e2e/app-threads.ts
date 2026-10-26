@@ -47,8 +47,11 @@ export function threads(t: TestContext) {
   const folder = mkdtempSync(join(tmpdir(), 'conexus-workers-'))
   const running = new Map<string, Promise<Running>>()
   t.after(async () => {
-    const started = await Promise.allSettled(running.values())
-    for (const app of started) if (app.status === 'fulfilled') await app.value.thread.terminate()
+    const over = new Error('The test ended.')
+    for (const [name, ready] of [...running]) {
+      const app = await ready.catch(() => undefined)
+      if (app !== undefined) await stop(name, app, over)
+    }
     rmSync(folder, { recursive: true, force: true })
   })
   function start(name: string, main: Buffer): Promise<Running> {
@@ -62,7 +65,7 @@ export function threads(t: TestContext) {
     thread.on('message', (message: FromThread) => void heard(started, message))
     thread.once('message', () => ready.resolve(started))
     thread.once('error', (error) => {
-      stop(name, started, error)
+      void stop(name, started, error)
       ready.reject(error)
     })
     running.set(name, ready.promise)
@@ -70,9 +73,9 @@ export function threads(t: TestContext) {
   }
   function stop(name: string, app: Running, error: Error) {
     if (running.get(name) === app.ready) running.delete(name)
-    void app.thread.terminate()
     for (const waiting of app.waiting.values()) waiting.reject(error)
     app.waiting.clear()
+    return app.thread.terminate()
   }
   return async function serve(name: string, worker: Uploaded, request: Request, props: Props) {
     const app = await (running.get(name) ?? start(name, worker.main))
@@ -94,7 +97,7 @@ export function threads(t: TestContext) {
     })
     const watch = setInterval(() => {
       if (app.thread.performance.eventLoopUtilization(before).active <= worker.cpuMs) return
-      stop(name, app, new Error('Worker exceeded CPU time limit.'))
+      void stop(name, app, new Error('Worker exceeded CPU time limit.'))
     }, 5)
     try {
       return await answer
