@@ -4,8 +4,12 @@ import { sentenceOfCode } from '../../platform/hub.ts'
 import { Marker, MarkerContent, MarkerIcon } from '../../ui/marker.tsx'
 import { WaitLine } from './machine-line.tsx'
 
-export function PreviewLine({ data }: { data: PreviewData }) {
-  if (data.state === 'sending') return <WaitLine text="Subindo o app…" />
+/**
+ * The Prévia's line in the version's message. A wait shows only while the turn runs: a kept
+ * `sending` on a settled turn is a send the shutdown cut, and the Versões tab tells its end.
+ */
+export function PreviewLine({ data, live }: { data: PreviewData; live: boolean }) {
+  if (data.state === 'sending') return live ? <WaitLine text="Subindo o app…" /> : null
   const ready = data.state === 'ready'
   return (
     <Marker className={ready ? 'text-text' : 'text-danger'}>

@@ -83,23 +83,40 @@ test('a Prévia pronta faz o Projeto ser lido de novo; a que falhou, não', asyn
   await waitFor(() => expect(reads).toBeGreaterThan(before))
 })
 
+/** A conversation whose kept version message still holds `sending`. */
+function keptSending() {
+  return conversationOf({
+    id: FIRST,
+    messages: [
+      personSaid('Crie um app de encomendas'),
+      builderSaid('Pronto.'),
+      {
+        id: 'ours',
+        role: 'assistant',
+        createdAt: '2026-10-19T12:03:00.000Z',
+        content: { parts: [VERSION, preview({ state: 'sending', number: 1 })] },
+      },
+    ],
+  })
+}
+
 test('recarregar no meio do envio mostra a versão e "Subindo o app…", até a Prévia pronta (31)', async () => {
-  const ours = {
-    id: 'ours',
-    role: 'assistant',
-    createdAt: '2026-10-19T12:03:00.000Z',
-    content: { parts: [VERSION, preview({ state: 'sending', number: 1 })] },
-  } as const
-  const opened = await openConversation(
-    conversationOf({
-      id: FIRST,
-      messages: [personSaid('Crie um app de encomendas'), builderSaid('Pronto.'), ours],
-    }),
-  )
+  const opened = await openConversation(keptSending(), {
+    conversations: [],
+    providers: ['anthropic', 'google'],
+    display: { isRunning: true },
+  })
   const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
   await within(log).findByText(/^Versão 1 guardada/)
   await within(log).findByText(/^Subindo o app…/)
   opened.line().emit(stepStarted('ours', [VERSION, preview({ state: 'ready', number: 1 })]))
   await within(log).findByText('Prévia pronta.')
+  expect(within(log).queryByText(/^Subindo o app…/)).toBeNull()
+})
+
+test('recarregar uma conversa parada cujo envio foi cortado não mostra "Subindo o app…"', async () => {
+  await openConversation(keptSending())
+  const log = screen.getByRole('log', { name: 'Conversa com o Builder' })
+  await within(log).findByText(/^Versão 1 guardada/)
   expect(within(log).queryByText(/^Subindo o app…/)).toBeNull()
 })
