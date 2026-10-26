@@ -19,7 +19,7 @@ const main = Buffer.from(\`export default { async fetch(request, env, ctx) {
 const hooks = []
 const serve = threads({ after: (hook) => hooks.push(hook) })
 const db = { query: () => new Promise(() => {}) }
-const ended = serve('app', { main, cpuMs: 50 }, new Request('https://x/'), { caller: null, db }).then(
+const ended = serve('app', { main, cpuMs: 60_000 }, new Request('https://x/'), { caller: null, db }).then(
   () => 2,
   () => 0,
 )
