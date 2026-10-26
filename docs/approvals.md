@@ -204,6 +204,10 @@ Em 2026-10-26, sobre as emendas do fechamento da etapa 14.3: o texto novo da V30
 
 Cartão da etapa 14.3 aprovado em 2026-10-26 (commit 9b961e60fe26052a1d059cb5d029b86408e92861): "B", "A" e "F"
 
+Em 2026-10-26, na rodada de correção do pull request de fechamento da etapa 14.3: o cartão só foi reescrito (linhas quebradas em 100 colunas, o desenho de 390 px alinhado, e o medidor da memória como o elemento nativo `<meter>` que o lint pede, sem mudar o que se vê); valem as palavras de antes, "B", "A" e "F".
+
+Cartão da etapa 14.3 aprovado em 2026-10-26 (commit c316c0ea48ce6ea714a1e0dca2935f86e85982de): "B", "A" e "F"
+
 ## Etapa 13.1
 
 Em 2026-10-25, olhando o Início de hoje: "Eu não sei em que etapa que a gente tem que vai mudar a página inicial, é depois da prévia? Porque essa não é a página inicial que a gente realmente quer ter ... E também, como você pode ver, ela tá até com o subliado lá em cima. Então, não que eu quero mudar isso agora, mas mudar quando a gente for mudar a página inicial, para deixar ela conforme a gente já vem planejando há um tempo. Mas acredito que a gente precisa esperar a prévia primeiro." À ordem proposta (14.1, depois arquivos e voz, depois a 13.1, com o compositor do Início sendo o mesmo com **+** e microfone e o contorno do título consertado na 13.1): "Concordo documente tudo isso para ser registrado"
