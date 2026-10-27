@@ -1,6 +1,6 @@
 import { CompanyId, FAILURES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, projectsRead, refusal } from '../../platform/test-hub.tsx'
@@ -201,4 +201,19 @@ test('Passo 4: Ir para o início sem pedir nada', async () => {
   expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
   expect(conexus.router.state.location.pathname).toBe(HOME)
   expect(projects).toHaveLength(0)
+})
+
+test('Passo 4: Enviar não cobre o passo com a tela de abertura, os Projetos já vieram', async () => {
+  home({ at: STEP_FOUR })
+  server.use(
+    http.get(`*/api/companies/${COMPANY.id}/projects`, async () => {
+      await new Promise((done) => setTimeout(done, 300))
+      return HttpResponse.json({ projects: [], next: { kind: 'END' }, databaseReady: true })
+    }),
+  )
+  fireEvent.change(await box(), { target: { value: REQUEST } })
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }))
+  expect(screen.getByText('Passo 4 de 4')).toBeTruthy()
+  expect(screen.queryByText('Abrindo o Conexus')).toBeNull()
+  expect(screen.getByLabelText('Nome do projeto')).toBeTruthy()
 })
