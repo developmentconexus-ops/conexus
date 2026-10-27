@@ -1,5 +1,5 @@
 import type { Task as HubTask } from '@conexus/hub-api'
-import { CheckIcon, ChevronRightIcon, CircleIcon, PlayIcon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, CircleIcon, Loader2Icon } from 'lucide-react'
 import { useState } from 'react'
 import type { z } from 'zod'
 import { cn } from '../../ui/cn.ts'
@@ -27,12 +27,16 @@ export function TaskPanel(props: { tasks: readonly Task[]; streaming: boolean })
   return <OpenTasks tasks={tasks} />
 }
 
-/** Holds the fold: it unmounts with the panel, so the next turn's panel starts folded. */
+/**
+ * Each status draws its icon and names it, as Factory's `TaskList` does (Mastra 1.69 `task-list.tsx:67-71,92`):
+ * the spinner for the task running is the founder's ask; Factory 1.78 draws rings instead.
+ * Holds the fold: it unmounts with the panel, so the next turn's panel starts folded. */
 function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
   const [open, setOpen] = useState(false)
   const total = tasks.length
   const completed = tasks.filter((t) => t.status === 'completed').length
   const focused = focusedTask(tasks)
+  const words = open ? 'break-words' : 'truncate'
 
   return (
     <Collapsible
@@ -48,17 +52,13 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
         />
         Tarefas · {completed} de {total}
       </CollapsibleTrigger>
-      <ul
-        className={cn(
-          'flex min-w-0 gap-sm',
-          open ? 'flex-col items-start' : 'items-center overflow-hidden',
-        )}
-      >
+      <ul className={cn('flex min-w-0 gap-sm', open ? 'flex-col' : 'items-center overflow-hidden')}>
         {tasks.map((task) => (
           <li
             key={task.id}
             className={cn(
-              'min-w-0 items-center gap-xs',
+              'min-w-0 gap-xs',
+              open ? 'items-start' : 'items-center',
               open || task.id === focused?.id
                 ? 'flex flex-1 md:flex-none'
                 : 'hidden md:flex md:shrink-0',
@@ -66,22 +66,34 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
           >
             {task.status === 'completed' && (
               <>
-                <CheckIcon className="size-3.5 text-success" aria-hidden="true" />
-                <span className="truncate text-text-2">{task.content}</span>
+                <CheckIcon
+                  className="size-3.5 shrink-0 text-success"
+                  role="img"
+                  aria-label="Concluída"
+                />
+                <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}
             {task.status === 'in_progress' && (
               <>
-                <PlayIcon className="size-3.5 fill-current text-accent" aria-hidden="true" />
-                <span className="truncate font-medium text-text">
+                <Loader2Icon
+                  className="size-3.5 shrink-0 text-accent motion-safe:animate-spin"
+                  role="img"
+                  aria-label="Em andamento"
+                />
+                <span className={cn(words, 'font-medium text-text')}>
                   {task.activeForm || task.content}
                 </span>
               </>
             )}
             {task.status === 'pending' && (
               <>
-                <CircleIcon className="size-3.5 text-text-2" aria-hidden="true" />
-                <span className="truncate text-text-2">{task.content}</span>
+                <CircleIcon
+                  className="size-3.5 shrink-0 text-text-2"
+                  role="img"
+                  aria-label="Pendente"
+                />
+                <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}
           </li>

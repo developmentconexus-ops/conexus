@@ -1,6 +1,6 @@
 // Defect: every 14.2 screen passed on controller events and stored rows typed by hand in the shape
 // the screen wanted, orders Mastra never produces (testing T24; method study, diff 6).
-// `npm run record -- <scenario>` (cited, thinking, abort, plan or files) runs the native flow once: Mastra's
+// `npm run record -- <scenario>` (cited, thinking, abort, plan, files or tasks) runs the native flow once: Mastra's
 // real AgentController, with the Builder's model and web tools, on Mastra's in-memory store, answering
 // from the provider recording `apps/server/src/platform/recordings/anthropic-<scenario>.sse` through
 // a fake `fetch`, as `scripts/record-provider.ts` made it. `plan` has no provider recording: it needs
@@ -17,7 +17,13 @@ import { join } from 'node:path'
 import { Agent } from '@mastra/core/agent'
 import { AgentController } from '@mastra/core/agent-controller'
 import { InMemoryStore } from '@mastra/core/storage'
-import { createTool, webFetchTool, webSearchTool } from '@mastra/core/tools'
+import {
+  createTool,
+  taskCompleteTool,
+  taskWriteTool,
+  webFetchTool,
+  webSearchTool,
+} from '@mastra/core/tools'
 import { Memory } from '@mastra/memory'
 import { z } from 'zod'
 import type { Block } from '../apps/server/src/platform/test-anthropic-stream.ts'
@@ -45,7 +51,7 @@ const PROMPTS = {
     'Uma padaria inventada vende 120 pães por dia a R$ 0,80 cada. Quanto ela fatura em 30 dias? Pense antes de responder.',
   abort: 'Escreva uma lista de 60 nomes inventados de padarias, um por linha, sem comentários.',
 }
-const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan', 'files'])
+const Scenario = z.enum(['cited', 'thinking', 'abort', 'plan', 'files', 'tasks'])
 
 const PLAN_FILE = '.conexus/plans/encomendas.md'
 const PLAN_PROMPT = 'Planeje um app de encomendas para uma padaria inventada.'
@@ -94,6 +100,20 @@ const FILES_CALLS: Block[][] = [
   [{ type: 'text', text: 'Ela precisa de pães sem glúten.' }],
 ]
 
+const TASKS_PROMPT = 'Monte um app de encomendas para uma padaria inventada, por tarefas.'
+const PLANNED = [
+  { id: '1', content: 'Montar a tabela', activeForm: 'Montando a tabela', status: 'in_progress' },
+  { id: '2', content: 'Fazer a tela', activeForm: 'Fazendo a tela', status: 'pending' },
+  { id: '3', content: 'Conferir o app', activeForm: 'Conferindo o app', status: 'pending' },
+]
+/** What the model does in the `tasks` scenario: plan three tasks, complete two, one call each, and answer. */
+const TASKS_CALLS: Block[][] = [
+  [{ type: 'tool_use', name: 'task_write', input: { tasks: PLANNED } }],
+  [{ type: 'tool_use', name: 'task_complete', input: { id: '1' } }],
+  [{ type: 'tool_use', name: 'task_complete', input: { id: '2' } }],
+  [{ type: 'text', text: 'Falta conferir o app.' }],
+]
+
 const Package = z.object({ version: z.string() })
 function versionOf(name: string): string {
   const path = join(ROOT, 'node_modules', name, 'package.json')
@@ -126,6 +146,9 @@ function replaying(answers: Answer[]): () => void {
 type Session = Awaited<ReturnType<AgentController['createSession']>>
 
 /** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
+const TASK_TOOLS = { task_write: taskWriteTool, task_complete: taskCompleteTool }
+const CALLS = { plan: PLAN_CALLS, files: FILES_CALLS, tasks: TASKS_CALLS }
+
 async function run(session: Session, scenario: z.infer<typeof Scenario>): Promise<unknown[]> {
   const events: unknown[] = []
   let deltas = 0
@@ -142,15 +165,16 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
       void session.sendMessage({ content: STEER })
     if (scenario === 'files' && event.type === 'tool_start' && event.toolName === 'anotar')
       void session.sendMessage({ content: MORE_FILES_PROMPT, files: [MORE_FILE] })
-    if (scenario === 'files' && event.type === 'agent_end') ended.resolve()
+    if ((scenario === 'files' || scenario === 'tasks') && event.type === 'agent_end')
+      ended.resolve()
     if (scenario === 'plan' && event.type === 'agent_end') {
       ends += 1
       if (ends === 2) ended.resolve()
     }
   })
   const answers: Answer[] =
-    scenario === 'plan' || scenario === 'files'
-      ? (scenario === 'plan' ? PLAN_CALLS : FILES_CALLS).map(
+    scenario === 'plan' || scenario === 'files' || scenario === 'tasks'
+      ? CALLS[scenario].map(
           (blocks, at, calls) => () =>
             new Response(
               streamed(CLAUDE, blocks, at === calls.length - 1 ? 'end_turn' : 'tool_use'),
@@ -162,6 +186,9 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
   try {
     if (scenario === 'files') {
       await session.sendMessage({ content: FILES_PROMPT, files: FILES })
+      await ended.promise
+    } else if (scenario === 'tasks') {
+      await session.sendMessage({ content: TASKS_PROMPT })
       await ended.promise
     } else {
       await session.sendMessage({ content: scenario === 'plan' ? PLAN_PROMPT : PROMPTS[scenario] })
@@ -181,7 +208,7 @@ async function run(session: Session, scenario: z.infer<typeof Scenario>): Promis
 }
 
 async function record(scenario: z.infer<typeof Scenario>) {
-  const planned = scenario === 'plan' || scenario === 'files'
+  const planned = scenario in CALLS
   const source = planned ? 'test-anthropic-stream.ts' : `anthropic-${scenario}.sse`
   // The plan's calls are not a provider's recording; the SDK that reads them is the one of any other.
   const provider = Recording.parse(
@@ -199,6 +226,7 @@ async function record(scenario: z.infer<typeof Scenario>) {
     instructions: 'Answer in Brazilian Portuguese.',
     model: `anthropic/${CLAUDE}`,
     tools: {
+      ...TASK_TOOLS,
       web_fetch: webFetchTool,
       web_search: webSearchTool,
       anotar: createTool({
