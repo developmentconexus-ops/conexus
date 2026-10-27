@@ -3,11 +3,13 @@
   "workspaces": {
     ".": {
       "project": ["scripts/**/*.ts", "tests/e2e/**/*.ts"],
-      "ignoreBinaries": ["openssl"]
+      "ignoreBinaries": ["openssl"],
+      "ignoreDependencies": ["jscpd"]
     },
     "apps/server": {
       "entry": ["src/**/*.check.ts"],
-      "ignoreBinaries": ["setpriv", "mkfifo"]
+      "ignoreBinaries": ["setpriv", "mkfifo"],
+      "ignoreDependencies": ["@stryker-mutator/command-runner"]
     },
     "apps/web": {
       "entry": ["src/ui/pieces-fixture.tsx"]

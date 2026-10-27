@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "node --test --test-force-exit --test-timeout=120000 --test-reporter=../../scripts/test-reporter.ts"
+  },
+  "coverageAnalysis": "off",
+  "concurrency": 1,
+  "inPlace": true,
+  "tempDirName": ".stryker-tmp",
+  "reporters": ["json"],
+  "jsonReporter": { "fileName": ".stryker-report/mutation.json" }
+}
