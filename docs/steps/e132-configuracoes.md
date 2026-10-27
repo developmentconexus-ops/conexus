@@ -146,7 +146,7 @@ fila e o Ligar ~70, as telas de contas ~150; menos as três colunas que não ent
 | 1 | U1 | A 1366 e a 390 px, sem toque: um `Button` `default` tem 32 px de altura, `sm` 28, `icon` 32 × 32, `icon-sm` 28 × 28, o texto 13 px; nenhum botão desenhado tem 44 px a 390 px (a recusa: um `max-md:h-11` que volte) | `apps/web/pieces.layout.test.ts`, "a escala dos botões, no computador e no celular" (navegador, `getBoundingClientRect` e `font-size` calculado) | must |
 | 2 | U1 | Com toque (`Emulation.setTouchEmulationEnabled`, `matchMedia('(pointer: coarse)')` verdadeiro), `elementFromPoint` a 5 px acima e abaixo de um botão de 32 px acha o botão, e a 7 px de um de 28 px também; sem toque, a 1 px fora da caixa desenhada não acha | `phone.layout.test.ts`, "o toque pega 44 px sem desenhar 44" | must |
 | 3 | U1 | O critério 30 da 13.1, refeito: a 390 px, **Recarregar** e **Abrir app** têm 32 × 32 desenhados e, com toque, pegam o toque numa área de 44 × 44; o resto do critério 30 continua | `phone.layout.test.ts`, o caso de `:82` (o título, que hoje diz "ícones de 44px", passa a "32 desenhados e 44 de toque"; a linha `:100` passa de `[44, 44]` a `[32, 32]`, mais a medida de toque do critério 2) | must |
-| 4 | U1 | Na conversa a 390 px, **Anexar arquivos**, **Modelo e raciocínio** e **Enviar** têm 32 px desenhados e 44 de toque; a linha continua uma só | `memory.layout.test.ts`, o caso da linha do compositor (`:120-124` mede só Anexar e Enviar: entra o botão do modelo; `:134` passa de "altura ≥ 44" à medida de toque) | must |
+| 4 | U1 | Na conversa a 390 px, **Anexar arquivos**, **Modelo e raciocínio** e **Enviar** têm 32 px desenhados e 44 de toque; a linha continua uma só | `memory.layout.test.ts`, o caso da linha do compositor (`:106-110` mede só Anexar e Enviar: entra o botão do modelo; `:134` passa de "altura ≥ 44" à medida de toque) | must |
 | 5 | U1 | Não mudam: os itens de menu e de seleção (34 px), as linhas da barra lateral (34 px), os campos (`h-9`); o botão **Minhas contas de modelo** do aviso sem conta (`model-choice.tsx:42`) tem 32 px desenhados a 390 px e ainda quebra a linha a 200 % (V18) | `pieces.layout.test.ts`, o mesmo caso (a recusa: uma linha da barra com 32 px) | should |
 | 6 | U2 | A barra de Configurações mostra os dois grupos, cada entrada com o seu ícone (o `svg` dentro do link); o nome da empresa é uma linha cortada com reticências e o nome inteiro no `title` | `apps/web/src/routes/_app/companies/$companyId_/settings/settings.test.tsx`, "cada seção com o seu ícone" e "o nome comprido da empresa numa linha" | must |
 | 7 | U2 | Cada seção aberta mostra o título em `text-display-narrow` e a frase da seção (`summary`) embaixo; uma rota filha sem `summary` não compila | `settings.test.tsx`, "o título e a frase da seção"; `tsc` | must |
@@ -732,7 +732,7 @@ hoje, que só manda no Salvar; o 23 com a resposta `MODEL_FALLBACK_STALE` e um c
 
 ### Parar se
 
-- A causa provável do #217 é `levelsOf` (`default-choice.tsx:15-17`), que não dá raciocínios sem a conta; se não
+- A causa provável do #217 é `levelsOf` (`default-choice.tsx:13-15`), que não dá raciocínios sem a conta; se não
   for, e o defeito estiver na leitura do Hub (`listModelAccounts` não devolve o raciocínio
   do padrão sem a conta): parar e reportar com a resposta gravada; a mudança do contrato volta ao
   cartão.
