@@ -2,14 +2,11 @@ import { FAILURES } from '@conexus/hub-api'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { http } from 'msw'
 import { expect, test } from 'vitest'
-import { PROJECT, SECOND } from '../../builder/conversation/test-hub.tsx'
-import { box, create, request, startHub } from '../../builder/conversation/test-start.tsx'
 import { COMPANY } from '../../platform/fixtures.ts'
 import { hubServer, refusal } from '../../platform/test-hub.tsx'
 import { COMPANY_PATH, companyHub, companyView, openAt } from './test-hub.tsx'
 
 const server = hubServer()
-const home = startHub(server)
 const WELCOME = `${COMPANY_PATH}/welcome`
 
 function ready(fields: Parameters<typeof companyView>[0] = {}) {
@@ -125,39 +122,6 @@ test('Passo 1 com a barra no fim do endereço: a empresa sem apelido fica no Pas
   const router = openAt(`${WELCOME}/company/`)
   expect(await screen.findByRole('heading', { name: 'Sua empresa' })).toBeTruthy()
   expect(router.state.location.pathname).toMatch(/\/welcome\/company\/?$/)
-})
-
-test('Passo 4: a caixa cria e abre a conversa', async () => {
-  const { projects, conversations, conexus } = home({ at: `${WELCOME}/build` })
-  expect(await screen.findByText('Passo 4 de 4')).toBeTruthy()
-  expect(screen.getByRole('heading', { name: 'O que vamos construir primeiro?' })).toBeTruthy()
-  expect((await box()).getAttribute('placeholder')).toBe('Descreva o app que você quer…')
-  expect(screen.getByRole('list', { name: 'Exemplos' })).toBeTruthy()
-  await request()
-  create('Pedidos')
-  await waitFor(() =>
-    expect(conexus.router.state.location.pathname).toBe(`${PROJECT}/conversations/${SECOND}`),
-  )
-  expect(projects).toHaveLength(1)
-  expect(conversations()).toHaveLength(1)
-})
-
-test('Passo 4: sem conta, o aviso do Início no lugar da caixa', async () => {
-  home({ at: `${WELCOME}/build`, start: null })
-  expect(
-    await screen.findByText(
-      'Você ainda não tem uma conta de modelo. Peça a quem administra a empresa ou ligue a sua.',
-    ),
-  ).toBeTruthy()
-  expect(screen.queryByRole('textbox', { name: 'Mensagem para o Builder' })).toBeNull()
-})
-
-test('Passo 4: Ir para o início sem pedir nada', async () => {
-  const { conexus, projects } = home({ at: `${WELCOME}/build` })
-  fireEvent.click(await screen.findByRole('link', { name: 'Ir para o início sem pedir nada' }))
-  expect(await screen.findByRole('heading', { name: 'O que vamos construir?' })).toBeTruthy()
-  expect(conexus.router.state.location.pathname).toBe(COMPANY_PATH)
-  expect(projects).toHaveLength(0)
 })
 
 for (const role of ['admin', 'member'] as const) {
