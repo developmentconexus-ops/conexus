@@ -160,10 +160,10 @@ function useDictation(draft: Draft, setPhrase: (phrase: string | null) => void) 
 }
 
 /**
- * The field and its action row, at every width: on the left **+**, the memory ring and the model's
- * button, and on the right the microphone and the round button, which is **Parar** while the Builder
+ * The field and its action row, at every width: on the left **+**, the model's button and the memory
+ * ring, and on the right the microphone and the round button, which is **Parar** while the Builder
  * answers and the box is empty, and **Enviar** otherwise (founder, 2026-10-27: **+** first, as AI
- * Elements' `PromptInputTools` puts the attachments action). The row never wraps down to 320 px: the
+ * Elements' `PromptInputTools` puts the attachments action, then the model and the ring after it). The row never wraps down to 320 px: the
  * left takes the free width and the model's name truncates in it, the buttons keep theirs
  * (`PromptInputFooter`, `PromptInputSubmit`). Under 20 rem, at 200% zoom on a phone (design V18),
  * there is no room for four 44 px targets and the buttons take a line of their own.
@@ -184,7 +184,7 @@ export function Composer(props: {
   onStop: () => void
   picker: ReactNode
   taskPanel?: ReactNode
-  /** The memory ring, the first of the status line on the row's left. */
+  /** The memory ring, after the model's button on the row's left. */
   memory?: ReactNode
 }) {
   const { draft } = props
@@ -254,8 +254,8 @@ export function Composer(props: {
         >
           <div className="flex min-w-0 flex-1 items-center gap-xs max-[20rem]:basis-full">
             <Attach add={addFiles} />
-            {props.memory}
             {props.picker}
+            {props.memory}
           </div>
           <div className="flex shrink-0 items-center gap-xs">
             {dictation.mic}

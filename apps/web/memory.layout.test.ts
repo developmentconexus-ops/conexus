@@ -124,6 +124,8 @@ for (const viewport of [
           }
         })
       assert.equal(measured.seen[0], 'Anexar arquivos', '+ is the first of the row')
+      assert.equal(measured.seen[1], 'Modelo e raciocínio', 'the model follows the +')
+      assert.match(measured.seen[2] ?? '', /^Memória da conversa/, 'the ring follows the model')
       assert.equal(measured.seen.at(-1), 'Enviar')
       assert.ok(measured.tabIsVisualOrder, 'Tab goes in the order the eye reads')
       assert.equal(measured.centres, 1, 'the buttons share one line')
