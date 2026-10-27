@@ -301,5 +301,7 @@ test('desligar com um pedido comum ainda em curso: ele termina antes de o Hub fe
   assert.equal(response.statusCode, 200)
   response.resume()
   await once(response, 'end')
-  await closed
+  // Well inside the 5 s window: the idle sweep closes the read's kept-alive connection at once.
+  const late = new Promise<string>((done) => setTimeout(() => done('late'), 2_000).unref())
+  assert.equal(await Promise.race([closed.then(() => 'closed'), late]), 'closed')
 })
