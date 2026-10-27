@@ -145,10 +145,10 @@ function replaying(answers: Answer[]): () => void {
 
 type Session = Awaited<ReturnType<AgentController['createSession']>>
 
-/** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
 const TASK_TOOLS = { task_write: taskWriteTool, task_complete: taskCompleteTool }
 const CALLS = { plan: PLAN_CALLS, files: FILES_CALLS, tasks: TASKS_CALLS }
 
+/** Plays the scenario on the session, with the model calls answered from the recording; the events it emitted. */
 async function run(session: Session, scenario: z.infer<typeof Scenario>): Promise<unknown[]> {
   const events: unknown[] = []
   let deltas = 0
