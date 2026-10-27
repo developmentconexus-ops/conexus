@@ -32,8 +32,17 @@ export function FileChip(props: { file: Chip; action?: ReactNode }) {
   )
 }
 
+/** A chip's key: what it shows, and which of its namesakes it is, since two files can share a name. */
+function keyOf(file: Chip, seen: Map<string, number>): string {
+  const shown = file.image ?? file.filename
+  const nth = seen.get(shown) ?? 0
+  seen.set(shown, nth + 1)
+  return `${shown}:${nth}`
+}
+
 /** The person's bubble, with `footer` under it: the hour of a sent message, or what a pending one waits for. */
 export function PersonBubble(props: { text: string; files: readonly Chip[]; footer: ReactNode }) {
+  const seen = new Map<string, number>()
   return (
     <Turn align="end">
       <MessageContent>
@@ -44,7 +53,7 @@ export function PersonBubble(props: { text: string; files: readonly Chip[]; foot
             className="flex-wrap justify-end self-end"
           >
             {props.files.map((file) => (
-              <FileChip key={file.image ?? file.filename} file={file} />
+              <FileChip key={keyOf(file, seen)} file={file} />
             ))}
           </AttachmentGroup>
         )}

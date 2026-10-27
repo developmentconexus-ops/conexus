@@ -1,7 +1,8 @@
 import { ModelId } from '@conexus/hub-api'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { expect, test, vi } from 'vitest'
 import { hubServer } from '../../platform/test-hub.tsx'
+import { PersonBubble } from './person-turn.tsx'
 import { OPENED, session } from './session-state.ts'
 import { AGENT_START, RUNNING, stepStarted, textDelta } from './test-events.ts'
 import { conversationOf, FIRST, say, screens } from './test-hub.tsx'
@@ -64,4 +65,13 @@ test('um arquivo enviado com o Builder trabalhando aparece pendente com a sua et
     expect(bubbles()).toEqual([{ files: ['cardapio.pdf'], words: undefined, pictures: [] }]),
   )
   expect(screen.getByText('Vai ao Builder no próximo passo')).toBeTruthy()
+})
+
+test('dois arquivos de mesmo nome na mesma mensagem são duas etiquetas, sem chave repetida', () => {
+  const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  const chip = { filename: 'tabela.pdf', image: null }
+  render(<PersonBubble text="" files={[chip, chip]} footer={null} />)
+  expect(screen.getAllByText('tabela.pdf')).toHaveLength(2)
+  expect(error).not.toHaveBeenCalled()
+  error.mockRestore()
 })

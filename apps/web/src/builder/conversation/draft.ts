@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { pageStorage } from '../../platform/storage.ts'
 import type { MessageFile, Outgoing } from './attachments.ts'
 
-const texts = pageStorage('session')
+/** Storage only mirrors the text: where the browser refuses it, the draft still holds. */
+const mirror = pageStorage('session')
+const texts = new Map<ConversationId, string>()
 /** Files stay in the page's memory: storage holds ~5 MB, and a reload drops them, as in Factory. */
 const files = new Map<ConversationId, readonly MessageFile[]>()
 
@@ -15,7 +17,7 @@ function keyOf(conversationId: ConversationId) {
 
 function heldOf(conversationId: ConversationId): Outgoing {
   return {
-    content: texts.getItem(keyOf(conversationId)) ?? '',
+    content: texts.get(conversationId) ?? mirror.getItem(keyOf(conversationId)) ?? '',
     files: files.get(conversationId) ?? NONE,
   }
 }
@@ -32,7 +34,8 @@ export function useDraft(conversationId: ConversationId) {
 
   // Written at once and not by an effect: a send can end after the composer unmounted.
   function hold(next: Outgoing) {
-    texts.setItem(keyOf(conversationId), next.content)
+    texts.set(conversationId, next.content)
+    mirror.setItem(keyOf(conversationId), next.content)
     files.set(conversationId, next.files)
     setHeld({ conversationId, ...next })
   }
