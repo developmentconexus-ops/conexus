@@ -25,17 +25,28 @@ test('sem memória o anel está vazio e diz 0% (Critério 15, matriz de estados)
   expect(screen.getByText('0%')).toBeTruthy()
 })
 
-test('o anel gira enquanto guarda, observa ou reorganiza (Critério 15)', () => {
+test('o anel não gira: enquanto guarda, observa ou reorganiza a luz corre sobre o arco (Critério 15)', () => {
   const { rerender } = render(<MemoryStatus memory={MEMORY} />)
-  expect(screen.getByRole('button').querySelector('svg')?.getAttribute('class')).not.toContain(
-    'animate-spin',
-  )
+  function ring() {
+    return screen.getByRole('button').querySelector('svg')
+  }
+  expect(ring()?.hasAttribute('data-working')).toBe(false)
   for (const omPhase of ['buffering', 'observing', 'reflecting'] as const) {
     rerender(<MemoryStatus memory={MEMORY} omPhase={omPhase} />)
-    expect(screen.getByRole('button').querySelector('svg')?.getAttribute('class')).toContain(
-      'animate-spin',
-    )
+    expect(ring()?.hasAttribute('data-working')).toBe(true)
+    expect(ring()?.getAttribute('class')).not.toContain('animate-spin')
+    expect(ring()?.querySelector('[class*="animate-ring-sweep"]')).toBeTruthy()
   }
+})
+
+test('cada memória mostra sua barra cheia até o percentual usado (Critério 16)', async () => {
+  render(<MemoryStatus memory={MEMORY} />)
+  fireEvent.click(screen.getByRole('button'))
+  await screen.findByText('3,6 de 30k')
+  const widths = [...document.querySelectorAll('rect[data-fill]')].map((r) =>
+    r.getAttribute('width'),
+  )
+  expect(widths).toEqual(['12%', '5.25%'])
 })
 
 test('o clique abre as duas memórias (Critério 16)', async () => {

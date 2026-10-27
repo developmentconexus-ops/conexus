@@ -1,4 +1,6 @@
 import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { useId } from 'react'
 import { cn } from '../../ui/cn.ts'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 import type { OMProgress } from './session-state.ts'
@@ -13,14 +15,26 @@ function formatK(tokens: number): string {
   return k.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 1 })
 }
 
-function Ring({ percent, spinning }: { percent: number; spinning: boolean }) {
+function Ring({ percent, working }: { percent: number; working: boolean }) {
+  const id = useId()
   const circumference = 2 * Math.PI * 6
-  const offset = circumference - (percent / 100) * circumference
+  const arc = `${(circumference * percent) / 100} ${circumference}`
+  const circle = {
+    cx: 8,
+    cy: 8,
+    r: 6,
+    fill: 'none',
+    strokeWidth: 2,
+    strokeDasharray: arc,
+    strokeLinecap: 'round',
+    className: 'origin-center -rotate-90 transition-all duration-300 motion-reduce:transition-none',
+  } as const
 
   return (
     <svg
       viewBox="0 0 16 16"
-      className={cn('size-3.5 shrink-0', spinning && 'animate-spin')}
+      className="size-3.5 shrink-0 text-accent"
+      data-working={working || undefined}
       aria-hidden="true"
     >
       <circle
@@ -30,21 +44,64 @@ function Ring({ percent, spinning }: { percent: number; spinning: boolean }) {
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
-        className="opacity-20"
+        className="text-text-2 opacity-20"
       />
-      <circle
-        cx="8"
-        cy="8"
-        r="6"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        className="text-accent origin-center -rotate-90 transition-all duration-300"
-      />
+      {working ? (
+        <>
+          <defs>
+            <linearGradient id={`${id}-sheen`}>
+              <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+              <stop offset="50%" stopColor="currentColor" />
+              <stop offset="100%" stopColor="currentColor" stopOpacity="0.25" />
+            </linearGradient>
+            <mask id={`${id}-arc`}>
+              <circle {...circle} stroke="white" />
+            </mask>
+          </defs>
+          <g mask={`url(#${id}-arc)`}>
+            <rect
+              width="16"
+              height="16"
+              fill={`url(#${id}-sheen)`}
+              className="origin-center animate-ring-sweep motion-reduce:rotate-[120deg] motion-reduce:animate-none"
+            />
+          </g>
+        </>
+      ) : (
+        <circle {...circle} stroke="currentColor" />
+      )}
     </svg>
+  )
+}
+
+/** One memory of the popover: its icon and name, how full it is, the bar and what filling it does. */
+function Budget(props: {
+  icon: ReactNode
+  label: string
+  used: number
+  threshold: number
+  tone: string
+  description: string
+  className?: string
+}) {
+  const { icon, label, used, threshold, tone, description, className } = props
+  const percent = threshold > 0 ? Math.min(100, (used / threshold) * 100) : 0
+
+  return (
+    <div className={cn('flex flex-col gap-xs', className)}>
+      <div className="flex items-center gap-xs font-semibold text-text">
+        <span className={tone}>{icon}</span>
+        <span>{label}</span>
+        <span className="ms-auto text-text-2 tabular-nums">
+          {formatK(used)} de {formatK(threshold)}k
+        </span>
+      </div>
+      <svg aria-hidden="true" className={cn('h-1.5 w-full overflow-hidden rounded-pill', tone)}>
+        <rect width="100%" height="100%" fill="currentColor" opacity="0.15" />
+        <rect data-fill height="100%" width={`${percent}%`} fill="currentColor" />
+      </svg>
+      <p className="text-text-2">{description}</p>
+    </div>
   )
 }
 
@@ -78,7 +135,7 @@ export function MemoryStatus(props: {
           failed ? ' · Falha na memória' : ''
         }`}
       >
-        <Ring percent={percent} spinning={working} />
+        <Ring percent={percent} working={working} />
         <span className="tabular-nums max-md:hidden">{percent}%</span>
         {failed && (
           <span className="flex items-center text-danger" title="Falha na memória">
@@ -87,36 +144,32 @@ export function MemoryStatus(props: {
         )}
       </PopoverTrigger>
 
-      <PopoverContent side="top" align="start" className="flex flex-col gap-sm p-md text-fact">
-        <div className="flex flex-col gap-xs">
-          <div className="flex items-center gap-xs font-semibold text-text">
-            <MessageSquareIcon className="size-4 text-text-2" />
-            <span>Mensagens</span>
-            <span className="ms-auto text-text-2 tabular-nums">
-              {formatK(pending)} de {formatK(threshold)}k
-            </span>
-          </div>
-          <p className="text-text-2">
-            {failed === 'observation' || failed === 'buffering'
+      <PopoverContent side="top" align="start" className="flex flex-col gap-md p-md text-fact">
+        <Budget
+          icon={<MessageSquareIcon className="size-4" />}
+          label="Mensagens"
+          used={pending}
+          threshold={threshold}
+          tone="text-accent"
+          description={
+            failed === 'observation' || failed === 'buffering'
               ? 'Não foi possível guardar as mensagens na memória.'
-              : 'Quando encher, o Builder resume a conversa para lembrar do que importa.'}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-xs border-t border-line pt-sm">
-          <div className="flex items-center gap-xs font-semibold text-text">
-            <BrainIcon className="size-4 text-text-2" />
-            <span>Memória</span>
-            <span className="ms-auto text-text-2 tabular-nums">
-              {formatK(observations)} de {formatK(reflectionThreshold)}k
-            </span>
-          </div>
-          <p className="text-text-2">
-            {failed === 'reflection'
+              : 'Quando encher, o Builder resume a conversa para lembrar do que importa.'
+          }
+        />
+        <Budget
+          icon={<BrainIcon className="size-4" />}
+          label="Memória"
+          used={observations}
+          threshold={reflectionThreshold}
+          tone="text-memory"
+          className="border-t border-line pt-sm"
+          description={
+            failed === 'reflection'
               ? 'Não foi possível reorganizar as observações.'
-              : 'Quando encher, o Builder junta as observações num resumo mais curto.'}
-          </p>
-        </div>
+              : 'Quando encher, o Builder junta as observações num resumo mais curto.'
+          }
+        />
       </PopoverContent>
     </Popover>
   )
