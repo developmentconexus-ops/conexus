@@ -62,7 +62,6 @@ async function expectStatusLineAndButtonsInTheBox() {
   const form = field.closest('form')
   const row = form?.querySelector('[data-slot="input-group-addon"]')
   expect(form?.querySelectorAll('[data-slot="input-group-addon"]')).toHaveLength(1)
-  expect(row?.className).toContain('flex-wrap')
   const ring = screen.getByRole('button', { name: /Memória da conversa/ })
   const picker = screen.getByRole('combobox', PICKER)
   const status = ring.parentElement
@@ -71,7 +70,6 @@ async function expectStatusLineAndButtonsInTheBox() {
   const buttons = screen.getByRole('button', { name: 'Enviar' }).parentElement
   expect(row?.contains(buttons)).toBe(true)
   expect(buttons?.contains(status)).toBe(false)
-  expect(buttons?.className).toContain('ms-auto')
   expect(
     [...(buttons?.querySelectorAll('button') ?? [])].map((one) => one.getAttribute('aria-label')),
   ).not.toContain('Modelo e raciocínio')

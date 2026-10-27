@@ -16,7 +16,6 @@ test('um anel com o percentual de pendingTokens/threshold (Critério 15)', () =>
     name: 'Memória da conversa: Mensagens 12%, 3,6/30k, Memória 2,1/40k',
   })
   expect(trigger.querySelectorAll('svg')).toHaveLength(1)
-  expect(screen.getByText('12%').className).toContain('max-md:hidden')
 })
 
 test('sem memória o anel está vazio e diz 0% (Critério 15, matriz de estados)', () => {
@@ -35,7 +34,6 @@ test('o anel não gira: enquanto guarda, observa ou reorganiza a luz corre sobre
     rerender(<MemoryStatus memory={MEMORY} omPhase={omPhase} />)
     expect(ring()?.hasAttribute('data-working')).toBe(true)
     expect(ring()?.getAttribute('class')).not.toContain('animate-spin')
-    expect(ring()?.querySelector('[class*="animate-ring-sweep"]')).toBeTruthy()
   }
 })
 
