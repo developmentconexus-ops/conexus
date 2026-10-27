@@ -81,7 +81,7 @@ async function ownDefault(ana: Page, owner: Page, companyId: string, base: strin
   await ana.getByRole('button', { name: 'Salvar padrão' }).click()
   await ana.getByText(/^Uma conversa nova começa em: .*sonnet.* — seu padrão$/i).waitFor()
   await ana.getByText('Conta usada primeiro (Anthropic): Claude da empresa').waitFor()
-  await newConversationChoice(ana, companyId, /sonnet.*·\s*Alto/i)
+  await newConversationChoice(ana, companyId, /sonnet.*Alto/i)
 
   const accounts = `${TEST_ORIGIN}/companies/${companyId}/settings/model-accounts`
   await owner.goto(accounts)
@@ -93,7 +93,7 @@ async function ownDefault(ana: Page, owner: Page, companyId: string, base: strin
       'Você não tem conta disponível para Anthropic agora: as conversas novas começam no padrão da empresa.',
     )
     .waitFor()
-  await newConversationChoice(ana, companyId, /GPT 5\s*·\s*Médio/)
+  await newConversationChoice(ana, companyId, /GPT 5\s*Médio/)
   await owner.getByRole('button', { name: 'Retomar Claude da empresa' }).click()
   await owner.getByRole('button', { name: 'Pausar Claude da empresa' }).waitFor()
 
@@ -142,7 +142,7 @@ async function script(window: (ip: string, who: string) => Promise<Page>, compan
   await anaPage.goto(`${base}/defaults`)
   await anaPage.getByText('Só o dono ou um administrador muda os padrões da empresa.').waitFor()
   assert.equal(await anaPage.getByRole('button', { name: 'Salvar padrão' }).count(), 0)
-  await newConversationChoice(anaPage, companyId, /GPT 5\s*·\s*Médio/)
+  await newConversationChoice(anaPage, companyId, /GPT 5\s*Médio/)
   await ownDefault(anaPage, ownerPage, companyId, base)
 
   // Step 5, the narrow screen and the dark theme: nothing scrolls sideways.
