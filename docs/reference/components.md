@@ -119,7 +119,21 @@ project-card:
   backgroundColor: "{colors.surface}"
   textColor: "{colors.text}"
   rounded: "{rounded.card}"
-  padding: "{spacing.lg}"
+  padding: "{spacing.md} {spacing.lg}, under the preview band"
+  border: "hairline, {colors.line}"
+  grid: "1 column, 2 from sm, 3 from lg; gap {spacing.md}, {spacing.lg} from sm"
+project-card-preview:
+  backgroundColor: "{colors.surface-3}"
+  textColor: "{colors.text-2}"
+  height: "112px (h-28) from sm; on a phone a 64px square at the card's start"
+  holds: "the name's first letter in {typography.display}, until a Projeto has a picture of its app"
+example-chip:
+  backgroundColor: "{colors.surface}"
+  textColor: "{colors.text-2}"
+  rounded: "{rounded.pill}"
+  padding: "0 {spacing.md}"
+  height: "32px (h-8), 44px at 390px"
+  typography: "{typography.label}"
   border: "hairline, {colors.line}"
 frame-public-column:
   backgroundColor: "{colors.canvas}"

@@ -1,6 +1,8 @@
+import { fireEvent } from '@testing-library/react'
 import { HttpResponse } from 'msw'
+import { z } from 'zod'
 import type { Stored } from './messages.ts'
-import { Display, recordedEvent } from './test-recorded.ts'
+import { Display, IsStored, recordedEvent, recordedRun } from './test-recorded.ts'
 
 /** Mastra's display state as its stream sends it, the fields the screen reads given. */
 export function displayOf(fields: Record<string, unknown> = {}) {
@@ -85,4 +87,41 @@ export function personSaid(text: string, id = 'person-1'): Stored {
     createdAt: '2026-10-19T12:01:00.000Z',
     content: { parts: [{ type: 'text', text }] },
   }
+}
+
+/** What Mastra's `sendMessage` posts. */
+const SentMessage = z.object({
+  message: z.string(),
+  files: z
+    .array(z.object({ data: z.string(), mediaType: z.string(), filename: z.string() }))
+    .optional(),
+})
+
+const StoredFile = z.looseObject({ type: z.literal('file'), mimeType: z.string() })
+
+/** A file part of a message Mastra stored, from the recording of a send with files (testing T26). */
+function recordedFile() {
+  for (const message of recordedRun('files').read) {
+    for (const part of message.content.parts) {
+      const file = StoredFile.safeParse(part)
+      if (file.success) return file.data
+    }
+  }
+  throw new Error('files.jsonl stores no file part')
+}
+
+/** A message sent by the route as Mastra stores it, each file the recorded part with its own data. */
+export function personSent(body: unknown, id: string): Stored {
+  const { message, files = [] } = SentMessage.parse(body)
+  const said = personSaid(message, id)
+  const stored = recordedFile()
+  const parts = files.map(({ mediaType, ...file }) => ({ ...stored, mimeType: mediaType, ...file }))
+  return IsStored.parse({ ...said, content: { parts: [...said.content.parts, ...parts] } })
+}
+
+/** Picks `file` with the composer's **+**. */
+export function attach(file: File) {
+  const picker = document.querySelector('input[type=file]')
+  if (picker === null) throw new Error('no file picker')
+  fireEvent.change(picker, { target: { files: [file] } })
 }

@@ -23,7 +23,7 @@ import {
   typed,
   view,
 } from './test-hub.tsx'
-import { displayOf, parkedOf } from './test-stream.tsx'
+import { attach, displayOf, parkedOf } from './test-stream.tsx'
 import { UNCONFIRMED_SEND } from './text.ts'
 
 const { open, openConversation } = screens(hubServer())
@@ -31,12 +31,6 @@ const { open, openConversation } = screens(hubServer())
 afterEach(() => sessionStorage.clear())
 
 const PDF = new File(['%PDF-1.4'], 'tabela.pdf', { type: 'application/pdf' })
-
-function attach(file: File) {
-  const picker = document.querySelector('input[type=file]')
-  if (picker === null) throw new Error('no file picker')
-  fireEvent.change(picker, { target: { files: [file] } })
-}
 
 function box() {
   return screen.getByRole('combobox', { name: 'Conversas' })

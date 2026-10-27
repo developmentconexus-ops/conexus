@@ -5,7 +5,7 @@ import { HttpResponse, http } from 'msw'
 import { afterEach, expect, test } from 'vitest'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
-import { hubServer, refusal, sessionRead } from '../../platform/test-hub.tsx'
+import { hubServer, sessionRead } from '../../platform/test-hub.tsx'
 
 const server = hubServer()
 
@@ -32,7 +32,6 @@ function hub(listed: (typeof COMPANY)[]) {
         getCompany.success.body.parse({ company, role: 'owner', mayInviteAs: [] }),
       )
     }),
-    http.get('*/api/companies/:companyId/model-accounts', () => refusal('DATABASE_UNAVAILABLE')),
     http.get('*/api/companies/:companyId/projects', () =>
       HttpResponse.json(
         listProjects.success.body.parse({

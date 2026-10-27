@@ -1,10 +1,12 @@
+import type { FailureCode } from '@conexus/hub-api'
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
 import type { DefaultValues, FieldValues, Path, UseFormReturn } from 'react-hook-form'
 import { FormProvider, useForm, useFormContext } from 'react-hook-form'
 import type { z } from 'zod'
-import { sentenceOf } from '../platform/hub.ts'
+import { keepsAttemptKey } from '../platform/attempt-key.ts'
+import { HubFailure, sentenceOf } from '../platform/hub.ts'
 import { Button } from './button.tsx'
 import { Field, FieldError, FieldGroup, FieldLabel } from './field.tsx'
 import { Input } from './input.tsx'
@@ -104,6 +106,22 @@ export function setServerError<I extends FieldValues, O>(
   field?: Path<I>,
 ) {
   form.setError(field ?? 'root.server', { type: 'server', message: sentenceOf(error) })
+}
+
+/**
+ * A create's failure on its form: on the field `fieldOf` blames for its code (web W23), `unconfirmed`
+ * when the Hub may have acted and the key stays (web W24), its sentence otherwise.
+ */
+export function setWriteError<I extends FieldValues, O>(
+  form: UseFormReturn<I, unknown, O>,
+  error: unknown,
+  unconfirmed: string,
+  fieldOf: Partial<Record<FailureCode, Path<I>>> = {},
+) {
+  const field = error instanceof HubFailure ? fieldOf[error.code] : undefined
+  if (keepsAttemptKey(error) && field === undefined) {
+    form.setError('root.server', { type: 'server', message: unconfirmed })
+  } else setServerError(form, error, field)
 }
 
 export function SubmitButton(props: { idle: string; pending: string; label?: string }) {
