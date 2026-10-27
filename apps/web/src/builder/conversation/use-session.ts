@@ -50,8 +50,9 @@ function reread(hooks: Hooks): void {
 }
 
 /**
- * The session state's tasks, as the Factory UI keeps them (`useAgentControllerConnection.ts:127-157`):
- * the event is written into the read, and a read in flight that predates it is let go.
+ * The session state's tasks: the event is written into the read, as the Factory UI does
+ * (`useAgentControllerConnection.ts:127-157`, Mastra 1.78). A read in flight that predates it is
+ * cancelled first, as TanStack Query's optimistic-updates guide does (`cancelQueries`, then `setQueryData`).
  */
 function tasksHeard(hooks: Hooks, tasks: SessionRead['tasks']): void {
   const { queryClient, ids } = hooks

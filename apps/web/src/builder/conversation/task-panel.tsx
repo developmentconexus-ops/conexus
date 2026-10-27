@@ -27,7 +27,10 @@ export function TaskPanel(props: { tasks: readonly Task[]; streaming: boolean })
   return <OpenTasks tasks={tasks} />
 }
 
-/** Holds the fold: it unmounts with the panel, so the next turn's panel starts folded. */
+/**
+ * Each status draws its icon and names it, as Factory's `TaskList` does (Mastra 1.69 `task-list.tsx:67-71,92`):
+ * the spinner for the task running is the founder's ask; Factory 1.78 draws rings instead.
+ * Holds the fold: it unmounts with the panel, so the next turn's panel starts folded. */
 function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
   const [open, setOpen] = useState(false)
   const total = tasks.length
@@ -63,7 +66,11 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
           >
             {task.status === 'completed' && (
               <>
-                <CheckIcon className="size-3.5 shrink-0 text-success" aria-hidden="true" />
+                <CheckIcon
+                  className="size-3.5 shrink-0 text-success"
+                  role="img"
+                  aria-label="Concluída"
+                />
                 <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}
@@ -71,7 +78,8 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
               <>
                 <Loader2Icon
                   className="size-3.5 shrink-0 text-accent motion-safe:animate-spin"
-                  aria-hidden="true"
+                  role="img"
+                  aria-label="Em andamento"
                 />
                 <span className={cn(words, 'font-medium text-text')}>
                   {task.activeForm || task.content}
@@ -80,7 +88,11 @@ function OpenTasks({ tasks }: { tasks: readonly Task[] }) {
             )}
             {task.status === 'pending' && (
               <>
-                <CircleIcon className="size-3.5 shrink-0 text-text-2" aria-hidden="true" />
+                <CircleIcon
+                  className="size-3.5 shrink-0 text-text-2"
+                  role="img"
+                  aria-label="Pendente"
+                />
                 <span className={cn(words, 'text-text-2')}>{task.content}</span>
               </>
             )}

@@ -6,6 +6,7 @@ import { hubServer } from '../../platform/test-hub.tsx'
 import { TaskPanel } from './task-panel.tsx'
 import { AGENT_START } from './test-events.ts'
 import { conversationOf, FIRST, screens } from './test-hub.tsx'
+import { recordedEvent, TaskUpdated } from './test-recorded.ts'
 
 type Task = z.infer<typeof HubTask>
 
@@ -162,4 +163,26 @@ test('depois de a stream cair no meio da execução, o painel mostra as tarefas 
   line().emit(AGENT_START)
 
   expect(await screen.findByText('Tarefas · 2 de 3')).toBeTruthy()
+})
+
+test('cada atualização de tarefas que o Mastra envia avança a contagem do painel, uma de cada vez (Critério 10)', async () => {
+  const { line } = await openConversation(conversationOf({ id: FIRST }))
+  line().emit(AGENT_START)
+  for (const done of [0, 1, 2]) {
+    line().emit(
+      recordedEvent(
+        'tasks',
+        TaskUpdated,
+        (event) => event.tasks.filter((task) => task.status === 'completed').length === done,
+      ),
+    )
+    expect(await screen.findByText(`Tarefas · ${done} de 3`)).toBeTruthy()
+  }
+})
+
+test('cada situação de tarefa tem o nome no ícone, para o leitor de tela (Critério 10)', () => {
+  render(<TaskPanel tasks={TASKS} streaming={true} />)
+  expect(screen.getByRole('img', { name: 'Concluída' })).toBeTruthy()
+  expect(screen.getByRole('img', { name: 'Em andamento' })).toBeTruthy()
+  expect(screen.getByRole('img', { name: 'Pendente' })).toBeTruthy()
 })
