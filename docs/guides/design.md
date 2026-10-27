@@ -17,6 +17,7 @@ colors:
   accent-text: "#9A6A08"
   accent-soft: "#FBF1D9"
   mark: "#C08A12"
+  memory: "#903BDB"
   success: "#1A7F4B"
   warning: "#B54708"
   danger: "#C0283D"
@@ -36,6 +37,7 @@ colors:
   dark-accent-text: "#F2B53A"
   dark-accent-soft: "#3A2E12"
   dark-mark: "#F2B53A"
+  dark-memory: "#B979FF"
   dark-success: "#6FD39A"
   dark-warning: "#F5A25B"
   dark-danger: "#F28B9A"
@@ -118,7 +120,8 @@ most colorful thing on screen. Ipê is the warm gold accent; prose is sans and f
   Tokens let both themes change in one file. [rule to write]
 - **V5.** Ipê **should** distinguish current activity and choice: focus, caret, selection, active
   lens and working agent, not every resting action or heading. The send hover keeps its current
-  accent. Failure: making everything gold hides the difference between focus and decoration.
+  accent. Failure: making everything gold hides the difference between focus and decoration. The
+  one other hue is violet, `memory`: it colors only the Memória budget beside Ipê's Mensagens.
   [review]
 - **V8.** Text **should** remain readable in both themes, with 4.5:1 as its contrast reference.
   Failure: a pale subtitle disappears on the light background. Syntax lint does not measure
@@ -203,11 +206,11 @@ The brand piece retains Encaixe, the mark's pieces separating and fitting while 
 - **V30.** Every action **should** have a keyboard path and coherent focus return, including Tab
   order, Esc, drag alternatives and safe text composition. Failure: Tab reaches a control without
   showing where focus is. In the conversation, on a keyboard Enter sends and Shift+Enter breaks the
-  line, and the hint below the field says so; on touch Return breaks the line, the button sends,
-  and the key hint is hidden. A send takes the person to the end, even from higher up. On a phone
-  the line against pasting secrets sits in the empty conversation and the model sheet, not under
-  the field. Founder, 2026-10-20: "3. Okay", "4. Sim"; 2026-10-25: "1. A 2.quebra de linha diva
-  sumir 3. B". [review]
+  line, with no hint under the field; on touch Return breaks the line and the button sends. Under
+  the field on a computer sits one small line against pasting secrets. A send takes the person to
+  the end, even from higher up. On a phone the line against pasting secrets sits in the empty
+  conversation and the model sheet, not under the field. Founder, 2026-10-20: "3. Okay", "4. Sim";
+  2026-10-25: "1. A 2.quebra de linha diva sumir 3. B"; 2026-10-26: "D. D1". [review]
 - **V31.** Controls **should** have meaningful localized accessible names: labels for inputs and
   pt-BR labels for icon-only buttons. Failure: a screen reader announces only "button" with no
   purpose. Syntactic a11y lint does not prove name quality or language. [review]
