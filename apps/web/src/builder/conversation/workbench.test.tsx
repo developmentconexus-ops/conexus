@@ -39,6 +39,7 @@ test('o Projeto abre na Prévia vazia, com a conversa à direita e sem "Abrir ap
   expect(await screen.findByText(NO_PREVIEW)).toBeTruthy()
   expect(tab('Prévia').getAttribute('aria-selected')).toBe('true')
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Recarregar' })).toBeNull()
   expect(await screen.findByRole('textbox', { name: 'Mensagem para o Builder' })).toBeTruthy()
   expect(screen.getByRole('separator', { name: 'Redimensionar a conversa' })).toBeTruthy()
 })
@@ -47,12 +48,21 @@ test('sem endereço, o topo não mostra "Abrir app"', async () => {
   openProject(PROJECT, { address: null })
   await screen.findByText(NO_PREVIEW)
   expect(screen.queryByRole('link', { name: 'Abrir app' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Recarregar' })).toBeNull()
+})
+
+test('fora da Prévia, o topo guarda só "Abrir app"', async () => {
+  openProject(PROJECT, { appVersion: 1 })
+  expect(await screen.findAllByRole('button', { name: 'Recarregar' })).not.toHaveLength(0)
+  fireEvent.click(await screen.findByRole('tab', { name: 'Código' }))
+  expect(await screen.findByRole('link', { name: 'Abrir app' })).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Recarregar' })).toBeNull()
 })
 
 test('a aba Projeto e a seção ficam no endereço, e o Sobre vem primeiro', async () => {
   const { conexus } = openProject()
   fireEvent.click(await screen.findByRole('tab', { name: 'Projeto' }))
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(conexus.router.state.location.search).toMatchObject({ lens: 'project' })
   fireEvent.click(await screen.findByRole('tab', { name: 'Versões' }))
   expect(await screen.findByRole('heading', { name: 'Versões' })).toBeTruthy()

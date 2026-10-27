@@ -4,9 +4,11 @@ import type { Locator, Page } from 'playwright-core'
 import type { Viewport } from './layout-harness.ts'
 import { createHarness, PHONE, SMALL_PHONE } from './layout-harness.ts'
 import { CONVERSATION_STATES } from './sweep-conversation-states.ts'
+import { PREVIEW_STATES } from './sweep-preview-states.ts'
 import { LONG_TREE } from './sweep-project-states.ts'
+import { PROJECT_NAME } from './sweep-replies.ts'
 
-// The phone's new screens at 390px and 320px: the one-bar top of a Projeto, the conversation sheet
+// The phone's new screens at 390px and 320px: the two-row top of a Projeto in App and its one bar in Conversa, the conversation sheet
 // and the model sheet (design V18, testing T23). layout.test.ts holds the frame's own widths.
 const harness = createHarness(import.meta.dirname)
 before(() => harness.start())
@@ -74,6 +76,55 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
       await page.close()
     })
   }
+}
+
+for (const viewport of [PHONE, SMALL_PHONE]) {
+  test(`o topo do App tem duas linhas, o nome do Projeto e os ícones de 44px, em ${viewport.width}px`, async () => {
+    const state = PREVIEW_STATES.find((each) => each.name === 'Projeto, Prévia com o app')
+    assert.ok(state, 'the sweep lacks the Prévia state')
+    const page = await harness.open(state.path, { viewport, replies: state.replies })
+    await state.settle(page)
+    const [name, toggle, tabs, reload, open] = await Promise.all(
+      [
+        page.getByText(PROJECT_NAME, { exact: true }).locator('visible=true'),
+        page.getByRole('group', { name: 'Parte do Projeto' }),
+        page.getByRole('tablist', { name: 'Projeto' }),
+        page.getByRole('button', { name: 'Recarregar', exact: true }),
+        page.getByRole('link', { name: 'Abrir app', exact: true }),
+      ].map((each) => each.boundingBox()),
+    )
+    assert.ok(name && toggle && tabs && reload && open, 'the top lacks one of its parts')
+    assert.ok(Math.abs(name.y - toggle.y) < toggle.height, 'the name and the toggle share a row')
+    assert.ok(tabs.y >= toggle.y + toggle.height, 'the tabs sit below the top bar')
+    for (const icon of [reload, open]) {
+      assert.deepEqual([icon.width, icon.height], [44, 44])
+      assert.ok(Math.abs(icon.y - tabs.y) < tabs.height, 'the icons share the row of the tabs')
+    }
+    assert.ok(reload.x + reload.width <= open.x, 'Recarregar comes before Abrir app')
+    const glyphs = await Promise.all(
+      [
+        page.getByRole('button', { name: 'Recarregar', exact: true }),
+        page.getByRole('link', { name: 'Abrir app', exact: true }),
+      ].map((each) => each.locator('svg').evaluate((icon) => icon.getBoundingClientRect().width)),
+    )
+    assert.deepEqual(glyphs, [14, 14], 'the two icons differ in size')
+    assert.equal((await page.getByRole('heading', { level: 1 }).count()) > 0, true)
+    assert.equal(await page.getByRole('heading', { level: 1 }).locator('visible=true').count(), 1)
+    assert.ok(open.x + open.width <= viewport.width, 'Abrir app leaves the screen')
+    const header = await page.getByRole('tablist', { name: 'Projeto' }).evaluate((list) => {
+      const row = list.parentElement?.getBoundingClientRect()
+      return row ? Math.round(row.bottom) : 0
+    })
+    if (viewport === PHONE) assert.equal(header, 101, 'the top of the Projeto is not two rows')
+    const pressed = await page
+      .getByRole('group', { name: 'Parte do Projeto' })
+      .getByRole('button', { name: 'App', exact: true })
+      .boundingBox()
+    assert.ok(pressed, 'the pressed half is not laid out')
+    assert.equal(pressed.x - toggle.x, 4, 'the toggle lost its inset')
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
+    await page.close()
+  })
 }
 
 test('a lista longa do Sheet rola até o fim, e o botão de fechar diz "Fechar arquivos"', async () => {
