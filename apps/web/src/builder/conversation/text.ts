@@ -27,6 +27,7 @@ export const REFUSALS: Record<Refusal, string> = {
   'too-large': `Este arquivo passa de ${megabytesOf(LIMITS.data)} MB.`,
   'too-large-together': `Os arquivos passam de ${megabytesOf(LIMITS.total)} MB juntos.`,
   type: 'Este tipo de arquivo não é aceito.',
+  unread: 'Não conseguimos ler este arquivo. Escolha de novo.',
 }
 
 const DICTATION_STOPPED = 'O ditado parou. Tente de novo.'

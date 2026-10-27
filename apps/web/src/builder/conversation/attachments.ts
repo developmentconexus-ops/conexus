@@ -9,7 +9,7 @@ export const LIMITS = { files: 20, data: 14_680_064, total: 29_360_128 } as cons
 export const ACCEPT =
   'application/pdf,text/markdown,.md,text/plain,.txt,image/png,image/jpeg,image/gif,image/webp'
 
-export type Refusal = 'too-many' | 'too-large' | 'too-large-together' | 'type'
+export type Refusal = 'too-many' | 'too-large' | 'too-large-together' | 'type' | 'unread'
 
 const TYPES = new Set(ACCEPT.split(',').filter((each) => !each.startsWith('.')))
 /** Browsers can leave a text file's type empty (Mastra playground `attachment-kind.ts`). */
@@ -24,26 +24,22 @@ function isDataUrl(read: unknown): read is DataUrl {
   return typeof read === 'string' && read.startsWith('data:')
 }
 
-function dataUrlOf(file: File, mediaType: string): Promise<DataUrl> {
-  return new Promise((resolve, reject) => {
+/** The file as a data URL, or `null` when the browser cannot read it (AI Elements `prompt-input`). */
+function dataUrlOf(file: File, mediaType: string): Promise<DataUrl | null> {
+  return new Promise((resolve) => {
     const reader = new FileReader()
-    reader.onload = () =>
-      isDataUrl(reader.result)
-        ? resolve(reader.result)
-        : reject(new Error(`${file.name} was not read as a data URL`))
-    reader.onerror = () => reject(reader.error)
+    reader.onload = () => resolve(isDataUrl(reader.result) ? reader.result : null)
+    reader.onerror = () => resolve(null)
     reader.readAsDataURL(new Blob([file], { type: mediaType }))
   })
 }
-
-type Read = { data: DataUrl; mediaType: string; filename: string }
 
 /**
  * The draft's files with the read ones that pass the route's ceilings, measured on the data URL as
  * the route measures it, and why the others were left out. A file already in the draft is left out
  * without a word.
  */
-function admitted(held: readonly MessageFile[], read: readonly Read[], refused: Refusal | null) {
+function admitted(held: readonly MessageFile[], read: readonly MessageFile[], refused: Refusal | null) {
   const files = [...held]
   let total = files.reduce((sum, each) => sum + each.data.length, 0)
   for (const file of read) {
@@ -72,14 +68,15 @@ export function useAttachments(draft: {
   async function add(picked: FileList | readonly File[]): Promise<Refusal | null> {
     const typed = Array.from(picked, (file) => ({ file, mediaType: mediaTypeOf(file) }))
     const accepted = typed.filter((each) => TYPES.has(each.mediaType))
-    const read = await Promise.all(
-      accepted.map(async ({ file, mediaType }) => ({
-        data: await dataUrlOf(file, mediaType),
-        mediaType,
-        filename: file.name,
-      })),
+    const reads = await Promise.all(
+      accepted.map(async ({ file, mediaType }) => {
+        const data = await dataUrlOf(file, mediaType)
+        return data === null ? null : { data, mediaType, filename: file.name }
+      }),
     )
-    let refused: Refusal | null = accepted.length < typed.length ? 'type' : null
+    const read = reads.filter((each) => each !== null)
+    let refused: Refusal | null =
+      accepted.length < typed.length ? 'type' : read.length < reads.length ? 'unread' : null
     draft.setFiles((held) => {
       const next = admitted(held, read, refused)
       refused = next.refused

@@ -95,6 +95,29 @@ test('os tetos da rota recusam com frase, e nada é enviado (9)', async () => {
   expect(sent).toHaveLength(0)
 })
 
+test('um arquivo que o navegador não lê fica de fora com frase, e os outros ficam (9)', async () => {
+  const { sent } = await openConversation(fresh())
+  const readAsDataURL = FileReader.prototype.readAsDataURL
+  let reads = 0
+  vi.spyOn(FileReader.prototype, 'readAsDataURL').mockImplementation(function (this, blob) {
+    reads += 1
+    if (reads === 2) queueMicrotask(() => this.onerror?.(new ProgressEvent('error') as never))
+    else readAsDataURL.call(this, blob)
+  })
+  try {
+    pick([PDF, MD, TXT])
+    await waitFor(() =>
+      expect(screen.getByRole('alert').textContent).toBe(
+        'Não conseguimos ler este arquivo. Escolha de novo.',
+      ),
+    )
+    expect(chips()).toEqual(['Tirar tabela-de-precos.pdf', 'Tirar notas.txt'])
+    expect(sent).toHaveLength(0)
+  } finally {
+    vi.restoreAllMocks()
+  }
+})
+
 test('o envio leva os arquivos como data URL, o .md sem tipo como text/markdown (10)', async () => {
   const { field, sent } = await openConversation(fresh())
   pick([MD, PDF])
