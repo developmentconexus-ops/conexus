@@ -15,7 +15,7 @@ import { accountsQuery, ModelPicker } from '../model-accounts/public.ts'
 import type { Outgoing } from './attachments.ts'
 import { Composer } from './composer.tsx'
 import { useDraft } from './draft.ts'
-import { stashHandoffFiles } from './handoff.ts'
+import { MODEL_REFUSALS, stashHandoffFiles } from './handoff.ts'
 import { chipOf } from './messages.ts'
 import { NoAccount } from './model-choice.tsx'
 import { FileChip } from './person-turn.tsx'
@@ -28,12 +28,8 @@ type Phase =
   /** The Projeto exists; its conversation does not yet. */
   | { kind: 'STARTING'; outgoing: Outgoing; project: Project }
 
-/** The refusals of the model the same conversation would meet again: the Projeto opens with them. */
-const REFUSED = ['MODEL_NO_ACCOUNT', 'MODEL_UNKNOWN', 'EFFORT_UNSUPPORTED'] as const
-type Refused = (typeof REFUSED)[number]
-
-function isRefused(code: string): code is Refused {
-  return REFUSED.some((one) => one === code)
+function isRefused(code: string): code is (typeof MODEL_REFUSALS)[number] {
+  return MODEL_REFUSALS.some((one) => one === code)
 }
 
 const FRAME = 'mx-auto flex w-full max-w-[46rem] flex-col'
@@ -77,8 +73,9 @@ function Request({ outgoing }: { outgoing: Outgoing }) {
 /** The model the request starts on, the person's default at first (decision 0054). */
 function usePicked(companyId: CompanyId) {
   const accounts = useSuspenseQuery(accountsQuery(companyId)).data
+  const start = accounts.defaults.start
   const [picked, setPicked] = useState<{ model: ModelId; effort: Effort } | null>(
-    accounts.defaults.start,
+    start && { model: start.model, effort: start.effort },
   )
   const providers = accounts.choices.mine
   function pickModel(model: ModelId) {

@@ -1,4 +1,4 @@
-import type { ConversationSummary, Effort, Task } from '@conexus/hub-api'
+import type { ConversationStart, ConversationSummary, Effort, Task } from '@conexus/hub-api'
 import {
   ATTEMPT_KEY_HEADER,
   BUILDER_CONTROLLER,
@@ -18,14 +18,12 @@ import type { HttpHandler } from 'msw'
 import { HttpResponse, http } from 'msw'
 import type { setupServer } from 'msw/node'
 import { afterEach, expect, vi } from 'vitest'
-import { z } from 'zod'
 import { Conexus, createConexus } from '../../main.tsx'
 import { ANA, COMPANY } from '../../platform/fixtures.ts'
 import { PEDIDOS, projectsRead, refusal } from '../../platform/test-hub.tsx'
 import type { Stored } from './messages.ts'
-import { IsStored } from './test-recorded.ts'
 import type { Line } from './test-stream.tsx'
-import { displayOf, openLine, personSaid } from './test-stream.tsx'
+import { displayOf, openLine, personSent } from './test-stream.tsx'
 
 export const FIRST = ConversationId.parse('11111111-1111-4111-8111-111111111111')
 export const SECOND = ConversationId.parse('22222222-2222-4222-8222-222222222222')
@@ -34,11 +32,6 @@ const BASE = `*/api/companies/${COMPANY.id}/projects/${PEDIDOS.id}/conversations
 const SESSION = `*${BUILDER_ROUTES}/agent-controller/${BUILDER_CONTROLLER}/sessions/:id`
 const MODEL = ModelId.parse('anthropic/claude-sonnet-4')
 const COMPANY_DEFAULT = { model: MODEL, effort: 'off' }
-/** What Mastra's `sendMessage` posts. */
-const SentMessage = z.object({
-  message: z.string(),
-  files: z.array(z.object({ data: z.string(), mediaType: z.string(), filename: z.string() })).optional(),
-})
 
 const EFFORTS: Record<string, string[]> = {
   'claude-sonnet-4': ['off', 'low', 'high'],
@@ -75,6 +68,8 @@ export type View = {
   conversations: Opened[]
   providers: string[]
   usable?: string[]
+  /** What a conversation created now begins on, the box's model on Início. */
+  start?: ConversationStart
   /** What the stream's first display state says, past an idle session's. */
   display?: Record<string, unknown>
 }
@@ -104,6 +99,7 @@ function accountsRead(view: View): HttpHandler[] {
   return [
     http.get(`*/api/companies/${COMPANY.id}/model-accounts`, () => {
       const mine = view.providers.map(accountOf)
+      const start = view.start ?? null
       const offered = PROVIDERS.filter((one) => view.providers.includes(one.id))
       return HttpResponse.json(
         listModelAccounts.success.body.parse({
@@ -111,7 +107,7 @@ function accountsRead(view: View): HttpHandler[] {
           mine,
           order: mine.map((one) => ({ provider: one.provider, accounts: [one.id] })),
           kinds: [],
-          defaults: { company: COMPANY_DEFAULT, mine: null, start: null, companyStart: null },
+          defaults: { company: COMPANY_DEFAULT, mine: null, start, companyStart: null },
           choices: { mine: offered, company: [] },
           fallback: { enabled: false, chain: [], revision: 0 },
           usableProviders: view.usable ?? view.providers,
@@ -152,17 +148,7 @@ function writesOf(view: View, sent: Sent[], answers: Answers): HttpHandler[] {
       if (replaced) return replaced
       const conversation = view.conversations.find((one) => one.id === params.id)
       if (!conversation) return refusal('CONVERSATION_NOT_FOUND')
-      const { message, files = [] } = SentMessage.parse(body)
-      const said = personSaid(message, `person-${conversation.messages.length}`)
-      // Mastra stores each file as a part naming its type `mimeType`.
-      const parts = files.map(({ mediaType, ...file }) => ({
-        type: 'file',
-        mimeType: mediaType,
-        ...file,
-      }))
-      conversation.messages.push(
-        IsStored.parse({ ...said, content: { parts: [...said.content.parts, ...parts] } }),
-      )
+      conversation.messages.push(personSent(body, `person-${conversation.messages.length}`))
       return HttpResponse.json({ ok: true })
     }),
     http.post(`${SESSION}/abort`, async ({ request }) => {

@@ -17,7 +17,7 @@ export function ProjectCards(props: { companyId: CompanyId; page: string | undef
   return (
     <ul className="grid gap-md sm:grid-cols-2 sm:gap-lg lg:grid-cols-3">
       {projects.map((project) => (
-        <li key={project.id}>
+        <li key={project.id} className="min-w-0">
           <Link
             to="/companies/$companyId/projects/$projectId"
             params={{ companyId, projectId: project.id }}

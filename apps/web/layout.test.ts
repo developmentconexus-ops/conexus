@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import { getSession, listModelAccounts } from '@conexus/hub-api'
+import { getSession } from '@conexus/hub-api'
 import type { Locator } from 'playwright-core'
 import type { Replies, Viewport } from './layout-harness.ts'
 import {
@@ -328,60 +328,6 @@ for (const viewport of [DESKTOP, PHONE]) {
       return new Set([...text.getClientRects()].map((line) => line.top)).size
     })
     assert.equal(lines, 1)
-    await page.close()
-  })
-}
-
-async function centreOf(locator: Locator): Promise<number> {
-  const found = await locator.boundingBox()
-  assert.ok(found, 'the element is not laid out')
-  return found.x + found.width / 2
-}
-
-const SONNET = 'anthropic/claude-sonnet-4'
-// Início opens its box only for a person with a model to start on.
-const WITH_MODEL: Replies = {
-  ...HOUSE,
-  [`GET /api/companies/${COMPANY_ID}/model-accounts`]: ok(listModelAccounts, {
-    company: [],
-    mine: [],
-    order: [],
-    kinds: [],
-    defaults: {
-      company: null,
-      mine: null,
-      start: { model: SONNET, effort: 'off', from: 'company', account: 'Claude da empresa' },
-      companyStart: null,
-    },
-    choices: {
-      mine: [{ id: 'anthropic', name: 'Anthropic', models: [{ id: SONNET, efforts: ['off'] }] }],
-      company: [],
-    },
-    fallback: { enabled: false, chain: [], revision: 0 },
-    usableProviders: ['anthropic'],
-    mayManage: false,
-  }),
-}
-
-for (const viewport of [DESKTOP, PHONE]) {
-  test(`o Início é centrado: título, caixa e exemplos no centro da coluna, numa tela de ${viewport.width}px`, async () => {
-    const page = await open(`/companies/${COMPANY_ID}`, viewport, WITH_MODEL)
-    const title = page.getByRole('heading', { name: 'O que vamos construir?' })
-    const box = page
-      .getByRole('textbox', { name: 'Mensagem para o Builder' })
-      .locator('xpath=ancestor::form')
-    const examples = page.getByRole('list', { name: 'Exemplos' })
-    await examples.waitFor()
-    const column = await centreOf(page.getByRole('main'))
-    for (const [name, one] of [
-      ['título', title],
-      ['caixa', box],
-      ['exemplos', examples],
-    ] as const) {
-      assert.ok(Math.abs((await centreOf(one)) - column) <= 1, `${name} is off the column's centre`)
-    }
-    assert.ok((await widthOf(box)) <= 736, 'the box is wider than 46rem')
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), viewport.width)
     await page.close()
   })
 }

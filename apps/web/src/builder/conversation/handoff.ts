@@ -4,6 +4,9 @@ import { useEffect, useRef } from 'react'
 import { pageStorage } from '../../platform/storage.ts'
 import type { MessageFile, Outgoing } from './attachments.ts'
 
+/** The refusals of the model a new conversation would meet again: Início opens the Projeto with them. */
+export const MODEL_REFUSALS = ['MODEL_NO_ACCOUNT', 'MODEL_UNKNOWN', 'EFFORT_UNSUPPORTED'] as const
+
 declare module '@tanstack/history' {
   /** What a navigation carries (TanStack Router `navigate({ state })`). */
   // biome-ignore lint/style/useConsistentTypeDefinitions: declaration merging needs an interface (code C25)
@@ -11,7 +14,7 @@ declare module '@tanstack/history' {
     /** "Send now", the words only (Factory `promptHandoffState`). */
     handoff?: { content: string }
     /** The Projeto was created and the Hub refused the model of its conversation. */
-    refused?: 'MODEL_NO_ACCOUNT' | 'MODEL_UNKNOWN' | 'EFFORT_UNSUPPORTED'
+    refused?: (typeof MODEL_REFUSALS)[number]
   }
 }
 
@@ -31,7 +34,7 @@ export function stashHandoffFiles(conversationId: ConversationId, stashed: reado
   else files.delete(conversationId)
 }
 
-export function takeHandoffFiles(conversationId: ConversationId): readonly MessageFile[] {
+function takeHandoffFiles(conversationId: ConversationId): readonly MessageFile[] {
   const taken = files.get(conversationId) ?? []
   files.delete(conversationId)
   return taken
