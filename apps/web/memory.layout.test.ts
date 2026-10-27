@@ -52,17 +52,71 @@ for (const [viewport, showsPercent] of [
   })
 }
 
-test('a linha de ações da caixa quebra em vez de passar da tela', async () => {
-  const page = await opened(SMALL_PHONE)
-  await page.getByRole('button', { name: 'Enviar' }).waitFor()
-  const measured = await page.locator('form [data-slot="input-group-addon"]').evaluate((row) => ({
-    wrapped:
-      new Set([...row.children].map((one) => Math.round(one.getBoundingClientRect().top))).size > 1,
-    inside: row.scrollWidth <= Math.ceil(row.getBoundingClientRect().width),
-  }))
-  assert.deepEqual(measured, { wrapped: true, inside: true })
-  await page.close()
-})
+/** The longest name the test providers' models can take, the effort level in it too. */
+const LONG_MODEL = 'google/gemini-3.8-flash-preview-high-thinking-long'
+
+/** The conversation's session answering with `model`, and the memory at two digits. */
+async function openedWith(viewport: typeof DESKTOP, model: string) {
+  const replies: Replies = { ...WITH_CONVERSATIONS }
+  const session = sessionReplies(FIRST, {
+    messages: MESSAGES,
+    display: { omProgress: MEMORY },
+  })
+  const key = Object.keys(session).find((one) => one.endsWith(`/sessions/${FIRST}`))
+  assert.ok(key)
+  const read = session[key]
+  assert.ok(typeof read?.json === 'object' && read.json !== null)
+  session[key] = { ...read, json: { ...read.json, modelId: model } }
+  Object.assign(replies, session)
+  const page = await harness.open(`${PROJECT}/conversations/${FIRST}`, {
+    viewport,
+    replies,
+  })
+  if (viewport.width < 768)
+    await page.getByRole('button', { name: 'Conversa', exact: true }).click()
+  return page
+}
+
+for (const viewport of [
+  DESKTOP,
+  { width: 768, height: 900 },
+  PHONE,
+  { width: 360, height: 800 },
+  SMALL_PHONE,
+]) {
+  for (const model of ['anthropic/claude-sonnet-4', LONG_MODEL]) {
+    test(`a linha de ações da caixa fica em uma linha em ${viewport.width}px com ${model}`, async () => {
+      const page = await openedWith(viewport, model)
+      await page.getByRole('button', { name: 'Enviar' }).waitFor()
+      const measured = await page
+        .locator('form [data-slot="input-group-addon"]')
+        .last()
+        .evaluate((row) => {
+          const form = row.closest('form')
+          const tops = [...row.querySelectorAll('button')].map((one) =>
+            Math.round(one.getBoundingClientRect().top + one.getBoundingClientRect().height / 2),
+          )
+          const small = [
+            ...row.querySelectorAll(
+              'button[aria-label="Anexar arquivos"], button[aria-label="Enviar"]',
+            ),
+          ].map((one) => one.getBoundingClientRect().height)
+          return {
+            centres: new Set(tops).size,
+            inside: row.scrollWidth <= Math.ceil(row.getBoundingClientRect().width),
+            rowHeight: Math.round(row.getBoundingClientRect().height),
+            formHeight: Math.round(form?.getBoundingClientRect().height ?? 0),
+            small,
+          }
+        })
+      assert.equal(measured.centres, 1, 'the buttons share one line')
+      assert.ok(measured.inside, 'the row stays inside the box')
+      assert.ok(measured.rowHeight <= 60, `the row is one line high, ${measured.rowHeight}px`)
+      if (viewport.width < 768) for (const height of measured.small) assert.ok(height >= 44)
+      await page.close()
+    })
+  }
+}
 
 for (const [reducedMotion, sweeps] of [
   ['no-preference', true],
