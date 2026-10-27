@@ -154,6 +154,31 @@ test('a mesma chave: uma conversa e um modelo, também depois de reiniciar; outr
   assert.deepEqual(rows, [{ count: 1 }])
 })
 
+test('o raciocínio pedido vale desde a criação', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const created = await post(hub, ana, conversations, { model: MODEL, effort: 'high' })
+  assert.equal(created.statusCode, 201)
+  const url = `${conversations}/${Object(created.json()).conversation.id}`
+  const state = await sessionStateOf(hub, ana, url)
+  assert.deepEqual([state.model, state.effort], [MODEL, 'high'])
+})
+
+test('um raciocínio que o modelo não tem é recusado', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const refused = await post(hub, ana, conversations, { model: MODEL, effort: 'xhigh' })
+  assert.deepEqual([refused.statusCode, codeOf(refused)], [422, 'EFFORT_UNSUPPORTED'])
+  const rows = await hub.test.asOwner('select count(*)::int as count from builder.conversation')
+  assert.deepEqual(rows, [{ count: 0 }])
+})
+
+test('a mesma chave com outro raciocínio é outro pedido', async (t) => {
+  const { hub, ana, conversations } = await conversing(t, () => ({ kind: 'text', text: 'ok' }))
+  const key = randomUUID()
+  assert.equal((await post(hub, ana, conversations, { effort: 'off' }, key)).statusCode, 201)
+  const other = await post(hub, ana, conversations, { effort: 'high' }, key)
+  assert.deepEqual([other.statusCode, codeOf(other)], [409, 'IDEMPOTENCY_CONFLICT'])
+})
+
 test('um modelo sem conta que a pessoa possa usar: 422 MODEL_NO_ACCOUNT, ao criar e ao trocar', async (t) => {
   const { hub, ana, conversations, anthropic } = await conversing(t, () => ({
     kind: 'text',

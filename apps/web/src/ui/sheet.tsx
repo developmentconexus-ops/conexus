@@ -14,9 +14,10 @@ export function Sheet(props: SheetPrimitive.Root.Props) {
 export function SheetContent({
   className,
   title,
+  closeLabel = 'Fechar navegação',
   children,
   ...props
-}: SheetPrimitive.Popup.Props & { title: string; children: ReactNode }) {
+}: SheetPrimitive.Popup.Props & { title: string; closeLabel?: string; children: ReactNode }) {
   return (
     <SheetPrimitive.Portal>
       <SheetPrimitive.Backdrop
@@ -38,7 +39,7 @@ export function SheetContent({
         <SheetPrimitive.Close
           data-slot="sheet-close"
           render={<Button variant="ghost" size="icon" className="absolute top-md right-md" />}
-          aria-label="Fechar navegação"
+          aria-label={closeLabel}
         >
           <XIcon aria-hidden="true" />
         </SheetPrimitive.Close>

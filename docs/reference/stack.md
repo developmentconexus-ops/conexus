@@ -64,6 +64,7 @@ can be another commit (one was at `729bdc5d`).
 | `react-markdown` | `apps/web/src/builder` | README | none | Mastra fork `packages/playground-ui/src/ds/components/MarkdownRenderer/markdown-renderer.tsx:70`, `:226`; the reference pins `^9.1.0` | 0033 | Streaming needs `remend`, tables need `remark-gfm` (PR 192) |
 | `remark-gfm` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:226` | 0033 | As `react-markdown` |
 | `remend` | `apps/web/src/builder` | README | none | Mastra fork `markdown-renderer.tsx:70` | 0033 | As `react-markdown` |
+| `shiki` | `apps/web/src/builder/source` | `shiki.style/guide/regex-engines`; `shiki.style/guide/best-performance` | none | Mastra fork `packages/playground-ui/src/ds/components/CodeEditor/highlight.ts:74` | V3, C73, W11 | The JavaScript engine, never the wasm default (the page keeps `script-src 'self'`); `codeToTokens` mapped to classes, never `codeToHtml`; a grammar by `import()`, never precompiled |
 | `react-hook-form` | `apps/web/src` | `react-hook-form.com/docs` | none | — | W23 | — |
 | `@hookform/resolvers` | `apps/web/src/ui`, `packages/app/starter` | README | none | — | W23 | — |
 | `@tanstack/react-table` | `packages/app/starter`, `packages/app/skills` | `node_modules/@tanstack/react-table/skills/` | `getting-started`, `table-state`, `migrate-v8-to-v9` (in the package) | — | — | v9: `useTable` and `tableFeatures`; the v8 `useReactTable` and `getCoreRowModel` that models know fail the check |
