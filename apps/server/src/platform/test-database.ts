@@ -345,7 +345,7 @@ export function serveEnvironment(
     HUB_APPS_NAMESPACE: TEST_NAMESPACE,
     HUB_CLOUDFLARE_APPS_TOKEN_FILE: keyFile(t, 'hub_apps_token', randomBytes(16).toString('hex')),
     HUB_SEAL_KEYS_FILE: keyFile(t, 'hub_seal_keys', testSealKeyLine()),
-    HUB_GIT_ROOT: tmpdir(),
+    HUB_GIT_ROOT: testGitRoot(url),
     HUB_GIT_COPY_BUCKET: 'conexus-test-git',
     HUB_GIT_COPY_KEY_FILE: keyFile(t, 'hub_git_copy_key', 'TESTKEYID testsecret'),
     HUB_E2B_API_KEY_FILE: keyFile(t, 'hub_e2b_api_key', randomBytes(16).toString('hex')),
