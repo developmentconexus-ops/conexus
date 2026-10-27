@@ -67,19 +67,12 @@ computador e no celular, diz o que viu e aprova os textos das telas.
 - **Juntar "Minhas contas de modelo" e "Contas de modelo" numa página**, as suas em cima, e **a
   etapa antes da 15**. "1. Sim 2. Antes".
 
-Faltam duas, cada uma com a minha recomendação:
-
-1. **Aparência sai da barra?** A página Aparência só tem o **Tema**, que já está no menu da sua conta
-   (embaixo, à esquerda). Esta etapa põe esse menu também em Configurações (#198), então o Tema
-   ficaria duas vezes na mesma tela.
-   - **A1 (recomendo)**, nativo: Aparência sai; o Tema fica no menu da conta, em toda tela. A barra
-     fica com 7 entradas.
-   - **A2**: Aparência fica como entrada própria, e o Tema aparece nela e no menu da conta.
-2. **Em que grupo fica Contas de modelo?** A página junta as suas contas e as da empresa.
-   - **B1 (recomendo)**, nativo: em **Você**, no lugar de "Minhas contas de modelo". Todo mundo usa a
-     parte de cima (as suas), e o membro só lê a de baixo; o botão **Minhas contas de modelo** do
-     Início e da conversa abre essa página.
-   - **B2**: em **Empresa**, no lugar de "Contas de modelo" de hoje.
+- **Aparência sai da barra (A1)**, nativo: a página só tinha o **Tema**, que fica no menu da sua conta,
+  em toda tela; esta etapa põe esse menu também em Configurações (#198). A barra fica com 7 entradas.
+  "Aprovado", 2026-10-27.
+- **Contas de modelo fica em Você (B1)**, nativo, no lugar de "Minhas contas de modelo": todo mundo
+  usa a parte de cima (as suas), o membro só lê a de baixo, e o botão **Minhas contas de modelo** do
+  Início e da conversa abre essa página. "Aprovado", 2026-10-27.
 
 **Não é decisão sua, já está decidido** (pela crítica e pelas referências, não por uma palavra sua;
 se quiser outra coisa em alguma, diga):
@@ -112,7 +105,7 @@ Nenhuma linha remendo.
 | Unidade | O que entrega | Pastas | Guia além do de código | Depende de |
 | --- | --- | --- | --- | --- |
 | U1 | A escala dos controles: 32 px, 28 px na linha, 44 px de toque sob `pointer: coarse`; saem os 44 px desenhados | `apps/web/src/ui/button.tsx`, `apps/web/src/ui/sidebar.tsx`, `apps/web/src/builder/conversation/`, `apps/web/src/hub/projects/name-step.tsx`, `apps/web/*.layout.test.ts`, `docs/reference/components.md` | design | 13.1 fechada |
-| U2 | A barra C e a moldura: ícones, o nome da empresa numa linha, a página na largura com título e frase, o menu da conta no pé (#198), o teste da guarda (#199); Aparência sai (se A1) | `apps/web/src/ui/settings-index.tsx`, `apps/web/src/ui/cn.ts`, `apps/web/src/routes/_app/companies/$companyId_/settings/`, `apps/web/src/ui/theme-choice.tsx` (sai, se A1), `packages/hub-api/src/pages.ts`, `docs/reference/screens.md` | web | U1 |
+| U2 | A barra C e a moldura: ícones, o nome da empresa numa linha, a página na largura com título e frase, o menu da conta no pé (#198), o teste da guarda (#199); Aparência sai | `apps/web/src/ui/settings-index.tsx`, `apps/web/src/ui/cn.ts`, `apps/web/src/routes/_app/companies/$companyId_/settings/`, `apps/web/src/ui/theme-choice.tsx` (sai, se A1), `packages/hub-api/src/pages.ts`, `docs/reference/screens.md` | web | U1 |
 | U3 | Contas de modelo numa página: as suas em cima, as da empresa e a troca automática embaixo; saem a rota `my-model-accounts`, o desvio `model-account` e os links para eles | `apps/web/src/builder/model-accounts/`, `apps/web/src/builder/conversation/model-choice.tsx`, `apps/web/src/routes/_app/companies/`, `packages/hub-api/src/pages.ts`, `tests/e2e/`, `docs/reference/screens.md` | web | U2 |
 | U4 | As contas em tabela: uma linha por conta, a etiqueta do estado, ↑ ↓ e o menu **…**, **Ligar conta** num painel lateral; sai a fileira de botões | `apps/web/src/builder/model-accounts/`, `apps/web/src/ui/` (`table.tsx`, `badge.tsx`, `sheet.tsx`), `docs/reference/components.md` | design | U3 |
 | U5 | As seções em duas colunas e a troca automática que salva a cada mudança; Minha conta, Geral, Meus padrões, Padrões da empresa (#217) e Memória nas seções | `apps/web/src/ui/` (`settings-section.tsx`, `switch.tsx`), `apps/web/src/builder/model-accounts/`, `apps/web/src/builder/observational-memory/`, `apps/web/src/hub/identity/my-account.tsx`, `apps/web/src/hub/identity/company-general.tsx`, `docs/reference/components.md` | design | U4 |
@@ -153,10 +146,10 @@ fila e o Ligar ~70, as telas de contas ~150; menos as três colunas que não ent
 | 8 | U2 | A 1366 px o conteúdo ocupa a largura do `main` menos as margens; a 1920 px fica centrado com no máximo `80rem`; a 390 e a 320 px a página não rola para o lado | `apps/web/layout.test.ts`, "Configurações ocupa a largura" (navegador: a caixa do `h1` e `scrollWidth`; a recusa é a coluna de 832 px à esquerda) | must |
 | 9 | U2 | O pé da barra de Configurações tem o menu da conta, com **Tema** e **Sair do Conexus**, sem passar por **Voltar** (#198) | `settings.test.tsx`, "o menu da conta no pé de Configurações" | must |
 | 10 | U2 | Uma seção cujo carregamento falha mostra a falha sem o título da seção em cima; tirar a guarda de `route.tsx` faz este caso falhar (#199) | `settings.test.tsx`, "a falha de uma seção não leva o título" | must |
-| 11 | U2 | (A1) A barra não tem **Aparência**; `/companies/<c>/settings/appearance` abre a página de "não encontrado"; o **Tema** do menu da conta continua trocando o tema e sobrevive ao recarregar (V9) | `settings.test.tsx`, "Aparência saiu"; `apps/web/src/platform/theme.test.tsx`, como hoje | must |
+| 11 | U2 | A barra não tem **Aparência**; `/companies/<c>/settings/appearance` abre a página de "não encontrado"; o **Tema** do menu da conta continua trocando o tema e sobrevive ao recarregar (V9) | `settings.test.tsx`, "Aparência saiu"; `apps/web/src/platform/theme.test.tsx`, como hoje | must |
 | 12 | U3 | `/companies/<c>/settings/model-accounts` mostra, nesta ordem: **Suas contas** (com a ordem de cada fornecedor e **Ligar conta**), **Contas da empresa** e **Troca automática**; o dono age nas duas partes; o membro age nas dele e lê as da empresa com "Só o dono ou um administrador muda as contas de modelo da empresa.", sem link para outra página | `apps/web/src/builder/model-accounts/model-accounts.test.tsx`, "as suas em cima, as da empresa embaixo" e "o membro lê as da empresa" | must |
 | 13 | U3 | `…/settings/my-model-accounts` e `…/model-account` abrem a página de "não encontrado" e não estão em `PAGES`; o botão **Minhas contas de modelo** (Início e conversa, `model-choice.tsx`) e **Mudar a ordem** de Meus padrões abrem `…/settings/model-accounts`; nenhum arquivo de `apps/web/src` cita os endereços antigos | `mine.test.tsx`, o caso `OLD` reescrito: "o endereço antigo não existe mais"; `start.test.tsx` e `my-defaults.test.tsx`, o destino do link; `apps/web/src/routes/__root.test.tsx:55` (o roteador igual a `PAGES`) | must |
-| 14 | U3 | A barra mostra **Contas de modelo** uma vez só, no grupo que a resposta 2 escolheu | `settings.test.tsx`, a contagem de seções (`:76`, hoje 9) | must |
+| 14 | U3 | A barra mostra **Contas de modelo** uma vez só, no grupo Você, no lugar de "Minhas contas de modelo" (B1) | `settings.test.tsx`, a contagem de seções (`:76`, hoje 9) | must |
 | 15 | U4 | Cada conta é uma linha da tabela do seu fornecedor: o lugar ("1ª"), o nome, o fim da chave ou o tipo, a etiqueta do estado com a palavra (V35) e, se reservada, "reservada para …"; nenhuma coluna Tipo, Para quem ou Ligada por; uma conta "para todos" não diz "para todos" | `model-accounts.test.tsx`, "uma linha por conta, só o que muda" | must |
 | 16 | U4 | O cabeçalho de cada fornecedor diz o nome, a contagem e que o Builder tenta nesta ordem; depois de **Subir**, a conta muda de lugar, o foco fica na seta e o leitor de tela ouve "… agora é a 1ª da fila …" (V30); no celular, depois de **Subir** no menu, o foco volta ao **…** da mesma conta, o padrão do Base UI | `model-accounts.test.tsx`, o caso de ordem de hoje, na tabela | must |
 | 17 | U4 | O **…** de uma conta tem **Renomear**, **Pausar** ou **Retomar**, **Dar a pessoas…** (só da empresa) e, separado e em texto de perigo, **Remover…** (V55); cada diálogo abre do item do menu; Esc fecha e devolve o foco ao **…**; depois de remover, o foco vai à parte da página | `model-accounts.test.tsx`, "as ações no menu"; `connect.test.tsx` e `mine.test.tsx`, as ações pelo menu | must |
@@ -188,7 +181,7 @@ fila e o Ligar ~70, as telas de contas ~150; menos as três colunas que não ent
 | --- | --- | --- |
 | `SectionMeta.icon` (U2) | web, cada rota filha de `settings/` em `staticData.section` | web, `SettingsIndex`, que o passa ao `FrameLink` |
 | `SectionMeta.summary` (U2) | web, cada rota filha | web, `SettingsFrame`, embaixo do título |
-| `PAGES` (U2, U3: saem `appearance` se A1, `my-model-accounts` e `model-account`) | `packages/hub-api/src/pages.ts` | server, que abre a página das telas em cada endereço; web, o teste que segura o roteador à lista |
+| `PAGES` (U2, U3: saem `appearance`, `my-model-accounts` e `model-account`) | `packages/hub-api/src/pages.ts` | server, que abre a página das telas em cada endereço; web, o teste que segura o roteador à lista |
 | `setModelFallback` `body` (de hoje, sem mudança) | web, `model-fallback.tsx`, agora a cada mudança | server, como hoje |
 
 **Desenho de caixas.** Segue o caminho 2 do estudo das páginas (`option-tabela.diff`, capturas `d2-*`)
@@ -271,7 +264,7 @@ Quando as contas de um modelo acabam, …
 | A página na largura, com título e frase | U2 | `settings/route.tsx:80-83` (sem largura nem frase; `PageTitle` em `text-title`, `ui/list.tsx:15`) | Stripe, Anthropic Console, GitHub (listas de chaves na largura); Mastra `ProviderAccessSection.tsx` (título e frase por seção) | Lido (estudo das páginas, seção 3) | nativo: `mx-auto max-w-[80rem]` (largura numérica, V23), o título em `text-display-narrow` (`brand/tokens.css:72`) e `summary` no `SectionMeta`; `cn.ts` ganha `display-narrow` na escala de texto do `tailwind-merge` | estudo das páginas, seção 2: a 1366, 1062 de 1062 px contra 832 de 1110 hoje | caminho 2, "Aprovado", 2026-10-27 | |
 | O menu da conta no pé de Configurações | U2 | `settings/route.tsx:71` (`footer={null}`); o da empresa em `routes/_app/companies/$companyId/route.tsx:57-67` | W30 (a conta na moldura); issue #198 | Lido | nativo: o mesmo `AccountMenu` de `hub/identity/public.ts` no `footer` | | não precisa (#198) | |
 | A guarda do título com teste | U2 | `settings/route.tsx:48-54` (o título só sobre uma seção que deu certo), sem teste que falhe sem ela | issue #199 | Lido | nativo | | não precisa (#199) | |
-| Aparência | U2 (sai, se A1) | `settings/appearance.tsx`, `ui/theme-choice.tsx` (o único uso); o mesmo Tema em `hub/identity/account-menu.tsx:67-73` | primeiro estudo, seção 3 (a página tem um fato só, e o tema já está no menu, W30); Linear e Notion põem o tema nas preferências da pessoa | Lido | nativo: sai; o Tema fica no menu da conta | | a decisão 1 desta página | |
+| Aparência | U2 (sai) | `settings/appearance.tsx`, `ui/theme-choice.tsx` (o único uso); o mesmo Tema em `hub/identity/account-menu.tsx:67-73` | primeiro estudo, seção 3 (a página tem um fato só, e o tema já está no menu, W30); Linear e Notion põem o tema nas preferências da pessoa | Lido | nativo: sai; o Tema fica no menu da conta | | A1, "Aprovado", 2026-10-27 | |
 | Contas de modelo numa página | U3 | `routes/…/settings/my-model-accounts.tsx` → `builder/model-accounts/my-accounts.tsx`; `routes/…/settings/model-accounts.tsx` → `company-accounts.tsx`; as duas leem `accountsQuery` (`listModelAccounts`) | Cursor, Settings > Models (chaves e modelos numa página); Mastra Factory `mastra-1.78@6a465f9d`: `ScopeIndicator` diz a quem cada parte vale (`SettingsSubsection.tsx:32`), mas `settingsSections.ts:1-27` separa "Factory models" e "Your models" em duas seções | Lido: o Cursor junta; a Factory separa e marca o escopo; o fundador escolheu juntar | nativo: uma rota, `model-accounts`, que compõe `MyAccounts` e `CompanyAccounts` lendo `companyId` da rota de `settings` | | "1. Sim", 2026-10-27 | |
 | Os endereços antigos e o desvio | U3 (saem) | `settings/my-model-accounts.tsx`; `routes/_app/companies/$companyId/model-account.tsx:4-11` (um desvio de 11 que ninguém mais chama, só `mine.test.tsx:13`); `packages/hub-api/src/pages.ts:15, 18`; os links `model-choice.tsx:35`, `my-defaults.tsx:19, 84`, `company-accounts.tsx:61` | princípio de migrar quem chama e apagar a API velha; nenhum e-mail nem rota do servidor cita os endereços (`grep` em `apps/server/src`) | Lido | nativo: os links vão para `model-accounts` e as duas rotas saem, sem desvio | | não precisa | |
 | A tabela de contas | U4 | `builder/model-accounts/queue.tsx` (uma lista por fornecedor), `account-row.tsx:132-140` (`Row`) | shadcn base-nova `table` (o diff do caminho 2, `ui/table.tsx`); Anthropic Console, "API keys table"; Stripe, as listas de chaves; GitHub, a lista de tokens | Lido: uma linha por chave | nativo: `Table` copiado do base-nova em `ui/table.tsx`, com linhas finas; cada `Queue` é um `TableBody`, a escrita e o retorno de foco por fornecedor como hoje | caminho 2, `option-tabela.diff`; captura `05-` | caminho 2, "Aprovado" | `apps/web/src/ui/table.tsx`, `apps/web/src/builder/model-accounts/accounts-table.tsx` |
@@ -316,8 +309,8 @@ construção ([entrega L20](../guides/delivery.md)):
   campos têm a sua escala. Fundador, 2026-10-27: "Aprovado". [`phone.layout.test.ts`,
   `pieces.layout.test.ts`, review]
 - `docs/guides/web.md` W32: a lista de entradas de Configurações muda (Contas de modelo uma vez, no
-  grupo da resposta 2; Aparência sai, se A1; Memória observacional, que a 14.2 acrescentou, entra na
-  lista). Fundador, 2026-10-27: "Opcao C", "1. Sim 2. Antes".
+  grupo Você (B1); Aparência sai (A1); Memória observacional, que a 14.2 acrescentou, entra na
+  lista). Fundador, 2026-10-27: "Opcao C", "1. Sim 2. Antes", e "Aprovado" à A1 e à B1.
 
 ## U1 A escala dos controles
 
@@ -419,7 +412,7 @@ pelo CDP, como a crítica fez. A U1 não tem escrita.
   (`route.tsx`, +7 / −3); `ui/cn.ts:8-14` (a escala `text` ganha `display-narrow`).
 - **O menu da conta**: `routes/_app/companies/$companyId/route.tsx:57-67`.
 - **A guarda do título**: `settings/route.tsx:48-54`.
-- **Aparência** (A1): `settings/appearance.tsx`, `ui/theme-choice.tsx`, `packages/hub-api/src/pages.ts:20`,
+- **Aparência**: `settings/appearance.tsx`, `ui/theme-choice.tsx`, `packages/hub-api/src/pages.ts:20`,
   `docs/reference/screens.md:20`.
 
 ### O raio da mudança
@@ -428,11 +421,11 @@ pelo CDP, como a crítica fez. A U1 não tem escrita.
 | --- | --- | --- |
 | `apps/web/src/ui/settings-index.tsx` | Muda: `SectionMeta` ganha `icon` e `summary`; o nome do grupo numa linha | `settings/route.tsx` |
 | `apps/web/src/ui/cn.ts` | Muda: `display-narrow` na escala de texto | todo `cn` |
-| `apps/web/src/routes/_app/companies/$companyId_/settings/` | Muda: `route.tsx` (largura, título, frase, `footer`), cada rota filha (`icon`, `summary`); apaga `appearance.tsx` (A1) | o roteador |
-| `apps/web/src/ui/theme-choice.tsx` | Apaga (A1) | só `appearance.tsx` |
-| `packages/hub-api/src/pages.ts` | Muda: sai `appearance` (A1) | server; o teste de `PAGES` |
+| `apps/web/src/routes/_app/companies/$companyId_/settings/` | Muda: `route.tsx` (largura, título, frase, `footer`), cada rota filha (`icon`, `summary`); apaga `appearance.tsx` | o roteador |
+| `apps/web/src/ui/theme-choice.tsx` | Apaga | só `appearance.tsx` |
+| `packages/hub-api/src/pages.ts` | Muda: sai `appearance` | server; o teste de `PAGES` |
 | `docs/reference/screens.md` | Muda: a linha de Você | — |
-| `apps/web/layout.test.ts`, `apps/web/sweep-house-states.ts` (`:63-64`, a Aparência), `tests/e2e/house.test.ts` (`:105-119`, clica em Aparência) | Muda: o critério 8; a Aparência sai dos estados e do e2e (A1) | — |
+| `apps/web/layout.test.ts`, `apps/web/sweep-house-states.ts` (`:63-64`, a Aparência), `tests/e2e/house.test.ts` (`:105-119`, clica em Aparência) | Muda: o critério 8; a Aparência sai dos estados e do e2e | — |
 
 ### Os contratos que a unidade cria
 
@@ -464,7 +457,7 @@ export type SectionMeta = {
 
 ### A ordem do trabalho
 
-1. (A1) Apaga `appearance.tsx`, `theme-choice.tsx`, a linha de `pages.ts` e a de `screens.md`; o teste
+1. Apaga `appearance.tsx`, `theme-choice.tsx`, a linha de `pages.ts` e a de `screens.md`; o teste
    do critério 11.
 2. `settings-index.tsx`: `icon` e `summary`, o `FrameLink` com `icon`, o `SidebarGroupLabel` com
    `truncate` e `title`. Cada rota filha ganha os dois.
@@ -482,8 +475,6 @@ apagada. A U2 não tem escrita.
 
 ### Parar se
 
-- A resposta 1 ainda não veio: fazer A1 só depois da palavra do fundador; sem ela, a U2 entra sem a
-  linha "Aparência" e a saída vai numa U2 menor depois.
 - O menu da conta precisa da pessoa e a rota de `settings` não a lê: ler como a rota da empresa,
   sem nova leitura ao Hub.
 
@@ -510,7 +501,7 @@ apagada. A U2 não tem escrita.
 | Pasta, ou dono de um contrato | Cria, muda ou apaga | Quem importa ou chama |
 | --- | --- | --- |
 | `apps/web/src/builder/model-accounts/` | Muda: `my-accounts.tsx` e `company-accounts.tsx` viram partes; uma tela `ModelAccounts` as compõe (em `company-accounts.tsx` ou num arquivo novo `model-accounts.tsx`); `public.ts` exporta a tela; sai o link "Minhas contas de modelo" do membro | `routes/…/settings/model-accounts.tsx` |
-| `apps/web/src/routes/_app/companies/$companyId_/settings/` | Apaga `my-model-accounts.tsx`; `model-accounts.tsx` carrega `accountsQuery`, `providersQuery` e `everyMemberQuery`, como hoje, e fica no grupo da resposta 2 | o roteador |
+| `apps/web/src/routes/_app/companies/$companyId_/settings/` | Apaga `my-model-accounts.tsx`; `model-accounts.tsx` carrega `accountsQuery`, `providersQuery` e `everyMemberQuery`, como hoje, e fica no grupo Você, com a ordem 20 de "Minhas contas de modelo" (B1) | o roteador |
 | `apps/web/src/routes/_app/companies/$companyId/model-account.tsx` | Apaga | ninguém |
 | `apps/web/src/builder/conversation/model-choice.tsx` | Muda: o link de `NoAccount` | o Início, a conversa |
 | `packages/hub-api/src/pages.ts` | Muda: saem `model-account` e `my-model-accounts` | server; o teste de `PAGES` |
@@ -539,7 +530,7 @@ saem e entram.
    a troca, que já está embaixo das contas (a barra C; `option-c.diff`, `company-accounts.tsx`).
    Depois de remover uma conta, o foco vai à parte dela, como hoje.
 3. Apaga `my-model-accounts.tsx` e `$companyId/model-account.tsx`, as entradas de `PAGES` e de
-   `screens.md`; o `staticData.section` de `model-accounts.tsx` com o grupo e a ordem da resposta 2.
+   `screens.md`; o `staticData.section` de `model-accounts.tsx` com `group: 'you'` e `order: 20` (B1).
    Regras: W1, W8, W29, W32, W34. Princípio: migrar quem chama e apagar o antigo na mesma onda.
 4. Os testes dos critérios 12 a 14; os e2e com o endereço novo.
 
@@ -555,8 +546,6 @@ vazio; `welcome/model-account` é outra página e fica.
 
 - Um endereço antigo aparece num e-mail ou numa resposta do servidor: parar e pôr um desvio de
   `beforeLoad` só para ele, dizendo no relatório.
-- A resposta 2 ainda não veio: a página entra em Empresa, no lugar de hoje, e a mudança de grupo é
-  uma linha depois.
 
 ## U4 As contas em tabela
 
