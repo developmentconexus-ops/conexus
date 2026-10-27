@@ -92,7 +92,8 @@ export function ModelChoice(props: {
       name="Modelo e raciocínio"
       heading="Modelo desta conversa"
       note={phone ? NO_SECRETS : undefined}
-      className="h-8 rounded-pill px-sm max-md:h-11 text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
+      chevron={false}
+      className="h-8 rounded-pill bg-surface-3 px-sm max-md:h-11 text-label font-medium hover:bg-accent-soft data-popup-open:bg-accent-soft"
       onChange={pickModel}
       effort={{ value: now.effort, onChange: (effort) => choose(now.model, effort) }}
     />

@@ -2,6 +2,7 @@ import { BrainIcon, CircleAlertIcon, MessageSquareIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useId } from 'react'
 import { cn } from '../../ui/cn.ts'
+import { Meter, MeterLabel } from '../../ui/meter.tsx'
 import { Popover, PopoverContent, PopoverTrigger } from '../../ui/popover.tsx'
 import type { OMProgress } from './session-state.ts'
 
@@ -89,17 +90,15 @@ function Budget(props: {
 
   return (
     <div className={cn('flex flex-col gap-xs', className)}>
-      <div className="flex items-center gap-xs font-semibold text-text">
-        <span className={tone}>{icon}</span>
-        <span>{label}</span>
-        <span className="ms-auto text-text-2 tabular-nums">
-          {formatK(used)} de {formatK(threshold)}k
-        </span>
-      </div>
-      <svg aria-hidden="true" className={cn('h-1.5 w-full overflow-hidden rounded-pill', tone)}>
-        <rect width="100%" height="100%" fill="currentColor" opacity="0.15" />
-        <rect data-fill height="100%" width={`${percent}%`} fill="currentColor" />
-      </svg>
+      <Meter value={percent} className={cn('flex flex-col gap-xs', tone)}>
+        <div className="flex items-center gap-xs font-semibold text-text">
+          <span className={tone}>{icon}</span>
+          <MeterLabel>{label}</MeterLabel>
+          <span className="ms-auto text-text-2 tabular-nums">
+            {formatK(used)} de {formatK(threshold)}k
+          </span>
+        </div>
+      </Meter>
       <p className="text-text-2">{description}</p>
     </div>
   )
@@ -130,8 +129,8 @@ export function MemoryStatus(props: {
   return (
     <Popover>
       <PopoverTrigger
-        className="flex min-h-11 min-w-11 items-center justify-center gap-xs text-fact text-text-2 hover:text-text md:min-h-0 md:min-w-0"
-        aria-label={`Memória da conversa: Mensagens ${percent}%, ${formatK(pending)}/${formatK(threshold)}k, Observações ${formatK(observations)}/${formatK(reflectionThreshold)}k${
+        className="flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-xs text-fact text-text-2 hover:text-text md:min-h-0 md:min-w-0"
+        aria-label={`Memória da conversa: Mensagens ${percent}%, ${formatK(pending)}/${formatK(threshold)}k, Memória ${formatK(observations)}/${formatK(reflectionThreshold)}k${
           failed ? ' · Falha na memória' : ''
         }`}
       >

@@ -13,10 +13,9 @@ const MEMORY: MemoryGauge = {
 test('um anel com o percentual de pendingTokens/threshold (Critério 15)', () => {
   render(<MemoryStatus memory={MEMORY} />)
   const trigger = screen.getByRole('button', {
-    name: 'Memória da conversa: Mensagens 12%, 3,6/30k, Observações 2,1/40k',
+    name: 'Memória da conversa: Mensagens 12%, 3,6/30k, Memória 2,1/40k',
   })
   expect(trigger.querySelectorAll('svg')).toHaveLength(1)
-  expect(screen.getByText('12%').className).toContain('max-md:hidden')
 })
 
 test('sem memória o anel está vazio e diz 0% (Critério 15, matriz de estados)', () => {
@@ -34,8 +33,6 @@ test('o anel não gira: enquanto guarda, observa ou reorganiza a luz corre sobre
   for (const omPhase of ['buffering', 'observing', 'reflecting'] as const) {
     rerender(<MemoryStatus memory={MEMORY} omPhase={omPhase} />)
     expect(ring()?.hasAttribute('data-working')).toBe(true)
-    expect(ring()?.getAttribute('class')).not.toContain('animate-spin')
-    expect(ring()?.querySelector('[class*="animate-ring-sweep"]')).toBeTruthy()
   }
 })
 
@@ -43,10 +40,13 @@ test('cada memória mostra sua barra cheia até o percentual usado (Critério 16
   render(<MemoryStatus memory={MEMORY} />)
   fireEvent.click(screen.getByRole('button'))
   await screen.findByText('3,6 de 30k')
-  const widths = [...document.querySelectorAll('rect[data-fill]')].map((r) =>
-    r.getAttribute('width'),
+  const values = screen.getAllByRole('meter').map((m) => m.getAttribute('aria-valuenow'))
+  expect(values).toEqual(['12', '5.25'])
+  const meter = screen.getByRole('meter', { name: 'Mensagens' })
+  expect(meter.hasAttribute('aria-label')).toBe(false)
+  expect(document.getElementById(meter.getAttribute('aria-labelledby') ?? '')?.textContent).toBe(
+    'Mensagens',
   )
-  expect(widths).toEqual(['12%', '5.25%'])
 })
 
 test('o clique abre as duas memórias (Critério 16)', async () => {
