@@ -10,7 +10,7 @@ e embaixo dela uma linha pequena.
 **O roteiro de uso.** Padaria Sol, com Ana (dona), no computador e no celular.
 
 1. "Encomendas" › **Conversa**. A caixa tem uma linha. Na mesma linha, da esquerda para a direita:
-   o anel da memória com "0%" ao lado, o modelo, o **+**, o **microfone** e a seta **Enviar**.
+   o **+**, o modelo, o anel da memória com "0%" ao lado, o **microfone** e a seta **Enviar**.
    Embaixo, uma linha pequena: "Não cole senhas ou chaves na conversa."
 2. Ana toca no **+** e escolhe `tabela-de-precos.pdf` e `logo.png` (também pode colar ou arrastar).
    Cada um vira uma etiqueta acima do texto, a imagem em miniatura, com um **x**. Ela escreve
@@ -96,7 +96,7 @@ U3 +476/−65; U4 +189/−9; U5 +58/−96. O teto de 4.000 linhas (L2) vale.
 | 2 | U1 | O pedido ao modelo leva o `.md` como texto `[File: observacoes.md]`, o PDF como `document` e o PNG como `image`; um PDF enviado com o Builder trabalhando chega ao modelo na mesma volta | `conversation-files.test.ts`, "cada tipo chega ao modelo na sua forma" e "o arquivo enviado no meio do trabalho entra na volta"; um envio só com o arquivo, sem texto, chega ao modelo, e o teste "só o arquivo, sem texto" o prova | must |
 | 3 | U1 | A página do Hub responde com `img-src 'self' data:` e nada mais muda no CSP | `apps/server/src/platform/http.test.ts`, o caso do cabeçalho CSP | must |
 | 4 | U2 | Vazia, a caixa tem uma linha; cresce com o texto até a altura máxima e então rola | `apps/web/src/builder/conversation/composer.test.tsx`, "a caixa começa com uma linha" (as classes do campo) e a captura da QA | must |
-| 5 | U2 | A linha de ações dentro da caixa em todo tamanho: à esquerda o anel e o modelo, à direita +, microfone e botão; quando falta espaço, o anel e o modelo descem para uma segunda linha dentro da caixa (fundador, "A" e depois "F", 2026-10-26); nada da memória embaixo da caixa | `composer.test.tsx`, "uma linha de ações em todo tamanho", a 1280 e a 390 px | must |
+| 5 | U2 | A linha de ações dentro da caixa em todo tamanho: uma linha só, a 1280 e a 390 px: à esquerda **+**, o modelo e o anel, à direita microfone e botão (fundador, "A" e depois "F", 2026-10-26, e a ordem de 2026-10-27: "inverte ... o modelo fica mais à esquerda e o anel à direita"); o modelo é a pílula, nome e nível juntos (o nível mais claro, sem "·" e sem seta na caixa; a folha de ajustes mantém a seta), que se encurta, sem texto do nível no celular e sem nível quando está desligado ("C" e "Pílula", 2026-10-27); nada da memória embaixo da caixa | `composer.test.tsx`, "uma linha de ações em todo tamanho", a 1280 e a 390 px | must |
 | 6 | U2 | Builder trabalhando e caixa vazia (sem texto e sem arquivo): um botão, **Parar**, e Esc para. Com texto ou arquivo: **Enviar**, que orienta. Parado: **Enviar**, desabilitado com a caixa vazia. Nunca os dois juntos | `composer.test.tsx`, "um botão só: Parar com a caixa vazia, Enviar com texto" | must |
 | 7 | U2 | Embaixo da caixa, no computador, uma linha só: "Não cole senhas ou chaves na conversa.", em 12 px (`text-fact`, D1a). Nenhuma dica de teclado. No celular, nada embaixo da caixa; a frase segue na conversa vazia e na folha do modelo | `composer.test.tsx`, "embaixo da caixa só a linha das senhas" | must |
 | 8 | U3 | **+**, colar e arrastar adicionam PDF, `.md`, `.txt` e imagem como etiquetas com **x**; o **x** tira | `apps/web/src/builder/conversation/attachments.test.tsx`, "escolher, colar e soltar viram etiquetas" | must |
@@ -107,7 +107,7 @@ U3 +476/−65; U4 +189/−9; U5 +58/−96. O teto de 4.000 linhas (L2) vale.
 | 13 | U4 | O microfone escreve em português na caixa, com a frase em andamento à vista, e para no segundo toque | `apps/web/src/builder/conversation/dictation.test.tsx`, com o reconhecimento dublado | must |
 | 14 | U4 | Microfone recusado (`not-allowed`, `service-not-allowed`), idioma indisponível ou silêncio: uma frase em português por código; o segundo toque para sem frase de erro (`aborted` não mostra frase); sem `SpeechRecognition` no navegador, o microfone não é desenhado. No iPhone com o Hub na tela de início, o microfone não é desenhado ou mostra a frase do código, e a QA da U4 registra qual dos dois acontece | `dictation.test.tsx`, "cada erro tem sua frase", "o segundo toque para sem frase" e "sem reconhecimento não há microfone"; o iPhone, a QA | must |
 | 15 | U5 | Um anel com o percentual de `pendingTokens/threshold`; no computador o número ao lado ("12%"), no celular só o anel; o nome lido diz as duas memórias | `apps/web/src/builder/conversation/memory-status.test.tsx`, "um anel com o percentual" | must |
-| 16 | U5 | O clique no anel abre a janela com Mensagens e Memória e seus números, como hoje | `memory-status.test.tsx`, "o clique abre as duas memórias" | must |
+| 16 | U5 | O clique no anel abre a janela com Mensagens e Memória, cada uma com seu ícone, seus números e uma barra que mostra quanto está cheia (Mensagens em Ipê, Memória no violeta `memory`: "Usa amarelo e roxo", "Aprovado", 2026-10-26) | `memory-status.test.tsx`, "o clique abre as duas memórias" | must |
 
 ## A matriz de estados
 
@@ -117,7 +117,7 @@ U3 +476/−65; U4 +189/−9; U5 +58/−96. O teto de 4.000 linhas (L2) vale.
 | Etiquetas no compositor (U3) | nenhuma; recarregar a página guarda o texto da caixa e tira os arquivos anexados | nenhuma | — (a leitura é local e curta) | a frase do teto: "Até 20 arquivos por mensagem.", "Este arquivo passa de 10,5 MB.", "Os arquivos passam de 21 MB juntos." (os números saem de `LIMITS`) | — | — | um tipo fora do `accept` não aparece no seletor; colado ou solto: "Este tipo de arquivo não é aceito." |
 | Bolha da pessoa (U3) | — | só texto, como hoje | pendente com "Vai ao Builder no próximo passo" | — | — | — | — |
 | Microfone (U4) | o botão, parado | — | ouvindo: o botão marcado (`aria-pressed`), o texto em andamento na caixa | "Permita o microfone no navegador para ditar." (`not-allowed`, `service-not-allowed`); "Este navegador não dita em português." (`language-not-supported`); "Não ouvimos nada. Tente de novo." (`no-speech`); outro código: "O ditado parou. Tente de novo."; `aborted` (o segundo toque, `stop()`): nenhuma frase | — | sem `SpeechRecognition`: o botão não é desenhado | — |
-| Anel da memória (U5) | anel vazio, "0%" no computador | igual | o anel gira enquanto observa (`omPhase`) | a marca de falha de hoje, e a frase na janela | — | — | — |
+| Anel da memória (U5) | anel vazio, "0%" no computador | igual | o arco fica no seu percentual enquanto observa (`omPhase`) e uma luz corre sobre ele; com movimento reduzido a luz para no arco | a marca de falha de hoje, e a frase na janela | — | — | — |
 
 | Campo de contrato | Quem escreve | Quem lê |
 | --- | --- | --- |
@@ -138,18 +138,17 @@ direita, dentro da caixa) e as linhas do fundador.
 ┌──────────────────────────────────────────────────────────────┐
 │ [▤ tabela-de-precos.pdf ×] [▣ logo.png ×]                    │
 │ Escreva para orientar o Builder                              │
-│ ◔ 12%   Claude Sonnet ▾                         [+] [mic] [↑] │
+│ [+] Claude Sonnet Médio ◔ 12%                       [mic] [↑] │
 └──────────────────────────────────────────────────────────────┘
               Não cole senhas ou chaves na conversa.
 
 390 px, Builder trabalhando, caixa vazia
 ┌─────────────────────────────────┐
 │ Escreva para orientar o Builder │
-│ ◔  Claude Sonnet ▾              │
-│                  [+] [mic] [■]  │
+│ [+] Claude Sonnet ◔     [mic] [■] │
 └─────────────────────────────────┘
-(a linha de status desce para uma segunda linha dentro da caixa quando falta espaço; nada
-embaixo da caixa; a frase das senhas fica na conversa vazia e na folha do modelo)
+(uma linha em todo tamanho, o nome do modelo se encurta; nada embaixo da caixa no celular; a
+frase das senhas fica na conversa vazia e na folha do modelo)
 ```
 
 ## A tabela de falhas
@@ -184,7 +183,7 @@ embaixo da caixa; a frase das senhas fica na conversa vazia e na folha do modelo
 | Uma linha de ações em todo tamanho | U2 | `composer.tsx:46-49, 101-130`: memória dentro da linha só no celular largo (`inRow`), embaixo no resto | Factory `Composer.tsx:266-300` (`StatusLine` com modelo e memória à esquerda, botões à direita, dentro da caixa) | Lido | nativo: uma linha só; saem `inRow`, `useIsNarrow` e as duas posições da memória | | 2026-10-25 "ela tá embaixo da box" | |
 | Um botão Enviar/Parar | U2 | `composer.tsx:104-125` Parar e Enviar lado a lado | AI Elements `PromptInputSubmit` (`ai-elements-prompt-input.tsx:1216-1263`: Parar enquanto `streaming`, `type="button"`); Factory `Composer.tsx:279-298` (os dois) | Lido | embrulhado: Parar quando trabalhando **e** sem texto nem arquivo; senão Enviar. Esc continua parando | Teste de tela (critério 6) | 2026-10-25 "podemos ter apenas um igual codex" | |
 | Linha embaixo da caixa | U2 | `composer.tsx:131-134` duas linhas `text-fact` (12 px): a dica de teclado (`STEER_KEYS` trabalhando) e `NO_SECRETS`; V30 pede a dica de teclado | Factory: nenhuma; Claude e ChatGPT: um aviso pequeno (capturas do fundador) | — | nativo: uma linha, "Não cole senhas ou chaves na conversa.", em `text-fact` (12 px, D1a); a dica de teclado sai; V30 muda | | D1, 2026-10-26: "D. D1"; D1a, 2026-10-26: "D1A" | |
-| Anel único da memória | U5 | `memory-status.tsx:16-58, 66-167` dois `TokenRing` e o `compact` | Factory `OperationalMemoryStatus.tsx:27-92` sobre `TokenBudget` (`packages/playground-ui/src/ds/components/TokenBudget/token-budget.tsx:25-90`, `role="meter"`); números do Mastra em `session-state.ts:7` (`Display['omProgress']`) | Lido: anel com `aria-valuenow`, o número ao lado, a janela com as duas memórias | nativo: um anel de `pendingTokens/threshold`, à esquerda na linha da caixa; no computador o percentual ao lado, no celular só o anel; a janela fica | | 2026-10-25 "só uma barra de girar ... quando clica, que abriria os dois"; E1, 2026-10-26: "E. E1" | |
+| Anel único da memória | U5 | `memory-status.tsx:16-58, 66-167` dois `TokenRing` e o `compact` | Factory `OperationalMemoryStatus.tsx:27-92` sobre `TokenBudget` (`packages/playground-ui/src/ds/components/TokenBudget/token-budget.tsx:25-90`, `role="meter"`; `token-budget-detail.tsx:39-66` a barra de cada memória; `token-budget.css:30-47` a luz sobre o arco); números do Mastra em `session-state.ts:7` (`Display['omProgress']`) | Lido: anel com `aria-valuenow`, o número ao lado, a janela com as duas memórias e a barra de cada uma; a luz corre sobre o arco | nativo: um anel de `pendingTokens/threshold`, à direita do modelo na linha da caixa; no computador o percentual ao lado, no celular só o anel; a janela tem uma barra por memória (o `Meter`, que o anel decorativo não usa); o `memory` é o violeta da Memória | | 2026-10-25 "só uma barra de girar ... quando clica, que abriria os dois"; E1, 2026-10-26: "E. E1"; 2026-10-26: "o círculo ... tem que mostrar ele sendo preenchido", "Usa amarelo e roxo", "Aprovado" | |
 | Microfone: ditado | U4 | nenhum | AI Elements `speech-input` (`ai-elements-speech-input.tsx:75-178, 260-330`); Mastra `client-sdks/react/src/voice/use-speech-recognition.ts:76-130`; Conexus OS `apps/web/src/features/builder/composer/use-dictation.ts:36-83` | Lido: `SpeechRecognition ?? webkitSpeechRecognition`, `continuous`, `interimResults`, `lang`; o AI Elements cai para `MediaRecorder` com `onAudioRecorded` | embrulhado: copiado para `ui/`, `lang='pt-BR'`, frase em andamento na caixa, frase por código de erro (`not-allowed`, `service-not-allowed`, `language-not-supported`, `no-speech`); sem `onAudioRecorded`, o botão some onde não há reconhecimento | Teste com o reconhecimento dublado (critérios 13 e 14) | A1 B1 C, 2026-10-25 | `apps/web/src/ui/speech-input.tsx` |
 | `processLocally` | U4 | — | MDN, on-device speech recognition (lido em 2026-10-26) | Documentado: `true` exige o pacote no aparelho, senão `start()` falha com `language-not-supported` | nativo: não ligar (padrão `false`) | | "C sim", 2026-10-25 | |
 | Tipos do Web Speech | U4 | — | `typescript@6.0.3` `lib/lib.dom.d.ts:35515-35627` tem os eventos e resultados, e `:44456` o tipo `SpeechRecognitionErrorCode`; não tem a interface `SpeechRecognition` nem o construtor | Lido | embrulhado: uma declaração da interface (`continuous`, `interimResults`, `lang`, `start`, `stop`, `onresult`, `onerror`, `onend`) e do construtor na peça, com o código de erro do `lib.dom` (o Conexus OS fazia `use-dictation.ts:3-23`) | `npm run typecheck` | não precisa | |
@@ -565,6 +564,11 @@ na tela de início, registra se o microfone não é desenhado ou mostra a frase 
   é o segundo caso do critério 14; relatar o código; a frase é a do código, e esconder o botão ali
   volta ao cartão.
 
+### Problema externo conhecido
+
+- No iOS 26.1 ou mais novo, a faixa de cima do Hub na tela de início (PWA) segue o bug 301994 do
+  WebKit: não há correção no DOM, então não se contorna aqui.
+
 ## U5 O anel único
 
 **Base e modelo.** `main` com U1 a U4. Sonnet: uma peça que fica menor.
@@ -592,12 +596,16 @@ export function MemoryStatus(props: {
 })
 ```
 
-- O gatilho, um botão, leva dentro dele um `<meter>` nativo, só para leitores de tela (`sr-only`,
-  `value` o percentual de `pendingTokens/threshold`), ao lado do anel e do percentual com
-  `max-md:hidden`. A Factory põe `role="meter"` num `span` (`OperationalMemoryStatus.tsx:27-49`,
-  `token-budget.tsx:45`); o lint do repositório pede o elemento nativo. O nome lido diz Mensagens e
-  Memória com os números, como hoje. A janela fica como está.
-- O anel gira enquanto observa, guarda ou reorganiza; a marca de falha fica.
+- O gatilho, um botão, leva o anel e o percentual (com `max-md:hidden`); o nome lido do botão diz
+  Mensagens e Memória com os números e o percentual. Não há `<meter>` escondido no gatilho: o
+  anel é decorativo (`aria-hidden`) e o percentual está no nome. A Factory põe `role="meter"`
+  num `span` (`OperationalMemoryStatus.tsx:27-49`, `token-budget.tsx:45`); o `Meter` foi
+  considerado para o anel e o SVG decorativo ficou.
+- A janela tem uma barra por memória (o `Meter` do repositório, uma por `Budget`), como a Factory
+  em `token-budget-detail.tsx:39-66`.
+- O anel não gira: enquanto observa, guarda ou reorganiza, o arco fica no seu percentual e uma
+  luz corre sobre ele (`token-budget.css:30-47`, Mastra 1.78, `6a465f9d`; aqui `ring-sweep`);
+  com movimento reduzido a luz para no arco. A marca de falha fica.
 
 ### As skills e a leitura
 
