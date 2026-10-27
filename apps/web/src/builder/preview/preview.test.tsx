@@ -173,8 +173,10 @@ test('entrada recusada: a frase da falha no lugar do iframe, e Recarregar tenta 
   expect(alert.textContent).toBe(sentenceOfCode('DATABASE_UNAVAILABLE'))
   expect(screen.queryByTitle('Prévia')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Tentar de novo' })).toBeNull()
-  for (const button of screen.getAllByRole('button', { name: 'Recarregar' }))
-    fireEvent.click(button)
+  // Only the phone's icon, the first in the page, which the top row owns.
+  const [phoneIcon] = screen.getAllByRole('button', { name: 'Recarregar' })
+  if (!phoneIcon) throw new Error('the phone has no Recarregar')
+  fireEvent.click(phoneIcon)
   expect((await screen.findByTitle('Prévia')).getAttribute('src')).toBe(`${APP}/`)
 })
 

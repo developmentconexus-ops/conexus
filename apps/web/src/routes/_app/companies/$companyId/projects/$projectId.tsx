@@ -35,7 +35,9 @@ function ProjectPage() {
       title={project.name}
       area={
         <ProjectArea
-          preview={(project, reloads) => <Preview project={project} reloads={reloads} />}
+          preview={(project, reloads, reload) => (
+            <Preview project={project} reloads={reloads} onReload={reload} />
+          )}
           code={<Source />}
         />
       }

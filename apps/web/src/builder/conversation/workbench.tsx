@@ -5,6 +5,7 @@ import { useDefaultLayout } from 'react-resizable-panels'
 import { pageStorage } from '../../platform/storage.ts'
 import { cn } from '../../ui/cn.ts'
 import { PhoneTopContent } from '../../ui/frame.tsx'
+import { PageTitle } from '../../ui/list.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
@@ -43,12 +44,9 @@ export function Workbench(props: { title: string; area: ReactNode; panel: ReactN
       <div className="flex h-full min-h-0 flex-col">
         <PhoneTopContent>
           {view === 'app' && (
-            <p
-              className="order-1 min-w-0 flex-1 truncate font-display text-title md:hidden"
-              title={props.title}
-            >
+            <PageTitle className="order-1 min-w-0 flex-1 truncate md:hidden" title={props.title}>
               {props.title}
-            </p>
+            </PageTitle>
           )}
           <div className="order-2 shrink-0 md:hidden">
             <ToggleGroup

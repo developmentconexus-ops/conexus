@@ -62,7 +62,7 @@ function Sections() {
  * (the route hands it in) or the Projeto's sections. The tab and the section live in the address.
  */
 export function ProjectArea(props: {
-  preview: (project: Project, reloads: number) => ReactNode
+  preview: (project: Project, reloads: number, reload: () => void) => ReactNode
   code: ReactNode
 }) {
   const { companyId, projectId } = route.useParams()
@@ -70,6 +70,9 @@ export function ProjectArea(props: {
   const navigate = useNavigate()
   const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
   const [reloads, setReloads] = useState(0)
+  function reload() {
+    setReloads((count) => count + 1)
+  }
   const live = project.address !== null && project.appVersion !== null
   return (
     <Tabs
@@ -96,7 +99,7 @@ export function ProjectArea(props: {
             size="icon"
             className="ml-auto md:hidden"
             aria-label="Recarregar"
-            onClick={() => setReloads((count) => count + 1)}
+            onClick={reload}
           >
             <RotateCwIcon aria-hidden="true" />
           </Button>
@@ -108,8 +111,8 @@ export function ProjectArea(props: {
             rel="noopener noreferrer"
             aria-label="Abrir app"
             className={cn(
-              buttonVariants({ variant: 'primary' }),
-              'ml-auto max-md:ml-0 max-md:size-11 max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text',
+              buttonVariants({ variant: 'primary', phoneIcon: true }),
+              'ml-auto max-md:ml-0',
               lens !== Lens.enum.preview && 'max-md:ml-auto',
             )}
           >
@@ -119,7 +122,7 @@ export function ProjectArea(props: {
         )}
       </div>
       <TabsContent value={Lens.enum.preview} className="min-h-0">
-        {props.preview(project, reloads)}
+        {props.preview(project, reloads, reload)}
       </TabsContent>
       <TabsContent value={Lens.enum.code} className="min-h-0 overflow-y-auto p-xl">
         {props.code}

@@ -106,7 +106,7 @@ test('cada cartão: o nome, "Criado em" e o link que abre o Projeto', async () =
   const link = await within(await screen.findByRole('main')).findByRole('link', { name: /Pedidos/ })
   expect(link.textContent).toContain('Criado em 17/10/2026')
   fireEvent.click(link)
-  expect(await screen.findByRole('heading', { name: 'Pedidos' })).toBeTruthy()
+  expect(await screen.findAllByRole('heading', { name: 'Pedidos' })).not.toHaveLength(0)
   expect(router.state.location.pathname).toBe(`${PROJECTS}/${PEDIDOS.id}`)
 })
 

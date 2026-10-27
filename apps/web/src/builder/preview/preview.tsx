@@ -90,21 +90,19 @@ function Frame(props: { address: string; view: FrameView }) {
 /** The Prévia of a Projeto: its app in a frame, or the Stage before its first app. */
 export function Preview({
   project,
-  reloads: phoneReloads = 0,
+  reloads,
+  onReload,
 }: {
   project: Project
-  reloads?: number
+  reloads: number
+  onReload: () => void
 }) {
   const [view, setView] = useState<FrameView>('computer')
-  const [reloads, setReloads] = useState(0)
   const [notice, setNotice] = useState<NoticeState>(() =>
     storage.getItem(NOTICE_CLOSED) === 'true' ? 'closed' : 'open',
   )
   const { address, appVersion } = project
   if (appVersion === null || address === null) return <Stage />
-  function reload() {
-    setReloads((count) => count + 1)
-  }
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-md border-b border-line px-md py-xs max-md:hidden">
@@ -121,7 +119,7 @@ export function Preview({
             <ToggleGroupItem value="phone">Celular</ToggleGroupItem>
           </ToggleGroup>
         </div>
-        <Button className="ml-auto" onClick={reload}>
+        <Button className="ml-auto" onClick={onReload}>
           Recarregar
         </Button>
       </div>
@@ -144,7 +142,7 @@ export function Preview({
           </Button>
         </div>
       )}
-      <Frame key={`${appVersion}-${reloads}-${phoneReloads}`} address={address} view={view} />
+      <Frame key={`${appVersion}-${reloads}`} address={address} view={view} />
     </div>
   )
 }

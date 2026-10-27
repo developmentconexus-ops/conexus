@@ -22,6 +22,10 @@ const buttonClasses = cva(
         default: 'h-[34px] px-[0.9rem] max-md:h-11 [&_svg]:size-4',
         icon: 'size-8 max-md:size-11 [&_svg]:size-3.5',
       },
+      // A link that is a labelled button from `md` and the quiet icon button (`ghost`, `icon`) under it.
+      phoneIcon: {
+        true: 'max-md:size-11 max-md:bg-transparent max-md:px-0 max-md:text-text-2 max-md:hover:bg-surface-3 max-md:hover:text-text max-md:[&_svg]:size-3.5',
+      },
     },
     defaultVariants: { variant: 'default', size: 'default' },
   },

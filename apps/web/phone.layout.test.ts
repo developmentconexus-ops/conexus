@@ -101,6 +101,15 @@ for (const viewport of [PHONE, SMALL_PHONE]) {
       assert.ok(Math.abs(icon.y - tabs.y) < tabs.height, 'the icons share the row of the tabs')
     }
     assert.ok(reload.x + reload.width <= open.x, 'Recarregar comes before Abrir app')
+    const glyphs = await Promise.all(
+      [
+        page.getByRole('button', { name: 'Recarregar', exact: true }),
+        page.getByRole('link', { name: 'Abrir app', exact: true }),
+      ].map((each) => each.locator('svg').evaluate((icon) => icon.getBoundingClientRect().width)),
+    )
+    assert.deepEqual(glyphs, [14, 14], 'the two icons differ in size')
+    assert.equal((await page.getByRole('heading', { level: 1 }).count()) > 0, true)
+    assert.equal(await page.getByRole('heading', { level: 1 }).locator('visible=true').count(), 1)
     assert.ok(open.x + open.width <= viewport.width, 'Abrir app leaves the screen')
     const header = await page.getByRole('tablist', { name: 'Projeto' }).evaluate((list) => {
       const row = list.parentElement?.getBoundingClientRect()
