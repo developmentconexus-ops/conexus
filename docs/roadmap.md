@@ -31,6 +31,7 @@ Aprovações e usos: [aprovações](approvals.md).
     14.1 **A Prévia.** Abre na Prévia o app que ele escreveu; cada versão do Builder que monta vai ao app sozinha.
     14.3 **Arquivos e voz.** Anexa um PDF, `.md`, `.txt` ou imagem na conversa com o Builder e dita a mensagem pelo microfone do navegador.
     13.1 **O primeiro pedido.** Pede o primeiro app no compositor do Início, com **+** e microfone, e vê o Projeto criado; o passo 4 da primeira entrada. É o Início que você planeja.
+    13.2 **Configurações.** Vê as páginas na largura, as contas numa página, botões menores.
 15. **Mudar o app.** Muda os dados sem perder nada.
 17. **Publicar.** Publica um app e o abre.
 18. **Entrar num app.** Convida alguém só para um app, e tira o acesso.
@@ -81,6 +82,7 @@ Login social. Arquivos enviados por pessoas para dentro de um app ou da máquina
 | 14.1 A Prévia | A 10, a 14.0 e a 14.2 | A1, B1, X1, um número por versão (A), Apaga tudo | Fechada em 2026-10-26 (v0.14.10, [aprovações](approvals.md)). Um app só até Publicar; todo membro põe a versão dele; o número é o do Builder; o Enviar versão saiu |
 | 14.3 Arquivos e voz | A 14.1 | Nenhuma | Fechada em 2026-10-27 (v0.14.11 e v0.14.12, [aprovações](approvals.md)). Arquivos (PDF, `.md`, `.txt`, imagens) só na conversa com o Builder: ficam na mensagem, não vão para dentro do app nem da máquina. Voz: o ditado do navegador; no app instalado do iPhone o microfone não aparece; a transcrição no servidor (Whisper e outras) espera, se for preciso |
 | 13.1 O primeiro pedido | A 14.3 e a 14.1 | A Alterações saiu do plano com a B1 da 14.1; a 13.1 confirma no estudo | O compositor do Início é o da 14.3, com **+** e microfone. O contorno no título do Início (foco programático depois de entrar, #32-4) é consertado aqui |
+| 13.2 Configurações | A 13.1 | Aparência; o grupo das contas | A escala dos botões |
 | 15 Mudar o app | A 14.1 | Nenhuma | Migrações atômicas de app. O lote |
 | 17 Publicar | A 15 | Nenhuma | Pré-requisitos de Release e Publish. O estudo 04 |
 | 18 Entrar num app | A 17 | Onde a checagem de sessão vive, pelo teste | Ficha de sessões e passagem. LT1 a LT4 e LT9 |
