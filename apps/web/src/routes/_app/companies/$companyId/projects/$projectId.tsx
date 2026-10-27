@@ -1,4 +1,5 @@
 import { ProjectId } from '@conexus/hub-api'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Workbench } from '../../../../../builder/conversation/public.ts'
@@ -23,10 +24,22 @@ export const Route = createFileRoute('/_app/companies/$companyId/projects/$proje
     readOrNotFound(
       context.queryClient.ensureQueryData(projectQuery(params.companyId, params.projectId)),
     ),
-  component: () => (
+  component: ProjectPage,
+})
+
+function ProjectPage() {
+  const { companyId, projectId } = Route.useParams()
+  const { project } = useSuspenseQuery(projectQuery(companyId, projectId)).data
+  return (
     <Workbench
-      area={<ProjectArea preview={(project) => <Preview project={project} />} code={<Source />} />}
+      title={project.name}
+      area={
+        <ProjectArea
+          preview={(project, reloads) => <Preview project={project} reloads={reloads} />}
+          code={<Source />}
+        />
+      }
       panel={<Outlet />}
     />
-  ),
-})
+  )
+}

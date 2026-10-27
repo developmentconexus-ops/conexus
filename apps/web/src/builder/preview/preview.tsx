@@ -88,7 +88,13 @@ function Frame(props: { address: string; view: FrameView }) {
 }
 
 /** The Prévia of a Projeto: its app in a frame, or the Stage before its first app. */
-export function Preview({ project }: { project: Project }) {
+export function Preview({
+  project,
+  reloads: phoneReloads = 0,
+}: {
+  project: Project
+  reloads?: number
+}) {
   const [view, setView] = useState<FrameView>('computer')
   const [reloads, setReloads] = useState(0)
   const [notice, setNotice] = useState<NoticeState>(() =>
@@ -101,8 +107,8 @@ export function Preview({ project }: { project: Project }) {
   }
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex items-center gap-md border-b border-line px-md py-xs">
-        <div className="w-56 max-md:hidden">
+      <div className="flex items-center gap-md border-b border-line px-md py-xs max-md:hidden">
+        <div className="w-56">
           <ToggleGroup
             aria-label="Tamanho da tela"
             value={[view]}
@@ -138,7 +144,7 @@ export function Preview({ project }: { project: Project }) {
           </Button>
         </div>
       )}
-      <Frame key={`${appVersion}-${reloads}`} address={address} view={view} />
+      <Frame key={`${appVersion}-${reloads}-${phoneReloads}`} address={address} view={view} />
     </div>
   )
 }

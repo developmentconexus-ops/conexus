@@ -21,6 +21,7 @@ import { Skeleton } from '../../ui/skeleton.tsx'
 import { ReadFailure } from '../../ui/states.tsx'
 import { conversationsQuery, sendCreation } from './queries.ts'
 import { titleOf, UNCONFIRMED_CREATION } from './text.ts'
+import { usePhoneView } from './workbench.tsx'
 
 const route = getRouteApi('/_app/companies/$companyId/projects/$projectId')
 const CONVERSATION = '/companies/$companyId/projects/$projectId/conversations/$conversationId'
@@ -159,6 +160,7 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
   const list = useQuery(conversationsQuery(companyId, projectId, undefined))
   const [failure, setFailure] = useState<string>()
   const { current } = props
+  const phoneView = usePhoneView()
   const items: Item[] = (list.data?.conversations ?? []).map((one) => ({
     value: one.id,
     label: one.id === current?.value ? current.label : titleOf(one),
@@ -170,7 +172,7 @@ export function ConversationSwitch(props: { current: Item | undefined }) {
   return (
     <>
       <PhoneTopContent>
-        <div className="order-1 min-w-24 flex-1 md:hidden">
+        <div className={phoneView === 'app' ? 'hidden' : 'order-1 min-w-24 flex-1 md:hidden'}>
           <ConversationSheet
             items={items}
             current={current}

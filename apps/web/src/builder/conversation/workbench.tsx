@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useState } from 'react'
+import { createContext, useContext, useState } from 'react'
 import { useDefaultLayout } from 'react-resizable-panels'
 import { pageStorage } from '../../platform/storage.ts'
 import { cn } from '../../ui/cn.ts'
@@ -7,6 +7,13 @@ import { PhoneTopContent } from '../../ui/frame.tsx'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '../../ui/resizable.tsx'
 import { ToggleGroup, ToggleGroupItem } from '../../ui/toggle-group.tsx'
 import { useIsMobile } from '../../ui/use-mobile.ts'
+
+const PhoneView = createContext<'app' | 'chat'>('app')
+
+/** Which region a phone shows; the conversation's switcher names the place only in its own. */
+export function usePhoneView() {
+  return useContext(PhoneView)
+}
 
 const LAYOUT_ID = 'conexus-workbench'
 const layoutMemory = pageStorage('local')
@@ -24,51 +31,61 @@ const PHONE_REGIONS =
  * `disabled` there although hidden: the library hit-tests by geometry, and `max-md:hidden` hides
  * only paint.
  */
-export function Workbench(props: { area: ReactNode; panel: ReactNode }) {
+export function Workbench(props: { title: string; area: ReactNode; panel: ReactNode }) {
   const [view, setView] = useState<'app' | 'chat'>('app')
   const phone = useIsMobile()
   const layout = useDefaultLayout({ id: LAYOUT_ID, storage: layoutMemory })
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <PhoneTopContent>
-        <div className="order-2 shrink-0 md:hidden">
-          <ToggleGroup
-            aria-label="Parte do Projeto"
-            value={[view]}
-            onValueChange={(next) => {
-              const [chosen] = next
-              if (chosen === 'app' || chosen === 'chat') setView(chosen)
-            }}
-          >
-            <ToggleGroupItem value="app">App</ToggleGroupItem>
-            <ToggleGroupItem value="chat">Conversa</ToggleGroupItem>
-          </ToggleGroup>
-        </div>
-      </PhoneTopContent>
-      <ResizablePanelGroup
-        id={LAYOUT_ID}
-        defaultLayout={layout.defaultLayout}
-        onLayoutChanged={layout.onLayoutChanged}
-        className={cn('min-h-0 flex-1', PHONE_REGIONS)}
-      >
-        <ResizablePanel id="area" minSize="40%" data-active={view === 'app'}>
-          {props.area}
-        </ResizablePanel>
-        <ResizableHandle
-          aria-label="Redimensionar a conversa"
-          disabled={phone}
-          className="max-md:hidden"
-        />
-        <ResizablePanel
-          id="conversation"
-          defaultSize="380px"
-          minSize="320px"
-          maxSize="60%"
-          data-active={view === 'chat'}
+    <PhoneView.Provider value={view}>
+      <div className="flex h-full min-h-0 flex-col">
+        <PhoneTopContent>
+          {view === 'app' && (
+            <p
+              className="order-1 min-w-0 flex-1 truncate font-display text-title md:hidden"
+              title={props.title}
+            >
+              {props.title}
+            </p>
+          )}
+          <div className="order-2 shrink-0 md:hidden">
+            <ToggleGroup
+              aria-label="Parte do Projeto"
+              value={[view]}
+              onValueChange={(next) => {
+                const [chosen] = next
+                if (chosen === 'app' || chosen === 'chat') setView(chosen)
+              }}
+            >
+              <ToggleGroupItem value="app">App</ToggleGroupItem>
+              <ToggleGroupItem value="chat">Conversa</ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+        </PhoneTopContent>
+        <ResizablePanelGroup
+          id={LAYOUT_ID}
+          defaultLayout={layout.defaultLayout}
+          onLayoutChanged={layout.onLayoutChanged}
+          className={cn('min-h-0 flex-1', PHONE_REGIONS)}
         >
-          {props.panel}
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </div>
+          <ResizablePanel id="area" minSize="40%" data-active={view === 'app'}>
+            {props.area}
+          </ResizablePanel>
+          <ResizableHandle
+            aria-label="Redimensionar a conversa"
+            disabled={phone}
+            className="max-md:hidden"
+          />
+          <ResizablePanel
+            id="conversation"
+            defaultSize="380px"
+            minSize="320px"
+            maxSize="60%"
+            data-active={view === 'chat'}
+          >
+            {props.panel}
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </div>
+    </PhoneView.Provider>
   )
 }
